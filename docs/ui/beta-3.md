@@ -1,5 +1,7 @@
 # Beta-3 UI
 
+**Historical.** Current law: [[ui/beta-4]].
+
 See [[mechanics/beta-3]], [[architecture/beta-3]], [[art/beta-3]]. Beta-2 chrome holds except below.
 
 ## Regions

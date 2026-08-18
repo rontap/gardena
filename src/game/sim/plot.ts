@@ -1,4 +1,4 @@
-import type { House, Pump, Rock, Shrub } from './building.ts'
+import type { Chest, Grinder, House, Pump, Rock, Shrub } from './building.ts'
 import type { Plant } from './plant.ts'
 
 export type Ground = 'soft' | 'hard' | 'very-hard'
@@ -11,7 +11,7 @@ export type Plot =
   | { kind: 'ripe'; plant: Plant }
   | { kind: 'dead'; plant: Plant }
 
-export type Cell = Plot | House | Pump | Rock | Shrub
+export type Cell = Plot | House | Pump | Rock | Shrub | Chest | Grinder
 
 export function isPlot(c: Cell): c is Plot {
   return (
@@ -25,5 +25,12 @@ export function isPlot(c: Cell): c is Plot {
 }
 
 export function isSolid(c: Cell): boolean {
-  return c.kind === 'house' || c.kind === 'pump' || c.kind === 'rock' || c.kind === 'shrub'
+  return (
+    c.kind === 'house' ||
+    c.kind === 'pump' ||
+    c.kind === 'rock' ||
+    c.kind === 'shrub' ||
+    c.kind === 'chest' ||
+    c.kind === 'grinder'
+  )
 }

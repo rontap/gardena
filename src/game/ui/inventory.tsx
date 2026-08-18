@@ -27,7 +27,9 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
                   >
                     {slot.kind === 'hold' ? <ItemFace item={slot.item} /> : null}
                   </button>
-                  {slot.kind === 'hold' && <div className="text-center text-xs leading-tight">{itemLine(slot.item)}</div>}
+                  {slot.kind === 'hold' && (
+                    <div className="text-center text-xs leading-tight">{itemLine(slot.item, world.modifiers)}</div>
+                  )}
                   {slot.kind === 'hold' && (slot.item.kind === 'fruit' || slot.item.kind === 'berry') && (
                     <Btn onClick={() => world.sellSlot(i)}>Sell</Btn>
                   )}

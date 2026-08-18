@@ -15,7 +15,7 @@ export function Status({ world, hover }: { world: World; hover: Coord | undefine
         ) : (
           <div className="h-12 w-12 shrink-0 bg-dirt-dark" />
         )}
-        <div className="text-base leading-snug">{heldText(hand)}</div>
+        <div className="text-base leading-snug">{heldText(hand, world.modifiers)}</div>
       </div>
       <div
         className={`relative px-3 py-3 leading-snug whitespace-pre-line ${

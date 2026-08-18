@@ -19,8 +19,12 @@ import bucket from '../../assets/item-bucket.svg?raw'
 import largeBucket from '../../assets/item-large-bucket.svg?raw'
 import itemShrub from '../../assets/item-shrub.svg?raw'
 import itemBerry from '../../assets/item-berry.svg?raw'
+import itemChest from '../../assets/item-chest.svg?raw'
+import itemGrinder from '../../assets/item-grinder.svg?raw'
 import house from '../../assets/prop-house.svg?raw'
 import pump from '../../assets/prop-pump.svg?raw'
+import chest from '../../assets/prop-chest.svg?raw'
+import grinder from '../../assets/prop-grinder.svg?raw'
 import rock from '../../assets/prop-rock.svg?raw'
 import rockLong from '../../assets/prop-rock-long.svg?raw'
 import shrub from '../../assets/prop-shrub.svg?raw'
@@ -42,8 +46,8 @@ import uiCornerTl from '../../assets/ui-corner-tl.svg'
 import uiCornerTr from '../../assets/ui-corner-tr.svg'
 import uiCornerBr from '../../assets/ui-corner-br.svg'
 import uiCornerBl from '../../assets/ui-corner-bl.svg'
-import type { CropId } from '../sim/ids.ts'
-import type { Item } from '../sim/item.ts'
+import type { CropId, SkuId } from '../sim/ids.ts'
+import { skuItem, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
   carrot,
@@ -61,11 +65,16 @@ const FRUIT: { readonly [K in CropId]: string } = {
   raspberry: fruitRaspberry,
 }
 
+export type Face = Item | { kind: 'pumpjack' } | { kind: 'chest' } | { kind: 'grinder' }
+
 export function cropInner(id: CropId, stage: string): string {
   return stageOnly(CROPS[id], stage)
 }
 
-export function itemInner(item: Item): string {
+export function itemInner(item: Face): string {
+  if (item.kind === 'pumpjack') return `<g transform="translate(0,6) scale(0.5)">${inner(pump)}</g>`
+  if (item.kind === 'chest') return inner(itemChest)
+  if (item.kind === 'grinder') return inner(itemGrinder)
   if (item.kind === 'shovel') return inner(item.id === 'shovel' ? shovel : better)
   if (item.kind === 'pickaxe') return inner(item.id === 'pickaxe' ? pickaxe : betterPickaxe)
   if (item.kind === 'container') {
@@ -77,6 +86,13 @@ export function itemInner(item: Item): string {
   if (item.kind === 'fruit') return inner(FRUIT[item.crop])
   if (item.kind === 'berry') return inner(itemBerry)
   return inner(itemShrub)
+}
+
+export function skuInner(id: SkuId): string {
+  if (id === 'buy-chest') return itemInner({ kind: 'chest' })
+  if (id === 'buy-grinder') return itemInner({ kind: 'grinder' })
+  if (id === 'buy-pumpjack') return itemInner({ kind: 'pumpjack' })
+  return itemInner(skuItem(id))
 }
 
 function boxInner(item: Extract<Item, { kind: 'box' }>): string {
@@ -94,6 +110,10 @@ function boxInner(item: Extract<Item, { kind: 'box' }>): string {
 export const ACTOR = inner(actor)
 export const HOUSE = inner(house)
 export const PUMP = inner(pump)
+export const CHEST = inner(chest)
+export const GRINDER = inner(grinder)
+export const ITEM_CHEST = inner(itemChest)
+export const ITEM_GRINDER = inner(itemGrinder)
 export const ROCK = inner(rock)
 export const ROCK_LONG = inner(rockLong)
 export const SHRUB = inner(shrub)

@@ -1,16 +1,20 @@
 import { memo, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
-import { HEALTH } from '../defs/crops.ts'
+import { HEALTH, WITHER } from '../defs/crops.ts'
 import { DOOR, HOUSE_BASE, type Coord } from '../sim/building.ts'
 import { onCell, type Drop } from '../sim/drop.ts'
-import { isPlot, type Plot } from '../sim/plot.ts'
-import { itemLine, skuItem, skuLabel } from '../sim/item.ts'
+import { isPlot, type Cell, type Plot } from '../sim/plot.ts'
+import { itemLine, skuLabel } from '../sim/item.ts'
+import type { SkuId } from '../sim/ids.ts'
+import type { Modifier } from '../sim/modifiers.ts'
 import type { World } from '../sim/world.ts'
 import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
   ACTOR,
   BERRY_SHRUB,
+  CHEST,
   DIRT,
   GRASS,
+  GRINDER,
   HARD,
   HOUSE,
   PUMP,
@@ -20,7 +24,26 @@ import {
   VERY_HARD,
   cropInner,
   itemInner,
+  skuInner,
 } from './svgs.ts'
+
+export type Lens = 'off' | 'water' | 'ripe' | 'kind'
+
+const ROOF = '#8b3a2a'
+const LEAF = '#6bc04a'
+const WATER = '#3d7ea6'
+const INK = '#1c1710'
+const WASH = '#cfc6b0'
+const LENS_BAD = '#e23b2e'
+const LENS_MID = '#d4a017'
+const LENS_GOOD = '#2fd15a'
+const LENS_DONE = '#1e9be6'
+
+const PLACE_LINE: { readonly [id: string]: string } = {
+  'buy-chest': 'Place Chest',
+  'buy-grinder': 'Place Seed grinder',
+  'buy-pumpjack': 'Place Pumpjack',
+}
 
 function bakeGround(world: World): string {
   let s = ''
@@ -40,13 +63,14 @@ type Props = {
   world: World
   cam: Camera
   rev: number
+  lens: Lens
   hover: Coord | undefined
   onHover: (c: Coord | undefined) => void
   onCam: (c: Camera) => void
   onClickCell: (c: Coord) => void
 }
 
-export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }: Props) {
+export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClickCell }: Props) {
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const [view, setView] = useState({ w: 800, h: 600 })
@@ -54,8 +78,8 @@ export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }:
   const placing = world.place.kind === 'sku'
   const prompt = hover !== undefined ? world.prompt(hover) : undefined
   const canPlace = placing && prompt?.kind === 'place'
-  const ghost = world.place.kind === 'sku' ? skuItem(world.place.id) : undefined
-  const pumpjack = ghost?.kind === 'pumpjack'
+  const placeId = world.place.kind === 'sku' ? world.place.id : undefined
+  const pumpjack = placeId === 'buy-pumpjack'
   const tipDrop =
     hover !== undefined
       ? onCell(world.drops, hover)
@@ -67,7 +91,7 @@ export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }:
       tipDrop.item.kind === 'pickaxe' ||
       tipDrop.item.kind === 'container' ||
       tipDrop.item.kind === 'box')
-      ? itemLine(tipDrop.item)
+      ? itemLine(tipDrop.item, world.modifiers)
       : undefined
 
   function pushCam(next: Camera): void {
@@ -154,7 +178,7 @@ export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }:
           transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale}) translate(${-cam.x * TILE}, ${-cam.y * TILE})`}
         >
           <Ground world={world} owned={world.owned.length} />
-          <Marks world={world} rev={rev} />
+          <Marks world={world} rev={rev} lens={lens} />
           {hover !== undefined && (
             <g pointerEvents="none">
               <rect
@@ -187,12 +211,25 @@ export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }:
               dangerouslySetInnerHTML={{ __html: PUMP }}
             />
           )}
+          <foreignObject
+            data-speech
+            pointerEvents="none"
+            x={0}
+            y={0}
+            width={200}
+            height={40}
+            visibility="hidden"
+          >
+            <div className="flex justify-center">
+              <div data-speech-text className="bg-house px-2 py-0.5 text-xs text-ink" />
+            </div>
+          </foreignObject>
         </g>
       </svg>
-      {ghost !== undefined && ghost.kind !== 'pumpjack' && world.place.kind === 'sku' && (
+      {placeId !== undefined && !pumpjack && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(ghost) }} />
-          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{`Place ${skuLabel(world.place.id)}`}</div>
+          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: skuInner(placeId) }} />
+          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{placeLine(placeId)}</div>
         </div>
       )}
       {tip !== undefined && (
@@ -203,14 +240,20 @@ export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }:
           {tip}
         </div>
       )}
-      {pumpjack && world.place.kind === 'sku' && hover === undefined && (
+      {pumpjack && placeId !== undefined && hover === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-8 w-16" viewBox="0 0 48 24" dangerouslySetInnerHTML={{ __html: PUMP }} />
-          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{`Place ${skuLabel(world.place.id)}`}</div>
+          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{placeLine(placeId)}</div>
         </div>
       )}
     </div>
   )
+}
+
+function placeLine(id: SkuId): string {
+  const extra = PLACE_LINE[id]
+  if (extra !== undefined) return extra
+  return `Place ${skuLabel(id)}`
 }
 
 const Ground = memo(function Ground({ world, owned }: { world: World; owned: number }) {
@@ -218,11 +261,14 @@ const Ground = memo(function Ground({ world, owned }: { world: World; owned: num
   return <g dangerouslySetInnerHTML={{ __html: html }} />
 })
 
-const Marks = memo(function Marks({ world, rev }: { world: World; rev: number }) {
+const Marks = memo(function Marks({ world, rev, lens }: { world: World; rev: number; lens: Lens }) {
   void rev
   const plots: { col: number; row: number; cell: Plot }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
   const shrubs: { col: number; row: number; ripe: boolean }[] = []
+  const chests: Coord[] = []
+  const grinders: Coord[] = []
+  const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
   world.forEachCell((at, cell) => {
     if (isPlot(cell) && cell.kind !== 'untilled' && cell.kind !== 'infertile') {
       plots.push({ col: at.col, row: at.row, cell })
@@ -231,6 +277,10 @@ const Marks = memo(function Marks({ world, rev }: { world: World; rev: number })
       rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
     }
     if (cell.kind === 'shrub') shrubs.push({ col: at.col, row: at.row, ripe: cell.ripe })
+    if (cell.kind === 'chest') chests.push(at)
+    if (cell.kind === 'grinder') grinders.push(at)
+    const tint = lensFill(lens, cell)
+    if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
   })
   return (
     <g>
@@ -258,12 +308,39 @@ const Marks = memo(function Marks({ world, rev }: { world: World; rev: number })
           />
         )
       })}
+      {chests.map(c => (
+        <g
+          key={`chest-${c.col},${c.row}`}
+          transform={`translate(${c.col * TILE},${c.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: CHEST }}
+        />
+      ))}
+      {grinders.map(g => (
+        <g
+          key={`grinder-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: GRINDER }}
+        />
+      ))}
       <g
         transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}
         dangerouslySetInnerHTML={{ __html: HOUSE }}
       />
+      {tints.map(t => (
+        <rect
+          key={`tint-${t.col},${t.row}`}
+          x={t.col * TILE}
+          y={t.row * TILE}
+          width={TILE}
+          height={TILE}
+          fill={t.fill}
+          fillOpacity={t.op}
+          style={t.hard ? { mixBlendMode: 'multiply' } : undefined}
+          pointerEvents="none"
+        />
+      ))}
       {world.drops.map((d, i) => (
-        <DropGfx key={i} drop={d} i={i} />
+        <DropGfx key={i} drop={d} i={i} mods={world.modifiers} />
       ))}
       {world.pulse !== undefined && (
         <g pointerEvents="none">
@@ -292,26 +369,75 @@ const Marks = memo(function Marks({ world, rev }: { world: World; rev: number })
         transform={`translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
         dangerouslySetInnerHTML={{ __html: ACTOR }}
       />
-      {world.faces().map(face => (
-        <g
-          key={`${face.id.cx},${face.id.cy}`}
-          className="cursor-pointer"
-          transform={`translate(${face.at.col * TILE},${face.at.row * TILE})`}
-          onPointerDown={e => e.stopPropagation()}
-          onPointerUp={e => {
-            e.stopPropagation()
-            world.expand(face.id)
-          }}
-        >
-          <rect x={4} y={16} width={40} height={14} className="fill-house" />
-          <text x={TILE / 2} y={27} textAnchor="middle" fill="#1c1710" fontSize={8}>
-            {`expand ${face.price}`}
-          </text>
-        </g>
-      ))}
+      {world.faces().map(face => {
+        const s = TILE * 0.85
+        const o = (TILE - s) / 2
+        const poor = world.money < face.price
+        return (
+          <g
+            key={`${face.id.cx},${face.id.cy}`}
+            className="cursor-pointer"
+            transform={`translate(${face.at.col * TILE},${face.at.row * TILE})`}
+            onPointerDown={e => e.stopPropagation()}
+            onPointerUp={e => {
+              e.stopPropagation()
+              world.expand(face.id)
+            }}
+          >
+            <rect x={o} y={o} width={s} height={s} className={poor ? 'fill-dirt-dark' : 'fill-house'} />
+            <text
+              x={TILE / 2}
+              y={TILE / 2 + 3}
+              textAnchor="middle"
+              className={poor ? 'fill-ink/50' : 'fill-ink'}
+              fontSize={8}
+            >
+              {`Expand $${face.price}`}
+            </text>
+          </g>
+        )
+      })}
     </g>
   )
 })
+
+function lensFill(lens: Lens, cell: Cell): { fill: string; op: number; hard: boolean } | undefined {
+  if (lens === 'off') return undefined
+  const hit = lensHit(lens, cell)
+  if (hit === undefined) return { fill: WASH, op: 0.35, hard: false }
+  return { fill: hit, op: 0.72, hard: true }
+}
+
+function lensHit(lens: Lens, cell: Cell): string | undefined {
+  if (lens === 'water') {
+    if (cell.kind !== 'growing' && cell.kind !== 'ripe') return undefined
+    if (cell.plant.thirst === 1) return LENS_DONE
+    return scaleTint(cell.plant.thirst)
+  }
+  if (lens === 'ripe') {
+    if (cell.kind === 'growing') return scaleTint(cell.plant.maturity)
+    if (cell.kind === 'ripe') return LENS_DONE
+    if (cell.kind === 'dead') return LENS_BAD
+    return undefined
+  }
+  if (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' || cell.kind === 'shrub') return LEAF
+  if (cell.kind === 'pump' || cell.kind === 'chest' || cell.kind === 'grinder') return WATER
+  if (cell.kind === 'rock') return INK
+  if (cell.kind === 'house') return ROOF
+  return undefined
+}
+
+function scaleTint(t: number): string {
+  if (t < 0.5) return mix(LENS_BAD, LENS_MID, t * 2)
+  return mix(LENS_MID, LENS_GOOD, (t - 0.5) * 2)
+}
+
+function mix(a: string, b: string, t: number): string {
+  const pa = [Number.parseInt(a.slice(1, 3), 16), Number.parseInt(a.slice(3, 5), 16), Number.parseInt(a.slice(5, 7), 16)]
+  const pb = [Number.parseInt(b.slice(1, 3), 16), Number.parseInt(b.slice(3, 5), 16), Number.parseInt(b.slice(5, 7), 16)]
+  const hex = (n: number) => n.toString(16).padStart(2, '0')
+  return `#${hex(Math.round(pa[0] + (pb[0] - pa[0]) * t))}${hex(Math.round(pa[1] + (pb[1] - pa[1]) * t))}${hex(Math.round(pa[2] + (pb[2] - pa[2]) * t))}`
+}
 
 function RockGfx({ col, row, w, h }: { col: number; row: number; w: number; h: number }) {
   if (w === 1 && h === 2) {
@@ -342,6 +468,7 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
   const x = col * TILE
   const y = row * TILE
   const bar = (cell.kind === 'growing' || cell.kind === 'ripe') && cell.plant.thirst < HEALTH
+  const wilt = cell.kind === 'growing' && cell.plant.thirst < WITHER
   return (
     <g>
       <g
@@ -357,7 +484,7 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
         />
       )}
       {bar && (cell.kind === 'growing' || cell.kind === 'ripe') && (
-        <g>
+        <g className={wilt ? 'animate-pulse' : undefined}>
           <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
             data-thirst={`${col},${row}`}
@@ -373,7 +500,7 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
   )
 }
 
-function DropGfx({ drop, i }: { drop: Drop; i: number }) {
+function DropGfx({ drop, i, mods }: { drop: Drop; i: number; mods: readonly Modifier[] }) {
   const n = i % 4
   const s = 33
   const tool =
@@ -386,7 +513,7 @@ function DropGfx({ drop, i }: { drop: Drop; i: number }) {
       transform={`translate(${drop.at.col * TILE + 4 + (n % 2) * 6},${drop.at.row * TILE + 4 + Math.floor(n / 2) * 6}) scale(${s / 24})`}
     >
       <g dangerouslySetInnerHTML={{ __html: itemInner(drop.item) }} />
-      {tool && <title>{itemLine(drop.item)}</title>}
+      {tool && <title>{itemLine(drop.item, mods)}</title>}
     </g>
   )
 }

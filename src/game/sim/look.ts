@@ -1,3 +1,4 @@
+import { WITHER } from '../defs/crops.ts'
 import type { Coord } from './building.ts'
 import { inWorld } from './building.ts'
 import { onCell } from './drop.ts'
@@ -22,6 +23,8 @@ export function lookText(world: World, at: Coord | undefined): string {
   if (cell.kind === 'house') lines.push('House')
   else if (cell.kind === 'pump') lines.push('Pump')
   else if (cell.kind === 'rock') lines.push('Rock')
+  else if (cell.kind === 'chest') lines.push('Chest')
+  else if (cell.kind === 'grinder') lines.push('Seed grinder')
   else if (cell.kind === 'shrub') lines.push(cell.ripe ? 'Berry shrub' : 'Shrub')
   else if (cell.kind === 'untilled') {
     if (cell.ground === 'soft') lines.push('Grass')
@@ -30,9 +33,13 @@ export function lookText(world: World, at: Coord | undefined): string {
   } else if (cell.kind === 'infertile') lines.push('Infertile soil')
   else if (cell.kind === 'empty') lines.push('Tilled soil')
   else if (cell.kind === 'growing') {
-    lines.push(
-      `${cropName(cell.plant.crop)} - growing ${Math.floor(cell.plant.maturity * 100)}%, water ${Math.floor(cell.plant.thirst * 100)}%`,
-    )
+    if (cell.plant.thirst < WITHER) {
+      lines.push(`${cropName(cell.plant.crop)} - water ${Math.floor(cell.plant.thirst * 100)}%`)
+    } else {
+      lines.push(
+        `${cropName(cell.plant.crop)} - growing ${Math.floor(cell.plant.maturity * 100)}%, water ${Math.floor(cell.plant.thirst * 100)}%`,
+      )
+    }
   } else if (cell.kind === 'ripe') {
     lines.push(`${cropName(cell.plant.crop)} - ripe, water ${Math.floor(cell.plant.thirst * 100)}%`)
   } else {
@@ -41,7 +48,7 @@ export function lookText(world: World, at: Coord | undefined): string {
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {
     const hand: Hand = { kind: 'hold', item: drop.item }
-    lines.push(heldText(hand))
+    lines.push(heldText(hand, world.modifiers))
   }
   lines.push(world.prompt(at).text)
   return lines.join('\n')

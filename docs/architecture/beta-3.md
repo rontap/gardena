@@ -1,5 +1,7 @@
 # Beta-3 architecture
 
+**Historical.** Current law: [[architecture/beta-4]].
+
 Supersedes [[architecture/beta-2]] where this file names a replacement. Rules: [[mechanics/beta-3]]. Chrome: [[ui/beta-3]]. Place: [[ui/place]]. Art: [[art/beta-3]].
 
 ## Tree

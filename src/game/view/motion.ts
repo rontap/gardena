@@ -19,7 +19,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       research.hidden = false
       const def = RESEARCH[job.id]
       const left = research.querySelector('[data-research-left]')
-      if (left !== null) left.textContent = `${def.id} ${Math.floor(job.left)}s`
+      if (left !== null) left.textContent = `${def.name} ${Math.floor(job.left)}s`
       const bar = research.querySelector('[data-research-bar]')
       if (bar instanceof HTMLElement) bar.style.width = `${((def.seconds - job.left) / def.seconds) * 100}%`
     } else {
@@ -33,6 +33,18 @@ export function paintMotion(root: HTMLElement, world: World): void {
     const on = world.clock.banner > 0 && world.seam.kind === 'play'
     banner.hidden = !on
     if (on) banner.textContent = `Day ${world.clock.day}`
+  }
+  const speech = root.querySelector('[data-speech]')
+  if (speech instanceof SVGForeignObjectElement) {
+    if (world.speech.kind === 'none') {
+      speech.setAttribute('visibility', 'hidden')
+    } else {
+      speech.setAttribute('visibility', 'visible')
+      speech.setAttribute('x', String(world.actor.x * TILE - 100))
+      speech.setAttribute('y', String((world.actor.y - 0.5) * TILE - 24))
+      const line = speech.querySelector('[data-speech-text]')
+      if (line !== null) line.textContent = world.speech.text
+    }
   }
   root.querySelectorAll('[data-thirst]').forEach(el => {
     const at = el.getAttribute('data-thirst')

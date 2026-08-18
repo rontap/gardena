@@ -1,5 +1,7 @@
 # Beta-3 mechanics
 
+**Historical.** Current law: [[mechanics/beta-4]].
+
 Supersedes [[mechanics/beta-2]] where this file names a replacement. Types: [[architecture/beta-3]]. Chrome: [[ui/beta-3]]. Art: [[art/beta-3]].
 
 ## Rarity (global)

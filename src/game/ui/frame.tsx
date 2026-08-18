@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
 import {
   UI_CORNER_BL,
   UI_CORNER_BR,
@@ -64,23 +64,29 @@ function Decor() {
   )
 }
 
-export function Btn({
-  children,
-  onClick,
-  disabled,
-  className,
-}: {
-  children: ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  className?: string
-}) {
+export const Btn = forwardRef<
+  HTMLButtonElement,
+  {
+    children: ReactNode
+    onClick?: () => void
+    disabled?: boolean
+    selected?: boolean
+    className?: string
+  }
+>(function Btn({ children, onClick, disabled, selected, className }, ref) {
   const off = disabled === true
+  const on = selected === true
+  const face = off
+    ? 'cursor-default bg-house text-ink/40'
+    : on
+      ? 'cursor-pointer bg-ink text-house'
+      : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark active:bg-dirt-dark'
   return (
     <button
+      ref={ref}
       type="button"
       disabled={off}
-      className={`relative cursor-pointer bg-dirt px-3 py-2 pt-3 text-left text-ink hover:bg-dirt-dark disabled:cursor-default disabled:opacity-50 ${className ?? ''}`}
+      className={`relative px-3 py-2 pt-3 text-left ${face} ${className ?? ''}`}
       onClick={onClick}
     >
       <span
@@ -94,7 +100,10 @@ export function Btn({
       <span className="relative">{children}</span>
     </button>
   )
-}
+})
+
+export const tabTriggerClass =
+  'cursor-pointer px-2 py-1 text-sm text-ink/50 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
 
 export function Dock({
   side,

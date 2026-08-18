@@ -1,5 +1,7 @@
 # Beta-3 art
 
+**Historical.** Current law: [[art/beta-4]].
+
 Supersedes [[art/beta-2]] with new files below. Palette, 24-unit grid, `shape-rendering="crispEdges"`, no text, no raster, no `currentColor`.
 
 ## New files

@@ -58,6 +58,7 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
       }
     }
   }
+  clearBase(cells, id)
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
   return cells
@@ -83,6 +84,30 @@ function placeRock(cells: Cell[][], seed: number, id: ChunkId, at: Coord): void 
     }
   }
   put(cells, at, new Rock({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 }))
+}
+
+const CLEAR = 8
+
+function nearBase(col: number, row: number): boolean {
+  return Math.hypot(col + 0.5 - (DOOR.col + 0.5), row + 0.5 - (DOOR.row + 0.5)) < CLEAR
+}
+
+function clearBase(cells: Cell[][], id: ChunkId): void {
+  const rect = chunkRect(id)
+  for (let row = rect.row0; row < rect.row1; row++) {
+    for (let col = rect.col0; col < rect.col1; col++) {
+      if (RESERVED.has(`${col},${row}`)) continue
+      if (!nearBase(col, row)) continue
+      const cell = atCell(cells, { col, row })
+      if (cell.kind === 'rock') {
+        occupiedCells(cell.base, [id]).forEach(at => put(cells, at, { kind: 'untilled', ground: 'soft' }))
+        continue
+      }
+      if (cell.kind === 'shrub' || (cell.kind === 'untilled' && cell.ground !== 'soft')) {
+        put(cells, { col, row }, { kind: 'untilled', ground: 'soft' })
+      }
+    }
+  }
 }
 
 function freeRock(cells: Cell[][], id: ChunkId, at: Coord): boolean {

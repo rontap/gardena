@@ -1,5 +1,6 @@
 # UI
 
+- [[ui/beta-4]]
 - [[ui/beta-3]]
 - [[ui/place]]
 - [[ui/beta-2]]

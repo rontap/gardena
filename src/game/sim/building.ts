@@ -1,3 +1,6 @@
+import { CHEST_SLOTS } from '../defs/items.ts'
+import type { Slot } from './item.ts'
+
 export type Coord = { col: number; row: number }
 
 export type ChunkId = { cx: number; cy: number }
@@ -151,6 +154,24 @@ export class Shrub {
   constructor(ripe: boolean, grow: number) {
     this.ripe = ripe
     this.grow = grow
+  }
+}
+
+export class Chest {
+  readonly kind = 'chest' as const
+  readonly base: RectBase
+  readonly slots: Slot[]
+  constructor(base: RectBase) {
+    this.base = base
+    this.slots = Array.from({ length: CHEST_SLOTS }, (): Slot => ({ kind: 'empty' }))
+  }
+}
+
+export class Grinder {
+  readonly kind = 'grinder' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
   }
 }
 

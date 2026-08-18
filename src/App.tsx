@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { World } from './game/sim/world.ts'
+import { Almanac } from './game/ui/almanac.tsx'
+import { ChestUi } from './game/ui/chest.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
@@ -11,7 +13,7 @@ import { Research } from './game/ui/research.tsx'
 import { Shop } from './game/ui/shop.tsx'
 import type { Coord } from './game/sim/building.ts'
 import type { Camera } from './game/view/camera.ts'
-import { MapView } from './game/view/map.tsx'
+import { MapView, type Lens } from './game/view/map.tsx'
 import { paintMotion } from './game/view/motion.ts'
 
 type Panel =
@@ -20,6 +22,8 @@ type Panel =
   | { kind: 'research' }
   | { kind: 'market' }
   | { kind: 'inventory' }
+  | { kind: 'almanac' }
+  | { kind: 'chest'; at: Coord }
 
 export default function App() {
   const world = useRef(new World()).current
@@ -28,6 +32,7 @@ export default function App() {
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
   const [hover, setHover] = useState<Coord | undefined>(undefined)
+  const [lens, setLens] = useState<Lens>('off')
 
   useEffect(() => world.on(() => setN(x => x + 1)), [world])
 
@@ -35,6 +40,14 @@ export default function App() {
     if (world.cue.kind !== 'inventory') return
     setPanel({ kind: 'inventory' })
     world.ackCue()
+  }, [n, world])
+
+  useEffect(() => {
+    const cue = world.cue
+    if (cue.kind !== 'chest') return
+    setPanel(p =>
+      p.kind === 'chest' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'chest', at: cue.at },
+    )
   }, [n, world])
 
   useEffect(() => {
@@ -55,7 +68,10 @@ export default function App() {
       if (e.key !== 'Escape') return
       world.cancelPlace()
       if (world.seam.kind === 'recap') world.dismissRecap()
-      setPanel({ kind: 'none' })
+      setPanel(p => {
+        if (p.kind === 'chest') world.ackCue()
+        return { kind: 'none' }
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -65,6 +81,7 @@ export default function App() {
     if (world.seam.kind === 'recap') return
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
+      if (p.kind === 'chest') world.ackCue()
       return p.kind === next.kind ? { kind: 'none' } : next
     })
   }
@@ -74,21 +91,27 @@ export default function App() {
       <div ref={root} className="flex h-full min-h-0 flex-col overflow-hidden">
         <Hud
           world={world}
+          panel={panel.kind}
+          lens={lens}
           onShop={() => open({ kind: 'shop' })}
           onResearch={() => open({ kind: 'research' })}
           onMarket={() => open({ kind: 'market' })}
+          onAlmanac={() => open({ kind: 'almanac' })}
+          onLens={setLens}
         />
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <MapView
             world={world}
             cam={cam}
             rev={n}
+            lens={lens}
             hover={hover}
             onHover={setHover}
             onCam={setCam}
             onClickCell={at => {
               if (world.seam.kind === 'recap') return
-              if (panel.kind === 'inventory') {
+              if (panel.kind === 'inventory' || panel.kind === 'chest') {
+                if (panel.kind === 'chest') world.ackCue()
                 setPanel({ kind: 'none' })
                 return
               }
@@ -111,6 +134,17 @@ export default function App() {
           {panel.kind === 'research' && <Research world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'almanac' && <Almanac onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'chest' && (
+            <ChestUi
+              world={world}
+              at={panel.at}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
           {world.seam.kind === 'recap' && (
             <Recap recap={world.seam.recap} nextDay={world.clock.day} onDismiss={() => world.dismissRecap()} />
           )}

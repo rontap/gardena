@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-18 — Beta-4
+
+Current contracts: [[mechanics/beta-4]] [[architecture/beta-4]] [[ui/beta-4]] [[art/beta-4]] [[ui/place]].
+
+### Chrome
+
+- Research human names. Tabs: plants, utilities, expansion, automation.
+- General store, three tabs, icons, permanent description.
+- Almanac. Lenses (water, ripeness, object type).
+- Button states. Expand plate. Speech on wrong tool.
+- Fruit box. Sell line shows exact $. Wilt pulses, no “growing”. Infertile: does not need seeds.
+
+### Content
+
+- Chest 1×1, 9 slots, walk-open. $18 / research $12.
+- Seed grinder 1×1. Fruit → 1–3 seeds. Fruit box dumps all. $30 / research $18.
+- House redrawn. Immature shrubs shovelable.
+
 ## 2026-08-18 — Beta-3
 
 Current contracts: [[mechanics/beta-3]] [[architecture/beta-3]] [[ui/beta-3]] [[ui/place]] [[art/beta-3]].

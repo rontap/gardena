@@ -1,6 +1,8 @@
-import { BOX_LARGE, BOX_SMALL, CONTAINERS, PICKAXES, SHOVELS } from '../defs/items.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import { fill } from '../defs/catalog.ts'
+import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, PICKAXES, SHOVELS } from '../defs/items.ts'
+import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
 import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId } from './ids.ts'
+import { statsOf, type Modifier } from './modifiers.ts'
 
 export type Stack = { crop: CropId; rarity: Rarity; count: number }
 
@@ -10,7 +12,7 @@ export type Item =
   | { kind: 'container'; id: ContainerId; liters: number; capacityLiters: number }
   | {
       kind: 'box'
-      cap: 5 | 15
+      cap: 5 | 14
       cargo:
         | { kind: 'empty' }
         | { kind: 'stack'; goods: 'fruit' | 'seeds'; stack: Stack }
@@ -28,13 +30,52 @@ export function cropName(id: CropId): string {
   return id.slice(0, 1).toUpperCase() + id.slice(1)
 }
 
-export function itemLine(item: Item): string {
+export function boxName(cap: 5 | 14): string {
+  return cap === 5 ? 'Fruit box' : 'Large fruit box'
+}
+
+export function fruitMoney(crop: CropId, rarity: Rarity, n: number, mods: readonly Modifier[]): number {
+  return statsOf(crop, rarity, mods).sale * n
+}
+
+export function berryMoney(rarity: Rarity, n: number): number {
+  return BERRY_SALE * RARITY_SALE[rarity] * n
+}
+
+export function grindN(hand: Hand): number {
+  if (hand.kind !== 'hold') return 0
+  if (hand.item.kind === 'fruit' && hand.item.count >= 1) return 1
+  if (
+    hand.item.kind === 'box' &&
+    hand.item.cargo.kind === 'stack' &&
+    hand.item.cargo.goods === 'fruit' &&
+    hand.item.cargo.stack.count >= 1
+  ) {
+    return hand.item.cargo.stack.count
+  }
+  return 0
+}
+
+export function toolName(hand: Hand): string {
+  if (hand.kind === 'empty') return 'hand'
+  const it = hand.item
+  if (it.kind === 'shovel') return it.id === 'shovel' ? 'Shovel' : 'Better shovel'
+  if (it.kind === 'pickaxe') return it.id === 'pickaxe' ? 'Pickaxe' : 'Hardened pickaxe'
+  if (it.kind === 'container') return it.id === 'bucket' ? 'Bucket' : 'Large bucket'
+  if (it.kind === 'box') return boxName(it.cap)
+  if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
+  if (it.kind === 'fruit') return cropName(it.crop)
+  if (it.kind === 'berry') return 'Berry'
+  return 'Shrub'
+}
+
+export function itemLine(item: Item, mods: readonly Modifier[]): string {
   if (item.kind === 'shovel') {
     const name = item.id === 'shovel' ? 'Shovel' : 'Better shovel'
     return `${name} - ${item.usesLeft}/${SHOVELS[item.id].uses} uses left`
   }
   if (item.kind === 'pickaxe') {
-    const name = item.id === 'pickaxe' ? 'Pickaxe' : 'Better pickaxe'
+    const name = item.id === 'pickaxe' ? 'Pickaxe' : 'Hardened pickaxe'
     return `${name} - ${item.usesLeft}/${PICKAXES[item.id].uses} uses left`
   }
   if (item.kind === 'container') {
@@ -42,21 +83,23 @@ export function itemLine(item: Item): string {
     return `${name} - ${item.liters}/${item.capacityLiters}L`
   }
   if (item.kind === 'box') {
-    if (item.cargo.kind === 'empty') return 'Box - empty'
-    if (item.cargo.kind === 'berry') return `Box - Berry ${item.cargo.count}/${item.cap}`
+    const name = boxName(item.cap)
+    if (item.cargo.kind === 'empty') return `${name} - empty`
+    if (item.cargo.kind === 'berry') return `${name} - Berry ${item.cargo.count}/${item.cap}`
     const n = cropName(item.cargo.stack.crop)
-    if (item.cargo.goods === 'seeds') return `Box - ${n} seed ${item.cargo.stack.count}/${item.cap}`
-    return `Box - ${n} ${item.cargo.stack.count}/${item.cap}`
+    if (item.cargo.goods === 'seeds') return `${name} - ${n} seed ${item.cargo.stack.count}/${item.cap}`
+    return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
-  if (item.kind === 'fruit') return `${cropName(item.crop)} - ${item.count}, sell it`
-  if (item.kind === 'berry') return `Berry - ${item.count}, sell it`
+  if (item.kind === 'fruit')
+    return `${cropName(item.crop)} - ${item.count}, sell for $${fruitMoney(item.crop, item.rarity, item.count, mods)}`
+  if (item.kind === 'berry') return `Berry - ${item.count}, sell for $${berryMoney(item.rarity, item.count)}`
   return 'Shrub - plant it'
 }
 
-export function heldText(hand: Hand): string {
+export function heldText(hand: Hand, mods: readonly Modifier[]): string {
   if (hand.kind === 'empty') return 'Nothing in hand'
-  return itemLine(hand.item)
+  return itemLine(hand.item, mods)
 }
 
 export function skuLabel(id: SkuId): string {
@@ -78,46 +121,61 @@ export function skuLabel(id: SkuId): string {
     case 'buy-pickaxe':
       return 'Pickaxe'
     case 'buy-better-pickaxe':
-      return 'Better pickaxe'
+      return 'Hardened pickaxe'
+    case 'buy-bucket':
+      return 'Bucket'
     case 'buy-bucket-large':
       return 'Large bucket'
     case 'buy-box':
-      return 'Box'
+      return 'Fruit box'
     case 'buy-box-large':
-      return 'Large box'
+      return 'Large fruit box'
     case 'buy-pumpjack':
       return 'Pumpjack'
+    case 'buy-chest':
+      return 'Chest'
+    case 'buy-grinder':
+      return 'Seed grinder'
   }
 }
 
 export function skuDesc(id: SkuId): string {
   switch (id) {
     case 'pack-carrot':
-      return 'Pack of 5 Carrot seeds.'
+      return fill('Pack of ${count} ${name} seeds.', { count: 5, name: cropName('carrot') })
     case 'pack-potato':
-      return 'Pack of 5 Potato seeds.'
+      return fill('Pack of ${count} ${name} seeds.', { count: 5, name: cropName('potato') })
     case 'pack-wheat':
-      return 'Pack of 5 Wheat seeds.'
+      return fill('Pack of ${count} ${name} seeds.', { count: 5, name: cropName('wheat') })
     case 'pack-tomato':
-      return 'Pack of 5 Tomato seeds.'
+      return fill('Pack of ${count} ${name} seeds.', { count: 5, name: cropName('tomato') })
     case 'pack-raspberry':
-      return 'Pack of 5 Raspberry seeds.'
+      return fill('Pack of ${count} ${name} seeds.', { count: 5, name: cropName('raspberry') })
     case 'buy-shovel':
-      return '100 uses, 1s dig.'
+      return fill('${uses} uses, ${workSeconds}s dig.', SHOVELS.shovel)
     case 'buy-better-shovel':
-      return '250 uses, 0.5s dig.'
+      return fill('${uses} uses, ${workSeconds}s dig.', SHOVELS['better-shovel'])
     case 'buy-pickaxe':
-      return '40 uses, 4s mine.'
+      return fill('${uses} uses, ${workSeconds}s mine.', PICKAXES.pickaxe)
     case 'buy-better-pickaxe':
-      return '80 uses, 2s mine.'
+      return fill('${uses} uses, ${workSeconds}s mine.', PICKAXES['better-pickaxe'])
+    case 'buy-bucket':
+      return fill('${capacityLiters} L.', CONTAINERS.bucket)
     case 'buy-bucket-large':
-      return '8 L.'
+      return fill('${capacityLiters} L.', CONTAINERS['large-bucket'])
     case 'buy-box':
-      return 'Carry 5.'
+      return fill('Carry ${cap}.', { cap: BOX_SMALL })
     case 'buy-box-large':
-      return 'Carry 15.'
+      return fill('Carry ${cap}.', { cap: BOX_LARGE })
     case 'buy-pumpjack':
-      return 'Place a 2 L/s pump.'
+      return fill('Place a ${output} L/s pump.', { output: 2 })
+    case 'buy-chest':
+      return fill('Chest. ${slots} slots. Walk up and store any item.', { slots: CHEST_SLOTS })
+    case 'buy-grinder':
+      return fill(
+        'Seed grinder. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.',
+        { min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK },
+      )
   }
 }
 
@@ -150,11 +208,11 @@ export function makeContainer(id: ContainerId, liters: number): Item {
   return { kind: 'container', id, liters, capacityLiters: CONTAINERS[id].capacityLiters }
 }
 
-export function makeBox(cap: 5 | 15): Item {
+export function makeBox(cap: 5 | 14): Item {
   return { kind: 'box', cap, cargo: { kind: 'empty' } }
 }
 
-export function skuItem(id: SkuId): Item | { kind: 'pumpjack' } {
+export function skuItem(id: SkuId): Item | { kind: 'pumpjack' } | { kind: 'chest' } | { kind: 'grinder' } {
   switch (id) {
     case 'pack-carrot':
       return { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 }
@@ -174,6 +232,8 @@ export function skuItem(id: SkuId): Item | { kind: 'pumpjack' } {
       return makePickaxe('pickaxe')
     case 'buy-better-pickaxe':
       return makePickaxe('better-pickaxe')
+    case 'buy-bucket':
+      return makeContainer('bucket', CONTAINERS.bucket.capacityLiters)
     case 'buy-bucket-large':
       return makeContainer('large-bucket', CONTAINERS['large-bucket'].capacityLiters)
     case 'buy-box':
@@ -182,6 +242,10 @@ export function skuItem(id: SkuId): Item | { kind: 'pumpjack' } {
       return makeBox(BOX_LARGE)
     case 'buy-pumpjack':
       return { kind: 'pumpjack' }
+    case 'buy-chest':
+      return { kind: 'chest' }
+    case 'buy-grinder':
+      return { kind: 'grinder' }
   }
 }
 

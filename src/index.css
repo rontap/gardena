@@ -11,6 +11,9 @@
   --color-ink: #1c1710;
   --color-house: #cfc6b0;
   --color-roof: #8b3a2a;
+  --color-lens-bad: #e23b2e;
+  --color-lens-good: #2fd15a;
+  --color-lens-done: #1e9be6;
 }
 
 html,

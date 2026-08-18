@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { CROPS, PLANT_THIRST } from '../defs/crops.ts'
-import { CONTAINERS } from '../defs/items.ts'
+import { CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK } from '../defs/items.ts'
 import { BERRY_SALE, RARITY_SALE, RARITY_WEIGHT } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import type { ResearchId } from './ids.ts'
-import { HOUSE_BASE, PUMP_BASE, occupiedCells } from './building.ts'
-import { makePickaxe, makeShovel } from './item.ts'
+import { Chest, Grinder, HOUSE_BASE, PUMP_BASE, occupiedCells } from './building.ts'
+import { itemLine, makePickaxe, makeShovel, skuLabel } from './item.ts'
 import { Plant } from './plant.ts'
 import { Rock, Shrub } from './building.ts'
+import { hash } from './rng.ts'
 import { World } from './world.ts'
 
 const HOME = [{ cx: 0, cy: 0 }]
@@ -260,10 +261,8 @@ describe('beta-2 invariants', () => {
     expect(RESEARCH['bump-carrot']).toMatchObject({ cost: 10, seconds: 40 })
     expect(RESEARCH['bump-potato']).toMatchObject({ cost: 10, seconds: 40 })
     expect(RESEARCH['bump-wheat']).toMatchObject({ cost: 12, seconds: 45 })
-    expect(RESEARCH['unlock-large-bucket']).toMatchObject({ cost: 10, seconds: 40 })
-    expect(RESEARCH['unlock-box']).toMatchObject({ cost: 10, seconds: 35 })
+    expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
     expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 17, seconds: 50 })
-    expect(RESEARCH['unlock-better-shovel']).toMatchObject({ cost: 12, seconds: 40 })
     expect(RESEARCH['unlock-pumpjack']).toMatchObject({ cost: 20, seconds: 60 })
     expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 15, seconds: 45 })
     expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 0, seconds: 40 })
@@ -391,7 +390,7 @@ describe('beta-3 invariants', () => {
     w.click(AT)
     for (let i = 0; i < 130; i++) w.tick(1 / 15)
     expect(w.cell(AT)).toEqual({ kind: 'untilled', ground: 'soft' })
-    expect(w.hand.kind === 'hold' && w.hand.item.kind === 'pickaxe' && w.hand.item.usesLeft).toBe(39)
+    expect(w.hand.kind === 'hold' && w.hand.item.kind === 'pickaxe' && w.hand.item.usesLeft).toBe(24)
     const a = { col: 10, row: 16 }
     const b = { col: 10, row: 17 }
     const rock = new Rock({ shape: 'rect', col: 10, row: 16, w: 1, h: 2 })
@@ -403,7 +402,7 @@ describe('beta-3 invariants', () => {
     for (let i = 0; i < 250; i++) w.tick(1 / 15)
     expect(w.cell(a)).toEqual({ kind: 'untilled', ground: 'soft' })
     expect(w.cell(b)).toEqual({ kind: 'untilled', ground: 'soft' })
-    expect(w.hand.kind === 'hold' && w.hand.item.kind === 'pickaxe' && w.hand.item.usesLeft).toBe(37)
+    expect(w.hand.kind === 'hold' && w.hand.item.kind === 'pickaxe' && w.hand.item.usesLeft).toBe(22)
   })
 
   test('same seed same map; fixture 1-3 shrubs', () => {
@@ -430,6 +429,16 @@ describe('beta-3 invariants', () => {
     expect(cellsC).not.toEqual(cellsA)
   })
 
+  test('no specials within 8 of door', () => {
+    const w = new World(2)
+    w.forEachCell((at, c) => {
+      if (Math.hypot(at.col + 0.5 - 15.5, at.row + 0.5 - 9.5) >= 8) return
+      expect(c.kind).not.toBe('rock')
+      expect(c.kind).not.toBe('shrub')
+      if (c.kind === 'untilled') expect(c.ground).toBe('soft')
+    })
+  })
+
   test('harvest berry cycles; shovel ripe extracts', () => {
     const w = new World()
     const shrub = new Shrub(true, 1)
@@ -450,7 +459,7 @@ describe('beta-3 invariants', () => {
   })
 
   test('pickaxe sku 20 gated on unlock-pickaxe; rarity table', () => {
-    expect(SKUS['buy-pickaxe'].price).toBe(20)
+    expect(SKUS['buy-pickaxe'].price).toBe(18)
     expect(SKUS['buy-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(RARITY_SALE).toEqual({ common: 1, uncommon: 1.25, rare: 2, heirloom: 3.5 })
@@ -470,6 +479,205 @@ describe('beta-3 invariants', () => {
     expect(w.actor.inside(AT)).toBe(true)
   })
 })
+
+describe('beta-4 invariants', () => {
+  test('immature shrub plus shovel extracts', () => {
+    const w = new World()
+    w.setCell(AT, new Shrub(false, 0.2))
+    w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
+    w.actor.x = 10.5
+    w.actor.y = 12.5
+    w.click(AT)
+    w.tick(0.05)
+    expect(w.cell(AT)).toEqual({ kind: 'untilled', ground: 'soft' })
+    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'shrub')).toBe(true)
+  })
+
+  test('buy-chest place 1x1 own slots', () => {
+    expect(SKUS['buy-chest'].price).toBe(18)
+    expect(RESEARCH['unlock-chest'].cost).toBe(12)
+    const w = new World()
+    w.done.add('unlock-chest')
+    const a = { col: 10, row: 12 }
+    const b = { col: 11, row: 12 }
+    w.setCell(a, { kind: 'empty' })
+    w.setCell(b, { kind: 'empty' })
+    w.buy('buy-chest')
+    w.confirmPlace(a)
+    w.buy('buy-chest')
+    w.confirmPlace(b)
+    const ca = w.cell(a)
+    const cb = w.cell(b)
+    expect(ca.kind).toBe('chest')
+    expect(cb.kind).toBe('chest')
+    expect(ca).toBeInstanceOf(Chest)
+    expect(cb).toBeInstanceOf(Chest)
+    if (ca.kind !== 'chest' || cb.kind !== 'chest') return
+    expect(ca.base).toEqual({ shape: 'rect', col: 10, row: 12, w: 1, h: 1 })
+    expect(ca.slots).toHaveLength(9)
+    expect(cb.slots).toHaveLength(9)
+    expect(ca.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(ca.slots).not.toBe(cb.slots)
+    ca.slots[0] = { kind: 'hold', item: { kind: 'shrub' } }
+    expect(cb.slots[0].kind).toBe('empty')
+  })
+
+  test('hand fruit grinds 1-3 same crop rarity; same seed day at', () => {
+    const countA = grindHandOnce(7)
+    const countB = grindHandOnce(7)
+    expect(countA).toBe(countB)
+    expect(countA).toBeGreaterThanOrEqual(GRIND_MIN)
+    expect(countA).toBeLessThanOrEqual(GRIND_MAX)
+    const u = hash(7, 'grind', AT.col, AT.row, 1, 0)
+    expect(countA).toBe(GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1)))
+    const w = grindWorld(7)
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1 } }
+    w.click(AT)
+    for (let i = 0; i < 50; i++) w.tick(1 / 15)
+    const slot = w.inventory.find(
+      s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === 'wheat' && s.item.rarity === 'rare',
+    )
+    expect(slot?.kind === 'hold' && slot.item.kind === 'seeds' && slot.item.count).toBe(countA)
+  })
+
+  test('box fruit N rolls work 2N box empty overflow drops', () => {
+    const n = 3
+    const w = grindWorld(11)
+    w.inventory.forEach((_, i) => {
+      w.inventory[i] = { kind: 'hold', item: { kind: 'shrub' } }
+    })
+    w.hand = {
+      kind: 'hold',
+      item: {
+        kind: 'box',
+        cap: 5,
+        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n } },
+      },
+    }
+    w.click(AT)
+    w.tick(1 / 15)
+    expect(w.workTotal).toBe(GRIND_WORK * n)
+    for (let i = 0; i < 200; i++) w.tick(1 / 15)
+    expect(w.hand.kind === 'hold' && w.hand.item.kind === 'box' && w.hand.item.cargo.kind).toBe('empty')
+    let expectCount = 0
+    for (let i = 0; i < n; i++) {
+      const u = hash(11, 'grind', AT.col, AT.row, 1, i)
+      expectCount += GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
+    }
+    const dropped = w.drops.filter(
+      d =>
+        d.at.col === AT.col &&
+        d.at.row === AT.row &&
+        d.item.kind === 'seeds' &&
+        d.item.crop === 'tomato' &&
+        d.item.rarity === 'uncommon',
+    )
+    expect(dropped).toHaveLength(1)
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
+    expect(w.inventory.every(s => s.kind === 'hold' && s.item.kind === 'shrub')).toBe(true)
+  })
+
+  test('unlock-grinder automation buy-grinder 30', () => {
+    expect(RESEARCH['unlock-grinder'].cost).toBe(18)
+    expect(RESEARCH['unlock-grinder'].tree).toBe('automation')
+    expect(SKUS['buy-grinder'].price).toBe(30)
+    expect(SKUS['buy-grinder'].unlock).toBe('unlock-grinder')
+  })
+
+  test('research names and unlock-expand tree', () => {
+    expect(RESEARCH['unlock-tomato'].name).toBe('Tomato seeds')
+    expect(RESEARCH['unlock-raspberry'].name).toBe('Raspberry seeds')
+    expect(RESEARCH['bump-carrot'].name).toBe('Better carrots')
+    expect(RESEARCH['bump-potato'].name).toBe('Better potatoes')
+    expect(RESEARCH['bump-wheat'].name).toBe('Better wheat')
+    expect(RESEARCH['unlock-better-tools'].name).toBe('Better gardening tools')
+    expect(RESEARCH['unlock-large-box'].name).toBe('Large fruit box')
+    expect(RESEARCH['unlock-pumpjack'].name).toBe('Pumpjack')
+    expect(RESEARCH['unlock-chest'].name).toBe('Chest')
+    expect(RESEARCH['unlock-expand'].name).toBe('Unlock land')
+    expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
+    expect(RESEARCH['unlock-grinder'].name).toBe('Seed grinder')
+    expect(RESEARCH['unlock-expand'].tree).toBe('expansion')
+  })
+
+  test('itemLine fruit berry sell-for equals sellSlot', () => {
+    const w = new World()
+    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3 } }
+    const fruitLine = itemLine(
+      w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
+      w.modifiers,
+    )
+    const before = w.money
+    w.sellSlot(0)
+    expect(fruitLine).toBe(`Carrot - 3, sell for $${w.money - before}`)
+    w.inventory[0] = { kind: 'hold', item: { kind: 'berry', rarity: 'uncommon', count: 2 } }
+    const berryLine = itemLine(
+      w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
+      w.modifiers,
+    )
+    const mid = w.money
+    w.sellSlot(0)
+    expect(berryLine).toBe(`Berry - 2, sell for $${w.money - mid}`)
+  })
+
+  test('infertile prompt is does not need seeds', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'infertile' })
+    const p = w.prompt(AT)
+    expect(p.kind).toBe('blocked')
+    expect(p.text).toBe('does not need seeds')
+  })
+
+  test('pickaxe on ripe does not queue and speaks', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'ripe', plant: new Plant('carrot', 'common') })
+    w.hand = { kind: 'hold', item: makePickaxe('pickaxe') }
+    const q = [...w.queue]
+    w.click(AT)
+    expect(w.queue).toEqual(q)
+    expect(w.speech).toEqual({
+      kind: 'say',
+      text: 'I cannot use this Pickaxe to harvest',
+      left: 2.5,
+    })
+  })
+
+  test('skuLabel buy-box is Fruit box', () => {
+    expect(skuLabel('buy-box')).toBe('Fruit box')
+  })
+
+  test('fruit box start; better pickaxe shown after pickaxe research', () => {
+    expect(SKUS['buy-box'].unlock).toBe('start')
+    const w = new World()
+    expect(w.skuOpen('buy-box')).toBe(true)
+    expect(w.skuShown('buy-box')).toBe(true)
+    expect(w.skuShown('buy-pickaxe')).toBe(true)
+    expect(w.skuShown('buy-better-pickaxe')).toBe(false)
+    w.done.add('unlock-pickaxe')
+    expect(w.skuShown('buy-better-pickaxe')).toBe(true)
+    expect(w.skuOpen('buy-better-pickaxe')).toBe(true)
+  })
+})
+
+function grindWorld(seed: number): World {
+  const w = new World(seed)
+  w.setCell(AT, new Grinder({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
+  w.actor.x = AT.col + 0.5
+  w.actor.y = AT.row + 0.5
+  return w
+}
+
+function grindHandOnce(seed: number): number {
+  const w = grindWorld(seed)
+  w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1 } }
+  w.click(AT)
+  for (let i = 0; i < 50; i++) w.tick(1 / 15)
+  const slot = w.inventory.find(
+    s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === 'wheat' && s.item.rarity === 'rare',
+  )
+  if (slot === undefined || slot.kind !== 'hold' || slot.item.kind !== 'seeds') return 0
+  return slot.item.count
+}
 
 function expectPacked(w: World): void {
   const seen = new Set<string>()

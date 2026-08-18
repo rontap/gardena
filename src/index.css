@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-grass: #4a7c3f;
+  --color-grass-dark: #3a6232;
+  --color-dirt: #8a5a32;
+  --color-dirt-dark: #6b4423;
+  --color-water: #3d7ea6;
+  --color-leaf: #6bc04a;
+  --color-ripe: #d4a017;
+  --color-ink: #1c1710;
+  --color-house: #cfc6b0;
+  --color-roof: #8b3a2a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+

@@ -1,22 +1,29 @@
 import { CONTAINERS } from '../defs/items.ts'
+import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
+import { HEALTH, WITHER } from '../defs/crops.ts'
 import type { CropId, ResearchId, SkuId } from './ids.ts'
-import type { Rarity } from '../defs/rarity.ts'
 import { Actor } from './actor.ts'
 import {
-  COLS,
+  CHUNK,
   DOOR,
   HOUSE_BASE,
   House,
   PUMP_BASE,
   Pump,
-  ROWS,
+  Shrub,
+  chunkKey,
+  chunkOf,
+  chunkRect,
   inWorld,
+  local,
   occupiedCells,
+  type ChunkId,
   type Coord,
 } from './building.ts'
 import { Clock } from './clock.ts'
 import { topIndex, type Drop } from './drop.ts'
+import { generateChunk } from './gen.ts'
 import {
   boxAdd,
   boxAccepts,
@@ -30,16 +37,17 @@ import {
 import type { Modifier } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { isPlot, type Cell, type Plot } from './plot.ts'
-import { HEALTH, WITHER } from '../defs/crops.ts'
-import { placeLabel, readPrompt, type Prompt } from './prompt.ts'
+import { placeLabel, pumpjackOk, readPrompt, type Prompt } from './prompt.ts'
+import { hash, rollRarity } from './rng.ts'
 
 export type Intent =
   | { act: 'walk'; at: Coord }
   | { act: 'shovel'; at: Coord }
+  | { act: 'mine'; at: Coord }
   | { act: 'plant'; at: Coord }
   | { act: 'water'; at: Coord }
   | { act: 'harvest'; at: Coord }
-  | { act: 'fill' }
+  | { act: 'fill'; at: Coord }
   | { act: 'sell' }
   | { act: 'pickup'; at: Coord }
   | { act: 'drop'; at: Coord }
@@ -47,7 +55,9 @@ export type Intent =
 
 export type TaskName =
   | 'Move here'
+  | 'Move here and dig'
   | 'Dig'
+  | 'Mine'
   | 'Plant'
   | 'Water'
   | 'Harvest'
@@ -71,6 +81,7 @@ export type Recap = {
   died: number
   harvests: number
   research: ResearchId[]
+  tax: number
 }
 
 export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
@@ -79,16 +90,26 @@ export type SaleOffer =
   | { kind: 'ok'; money: number; label: string }
   | { kind: 'blocked'; text: string }
 
+export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; price: number }
+
 type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
 
 const QUEUE_CAP = 8
 const DT_MAX = 1 / 15
 const INV = 16
 
+export function dest(i: Intent): Coord {
+  if (i.act === 'fill') return i.at
+  if (i.act === 'sell' || i.act === 'inventory') return { ...DOOR }
+  return i.at
+}
+
 export class World {
-  readonly grid: Cell[][]
+  seed: number
+  purchases = 0
+  readonly owned: ChunkId[] = [{ cx: 0, cy: 0 }]
+  readonly pumps: Pump[]
   readonly house: House
-  readonly pump: Pump
   readonly actor: Actor
   readonly clock = new Clock()
   readonly drops: Drop[] = []
@@ -108,15 +129,21 @@ export class World {
   workTotal = 0
   private workLeft = 0
   private filling = false
+  private readonly chunks = new Map<string, Cell[][]>()
   private readonly subs = new Set<() => void>()
 
-  constructor() {
+  constructor(seed?: number) {
+    this.seed = seed === undefined ? (Math.random() * 0x100000000) >>> 0 : seed
     this.house = new House(HOUSE_BASE, DOOR)
-    this.pump = new Pump(PUMP_BASE, 2)
-    this.grid = buildGrid(this.house, this.pump)
+    this.pumps = [new Pump(PUMP_BASE, 2)]
+    this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.seed, this.owned[0], this.house, this.pumps[0]))
     this.actor = new Actor(DOOR.col + 0.5, DOOR.row + 0.5)
     this.inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
+  }
+
+  get pump(): Pump {
+    return this.pumps[0]
   }
 
   on(fn: () => void): () => void {
@@ -130,8 +157,103 @@ export class World {
     this.subs.forEach(f => f())
   }
 
+  inWorld(at: Coord): boolean {
+    return inWorld(at, this.owned)
+  }
+
   cell(at: Coord): Cell {
-    return this.grid[at.row][at.col]
+    const loc = local(at)
+    return this.gridOf(chunkOf(at))[loc.row][loc.col]
+  }
+
+  setCell(at: Coord, cell: Cell): void {
+    const loc = local(at)
+    this.gridOf(chunkOf(at))[loc.row][loc.col] = cell
+  }
+
+  forEachCell(fn: (at: Coord, cell: Cell) => void): void {
+    this.owned.forEach(id => {
+      const g = this.gridOf(id)
+      const { col0, row0 } = chunkRect(id)
+      for (let row = 0; row < CHUNK; row++) {
+        for (let col = 0; col < CHUNK; col++) {
+          fn({ col: col0 + col, row: row0 + row }, g[row][col])
+        }
+      }
+    })
+  }
+
+  private gridOf(id: ChunkId): Cell[][] {
+    return this.chunks.get(chunkKey(id)) as Cell[][]
+  }
+
+  bounds(): { col0: number; row0: number; col1: number; row1: number } {
+    let col0 = Infinity
+    let row0 = Infinity
+    let col1 = -Infinity
+    let row1 = -Infinity
+    this.owned.forEach(id => {
+      const r = chunkRect(id)
+      if (r.col0 < col0) col0 = r.col0
+      if (r.row0 < row0) row0 = r.row0
+      if (r.col1 > col1) col1 = r.col1
+      if (r.row1 > row1) row1 = r.row1
+    })
+    return { col0, row0, col1, row1 }
+  }
+
+  expandPrice(): number {
+    return 40 + 15 * this.purchases
+  }
+
+  tax(): number {
+    return 2 + 6 * (this.owned.length - 1)
+  }
+
+  faces(): ExpandFace[] {
+    if (!this.done.has('unlock-expand')) return []
+    const have = new Set(this.owned.map(chunkKey))
+    const seen = new Set<string>()
+    const price = this.expandPrice()
+    const out: ExpandFace[] = []
+    const dirs = [
+      { dir: 'n' as const, dcx: 0, dcy: -1 },
+      { dir: 'e' as const, dcx: 1, dcy: 0 },
+      { dir: 's' as const, dcx: 0, dcy: 1 },
+      { dir: 'w' as const, dcx: -1, dcy: 0 },
+    ]
+    this.owned.forEach(o => {
+      const rect = chunkRect(o)
+      dirs.forEach(d => {
+        const id = { cx: o.cx + d.dcx, cy: o.cy + d.dcy }
+        const key = chunkKey(id)
+        if (have.has(key) || seen.has(key)) return
+        seen.add(key)
+        const at =
+          d.dir === 'n'
+            ? { col: rect.col0 + CHUNK / 2, row: rect.row0 - 1 }
+            : d.dir === 'e'
+              ? { col: rect.col1, row: rect.row0 + CHUNK / 2 }
+              : d.dir === 's'
+                ? { col: rect.col0 + CHUNK / 2, row: rect.row1 }
+                : { col: rect.col0 - 1, row: rect.row0 + CHUNK / 2 }
+        out.push({ id, dir: d.dir, at, price })
+      })
+    })
+    return out
+  }
+
+  expand(id: ChunkId): void {
+    if (!this.done.has('unlock-expand')) return
+    if (this.owned.some(c => c.cx === id.cx && c.cy === id.cy)) return
+    if (!this.owned.some(c => Math.abs(c.cx - id.cx) + Math.abs(c.cy - id.cy) === 1)) return
+    const price = this.expandPrice()
+    if (this.money < price) return
+    this.money -= price
+    this.owned.push(id)
+    this.purchases += 1
+    this.chunks.set(chunkKey(id), generateChunk(this.seed, id, this.house, this.pumps[0]))
+    this.ping()
   }
 
   skuOpen(id: SkuId): boolean {
@@ -144,7 +266,7 @@ export class World {
   }
 
   click(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
-    if (!inWorld(at) && this.place.kind === 'none') return 'noop'
+    if (!inWorld(at, this.owned) && this.place.kind === 'none') return 'noop'
     const p = this.prompt(at)
     if (p.kind === 'intent') {
       this.enqueue(p.intent)
@@ -171,11 +293,17 @@ export class World {
   }
 
   taskName(i: Intent): TaskName {
+    if (!this.actor.inside(dest(i))) {
+      if (i.act === 'shovel') return 'Move here and dig'
+      return 'Move here'
+    }
     switch (i.act) {
       case 'walk':
         return 'Move here'
       case 'shovel':
         return 'Dig'
+      case 'mine':
+        return 'Mine'
       case 'plant':
         return 'Plant'
       case 'water':
@@ -202,10 +330,10 @@ export class World {
     if (this.filling && this.hand.kind === 'hold' && this.hand.item.kind === 'container') {
       return this.hand.item.liters / this.hand.item.capacityLiters
     }
-    const dest = destOf(head)
-    if (!this.actor.inside(dest)) {
-      const tx = dest.col + 0.5
-      const ty = dest.row + 0.5
+    const at = dest(head)
+    if (!this.actor.inside(at)) {
+      const tx = at.col + 0.5
+      const ty = at.row + 0.5
       const span = Math.hypot(this.legStart.x - tx, this.legStart.y - ty)
       if (span === 0) return 1
       return 1 - Math.hypot(this.actor.x - tx, this.actor.y - ty) / span
@@ -217,13 +345,6 @@ export class World {
     if (!this.skuOpen(id)) return undefined
     const sku = SKUS[id]
     const made = skuItem(id)
-    if (made.kind === 'pumpjack') {
-      if (this.money < sku.price) return 'Cannot afford'
-      this.money -= sku.price
-      this.pump.outputLitersPerSec = 5
-      this.ping()
-      return undefined
-    }
     if (made.kind === 'seeds') {
       const merge = this.inventory.findIndex(
         s =>
@@ -253,9 +374,21 @@ export class World {
 
   confirmPlace(at: Coord): void {
     if (this.place.kind !== 'sku') return
-    if (!inWorld(at) || !isPlot(this.cell(at))) return
     const sku = SKUS[this.place.id]
     if (this.money < sku.price) return
+    if (this.place.id === 'buy-pumpjack') {
+      if (!pumpjackOk(this, at)) return
+      this.money -= sku.price
+      const pump = new Pump({ shape: 'rect', col: at.col, row: at.row, w: 2, h: 1 }, 2)
+      this.pumps.push(pump)
+      this.setCell(at, pump)
+      this.setCell({ col: at.col + 1, row: at.row }, pump)
+      this.pulse = { text: 'Place Pumpjack', at: { ...at } }
+      this.place = { kind: 'none' }
+      this.ping()
+      return
+    }
+    if (!inWorld(at, this.owned) || !isPlot(this.cell(at))) return
     const made = skuItem(this.place.id)
     if (made.kind === 'pumpjack' || made.kind === 'seeds') return
     this.money -= sku.price
@@ -277,7 +410,7 @@ export class World {
       this.ping()
       return
     }
-    if (!inWorld(at)) return
+    if (!inWorld(at, this.owned)) return
     if (!isPlot(this.cell(at))) return
     if (this.hand.kind !== 'hold') return
     this.enqueue({ act: 'drop', at: { ...at } })
@@ -293,8 +426,16 @@ export class World {
 
   sellSlot(i: number): void {
     const slot = this.inventory[i]
-    if (slot.kind !== 'hold' || slot.item.kind !== 'fruit') return
-    this.money += fruitMoney(this, slot.item.crop, slot.item.rarity, slot.item.count)
+    if (slot.kind !== 'hold') return
+    if (slot.item.kind === 'fruit') {
+      this.money += fruitMoney(this, slot.item.crop, slot.item.rarity, slot.item.count)
+      this.inventory[i] = { kind: 'empty' }
+      this.compactInventory()
+      this.ping()
+      return
+    }
+    if (slot.item.kind !== 'berry') return
+    this.money += berryMoney(slot.item.rarity, slot.item.count)
     this.inventory[i] = { kind: 'empty' }
     this.compactInventory()
     this.ping()
@@ -321,6 +462,14 @@ export class World {
           return
         }
       }
+      if (slot.item.kind === 'berry') {
+        const rarity = slot.item.rarity
+        const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'berry' && s.item.rarity === rarity)
+        if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'berry') {
+          hit.item.count += slot.item.count
+          return
+        }
+      }
       kept.push(slot)
     })
     kept.forEach((s, i) => {
@@ -333,6 +482,7 @@ export class World {
     ;(Object.keys(RESEARCH) as ResearchId[]).forEach(id => {
       this.done.add(id)
     })
+    this.money += 999
     this.job = { kind: 'idle' }
     this.ping()
   }
@@ -343,9 +493,17 @@ export class World {
       const it = this.hand.item
       return { kind: 'ok', money: fruitMoney(this, it.crop, it.rarity, it.count), label: `${it.crop} ×${it.count}` }
     }
+    if (this.hand.item.kind === 'berry') {
+      const it = this.hand.item
+      return { kind: 'ok', money: berryMoney(it.rarity, it.count), label: `berry ×${it.count}` }
+    }
     if (this.hand.item.kind === 'box' && this.hand.item.cargo.kind === 'stack' && this.hand.item.cargo.goods === 'fruit') {
       const st = this.hand.item.cargo.stack
       return { kind: 'ok', money: fruitMoney(this, st.crop, st.rarity, st.count), label: `${st.crop} ×${st.count}` }
+    }
+    if (this.hand.item.kind === 'box' && this.hand.item.cargo.kind === 'berry') {
+      const c = this.hand.item.cargo
+      return { kind: 'ok', money: berryMoney(c.rarity, c.count), label: `berry ×${c.count}` }
     }
     return { kind: 'blocked', text: 'Nothing to sell' }
   }
@@ -375,6 +533,8 @@ export class World {
       this.workTotal = 0
       this.filling = false
       this.money += 10
+      const tax = this.tax()
+      this.money -= tax
       this.seam = {
         kind: 'recap',
         recap: {
@@ -383,6 +543,7 @@ export class World {
           died: this.tally.died,
           harvests: this.tally.harvests,
           research: this.tally.research,
+          tax,
         },
       }
       this.tally = { died: 0, harvests: 0, research: [] }
@@ -391,7 +552,7 @@ export class World {
     }
     this.tickJob(dt)
     this.tickQueue(dt)
-    this.tickPlants(dt)
+    this.tickField(dt)
   }
 
   private tickJob(dt: number): void {
@@ -428,9 +589,9 @@ export class World {
     }
     const next = this.queue[0]
     if (next === undefined) return
-    const dest = destOf(next)
-    if (!this.actor.inside(dest)) {
-      this.actor.walkToward(dest, dt)
+    const at = dest(next)
+    if (!this.actor.inside(at)) {
+      this.actor.walkToward(at, dt)
       return
     }
     this.begin(next)
@@ -446,7 +607,14 @@ export class World {
           this.shiftHead()
           return
         }
-        this.arm((this.hand as { item: Extract<Item, { kind: 'shovel' }> }).item.workSeconds)
+        this.arm(shovelTime(this, i.at))
+        return
+      case 'mine':
+        if (!this.canMine(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(mineTime(this, i.at))
         return
       case 'plant':
         if (!this.canPlant(i.at)) {
@@ -478,7 +646,7 @@ export class World {
         this.shiftHead()
         return
       case 'fill':
-        if (!this.canFill()) {
+        if (!this.canFill(i.at)) {
           this.shiftHead()
           return
         }
@@ -505,7 +673,7 @@ export class World {
   }
 
   private markWalk(i: Intent): void {
-    if (this.actor.inside(destOf(i))) return
+    if (this.actor.inside(dest(i))) return
     this.legStart = { x: this.actor.x, y: this.actor.y }
   }
 
@@ -522,6 +690,7 @@ export class World {
     const i = this.queue[0]
     if (i === undefined) return
     if (i.act === 'shovel') this.doShovel(i.at)
+    if (i.act === 'mine') this.doMine(i.at)
     if (i.act === 'plant') this.doPlant(i.at)
     if (i.act === 'water') this.doWater(i.at)
     if (i.act === 'harvest') this.doHarvest(i.at)
@@ -529,7 +698,19 @@ export class World {
   }
 
   private tickFill(dt: number): void {
+    const head = this.queue[0]
+    if (head === undefined || head.act !== 'fill') {
+      this.filling = false
+      this.shiftHead()
+      return
+    }
     if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'container') {
+      this.filling = false
+      this.shiftHead()
+      return
+    }
+    const pumpCell = this.cell(head.at)
+    if (pumpCell.kind !== 'pump') {
       this.filling = false
       this.shiftHead()
       return
@@ -538,91 +719,153 @@ export class World {
     const miss = c.capacityLiters - c.liters
     if (miss <= 0) {
       this.filling = false
-      this.pulse = { text: 'Fill', at: { col: 18, row: 1 } }
+      this.pulse = { text: 'Fill', at: { ...head.at } }
       this.shiftHead()
       return
     }
-    const add = this.pump.outputLitersPerSec * dt
+    const add = pumpCell.outputLitersPerSec * dt
     c.liters = add >= miss ? c.capacityLiters : c.liters + add
     if (c.liters === c.capacityLiters) {
       this.filling = false
-      this.pulse = { text: 'Fill', at: { col: 18, row: 1 } }
+      this.pulse = { text: 'Fill', at: { ...head.at } }
       this.shiftHead()
     }
   }
 
-  private tickPlants(dt: number): void {
+  private tickField(dt: number): void {
     let dirty = false
-    for (let row = 0; row < ROWS; row++) {
-      for (let col = 0; col < COLS; col++) {
-        const c = this.grid[row][col]
-        if (c.kind !== 'growing' && c.kind !== 'ripe') continue
-        const stage0 = c.plant.stage(c.kind)
-        const bar0 = c.plant.thirst < HEALTH
-        const st = c.plant.stats(this.modifiers)
-        if (c.kind === 'growing') {
-          c.plant.thirst -= st.waterUsePerSec * dt
-          if (c.plant.thirst < 0) c.plant.thirst = 0
-        }
-        if (c.kind === 'growing' && c.plant.thirst <= 0) {
-          this.grid[row][col] = { kind: 'dead', plant: c.plant }
-          this.tally.died += 1
+    this.forEachCell((at, c) => {
+      if (c.kind === 'shrub' && !c.ripe) {
+        c.grow += dt / 360
+        if (c.grow >= 1) {
+          c.grow = 1
+          c.ripe = true
           dirty = true
-          continue
         }
-        if (c.kind === 'growing' && c.plant.thirst >= WITHER) {
-          c.plant.maturity += dt / st.growSeconds
-          if (c.plant.maturity >= 1) {
-            c.plant.maturity = 1
-            this.grid[row][col] = { kind: 'ripe', plant: c.plant }
-            dirty = true
-            continue
-          }
-        }
-        const now = this.grid[row][col]
-        if (now.kind !== 'growing' && now.kind !== 'ripe') continue
-        if (now.plant.stage(now.kind) !== stage0 || now.plant.thirst < HEALTH !== bar0) dirty = true
+        return
       }
-    }
+      if (c.kind !== 'growing' && c.kind !== 'ripe') return
+      const stage0 = c.plant.stage(c.kind)
+      const bar0 = c.plant.thirst < HEALTH
+      const st = c.plant.stats(this.modifiers)
+      if (c.kind === 'growing') {
+        c.plant.thirst -= st.waterUsePerSec * dt
+        if (c.plant.thirst < 0) c.plant.thirst = 0
+      }
+      if (c.kind === 'growing' && c.plant.thirst <= 0) {
+        this.setCell(at, { kind: 'dead', plant: c.plant })
+        this.tally.died += 1
+        dirty = true
+        return
+      }
+      if (c.kind === 'growing' && c.plant.thirst >= WITHER) {
+        c.plant.maturity += dt / st.growSeconds
+        if (c.plant.maturity >= 1) {
+          c.plant.maturity = 1
+          this.setCell(at, { kind: 'ripe', plant: c.plant })
+          dirty = true
+          return
+        }
+      }
+      const now = this.cell(at)
+      if (now.kind !== 'growing' && now.kind !== 'ripe') return
+      if (now.plant.stage(now.kind) !== stage0 || now.plant.thirst < HEALTH !== bar0) dirty = true
+    })
     if (dirty) this.ping()
   }
 
   private canShovel(at: Coord): boolean {
     if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'shovel') return false
     const c = this.cell(at)
-    return isPlot(c)
+    if (c.kind === 'shrub') return c.ripe
+    if (!isPlot(c)) return false
+    if (c.kind === 'infertile') return false
+    if (c.kind === 'untilled' && c.ground === 'very-hard') return false
+    if (c.kind === 'untilled' && c.ground === 'hard') return this.hand.item.usesLeft >= 2
+    return true
   }
 
   private doShovel(at: Coord): void {
     if (!this.canShovel(at)) return
     const c = this.cell(at)
+    const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
+    if (c.kind === 'shrub') {
+      this.drops.push({ at: { ...at }, item: { kind: 'shrub' } })
+      this.setCell(at, { kind: 'untilled', ground: 'soft' })
+      s.item.usesLeft -= 1
+      if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Dig', at: { ...at } }
+      return
+    }
     const text =
       c.kind === 'dead' ? 'Dig out dead plant' : c.kind === 'growing' || c.kind === 'ripe' ? 'Dig up plant' : 'Dig'
-    const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
     if (c.kind === 'growing' || c.kind === 'ripe') {
       this.drops.push({
         at: { ...at },
         item: { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 },
       })
     }
-    this.grid[at.row][at.col] = { kind: 'empty' }
-    s.item.usesLeft -= 1
+    this.setCell(at, { kind: 'empty' })
+    const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
+    s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
     this.pulse = { text, at: { ...at } }
   }
 
+  private canMine(at: Coord): boolean {
+    if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'pickaxe') return false
+    const c = this.cell(at)
+    if (c.kind === 'untilled' && c.ground === 'very-hard') return true
+    if (c.kind !== 'rock') return false
+    const n = occupiedCells(c.base, this.owned).length
+    return n < 2 || this.hand.item.usesLeft >= 2
+  }
+
+  private doMine(at: Coord): void {
+    if (!this.canMine(at)) return
+    const c = this.cell(at)
+    const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'pickaxe' }> }
+    if (c.kind === 'untilled' && c.ground === 'very-hard') {
+      this.setCell(at, { kind: 'infertile' })
+      s.item.usesLeft -= 1
+      if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Mine', at: { ...at } }
+      return
+    }
+    if (c.kind !== 'rock') return
+    const n = occupiedCells(c.base, this.owned).length
+    occupiedCells(c.base, this.owned).forEach(p => {
+      this.setCell(p, { kind: 'untilled', ground: 'soft' })
+    })
+    s.item.usesLeft -= n === 1 ? 1 : 2
+    if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
+    this.pulse = { text: 'Mine', at: { ...at } }
+  }
+
   private canPlant(at: Coord): boolean {
-    if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'seeds') return false
+    if (this.hand.kind !== 'hold') return false
+    if (this.hand.item.kind === 'shrub') {
+      const c = this.cell(at)
+      return c.kind === 'untilled' && c.ground === 'soft'
+    }
+    if (this.hand.item.kind !== 'seeds') return false
     return this.cell(at).kind === 'empty'
   }
 
   private doPlant(at: Coord): void {
     if (!this.canPlant(at)) return
+    if (this.hand.kind !== 'hold') return
+    if (this.hand.item.kind === 'shrub') {
+      this.setCell(at, new Shrub(false, 0))
+      this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Plant', at: { ...at } }
+      return
+    }
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
-    this.grid[at.row][at.col] = {
+    this.setCell(at, {
       kind: 'growing',
       plant: new Plant(s.item.crop, s.item.rarity),
-    }
+    })
     const crop = s.item.crop
     s.item.count -= 1
     if (s.item.count <= 0) this.hand = { kind: 'empty' }
@@ -646,17 +889,38 @@ export class World {
   }
 
   private canHarvest(at: Coord): boolean {
-    if (this.cell(at).kind !== 'ripe') return false
+    const c = this.cell(at)
+    if (c.kind === 'shrub' && c.ripe) {
+      if (this.hand.kind === 'empty') return true
+      if (this.hand.item.kind !== 'box') return false
+      const cargo = this.hand.item.cargo
+      return cargo.kind === 'empty' || (cargo.kind === 'berry' && cargo.count < this.hand.item.cap)
+    }
+    if (c.kind !== 'ripe') return false
     if (this.hand.kind === 'empty') return true
     if (this.hand.item.kind !== 'box') return false
-    const p = (this.cell(at) as Extract<Plot, { kind: 'ripe' }>).plant
-    return boxAccepts(this.hand.item, 'fruit', p.crop, p.rarity, 1) > 0
+    return boxAccepts(this.hand.item, 'fruit', c.plant.crop, c.plant.rarity, 1) > 0
   }
 
   private doHarvest(at: Coord): void {
     if (!this.canHarvest(at)) return
-    const p = (this.cell(at) as Extract<Plot, { kind: 'ripe' }>).plant
-    this.grid[at.row][at.col] = { kind: 'empty' }
+    const c = this.cell(at)
+    if (c.kind === 'shrub') {
+      const rarity = rollRarity(hash(this.seed, 'berry', at.col, at.row, this.clock.day))
+      if (this.hand.kind === 'hold' && this.hand.item.kind === 'box') {
+        if (boxAccepts(this.hand.item, 'berry', rarity, 1) === 0) return
+        boxAdd(this.hand.item, 'berry', rarity, 1)
+      } else {
+        this.hand = { kind: 'hold', item: { kind: 'berry', rarity, count: 1 } }
+      }
+      c.ripe = false
+      c.grow = 0
+      this.tally.harvests += 1
+      this.pulse = { text: 'Harvest', at: { ...at } }
+      return
+    }
+    const p = (c as Extract<Plot, { kind: 'ripe' }>).plant
+    this.setCell(at, { kind: 'empty' })
     this.tally.harvests += 1
     this.pulse = { text: 'Harvest', at: { ...at } }
     if (this.hand.kind === 'empty') {
@@ -666,25 +930,41 @@ export class World {
     if (this.hand.item.kind === 'box') boxAdd(this.hand.item, 'fruit', p.crop, p.rarity, 1)
   }
 
-  private canFill(): boolean {
-    return this.hand.kind === 'hold' && this.hand.item.kind === 'container'
+  private canFill(at: Coord): boolean {
+    if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'container') return false
+    return this.cell(at).kind === 'pump'
   }
 
   private doPickup(at: Coord): void {
     const i = topIndex(this.drops, at)
     if (i < 0) return
     const taken = this.drops[i].item
-    if (this.hand.kind === 'hold' && this.hand.item.kind === 'box' && (taken.kind === 'seeds' || taken.kind === 'fruit')) {
-      const n = boxAdd(this.hand.item, taken.kind, taken.crop, taken.rarity, taken.count)
-      if (n === taken.count) {
-        this.drops.splice(i, 1)
-        this.pulse = { text: 'Pick up', at: { ...at } }
-        return
+    if (this.hand.kind === 'hold' && this.hand.item.kind === 'box') {
+      if (taken.kind === 'seeds' || taken.kind === 'fruit') {
+        const n = boxAdd(this.hand.item, taken.kind, taken.crop, taken.rarity, taken.count)
+        if (n === taken.count) {
+          this.drops.splice(i, 1)
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
+        if (n > 0) {
+          taken.count -= n
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
       }
-      if (n > 0) {
-        taken.count -= n
-        this.pulse = { text: 'Pick up', at: { ...at } }
-        return
+      if (taken.kind === 'berry') {
+        const n = boxAdd(this.hand.item, 'berry', taken.rarity, taken.count)
+        if (n === taken.count) {
+          this.drops.splice(i, 1)
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
+        if (n > 0) {
+          taken.count -= n
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
       }
     }
     this.drops.splice(i, 1)
@@ -713,8 +993,20 @@ export class World {
       this.pulse = { text: 'Sell', at: { ...DOOR } }
       return
     }
+    if (this.hand.item.kind === 'berry') {
+      this.money += berryMoney(this.hand.item.rarity, this.hand.item.count)
+      this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Sell', at: { ...DOOR } }
+      return
+    }
     if (this.hand.item.kind !== 'box') return
     const cargo = this.hand.item.cargo
+    if (cargo.kind === 'berry') {
+      this.money += berryMoney(cargo.rarity, cargo.count)
+      this.hand.item.cargo = { kind: 'empty' }
+      this.pulse = { text: 'Sell', at: { ...DOOR } }
+      return
+    }
     if (cargo.kind !== 'stack' || cargo.goods !== 'fruit') return
     this.money += fruitMoney(this, cargo.stack.crop, cargo.stack.rarity, cargo.stack.count)
     this.hand.item.cargo = { kind: 'empty' }
@@ -726,24 +1018,22 @@ function fruitMoney(w: World, crop: CropId, rarity: Rarity, n: number): number {
   return new Plant(crop, rarity).stats(w.modifiers).sale * n
 }
 
-function destOf(i: Intent): Coord {
-  if (i.act === 'fill') return { col: 18, row: 1 }
-  if (i.act === 'sell' || i.act === 'inventory') return { ...DOOR }
-  return i.at
+function berryMoney(rarity: Rarity, n: number): number {
+  return BERRY_SALE * RARITY_SALE[rarity] * n
 }
 
-function buildGrid(house: House, pump: Pump): Cell[][] {
-  const g: Cell[][] = []
-  for (let row = 0; row < ROWS; row++) {
-    const line: Cell[] = []
-    for (let col = 0; col < COLS; col++) line.push({ kind: 'untilled' })
-    g.push(line)
-  }
-  occupiedCells(house.base).forEach(({ col, row }) => {
-    g[row][col] = house
-  })
-  occupiedCells(pump.base).forEach(({ col, row }) => {
-    g[row][col] = pump
-  })
-  return g
+function shovelTime(w: World, at: Coord): number {
+  const s = (w.hand as { item: Extract<Item, { kind: 'shovel' }> }).item
+  const c = w.cell(at)
+  if (c.kind === 'untilled' && c.ground === 'hard') return s.workSeconds * 2
+  return s.workSeconds
 }
+
+function mineTime(w: World, at: Coord): number {
+  const p = (w.hand as { item: Extract<Item, { kind: 'pickaxe' }> }).item
+  const c = w.cell(at)
+  if (c.kind !== 'rock') return p.workSeconds
+  const n = occupiedCells(c.base, w.owned).length
+  return n === 1 ? p.workSeconds : p.workSeconds * 2
+}
+

@@ -26,19 +26,10 @@ export function Held({ hand }: { hand: Hand }) {
 
 export function ItemFace({ item }: { item: Item }) {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <span className="relative flex h-12 w-12 items-center justify-center">
-          <svg viewBox="0 0 24 24" className="h-10 w-10" dangerouslySetInnerHTML={{ __html: itemInner(item) }} />
-          <Badge item={item} />
-        </span>
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content className="z-50 border border-ink bg-ink px-2 py-1 text-xs text-house" sideOffset={6}>
-          {itemTip(item)}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <span className="relative flex h-12 w-12 items-center justify-center">
+      <svg viewBox="0 0 24 24" className="h-10 w-10" dangerouslySetInnerHTML={{ __html: itemInner(item) }} />
+      <Badge item={item} />
+    </span>
   )
 }
 
@@ -51,19 +42,22 @@ function Badge({ item }: { item: Item }) {
 }
 
 function badge(item: Item): string | undefined {
-  if (item.kind === 'shovel') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
   if (item.kind === 'container') return `${item.liters}L`
-  if (item.kind === 'seeds' || item.kind === 'fruit') return String(item.count)
+  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'berry') return String(item.count)
   if (item.kind === 'box' && item.cargo.kind === 'stack') return String(item.cargo.stack.count)
+  if (item.kind === 'box' && item.cargo.kind === 'berry') return String(item.cargo.count)
   return undefined
 }
 
 function heldNumber(item: Item): string {
-  if (item.kind === 'shovel') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
   if (item.kind === 'container') return `${item.liters}L`
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return String(item.cap)
+    if (item.cargo.kind === 'berry') return `${item.cargo.count}/${item.cap}`
     return `${item.cargo.stack.count}/${item.cap}`
   }
+  if (item.kind === 'shrub') return ''
   return String(item.count)
 }

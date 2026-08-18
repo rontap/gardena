@@ -11,12 +11,20 @@ import fruitTomato from '../../assets/fruit-tomato.svg?raw'
 import fruitRaspberry from '../../assets/fruit-raspberry.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
 import better from '../../assets/item-better-shovel.svg?raw'
+import pickaxe from '../../assets/item-pickaxe.svg?raw'
+import betterPickaxe from '../../assets/item-better-pickaxe.svg?raw'
 import box from '../../assets/item-box.svg?raw'
 import largeBox from '../../assets/item-large-box.svg?raw'
 import bucket from '../../assets/item-bucket.svg?raw'
 import largeBucket from '../../assets/item-large-bucket.svg?raw'
+import itemShrub from '../../assets/item-shrub.svg?raw'
+import itemBerry from '../../assets/item-berry.svg?raw'
 import house from '../../assets/prop-house.svg?raw'
 import pump from '../../assets/prop-pump.svg?raw'
+import rock from '../../assets/prop-rock.svg?raw'
+import rockLong from '../../assets/prop-rock-long.svg?raw'
+import shrub from '../../assets/prop-shrub.svg?raw'
+import berryShrub from '../../assets/prop-berry-shrub.svg?raw'
 import grass0 from '../../assets/tile-grass-0.svg?raw'
 import grass1 from '../../assets/tile-grass-1.svg?raw'
 import grass2 from '../../assets/tile-grass-2.svg?raw'
@@ -24,6 +32,9 @@ import grass3 from '../../assets/tile-grass-3.svg?raw'
 import grass4 from '../../assets/tile-grass-4.svg?raw'
 import dirt0 from '../../assets/tile-dirt-0.svg?raw'
 import dirt1 from '../../assets/tile-dirt-1.svg?raw'
+import hard0 from '../../assets/tile-hard-0.svg?raw'
+import hard1 from '../../assets/tile-hard-1.svg?raw'
+import veryHard from '../../assets/tile-very-hard-0.svg?raw'
 import uiBtn from '../../assets/ui-btn.svg?raw'
 import uiHeader from '../../assets/ui-header.svg'
 import uiRail from '../../assets/ui-rail.svg'
@@ -56,21 +67,41 @@ export function cropInner(id: CropId, stage: string): string {
 
 export function itemInner(item: Item): string {
   if (item.kind === 'shovel') return inner(item.id === 'shovel' ? shovel : better)
+  if (item.kind === 'pickaxe') return inner(item.id === 'pickaxe' ? pickaxe : betterPickaxe)
   if (item.kind === 'container') {
     if (item.id === 'bucket') return inner(bucket)
     return inner(largeBucket)
   }
-  if (item.kind === 'box') return inner(item.cap === 5 ? box : largeBox)
+  if (item.kind === 'box') return boxInner(item)
   if (item.kind === 'seeds') return cropInner(item.crop, 'ripe')
   if (item.kind === 'fruit') return inner(FRUIT[item.crop])
-  return inner(shovel)
+  if (item.kind === 'berry') return inner(itemBerry)
+  return inner(itemShrub)
+}
+
+function boxInner(item: Extract<Item, { kind: 'box' }>): string {
+  const crate = inner(item.cap === 5 ? box : largeBox)
+  if (item.cargo.kind === 'empty') return crate
+  const cargo =
+    item.cargo.kind === 'berry'
+      ? inner(itemBerry)
+      : item.cargo.goods === 'fruit'
+        ? inner(FRUIT[item.cargo.stack.crop])
+        : cropInner(item.cargo.stack.crop, 'ripe')
+  return `${crate}<g transform="translate(7,7) scale(${10 / 24})">${cargo}</g>`
 }
 
 export const ACTOR = inner(actor)
 export const HOUSE = inner(house)
 export const PUMP = inner(pump)
+export const ROCK = inner(rock)
+export const ROCK_LONG = inner(rockLong)
+export const SHRUB = inner(shrub)
+export const BERRY_SHRUB = inner(berryShrub)
 export const GRASS = [inner(grass0), inner(grass1), inner(grass2), inner(grass3), inner(grass4)] as const
 export const DIRT = [inner(dirt0), inner(dirt1)] as const
+export const HARD = [inner(hard0), inner(hard1)] as const
+export const VERY_HARD = inner(veryHard)
 export const UI_BTN_IDLE = groupInner(uiBtn, 'idle')
 export const UI_BTN_HOVER = groupInner(uiBtn, 'hover')
 export const UI_BTN_DISABLED = groupInner(uiBtn, 'disabled')

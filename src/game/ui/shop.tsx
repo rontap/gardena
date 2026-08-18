@@ -1,7 +1,7 @@
-import * as Tooltip from '@radix-ui/react-tooltip'
+import { useState } from 'react'
 import { SKUS } from '../defs/research.ts'
 import type { SkuId } from '../sim/ids.ts'
-import { skuItem, skuLabel } from '../sim/item.ts'
+import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { Btn, Dock } from './frame.tsx'
 
@@ -13,6 +13,8 @@ const ORDER: SkuId[] = [
   'pack-raspberry',
   'buy-shovel',
   'buy-better-shovel',
+  'buy-pickaxe',
+  'buy-better-pickaxe',
   'buy-bucket-large',
   'buy-box',
   'buy-box-large',
@@ -22,48 +24,52 @@ const ORDER: SkuId[] = [
 type RowState = 'not-researched' | 'cannot-afford' | 'inventory-full' | 'ok'
 
 export function Shop({ world, onClose }: { world: World; onClose: () => void }) {
+  const [hot, setHot] = useState<SkuId | undefined>(undefined)
+  const reason =
+    hot === undefined
+      ? undefined
+      : rowState(world, hot) === 'not-researched'
+        ? 'not researched'
+        : rowState(world, hot) === 'cannot-afford'
+          ? 'cannot afford'
+          : rowState(world, hot) === 'inventory-full'
+            ? 'inventory-full'
+            : undefined
   return (
     <Dock side="left" title="Shop" onClose={onClose}>
       {ORDER.map(id => (
-        <SkuRow key={id} id={id} world={world} />
+        <SkuRow key={id} id={id} world={world} onHot={setHot} />
       ))}
+      <div className="mt-2 min-h-10 px-1 pt-1 text-sm text-ink">
+        {hot !== undefined && <div>{skuDesc(hot)}</div>}
+        {reason !== undefined && <div>{reason}</div>}
+      </div>
     </Dock>
   )
 }
 
-function SkuRow({ id, world }: { id: SkuId; world: World }) {
+function SkuRow({
+  id,
+  world,
+  onHot,
+}: {
+  id: SkuId
+  world: World
+  onHot: (id: SkuId | undefined) => void
+}) {
   const state = rowState(world, id)
-  const reason =
-    state === 'not-researched'
-      ? 'not researched'
-      : state === 'cannot-afford'
-        ? 'cannot afford'
-        : state === 'inventory-full'
-          ? 'inventory-full'
-          : undefined
-  const row = (
-    <Btn
-      className={`mb-1 w-full${world.place.kind === 'sku' && world.place.id === id ? ' bg-dirt-dark' : ''}`}
-      disabled={state !== 'ok'}
-      onClick={() => {
-        if (state === 'ok') world.buy(id)
-      }}
-    >
-      {skuLabel(id)} ${SKUS[id].price}
-    </Btn>
-  )
-  if (reason === undefined) return row
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <span className="mb-1 block w-full">{row}</span>
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content className="z-50 bg-house px-2 py-1 text-sm text-ink" sideOffset={6}>
-          {reason}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <div className="mb-1" onMouseEnter={() => onHot(id)} onMouseLeave={() => onHot(undefined)}>
+      <Btn
+        className={`w-full${world.place.kind === 'sku' && world.place.id === id ? ' bg-dirt-dark' : ''}`}
+        disabled={state !== 'ok'}
+        onClick={() => {
+          if (state === 'ok') world.buy(id)
+        }}
+      >
+        {skuLabel(id)} ${SKUS[id].price}
+      </Btn>
+    </div>
   )
 }
 

@@ -1,5 +1,6 @@
 # Art
 
+- [[art/beta-3]]
 - [[art/beta-2]]
 - [[art/beta-1]]
 

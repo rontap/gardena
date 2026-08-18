@@ -19,4 +19,4 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
 export const WITHER = 0.33
 export const CRITICAL = 0.1
 export const HEALTH = 0.5
-export const PLANT_THIRST = 1
+export const PLANT_THIRST = 0.75

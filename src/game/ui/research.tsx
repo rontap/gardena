@@ -18,6 +18,8 @@ const UTIL: ResearchId[] = [
   'unlock-large-box',
   'unlock-better-shovel',
   'unlock-pumpjack',
+  'unlock-expand',
+  'unlock-pickaxe',
 ]
 
 export function Research({ world, onClose }: { world: World; onClose: () => void }) {
@@ -50,6 +52,12 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
   )
 }
 
+function label(id: ResearchId): string {
+  if (id === 'unlock-expand') return 'Unlock land'
+  if (id === 'unlock-pickaxe') return 'Unlock pickaxe'
+  return id
+}
+
 function Row({ id, world }: { id: ResearchId; world: World }) {
   const d = RESEARCH[id]
   const done = world.done.has(id)
@@ -64,7 +72,7 @@ function Row({ id, world }: { id: ResearchId; world: World }) {
       }}
     >
       <div>
-        {id} ${d.cost} {d.seconds}s{done ? ' done' : ''}
+        {label(id)} ${d.cost} {d.seconds}s{done ? ' done' : ''}
       </div>
       {(run || done) && (
         <Progress.Root className="relative mt-1 h-1.5 overflow-hidden bg-dirt-dark" value={pct}>

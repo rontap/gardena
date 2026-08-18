@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/mechanics/beta-1.md",
+                "file": "docs/architecture/beta-1.md",
                 "mode": "source",
                 "source": false
               },
@@ -55,7 +55,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "×",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/mechanics/beta-1.md",
+                "file": "docs/architecture/beta-1.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "docs/mechanics/beta-1.md",
+                "file": "docs/architecture/beta-1.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "docs/mechanics/beta-1.md",
+                "file": "docs/architecture/beta-1.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,33 +188,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "8be52ee30d7dde7c",
+  "active": "06eeedefa5501be2",
   "lastOpenFiles": [
+    "images/beta-3.png",
+    "images/Screenshot 2026-08-18 220823.png",
+    "images",
+    "node_modules/@radix-ui/react-roving-focus/package.json",
+    "node_modules/@radix-ui/react-tabs/package.json",
+    "node_modules/@radix-ui/react-dialog/package.json",
+    "node_modules/@radix-ui/react-progress/package.json",
+    "node_modules/@radix-ui/rect/package.json",
+    "node_modules/@radix-ui/react-arrow/package.json",
+    "node_modules/@radix-ui/react-primitive/package.json",
+    "node_modules/@radix-ui/react-portal/package.json",
+    "node_modules/@radix-ui/react-popper/package.json",
+    "src/assets/item-pickaxe.svg",
+    "src/assets/item-berry.svg",
+    "src/assets/item-shrub.svg",
+    "src/assets/tile-hard-0.svg",
+    "src/assets/tile-very-hard-0.svg",
+    "src/assets/prop-rock.svg",
+    "src/assets/item-better-pickaxe.svg",
+    "src/assets/prop-rock-long.svg",
+    "src/assets/prop-berry-shrub.svg",
+    "docs/art/beta-3.md",
+    "docs/ui/beta-3.md",
+    "docs/architecture/beta-3.md",
+    "docs/mechanics/beta-3.md",
+    "docs/canon.md",
+    "docs/art/beta-1.md",
+    "docs/art/_index.md",
+    "docs/architecture/beta-2.md",
+    "docs/mechanics/beta-1.md",
     "docs/changelog.md",
-    "src/assets/fruit-wheat.svg",
-    "src/assets/fruit-raspberry.svg",
-    "src/assets/fruit-carrot.svg",
-    "src/assets/fruit-potato.svg",
-    "src/assets/fruit-tomato.svg",
     "docs/ui/place.md",
-    "src/game/ui/status.tsx",
-    "src/game/sim/look.ts",
-    "src/game/view/motion.ts",
-    "src/assets/tile-dirt-0.svg",
-    "src/assets/tile-grass-4.svg",
-    "src/assets/ui-btn.svg",
-    "src/assets/tile-dirt-1.svg",
     "docs/ui/beta-2.md",
     "docs/mechanics/beta-2.md",
-    "docs/architecture/beta-2.md",
     "docs/art/beta-2.md",
-    "src/game/defs/research.ts~",
-    "src/game/ui/queue.tsx",
-    "node_modules/vitest/browser/context.js",
-    "node_modules/vitest/browser/context.d.ts",
-    "node_modules/vitest/browser",
-    "node_modules/vitest/optional-types.d.ts",
-    "node_modules/vitest/config.d.ts",
     "node_modules/@radix-ui/react-focus-scope/README.md",
     "node_modules/use-callback-ref/README.md",
     "node_modules/react-remove-scroll-bar/README.md",
@@ -222,19 +232,9 @@
     "node_modules/@radix-ui/react-primitive/README.md",
     "node_modules/@floating-ui/react-dom/README.md",
     "node_modules/get-nonce/README.md",
-    "src/assets/ui-header.svg",
     "docs/coder-concerns.md",
     "node_modules/vitest/README.md",
     "node_modules/vitest/LICENSE.md",
-    "node_modules/es-module-lexer/README.md",
-    "node_modules/expect-type/README.md",
-    "node_modules/tinyrainbow/README.md",
-    "node_modules/@types/estree/README.md",
-    "node_modules/siginfo/README.md",
-    "node_modules/estree-walker/README.md",
-    "node_modules/convert-source-map/README.md",
-    "docs/mechanics/beta-1.md",
-    "docs/index.md",
-    "docs/canon.md"
+    "node_modules/es-module-lexer/README.md"
   ]
 }

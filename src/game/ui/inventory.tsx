@@ -1,4 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
+import { itemLine } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { Btn, Frame } from './frame.tsx'
 import { ItemFace } from './held.tsx'
@@ -26,7 +27,8 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
                   >
                     {slot.kind === 'hold' ? <ItemFace item={slot.item} /> : null}
                   </button>
-                  {slot.kind === 'hold' && slot.item.kind === 'fruit' && (
+                  {slot.kind === 'hold' && <div className="text-center text-xs leading-tight">{itemLine(slot.item)}</div>}
+                  {slot.kind === 'hold' && (slot.item.kind === 'fruit' || slot.item.kind === 'berry') && (
                     <Btn onClick={() => world.sellSlot(i)}>Sell</Btn>
                   )}
                 </div>

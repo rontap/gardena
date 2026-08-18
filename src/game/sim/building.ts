@@ -1,24 +1,69 @@
 export type Coord = { col: number; row: number }
 
+export type ChunkId = { cx: number; cy: number }
+
 export type RectBase = { shape: 'rect'; col: number; row: number; w: number; h: number }
 export type CircleBase = { shape: 'circle'; cx: number; cy: number; r: number }
 export type Base = RectBase | CircleBase
 
-export const COLS = 32
-export const ROWS = 48
+export const CHUNK = 32
 
-export function inWorld(at: Coord): boolean {
-  return at.col >= 0 && at.col < COLS && at.row >= 0 && at.row < ROWS
+export function chunkOf(at: Coord): ChunkId {
+  return { cx: Math.floor(at.col / CHUNK), cy: Math.floor(at.row / CHUNK) }
 }
 
-export function occupiedCells(base: Base): Coord[] {
+export function chunkRect(id: ChunkId): { col0: number; row0: number; col1: number; row1: number } {
+  return {
+    col0: id.cx * CHUNK,
+    row0: id.cy * CHUNK,
+    col1: id.cx * CHUNK + CHUNK,
+    row1: id.cy * CHUNK + CHUNK,
+  }
+}
+
+export function local(at: Coord): Coord {
+  return {
+    col: ((at.col % CHUNK) + CHUNK) % CHUNK,
+    row: ((at.row % CHUNK) + CHUNK) % CHUNK,
+  }
+}
+
+export function chunkKey(id: ChunkId): string {
+  return `${id.cx},${id.cy}`
+}
+
+export function inWorld(at: Coord, owned: readonly ChunkId[]): boolean {
+  const id = chunkOf(at)
+  return owned.some(c => c.cx === id.cx && c.cy === id.cy)
+}
+
+export function occupiedCells(base: Base, owned: readonly ChunkId[]): Coord[] {
+  const box = tileBox(base)
   const out: Coord[] = []
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
+  for (let row = box.row0; row < box.row1; row++) {
+    for (let col = box.col0; col < box.col1; col++) {
+      if (!inWorld({ col, row }, owned)) continue
       if (areaOverlap(base, col, row) > 0) out.push({ col, row })
     }
   }
   return out
+}
+
+function tileBox(base: Base): { col0: number; row0: number; col1: number; row1: number } {
+  if (base.shape === 'rect') {
+    return {
+      col0: Math.floor(base.col),
+      row0: Math.floor(base.row),
+      col1: Math.ceil(base.col + base.w),
+      row1: Math.ceil(base.row + base.h),
+    }
+  }
+  return {
+    col0: Math.floor(base.cx - base.r),
+    row0: Math.floor(base.cy - base.r),
+    col1: Math.ceil(base.cx + base.r),
+    row1: Math.ceil(base.cy + base.r),
+  }
 }
 
 function areaOverlap(base: Base, col: number, row: number): number {
@@ -67,9 +112,9 @@ function clamp(n: number, a: number, c: number): number {
   return Math.min(c, Math.max(a, n))
 }
 
-export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 0, w: 4, h: 3 }
-export const PUMP_BASE: CircleBase = { shape: 'circle', cx: 18.5, cy: 1.5, r: 0.5 }
-export const DOOR: Coord = { col: 15, row: 3 }
+export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 6, w: 4, h: 3 }
+export const PUMP_BASE: CircleBase = { shape: 'circle', cx: 18.5, cy: 7.5, r: 0.5 }
+export const DOOR: Coord = { col: 15, row: 9 }
 
 export class House {
   readonly kind = 'house' as const
@@ -83,11 +128,29 @@ export class House {
 
 export class Pump {
   readonly kind = 'pump' as const
-  readonly base: CircleBase
+  readonly base: Base
   outputLitersPerSec: number
-  constructor(base: CircleBase, outputLitersPerSec: number) {
+  constructor(base: Base, outputLitersPerSec: number) {
     this.base = base
     this.outputLitersPerSec = outputLitersPerSec
+  }
+}
+
+export class Rock {
+  readonly kind = 'rock' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class Shrub {
+  readonly kind = 'shrub' as const
+  ripe: boolean
+  grow: number
+  constructor(ripe: boolean, grow: number) {
+    this.ripe = ripe
+    this.grow = grow
   }
 }
 

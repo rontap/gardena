@@ -9,6 +9,7 @@ export type ResearchDef = {
     | { kind: 'unlock-sku'; sku: SkuId }
     | { kind: 'sale-mul'; crop: CropId; saleMul: number }
     | { kind: 'pumpjack' }
+    | { kind: 'expand' }
 }
 
 export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
@@ -82,20 +83,36 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
     seconds: 60,
     effect: { kind: 'pumpjack' },
   },
+  'unlock-expand': {
+    id: 'unlock-expand',
+    tree: 'utilities',
+    cost: 15,
+    seconds: 45,
+    effect: { kind: 'expand' },
+  },
+  'unlock-pickaxe': {
+    id: 'unlock-pickaxe',
+    tree: 'utilities',
+    cost: 0,
+    seconds: 40,
+    effect: { kind: 'unlock-sku', sku: 'buy-pickaxe' },
+  },
 }
 
 export type Sku = { id: SkuId; price: number; unlock: 'start' | ResearchId }
 
 export const SKUS: { readonly [K in SkuId]: Sku } = {
-  'pack-carrot': { id: 'pack-carrot', price: 4, unlock: 'start' },
+  'pack-carrot': { id: 'pack-carrot', price: 3, unlock: 'start' },
   'pack-potato': { id: 'pack-potato', price: 6, unlock: 'start' },
   'pack-wheat': { id: 'pack-wheat', price: 8, unlock: 'start' },
   'pack-tomato': { id: 'pack-tomato', price: 12, unlock: 'unlock-tomato' },
   'pack-raspberry': { id: 'pack-raspberry', price: 16, unlock: 'unlock-raspberry' },
   'buy-shovel': { id: 'buy-shovel', price: 10, unlock: 'start' },
   'buy-better-shovel': { id: 'buy-better-shovel', price: 35, unlock: 'unlock-better-shovel' },
-  'buy-bucket-large': { id: 'buy-bucket-large', price: 18, unlock: 'unlock-large-bucket' },
-  'buy-box': { id: 'buy-box', price: 2, unlock: 'unlock-box' },
-  'buy-box-large': { id: 'buy-box-large', price: 4, unlock: 'unlock-large-box' },
+  'buy-pickaxe': { id: 'buy-pickaxe', price: 20, unlock: 'unlock-pickaxe' },
+  'buy-better-pickaxe': { id: 'buy-better-pickaxe', price: 25, unlock: 'unlock-pickaxe' },
+  'buy-bucket-large': { id: 'buy-bucket-large', price: 22, unlock: 'unlock-large-bucket' },
+  'buy-box': { id: 'buy-box', price: 6, unlock: 'unlock-box' },
+  'buy-box-large': { id: 'buy-box-large', price: 12, unlock: 'unlock-large-box' },
   'buy-pumpjack': { id: 'buy-pumpjack', price: 50, unlock: 'unlock-pumpjack' },
 }

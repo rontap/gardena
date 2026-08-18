@@ -26,7 +26,7 @@ export default function App() {
   const root = useRef<HTMLDivElement>(null)
   const [n, setN] = useState(0)
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
-  const [cam, setCam] = useState<Camera>({ x: 15.5, y: 3.5, scale: 1 })
+  const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
   const [hover, setHover] = useState<Coord | undefined>(undefined)
 
   useEffect(() => world.on(() => setN(x => x + 1)), [world])

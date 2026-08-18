@@ -2,20 +2,18 @@ import {SKUS} from '../defs/research.ts'
 import {inWorld, type Coord} from './building.ts'
 import {onCell} from './drop.ts'
 import type {Rarity} from '../defs/rarity.ts'
-import {boxAccepts, skuItem} from './item.ts'
+import {boxAccepts, skuItem, skuLabel} from './item.ts'
 import type {CropId, SkuId} from './ids.ts'
 import {isPlot} from './plot.ts'
 import type {Intent, World} from './world.ts'
 
 export type Prompt =
     | { kind: 'intent'; text: string; intent: Intent }
-    | { kind: 'inventory'; text: 'Inventory' }
     | { kind: 'place'; text: string }
     | { kind: 'blocked'; text: string }
 
 export function placeLabel(id: SkuId): string {
-    const made = skuItem(id)
-    return itemPlaceName(made)
+    return skuLabel(id)
 }
 
 export function readPrompt(w: World, at: Coord): Prompt {
@@ -26,7 +24,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (!inWorld(at)) return {kind: 'blocked', text: 'Cannot place here'}
     const cell = w.cell(at)
-    if (cell.kind === 'house') return {kind: 'inventory', text: 'Inventory'}
+    if (cell.kind === 'house') return intent('Inventory', {act: 'inventory'})
     if (onCell(w.drops, at).length > 0) return intent('Pick up', {act: 'pickup', at})
     if (cell.kind === 'pump') {
         if (w.hand.kind === 'hold' && w.hand.item.kind === 'container') return intent('Fill', {act: 'fill'})
@@ -49,6 +47,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
         return intent('Harvest', {act: 'harvest', at})
     }
     if (w.hand.kind === 'empty') return intent('Move here', {act: 'walk', at})
+    if (isPlot(cell)) return intent('Drop', {act: 'drop', at})
     return {kind: 'blocked', text: 'Need seeds'}
 }
 
@@ -62,11 +61,4 @@ function intent(text: string, i: Intent): Prompt {
     return {kind: 'intent', text, intent: i}
 }
 
-function itemPlaceName(made: ReturnType<typeof skuItem>): string {
-    if (made.kind === 'pumpjack') return 'pumpjack'
-    if (made.kind === 'seeds') return made.crop
-    if (made.kind === 'shovel') return made.id
-    if (made.kind === 'container') return made.id
-    if (made.kind === 'box') return made.cap === 5 ? 'box' : 'large-box'
-    return made.crop
-}
+

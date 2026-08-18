@@ -20,3 +20,4 @@ Read [[index]] and [[canon]]. Write `docs/` immediately. No handoff text.
 2. Fix stale links. Delete corpses.
 3. Decisions and contracts. Not tutorials. Not changelogs.
 4. Unknown decision → one-line question, stop.
+5. Done when indexes link the new notes. Final message: paths only.

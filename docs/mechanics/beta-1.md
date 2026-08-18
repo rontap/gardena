@@ -1,5 +1,7 @@
 # Beta-1 mechanics
 
+**Historical.** Current law: [[mechanics/beta-2]].
+
 Garden sim. Loop: shovel → plant → water → harvest → walk to house → sell → buy / research.
 
 Renderer: SVG + DOM. See [[architecture/beta-1]].

@@ -19,12 +19,23 @@ Vault for this game. Agents read this first.
 - [[agents/documenter]]
 - [[agents/code-review]]
 
+## Beta-2
+
+- [[mechanics/beta-2]]
+- [[architecture/beta-2]]
+- [[ui/beta-2]]
+- [[art/beta-2]]
+
 ## Beta-1
 
 - [[mechanics/beta-1]]
 - [[architecture/beta-1]]
 - [[ui/beta-1]]
 - [[art/beta-1]]
+
+## Log
+
+- [[changelog]]
 
 ## Later
 

@@ -1,5 +1,7 @@
 # Beta-1 art
 
+**Historical.** Current law: [[art/beta-2]].
+
 Top-down, pixel-esque, SVG. Clean paths. `viewBox` on a 16×16 or 32×32 grid. No editor metadata. `shape-rendering: crispEdges` where it helps.
 
 ## Palette

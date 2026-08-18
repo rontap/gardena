@@ -10,7 +10,7 @@ import {
 
 export function Chrome({ children, className }: { children: ReactNode; className: string }) {
   return (
-    <div className={`relative bg-house text-ink ${className}`}>
+    <div className={`bg-house text-ink ${className}`}>
       <Decor />
       {children}
     </div>
@@ -64,24 +64,83 @@ function Decor() {
   )
 }
 
+export function Btn({
+  children,
+  onClick,
+  disabled,
+  className,
+}: {
+  children: ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  className?: string
+}) {
+  const off = disabled === true
+  return (
+    <button
+      type="button"
+      disabled={off}
+      className={`relative cursor-pointer bg-dirt px-3 py-2 pt-3 text-left text-ink hover:bg-dirt-dark disabled:cursor-default disabled:opacity-50 ${className ?? ''}`}
+      onClick={onClick}
+    >
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
+        style={{
+          backgroundImage: `url(${UI_HEADER})`,
+          backgroundRepeat: 'repeat-x',
+          backgroundSize: '16px 12px',
+        }}
+      />
+      <span className="relative">{children}</span>
+    </button>
+  )
+}
+
+export function Dock({
+  side,
+  title,
+  children,
+  onClose,
+}: {
+  side: 'left' | 'right'
+  title: string
+  children: ReactNode
+  onClose: () => void
+}) {
+  const pos = side === 'left' ? 'left-3' : 'right-3'
+  return (
+    <Chrome className={`absolute top-3 ${pos} z-20 flex max-h-[calc(100%-13rem)] w-72 flex-col overflow-hidden`}>
+      <div className="relative z-20 flex items-center justify-between px-3 py-2">
+        <div className="text-sm">{title}</div>
+        <button type="button" className="cursor-pointer px-2 py-0.5 text-sm text-ink hover:bg-dirt" onClick={onClose}>
+          ×
+        </button>
+      </div>
+      <div className="relative z-20 min-h-0 overflow-y-auto px-3 pb-3">{children}</div>
+    </Chrome>
+  )
+}
+
 export function Frame({
   title,
   children,
   onClose,
   wide,
+  className,
 }: {
   title: string
   children: ReactNode
   onClose?: () => void
   wide?: boolean
+  className?: string
 }) {
   return (
-    <Chrome className={wide === true ? 'w-[28rem]' : 'w-80'}>
+    <Chrome className={`relative ${className ?? (wide === true ? 'w-[28rem]' : 'w-80')}`}>
       <div className="relative px-4 pb-4 pt-2">
         <div className="mb-3 flex h-7 items-center justify-between">
           <div className="font-medium text-ink">{title}</div>
           {onClose !== undefined && (
-            <button type="button" className="border border-ink px-1.5 text-xs text-ink" onClick={onClose}>
+            <button type="button" className="px-1.5 text-xs text-ink hover:bg-dirt" onClick={onClose}>
               ×
             </button>
           )}

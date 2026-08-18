@@ -1,5 +1,7 @@
 # Beta-1 UI
 
+**Historical.** Current law: [[ui/beta-2]], [[ui/place]].
+
 See [[mechanics/beta-1]], [[architecture/beta-1]], [[art/beta-1]].
 
 Chrome: React + Tailwind + Radix. Map: SVG. No inspect. No `Q`. No hotbar. No keys `1–8`.

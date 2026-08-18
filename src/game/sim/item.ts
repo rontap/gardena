@@ -19,6 +19,61 @@ export type Item =
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
 
+export function cropName(id: CropId): string {
+  return id.slice(0, 1).toUpperCase() + id.slice(1)
+}
+
+export function itemLine(item: Item): string {
+  if (item.kind === 'shovel') {
+    const name = item.id === 'shovel' ? 'Shovel' : 'Better shovel'
+    return `${name} - ${item.usesLeft}/${SHOVELS[item.id].uses} uses left`
+  }
+  if (item.kind === 'container') {
+    const name = item.id === 'bucket' ? 'Bucket' : 'Large bucket'
+    return `${name} - ${item.liters}/${item.capacityLiters}L`
+  }
+  if (item.kind === 'box') {
+    if (item.cargo.kind === 'empty') return 'Box - empty'
+    const n = cropName(item.cargo.stack.crop)
+    if (item.cargo.goods === 'seeds') return `Box - ${n} seed ${item.cargo.stack.count}/${item.cap}`
+    return `Box - ${n} ${item.cargo.stack.count}/${item.cap}`
+  }
+  if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
+  return `${cropName(item.crop)} - ${item.count}, sell it`
+}
+
+export function heldText(hand: Hand): string {
+  if (hand.kind === 'empty') return 'Nothing in hand'
+  return itemLine(hand.item)
+}
+
+export function skuLabel(id: SkuId): string {
+  switch (id) {
+    case 'pack-carrot':
+      return 'Carrot seeds'
+    case 'pack-potato':
+      return 'Potato seeds'
+    case 'pack-wheat':
+      return 'Wheat seeds'
+    case 'pack-tomato':
+      return 'Tomato seeds'
+    case 'pack-raspberry':
+      return 'Raspberry seeds'
+    case 'buy-shovel':
+      return 'Shovel'
+    case 'buy-better-shovel':
+      return 'Better shovel'
+    case 'buy-bucket-large':
+      return 'Large bucket'
+    case 'buy-box':
+      return 'Box'
+    case 'buy-box-large':
+      return 'Large box'
+    case 'buy-pumpjack':
+      return 'Pumpjack'
+  }
+}
+
 export function itemTip(item: Item): string {
   if (item.kind === 'shovel') return `${item.id} ${item.usesLeft}`
   if (item.kind === 'container') return `${item.id} ${item.liters}/${item.capacityLiters}L`
@@ -61,10 +116,6 @@ export function skuItem(id: SkuId): Item | { kind: 'pumpjack' } {
       return makeShovel('better-shovel')
     case 'buy-bucket-large':
       return makeContainer('large-bucket', CONTAINERS['large-bucket'].capacityLiters)
-    case 'buy-can':
-      return makeContainer('can', CONTAINERS.can.capacityLiters)
-    case 'buy-can-large':
-      return makeContainer('large-can', CONTAINERS['large-can'].capacityLiters)
     case 'buy-box':
       return makeBox(BOX_SMALL)
     case 'buy-box-large':

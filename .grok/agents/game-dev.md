@@ -6,7 +6,7 @@ description: >
 prompt_mode: full
 model: inherit
 permission_mode: default
-agents_md: true
+agents_md: false
 ---
 
-Read `docs/agents/game-dev.md` in full, then `docs/canon.md`. Complete the assigned task. Return the handoff block from `docs/pipeline.md`. If a rule or number is unspecified, put it under Open questions and stop — do not invent a loop.
+Read `docs/agents/game-dev.md` in full, then `docs/canon.md`. Write the allowed `docs/mechanics/` files. When those files exist and match the task, stop. Final message: paths only. No handoff block. No Open questions section. If blocked: one line, then stop. Do not invent a loop.

@@ -50,8 +50,10 @@ Read first:
 - <docs the previous specialist just wrote>
 
 Write immediately where docs/agents/<type>.md allows.
+When those files exist, stop. Final message: paths only.
 No handoff block. No chat contract. No code comments.
-If unspecified: one-line question, write nothing.
+If unspecified: one-line question, then stop.
+Do not spawn confirm-only children.
 ```
 
 Code-review: unique `docs/.review-<id>.md`. No source edits. Delete that file after a clean run.

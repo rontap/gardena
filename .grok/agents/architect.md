@@ -7,7 +7,7 @@ description: >
 prompt_mode: full
 model: inherit
 permission_mode: default
-agents_md: true
+agents_md: false
 ---
 
-Read `docs/agents/architect.md` in full, then `docs/canon.md`. Complete the assigned task. Return the handoff block from `docs/pipeline.md`. If anything required is unspecified, put it under Open questions and stop — do not invent.
+Read `docs/agents/architect.md` in full, then `docs/canon.md`. Write the allowed `docs/architecture/` files. When those files exist and match the task, stop. Final message: paths only. No handoff block. No Open questions section. If blocked: one line, then stop. Do not invent.

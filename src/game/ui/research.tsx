@@ -1,10 +1,9 @@
-import * as Dialog from '@radix-ui/react-dialog'
 import * as Progress from '@radix-ui/react-progress'
 import * as Tabs from '@radix-ui/react-tabs'
 import { RESEARCH } from '../defs/research.ts'
 import type { ResearchId } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
-import { Frame } from './frame.tsx'
+import { Btn, Dock } from './frame.tsx'
 
 const PLANTS: ResearchId[] = [
   'unlock-tomato',
@@ -14,9 +13,7 @@ const PLANTS: ResearchId[] = [
   'bump-wheat',
 ]
 const UTIL: ResearchId[] = [
-  'unlock-can',
   'unlock-large-bucket',
-  'unlock-large-can',
   'unlock-box',
   'unlock-large-box',
   'unlock-better-shovel',
@@ -25,45 +22,31 @@ const UTIL: ResearchId[] = [
 
 export function Research({ world, onClose }: { world: World; onClose: () => void }) {
   return (
-    <Dialog.Root open modal={false}>
-      <Dialog.Portal>
-        <Dialog.Content
-          className="fixed left-4 top-20 z-20 outline-none"
-          onInteractOutside={e => e.preventDefault()}
-          onEscapeKeyDown={e => e.preventDefault()}
-        >
-          <Frame title="research" onClose={onClose}>
-            <Dialog.Title className="sr-only">research</Dialog.Title>
-            <Tabs.Root defaultValue="plants">
-              <Tabs.List className="mb-2 flex gap-1">
-                <Tabs.Trigger
-                  value="plants"
-                  className="border border-ink px-2 py-1 data-[state=active]:bg-roof data-[state=active]:text-house"
-                >
-                  plants
-                </Tabs.Trigger>
-                <Tabs.Trigger
-                  value="utilities"
-                  className="border border-ink px-2 py-1 data-[state=active]:bg-roof data-[state=active]:text-house"
-                >
-                  utilities
-                </Tabs.Trigger>
-              </Tabs.List>
-              <Tabs.Content value="plants">
-                {PLANTS.map(id => (
-                  <Row key={id} id={id} world={world} />
-                ))}
-              </Tabs.Content>
-              <Tabs.Content value="utilities">
-                {UTIL.map(id => (
-                  <Row key={id} id={id} world={world} />
-                ))}
-              </Tabs.Content>
-            </Tabs.Root>
-          </Frame>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <Dock side="right" title="Research" onClose={onClose}>
+      <Btn className="mb-3 w-full" onClick={() => world.unlockAll()}>
+        unlock all instantly
+      </Btn>
+      <Tabs.Root defaultValue="plants">
+        <Tabs.List className="mb-2 flex gap-1">
+          <Tabs.Trigger value="plants" className="bg-dirt px-2 py-1 text-ink data-[state=active]:bg-dirt-dark">
+            plants
+          </Tabs.Trigger>
+          <Tabs.Trigger value="utilities" className="bg-dirt px-2 py-1 text-ink data-[state=active]:bg-dirt-dark">
+            utilities
+          </Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="plants">
+          {PLANTS.map(id => (
+            <Row key={id} id={id} world={world} />
+          ))}
+        </Tabs.Content>
+        <Tabs.Content value="utilities">
+          {UTIL.map(id => (
+            <Row key={id} id={id} world={world} />
+          ))}
+        </Tabs.Content>
+      </Tabs.Root>
+    </Dock>
   )
 }
 
@@ -73,9 +56,9 @@ function Row({ id, world }: { id: ResearchId; world: World }) {
   const run = world.job.kind === 'run' && world.job.id === id
   const pct = run && world.job.kind === 'run' ? ((d.seconds - world.job.left) / d.seconds) * 100 : done ? 100 : 0
   return (
-    <button
-      type="button"
-      className="mb-1 block w-full border border-ink bg-house px-2 py-1 text-left"
+    <Btn
+      className="mb-1 w-full"
+      disabled={run || done}
       onClick={() => {
         if (!done) world.startResearch(id)
       }}
@@ -88,6 +71,6 @@ function Row({ id, world }: { id: ResearchId; world: World }) {
           <Progress.Indicator className="h-full bg-leaf" style={{ width: `${pct}%` }} />
         </Progress.Root>
       )}
-    </button>
+    </Btn>
   )
 }

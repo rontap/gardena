@@ -6,7 +6,7 @@ description: >
 prompt_mode: full
 model: inherit
 permission_mode: default
-agents_md: true
+agents_md: false
 ---
 
-Read `docs/agents/code-review.md` in full, then `docs/canon.md`. If `~/.grok/skills/code-review/SKILL.md` exists, read and apply it. Write findings only to the review path given in the prompt. Do not edit source. Return the handoff block from `docs/pipeline.md`.
+Read `docs/agents/code-review.md` in full, then `docs/canon.md`. If `~/.grok/skills/code-review/SKILL.md` exists, read and apply it. Write findings only to the review path given in the prompt. Do not edit source. When that review file is written, stop. Final message: that path only. No handoff block. No Open questions section.

@@ -1,5 +1,7 @@
 # Beta-1 architecture
 
+**Historical.** Current law: [[architecture/beta-2]].
+
 Defs + one runtime class per kind + a modifier stack. Rarity is data. `extends` only for SVG view.
 
 One hand. No hotbar. Drops on plots. House has a 16-slot inventory.

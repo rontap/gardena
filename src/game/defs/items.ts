@@ -6,10 +6,8 @@ export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: n
 }
 
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {
-  bucket: { capacityLiters: 2 },
-  'large-bucket': { capacityLiters: 4 },
-  can: { capacityLiters: 5 },
-  'large-can': { capacityLiters: 10 },
+  bucket: { capacityLiters: 3 },
+  'large-bucket': { capacityLiters: 8 },
 }
 
 export const BOX_SMALL = 5

@@ -20,3 +20,4 @@ Read [[canon]] and [[stack]]. Write `docs/architecture/` immediately. No handoff
 2. Types that cannot represent illegal states. See [[canon]].
 3. Name invariants the coder must not runtime-check.
 4. Name the files. Do not create `src/` until asked.
+5. Done when `docs/architecture/` matches the task. Final message: paths only.

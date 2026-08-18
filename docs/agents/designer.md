@@ -24,3 +24,5 @@ Read [[canon]] and [[art/_index]]. Write `docs/art/` and SVGs immediately. No ha
 - One concept per file.
 
 Unspecified style → one-line question, stop.
+
+Done when the named SVGs exist. Final message: paths only.

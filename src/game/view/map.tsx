@@ -1,27 +1,42 @@
 import { memo, useEffect, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
 import { HEALTH } from '../defs/crops.ts'
-import { COLS, DOOR, ROWS, inWorld, type Coord } from '../sim/building.ts'
-import { onCell, type Drop } from '../sim/drop.ts'
-import { itemTip } from '../sim/item.ts'
+import { COLS, DOOR, ROWS, type Coord } from '../sim/building.ts'
+import type { Drop } from '../sim/drop.ts'
 import { isPlot, type Plot } from '../sim/plot.ts'
+import { skuItem } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
-import { TILE, type Camera } from './camera.ts'
-import { ACTOR, GRASS, HOUSE, PUMP, WATER, cropInner, itemInner } from './svgs.ts'
+import { TILE, tileVariant, type Camera } from './camera.ts'
+import { ACTOR, DIRT, GRASS, HOUSE, PUMP, cropInner, itemInner } from './svgs.ts'
+
+const GRASS_FIELD = (() => {
+  let s = ''
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      s += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})">${GRASS[tileVariant(col, row, 5)]}</g>`
+    }
+  }
+  return s
+})()
 
 type Props = {
   world: World
   cam: Camera
   rev: number
+  hover: Coord | undefined
+  onHover: (c: Coord | undefined) => void
   onCam: (c: Camera) => void
   onClickCell: (c: Coord) => void
 }
 
-export function MapView({ world, cam, rev, onCam, onClickCell }: Props) {
+export function MapView({ world, cam, rev, hover, onHover, onCam, onClickCell }: Props) {
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const [view, setView] = useState({ w: 800, h: 600 })
-  const [hover, setHover] = useState<Coord | undefined>(undefined)
   const [ptr, setPtr] = useState({ x: 0, y: 0 })
+  const placing = world.place.kind === 'sku'
+  const prompt = hover !== undefined ? world.prompt(hover) : undefined
+  const canPlace = placing && prompt?.kind === 'place'
+  const ghost = world.place.kind === 'sku' ? skuItem(world.place.id) : undefined
 
   useEffect(() => {
     const el = svgRef.current
@@ -56,17 +71,11 @@ export function MapView({ world, cam, rev, onCam, onClickCell }: Props) {
     onCam({ x: cam.x + px * k, y: cam.y + py * k, scale })
   }
 
-  const prompt = hover !== undefined ? world.prompt(hover) : undefined
-  const dropTip =
-    hover !== undefined && inWorld(hover)
-      ? onCell(world.drops, hover).at(-1)
-      : undefined
-
   return (
-    <div className="relative h-full w-full">
+    <div className="absolute inset-0 overflow-hidden">
       <svg
         ref={svgRef}
-        className="h-full w-full cursor-crosshair bg-grass"
+        className={`h-full w-full overflow-hidden bg-grass ${canPlace ? 'cursor-pointer' : 'cursor-crosshair'}`}
         onWheel={onWheel}
         onContextMenu={e => {
           e.preventDefault()
@@ -93,7 +102,7 @@ export function MapView({ world, cam, rev, onCam, onClickCell }: Props) {
               return
             }
           }
-          setHover(toCell(e))
+          onHover(toCell(e))
         }}
         onPointerUp={e => {
           const d = drag.current
@@ -103,12 +112,13 @@ export function MapView({ world, cam, rev, onCam, onClickCell }: Props) {
           if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
           onClickCell(toCell(e))
         }}
-        onPointerLeave={() => setHover(undefined)}
+        onPointerLeave={() => onHover(undefined)}
       >
         <g
           transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale}) translate(${-cam.x * TILE}, ${-cam.y * TILE})`}
         >
-          <Field world={world} rev={rev} />
+          <Ground />
+          <Marks world={world} rev={rev} />
           {hover !== undefined && (
             <g pointerEvents="none">
               <rect
@@ -117,37 +127,31 @@ export function MapView({ world, cam, rev, onCam, onClickCell }: Props) {
                 width={TILE}
                 height={TILE}
                 fill="none"
-                stroke="#1c1710"
+                className={placing && prompt?.kind !== 'place' ? 'stroke-roof' : 'stroke-ink'}
                 strokeWidth={2}
               />
-              {prompt !== undefined && (
-                <text
-                  x={(hover.col + 0.5) * TILE}
-                  y={hover.row * TILE - 4}
-                  textAnchor="middle"
-                  fill="#1c1710"
-                  fontSize={11}
-                >
-                  {prompt.text}
-                </text>
-              )}
             </g>
           )}
         </g>
       </svg>
-      {dropTip !== undefined && (
-        <div
-          className="pointer-events-none fixed z-20 border border-ink bg-ink px-2 py-1 text-xs text-house"
+      {ghost !== undefined && ghost.kind !== 'pumpjack' && (
+        <svg
+          className="pointer-events-none fixed z-30 h-8 w-8"
           style={{ left: ptr.x + 12, top: ptr.y + 12 }}
-        >
-          {itemTip(dropTip.item)}
-        </div>
+          viewBox="0 0 24 24"
+          dangerouslySetInnerHTML={{ __html: itemInner(ghost) }}
+        />
       )}
     </div>
   )
 }
 
-const Field = memo(function Field({ world, rev }: { world: World; rev: number }) {
+const Ground = memo(function Ground() {
+  return <g dangerouslySetInnerHTML={{ __html: GRASS_FIELD }} />
+})
+
+const Marks = memo(function Marks({ world, rev }: { world: World; rev: number }) {
+  void rev
   const plots: { col: number; row: number; cell: Plot }[] = []
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
@@ -156,26 +160,12 @@ const Field = memo(function Field({ world, rev }: { world: World; rev: number })
     }
   }
   return (
-    <g data-rev={rev}>
-      <defs>
-        <pattern id="untilled-grass" width={TILE * 4} height={TILE * 4} patternUnits="userSpaceOnUse">
-          {[0, 1, 2, 3].flatMap(row =>
-            [0, 1, 2, 3].map(col => (
-              <g
-                key={`${col},${row}`}
-                transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 16})`}
-                dangerouslySetInnerHTML={{ __html: GRASS[(col + row) % 4] }}
-              />
-            )),
-          )}
-        </pattern>
-      </defs>
-      <rect x={0} y={0} width={COLS * TILE} height={ROWS * TILE} fill="url(#untilled-grass)" />
+    <g>
       {plots.map(t => (
         <PlotGfx key={`${t.col},${t.row}`} col={t.col} row={t.row} cell={t.cell} />
       ))}
-      <g transform={`translate(${14 * TILE},0) scale(2)`} dangerouslySetInnerHTML={{ __html: HOUSE }} />
-      <g transform={`translate(${18 * TILE},${TILE}) scale(2)`} dangerouslySetInnerHTML={{ __html: PUMP }} />
+      <g transform={`translate(${14 * TILE},0) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: HOUSE }} />
+      <g transform={`translate(${18 * TILE},${TILE}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: PUMP }} />
       {world.drops.map((d, i) => (
         <DropGfx key={i} drop={d} i={i} />
       ))}
@@ -200,11 +190,12 @@ const Field = memo(function Field({ world, rev }: { world: World; rev: number })
           </text>
         </g>
       )}
+      <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
       <g
-        transform={`translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(2)`}
+        data-actor
+        transform={`translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
         dangerouslySetInnerHTML={{ __html: ACTOR }}
       />
-      <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
     </g>
   )
 })
@@ -212,30 +203,26 @@ const Field = memo(function Field({ world, rev }: { world: World; rev: number })
 function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
   const x = col * TILE
   const y = row * TILE
-  const fill = cell.kind === 'empty' ? '#8a5a32' : '#6b4423'
   const bar = (cell.kind === 'growing' || cell.kind === 'ripe') && cell.plant.thirst < HEALTH
   return (
     <g>
-      <rect x={x} y={y} width={TILE} height={TILE} fill={fill} />
+      <g
+        transform={`translate(${x},${y}) scale(${TILE / 24})`}
+        dangerouslySetInnerHTML={{ __html: DIRT[tileVariant(col, row, 2)] }}
+      />
       {(cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') && (
         <g
-          transform={`translate(${x},${y}) scale(${TILE / 16})`}
+          transform={`translate(${x},${y}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{
             __html: cropInner(cell.plant.crop, cell.plant.stage(cell.kind)),
           }}
-        />
-      )}
-      {(cell.kind === 'growing' || cell.kind === 'ripe') && cell.plant.thirsty && (
-        <g
-          transform={`translate(${x},${y}) scale(${TILE / 16})`}
-          opacity={cell.plant.critical ? 1 : 0.7}
-          dangerouslySetInnerHTML={{ __html: WATER }}
         />
       )}
       {bar && (cell.kind === 'growing' || cell.kind === 'ripe') && (
         <g>
           <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
+            data-thirst={`${col},${row}`}
             x={x + 3}
             y={y + TILE - 5}
             width={(TILE - 6) * cell.plant.thirst}
@@ -250,10 +237,10 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
 
 function DropGfx({ drop, i }: { drop: Drop; i: number }) {
   const n = i % 4
-  const s = 22
+  const s = 33
   return (
     <g
-      transform={`translate(${drop.at.col * TILE + 4 + (n % 2) * 6},${drop.at.row * TILE + 4 + Math.floor(n / 2) * 6}) scale(${s / 16})`}
+      transform={`translate(${drop.at.col * TILE + 4 + (n % 2) * 6},${drop.at.row * TILE + 4 + Math.floor(n / 2) * 6}) scale(${s / 24})`}
       dangerouslySetInnerHTML={{ __html: itemInner(drop.item) }}
     />
   )

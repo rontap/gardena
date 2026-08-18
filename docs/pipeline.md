@@ -29,7 +29,11 @@ Specialists write their allowed `.md` (and assets/src if allowed) **immediately*
 
 No Intent / Assumptions / Artifacts / Open questions / Handoff block. Next agent reads the notes, not chat.
 
-If blocked: write nothing, tell the orchestrator the question in one line.
+If blocked: one-line question, then **stop**. Do not keep reading.
+
+Done: allowed files written → stop. Final chat line is paths only.
+
+There is no handoff block. `.grok/agents/*` must not ask for one. Confirm-only / “write nothing if complete” tasks are forbidden — the child has no exit.
 
 Invented scope or a just-in-case fallback is a failed run. Reject. Do not silently repair.
 

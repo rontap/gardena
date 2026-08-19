@@ -1,14 +1,16 @@
 import type { World } from '../sim/world.ts'
-import { Btn, Dock } from './frame.tsx'
+import { Btn, Coin, Dock } from './frame.tsx'
 
 export function Market({ world, onClose }: { world: World; onClose: () => void }) {
   const offer = world.saleOffer()
   return (
-    <Dock side="right" title="Market" onClose={onClose}>
+    <Dock title="Market" onClose={onClose}>
       {offer.kind === 'ok' ? (
         <div className="flex flex-col gap-3">
           <div>
-            {offer.label} ${offer.money}
+            <span className="inline-flex items-center gap-1">
+              {offer.label} <Coin n={offer.money} />
+            </span>
           </div>
           <Btn
             className="w-full"

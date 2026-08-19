@@ -1,14 +1,16 @@
 import { CRITICAL, PLANT_THIRST, WITHER } from '../defs/crops.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import { HAPPY_START, type Rarity } from '../defs/rarity.ts'
 import type { CropId } from './ids.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 
 export class Plant {
   maturity = 0
   thirst = PLANT_THIRST
+  freshness = 1
+  happiness = HAPPY_START
 
   readonly crop: CropId
-  readonly rarity: Rarity
+  rarity: Rarity
 
   constructor(crop: CropId, rarity: Rarity) {
     this.crop = crop

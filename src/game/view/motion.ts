@@ -1,6 +1,7 @@
 import { RESEARCH } from '../defs/research.ts'
 import type { World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
+import { UI_PHASE } from './svgs.ts'
 
 export function paintMotion(root: HTMLElement, world: World): void {
   const actor = root.querySelector('[data-actor]')
@@ -11,7 +12,12 @@ export function paintMotion(root: HTMLElement, world: World): void {
     )
   }
   const clock = root.querySelector('[data-clock]')
-  if (clock !== null) clock.textContent = `day ${world.clock.day} · ${Math.floor(world.clock.remaining)}s`
+  if (clock !== null) {
+    clock.textContent = `day ${world.clock.day}`
+    clock.setAttribute('data-clock-t', String(Math.floor(world.clock.t)))
+  }
+  const phase = root.querySelector('[data-phase]')
+  if (phase !== null) phase.innerHTML = UI_PHASE[world.clock.phase()]
   const job = world.job
   const research = root.querySelector('[data-research]')
   if (research instanceof HTMLElement) {
@@ -19,7 +25,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       research.hidden = false
       const def = RESEARCH[job.id]
       const left = research.querySelector('[data-research-left]')
-      if (left !== null) left.textContent = `${def.name} ${Math.floor(job.left)}s`
+      if (left !== null) left.textContent = def.name
       const bar = research.querySelector('[data-research-bar]')
       if (bar instanceof HTMLElement) bar.style.width = `${((def.seconds - job.left) / def.seconds) * 100}%`
     } else {
@@ -51,7 +57,15 @@ export function paintMotion(root: HTMLElement, world: World): void {
     if (at === null) return
     const [cs, rs] = at.split(',')
     const cell = world.cell({ col: Number(cs), row: Number(rs) })
-    if (cell.kind !== 'growing' && cell.kind !== 'ripe') return
+    if (cell.kind !== 'growing') return
     if (el instanceof SVGRectElement) el.setAttribute('width', String((TILE - 6) * cell.plant.thirst))
+  })
+  root.querySelectorAll('[data-fresh]').forEach(el => {
+    const at = el.getAttribute('data-fresh')
+    if (at === null) return
+    const [cs, rs] = at.split(',')
+    const cell = world.cell({ col: Number(cs), row: Number(rs) })
+    if (cell.kind !== 'ripe') return
+    if (el instanceof SVGRectElement) el.setAttribute('width', String((TILE - 6) * cell.plant.freshness))
   })
 }

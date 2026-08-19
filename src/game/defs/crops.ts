@@ -1,3 +1,4 @@
+import type { Rarity } from './rarity.ts'
 import type { CropId } from '../sim/ids.ts'
 
 export type CropDef = {
@@ -6,14 +7,33 @@ export type CropDef = {
   waterUsePerSec: number
   sale: number
   seed: number
+  rotSeconds: number
 }
 
 export const CROPS: { readonly [K in CropId]: CropDef } = {
-  carrot: { id: 'carrot', growSeconds: 45, waterUsePerSec: 0.008333, sale: 4, seed: 2 },
-  potato: { id: 'potato', growSeconds: 60, waterUsePerSec: 0.007333, sale: 7, seed: 3 },
-  wheat: { id: 'wheat', growSeconds: 75, waterUsePerSec: 0.006, sale: 10, seed: 5 },
-  tomato: { id: 'tomato', growSeconds: 90, waterUsePerSec: 0.009333, sale: 14, seed: 7 },
-  raspberry: { id: 'raspberry', growSeconds: 120, waterUsePerSec: 0.01, sale: 20, seed: 10 },
+  carrot: { id: 'carrot', growSeconds: 103.5, waterUsePerSec: 0.004889, sale: 4, seed: 1, rotSeconds: 480 },
+  potato: { id: 'potato', growSeconds: 184, waterUsePerSec: 0.00375, sale: 8, seed: 2, rotSeconds: 480 },
+  wheat: { id: 'wheat', growSeconds: 276, waterUsePerSec: 0.003333, sale: 14, seed: 2, rotSeconds: 480 },
+  tomato: { id: 'tomato', growSeconds: 345, waterUsePerSec: 0.003111, sale: 18, seed: 3, rotSeconds: 300 },
+  raspberry: { id: 'raspberry', growSeconds: 414, waterUsePerSec: 0.003333, sale: 24, seed: 4, rotSeconds: 158.4 },
+  watermelon: { id: 'watermelon', growSeconds: 345, waterUsePerSec: 0.013333, sale: 19, seed: 4, rotSeconds: 360 },
+}
+
+const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = {
+  carrot: { common: 'Carrot', uncommon: 'Carrot', rare: 'Atomic Red', heirloom: 'Cosmic Purple' },
+  potato: { common: 'Potato', uncommon: 'Potato', rare: 'Adirondack Blue', heirloom: 'Russian Banana' },
+  wheat: { common: 'Wheat', uncommon: 'Wheat', rare: 'Black emmer', heirloom: 'Red Fife' },
+  tomato: { common: 'Tomato', uncommon: 'Tomato', rare: 'Cherokee Purple', heirloom: 'Green Zebra' },
+  raspberry: { common: 'Raspberry', uncommon: 'Raspberry', rare: 'Golden raspberry', heirloom: 'Black raspberry' },
+  watermelon: { common: 'Watermelon', uncommon: 'Watermelon', rare: 'Yellow Crimson', heirloom: 'Moon and Stars' },
+}
+
+export function cropVariety(id: CropId, rarity: Rarity): string {
+  return VARIETY[id][rarity]
+}
+
+export function freshMul(f: number): number {
+  return f >= 0.8 ? 1 : f / 0.8
 }
 
 export const WITHER = 0.33

@@ -1,15 +1,19 @@
 import { describe, expect, test } from 'vitest'
-import { CROPS, PLANT_THIRST } from '../defs/crops.ts'
+import { CROPS, freshMul, PLANT_THIRST } from '../defs/crops.ts'
 import { CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK } from '../defs/items.ts'
-import { BERRY_SALE, RARITY_SALE, RARITY_WEIGHT } from '../defs/rarity.ts'
+import { BERRY_SALE, HAPPY_START, RARITY_SALE, RARITY_WEIGHT, rarityOdds, rollGrowRarity, stepRarity } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import type { ResearchId } from './ids.ts'
+import type { ResearchId, SkuId } from './ids.ts'
 import { Chest, Grinder, HOUSE_BASE, PUMP_BASE, occupiedCells } from './building.ts'
-import { itemLine, makePickaxe, makeShovel, skuLabel } from './item.ts'
+import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
 import { Plant } from './plant.ts'
+import { aoe, junction, type Edge } from './pipe.ts'
 import { Rock, Shrub } from './building.ts'
 import { hash } from './rng.ts'
+import { Clock, days } from './clock.ts'
 import { World } from './world.ts'
+import { AUTOMATION } from '../ui/shop.tsx'
+import { qualityPip } from '../view/svgs.ts'
 
 const HOME = [{ cx: 0, cy: 0 }]
 const AT = { col: 10, row: 12 }
@@ -40,7 +44,7 @@ describe('beta-1 invariants', () => {
     const g = new Plant('carrot', 'common')
     g.thirst = 0.001
     w.setCell(AT, { kind: 'growing', plant: g })
-    for (let n = 0; n < 5; n++) w.tick(1)
+    for (let n = 0; n < 20; n++) w.tick(1)
     expect(w.cell(AT).kind).toBe('dead')
     const r = new Plant('carrot', 'common')
     r.maturity = 1
@@ -102,7 +106,7 @@ describe('beta-1 invariants', () => {
     w.buy('buy-pumpjack')
     expect(w.pump.outputLitersPerSec).toBe(2)
     w.money = 50
-    w.done.add('unlock-pumpjack')
+    w.done.add('unlock-irrigation')
     w.buy('buy-pumpjack')
     expect(w.place.kind).toBe('sku')
     expect(w.pump.outputLitersPerSec).toBe(2)
@@ -192,9 +196,9 @@ describe('beta-2 invariants', () => {
       kind: 'hold',
       item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 10 },
     })
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 2 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 2, unitSale: 4 } }
     w.swap(1)
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
     w.swap(2)
     expectPacked(w)
     const fruits = w.inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
@@ -208,10 +212,12 @@ describe('beta-2 invariants', () => {
   test('sellSlot fruit pays count and leaves hand', () => {
     const w = new World()
     const hand = w.hand
-    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3 } }
+    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
+    w.inventory[1] = { kind: 'empty' }
+    w.inventory[2] = { kind: 'empty' }
     const before = w.money
     w.sellSlot(0)
-    expect(w.money).toBe(before + new Plant('carrot', 'common').stats(w.modifiers).sale * 3)
+    expect(w.money).toBe(before + 4 * 3)
     expect(w.inventory[0].kind).toBe('empty')
     expect(w.hand).toEqual(hand)
   })
@@ -263,7 +269,7 @@ describe('beta-2 invariants', () => {
     expect(RESEARCH['bump-wheat']).toMatchObject({ cost: 12, seconds: 45 })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
     expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 17, seconds: 50 })
-    expect(RESEARCH['unlock-pumpjack']).toMatchObject({ cost: 20, seconds: 60 })
+    expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 20, seconds: 50 })
     expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 15, seconds: 45 })
     expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 0, seconds: 40 })
   })
@@ -448,7 +454,11 @@ describe('beta-3 invariants', () => {
     w.actor.y = 12.5
     w.click(AT)
     for (let i = 0; i < 12; i++) w.tick(1 / 15)
-    expect(w.hand.kind === 'hold' && w.hand.item.kind).toBe('berry')
+    {
+      const h = readHand(w)
+      expect(h.kind).toBe('hold')
+      expect(h.kind === 'hold' ? h.item.kind : undefined).toBe('berry')
+    }
     expect(w.cell(AT).kind === 'shrub' && (w.cell(AT) as Shrub).ripe).toBe(false)
     w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
     ;(w.cell(AT) as Shrub).ripe = true
@@ -531,7 +541,7 @@ describe('beta-4 invariants', () => {
     const u = hash(7, 'grind', AT.col, AT.row, 1, 0)
     expect(countA).toBe(GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1)))
     const w = grindWorld(7)
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28 } }
     w.click(AT)
     for (let i = 0; i < 50; i++) w.tick(1 / 15)
     const slot = w.inventory.find(
@@ -551,7 +561,7 @@ describe('beta-4 invariants', () => {
       item: {
         kind: 'box',
         cap: 5,
-        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n } },
+        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5 } },
       },
     }
     w.click(AT)
@@ -592,7 +602,7 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['bump-wheat'].name).toBe('Better wheat')
     expect(RESEARCH['unlock-better-tools'].name).toBe('Better gardening tools')
     expect(RESEARCH['unlock-large-box'].name).toBe('Large fruit box')
-    expect(RESEARCH['unlock-pumpjack'].name).toBe('Pumpjack')
+    expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
     expect(RESEARCH['unlock-chest'].name).toBe('Chest')
     expect(RESEARCH['unlock-expand'].name).toBe('Unlock land')
     expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
@@ -602,14 +612,14 @@ describe('beta-4 invariants', () => {
 
   test('itemLine fruit berry sell-for equals sellSlot', () => {
     const w = new World()
-    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3 } }
+    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
     const fruitLine = itemLine(
       w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
       w.modifiers,
     )
     const before = w.money
     w.sellSlot(0)
-    expect(fruitLine).toBe(`Carrot - 3, sell for $${w.money - before}`)
+    expect(fruitLine).toBe(`Carrot - 3, sell for ${w.money - before}`)
     w.inventory[0] = { kind: 'hold', item: { kind: 'berry', rarity: 'uncommon', count: 2 } }
     const berryLine = itemLine(
       w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
@@ -617,7 +627,7 @@ describe('beta-4 invariants', () => {
     )
     const mid = w.money
     w.sellSlot(0)
-    expect(berryLine).toBe(`Berry - 2, sell for $${w.money - mid}`)
+    expect(berryLine).toBe(`Berry - 2, sell for ${w.money - mid}`)
   })
 
   test('infertile prompt is does not need seeds', () => {
@@ -659,6 +669,537 @@ describe('beta-4 invariants', () => {
   })
 })
 
+describe('beta-5 invariants', () => {
+  test('buy-pipe 4; two adjacent owned edges stay armed one system', () => {
+    expect(SKUS['buy-pipe'].price).toBe(4)
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 50
+    w.buy('buy-pipe')
+    expect(w.place).toEqual({ kind: 'sku', id: 'buy-pipe' })
+    const e1: Edge = { axis: 'h', col: 10, row: 12 }
+    const e2: Edge = { axis: 'h', col: 11, row: 12 }
+    w.placePipe(e1)
+    w.placePipe(e2)
+    expect(w.place).toEqual({ kind: 'sku', id: 'buy-pipe' })
+    expect(w.hasPipe(e1)).toBe(true)
+    expect(w.hasPipe(e2)).toBe(true)
+    expect(w.money).toBe(42)
+    expect(w.system(e1)).toEqual(w.system(e2))
+  })
+
+  test('junction classification', () => {
+    const v = { col: 10, row: 12 }
+    const hL: Edge = { axis: 'h', col: 9, row: 12 }
+    const hR: Edge = { axis: 'h', col: 10, row: 12 }
+    const vD: Edge = { axis: 'v', col: 10, row: 12 }
+    expect(junction(v, e => sameEdge(e, hL))).toBe('stub')
+    expect(junction(v, e => sameEdge(e, hL) || sameEdge(e, hR))).toBe('I')
+    expect(junction(v, e => sameEdge(e, hL) || sameEdge(e, vD))).toBe('L')
+    expect(junction(v, e => sameEdge(e, hL) || sameEdge(e, hR) || sameEdge(e, vD))).toBe('T')
+    expect(junction(v, () => true)).toBe('X')
+  })
+
+  test('prices outputs starter C', () => {
+    expect(SKUS['buy-pumpjack'].price).toBe(40)
+    expect(SKUS['buy-well'].price).toBe(75)
+    const w = new World()
+    w.done.add('unlock-adv-irrigation')
+    w.money = 200
+    w.buy('buy-well')
+    const at = { col: 10, row: 12 }
+    w.setCell(at, { kind: 'empty' })
+    w.confirmPlace(at)
+    const well = w.cell(at)
+    expect(well.kind).toBe('pump')
+    if (well.kind === 'pump') {
+      expect(well.form).toBe('well')
+      expect(well.outputLitersPerSec).toBe(5)
+      expect(well.base).toEqual({ shape: 'rect', col: 10, row: 12, w: 1, h: 1 })
+    }
+    w.done.add('unlock-auto-irrigation')
+    w.buy('buy-pipe')
+    const edge: Edge = { axis: 'h', col: 18, row: 7 }
+    w.placePipe(edge)
+    expect(w.system(edge).C).toBe(2)
+  })
+
+  test('one jack + five sprinklers each rate 0.4', () => {
+    const w = new World()
+    w.done.add('unlock-irrigation')
+    w.done.add('unlock-auto-irrigation')
+    w.money = 500
+    w.buy('buy-pumpjack')
+    const at = { col: 5, row: 20 }
+    w.setCell(at, { kind: 'empty' })
+    w.setCell({ col: 6, row: 20 }, { kind: 'empty' })
+    w.confirmPlace(at)
+    w.buy('buy-pipe')
+    ;[5, 6, 7, 8, 9].forEach(col => {
+      w.placePipe({ axis: 'h', col, row: 20 })
+    })
+    w.buy('buy-sprinkler')
+    ;[5, 6, 7, 8, 9].forEach(col => {
+      w.placeSprinkler({ variant: 'basic', at: { col, row: 20 } })
+    })
+    ;[5, 6, 7, 8, 9].forEach(col => {
+      expect(w.rate({ col, row: 20 })).toBe(0.4)
+    })
+  })
+
+  test('pipes no source rate 0', () => {
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 100
+    w.buy('buy-pipe')
+    const e: Edge = { axis: 'h', col: 10, row: 20 }
+    w.placePipe(e)
+    w.buy('buy-sprinkler')
+    w.placeSprinkler({ variant: 'basic', at: { col: 10, row: 20 } })
+    expect(w.rate({ col: 10, row: 20 })).toBe(0)
+  })
+
+  test('research names trees reveal', () => {
+    expect(RESEARCH['unlock-watermelon']).toMatchObject({
+      name: 'Watermelon seeds',
+      tree: 'plants',
+      reveal: 'start',
+    })
+    expect(RESEARCH['unlock-irrigation']).toMatchObject({
+      name: 'Irrigation',
+      tree: 'automation',
+      reveal: 'start',
+    })
+    expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({
+      name: 'Automated irrigation',
+      tree: 'automation',
+      reveal: 'unlock-irrigation',
+    })
+    expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({
+      name: 'Advanced irrigation',
+      tree: 'automation',
+      reveal: 'unlock-auto-irrigation',
+    })
+    expect(Object.keys(RESEARCH).includes('unlock-pumpjack')).toBe(false)
+    const w = new World()
+    w.done.add('unlock-irrigation')
+    expect(w.skuShown('buy-sprinkler')).toBe(true)
+    expect(w.skuOpen('buy-sprinkler')).toBe(false)
+    w.done.add('unlock-auto-irrigation')
+    expect(w.skuOpen('buy-sprinkler')).toBe(true)
+  })
+
+  test('watermelon waterUse pack research', () => {
+    expect(CROPS.watermelon.waterUsePerSec).toBe(0.013333)
+    expect(SKUS['pack-watermelon'].price).toBe(18)
+    expect(RESEARCH['unlock-watermelon']).toMatchObject({ cost: 8, seconds: 35, tree: 'plants' })
+  })
+
+  test('delete no money change; pumpjack remains', () => {
+    const w = new World()
+    w.done.add('unlock-irrigation')
+    w.done.add('unlock-auto-irrigation')
+    w.done.add('unlock-grinder')
+    w.money = 200
+    w.buy('buy-pumpjack')
+    const at = { col: 10, row: 12 }
+    w.setCell(at, { kind: 'empty' })
+    w.setCell({ col: 11, row: 12 }, { kind: 'empty' })
+    w.confirmPlace(at)
+    expect(w.cell(at).kind).toBe('pump')
+    w.buy('buy-pipe')
+    const e: Edge = { axis: 'h', col: 10, row: 12 }
+    w.placePipe(e)
+    w.buy('buy-sprinkler')
+    const v = { col: 10, row: 12 }
+    w.placeSprinkler({ variant: 'basic', at: v })
+    w.buy('buy-grinder')
+    const g = { col: 8, row: 12 }
+    w.setCell(g, { kind: 'empty' })
+    w.confirmPlace(g)
+    w.armDelete()
+    const money = w.money
+    w.deletePipe(e)
+    expect(w.money).toBe(money)
+    expect(w.hasPipe(e)).toBe(false)
+    w.deleteSprinkler(v)
+    expect(w.money).toBe(money)
+    expect(w.sprinklerAt(v)).toBeUndefined()
+    w.deleteBuilding(g)
+    expect(w.money).toBe(money)
+    expect(w.cell(g).kind).toBe('empty')
+    expect(w.cell(at).kind).toBe('pump')
+    expect(w.pumps).toHaveLength(2)
+  })
+
+  test('aoe formulas', () => {
+    const v = { col: 10, row: 12 }
+    expect(sorted(aoe({ variant: 'basic', at: v }))).toEqual(
+      sorted([
+        { col: 9, row: 11 },
+        { col: 10, row: 11 },
+        { col: 9, row: 12 },
+        { col: 10, row: 12 },
+      ]),
+    )
+    expect(sorted(aoe({ variant: 'large', at: v }))).toEqual(
+      sorted(
+        [-2, -1, 0, 1].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
+      ),
+    )
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ns' }))).toEqual(
+      sorted(
+        [-2, -1, 0, 1].flatMap(dr => [-1, 0].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
+      ),
+    )
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ew' }))).toEqual(
+      sorted(
+        [-1, 0].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
+      ),
+    )
+  })
+
+  test('growing thirst 1 stays 1; ripe unchanged', () => {
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 100
+    w.buy('buy-pipe')
+    w.placePipe({ axis: 'h', col: 18, row: 7 })
+    w.buy('buy-sprinkler')
+    w.placeSprinkler({ variant: 'basic', at: { col: 19, row: 7 } })
+    const growAt = { col: 18, row: 6 }
+    const ripeAt = { col: 19, row: 6 }
+    const g = new Plant('carrot', 'common')
+    g.thirst = 1
+    w.setCell(growAt, { kind: 'growing', plant: g })
+    const r = new Plant('carrot', 'common')
+    r.thirst = 0.7
+    r.maturity = 1
+    w.setCell(ripeAt, { kind: 'ripe', plant: r })
+    w.tick(1 / 15)
+    expect(g.thirst).toBe(1)
+    expect(r.thirst).toBe(0.7)
+  })
+
+  test('place basic, no incident pipe, succeeds, rate 0', () => {
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 100
+    w.buy('buy-sprinkler')
+    const v = { col: 10, row: 12 }
+    w.placeSprinkler({ variant: 'basic', at: v })
+    expect(w.sprinklerAt(v)).toEqual({ variant: 'basic', at: v })
+    expect(w.rate(v)).toBe(0)
+  })
+
+  test('isolated sprinkler then source-touching pipe at vertex', () => {
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 100
+    w.buy('buy-sprinkler')
+    const v = { col: 19, row: 7 }
+    w.placeSprinkler({ variant: 'basic', at: v })
+    expect(w.rate(v)).toBe(0)
+    w.buy('buy-pipe')
+    const e: Edge = { axis: 'h', col: 18, row: 7 }
+    w.placePipe(e)
+    const sys = w.system(e)
+    expect(w.rate(v)).toBe(Math.min(0.5, sys.C / sys.N))
+  })
+
+  test('growing in AoE R>0 thirst not below dry trajectory', () => {
+    const w = new World()
+    w.done.add('unlock-auto-irrigation')
+    w.money = 100
+    w.buy('buy-pipe')
+    w.placePipe({ axis: 'h', col: 18, row: 7 })
+    w.buy('buy-sprinkler')
+    const v = { col: 19, row: 7 }
+    w.placeSprinkler({ variant: 'basic', at: v })
+    const growAt = { col: 18, row: 6 }
+    const g = new Plant('carrot', 'common')
+    g.thirst = 0.5
+    w.setCell(growAt, { kind: 'growing', plant: g })
+    const r = w.rate(v)
+    expect(r).toBeGreaterThan(0)
+    const start = g.thirst
+    const dt = 1 / 15
+    const dry = start - g.stats(w.modifiers).waterUsePerSec * dt
+    w.tick(dt)
+    expect(g.thirst).toBeGreaterThanOrEqual(dry)
+    if (start < 1 && r > 0) {
+      expect(g.thirst > start || g.thirst === 1).toBe(true)
+    }
+  })
+})
+
+describe('beta-6 invariants', () => {
+  test('pack prices and CROPS match the table', () => {
+    expect(CROPS.carrot).toMatchObject({
+      growSeconds: 103.5,
+      waterUsePerSec: 0.004889,
+      sale: 4,
+      seed: 1,
+      rotSeconds: 480,
+    })
+    expect(CROPS.potato).toMatchObject({
+      growSeconds: 184,
+      waterUsePerSec: 0.00375,
+      sale: 8,
+      seed: 2,
+      rotSeconds: 480,
+    })
+    expect(CROPS.wheat).toMatchObject({
+      growSeconds: 276,
+      waterUsePerSec: 0.003333,
+      sale: 14,
+      seed: 2,
+      rotSeconds: 480,
+    })
+    expect(CROPS.tomato).toMatchObject({
+      growSeconds: 345,
+      waterUsePerSec: 0.003111,
+      sale: 18,
+      seed: 3,
+      rotSeconds: 300,
+    })
+    expect(CROPS.watermelon).toMatchObject({
+      growSeconds: 345,
+      waterUsePerSec: 0.013333,
+      sale: 19,
+      seed: 4,
+      rotSeconds: 360,
+    })
+    expect(CROPS.raspberry).toMatchObject({
+      growSeconds: 414,
+      waterUsePerSec: 0.003333,
+      sale: 24,
+      seed: 4,
+      rotSeconds: 158.4,
+    })
+    expect(SKUS['pack-carrot'].price).toBe(3)
+    expect(SKUS['pack-potato'].price).toBe(6)
+    expect(SKUS['pack-wheat'].price).toBe(10)
+    expect(SKUS['pack-tomato'].price).toBe(15)
+    expect(SKUS['pack-watermelon'].price).toBe(18)
+    expect(SKUS['pack-raspberry'].price).toBe(22)
+  })
+
+  test('ripe plant freshness starts 1 then rots', () => {
+    const w = new World()
+    const p = new Plant('raspberry', 'common')
+    w.setCell(AT, { kind: 'ripe', plant: p })
+    expect(p.freshness).toBe(1)
+    const rot = CROPS.raspberry.rotSeconds
+    for (let t = 0; t < rot; t += 1 / 15) {
+      if (w.seam.kind === 'recap') w.dismissRecap()
+      w.tick(1 / 15)
+    }
+    expect(w.cell(AT).kind).toBe('rotten')
+  })
+
+  test('harvest bakes unitSale from freshness', () => {
+    const w = new World()
+    w.hand = { kind: 'empty' }
+    w.actor.x = AT.col + 0.5
+    w.actor.y = AT.row + 0.5
+    const sale = new Plant('carrot', 'common').stats(w.modifiers).sale
+    const a = new Plant('carrot', 'common')
+    a.freshness = 1
+    w.setCell(AT, { kind: 'ripe', plant: a })
+    w.click(AT)
+    for (let i = 0; i < 20; i++) w.tick(1 / 15)
+    {
+      const h = readHand(w)
+      expect(h.kind).toBe('hold')
+      expect(h.kind === 'hold' && h.item.kind === 'fruit' ? h.item.unitSale : undefined).toBe(sale)
+    }
+    expect(freshMul(0.8)).toBe(1)
+    expect(freshMul(0.4)).toBe(0.5)
+    w.hand = { kind: 'empty' }
+    const b = new Plant('carrot', 'common')
+    b.freshness = 0.4
+    w.setCell(AT, { kind: 'ripe', plant: b })
+    w.click(AT)
+    for (let i = 0; i < 20; i++) {
+      const cell = w.cell(AT)
+      if (cell.kind === 'ripe') cell.plant.freshness = 0.4
+      w.tick(1 / 15)
+    }
+    {
+      const h = readHand(w)
+      expect(h.kind).toBe('hold')
+      expect(h.kind === 'hold' && h.item.kind === 'fruit' ? h.item.unitSale : undefined).toBe(sale * 0.5)
+    }
+  })
+
+  test('fruit merge weighted unitSale', () => {
+    const w = new World()
+    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4 } }
+    w.inventory[1] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 6 } }
+    w.compactInventory()
+    const slot = w.inventory[0]
+    expect(slot.kind === 'hold' && slot.item.kind === 'fruit' && slot.item.unitSale).toBe(5)
+    expect(slot.kind === 'hold' && slot.item.kind === 'fruit' && slot.item.count).toBe(2)
+    if (slot.kind === 'hold' && slot.item.kind === 'fruit') expect(fruitMoney(slot.item)).toBe(10)
+  })
+
+  test('buy-delete is not a SkuId; shop automation has no Delete', () => {
+    expect((Object.keys(SKUS) as string[]).includes('buy-delete')).toBe(false)
+    expect(AUTOMATION.includes('buy-delete' as SkuId)).toBe(false)
+    expect(AUTOMATION.some(id => skuLabel(id) === 'Delete')).toBe(false)
+  })
+
+  test('delete pumpjack money unchanged both empty starter remains', () => {
+    const w = new World()
+    w.done.add('unlock-irrigation')
+    w.money = 200
+    w.buy('buy-pumpjack')
+    w.setCell(AT, { kind: 'empty' })
+    w.setCell({ col: 11, row: 12 }, { kind: 'empty' })
+    w.confirmPlace(AT)
+    expect(w.cell(AT).kind).toBe('pump')
+    expect(w.cell({ col: 11, row: 12 }).kind).toBe('pump')
+    const starter = { col: 18, row: 7 }
+    expect(w.cell(starter).kind).toBe('pump')
+    w.armDelete()
+    const money = w.money
+    w.deleteBuilding(AT)
+    expect(w.money).toBe(money)
+    expect(w.cell(AT).kind).toBe('empty')
+    expect(w.cell({ col: 11, row: 12 }).kind).toBe('empty')
+    expect(w.cell(starter).kind).toBe('pump')
+    expect(w.pumps).toHaveLength(1)
+    expect(w.pumps[0].form).toBe('starter')
+  })
+
+  test('delete chest drops items; house delete is no-op', () => {
+    const w = new World()
+    w.done.add('unlock-chest')
+    w.money = 200
+    w.buy('buy-chest')
+    w.setCell(AT, { kind: 'empty' })
+    w.confirmPlace(AT)
+    const chest = w.cell(AT)
+    expect(chest.kind).toBe('chest')
+    if (chest.kind !== 'chest') return
+    chest.slots[0] = { kind: 'hold', item: { kind: 'shrub' } }
+    chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
+    w.armDelete()
+    const n = w.drops.length
+    w.deleteBuilding(AT)
+    expect(w.cell(AT).kind).toBe('empty')
+    expect(w.drops).toHaveLength(n + 2)
+    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'shrub')).toBe(true)
+    const house = { col: 14, row: 6 }
+    expect(w.cell(house).kind).toBe('house')
+    w.deleteBuilding(house)
+    expect(w.cell(house).kind).toBe('house')
+    w.click(house)
+    expect(w.cell(house).kind).toBe('house')
+  })
+
+  test('rotten shovel empties no drop; pickaxe and empty hand do not', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'rotten' })
+    w.hand = { kind: 'hold', item: makePickaxe('pickaxe') }
+    w.actor.x = AT.col + 0.5
+    w.actor.y = AT.row + 0.5
+    const drops = w.drops.length
+    w.click(AT)
+    expect(w.cell(AT).kind).toBe('rotten')
+    w.hand = { kind: 'empty' }
+    w.click(AT)
+    expect(w.cell(AT).kind).toBe('rotten')
+    while (w.queue.length > 0) w.tick(1 / 15)
+    w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
+    w.click(AT)
+    w.tick(0.05)
+    expect(w.cell(AT).kind).toBe('empty')
+    expect(w.drops).toHaveLength(drops)
+  })
+
+  test('qualityPip uncommon+ only', () => {
+    expect(qualityPip('common')).toBeUndefined()
+    expect(qualityPip('uncommon')).toBeTruthy()
+    expect(qualityPip('rare')).toBeTruthy()
+    expect(qualityPip('heirloom')).toBeTruthy()
+  })
+
+  test('different rarity seeds do not merge', () => {
+    const w = new World()
+    w.inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
+    w.inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'rare', count: 3 } }
+    w.compactInventory()
+    const a = w.inventory[0]
+    const b = w.inventory[1]
+    expect(a.kind === 'hold' && a.item.kind === 'seeds' && a.item.rarity).toBe('common')
+    expect(a.kind === 'hold' && a.item.kind === 'seeds' && a.item.count).toBe(2)
+    expect(b.kind === 'hold' && b.item.kind === 'seeds' && b.item.rarity).toBe('rare')
+    expect(b.kind === 'hold' && b.item.kind === 'seeds' && b.item.count).toBe(3)
+  })
+
+  test('phase at t=0/60/156/216', () => {
+    const c = new Clock()
+    expect(c.phase()).toBe('sunrise')
+    c.t = 60
+    expect(c.phase()).toBe('day')
+    c.t = 156
+    expect(c.phase()).toBe('sunset')
+    c.t = 216
+    expect(c.phase()).toBe('twilight')
+  })
+
+  test('days display', () => {
+    expect(days(90).toFixed(2)).toBe('0.38')
+    expect(Number(days(360).toFixed(2))).toBe(1.5)
+  })
+
+  test('wilted plant drinks half; growing wet plant still grows', () => {
+    const w = new World()
+    const wilt = new Plant('carrot', 'common')
+    wilt.thirst = 0.2
+    w.setCell(AT, { kind: 'growing', plant: wilt })
+    const wetAt = { col: 11, row: 12 }
+    const wet = new Plant('carrot', 'common')
+    wet.thirst = 1
+    w.setCell(wetAt, { kind: 'growing', plant: wet })
+    const use = wilt.stats(w.modifiers).waterUsePerSec
+    const dt = 1 / 15
+    w.tick(1)
+    expect(wilt.thirst).toBeCloseTo(0.2 - use * 0.5 * dt, 6)
+    expect(wilt.maturity).toBe(0)
+    expect(wet.maturity).toBeGreaterThan(0)
+    expect(wet.maturity).toBeCloseTo(dt / CROPS.carrot.growSeconds, 6)
+  })
+
+  test('happiness odds at 50% and 0%', () => {
+    expect(rarityOdds(HAPPY_START)).toEqual({ up2: 0.005, up1: 0.05, down: 0 })
+    expect(rarityOdds(0)).toEqual({ up2: 0, up1: 0, down: 0.05 })
+    expect(stepRarity('common', -1)).toBe('common')
+    expect(stepRarity('heirloom', 2)).toBe('heirloom')
+    expect(rollGrowRarity('common', HAPPY_START, 0)).toBe('rare')
+    expect(rollGrowRarity('common', HAPPY_START, 0.004)).toBe('rare')
+    expect(rollGrowRarity('common', HAPPY_START, 0.006)).toBe('uncommon')
+    expect(rollGrowRarity('common', HAPPY_START, 0.06)).toBe('common')
+    expect(rollGrowRarity('uncommon', 0, 0.01)).toBe('common')
+  })
+
+  test('wilt drains happiness', () => {
+    const w = new World()
+    const p = new Plant('carrot', 'common')
+    p.thirst = 0.2
+    w.setCell(AT, { kind: 'growing', plant: p })
+    w.tick(1 / 15)
+    expect(p.happiness).toBeLessThan(HAPPY_START)
+    expect(p.happiness).toBeGreaterThan(0)
+  })
+})
+
+function readHand(w: World): Hand {
+  return w.hand
+}
+
 function grindWorld(seed: number): World {
   const w = new World(seed)
   w.setCell(AT, new Grinder({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
@@ -669,7 +1210,7 @@ function grindWorld(seed: number): World {
 
 function grindHandOnce(seed: number): number {
   const w = grindWorld(seed)
-  w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1 } }
+  w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28 } }
   w.click(AT)
   for (let i = 0; i < 50; i++) w.tick(1 / 15)
   const slot = w.inventory.find(
@@ -677,6 +1218,14 @@ function grindHandOnce(seed: number): number {
   )
   if (slot === undefined || slot.kind !== 'hold' || slot.item.kind !== 'seeds') return 0
   return slot.item.count
+}
+
+function sameEdge(a: Edge, b: Edge): boolean {
+  return a.axis === b.axis && a.col === b.col && a.row === b.row
+}
+
+function sorted(cs: { col: number; row: number }[]): { col: number; row: number }[] {
+  return [...cs].sort((a, b) => a.row - b.row || a.col - b.col)
 }
 
 function expectPacked(w: World): void {

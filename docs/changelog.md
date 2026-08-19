@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-08-19 — Beta-6 / Update 7
+
+Current contracts: [[mechanics/beta-6]] [[architecture/beta-6]] [[ui/beta-6]] [[art/beta-6]] [[ui/place]].
+
+- HUD overlay + cottage buttons.
+- Coin replaces `$`.
+- Almanac tabs + growth + meters.
+- Delete is HUD, not shop. Buildings (no house/starter). No refund.
+- Freshness / rot.
+- Rarity pip. Rare / heirloom fruit. Rarity lens.
+- Seed rebalance 45 / 80 / 120 / 150 / 150 / 180.
+- Actor held item.
+- Grass 8-tile. Very-hard grass fill.
+
+## 2026-08-19 — Beta-5 irrigation fix
+
+Historical. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] [[ui/beta-5]] [[art/beta-5]] [[ui/place]].
+
+- Sprinkler place without incident pipe; rate 0 until sourced.
+- Large AoE 4×4 centered.
+- Dry pipes omit water fill.
+- Pipe place ghost is `pipeFit`.
+- Hover cell outline restored.
+- Pipes-lens source `overlay-water`.
+- Shop close exits pipes lens.
+- Playwright e2e.
+
+## 2026-08-18 — Beta-5
+
+Historical. Automation. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] [[ui/beta-5]] [[art/beta-5]] [[ui/place]].
+
+### Network
+
+- Pipes on **edges**. Sprinklers on **vertices**. Neither is a Cell.
+- Well 1×1, 5 L/s, $75. Pumpjack $40.
+- Watermelon. `unlock-watermelon` $8 / 35s. Pack $12. 2.5× tomato thirst.
+- Irrigation → Automated irrigation → Advanced irrigation. `unlock-pumpjack` dies.
+- Lens **Pipes**. `buy-delete` $0. Pipes and sprinklers only.
+
 ## 2026-08-18 — Beta-4
 
 Current contracts: [[mechanics/beta-4]] [[architecture/beta-4]] [[ui/beta-4]] [[art/beta-4]] [[ui/place]].

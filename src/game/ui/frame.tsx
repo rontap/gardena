@@ -1,5 +1,7 @@
 import { forwardRef, type ReactNode } from 'react'
 import {
+  UI_COIN,
+  UI_COIN_SILVER,
   UI_CORNER_BL,
   UI_CORNER_BR,
   UI_CORNER_TL,
@@ -7,6 +9,43 @@ import {
   UI_HEADER,
   UI_RAIL,
 } from '../view/svgs.ts'
+
+export function moneyParts(n: number): { gold: number; silver: number } {
+  const tenths = Math.floor(n * 10)
+  return { gold: Math.floor(tenths / 10), silver: tenths % 10 }
+}
+
+function Glyph({ html }: { html: string }) {
+  return <svg viewBox="0 0 12 12" className="inline-block h-3 w-3 shrink-0" dangerouslySetInnerHTML={{ __html: html }} />
+}
+
+export function Coin({ n }: { n: number }) {
+  const { gold, silver } = moneyParts(n)
+  if (gold === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5">
+        <Glyph html={UI_COIN_SILVER} />
+        <span>{silver}</span>
+      </span>
+    )
+  }
+  if (silver === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5">
+        <Glyph html={UI_COIN} />
+        <span>{gold}</span>
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <Glyph html={UI_COIN} />
+      <span>{gold}</span>
+      <Glyph html={UI_COIN_SILVER} />
+      <span>{silver}</span>
+    </span>
+  )
+}
 
 export function Chrome({ children, className }: { children: ReactNode; className: string }) {
   return (
@@ -106,26 +145,30 @@ export const tabTriggerClass =
   'cursor-pointer px-2 py-1 text-sm text-ink/50 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
 
 export function Dock({
-  side,
   title,
   children,
+  footer,
   onClose,
+  wide,
 }: {
-  side: 'left' | 'right'
   title: string
   children: ReactNode
+  footer?: ReactNode
   onClose: () => void
+  wide?: boolean
 }) {
-  const pos = side === 'left' ? 'left-3' : 'right-3'
   return (
-    <Chrome className={`absolute top-3 ${pos} z-20 flex max-h-[calc(100%-13rem)] w-72 flex-col overflow-hidden`}>
+    <Chrome
+      className={`absolute top-16 left-32 z-20 flex max-h-[calc(100%-4rem)] flex-col overflow-hidden ${wide === true ? 'w-[28rem]' : 'w-72'}`}
+    >
       <div className="relative z-20 flex items-center justify-between px-3 py-2">
         <div className="text-sm">{title}</div>
         <button type="button" className="cursor-pointer px-2 py-0.5 text-sm text-ink hover:bg-dirt" onClick={onClose}>
           ×
         </button>
       </div>
-      <div className="relative z-20 min-h-0 overflow-y-auto px-3 pb-3">{children}</div>
+      <div className="relative z-20 min-h-0 flex-1 overflow-y-auto px-3 pb-3">{children}</div>
+      {footer !== undefined && <div className="relative z-20 px-3 pb-3">{footer}</div>}
     </Chrome>
   )
 }

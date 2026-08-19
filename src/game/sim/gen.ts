@@ -3,6 +3,8 @@ import {
   DOOR,
   HOUSE_BASE,
   PUMP_BASE,
+  TRUCK_BASE,
+  YARD,
   Rock,
   Shrub,
   chunkRect,
@@ -13,6 +15,7 @@ import {
   type Coord,
   type House,
   type Pump,
+  type Truck,
 } from './building.ts'
 import type { Cell } from './plot.ts'
 import { hash } from './rng.ts'
@@ -20,12 +23,16 @@ import { hash } from './rng.ts'
 const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
 
 const RESERVED = new Set(
-  [...occupiedCells(HOUSE_BASE, HOME), ...occupiedCells(PUMP_BASE, HOME), DOOR].map(
-    a => `${a.col},${a.row}`,
-  ),
+  [
+    ...occupiedCells(HOUSE_BASE, HOME),
+    ...occupiedCells(PUMP_BASE, HOME),
+    DOOR,
+    ...occupiedCells(TRUCK_BASE, HOME),
+    ...YARD,
+  ].map(a => `${a.col},${a.row}`),
 )
 
-export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pump): Cell[][] {
+export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pump, truck: Truck): Cell[][] {
   const cells: Cell[][] = []
   for (let row = 0; row < CHUNK; row++) {
     const line: Cell[] = []
@@ -61,6 +68,7 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
   clearBase(cells, id)
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
+  occupiedCells(truck.base, owned).forEach(at => put(cells, at, truck))
   return cells
 }
 

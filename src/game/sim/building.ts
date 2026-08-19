@@ -118,6 +118,13 @@ function clamp(n: number, a: number, c: number): number {
 export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 6, w: 4, h: 3 }
 export const PUMP_BASE: CircleBase = { shape: 'circle', cx: 18.5, cy: 7.5, r: 0.5 }
 export const DOOR: Coord = { col: 15, row: 9 }
+export const TRUCK_BASE: RectBase = { shape: 'rect', col: 12, row: 8, w: 2, h: 1 }
+export const YARD: Coord[] = [
+  { col: 12, row: 9 },
+  { col: 13, row: 9 },
+  { col: 14, row: 9 },
+]
+export const PAD: Coord = { col: 12, row: 9 }
 
 export class House {
   readonly kind = 'house' as const
@@ -131,11 +138,15 @@ export class House {
 
 export class Pump {
   readonly kind = 'pump' as const
+  readonly form: 'starter' | 'jack' | 'well'
   readonly base: Base
-  outputLitersPerSec: number
-  constructor(base: Base, outputLitersPerSec: number) {
+  constructor(base: Base, form: 'starter' | 'jack' | 'well') {
     this.base = base
-    this.outputLitersPerSec = outputLitersPerSec
+    this.form = form
+  }
+  get outputLitersPerSec(): number {
+    if (this.form === 'well') return 5
+    return 2
   }
 }
 
@@ -169,6 +180,14 @@ export class Chest {
 
 export class Grinder {
   readonly kind = 'grinder' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class Truck {
+  readonly kind = 'truck' as const
   readonly base: RectBase
   constructor(base: RectBase) {
     this.base = base

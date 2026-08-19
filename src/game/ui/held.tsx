@@ -1,7 +1,9 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemTip } from '../sim/item.ts'
-import { itemInner } from '../view/svgs.ts'
+import { berryMoney, cropName, fruitMoney } from '../sim/item.ts'
+import { faceGfx } from '../view/svgs.ts'
+import { Coin } from './frame.tsx'
 
 export function Held({ hand }: { hand: Hand }) {
   if (hand.kind === 'empty') {
@@ -11,7 +13,7 @@ export function Held({ hand }: { hand: Hand }) {
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
         <div className="flex min-h-20 min-w-20 flex-col items-center border-2 border-ink bg-roof px-2 pt-1 pb-1">
-          <svg viewBox="0 0 24 24" className="h-20 w-20" dangerouslySetInnerHTML={{ __html: itemInner(hand.item) }} />
+          <svg viewBox="0 0 24 24" className="h-20 w-20" dangerouslySetInnerHTML={{ __html: faceGfx(hand.item) }} />
           <span className="text-2xl leading-none">{heldNumber(hand.item)}</span>
         </div>
       </Tooltip.Trigger>
@@ -27,7 +29,7 @@ export function Held({ hand }: { hand: Hand }) {
 export function ItemFace({ item }: { item: Item }) {
   return (
     <span className="relative flex h-12 w-12 items-center justify-center">
-      <svg viewBox="0 0 24 24" className="h-10 w-10" dangerouslySetInnerHTML={{ __html: itemInner(item) }} />
+      <svg viewBox="0 0 24 24" className="h-10 w-10" dangerouslySetInnerHTML={{ __html: faceGfx(item) }} />
       <Badge item={item} />
     </span>
   )
@@ -48,6 +50,24 @@ function badge(item: Item): string | undefined {
   if (item.kind === 'box' && item.cargo.kind === 'stack') return String(item.cargo.stack.count)
   if (item.kind === 'box' && item.cargo.kind === 'berry') return String(item.cargo.count)
   return undefined
+}
+
+export function ItemLineView({ item }: { item: Item }) {
+  if (item.kind === 'fruit') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        {cropName(item.crop)} - {item.count}, sell for <Coin n={fruitMoney(item)} />
+      </span>
+    )
+  }
+  if (item.kind === 'berry') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        Berry - {item.count}, sell for <Coin n={berryMoney(item.rarity, item.count)} />
+      </span>
+    )
+  }
+  return null
 }
 
 function heldNumber(item: Item): string {

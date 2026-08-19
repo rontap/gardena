@@ -5,9 +5,16 @@ import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
-import { Btn, Dock, tabTriggerClass } from './frame.tsx'
+import { Btn, Coin, Dock, tabTriggerClass } from './frame.tsx'
 
-const SEEDS: SkuId[] = ['pack-carrot', 'pack-potato', 'pack-wheat', 'pack-tomato', 'pack-raspberry']
+const SEEDS: SkuId[] = [
+  'pack-carrot',
+  'pack-potato',
+  'pack-wheat',
+  'pack-tomato',
+  'pack-raspberry',
+  'pack-watermelon',
+]
 const UTILITY: SkuId[] = [
   'buy-shovel',
   'buy-better-shovel',
@@ -18,7 +25,16 @@ const UTILITY: SkuId[] = [
   'buy-box',
   'buy-box-large',
 ]
-const AUTOMATION: SkuId[] = ['buy-pumpjack', 'buy-chest', 'buy-grinder']
+export const AUTOMATION: SkuId[] = [
+  'buy-pumpjack',
+  'buy-well',
+  'buy-pipe',
+  'buy-sprinkler',
+  'buy-sprinkler-vert',
+  'buy-sprinkler-large',
+  'buy-chest',
+  'buy-grinder',
+]
 
 const TAB_LINE = {
   seeds: 'Seeds for the field.',
@@ -50,7 +66,22 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
             ? 'inventory-full'
             : undefined
   return (
-    <Dock side="left" title="General store" onClose={onClose}>
+    <Dock
+      title="General store"
+      onClose={onClose}
+      footer={
+        <div className="min-h-10 px-1 pt-1 text-sm text-ink">
+          {hot === undefined ? (
+            <div>{TAB_LINE[tab]}</div>
+          ) : (
+            <>
+              <div>{skuDesc(hot)}</div>
+              {reason !== undefined && <div>{reason}</div>}
+            </>
+          )}
+        </div>
+      }
+    >
       <Tabs.Root
         value={tab}
         onValueChange={v => {
@@ -58,7 +89,7 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
           setHot(undefined)
         }}
       >
-        <Tabs.List className="mb-2 flex gap-1 border-b border-ink/20">
+        <Tabs.List className="sticky top-0 z-10 mb-2 flex gap-1 border-b border-ink/20 bg-house">
           {TABS.map(t => (
             <Tabs.Trigger key={t.id} value={t.id} className={tabTriggerClass}>
               {t.label}
@@ -75,16 +106,6 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
           </Tabs.Content>
         ))}
       </Tabs.Root>
-      <div className="mt-2 min-h-10 px-1 pt-1 text-sm text-ink">
-        {hot === undefined ? (
-          <div>{TAB_LINE[tab]}</div>
-        ) : (
-          <>
-            <div>{skuDesc(hot)}</div>
-            {reason !== undefined && <div>{reason}</div>}
-          </>
-        )}
-      </div>
     </Dock>
   )
 }
@@ -115,8 +136,8 @@ function SkuRow({
             viewBox="0 0 24 24"
             dangerouslySetInnerHTML={{ __html: skuInner(id) }}
           />
-          <span>
-            {skuLabel(id)} ${SKUS[id].price}
+          <span className="inline-flex items-center gap-1">
+            {skuLabel(id)} <Coin n={SKUS[id].price} />
           </span>
         </span>
       </Btn>
@@ -127,17 +148,26 @@ function SkuRow({
 function rowState(world: World, id: SkuId): RowState {
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < SKUS[id].price) return 'cannot-afford'
-  const made = skuItem(id)
-  if (made.kind === 'seeds') {
-    const merge = world.inventory.findIndex(
-      s =>
-        s.kind === 'hold' &&
-        s.item.kind === 'seeds' &&
-        s.item.crop === made.crop &&
-        s.item.rarity === made.rarity,
-    )
-    const empty = world.inventory.findIndex(s => s.kind === 'empty')
-    if (merge < 0 && empty < 0) return 'inventory-full'
+  if (
+    id === 'pack-carrot' ||
+    id === 'pack-potato' ||
+    id === 'pack-wheat' ||
+    id === 'pack-tomato' ||
+    id === 'pack-raspberry' ||
+    id === 'pack-watermelon'
+  ) {
+    const made = skuItem(id)
+    if (made.kind === 'seeds') {
+      const merge = world.inventory.findIndex(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === 'seeds' &&
+          s.item.crop === made.crop &&
+          s.item.rarity === made.rarity,
+      )
+      const empty = world.inventory.findIndex(s => s.kind === 'empty')
+      if (merge < 0 && empty < 0) return 'inventory-full'
+    }
   }
   return 'ok'
 }

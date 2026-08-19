@@ -1,5 +1,11 @@
 export const DAY_SECONDS = 240
 
+export type DayPhase = 'sunrise' | 'day' | 'sunset' | 'twilight'
+
+export function days(s: number): number {
+  return s / DAY_SECONDS
+}
+
 export class Clock {
   day = 1
   t = 0
@@ -7,6 +13,14 @@ export class Clock {
 
   get remaining(): number {
     return DAY_SECONDS - this.t
+  }
+
+  phase(): DayPhase {
+    const p = this.t / DAY_SECONDS
+    if (p < 0.25) return 'sunrise'
+    if (p < 0.65) return 'day'
+    if (p < 0.9) return 'sunset'
+    return 'twilight'
   }
 
   advance(dt: number): 'tick' | 'seam' {

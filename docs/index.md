@@ -19,7 +19,21 @@ Vault for this game. Agents read this first.
 - [[agents/documenter]]
 - [[agents/code-review]]
 
-## Beta-4
+## Beta-6
+
+- [[mechanics/beta-6]]
+- [[architecture/beta-6]]
+- [[ui/beta-6]]
+- [[art/beta-6]]
+
+## Beta-5 — historical
+
+- [[mechanics/beta-5]]
+- [[architecture/beta-5]]
+- [[ui/beta-5]]
+- [[art/beta-5]]
+
+## Beta-4 — historical
 
 - [[mechanics/beta-4]]
 - [[architecture/beta-4]]

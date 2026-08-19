@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import type { Recap as RecapData } from '../sim/world.ts'
-import { Frame } from './frame.tsx'
+import { Coin, Frame } from './frame.tsx'
 
 export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay: number; onDismiss: () => void }) {
   return (
@@ -16,8 +16,12 @@ export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay
           <Frame title={`day ${recap.day}`}>
             <Dialog.Title className="sr-only">day {recap.day}</Dialog.Title>
             <div className="flex flex-col gap-1 text-sm">
-              <div>${recap.money}</div>
-              <div>tax {recap.tax}</div>
+              <div>
+                <Coin n={recap.money} />
+              </div>
+              <div className="inline-flex items-center gap-1">
+                tax <Coin n={recap.tax} />
+              </div>
               <div>died {recap.died}</div>
               <div>harvests {recap.harvests}</div>
               <div>research {recap.research.join(' ')}</div>

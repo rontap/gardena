@@ -23,3 +23,4 @@ export const GRIND_MIN = 1
 export const GRIND_MAX = 3
 export const SPEECH_S = 2.5
 export const SHRUB_GROW = 360
+export const SPRINKLER_RATE = 0.5

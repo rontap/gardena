@@ -168,6 +168,20 @@ export class Shrub {
   }
 }
 
+export class AppleTree {
+  readonly kind = 'apple-tree' as const
+  readonly base: RectBase
+  ripe: boolean
+  grow: number
+  rarity: 'common' | 'uncommon' | 'rare' | 'heirloom'
+  constructor(base: RectBase, ripe: boolean, grow: number, rarity: 'common' | 'uncommon' | 'rare' | 'heirloom' = 'common') {
+    this.base = base
+    this.ripe = ripe
+    this.grow = grow
+    this.rarity = rarity
+  }
+}
+
 export class Chest {
   readonly kind = 'chest' as const
   readonly base: RectBase

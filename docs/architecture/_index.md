@@ -1,5 +1,7 @@
 # Architecture
 
+- [[architecture/apple-tree]]
+
 - [[architecture/v0.1]] — current
 - [[architecture/beta-6]] — historical
 - [[architecture/beta-5]] — historical

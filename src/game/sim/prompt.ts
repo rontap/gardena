@@ -162,7 +162,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'rock' || (cell.kind === 'untilled' && cell.ground === 'very-hard')) {
       return { kind: 'blocked', text: 'Need a pickaxe' }
     }
-    if (cell.kind === 'shrub') return intent('Dig', { act: 'shovel', at })
+    if (cell.kind === 'shrub' || cell.kind === 'apple-tree') return intent('Dig', { act: 'shovel', at })
     if (cell.kind === 'untilled' && cell.ground === 'hard' && w.hand.item.usesLeft < 2) {
       return { kind: 'blocked', text: 'Cannot dig' }
     }
@@ -184,6 +184,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return { kind: 'blocked', text: 'Bucket empty' }
   }
   if (cell.kind === 'shrub' && cell.ripe && canHarvestBerry(w)) {
+    return intent('Harvest', { act: 'harvest', at })
+  }
+  if (cell.kind === 'apple-tree' && cell.ripe && canHarvestHand(w, 'apple', cell.rarity)) {
     return intent('Harvest', { act: 'harvest', at })
   }
   if (cell.kind === 'ripe' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {

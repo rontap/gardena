@@ -17,6 +17,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   tomato: { id: 'tomato', growSeconds: 345, waterUsePerSec: 0.003111, sale: 18, seed: 3, rotSeconds: 300 },
   raspberry: { id: 'raspberry', growSeconds: 414, waterUsePerSec: 0.003333, sale: 24, seed: 4, rotSeconds: 158.4 },
   watermelon: { id: 'watermelon', growSeconds: 345, waterUsePerSec: 0.013333, sale: 19, seed: 4, rotSeconds: 360 },
+  apple: { id: 'apple', growSeconds: 720, waterUsePerSec: 0, sale: 20, seed: 4, rotSeconds: 480 },
 }
 
 const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = {
@@ -26,6 +27,7 @@ const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = 
   tomato: { common: 'Tomato', uncommon: 'Tomato', rare: 'Cherokee Purple', heirloom: 'Green Zebra' },
   raspberry: { common: 'Raspberry', uncommon: 'Raspberry', rare: 'Golden raspberry', heirloom: 'Black raspberry' },
   watermelon: { common: 'Watermelon', uncommon: 'Watermelon', rare: 'Yellow Crimson', heirloom: 'Moon and Stars' },
+  apple: { common: 'Apple', uncommon: 'Apple', rare: 'Apple', heirloom: 'Pink Lady' },
 }
 
 export function cropVariety(id: CropId, rarity: Rarity): string {

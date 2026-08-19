@@ -5,12 +5,14 @@ import wheat from '../../assets/crop-wheat.svg?raw'
 import tomato from '../../assets/crop-tomato.svg?raw'
 import raspberry from '../../assets/crop-raspberry.svg?raw'
 import watermelon from '../../assets/crop-watermelon.svg?raw'
+import apple from '../../assets/crop-apple.svg?raw'
 import fruitCarrot from '../../assets/fruit-carrot.svg?raw'
 import fruitPotato from '../../assets/fruit-potato.svg?raw'
 import fruitWheat from '../../assets/fruit-wheat.svg?raw'
 import fruitTomato from '../../assets/fruit-tomato.svg?raw'
 import fruitRaspberry from '../../assets/fruit-raspberry.svg?raw'
 import fruitWatermelon from '../../assets/fruit-watermelon.svg?raw'
+import fruitApple from '../../assets/fruit-apple.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
 import better from '../../assets/item-better-shovel.svg?raw'
 import pickaxe from '../../assets/item-pickaxe.svg?raw'
@@ -47,6 +49,7 @@ import rock from '../../assets/prop-rock.svg?raw'
 import rockLong from '../../assets/prop-rock-long.svg?raw'
 import shrub from '../../assets/prop-shrub.svg?raw'
 import berryShrub from '../../assets/prop-berry-shrub.svg?raw'
+import appleTree from '../../assets/prop-apple-tree.svg?raw'
 import grass0 from '../../assets/tile-grass-0.svg?raw'
 import grass1 from '../../assets/tile-grass-1.svg?raw'
 import grass2 from '../../assets/tile-grass-2.svg?raw'
@@ -100,6 +103,7 @@ const CROPS: { readonly [K in CropId]: string } = {
   tomato,
   raspberry,
   watermelon,
+  apple,
 }
 
 const FRUIT: { readonly [K in CropId]: string } = {
@@ -109,6 +113,7 @@ const FRUIT: { readonly [K in CropId]: string } = {
   tomato: fruitTomato,
   raspberry: fruitRaspberry,
   watermelon: fruitWatermelon,
+  apple: fruitApple,
 }
 
 export type { Face }
@@ -261,6 +266,10 @@ export const ROCK = inner(rock)
 export const ROCK_LONG = inner(rockLong)
 export const SHRUB = inner(shrub)
 export const BERRY_SHRUB = inner(berryShrub)
+export const APPLE_TREE = inner(appleTree)
+export function appleTreeStage(ripe: boolean): string {
+  return stageOnly(appleTree, ripe ? 'ripe' : 'unripe')
+}
 export const CROP_ROTTEN = inner(cropRotten)
 export const GRASS = [
   inner(grass0),

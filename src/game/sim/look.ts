@@ -42,6 +42,7 @@ export function lookText(world: World, hit: PromptHit | undefined): string {
   else if (cell.kind === 'chest') lines.push('Chest')
   else if (cell.kind === 'grinder') lines.push('Seed grinder')
   else if (cell.kind === 'shrub') lines.push(cell.ripe ? 'Berry shrub' : 'Shrub')
+  else if (cell.kind === 'apple-tree') lines.push(cell.ripe ? 'Apple tree - ripe' : `Apple tree - growing ${Math.floor(cell.grow * 100)}%`)
   else if (cell.kind === 'untilled') {
     if (cell.ground === 'soft') lines.push('Grass')
     else if (cell.ground === 'hard') lines.push('Hard soil')

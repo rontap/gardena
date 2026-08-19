@@ -1,5 +1,7 @@
 # Mechanics
 
+- [[mechanics/apple-tree]]
+
 - [[mechanics/v0.1]] — current
 - [[mechanics/beta-6]] — historical
 - [[mechanics/beta-5]] — historical

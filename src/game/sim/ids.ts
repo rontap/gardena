@@ -1,4 +1,4 @@
-export type CropId = 'carrot' | 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'watermelon'
+export type CropId = 'carrot' | 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'watermelon' | 'apple'
 
 export type StallGoodId = CropId | 'berry'
 

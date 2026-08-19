@@ -1,7 +1,8 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemTip } from '../sim/item.ts'
-import { berryMoney, cropName, fruitMoney } from '../sim/item.ts'
+import { berryMoney, fruitMoney } from '../sim/item.ts'
+import { cropVariety } from '../defs/crops.ts'
 import { faceGfx } from '../view/svgs.ts'
 import { Coin } from './frame.tsx'
 
@@ -56,7 +57,7 @@ export function ItemLineView({ item }: { item: Item }) {
   if (item.kind === 'fruit') {
     return (
       <span className="inline-flex items-center gap-1">
-        {cropName(item.crop)} - {item.count}, sell for <Coin n={fruitMoney(item)} />
+        {cropVariety(item.crop, item.rarity)} - {item.count}, sell for <Coin n={fruitMoney(item)} />
       </span>
     )
   }
@@ -78,6 +79,6 @@ function heldNumber(item: Item): string {
     if (item.cargo.kind === 'berry') return `${item.cargo.count}/${item.cap}`
     return `${item.cargo.stack.count}/${item.cap}`
   }
-  if (item.kind === 'shrub') return ''
+  if (item.kind === 'shrub' || item.kind === 'apple-tree') return ''
   return String(item.count)
 }

@@ -1,6 +1,7 @@
 import { fill } from '../defs/catalog.ts'
 import { BOX_LARGE, BOX_SMALL, CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, PICKAXES, SHOVELS } from '../defs/items.ts'
 import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
+import { cropVariety } from '../defs/crops.ts'
 import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 
@@ -24,6 +25,7 @@ export type Item =
   | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number }
   | { kind: 'berry'; rarity: Rarity; count: number }
   | { kind: 'shrub' }
+  | { kind: 'apple-tree' }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -82,8 +84,9 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'container') return it.id === 'bucket' ? 'Bucket' : 'Large bucket'
   if (it.kind === 'box') return boxName(it.cap)
   if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
-  if (it.kind === 'fruit') return cropName(it.crop)
+  if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
   if (it.kind === 'berry') return 'Berry'
+  if (it.kind === 'apple-tree') return 'Apple tree'
   return 'Shrub'
 }
 
@@ -109,8 +112,9 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
-  if (item.kind === 'fruit') return `${cropName(item.crop)} - ${item.count}`
+  if (item.kind === 'fruit') return `${cropVariety(item.crop, item.rarity)} - ${item.count}`
   if (item.kind === 'berry') return `Berry - ${item.count}`
+  if (item.kind === 'apple-tree') return 'Apple tree'
   return 'Shrub - plant it'
 }
 

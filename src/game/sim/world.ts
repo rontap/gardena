@@ -32,6 +32,8 @@ import { generateChunk } from './gen.ts'
 import {
   boxAdd,
   boxAccepts,
+  fruitMoney,
+  berryMoney,
   grindN,
   makeContainer,
   makeShovel,
@@ -194,6 +196,7 @@ export class World {
       tomato: makeStall('tomato', this.modifiers),
       raspberry: makeStall('raspberry', this.modifiers),
       watermelon: makeStall('watermelon', this.modifiers),
+      apple: makeStall('apple', this.modifiers),
       berry: makeStall('berry', this.modifiers),
     }
     this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.seed, this.owned[0], this.house, this.pumps[0], this.truck))
@@ -1044,6 +1047,16 @@ export class World {
         }
         return
       }
+      if (c.kind === 'apple-tree' && !c.ripe) {
+        c.grow += dt / 720
+        if (c.grow >= 1) {
+          c.grow = 1
+          c.ripe = true
+          c.rarity = rollRarity(hash(this.seed, 'apple', c.base.col, c.base.row, this.clock.day))
+          dirty = true
+        }
+        return
+      }
       if (c.kind !== 'growing' && c.kind !== 'ripe') return
       const stage0 = c.plant.stage(c.kind)
       const bar0 = c.plant.thirst < HEALTH
@@ -1109,7 +1122,7 @@ export class World {
   private canShovel(at: Coord): boolean {
     if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'shovel') return false
     const c = this.cell(at)
-    if (c.kind === 'shrub') return true
+    if (c.kind === 'shrub' || c.kind === 'apple-tree') return true
     if (!isPlot(c)) return false
     if (c.kind === 'infertile') return false
     if (c.kind === 'untilled' && c.ground === 'very-hard') return false
@@ -1124,6 +1137,14 @@ export class World {
     if (c.kind === 'shrub') {
       this.drops.push({ at: { ...at }, item: { kind: 'shrub' } })
       this.setCell(at, { kind: 'untilled', ground: 'soft' })
+      s.item.usesLeft -= 1
+      if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Dig', at: { ...at } }
+      return
+    }
+    if (c.kind === 'apple-tree') {
+      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, { kind: 'untilled', ground: 'soft' }))
+      this.drops.push({ at: { ...at }, item: { kind: 'apple-tree' } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
       this.pulse = { text: 'Dig', at: { ...at } }
@@ -1222,7 +1243,7 @@ export class World {
 
   private canHarvest(at: Coord): boolean {
     const c = this.cell(at)
-    if (c.kind === 'shrub' && c.ripe) {
+    if ((c.kind === 'shrub' || c.kind === 'apple-tree') && c.ripe) {
       if (this.hand.kind === 'empty') return true
       if (this.hand.item.kind !== 'box') return false
       const cargo = this.hand.item.cargo
@@ -1249,6 +1270,15 @@ export class World {
       c.grow = 0
       this.tally.harvests += 1
       this.pulse = { text: 'Harvest', at: { ...at } }
+      return
+    }
+    if (c.kind === 'apple-tree') {
+      const unitSale = CROPS.apple.sale * RARITY_SALE[c.rarity]
+      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, { kind: 'untilled', ground: 'soft' }))
+      this.tally.harvests += 1
+      this.pulse = { text: 'Harvest', at: { ...at } }
+      if (this.hand.kind === 'empty') this.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'apple', rarity: c.rarity, count: 1, unitSale } }
+      else if (this.hand.item.kind === 'box') boxAdd(this.hand.item, 'fruit', 'apple', c.rarity, 1, unitSale)
       return
     }
     const p = (c as Extract<Plot, { kind: 'ripe' }>).plant
@@ -1535,4 +1565,3 @@ function compactSlots(slots: Slot[]): void {
   })
   for (let i = kept.length; i < slots.length; i++) slots[i] = { kind: 'empty' }
 }
-

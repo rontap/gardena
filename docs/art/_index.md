@@ -1,5 +1,7 @@
 # Art
 
+- [[art/apple-tree]]
+
 - [[art/v0.1]] — current
 - [[art/beta-6]] — historical
 - [[art/beta-5]] — historical

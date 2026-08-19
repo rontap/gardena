@@ -1,6 +1,7 @@
 import {
   CHUNK,
   DOOR,
+  AppleTree,
   HOUSE_BASE,
   PUMP_BASE,
   TRUCK_BASE,
@@ -66,10 +67,30 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
     }
   }
   clearBase(cells, id)
+  if (id.cx === 0 && id.cy === 0) spawnAppleTree(cells, id)
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
   occupiedCells(truck.base, owned).forEach(at => put(cells, at, truck))
   return cells
+}
+
+function spawnAppleTree(cells: Cell[][], id: ChunkId): void {
+  const rect = chunkRect(id)
+  for (let row = rect.row0; row < rect.row1; row++) {
+    for (let col = rect.col0; col < rect.col1; col++) {
+      const a = { col, row }
+      const b = { col, row: row + 1 }
+      if (!inWorld(b, [id])) continue
+      if (atCell(cells, a).kind !== 'untilled' || atCell(cells, b).kind !== 'untilled') continue
+      const ca = atCell(cells, a)
+      const cb = atCell(cells, b)
+      if (ca.kind !== 'untilled' || cb.kind !== 'untilled' || ca.ground !== 'soft' || cb.ground !== 'soft') continue
+      const tree = new AppleTree({ shape: 'rect', col, row, w: 1, h: 2 }, false, 0)
+      put(cells, a, tree)
+      put(cells, b, tree)
+      return
+    }
+  }
 }
 
 function placeRock(cells: Cell[][], seed: number, id: ChunkId, at: Coord): void {

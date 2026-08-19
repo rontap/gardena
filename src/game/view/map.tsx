@@ -15,6 +15,7 @@ import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
   ACTOR,
   BERRY_SHRUB,
+  appleTreeStage,
   CHEST,
   CROP_ROTTEN,
   DIRT,
@@ -407,6 +408,7 @@ const Marks = memo(function Marks({
   const plots: { col: number; row: number; cell: Plot }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
   const shrubs: { col: number; row: number; ripe: boolean }[] = []
+  const appleTrees: { col: number; row: number; ripe: boolean }[] = []
   const chests: Coord[] = []
   const grinders: Coord[] = []
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
@@ -438,6 +440,7 @@ const Marks = memo(function Marks({
       rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
     }
     if (cell.kind === 'shrub') shrubs.push({ col: at.col, row: at.row, ripe: cell.ripe })
+    if (cell.kind === 'apple-tree' && cell.base.col === at.col && cell.base.row === at.row) appleTrees.push({ col: at.col, row: at.row, ripe: cell.ripe })
     if (cell.kind === 'chest') chests.push(at)
     if (cell.kind === 'grinder') grinders.push(at)
     const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`))
@@ -469,6 +472,9 @@ const Marks = memo(function Marks({
           transform={`translate(${s.col * TILE},${s.row * TILE}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{ __html: s.ripe ? BERRY_SHRUB : SHRUB }}
         />
+      ))}
+      {appleTrees.map(t => (
+        <g key={`apple-tree-${t.col},${t.row}`} transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: appleTreeStage(t.ripe) }} />
       ))}
       {world.pumps.map((p, i) => {
         const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)

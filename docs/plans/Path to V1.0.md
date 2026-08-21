@@ -1,0 +1,255 @@
+## 0.3 Dirt Overhaul & Fertilizers
+Currently, each tile is a single thing, and the dirt underneath has no properties. This makes many things about the game bit unrealistic: for example, poorer dirt is not modelled, fertilizer use cannot be easily added, only seeded soil can be watered, excess water is removed when plant is removed. In this update, each tile of dirt will get its own identity.
+Main change: In this update, dirt will own two properties: water and fertilizer. When the player tills hard or very hard soil, the difference is that those will have lower base fertilization.
+Instead of RNG based individual soils, create a Perlin noise map where [0,1] represents dirt "goodness", 0 is 0 fertilizer and 1 is completely fertilized. below a threshold, the hard dirt will get generated, and at a very low, very hard dirt. The area around the starting base should get a random, decaying boost, clamping to max 1, the effect tapering out to +0 in r=16, so the whole starting area gets a bit of buff. 
+When a seed is planted, the plant's water is "tied" to the water in the soil, so that logic, both drinking and giving more water is moved to the soil logic. 
+New "plants": weed (not 420) and grass. 
+- Weed grows in tilled lands that do not have any seed in it. They have a random chance to appear, checked every "big" ui tick, idk how it is implemented but there shouild be a secondary tick done only less often, like 10 seconds or so. There is a 5% chance that it appears on tilled land. Weed will grow fast, draining fertilizer and water. create SVG sprites for two types of weed
+- Fertilizer use for now is uniform across all plants. Apple trees and bushes still do not use either. 
+- Each big ui tick, there is a chance that a new grass will show up somewhere. Conditions: no item or building or tilled land or very hard dirt. grass grows immediately and is kind of a visual thing only for now, has 3 variants. This chance is owned by the state update, not ticked by each individual empty field. Same for weed growth, for optimization reasons.
+Fertilizer bag (5L) 6$ can be bought once researched, one full plot fill uses max 1L, but since it has an an internal buffer, only the required amount is used (ie. if the fertilizer level is 70%, only 0.3L will be used).
+For now, fertilizer does not affect plant health and anything. Focus on the water change going smoothly.
+Now instead of starting with fixed water level for plants, the starting water level is taken from what is in the soil. When watering, still add up to 1L of water.
+## 0.4 Plant happiness, rotting and composting
+This update aims to introduce additional depth to the game by overhauling plant happiness UI and introducing new mechanics. 
+Happiness: Each plant already has a water level need, which influences happiness, which influences only the rarity drop chance. Now in this update, more stuff is introduced to influence the plant's happiness. 
+Obviously, fertilizer need is one. For now, each plant will have a single value determining its fertilizer need, which it sucks up slowly from the dirt. There are three stages: fully fertilized (green), mediocre (orange), starving (red). When fully fertilized, plant is gaining bits of happiness, orange stays the same and red happiness is decreasing. there is one value `fertilizer_tolerance` that governs this. at 1, the full range is green. at 0.33, third is green, third is red and middle third is orange. Basic starter plants have very high tolerance, and this goes down as type is increased, and as rarity is increased (programmatically). But numbers should be crafted such that it never is <0.25.
+Fertilizer use is constant and slow: for now, set 3 days of full growth as the full exaustion from fully fertilized land to zero. The player initialyl should not really be concerned with this. Underfertilized plants have stunted growth by 33%.
+New mechanic: overwatering. This is introduced to make the automatic irrigation not a complete solve of the game. Each plant has in addition to water need, water tolerance. 1L is the midpoint, shown on the UI from 0L to 2L. All plants are happy at 1L. `water_tolerance` works similarly to fertzilizer tolerance, but here it goes two ways. So 1 tolerance value means plant will be happy in whatever case. This water tolerance replaces the existing 0.33 (?) fixed threshold for wilting. Similar 3-band red orange green, extending both directions. Wilting (in the red) is still decreasing happiness and stunts growth by 33%.  Overwatering is much more seriously affecting the plant's happiness (same level of stunted growth of 33%). If a plant's happines reaches zero, it dies. Balance this in a way such that it is not super punishing, but if the plant is at 2L (so max) water level, it should die before producing a plant. Multiple things can cause the plant's death, the cause is recorded as the last thing that made it so the plant is dead (since multiple negative things can be affecting the plant at once).
+- if it is overwatering (or the player did not harvest it in time), it becomes rotten {fruit}, new icon for each _class_ of fruit, not per fruit. 
+- if its underwatering or no fertilizer, it becomes dead {plant}, same SVG logic. 
+These items are not completely useless, although they have no sell value. A new building, compost box (1×1) can slowly turn these things into compost, which is a similar item to fertilizer, 3L. Compost can accept any organic material, each material has a calculated compost value. 10 units are needed to create one compost. seeds universally are 1, fruits universally are 5, heirloom is 20, grass is 1, weed is 1, rotten fruit is 2, dead plant is also 1. The compost box has infinite internal storage, when items are dropped (no ui), it converts it into compost units immediately. Once it has 10, it starts producing slowly new compost. compost, an item, is dropped on the ground in front of the compost station, and can be used as fertilizer. Composting is not very fast, takes like 0.5 day. Progress bar is shown on the building.
+When writing tests, check if the rarity upgrade mechanic is working as intended with the interplay of watering / fertilizer mechanic. If the player is taking good care of the plants, fruits should slowly upgrade over time.
+New item: synthetic fertilizer. It is bigger than regular fertilizer with 8L and costs 5$. If used on soil, the soil will have property `is_bio:false`, and the fruits will have object property `is_bio:false` (not used or displayed anywhere) too. This property is removed when new fertilizer is added, but to prevent cheesing, only is removed when at least 30% of fertilizer is added. If the plant is already non-bio, it will not change it back.
+
+## 0.5 Automation update II.
+With the introduction of the last update, sprinklers now can be actively overwatering plants to a detrement. Therefore we update the sprinkling system with new features and items.
+First: water sources should have, when the pipes lense turned on, have a × shaped pipe (actually 45 deg) and water source icon in the middle. It should be intuitive to the user, that if any of the edges are reached by the pipe, it will connect to that. Also fix a but here where now pipe is only filled if it is on a two edges of a water source, and not when it is only on one point.
+New buildings and mechanics:
+- Manual Valve. This object, also placed on the edges of tiles, can open or close a valve. User can trigger change by clicking on it, (player moves there), and the valve is SVG-designed in a way such that it is either blue or red (off). Sprlinklers have no VFX when they have no water. If the pipe is connected in another way such that is can flow threough there, water should still reach it. 
+- Tied to a research, called smart sprinklers, adds a clickable popup hud to sprinklers (not as a new building). When clicked, the list of all plants are shown in a vertical grid, showing water use. When the user clicks a plant, the sprinkler will adjust water output such that it only sprinklers as much water as the plants actually need. Note, that if the plant was under or overwatered, that will remain so. When the player manually waters a plant, it plants up to 1L + `max plant comfortable water use` . So if the plant is already overwatered, no water is being added, whereas if the plant is wilting, more than 1L could be added. 
+- Rainwater tank. 2×1 building, 20$, slowly (0.4/L) gathers water and has internal storage of 100L. All water producers have internal water storage. pump has 50L and well has 150L.
+	- Design consideration: when there are multiple producers and multiple consumers in a network, it should clearly work. It is not important if it is pooled together, or only one is used at all. But if +10L/s is being produced, sprinklers should be able to use all 10L
+- "Csap". It is an acces point for water without having to place an expensive pump or well. 10$, needs to be connected to the water grid to function. Can fill water buckets quickly (5L/s)
+	- Keep in mind, that a pumpjack alone cannot provide this mnuch water. But since it has an internal buffer, that can be used to provide that. Buf it that is empty, then fill speed should still just be 2.5L/s!
+
+## 0.6 Family Update
+The game mechanics of research-farming-market is done by personifying the three aspects as the player (you, female), your husband (research) and you daughter, who is at the market. 
+Add a new main button to the left called "Family", which opens an almost full screen view.  It is a grid view, 3 vertical panels for the three characters, with high-quality detailed pixel art SVG for each of them. In the future, they will be able to earn _skills_ by gaining XP through various mechanics, but for now, implement only the skill points's system, each day one of them gets one skill point. "unlock all" gives all three of them 99. 
+Each of them have seperate skills, with 3 random showing up based on the seed, and when one is selected, all three are rerolled. There are tiered skills, implemented such that if idk "gardening" gets rolled, but user has gardening II already, then the skill will be gardening III. These skills have modifiers that are wide-reaching and extremely useful. Each skill has an icon, and existing skills are shown as icons with hover-on showing name and effect. In the selectable skills, same is true but name is also displayed on the button. LEvel is also displayed. Skills can be gated behind research unlocks, or skill unlocks.
+Player skills (gardening-focused)
+- Boots (I-V) 5% walking speed increase (non-comulative)
+- Machinery (I-III) 5% machine use speed (non-comulative), machines are all pipe related and seed grinder.
+- Careful tending. Unlocks an action with growing plants "tend", that can be done one time and provides a 10% boost to happiness.
+Research skills (research focused)
+- Speedy research (I-III) 5% research _speed_ increase.
+- Tool contracts (I-III) utilities become 1$ cheaper. Min price is 1$
+- Machine contracts (I-III) automation tools become 1$ cheaper. Min price is 1$
+- Weather forecast [dummy]
+- Smart tax returns (I-III) lowers taxes by 2%. Min tax is 1$
+- {water,land quality} study, allows water level and land quality (fertilizer status) lenses.
+- bulk buying. when buying seeds, press control to buy 5× as much (5->25) with 5% discount
+For now, market mechanics are not that detailed, but the "better XY" crops research are moved to here as skills.
+- saleswoman (I-III) fruits sell for 2% more
+- "őstermelő" (I-III) heirloom fruits sell for 5% more.
+- better {fruit}, for each fruit, a one time 4% income increase in income, replaces the research options.
+- bio farmer (I-V) fruits that are `is_bio:true` have 3% higher sale value.
+- industrial farmer [dummy] (I-V)
+- At the start of the game, the market is actually not open (sale cannot be made) during the late afternoon and twilight stages of the game. (sell button becomes disabled with reason shown in text). "Open late" skill allows market to be open later, and when that is unlocked, -> "open 24/7" makes the market open during twilight too. 
+- "Still good for jam" (I-V) caps maximum reduction by fruit being  partially rotten to -90% / .. / -50%
+- "Clearence sale" allows selling rotten fruits for 1$, regardless of type.
+When there are no skills left, or not enough to fill all three, only those are generated.
+## 0.7 VFX & UI update and Docs ordering
+This update focuses on improving UI & UX and VFX design in terms of game code.
+The docs are right now organised in a very messy way. The main workdocs are okay per-version, but having no other notes about the game is bad. There should be an almanac-style repository of UI items, mechanics, interactions, design considerations. This is because right now it is hard to know if any given value is: calculated by hand based on different things, tuned to another value (and will need to be changed if that other mechanic is rebalanced), or is just a game design pereference. 
+A few (for now) mostly cosmetic items are to be added. They are all placed similarly to tiles, i.e. when the user starts placing it, they enter the "place many of this" mode and they can click and build as much as they want to. 
+- Wooden Fence (10$) can be built on untilled soil and links up to fences the same way a pipe does, but the fence is in the middle of a tile, not inbetween files.
+- Tiles (Cobblestone, Brick, Paved) 5 / 7 / 11. They later will affect walking speed, but are not doing anything besides visuals now. 
+- Grass seeds - 1$, unlocked by "**landscape architecture**" research, allows planting of grass seeds, use very little water and mature quite quickly (1/4 day), do not have rarity. Once a grass is fully grown, the tilled land becomes untilled again.
+- Rotary shovel - research gated behind digging 200 times (research time 120sec), cost 1000$, 0.2s shovel time, 1k uses
+- Diamond pickaxe - research gated behind pickaxing 150 times (research time 120sec), cost 1000$, 0.4s pickaxe time, 1k uses
+UI updates:
+- End of day screen should be better designed, table like, beter summarizing {starting} + {gain (from sources ...)} - expenses (buying and tax)
+
+## 0.8 Stable game log state
+The goal of this update is to log actions in a way such that later tools can use it to unlock things.
+Most actions should be logged in a global dump-state, such as number of sold items per type×rarity, number of gold earned and spent. It should be almost like an action log. The tutorial engine attaches to this and every N ticks it checks for the step being complete.
+Uses:
+- Hiding more stuff from the user: unless the user has ever harvested a fruit of type X that is rare or specialty, it is shown as ???, and when clicking on it, the tab instead shows "You have not encountered this rare variant". This unlock check happens only when user opens almanac, with something like gamedump.filter( type harvest)
+- Some research instead of being gated by money or time, is gated by progression. The better carrots-potatoes-wheat all require 20 of the respective plant to be owned cumulatively. check again happens when research is opened, and once unlocked, stay unlocked. Pickaxe is gated behind reaching day 3. Research time still applies to all. Large fruit contain requires you to sell 80 fruits Unlock land requires you to have received total of 200 money.
+
+## 0.9 Early Access 1 - playable complete game
+This update is a wrap-up and polish update. No directly new gameplay features.
+Features:
+Menu and Save
+- Game starts at main menu, unless url is launched with url#start_now.
+- Game name is shown with 3 buttons: New Game / Load Save / Upload Save
+- Save and restore game feature. The game state should be serialisable and deserialisable, JSON. Including version number. Game state includes everything from research done, in progress, all placed objects, state of map, object locations and durabilities, money. Queued actions are not saved. Game is autosaved at end of day to localStorage.
+- New buttion in the game view, top ribbon, right, a gear icon. clicking on it, the startup menu is reused but with two options: Save game / Download Save
+- Older save files are attempted to be loaded in, but now no migration of content.
+- All future features should be also serializable and savable, but for now no backward compatibility conversion. 
+SVG pass
+- several icons and objects are a bit bad, look too boxy, a bit afar from the style I am aiming for. for example, carrot fruit and variants are cool, chest too. What needs partial redesign: very hard soil (too boxy), hard soil (too boxy), house (almost good, but maybe a more rustic roof that is more layered), buckets (hard to parse what it is), shovels (bad proportions).
+- Day-night clock is not easily parseable, make it bigger and more detailed.
+- 
+UI pass
+- in the shop, prices should be right-aligned
+- Almanac
+	- in pipe section, show all pipe variants in the same iterating way as it is done with plants
+- dialougs should be exitable via clicking the backdrop
+Tutorial
+- disabled when game is launched with url#start_now, disabled when the user already has a savefile.
+- The tutorial for now should be short. It should be
+	- step 1 explaining game concept, click on farmland to dig
+	- step 2 dig 4 more farms (does not dynamically update)
+	- step 3 click on house and add seeds to inventory
+	- step 4 explaining you have one item max on you, this is not super common in other sims. plant the seeds
+	- step 5 research something
+	- step 6 if any of the plants start wilting, trigger the watering guide to pick up bucket, fill it up and then water plants, noting the bucket capacity too.
+	- step 7 when any is harvest ready, then prompt to buy box and place it.
+	- step 8 gather the fruits (any is ok)
+	- step 9 sell on marketplace
+	- step 10 end of tutorial (in this iteration)
+
+# 0.10 Early Access 2 - Plant diseases
+Add a debug left menu which will be populated with trigger actions that force certain events to appear. only shows when unlock all instantly is pressed.
+This update will add plant diseases and ways to fight that. Plants can now be afflicted with disease and spread it to other plants. 
+There are three common diseases that are common to all plants: Powdery Mildew, Anthracnose and Gray Mold. These are shown as statuses on the plant and have several negative effects.
+- Mildew reduces growth speed by 20% and makes the plant less happy overall.
+- Anthracnose reduces growth speed by 20% and makes the plant less happy overall.
+- Gray Mold reduces growth speed by 10% makes the plant somewhat less happy and when the fruit is ripe, it starts at -20% freshness.
+Plants can be affected by multiple diseases at the same time, effects are additive. An SVG effect is placed on the soil to somehow indicate infection. Infection lens is also added "Healthy" / "Unhealthy".
+ spreading with normal disease can happen to any nearby plant at set intervals of the plant's growth (25/50/75/100). At each section, there is a 33% chance that the plant will affect nearby (3×3 grid centered on plant) plants, rolled for each plant that is not yet infected with that disease. In addition, each fruit has its own, much rarer and much deadlier version, which can only be spread between species. These have 50% infection chances. Reduce growth speed by 33%, starts at freshness -25%, plant is much less happy, and at spreading stages (25/50/75/100) theres is a 10% chance the plant just immediately dies.
+ All plants have some disease immunity. The final roll for getting infected is chance = (1-immunity) × infection chance from incoming plant. common fruits have 15% immunity, uncommon 10%, rare 5% and heirloom has 0%. 
+ Infections can occur randomly (very rare - 0.1% of a plant getting randomly infected at a checkpoint), and some seed may have disease (also rare, 1%). The first 20 seeds the players buy have 0% chance to be infected. When a disease has been rolled, the three versions (3 common or one dangerous) is equal in weight.
+ Infections can be fought with three ways, after "disease management" research is done, which unlocks when the user first plants 20 seeds. 
+ - pesticide 70$ - 40 uses, `is_bio:false`, immediately kills all germs, adds to that individual plant +15% immunity.
+ - bio pesticide 80$ - 30 uses `is_bio:true` immediately kills all germs, adds to that indidvidual plant +20% immunity.
+ - antifungal extract 15$ - 20 uses does not treat infection but adds +30% immunity and completely prevents Gray Mold's effect, most likely best to add flag `immunized:["Gray Mold"], extra_immunity:0.25`
+Disease resitance is added to almanac.
+New research skill: disease resistance (I-III) adds flat 5% disease resistance for all plants-> then unlocked heirloom genetic resistance adds 10% resistance to heirlooms.
+High level, The player has the following mental model and decision points:
+- If I use cheap crops and they start getting infected, it may not even be worth it to use pesticide because it cuts into my profits. 
+- If I use expensive crops or heirloom crops, they are much more expensive but also more sucaptable, i need to be very quick to prevent an outbreak. 
+- I can invest some time to add antifungal extract that will slow down outbreaks and lower the effective chance of an outbreak, but cuts permanently into my profiuts
+- pesticide is kind of cheap, but makes my fruits non bio and i may be getting big dividends on that. 
+In addition, at the checkpoints (25..100) there is an additional roll for emerging disease:
+- 0.5% for gray mold if the plant is in the red overwatered zone. 
+- not implemented yet, but if it is [raining] , 0.5% for Anthracnose.
+- not implemented yet, but if it is [hot], 0.5% for Mildew
+Wild berry and apple tree are not affected
+
+# 0.11 Early Access 3 Plants expansion & Trees Rework
+In this cute update, a few new plants are gonna be added.
+- Olives
+- Grapes
+- Corn
+- Vanilla
+- Sugar cane
+These are all researchable. Wheat is also moved to a researchable item, corn research and item only shows up once wheat has been researched. Rasberry is hidden as a research item behind grapes. 
+Sugar cane is water hungry and seels poorly, but is useful as an additive for later stuff.
+Vanilla is the new princess on the block, seeds very expensive, growth time slow, low disease resistance and icky about fertilizer and water levels, unlocked after raspberry. At common, it is not even outcompeting in terms of price other stuff, but rare and heirloom have an increased rarity price multiplier. Also they have potato-levels of freshness.
+And tree - like stuff:
+- Apricot
+- Lemon
+- Cherry
+The tree system is now somewhat bolted-on on the main system. Make is significantly more robust. Apples, Lemons and cherries automatically drop on the ground at 100% freshness. Add growing stage to all trees ( only once), but decease the time it takes for them to produce fruits. In general, apple is the fresh most long >lemon > apricot > cherry, while time it takes to mature is similar, with $ apple > apricot > lemon > cherry. total $/sec is apricot > lemon = cherry > apple. Here the fecund is apricot, producing a lot of cherries at low individual costs. Trees have "yielding days" once matured, the first starts the day after they are mature. During the yielding days (2) the production is 3×, then it is 0.75×, and the chance to start yielding is decided on the next day. After yielding time is over, the chance is -20%, and each day 20% is added.
+The three common germs now can affect trees, but come up with a more stable way of infection ticking because the growth rate is not good for that since they have active phases. 
+To prevent the user from permanently giving the plant 100% disease resistance, disease resistance drops by 10% each day. Trees also have the same rarity-specific disease resistance. 
+In general gameplay wise, trees are intended as low-effort, low maintenance but low relative yield option, with limited ways to plant them.
+In terms of planting trees, in the future tree seeds will be obtainably in special ways, for now they can be used in the seed grinder and give the user one apricot-lemon-cherry-apple seed in the house inventory. 
+
+# 0.12 Early Access 4 Machines Machines Machines
+This update focuses on adding a lot of machines to the game to create secondary products that are better in some ways and in the future can be used as consumable goods. First, to make the tools desirable, the freshness mechanism should be changed such that rotting continues once picked, until it is dropped off at the market. 
+Pot still:
+- potatoes, wheat and apricot can be used to make spirits. It has a similar working to the compost, the user fills it up with stuff and then the production beings, but here the capacity == max, so no overload. The type of spirit produced depends on the input fruits (Vodka, Beer, Brandy). If there are more than one type is mixed in, it will produce mixed spirit which is cheaper. The spirits have rarities too, averaged from the rarities of the fruits, so if i mix common and uncommon 50%-50%, its rarity will be 1.5, and at finish random decides where to clamp to. Rot does not decrease quality (very realistic). In general, it should be worth it marginally to do pot stilling, but not to heirlooms and not to produce mixed spirit. Pot still needs to be connected to water system and uses 0.1L to produce the mix.
+barrels:
+- grapes can be turned into wine. A wine barrel holds less fruits than a pot still does. It takes 1 day to mature, has similar rarity decision. A wine can be aged for a further three days, and depending on rarity, the sell price will increase by 1.5× / 2 / 2.5 / 3. 
+- beer can be turned into whisky. It takes 2 days to mature and can be aged for a further of five days, and depending the rarity, the sell price will increase by 3 / 4 / 5 / 6. A full batch of rare heirloom potatoes turned to whisky and aged so long should be very rewarding financially, so make sure the numbers add up to a positive EV compared to just spamming carrots. 
+Jam machine:
+- Very useful for upcoming updates (where price of fruits may fluctuate).
+- apricot, grape, raspberry, wild berry can be turned into Jam, tomato into ketchup. Jam machine is quite quick and does not care about rottenness OR quality, good mid-game item for preserving stuff. 
+- Items cannot be mixed.
+- Jam machine has an internal buffer of sugar that needs to be filled and uses it to create jam.
+Refiner mill:
+- will crush items down (and should show what the item will be crushed into)
+- is researchable item in automation, like pot still and jam machine (jam machine is dependent on this item, and this item is available from the start)
+- sugar cane 5× -> sugar (2L)
+- olive 5× -> olive oil (1 item)
+- wheat 5× -> flour (1 item)
+- grass 15× -> antifungal extract (unlocked by research gated behind disease management)
+Sugar is also unlocked as a buyable item when jam is unlocked, it should be priced in a way such that sugar cane is overall a cheaper was to produce it. 
+
+# 0.13 Early Access 5 Weather patterns.
+Weather is added to the game. A weather indicator is shown, and if the appropriate skill is shown, next day's weather is shown. The current "no weather" is still gonna be the default weather state in the game. Two new main weathers are introduced, rainy days and dry days. They have bunch of overarching effects that slightly modify the gameplay.
+water use now costs money - hopefully the tracking of which producer uses money has been kept. Water use of the PUMP only costs money. Not very significant, but enough to balance out some of the fecund but cheap stuff. For example, running watermelons from pump is less efficient.
+Rainy days:
+- Each tilled field gets a slight extra water input. This value should be set such that plants do not just die of overwatering, but in particularly picky plants, it can cause some issues. But having set up an irrigation system that just keeps on going should cause problems - gameplay goal is to make the user realises that the situation can turn bad if they do not act.
+- weeds and grass are 2× likely to appear.
+- rainwater tank has 6× yield.
+- see relevant infection notes.
+Dry days:
+- each tilled field has every N ticks a small amount of water substracted due to evaporation, over the whole day it should be like 0.2L, large enough to cause some trouble but nothing catastrophic.
+- weeds do not appear, new grass does not grow.
+- rainwater tank has no yield.
+- see relevant infections.
+- pump water use cost is increased by 50%
+Game starts in normal weather and each day there is an increasing chance that a rainy or dry day will occur. Starts at -40%, +20% each subsequent day (first three days are dry). Then, if special day is rolled, then dry/rainy will be rolled with 50-50 chance. In a special day, there is a 50% chance that it will continue the next day, lowering by 10%, and a 20% chance for severe weather. If normal day is rolled, we go back to -20% to roll a special day. 
+Severe weather can be either flood or drought. Severe weather lasts one day and next day we are back to -40% to roll a special day and a normal day.
+Flood:
+- each tilled plot gets lot of water input. plants may die from too much water.
+- rainwater tank has 12× yield.
+- market is closed in the morning and shop prices are double due to flooding conditions.
+Drought:
+- each tilled plot loses 0.4L water a day.
+- rainwater tank has no yield and well has only 50% yield. pump is unaffected in terms of yield, but pump water use cost is increased by 200%.
+- market is closed midday and shop prices are double due to panic.
+
+Since this is PRNG seeded (its own seed lineage obviously), the whole chain of days up to like day 99 can be done after startup, to allow weather predcitions to happen. Add debug options to change weather for next day.
+
+
+# 0.14 Early Access 6 - Vehicles I.
+Vehicles will be added to the game, an extensive and modular system, just like real life they will represent the ultimate mechanized farming. This is a demanding update and is split into two parts.
+In general, all vehicles have a speed, acceleration and turning radious. THe player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
+The first, flagship vehicle is the Quad. It only serves as a baseline vehicle, nothing can be attached,
+The "Vehicles" research allows the buying of vehicle hangar, a large 3×2 building that will contain all future vehicles. When the user clicks it, a large and modular HUD shows up, where new vehicles and components can be bought and assembled for deployment. With the quad, once it is bought, and selected, "Deploy" button closes dialog and user is inside the vehicle now, allowing it to quickly traverse the map. No collision model for object, for now. 
+Vehicle can be returned by going to the door of the vehicle hangar, which is shown with an arrow on the fields below the hangar, only active when player is in a vehicle. The player can dismount the vehicle by clicking somewhere, at which point the vehicle will slow down to 0, then the walk there is done. If the player wants to drive again the vehicle, they click it. The vehicle has a HUD, with 6 slots for storing items and a button "embark". It also has gauges, in general potentially multiple, but in this case its only one, the fuel gauge. 
+In the vehicle bay, there is a button for refill all vehicles ($ ) shown.
+Max vehicle speed depends on the exact surface the vehicle is running on. Slowest is tilled soil and rock and objects (0.5× max), fastest is paved road (1.2×) max. Max speed transition is set, so coming off high speed from paved road to rock will take some time to slow vehicle down.
+The VFX and SVG here is important, the vehicle physically turns (top down view always).
+# 0.15 Early Access 6 - Vehicles II.
+A new vehicle type is added, Tractor. A tractor can have trailers, and is by default slower than Quad. 
+There are 3 different kinds trailers, and each has a respective building where it can interact with it.
+- Seeding trailer. Two variants, 2×1 and 5×1.  When attached and driven straight over an area, any tilled empty fields where the wide seeding trailer is touching the soil, it will plant it. seeding trailer can only have one type of fruit in it. 
+	- Building: seed silo 3 tall 2 wide. When opened it, provides a similar interface to the shop/seed store, excewpt here you can set amounts for each seed to buy, and which one to send to the trailer. When the trailer is at the interface point (exactly same mechanism as the return to garage), the trailer's inventory is merged withe the silo's. So if there is unused seed from a seeding round, it can be returned, and switched for something else with a single button. (clicking "raspberry" if there is already raspberry stored there will replace existing wheat seed).
+- Spraying trailer. same two variants, 2×1 and 5×1. When attached, it can dispense fertilizer, pesticide, and antifungal extract. 
+	- Building: spraying silo Similar UI to seed silo, but remember that there are two types of fertilizers, and two types of pesticides. 
+- Harvesting trailer. same two variants. When attached, it harvests all (!) planted fruits, regardless if it was ripe or not. it can hold different kinds of produce. 
+	- Building: produce silo, drops off everything into a 5 × 5 grid, seeds separated by rarity. 
+In the vehicle hangar, the player may have one of each thing bought. Deploying it is basically selecting the vehicle itself (icons of them), then, if the vehicle allows for trailers, selecting a trailer. A trailer is a permanent object, whether it is stored ephemerally inside the vehicle hangar or driven attached to a tractor, the inventory of it is kept. 
+The player may have multiple hangars, multiple silos or multiple trailers, but can only drive at most one truck that has one attached trailer to it.
+
+# 0.16 Early Access 7 - Automation III.
+Sensors are added to the game. Sensors are 1×1 buildings that can read data from  places and send them to others through wires. Sensors may have inputs and/or outputs. all wires are one-way, strictly from output to input, strictly binary. Many of them have single pop-up huds that do not require the user to walk there. If there is a single input/output, they are on top (I) and bottom (O). If there are two inputs, they are on the side visually. Circular loops cannot be made.
+Most are research at bulk with the research "Sensors", when researched, a new shop tab "Sensors" is shown, where most of these are 
+Basic sensor providing user IO:
+- Lever->: interactable object, when clicked by player, turns to other state and is replaced with active version, emitting output signal.
+- Button->: interactrable, clickable same way but emits a pulse only.
+- ->Lamp: lights up if receives signal.
+- -> -> OR ->: signal with two inputs (one on the left side, one on the right), output (lower end), trivial how it works.
+- -> -> AND ->: trivial again
+- -> NOT ->: trivial
+Specific sensors: these interact with various game mechanics to allow for automation.
+- Germ sensor: sends signal if detects germs in the area. Area can be set to be 2×2 ... 4×4
+- Water sensor: sends signal if any plant is being underwatered in the area. Has a checkbox to select send signal if : "wilting" andor"overwatered"
+- Fertilizer sensor: trivial
+- Water system sensor: sends out a signal when the connected system does not have enough water to satisfy needs
+- Weather sensor: can be configured to send signal (checkbox) for any of the five types of weather.
+- Harvest ready sensor: sends out signal if any OR all (hud configurable) plants in range are ready to be harvested.
+When in the sensor lens, clicking the cell with a sensor that has only outputs will start drawing a wire from (lower end of sensor, cursor), and the wire is finalised if it is clicked on a valid input (either full cell for one input, or left or right size of input). This can easily done with SVG beziér curves. if a wire is active, it changes color from red to blue. Wires are only visible in the Sensors tab. Wires are free, do not cost maintenance.
+Research-wise, many sensors are dual-requirement locked. The basic sensors unlock with Sensors research, But for example germ sensor requires the the related germ-y research to be done as well, but it does not have its own research. Same for others.
+objects and research, locked behind "advanced signalling", requiring advanced irrigation:
+- Smart sprinkler: receives a signal to turn on/off. Also it has a hud with 5×5 grid (center is sprinkler) where each grid can be turned off or on, and the sprinkler will only sprinkle those specific cells. Good to prevent overlaps from accedentally happening. 
+- Smart valve: works same as normal valve, but user cannot manually set its state, instead it is set from input
+- Vehicle detector: sends signal if the vehicle is on the cell. 
+All sensors have a switch cooldown of a few ticks to prevent resource-heavy loops of plant wilts -> sprinkler turns on -> plant wilts ...

@@ -32,8 +32,6 @@ import { generateChunk } from './gen.ts'
 import {
   boxAdd,
   boxAccepts,
-  fruitMoney,
-  berryMoney,
   grindN,
   makeContainer,
   makeShovel,
@@ -141,6 +139,7 @@ type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
 const QUEUE_CAP = 8
 const DT_MAX = 1 / 15
 const INV = 16
+const DYNAMIC_MARKET = false
 
 export function dest(i: Intent): Coord {
   if (i.act === 'fill') return i.at
@@ -160,6 +159,7 @@ export class World {
   readonly truck: Truck
   readonly stall: StallMap
   sales: StallSale[] = []
+  consignRevision = 0
   readonly actor: Actor
   readonly clock = new Clock()
   readonly drops: Drop[] = []
@@ -204,11 +204,11 @@ export class World {
     this.inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
     this.inventory[1] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'rare', count: 2, unitSale: CROPS.carrot.sale * RARITY_SALE.rare },
+      item: { kind: 'seeds', crop: 'carrot', rarity: 'rare', count: 2 },
     }
     this.inventory[2] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'tomato', rarity: 'rare', count: 2, unitSale: CROPS.tomato.sale * RARITY_SALE.rare },
+      item: { kind: 'seeds', crop: 'tomato', rarity: 'rare', count: 2 },
     }
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
   }
@@ -786,6 +786,38 @@ export class World {
     this.ping()
   }
 
+  marketGain(): number {
+    return STALL_IDS.reduce(
+      (total, id) =>
+        total +
+        RARITY_RANK.reduce((goodTotal, rarity) => goodTotal + this.stall[id].stock[rarity] * stallX(id, this.modifiers) * RARITY_SALE[rarity], 0),
+      0,
+    )
+  }
+
+  sellAll(): void {
+    const gain = this.marketGain()
+    if (gain === 0) return
+    STALL_IDS.forEach(id => {
+      RARITY_RANK.forEach(rarity => {
+        this.stall[id].stock[rarity] = 0
+      })
+      this.stall[id].acc = 0
+    })
+    this.money += gain
+    this.sales = []
+    this.ping()
+  }
+
+  private retarget(slot: 0 | 1): void {
+    STALL_IDS.forEach(id => {
+      const g = this.stall[id]
+      const x = stallX(id, this.modifiers)
+      const u = hash(this.seed, 'mkt-tgt', goodIx(id), this.clock.day, slot)
+      g.target = clamp(g.target * (0.75 + u * 0.5), 0.25 * x, 1.75 * x)
+    })
+  }
+
   startResearch(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
@@ -806,7 +838,11 @@ export class World {
   tick(rawDt: number): void {
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
     if (this.seam.kind === 'recap') return
-    if (this.clock.advance(dt) === 'seam') {
+    this.sales = []
+    const t0 = this.clock.t
+    const seam = this.clock.advance(dt) === 'seam'
+    if (seam) {
+      if (DYNAMIC_MARKET) this.retarget(1)
       this.workLeft = 0
       this.workTotal = 0
       this.filling = false
@@ -828,10 +864,12 @@ export class World {
       this.ping()
       return
     }
+    if (DYNAMIC_MARKET && t0 < 120 && this.clock.t >= 120) this.retarget(0)
     this.tickSpeech(dt)
     this.tickJob(dt)
     this.tickQueue(dt)
     this.tickField(dt)
+    if (this.tickStall(dt) || this.sales.length > 0) this.ping()
   }
 
   private tickSpeech(dt: number): void {
@@ -859,6 +897,12 @@ export class World {
         growSpeed: 1,
         waterUseMul: 1,
       })
+      if (DYNAMIC_MARKET) {
+        const g = this.stall[def.effect.crop]
+        const x = stallX(def.effect.crop, this.modifiers)
+        g.market = clamp(g.market, 0.25 * x, 1.75 * x)
+        g.target = clamp(g.target, 0.25 * x, 1.75 * x)
+      }
     }
     this.ping()
   }
@@ -928,8 +972,8 @@ export class World {
         this.doPickup(i.at)
         this.shiftHead()
         return
-      case 'sell':
-        this.doSell()
+      case 'consign':
+        this.doConsign()
         this.shiftHead()
         return
       case 'fill':
@@ -1361,32 +1405,79 @@ export class World {
     this.hand = { kind: 'empty' }
   }
 
-  private doSell(): void {
+  private doConsign(): void {
     if (this.hand.kind !== 'hold') return
-    if (this.hand.item.kind === 'fruit') {
-      this.money += fruitMoney(this.hand.item)
+    const item = this.hand.item
+    if (item.kind === 'fruit') {
+      this.stall[item.crop].stock[item.rarity] += item.count
       this.hand = { kind: 'empty' }
-      this.pulse = { text: 'Sell', at: { ...DOOR } }
+      this.completeConsign()
       return
     }
-    if (this.hand.item.kind === 'berry') {
-      this.money += berryMoney(this.hand.item.rarity, this.hand.item.count)
+    if (item.kind === 'berry') {
+      this.stall.berry.stock[item.rarity] += item.count
       this.hand = { kind: 'empty' }
-      this.pulse = { text: 'Sell', at: { ...DOOR } }
+      this.completeConsign()
       return
     }
-    if (this.hand.item.kind !== 'box') return
-    const cargo = this.hand.item.cargo
-    if (cargo.kind === 'berry') {
-      this.money += berryMoney(cargo.rarity, cargo.count)
-      this.hand.item.cargo = { kind: 'empty' }
-      this.pulse = { text: 'Sell', at: { ...DOOR } }
+    if (item.kind !== 'box') return
+    if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
+      const cargo = item.cargo.stack
+      this.stall[cargo.crop].stock[cargo.rarity] += cargo.count
+      item.cargo = { kind: 'empty' }
+      this.completeConsign()
       return
     }
-    if (cargo.kind !== 'stack' || cargo.goods !== 'fruit') return
-    this.money += fruitMoney(cargo.stack)
-    this.hand.item.cargo = { kind: 'empty' }
-    this.pulse = { text: 'Sell', at: { ...DOOR } }
+    if (item.cargo.kind === 'berry') {
+      this.stall.berry.stock[item.cargo.rarity] += item.cargo.count
+      item.cargo = { kind: 'empty' }
+      this.completeConsign()
+    }
+  }
+
+  private completeConsign(): void {
+    this.consignRevision += 1
+    this.pulse = { text: 'Drop off', at: { ...PAD } }
+  }
+
+  private tickStall(dt: number): boolean {
+    if (!DYNAMIC_MARKET) return false
+    let changed = false
+    this.mktAcc += dt
+    while (this.mktAcc >= 10) {
+      this.mktAcc -= 10
+      STALL_IDS.forEach(id => {
+        const g = this.stall[id]
+        const current = tenths(g.market)
+        const target = tenths(g.target)
+        if (current < target) {
+          g.market = (current + 1) / 10
+          changed = true
+        }
+        if (current > target) {
+          g.market = (current - 1) / 10
+          changed = true
+        }
+      })
+    }
+    STALL_IDS.forEach(id => {
+      const g = this.stall[id]
+      if (stockCount(g) === 0) {
+        g.acc = 0
+        return
+      }
+      g.acc += stallRate(g.offered, g.market) * dt
+      while (g.acc >= 1 && stockCount(g) > 0) {
+        const rarity = RARITY_RANK.find(r => g.stock[r] > 0) as Rarity
+        g.stock[rarity] -= 1
+        const money = g.offered * RARITY_SALE[rarity]
+        this.money += money
+        this.sales.push({ good: id, rarity, money })
+        g.acc -= 1
+        changed = true
+      }
+    })
+    return changed
   }
 
   private canGrind(at: Coord): boolean {
@@ -1510,6 +1601,14 @@ function sprinklerSku(s: Sprinkler): SkuId {
   if (s.variant === 'basic') return 'buy-sprinkler'
   if (s.variant === 'vert') return 'buy-sprinkler-vert'
   return 'buy-sprinkler-large'
+}
+
+function stockCount(g: { readonly stock: { [K in Rarity]: number } }): number {
+  return RARITY_RANK.reduce((n, rarity) => n + g.stock[rarity], 0)
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n))
 }
 
 function vertsOf(e: Edge): [Vertex, Vertex] {

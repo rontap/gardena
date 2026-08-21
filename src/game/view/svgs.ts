@@ -36,6 +36,7 @@ import pump from '../../assets/prop-pump.svg?raw'
 import chest from '../../assets/prop-chest.svg?raw'
 import grinder from '../../assets/prop-grinder.svg?raw'
 import propWell from '../../assets/prop-well.svg?raw'
+import propTruck from '../../assets/prop-truck.svg?raw'
 import propSprinkler from '../../assets/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/prop-sprinkler-vert.svg?raw'
 import propSprinklerLarge from '../../assets/prop-sprinkler-large.svg?raw'
@@ -73,6 +74,7 @@ import uiBtnLens from '../../assets/ui-btn-lens.svg?raw'
 import uiBtnDelete from '../../assets/ui-btn-delete.svg?raw'
 import uiBtnRotate from '../../assets/ui-btn-rotate.svg?raw'
 import uiBtnCancel from '../../assets/ui-btn-cancel.svg?raw'
+import uiMarketStall from '../../assets/ui-market-stall.svg?raw'
 import uiCoin from '../../assets/ui-coin.svg?raw'
 import uiCoinSilver from '../../assets/ui-coin-silver.svg?raw'
 import uiMeter from '../../assets/ui-meter.svg?raw'
@@ -249,6 +251,7 @@ export const ACTOR = inner(actor)
 export const HOUSE = inner(house)
 export const PUMP = inner(pump)
 export const WELL = inner(propWell)
+export const TRUCK = inner(propTruck)
 export const CHEST = inner(chest)
 export const GRINDER = inner(grinder)
 export const SPRINKLER = inner(propSprinkler)
@@ -299,6 +302,7 @@ export const UI_BTN_LENS = uiBtnLens
 export const UI_BTN_DELETE = uiBtnDelete
 export const UI_BTN_ROTATE = uiBtnRotate
 export const UI_BTN_CANCEL = uiBtnCancel
+export const UI_MARKET_STALL = uiMarketStall
 export const UI_PHASE: { readonly [K in DayPhase]: string } = {
   sunrise: inner(uiPhaseSunrise),
   day: inner(uiPhaseDay),

@@ -29,6 +29,7 @@ type Panel =
 export default function App() {
   const world = useRef(new World()).current
   const root = useRef<HTMLDivElement>(null)
+  const consignRevision = useRef(0)
   const [n, setN] = useState(0)
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
@@ -41,6 +42,12 @@ export default function App() {
     if (world.cue.kind !== 'inventory') return
     setPanel({ kind: 'inventory' })
     world.ackCue()
+  }, [n, world])
+
+  useEffect(() => {
+    if (world.consignRevision === consignRevision.current) return
+    consignRevision.current = world.consignRevision
+    if (world.seam.kind !== 'recap') setPanel({ kind: 'market' })
   }, [n, world])
 
   useEffect(() => {

@@ -188,7 +188,7 @@ describe('beta-2 invariants', () => {
     expect(w.hand).toEqual(hand)
   })
 
-  test('compact after buy swap sellSlot', () => {
+  test('compact after buy and swap', () => {
     const w = new World()
     w.buy('pack-carrot')
     expectPacked(w)
@@ -204,22 +204,6 @@ describe('beta-2 invariants', () => {
     const fruits = w.inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
     expect(fruits).toHaveLength(1)
     expect(fruits[0].kind === 'hold' && fruits[0].item.kind === 'fruit' && fruits[0].item.count).toBe(5)
-    w.sellSlot(1)
-    expectPacked(w)
-    expect(w.inventory.some(s => s.kind === 'hold' && s.item.kind === 'fruit')).toBe(false)
-  })
-
-  test('sellSlot fruit pays count and leaves hand', () => {
-    const w = new World()
-    const hand = w.hand
-    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
-    w.inventory[1] = { kind: 'empty' }
-    w.inventory[2] = { kind: 'empty' }
-    const before = w.money
-    w.sellSlot(0)
-    expect(w.money).toBe(before + 4 * 3)
-    expect(w.inventory[0].kind).toBe('empty')
-    expect(w.hand).toEqual(hand)
   })
 
   test('unlockAll marks every research done and idles job', () => {
@@ -610,24 +594,10 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-expand'].tree).toBe('expansion')
   })
 
-  test('itemLine fruit berry sell-for equals sellSlot', () => {
+  test('itemLine fruit berry has no money clause', () => {
     const w = new World()
-    w.inventory[0] = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
-    const fruitLine = itemLine(
-      w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
-      w.modifiers,
-    )
-    const before = w.money
-    w.sellSlot(0)
-    expect(fruitLine).toBe(`Carrot - 3, sell for ${w.money - before}`)
-    w.inventory[0] = { kind: 'hold', item: { kind: 'berry', rarity: 'uncommon', count: 2 } }
-    const berryLine = itemLine(
-      w.inventory[0].kind === 'hold' ? w.inventory[0].item : { kind: 'shrub' },
-      w.modifiers,
-    )
-    const mid = w.money
-    w.sellSlot(0)
-    expect(berryLine).toBe(`Berry - 2, sell for ${w.money - mid}`)
+    expect(itemLine({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 }, w.modifiers)).toBe('Carrot - 3')
+    expect(itemLine({ kind: 'berry', rarity: 'uncommon', count: 2 }, w.modifiers)).toBe('Berry - 2')
   })
 
   test('infertile prompt is does not need seeds', () => {

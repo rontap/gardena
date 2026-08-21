@@ -28,6 +28,7 @@ import {
   ROCK,
   ROCK_LONG,
   SHRUB,
+  TRUCK,
   SPRINKLER,
   SPRINKLER_LARGE,
   SPRINKLER_VERT,
@@ -411,6 +412,7 @@ const Marks = memo(function Marks({
   const appleTrees: { col: number; row: number; ripe: boolean }[] = []
   const chests: Coord[] = []
   const grinders: Coord[] = []
+  const truck = { col: world.truck.base.col, row: world.truck.base.row }
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
   const pipes: { v: Vertex; html: string; rot: number; wet: boolean }[] = []
   const sprinklers: Sprinkler[] = []
@@ -509,6 +511,11 @@ const Marks = memo(function Marks({
           dangerouslySetInnerHTML={{ __html: GRINDER }}
         />
       ))}
+      <g
+        data-truck
+        transform={`translate(${truck.col * TILE},${truck.row * TILE}) scale(${TILE / 24})`}
+        dangerouslySetInnerHTML={{ __html: TRUCK }}
+      />
       <g
         transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}
         dangerouslySetInnerHTML={{ __html: HOUSE }}

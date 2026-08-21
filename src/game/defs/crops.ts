@@ -11,13 +11,13 @@ export type CropDef = {
 }
 
 export const CROPS: { readonly [K in CropId]: CropDef } = {
-  carrot: { id: 'carrot', growSeconds: 103.5, waterUsePerSec: 0.004889, sale: 4, seed: 1, rotSeconds: 480 },
-  potato: { id: 'potato', growSeconds: 184, waterUsePerSec: 0.00375, sale: 8, seed: 2, rotSeconds: 480 },
-  wheat: { id: 'wheat', growSeconds: 276, waterUsePerSec: 0.003333, sale: 14, seed: 2, rotSeconds: 480 },
-  tomato: { id: 'tomato', growSeconds: 345, waterUsePerSec: 0.003111, sale: 18, seed: 3, rotSeconds: 300 },
-  raspberry: { id: 'raspberry', growSeconds: 414, waterUsePerSec: 0.003333, sale: 24, seed: 4, rotSeconds: 158.4 },
-  watermelon: { id: 'watermelon', growSeconds: 345, waterUsePerSec: 0.013333, sale: 19, seed: 4, rotSeconds: 360 },
-  apple: { id: 'apple', growSeconds: 720, waterUsePerSec: 0, sale: 20, seed: 4, rotSeconds: 480 },
+  carrot: { id: 'carrot', growSeconds: 90, waterUsePerSec: 0.004889, sale: 3, seed: 1, rotSeconds: 420 },
+  potato: { id: 'potato', growSeconds: 120, waterUsePerSec: 0.00375, sale: 6, seed: 2, rotSeconds: 600 },
+  wheat: { id: 'wheat', growSeconds: 180, waterUsePerSec: 0.003333, sale: 12, seed: 2, rotSeconds: 420 },
+  tomato: { id: 'tomato', growSeconds: 280, waterUsePerSec: 0.003111, sale: 20, seed: 3, rotSeconds: 300 },
+  raspberry: { id: 'raspberry', growSeconds: 340, waterUsePerSec: 0.003333, sale: 26, seed: 4, rotSeconds: 160 },
+  watermelon: { id: 'watermelon', growSeconds: 260, waterUsePerSec: 0.013333, sale: 20, seed: 4, rotSeconds: 360 },
+  apple: { id: 'apple', growSeconds: 600, waterUsePerSec: 0, sale: 20, seed: 4, rotSeconds: 480 },
 }
 
 const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = {

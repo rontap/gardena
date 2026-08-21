@@ -1,10 +1,8 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemTip } from '../sim/item.ts'
-import { berryMoney, fruitMoney } from '../sim/item.ts'
 import { cropVariety } from '../defs/crops.ts'
 import { faceGfx } from '../view/svgs.ts'
-import { Coin } from './frame.tsx'
 
 export function Held({ hand }: { hand: Hand }) {
   if (hand.kind === 'empty') {
@@ -57,14 +55,14 @@ export function ItemLineView({ item }: { item: Item }) {
   if (item.kind === 'fruit') {
     return (
       <span className="inline-flex items-center gap-1">
-        {cropVariety(item.crop, item.rarity)} - {item.count}, sell for <Coin n={fruitMoney(item)} />
+      {cropVariety(item.crop, item.rarity)} - {item.count}
       </span>
     )
   }
   if (item.kind === 'berry') {
     return (
       <span className="inline-flex items-center gap-1">
-        Berry - {item.count}, sell for <Coin n={berryMoney(item.rarity, item.count)} />
+      Berry - {item.count}
       </span>
     )
   }

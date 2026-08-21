@@ -111,8 +111,11 @@ export const Btn = forwardRef<
     disabled?: boolean
     selected?: boolean
     className?: string
+    'data-plus'?: string
+    'data-minus'?: string
+    'data-sell-all'?: string
   }
->(function Btn({ children, onClick, disabled, selected, className }, ref) {
+>(function Btn({ children, onClick, disabled, selected, className, 'data-plus': dataPlus, 'data-minus': dataMinus, 'data-sell-all': dataSellAll }, ref) {
   const off = disabled === true
   const on = selected === true
   const face = off
@@ -126,6 +129,9 @@ export const Btn = forwardRef<
       type="button"
       disabled={off}
       className={`relative px-3 py-2 pt-3 text-left ${face} ${className ?? ''}`}
+      data-plus={dataPlus}
+      data-minus={dataMinus}
+      data-sell-all={dataSellAll}
       onClick={onClick}
     >
       <span

@@ -188,7 +188,15 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       : undefined
 
   function pushCam(next: Camera): void {
-    onCam(clampCam(next, world.bounds()))
+    const b = world.bounds()
+    onCam(
+      clampCam(next, {
+        col0: b.col0 - FADE,
+        row0: b.row0 - FADE,
+        col1: b.col1 + FADE,
+        row1: b.row1 + FADE,
+      }),
+    )
   }
 
   useEffect(() => {
@@ -791,7 +799,7 @@ function hBand(g: number): number {
   return Math.min(2, Math.floor((g - VERY_HARD_MAX) / HARD_BAND))
 }
 
-function groundArt(seed: number, col: number, row: number, g: number): string {
+function groundArt(col: number, row: number, g: number): string {
   return g < VERY_HARD_MAX
     ? VERY_HARD[vhBand(g)]
     : g < HARD_MAX
@@ -821,7 +829,7 @@ function bakeGround(world: World): string {
     for (let col = b.col0 - FADE; col < b.col1 + FADE; col++) {
       if (keys.has(chunkKey(chunkOf({ col, row })))) continue
       const g = goodness(world.seed, col, row)
-      const art = groundArt(world.seed, col, row, g)
+      const art = groundArt(col, row, g)
       const d = Math.max(
         b.col0 - col,
         col - (b.col1 - 1),

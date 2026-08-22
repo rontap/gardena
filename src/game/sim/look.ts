@@ -1,4 +1,5 @@
-import { inWorld } from './building.ts'
+import { inFade, inWorld } from './building.ts'
+import { NOT_OWNED } from './prompt.ts'
 import { onCell } from './drop.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
@@ -35,7 +36,12 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       return `expand ${face.price}`
     }
   }
-  if (at === undefined || !inWorld(at, world.owned)) {
+  if (at === undefined) {
+    if (world.place.kind === 'sku') return `Place ${skuLabel(world.place.id)}`
+    return '—'
+  }
+  if (!inWorld(at, world.owned)) {
+    if (inFade(at, world.owned)) return NOT_OWNED
     if (world.place.kind === 'sku') {
       return `Place ${skuLabel(world.place.id)}`
     }

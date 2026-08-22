@@ -101,16 +101,14 @@ For now, market mechanics are not that detailed, but the "better XY" crops resea
 - "Clearence sale" allows selling rotten fruits for 1$, regardless of type.
 When there are no skills left, or not enough to fill all three, only those are generated.
 ## 0.7 VFX & UI update and Docs ordering
-This update focuses on improving UI & UX and VFX design in terms of game code.
-The docs are right now organised in a very messy way. The main workdocs are okay per-version, but having no other notes about the game is bad. There should be an almanac-style repository of UI items, mechanics, interactions, design considerations. This is because right now it is hard to know if any given value is: calculated by hand based on different things, tuned to another value (and will need to be changed if that other mechanic is rebalanced), or is just a game design pereference. 
+
 A few (for now) mostly cosmetic items are to be added. They are all placed similarly to tiles, i.e. when the user starts placing it, they enter the "place many of this" mode and they can click and build as much as they want to. Theese items alre already mostly implemented - finish up work
 - Wooden Fence (10$) can be built on untilled soil and links up to fences the same way a pipe does, but the fence is in the middle of a tile, not inbetween files.
 - Tiles (Cobblestone, Brick, Paved) 5 / 7 / 11. They later will affect walking speed, but are not doing anything besides visuals now. 
 - Grass seeds - 1$, unlocked by "**landscape architecture**" research, allows planting of grass seeds, use very little water and mature quite quickly (1/4 day), do not have rarity. Once a grass is fully grown, the tilled land becomes untilled again.
 - Rotary shovel - research gated behind digging 200 times (research time 120sec), cost 1000$, 0.2s shovel time, 1k uses
 - Diamond pickaxe - research gated behind pickaxing 150 times (research time 120sec), cost 1000$, 0.4s pickaxe time, 1k uses
-UI updates:
-- End of day screen should be better designed, table like, beter summarizing {starting} + {gain (from sources ...)} - expenses (buying and tax)
+
 
 ## 0.8 Stable game log state and perf improvements
 The goal of this update is to log actions in a way such that later tools can use it to unlock things.

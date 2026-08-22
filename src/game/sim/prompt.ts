@@ -9,6 +9,8 @@ import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { fillable, waterable, type Intent, type World } from './world.ts'
 
+export const NOT_OWNED = "I don't own this land"
+
 export type Prompt =
   | { kind: 'intent'; text: string; intent: Intent }
   | { kind: 'place'; text: string }
@@ -86,7 +88,7 @@ export function deletePrompt(
 
 export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (w.place.kind !== 'delete') return { kind: 'blocked', text: 'Cannot delete here' }
-  if (!inWorld(at, w.owned)) return { kind: 'blocked', text: 'Cannot delete here' }
+  if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
   const cell = w.cell(at)
   if (cell.kind === 'pump' && cell.form === 'jack') return { kind: 'place', text: 'Delete pumpjack' }
   if (cell.kind === 'pump' && cell.form === 'well') return { kind: 'place', text: 'Delete well' }
@@ -156,7 +158,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.place.id === 'buy-tile-brick' ||
       w.place.id === 'buy-tile-cobble'
     ) {
-      if (!inWorld(at, w.owned)) return { kind: 'blocked', text: 'Cannot place here' }
+      if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
       if (!isTileSite(w.cell(at))) return { kind: 'blocked', text: 'Cannot place here' }
       return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }
     }
@@ -174,10 +176,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!placeSolidOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
       return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }
     }
-    if (!inWorld(at, w.owned) || !isPlot(w.cell(at))) return { kind: 'blocked', text: 'Cannot place here' }
+    if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
+    if (!isPlot(w.cell(at))) return { kind: 'blocked', text: 'Cannot place here' }
     return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }
   }
-  if (!inWorld(at, w.owned)) return { kind: 'blocked', text: 'Cannot place here' }
+  if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
   const cell = w.cell(at)
   if (cell.kind === 'house') return intent('Inventory', { act: 'inventory' })
   if (cell.kind === 'truck') {

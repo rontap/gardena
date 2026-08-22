@@ -55,6 +55,7 @@ import {
   chunkOf,
   chunkRect,
   frontOf,
+  inFade,
   inWorld,
   local,
   occupiedCells,
@@ -142,6 +143,7 @@ import {
   readPrompt,
   readPromptHit,
   valvePrompt,
+  NOT_OWNED,
   type Prompt,
   type PromptHit,
 } from './prompt.ts'
@@ -958,7 +960,10 @@ export class World {
   }
 
   click(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
-    if (!inWorld(at, this.owned) && this.place.kind === 'none') return 'noop'
+    if (!inWorld(at, this.owned)) {
+      if (inFade(at, this.owned) && this.place.kind === 'none') this.say(NOT_OWNED)
+      return 'noop'
+    }
     const p = this.prompt(at)
     if (p.kind === 'intent') {
       this.enqueue(p.intent)

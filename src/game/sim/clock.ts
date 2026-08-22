@@ -2,6 +2,13 @@ export const DAY_SECONDS = 240
 
 export type DayPhase = 'sunrise' | 'day' | 'sunset' | 'twilight'
 
+export const PHASE_NAME: { readonly [K in DayPhase]: string } = {
+  sunrise: 'Sunrise',
+  day: 'Midday',
+  sunset: 'Sunset',
+  twilight: 'Twilight',
+}
+
 export function days(s: number): number {
   return s / DAY_SECONDS
 }

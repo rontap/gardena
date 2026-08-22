@@ -2,6 +2,8 @@ import {
   COMPOST_NEED,
   COMPOST_SECONDS,
   CONTAINERS,
+  GRASS_GROW,
+  GRASS_WATER_PER_SEC,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -10,7 +12,7 @@ import {
   SPRINKLER_TILE_RATE,
 } from '../defs/items.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
+import { extraGrowUp1, JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   HAPPY_DROWN_SECONDS,
@@ -21,6 +23,7 @@ import {
   RARITY_RANK,
   RARITY_SALE,
   rollGrowRarity,
+  rollShopRarity,
   type Rarity,
 } from '../defs/rarity.ts'
 import type {
@@ -100,8 +103,8 @@ import {
 } from './stall.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 import { goodness } from './noise.ts'
-import { Plant, Weed, type Doom } from './plant.ts'
-import { bare, isPlot, isTileSite, isTilled, type Cell, type Plot } from './plot.ts'
+import { Plant, Turf, Weed, type Doom } from './plant.ts'
+import { bare, isFenceSite, isPlot, isTileSite, isTilled, type Cell, type Plot } from './plot.ts'
 import {
   BIG_TICK,
   FERT_PLOT_MAX,
@@ -198,13 +201,6 @@ export type Place =
   | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
   | { kind: 'delete' }
 
-export type StayArmed =
-  | 'buy-pipe'
-  | 'buy-sprinkler'
-  | 'buy-sprinkler-vert'
-  | 'buy-sprinkler-large'
-  | 'delete'
-
 export type Pulse = { text: string; at: Coord }
 
 export type Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[] }
@@ -252,7 +248,7 @@ const INV = 16
 const DYNAMIC_MARKET = false
 
 function groundSig(c: Cell): string {
-  if (c.kind === 'untilled') return `${c.ground}:${c.cover !== undefined && c.cover.kind === 'tile' ? c.cover.tile : '-'}`
+  if (c.kind === 'untilled') return `${c.ground}:${c.cover.kind === 'tile' ? c.cover.tile : '-'}`
   if (c.kind === 'infertile') return 'vh'
   return '.'
 }
@@ -272,6 +268,7 @@ export class World {
   readonly tanks: RainTank[] = []
   readonly taps: Tap[] = []
   readonly segments = new Map<string, Segment>()
+  readonly fences = new Set<string>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
   readonly house: House
@@ -301,6 +298,9 @@ export class World {
   legStart = { x: DOOR.col + 0.5, y: DOOR.row + 0.5 }
   workTotal = 0
   bigTicks = 0
+  digs = 0
+  mines = 0
+  cheatFastResearch = false
   private workLeft = 0
   private filling = false
   private mktAcc = 0
@@ -393,6 +393,7 @@ export class World {
       cell.kind === 'growing' ||
       cell.kind === 'ripe' ||
       cell.kind === 'weed' ||
+      cell.kind === 'turf' ||
       cell.kind === 'chest' ||
       cell.kind === 'compost-box' ||
       ((cell.kind === 'shrub' || cell.kind === 'apple-tree') && !cell.ripe)
@@ -602,6 +603,19 @@ export class World {
     return r === 'start' || this.done.has(r)
   }
 
+  hasFence(at: Coord): boolean {
+    return this.fences.has(`${at.col},${at.row}`)
+  }
+
+  fenceArms(at: Coord): { n: boolean; e: boolean; s: boolean; w: boolean } {
+    return {
+      n: this.hasFence({ col: at.col, row: at.row - 1 }),
+      e: this.hasFence({ col: at.col + 1, row: at.row }),
+      s: this.hasFence({ col: at.col, row: at.row + 1 }),
+      w: this.hasFence({ col: at.col - 1, row: at.row }),
+    }
+  }
+
   hasPipe(e: Edge): boolean {
     return this.segments.has(edgeKey(e))
   }
@@ -766,6 +780,18 @@ export class World {
     if (this.place.kind !== 'delete') return
     if (!inWorld(at, this.owned)) return
     const c = this.cell(at)
+    if (this.hasFence(at)) {
+      this.fences.delete(`${at.col},${at.row}`)
+      this.pulse = { text: 'Delete wooden fence', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'untilled' && c.cover.kind === 'tile') {
+      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
+      this.pulse = { text: 'Delete paving', at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind === 'pump') {
       if (c.form === 'starter') return
       occupiedCells(c.base, this.owned).forEach(p => {
@@ -1060,27 +1086,24 @@ export class World {
 
   buy(id: SkuId): 'Cannot afford' | 'Inventory full' | undefined {
     if (!this.skuOpen(id)) return undefined
-    const sku = SKUS[id]
     const made = skuItem(id)
-    if (made.kind === 'seeds') {
-      const merge = this.inventory.findIndex(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === 'seeds' &&
-          s.item.crop === made.crop &&
-          s.item.rarity === made.rarity,
-      )
-      const empty = this.inventory.findIndex(s => s.kind === 'empty')
+    if (made.kind === 'grass-seeds') {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
-      if (merge < 0 && empty < 0) return 'Inventory full'
+      if (!this.canFitGrass()) return 'Inventory full'
       this.money -= price
-      if (merge >= 0) {
-        const slot = this.inventory[merge]
-        if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += made.count
-      } else {
-        this.inventory[empty] = { kind: 'hold', item: made }
-      }
+      this.putGrass(made.count)
+      this.compactInventory()
+      this.ping()
+      return undefined
+    }
+    if (made.kind === 'seeds') {
+      const rarity = this.shopPackRarity(0)
+      const price = this.skuPrice(id)
+      if (this.money < price) return 'Cannot afford'
+      if (!this.canFitSeeds(made.crop, [{ rarity, count: made.count }])) return 'Inventory full'
+      this.money -= price
+      this.putSeeds(made.crop, rarity, made.count)
       this.compactInventory()
       this.ping()
       return undefined
@@ -1119,6 +1142,16 @@ export class World {
       const tile = this.place.id === 'buy-tile-paved' ? 'paved' : this.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
       this.money -= price
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
+      this.pulse = { text: `Place ${placeLabel(this.place.id)}`, at: { ...at } }
+      this.ping()
+      return
+    }
+    if (this.place.id === 'buy-fence') {
+      if (!inWorld(at, this.owned)) return
+      if (!isFenceSite(this.cell(at))) return
+      if (this.hasFence(at)) return
+      this.money -= price
+      this.fences.add(`${at.col},${at.row}`)
       this.pulse = { text: `Place ${placeLabel(this.place.id)}`, at: { ...at } }
       this.ping()
       return
@@ -1184,7 +1217,9 @@ export class World {
       made.kind === 'sprinkler-vert' ||
       made.kind === 'sprinkler-large' ||
       made.kind === 'delete' ||
-      made.kind === 'tile'
+      made.kind === 'tile' ||
+      made.kind === 'fence' ||
+      made.kind === 'grass-seeds'
     ) {
       return
     }
@@ -1247,32 +1282,105 @@ export class World {
     this.ping()
   }
 
+  cheatMoney(): void {
+    this.money += 200
+    this.ping()
+  }
+
+  cheatPoints(): void {
+    this.family.player.points += 10
+    this.family.husband.points += 10
+    this.family.daughter.points += 10
+    this.ping()
+  }
+
+  toggleCheatResearch(): void {
+    this.cheatFastResearch = !this.cheatFastResearch
+    this.ping()
+  }
+
   buyPacks(id: SkuId): void {
     if (!this.hasSkill('bulk-buying')) return
     if (!this.skuOpen(id)) return
     const made = skuItem(id)
     if (made.kind !== 'seeds') return
     const price = 5 * this.skuPrice(id) * 0.95
-    const merge = this.inventory.findIndex(
-      s =>
-        s.kind === 'hold' &&
-        s.item.kind === 'seeds' &&
-        s.item.crop === made.crop &&
-        s.item.rarity === made.rarity,
-    )
-    const empty = this.inventory.findIndex(s => s.kind === 'empty')
+    const rarityOf = [0, 1, 2, 3, 4].map(i => this.shopPackRarity(i))
+    const stacks = RARITY_RANK.flatMap(rarity => {
+      const n = rarityOf.filter(x => x === rarity).length
+      return n === 0 ? [] : [{ rarity, count: n * made.count }]
+    })
     if (this.money < price) return
-    if (merge < 0 && empty < 0) return
+    if (!this.canFitSeeds(made.crop, stacks)) return
     this.money -= price
-    const add = made.count * 5
-    if (merge >= 0) {
-      const slot = this.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += add
-    } else {
-      this.inventory[empty] = { kind: 'hold', item: { ...made, count: add } }
-    }
+    stacks.forEach(s => this.putSeeds(made.crop, s.rarity, s.count))
     this.compactInventory()
     this.ping()
+  }
+
+  private shopPackRarity(i: number): Rarity {
+    const u = hash(
+      this.seed,
+      'pack-rarity',
+      this.clock.day,
+      Math.floor(this.clock.t * 1000),
+      Math.round(this.money * 10),
+      i,
+    )
+    return rollShopRarity(this.skillTier('seed-bank'), u)
+  }
+
+  private seedSlot(crop: CropId, rarity: Rarity): number {
+    return this.inventory.findIndex(
+      s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === crop && s.item.rarity === rarity,
+    )
+  }
+
+  private grassSlot(): number {
+    return this.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
+  }
+
+  private canFitGrass(): boolean {
+    return this.grassSlot() >= 0 || this.inventory.some(s => s.kind === 'empty')
+  }
+
+  private putGrass(count: number): void {
+    const merge = this.grassSlot()
+    if (merge >= 0) {
+      const slot = this.inventory[merge]
+      if (slot.kind === 'hold' && slot.item.kind === 'grass-seeds') slot.item.count += count
+      return
+    }
+    this.inventory[this.inventory.findIndex(s => s.kind === 'empty')] = {
+      kind: 'hold',
+      item: { kind: 'grass-seeds', count },
+    }
+  }
+
+  private canFitSeeds(crop: CropId, stacks: readonly { rarity: Rarity; count: number }[]): boolean {
+    let empties = this.inventory.filter(s => s.kind === 'empty').length
+    const seen = new Set<Rarity>()
+    for (const s of stacks) {
+      if (this.seedSlot(crop, s.rarity) >= 0 || seen.has(s.rarity)) {
+        seen.add(s.rarity)
+        continue
+      }
+      seen.add(s.rarity)
+      if (empties < 1) return false
+      empties -= 1
+    }
+    return true
+  }
+
+  private putSeeds(crop: CropId, rarity: Rarity, count: number): void {
+    const merge = this.seedSlot(crop, rarity)
+    if (merge >= 0) {
+      const slot = this.inventory[merge]
+      if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += count
+      return
+    }
+    const empty = this.inventory.findIndex(s => s.kind === 'empty')
+    this.inventory[empty] = { kind: 'hold', item: { kind: 'seeds', crop, rarity, count } }
   }
 
   nudgeOffered(id: StallGoodId, dir: 1 | -1): void {
@@ -1346,9 +1454,26 @@ export class World {
     })
   }
 
+  gateProgress(id: ResearchId): number {
+    const gate = RESEARCH[id].gate
+    if (gate.kind === 'none') return 1
+    return Math.min(1, (gate.kind === 'digs' ? this.digs : this.mines) / gate.n)
+  }
+
+  gateHave(id: ResearchId): number {
+    const gate = RESEARCH[id].gate
+    if (gate.kind === 'none') return 0
+    return gate.kind === 'digs' ? this.digs : this.mines
+  }
+
+  researchOpen(id: ResearchId): boolean {
+    return this.gateProgress(id) >= 1
+  }
+
   startResearch(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
+    if (!this.researchOpen(id)) return
     const def = RESEARCH[id]
     if (this.money < def.cost) return
     this.money -= def.cost
@@ -1418,7 +1543,8 @@ export class World {
 
   private tickJob(dt: number): void {
     if (this.job.kind === 'idle') return
-    this.job.left -= dt * (1 + 0.05 * this.skillTier('research-speed'))
+    const cheat = this.cheatFastResearch ? 3 : 1
+    this.job.left -= dt * (1 + 0.05 * this.skillTier('research-speed')) * cheat
     if (this.job.left > 0) return
     this.done.add(this.job.id)
     this.tally.research.push(this.job.id)
@@ -1664,6 +1790,18 @@ export class World {
         }
         continue
       }
+      if (c.kind === 'turf') {
+        const stage0 = c.turf.stage()
+        c.soil.drink(GRASS_WATER_PER_SEC * dt)
+        c.turf.maturity += dt / GRASS_GROW
+        if (c.turf.maturity >= 1) {
+          this.setCell(at, { kind: 'untilled', ground: 'soft', cover: { kind: 'grass', variant: c.turf.variant } })
+          dirty = true
+          continue
+        }
+        if (c.turf.stage() !== stage0) dirty = true
+        continue
+      }
       if (c.kind === 'weed') {
         const stage0 = c.weed.stage()
         c.soil.drink(WEED_WATER_PER_SEC * dt)
@@ -1696,7 +1834,12 @@ export class World {
           c.plant.maturity = 1
           c.plant.freshness = 1
           const u = hash(this.seed, 'grow-rarity', at.col, at.row, this.clock.day)
-          c.plant.rarity = rollGrowRarity(c.plant.rarity, c.plant.happiness, u)
+          c.plant.rarity = rollGrowRarity(
+            c.plant.rarity,
+            c.plant.happiness,
+            u,
+            extraGrowUp1(c.plant.crop, id => this.hasSkill(id)),
+          )
           this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
           dirty = true
           continue
@@ -1794,7 +1937,7 @@ export class World {
 
   private tickVfx(): boolean {
     let changed = false
-    this.vfx.forEach((on, k) => {
+    this.vfx.forEach((_on, k) => {
       if (!this.sprinklers.has(k)) {
         this.vfx.delete(k)
         changed = true
@@ -1896,6 +2039,7 @@ export class World {
     }
     this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
+    this.digs += 1
     s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
     this.pulse = { text, at: { ...at } }
@@ -1916,6 +2060,7 @@ export class World {
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'pickaxe' }> }
     if (c.kind === 'untilled' && c.ground === 'very-hard') {
       this.setCell(at, { kind: 'infertile' })
+      this.mines += 1
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
       this.pulse = { text: 'Mine', at: { ...at } }
@@ -1926,6 +2071,7 @@ export class World {
     occupiedCells(c.base, this.owned).forEach(p => {
       this.setCell(p, bare('soft'))
     })
+    this.mines += 1
     s.item.usesLeft -= n === 1 ? 1 : 2
     if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
     this.pulse = { text: 'Mine', at: { ...at } }
@@ -1937,7 +2083,7 @@ export class World {
       const c = this.cell(at)
       return c.kind === 'untilled' && c.ground === 'soft'
     }
-    if (this.hand.item.kind !== 'seeds') return false
+    if (this.hand.item.kind !== 'seeds' && this.hand.item.kind !== 'grass-seeds') return false
     return this.cell(at).kind === 'empty'
   }
 
@@ -1951,6 +2097,17 @@ export class World {
       return
     }
     const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
+    if (this.hand.item.kind === 'grass-seeds') {
+      const g = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'grass-seeds' }> }
+      const variant = Math.floor(hash(this.seed, 'turf', at.col, at.row) * 3) as 0 | 1 | 2
+      this.setCell(at, { kind: 'turf', soil: bed.soil, turf: new Turf(variant) })
+      g.item.count -= 1
+      if (g.item.count <= 0) this.hand = { kind: 'empty' }
+      this.pulse = { text: 'Sow grass', at: { ...at } }
+      this.compactInventory()
+      this.ping()
+      return
+    }
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
     this.setCell(at, {
       kind: 'growing',

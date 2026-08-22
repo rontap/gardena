@@ -32,7 +32,7 @@ father's eyes — same girl as in `ui-market-stall.svg`.
 
 viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, the UI draws the level.
 
-`skill-boots` `skill-machinery` `skill-tending` · `skill-research-speed` `skill-tool-contracts`
+`skill-boots` `skill-machinery` `skill-tending` `skill-seed-bank` · `skill-research-speed` `skill-tool-contracts`
 `skill-machine-contracts` `skill-forecast` `skill-tax` `skill-water-study` `skill-land-study` `skill-bulk-buying` ·
 `skill-saleswoman` `skill-heirloom` `skill-better` `skill-bio` `skill-industrial` `skill-open-late` `skill-open-24`
 `skill-jam` `skill-clearance` · `skill-point` (unspent point) `skill-locked` (research or skill gate).

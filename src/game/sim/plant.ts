@@ -31,6 +31,20 @@ export class Plant {
   }
 }
 
+export class Turf {
+  maturity = 0
+
+  readonly variant: 0 | 1 | 2
+
+  constructor(variant: 0 | 1 | 2) {
+    this.variant = variant
+  }
+
+  stage(): 'sprout' | 'grow' {
+    return this.maturity < 0.5 ? 'sprout' : 'grow'
+  }
+}
+
 export class Weed {
   maturity = 0
 

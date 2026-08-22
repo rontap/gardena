@@ -27,6 +27,20 @@ import itemCompost from '../../assets/item-compost.svg?raw'
 import itemRotten from '../../assets/item-rotten.svg?raw'
 import itemDead from '../../assets/item-dead.svg?raw'
 import itemGrass from '../../assets/item-grass.svg?raw'
+import cropGrass from '../../assets/crop-grass.svg?raw'
+import rotaryShovel from '../../assets/item-rotary-shovel.svg?raw'
+import diamondPickaxe from '../../assets/item-diamond-pickaxe.svg?raw'
+import itemFence from '../../assets/item-fence.svg?raw'
+import fencePost from '../../assets/fence-post.svg?raw'
+import fenceStub from '../../assets/fence-stub.svg?raw'
+import fenceI from '../../assets/fence-i.svg?raw'
+import fenceL from '../../assets/fence-l.svg?raw'
+import fenceT from '../../assets/fence-t.svg?raw'
+import fenceX from '../../assets/fence-x.svg?raw'
+import itemPaved from '../../assets/item-paved.svg?raw'
+import itemBrick from '../../assets/item-brick.svg?raw'
+import itemCobble from '../../assets/item-cobble.svg?raw'
+import uiResearchLandscape from '../../assets/ui-research-landscape.svg?raw'
 import propCompostBox from '../../assets/prop-compost-box.svg?raw'
 import itemShrub from '../../assets/item-shrub.svg?raw'
 import itemBerry from '../../assets/item-berry.svg?raw'
@@ -94,6 +108,7 @@ import tileBrick from '../../assets/tile-brick.svg?raw'
 import tileCobble from '../../assets/tile-cobble.svg?raw'
 import uiBtn from '../../assets/ui-btn.svg?raw'
 import uiBtnShop from '../../assets/ui-btn-shop.svg?raw'
+import uiBtnCheat from '../../assets/ui-btn-cheat.svg?raw'
 import uiBtnResearch from '../../assets/ui-btn-research.svg?raw'
 import uiBtnMarket from '../../assets/ui-btn-market.svg?raw'
 import uiBtnAlmanac from '../../assets/ui-btn-almanac.svg?raw'
@@ -105,6 +120,7 @@ import uiBtnFamily from '../../assets/skills/ui-btn-family.svg?raw'
 import skillBoots from '../../assets/skills/skill-boots.svg?raw'
 import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
 import skillTending from '../../assets/skills/skill-tending.svg?raw'
+import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
 import skillToolContracts from '../../assets/skills/skill-tool-contracts.svg?raw'
 import skillMachineContracts from '../../assets/skills/skill-machine-contracts.svg?raw'
@@ -150,7 +166,7 @@ import uiCornerBl from '../../assets/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import type { CropId, MemberId, ResearchId, SkillId, SkuId, TileId } from '../sim/ids.ts'
+import type { CropId, MemberId, PickaxeId, ResearchId, ShovelId, SkillId, SkuId, TileId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -192,7 +208,8 @@ export function cropInner(id: CropId, stage: string): string {
 }
 
 export function itemInner(item: Face): string {
-  if (item.kind === 'tile') return BUILDING_TILES[item.tile]
+  if (item.kind === 'tile') return TILE_ICON[item.tile]
+  if (item.kind === 'fence') return inner(itemFence)
   if (item.kind === 'pumpjack') return `<g transform="translate(0,6) scale(0.5)">${inner(pump)}</g>`
   if (item.kind === 'chest') return inner(itemChest)
   if (item.kind === 'grinder') return inner(itemGrinder)
@@ -208,10 +225,11 @@ export function itemInner(item: Face): string {
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
+  if (item.kind === 'grass-seeds') return turfInner('grow')
   if (item.kind === 'rotten') return rottenInner(item.cls)
   if (item.kind === 'dead') return deadInner(item.cls)
-  if (item.kind === 'shovel') return inner(item.id === 'shovel' ? shovel : better)
-  if (item.kind === 'pickaxe') return inner(item.id === 'pickaxe' ? pickaxe : betterPickaxe)
+  if (item.kind === 'shovel') return SHOVEL_ART[item.id]
+  if (item.kind === 'pickaxe') return PICKAXE_ART[item.id]
   if (item.kind === 'container') {
     if (item.id === 'bucket') return inner(bucket)
     return inner(largeBucket)
@@ -248,6 +266,59 @@ export const BUILDING_TILES: { readonly [K in TileId]: string } = {
   cobble: inner(tileCobble),
 }
 
+export const TILE_ICON: { readonly [K in TileId]: string } = {
+  paved: inner(itemPaved),
+  brick: inner(itemBrick),
+  cobble: inner(itemCobble),
+}
+
+const SHOVEL_ART: { readonly [K in ShovelId]: string } = {
+  shovel: inner(shovel),
+  'better-shovel': inner(better),
+  'rotary-shovel': inner(rotaryShovel),
+}
+
+const PICKAXE_ART: { readonly [K in PickaxeId]: string } = {
+  pickaxe: inner(pickaxe),
+  'better-pickaxe': inner(betterPickaxe),
+  'diamond-pickaxe': inner(diamondPickaxe),
+}
+
+export function turfInner(stage: 'sprout' | 'grow'): string {
+  return stageOnly(cropGrass, stage)
+}
+
+export const FENCE_POST = inner(fencePost)
+export const FENCE_STUB = inner(fenceStub)
+export const FENCE_I = inner(fenceI)
+export const FENCE_L = inner(fenceL)
+export const FENCE_T = inner(fenceT)
+export const FENCE_X = inner(fenceX)
+
+export function fenceFit(n: boolean, e: boolean, s: boolean, w: boolean): { html: string; rot: number } {
+  const d = Number(n) + Number(e) + Number(s) + Number(w)
+  if (d === 0) return { html: FENCE_POST, rot: 0 }
+  if (d === 4) return { html: FENCE_X, rot: 0 }
+  if (d === 3) {
+    if (!n) return { html: FENCE_T, rot: 0 }
+    if (!e) return { html: FENCE_T, rot: 90 }
+    if (!s) return { html: FENCE_T, rot: 180 }
+    return { html: FENCE_T, rot: 270 }
+  }
+  if (d === 1) {
+    if (e) return { html: FENCE_STUB, rot: 0 }
+    if (s) return { html: FENCE_STUB, rot: 90 }
+    if (w) return { html: FENCE_STUB, rot: 180 }
+    return { html: FENCE_STUB, rot: 270 }
+  }
+  if (e && w) return { html: FENCE_I, rot: 0 }
+  if (n && s) return { html: FENCE_I, rot: 90 }
+  if (e && s) return { html: FENCE_L, rot: 0 }
+  if (s && w) return { html: FENCE_L, rot: 90 }
+  if (w && n) return { html: FENCE_L, rot: 180 }
+  return { html: FENCE_L, rot: 270 }
+}
+
 export function researchInner(id: ResearchId): string {
   switch (id) {
     case 'unlock-tomato':
@@ -256,6 +327,8 @@ export function researchInner(id: ResearchId): string {
       return stageOnly(FRUIT.raspberry, 'common')
     case 'unlock-watermelon':
       return stageOnly(FRUIT.watermelon, 'common')
+    case 'unlock-heirloom':
+      return inner(skillHeirloom)
     case 'unlock-large-box':
       return itemInner({ kind: 'box', cap: 14, cargo: { kind: 'empty' } })
     case 'unlock-irrigation':
@@ -280,6 +353,12 @@ export function researchInner(id: ResearchId): string {
       return inner(uiResearchSmart)
     case 'unlock-expand':
       return inner(uiResearchExpand)
+    case 'unlock-landscaping':
+      return inner(uiResearchLandscape)
+    case 'unlock-rotary-shovel':
+      return inner(rotaryShovel)
+    case 'unlock-diamond-pickaxe':
+      return inner(diamondPickaxe)
   }
 }
 
@@ -403,6 +482,7 @@ export const UI_COIN_SILVER = inner(uiCoinSilver)
 export const UI_METER = uiMeter
 export const UI_QUALITY = inner(uiQuality)
 export const UI_BTN_SHOP = uiBtnShop
+export const UI_BTN_CHEAT = uiBtnCheat
 export const UI_BTN_RESEARCH = uiBtnResearch
 export const UI_BTN_MARKET = uiBtnMarket
 export const UI_BTN_ALMANAC = uiBtnAlmanac
@@ -422,6 +502,7 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   boots: inner(skillBoots),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
+  'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
   'tool-contracts': inner(skillToolContracts),
   'machine-contracts': inner(skillMachineContracts),

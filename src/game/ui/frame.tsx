@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from 'react'
+import { forwardRef, type MouseEvent, type ReactNode } from 'react'
 import {
   UI_COIN,
   UI_COIN_SILVER,
@@ -16,14 +16,16 @@ export function moneyParts(n: number): { gold: number; silver: number } {
 }
 
 function Glyph({ html }: { html: string }) {
-  return <svg viewBox="0 0 12 12" className="inline-block h-3 w-3 shrink-0" dangerouslySetInnerHTML={{ __html: html }} />
+  return (
+    <svg viewBox="0 0 12 12" className="inline-block h-3.5 w-3.5 shrink-0" dangerouslySetInnerHTML={{ __html: html }} />
+  )
 }
 
 export function Coin({ n }: { n: number }) {
   const { gold, silver } = moneyParts(n)
   if (gold === 0) {
     return (
-      <span className="inline-flex items-center gap-0.5">
+      <span className="inline-flex items-center gap-0.5 tabular-nums">
         <Glyph html={UI_COIN_SILVER} />
         <span>{silver}</span>
       </span>
@@ -31,14 +33,14 @@ export function Coin({ n }: { n: number }) {
   }
   if (silver === 0) {
     return (
-      <span className="inline-flex items-center gap-0.5">
+      <span className="inline-flex items-center gap-0.5 tabular-nums">
         <Glyph html={UI_COIN} />
         <span>{gold}</span>
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-0.5">
+    <span className="inline-flex items-center gap-0.5 tabular-nums">
       <Glyph html={UI_COIN} />
       <span>{gold}</span>
       <Glyph html={UI_COIN_SILVER} />
@@ -107,7 +109,7 @@ export const Btn = forwardRef<
   HTMLButtonElement,
   {
     children: ReactNode
-    onClick?: () => void
+    onClick?: (e: MouseEvent<HTMLButtonElement>) => void
     disabled?: boolean
     selected?: boolean
     className?: string
@@ -115,11 +117,23 @@ export const Btn = forwardRef<
     'data-minus'?: string
     'data-sell-all'?: string
   }
->(function Btn({ children, onClick, disabled, selected, className, 'data-plus': dataPlus, 'data-minus': dataMinus, 'data-sell-all': dataSellAll }, ref) {
+>(function Btn(
+  {
+    children,
+    onClick,
+    disabled,
+    selected,
+    className,
+    'data-plus': dataPlus,
+    'data-minus': dataMinus,
+    'data-sell-all': dataSellAll,
+  },
+  ref,
+) {
   const off = disabled === true
   const on = selected === true
   const face = off
-    ? 'cursor-default bg-house text-ink/40'
+    ? 'cursor-default bg-house text-ink/35'
     : on
       ? 'cursor-pointer bg-ink text-house'
       : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark active:bg-dirt-dark'
@@ -128,7 +142,7 @@ export const Btn = forwardRef<
       ref={ref}
       type="button"
       disabled={off}
-      className={`relative px-3 py-2 pt-3 text-left text-lg ${face} ${className ?? ''}`}
+      className={`relative px-3 pt-3 pb-2 text-left text-base ${face} ${className ?? ''}`}
       data-plus={dataPlus}
       data-minus={dataMinus}
       data-sell-all={dataSellAll}
@@ -142,13 +156,17 @@ export const Btn = forwardRef<
           backgroundSize: '16px 12px',
         }}
       />
-      <span className="relative">{children}</span>
+      <span className="relative block">{children}</span>
     </button>
   )
 })
 
 export const tabTriggerClass =
-  'cursor-pointer px-2 py-1 text-lg text-ink/50 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
+  'cursor-pointer whitespace-nowrap px-2 pt-1 pb-1.5 text-sm font-semibold tracking-wide text-ink/45 hover:text-ink/75 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
+
+export function Label({ children }: { children: ReactNode }) {
+  return <div className="mt-1 mb-1 text-xs font-bold tracking-[0.14em] text-ink/45 uppercase">{children}</div>
+}
 
 export function Window({
   title,
@@ -168,16 +186,23 @@ export function Window({
   return (
     <div className="relative">
       <Chrome className={`flex flex-col overflow-hidden ${className}`}>
-        <div className="relative z-20 flex shrink-0 items-center justify-between px-3 py-2">
-          <div className="font-display text-lg leading-relaxed">{title}</div>
+        <div className="relative z-20 flex shrink-0 items-center justify-between gap-3 border-b border-ink/15 px-4 pt-4 pb-2">
+          <div className="font-display text-sm leading-none">{title}</div>
           {onClose !== undefined && (
-            <button type="button" className="cursor-pointer px-2 py-0.5 text-lg text-ink hover:bg-dirt" onClick={onClose}>
+            <button
+              type="button"
+              aria-label="Close"
+              className="-mr-1 cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
+              onClick={onClose}
+            >
               ×
             </button>
           )}
         </div>
-        <div className="relative z-20 min-h-0 flex-1 overflow-y-auto px-3 pb-3">{children}</div>
-        {footer !== undefined && <div className="relative z-20 px-3 pb-3">{footer}</div>}
+        <div className="scroll-pane relative z-20 min-h-0 flex-1 overflow-y-auto px-4 py-3">{children}</div>
+        {footer !== undefined && (
+          <div className="relative z-20 shrink-0 border-t border-ink/15 px-4 pt-2 pb-3">{footer}</div>
+        )}
       </Chrome>
       {aside}
     </div>
@@ -199,7 +224,7 @@ export function Overlay({
 }) {
   return (
     <div
-      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40"
+      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/50"
       onPointerDown={e => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -227,13 +252,13 @@ export function Dock({
   aside?: ReactNode
 }) {
   return (
-    <div className="absolute top-16 left-32 z-20">
+    <div className="absolute top-24 left-32 z-20">
       <Window
         title={title}
         onClose={onClose}
         footer={footer}
         aside={aside}
-        className={`max-h-[calc(100vh-5rem)] ${wide === true ? 'w-[28rem]' : 'w-72'}`}
+        className={`max-h-[calc(100vh-6rem)] ${wide === true ? 'w-[30rem]' : 'w-80'}`}
       >
         {children}
       </Window>
@@ -255,7 +280,7 @@ export function Frame({
   className?: string
 }) {
   return (
-    <Window title={title} onClose={onClose} className={className ?? (wide === true ? 'w-[28rem]' : 'w-80')}>
+    <Window title={title} onClose={onClose} className={className ?? (wide === true ? 'w-[30rem]' : 'w-80')}>
       {children}
     </Window>
   )

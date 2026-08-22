@@ -26,7 +26,7 @@ export function Market({ world, onClose }: { world: World; onClose: () => void }
     <Overlay title="Market" onClose={onClose} className="max-h-[calc(100%-4rem)] w-[40rem]">
       <svg viewBox="0 0 240 120" aria-hidden="true" className="h-24 w-full" dangerouslySetInnerHTML={{ __html: UI_MARKET_STALL }} />
       <div className="flex flex-col gap-2 pt-2">
-        {stocked.length === 0 ? <div>No produce.</div> : stocked.map(id => <StallRow key={id} id={id} world={world} />)}
+        {stocked.length === 0 ? <div className="py-4 text-sm text-ink/50">Nothing on the stall. Drop produce at the truck.</div> : stocked.map(id => <StallRow key={id} id={id} world={world} />)}
         {DYNAMIC_MARKET_DISPLAY && <DynamicMarketRows world={world} stocked={stocked} />}
         <Btn
           data-sell-all=""
@@ -39,7 +39,7 @@ export function Market({ world, onClose }: { world: World; onClose: () => void }
         >
           Sell all - <Coin n={gain} />
         </Btn>
-        {closed !== undefined && <div className="text-base text-ink/70">{closed}</div>}
+        {closed !== undefined && <div className="text-sm text-roof">{closed}</div>}
       </div>
     </Overlay>
   )
@@ -47,7 +47,7 @@ export function Market({ world, onClose }: { world: World; onClose: () => void }
 
 function StallRow({ id, world }: { id: StallGoodId; world: World }) {
   return (
-    <div data-stall-box={id} className="flex items-center gap-3 bg-dirt px-2 py-2 text-base">
+    <div data-stall-box={id} className="flex items-center gap-3 bg-ink/8 px-3 py-2 text-base font-semibold">
       <ItemFace item={boxFace(id)} />
       <span>{binCount(world.stall[id])}</span>
     </div>

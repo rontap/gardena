@@ -47,7 +47,9 @@ import {
   WELL,
   cropInner,
   faceGfx,
+  fenceFit,
   pipeFit,
+  turfInner,
   qualityPip,
   ripeGroup,
   skuInner,
@@ -75,23 +77,6 @@ const LENS_DONE = '#1e9be6'
 const EDGE_HIT = 0.35
 const VERTEX_HIT = 0.3
 
-const PLACE_LINE: { readonly [id: string]: string } = {
-  'buy-chest': 'Place Chest',
-  'buy-grinder': 'Place Seed grinder',
-  'buy-pumpjack': 'Place Pumpjack',
-  'buy-well': 'Place Well',
-  'buy-pipe': 'Place Pipe',
-  'buy-valve': 'Place Manual valve',
-  'buy-rain-tank': 'Place Rainwater tank',
-  'buy-tap': 'Place Tap',
-  'buy-sprinkler': 'Place Sprinkler',
-  'buy-sprinkler-vert': 'Place Vertical sprinkler',
-  'buy-sprinkler-large': 'Place Large sprinkler',
-  'buy-tile-paved': 'Place Paved tile',
-  'buy-tile-brick': 'Place Brick tile',
-  'buy-tile-cobble': 'Place Cobble tile',
-}
-
 const PIPE_PLACE: readonly SkuId[] = [
   'buy-pipe',
   'buy-valve',
@@ -118,6 +103,10 @@ const STAY_ARMED: readonly SkuId[] = [
   'buy-sprinkler',
   'buy-sprinkler-vert',
   'buy-sprinkler-large',
+  'buy-tile-paved',
+  'buy-tile-brick',
+  'buy-tile-cobble',
+  'buy-fence',
 ]
 
 const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
@@ -451,8 +440,6 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
 }
 
 function placeLine(id: SkuId): string {
-  const extra = PLACE_LINE[id]
-  if (extra !== undefined) return extra
   return `Place ${skuLabel(id)}`
 }
 
@@ -493,6 +480,7 @@ const Marks = memo(function Marks({
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
   const pipes: { v: Vertex; html: string; rot: number; wet: boolean }[] = []
   const sprinklers: Sprinkler[] = []
+  const fences: { col: number; row: number; html: string; rot: number }[] = []
   const valves: { at: Edge; open: boolean }[] = []
   world.segments.forEach(seg => {
     if (seg.gate.kind === 'valve') valves.push({ at: seg.at, open: seg.gate.open })
@@ -535,6 +523,11 @@ const Marks = memo(function Marks({
     if (cell.kind === 'compost-box') {
       composters.push({ col: at.col, row: at.row, units: cell.units, progress: cell.progress })
     }
+    if (world.hasFence(at)) {
+      const a = world.fenceArms(at)
+      const fit = fenceFit(a.n, a.e, a.s, a.w)
+      fences.push({ col: at.col, row: at.row, html: fit.html, rot: fit.rot })
+    }
     const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`))
     if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
   })
@@ -569,6 +562,14 @@ const Marks = memo(function Marks({
           row={t.row}
           cell={t.cell}
           edge={dirtEdges(world, t.col, t.row)}
+        />
+      ))}
+      {fences.map(f => (
+        <g
+          key={`fence-${f.col},${f.row}`}
+          data-fence={`${f.col},${f.row}`}
+          transform={`translate(${f.col * TILE},${f.row * TILE}) scale(${TILE / 24}) rotate(${f.rot} 12 12)`}
+          dangerouslySetInnerHTML={{ __html: f.html }}
         />
       ))}
       {rocks.map(r => (
@@ -1027,6 +1028,13 @@ function PlotGfx({ col, row, cell, edge }: { col: number; row: number; cell: Plo
         <g
           transform={`translate(${x},${y}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{ __html: CROP_ROTTEN }}
+        />
+      )}
+      {cell.kind === 'turf' && (
+        <g
+          data-turf={`${col},${row}`}
+          transform={`translate(${x},${y}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: turfInner(cell.turf.stage()) }}
         />
       )}
       {cell.kind === 'weed' && (

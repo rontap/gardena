@@ -5,6 +5,7 @@ import type { Rarity } from '../defs/rarity.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
+import type { TileId } from './ids.ts'
 import type { World } from './world.ts'
 
 const FERT_WORD: { readonly [K in Band]: string } = {
@@ -64,12 +65,14 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'shrub') lines.push(cell.ripe ? 'Berry shrub' : 'Shrub')
   else if (cell.kind === 'apple-tree') lines.push(cell.ripe ? 'Apple tree - ripe' : `Apple tree - growing ${Math.floor(cell.grow * 100)}%`)
   else if (cell.kind === 'untilled') {
-    if (cell.ground === 'soft') lines.push('Grass')
+    if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))
+    else if (cell.ground === 'soft') lines.push('Grass')
     else if (cell.ground === 'hard') lines.push('Hard soil')
     else lines.push('Very hard soil')
   } else if (cell.kind === 'infertile') lines.push('Infertile soil')
   else if (cell.kind === 'empty') lines.push(`Tilled soil - ${soilLine(cell.soil)}`)
   else if (cell.kind === 'weed') lines.push(`Weed - ${soilLine(cell.soil)}`)
+  else if (cell.kind === 'turf') lines.push(`Grass - rooting ${Math.floor(cell.turf.maturity * 100)}%`)
   else if (cell.kind === 'growing') {
     const st = cell.plant.stats(world.modifiers)
     lines.push(`${cropName(cell.plant.crop)} - growing ${Math.floor(cell.plant.maturity * 100)}%`)
@@ -85,6 +88,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   } else {
     lines.push(`${cropName(cell.plant.crop)} - dead`)
   }
+  if (world.hasFence(at)) lines.push('Wooden fence')
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {
     const hand: Hand = { kind: 'hold', item: drop.item }
@@ -92,6 +96,16 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   }
   lines.push(world.prompt(at).text)
   return lines.join('\n')
+}
+
+const TILE_NAME: { readonly [K in TileId]: string } = {
+  paved: 'Paving slab',
+  brick: 'Brickwork',
+  cobble: 'Cobblestone',
+}
+
+function tileName(id: TileId): string {
+  return TILE_NAME[id]
 }
 
 function soilLine(soil: Soil): string {

@@ -23,6 +23,7 @@ const SEED_IDS = [
   'shrub',
   'soil',
   'weed',
+  'grass-seeds',
   'grass',
   'rotten',
   'dead',
@@ -39,7 +40,11 @@ const UTIL_IDS = [
   'fertilizer',
   'synth-fertilizer',
   'compost',
+  'rotary-shovel',
+  'diamond-pickaxe',
 ]
+
+const BUILD_IDS = ['fence', 'tile-cobble', 'tile-brick', 'tile-paved']
 const AUTO_IDS = [
   'pumpjack',
   'well',
@@ -59,6 +64,7 @@ const TABS = [
   { id: 'seeds', label: 'Seeds', ids: SEED_IDS },
   { id: 'utility', label: 'Utility', ids: UTIL_IDS },
   { id: 'automation', label: 'Automation', ids: AUTO_IDS },
+  { id: 'building', label: 'Building', ids: BUILD_IDS },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']

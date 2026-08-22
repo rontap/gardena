@@ -49,10 +49,10 @@ function FillBar({ value }: { value: number }) {
 
 function StatRow({ label, value, text, segments }: { label: string; value: number; text: string; segments: readonly Segment[] }) {
   return (
-    <div className="flex items-center gap-2 text-lg">
-      <span className="w-16 shrink-0">{label}</span>
+    <div className="flex items-center gap-2 text-sm">
+      <span className="w-20 shrink-0 font-semibold text-ink/70">{label}</span>
       <SegmentBar value={value} segments={segments} />
-      <span className="w-10 shrink-0 text-right">{text}</span>
+      <span className="w-12 shrink-0 text-right tabular-nums">{text}</span>
     </div>
   )
 }
@@ -71,11 +71,11 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     const waterGreenEnd = (SOIL_WATER_MID + waterTol) / SOIL_WATER_MAX
     const waterRedEnd = (SOIL_WATER_MID + waterRedDistance) / SOIL_WATER_MAX
     return (
-      <div className="space-y-1.5 bg-dirt/40 px-3 py-2">
-        <div className="flex items-center gap-2 text-lg">
-          <span className="w-16 shrink-0">Growth</span>
+      <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-20 shrink-0 font-semibold text-ink/70">Growth</span>
           <FillBar value={cell.plant.maturity} />
-          <span className="w-10 shrink-0 text-right">{Math.floor(cell.plant.maturity * 100)}%</span>
+          <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(cell.plant.maturity * 100)}%</span>
         </div>
         <StatRow label="Happiness" value={cell.plant.happiness} text={`${Math.floor(cell.plant.happiness * 100)}%`} segments={[{ from: 0, to: HAPPY_START / 2, color: 'red' }, { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' }, { from: HAPPY_START, to: 1, color: 'green' }]} />
         <StatRow label="Fertilizer" value={cell.soil.fertilizer} text={`${Math.floor(cell.soil.fertilizer * 100)}%`} segments={[{ from: 0, to: fertFloor / 2, color: 'red' }, { from: fertFloor / 2, to: fertFloor, color: 'orange' }, { from: fertFloor, to: 1, color: 'green' }]} />
@@ -85,7 +85,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   }
   if (cell.kind === 'ripe') {
     return (
-      <div className="bg-dirt/40 px-3 py-2">
+      <div className="bg-dirt/25 px-3 py-2.5">
         <StatRow label="Freshness" value={cell.plant.freshness} text={`${Math.floor(cell.plant.freshness * 100)}%`} segments={[{ from: 0, to: 0.8, color: 'red' }, { from: 0.8, to: 1, color: 'green' }]} />
       </div>
     )
@@ -103,7 +103,7 @@ export function Status({ world, hover }: { world: World; hover: PromptHit | unde
         ) : (
           <div className="h-12 w-12 shrink-0 bg-dirt-dark" />
         )}
-        <div className="text-lg leading-snug">
+        <div className="min-w-0 text-base leading-snug font-semibold">
           {hand.kind === 'hold' && (hand.item.kind === 'fruit' || hand.item.kind === 'berry') ? (
             <ItemLineView item={hand.item} />
           ) : (
@@ -113,7 +113,7 @@ export function Status({ world, hover }: { world: World; hover: PromptHit | unde
       </div>
       <div
         className={`relative px-3 py-3 leading-snug whitespace-pre-line ${
-          world.place.kind !== 'none' ? 'bg-roof/20 text-lg text-roof' : 'bg-dirt/40 text-lg'
+          world.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
         }`}
       >
           {lookText(world, hover, false)}

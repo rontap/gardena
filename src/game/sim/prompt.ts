@@ -4,7 +4,7 @@ import { onCell } from './drop.ts'
 import type { CropId, SkuId } from './ids.ts'
 import { boxAccepts, grindN, organic, skuLabel, type Hand, type Item } from './item.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
-import { isPlot, isTilled, isTileSite } from './plot.ts'
+import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { fillable, waterable, type Intent, type World } from './world.ts'
@@ -94,6 +94,8 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'pump' && cell.form === 'well') return { kind: 'place', text: 'Delete well' }
   if (cell.kind === 'rain-tank') return { kind: 'place', text: 'Delete rainwater tank' }
   if (cell.kind === 'tap') return { kind: 'place', text: 'Delete tap' }
+  if (w.hasFence(at)) return { kind: 'place', text: 'Delete wooden fence' }
+  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return { kind: 'place', text: 'Delete paving' }
   if (cell.kind === 'chest') return { kind: 'place', text: 'Delete chest' }
   if (cell.kind === 'grinder') return { kind: 'place', text: 'Delete grinder' }
   if (cell.kind === 'compost-box') return { kind: 'place', text: 'Delete compost box' }
@@ -160,6 +162,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
     ) {
       if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
       if (!isTileSite(w.cell(at))) return { kind: 'blocked', text: 'Cannot place here' }
+      return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }
+    }
+    if (w.place.id === 'buy-fence') {
+      if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
+      if (!isFenceSite(w.cell(at))) return { kind: 'blocked', text: 'Fences need untilled ground' }
+      if (w.hasFence(at)) return { kind: 'blocked', text: 'Already fenced' }
       return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }
     }
     if (w.place.id === 'buy-pumpjack' || w.place.id === 'buy-rain-tank') {
@@ -235,6 +243,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
   }
   if (w.hand.kind === 'hold' && w.hand.item.kind === 'seeds') {
     if (cell.kind === 'empty') return intent(`Plant ${w.hand.item.crop}`, { act: 'plant', at })
+    return needSeeds(cell)
+  }
+  if (w.hand.kind === 'hold' && w.hand.item.kind === 'grass-seeds') {
+    if (cell.kind === 'empty') return intent('Sow grass', { act: 'plant', at })
     return needSeeds(cell)
   }
   if (w.hand.kind === 'hold' && w.hand.item.kind === 'container' && isTilled(cell)) {

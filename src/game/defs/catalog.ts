@@ -3,6 +3,9 @@ import { CROPS } from './crops.ts'
 import {
   BOX_LARGE,
   BOX_SMALL,
+  GRASS_GROW,
+  GRASS_PACK,
+  GRASS_WATER_PER_SEC,
   COMPOST_LITERS,
   COMPOST_NEED,
   COMPOST_SECONDS,
@@ -20,7 +23,8 @@ import {
 } from './items.ts'
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
 import { BIO_RESTORE, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
-import type { CropId } from '../sim/ids.ts'
+import { DAY_SECONDS } from '../sim/clock.ts'
+import type { CropId, TileId } from '../sim/ids.ts'
 import type { Face } from '../sim/item.ts'
 
 export type CatalogEntry = {
@@ -52,6 +56,11 @@ const DEAD_T =
 const GRASS_T = 'Cut from untilled ground. Worth ${n} unit in the compost box.'
 const SOIL_T =
   'Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads 0 to ${max} L; plants want ${mid} L and drown above it. Fertilizer runs from 0 to 1 and a growing plant empties a full plot in three days.'
+const TURF_T =
+  'Sold in packs of ${pack}. Sow on tilled soil. Roots in ${seconds}s and drinks only ${drink} L a day, then the plot turns back into untilled lawn.'
+const FENCE_T =
+  'Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.'
+const PAVING_T = 'Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.'
 const BERRY_T = 'Wild berry. Sells for ${sale} times the rarity multiplier.'
 const SHRUB_T = 'Berry shrub. Matures in ${growSeconds}s, then berries. Shovel to move.'
 const PUMP_T =
@@ -77,6 +86,15 @@ export function fill(template: string, vars: { readonly [key: string]: string | 
     return String(vars[key])
   })
 }
+
+const TILE_TITLE: { readonly [K in TileId]: string } = {
+  paved: 'Paving slab',
+  brick: 'Brickwork',
+  cobble: 'Cobblestone',
+}
+
+const ROTARY_T = 'Motorised. Digs anything a shovel digs, near enough instantly. ${uses} uses, ${workSeconds}s per dig.'
+const DIAMOND_T = 'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.'
 
 function cropTitle(id: CropId): string {
   return id.slice(0, 1).toUpperCase() + id.slice(1)
@@ -247,6 +265,50 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Berry shrub',
       icon: { kind: 'shrub' },
       blurb: fill(SHRUB_T, { growSeconds: SHRUB_GROW }),
+    },
+    {
+      id: 'grass-seeds',
+      title: 'Grass seeds',
+      icon: { kind: 'grass-seeds', count: GRASS_PACK },
+      blurb: fill(TURF_T, {
+        pack: GRASS_PACK,
+        seconds: GRASS_GROW,
+        drink: Number((GRASS_WATER_PER_SEC * DAY_SECONDS).toFixed(2)),
+      }),
+    },
+    {
+      id: 'fence',
+      title: 'Wooden fence',
+      icon: { kind: 'fence' },
+      blurb: FENCE_T,
+    },
+    ...(['cobble', 'brick', 'paved'] as TileId[]).map(tile => ({
+      id: `tile-${tile}`,
+      title: TILE_TITLE[tile],
+      icon: { kind: 'tile' as const, tile },
+      blurb: PAVING_T,
+    })),
+    {
+      id: 'rotary-shovel',
+      title: 'Rotary shovel',
+      icon: {
+        kind: 'shovel' as const,
+        id: 'rotary-shovel' as const,
+        usesLeft: SHOVELS['rotary-shovel'].uses,
+        workSeconds: SHOVELS['rotary-shovel'].workSeconds,
+      },
+      blurb: fill(ROTARY_T, SHOVELS['rotary-shovel']),
+    },
+    {
+      id: 'diamond-pickaxe',
+      title: 'Diamond pickaxe',
+      icon: {
+        kind: 'pickaxe' as const,
+        id: 'diamond-pickaxe' as const,
+        usesLeft: PICKAXES['diamond-pickaxe'].uses,
+        workSeconds: PICKAXES['diamond-pickaxe'].workSeconds,
+      },
+      blurb: fill(DIAMOND_T, PICKAXES['diamond-pickaxe']),
     },
     {
       id: 'pumpjack',

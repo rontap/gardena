@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import * as Progress from '@radix-ui/react-progress'
 import { RESEARCH } from '../defs/research.ts'
+import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
 import type { Lens } from '../view/map.tsx'
 import {
   btnFace,
   UI_BTN_ALMANAC,
   UI_BTN_CANCEL,
+  UI_BTN_CHEAT,
   UI_BTN_DELETE,
   UI_BTN_LENS,
   UI_BTN_FAMILY,
@@ -17,61 +19,11 @@ import {
   UI_PHASE,
   type BtnState,
 } from '../view/svgs.ts'
-import { Btn, Chrome, Coin } from './frame.tsx'
+import { Chrome, Coin } from './frame.tsx'
 
-const LENS_ROWS: { id: Lens; label: string; swatches: { face: string; name: string }[] }[] = [
-  { id: 'off', label: 'None', swatches: [] },
-  {
-    id: 'water',
-    label: 'Water need',
-    swatches: [
-      { face: 'bg-lens-bad', name: 'dry' },
-      { face: 'bg-lens-good', name: 'wet' },
-      { face: 'bg-lens-done', name: 'full' },
-    ],
-  },
-  {
-    id: 'land',
-    label: 'Land quality',
-    swatches: [
-      { face: 'bg-lens-bad', name: 'low' },
-      { face: 'bg-lens-good', name: 'ok' },
-      { face: 'bg-lens-done', name: 'full' },
-    ],
-  },
-  {
-    id: 'ripe',
-    label: 'Ripeness',
-    swatches: [
-      { face: 'bg-lens-bad', name: 'early' },
-      { face: 'bg-lens-good', name: 'ready' },
-      { face: 'bg-lens-done', name: 'ripe' },
-    ],
-  },
-  {
-    id: 'kind',
-    label: 'Object type',
-    swatches: [
-      { face: 'bg-leaf', name: 'plant' },
-      { face: 'bg-water', name: 'machine' },
-      { face: 'bg-ink', name: 'obstruction' },
-      { face: 'bg-roof', name: 'building' },
-    ],
-  },
-  {
-    id: 'rarity',
-    label: 'Rarity',
-    swatches: [
-      { face: 'bg-house', name: 'common' },
-      { face: 'bg-leaf', name: 'uncommon' },
-      { face: 'bg-water', name: 'rare' },
-      { face: 'bg-ripe', name: 'heirloom' },
-    ],
-  },
-  { id: 'pipes', label: 'Pipes', swatches: [] },
-]
+const ROTATABLE = ['buy-sprinkler-vert'] as const
 
-const BUILD_IDS = [
+const PLACE_TOOLS = [
   'buy-pumpjack',
   'buy-well',
   'buy-rain-tank',
@@ -83,6 +35,11 @@ const BUILD_IDS = [
   'buy-sprinkler-large',
   'buy-chest',
   'buy-grinder',
+  'buy-compost-box',
+  'buy-tile-cobble',
+  'buy-tile-brick',
+  'buy-tile-paved',
+  'buy-fence',
 ] as const
 
 export function Hud({
@@ -95,143 +52,108 @@ export function Hud({
   onMarket,
   onAlmanac,
   onLens,
+  onCheat,
 }: {
   world: World
-  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest'
+  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat'
   lens: Lens
   onFamily: () => void
   onShop: () => void
   onResearch: () => void
   onMarket: () => void
   onAlmanac: () => void
-  onLens: (lens: Lens) => void
+  onLens: () => void
+  onCheat: () => void
 }) {
   const job = world.job
   const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
   const pct = def !== undefined && job.kind === 'run' ? ((def.seconds - job.left) / def.seconds) * 100 : 0
-  const [open, setOpen] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
-  const menu = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const onPtr = (e: PointerEvent) => {
-      const t = e.target as Node
-      if (box.current !== null && box.current.contains(t)) return
-      if (menu.current !== null && menu.current.contains(t)) return
-      setOpen(false)
-    }
-    window.addEventListener('pointerdown', onPtr)
-    return () => window.removeEventListener('pointerdown', onPtr)
-  }, [open])
-  const labels: { [K in Lens]: string } = {
-    off: 'Lens',
-    water: 'Lens · Water need',
-    land: 'Lens · Land quality',
-    ripe: 'Lens · Ripeness',
-    kind: 'Lens · Object type',
-    rarity: 'Lens · Rarity',
-    pipes: 'Lens · Pipes',
-  }
-  const lensRows = LENS_ROWS.filter(row => {
-    if (row.id === 'water') return world.hasSkill('water-study')
-    if (row.id === 'land') return world.hasSkill('land-study')
-    return true
-  })
+  const phase = world.clock.phase()
+  const dayPct = (world.clock.t / DAY_SECONDS) * 100
   const trio =
     world.place.kind === 'delete' ||
-    (world.place.kind === 'sku' && (BUILD_IDS as readonly string[]).includes(world.place.id))
-  const phase = world.clock.phase()
+    (world.place.kind === 'sku' && (PLACE_TOOLS as readonly string[]).includes(world.place.id))
+  const canRotate = world.place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(world.place.id)
   return (
     <>
-      <Chrome className="pointer-events-none absolute top-4 left-4 right-4 z-20 h-10">
-        <div className="relative z-20 flex h-full items-center gap-4 px-3">
-          <span data-hud-money className="inline-flex items-center text-lg leading-none">
+      <Chrome className="pointer-events-none absolute top-4 left-4 right-4 z-20 h-14">
+        <div className="relative z-20 flex h-full items-center gap-5 px-4">
+          <div className="font-display shrink-0 text-base leading-none text-ink">Gardena</div>
+          <div className="h-7 w-px shrink-0 bg-ink/20" />
+          <span data-hud-money className="inline-flex shrink-0 items-center text-lg leading-none font-semibold">
             <Coin n={world.money} />
           </span>
-          <span data-clock data-clock-t={Math.floor(world.clock.t)} className="text-lg">
-            day {world.clock.day}
-          </span>
-          <svg
-            data-phase
-            viewBox="0 0 16 16"
-            className="h-4 w-4 shrink-0"
-            dangerouslySetInnerHTML={{ __html: UI_PHASE[phase] }}
-          />
+          <div className="flex shrink-0 items-center gap-2">
+            <svg
+              data-phase
+              viewBox="0 0 16 16"
+              className="h-5 w-5 shrink-0"
+              dangerouslySetInnerHTML={{ __html: UI_PHASE[phase] }}
+            />
+            <div className="flex flex-col gap-1">
+              <span data-clock data-clock-t={Math.floor(world.clock.t)} className="text-sm leading-none font-semibold">
+                Day {world.clock.day} · {PHASE_NAME[phase]}
+              </span>
+              <Progress.Root className="relative h-1 w-28 overflow-hidden bg-ink/20" value={dayPct}>
+                <Progress.Indicator data-day-bar className="h-full bg-ripe" style={{ width: `${dayPct}%` }} />
+              </Progress.Root>
+            </div>
+          </div>
+          <div className="h-7 w-px shrink-0 bg-ink/20" />
           <div data-research className="flex min-w-0 flex-1 flex-col justify-center gap-1" hidden={job.kind !== 'run'}>
             {def !== undefined && job.kind === 'run' && (
               <>
-                <span data-research-left className="truncate text-lg">
-                  {def.name}
+                <span className="truncate text-sm leading-none">
+                  <span className="text-ink/50">Researching </span>
+                  <span data-research-left>{def.name}</span>
+                  <span className="text-ink/50"> · </span>
+                  <span data-research-secs className="text-ink/50 tabular-nums">
+                    {Math.ceil(job.left)}s
+                  </span>
                 </span>
-                <Progress.Root className="relative h-2 overflow-hidden bg-dirt-dark" value={pct}>
+                <Progress.Root className="relative h-1.5 max-w-96 overflow-hidden bg-ink/20" value={pct}>
                   <Progress.Indicator data-research-bar className="h-full bg-leaf" style={{ width: `${pct}%` }} />
                 </Progress.Root>
               </>
             )}
           </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2 text-sm text-ink/45">
+            <span>digs {world.digs}</span>
+            <span>·</span>
+            <span>mines {world.mines}</span>
+          </div>
         </div>
       </Chrome>
-      <Chrome className="pointer-events-none absolute top-16 left-4 z-20 w-24">
-        <div className="relative z-20 flex flex-col py-1">
-          <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
+      <Chrome className="pointer-events-none absolute top-20 left-4 z-20 w-24">
+        <div className="relative z-20 flex flex-col py-1.5">
           <FaceBtn art={UI_BTN_SHOP} label="Shop" selected={panel === 'shop'} onClick={onShop} />
           <FaceBtn art={UI_BTN_RESEARCH} label="Research" selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label="Market" selected={panel === 'market'} onClick={onMarket} />
-          <div ref={box} className="relative">
-            <FaceBtn art={UI_BTN_LENS} label={labels[lens]} selected={open} onClick={() => setOpen(v => !v)} />
-          </div>
+          <FaceBtn
+            art={UI_BTN_LENS}
+            label="Lens"
+            note={lens === 'off' ? undefined : lens}
+            selected={panel === 'lens'}
+            onClick={onLens}
+          />
+          <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
           <FaceBtn art={UI_BTN_ALMANAC} label="Almanac" selected={panel === 'almanac'} onClick={onAlmanac} />
+          <FaceBtn art={UI_BTN_CHEAT} label="Cheat" selected={panel === 'cheat'} onClick={onCheat} />
           {trio && (
             <>
-              <div className="mx-2 my-1 border-t border-ink/20" />
+              <div className="mx-3 my-1.5 border-t border-ink/20" />
               <FaceBtn
                 art={UI_BTN_DELETE}
                 label="Delete"
                 selected={world.place.kind === 'delete'}
                 onClick={() => world.armDelete()}
               />
-              <FaceBtn art={UI_BTN_ROTATE} label="Rotate" onClick={() => world.rotatePlace()} />
+              {canRotate && <FaceBtn art={UI_BTN_ROTATE} label="Rotate" onClick={() => world.rotatePlace()} />}
               <FaceBtn art={UI_BTN_CANCEL} label="Cancel" onClick={() => world.cancelPlace()} />
             </>
           )}
         </div>
       </Chrome>
-      {open && box.current !== null && (
-        <div
-          ref={menu}
-          className="pointer-events-auto fixed z-30 flex w-56 flex-col gap-1 bg-house p-1"
-          style={{
-            left: box.current.getBoundingClientRect().right,
-            top: box.current.getBoundingClientRect().top,
-          }}
-        >
-          {lensRows.map(row => (
-            <Btn
-              key={row.id}
-              className="w-full"
-              selected={lens === row.id}
-              onClick={() => {
-                onLens(row.id)
-                setOpen(false)
-              }}
-            >
-              <span className="flex flex-col gap-1">
-                <span>{row.label}</span>
-                {row.swatches.length > 0 && (
-                  <span className="flex flex-wrap gap-2 text-lg leading-none">
-                    {row.swatches.map(s => (
-                      <span key={s.name} className="flex items-center gap-1">
-                        <span className={`inline-block size-3 ${s.face}`} />
-                        {s.name}
-                      </span>
-                    ))}
-                  </span>
-                )}
-              </span>
-            </Btn>
-          ))}
-        </div>
-      )}
     </>
   )
 }
@@ -239,12 +161,14 @@ export function Hud({
 function FaceBtn({
   art,
   label,
+  note,
   selected,
   disabled,
   onClick,
 }: {
   art: string
   label: string
+  note?: string
   selected?: boolean
   disabled?: boolean
   onClick: () => void
@@ -256,13 +180,18 @@ function FaceBtn({
     <button
       type="button"
       disabled={off}
-      className={`pointer-events-auto flex w-full flex-col items-center gap-0.5 px-1 py-1 ${off ? 'cursor-default' : 'cursor-pointer'}`}
+      className={`pointer-events-auto flex w-full flex-col items-center gap-0.5 px-1 py-1 ${off ? 'cursor-default' : 'cursor-pointer'} ${hot && !off ? 'bg-ink/5' : ''}`}
       onClick={onClick}
       onPointerEnter={() => setHot(true)}
       onPointerLeave={() => setHot(false)}
     >
-      <svg viewBox="0 0 24 24" className="h-12 w-12 shrink-0" dangerouslySetInnerHTML={{ __html: btnFace(art, state) }} />
-      <span className="text-center text-lg leading-none">{label}</span>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-11 w-11 shrink-0"
+        dangerouslySetInnerHTML={{ __html: btnFace(art, state) }}
+      />
+      <span className="text-center text-sm leading-none font-semibold">{label}</span>
+      {note !== undefined && <span className="text-center text-xs leading-none text-ink/50 capitalize">{note}</span>}
     </button>
   )
 }

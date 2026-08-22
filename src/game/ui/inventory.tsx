@@ -22,13 +22,13 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
                 <div key={i} className="flex flex-col items-center gap-1">
                   <button
                     type="button"
-                    className="flex h-16 w-16 items-center justify-center border-2 border-ink bg-dirt-dark"
+                    className="flex h-16 w-16 cursor-pointer items-center justify-center bg-ink/15 hover:bg-ink/25"
                     onClick={() => world.swap(i)}
                   >
                     {slot.kind === 'hold' ? <ItemFace item={slot.item} /> : null}
                   </button>
                   {slot.kind === 'hold' && (
-                    <div className="text-center text-base leading-tight">
+                    <div className="text-center text-xs leading-tight text-ink/70">
                       {slot.item.kind === 'fruit' || slot.item.kind === 'berry' ? (
                         <ItemLineView item={slot.item} />
                       ) : (

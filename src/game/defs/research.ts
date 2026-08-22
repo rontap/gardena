@@ -1,4 +1,7 @@
+import {DIAMOND_MINES, ROTARY_DIGS} from './items.ts'
 import type {ResearchId, SkuId} from '../sim/ids.ts'
+
+export type ResearchGate = { kind: 'none' } | { kind: 'digs'; n: number } | { kind: 'mines'; n: number }
 
 export type ResearchDef = {
     id: ResearchId
@@ -7,6 +10,7 @@ export type ResearchDef = {
     cost: number
     seconds: number
     reveal: 'start' | ResearchId
+    gate: ResearchGate
     blurb: string
     effect:
         | { kind: 'unlock-sku'; sku: SkuId }
@@ -22,6 +26,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 7,
         seconds: 30,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Tomato seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-tomato'},
     },
@@ -32,6 +37,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 12,
         seconds: 45,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Raspberry seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-raspberry'},
     },
@@ -42,8 +48,20 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 8,
         seconds: 35,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Watermelon seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-watermelon'},
+    },
+    'unlock-heirloom': {
+        id: 'unlock-heirloom',
+        name: 'Heirloom crops',
+        tree: 'plants',
+        cost: 20,
+        seconds: 120,
+        reveal: 'start',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Őstermelő. Heirloom produce can sell for more.',
+        effect: {kind: 'feature'},
     },
     'unlock-better-tools': {
         id: 'unlock-better-tools',
@@ -52,6 +70,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 16,
         seconds: 45,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Better shovel and Large bucket in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-better-shovel'},
     },
@@ -62,6 +81,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 17,
         seconds: 50,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Large fruit box in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-box-large'},
     },
@@ -72,6 +92,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 20,
         seconds: 50,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Pumpjack in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pumpjack'},
     },
@@ -82,6 +103,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 22,
         seconds: 55,
         reveal: 'unlock-irrigation',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pipe'},
     },
@@ -92,6 +114,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 28,
         seconds: 65,
         reveal: 'unlock-auto-irrigation',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-well'},
     },
@@ -102,6 +125,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 30,
         seconds: 70,
         reveal: 'unlock-adv-irrigation',
+        gate: {kind: 'none'},
         blurb: 'Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks.',
         effect: {kind: 'feature'},
     },
@@ -112,6 +136,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 12,
         seconds: 40,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Chest in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-chest'},
     },
@@ -122,6 +147,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 15,
         seconds: 45,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks land expansion on the map edge.',
         effect: {kind: 'expand'},
     },
@@ -132,6 +158,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 0,
         seconds: 40,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Pickaxe and Hardened pickaxe in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pickaxe'},
     },
@@ -142,6 +169,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 9,
         seconds: 40,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Synthetic fertilizer in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-synth-fertilizer'},
     },
@@ -152,6 +180,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 14,
         seconds: 45,
         reveal: 'unlock-fertilizer',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Compost box in the general store. Turns organic waste back into fertilizer.',
         effect: {kind: 'unlock-sku', sku: 'buy-compost-box'},
     },
@@ -162,9 +191,49 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 18,
         seconds: 50,
         reveal: 'start',
+        gate: {kind: 'none'},
         blurb: 'Unlocks Seed grinder in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-grinder'},
     },
+    'unlock-landscaping': {
+        id: 'unlock-landscaping',
+        name: 'Landscape architecture',
+        tree: 'expansion',
+        cost: 12,
+        seconds: 60,
+        reveal: 'start',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Grass seeds, Wooden fence and every paving tile in the general store.',
+        effect: {kind: 'unlock-sku', sku: 'pack-grass'},
+    },
+    'unlock-rotary-shovel': {
+        id: 'unlock-rotary-shovel',
+        name: 'Rotary shovel',
+        tree: 'utilities',
+        cost: 40,
+        seconds: 120,
+        reveal: 'unlock-better-tools',
+        gate: {kind: 'digs', n: ROTARY_DIGS},
+        blurb: 'Unlocks the Rotary shovel in the general store. Earned by digging, not by reading.',
+        effect: {kind: 'unlock-sku', sku: 'buy-rotary-shovel'},
+    },
+    'unlock-diamond-pickaxe': {
+        id: 'unlock-diamond-pickaxe',
+        name: 'Diamond pickaxe',
+        tree: 'utilities',
+        cost: 40,
+        seconds: 120,
+        reveal: 'unlock-pickaxe',
+        gate: {kind: 'mines', n: DIAMOND_MINES},
+        blurb: 'Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading.',
+        effect: {kind: 'unlock-sku', sku: 'buy-diamond-pickaxe'},
+    },
+}
+
+export const GATE_TEXT: { readonly [K in ResearchGate['kind']]: string } = {
+    none: '',
+    digs: 'Dig ${have} / ${n} times to unlock this research.',
+    mines: 'Mine ${have} / ${n} times to unlock this research.',
 }
 
 export type SkuTab = 'seeds' | 'utility' | 'automation' | 'building'
@@ -230,7 +299,23 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-valve': {id: 'buy-valve', price: 6, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
     'buy-rain-tank': {id: 'buy-rain-tank', price: 20, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
     'buy-tap': {id: 'buy-tap', price: 10, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
-    'buy-tile-paved': {id: 'buy-tile-paved', price: 5, tab: 'building', unlock: 'start', show: 'start'},
-    'buy-tile-brick': {id: 'buy-tile-brick', price: 7, tab: 'building', unlock: 'start', show: 'start'},
-    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 11, tab: 'building', unlock: 'start', show: 'start'},
+    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 5, tab: 'building', unlock: 'unlock-landscaping', show: 'start'},
+    'buy-tile-brick': {id: 'buy-tile-brick', price: 7, tab: 'building', unlock: 'unlock-landscaping', show: 'start'},
+    'buy-tile-paved': {id: 'buy-tile-paved', price: 11, tab: 'building', unlock: 'unlock-landscaping', show: 'start'},
+    'buy-fence': {id: 'buy-fence', price: 10, tab: 'building', unlock: 'unlock-landscaping', show: 'start'},
+    'pack-grass': {id: 'pack-grass', price: 1, tab: 'seeds', unlock: 'unlock-landscaping', show: 'start'},
+    'buy-rotary-shovel': {
+        id: 'buy-rotary-shovel',
+        price: 1000,
+        tab: 'utility',
+        unlock: 'unlock-rotary-shovel',
+        show: 'unlock-better-tools',
+    },
+    'buy-diamond-pickaxe': {
+        id: 'buy-diamond-pickaxe',
+        price: 1000,
+        tab: 'utility',
+        unlock: 'unlock-diamond-pickaxe',
+        show: 'unlock-pickaxe',
+    },
 }

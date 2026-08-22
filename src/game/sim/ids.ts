@@ -4,9 +4,9 @@ export type TileId = 'paved' | 'brick' | 'cobble'
 
 export type StallGoodId = CropId | 'berry'
 
-export type ShovelId = 'shovel' | 'better-shovel'
+export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 
-export type PickaxeId = 'pickaxe' | 'better-pickaxe'
+export type PickaxeId = 'pickaxe' | 'better-pickaxe' | 'diamond-pickaxe'
 
 export type ContainerId = 'bucket' | 'large-bucket'
 
@@ -16,6 +16,7 @@ export type PlayerSkillId =
   | 'boots'
   | 'machinery'
   | 'tending'
+  | 'seed-bank'
   | 'better-carrot'
   | 'better-potato'
   | 'better-wheat'
@@ -49,6 +50,7 @@ export type ResearchId =
   | 'unlock-tomato'
   | 'unlock-raspberry'
   | 'unlock-watermelon'
+  | 'unlock-heirloom'
   | 'unlock-better-tools'
   | 'unlock-large-box'
   | 'unlock-irrigation'
@@ -61,6 +63,9 @@ export type ResearchId =
   | 'unlock-fertilizer'
   | 'unlock-compost'
   | 'unlock-smart-sprinkler'
+  | 'unlock-landscaping'
+  | 'unlock-rotary-shovel'
+  | 'unlock-diamond-pickaxe'
 
 export type SkuId =
   | 'pack-carrot'
@@ -94,3 +99,7 @@ export type SkuId =
   | 'buy-tile-paved'
   | 'buy-tile-brick'
   | 'buy-tile-cobble'
+  | 'buy-fence'
+  | 'pack-grass'
+  | 'buy-rotary-shovel'
+  | 'buy-diamond-pickaxe'

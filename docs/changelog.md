@@ -2,6 +2,50 @@
 
 History. Not current contracts.
 
+## 2026-08-22 — cheat dock
+
+- Left ribbon **Cheat**. Dock: Unlock all instantly (moved off Research), research speed 3× toggle, gain 200, gain 10 skill points each.
+
+## 2026-08-22 — 0.7.4
+
+### Building
+
+- **Wooden fence** `buy-fence` $10. Middle of an untilled tile, joins its four neighbours through `fenceFit`. `World.fences` set, not a `Cover`. Cosmetic — does not block walking. [[items/tiles]]
+- Paving repriced and reordered: cobble $5, brick $7, paved $11. All gated on Landscape architecture. Shop icons are now `item-{tile}.svg`, not the ground art.
+- Fence and paving stay armed while placing. Delete tool lifts both; fence wins when they share a cell.
+
+### Plants
+
+- **Grass seeds** `pack-grass` $1 for 5. Not a crop — no `CropId`, no rarity. New `turf` plot kind + `Turf`. Drinks 0.29 L/day, roots in `DAY_SECONDS / 4`, then the plot reverts to untilled lawn. [[mechanics/plants]]
+
+### Tools
+
+- **Rotary shovel** 1000 uses / 0.2s / $1000. **Diamond pickaxe** 1000 uses / 0.4s / $1000. `SHOVEL_NAME` / `PICKAXE_NAME` replace the id ternaries. [[items/tools]]
+
+### Research
+
+- `ResearchDef.gate` required on every row. `digs` / `mines` counters on `World`, bumped in `doShovel` / `doMine`. `researchOpen` blocks `startResearch`; gated cards show a bar and `{have} / {n}`.
+- New rows: **Landscape architecture** (expansion, $12 / 60s), **Rotary shovel** (200 digs), **Diamond pickaxe** (150 mines), both $40 / 120s. [[mechanics/research]]
+
+### UI pass
+
+- One type scale and two faces: Press Start 2P for titles only, **Nunito** for body. `text-lg`-everywhere is gone. [[ui/type]]
+- Top ribbon `h-14`: **Gardena** wordmark, money, **Day n · Phase** over a day bar, research job with seconds, dig / mine counters. `paintMotion` updated to match.
+- Shop rewamped: `w-[30rem]`, single-word tabs, row-as-button with right-aligned price, armed state, empty-shelf copy.
+- Lens is a dock, not a floating menu. Cards with blurbs and legends; locked lenses are counted, not hidden silently. [[ui/lens]]
+- Family: three cards with header bands, role blurbs, a points band, fixed-height offer slots, a learned tray.
+- Research: 2-col cards with done / running / gated / blocked faces; footer states the running job.
+- Blocked controls hover. `aria-disabled` instead of `disabled` in shop rows, research cards and family offers, so the callout can say **why** — no research, no money, no point, no room. [[ui/callout-hover]]
+- `scroll-pane` styles every overflow bar; panels sized to not scroll at 1440×900.
+
+## 2026-08-22 — 0.7.3
+
+- Left ribbon: Shop, Research, Market, Lens, **Family**, Almanac.
+- Better {crop}: +4% +1-rarity at full happiness (`extraUp1`, scaled). UI: happy plant / superior fruit.
+- Gardener **Trusted seed bank** I–V. Shop packs: per rank 5% uncommon / 1.2% rare / 0.2% heirloom. Base 0% (always common).
+- Plants research **Heirloom crops** $20 / 120s. Gates Őstermelő.
+- Dummy copy: industrial “Does nothing yet.” Forecast names that weather is not in yet.
+
 ## 2026-08-22 — 0.6 Family
 
 - Family overlay: three columns, portraits, skill offers, owned icons. Left-ribbon **Family**.

@@ -53,10 +53,13 @@ export const HAPPY_DROWN_SECONDS = 180
 
 export const RARITY_RANK: readonly Rarity[] = ['common', 'uncommon', 'rare', 'heirloom']
 
-export function rarityOdds(h: number): { up2: number; up1: number; down: number } {
+export const SEED_BANK_CHANCE = { uncommon: 0.05, rare: 0.012, heirloom: 0.002 } as const
+
+export function rarityOdds(h: number, extraUp1 = 0): { up2: number; up1: number; down: number } {
   const x = h / HAPPY_START
-  if (h >= HAPPY_START) return { up2: 0.005 * x, up1: 0.05 * x, down: 0 }
-  return { up2: 0, up1: 0.05 * x, down: 0.05 * (1 - x) }
+  const extra = extraUp1 * (h / HAPPY_MAX)
+  if (h >= HAPPY_START) return { up2: 0.005 * x, up1: 0.05 * x + extra, down: 0 }
+  return { up2: 0, up1: 0.05 * x + extra, down: 0.05 * (1 - x) }
 }
 
 export function stepRarity(r: Rarity, delta: number): Rarity {
@@ -65,10 +68,21 @@ export function stepRarity(r: Rarity, delta: number): Rarity {
   return RARITY_RANK[j]
 }
 
-export function rollGrowRarity(r: Rarity, h: number, u: number): Rarity {
-  const { up2, up1, down } = rarityOdds(h)
+export function rollGrowRarity(r: Rarity, h: number, u: number, extraUp1 = 0): Rarity {
+  const { up2, up1, down } = rarityOdds(h, extraUp1)
   if (u < up2) return stepRarity(r, 2)
   if (u < up2 + up1) return stepRarity(r, 1)
   if (u < up2 + up1 + down) return stepRarity(r, -1)
   return r
+}
+
+export function rollShopRarity(tier: number, u: number): Rarity {
+  if (tier <= 0) return 'common'
+  const heirloom = SEED_BANK_CHANCE.heirloom * tier
+  const rare = SEED_BANK_CHANCE.rare * tier
+  const uncommon = SEED_BANK_CHANCE.uncommon * tier
+  if (u < heirloom) return 'heirloom'
+  if (u < heirloom + rare) return 'rare'
+  if (u < heirloom + rare + uncommon) return 'uncommon'
+  return 'common'
 }

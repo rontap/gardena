@@ -11,8 +11,10 @@ import { Market } from './game/ui/market.tsx'
 import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Research } from './game/ui/research.tsx'
+import { Cheat } from './game/ui/cheat.tsx'
 import { Shop } from './game/ui/shop.tsx'
 import { Family } from './game/ui/family.tsx'
+import { LensPanel } from './game/ui/lens.tsx'
 import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
@@ -28,6 +30,8 @@ type Panel =
   | { kind: 'market' }
   | { kind: 'inventory' }
   | { kind: 'almanac' }
+  | { kind: 'cheat' }
+  | { kind: 'lens' }
   | { kind: 'chest'; at: Coord }
 
 const SPEED = (() => {
@@ -163,13 +167,17 @@ export default function App() {
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
             onAlmanac={() => open({ kind: 'almanac' })}
-            onLens={setLens}
+            onLens={() => open({ kind: 'lens' })}
+            onCheat={() => open({ kind: 'cheat' })}
           />
           <div className="pointer-events-none absolute right-4 bottom-4 z-20 flex w-80 flex-col gap-3">
             <Queue world={world} />
             <Status world={world} hover={hover} />
           </div>
           {panel.kind === 'family' && <Family world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'lens' && (
+            <LensPanel world={world} lens={lens} onPick={setLens} onClose={() => setPanel({ kind: 'none' })} />
+          )}
           {panel.kind === 'shop' && (
             <Shop
               world={world}
@@ -181,6 +189,7 @@ export default function App() {
             />
           )}
           {panel.kind === 'research' && <Research world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'almanac' && <Almanac onClose={() => setPanel({ kind: 'none' })} />}

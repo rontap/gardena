@@ -152,8 +152,8 @@ async function tapWorld(page: Page, wx: number, wy: number) {
 }
 
 async function unlockAll(page: Page) {
-  await page.getByRole('button', { name: 'Research', exact: true }).click()
-  const unlock = page.getByRole('button', { name: 'unlock all instantly' })
+  await page.getByRole('button', { name: 'Cheat', exact: true }).click()
+  const unlock = page.getByRole('button', { name: 'Unlock all instantly' })
   await expect(unlock).toBeVisible()
   await unlock.click()
   await expect(hudMoney(page)).toHaveText('1049')

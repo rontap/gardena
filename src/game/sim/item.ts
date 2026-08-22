@@ -10,6 +10,7 @@ import {
   FERT_BAG_LITERS,
   GRIND_MAX,
   GRIND_MIN,
+  GRASS_PACK,
   GRIND_WORK,
   PICKAXES,
   SHOVELS,
@@ -49,6 +50,7 @@ export type Item =
         | { kind: 'berry'; rarity: Rarity; count: number }
     }
   | { kind: 'seeds'; crop: CropId; rarity: Rarity; count: number }
+  | { kind: 'grass-seeds'; count: number }
   | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
   | { kind: 'berry'; rarity: Rarity; count: number }
   | { kind: 'rotten'; cls: CropClass; count: number }
@@ -77,9 +79,11 @@ export type Face =
   | { kind: 'tap' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
+  | { kind: 'fence' }
 
 export function compostValue(item: Item): number {
   if (item.kind === 'seeds') return COMPOST_VALUE.seeds * item.count
+  if (item.kind === 'grass-seeds') return COMPOST_VALUE.seeds * item.count
   if (item.kind === 'fruit') {
     return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
   }
@@ -96,6 +100,18 @@ export function compostValue(item: Item): number {
 
 export function organic(item: Item): boolean {
   return compostValue(item) > 0
+}
+
+export const SHOVEL_NAME: { readonly [K in ShovelId]: string } = {
+  shovel: 'Shovel',
+  'better-shovel': 'Better shovel',
+  'rotary-shovel': 'Rotary shovel',
+}
+
+export const PICKAXE_NAME: { readonly [K in PickaxeId]: string } = {
+  pickaxe: 'Pickaxe',
+  'better-pickaxe': 'Hardened pickaxe',
+  'diamond-pickaxe': 'Diamond pickaxe',
 }
 
 export function cropName(id: CropId): string {
@@ -142,14 +158,15 @@ export function grindN(hand: Hand): number {
 export function toolName(hand: Hand): string {
   if (hand.kind === 'empty') return 'hand'
   const it = hand.item
-  if (it.kind === 'shovel') return it.id === 'shovel' ? 'Shovel' : 'Better shovel'
-  if (it.kind === 'pickaxe') return it.id === 'pickaxe' ? 'Pickaxe' : 'Hardened pickaxe'
+  if (it.kind === 'shovel') return SHOVEL_NAME[it.id]
+  if (it.kind === 'pickaxe') return PICKAXE_NAME[it.id]
   if (it.kind === 'container') return it.id === 'bucket' ? 'Bucket' : 'Large bucket'
   if (it.kind === 'fertilizer') return 'Fertilizer bag'
   if (it.kind === 'synth') return 'Synthetic fertilizer'
   if (it.kind === 'compost') return 'Compost'
   if (it.kind === 'box') return boxName(it.cap)
   if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
+  if (it.kind === 'grass-seeds') return 'Grass seed'
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
   if (it.kind === 'berry') return 'Berry'
   if (it.kind === 'rotten') return rottenName(it.cls)
@@ -170,12 +187,10 @@ export function deadName(cls: CropClass): string {
 
 export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'shovel') {
-    const name = item.id === 'shovel' ? 'Shovel' : 'Better shovel'
-    return `${name} - ${item.usesLeft}/${SHOVELS[item.id].uses} uses left`
+    return `${SHOVEL_NAME[item.id]} - ${item.usesLeft}/${SHOVELS[item.id].uses} uses left`
   }
   if (item.kind === 'pickaxe') {
-    const name = item.id === 'pickaxe' ? 'Pickaxe' : 'Hardened pickaxe'
-    return `${name} - ${item.usesLeft}/${PICKAXES[item.id].uses} uses left`
+    return `${PICKAXE_NAME[item.id]} - ${item.usesLeft}/${PICKAXES[item.id].uses} uses left`
   }
   if (item.kind === 'container') {
     const name = item.id === 'bucket' ? 'Bucket' : 'Large bucket'
@@ -199,6 +214,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
+  if (item.kind === 'grass-seeds') return `Grass seed - ${item.count}, plant it on tilled soil`
   if (item.kind === 'fruit') {
     return `${cropVariety(item.crop, item.rarity)} - ${item.count}, freshness ${Math.floor(item.freshness * 100)}%`
   }
@@ -275,11 +291,19 @@ export function skuLabel(id: SkuId): string {
     case 'buy-tap':
       return 'Tap'
     case 'buy-tile-paved':
-      return 'Paved tile'
+      return 'Paving slab'
     case 'buy-tile-brick':
-      return 'Brick tile'
+      return 'Brickwork'
     case 'buy-tile-cobble':
-      return 'Cobble tile'
+      return 'Cobblestone'
+    case 'buy-fence':
+      return 'Wooden fence'
+    case 'pack-grass':
+      return 'Grass seeds'
+    case 'buy-rotary-shovel':
+      return 'Rotary shovel'
+    case 'buy-diamond-pickaxe':
+      return 'Diamond pickaxe'
   }
 }
 
@@ -377,13 +401,33 @@ export function skuDesc(id: SkuId): string {
         rate: TAP_RATE,
       })
     case 'buy-tile-paved':
-      return 'Place on bare untilled ground. $1 per tile.'
+      return TILE_T
     case 'buy-tile-brick':
-      return 'Place on bare untilled ground. $1 per tile.'
+      return TILE_T
     case 'buy-tile-cobble':
-      return 'Place on bare untilled ground. $1 per tile.'
+      return TILE_T
+    case 'buy-fence':
+      return FENCE_T
+    case 'pack-grass':
+      return fill(GRASS_SEED_T, { n: GRASS_PACK })
+    case 'buy-rotary-shovel':
+      return fill(
+        'Motorised. Digs anything a shovel digs, near enough instantly. ${uses} uses, ${workSeconds}s per dig.',
+        SHOVELS['rotary-shovel'],
+      )
+    case 'buy-diamond-pickaxe':
+      return fill(
+        'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.',
+        PICKAXES['diamond-pickaxe'],
+      )
   }
 }
+
+const TILE_T = 'Paving. Lays on untilled ground and stays put. Keeps the garden walkable and tidy.'
+const FENCE_T =
+  'Sits in the middle of an untilled tile and joins up with the fences beside it. Marks a boundary; the gardener still walks through.'
+const GRASS_SEED_T =
+  'Pack of ${n}. Sow on tilled soil. Drinks almost nothing and takes a quarter day to root, then the plot goes back to untilled lawn.'
 
 export function itemTip(item: Item): string {
   if (item.kind === 'shovel') return `${item.id} ${item.usesLeft}`
@@ -398,6 +442,7 @@ export function itemTip(item: Item): string {
     return `box ${item.cargo.goods} ${item.cargo.stack.crop} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
+  if (item.kind === 'grass-seeds') return `grass-seeds ${item.count}`
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
   if (item.kind === 'berry') return `berry ${item.count}`
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
@@ -501,6 +546,14 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'tile', tile: 'brick' }
     case 'buy-tile-cobble':
       return { kind: 'tile', tile: 'cobble' }
+    case 'buy-fence':
+      return { kind: 'fence' }
+    case 'pack-grass':
+      return { kind: 'grass-seeds', count: GRASS_PACK }
+    case 'buy-rotary-shovel':
+      return makeShovel('rotary-shovel')
+    case 'buy-diamond-pickaxe':
+      return makePickaxe('diamond-pickaxe')
   }
 }
 

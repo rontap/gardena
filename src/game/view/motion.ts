@@ -1,6 +1,7 @@
 import { RESEARCH } from '../defs/research.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { SOIL_WATER_MAX } from '../sim/soil.ts'
+import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
 import { UI_PHASE } from './svgs.ts'
@@ -10,6 +11,7 @@ type MotionNodes = {
   clock: Element | null
   phase: Element | null
   research: Element | null
+  daybar: Element | null
   qbar: Element | null
   banner: Element | null
   speech: Element | null
@@ -28,6 +30,7 @@ function scan(root: HTMLElement): MotionNodes {
     clock: root.querySelector('[data-clock]'),
     phase: root.querySelector('[data-phase]'),
     research: root.querySelector('[data-research]'),
+    daybar: root.querySelector('[data-day-bar]'),
     qbar: root.querySelector('[data-queue-bar]'),
     banner: root.querySelector('[data-banner]'),
     speech: root.querySelector('[data-speech]'),
@@ -50,12 +53,16 @@ export function paintMotion(root: HTMLElement, world: World, rev: number): void 
       `translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`,
     )
   }
-  let dayText = `day ${world.clock.day}`
+  const phase = world.clock.phase()
+  const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
   if (n.clock !== null) {
     if (n.clock.textContent !== dayText) n.clock.textContent = dayText
     n.clock.setAttribute('data-clock-t', String(Math.floor(world.clock.t)))
   }
-  const phaseHtml = UI_PHASE[world.clock.phase()]
+  if (n.daybar instanceof HTMLElement) {
+    n.daybar.style.width = `${(world.clock.t / DAY_SECONDS) * 100}%`
+  }
+  const phaseHtml = UI_PHASE[phase]
   if (n.phase !== null && n.phase.innerHTML !== phaseHtml) n.phase.innerHTML = phaseHtml
   const job = world.job
   const research = n.research
@@ -65,6 +72,8 @@ export function paintMotion(root: HTMLElement, world: World, rev: number): void 
       const def = RESEARCH[job.id]
       const left = research.querySelector('[data-research-left]')
       if (left !== null) left.textContent = def.name
+      const secs = research.querySelector('[data-research-secs]')
+      if (secs !== null) secs.textContent = `${Math.ceil(job.left)}s`
       const bar = research.querySelector('[data-research-bar]')
       if (bar instanceof HTMLElement) bar.style.width = `${((def.seconds - job.left) / def.seconds) * 100}%`
     } else {

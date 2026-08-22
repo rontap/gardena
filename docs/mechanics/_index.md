@@ -25,7 +25,7 @@ See [[canon]].
 6. `goodness < VERY_HARD_MAX` → very-hard; `< HARD_MAX` → hard; else soft. Hard dirt is poor dirt.
 7. Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC`. Ripe does not drink. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.
 8. Happiness starts `HAPPY_START`. Drown drain `HAPPY_DROWN_SECONDS`. Wilt `HAPPY_WILT_SECONDS`. Starve `HAPPY_STARVE_SECONDS`. Happiness 0 while growing: drown → `rotten`; wilt/starve → `dead`. Ripe does not die of water or fertilizer.
-9. Ripen: `freshness = 1`, `rarity = rollGrowRarity(rarity, happiness, hash(seed, 'grow-rarity', col, row, day))`. Ripe `freshness -= dt / rotSeconds`; `<= 0` → `rotten`.
+9. Ripen: `freshness = 1`, `rarity = rollGrowRarity(rarity, happiness, hash(seed, 'grow-rarity', col, row, day), extraUp1)`. `extraUp1` is 0.04 if player owns `better-{crop}`, else 0; scaled by `h / HAPPY_MAX`. Ripe `freshness -= dt / rotSeconds`; `<= 0` → `rotten`.
 10. Picked fruit keeps ticking freshness (hand, house, chest, ground, box cargo) until sold. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`, then jam floor if daughter owns `jam`.
 11. Empty-hand harvest of ripe: one fruit, current freshness, `unitSale = stats.sale`, plot `empty` same soil. Shovel growing/ripe: one seed. Shovel dead, rotten, weed, or grass: no drop.
 12. Empty hand gathers weed/grass as items. Each `BIG_TICK`, each `empty` plot rolls `WEED_CHANCE`.
@@ -37,11 +37,11 @@ See [[canon]].
 18. Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. Box $20. Composting research $14 / 45s.
 19. `CHUNK` 32. `expandPrice = 40 + 15 * purchases`. 4-connected after `unlock-expand`.
 20. Player-facing top rarity is Heirloom (`heirloom`). `RARITY_SALE` 1 / 1.25 / 2 / 3.5.
-21. Crop stats are `CROPS`. Pack prices: carrot 3, potato 6, wheat 10, tomato 15, watermelon 18, raspberry 22.
+21. Crop stats are `CROPS`. Pack prices: carrot 3, potato 6, wheat 10, tomato 15, watermelon 18, raspberry 22. Shop packs are common unless player owns `seed-bank`: per rank 5% uncommon / 1.2% rare / 0.2% heirloom (`SEED_BANK_CHANCE`). Base 0.
 22. Start chunk `(0,0)` has one wild 1×2 apple tree on the first valid soft pair.
 23. Recap exit is only `dismissRecap()`. Each member `points += 1`, then play, `banner = 2`.
 24. Offers 0–3 persist until pick. `pickSkill` costs 1 of that member’s points, writes `owned[id] = offered.tier`, `pickCount++`, rerolls that member only.
 25. Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`.
-26. No `bump-carrot` `bump-potato` `bump-wheat`. No research `sale-mul`. Better crop sale is daughter `better-*` `saleMul` 1.04.
+26. No `bump-carrot` `bump-potato` `bump-wheat`. No research `sale-mul`. Better crop is player `better-*` `saleMul` 1.04 and ripen `extraUp1` 0.04. Őstermelő gated on `unlock-heirloom`.
 27. `unlockAll`: every research done, `money += 999`, job idle, each member `points = 99`. Does not grant skills. Does not reroll.
 28. Water lens only if husband owns `water-study`. Land lens if husband owns `land-study`.

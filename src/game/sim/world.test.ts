@@ -1,8 +1,19 @@
 import { describe, expect, test } from 'vitest'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import { CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, SPRINKLER_TILE_RATE } from '../defs/items.ts'
-import { BERRY_SALE, HAPPY_START, RARITY_SALE, RARITY_WEIGHT, rarityOdds, rollGrowRarity, stepRarity } from '../defs/rarity.ts'
+import {
+  BERRY_SALE,
+  HAPPY_MAX,
+  HAPPY_START,
+  RARITY_SALE,
+  RARITY_WEIGHT,
+  rarityOdds,
+  rollGrowRarity,
+  rollShopRarity,
+  stepRarity,
+} from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
+import { SKILLS } from '../defs/skills.ts'
 import type { ResearchId, SkuId } from './ids.ts'
 import { Chest, Grinder, HOUSE_BASE, PUMP_BASE, occupiedCells } from './building.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
@@ -109,15 +120,15 @@ describe('beta-1 invariants', () => {
   test('effectiveSale', () => {
     const w = new World()
     w.modifiers.push({
-      id: 'bump-carrot',
-      source: 'research',
+      id: 'better-carrot',
+      source: 'skill',
       crop: 'carrot',
-      saleMul: 1.1,
+      saleMul: 1.04,
       growSpeed: 1,
       waterUseMul: 1,
     })
     const sale = new Plant('carrot', 'common').stats(w.modifiers).sale
-    expect(sale).toBe(CROPS.carrot.sale * RARITY_SALE.common * 1.1)
+    expect(sale).toBe(CROPS.carrot.sale * RARITY_SALE.common * 1.04)
   })
 
   test('shovel 0 removes item', () => {
@@ -260,6 +271,22 @@ describe('beta-2 invariants', () => {
     expect(w.money).toBe(money + 999)
   })
 
+  test('cheat money points and research 3×', () => {
+    const w = new World()
+    const money = w.money
+    w.cheatMoney()
+    expect(w.money).toBe(money + 200)
+    w.cheatPoints()
+    expect(w.family.player.points).toBe(10)
+    expect(w.family.husband.points).toBe(10)
+    expect(w.family.daughter.points).toBe(10)
+    w.startResearch('unlock-tomato')
+    w.toggleCheatResearch()
+    expect(w.cheatFastResearch).toBe(true)
+    for (let i = 0; i < 15; i++) w.tick(1 / 15)
+    expect(w.job.kind === 'run' && w.job.left).toBeCloseTo(RESEARCH['unlock-tomato'].seconds - 3, 5)
+  })
+
   test('shovel SKU is 10', () => {
     expect(SKUS['buy-shovel'].price).toBe(10)
   })
@@ -295,9 +322,7 @@ describe('beta-2 invariants', () => {
   test('research costs match table', () => {
     expect(RESEARCH['unlock-tomato']).toMatchObject({ cost: 7, seconds: 30 })
     expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 12, seconds: 45 })
-    expect(RESEARCH['bump-carrot']).toMatchObject({ cost: 10, seconds: 40 })
-    expect(RESEARCH['bump-potato']).toMatchObject({ cost: 10, seconds: 40 })
-    expect(RESEARCH['bump-wheat']).toMatchObject({ cost: 12, seconds: 45 })
+    expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 20, seconds: 120, tree: 'plants' })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
     expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 17, seconds: 50 })
     expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 20, seconds: 50 })
@@ -629,9 +654,7 @@ describe('beta-4 invariants', () => {
   test('research names and unlock-expand tree', () => {
     expect(RESEARCH['unlock-tomato'].name).toBe('Tomato seeds')
     expect(RESEARCH['unlock-raspberry'].name).toBe('Raspberry seeds')
-    expect(RESEARCH['bump-carrot'].name).toBe('Better carrots')
-    expect(RESEARCH['bump-potato'].name).toBe('Better potatoes')
-    expect(RESEARCH['bump-wheat'].name).toBe('Better wheat')
+    expect(RESEARCH['unlock-heirloom'].name).toBe('Heirloom crops')
     expect(RESEARCH['unlock-better-tools'].name).toBe('Better gardening tools')
     expect(RESEARCH['unlock-large-box'].name).toBe('Fruit boxes')
     expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
@@ -1221,6 +1244,8 @@ describe('beta-6 invariants', () => {
   test('happiness odds at 50% and 0%', () => {
     expect(rarityOdds(HAPPY_START)).toEqual({ up2: 0.005, up1: 0.05, down: 0 })
     expect(rarityOdds(0)).toEqual({ up2: 0, up1: 0, down: 0.05 })
+    expect(rarityOdds(HAPPY_MAX, 0.04)).toEqual({ up2: 0.01, up1: 0.14, down: 0 })
+    expect(rarityOdds(HAPPY_START, 0.04)).toEqual({ up2: 0.005, up1: 0.07, down: 0 })
     expect(stepRarity('common', -1)).toBe('common')
     expect(stepRarity('heirloom', 2)).toBe('heirloom')
     expect(rollGrowRarity('common', HAPPY_START, 0)).toBe('rare')
@@ -1228,6 +1253,29 @@ describe('beta-6 invariants', () => {
     expect(rollGrowRarity('common', HAPPY_START, 0.006)).toBe('uncommon')
     expect(rollGrowRarity('common', HAPPY_START, 0.06)).toBe('common')
     expect(rollGrowRarity('uncommon', 0, 0.01)).toBe('common')
+    expect(rollGrowRarity('common', HAPPY_MAX, 0.111)).toBe('common')
+    expect(rollGrowRarity('common', HAPPY_MAX, 0.111, 0.04)).toBe('uncommon')
+  })
+
+  test('shop packs stay common until Trusted seed bank', () => {
+    expect(rollShopRarity(0, 0)).toBe('common')
+    expect(rollShopRarity(5, 0)).toBe('heirloom')
+    expect(rollShopRarity(5, 0.009)).toBe('heirloom')
+    expect(rollShopRarity(5, 0.011)).toBe('rare')
+    expect(rollShopRarity(5, 0.069)).toBe('rare')
+    expect(rollShopRarity(5, 0.071)).toBe('uncommon')
+    expect(rollShopRarity(5, 0.319)).toBe('uncommon')
+    expect(rollShopRarity(5, 0.32)).toBe('common')
+    expect(SKILLS.heirloom.gate).toEqual({ kind: 'research', id: 'unlock-heirloom' })
+    const w = new World(1)
+    w.family.player.owned.set('seed-bank', 5)
+    const u = hash(1, 'pack-rarity', w.clock.day, Math.floor(w.clock.t * 1000), Math.round(w.money * 10), 0)
+    expect(w.buy('pack-wheat')).toBeUndefined()
+    const got = w.inventory.find(s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === 'wheat')
+    expect(got).toEqual({
+      kind: 'hold',
+      item: { kind: 'seeds', crop: 'wheat', rarity: rollShopRarity(5, u), count: 5 },
+    })
   })
 
   test('wilt drains happiness', () => {

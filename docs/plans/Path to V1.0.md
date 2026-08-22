@@ -127,15 +127,10 @@ Menu and Save
 - New buttion in the game view, top ribbon, right, a gear icon. clicking on it, the startup menu is reused but with two options: Save game / Download Save
 - Older save files are attempted to be loaded in, but now no migration of content.
 - All future features should be also serializable and savable, but for now no backward compatibility conversion. 
-SVG pass
-- several icons and objects are a bit bad, look too boxy, a bit afar from the style I am aiming for. for example, carrot fruit and variants are cool, chest too. What needs partial redesign: very hard soil (too boxy), hard soil (too boxy), house (almost good, but maybe a more rustic roof that is more layered), buckets (hard to parse what it is), shovels (bad proportions).
-- Day-night clock is not easily parseable, make it bigger and more detailed.
-- 
 UI pass
 - in the shop, prices should be right-aligned
 - Almanac
 	- in pipe section, show all pipe variants in the same iterating way as it is done with plants
-- dialougs should be exitable via clicking the backdrop
 Tutorial
 - disabled when game is launched with url#start_now, disabled when the user already has a savefile.
 - The tutorial for now should be short. It should be

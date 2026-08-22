@@ -4,11 +4,13 @@ import type { ContainerId, PickaxeId, ShovelId } from '../sim/ids.ts'
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
   shovel: { uses: 80, workSeconds: 1.2 },
   'better-shovel': { uses: 200, workSeconds: 0.6 },
+  'rotary-shovel': { uses: 1000, workSeconds: 0.2 },
 }
 
 export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds: number } } = {
   pickaxe: { uses: 25, workSeconds: 4 },
   'better-pickaxe': { uses: 40, workSeconds: 2 },
+  'diamond-pickaxe': { uses: 1000, workSeconds: 0.4 },
 }
 
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {
@@ -24,6 +26,11 @@ export const GRIND_MIN = 1
 export const GRIND_MAX = 3
 export const SPEECH_S = 2.5
 export const SHRUB_GROW = 360
+export const GRASS_GROW = DAY_SECONDS / 4
+export const GRASS_WATER_PER_SEC = 0.0012
+export const GRASS_PACK = 5
+export const ROTARY_DIGS = 200
+export const DIAMOND_MINES = 150
 export const SPRINKLER_TILE_DAY = 2.5
 export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
 export const FERT_BAG_LITERS = 5

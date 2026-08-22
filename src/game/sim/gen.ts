@@ -18,7 +18,8 @@ import {
   type Pump,
   type Truck,
 } from './building.ts'
-import type { Cell } from './plot.ts'
+import { goodness, groundOf } from './noise.ts'
+import { bare, type Cell } from './plot.ts'
 import { hash } from './rng.ts'
 
 const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
@@ -37,7 +38,7 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
   const cells: Cell[][] = []
   for (let row = 0; row < CHUNK; row++) {
     const line: Cell[] = []
-    for (let col = 0; col < CHUNK; col++) line.push({ kind: 'untilled', ground: 'soft' })
+    for (let col = 0; col < CHUNK; col++) line.push(bare('soft'))
     cells.push(line)
   }
   const rect = chunkRect(id)
@@ -48,19 +49,13 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
       if (RESERVED.has(`${col},${row}`)) continue
       if (atCell(cells, at).kind === 'rock') continue
       const r = Math.hypot(col + 0.5 - 16, row + 0.5 - 16)
-      const t = r / 32
-      const pRock = 0.014 + 0.01 * t
-      const pVhard = 0.004 + 0.04 * t
-      const pHard = 0.015 + 0.06 * t
+      const pRock = 0.014 + 0.01 * (r / 32)
       if (hash(seed, 'rock', col, row) < pRock) {
         placeRock(cells, seed, id, at)
         continue
       }
-      const u = hash(seed, 'soil', col, row)
-      let ground: 'soft' | 'hard' | 'very-hard' = 'soft'
-      if (u < pVhard) ground = 'very-hard'
-      else if (u < pVhard + pHard) ground = 'hard'
-      put(cells, at, { kind: 'untilled', ground })
+      const ground = groundOf(goodness(seed, col, row))
+      put(cells, at, bare(ground))
       if (ground === 'soft' && hash(seed, 'shrub', col, row) < 0.0035) {
         put(cells, at, new Shrub(false, 0))
       }
@@ -129,11 +124,11 @@ function clearBase(cells: Cell[][], id: ChunkId): void {
       if (!nearBase(col, row)) continue
       const cell = atCell(cells, { col, row })
       if (cell.kind === 'rock') {
-        occupiedCells(cell.base, [id]).forEach(at => put(cells, at, { kind: 'untilled', ground: 'soft' }))
+        occupiedCells(cell.base, [id]).forEach(at => put(cells, at, bare('soft')))
         continue
       }
       if (cell.kind === 'shrub' || (cell.kind === 'untilled' && cell.ground !== 'soft')) {
-        put(cells, { col, row }, { kind: 'untilled', ground: 'soft' })
+        put(cells, { col, row }, bare('soft'))
       }
     }
   }

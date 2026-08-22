@@ -28,11 +28,28 @@ export const RARITY_WEIGHT: { readonly [K in Rarity]: number } = {
   heirloom: 0.01,
 }
 
+export const TOL_RARITY: { readonly [K in Rarity]: number } = {
+  common: 1,
+  uncommon: 0.92,
+  rare: 0.8,
+  heirloom: 0.65,
+}
+
+export const TOL_MIN = 0.25
+
 export const BERRY_SALE = 2
 
 export const HAPPY_START = 0.5
 
+export const HAPPY_MAX = 1
+
+export const HAPPY_GAIN_SECONDS = 600
+
 export const HAPPY_WILT_SECONDS = 480
+
+export const HAPPY_STARVE_SECONDS = 600
+
+export const HAPPY_DROWN_SECONDS = 120
 
 export const RARITY_RANK: readonly Rarity[] = ['common', 'uncommon', 'rare', 'heirloom']
 

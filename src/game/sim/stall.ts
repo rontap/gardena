@@ -45,6 +45,7 @@ export class StallGood {
   target: number
   acc: number
   readonly stock: { [K in Rarity]: number }
+  readonly worth: { [K in Rarity]: number }
 
   constructor(id: StallGoodId, x: number) {
     this.id = id
@@ -53,6 +54,12 @@ export class StallGood {
     this.target = x
     this.acc = 0
     this.stock = { common: 0, uncommon: 0, rare: 0, heirloom: 0 }
+    this.worth = { common: 0, uncommon: 0, rare: 0, heirloom: 0 }
+  }
+
+  take(rarity: Rarity, count: number, freshness: number): void {
+    this.stock[rarity] += count
+    this.worth[rarity] += count * freshness
   }
 }
 

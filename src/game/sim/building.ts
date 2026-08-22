@@ -200,12 +200,31 @@ export class Grinder {
   }
 }
 
+export class CompostBox {
+  readonly kind = 'compost-box' as const
+  readonly base: RectBase
+  units = 0
+  progress = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
 export class Truck {
   readonly kind = 'truck' as const
   readonly base: RectBase
   constructor(base: RectBase) {
     this.base = base
   }
+}
+
+export function frontOf(at: Coord): Coord[] {
+  return [
+    { col: at.col, row: at.row + 1 },
+    { col: at.col - 1, row: at.row },
+    { col: at.col + 1, row: at.row },
+    { col: at.col, row: at.row - 1 },
+  ]
 }
 
 export type Building = House | Pump

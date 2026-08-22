@@ -1,4 +1,4 @@
-import { CROPS, type CropDef } from '../defs/crops.ts'
+import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
 import { RARITY_GROW, RARITY_ROT, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
 import type { CropId } from './ids.ts'
 
@@ -15,6 +15,8 @@ export type Stats = {
   sale: number
   growSeconds: number
   waterUsePerSec: number
+  waterTolerance: number
+  fertTolerance: number
   rotSeconds: number
 }
 
@@ -27,6 +29,8 @@ export function apply(def: CropDef, rarity: Rarity, mods: readonly Modifier[]): 
     sale: def.sale * saleMul,
     growSeconds: (def.growSeconds * RARITY_GROW[rarity]) / growSpeed,
     waterUsePerSec: def.waterUsePerSec * waterUseMul,
+    waterTolerance: tolerance(def.waterTolerance, rarity),
+    fertTolerance: tolerance(def.fertTolerance, rarity),
     rotSeconds: def.rotSeconds * RARITY_ROT[rarity],
   }
 }

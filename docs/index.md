@@ -19,6 +19,11 @@ Vault for this game. Agents read this first.
 - [[agents/documenter]]
 - [[agents/code-review]]
 
+## v0.3
+
+- [[mechanics/v0.3]]
+- [[architecture/v0.3]]
+
 ## Beta-6
 
 - [[mechanics/beta-6]]

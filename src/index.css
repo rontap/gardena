@@ -14,6 +14,7 @@
   --color-lens-bad: #e23b2e;
   --color-lens-good: #2fd15a;
   --color-lens-done: #1e9be6;
+  --font-display: 'Press Start 2P', ui-monospace, monospace;
 }
 
 html,
@@ -25,3 +26,11 @@ body,
   user-select: none;
 }
 
+.plant-quality-pip {
+  opacity: 0;
+  transition: opacity 100ms linear;
+}
+
+.plant-rarity:hover .plant-quality-pip {
+  opacity: 1;
+}

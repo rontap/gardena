@@ -1,23 +1,109 @@
-import type { Rarity } from './rarity.ts'
+import { TOL_MIN, TOL_RARITY, type Rarity } from './rarity.ts'
 import type { CropId } from '../sim/ids.ts'
+
+export type CropClass = 'root' | 'grain' | 'fruit'
 
 export type CropDef = {
   id: CropId
+  cls: CropClass
   growSeconds: number
   waterUsePerSec: number
+  waterTolerance: number
+  fertTolerance: number
   sale: number
   seed: number
   rotSeconds: number
 }
 
 export const CROPS: { readonly [K in CropId]: CropDef } = {
-  carrot: { id: 'carrot', growSeconds: 90, waterUsePerSec: 0.004889, sale: 3, seed: 1, rotSeconds: 420 },
-  potato: { id: 'potato', growSeconds: 120, waterUsePerSec: 0.00375, sale: 6, seed: 2, rotSeconds: 600 },
-  wheat: { id: 'wheat', growSeconds: 180, waterUsePerSec: 0.003333, sale: 12, seed: 2, rotSeconds: 420 },
-  tomato: { id: 'tomato', growSeconds: 280, waterUsePerSec: 0.003111, sale: 20, seed: 3, rotSeconds: 300 },
-  raspberry: { id: 'raspberry', growSeconds: 340, waterUsePerSec: 0.003333, sale: 26, seed: 4, rotSeconds: 160 },
-  watermelon: { id: 'watermelon', growSeconds: 260, waterUsePerSec: 0.013333, sale: 20, seed: 4, rotSeconds: 360 },
-  apple: { id: 'apple', growSeconds: 600, waterUsePerSec: 0, sale: 20, seed: 4, rotSeconds: 480 },
+  carrot: {
+    id: 'carrot',
+    cls: 'root',
+    growSeconds: 90,
+    waterUsePerSec: 0.004889,
+    waterTolerance: 0.9,
+    fertTolerance: 0.9,
+    sale: 3,
+    seed: 1,
+    rotSeconds: 420,
+  },
+  potato: {
+    id: 'potato',
+    cls: 'root',
+    growSeconds: 120,
+    waterUsePerSec: 0.00375,
+    waterTolerance: 0.85,
+    fertTolerance: 0.85,
+    sale: 6,
+    seed: 2,
+    rotSeconds: 600,
+  },
+  wheat: {
+    id: 'wheat',
+    cls: 'grain',
+    growSeconds: 180,
+    waterUsePerSec: 0.003333,
+    waterTolerance: 0.75,
+    fertTolerance: 0.7,
+    sale: 12,
+    seed: 2,
+    rotSeconds: 420,
+  },
+  tomato: {
+    id: 'tomato',
+    cls: 'fruit',
+    growSeconds: 280,
+    waterUsePerSec: 0.003111,
+    waterTolerance: 0.65,
+    fertTolerance: 0.6,
+    sale: 20,
+    seed: 3,
+    rotSeconds: 300,
+  },
+  raspberry: {
+    id: 'raspberry',
+    cls: 'fruit',
+    growSeconds: 340,
+    waterUsePerSec: 0.003333,
+    waterTolerance: 0.6,
+    fertTolerance: 0.55,
+    sale: 26,
+    seed: 4,
+    rotSeconds: 160,
+  },
+  watermelon: {
+    id: 'watermelon',
+    cls: 'fruit',
+    growSeconds: 260,
+    waterUsePerSec: 0.013333,
+    waterTolerance: 0.5,
+    fertTolerance: 0.6,
+    sale: 20,
+    seed: 4,
+    rotSeconds: 360,
+  },
+  apple: {
+    id: 'apple',
+    cls: 'fruit',
+    growSeconds: 600,
+    waterUsePerSec: 0,
+    waterTolerance: 0.9,
+    fertTolerance: 0.9,
+    sale: 20,
+    seed: 4,
+    rotSeconds: 480,
+  },
+}
+
+export const CLASS_NAME: { readonly [K in CropClass]: string } = {
+  root: 'root',
+  grain: 'grain',
+  fruit: 'fruit',
+}
+
+export function tolerance(base: number, rarity: Rarity): number {
+  const t = base * TOL_RARITY[rarity]
+  return t < TOL_MIN ? TOL_MIN : t
 }
 
 const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = {
@@ -37,8 +123,3 @@ export function cropVariety(id: CropId, rarity: Rarity): string {
 export function freshMul(f: number): number {
   return f >= 0.8 ? 1 : f / 0.8
 }
-
-export const WITHER = 0.33
-export const CRITICAL = 0.1
-export const HEALTH = 0.5
-export const PLANT_THIRST = 0.75

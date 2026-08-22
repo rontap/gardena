@@ -24,7 +24,10 @@ const UTILITY: SkuId[] = [
   'buy-bucket-large',
   'buy-box',
   'buy-box-large',
+  'buy-fertilizer',
+  'buy-synth-fertilizer',
 ]
+const BUILDING_TILES: SkuId[] = ['buy-tile-paved', 'buy-tile-brick', 'buy-tile-cobble']
 export const AUTOMATION: SkuId[] = [
   'buy-pumpjack',
   'buy-well',
@@ -34,12 +37,14 @@ export const AUTOMATION: SkuId[] = [
   'buy-sprinkler-large',
   'buy-chest',
   'buy-grinder',
+  'buy-compost-box',
 ]
 
 const TAB_LINE = {
   seeds: 'Seeds for the field.',
   utility: 'Tools and carry.',
   automation: 'Machines you place.',
+  building: 'Building tiles for the garden.',
 } as const
 
 type Tab = keyof typeof TAB_LINE
@@ -48,6 +53,7 @@ const TABS: { id: Tab; label: string; skus: SkuId[] }[] = [
   { id: 'seeds', label: 'Seeds', skus: SEEDS },
   { id: 'utility', label: 'Utility', skus: UTILITY },
   { id: 'automation', label: 'Automation', skus: AUTOMATION },
+  { id: 'building', label: 'Building Tiles', skus: BUILDING_TILES },
 ]
 
 type RowState = 'not-researched' | 'cannot-afford' | 'inventory-full' | 'ok'

@@ -1,12 +1,33 @@
-import { CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, SPEECH_S, SHRUB_GROW, SPRINKLER_RATE } from '../defs/items.ts'
+import {
+  COMPOST_NEED,
+  COMPOST_SECONDS,
+  CONTAINERS,
+  GRIND_MAX,
+  GRIND_MIN,
+  GRIND_WORK,
+  SPEECH_S,
+  SHRUB_GROW,
+  SPRINKLER_RATE,
+} from '../defs/items.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { CROPS, freshMul, HEALTH, WITHER } from '../defs/crops.ts'
-import { HAPPY_WILT_SECONDS, RARITY_RANK, RARITY_SALE, rollGrowRarity, type Rarity } from '../defs/rarity.ts'
+import { CROPS, freshMul } from '../defs/crops.ts'
+import {
+  HAPPY_DROWN_SECONDS,
+  HAPPY_GAIN_SECONDS,
+  HAPPY_MAX,
+  HAPPY_STARVE_SECONDS,
+  HAPPY_WILT_SECONDS,
+  RARITY_RANK,
+  RARITY_SALE,
+  rollGrowRarity,
+  type Rarity,
+} from '../defs/rarity.ts'
 import type { CropId, ResearchId, SkuId, StallGoodId } from './ids.ts'
 import { Actor } from './actor.ts'
 import {
   CHUNK,
   Chest,
+  CompostBox,
   DOOR,
   Grinder,
   HOUSE_BASE,
@@ -20,6 +41,7 @@ import {
   chunkKey,
   chunkOf,
   chunkRect,
+  frontOf,
   inWorld,
   local,
   occupiedCells,
@@ -27,25 +49,50 @@ import {
   type Coord,
 } from './building.ts'
 import { Clock } from './clock.ts'
-import { topIndex, type Drop } from './drop.ts'
+import { onCell, topIndex, type Drop } from './drop.ts'
 import { generateChunk } from './gen.ts'
 import {
   boxAdd,
   boxAccepts,
+  boxAddFruit,
+  compostValue,
+  fruitStack,
   grindN,
+  makeCompost,
   makeContainer,
   makeShovel,
+  mergeFreshness,
   mergeUnitSale,
+  organic,
   skuItem,
   toolName,
+  type FruitStack,
   type Hand,
   type Item,
   type Slot,
 } from './item.ts'
 import { goodIx, makeStall, rate as stallRate, stallX, tenths, STALL_IDS, type StallMap, type StallSale } from './stall.ts'
-import type { Modifier } from './modifiers.ts'
-import { Plant } from './plant.ts'
-import { isPlot, type Cell, type Plot } from './plot.ts'
+import { statsOf, type Modifier, type Stats } from './modifiers.ts'
+import { goodness } from './noise.ts'
+import { Plant, Weed, type Doom } from './plant.ts'
+import { bare, isPlot, isTileSite, isTilled, type Cell, type Plot } from './plot.ts'
+import {
+  BIG_TICK,
+  FERT_PLOT_MAX,
+  GRASS_CHANCE,
+  PLANT_FERT_PER_SEC,
+  SOIL_TILL_WATER,
+  SOIL_WATER_MID,
+  STUNT,
+  Soil,
+  WEED_CHANCE,
+  WEED_FERT_PER_SEC,
+  WEED_GROW,
+  WEED_WATER_PER_SEC,
+  fertBand,
+  waterBand,
+  type Band,
+} from './soil.ts'
 import {
   aoe,
   edgeKey,
@@ -75,6 +122,8 @@ export type Intent =
   | { act: 'mine'; at: Coord }
   | { act: 'plant'; at: Coord }
   | { act: 'water'; at: Coord }
+  | { act: 'fertilize'; at: Coord }
+  | { act: 'compost'; at: Coord }
   | { act: 'harvest'; at: Coord }
   | { act: 'fill'; at: Coord }
   | { act: 'consign' }
@@ -91,6 +140,8 @@ export type TaskName =
   | 'Mine'
   | 'Plant'
   | 'Water'
+  | 'Fertilize'
+  | 'Compost'
   | 'Harvest'
   | 'Fill'
   | 'Drop off'
@@ -178,9 +229,11 @@ export class World {
   seam: Seam = { kind: 'play' }
   legStart = { x: DOOR.col + 0.5, y: DOOR.row + 0.5 }
   workTotal = 0
+  bigTicks = 0
   private workLeft = 0
   private filling = false
   private mktAcc = 0
+  private bigAcc = 0
   private readonly chunks = new Map<string, Cell[][]>()
   private readonly subs = new Set<() => void>()
 
@@ -209,6 +262,10 @@ export class World {
     this.inventory[2] = {
       kind: 'hold',
       item: { kind: 'seeds', crop: 'tomato', rarity: 'rare', count: 2 },
+    }
+    this.inventory[3] = {
+      kind: 'hold',
+      item: { kind: 'seeds', crop: 'potato', rarity: 'heirloom', count: 2 },
     }
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
   }
@@ -430,14 +487,14 @@ export class World {
       if (c.form === 'starter') return
       if (c.form === 'jack') {
         occupiedCells(c.base, this.owned).forEach(p => {
-          this.setCell(p, { kind: 'empty' })
+          this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
         })
         this.pumps.splice(this.pumps.indexOf(c), 1)
         this.pulse = { text: 'Delete pumpjack', at: { ...at } }
         this.ping()
         return
       }
-      this.setCell(at, { kind: 'empty' })
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pumps.splice(this.pumps.indexOf(c), 1)
       this.pulse = { text: 'Delete well', at: { ...at } }
       this.ping()
@@ -447,13 +504,19 @@ export class World {
       c.slots.forEach(s => {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
       })
-      this.setCell(at, { kind: 'empty' })
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete chest', at: { ...at } }
       this.ping()
       return
     }
+    if (c.kind === 'compost-box') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.pulse = { text: 'Delete compost box', at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind !== 'grinder') return
-    this.setCell(at, { kind: 'empty' })
+    this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
     this.pulse = { text: 'Delete grinder', at: { ...at } }
     this.ping()
   }
@@ -556,6 +619,10 @@ export class World {
         return 'Plant'
       case 'water':
         return 'Water'
+      case 'fertilize':
+        return 'Fertilize'
+      case 'compost':
+        return 'Compost'
       case 'harvest':
         return 'Harvest'
       case 'fill':
@@ -641,6 +708,21 @@ export class World {
     }
     const sku = SKUS[this.place.id]
     if (this.money < sku.price) return
+    if (
+      this.place.id === 'buy-tile-paved' ||
+      this.place.id === 'buy-tile-brick' ||
+      this.place.id === 'buy-tile-cobble'
+    ) {
+      if (!inWorld(at, this.owned)) return
+      const c = this.cell(at)
+      if (!isTileSite(c)) return
+      const tile = this.place.id === 'buy-tile-paved' ? 'paved' : this.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
+      this.money -= sku.price
+      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
+      this.pulse = { text: `Place ${placeLabel(this.place.id)}`, at: { ...at } }
+      this.ping()
+      return
+    }
     if (this.place.id === 'buy-pumpjack') {
       if (!pumpjackOk(this, at)) return
       this.money -= sku.price
@@ -653,12 +735,18 @@ export class World {
       this.ping()
       return
     }
-    if (this.place.id === 'buy-chest' || this.place.id === 'buy-grinder' || this.place.id === 'buy-well') {
+    if (
+      this.place.id === 'buy-chest' ||
+      this.place.id === 'buy-grinder' ||
+      this.place.id === 'buy-compost-box' ||
+      this.place.id === 'buy-well'
+    ) {
       if (!placeSolidOk(this, at)) return
       this.money -= sku.price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
       if (this.place.id === 'buy-chest') this.setCell(at, new Chest(base))
       else if (this.place.id === 'buy-grinder') this.setCell(at, new Grinder(base))
+      else if (this.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
       else {
         const pump = new Pump(base, 'well')
         this.pumps.push(pump)
@@ -676,12 +764,14 @@ export class World {
       made.kind === 'seeds' ||
       made.kind === 'chest' ||
       made.kind === 'grinder' ||
+      made.kind === 'compost-box' ||
       made.kind === 'well' ||
       made.kind === 'pipe' ||
       made.kind === 'sprinkler' ||
       made.kind === 'sprinkler-vert' ||
       made.kind === 'sprinkler-large' ||
-      made.kind === 'delete'
+      made.kind === 'delete' ||
+      made.kind === 'tile'
     ) {
       return
     }
@@ -729,43 +819,7 @@ export class World {
   }
 
   compactInventory(): void {
-    const kept: Slot[] = []
-    this.inventory.forEach(slot => {
-      if (slot.kind === 'empty') return
-      if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
-        const kind = slot.item.kind
-        const crop = slot.item.crop
-        const rarity = slot.item.rarity
-        const hit = kept.find(
-          s =>
-            s.kind === 'hold' &&
-            s.item.kind === kind &&
-            (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
-            s.item.crop === crop &&
-            s.item.rarity === rarity,
-        )
-        if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
-          if (hit.item.kind === 'fruit' && slot.item.kind === 'fruit') {
-            hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
-          }
-          hit.item.count += slot.item.count
-          return
-        }
-      }
-      if (slot.item.kind === 'berry') {
-        const rarity = slot.item.rarity
-        const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'berry' && s.item.rarity === rarity)
-        if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'berry') {
-          hit.item.count += slot.item.count
-          return
-        }
-      }
-      kept.push(slot)
-    })
-    kept.forEach((s, i) => {
-      this.inventory[i] = s
-    })
-    for (let i = kept.length; i < INV; i++) this.inventory[i] = { kind: 'empty' }
+    compactSlots(this.inventory)
   }
 
   unlockAll(): void {
@@ -790,7 +844,7 @@ export class World {
     return STALL_IDS.reduce(
       (total, id) =>
         total +
-        RARITY_RANK.reduce((goodTotal, rarity) => goodTotal + this.stall[id].stock[rarity] * stallX(id, this.modifiers) * RARITY_SALE[rarity], 0),
+        RARITY_RANK.reduce((goodTotal, rarity) => goodTotal + this.stall[id].worth[rarity] * stallX(id, this.modifiers) * RARITY_SALE[rarity], 0),
       0,
     )
   }
@@ -801,6 +855,7 @@ export class World {
     STALL_IDS.forEach(id => {
       RARITY_RANK.forEach(rarity => {
         this.stall[id].stock[rarity] = 0
+        this.stall[id].worth[rarity] = 0
       })
       this.stall[id].acc = 0
     })
@@ -869,6 +924,9 @@ export class World {
     this.tickJob(dt)
     this.tickQueue(dt)
     this.tickField(dt)
+    this.tickFreshness(dt)
+    this.tickCompost(dt)
+    this.tickBig(dt)
     if (this.tickStall(dt) || this.sales.length > 0) this.ping()
   }
 
@@ -961,6 +1019,20 @@ export class World {
         }
         this.arm(0.4)
         return
+      case 'fertilize':
+        if (!this.canFertilize(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.6)
+        return
+      case 'compost':
+        if (!this.canCompost(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
+        return
       case 'harvest':
         if (!this.canHarvest(i.at)) {
           this.shiftHead()
@@ -1039,6 +1111,8 @@ export class World {
     if (i.act === 'mine') this.doMine(i.at)
     if (i.act === 'plant') this.doPlant(i.at)
     if (i.act === 'water') this.doWater(i.at)
+    if (i.act === 'fertilize') this.doFertilize(i.at)
+    if (i.act === 'compost') this.doCompost(i.at)
     if (i.act === 'harvest') this.doHarvest(i.at)
     if (i.act === 'grind') this.doGrind(i.at)
     this.shiftHead()
@@ -1101,33 +1175,40 @@ export class World {
         }
         return
       }
-      if (c.kind !== 'growing' && c.kind !== 'ripe') return
-      const stage0 = c.plant.stage(c.kind)
-      const bar0 = c.plant.thirst < HEALTH
-      const st = c.plant.stats(this.modifiers)
-      if (c.kind === 'growing') {
-        const drink = c.plant.thirst < WITHER ? st.waterUsePerSec * 0.5 : st.waterUsePerSec
-        c.plant.thirst -= drink * dt
-        if (c.plant.thirst < 0) c.plant.thirst = 0
-      }
-      if (c.kind === 'growing' && c.plant.thirst <= 0) {
-        this.setCell(at, { kind: 'dead', plant: c.plant })
-        this.tally.died += 1
-        dirty = true
+      if (c.kind === 'weed') {
+        const stage0 = c.weed.stage()
+        c.soil.drink(WEED_WATER_PER_SEC * dt)
+        c.soil.starve(WEED_FERT_PER_SEC * dt)
+        const grown = c.weed.maturity + dt / WEED_GROW
+        c.weed.maturity = grown > 1 ? 1 : grown
+        if (c.weed.stage() !== stage0) dirty = true
         return
       }
-      if (c.kind === 'growing' && c.plant.thirst < WITHER) {
-        c.plant.happiness -= dt / HAPPY_WILT_SECONDS
-        if (c.plant.happiness < 0) c.plant.happiness = 0
-      }
-      if (c.kind === 'growing' && c.plant.thirst >= WITHER) {
-        c.plant.maturity += dt / st.growSeconds
+      if (c.kind !== 'growing' && c.kind !== 'ripe') return
+      const stage0 = c.plant.stage(c.kind)
+      const st = c.plant.stats(this.modifiers)
+      const mood0 = mood(c.soil, st)
+      if (c.kind === 'growing') {
+        c.soil.drink(st.waterUsePerSec * dt)
+        c.soil.starve(PLANT_FERT_PER_SEC * dt)
+        if (!c.soil.bio) c.plant.bio = false
+        const water = waterBand(c.soil.water, st.waterTolerance)
+        const fert = fertBand(c.soil.fertilizer, st.fertTolerance)
+        const harm = age(c.plant, c.soil, water, fert, dt)
+        if (harm.kind === 'hurt' && c.plant.happiness <= 0) {
+          this.setCell(at, doomed(harm.by, c.soil, c.plant))
+          this.tally.died += 1
+          dirty = true
+          return
+        }
+        const stunt = (water === 'red' ? STUNT : 1) * (fert === 'red' ? STUNT : 1)
+        c.plant.maturity += (dt * stunt) / st.growSeconds
         if (c.plant.maturity >= 1) {
           c.plant.maturity = 1
           c.plant.freshness = 1
           const u = hash(this.seed, 'grow-rarity', at.col, at.row, this.clock.day)
           c.plant.rarity = rollGrowRarity(c.plant.rarity, c.plant.happiness, u)
-          this.setCell(at, { kind: 'ripe', plant: c.plant })
+          this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
           dirty = true
           return
         }
@@ -1136,7 +1217,7 @@ export class World {
         const bar0Fresh = c.plant.freshness < 0.8
         c.plant.freshness -= dt / st.rotSeconds
         if (c.plant.freshness <= 0) {
-          this.setCell(at, { kind: 'rotten' })
+          this.setCell(at, { kind: 'rotten', soil: c.soil, crop: c.plant.crop })
           dirty = true
           return
         }
@@ -1144,7 +1225,7 @@ export class World {
       }
       const now = this.cell(at)
       if (now.kind !== 'growing' && now.kind !== 'ripe') return
-      if (now.plant.stage(now.kind) !== stage0 || now.plant.thirst < HEALTH !== bar0) dirty = true
+      if (now.plant.stage(now.kind) !== stage0 || mood(now.soil, st) !== mood0) dirty = true
     })
     this.sprinklers.forEach(s => {
       const r = this.rate(s.at)
@@ -1155,12 +1236,98 @@ export class World {
       targets.forEach(at => {
         const c = this.cell(at)
         if (c.kind !== 'growing') return
-        const next = c.plant.thirst + add
-        c.plant.thirst = next > 1 ? 1 : next
+        c.soil.soak(add)
         dirty = true
       })
     })
     if (dirty) this.ping()
+  }
+
+  private tickCompost(dt: number): void {
+    let dirty = false
+    this.forEachCell((at, c) => {
+      if (c.kind !== 'compost-box') return
+      if (c.base.col !== at.col || c.base.row !== at.row) return
+      if (c.units < COMPOST_NEED) return
+      c.progress += dt / COMPOST_SECONDS
+      if (c.progress < 1) return
+      const spot = frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
+      if (spot === undefined) return
+      c.progress = 0
+      c.units -= COMPOST_NEED
+      this.drops.push({ at: spot, item: makeCompost() })
+      dirty = true
+    })
+    if (dirty) this.ping()
+  }
+
+  private tickFreshness(dt: number): void {
+    const rot = (f: FruitStack) => {
+      const next = f.freshness - dt / statsOf(f.crop, f.rarity, this.modifiers).rotSeconds
+      f.freshness = next < 0 ? 0 : next
+    }
+    const slot = (s: Slot) => {
+      if (s.kind !== 'hold') return
+      if (s.item.kind === 'fruit') rot(s.item)
+      if (s.item.kind === 'box' && s.item.cargo.kind === 'stack' && s.item.cargo.goods === 'fruit') {
+        rot(s.item.cargo.stack)
+      }
+    }
+    slot(this.hand)
+    this.inventory.forEach(slot)
+    this.drops.forEach(d => slot({ kind: 'hold', item: d.item }))
+    this.forEachCell((_at, c) => {
+      if (c.kind === 'chest') c.slots.forEach(slot)
+    })
+  }
+
+  private tickBig(dt: number): void {
+    this.bigAcc += dt
+    if (this.bigAcc < BIG_TICK) return
+    this.bigAcc -= BIG_TICK
+    this.bigTicks += 1
+    const weeds = this.sproutWeeds()
+    const grass = this.sproutGrass()
+    if (weeds || grass) this.ping()
+  }
+
+  private sproutWeeds(): boolean {
+    const fallow: Coord[] = []
+    this.forEachCell((at, c) => {
+      if (c.kind === 'empty') fallow.push(at)
+    })
+    let grew = false
+    fallow.forEach(at => {
+      const c = this.cell(at)
+      if (c.kind !== 'empty') return
+      if (hash(this.seed, 'weed', at.col, at.row, this.bigTicks) >= WEED_CHANCE) return
+      const variant = hash(this.seed, 'weed-kind', at.col, at.row, this.bigTicks) < 0.5 ? 0 : 1
+      this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
+      grew = true
+    })
+    return grew
+  }
+
+  private sproutGrass(): boolean {
+    if (hash(this.seed, 'grass-roll', this.bigTicks) >= GRASS_CHANCE) return false
+    const b = this.bounds()
+    for (let i = 0; i < 24; i++) {
+      const col = b.col0 + Math.floor(hash(this.seed, 'grass-col', this.bigTicks, i) * (b.col1 - b.col0))
+      const row = b.row0 + Math.floor(hash(this.seed, 'grass-row', this.bigTicks, i) * (b.row1 - b.row0))
+      const at = { col, row }
+      if (!this.inWorld(at)) continue
+      const c = this.cell(at)
+      if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
+      if (onCell(this.drops, at).length > 0) continue
+      const variant = Math.floor(hash(this.seed, 'grass-kind', col, row, this.bigTicks) * 3) as 0 | 1 | 2
+      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'grass', variant } })
+      return true
+    }
+    return false
+  }
+
+  private freshSoil(at: Coord): Soil {
+    return new Soil(SOIL_TILL_WATER, goodness(this.seed, at.col, at.row))
   }
 
   private canShovel(at: Coord): boolean {
@@ -1180,14 +1347,14 @@ export class World {
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
     if (c.kind === 'shrub') {
       this.drops.push({ at: { ...at }, item: { kind: 'shrub' } })
-      this.setCell(at, { kind: 'untilled', ground: 'soft' })
+      this.setCell(at, bare('soft'))
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
       this.pulse = { text: 'Dig', at: { ...at } }
       return
     }
     if (c.kind === 'apple-tree') {
-      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, { kind: 'untilled', ground: 'soft' }))
+      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
       this.drops.push({ at: { ...at }, item: { kind: 'apple-tree' } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
@@ -1195,14 +1362,26 @@ export class World {
       return
     }
     const text =
-      c.kind === 'dead' ? 'Dig out dead plant' : c.kind === 'growing' || c.kind === 'ripe' ? 'Dig up plant' : 'Dig'
+      c.kind === 'dead'
+        ? 'Dig out dead plant'
+        : c.kind === 'weed'
+          ? 'Pull weed'
+          : c.kind === 'growing' || c.kind === 'ripe'
+            ? 'Dig up plant'
+            : 'Dig'
     if (c.kind === 'growing' || c.kind === 'ripe') {
       this.drops.push({
         at: { ...at },
         item: { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 },
       })
     }
-    this.setCell(at, { kind: 'empty' })
+    if (c.kind === 'dead') {
+      this.drops.push({ at: { ...at }, item: { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 } })
+    }
+    if (c.kind === 'rotten') {
+      this.drops.push({ at: { ...at }, item: { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 } })
+    }
+    this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
     s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
@@ -1232,7 +1411,7 @@ export class World {
     if (c.kind !== 'rock') return
     const n = occupiedCells(c.base, this.owned).length
     occupiedCells(c.base, this.owned).forEach(p => {
-      this.setCell(p, { kind: 'untilled', ground: 'soft' })
+      this.setCell(p, bare('soft'))
     })
     s.item.usesLeft -= n === 1 ? 1 : 2
     if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
@@ -1258,9 +1437,11 @@ export class World {
       this.pulse = { text: 'Plant', at: { ...at } }
       return
     }
+    const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
     this.setCell(at, {
       kind: 'growing',
+      soil: bed.soil,
       plant: new Plant(s.item.crop, s.item.rarity),
     })
     const crop = s.item.crop
@@ -1271,18 +1452,56 @@ export class World {
 
   private canWater(at: Coord): boolean {
     if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'container') return false
-    if (this.hand.item.liters < 1) return false
-    const c = this.cell(at)
-    return c.kind === 'growing' || c.kind === 'ripe'
+    if (this.hand.item.liters <= 0) return false
+    return waterable(this.cell(at))
   }
 
   private doWater(at: Coord): void {
     if (!this.canWater(at)) return
-    const c = this.cell(at) as Extract<Plot, { kind: 'growing' | 'ripe' }>
+    const c = this.cell(at) as Extract<Plot, { soil: Soil }>
     const bucket = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'container' }> }
-    bucket.item.liters -= 1
-    c.plant.thirst = 1
+    const need = SOIL_WATER_MID - c.soil.water
+    const use = need > bucket.item.liters ? bucket.item.liters : need
+    c.soil.soak(use)
+    bucket.item.liters -= use
     this.pulse = { text: 'Water', at: { ...at } }
+  }
+
+  private canFertilize(at: Coord): boolean {
+    if (this.hand.kind !== 'hold') return false
+    const it = this.hand.item
+    if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost') return false
+    if (it.liters <= 0) return false
+    const c = this.cell(at)
+    return isTilled(c) && c.soil.fertilizer < FERT_PLOT_MAX
+  }
+
+  private doFertilize(at: Coord): void {
+    if (!this.canFertilize(at)) return
+    const c = this.cell(at) as Extract<Plot, { soil: Soil }>
+    const bag = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'synth' | 'compost' }> }
+    const need = FERT_PLOT_MAX - c.soil.fertilizer
+    const use = need > bag.item.liters ? bag.item.liters : need
+    if (bag.item.kind === 'synth') c.soil.spike(use)
+    else c.soil.feed(use)
+    bag.item.liters -= use
+    if (bag.item.liters <= 0) this.hand = { kind: 'empty' }
+    this.pulse = { text: 'Fertilize', at: { ...at } }
+  }
+
+  private canCompost(at: Coord): boolean {
+    if (this.hand.kind !== 'hold') return false
+    if (this.cell(at).kind !== 'compost-box') return false
+    return organic(this.hand.item)
+  }
+
+  private doCompost(at: Coord): void {
+    if (!this.canCompost(at)) return
+    const box = this.cell(at) as CompostBox
+    const held = this.hand as { kind: 'hold'; item: Item }
+    box.units += compostValue(held.item)
+    this.hand = { kind: 'empty' }
+    this.pulse = { text: 'Compost', at: { ...at } }
   }
 
   private canHarvest(at: Coord): boolean {
@@ -1317,24 +1536,25 @@ export class World {
       return
     }
     if (c.kind === 'apple-tree') {
-      const unitSale = CROPS.apple.sale * RARITY_SALE[c.rarity]
-      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, { kind: 'untilled', ground: 'soft' }))
+      const picked = fruitStack('apple', c.rarity, 1, CROPS.apple.sale * RARITY_SALE[c.rarity], 1, true)
+      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
       this.tally.harvests += 1
       this.pulse = { text: 'Harvest', at: { ...at } }
-      if (this.hand.kind === 'empty') this.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'apple', rarity: c.rarity, count: 1, unitSale } }
-      else if (this.hand.item.kind === 'box') boxAdd(this.hand.item, 'fruit', 'apple', c.rarity, 1, unitSale)
+      if (this.hand.kind === 'empty') this.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
+      else if (this.hand.item.kind === 'box') boxAddFruit(this.hand.item, picked)
       return
     }
-    const p = (c as Extract<Plot, { kind: 'ripe' }>).plant
-    const unitSale = p.stats(this.modifiers).sale * freshMul(p.freshness)
-    this.setCell(at, { kind: 'empty' })
+    const bed = c as Extract<Plot, { kind: 'ripe' }>
+    const p = bed.plant
+    const picked = fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
+    this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
     this.pulse = { text: 'Harvest', at: { ...at } }
     if (this.hand.kind === 'empty') {
-      this.hand = { kind: 'hold', item: { kind: 'fruit', crop: p.crop, rarity: p.rarity, count: 1, unitSale } }
+      this.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
       return
     }
-    if (this.hand.item.kind === 'box') boxAdd(this.hand.item, 'fruit', p.crop, p.rarity, 1, unitSale)
+    if (this.hand.item.kind === 'box') boxAddFruit(this.hand.item, picked)
   }
 
   private canFill(at: Coord): boolean {
@@ -1344,7 +1564,19 @@ export class World {
 
   private doPickup(at: Coord): void {
     const i = topIndex(this.drops, at)
-    if (i < 0) return
+    if (i < 0) {
+      if (this.hand.kind !== 'empty') return
+      const c = this.cell(at)
+      if (c.kind === 'weed') {
+        this.setCell(at, { kind: 'empty', soil: c.soil })
+        this.hand = { kind: 'hold', item: { kind: 'weed', count: 1 } }
+      } else if (c.kind === 'untilled' && c.cover.kind === 'grass') {
+        this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
+        this.hand = { kind: 'hold', item: { kind: 'grass', count: 1 } }
+      } else return
+      this.pulse = { text: 'Pick up', at: { ...at } }
+      return
+    }
     const taken = this.drops[i].item
     if (this.hand.kind === 'hold' && this.hand.item.kind === 'box') {
       if (taken.kind === 'seeds') {
@@ -1361,7 +1593,7 @@ export class World {
         }
       }
       if (taken.kind === 'fruit') {
-        const n = boxAdd(this.hand.item, 'fruit', taken.crop, taken.rarity, taken.count, taken.unitSale)
+        const n = boxAddFruit(this.hand.item, taken)
         if (n === taken.count) {
           this.drops.splice(i, 1)
           this.pulse = { text: 'Pick up', at: { ...at } }
@@ -1409,13 +1641,13 @@ export class World {
     if (this.hand.kind !== 'hold') return
     const item = this.hand.item
     if (item.kind === 'fruit') {
-      this.stall[item.crop].stock[item.rarity] += item.count
+      this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness))
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'berry') {
-      this.stall.berry.stock[item.rarity] += item.count
+      this.stall.berry.take(item.rarity, item.count, 1)
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
@@ -1423,13 +1655,13 @@ export class World {
     if (item.kind !== 'box') return
     if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
       const cargo = item.cargo.stack
-      this.stall[cargo.crop].stock[cargo.rarity] += cargo.count
+      this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness))
       item.cargo = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.cargo.kind === 'berry') {
-      this.stall.berry.stock[item.cargo.rarity] += item.cargo.count
+      this.stall.berry.take(item.cargo.rarity, item.cargo.count, 1)
       item.cargo = { kind: 'empty' }
       this.completeConsign()
     }
@@ -1469,8 +1701,10 @@ export class World {
       g.acc += stallRate(g.offered, g.market) * dt
       while (g.acc >= 1 && stockCount(g) > 0) {
         const rarity = RARITY_RANK.find(r => g.stock[r] > 0) as Rarity
+        const fresh = g.worth[rarity] / g.stock[rarity]
         g.stock[rarity] -= 1
-        const money = g.offered * RARITY_SALE[rarity]
+        g.worth[rarity] -= fresh
+        const money = g.offered * RARITY_SALE[rarity] * fresh
         this.money += money
         this.sales.push({ good: id, rarity, money })
         g.acc -= 1
@@ -1559,15 +1793,48 @@ function usesLeftBlocked(w: World, at: Coord): boolean {
 }
 
 function emptyBucketBlocked(w: World, at: Coord): boolean {
-  if (w.hand.kind !== 'hold' || w.hand.item.kind !== 'container' || w.hand.item.liters >= 1) return false
-  const cell = w.cell(at)
-  return cell.kind === 'growing' || cell.kind === 'ripe'
+  if (w.hand.kind !== 'hold' || w.hand.item.kind !== 'container' || w.hand.item.liters > 0) return false
+  return waterable(w.cell(at))
+}
+
+export function waterable(c: Cell): boolean {
+  if (c.kind !== 'empty' && c.kind !== 'weed' && c.kind !== 'growing' && c.kind !== 'ripe') return false
+  return c.soil.water < SOIL_WATER_MID
+}
+
+type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
+
+function age(plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+  let harm: Harm = { kind: 'none' }
+  if (fert === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
+  if (fert === 'red') {
+    plant.happiness -= dt / HAPPY_STARVE_SECONDS
+    harm = { kind: 'hurt', by: 'starve' }
+  }
+  if (water === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
+  if (water === 'red') {
+    const by: Doom = soil.drowning ? 'drown' : 'wilt'
+    plant.happiness -= dt / (by === 'drown' ? HAPPY_DROWN_SECONDS : HAPPY_WILT_SECONDS)
+    harm = { kind: 'hurt', by }
+  }
+  plant.happiness = plant.happiness < 0 ? 0 : plant.happiness > HAPPY_MAX ? HAPPY_MAX : plant.happiness
+  return harm
+}
+
+function doomed(by: Doom, soil: Soil, plant: Plant): Plot {
+  if (by === 'drown') return { kind: 'rotten', soil, crop: plant.crop }
+  return { kind: 'dead', soil, plant }
+}
+
+export function mood(soil: Soil, st: Stats): string {
+  return `${waterBand(soil.water, st.waterTolerance)}-${fertBand(soil.fertilizer, st.fertTolerance)}`
 }
 
 function primaryAct(cell: Cell): string | undefined {
   if (cell.kind === 'ripe') return 'harvest'
   if (cell.kind === 'shrub' && cell.ripe) return 'harvest'
   if (cell.kind === 'growing') return 'water'
+  if (cell.kind === 'weed') return 'dig'
   if (cell.kind === 'empty') return 'plant'
   if (cell.kind === 'untilled' && cell.ground === 'very-hard') return 'mine'
   if (cell.kind === 'untilled') return 'dig'
@@ -1575,6 +1842,7 @@ function primaryAct(cell: Cell): string | undefined {
   if (cell.kind === 'rock') return 'mine'
   if (cell.kind === 'pump') return 'fill'
   if (cell.kind === 'grinder') return 'grind'
+  if (cell.kind === 'compost-box') return 'compost'
   if (cell.kind === 'chest') return 'open'
   if (cell.kind === 'house') return 'inventory'
   if (cell.kind === 'dead') return 'dig'
@@ -1644,6 +1912,8 @@ function compactSlots(slots: Slot[]): void {
       if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
         if (hit.item.kind === 'fruit' && slot.item.kind === 'fruit') {
           hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
+          hit.item.freshness = mergeFreshness(hit.item, slot.item)
+          hit.item.bio = hit.item.bio && slot.item.bio
         }
         hit.item.count += slot.item.count
         return
@@ -1653,6 +1923,29 @@ function compactSlots(slots: Slot[]): void {
       const rarity = slot.item.rarity
       const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'berry' && s.item.rarity === rarity)
       if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'berry') {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    if (slot.item.kind === 'rotten' || slot.item.kind === 'dead') {
+      const kind = slot.item.kind
+      const cls = slot.item.cls
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === kind &&
+          (s.item.kind === 'rotten' || s.item.kind === 'dead') &&
+          s.item.cls === cls,
+      )
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'rotten' || hit.item.kind === 'dead')) {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    if (slot.item.kind === 'weed' || slot.item.kind === 'grass') {
+      const kind = slot.item.kind
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === kind)
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'weed' || hit.item.kind === 'grass')) {
         hit.item.count += slot.item.count
         return
       }

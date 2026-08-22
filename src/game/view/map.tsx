@@ -1,12 +1,16 @@
 import { memo, useEffect, useMemo, useRef, useState, type WheelEvent } from 'react'
-import { HEALTH, WITHER } from '../defs/crops.ts'
+import { COMPOST_NEED } from '../defs/items.ts'
+import { CROPS, tolerance } from '../defs/crops.ts'
 import { SKUS } from '../defs/research.ts'
+import { fertBand, waterBand, SOIL_WATER_MAX, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
 import { DOOR, HOUSE_BASE, occupiedCells, type Coord } from '../sim/building.ts'
 import { onCell, type Drop } from '../sim/drop.ts'
-import { isPlot, type Cell, type Plot } from '../sim/plot.ts'
+import { isPlot, isTilled, type Cell, type Cover, type Plot } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import { Coin } from '../ui/frame.tsx'
-import type { SkuId } from '../sim/ids.ts'
+import type { CropId, SkuId } from '../sim/ids.ts'
+import type { Rarity } from '../defs/rarity.ts'
+import type { Soil } from '../sim/soil.ts'
 import type { Modifier } from '../sim/modifiers.ts'
 import { aoe, edgeKey, incident, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
@@ -16,10 +20,15 @@ import {
   ACTOR,
   BERRY_SHRUB,
   appleTreeStage,
+  BUILDING_TILES,
   CHEST,
+  COMPOST_BOX,
   CROP_ROTTEN,
   DIRT,
+  DIRT_EDGE,
+  DIRT_INSET,
   GRASS,
+  GRASS_TUFT,
   GRINDER,
   HARD,
   HOUSE,
@@ -40,6 +49,7 @@ import {
   qualityPip,
   ripeGroup,
   skuInner,
+  weedInner,
 } from './svgs.ts'
 
 export type Lens = 'off' | 'water' | 'ripe' | 'kind' | 'rarity' | 'pipes'
@@ -69,6 +79,9 @@ const PLACE_LINE: { readonly [id: string]: string } = {
   'buy-sprinkler': 'Place Sprinkler',
   'buy-sprinkler-vert': 'Place Vertical sprinkler',
   'buy-sprinkler-large': 'Place Large sprinkler',
+  'buy-tile-paved': 'Place Paved tile',
+  'buy-tile-brick': 'Place Brick tile',
+  'buy-tile-cobble': 'Place Cobble tile',
 }
 
 const PIPE_PLACE: readonly SkuId[] = [
@@ -256,7 +269,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
         <g
           transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale}) translate(${-cam.x * TILE}, ${-cam.y * TILE})`}
         >
-          <Ground world={world} owned={world.owned.length} />
+          <Ground world={world} owned={world.owned.length} rev={rev} />
           <Marks world={world} rev={rev} lens={lens} hideVerts={ghostVerts} />
           {strokeCell !== undefined && (
             <g pointerEvents="none">
@@ -389,8 +402,8 @@ function placeLine(id: SkuId): string {
   return `Place ${skuLabel(id)}`
 }
 
-const Ground = memo(function Ground({ world, owned }: { world: World; owned: number }) {
-  const html = useMemo(() => bakeGround(world), [world, owned])
+const Ground = memo(function Ground({ world, owned, rev }: { world: World; owned: number; rev: number }) {
+  const html = useMemo(() => bakeGround(world), [world, owned, rev])
   return <g dangerouslySetInnerHTML={{ __html: html }} />
 })
 
@@ -409,9 +422,11 @@ const Marks = memo(function Marks({
   const plots: { col: number; row: number; cell: Plot }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
   const shrubs: { col: number; row: number; ripe: boolean }[] = []
+  const tufts: { col: number; row: number; cover: Cover }[] = []
   const appleTrees: { col: number; row: number; ripe: boolean }[] = []
   const chests: Coord[] = []
   const grinders: Coord[] = []
+  const composters: { col: number; row: number; units: number; progress: number }[] = []
   const truck = { col: world.truck.base.col, row: world.truck.base.row }
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
   const pipes: { v: Vertex; html: string; rot: number; wet: boolean }[] = []
@@ -438,6 +453,9 @@ const Marks = memo(function Marks({
     if (isPlot(cell) && cell.kind !== 'untilled' && cell.kind !== 'infertile') {
       plots.push({ col: at.col, row: at.row, cell })
     }
+    if (cell.kind === 'untilled' && cell.cover.kind === 'grass') {
+      tufts.push({ col: at.col, row: at.row, cover: cell.cover })
+    }
     if (cell.kind === 'rock' && cell.base.col === at.col && cell.base.row === at.row) {
       rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
     }
@@ -445,6 +463,9 @@ const Marks = memo(function Marks({
     if (cell.kind === 'apple-tree' && cell.base.col === at.col && cell.base.row === at.row) appleTrees.push({ col: at.col, row: at.row, ripe: cell.ripe })
     if (cell.kind === 'chest') chests.push(at)
     if (cell.kind === 'grinder') grinders.push(at)
+    if (cell.kind === 'compost-box') {
+      composters.push({ col: at.col, row: at.row, units: cell.units, progress: cell.progress })
+    }
     const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`))
     if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
   })
@@ -462,8 +483,24 @@ const Marks = memo(function Marks({
   })
   return (
     <g>
+      {tufts.map(t => (
+        <g
+          key={`tuft-${t.col},${t.row}`}
+          data-tuft={`${t.col},${t.row}`}
+          transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{
+            __html: t.cover.kind === 'grass' ? GRASS_TUFT[t.cover.variant] : '',
+          }}
+        />
+      ))}
       {plots.map(t => (
-        <PlotGfx key={`${t.col},${t.row}`} col={t.col} row={t.row} cell={t.cell} />
+        <PlotGfx
+          key={`${t.col},${t.row}`}
+          col={t.col}
+          row={t.row}
+          cell={t.cell}
+          edge={dirtEdges(world, t.col, t.row)}
+        />
       ))}
       {rocks.map(r => (
         <RockGfx key={`${r.col},${r.row}`} col={r.col} row={r.row} w={r.w} h={r.h} />
@@ -510,6 +547,23 @@ const Marks = memo(function Marks({
           transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{ __html: GRINDER }}
         />
+      ))}
+      {composters.map(c => (
+        <g key={`compost-${c.col},${c.row}`} data-compost={`${c.col},${c.row}`}>
+          <g
+            transform={`translate(${c.col * TILE},${c.row * TILE}) scale(${TILE / 24})`}
+            dangerouslySetInnerHTML={{ __html: COMPOST_BOX }}
+          />
+          <rect x={c.col * TILE + 2} y={c.row * TILE + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
+          <rect
+            data-compost-bar
+            x={c.col * TILE + 3}
+            y={c.row * TILE + TILE - 5}
+            width={(TILE - 6) * (c.units < COMPOST_NEED ? c.units / COMPOST_NEED : c.progress)}
+            height={2}
+            fill={c.units < COMPOST_NEED ? WASH : LENS_GOOD}
+          />
+        </g>
       ))}
       <g
         data-truck
@@ -653,8 +707,10 @@ const Marks = memo(function Marks({
 function bakeGround(world: World): string {
   let s = ''
   world.forEachCell((at, cell) => {
-    const art =
-      cell.kind === 'untilled' && cell.ground === 'hard'
+  const art =
+      cell.kind === 'untilled' && cell.cover.kind === 'tile'
+        ? BUILDING_TILES[cell.cover.tile]
+        : cell.kind === 'untilled' && cell.ground === 'hard'
         ? HARD[tileVariant(at.col, at.row, 2)]
         : (cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile'
           ? VERY_HARD
@@ -687,11 +743,27 @@ function lensFill(
   return { fill: hit, op: 0.72, hard: true }
 }
 
+const BAND_TINT: { readonly [K in Band]: string } = {
+  green: LENS_GOOD,
+  orange: LENS_MID,
+  red: LENS_BAD,
+}
+
+function plantBands(crop: CropId, rarity: Rarity, soil: Soil): { water: Band; fert: Band } {
+  return {
+    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, rarity)),
+    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, rarity)),
+  }
+}
+
 function lensHit(lens: Lens, cell: Cell): string | undefined {
   if (lens === 'water') {
-    if (cell.kind !== 'growing' && cell.kind !== 'ripe') return undefined
-    if (cell.plant.thirst === 1) return LENS_DONE
-    return scaleTint(cell.plant.thirst)
+    if (!isTilled(cell)) return undefined
+    if (cell.kind === 'growing' || cell.kind === 'ripe') {
+      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).water]
+    }
+    if (cell.soil.water >= SOIL_WATER_MID) return LENS_DONE
+    return scaleTint(cell.soil.water / SOIL_WATER_MID)
   }
   if (lens === 'ripe') {
     if (cell.kind === 'growing') return scaleTint(cell.plant.maturity)
@@ -699,8 +771,18 @@ function lensHit(lens: Lens, cell: Cell): string | undefined {
     if (cell.kind === 'dead') return LENS_BAD
     return undefined
   }
-  if (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' || cell.kind === 'shrub') return LEAF
-  if (cell.kind === 'pump' || cell.kind === 'chest' || cell.kind === 'grinder') return WATER
+  if (
+    cell.kind === 'growing' ||
+    cell.kind === 'ripe' ||
+    cell.kind === 'dead' ||
+    cell.kind === 'weed' ||
+    cell.kind === 'shrub'
+  ) {
+    return LEAF
+  }
+  if (cell.kind === 'pump' || cell.kind === 'chest' || cell.kind === 'grinder' || cell.kind === 'compost-box') {
+    return WATER
+  }
   if (cell.kind === 'rock') return INK
   if (cell.kind === 'house') return ROOF
   return undefined
@@ -743,11 +825,47 @@ function RockGfx({ col, row, w, h }: { col: number; row: number; w: number; h: n
   )
 }
 
-function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
+type DirtEdges = {
+  top: boolean
+  right: boolean
+  bottom: boolean
+  left: boolean
+  topLeftInset: boolean
+  topRightInset: boolean
+  bottomRightInset: boolean
+  bottomLeftInset: boolean
+}
+
+function dirtEdges(world: World, col: number, row: number): DirtEdges {
+  const tilled = (c: number, r: number) => world.inWorld({ col: c, row: r }) && isTilled(world.cell({ col: c, row: r }))
+  const top = !tilled(col, row - 1)
+  const right = !tilled(col + 1, row)
+  const bottom = !tilled(col, row + 1)
+  const left = !tilled(col - 1, row)
+  return {
+    top,
+    right,
+    bottom,
+    left,
+    topLeftInset: tilled(col - 1, row) && tilled(col, row - 1) && !tilled(col - 1, row - 1),
+    topRightInset: tilled(col + 1, row) && tilled(col, row - 1) && !tilled(col + 1, row - 1),
+    bottomRightInset: tilled(col + 1, row) && tilled(col, row + 1) && !tilled(col + 1, row + 1),
+    bottomLeftInset: tilled(col - 1, row) && tilled(col, row + 1) && !tilled(col - 1, row + 1),
+  }
+}
+
+function DirtInsetG({ x, y, angle }: { x: number; y: number; angle: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <g transform={`rotate(${angle}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: DIRT_INSET }} />
+    </g>
+  )
+}
+
+function PlotGfx({ col, row, cell, edge }: { col: number; row: number; cell: Plot; edge: DirtEdges }) {
   const x = col * TILE
   const y = row * TILE
-  const bar = cell.kind === 'growing' && cell.plant.thirst < HEALTH
-  const wilt = cell.kind === 'growing' && cell.plant.thirst < WITHER
+  const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
   const fresh = cell.kind === 'ripe' && cell.plant.freshness < 0.8
   const pip =
     (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') && qualityPip(cell.plant.rarity)
@@ -758,15 +876,30 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
         ? cell.plant.stage(cell.kind)
         : undefined
   return (
-    <g>
+    <g className={pip !== undefined ? 'plant-rarity' : undefined}>
       <g
         transform={`translate(${x},${y}) scale(${TILE / 24})`}
         dangerouslySetInnerHTML={{ __html: DIRT[tileVariant(col, row, 2)] }}
       />
+      {edge.bottom && <g transform={`translate(${x},${y}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
+      {edge.top && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(180 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
+      {edge.right && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(-90 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
+      {edge.left && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(90 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
+      {edge.topLeftInset && <DirtInsetG x={x} y={y} angle={0} />}
+      {edge.topRightInset && <DirtInsetG x={x + TILE} y={y} angle={90} />}
+      {edge.bottomRightInset && <DirtInsetG x={x + TILE} y={y + TILE} angle={180} />}
+      {edge.bottomLeftInset && <DirtInsetG x={x} y={y + TILE} angle={-90} />}
       {cell.kind === 'rotten' && (
         <g
           transform={`translate(${x},${y}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{ __html: CROP_ROTTEN }}
+        />
+      )}
+      {cell.kind === 'weed' && (
+        <g
+          data-weed={`${col},${row}`}
+          transform={`translate(${x},${y}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: weedInner(cell.weed.variant, cell.weed.stage()) }}
         />
       )}
       {stage !== undefined && (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') && (
@@ -779,20 +912,35 @@ function PlotGfx({ col, row, cell }: { col: number; row: number; cell: Plot }) {
       )}
       {pip !== undefined && pip !== false && (
         <g
+          className="plant-quality-pip"
           transform={`translate(${x},${y}) scale(${TILE / 24}) translate(16,16)`}
           dangerouslySetInnerHTML={{ __html: pip }}
         />
       )}
-      {bar && cell.kind === 'growing' && (
-        <g className={wilt ? 'animate-pulse' : undefined}>
+      {bands !== undefined && cell.kind === 'growing' && bands.water !== 'green' && (
+        <g className={bands.water === 'red' ? 'animate-pulse' : undefined}>
           <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
             data-thirst={`${col},${row}`}
             x={x + 3}
             y={y + TILE - 5}
-            width={(TILE - 6) * cell.plant.thirst}
+            width={((TILE - 6) * cell.soil.water) / SOIL_WATER_MAX}
             height={2}
-            fill={cell.plant.critical ? '#8b3a2a' : '#3d7ea6'}
+            fill={BAND_TINT[bands.water]}
+          />
+          <rect x={x + 2 + (TILE - 4) / 2} y={y + TILE - 7} width={1} height={6} fill="#1c1710" />
+        </g>
+      )}
+      {bands !== undefined && cell.kind === 'growing' && bands.fert !== 'green' && (
+        <g className={bands.fert === 'red' ? 'animate-pulse' : undefined}>
+          <rect x={x + 2} y={y + TILE - 11} width={TILE - 4} height={4} fill="#1c1710" />
+          <rect
+            data-fert={`${col},${row}`}
+            x={x + 3}
+            y={y + TILE - 10}
+            width={(TILE - 6) * cell.soil.fertilizer}
+            height={2}
+            fill={BAND_TINT[bands.fert]}
           />
         </g>
       )}

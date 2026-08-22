@@ -196,7 +196,7 @@ export function Hud({
               <span className="flex flex-col gap-1">
                 <span>{row.label}</span>
                 {row.swatches.length > 0 && (
-                  <span className="flex flex-wrap gap-2 text-[10px] leading-none">
+                  <span className="flex flex-wrap gap-2 text-[14px] leading-none">
                     {row.swatches.map(s => (
                       <span key={s.name} className="flex items-center gap-1">
                         <span className={`inline-block size-3 ${s.face}`} />

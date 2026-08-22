@@ -1,17 +1,42 @@
 import { fill } from '../defs/catalog.ts'
-import { BOX_LARGE, BOX_SMALL, CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, PICKAXES, SHOVELS } from '../defs/items.ts'
+import {
+  BOX_LARGE,
+  BOX_SMALL,
+  COMPOST_LITERS,
+  COMPOST_NEED,
+  COMPOST_SECONDS,
+  COMPOST_VALUE,
+  CONTAINERS,
+  FERT_BAG_LITERS,
+  GRIND_MAX,
+  GRIND_MIN,
+  GRIND_WORK,
+  PICKAXES,
+  SHOVELS,
+  SYNTH_BAG_LITERS,
+} from '../defs/items.ts'
 import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
-import { cropVariety } from '../defs/crops.ts'
-import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId } from './ids.ts'
+import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
+import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId, TileId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 
 export type Stack = { crop: CropId; rarity: Rarity; count: number }
-export type FruitStack = { crop: CropId; rarity: Rarity; count: number; unitSale: number }
+export type FruitStack = {
+  crop: CropId
+  rarity: Rarity
+  count: number
+  unitSale: number
+  freshness: number
+  bio: boolean
+}
 
 export type Item =
   | { kind: 'shovel'; id: ShovelId; usesLeft: number; workSeconds: number }
   | { kind: 'pickaxe'; id: PickaxeId; usesLeft: number; workSeconds: number }
   | { kind: 'container'; id: ContainerId; liters: number; capacityLiters: number }
+  | { kind: 'fertilizer'; liters: number; capacityLiters: number }
+  | { kind: 'synth'; liters: number; capacityLiters: number }
+  | { kind: 'compost'; liters: number; capacityLiters: number }
   | {
       kind: 'box'
       cap: 5 | 14
@@ -22,8 +47,12 @@ export type Item =
         | { kind: 'berry'; rarity: Rarity; count: number }
     }
   | { kind: 'seeds'; crop: CropId; rarity: Rarity; count: number }
-  | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number }
+  | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
   | { kind: 'berry'; rarity: Rarity; count: number }
+  | { kind: 'rotten'; cls: CropClass; count: number }
+  | { kind: 'dead'; cls: CropClass; count: number }
+  | { kind: 'weed'; count: number }
+  | { kind: 'grass'; count: number }
   | { kind: 'shrub' }
   | { kind: 'apple-tree' }
 
@@ -35,12 +64,34 @@ export type Face =
   | { kind: 'pumpjack' }
   | { kind: 'chest' }
   | { kind: 'grinder' }
+  | { kind: 'compost-box' }
   | { kind: 'well' }
   | { kind: 'pipe' }
   | { kind: 'sprinkler' }
   | { kind: 'sprinkler-vert' }
   | { kind: 'sprinkler-large' }
   | { kind: 'delete' }
+  | { kind: 'tile'; tile: TileId }
+
+export function compostValue(item: Item): number {
+  if (item.kind === 'seeds') return COMPOST_VALUE.seeds * item.count
+  if (item.kind === 'fruit') {
+    return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
+  }
+  if (item.kind === 'berry') {
+    return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
+  }
+  if (item.kind === 'rotten') return COMPOST_VALUE.rotten * item.count
+  if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
+  if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
+  if (item.kind === 'grass') return COMPOST_VALUE.grass * item.count
+  if (item.kind === 'shrub') return COMPOST_VALUE.fruit
+  return 0
+}
+
+export function organic(item: Item): boolean {
+  return compostValue(item) > 0
+}
 
 export function cropName(id: CropId): string {
   return id.slice(0, 1).toUpperCase() + id.slice(1)
@@ -50,12 +101,19 @@ export function boxName(cap: 5 | 14): string {
   return cap === 5 ? 'Fruit box' : 'Large fruit box'
 }
 
-export function fruitMoney(it: { unitSale: number; count: number }): number {
-  return it.unitSale * it.count
+export function fruitMoney(it: { unitSale: number; count: number; freshness: number }): number {
+  return it.unitSale * it.count * freshMul(it.freshness)
 }
 
 export function mergeUnitSale(a: { unitSale: number; count: number }, b: { unitSale: number; count: number }): number {
   return (a.unitSale * a.count + b.unitSale * b.count) / (a.count + b.count)
+}
+
+export function mergeFreshness(
+  a: { freshness: number; count: number },
+  b: { freshness: number; count: number },
+): number {
+  return (a.freshness * a.count + b.freshness * b.count) / (a.count + b.count)
 }
 
 export function berryMoney(rarity: Rarity, n: number): number {
@@ -82,12 +140,27 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'shovel') return it.id === 'shovel' ? 'Shovel' : 'Better shovel'
   if (it.kind === 'pickaxe') return it.id === 'pickaxe' ? 'Pickaxe' : 'Hardened pickaxe'
   if (it.kind === 'container') return it.id === 'bucket' ? 'Bucket' : 'Large bucket'
+  if (it.kind === 'fertilizer') return 'Fertilizer bag'
+  if (it.kind === 'synth') return 'Synthetic fertilizer'
+  if (it.kind === 'compost') return 'Compost'
   if (it.kind === 'box') return boxName(it.cap)
   if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
   if (it.kind === 'berry') return 'Berry'
+  if (it.kind === 'rotten') return rottenName(it.cls)
+  if (it.kind === 'dead') return deadName(it.cls)
+  if (it.kind === 'weed') return 'Pulled weed'
+  if (it.kind === 'grass') return 'Cut grass'
   if (it.kind === 'apple-tree') return 'Apple tree'
   return 'Shrub'
+}
+
+export function rottenName(cls: CropClass): string {
+  return `Rotten ${CLASS_NAME[cls]}`
+}
+
+export function deadName(cls: CropClass): string {
+  return `Dead ${CLASS_NAME[cls]} plant`
 }
 
 export function itemLine(item: Item, _mods: readonly Modifier[]): string {
@@ -103,6 +176,15 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     const name = item.id === 'bucket' ? 'Bucket' : 'Large bucket'
     return `${name} - ${item.liters}/${item.capacityLiters}L`
   }
+  if (item.kind === 'fertilizer') {
+    return `Fertilizer bag - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+  }
+  if (item.kind === 'synth') {
+    return `Synthetic fertilizer - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+  }
+  if (item.kind === 'compost') {
+    return `Compost - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+  }
   if (item.kind === 'box') {
     const name = boxName(item.cap)
     if (item.cargo.kind === 'empty') return `${name} - empty`
@@ -112,8 +194,14 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
-  if (item.kind === 'fruit') return `${cropVariety(item.crop, item.rarity)} - ${item.count}`
+  if (item.kind === 'fruit') {
+    return `${cropVariety(item.crop, item.rarity)} - ${item.count}, freshness ${Math.floor(item.freshness * 100)}%`
+  }
   if (item.kind === 'berry') return `Berry - ${item.count}`
+  if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
+  if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
+  if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
+  if (item.kind === 'grass') return `Cut grass - ${item.count}, compost it`
   if (item.kind === 'apple-tree') return 'Apple tree'
   return 'Shrub - plant it'
 }
@@ -153,6 +241,12 @@ export function skuLabel(id: SkuId): string {
       return 'Fruit box'
     case 'buy-box-large':
       return 'Large fruit box'
+    case 'buy-fertilizer':
+      return 'Fertilizer bag'
+    case 'buy-synth-fertilizer':
+      return 'Synthetic fertilizer'
+    case 'buy-compost-box':
+      return 'Compost box'
     case 'buy-pumpjack':
       return 'Pumpjack'
     case 'buy-chest':
@@ -169,6 +263,12 @@ export function skuLabel(id: SkuId): string {
       return 'Large sprinkler'
     case 'buy-well':
       return 'Well'
+    case 'buy-tile-paved':
+      return 'Paved tile'
+    case 'buy-tile-brick':
+      return 'Brick tile'
+    case 'buy-tile-cobble':
+      return 'Cobble tile'
   }
 }
 
@@ -213,6 +313,19 @@ export function skuDesc(id: SkuId): string {
       return 'Allows you to gather up to 5 of the same fruits at the same time. Also holds seeds or berries of one kind.'
     case 'buy-box-large':
       return 'Allows you to gather up to 14 of the same fruits at the same time. Also holds seeds or berries of one kind.'
+    case 'buy-fertilizer':
+      return fill('Holds ${n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.', {
+        n: FERT_BAG_LITERS,
+      })
+    case 'buy-synth-fertilizer':
+      return fill('Holds ${n} L and works the same, but the soil and its produce stop being organic.', {
+        n: SYNTH_BAG_LITERS,
+      })
+    case 'buy-compost-box':
+      return fill(
+        'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s, left on the ground beside the box.',
+        { need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS },
+      )
     case 'buy-pumpjack':
       return 'Place a 2 L/s pump on two tiles. Fill a bucket here. Pipe its edges to feed sprinklers.'
     case 'buy-chest':
@@ -233,6 +346,12 @@ export function skuDesc(id: SkuId): string {
       return 'Waters a 4×4 around a corner. 0.5 L/s when piped to a source.'
     case 'buy-well':
       return 'Place a 5 L/s well on one tile. Fill a bucket here. Pipe its edges to feed sprinklers.'
+    case 'buy-tile-paved':
+      return 'Place on bare untilled ground. $1 per tile.'
+    case 'buy-tile-brick':
+      return 'Place on bare untilled ground. $1 per tile.'
+    case 'buy-tile-cobble':
+      return 'Place on bare untilled ground. $1 per tile.'
   }
 }
 
@@ -240,6 +359,9 @@ export function itemTip(item: Item): string {
   if (item.kind === 'shovel') return `${item.id} ${item.usesLeft}`
   if (item.kind === 'pickaxe') return `${item.id} ${item.usesLeft}`
   if (item.kind === 'container') return `${item.id} ${item.liters}/${item.capacityLiters}L`
+  if (item.kind === 'fertilizer') return `fertilizer ${item.liters}/${item.capacityLiters}L`
+  if (item.kind === 'synth') return `synth ${item.liters}/${item.capacityLiters}L`
+  if (item.kind === 'compost') return `compost ${item.liters}/${item.capacityLiters}L`
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return `box ${item.cap}`
     if (item.cargo.kind === 'berry') return `box berry ${item.cargo.count}/${item.cap}`
@@ -248,6 +370,10 @@ export function itemTip(item: Item): string {
   if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
   if (item.kind === 'berry') return `berry ${item.count}`
+  if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
+  if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
+  if (item.kind === 'weed') return `weed ${item.count}`
+  if (item.kind === 'grass') return `grass ${item.count}`
   return 'shrub'
 }
 
@@ -267,6 +393,18 @@ export function makeContainer(id: ContainerId, liters: number): Item {
 
 export function makeBox(cap: 5 | 14): Item {
   return { kind: 'box', cap, cargo: { kind: 'empty' } }
+}
+
+export function makeFertilizer(): Item {
+  return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
+}
+
+export function makeSynth(): Item {
+  return { kind: 'synth', liters: SYNTH_BAG_LITERS, capacityLiters: SYNTH_BAG_LITERS }
+}
+
+export function makeCompost(): Item {
+  return { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS }
 }
 
 export function skuItem(id: SkuId): Face {
@@ -299,6 +437,12 @@ export function skuItem(id: SkuId): Face {
       return makeBox(BOX_SMALL)
     case 'buy-box-large':
       return makeBox(BOX_LARGE)
+    case 'buy-fertilizer':
+      return makeFertilizer()
+    case 'buy-synth-fertilizer':
+      return makeSynth()
+    case 'buy-compost-box':
+      return { kind: 'compost-box' }
     case 'buy-pumpjack':
       return { kind: 'pumpjack' }
     case 'buy-chest':
@@ -315,6 +459,12 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'sprinkler-large' }
     case 'buy-well':
       return { kind: 'well' }
+    case 'buy-tile-paved':
+      return { kind: 'tile', tile: 'paved' }
+    case 'buy-tile-brick':
+      return { kind: 'tile', tile: 'brick' }
+    case 'buy-tile-cobble':
+      return { kind: 'tile', tile: 'cobble' }
   }
 }
 
@@ -358,14 +508,6 @@ export function boxAccepts(
 
 export function boxAdd(
   box: Extract<Item, { kind: 'box' }>,
-  goods: 'fruit',
-  crop: CropId,
-  rarity: Rarity,
-  n: number,
-  unitSale: number,
-): number
-export function boxAdd(
-  box: Extract<Item, { kind: 'box' }>,
   goods: 'seeds',
   crop: CropId,
   rarity: Rarity,
@@ -379,11 +521,10 @@ export function boxAdd(
 ): number
 export function boxAdd(
   box: Extract<Item, { kind: 'box' }>,
-  goods: 'fruit' | 'seeds' | 'berry',
+  goods: 'seeds' | 'berry',
   cropOrRarity: CropId | Rarity,
   rarityOrN: Rarity | number,
   n?: number,
-  unitSale?: number,
 ): number {
   if (goods === 'berry') {
     const rarity = cropOrRarity as Rarity
@@ -400,24 +541,41 @@ export function boxAdd(
   const crop = cropOrRarity as CropId
   const rarity = rarityOrN as Rarity
   const count = n as number
-  const take = boxAccepts(box, goods, crop, rarity, count)
+  const take = boxAccepts(box, 'seeds', crop, rarity, count)
   if (take === 0) return 0
-  if (goods === 'fruit') {
-    const sale = unitSale as number
-    if (box.cargo.kind === 'empty') {
-      box.cargo = { kind: 'stack', goods: 'fruit', stack: { crop, rarity, count: take, unitSale: sale } }
-      return take
-    }
-    if (box.cargo.kind === 'stack' && box.cargo.goods === 'fruit') {
-      box.cargo.stack.unitSale = mergeUnitSale(box.cargo.stack, { unitSale: sale, count: take })
-      box.cargo.stack.count += take
-    }
-    return take
-  }
   if (box.cargo.kind === 'empty') {
     box.cargo = { kind: 'stack', goods: 'seeds', stack: { crop, rarity, count: take } }
     return take
   }
   if (box.cargo.kind === 'stack' && box.cargo.goods === 'seeds') box.cargo.stack.count += take
   return take
+}
+
+export function boxAddFruit(box: Extract<Item, { kind: 'box' }>, f: FruitStack): number {
+  const take = boxAccepts(box, 'fruit', f.crop, f.rarity, f.count)
+  if (take === 0) return 0
+  const part = { ...f, count: take }
+  if (box.cargo.kind === 'empty') {
+    box.cargo = { kind: 'stack', goods: 'fruit', stack: part }
+    return take
+  }
+  if (box.cargo.kind === 'stack' && box.cargo.goods === 'fruit') {
+    const stack = box.cargo.stack
+    stack.unitSale = mergeUnitSale(stack, part)
+    stack.freshness = mergeFreshness(stack, part)
+    stack.bio = stack.bio && part.bio
+    stack.count += take
+  }
+  return take
+}
+
+export function fruitStack(
+  crop: CropId,
+  rarity: Rarity,
+  count: number,
+  unitSale: number,
+  freshness: number,
+  bio: boolean,
+): FruitStack {
+  return { crop, rarity, count, unitSale, freshness, bio }
 }

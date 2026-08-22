@@ -1,5 +1,7 @@
 export type CropId = 'carrot' | 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'watermelon' | 'apple'
 
+export type TileId = 'paved' | 'brick' | 'cobble'
+
 export type StallGoodId = CropId | 'berry'
 
 export type ShovelId = 'shovel' | 'better-shovel'
@@ -24,6 +26,8 @@ export type ResearchId =
   | 'unlock-pickaxe'
   | 'unlock-chest'
   | 'unlock-grinder'
+  | 'unlock-fertilizer'
+  | 'unlock-compost'
 
 export type SkuId =
   | 'pack-carrot'
@@ -40,6 +44,9 @@ export type SkuId =
   | 'buy-bucket-large'
   | 'buy-box'
   | 'buy-box-large'
+  | 'buy-fertilizer'
+  | 'buy-synth-fertilizer'
+  | 'buy-compost-box'
   | 'buy-pumpjack'
   | 'buy-chest'
   | 'buy-grinder'
@@ -48,3 +55,6 @@ export type SkuId =
   | 'buy-sprinkler-vert'
   | 'buy-sprinkler-large'
   | 'buy-well'
+  | 'buy-tile-paved'
+  | 'buy-tile-brick'
+  | 'buy-tile-cobble'

@@ -1,7 +1,7 @@
 ## 0.3 Dirt Overhaul & Fertilizers
 Currently, each tile is a single thing, and the dirt underneath has no properties. This makes many things about the game bit unrealistic: for example, poorer dirt is not modelled, fertilizer use cannot be easily added, only seeded soil can be watered, excess water is removed when plant is removed. In this update, each tile of dirt will get its own identity.
 Main change: In this update, dirt will own two properties: water and fertilizer. When the player tills hard or very hard soil, the difference is that those will have lower base fertilization.
-Instead of RNG based individual soils, create a Perlin noise map where [0,1] represents dirt "goodness", 0 is 0 fertilizer and 1 is completely fertilized. below a threshold, the hard dirt will get generated, and at a very low, very hard dirt. The area around the starting base should get a random, decaying boost, clamping to max 1, the effect tapering out to +0 in r=16, so the whole starting area gets a bit of buff. 
+Instead of RNG based individual soils, create a Perlin noise map where [0,1] represents dirt "goodness", 0 is 0 fertilizer and 1 is completely fertilized. below a threshold, the hard dirt will get generated, and at a very low, very hard dirt. The area around the starting base should get a random, decaying boost, clamping to max 1, the effect tapering out to +0 in r=8, so the whole starting area gets a bit of buff. 
 When a seed is planted, the plant's water is "tied" to the water in the soil, so that logic, both drinking and giving more water is moved to the soil logic. 
 New "plants": weed (not 420) and grass. 
 - Weed grows in tilled lands that do not have any seed in it. They have a random chance to appear, checked every "big" ui tick, idk how it is implemented but there shouild be a secondary tick done only less often, like 10 seconds or so. There is a 5% chance that it appears on tilled land. Weed will grow fast, draining fertilizer and water. create SVG sprites for two types of weed
@@ -19,6 +19,7 @@ New mechanic: overwatering. This is introduced to make the automatic irrigation 
 - if it is overwatering (or the player did not harvest it in time), it becomes rotten {fruit}, new icon for each _class_ of fruit, not per fruit. 
 - if its underwatering or no fertilizer, it becomes dead {plant}, same SVG logic. 
 These items are not completely useless, although they have no sell value. A new building, compost box (1×1) can slowly turn these things into compost, which is a similar item to fertilizer, 3L. Compost can accept any organic material, each material has a calculated compost value. 10 units are needed to create one compost. seeds universally are 1, fruits universally are 5, heirloom is 20, grass is 1, weed is 1, rotten fruit is 2, dead plant is also 1. The compost box has infinite internal storage, when items are dropped (no ui), it converts it into compost units immediately. Once it has 10, it starts producing slowly new compost. compost, an item, is dropped on the ground in front of the compost station, and can be used as fertilizer. Composting is not very fast, takes like 0.5 day. Progress bar is shown on the building.
+Freshness stops stopping at harvest: a picked item keeps decaying at its `rotSeconds` rate until sold at market, not just while it sits ripe on the plant.
 When writing tests, check if the rarity upgrade mechanic is working as intended with the interplay of watering / fertilizer mechanic. If the player is taking good care of the plants, fruits should slowly upgrade over time.
 New item: synthetic fertilizer. It is bigger than regular fertilizer with 8L and costs 5$. If used on soil, the soil will have property `is_bio:false`, and the fruits will have object property `is_bio:false` (not used or displayed anywhere) too. This property is removed when new fertilizer is added, but to prevent cheesing, only is removed when at least 30% of fertilizer is added. If the plant is already non-bio, it will not change it back.
 
@@ -30,6 +31,7 @@ New buildings and mechanics:
 - Tied to a research, called smart sprinklers, adds a clickable popup hud to sprinklers (not as a new building). When clicked, the list of all plants are shown in a vertical grid, showing water use. When the user clicks a plant, the sprinkler will adjust water output such that it only sprinklers as much water as the plants actually need. Note, that if the plant was under or overwatered, that will remain so. When the player manually waters a plant, it plants up to 1L + `max plant comfortable water use` . So if the plant is already overwatered, no water is being added, whereas if the plant is wilting, more than 1L could be added. 
 - Rainwater tank. 2×1 building, 20$, slowly (0.4/L) gathers water and has internal storage of 100L. All water producers have internal water storage. pump has 50L and well has 150L.
 	- Design consideration: when there are multiple producers and multiple consumers in a network, it should clearly work. It is not important if it is pooled together, or only one is used at all. But if +10L/s is being produced, sprinklers should be able to use all 10L
+	- Track water draw per producer individually (pump, well, rainwater tank, csap). Needed for pump-only water costs later.
 - "Csap". It is an acces point for water without having to place an expensive pump or well. 10$, needs to be connected to the water grid to function. Can fill water buckets quickly (5L/s)
 	- Keep in mind, that a pumpjack alone cannot provide this mnuch water. But since it has an internal buffer, that can be used to provide that. Buf it that is empty, then fill speed should still just be 2.5L/s!
 
@@ -146,7 +148,7 @@ In this cute update, a few new plants are gonna be added.
 - Corn
 - Vanilla
 - Sugar cane
-These are all researchable. Wheat is also moved to a researchable item, corn research and item only shows up once wheat has been researched. Rasberry is hidden as a research item behind grapes. 
+These are all researchable. Rasberry is hidden as a research item behind grapes. 
 Sugar cane is water hungry and seels poorly, but is useful as an additive for later stuff.
 Vanilla is the new princess on the block, seeds very expensive, growth time slow, low disease resistance and icky about fertilizer and water levels, unlocked after raspberry. At common, it is not even outcompeting in terms of price other stuff, but rare and heirloom have an increased rarity price multiplier. Also they have potato-levels of freshness.
 And tree - like stuff:
@@ -182,7 +184,7 @@ Sugar is also unlocked as a buyable item when jam is unlocked, it should be pric
 
 # 0.13 Early Access 5 Weather patterns.
 Weather is added to the game. A weather indicator is shown, and if the appropriate skill is shown, next day's weather is shown. The current "no weather" is still gonna be the default weather state in the game. Two new main weathers are introduced, rainy days and dry days. They have bunch of overarching effects that slightly modify the gameplay.
-water use now costs money - hopefully the tracking of which producer uses money has been kept. Water use of the PUMP only costs money. Not very significant, but enough to balance out some of the fecund but cheap stuff. For example, running watermelons from pump is less efficient.
+water use now costs money. Water use of the PUMP only costs money. Not very significant, but enough to balance out some of the fecund but cheap stuff. For example, running watermelons from pump is less efficient.
 Rainy days:
 - Each tilled field gets a slight extra water input. This value should be set such that plants do not just die of overwatering, but in particularly picky plants, it can cause some issues. But having set up an irrigation system that just keeps on going should cause problems - gameplay goal is to make the user realises that the situation can turn bad if they do not act.
 - weeds and grass are 2× likely to appear.
@@ -207,31 +209,9 @@ Drought:
 
 Since this is PRNG seeded (its own seed lineage obviously), the whole chain of days up to like day 99 can be done after startup, to allow weather predcitions to happen. Add debug options to change weather for next day.
 
-
-# 0.14 Early Access 6 - Vehicles I.
-Vehicles will be added to the game, an extensive and modular system, just like real life they will represent the ultimate mechanized farming. This is a demanding update and is split into two parts.
-In general, all vehicles have a speed, acceleration and turning radious. THe player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
-The first, flagship vehicle is the Quad. It only serves as a baseline vehicle, nothing can be attached,
-The "Vehicles" research allows the buying of vehicle hangar, a large 3×2 building that will contain all future vehicles. When the user clicks it, a large and modular HUD shows up, where new vehicles and components can be bought and assembled for deployment. With the quad, once it is bought, and selected, "Deploy" button closes dialog and user is inside the vehicle now, allowing it to quickly traverse the map. No collision model for object, for now. 
-Vehicle can be returned by going to the door of the vehicle hangar, which is shown with an arrow on the fields below the hangar, only active when player is in a vehicle. The player can dismount the vehicle by clicking somewhere, at which point the vehicle will slow down to 0, then the walk there is done. If the player wants to drive again the vehicle, they click it. The vehicle has a HUD, with 6 slots for storing items and a button "embark". It also has gauges, in general potentially multiple, but in this case its only one, the fuel gauge. 
-In the vehicle bay, there is a button for refill all vehicles ($ ) shown.
-Max vehicle speed depends on the exact surface the vehicle is running on. Slowest is tilled soil and rock and objects (0.5× max), fastest is paved road (1.2×) max. Max speed transition is set, so coming off high speed from paved road to rock will take some time to slow vehicle down.
-The VFX and SVG here is important, the vehicle physically turns (top down view always).
-# 0.15 Early Access 6 - Vehicles II.
-A new vehicle type is added, Tractor. A tractor can have trailers, and is by default slower than Quad. 
-There are 3 different kinds trailers, and each has a respective building where it can interact with it.
-- Seeding trailer. Two variants, 2×1 and 5×1.  When attached and driven straight over an area, any tilled empty fields where the wide seeding trailer is touching the soil, it will plant it. seeding trailer can only have one type of fruit in it. 
-	- Building: seed silo 3 tall 2 wide. When opened it, provides a similar interface to the shop/seed store, excewpt here you can set amounts for each seed to buy, and which one to send to the trailer. When the trailer is at the interface point (exactly same mechanism as the return to garage), the trailer's inventory is merged withe the silo's. So if there is unused seed from a seeding round, it can be returned, and switched for something else with a single button. (clicking "raspberry" if there is already raspberry stored there will replace existing wheat seed).
-- Spraying trailer. same two variants, 2×1 and 5×1. When attached, it can dispense fertilizer, pesticide, and antifungal extract. 
-	- Building: spraying silo Similar UI to seed silo, but remember that there are two types of fertilizers, and two types of pesticides. 
-- Harvesting trailer. same two variants. When attached, it harvests all (!) planted fruits, regardless if it was ripe or not. it can hold different kinds of produce. 
-	- Building: produce silo, drops off everything into a 5 × 5 grid, seeds separated by rarity. 
-In the vehicle hangar, the player may have one of each thing bought. Deploying it is basically selecting the vehicle itself (icons of them), then, if the vehicle allows for trailers, selecting a trailer. A trailer is a permanent object, whether it is stored ephemerally inside the vehicle hangar or driven attached to a tractor, the inventory of it is kept. 
-The player may have multiple hangars, multiple silos or multiple trailers, but can only drive at most one truck that has one attached trailer to it.
-
-# 0.16 Early Access 7 - Automation III.
+# 0.164 Early Access 6 - Automation III.
 Sensors are added to the game. Sensors are 1×1 buildings that can read data from  places and send them to others through wires. Sensors may have inputs and/or outputs. all wires are one-way, strictly from output to input, strictly binary. Many of them have single pop-up huds that do not require the user to walk there. If there is a single input/output, they are on top (I) and bottom (O). If there are two inputs, they are on the side visually. Circular loops cannot be made.
-Most are research at bulk with the research "Sensors", when researched, a new shop tab "Sensors" is shown, where most of these are 
+Most are research at bulk with the research "Sensors", when researched, a new main option tab "Sensors" is shown, where most of these are 
 Basic sensor providing user IO:
 - Lever->: interactable object, when clicked by player, turns to other state and is replaced with active version, emitting output signal.
 - Button->: interactrable, clickable same way but emits a pulse only.
@@ -251,5 +231,26 @@ Research-wise, many sensors are dual-requirement locked. The basic sensors unloc
 objects and research, locked behind "advanced signalling", requiring advanced irrigation:
 - Smart sprinkler: receives a signal to turn on/off. Also it has a hud with 5×5 grid (center is sprinkler) where each grid can be turned off or on, and the sprinkler will only sprinkle those specific cells. Good to prevent overlaps from accedentally happening. 
 - Smart valve: works same as normal valve, but user cannot manually set its state, instead it is set from input
-- Vehicle detector: sends signal if the vehicle is on the cell. 
+- Vehicle detector: sends signal if the vehicle is on the cell. [dummy for now]
 All sensors have a switch cooldown of a few ticks to prevent resource-heavy loops of plant wilts -> sprinkler turns on -> plant wilts ...
+
+# 0.15 Early Access 7  - Vehicles I.
+Vehicles will be added to the game, an extensive and modular system, just like real life they will represent the ultimate mechanized farming. This is a demanding update and is split into two parts.
+In general, all vehicles have a speed, acceleration and turning radious. THe player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
+The first, flagship vehicle is the Quad. It only serves as a baseline vehicle, nothing can be attached,
+The "Vehicles" research allows the buying of vehicle hangar, a large 3×2 building that will contain all future vehicles. When the user clicks it, a large and modular HUD shows up, where new vehicles and components can be bought and assembled for deployment. With the quad, once it is bought, and selected, "Deploy" button closes dialog and user is inside the vehicle now, allowing it to quickly traverse the map. No collision model for object, for now. 
+Vehicle can be returned by going to the door of the vehicle hangar, which is shown with an arrow on the fields below the hangar, only active when player is in a vehicle. The player can dismount the vehicle by clicking somewhere, at which point the vehicle will slow down to 0, then the walk there is done. If the player wants to drive again the vehicle, they click it. The vehicle has a HUD, with 6 slots for storing items and a button "embark". It also has gauges, in general potentially multiple, but in this case its only one, the fuel gauge. 
+In the vehicle bay, there is a button for refill all vehicles ($ ) shown.
+Max vehicle speed depends on the exact surface the vehicle is running on. Slowest is tilled soil and rock and objects (0.5× max), fastest is paved road (1.2×) max. Max speed transition is set, so coming off high speed from paved road to rock will take some time to slow vehicle down.
+The VFX and SVG here is important, the vehicle physically turns (top down view always).
+# 0.16 Early Access 8 - Vehicles II.
+A new vehicle type is added, Tractor. A tractor can have trailers, and is by default slower than Quad. 
+There are 3 different kinds trailers, and each has a respective building where it can interact with it.
+- Seeding trailer. Two variants, 2×1 and 5×1.  When attached and driven straight over an area, any tilled empty fields where the wide seeding trailer is touching the soil, it will plant it. seeding trailer can only have one type of fruit in it. 
+	- Building: seed silo 3 tall 2 wide. When opened it, provides a similar interface to the shop/seed store, excewpt here you can set amounts for each seed to buy, and which one to send to the trailer. When the trailer is at the interface point (exactly same mechanism as the return to garage), the trailer's inventory is merged withe the silo's. So if there is unused seed from a seeding round, it can be returned, and switched for something else with a single button. (clicking "raspberry" if there is already raspberry stored there will replace existing wheat seed).
+- Spraying trailer. same two variants, 2×1 and 5×1. When attached, it can dispense fertilizer, pesticide, and antifungal extract. 
+	- Building: spraying silo Similar UI to seed silo, but remember that there are two types of fertilizers, and two types of pesticides. 
+- Harvesting trailer. same two variants. When attached, it harvests all (!) planted fruits, regardless if it was ripe or not. it can hold different kinds of produce. 
+	- Building: produce silo, drops off everything into a 5 × 5 grid, seeds separated by rarity. 
+In the vehicle hangar, the player may have one of each thing bought. Deploying it is basically selecting the vehicle itself (icons of them), then, if the vehicle allows for trailers, selecting a trailer. A trailer is a permanent object, whether it is stored ephemerally inside the vehicle hangar or driven attached to a tractor, the inventory of it is kept. 
+The player may have multiple hangars, multiple silos or multiple trailers, but can only drive at most one truck that has one attached trailer to it.

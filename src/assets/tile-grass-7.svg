@@ -19,9 +19,8 @@
   <rect fill="#3a6232" x="14" y="8" width="3" height="3"/>
   <rect fill="#3a6232" x="13" y="9" width="1" height="1"/>
   <rect fill="#3a6232" x="17" y="9" width="1" height="1"/>
-  <rect fill="#6bc04a" x="6" y="16" width="3" height="1"/>
-  <rect fill="#6bc04a" x="7" y="15" width="1" height="3"/>
-  <rect fill="#d4a017" x="7" y="16" width="1" height="1"/>
+  <rect fill="#3a6232" x="6" y="16" width="1" height="2"/>
+  <rect fill="#3a6232" x="8" y="15" width="1" height="1"/>
   <rect fill="#6b4423" x="11" y="12" width="1" height="1"/>
   <rect fill="#3a6232" x="18" y="17" width="1" height="2"/>
 </svg>

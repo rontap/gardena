@@ -24,3 +24,17 @@ export const GRIND_MAX = 3
 export const SPEECH_S = 2.5
 export const SHRUB_GROW = 360
 export const SPRINKLER_RATE = 0.5
+export const FERT_BAG_LITERS = 5
+export const SYNTH_BAG_LITERS = 8
+export const COMPOST_LITERS = 3
+export const COMPOST_NEED = 10
+export const COMPOST_SECONDS = 120
+export const COMPOST_VALUE = {
+  seeds: 1,
+  fruit: 5,
+  heirloom: 20,
+  grass: 1,
+  weed: 1,
+  rotten: 2,
+  dead: 1,
+} as const

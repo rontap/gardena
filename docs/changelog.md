@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-22 — v0.3 Dirt Overhaul & Fertilizers
+
+Current contracts: [[mechanics/v0.3]] [[architecture/v0.3]].
+
+- Water and fertilizer belong to the soil, not the plant. `Plant.thirst` dies.
+- Soil survives harvest, dig, death and rot. Bare tilled soil can be watered.
+- Ground kind derives from a Perlin-style goodness field; hard dirt is poor dirt. Base boost tapers to r=8.
+- Weeds take fallow tilled plots and drink water + fertilizer. Two variants.
+- Grass spreads over untilled ground. Three variants, cosmetic.
+- Fertilizer bag 5 L / $6, `unlock-fertilizer`. Spends only the gap.
+- Big tick (10s) owns weed and grass spawning.
+
 ## 2026-08-19 — Beta-6 / Update 7
 
 Current contracts: [[mechanics/beta-6]] [[architecture/beta-6]] [[ui/beta-6]] [[art/beta-6]] [[ui/place]].

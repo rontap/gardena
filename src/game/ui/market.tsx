@@ -55,7 +55,15 @@ function StallRow({ id, world }: { id: StallGoodId; world: World }) {
 
 function boxFace(id: StallGoodId): Item {
   if (id === 'berry') return { kind: 'box', cap: 5, cargo: { kind: 'berry', rarity: 'common', count: 1 } }
-  return { kind: 'box', cap: 5, cargo: { kind: 'stack', goods: 'fruit', stack: { crop: id, rarity: 'common', count: 1, unitSale: CROPS[id].sale } } }
+  return {
+    kind: 'box',
+    cap: 5,
+    cargo: {
+      kind: 'stack',
+      goods: 'fruit',
+      stack: { crop: id, rarity: 'common', count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true },
+    },
+  }
 }
 
 function stockCount(world: World, id: StallGoodId): number {

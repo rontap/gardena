@@ -21,6 +21,13 @@ import box from '../../assets/item-box.svg?raw'
 import largeBox from '../../assets/item-large-box.svg?raw'
 import bucket from '../../assets/item-bucket.svg?raw'
 import largeBucket from '../../assets/item-large-bucket.svg?raw'
+import itemFertilizer from '../../assets/item-fertilizer.svg?raw'
+import itemSynth from '../../assets/item-synth.svg?raw'
+import itemCompost from '../../assets/item-compost.svg?raw'
+import itemRotten from '../../assets/item-rotten.svg?raw'
+import itemDead from '../../assets/item-dead.svg?raw'
+import itemGrass from '../../assets/item-grass.svg?raw'
+import propCompostBox from '../../assets/prop-compost-box.svg?raw'
 import itemShrub from '../../assets/item-shrub.svg?raw'
 import itemBerry from '../../assets/item-berry.svg?raw'
 import itemChest from '../../assets/item-chest.svg?raw'
@@ -60,11 +67,21 @@ import grass5 from '../../assets/tile-grass-5.svg?raw'
 import grass6 from '../../assets/tile-grass-6.svg?raw'
 import grass7 from '../../assets/tile-grass-7.svg?raw'
 import cropRotten from '../../assets/crop-rotten.svg?raw'
+import weed0 from '../../assets/crop-weed-0.svg?raw'
+import weed1 from '../../assets/crop-weed-1.svg?raw'
+import propGrass0 from '../../assets/prop-grass-0.svg?raw'
+import propGrass1 from '../../assets/prop-grass-1.svg?raw'
+import propGrass2 from '../../assets/prop-grass-2.svg?raw'
 import dirt0 from '../../assets/tile-dirt-0.svg?raw'
 import dirt1 from '../../assets/tile-dirt-1.svg?raw'
+import dirtEdge from '../../assets/tile-dirt-edge.svg?raw'
+import dirtInset from '../../assets/tile-dirt-inset.svg?raw'
 import hard0 from '../../assets/tile-hard-0.svg?raw'
 import hard1 from '../../assets/tile-hard-1.svg?raw'
 import veryHard from '../../assets/tile-very-hard-0.svg?raw'
+import tilePaved from '../../assets/tile-paved.svg?raw'
+import tileBrick from '../../assets/tile-brick.svg?raw'
+import tileCobble from '../../assets/tile-cobble.svg?raw'
 import uiBtn from '../../assets/ui-btn.svg?raw'
 import uiBtnShop from '../../assets/ui-btn-shop.svg?raw'
 import uiBtnResearch from '../../assets/ui-btn-research.svg?raw'
@@ -93,9 +110,10 @@ import uiCornerTl from '../../assets/ui-corner-tl.svg'
 import uiCornerTr from '../../assets/ui-corner-tr.svg'
 import uiCornerBr from '../../assets/ui-corner-br.svg'
 import uiCornerBl from '../../assets/ui-corner-bl.svg'
+import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import type { CropId, ResearchId, SkuId } from '../sim/ids.ts'
+import type { CropId, ResearchId, SkuId, TileId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -137,31 +155,41 @@ export function cropInner(id: CropId, stage: string): string {
 }
 
 export function itemInner(item: Face): string {
+  if (item.kind === 'tile') return BUILDING_TILES[item.tile]
   if (item.kind === 'pumpjack') return `<g transform="translate(0,6) scale(0.5)">${inner(pump)}</g>`
   if (item.kind === 'chest') return inner(itemChest)
   if (item.kind === 'grinder') return inner(itemGrinder)
+  if (item.kind === 'compost-box') return COMPOST_BOX
   if (item.kind === 'well') return inner(itemWell)
   if (item.kind === 'pipe') return inner(itemPipe)
   if (item.kind === 'sprinkler') return inner(itemSprinkler)
   if (item.kind === 'sprinkler-vert') return inner(itemSprinklerVert)
   if (item.kind === 'sprinkler-large') return inner(itemSprinklerLarge)
   if (item.kind === 'delete') return inner(itemDelete)
+  if (item.kind === 'weed') return weedInner(0, 'grow')
+  if (item.kind === 'grass') return inner(itemGrass)
+  if (item.kind === 'rotten') return rottenInner(item.cls)
+  if (item.kind === 'dead') return deadInner(item.cls)
   if (item.kind === 'shovel') return inner(item.id === 'shovel' ? shovel : better)
   if (item.kind === 'pickaxe') return inner(item.id === 'pickaxe' ? pickaxe : betterPickaxe)
   if (item.kind === 'container') {
     if (item.id === 'bucket') return inner(bucket)
     return inner(largeBucket)
   }
+  if (item.kind === 'fertilizer') return inner(itemFertilizer)
+  if (item.kind === 'synth') return inner(itemSynth)
+  if (item.kind === 'compost') return inner(itemCompost)
   if (item.kind === 'box') return boxInner(item)
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.rarity))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
-  if (item.kind === 'berry') return inner(itemBerry)
+  if (item.kind === 'berry') return stageOnly(itemBerry, fruitGroup(item.rarity))
   return inner(itemShrub)
 }
 
 export function skuInner(id: SkuId): string {
   if (id === 'buy-chest') return itemInner({ kind: 'chest' })
   if (id === 'buy-grinder') return itemInner({ kind: 'grinder' })
+  if (id === 'buy-compost-box') return itemInner({ kind: 'compost-box' })
   if (id === 'buy-pumpjack') return itemInner({ kind: 'pumpjack' })
   if (id === 'buy-well') return itemInner({ kind: 'well' })
   if (id === 'buy-pipe') return itemInner({ kind: 'pipe' })
@@ -169,6 +197,12 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-sprinkler-vert') return itemInner({ kind: 'sprinkler-vert' })
   if (id === 'buy-sprinkler-large') return itemInner({ kind: 'sprinkler-large' })
   return itemInner(skuItem(id))
+}
+
+export const BUILDING_TILES: { readonly [K in TileId]: string } = {
+  paved: inner(tilePaved),
+  brick: inner(tileBrick),
+  cobble: inner(tileCobble),
 }
 
 export function researchInner(id: ResearchId): string {
@@ -195,6 +229,10 @@ export function researchInner(id: ResearchId): string {
       return itemInner({ kind: 'grinder' })
     case 'unlock-pickaxe':
       return inner(pickaxe)
+    case 'unlock-fertilizer':
+      return inner(itemFertilizer)
+    case 'unlock-compost':
+      return COMPOST_BOX
     case 'unlock-better-tools':
       return inner(uiResearchTools)
     case 'unlock-auto-irrigation':
@@ -240,7 +278,7 @@ function boxInner(item: Extract<Item, { kind: 'box' }>): string {
   if (item.cargo.kind === 'empty') return crate
   const cargo =
     item.cargo.kind === 'berry'
-      ? inner(itemBerry)
+      ? stageOnly(itemBerry, fruitGroup(item.cargo.rarity))
       : item.cargo.goods === 'fruit'
         ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
         : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
@@ -274,6 +312,18 @@ export function appleTreeStage(ripe: boolean): string {
   return stageOnly(appleTree, ripe ? 'ripe' : 'unripe')
 }
 export const CROP_ROTTEN = inner(cropRotten)
+const WEED = [weed0, weed1] as const
+export function weedInner(variant: 0 | 1, stage: 'sprout' | 'grow'): string {
+  return stageOnly(WEED[variant], stage)
+}
+export const GRASS_TUFT = [inner(propGrass0), inner(propGrass1), inner(propGrass2)] as const
+export const COMPOST_BOX = inner(propCompostBox)
+export function rottenInner(cls: CropClass): string {
+  return stageOnly(itemRotten, cls)
+}
+export function deadInner(cls: CropClass): string {
+  return stageOnly(itemDead, cls)
+}
 export const GRASS = [
   inner(grass0),
   inner(grass1),
@@ -285,6 +335,8 @@ export const GRASS = [
   inner(grass7),
 ] as const
 export const DIRT = [inner(dirt0), inner(dirt1)] as const
+export const DIRT_EDGE = inner(dirtEdge)
+export const DIRT_INSET = inner(dirtInset)
 export const HARD = [inner(hard0), inner(hard1)] as const
 export const VERY_HARD = inner(veryHard)
 export const UI_BTN_IDLE = groupInner(uiBtn, 'idle')

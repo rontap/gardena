@@ -168,7 +168,7 @@ export function Dock({
       className={`absolute top-16 left-32 z-20 flex max-h-[calc(100%-4rem)] flex-col overflow-hidden ${wide === true ? 'w-[28rem]' : 'w-72'}`}
     >
       <div className="relative z-20 flex items-center justify-between px-3 py-2">
-        <div className="text-sm">{title}</div>
+        <div className="font-display text-[14px] leading-relaxed">{title}</div>
         <button type="button" className="cursor-pointer px-2 py-0.5 text-sm text-ink hover:bg-dirt" onClick={onClose}>
           ×
         </button>
@@ -196,7 +196,7 @@ export function Frame({
     <Chrome className={`relative ${className ?? (wide === true ? 'w-[28rem]' : 'w-80')}`}>
       <div className="relative px-4 pb-4 pt-2">
         <div className="mb-3 flex h-7 items-center justify-between">
-          <div className="font-medium text-ink">{title}</div>
+          <div className="font-display text-[11px] leading-relaxed text-ink">{title}</div>
           {onClose !== undefined && (
             <button type="button" className="px-1.5 text-xs text-ink hover:bg-dirt" onClick={onClose}>
               ×

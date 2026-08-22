@@ -38,14 +38,24 @@ function Badge({ item }: { item: Item }) {
   const t = badge(item)
   if (t === undefined) return null
   return (
-    <span className="absolute bottom-0 right-0 bg-ink px-0.5 text-[10px] leading-tight text-house">{t}</span>
+    <span className="absolute bottom-0 right-0 bg-ink px-0.5 text-[12px] leading-tight text-house">{t}</span>
   )
 }
 
 function badge(item: Item): string | undefined {
   if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
-  if (item.kind === 'container') return `${item.liters}L`
-  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'berry') return String(item.count)
+  if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
+  if (
+    item.kind === 'seeds' ||
+    item.kind === 'fruit' ||
+    item.kind === 'berry' ||
+    item.kind === 'rotten' ||
+    item.kind === 'dead' ||
+    item.kind === 'weed' ||
+    item.kind === 'grass'
+  ) {
+    return String(item.count)
+  }
   if (item.kind === 'box' && item.cargo.kind === 'stack') return String(item.cargo.stack.count)
   if (item.kind === 'box' && item.cargo.kind === 'berry') return String(item.cargo.count)
   return undefined
@@ -71,7 +81,10 @@ export function ItemLineView({ item }: { item: Item }) {
 
 function heldNumber(item: Item): string {
   if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
-  if (item.kind === 'container') return `${item.liters}L`
+  if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
+  if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+    return `${Number(item.liters.toFixed(1))}L`
+  }
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return String(item.cap)
     if (item.cargo.kind === 'berry') return `${item.cargo.count}/${item.cap}`

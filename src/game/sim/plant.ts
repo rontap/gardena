@@ -1,13 +1,14 @@
-import { CRITICAL, PLANT_THIRST, WITHER } from '../defs/crops.ts'
 import { HAPPY_START, type Rarity } from '../defs/rarity.ts'
 import type { CropId } from './ids.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 
+export type Doom = 'wilt' | 'drown' | 'starve'
+
 export class Plant {
   maturity = 0
-  thirst = PLANT_THIRST
   freshness = 1
   happiness = HAPPY_START
+  bio = true
 
   readonly crop: CropId
   rarity: Rarity
@@ -21,18 +22,24 @@ export class Plant {
     return statsOf(this.crop, this.rarity, mods)
   }
 
-  get thirsty(): boolean {
-    return this.thirst < WITHER
-  }
-
-  get critical(): boolean {
-    return this.thirst < CRITICAL
-  }
-
   stage(kind: 'growing' | 'ripe' | 'dead'): 'sprout' | 'grow' | 'ripe' | 'dead' {
     if (kind === 'dead') return 'dead'
     if (kind === 'ripe') return 'ripe'
     if (this.maturity < 0.33) return 'sprout'
     return 'grow'
+  }
+}
+
+export class Weed {
+  maturity = 0
+
+  readonly variant: 0 | 1
+
+  constructor(variant: 0 | 1) {
+    this.variant = variant
+  }
+
+  stage(): 'sprout' | 'grow' {
+    return this.maturity < 0.4 ? 'sprout' : 'grow'
   }
 }

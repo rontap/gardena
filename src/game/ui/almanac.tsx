@@ -5,12 +5,28 @@ import { CROPS, cropVariety } from '../defs/crops.ts'
 import { SHRUB_GROW } from '../defs/items.ts'
 import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
 import { statsOf } from '../sim/modifiers.ts'
+import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { CropId } from '../sim/ids.ts'
 import { BERRY_SHRUB, SHRUB, appleTreeStage, cropInner, faceGfx, itemInner, meterInner } from '../view/svgs.ts'
 import { Chrome, Coin, tabTriggerClass } from './frame.tsx'
 
-const SEED_IDS = ['carrot', 'potato', 'wheat', 'tomato', 'raspberry', 'watermelon', 'apple', 'berry', 'shrub']
+const SEED_IDS = [
+  'carrot',
+  'potato',
+  'wheat',
+  'tomato',
+  'raspberry',
+  'watermelon',
+  'apple',
+  'berry',
+  'shrub',
+  'soil',
+  'weed',
+  'grass',
+  'rotten',
+  'dead',
+]
 const UTIL_IDS = [
   'shovel',
   'better-shovel',
@@ -20,6 +36,9 @@ const UTIL_IDS = [
   'large-bucket',
   'box',
   'box-large',
+  'fertilizer',
+  'synth-fertilizer',
+  'compost',
 ]
 const AUTO_IDS = [
   'pumpjack',
@@ -30,6 +49,7 @@ const AUTO_IDS = [
   'sprinkler-large',
   'chest',
   'grinder',
+  'compost-box',
 ]
 
 const TABS = [
@@ -59,6 +79,10 @@ function colMax(key: 'growSeconds' | 'waterUsePerSec' | 'sale' | 'seed' | 'rotSe
 
 function meterN(v: number, min: number, max: number): number {
   return 1 + Math.round((4 * (v - min)) / (max - min))
+}
+
+function liters(n: number): string {
+  return `${Number(n.toFixed(2))}L`
 }
 
 const STAGES = ['sprout', 'grow', 'ripe'] as const
@@ -138,7 +162,7 @@ function Pane({ entry }: { entry: CatalogEntry }) {
   if (crop !== undefined) return <CropPane id={crop} />
   return (
     <>
-      <div className="mb-2 text-lg text-ink">{entry.title}</div>
+      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{entry.title}</div>
       <div className="mb-3 flex h-20 w-20 items-center justify-center bg-dirt-dark">
         <svg
           className="h-16 w-16"
@@ -183,7 +207,7 @@ function CropPane({ id }: { id: CropId }) {
   const st = statsOf(id, preview, [])
   return (
     <>
-      <div className="mb-2 text-lg text-ink">{cropVariety(id, preview)}</div>
+      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{cropVariety(id, preview)}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
@@ -197,6 +221,8 @@ function CropPane({ id }: { id: CropId }) {
                 rarity: preview,
                 count: 1,
                 unitSale: st.sale,
+                freshness: 1,
+                bio: true,
               }),
             }}
           />
@@ -219,6 +245,16 @@ function CropPane({ id }: { id: CropId }) {
           label="Drink"
           n={meterN(d.waterUsePerSec, colMin('waterUsePerSec'), colMax('waterUsePerSec'))}
           kind={{ t: 'raw', raw: `${Number((d.waterUsePerSec * DAY_SECONDS).toPrecision(1))} L/day` }}
+        />
+        <Stat
+          label="Water range"
+          n={meterN(st.waterTolerance, 0.25, 1)}
+          kind={{ t: 'raw', raw: `${liters(SOIL_WATER_MID - st.waterTolerance)}–${liters(SOIL_WATER_MID + st.waterTolerance)}` }}
+        />
+        <Stat
+          label="Fertilizer"
+          n={meterN(st.fertTolerance, 0.25, 1)}
+          kind={{ t: 'raw', raw: `happy above ${Math.round((FERT_PLOT_MAX - st.fertTolerance) * 100)}%` }}
         />
         <Stat label="Sell" n={meterN(d.sale, colMin('sale'), colMax('sale'))} kind={{ t: 'coin', n: st.sale }} />
         <Stat
@@ -245,7 +281,7 @@ function BerryPane({ title }: { title: string }) {
   }, [])
   return (
     <>
-      <div className="mb-2 text-lg text-ink">
+      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">
         {preview === 'rare' ? 'Golden berry' : preview === 'heirloom' ? 'Black raspberry' : title}
       </div>
       <RarityTabs preview={preview} onPreview={setPreview} />
@@ -288,11 +324,11 @@ function ApplePane() {
   }, [])
   return (
     <>
-      <div className="mb-2 text-lg text-ink">{cropVariety('apple', preview)}</div>
+      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx({ kind: 'fruit', crop: 'apple', rarity: preview, count: 1, unitSale: CROPS.apple.sale * RARITY_SALE[preview] }) }} />
+          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx({ kind: 'fruit', crop: 'apple', rarity: preview, count: 1, unitSale: CROPS.apple.sale * RARITY_SALE[preview], freshness: 1, bio: true }) }} />
         </div>
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
           <svg className="h-16 w-10" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: appleTreeStage(ripe) }} />

@@ -12,7 +12,7 @@ React + Tailwind sketches only when `src/` exists and the contract is complete.
 
 ## Does not
 
-- Invent mechanics or copy. Ask.
+- Invent mechanics or copy.
 - Invent visual identity.
 - Lorem, dummy journeys, placeholder screens.
 
@@ -21,5 +21,5 @@ React + Tailwind sketches only when `src/` exists and the contract is complete.
 1. Real states only. Total. No hover/disabled/error you were not told.
 2. Tokens the coder can paste. No unnamed hex.
 3. Tailwind. No new CSS framework. No CSS-in-JS.
-4. Missing copy / density / input → one-line question, stop.
+4. Halt: [[canon]].
 5. Done when `docs/ui/` matches the named mechanics. Final message: paths only.

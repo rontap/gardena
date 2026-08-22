@@ -168,13 +168,13 @@ export class House {
 
 export class Pump {
   readonly kind = 'pump' as const
-  readonly form: 'starter' | 'jack' | 'well'
+  readonly form: 'starter' | 'jack'
   readonly base: Base
   readonly water: Reservoir
-  constructor(base: Base, form: 'starter' | 'jack' | 'well') {
+  constructor(base: Base, form: 'starter' | 'jack') {
     this.base = base
     this.form = form
-    this.water = new Reservoir(form === 'well' ? 'well' : 'pump')
+    this.water = new Reservoir('pump')
   }
 }
 

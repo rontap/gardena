@@ -599,13 +599,13 @@ export function boxAdd(
   rarity: Rarity,
   n: number,
 ): number {
-  const take = boxAccepts(box, 'seeds', crop, rarity, n)
+  const take = boxAccepts(box, goods, crop, rarity, n)
   if (take === 0) return 0
   if (box.cargo.kind === 'empty') {
-    box.cargo = { kind: 'stack', goods: 'seeds', stack: { crop, rarity, count: take } }
+    box.cargo = { kind: 'stack', goods, stack: { crop, rarity, count: take } }
     return take
   }
-  if (box.cargo.kind === 'stack' && box.cargo.goods === 'seeds') box.cargo.stack.count += take
+  if (box.cargo.kind === 'stack' && box.cargo.goods === goods) box.cargo.stack.count += take
   return take
 }
 

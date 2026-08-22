@@ -1,3 +1,5 @@
+import { DAY_SECONDS } from './clock.ts'
+
 export const SOIL_WATER_MID = 1
 export const SOIL_WATER_MAX = 2
 export const SOIL_TILL_WATER = 0.75
@@ -11,6 +13,12 @@ export const WEED_GROW = 60
 export const BIG_TICK = 10
 export const WEED_CHANCE = 0.035
 export const GRASS_CHANCE = 0.5
+export const CHANCE_RAMP_TICKS = DAY_SECONDS / BIG_TICK
+
+export function ramped(chance: number, bigTicks: number): number {
+  const k = Math.min(1, bigTicks / CHANCE_RAMP_TICKS)
+  return -0.1 + (chance + 0.1) * k
+}
 
 export type Band = 'green' | 'orange' | 'red'
 

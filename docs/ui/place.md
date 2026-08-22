@@ -23,11 +23,11 @@ StayArmed =
   | 'delete'
 ```
 
-Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers. Delete via `place.kind === 'delete'`.
+Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + `buy-well`. Delete via `place.kind === 'delete'`.
 
-Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
+Confirm does **not** set `none` for StayArmed, **valve**, **well**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
-Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-well` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` and item SKUs.
+Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` and item SKUs.
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live. While armed, `readPrompt` is place or blocked only.
 
@@ -64,23 +64,27 @@ Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and
 
 ## Ghosts
 
-Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-well` `buy-tap` `buy-compost-box`) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box disarms. Tiles stay armed.
+Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box`) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box disarms. Tiles stay armed.
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 well+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
-## Pipe / valve
+## Pipe / valve / well
 
-`buy-pipe` `buy-valve`. Nearest edge of the hovered cell, only if the pointer is within **0.35** tile of that edge. Corner → one nearest edge, never two.
+`buy-pipe` `buy-valve` `buy-well`. Nearest edge of the hovered cell, only if the pointer is within **0.35** tile of that edge. Corner → one nearest edge, never two.
 
 Ghost is not a black `EdgeStroke` bar. Not `item-pipe.svg`. Not a 64px item.
 
 While there is an `edgeHit`, the two endpoint vertices draw the **post-confirm** junction: `pipeFit` from the incident arm set **including the pending edge**. Those two vertices show the ghost (`data-pipe-ghost`). Ghost wetness = C of the component after confirm. Isolated pending run, no source touch: dry.
 
-Cell outline stays `stroke-ink`. Copy **Place Pipe** / **Place Manual valve**. Stay armed.
+Valve: the edge midpoint also draws the open-valve art at 0.7 (`data-valve-ghost`) — the body preview of what is being placed.
 
-Already piped / not an edge / unowned → **Cannot place here**. Valve on empty edge → **Valve needs a pipe**. Valve on a valved edge → **Pipe already has a valve**. Poor → **Cannot afford**.
+Well: no junction ghosts (the well edge gains no pipe). The edge midpoint draws the well art at 0.7 (`data-well-ghost`). Valid iff owned edge with no pipe and no well.
 
-Pipes drawn iff `lens === 'pipes'` or place is delete / a `PIPE_PLACE` sku.
+Cell outline stays `stroke-ink`. Copy **Place Pipe** / **Place Manual valve** / **Place Well**. Stay armed.
+
+Already piped / not an edge / unowned → **Cannot place here**. Valve on empty edge → **Valve needs a pipe**. Valve on a valved edge → **Pipe already has a valve**. Pipe or well on a well edge → **Cannot place here**. Poor → **Cannot afford**.
+
+Pipes drawn iff `lens === 'pipes'` or place is delete / a `PIPE_PLACE` sku. Placed wells always draw their art on the edge midpoint (`data-well`).
 
 ## Sprinkler
 
@@ -106,9 +110,9 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Then `deleteBuilding(at)`.
 |---|---|---|
 | owned piped edge, no valve | **Delete pipe** | remove pipe |
 | owned valved edge | **Delete valve** | valve off, pipe stays |
+| well edge | **Delete well** | well off, edge goes |
 | owned sprinkler vertex | **Delete sprinkler** | remove sprinkler |
 | pumpjack | **Delete pumpjack** | both cells → empty |
-| well | **Delete well** | cell → empty |
 | rain-tank | **Delete rainwater tank** | both cells → empty |
 | tap | **Delete tap** | cell → empty |
 | chest | **Delete chest** | slots become drops on at, cell → empty |
@@ -116,7 +120,7 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Then `deleteBuilding(at)`.
 | compost-box | **Delete compost box** | cell → empty |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
-`deletePipe` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
+`deletePipe` / `deleteWell` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
 
 Delete pipe / sprinkler uses `EdgeStroke` / `VertexStroke`. Cell outline stays `stroke-ink`.
 
@@ -141,10 +145,13 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | place / pulse `buy-valve` | **Place Manual valve** |
 | place / pulse sprinklers | **Place Sprinkler** / **Place Vertical sprinkler** / **Place Large sprinkler** |
 | unarmed valve | **Open valve** / **Close valve** |
+| unarmed well edge, container in hand | **Fill** |
+| unarmed well edge, no container | **Need a bucket** |
 | unarmed sprinkler vertex, smart unlocked | **Tune sprinkler** |
 | delete, hover piped owned edge | **Delete pipe** / **Delete valve** |
+| delete, hover well edge | **Delete well** |
 | delete, hover sprinkler vertex | **Delete sprinkler** |
-| delete, hover building | **Delete pumpjack** / **Delete well** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** |
+| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** |
 | delete else | **Cannot delete here** |
 | blocked | **Cannot place here** |
 | blocked, `money < price` | **Cannot afford** |

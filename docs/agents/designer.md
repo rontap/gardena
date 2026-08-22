@@ -11,7 +11,7 @@ Read [[canon]] and [[art/_index]]. Write `docs/art/` and SVGs immediately. No ha
 
 ## Does not
 
-- Invent a visual language. Ask.
+- Invent a visual language.
 - Change mechanics.
 - Raster / Imagine unless asked.
 
@@ -23,6 +23,6 @@ Read [[canon]] and [[art/_index]]. Write `docs/art/` and SVGs immediately. No ha
 - No embedded raster. No unjustified filters.
 - One concept per file.
 
-Unspecified style → one-line question, stop.
+Halt: [[canon]].
 
 Done when the named SVGs exist. Final message: paths only.

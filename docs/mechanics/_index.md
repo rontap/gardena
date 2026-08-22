@@ -14,6 +14,7 @@ Rules as the game runs. Tests follow the numbered list. Numbers: preference / tu
 - [[mechanics/inventory]]
 - [[mechanics/log]]
 - [[mechanics/rng]]
+- [[mechanics/tutorial]]
 
 See [[canon]].
 
@@ -67,3 +68,12 @@ See [[canon]].
 46. `Spatial.at` / `hash`: same args, any call order → same `u`.
 47. Failed `buy` / `buyPacks` (closed, cannot afford, cannot fit) consumes 0 `shop.next()`. Failed tree drop consumes 0 `fruit.next()`. Granted pack: one `next()` each. `buyPacks` success: 5.
 48. Pack rarity is `rollShopRarity(seed-bank tier, shop.next())`. Not `clock.t`. Not `money`.
+49. Tutorial on only at New Game with `!slotExists()` and fragment not `start_now`. `slotExists()` or `#start_now` → off, including New Game. Load / Upload → off.
+50. No tutorial field on `Save` or `World`. Session only. Parse does not resume a step.
+51. `tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2. Not `World.digs`.
+52. Step 5 completes on `startResearch` that sets `job.kind === 'run'`, or `done.size > 0`. Not on opening Research.
+53. Step 6 ready is `waterBand(...) === 'red'` on a `growing` plant. No extra thirst flag.
+54. A box is `Item` `{ kind: 'box' }` in hand, house, chest, or drops. Cap `BOX_SMALL` or `BOX_LARGE`. Not `CompostBox`. Not an unconfirmed SKU.
+55. Step 9 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
+56. Step 10 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
+57. Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.

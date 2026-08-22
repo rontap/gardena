@@ -122,34 +122,13 @@ Uses:
 - Achievements, for now just an empty stub.
 Now the game gets sluggish very fast. Mostly due to unnecesary react state updates and rerendering so many things. A few minutes of gameplay and we hit like 20FPS with lag spikes. Disptach agents to check out a RCA and fix the most pressing issues. 
 ## 0.9 Early Access 1 - playable complete game
-This update is a wrap-up and polish update. No directly new gameplay features.
-Features:
-Menu and Save
-- Game starts at main menu, unless url is launched with url#start_now.
-- Game name is shown with 3 buttons: New Game / Load Save / Upload Save
-- Save and restore game feature. The game state should be serialisable and deserialisable, JSON. Including version number. Game state includes everything from research done, in progress, all placed objects, state of map, object locations and durabilities, money. Queued actions are not saved. Game is autosaved at end of day to localStorage.
-- New buttion in the game view, top ribbon, right, a gear icon. clicking on it, the startup menu is reused but with two options: Save game / Download Save
-- Older save files are attempted to be loaded in, but now no migration of content.
-- All future features should be also serializable and savable, but for now no backward compatibility conversion. 
-UI pass
-- in the shop, prices should be right-aligned
-- Almanac
-	- in pipe section, show all pipe variants in the same iterating way as it is done with plants
-Tutorial
-- disabled when game is launched with url#start_now, disabled when the user already has a savefile.
-- The tutorial for now should be short. It should be
-	- step 1 explaining game concept, click on farmland to dig
-	- step 2 dig 4 more farms (does not dynamically update)
-	- step 3 click on house and add seeds to inventory
-	- step 4 explaining you have one item max on you, this is not super common in other sims. plant the seeds
-	- step 5 research something
-	- step 6 if any of the plants start wilting, trigger the watering guide to pick up bucket, fill it up and then water plants, noting the bucket capacity too.
-	- step 7 when any is harvest ready, then prompt to buy box and place it.
-	- step 8 gather the fruits (any is ok)
-	- step 9 sell on marketplace
-	- step 10 end of tutorial (in this iteration)
+
+Spec: [[plans/early-access-1]] (1.0 Early Access 1). Implement from that note.
 
 # 0.10 Early Access 2 - Plant diseases
+
+Design notes and critique: [[plans/early-access-2]]. The draft below is the original intent; several of its numbers and its spread clock are superseded there. Do not implement from this section alone.
+
 Add a debug left menu which will be populated with trigger actions that force certain events to appear. only shows when unlock all instantly is pressed.
 This update will add plant diseases and ways to fight that. Plants can now be afflicted with disease and spread it to other plants. 
 There are three common diseases that are common to all plants: Powdery Mildew, Anthracnose and Gray Mold. These are shown as statuses on the plant and have several negative effects.

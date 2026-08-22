@@ -128,6 +128,9 @@ import uiBtnDelete from '../../assets/ui-btn-delete.svg?raw'
 import uiBtnRotate from '../../assets/ui-btn-rotate.svg?raw'
 import uiBtnCancel from '../../assets/ui-btn-cancel.svg?raw'
 import uiBtnFamily from '../../assets/skills/ui-btn-family.svg?raw'
+import uiBtnGear from '../../assets/ui-btn-gear.svg?raw'
+import uiBtnPause from '../../assets/ui-btn-pause.svg?raw'
+import uiMenu from '../../assets/ui-menu.svg?raw'
 import skillBoots from '../../assets/skills/skill-boots.svg?raw'
 import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
 import skillTending from '../../assets/skills/skill-tending.svg?raw'
@@ -529,6 +532,9 @@ export const UI_BTN_DELETE = uiBtnDelete
 export const UI_BTN_ROTATE = uiBtnRotate
 export const UI_BTN_CANCEL = uiBtnCancel
 export const UI_BTN_FAMILY = uiBtnFamily
+export const UI_BTN_GEAR = uiBtnGear
+export const UI_BTN_PAUSE = uiBtnPause
+export const UI_MENU = inner(uiMenu)
 export const SKILL_POINT = inner(skillPoint)
 export const PORTRAIT: { readonly [K in MemberId]: string } = {
   player: inner(portraitPlayer),

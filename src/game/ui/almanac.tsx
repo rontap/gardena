@@ -9,7 +9,7 @@ import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { CropId } from '../sim/ids.ts'
-import { cropInner, faceGfx, itemInner, meterInner, treeStage } from '../view/svgs.ts'
+import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, treeStage } from '../view/svgs.ts'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 
 const SEED_IDS = [
@@ -161,11 +161,14 @@ export function Almanac({ onClose }: { onClose: () => void }) {
   )
 }
 
+const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
+
 function Pane({ entry }: { entry: CatalogEntry }) {
   const tree = TREE_IDS.find(id => id === entry.id)
   if (tree !== undefined) return <TreePane id={tree} />
   const crop = CROP_IDS.find(id => id === entry.id)
   if (crop !== undefined) return <CropPane id={crop} />
+  if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
@@ -177,6 +180,27 @@ function Pane({ entry }: { entry: CatalogEntry }) {
         />
       </div>
       <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
+    </>
+  )
+}
+
+function PipePane({ title, blurb }: { title: string; blurb: string }) {
+  const [stage, setStage] = useState(0)
+  useEffect(() => {
+    const t = window.setInterval(() => setStage(s => (s + 1) % 5), 800)
+    return () => window.clearInterval(t)
+  }, [])
+  return (
+    <>
+      <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
+      <div className="mb-3 flex h-20 w-20 items-center justify-center bg-dirt-dark">
+        <svg
+          className="h-16 w-16"
+          viewBox="0 0 24 24"
+          dangerouslySetInnerHTML={{ __html: PIPE_JOINS[stage] }}
+        />
+      </div>
+      <div className="text-base leading-relaxed text-ink">{blurb}</div>
     </>
   )
 }

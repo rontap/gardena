@@ -1,5 +1,6 @@
 import type { Coord } from './building.ts'
 import type { CropId } from './ids.ts'
+import { Reservoir } from './water.ts'
 
 export type Edge =
   | { axis: 'h'; col: number; row: number }
@@ -19,6 +20,16 @@ export type Sprinkler =
   | { variant: 'basic'; at: Vertex; tune: Tune }
   | { variant: 'vert'; at: Vertex; facing: 'ns' | 'ew'; tune: Tune }
   | { variant: 'large'; at: Vertex; tune: Tune }
+
+export class Well {
+  readonly kind = 'well' as const
+  readonly at: Edge
+  readonly water: Reservoir
+  constructor(at: Edge) {
+    this.at = at
+    this.water = new Reservoir('well')
+  }
+}
 
 export function flows(s: Segment): boolean {
   return s.gate.kind === 'bare' || s.gate.open

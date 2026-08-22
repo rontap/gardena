@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 
 test('hud shots', async ({ page }) => {
   await mkdir('e2e/shots', { recursive: true })
-  await page.goto('/')
+  await page.goto('/#start_now')
   await expect(page.locator('svg.bg-grass')).toBeVisible()
   await page.screenshot({ path: 'e2e/shots/hud.png' })
   await page.getByRole('button', { name: 'Shop', exact: true }).click()

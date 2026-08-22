@@ -17,13 +17,17 @@ const FERT_WORD: { readonly [K in Band]: string } = {
 
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
   if (world.place.kind === 'delete') return world.promptHit(hit).text
-  if (hit !== undefined && (hit.kind === 'valve' || hit.kind === 'sprinkler-hud')) {
+  if (
+    hit !== undefined &&
+    (hit.kind === 'valve' || hit.kind === 'well' || hit.kind === 'sprinkler-hud')
+  ) {
     return world.promptHit(hit).text
   }
   if (
     world.place.kind === 'sku' &&
     (world.place.id === 'buy-pipe' ||
       world.place.id === 'buy-valve' ||
+      world.place.id === 'buy-well' ||
       world.place.id === 'buy-sprinkler' ||
       world.place.id === 'buy-sprinkler-vert' ||
       world.place.id === 'buy-sprinkler-large')
@@ -56,7 +60,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   }
   if (cell.kind === 'house') lines.push('House')
   else if (cell.kind === 'truck') lines.push('Market truck')
-  else if (cell.kind === 'pump') lines.push(`${cell.form === 'well' ? 'Well' : 'Pump'} - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
+  else if (cell.kind === 'pump') lines.push(`Pump - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'rain-tank') lines.push(`Rainwater tank - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'tap') lines.push('Tap')
   else if (cell.kind === 'rock') lines.push('Rock')

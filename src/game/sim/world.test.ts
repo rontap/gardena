@@ -22,7 +22,7 @@ import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
 import { Clock, days } from './clock.ts'
-import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT } from './soil.ts'
+import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, GRASS_CHANCE, ramped } from './soil.ts'
 import { bare } from './plot.ts'
 import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
@@ -40,9 +40,17 @@ function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
 }
 
 describe('beta-1 invariants', () => {
+  test('weed and grass chances ramp from -10% over one day of big ticks', () => {
+    expect(ramped(WEED_CHANCE, 0)).toBeLessThan(0)
+    expect(ramped(GRASS_CHANCE, 0)).toBeLessThan(0)
+    expect(ramped(WEED_CHANCE, 12)).toBeCloseTo((-0.1 + (WEED_CHANCE + 0.1) * 0.5), 9)
+    expect(ramped(WEED_CHANCE, 24)).toBe(WEED_CHANCE)
+    expect(ramped(GRASS_CHANCE, 24)).toBe(GRASS_CHANCE)
+  })
+
   test('no plant tick across sundown', () => {
     const w = new World()
-    w.setCell(AT, { kind: 'growing', plant: new Plant('carrot', 'common') })
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('carrot', 'common') })
     w.clock.t = 239.999
     const before = (w.cell(AT) as { plant: Plant }).plant.maturity
     w.tick(1)
@@ -251,9 +259,9 @@ describe('beta-2 invariants', () => {
       kind: 'hold',
       item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 10 },
     })
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 2, unitSale: 4 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 2, unitSale: 4, freshness: 1, bio: true } }
     w.swap(1)
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true } }
     w.swap(2)
     expectPacked(w)
     const fruits = w.inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
@@ -552,8 +560,8 @@ describe('beta-4 invariants', () => {
     w.done.add('unlock-chest')
     const a = { col: 10, row: 12 }
     const b = { col: 11, row: 12 }
-    w.setCell(a, { kind: 'empty' })
-    w.setCell(b, { kind: 'empty' })
+    w.setCell(a, { kind: 'empty', soil: bed() })
+    w.setCell(b, { kind: 'empty', soil: bed() })
     w.buy('buy-chest')
     w.confirmPlace(a)
     w.buy('buy-chest')
@@ -583,7 +591,7 @@ describe('beta-4 invariants', () => {
     const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
     expect(countA).toBe(GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1)))
     const w = grindWorld(7)
-    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28 } }
+    w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true } }
     w.click(AT)
     for (let i = 0; i < 50; i++) w.tick(1 / 15)
     const slot = w.inventory.find(
@@ -603,7 +611,7 @@ describe('beta-4 invariants', () => {
       item: {
         kind: 'box',
         cap: 5,
-        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5 } },
+        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5, freshness: 1, bio: true } },
       },
     }
     w.click(AT)
@@ -668,7 +676,7 @@ describe('beta-4 invariants', () => {
 
   test('pickaxe on ripe does not queue and speaks', () => {
     const w = new World()
-    w.setCell(AT, { kind: 'ripe', plant: new Plant('carrot', 'common') })
+    w.setCell(AT, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
     w.hand = { kind: 'hold', item: makePickaxe('pickaxe') }
     const q = [...w.queue]
     w.click(AT)
@@ -741,22 +749,40 @@ describe('beta-5 invariants', () => {
     const w = new World()
     w.done.add('unlock-adv-irrigation')
     w.money = 200
+    w.buy('buy-pipe')
+    const e1: Edge = { axis: 'h', col: 10, row: 12 }
+    w.placePipe(e1)
     w.buy('buy-well')
-    const at = { col: 10, row: 12 }
-    w.setCell(at, { kind: 'empty', soil: bed() })
-    w.confirmPlace(at)
-    const well = w.cell(at)
-    expect(well.kind).toBe('pump')
-    if (well.kind === 'pump') {
-      expect(well.form).toBe('well')
-      expect(well.water.rate).toBe(SOURCE.well.rate)
-      expect(well.water.capacity).toBe(SOURCE.well.capacity)
-      expect(well.water.stored).toBe(SOURCE.well.start)
-      expect(well.base).toEqual({ shape: 'rect', col: 10, row: 12, w: 1, h: 1 })
-    }
+    const e2: Edge = { axis: 'h', col: 20, row: 12 }
+    w.placePipe(e2)
+    const well = w.wellAt(e2)
+    expect(well).toBeDefined()
+    if (well === undefined) return
+    expect(well.water.rate).toBe(SOURCE.well.rate)
+    expect(well.water.capacity).toBe(SOURCE.well.capacity)
+    expect(well.water.stored).toBe(SOURCE.well.start)
+    expect(w.hasPipe(e2)).toBe(false)
+    expect(w.hasWell(e2)).toBe(true)
     const net = w.netOfVertex({ col: 18, row: 7 })
     expect(net).toBeDefined()
     expect(net?.sources).toHaveLength(1)
+    const wellNet = w.netOfVertex({ col: 20, row: 12 })
+    expect(wellNet).toBeDefined()
+    expect(wellNet?.sources).toHaveLength(1)
+    expect(wellNet).not.toBe(net)
+  })
+
+  test('well joins its two endpoint vertices into one net', () => {
+    const w = new World()
+    w.done.add('unlock-adv-irrigation')
+    w.money = 200
+    w.buy('buy-well')
+    const e: Edge = { axis: 'v', col: 10, row: 12 }
+    w.placePipe(e)
+    const a = w.netOfVertex({ col: 10, row: 12 })
+    const b = w.netOfVertex({ col: 10, row: 13 })
+    expect(a).toBeDefined()
+    expect(a).toBe(b)
   })
 
   test('one jack + five sprinklers share the source and water growing tiles', () => {
@@ -852,8 +878,8 @@ describe('beta-5 invariants', () => {
     w.money = 200
     w.buy('buy-pumpjack')
     const at = { col: 10, row: 12 }
-    w.setCell(at, { kind: 'empty' })
-    w.setCell({ col: 11, row: 12 }, { kind: 'empty' })
+    w.setCell(at, { kind: 'empty', soil: bed() })
+    w.setCell({ col: 11, row: 12 }, { kind: 'empty', soil: bed() })
     w.confirmPlace(at)
     expect(w.cell(at).kind).toBe('pump')
     w.buy('buy-pipe')
@@ -864,7 +890,7 @@ describe('beta-5 invariants', () => {
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' } })
     w.buy('buy-grinder')
     const g = { col: 8, row: 12 }
-    w.setCell(g, { kind: 'empty' })
+    w.setCell(g, { kind: 'empty', soil: bed() })
     w.confirmPlace(g)
     w.armDelete()
     const money = w.money
@@ -883,7 +909,7 @@ describe('beta-5 invariants', () => {
 
   test('aoe formulas', () => {
     const v = { col: 10, row: 12 }
-    expect(sorted(aoe({ variant: 'basic', at: v }))).toEqual(
+    expect(sorted(aoe({ variant: 'basic', at: v, tune: { kind: 'flat' } }))).toEqual(
       sorted([
         { col: 9, row: 11 },
         { col: 10, row: 11 },
@@ -891,17 +917,17 @@ describe('beta-5 invariants', () => {
         { col: 10, row: 12 },
       ]),
     )
-    expect(sorted(aoe({ variant: 'large', at: v }))).toEqual(
+    expect(sorted(aoe({ variant: 'large', at: v, tune: { kind: 'flat' } }))).toEqual(
       sorted(
         [-2, -1, 0, 1].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
     )
-    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ns' }))).toEqual(
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ns', tune: { kind: 'flat' } }))).toEqual(
       sorted(
         [-2, -1, 0, 1].flatMap(dr => [-1, 0].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
     )
-    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ew' }))).toEqual(
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ew', tune: { kind: 'flat' } }))).toEqual(
       sorted(
         [-1, 0].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
@@ -1107,8 +1133,8 @@ describe('beta-6 invariants', () => {
     w.done.add('unlock-irrigation')
     w.money = 200
     w.buy('buy-pumpjack')
-    w.setCell(AT, { kind: 'empty' })
-    w.setCell({ col: 11, row: 12 }, { kind: 'empty' })
+    w.setCell(AT, { kind: 'empty', soil: bed() })
+    w.setCell({ col: 11, row: 12 }, { kind: 'empty', soil: bed() })
     w.confirmPlace(AT)
     expect(w.cell(AT).kind).toBe('pump')
     expect(w.cell({ col: 11, row: 12 }).kind).toBe('pump')
@@ -1130,7 +1156,7 @@ describe('beta-6 invariants', () => {
     w.done.add('unlock-chest')
     w.money = 200
     w.buy('buy-chest')
-    w.setCell(AT, { kind: 'empty' })
+    w.setCell(AT, { kind: 'empty', soil: bed() })
     w.confirmPlace(AT)
     const chest = w.cell(AT)
     expect(chest.kind).toBe('chest')
@@ -1287,7 +1313,7 @@ function grindWorld(seed: number): World {
 
 function grindHandOnce(seed: number): number {
   const w = grindWorld(seed)
-  w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28 } }
+  w.hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true } }
   w.click(AT)
   for (let i = 0; i < 50; i++) w.tick(1 / 15)
   const slot = w.inventory.find(
@@ -1343,7 +1369,9 @@ describe('0.8 plants and trees', () => {
     w.setCell(AT, { kind: 'ripe', soil: bed(), plant: p })
     w.click(AT)
     for (let i = 0; i < 20; i++) w.tick(1 / 15)
-    expect(w.hand.kind === 'hold' && w.hand.item.kind).toBe('sugar')
+    const h = w.hand as Hand
+    const held = h.kind === 'hold' ? h.item.kind : 'empty'
+    expect(held).toBe('sugar')
     expect(w.cell(AT).kind).toBe('empty')
   })
 

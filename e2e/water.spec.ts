@@ -33,7 +33,7 @@ async function worldTrue(page: Page, arg: unknown, body: string, timeout = 60_00
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/#start_now')
   await expect(page.locator('svg.bg-grass')).toBeVisible()
 })
 
@@ -85,7 +85,7 @@ test('two sources join one network', async ({ page }) => {
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
   await armSku(page, 'Well 75')
-  await confirmPlaceAt(page, 20, 6)
+  await confirmWellEdge(page, 20, 7)
   await page.keyboard.press('Escape')
   await worldTrue(
     page,
@@ -118,7 +118,7 @@ test('two sources join one network', async ({ page }) => {
 })
 
 test('weeds sprout on fallow tilled soil', async ({ page }) => {
-  await page.goto('/?speed=10')
+  await page.goto('/?speed=10#start_now')
   const spots: At[] = [
     { col: 13, row: 11 },
     { col: 14, row: 11 },
@@ -140,7 +140,7 @@ test('weeds sprout on fallow tilled soil', async ({ page }) => {
 
 test.fixme('ripe fruit rots', async ({ page }) => {
   test.setTimeout(240_000)
-  await page.goto('/?speed=10')
+  await page.goto('/?speed=10#start_now')
   await tapWorld(page, 13.5, 11.5)
   await worldTrue(page, { col: 13, row: 11 }, 'w.cell(at).kind === "empty" && w.queue.length === 0')
 
@@ -209,16 +209,15 @@ async function convertToValve(page: Page, col: number, row: number): Promise<voi
     .toBe('valve')
 }
 
-async function confirmPlaceAt(page: Page, col: number, row: number): Promise<void> {
-  const wx = col + 0.5
-  const wy = row + 0.5
+async function confirmWellEdge(page: Page, col: number, row: number): Promise<void> {
+  const key = `h:${col},${row}`
   await expect
     .poll(async () => {
-      const kind = await readWorld<string>(page, { col, row }, 'w.cell(at).kind')
-      if (kind !== 'pump') await tapWorld(page, wx, wy)
-      return kind
+      const has = await readWorld<boolean>(page, key, 'w.wells.has(at)')
+      if (!has) await tapWorld(page, col + 0.5, row)
+      return has
     }, { timeout: 20_000 })
-    .toBe('pump')
+    .toBe(true)
 }
 
 async function wetCount(page: Page): Promise<number> {

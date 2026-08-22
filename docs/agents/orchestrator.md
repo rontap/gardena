@@ -6,7 +6,7 @@ Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
 
 ## Does
 
-- Parse. Ask when unspecified.
+- Parse. Blocking gaps before dispatch → ask, stop.
 - Minimum slice from [[pipeline]].
 - Spawn specialists. They read `docs/`, not a handoff blob.
 - Present results. Do not commit or push unless asked.

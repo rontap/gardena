@@ -12,7 +12,9 @@ import {
   UI_BTN_DELETE,
   UI_BTN_LENS,
   UI_BTN_FAMILY,
+  UI_BTN_GEAR,
   UI_BTN_MARKET,
+  UI_BTN_PAUSE,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
   UI_BTN_SHOP,
@@ -46,6 +48,7 @@ export function Hud({
   world,
   panel,
   lens,
+  paused,
   onFamily,
   onShop,
   onResearch,
@@ -53,10 +56,13 @@ export function Hud({
   onAlmanac,
   onLens,
   onCheat,
+  onGear,
+  onPause,
 }: {
   world: World
-  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat'
+  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat' | 'menu'
   lens: Lens
+  paused: boolean
   onFamily: () => void
   onShop: () => void
   onResearch: () => void
@@ -64,6 +70,8 @@ export function Hud({
   onAlmanac: () => void
   onLens: () => void
   onCheat: () => void
+  onGear: () => void
+  onPause: () => void
 }) {
   const job = world.job
   const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
@@ -117,10 +125,14 @@ export function Hud({
               </>
             )}
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2 text-sm text-ink/45">
-            <span>digs {world.digs}</span>
-            <span>·</span>
-            <span>mines {world.mines}</span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="flex items-center gap-2 text-sm text-ink/45">
+              <span>digs {world.digs}</span>
+              <span>·</span>
+              <span>mines {world.mines}</span>
+            </div>
+            <PauseBtn selected={paused} onClick={onPause} />
+            <GearBtn selected={panel === 'menu'} onClick={onGear} />
           </div>
         </div>
       </Chrome>
@@ -155,6 +167,49 @@ export function Hud({
         </div>
       </Chrome>
     </>
+  )
+}
+
+function GearBtn({ selected, onClick }: { selected: boolean; onClick: () => void }) {
+  return (
+    <IconButton art={UI_BTN_GEAR} label="Gear" selected={selected} onClick={onClick} />
+  )
+}
+
+function PauseBtn({ selected, onClick }: { selected: boolean; onClick: () => void }) {
+  return (
+    <IconButton art={UI_BTN_PAUSE} label={selected ? 'Resume' : 'Pause'} selected={selected} onClick={onClick} />
+  )
+}
+
+function IconButton({
+  art,
+  label,
+  selected,
+  onClick,
+}: {
+  art: string
+  label: string
+  selected: boolean
+  onClick: () => void
+}) {
+  const [hot, setHot] = useState(false)
+  const state: BtnState = selected ? 'selected' : hot ? 'hover' : 'idle'
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      className={`pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center ${hot ? 'bg-ink/5' : ''} cursor-pointer`}
+      onClick={onClick}
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="pointer-events-none h-11 w-11 shrink-0"
+        dangerouslySetInnerHTML={{ __html: btnFace(art, state) }}
+      />
+    </button>
   )
 }
 

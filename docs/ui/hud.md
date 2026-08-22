@@ -15,8 +15,7 @@ Left → right, separated by `w-px bg-ink/20` rules:
 3. Phase glyph, then **Day {n} · {phase name}** over a `w-28` `bg-ripe` day bar (`clock.t / DAY_SECONDS`).
 4. Research job when `job.kind === 'run'`: *Researching* **{name}** · **{n}s** over a `bg-leaf` bar. Hidden when idle.
 5. Pushed right: **digs {n} · mines {n}**, `text-sm` `text-ink/45`. These are the counters the tool research gates read — [[mechanics/research]].
-
-Phase is `Clock.phase()`: `sunrise` `day` `sunset` `twilight`. `PHASE_NAME` (in `clock.ts`) is the label — **Sunrise** **Midday** **Sunset** **Twilight**. Glyphs `ui-phase-{phase}`. `'night'` is not a phase — recap is [[ui/docks]].
+6. Far right: **Pause** then **Gear**. Both `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Pause (`ui-btn-pause.svg`) toggles the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway).
 
 The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right.
 

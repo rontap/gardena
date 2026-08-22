@@ -16,9 +16,11 @@ Be terse. No handoff blocks. Contracts go into `docs/**/*.md` immediately.
 
 ## 1. Gaps
 
-List unspecified product / design / mechanic / copy / visual facts.
+List unspecified product / design / mechanic / copy / visual facts **visible in the task before dispatch**.
 
 Non-empty → `ask_user_question` and **stop**. Do not invent.
+
+A gap that appears only after a child has started writing is not a parent halt. The child finishes with a one-line assumption in the note.
 
 Renderer and genre stay unlocked until the user locks them. App is at repo root.
 
@@ -34,7 +36,7 @@ One `spawn_subagent` per specialist.
 
 | Field | Value |
 |---|---|
-| `subagent_type` | `architect` / `game-dev` / `designer` / `ui-ux` / `coder` / `documenter` / `code-review` |
+| `subagent_type` | `architect` / `designer` / `ui-ux` / `coder` / `documenter` / `code-review` |
 | `description` | `[<type>] <5 words>` |
 | `capability_mode` | `read-write` except `coder` and `code-review` → `all` |
 | `isolation` | `none` |
@@ -52,7 +54,8 @@ Read first:
 Write immediately where docs/agents/<type>.md allows.
 When those files exist, stop. Final message: paths only.
 No handoff block. No chat contract. No code comments.
-If unspecified: one-line question, then stop.
+Halt only if the task as given is blocked before any write: one-line question, then stop.
+A gap found after reading or after a write: one-line assumption in the note, finish.
 Do not spawn confirm-only children.
 ```
 
@@ -63,8 +66,8 @@ Code-review: unique `docs/.review-<id>.md`. No source edits. Delete that file af
 After each child:
 
 - Allowed `.md` / src / svg missing, or invented scope, or a fallback → reject. Re-ask or re-spawn. Do not silently repair.
-- One-line question → ask the user. Do not answer for them.
-- Then spawn the next.
+- One-line question with no writes → ask the user. Do not answer for them.
+- A finished note that names an assumption is not a halt. Spawn the next.
 
 ## 5. Stop
 

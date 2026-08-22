@@ -20,7 +20,7 @@ Do not create `src/` here.
 
 Worker is an async JSON copy. Main thread owns `World`.
 
-React does not own the log. App holds `World`. Panel open/close, camera, hover, `Lens` are view-local and not logged.
+React does not own the log. App holds `World` or none. Panel open/close, camera, hover, `Lens` are view-local and not logged.
 
 ## Sink
 
@@ -30,7 +30,7 @@ LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 
 `MemorySink.cmds: Cmd[]`. `push` appends. `reset` clears.
 
-`WorkerSink` `postMessage`s. Worker file `src/game/sim/log.worker.ts`.
+`WorkerSink` `postMessage`s. One worker for the page. Spawned in `src/main.tsx` at startup. React does not create or kill it. `terminate()` exists for Vite HMR dispose only. Worker file `src/game/sim/log.worker.ts`. Vitest never loads `main.tsx`.
 
 ```
 WorkerIn =

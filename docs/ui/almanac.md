@@ -33,3 +33,15 @@ Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_M
 | Freshness | `rotSeconds` among trees | `{n} days` |
 
 No Water. No Yield row. No Drink. No Fertilizer. No Seed price.
+
+## Pipe
+
+Automation list row `pipe` only. Valve and the sprinklers stay their own static rows.
+
+Same generic pane chrome as other non-crop entries: title, one `h-20 w-20` `bg-dirt-dark` plate (`h-16 w-16` svg, `viewBox="0 0 24 24"`), blurb. The plate is not `itemInner({ kind: 'pipe' })`.
+
+Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `setInterval` 800ms, `(s + 1) % 5`. Order, rot 0:
+
+`PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`
+
+(`pipe-stub` `pipe-i` `pipe-l` `pipe-t` `pipe-x`). Not `pipe-source`. Not `pipe-valve`.

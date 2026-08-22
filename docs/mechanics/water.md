@@ -10,13 +10,15 @@ Sources own a tank. They gather every second up to capacity. Consumers spend sto
 | well | 5 | 150 | full |
 | rain-tank | 0.4 | 100 | empty |
 
-Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1, $40. Well 1×1, $75. Rainwater tank 2×1, $20 — gathers with no pipe run to another source.
+Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1, $40. Well $75 — **edge-based**, see below. Rainwater tank 2×1, $20 — gathers with no pipe run to another source.
 
 `pull(sources, want)` draws in proportion to `stored`.
 
 ## Grid
 
-Pipes on **edges**. Sprinklers on **vertices**. Valves on edges. None of these are a `Cell`.
+Pipes on **edges**. Sprinklers on **vertices**. Valves and wells on edges. None of these are a `Cell`.
+
+A well sits on one owned edge. Its two endpoint vertices are joined (it conducts like a bare pipe) and its reservoir feeds that net from either vertex. No pipe or valve may share the well's edge; pipes attach at its endpoints as usual. Place: `Place Well`, stays armed. Click with a container: gardener walks to an adjacent cell and fills at `SOURCE.well.rate`. Delete tool on the edge: **Delete well**, whole edge goes.
 
 Any corner of any tile a source covers connects. A pipe that meets a source at a point is fed. Two pipe runs that both touch the same source are one net and share that output.
 
@@ -24,7 +26,7 @@ A closed valve blocks **its own edge only**. Water still reaches a sprinkler by 
 
 `TAP_RATE = 5` L/s — preference. Tap 1×1, $10. Not a producer. Fills a bucket at `TAP_RATE` while the net’s tanks hold; once dry, only as fast as sources make. No net or no source: nothing.
 
-Fill at pump / well / rain-tank: that tank at its `rate`.
+Fill at pump / rain-tank: that tank at its `rate`. Fill at a well edge: the well's tank at its `rate`.
 
 ## Sprinklers
 

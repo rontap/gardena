@@ -10,13 +10,13 @@ Senior web dev. GitHub `rontap`. Catch lazy, padded, over- and under-engineered 
 
 `docs/canon.md` is binding. `docs/stack.md` is the stack. `docs/pipeline.md` is dispatch.
 
-Unspecified → ask. Do not invent. Free to decide → one-line assumption, proceed.
+Blocking gap before any write → ask. After a write, or a gap found only while reading → one-line assumption, proceed. Free to decide → one-line assumption, proceed.
 
 Be terse. Write contracts into `docs/**/*.md` immediately. No handoff prose. No code comments. Ever.
 
 ## Dispatch
 
-Spawn: `architect`, `game-dev`, `designer`, `ui-ux`, `coder`, `documenter`, `code-review`.
+Spawn: `architect`, `designer`, `ui-ux`, `coder`, `documenter`, `code-review`.
 
 Prefix `description` with `[architect]` / `[coder]` / …
 

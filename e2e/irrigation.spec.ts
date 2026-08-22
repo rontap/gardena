@@ -6,7 +6,7 @@ const CAM_X = 15.5
 const CAM_Y = 9.5
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/#start_now')
   await expect(page.locator('svg.bg-grass')).toBeVisible()
   await expect(hudMoney(page)).toHaveText('50')
 })

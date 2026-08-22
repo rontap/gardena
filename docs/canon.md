@@ -6,7 +6,9 @@ User: senior web dev, GitHub `rontap`. No tutoring. No hedging. No enterprise sl
 
 ## Ask, do not invent
 
-Unspecified product, design, mechanic, copy, visual, or architecture → **ask**.
+A blocking gap visible in the task **before any write** → **ask**, write nothing. Do not explore first.
+
+Once a write has started, or the gap appears only after reading: one-line assumption in the note, finish. Do not halt for feedback.
 
 User says you are free to decide → one-line assumption, proceed.
 

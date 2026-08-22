@@ -48,9 +48,13 @@ export class Spatial {
 
 export class Seq {
   private readonly streamSeed: number
-  private n = 0
-  constructor(streamSeed: number) {
+  private n: number
+  constructor(streamSeed: number, n = 0) {
     this.streamSeed = streamSeed
+    this.n = n
+  }
+  get consumed(): number {
+    return this.n
   }
   next(): number {
     let h = this.streamSeed
@@ -64,8 +68,17 @@ export class Rng {
   readonly seed: number
   private readonly spatials = new Map<SpatialId, Spatial>()
   private readonly seqs = new Map<SeqId, Seq>()
-  constructor(seed?: number) {
+  constructor(seed?: number, seq?: { shop: number; fruit: number }) {
     this.seed = seed === undefined ? (Math.random() * 0x100000000) >>> 0 : seed
+    if (seq !== undefined) {
+      this.seqs.set('shop', new Seq(streamSeed(this.seed, 'shop'), seq.shop))
+      this.seqs.set('fruit', new Seq(streamSeed(this.seed, 'fruit'), seq.fruit))
+    }
+  }
+  consumed(id: SeqId): number {
+    const s = this.seqs.get(id)
+    if (s === undefined) return 0
+    return s.consumed
   }
   stream(id: SpatialId): Spatial
   stream(id: SeqId): Seq

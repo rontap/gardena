@@ -134,19 +134,22 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const placing = world.place.kind === 'sku' || world.place.kind === 'delete'
   const placeId = world.place.kind === 'sku' ? world.place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
-  const pipeTool = placeId === 'buy-pipe' || placeId === 'buy-valve'
+  const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
   const deleteTool = world.place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const stay = deleteTool || (placeId !== undefined && STAY_ARMED.includes(placeId))
-  const skuStroke = placing && !pipeTool && !deleteTool && !sprinklerTool
-  const followSku = placeId !== undefined && !pumpjack && !pipeTool && !sprinklerTool
+  const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
+  const followSku = placeId !== undefined && !pumpjack && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y) : undefined
   const strokeCell =
     worldPtr !== undefined ? { col: Math.floor(worldPtr.x), row: Math.floor(worldPtr.y) } : undefined
   const ghostVerts = useMemo(
-    () => (pipeTool && edgeHit !== undefined ? vertsOf(edgeHit) : undefined),
-    [pipeTool, edgeHit?.axis, edgeHit?.col, edgeHit?.row],
+    () =>
+      edgeTool && placeId !== 'buy-well' && edgeHit !== undefined
+        ? vertsOf(edgeHit)
+        : undefined,
+    [edgeTool, placeId, edgeHit?.axis, edgeHit?.col, edgeHit?.row],
   )
   const ghostWet = edgeHit !== undefined && world.pendingWet(edgeHit)
   const ghostSprinkler =
@@ -255,7 +258,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
     pushCam({ x: cam.x + px * k, y: cam.y + py * k, scale })
   }
 
-  const stayHit: PromptHit | undefined = pipeTool
+  const stayHit: PromptHit | undefined = edgeTool
     ? edgeHit !== undefined
       ? { kind: 'edge', edge: edgeHit }
       : undefined
@@ -263,9 +266,11 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       ? { kind: 'sprinkler', sprinkler: ghostSprinkler }
       : deleteTarget?.kind === 'pipe'
         ? { kind: 'delete-pipe', edge: deleteTarget.edge }
-        : deleteTarget?.kind === 'sprinkler'
-          ? { kind: 'delete-sprinkler', at: deleteTarget.at }
-          : undefined
+        : deleteTarget?.kind === 'well'
+          ? { kind: 'delete-well', edge: deleteTarget.edge }
+          : deleteTarget?.kind === 'sprinkler'
+            ? { kind: 'delete-sprinkler', at: deleteTarget.at }
+            : undefined
   const followText = stay
     ? world.promptHit(stayHit).text
     : placeId !== undefined
@@ -374,7 +379,24 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               <SprinklerGfx s={ghostSprinkler} opacity={0.7} placed={false} />
             </g>
           )}
+          {placeId === 'buy-valve' && edgeHit !== undefined && (
+            <g
+              data-valve-ghost
+              pointerEvents="none"
+              opacity={0.7}
+              transform={edgeTransform(edgeHit)}
+              dangerouslySetInnerHTML={{ __html: valveArt(true) }}
+            />
+          )}
+          {placeId === 'buy-well' && edgeHit !== undefined && (
+            <g data-well-ghost pointerEvents="none" opacity={0.7}>
+              <WellGfx at={edgeHit} />
+            </g>
+          )}
           {deleteTool && deleteTarget?.kind === 'pipe' && (
+            <EdgeStroke edge={deleteTarget.edge} ok />
+          )}
+          {deleteTool && deleteTarget?.kind === 'well' && (
             <EdgeStroke edge={deleteTarget.edge} ok />
           )}
           {deleteTool && deleteTarget?.kind === 'sprinkler' && (
@@ -415,7 +437,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{followText}</div>
         </div>
       )}
-      {(pipeTool || sprinklerTool || deleteTool) && followText !== undefined && (
+      {(edgeTool || sprinklerTool || deleteTool) && followText !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <div className="bg-house px-2 py-0.5 text-base text-ink">{followText}</div>
         </div>
@@ -480,6 +502,8 @@ const Marks = memo(function Marks({
   const sprinklers: Sprinkler[] = []
   const fences: { col: number; row: number; html: string; rot: number }[] = []
   const valves: { at: Edge; open: boolean }[] = []
+  const wellEdges: Edge[] = []
+  world.wells.forEach(w => wellEdges.push(w.at))
   world.segments.forEach(seg => {
     if (seg.gate.kind === 'valve') valves.push({ at: seg.at, open: seg.gate.open })
   })
@@ -528,7 +552,8 @@ const Marks = memo(function Marks({
       const fit = fenceFit(a.n, a.e, a.s, a.w)
       fences.push({ col: at.col, row: at.row, html: fit.html, rot: fit.rot })
     }
-    const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`))
+    const g = lens === 'land' ? goodness(world.rng, at.col, at.row) : 0
+    const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`), g)
     if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
   })
   visitVerts(world, v => {
@@ -589,7 +614,7 @@ const Marks = memo(function Marks({
           <g key={`pump-${i}`}>
             <g
               transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
-              dangerouslySetInnerHTML={{ __html: p.form === 'well' ? WELL : PUMP }}
+              dangerouslySetInnerHTML={{ __html: PUMP }}
             />
             {showPipes && <SourceGfx world={world} base={p.base} />}
           </g>
@@ -683,6 +708,9 @@ const Marks = memo(function Marks({
           />
         )
       })}
+      {wellEdges.map(e => (
+        <WellGfx key={`well-${edgeKey(e)}`} at={e} />
+      ))}
       {valves.map(v => (
         <ValveGfx key={`valve-${edgeKey(v.at)}`} at={v.at} open={v.open} />
       ))}
@@ -846,6 +874,7 @@ function lensFill(
   lens: Lens,
   cell: Cell,
   aoe: boolean,
+  g: number,
 ): { fill: string; op: number; hard: boolean } | undefined {
   if (lens === 'off') return undefined
   if (lens === 'rarity') {
@@ -862,7 +891,7 @@ function lensFill(
     if (aoe) return undefined
     return { fill: WASH, op: 0.35, hard: false }
   }
-  const hit = lensHit(lens, cell)
+  const hit = lensHit(lens, cell, g)
   if (hit === undefined) return { fill: WASH, op: 0.35, hard: false }
   return { fill: hit, op: 0.72, hard: true }
 }
@@ -880,7 +909,7 @@ function plantBands(crop: CropId, rarity: Rarity, soil: Soil): { water: Band; fe
   }
 }
 
-function lensHit(lens: Lens, cell: Cell): string | undefined {
+function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
   if (lens === 'water') {
     if (!isTilled(cell)) return undefined
     if (cell.kind === 'growing' || cell.kind === 'ripe') {
@@ -890,7 +919,11 @@ function lensHit(lens: Lens, cell: Cell): string | undefined {
     return scaleTint(cell.soil.water / SOIL_WATER_MID)
   }
   if (lens === 'land') {
-    if (!isTilled(cell)) return undefined
+    if (!isTilled(cell)) {
+      if (cell.kind === 'infertile') return LENS_BAD
+      if (cell.kind === 'untilled') return scaleTint(g)
+      return undefined
+    }
     if (cell.kind === 'growing' || cell.kind === 'ripe') {
       return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).fert]
     }
@@ -1132,17 +1165,32 @@ function SourceGfx({ world, base }: { world: World; base: Base }) {
   )
 }
 
+function edgeTransform(e: Edge): string {
+  const x = e.axis === 'h' ? (e.col + 0.5) * TILE : e.col * TILE
+  const y = e.axis === 'h' ? e.row * TILE : (e.row + 0.5) * TILE
+  const rot = e.axis === 'h' ? 0 : 90
+  return `translate(${x},${y}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`
+}
+
 function ValveGfx({ at, open }: { at: Edge; open: boolean }) {
-  const x = at.axis === 'h' ? (at.col + 0.5) * TILE : at.col * TILE
-  const y = at.axis === 'h' ? at.row * TILE : (at.row + 0.5) * TILE
-  const rot = at.axis === 'h' ? 0 : 90
   return (
     <g
       data-valve={edgeKey(at)}
       data-open={open ? '1' : '0'}
       pointerEvents="none"
-      transform={`translate(${x},${y}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
+      transform={edgeTransform(at)}
       dangerouslySetInnerHTML={{ __html: valveArt(open) }}
+    />
+  )
+}
+
+function WellGfx({ at }: { at: Edge }) {
+  return (
+    <g
+      data-well={edgeKey(at)}
+      pointerEvents="none"
+      transform={edgeTransform(at)}
+      dangerouslySetInnerHTML={{ __html: WELL }}
     />
   )
 }
@@ -1238,7 +1286,10 @@ function VertexStroke({ v, ok }: { v: Vertex; ok: boolean }) {
   )
 }
 
-type DeleteTarget = { kind: 'pipe'; edge: Edge } | { kind: 'sprinkler'; at: Vertex }
+type DeleteTarget =
+  | { kind: 'pipe'; edge: Edge }
+  | { kind: 'well'; edge: Edge }
+  | { kind: 'sprinkler'; at: Vertex }
 
 function nearestEdge(wx: number, wy: number): Edge | undefined {
   const col = Math.floor(wx)
@@ -1329,9 +1380,23 @@ function valveHit(world: World, wx: number, wy: number): Edge | undefined {
   return (best as { edge: Edge; d: number }).edge
 }
 
+function wellHit(world: World, wx: number, wy: number): Edge | undefined {
+  let best: { edge: Edge; d: number } | undefined = undefined
+  world.wells.forEach(well => {
+    const mx = well.at.axis === 'h' ? well.at.col + 0.5 : well.at.col
+    const my = well.at.axis === 'h' ? well.at.row : well.at.row + 0.5
+    const d = Math.hypot(wx - mx, wy - my)
+    if (d > VERTEX_HIT) return
+    if (best === undefined || d < best.d) best = { edge: well.at, d }
+  })
+  if (best === undefined) return undefined
+  return (best as { edge: Edge; d: number }).edge
+}
+
 function deleteHit(world: World, edge: Edge | undefined, v: Vertex | undefined): DeleteTarget | undefined {
-  if (edge !== undefined && world.hasPipe(edge) && world.edgeOwned(edge)) {
-    return { kind: 'pipe', edge }
+  if (edge !== undefined) {
+    if (world.hasWell(edge)) return { kind: 'well', edge }
+    if (world.hasPipe(edge) && world.edgeOwned(edge)) return { kind: 'pipe', edge }
   }
   if (v !== undefined && world.sprinklerAt(v) !== undefined) return { kind: 'sprinkler', at: v }
   return undefined
@@ -1354,13 +1419,21 @@ function stayOk(
   if (placeId === 'buy-pipe' || placeId === 'buy-valve') {
     return edge !== undefined && pipeOk(world, placeId, edge)
   }
+  if (placeId === 'buy-well') {
+    return (
+      edge !== undefined &&
+      world.edgeOwned(edge) &&
+      !world.hasPipe(edge) &&
+      !world.hasWell(edge)
+    )
+  }
   if (s === undefined) return false
   return sprinklerOk(world, s)
 }
 
 function clickHit(world: World, wx: number, wy: number): MapClick | undefined {
   const place = world.place
-  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve')) {
+  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well')) {
     const edge = nearestEdge(wx, wy)
     if (edge === undefined) return undefined
     return { kind: 'edge', edge }
@@ -1374,6 +1447,7 @@ function clickHit(world: World, wx: number, wy: number): MapClick | undefined {
     const at = nearestVertex(wx, wy)
     const del = deleteHit(world, edge, at)
     if (del?.kind === 'pipe') return { kind: 'delete-pipe', edge: del.edge }
+    if (del?.kind === 'well') return { kind: 'delete-well', edge: del.edge }
     if (del?.kind === 'sprinkler') return { kind: 'delete-sprinkler', at: del.at }
     return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
   }
@@ -1388,6 +1462,8 @@ function clickHit(world: World, wx: number, wy: number): MapClick | undefined {
     }
     const valve = valveHit(world, wx, wy)
     if (valve !== undefined) return { kind: 'valve', edge: valve }
+    const well = wellHit(world, wx, wy)
+    if (well !== undefined) return { kind: 'well', edge: well }
   }
   return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
 }

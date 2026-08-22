@@ -21,7 +21,7 @@
 | 2×1 pump | `0 0 48 24` |
 | 4×3 house | `0 0 96 72` |
 
-Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`) are not tiles. Own viewBox. Still no width/height.
+Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
 
 ## Groups
 
@@ -38,4 +38,4 @@ Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon u
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/tilled-edges]], [[art/skills]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]].

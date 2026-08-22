@@ -1,6 +1,6 @@
 # Modules
 
-`src/game/` is four folders. `src/App.tsx` holds the one [[architecture/world]] `World` and the panel union. It ticks `World`. It does not own `Cell`.
+`src/game/` is four folders. `src/App.tsx` holds one [[architecture/world]] `World` or none, and the panel union. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
 `defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the SVG camera.
 
@@ -31,6 +31,8 @@ Classes for game objects. Tick and mutation stay here.
 | file | owns |
 |---|---|
 | `world.ts` | `World`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `now`, `dispatch` / `apply`, `log`, `rng` |
+| `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
+| `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
 | `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
 | `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
 | `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground` |
@@ -38,8 +40,8 @@ Classes for game objects. Tick and mutation stay here.
 | `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended` |
 | `water.ts` | `Reservoir`, `SourceKind`, `pull()` |
 | `stall.ts` | `StallGood`, `StallMap`, `StallSale` |
-| `building.ts` | `House`, `Pump`, `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Coord`, `Base` |
-| `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Tune`, `Gate` |
+| `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Coord`, `Base` |
+| `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Well`, `Tune`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock`, `DAY_SECONDS` |
 | `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm |
@@ -55,13 +57,16 @@ Classes for game objects. Tick and mutation stay here.
 
 ## ui
 
-Function components. Read `World`. Do not tick. Do not own `Cell` or `Place`.
+Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` or `Place`. Startup [[ui/menu]] has no `World`.
 
 | file | chrome |
 |---|---|
 | `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn` |
 | `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
-| `hud.tsx` | clock, build ribbon, docks |
+| `hud.tsx` | clock, build ribbon, docks, pause, gear |
+| `menu.tsx` | startup / in-play gear shell. [[ui/menu]] |
+| `tutorial.tsx` | tour card. [[ui/tutorial]] |
+| `lens.tsx` | lens dock. [[ui/lens]] |
 | `status.tsx` | look line |
 | `held.tsx` | hand / item face |
 | `queue.tsx` | intent queue |
@@ -95,7 +100,7 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.
 
 | unit | owner |
 |---|---|
-| `World` | class `sim/world.ts`. App holds the instance. Family state is `World.family`, not a class. |
+| `World` | class `sim/world.ts`. App holds the instance or none. Family state is `World.family`, not a class. |
 | `Soil` | class `sim/soil.ts`. Required field on every `Tilled` plot. |
 | `Plant` | class `sim/plant.ts`. Required on `growing` / `ripe` / `dead`. `crop: AnnualId`. |
 | `Tree` | class `sim/building.ts`. Same instance in both 1×2 cells. |
@@ -105,6 +110,12 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.
 
 `World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` are the same instances stored in their cells.
 
-`World.segments` and `World.sprinklers` are the pipe graph. Not `Cell`.
+`World.segments`, `World.wells` and `World.sprinklers` are the pipe graph. Not `Cell`. Wells sit on edges — [[mechanics/water]].
+
+`World.fences` is the fence set. Not `Cell`. Not `Cover`. [[items/tiles]]
+
+Tutorial is App session state. `sim/tutorial.ts` checks. Not a `World` field. [[mechanics/tutorial]] [[ui/tutorial]]
+
+Save I/O is `sim/save.ts`. App does not own `Save`. [[architecture/save]]
 
 Chest, grinder, compost box, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint.

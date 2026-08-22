@@ -8,5 +8,6 @@ Module map and types for the game as it runs.
 - [[architecture/rng]]
 - [[architecture/family]]
 - [[architecture/tree]]
+- [[architecture/save]]
 
 See [[canon]].

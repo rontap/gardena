@@ -142,7 +142,7 @@ Illegal: tier 0. Illegal: tier > `maxTier`. Illegal: optional `Family`. Illegal:
 
 Pool = that member’s ids where `owned` tier < max (or absent) and gate met. Ineligible ids are not in the pool.
 
-Roll: `hash(world.seed, member, pickCount)` (`hash` salt = `MemberId`). Draw `min(3, pool.length)` distinct. No padding. 0–3.
+Roll: `skill.at(memberIx, pickCount, i)` — [[architecture/rng]]. Draw `min(3, pool.length)` distinct. No padding. 0–3.
 
 Offers exist at init. Persist until a pick. Research completing does not reroll.
 

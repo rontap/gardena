@@ -31,7 +31,7 @@ Classes for game objects. Tick and mutation stay here.
 | file | owns |
 |---|---|
 | `world.ts` | `World`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `now`, `dispatch` / `apply`, `log`, `rng` |
-| `log.ts` | `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
+| `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
 | `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
 | `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground` |
 | `soil.ts` | `Soil` |
@@ -49,7 +49,7 @@ Classes for game objects. Tick and mutation stay here.
 | `gen.ts` | `generateChunk` |
 | `noise.ts` | `goodness`, `groundOf` |
 | `modifiers.ts` | `Modifier`, `Stats`. `source` includes `'skill'`. `statsOf` uses `CropDef.saleMul` when present, else `RARITY_SALE` |
-| `rng.ts` | `hash`, `rollRarity`, `Rng`, `Stream` (`Spatial` / `Seq`). `StreamId` |
+| `rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
 
 `ui` and `view` call `World` methods. They do not construct `Soil` / `Plant` / `Reservoir` / `StallGood`.
 

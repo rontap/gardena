@@ -4,7 +4,7 @@ Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
 ## Spawn
 
-`BIG_TICK = 10` s — preference. Each tick, each `empty` plot: `hash(seed, 'weed', col, row, bigTicks) < WEED_CHANCE`.
+`BIG_TICK = 10` s — preference. Each tick, each `empty` plot: `weed.at(col, row, bigTicks) < WEED_CHANCE`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. — [[mechanics/rng]]
 
 `WEED_CHANCE = 0.035` — preference.
 

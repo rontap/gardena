@@ -13,6 +13,12 @@ function mix(h: number, x: number): number {
   return h ^ (h >>> 16)
 }
 
+function streamSeed(seed: number, id: StreamId): number {
+  let h = seed >>> 0
+  for (let i = 0; i < id.length; i++) h = mix(h, id.charCodeAt(i))
+  return h
+}
+
 export function rollRarity(u: number): Rarity {
   let acc = 0
   const order = ['common', 'uncommon', 'rare', 'heirloom'] as const
@@ -21,4 +27,60 @@ export function rollRarity(u: number): Rarity {
     if (acc > u) return r
   }
   return 'heirloom'
+}
+
+export type SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'market'
+export type SeqId = 'shop' | 'fruit'
+export type StreamId = SpatialId | SeqId
+export type Stream = Spatial | Seq
+
+export class Spatial {
+  private readonly streamSeed: number
+  constructor(streamSeed: number) {
+    this.streamSeed = streamSeed
+  }
+  at(...ints: [number, ...number[]]): number {
+    let h = this.streamSeed
+    for (const n of ints) h = mix(h, n)
+    return (h >>> 0) / 4294967296
+  }
+}
+
+export class Seq {
+  private readonly streamSeed: number
+  private n = 0
+  constructor(streamSeed: number) {
+    this.streamSeed = streamSeed
+  }
+  next(): number {
+    let h = this.streamSeed
+    h = mix(h, this.n)
+    this.n += 1
+    return (h >>> 0) / 4294967296
+  }
+}
+
+export class Rng {
+  readonly seed: number
+  private readonly spatials = new Map<SpatialId, Spatial>()
+  private readonly seqs = new Map<SeqId, Seq>()
+  constructor(seed?: number) {
+    this.seed = seed === undefined ? (Math.random() * 0x100000000) >>> 0 : seed
+  }
+  stream(id: SpatialId): Spatial
+  stream(id: SeqId): Seq
+  stream(id: StreamId): Spatial | Seq {
+    if (id === 'shop' || id === 'fruit') {
+      const hit = this.seqs.get(id)
+      if (hit !== undefined) return hit
+      const made = new Seq(streamSeed(this.seed, id))
+      this.seqs.set(id, made)
+      return made
+    }
+    const hit = this.spatials.get(id)
+    if (hit !== undefined) return hit
+    const made = new Spatial(streamSeed(this.seed, id))
+    this.spatials.set(id, made)
+    return made
+  }
 }

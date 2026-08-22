@@ -153,7 +153,8 @@ import {
   type Prompt,
   type PromptHit,
 } from './prompt.ts'
-import { hash, rollRarity } from './rng.ts'
+import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
+import { Rng, rollRarity } from './rng.ts'
 
 export type Intent =
   | { act: 'walk'; at: Coord }
@@ -249,6 +250,7 @@ const QUEUE_CAP = 8
 export const DT_MAX = 1 / 15
 const INV = 16
 const DYNAMIC_MARKET = false
+const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
 function groundSig(c: Cell): string {
   if (c.kind === 'untilled') return `${c.ground}:${c.cover.kind === 'tile' ? c.cover.tile : '-'}`
@@ -264,7 +266,11 @@ export function dest(i: Intent): Coord {
 }
 
 export class World {
-  seed: number
+  readonly rng: Rng
+  readonly log: Cmd[] = []
+  now = 0
+  readonly ripenN = new Map<string, number>()
+  private readonly sink: LogSink
   purchases = 0
   readonly owned: ChunkId[] = [{ cx: 0, cy: 0 }]
   readonly pumps: Pump[]
@@ -315,8 +321,10 @@ export class World {
   private readonly vfx = new Map<string, boolean>()
   private readonly subs = new Set<() => void>()
 
-  constructor(seed?: number) {
-    this.seed = seed === undefined ? (Math.random() * 0x100000000) >>> 0 : seed
+  constructor(seed?: number, sink: LogSink = new MemorySink()) {
+    this.rng = new Rng(seed)
+    this.sink = sink
+    this.sink.reset(this.rng.seed)
     this.house = new House(HOUSE_BASE, DOOR)
     this.truck = new Truck(TRUCK_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
@@ -329,7 +337,7 @@ export class World {
     this.rerollOffers('player')
     this.rerollOffers('husband')
     this.rerollOffers('daughter')
-    this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.seed, this.owned[0], this.house, this.pumps[0], this.truck))
+    this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck))
     this.actor = new Actor(DOOR.col + 0.5, DOOR.row + 0.5)
     this.inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
     this.inventory[1] = {
@@ -351,8 +359,107 @@ export class World {
     this.indexAll()
   }
 
+  get seed(): number {
+    return this.rng.seed
+  }
+
   get pump(): Pump {
     return this.pumps[0]
+  }
+
+  dispatch(cmd: Extract<Cmd, { a: typeof Act.click }>): 'queued' | 'placed' | 'blocked' | 'noop'
+  dispatch(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
+  dispatch(cmd: Cmd): void
+  dispatch(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
+    this.log.push(cmd)
+    this.sink.push(cmd)
+    return this.apply(cmd)
+  }
+
+  apply(cmd: Extract<Cmd, { a: typeof Act.click }>): 'queued' | 'placed' | 'blocked' | 'noop'
+  apply(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
+  apply(cmd: Cmd): void
+  apply(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
+    switch (cmd.a) {
+      case Act.click:
+        return this.clickBody({ col: cmd.c[0], row: cmd.c[1] })
+      case Act.clickValve:
+        this.clickValveBody(cmd.e)
+        return
+      case Act.enqueue:
+        this.enqueue(cmd.i)
+        return
+      case Act.buy:
+        return this.buyBody(cmd.s)
+      case Act.buyPacks:
+        this.buyPacksBody(cmd.s)
+        return
+      case Act.placePipe:
+        this.placePipeBody(cmd.e)
+        return
+      case Act.placeSprinkler:
+        this.placeSprinklerBody(cmd.s)
+        return
+      case Act.delete:
+        if (cmd.k === 'pipe') this.deletePipeBody(cmd.e)
+        else if (cmd.k === 'sprinkler') this.deleteSprinklerBody({ col: cmd.c[0], row: cmd.c[1] })
+        else this.deleteBuildingBody({ col: cmd.c[0], row: cmd.c[1] })
+        return
+      case Act.expand:
+        this.expandBody(cmd.k)
+        return
+      case Act.startResearch:
+        this.startResearchBody(cmd.r)
+        return
+      case Act.pickSkill:
+        this.pickSkillBody(cmd.m, cmd.s)
+        return
+      case Act.sellAll:
+        this.sellAllBody()
+        return
+      case Act.nudgeOffered:
+        this.nudgeOfferedBody(cmd.g, cmd.d)
+        return
+      case Act.swap:
+        this.swapBody(cmd.i)
+        return
+      case Act.swapChest:
+        this.swapChestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.i)
+        return
+      case Act.tuneSprinkler:
+        this.tuneSprinklerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.u)
+        return
+      case Act.openHud:
+        this.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
+        return
+      case Act.closeHud:
+        this.closeHudBody()
+        return
+      case Act.armDelete:
+        this.armDeleteBody()
+        return
+      case Act.cancelPlace:
+        this.cancelPlaceBody()
+        return
+      case Act.rotatePlace:
+        this.rotatePlaceBody()
+        return
+      case Act.dismissRecap:
+        this.dismissRecapBody()
+        return
+      case Act.ackCue:
+        this.ackCueBody()
+        return
+      case Act.rightClick:
+        this.rightClickBody({ col: cmd.c[0], row: cmd.c[1] })
+        return
+      case Act.cheat:
+        if (cmd.k === 'all') this.unlockAllBody()
+        else if (cmd.k === 'money') this.cheatMoneyBody()
+        else if (cmd.k === 'points') this.cheatPointsBody()
+        else this.toggleCheatResearchBody()
+        return
+    }
   }
 
   on(fn: () => void): () => void {
@@ -491,6 +598,10 @@ export class World {
   }
 
   pickSkill(member: MemberId, slot: number): void {
+    this.dispatch({ a: Act.pickSkill, t: this.now, m: member, s: slot })
+  }
+
+  private pickSkillBody(member: MemberId, slot: number): void {
     const st = this.family[member]
     if (st.points < 1) return
     const offer = st.offers[slot]
@@ -520,7 +631,7 @@ export class World {
     const left = [...pool]
     const out: SkillRef[] = []
     for (let i = 0; i < n; i++) {
-      const u = hash(this.seed, member, st.pickCount, i)
+      const u = this.rng.stream('skill').at(MEMBER_IX[member], st.pickCount, i)
       const ix = Math.floor(u * left.length)
       const id = left.splice(ix, 1)[0]
       const have = this.skillTier(id)
@@ -571,6 +682,10 @@ export class World {
   }
 
   expand(id: ChunkId): void {
+    this.dispatch({ a: Act.expand, t: this.now, k: id })
+  }
+
+  private expandBody(id: ChunkId): void {
     if (!this.done.has('unlock-expand')) return
     if (this.owned.some(c => c.cx === id.cx && c.cy === id.cy)) return
     if (!this.owned.some(c => Math.abs(c.cx - id.cx) + Math.abs(c.cy - id.cy) === 1)) return
@@ -580,7 +695,7 @@ export class World {
     this.owned.push(id)
     this.purchases += 1
     this.dirtyNets()
-    this.chunks.set(chunkKey(id), generateChunk(this.seed, id, this.house, this.pumps[0], this.truck))
+    this.chunks.set(chunkKey(id), generateChunk(this.rng, id, this.house, this.pumps[0], this.truck))
     this.indexAll()
     this.ping()
   }
@@ -661,6 +776,10 @@ export class World {
   }
 
   placePipe(e: Edge): void {
+    this.dispatch({ a: Act.placePipe, t: this.now, e })
+  }
+
+  private placePipeBody(e: Edge): void {
     if (this.place.kind !== 'sku') return
     const id = this.place.id
     if (id !== 'buy-pipe' && id !== 'buy-valve') return
@@ -682,6 +801,10 @@ export class World {
   }
 
   deletePipe(e: Edge): void {
+    this.dispatch({ a: Act.delete, t: this.now, k: 'pipe', e })
+  }
+
+  private deletePipeBody(e: Edge): void {
     if (this.place.kind !== 'delete') return
     const seg = this.segmentAt(e)
     if (!this.edgeOwned(e) || seg === undefined) return
@@ -707,17 +830,29 @@ export class World {
   }
 
   openHud(target: HudTarget): void {
+    this.dispatch({ a: Act.openHud, t: this.now, c: [target.at.col, target.at.row] })
+  }
+
+  private openHudBody(target: HudTarget): void {
     this.hud = target
     this.ping()
   }
 
   closeHud(): void {
+    this.dispatch({ a: Act.closeHud, t: this.now })
+  }
+
+  private closeHudBody(): void {
     if (this.hud === undefined) return
     this.hud = undefined
     this.ping()
   }
 
   tuneSprinkler(at: Vertex, tune: Tune): void {
+    this.dispatch({ a: Act.tuneSprinkler, t: this.now, c: [at.col, at.row], u: tune })
+  }
+
+  private tuneSprinklerBody(at: Vertex, tune: Tune): void {
     const s = this.sprinklerAt(at)
     if (s === undefined) return
     s.tune = tune
@@ -725,6 +860,10 @@ export class World {
   }
 
   placeSprinkler(s: Sprinkler): void {
+    this.dispatch({ a: Act.placeSprinkler, t: this.now, s })
+  }
+
+  private placeSprinklerBody(s: Sprinkler): void {
     const id = sprinklerSku(s)
     if (this.place.kind !== 'sku' || this.place.id !== id) return
     if (this.money < this.skuPrice(id)) return
@@ -750,6 +889,10 @@ export class World {
   }
 
   deleteSprinkler(v: Vertex): void {
+    this.dispatch({ a: Act.delete, t: this.now, k: 'sprinkler', c: [v.col, v.row] })
+  }
+
+  private deleteSprinklerBody(v: Vertex): void {
     if (this.place.kind !== 'delete') return
     if (this.sprinklerAt(v) === undefined) return
     this.sprinklers.delete(vertexKey(v))
@@ -760,11 +903,19 @@ export class World {
   }
 
   armDelete(): void {
+    this.dispatch({ a: Act.armDelete, t: this.now })
+  }
+
+  private armDeleteBody(): void {
     this.place = { kind: 'delete' }
     this.ping()
   }
 
   rotatePlace(): void {
+    this.dispatch({ a: Act.rotatePlace, t: this.now })
+  }
+
+  private rotatePlaceBody(): void {
     if (this.place.kind !== 'sku' || this.place.id !== 'buy-sprinkler-vert') return
     this.place = {
       kind: 'sku',
@@ -775,6 +926,10 @@ export class World {
   }
 
   deleteBuilding(at: Coord): void {
+    this.dispatch({ a: Act.delete, t: this.now, k: 'building', c: [at.col, at.row] })
+  }
+
+  private deleteBuildingBody(at: Coord): void {
     if (this.place.kind !== 'delete') return
     if (!inWorld(at, this.owned)) return
     const c = this.cell(at)
@@ -984,6 +1139,10 @@ export class World {
   }
 
   click(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
+    return this.dispatch({ a: Act.click, t: this.now, c: [at.col, at.row] })
+  }
+
+  private clickBody(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
     if (!inWorld(at, this.owned)) {
       if (inFade(at, this.owned) && this.place.kind === 'none') this.say(NOT_OWNED)
       return 'noop'
@@ -1002,12 +1161,20 @@ export class World {
   }
 
   clickValve(e: Edge): void {
+    this.dispatch({ a: Act.clickValve, t: this.now, e })
+  }
+
+  private clickValveBody(e: Edge): void {
     const p = valvePrompt(this, e)
     if (p.kind !== 'intent') return
     this.enqueue(p.intent)
   }
 
   ackCue(): void {
+    this.dispatch({ a: Act.ackCue, t: this.now })
+  }
+
+  private ackCueBody(): void {
     this.cue = { kind: 'none' }
     this.ping()
   }
@@ -1083,6 +1250,10 @@ export class World {
   }
 
   buy(id: SkuId): 'Cannot afford' | 'Inventory full' | undefined {
+    return this.dispatch({ a: Act.buy, t: this.now, s: id })
+  }
+
+  private buyBody(id: SkuId): 'Cannot afford' | 'Inventory full' | undefined {
     if (!this.skuOpen(id)) return undefined
     const made = skuItem(id)
     if (made.kind === 'grass-seeds') {
@@ -1096,10 +1267,16 @@ export class World {
       return undefined
     }
     if (made.kind === 'seeds') {
-      const rarity = this.shopPackRarity(0)
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
-      if (!this.canFitSeeds(made.crop, [{ rarity, count: made.count }])) return 'Inventory full'
+      const tier = this.skillTier('seed-bank')
+      const fits =
+        tier <= 0
+          ? this.canFitSeeds(made.crop, [{ rarity: 'common', count: made.count }])
+          : this.inventory.some(s => s.kind === 'empty') ||
+            RARITY_RANK.every(rarity => this.seedSlot(made.crop, rarity) >= 0)
+      if (!fits) return 'Inventory full'
+      const rarity = rollShopRarity(tier, this.rng.stream('shop').next())
       this.money -= price
       this.putSeeds(made.crop, rarity, made.count)
       this.compactInventory()
@@ -1114,7 +1291,7 @@ export class World {
 
   confirmPlace(at: Coord): void {
     if (this.place.kind === 'delete') {
-      this.deleteBuilding(at)
+      this.deleteBuildingBody(at)
       return
     }
     if (this.place.kind !== 'sku') return
@@ -1229,15 +1406,22 @@ export class World {
   }
 
   cancelPlace(): void {
+    this.dispatch({ a: Act.cancelPlace, t: this.now })
+  }
+
+  private cancelPlaceBody(): void {
     if (this.place.kind === 'none') return
     this.place = { kind: 'none' }
     this.ping()
   }
 
   rightClick(at: Coord): void {
+    this.dispatch({ a: Act.rightClick, t: this.now, c: [at.col, at.row] })
+  }
+
+  private rightClickBody(at: Coord): void {
     if (this.place.kind !== 'none') {
-      this.place = { kind: 'none' }
-      this.ping()
+      this.cancelPlaceBody()
       return
     }
     if (!inWorld(at, this.owned)) return
@@ -1247,6 +1431,10 @@ export class World {
   }
 
   swap(i: number): void {
+    this.dispatch({ a: Act.swap, t: this.now, i })
+  }
+
+  private swapBody(i: number): void {
     const held = this.hand
     this.hand = this.inventory[i]
     this.inventory[i] = held
@@ -1255,6 +1443,10 @@ export class World {
   }
 
   swapChest(at: Coord, i: number): void {
+    this.dispatch({ a: Act.swapChest, t: this.now, c: [at.col, at.row], i })
+  }
+
+  private swapChestBody(at: Coord, i: number): void {
     const cell = this.cell(at)
     if (cell.kind !== 'chest') return
     const held = this.hand
@@ -1269,6 +1461,10 @@ export class World {
   }
 
   unlockAll(): void {
+    this.dispatch({ a: Act.cheat, t: this.now, k: 'all' })
+  }
+
+  private unlockAllBody(): void {
     ;(Object.keys(RESEARCH) as ResearchId[]).forEach(id => {
       this.done.add(id)
     })
@@ -1281,11 +1477,19 @@ export class World {
   }
 
   cheatMoney(): void {
+    this.dispatch({ a: Act.cheat, t: this.now, k: 'money' })
+  }
+
+  private cheatMoneyBody(): void {
     this.money += 200
     this.ping()
   }
 
   cheatPoints(): void {
+    this.dispatch({ a: Act.cheat, t: this.now, k: 'points' })
+  }
+
+  private cheatPointsBody(): void {
     this.family.player.points += 10
     this.family.husband.points += 10
     this.family.daughter.points += 10
@@ -1293,39 +1497,43 @@ export class World {
   }
 
   toggleCheatResearch(): void {
+    this.dispatch({ a: Act.cheat, t: this.now, k: 'research' })
+  }
+
+  private toggleCheatResearchBody(): void {
     this.cheatFastResearch = !this.cheatFastResearch
     this.ping()
   }
 
   buyPacks(id: SkuId): void {
+    this.dispatch({ a: Act.buyPacks, t: this.now, s: id })
+  }
+
+  private buyPacksBody(id: SkuId): void {
     if (!this.hasSkill('bulk-buying')) return
     if (!this.skuOpen(id)) return
     const made = skuItem(id)
     if (made.kind !== 'seeds') return
     const price = 5 * this.skuPrice(id) * 0.95
-    const rarityOf = [0, 1, 2, 3, 4].map(i => this.shopPackRarity(i))
+    if (this.money < price) return
+    const fits =
+      this.skillTier('seed-bank') <= 0
+        ? this.canFitSeeds(made.crop, [{ rarity: 'common', count: made.count }])
+        : this.canFitSeeds(
+            made.crop,
+            RARITY_RANK.map(rarity => ({ rarity, count: made.count })),
+          )
+    if (!fits) return
+    const shop = this.rng.stream('shop')
+    const rarityOf = [0, 1, 2, 3, 4].map(() => rollShopRarity(this.skillTier('seed-bank'), shop.next()))
     const stacks = RARITY_RANK.flatMap(rarity => {
       const n = rarityOf.filter(x => x === rarity).length
       return n === 0 ? [] : [{ rarity, count: n * made.count }]
     })
-    if (this.money < price) return
-    if (!this.canFitSeeds(made.crop, stacks)) return
     this.money -= price
     stacks.forEach(s => this.putSeeds(made.crop, s.rarity, s.count))
     this.compactInventory()
     this.ping()
-  }
-
-  private shopPackRarity(i: number): Rarity {
-    const u = hash(
-      this.seed,
-      'pack-rarity',
-      this.clock.day,
-      Math.floor(this.clock.t * 1000),
-      Math.round(this.money * 10),
-      i,
-    )
-    return rollShopRarity(this.skillTier('seed-bank'), u)
   }
 
   private seedSlot(crop: CropId, rarity: Rarity): number {
@@ -1382,6 +1590,10 @@ export class World {
   }
 
   nudgeOffered(id: StallGoodId, dir: 1 | -1): void {
+    this.dispatch({ a: Act.nudgeOffered, t: this.now, g: id, d: dir })
+  }
+
+  private nudgeOfferedBody(id: StallGoodId, dir: 1 | -1): void {
     const g = this.stall[id]
     const cap = tenths(3 * stallX(id, this.modifiers))
     const next = tenths(g.offered) + dir
@@ -1433,6 +1645,10 @@ export class World {
   }
 
   sellAll(): void {
+    this.dispatch({ a: Act.sellAll, t: this.now })
+  }
+
+  private sellAllBody(): void {
     if (!this.marketOpen()) return
     const gain = this.marketGain()
     if (gain === 0) return
@@ -1452,7 +1668,7 @@ export class World {
     STALL_IDS.forEach(id => {
       const g = this.stall[id]
       const x = stallX(id, this.modifiers)
-      const u = hash(this.seed, 'mkt-tgt', goodIx(id), this.clock.day, slot)
+      const u = this.rng.stream('market').at(goodIx(id), this.clock.day, slot)
       g.target = clamp(g.target * (0.75 + u * 0.5), 0.25 * x, 1.75 * x)
     })
   }
@@ -1474,6 +1690,10 @@ export class World {
   }
 
   startResearch(id: ResearchId): void {
+    this.dispatch({ a: Act.startResearch, t: this.now, r: id })
+  }
+
+  private startResearchBody(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
     if (!this.researchOpen(id)) return
@@ -1485,6 +1705,10 @@ export class World {
   }
 
   dismissRecap(): void {
+    this.dispatch({ a: Act.dismissRecap, t: this.now })
+  }
+
+  private dismissRecapBody(): void {
     if (this.seam.kind !== 'recap') return
     this.grantPoint('player')
     this.grantPoint('husband')
@@ -1495,6 +1719,7 @@ export class World {
   }
 
   tick(rawDt: number): void {
+    this.now += 1
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
     if (this.seam.kind === 'recap') return
     this.sales = []
@@ -1820,13 +2045,17 @@ export class World {
         if (c.plant.maturity >= 1) {
           c.plant.maturity = 1
           c.plant.freshness = 1
-          const u = hash(this.seed, 'grow-rarity', at.col, at.row, this.clock.day)
+          const key = `${at.col},${at.row}`
+          const stored = this.ripenN.get(key)
+          const n = stored === undefined ? 0 : stored
+          const u = this.rng.stream('grow').at(at.col, at.row, this.clock.day, n)
           c.plant.rarity = rollGrowRarity(
             c.plant.rarity,
             c.plant.happiness,
             u,
             extraGrowUp1(c.plant.crop, id => this.hasSkill(id)),
           )
+          this.ripenN.set(key, n + 1)
           this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
           dirty = true
           continue
@@ -1949,8 +2178,8 @@ export class World {
     fallow.forEach(at => {
       const c = this.cell(at)
       if (c.kind !== 'empty') return
-      if (hash(this.seed, 'weed', at.col, at.row, this.bigTicks) >= WEED_CHANCE) return
-      const variant = hash(this.seed, 'weed-kind', at.col, at.row, this.bigTicks) < 0.5 ? 0 : 1
+      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= WEED_CHANCE) return
+      const variant = this.rng.stream('weed').at(at.col, at.row, this.bigTicks, 1) < 0.5 ? 0 : 1
       this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
       grew = true
     })
@@ -1958,17 +2187,17 @@ export class World {
   }
 
   private sproutGrass(): boolean {
-    if (hash(this.seed, 'grass-roll', this.bigTicks) >= GRASS_CHANCE) return false
+    if (this.rng.stream('grass').at(this.bigTicks) >= GRASS_CHANCE) return false
     const b = this.bounds()
     for (let i = 0; i < 24; i++) {
-      const col = b.col0 + Math.floor(hash(this.seed, 'grass-col', this.bigTicks, i) * (b.col1 - b.col0))
-      const row = b.row0 + Math.floor(hash(this.seed, 'grass-row', this.bigTicks, i) * (b.row1 - b.row0))
+      const col = b.col0 + Math.floor(this.rng.stream('grass').at(this.bigTicks, i, 0) * (b.col1 - b.col0))
+      const row = b.row0 + Math.floor(this.rng.stream('grass').at(this.bigTicks, i, 1) * (b.row1 - b.row0))
       const at = { col, row }
       if (!this.inWorld(at)) continue
       const c = this.cell(at)
       if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
       if (onCell(this.drops, at).length > 0) continue
-      const variant = Math.floor(hash(this.seed, 'grass-kind', col, row, this.bigTicks) * 3) as 0 | 1 | 2
+      const variant = Math.floor(this.rng.stream('grass').at(col, row, this.bigTicks) * 3) as 0 | 1 | 2
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'grass', variant } })
       return true
     }
@@ -1976,7 +2205,7 @@ export class World {
   }
 
   private freshSoil(at: Coord): Soil {
-    return new Soil(SOIL_TILL_WATER, goodness(this.seed, at.col, at.row))
+    return new Soil(SOIL_TILL_WATER, goodness(this.rng, at.col, at.row))
   }
 
   private tickTreesSeam(): void {
@@ -1999,7 +2228,7 @@ export class World {
       return
     }
     const chance = t.yield.chance + 0.2
-    const u = hash(this.seed, 'tree-yield', t.base.col, t.base.row, this.clock.day)
+    const u = this.rng.stream('tree').at(t.base.col, t.base.row, this.clock.day)
     t.yield = u < chance ? { kind: 'on', daysLeft: 2 } : { kind: 'off', chance }
   }
 
@@ -2039,7 +2268,7 @@ export class World {
       return isPlot(this.cell(p))
     })
     if (hit === undefined) return false
-    const rarity = rollRarity(hash(this.seed, 'tree-fruit', t.base.col, t.base.row, this.clock.day, Math.floor(t.fruit * 1000)))
+    const rarity = rollRarity(this.rng.stream('fruit').next())
     const sale = CROPS[t.species].sale * RARITY_SALE[rarity]
     this.drops.push({
       at: { ...hit },
@@ -2159,7 +2388,7 @@ export class World {
     const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
     if (this.hand.item.kind === 'grass-seeds') {
       const g = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'grass-seeds' }> }
-      const variant = Math.floor(hash(this.seed, 'turf', at.col, at.row) * 3) as 0 | 1 | 2
+      const variant = Math.floor(this.rng.stream('gen').at(3, at.col, at.row) * 3) as 0 | 1 | 2
       this.setCell(at, { kind: 'turf', soil: bed.soil, turf: new Turf(variant) })
       g.item.count -= 1
       if (g.item.count <= 0) this.hand = { kind: 'empty' }
@@ -2467,7 +2696,7 @@ export class World {
     } else return
     let total = 0
     for (let i = 0; i < n; i++) {
-      const u = hash(this.seed, 'grind', at.col, at.row, this.clock.day, i)
+      const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, i)
       total += GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
     }
     this.mergeSeeds(crop, rarity, total, at)

@@ -43,7 +43,7 @@ Pool = that member’s ids with `owned < max` (or absent) and gate met.
 
 Offered tier = owned + 1 (absent → 1).
 
-Draw `min(3, pool.length)` distinct, no padding. Sort pool by id. Without replacement, slot `i` = `floor(hash(seed, member, pickCount, i) * remaining)`. `hash` salt = `MemberId`.
+Draw `min(3, pool.length)` distinct, no padding. Sort pool by id. Without replacement, slot `i` = `floor(skill.at(memberIx, pickCount, i) * remaining)`. — [[mechanics/rng]]
 
 Offers exist at init. Persist until pick. Research done does not reroll.
 
@@ -118,5 +118,5 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - water-study: unlocks water lens. Water lens gated until owned
 - land-study: unlocks land lens
 - bulk-buying: seed SKU `buyPacks(id)` five packs at `5 × skuPrice(id) × 0.95`. Else no-op. `buy(id)` stays one
-- seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, hash(seed, 'pack-rarity', day, floor(t×1000), round(money×10), i))`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` rolls `i=0` once for the pack of 5. `buyPacks` rolls `i=0..4` (one pack each), merges by rarity, needs a house slot per new rarity. Catalog icon stays common.
+- seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five if the bulk grant succeeds. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
 - forecast / industrial: dummy

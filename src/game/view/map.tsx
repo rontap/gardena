@@ -808,7 +808,7 @@ function groundArt(col: number, row: number, g: number): string {
 function bakeGround(world: World): string {
   let s = ''
   world.forEachCell((at, cell) => {
-    const g = goodness(world.seed, at.col, at.row)
+    const g = goodness(world.rng, at.col, at.row)
     const art =
       cell.kind === 'untilled' && cell.cover.kind === 'tile'
         ? BUILDING_TILES[cell.cover.tile]
@@ -826,7 +826,7 @@ function bakeGround(world: World): string {
   for (let row = b.row0 - FADE; row < b.row1 + FADE; row++) {
     for (let col = b.col0 - FADE; col < b.col1 + FADE; col++) {
       if (keys.has(chunkKey(chunkOf({ col, row })))) continue
-      const g = goodness(world.seed, col, row)
+      const g = goodness(world.rng, col, row)
       const art = groundArt(col, row, g)
       const d = Math.max(
         b.col0 - col,

@@ -19,7 +19,7 @@ import {
 } from './building.ts'
 import { goodness, groundOf } from './noise.ts'
 import { bare, type Cell } from './plot.ts'
-import { hash } from './rng.ts'
+import type { Rng } from './rng.ts'
 
 const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
 
@@ -33,7 +33,7 @@ const RESERVED = new Set(
   ].map(a => `${a.col},${a.row}`),
 )
 
-export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pump, truck: Truck): Cell[][] {
+export function generateChunk(rng: Rng, id: ChunkId, house: House, pump: Pump, truck: Truck): Cell[][] {
   const cells: Cell[][] = []
   for (let row = 0; row < CHUNK; row++) {
     const line: Cell[] = []
@@ -42,6 +42,7 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
   }
   const rect = chunkRect(id)
   const owned = [id]
+  const gen = rng.stream('gen')
   for (let row = rect.row0; row < rect.row1; row++) {
     for (let col = rect.col0; col < rect.col1; col++) {
       const at = { col, row }
@@ -49,11 +50,11 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
       if (atCell(cells, at).kind === 'rock') continue
       const r = Math.hypot(col + 0.5 - 16, row + 0.5 - 16)
       const pRock = 0.014 + 0.01 * (r / 32)
-      if (hash(seed, 'rock', col, row) < pRock) {
-        placeRock(cells, seed, id, at)
+      if (gen.at(0, col, row) < pRock) {
+        placeRock(cells, rng, id, at)
         continue
       }
-      const ground = groundOf(goodness(seed, col, row))
+      const ground = groundOf(goodness(rng, col, row))
       put(cells, at, bare(ground))
     }
   }
@@ -84,8 +85,8 @@ function spawnAppleTree(cells: Cell[][], id: ChunkId): void {
   }
 }
 
-function placeRock(cells: Cell[][], seed: number, id: ChunkId, at: Coord): void {
-  const shape = hash(seed, 'rock-shape', at.col, at.row)
+function placeRock(cells: Cell[][], rng: Rng, id: ChunkId, at: Coord): void {
+  const shape = rng.stream('gen').at(1, at.col, at.row)
   if (shape < 0.12) {
     const east = { col: at.col + 1, row: at.row }
     if (freeRock(cells, id, east)) {

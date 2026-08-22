@@ -8,7 +8,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 
 | file | owns |
 |---|---|
-| `src/game/sim/rng.ts` | `hash`, `rollRarity`, `Rng`, `Stream`, `Spatial`, `Seq`, `StreamId` |
+| `src/game/sim/rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
 | `src/game/sim/world.ts` | `World.rng`, `World.ripenN`. Shop / grow / weed / grass / tree / fruit / skill / grind / market call sites |
 | `src/game/sim/gen.ts` | rocks, rock-shape. Uses `gen` |
 | `src/game/sim/noise.ts` | soil-noise, soil-boost. Uses `gen` |

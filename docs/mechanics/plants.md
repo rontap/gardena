@@ -31,7 +31,7 @@ Lawn, not a crop. No `CropId`, no rarity, no `Plant`, no market value.
 
 Item `{ kind: 'grass-seeds'; count }`. `pack-grass` $1 for `GRASS_PACK` 5, unlock `unlock-landscaping`. Buying merges into one house slot like seeds do.
 
-Sow on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. `Turf` holds `maturity` and a `variant` 0–2 picked by `hash(seed, 'turf', col, row)`. Prompt **Sow grass**, pulse **Sow grass**.
+Sow on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. `Turf` holds `maturity` and a `variant` 0–2 picked by `gen.at(3, col, row)` — [[mechanics/rng]]. Prompt **Sow grass**, pulse **Sow grass**.
 
 Ticks in `tickField` off `live`: drinks `GRASS_WATER_PER_SEC` 0.0012 L/s (0.29 L a day — an order under any crop), matures over `GRASS_GROW` = `DAY_SECONDS / 4` = 60s. No happiness, no fertilizer draw, no water band, no death.
 
@@ -82,7 +82,7 @@ Ripe does not die of water or fertilizer. It only rots.
 
 ## Rarity roll
 
-At ripen: `freshness = 1`. `u = hash(seed, 'grow-rarity', col, row, day)`. `rarity = rollGrowRarity(rarity, happiness, u, extraUp1)`.
+At ripen: `freshness = 1`. `rarity = rollGrowRarity(rarity, happiness, grow.at(col, row, day, n), extraUp1)`. `n` is `World.ripenN` at that cell, then becomes `n + 1`. Absent 0. Not a `Soil` field. — [[mechanics/rng]]
 
 `extraUp1` is `BETTER_UP1` 0.04 if the player owns `better-{crop}`, else 0. Scaled by `h / HAPPY_MAX` so 4% is at full happiness. UI: “increased chance that a happy plant will produce a superior fruit.” No `better-*` for `TreeId`.
 
@@ -147,9 +147,9 @@ Seam, with stipend/tax, before field tick, per tree with `juvenile >= 1`:
 
 1. `pending` → `{ on, daysLeft: 2 }`
 2. `on` → `daysLeft -= 1`; if 0 → `{ off, chance: -0.2 }` (no roll)
-3. `off` → `chance += 0.2`; `u = hash(seed, 'tree-yield', col, row, day)`; if `u < chance` → `{ on, daysLeft: 2 }`
+3. `off` → `chance += 0.2`; `u = tree.at(base.col, base.row, day)`; if `u < chance` → `{ on, daysLeft: 2 }` — [[mechanics/rng]]
 
-Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: `rarity = rollRarity(hash(seed, 'tree-fruit', species, col, row, day, floor(fruit)))`, drop `{ kind: 'fruit', crop: species, freshness: 1, bio: true, unitSale: CROPS.sale × RARITY_SALE[rarity] }` on the first in-world `frontOf` cell that is a `Plot` and is not in the footprint. Walk `frontOf(base)` then `frontOf({ col, row: row+1 })`. Existing drops on a plot are allowed. No plot → clamp `fruit = 1`, show ripe. Success: `fruit = 0`, `tally.harvests += 1`. No harvest prompt.
+Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: drop `{ kind: 'fruit', crop: species, freshness: 1, bio: true, unitSale: CROPS.sale × RARITY_SALE[rarity] }` on the first in-world `frontOf` cell that is a `Plot` and is not in the footprint. Walk `frontOf(base)` then `frontOf({ col, row: row+1 })`. Existing drops on a plot are allowed. Spot found: `rarity = rollRarity(fruit.next())`, `fruit = 0`, `tally.harvests += 1`. No plot → clamp `fruit = 1`, show ripe, no `next()`. No harvest prompt. — [[mechanics/rng]]
 
 Shovel: `{ kind: 'sapling'; tree: species }`, both cells bare soft.
 

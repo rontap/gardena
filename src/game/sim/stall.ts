@@ -3,7 +3,7 @@ import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { YARD, type Coord } from './building.ts'
 import type { CropId, StallGoodId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
-import { hash } from './rng.ts'
+import type { Rng } from './rng.ts'
 
 export const STALL_IDS: StallGoodId[] = [
   'carrot',
@@ -110,14 +110,14 @@ export function makeStall(id: StallGoodId, mods: readonly Modifier[]): StallGood
   return new StallGood(id, stallX(id, mods))
 }
 
-export function crateCells(seed: number, stall: StallMap): { id: StallGoodId; at: Coord }[] {
+export function crateCells(rng: Rng, stall: StallMap): { id: StallGoodId; at: Coord }[] {
   const used = new Set<string>()
   const out: { id: StallGoodId; at: Coord }[] = []
   STALL_IDS.forEach(id => {
     const g = stall[id]
     const n = binCount(g)
     if (n <= 0) return
-    const start = Math.floor(hash(seed, 'crate', goodIx(id)) * YARD.length)
+    const start = Math.floor(rng.stream('gen').at(5, goodIx(id)) * YARD.length)
     const at = YARD.map((_, i) => YARD[(start + i) % YARD.length]).find(c => !used.has(`${c.col},${c.row}`))
     if (at === undefined) return
     used.add(`${at.col},${at.row}`)

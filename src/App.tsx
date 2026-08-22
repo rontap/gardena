@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
+import { WorkerSink } from './game/sim/log.ts'
 import { World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
@@ -41,7 +42,12 @@ const SPEED = (() => {
 })()
 
 export default function App() {
-  const world = useRef(new World()).current
+  const world = useRef(
+    new World(
+      undefined,
+      new WorkerSink(new Worker(new URL('./game/sim/log.worker.ts', import.meta.url), { type: 'module' })),
+    ),
+  ).current
   const root = useRef<HTMLDivElement>(null)
   const revRef = useRef(0)
   const consignRevision = useRef(0)

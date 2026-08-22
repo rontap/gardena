@@ -8,7 +8,7 @@ Internal enabler. No player-visible change. Not save UI. Not replay viewer. Not 
 
 | file | owns |
 |---|---|
-| `src/game/sim/log.ts` | `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
+| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
 | `src/game/sim/log.worker.ts` | worker. Holds `Cmd[]`. Does not apply. Does not own `World`. |
 | `src/game/sim/world.ts` | `World.now`, `World.log`, `dispatch`, `apply`. Wrappers. |
 
@@ -107,7 +107,9 @@ Same-`t` cmds apply in log order. `t` is non-decreasing. Ticks are not cmds.
 
 ## JSON
 
-`Cmd` is JSON. Classes forbidden in the log. One-letter keys. Closed discriminated union on `a`. Each `a` has exactly one meaning.
+`Cmd` is JSON. Classes forbidden in the log. Field names are one letter. Closed discriminated union on `a`. Each `a` has exactly one meaning.
+
+Letters for `a` live only in `Act` (`src/game/sim/log.ts`). Call sites use `Act.click`, never the letter. JSON still stores the letter.
 
 ```
 XY = [col: number, row: number]
@@ -115,51 +117,51 @@ XY = [col: number, row: number]
 
 Vertex uses `XY`. Edge in the log is `Edge` (`axis`, `col`, `row`). Intent in the log is `Intent`. Sprinkler in the log is `Sprinkler` (variant, at, facing if vert, tune). Tune is `Tune`. ChunkId is `ChunkId`. No `Partial`. No optional that means unsure. `facing` only on vert sprinkler.
 
-`e` is the Edge field. `a` is never `'e'`.
+`e` is the Edge field. `Act` has no key whose value is `'e'`.
 
 ## Cmd
 
-Every arm has required `t: number`.
+Every arm has required `t: number`. `a` is `typeof Act.<name>`.
 
 ```
 Cmd =
-  | { a: 'c'; t: number; c: XY }                                          // click
-  | { a: 'v'; t: number; e: Edge }                                        // clickValve
-  | { a: 'q'; t: number; i: Intent }                                      // enqueue (tests / apply)
-  | { a: 'b'; t: number; s: SkuId }                                       // buy
-  | { a: 'p'; t: number; s: SkuId }                                       // buyPacks
-  | { a: 'y'; t: number; e: Edge }                                        // placePipe
-  | { a: 'n'; t: number; s: Sprinkler }                                   // placeSprinkler
-  | { a: 'd'; t: number; k: 'pipe'; e: Edge }                             // deletePipe
-  | { a: 'd'; t: number; k: 'sprinkler'; c: XY }                          // deleteSprinkler (vertex)
-  | { a: 'd'; t: number; k: 'building'; c: XY }                           // deleteBuilding
-  | { a: 'x'; t: number; k: ChunkId }                                     // expand
-  | { a: 'r'; t: number; r: ResearchId }                                  // startResearch
-  | { a: 'k'; t: number; m: MemberId; s: number }                         // pickSkill (s = offer slot)
-  | { a: 's'; t: number }                                                 // sellAll
-  | { a: 'o'; t: number; g: StallGoodId; d: 1 | -1 }                      // nudgeOffered
-  | { a: 'w'; t: number; i: number }                                      // swap (inventory index)
-  | { a: 'h'; t: number; c: XY; i: number }                               // swapChest
-  | { a: 't'; t: number; c: XY; u: Tune }                                 // tuneSprinkler (vertex)
-  | { a: 'j'; t: number; c: XY }                                          // openHud sprinkler
-  | { a: 'l'; t: number }                                                 // closeHud
-  | { a: 'm'; t: number }                                                 // armDelete
-  | { a: 'f'; t: number }                                                 // cancelPlace
-  | { a: 'g'; t: number }                                                 // rotatePlace
-  | { a: 'i'; t: number }                                                 // dismissRecap
-  | { a: 'a'; t: number }                                                 // ackCue
-  | { a: 'z'; t: number; c: XY }                                          // rightClick (map)
-  | { a: 'u'; t: number; k: 'all' }                                       // unlockAll
-  | { a: 'u'; t: number; k: 'money' }                                     // cheatMoney
-  | { a: 'u'; t: number; k: 'points' }                                    // cheatPoints
-  | { a: 'u'; t: number; k: 'research' }                                  // toggleCheatResearch
+  | { a: typeof Act.click; t; c: XY }
+  | { a: typeof Act.clickValve; t; e: Edge }
+  | { a: typeof Act.enqueue; t; i: Intent }
+  | { a: typeof Act.buy; t; s: SkuId }
+  | { a: typeof Act.buyPacks; t; s: SkuId }
+  | { a: typeof Act.placePipe; t; e: Edge }
+  | { a: typeof Act.placeSprinkler; t; s: Sprinkler }
+  | { a: typeof Act.delete; t; k: 'pipe'; e: Edge }
+  | { a: typeof Act.delete; t; k: 'sprinkler'; c: XY }
+  | { a: typeof Act.delete; t; k: 'building'; c: XY }
+  | { a: typeof Act.expand; t; k: ChunkId }
+  | { a: typeof Act.startResearch; t; r: ResearchId }
+  | { a: typeof Act.pickSkill; t; m: MemberId; s: number }
+  | { a: typeof Act.sellAll; t }
+  | { a: typeof Act.nudgeOffered; t; g: StallGoodId; d: 1 | -1 }
+  | { a: typeof Act.swap; t; i: number }
+  | { a: typeof Act.swapChest; t; c: XY; i: number }
+  | { a: typeof Act.tuneSprinkler; t; c: XY; u: Tune }
+  | { a: typeof Act.openHud; t; c: XY }
+  | { a: typeof Act.closeHud; t }
+  | { a: typeof Act.armDelete; t }
+  | { a: typeof Act.cancelPlace; t }
+  | { a: typeof Act.rotatePlace; t }
+  | { a: typeof Act.dismissRecap; t }
+  | { a: typeof Act.ackCue; t }
+  | { a: typeof Act.rightClick; t; c: XY }
+  | { a: typeof Act.cheat; t; k: 'all' }
+  | { a: typeof Act.cheat; t; k: 'money' }
+  | { a: typeof Act.cheat; t; k: 'points' }
+  | { a: typeof Act.cheat; t; k: 'research' }
 ```
 
-`d` is delete. Inner `k` is a closed union: pipe / sprinkler / building. Not one mushy target.
+`Act.delete` inner `k` is a closed union: pipe / sprinkler / building. Not one mushy target.
 
-`u` is cheat. Inner `k` is a closed union.
+`Act.cheat` inner `k` is a closed union.
 
-Map calls `rightClick`. Log `z`, not a split cancel/drop. `apply(z)`: if `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and hand holds. HUD/App `cancelPlace` logs `f`.
+Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm: if `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 
 Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickValve` / `openHud` / `click` / `expand` — those public methods.
 
@@ -169,6 +171,7 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 
 - `Cmd` missing `t`
 - two meanings for one `a`
+- a letter for `a` written outside `Act`
 - classes in the log
 - React owning the log
 - Worker applying cmds

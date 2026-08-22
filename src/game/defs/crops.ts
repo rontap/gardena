@@ -6,6 +6,7 @@ export type CropClass = 'root' | 'grain' | 'fruit'
 export type CropDef = {
   id: CropId
   cls: CropClass
+  desc: string
   growSeconds: number
   waterUsePerSec: number
   waterTolerance: number
@@ -19,6 +20,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   carrot: {
     id: 'carrot',
     cls: 'root',
+    desc: 'Quick and forgiving. Shrugs off poor soil and thin feeding, but the roots fetch almost nothing.',
     growSeconds: 90,
     waterUsePerSec: 0.004889,
     waterTolerance: 0.9,
@@ -30,6 +32,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   potato: {
     id: 'potato',
     cls: 'root',
+    desc: 'Thrifty tuber. Drinks less than any other crop and keeps in store the longest.',
     growSeconds: 120,
     waterUsePerSec: 0.00375,
     waterTolerance: 0.85,
@@ -41,6 +44,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   wheat: {
     id: 'wheat',
     cls: 'grain',
+    desc: 'Slow grain, wants steady water and rich soil. Cut dry, so it holds its condition.',
     growSeconds: 180,
     waterUsePerSec: 0.0045833,
     waterTolerance: 0.75,
@@ -52,6 +56,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   tomato: {
     id: 'tomato',
     cls: 'fruit',
+    desc: 'Late to ripen and particular about water and feed. Bruises fast once picked.',
     growSeconds: 280,
     waterUsePerSec: 0.0043611,
     waterTolerance: 0.65,
@@ -63,6 +68,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   raspberry: {
     id: 'raspberry',
     cls: 'fruit',
+    desc: 'The richest crop and the most delicate. Slow to fruit, first to spoil.',
     growSeconds: 340,
     waterUsePerSec: 0.0045833,
     waterTolerance: 0.6,
@@ -74,6 +80,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   watermelon: {
     id: 'watermelon',
     cls: 'fruit',
+    desc: 'Swells quickly for its size and drinks more than anything else. A dry plot kills it.',
     growSeconds: 260,
     waterUsePerSec: 0.01125,
     waterTolerance: 0.5,
@@ -85,6 +92,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   apple: {
     id: 'apple',
     cls: 'fruit',
+    desc: 'The tree feeds itself - no water, no fertilizer. Slow to set fruit, then keeps for days.',
     growSeconds: 600,
     waterUsePerSec: 0,
     waterTolerance: 0.9,

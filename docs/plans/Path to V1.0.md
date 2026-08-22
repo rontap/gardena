@@ -1,3 +1,40 @@
+
+# Establishing prompt (Declaration of Intent)
+
+This is a garden simulator game, similar to alice greenfingers or stardew valley but more focused on factorio-ish automation, expansion and tech-tree like evolution of tools and crops.
+Starting context: game starts with a house, a character, shovel, some seeds, water pump and bucket. user selects the tools and clicks on the farm grid and shovels that plot, plants the seed, and it starts to grow.  when this happens, the player character physically moves there and performs the action. the plant has internal thirst that shows up when its low, then bucket needs to be used to water it. eventually it can be harvested. For Beta-1, all plants are taken back to the house and sold immediately for a money. 
+First implementaiton version is beta-1
+Core gameplay loop:
+(shovel -> plant -> water -> harvest) -> buy upgrades to tools and plants -> ...
+The game has the following concepts:
+- seeds
+	- Each type of fruit (corn, maise, rasberry etc) has _rarities_ which define sale value and other characteristics. At start, only common rarity is available.
+	- Seeds have a grow time, in seconds, also water use.
+	- Fruits have a sale value
+	- growing fruits have a maturity time (time it takes to get ready). USually, watering needs to happen 1-2 times before fruit is ripe.
+	- If a plant has <33% (not a baked number but config), it starts withering, does not grow, it is indicated that it needs water. At 10% more agressive in-field indication and at 0% plant is withered and dies, need to be showeled again.
+	- Disease resistance (not relevant in beta-1)
+- utility items
+	- box, which when grabbed allows the harvest of multiple of the same fruit (5), large box 15
+	- watering can, when filled at pump can water 5 plants. pump is a buyable item. large watering can can hold 10 waterings always filling up to full.
+	- ... many more in later versions.
+- research. 
+	- players character's husband in the house (research button on UI) can research stuff in three categories initially.
+		- Plants (more type of plant unlocks, more rare plants being available, small flat increased plant stats per type) (in total, like there should be like 5 single-field crops, each with given strength)
+		- utilities unlocks: large box, large watering can, pumpjack, better shovel. these can be bought then in the shop and placed on the playing field, but they are not occupying a grid slot, they are "over" the gamefield. in later versions automations will be here too, fertilizer which increases growth speed and final sale value
+		- third is not in beta-3
+- shop, accessible via user button
+- market, for now flat sell all button
+
+Architecture & style:
+- make sure the implementation of plants and stuff like this is highly polimorphic and can be easily affected by individual (like fertilizer) and flat (from research) increases. But also, the 4 apple rarities should not be four different classes, aim to create a very flexible base class for these things and the extends should just be art/ specific things 
+- SVG + DOM mostly
+- map should be pannable, zoomable, individual plot items should be investigate-able (Debuggable as well), constant mincraft-esque toolbar for main user action.
+- Top down pixel-esque style
+- Game loop is divided into days, each day roughly 4 minutes (in beta), at the end of the day flat payouts and in the future, flat expenses
+
+# Prior versions
+see detailed beta-1 ... beta-6 then v0.1..v0.5
 ## 0.3 Dirt Overhaul & Fertilizers
 Currently, each tile is a single thing, and the dirt underneath has no properties. This makes many things about the game bit unrealistic: for example, poorer dirt is not modelled, fertilizer use cannot be easily added, only seeded soil can be watered, excess water is removed when plant is removed. In this update, each tile of dirt will get its own identity.
 Main change: In this update, dirt will own two properties: water and fertilizer. When the player tills hard or very hard soil, the difference is that those will have lower base fertilization.
@@ -40,7 +77,7 @@ New buildings and mechanics:
 ## 0.6 Family Update
 The game mechanics of research-farming-market is done by personifying the three aspects as the player (you, female), your husband (research) and you daughter, who is at the market. 
 Add a new main button to the left called "Family", which opens an almost full screen view.  It is a grid view, 3 vertical panels for the three characters, with high-quality detailed pixel art SVG for each of them. In the future, they will be able to earn _skills_ by gaining XP through various mechanics, but for now, implement only the skill points's system, each day one of them gets one skill point. "unlock all" gives all three of them 99. 
-Each of them have seperate skills, with 3 random showing up based on the seed, and when one is selected, all three are rerolled. There are tiered skills, implemented such that if idk "gardening" gets rolled, but user has gardening II already, then the skill will be gardening III. These skills have modifiers that are wide-reaching and extremely useful. Each skill has an icon, and existing skills are shown as icons with hover-on showing name and effect. In the selectable skills, same is true but name is also displayed on the button. LEvel is also displayed. Skills can be gated behind research unlocks, or skill unlocks.
+Each of them have seperate skills, with 3 random showing up based on the seed, and when one is selected, all three are rerolled. There are tiered skills, implemented such that if idk "gardening" gets rolled, but user has gardening II already, then the skill will be gardening III. These skills have modifiers that are wide-reaching and extremely useful. Each skill has an icon, and existing skills are shown as icons with hover-on showing name and effect. Icons are already implemented. The better {fruit} icons require composing the grown base fruit + icon In the selectable skills, same is true but name is also displayed on the button. LEvel is also displayed. Skills can be gated behind research unlocks, or skill unlocks.
 Player skills (gardening-focused)
 - Boots (I-V) 5% walking speed increase (non-comulative)
 - Machinery (I-III) 5% machine use speed (non-comulative), machines are all pipe related and seed grinder.
@@ -59,7 +96,7 @@ For now, market mechanics are not that detailed, but the "better XY" crops resea
 - better {fruit}, for each fruit, a one time 4% income increase in income, replaces the research options.
 - bio farmer (I-V) fruits that are `is_bio:true` have 3% higher sale value.
 - industrial farmer [dummy] (I-V)
-- At the start of the game, the market is actually not open (sale cannot be made) during the late afternoon and twilight stages of the game. (sell button becomes disabled with reason shown in text). "Open late" skill allows market to be open later, and when that is unlocked, -> "open 24/7" makes the market open during twilight too. 
+- At the start of the game, the market is actually not open (sale cannot be made) during the late afternoon and twilight stages of the game. (sell button becomes disabled with reason shown in text). "Open late" skill allows market to be open later, and when that is unlocked, -> "open 24/7" makes the market open during twilight too. This is a gameplay change too.
 - "Still good for jam" (I-V) caps maximum reduction by fruit being  partially rotten to -90% / .. / -50%
 - "Clearence sale" allows selling rotten fruits for 1$, regardless of type.
 When there are no skills left, or not enough to fill all three, only those are generated.

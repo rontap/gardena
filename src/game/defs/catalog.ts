@@ -41,7 +41,7 @@ const FERT_T =
 const SYNTH_T =
   'Holds ${n} L and tops a plot to full like the ordinary bag, but the soil turns non-organic and so does everything grown in it. Ordinary fertilizer or compost brings it back once ${restore} L land at once.'
 const COMPOST_BOX_T =
-  'Drop any organic waste in. ${need} units become ${liters} L of compost in ${seconds}s, left on the ground beside the box. Seeds ${seeds}, fruit ${fruit}, specialty fruit ${heirloom}, rotten fruit ${rotten}, dead plants and weeds ${dead}.'
+  'Drop any organic waste in. ${need} units become ${liters} L of compost in ${seconds}s, left on the ground beside the box. Seeds ${seeds}, fruit ${fruit}, heirloom fruit ${heirloom}, rotten fruit ${rotten}, dead plants and weeds ${dead}.'
 const COMPOST_T = 'Holds ${liters} L. Feeds soil exactly like fertilizer, and it is organic.'
 const WEED_T =
   'Takes over tilled soil left without seed. Full grown in ${seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.'
@@ -90,7 +90,7 @@ export function catalogEntries(): CatalogEntry[] {
       id,
       title: name,
       icon: { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
-      blurb: '',
+      blurb: d.desc,
     }
   })
   return [

@@ -1,16 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
-  <rect fill="#1c1710" x="1" y="1" width="14" height="21"/>
-  <rect fill="#cfc6b0" x="2" y="2" width="12" height="19"/>
-  <rect fill="#6b4423" x="4" y="4" width="8" height="1"/>
-  <rect fill="#6b4423" x="4" y="7" width="8" height="1"/>
+  <rect fill="#1c1710" x="1" y="1" width="13" height="21"/>
+  <rect fill="#cfc6b0" x="2" y="2" width="11" height="19"/>
+  <rect fill="#6b4423" x="4" y="4" width="7" height="1"/>
+  <rect fill="#6b4423" x="4" y="7" width="7" height="1"/>
   <rect fill="#6b4423" x="4" y="10" width="5" height="1"/>
-  <rect fill="#8b3a2a" x="4" y="13" width="8" height="1"/>
-  <rect fill="#1c1710" x="15" y="1" width="8" height="11"/>
-  <rect fill="#6bc04a" x="18" y="2" width="2" height="5"/>
-  <rect fill="#6bc04a" x="17" y="7" width="4" height="1"/>
-  <rect fill="#6bc04a" x="18" y="8" width="2" height="1"/>
-  <rect fill="#1c1710" x="13" y="13" width="10" height="10"/>
-  <rect fill="#d4a017" x="14" y="14" width="8" height="8"/>
-  <rect fill="#8a5a32" x="14" y="14" width="8" height="1"/>
-  <rect fill="#6b4423" x="16" y="16" width="4" height="4"/>
+  <rect fill="#8b3a2a" x="4" y="13" width="7" height="1"/>
+  <g transform="translate(1,10)">
+    <rect fill="#1c1710" x="3" y="0" width="6" height="1"/>
+    <rect fill="#1c1710" x="1" y="1" width="10" height="1"/>
+    <rect fill="#1c1710" x="0" y="2" width="12" height="8"/>
+    <rect fill="#1c1710" x="1" y="10" width="10" height="1"/>
+    <rect fill="#1c1710" x="3" y="11" width="6" height="1"/>
+    <rect fill="#d4a017" x="3" y="1" width="6" height="10"/>
+    <rect fill="#d4a017" x="1" y="3" width="10" height="6"/>
+    <rect fill="#8a5a32" x="3" y="2" width="6" height="1"/>
+    <rect fill="#8a5a32" x="2" y="3" width="1" height="6"/>
+    <rect fill="#8a5a32" x="9" y="3" width="1" height="6"/>
+    <rect fill="#8a5a32" x="3" y="9" width="6" height="1"/>
+    <rect fill="#cfc6b0" x="4" y="3" width="2" height="2"/>
+  </g>
+  <g transform="translate(16,2)">
+    <rect fill="#1c1710" x="0" y="0" width="10" height="10"/>
+    <rect fill="#6bc04a" x="1" y="1" width="8" height="8"/>
+    <rect fill="#1c1710" x="4" y="2" width="2" height="3"/>
+    <rect fill="#1c1710" x="2" y="5" width="6" height="1"/>
+    <rect fill="#1c1710" x="3" y="6" width="4" height="1"/>
+    <rect fill="#1c1710" x="4" y="7" width="2" height="1"/>
+  </g>
 </svg>

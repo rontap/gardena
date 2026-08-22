@@ -190,6 +190,7 @@ export type DayTally = { died: number; harvests: number; research: ResearchId[] 
 export type Recap = {
   day: number
   money: number
+  stipend: number
   died: number
   harvests: number
   research: ResearchId[]
@@ -202,8 +203,10 @@ export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; p
 
 type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
 
+export const DAY_STIPEND = 10
+
 const QUEUE_CAP = 8
-const DT_MAX = 1 / 15
+export const DT_MAX = 1 / 15
 const INV = 16
 const DYNAMIC_MARKET = false
 
@@ -1160,7 +1163,7 @@ export class World {
       this.workLeft = 0
       this.workTotal = 0
       this.filling = false
-      this.money += 10
+      this.money += DAY_STIPEND
       const tax = this.tax()
       this.money -= tax
       this.seam = {
@@ -1168,6 +1171,7 @@ export class World {
         recap: {
           day: this.clock.day - 1,
           money: this.money,
+          stipend: DAY_STIPEND,
           died: this.tally.died,
           harvests: this.tally.harvests,
           research: this.tally.research,
@@ -1684,12 +1688,6 @@ export class World {
         at: { ...at },
         item: { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 },
       })
-    }
-    if (c.kind === 'dead') {
-      this.drops.push({ at: { ...at }, item: { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 } })
-    }
-    if (c.kind === 'rotten') {
-      this.drops.push({ at: { ...at }, item: { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 } })
     }
     this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1

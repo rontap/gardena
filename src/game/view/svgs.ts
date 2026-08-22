@@ -99,6 +99,7 @@ import uiBtnDelete from '../../assets/ui-btn-delete.svg?raw'
 import uiBtnRotate from '../../assets/ui-btn-rotate.svg?raw'
 import uiBtnCancel from '../../assets/ui-btn-cancel.svg?raw'
 import uiMarketStall from '../../assets/ui-market-stall.svg?raw'
+import uiRecapNight from '../../assets/ui-recap-night.svg?raw'
 import uiCoin from '../../assets/ui-coin.svg?raw'
 import uiCoinSilver from '../../assets/ui-coin-silver.svg?raw'
 import uiMeter from '../../assets/ui-meter.svg?raw'
@@ -388,6 +389,7 @@ export const UI_BTN_DELETE = uiBtnDelete
 export const UI_BTN_ROTATE = uiBtnRotate
 export const UI_BTN_CANCEL = uiBtnCancel
 export const UI_MARKET_STALL = uiMarketStall
+export const UI_RECAP_NIGHT = inner(uiRecapNight)
 export const UI_PHASE: { readonly [K in DayPhase]: string } = {
   sunrise: inner(uiPhaseSunrise),
   day: inner(uiPhaseDay),

@@ -93,8 +93,8 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 17,
         seconds: 50,
         reveal: 'start',
-        blurb: 'Unlocks Fruit box and Large fruit box in the general store.',
-        effect: {kind: 'unlock-sku', sku: 'buy-box'},
+        blurb: 'Unlocks Large fruit box in the general store.',
+        effect: {kind: 'unlock-sku', sku: 'buy-box-large'},
     },
     'unlock-irrigation': {
         id: 'unlock-irrigation',
@@ -223,7 +223,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     },
     'buy-bucket': {id: 'buy-bucket', price: 8, unlock: 'start', show: 'start'},
     'buy-bucket-large': {id: 'buy-bucket-large', price: 22, unlock: 'unlock-better-tools', show: 'start'},
-    'buy-box': {id: 'buy-box', price: 6, unlock: 'unlock-large-box', show: 'start'},
+    'buy-box': {id: 'buy-box', price: 6, unlock: 'start', show: 'start'},
     'buy-box-large': {id: 'buy-box-large', price: 18, unlock: 'unlock-large-box', show: 'start'},
     'buy-fertilizer': {id: 'buy-fertilizer', price: 6, unlock: 'start', show: 'start'},
     'buy-synth-fertilizer': {
@@ -254,7 +254,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-valve': {id: 'buy-valve', price: 6, unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
     'buy-rain-tank': {id: 'buy-rain-tank', price: 20, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
     'buy-tap': {id: 'buy-tap', price: 10, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
-    'buy-tile-paved': {id: 'buy-tile-paved', price: 1, unlock: 'start', show: 'start'},
-    'buy-tile-brick': {id: 'buy-tile-brick', price: 1, unlock: 'start', show: 'start'},
-    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 1, unlock: 'start', show: 'start'},
+    'buy-tile-paved': {id: 'buy-tile-paved', price: 5, unlock: 'start', show: 'start'},
+    'buy-tile-brick': {id: 'buy-tile-brick', price: 7, unlock: 'start', show: 'start'},
+    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 11, unlock: 'start', show: 'start'},
 }

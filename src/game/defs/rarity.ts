@@ -49,7 +49,7 @@ export const HAPPY_WILT_SECONDS = 240
 
 export const HAPPY_STARVE_SECONDS = 400
 
-export const HAPPY_DROWN_SECONDS = 90
+export const HAPPY_DROWN_SECONDS = 180
 
 export const RARITY_RANK: readonly Rarity[] = ['common', 'uncommon', 'rare', 'heirloom']
 

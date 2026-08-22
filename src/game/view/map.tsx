@@ -125,6 +125,7 @@ const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 
 type Props = {
   world: World
   cam: Camera
+  rev: number
   lens: Lens
   hover: PromptHit | undefined
   onHover: (c: PromptHit | undefined) => void
@@ -132,7 +133,7 @@ type Props = {
   onClick: (hit: MapClick) => void
 }
 
-export function MapView({ world, cam, lens, hover, onHover, onCam, onClick }: Props) {
+export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick }: Props) {
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const pendingMove = useRef<{ x: number; y: number; buttons: number } | undefined>(undefined)
@@ -315,7 +316,7 @@ export function MapView({ world, cam, lens, hover, onHover, onCam, onClick }: Pr
           transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale}) translate(${-cam.x * TILE}, ${-cam.y * TILE})`}
         >
           <Ground world={world} owned={world.owned.length} groundRev={world.groundRev} />
-          <Marks world={world} lens={lens} hideVerts={ghostVerts} />
+          <Marks world={world} rev={rev} lens={lens} hideVerts={ghostVerts} />
           {strokeCell !== undefined && (
             <g pointerEvents="none">
               <rect
@@ -462,13 +463,16 @@ const Ground = memo(function Ground({
 
 const Marks = memo(function Marks({
   world,
+  rev,
   lens,
   hideVerts,
 }: {
   world: World
+  rev: number
   lens: Lens
   hideVerts: readonly Vertex[] | undefined
 }) {
+  void rev
   const plots: { col: number; row: number; cell: Plot }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
   const shrubs: { col: number; row: number; ripe: boolean }[] = []

@@ -1,58 +1,51 @@
 # Family & skills art
 
-New folder: `src/assets/skills/`. Everything else stays [[art/v0.1]] — palette, 24-unit grid,
-`shape-rendering="crispEdges"`, no text, no raster, no `currentColor`, no new hex.
+`src/assets/skills/*.svg`. Rules from [[art/svg]] and [[art/palette]] hold.
 
 ## Portraits
 
-`portrait-player.svg` `portrait-husband.svg` `portrait-daughter.svg` — viewBox `0 0 48 72`, 2:3 panel.
-One per Family panel column. Bust with a background that names the aspect: field and sky for you,
-study wall with bookshelf and chalkboard for your husband, market awning and counter for your daughter.
-No groups, no states. Scale with `image-rendering: pixelated`.
+`portrait-player.svg` `portrait-husband.svg` `portrait-daughter.svg` — viewBox `0 0 64 96`, one per Family panel
+column, no groups. Bust plus a background naming the aspect: field and sky, study wall, market awning.
 
-- You: straw hat (`ripe` crown, `dirt-dark` band), braids, cream blouse, `dirt-dark` overalls, seedling in the pocket.
-- Husband: `dirt-dark` hair, ink glasses, cream shirt, `water` vest, `roof` tie, pencil in the pocket.
-- Daughter: `dirt-dark` pigtails, `fruit-red` bow, `roof` dress, cream apron — same girl as the one in `ui-market-stall.svg`.
+Anatomy, not blobs. Cranium ellipse tapering into a jaw and chin; a straight neck column flaring into the
+trapezius; shoulders sloping to the deltoid then dropping straight. **The arm edge starts at the armpit**, about
+eighteen rows below the shoulder line, fifteen on the child — low, roughly two thirds down the visible torso — and
+runs to the bottom crop as ink plus a two-pixel contact shadow, with the ribcage nine pixels narrower per side
+than the shoulder span. The shoulder cap stays unbroken: arm and torso are
+one mass where they join, and an edge carried up over the shoulder reads as a limb stuck on.
+
+Face: eyes are 6×4, mirrored so the inner corner faces the nose — ink lash cap, shaded iris row with a glint, lit
+iris row around a 2×1 pupil, cream only in the corners. Eyes land on the half-height of the skull, about one
+eye-width apart. Nose base to mouth is **one** row; mouth to chin three or four. Brows sit two rows clear of the
+lash cap on visible forehead. No loose `dirt` pixels on the cheeks — at this scale they read as scars.
+
+You: straw hat, braids, overalls, `water` eyes. Husband: brown-blonde side part, cream shirt with **horizontal**
+`water` stripes, `leaf` eyes, no glasses. Daughter: pigtails, `fruit-red` bow, `roof` dress, cream pinafore, her
+father's eyes — same girl as in `ui-market-stall.svg`.
 
 ## Button
 
-`ui-btn-family.svg` — viewBox `0 0 24 24`. Four sibling groups `idle` `hover` `selected` `disabled`,
-same frame language as `ui-btn-research.svg`; select by id with `btnFace`. Three heads: husband left,
-you centre and tallest, daughter right.
+`ui-btn-family.svg` — viewBox `0 0 24 24`, groups `idle` `hover` `selected` `disabled`, frame language of
+`ui-btn-research.svg`, select with `btnFace`. Three heads: husband left, you centre, daughter right.
 
 ## Skill icons
 
-viewBox `0 0 24 24`, no groups. One icon per skill family — every tier reuses it, the level is drawn by the UI.
+viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, the UI draws the level.
 
-| file | skill |
-|---|---|
-| `skill-boots.svg` | Boots I–V |
-| `skill-machinery.svg` | Machinery I–III |
-| `skill-tending.svg` | Careful tending |
-| `skill-research-speed.svg` | Speedy research I–III |
-| `skill-tool-contracts.svg` | Tool contracts I–III |
-| `skill-machine-contracts.svg` | Machine contracts I–III |
-| `skill-forecast.svg` | Weather forecast |
-| `skill-tax.svg` | Smart tax returns I–III |
-| `skill-water-study.svg` | Water study lens |
-| `skill-land-study.svg` | Land quality study lens |
-| `skill-bulk-buying.svg` | Bulk buying |
-| `skill-saleswoman.svg` | Saleswoman I–III |
-| `skill-heirloom.svg` | Őstermelő I–III |
-| `skill-better-{crop}.svg` | Better {crop} — carrot, potato, wheat, tomato, raspberry, watermelon, apple |
-| `skill-bio.svg` | Bio farmer I–V |
-| `skill-industrial.svg` | Industrial farmer I–V |
-| `skill-open-late.svg` | Open late |
-| `skill-open-24.svg` | Open 24/7 |
-| `skill-jam.svg` | Still good for jam I–V |
-| `skill-clearance.svg` | Clearance sale |
-| `skill-point.svg` | Unspent skill point pip |
-| `skill-locked.svg` | Gated skill, research or skill unlock missing |
+`skill-boots` `skill-machinery` `skill-tending` · `skill-research-speed` `skill-tool-contracts`
+`skill-machine-contracts` `skill-forecast` `skill-tax` `skill-water-study` `skill-land-study` `skill-bulk-buying` ·
+`skill-saleswoman` `skill-heirloom` `skill-better` `skill-bio` `skill-industrial` `skill-open-late` `skill-open-24`
+`skill-jam` `skill-clearance` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
 
-`skill-better-{crop}.svg` embeds the `common` group of the matching **`fruit-*.svg`** — the sold fruit,
-not `crop-*.svg` — under a green up arrow. Regenerate rather than redraw if fruit art changes.
-`skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
+## Reuse, not redraw
 
-## Do not
+One copy of each shared symbol; icons composite it.
 
-Imagine, raster, new hex, text in asset files, redraw the portraits per state, bake a tier number into an icon.
+- **Better {crop}** — `skill-better.svg` is the arrow badge alone. The UI draws `fruitInner(crop)` under it. No
+  per-crop file.
+- **Arrows** — up / down badge in the `ui-quality.svg` language: ink square, solid `leaf` fill, ink glyph cut out.
+- **Őstermelő** — `skill-heirloom.svg` is `ui-quality.svg` at 3× in heirloom gold. Not a new symbol.
+- **Money** — every coin is `ui-coin.svg` embedded verbatim under a `translate` (and `scale(2)` in
+  `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-tool-contracts`
+  `skill-machine-contracts` `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom`.
+- `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.

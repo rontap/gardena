@@ -17,6 +17,7 @@ import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { paintMotion } from './game/view/motion.ts'
+import { DT_MAX } from './game/sim/world.ts'
 
 type Panel =
   | { kind: 'none' }
@@ -26,6 +27,12 @@ type Panel =
   | { kind: 'inventory' }
   | { kind: 'almanac' }
   | { kind: 'chest'; at: Coord }
+
+const SPEED = (() => {
+  const raw = new URLSearchParams(window.location.search).get('speed')
+  const n = raw === null ? NaN : Number(raw)
+  return Number.isFinite(n) && n >= 1 ? Math.min(20, n) : 1
+})()
 
 export default function App() {
   const world = useRef(new World()).current
@@ -38,6 +45,13 @@ export default function App() {
   const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
+
+  useEffect(() => {
+    ;(window as unknown as { __world?: World }).__world = world
+    return () => {
+      delete (window as unknown as { __world?: World }).__world
+    }
+  }, [world])
 
   useEffect(() => world.on(() => setN(x => x + 1)), [world])
 
@@ -65,8 +79,13 @@ export default function App() {
     let last = performance.now()
     let id = 0
     const loop = (now: number) => {
-      world.tick((now - last) / 1000)
+      let left = ((now - last) / 1000) * SPEED
       last = now
+      while (left > 1e-6) {
+        const step = Math.min(left, DT_MAX)
+        world.tick(step)
+        left -= step
+      }
       if (root.current !== null) paintMotion(root.current, world, revRef.current)
       id = requestAnimationFrame(loop)
     }
@@ -109,6 +128,7 @@ export default function App() {
         <MapView
             world={world}
             cam={cam}
+            rev={n}
             lens={lens}
             hover={hover}
             onHover={setHover}

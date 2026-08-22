@@ -11,16 +11,18 @@ const OCTAVES = [
 ]
 
 const CONTRAST = 1.9
-const BOOST_RADIUS = 8
+const BOOST_RADIUS = 16
+const BOOST_FALLOFF = 8
 const BOOST_MIN = 0.4
 const BOOST_SPAN = 0.35
+const BOOST_TAIL = Math.exp(-BOOST_RADIUS / BOOST_FALLOFF)
 
 export function goodness(seed: number, col: number, row: number): number {
   const x = col + 0.5
   const y = row + 0.5
   const raw = OCTAVES.reduce((a, o, i) => a + o.amp * valueNoise(seed, i, x * o.freq, y * o.freq), 0)
   const r = Math.hypot(x - (DOOR.col + 0.5), y - (DOOR.row + 0.5))
-  const fade = r >= BOOST_RADIUS ? 0 : 1 - r / BOOST_RADIUS
+  const fade = r >= BOOST_RADIUS ? 0 : (Math.exp(-r / BOOST_FALLOFF) - BOOST_TAIL) / (1 - BOOST_TAIL)
   const boost = fade * (BOOST_MIN + BOOST_SPAN * hash(seed, 'soil-boost', col, row))
   const v = 0.5 + (raw - 0.5) * CONTRAST + boost
   return v < 0 ? 0 : v > 1 ? 1 : v

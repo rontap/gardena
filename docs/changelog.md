@@ -1,8 +1,18 @@
 # Changelog
 
+History. Not current contracts.
+
+## 2026-08-22 — v0.7.1
+
+- Base soil boost: exponential decay to `r = 16` instead of a linear taper to `r = 8`. No hard ring around the cottage.
+- Actor redrawn — straw hat, overalls, boots. [[art/actor]].
+- Market and almanac overlays close on backdrop, matching the Radix dialogs.
+- Crop panes carry a plain-language `desc` under the name; it doubles as the catalog blurb.
+- Recap redesigned: night strip, tally rows, stipend / tax / balance ledger. `Recap.stipend` added. [[ui/docks]] [[art/recap-night]].
+
 ## 2026-08-22 — v0.3 Dirt Overhaul & Fertilizers
 
-Current contracts: [[mechanics/v0.3]] [[architecture/v0.3]].
+[[archive/mechanics/v0.3]] [[archive/architecture/v0.3]].
 
 - Water and fertilizer belong to the soil, not the plant. `Plant.thirst` dies.
 - Soil survives harvest, dig, death and rot. Bare tilled soil can be watered.
@@ -14,7 +24,7 @@ Current contracts: [[mechanics/v0.3]] [[architecture/v0.3]].
 
 ## 2026-08-19 — Beta-6 / Update 7
 
-Current contracts: [[mechanics/beta-6]] [[architecture/beta-6]] [[ui/beta-6]] [[art/beta-6]] [[ui/place]].
+[[archive/mechanics/beta-6]] [[archive/architecture/beta-6]] [[archive/ui/beta-6]] [[archive/art/beta-6]] [[ui/place]].
 
 - HUD overlay + cottage buttons.
 - Coin replaces `$`.
@@ -28,7 +38,7 @@ Current contracts: [[mechanics/beta-6]] [[architecture/beta-6]] [[ui/beta-6]] [[
 
 ## 2026-08-19 — Beta-5 irrigation fix
 
-Historical. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] [[ui/beta-5]] [[art/beta-5]] [[ui/place]].
+[[archive/mechanics/beta-5]] [[archive/architecture/beta-5]] [[archive/ui/beta-5]] [[archive/art/beta-5]] [[ui/place]].
 
 - Sprinkler place without incident pipe; rate 0 until sourced.
 - Large AoE 4×4 centered.
@@ -41,7 +51,7 @@ Historical. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] [[ui/beta-5]
 
 ## 2026-08-18 — Beta-5
 
-Historical. Automation. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] [[ui/beta-5]] [[art/beta-5]] [[ui/place]].
+Automation. [[archive/mechanics/beta-5]] [[archive/architecture/beta-5]] [[archive/ui/beta-5]] [[archive/art/beta-5]] [[ui/place]].
 
 ### Network
 
@@ -53,7 +63,7 @@ Historical. Automation. Contracts: [[mechanics/beta-5]] [[architecture/beta-5]] 
 
 ## 2026-08-18 — Beta-4
 
-Current contracts: [[mechanics/beta-4]] [[architecture/beta-4]] [[ui/beta-4]] [[art/beta-4]] [[ui/place]].
+[[archive/mechanics/beta-4]] [[archive/architecture/beta-4]] [[archive/ui/beta-4]] [[archive/art/beta-4]] [[ui/place]].
 
 ### Chrome
 
@@ -71,7 +81,7 @@ Current contracts: [[mechanics/beta-4]] [[architecture/beta-4]] [[ui/beta-4]] [[
 
 ## 2026-08-18 — Beta-3
 
-Current contracts: [[mechanics/beta-3]] [[architecture/beta-3]] [[ui/beta-3]] [[ui/place]] [[art/beta-3]].
+[[archive/mechanics/beta-3]] [[archive/architecture/beta-3]] [[archive/ui/beta-3]] [[ui/place]] [[archive/art/beta-3]].
 
 ### World
 
@@ -98,7 +108,7 @@ Current contracts: [[mechanics/beta-3]] [[architecture/beta-3]] [[ui/beta-3]] [[
 
 ## 2026-08-18 — Beta-2 close
 
-Historical. Current law: [[mechanics/beta-3]].
+[[archive/mechanics/beta-3]].
 
 Beta-1 notes are historical.
 

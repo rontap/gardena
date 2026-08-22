@@ -7,6 +7,12 @@ Vault for this game. Agents read this first.
 - [[canon]]
 - [[stack]]
 - [[pipeline]]
+- [[standards/docs]]
+- [[standards/testing]]
+
+## Aims
+
+- [[aims]]
 
 ## Agents
 
@@ -19,60 +25,31 @@ Vault for this game. Agents read this first.
 - [[agents/documenter]]
 - [[agents/code-review]]
 
-## v0.3
+## Mechanics
 
-- [[mechanics/v0.3]]
-- [[architecture/v0.3]]
+- [[mechanics/_index]]
 
-## Beta-6
+## Items
 
-- [[mechanics/beta-6]]
-- [[architecture/beta-6]]
-- [[ui/beta-6]]
-- [[art/beta-6]]
+- [[items/_index]]
 
-## Beta-5 — historical
-
-- [[mechanics/beta-5]]
-- [[architecture/beta-5]]
-- [[ui/beta-5]]
-- [[art/beta-5]]
-
-## Beta-4 — historical
-
-- [[mechanics/beta-4]]
-- [[architecture/beta-4]]
-- [[ui/beta-4]]
-- [[art/beta-4]]
-
-## Beta-3
-
-- [[mechanics/beta-3]]
-- [[architecture/beta-3]]
-- [[ui/beta-3]]
-- [[art/beta-3]]
-
-## Beta-2
-
-- [[mechanics/beta-2]]
-- [[architecture/beta-2]]
-- [[ui/beta-2]]
-- [[art/beta-2]]
-
-## Beta-1
-
-- [[mechanics/beta-1]]
-- [[architecture/beta-1]]
-- [[ui/beta-1]]
-- [[art/beta-1]]
-
-## Log
-
-- [[changelog]]
-
-## Later
+## Architecture
 
 - [[architecture/_index]]
-- [[mechanics/_index]]
+
+## UI
+
 - [[ui/_index]]
+
+## Art
+
 - [[art/_index]]
+
+## Plans
+
+- [[plans/Path to V1.0]] — roadmap, not rules
+- [[reconciliation]] — locked decisions
+
+## Archive
+
+- [[archive/_index]]

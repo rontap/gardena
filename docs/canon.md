@@ -47,8 +47,8 @@ Missing value → the type is wrong. Fix the type.
 
 ## Tests
 
-Only named mechanic invariants in [[mechanics/_index]], or when the user asks.
+Named invariants on [[mechanics/_index]], or when the user asks.
 
 ## Docs
 
-Contracts live in `docs/**/*.md`. Obsidian `[[wikilinks]]`, no `.md` suffix in the link. Record decisions and contracts, not what the code already shows. Write the file immediately. Do not emit handoff text instead of the note.
+Working notes per [[standards/docs]].

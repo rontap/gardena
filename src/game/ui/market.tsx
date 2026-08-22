@@ -15,7 +15,13 @@ export function Market({ world, onClose }: { world: World; onClose: () => void }
   const stocked = STALL_IDS.filter(id => stockCount(world, id) > 0)
   const gain = world.marketGain()
   return (
-    <div data-market-overlay className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40">
+    <div
+      data-market-overlay
+      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40"
+      onPointerDown={e => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <Chrome className="relative max-h-[calc(100%-4rem)] w-[40rem] overflow-y-auto px-4 pb-5 pt-7">
         <div className="relative z-20 flex items-center justify-between pb-2">
           <div className="text-sm">Market</div>

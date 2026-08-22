@@ -67,7 +67,7 @@ const RARITY_TABS: { id: Rarity; label: string }[] = [
   { id: 'common', label: 'Common' },
   { id: 'uncommon', label: 'Uncommon' },
   { id: 'rare', label: 'Rare' },
-  { id: 'heirloom', label: 'Specialty' },
+  { id: 'heirloom', label: 'Heirloom' },
 ]
 
 const CROP_IDS = Object.keys(CROPS) as CropId[]
@@ -103,7 +103,12 @@ export function Almanac({ onClose }: { onClose: () => void }) {
   const entry = byId.get(id)
   const shownEntry = entry !== undefined && list.some(e => e.id === id) ? entry : list[0]
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40">
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40"
+      onPointerDown={e => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <Chrome className="relative flex max-h-[min(36rem,calc(100%-6rem))] w-[36rem] flex-col overflow-hidden">
         <div className="relative z-20 flex h-9 shrink-0 items-center justify-between px-4">
           <div className="font-medium text-ink">Almanac</div>
@@ -210,7 +215,8 @@ function CropPane({ id }: { id: CropId }) {
   const st = statsOf(id, preview, [])
   return (
     <>
-      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="font-display mb-2 text-[11px] leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="mb-3 text-sm leading-relaxed text-ink/70">{d.desc}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
@@ -327,7 +333,8 @@ function ApplePane() {
   }, [])
   return (
     <>
-      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
+      <div className="font-display mb-2 text-[11px] leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
+      <div className="mb-3 text-sm leading-relaxed text-ink/70">{CROPS.apple.desc}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">

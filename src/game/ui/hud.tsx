@@ -55,7 +55,7 @@ const LENS_ROWS: { id: Lens; label: string; swatches: { face: string; name: stri
       { face: 'bg-house', name: 'common' },
       { face: 'bg-leaf', name: 'uncommon' },
       { face: 'bg-water', name: 'rare' },
-      { face: 'bg-ripe', name: 'specialty' },
+      { face: 'bg-ripe', name: 'heirloom' },
     ],
   },
   { id: 'pipes', label: 'Pipes', swatches: [] },

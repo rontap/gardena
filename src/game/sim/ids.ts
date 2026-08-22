@@ -28,6 +28,7 @@ export type ResearchId =
   | 'unlock-grinder'
   | 'unlock-fertilizer'
   | 'unlock-compost'
+  | 'unlock-smart-sprinkler'
 
 export type SkuId =
   | 'pack-carrot'
@@ -55,6 +56,9 @@ export type SkuId =
   | 'buy-sprinkler-vert'
   | 'buy-sprinkler-large'
   | 'buy-well'
+  | 'buy-valve'
+  | 'buy-rain-tank'
+  | 'buy-tap'
   | 'buy-tile-paved'
   | 'buy-tile-brick'
   | 'buy-tile-cobble'

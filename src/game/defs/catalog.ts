@@ -14,9 +14,11 @@ import {
   PICKAXES,
   SHOVELS,
   SHRUB_GROW,
+  SPRINKLER_TILE_DAY,
   SYNTH_BAG_LITERS,
   COMPOST_VALUE,
 } from './items.ts'
+import { SOURCE, TAP_RATE } from '../sim/water.ts'
 import { BIO_RESTORE, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
 import type { CropId } from '../sim/ids.ts'
 import type { Face } from '../sim/item.ts'
@@ -52,14 +54,22 @@ const SOIL_T =
   'Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads 0 to ${max} L; plants want ${mid} L and drown above it. Fertilizer runs from 0 to 1 and a growing plant empties a full plot in three days.'
 const BERRY_T = 'Wild berry. Sells for ${sale} times the rarity multiplier.'
 const SHRUB_T = 'Berry shrub. Matures in ${growSeconds}s, then berries. Shovel to move.'
-const PUMP_T = 'Place a 2 L/s pump on two tiles. Fill a bucket here. Pipe its edges to feed sprinklers.'
+const PUMP_T =
+  'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
 const CHEST_T = '9 slots. Walk up and store any item.'
 const GRIND_T = 'One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.'
 const PIPE_T = 'Pipe. 4 per edge. Hidden unless the Pipes lens or a pipe tool is out.'
-const SPRINKLER_T = 'Waters a 2×2 around a corner. 0.5 L/s when piped to a source.'
-const SPRINKLER_VERT_T = 'Waters a 4×2 strip. Rotate while placing to flip NS/EW. 0.5 L/s when piped.'
-const SPRINKLER_LARGE_T = 'Waters a 4×4 around a corner. 0.5 L/s when piped to a source.'
-const WELL_T = 'Place a 5 L/s well on one tile. Fill a bucket here. Pipe its edges to feed sprinklers.'
+const SPRINKLER_T =
+  'Waters a 2×2 around a corner, ${day} L a day per tile. Smart sprinklers research lets you dial it down to the exact thirst of one crop.'
+const SPRINKLER_VERT_T = 'Waters a 4×2 strip, ${day} L a day per tile. Rotate while placing to flip NS/EW.'
+const SPRINKLER_LARGE_T = 'Waters a 4×4 around a corner, ${day} L a day per tile.'
+const WELL_T =
+  'One tile. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
+const VALVE_T =
+  'Sits on an edge like pipe. Click it to send the gardener over and turn the flow off or on. Water still reaches a sprinkler by any other open route.'
+const RAIN_TANK_T = 'Two tiles. Gathers ${rate} L/s into a ${cap} L tank with no pump and no pipe run to a source.'
+const TAP_T =
+  'One tile on the grid. Fills a bucket at ${rate} L/s while the tanks hold water, and only as fast as the sources make it once they run dry.'
 
 export function fill(template: string, vars: { readonly [key: string]: string | number }): string {
   return template.replace(/\$\{([^}]+)\}/g, (_, key: string) => {
@@ -242,7 +252,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'pumpjack',
       title: 'Pump',
       icon: { kind: 'pumpjack' },
-      blurb: PUMP_T,
+      blurb: fill(PUMP_T, { rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
     },
     {
       id: 'chest',
@@ -266,25 +276,43 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'sprinkler',
       title: 'Sprinkler',
       icon: { kind: 'sprinkler' },
-      blurb: SPRINKLER_T,
+      blurb: fill(SPRINKLER_T, { day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'sprinkler-vert',
       title: 'Vertical sprinkler',
       icon: { kind: 'sprinkler-vert' },
-      blurb: SPRINKLER_VERT_T,
+      blurb: fill(SPRINKLER_VERT_T, { day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'sprinkler-large',
       title: 'Large sprinkler',
       icon: { kind: 'sprinkler-large' },
-      blurb: SPRINKLER_LARGE_T,
+      blurb: fill(SPRINKLER_LARGE_T, { day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'well',
       title: 'Well',
       icon: { kind: 'well' },
-      blurb: WELL_T,
+      blurb: fill(WELL_T, { rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
+    },
+    {
+      id: 'valve',
+      title: 'Manual valve',
+      icon: { kind: 'valve' },
+      blurb: VALVE_T,
+    },
+    {
+      id: 'rain-tank',
+      title: 'Rainwater tank',
+      icon: { kind: 'rain-tank' },
+      blurb: fill(RAIN_TANK_T, { rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
+    },
+    {
+      id: 'tap',
+      title: 'Tap',
+      icon: { kind: 'tap' },
+      blurb: fill(TAP_T, { rate: TAP_RATE }),
     },
   ]
 }

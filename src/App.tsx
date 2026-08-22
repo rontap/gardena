@@ -6,6 +6,7 @@ import { ChestUi } from './game/ui/chest.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
+import { ObjectHud } from './game/ui/objecthud.tsx'
 import { Market } from './game/ui/market.tsx'
 import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
@@ -29,8 +30,10 @@ type Panel =
 export default function App() {
   const world = useRef(new World()).current
   const root = useRef<HTMLDivElement>(null)
+  const revRef = useRef(0)
   const consignRevision = useRef(0)
   const [n, setN] = useState(0)
+  revRef.current = n
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
@@ -64,7 +67,7 @@ export default function App() {
     const loop = (now: number) => {
       world.tick((now - last) / 1000)
       last = now
-      if (root.current !== null) paintMotion(root.current, world)
+      if (root.current !== null) paintMotion(root.current, world, revRef.current)
       id = requestAnimationFrame(loop)
     }
     id = requestAnimationFrame(loop)
@@ -75,6 +78,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       world.cancelPlace()
+      world.closeHud()
       setLens(l => (l === 'pipes' ? 'off' : l))
       if (world.seam.kind === 'recap') world.dismissRecap()
       setPanel(p => {
@@ -105,13 +109,13 @@ export default function App() {
         <MapView
             world={world}
             cam={cam}
-            rev={n}
             lens={lens}
             hover={hover}
             onHover={setHover}
             onCam={setCam}
             onClick={hit => {
               if (world.seam.kind === 'recap') return
+              if (hit.kind !== 'sprinkler-hud') world.closeHud()
               if (panel.kind === 'inventory' || panel.kind === 'chest') {
                 if (panel.kind === 'chest') world.ackCue()
                 setPanel({ kind: 'none' })
@@ -158,6 +162,7 @@ export default function App() {
               }}
             />
           )}
+          <ObjectHud world={world} cam={cam} onClose={() => world.closeHud()} />
           {world.seam.kind === 'recap' && (
             <Recap recap={world.seam.recap} nextDay={world.clock.day} onDismiss={() => world.dismissRecap()} />
           )}
@@ -186,6 +191,14 @@ function dispatchClick(world: World, hit: MapClick): void {
   }
   if (hit.kind === 'delete-sprinkler') {
     world.deleteSprinkler(hit.at)
+    return
+  }
+  if (hit.kind === 'valve') {
+    world.clickValve(hit.edge)
+    return
+  }
+  if (hit.kind === 'sprinkler-hud') {
+    world.openHud({ kind: 'sprinkler', at: hit.at })
     return
   }
   world.click(hit.at)

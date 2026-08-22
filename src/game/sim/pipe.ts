@@ -1,4 +1,5 @@
 import type { Coord } from './building.ts'
+import type { CropId } from './ids.ts'
 
 export type Edge =
   | { axis: 'h'; col: number; row: number }
@@ -8,12 +9,53 @@ export type Vertex = { col: number; row: number }
 
 export type Junction = 'stub' | 'I' | 'L' | 'T' | 'X'
 
-export type Sprinkler =
-  | { variant: 'basic'; at: Vertex }
-  | { variant: 'vert'; at: Vertex; facing: 'ns' | 'ew' }
-  | { variant: 'large'; at: Vertex }
+export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }
 
-export type System = { C: number; N: number; R: number }
+export type Segment = { at: Edge; gate: Gate }
+
+export type Tune = { kind: 'flat' } | { kind: 'crop'; crop: CropId }
+
+export type Sprinkler =
+  | { variant: 'basic'; at: Vertex; tune: Tune }
+  | { variant: 'vert'; at: Vertex; facing: 'ns' | 'ew'; tune: Tune }
+  | { variant: 'large'; at: Vertex; tune: Tune }
+
+export function flows(s: Segment): boolean {
+  return s.gate.kind === 'bare' || s.gate.open
+}
+
+export function vertsOf(e: Edge): [Vertex, Vertex] {
+  if (e.axis === 'h') return [{ col: e.col, row: e.row }, { col: e.col + 1, row: e.row }]
+  return [{ col: e.col, row: e.row }, { col: e.col, row: e.row + 1 }]
+}
+
+export function boundsOf(at: Coord): Edge[] {
+  return [
+    { axis: 'h', col: at.col, row: at.row },
+    { axis: 'h', col: at.col, row: at.row + 1 },
+    { axis: 'v', col: at.col, row: at.row },
+    { axis: 'v', col: at.col + 1, row: at.row },
+  ]
+}
+
+export function corners(cells: readonly Coord[]): Vertex[] {
+  const seen = new Set<string>()
+  const out: Vertex[] = []
+  cells.forEach(at => {
+    ;[
+      { col: at.col, row: at.row },
+      { col: at.col + 1, row: at.row },
+      { col: at.col, row: at.row + 1 },
+      { col: at.col + 1, row: at.row + 1 },
+    ].forEach(v => {
+      const k = vertexKey(v)
+      if (seen.has(k)) return
+      seen.add(k)
+      out.push(v)
+    })
+  })
+  return out
+}
 
 export function edgeKey(e: Edge): string {
   return `${e.axis}:${e.col},${e.row}`

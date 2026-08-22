@@ -31,7 +31,10 @@ const BUILDING_TILES: SkuId[] = ['buy-tile-paved', 'buy-tile-brick', 'buy-tile-c
 export const AUTOMATION: SkuId[] = [
   'buy-pumpjack',
   'buy-well',
+  'buy-rain-tank',
+  'buy-tap',
   'buy-pipe',
+  'buy-valve',
   'buy-sprinkler',
   'buy-sprinkler-vert',
   'buy-sprinkler-large',

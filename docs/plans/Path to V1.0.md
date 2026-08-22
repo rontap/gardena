@@ -25,13 +25,15 @@ New item: synthetic fertilizer. It is bigger than regular fertilizer with 8L and
 
 ## 0.5 Automation update II.
 With the introduction of the last update, sprinklers now can be actively overwatering plants to a detrement. Therefore we update the sprinkling system with new features and items.
-First: water sources should have, when the pipes lense turned on, have a × shaped pipe (actually 45 deg) and water source icon in the middle. It should be intuitive to the user, that if any of the edges are reached by the pipe, it will connect to that. Also fix a but here where now pipe is only filled if it is on a two edges of a water source, and not when it is only on one point.
+First: water sources should have, when the pipes lense turned on, have a × shaped pipe (actually 45 deg) and water source icon in the middle. It should be intuitive to the user, that if any of the edges are reached by the pipe, it will connect to that. Also fix a but here where now pipe is only filled if it is on a two edges of a water source, and not when it is only on one point. Sprinklers now all dispense only 2.5L/water/tile. Tomato, wheat and raspberry now use +0.3L/day, but watermelon uses -0.5L/day.
 New buildings and mechanics:
 - Manual Valve. This object, also placed on the edges of tiles, can open or close a valve. User can trigger change by clicking on it, (player moves there), and the valve is SVG-designed in a way such that it is either blue or red (off). Sprlinklers have no VFX when they have no water. If the pipe is connected in another way such that is can flow threough there, water should still reach it. 
-- Tied to a research, called smart sprinklers, adds a clickable popup hud to sprinklers (not as a new building). When clicked, the list of all plants are shown in a vertical grid, showing water use. When the user clicks a plant, the sprinkler will adjust water output such that it only sprinklers as much water as the plants actually need. Note, that if the plant was under or overwatered, that will remain so. When the player manually waters a plant, it plants up to 1L + `max plant comfortable water use` . So if the plant is already overwatered, no water is being added, whereas if the plant is wilting, more than 1L could be added. 
+- Tied to a research, called smart sprinklers, adds a clickable popup hud to sprinklers (not as a new building). When clicked, the list of all plants are shown in a vertical grid, showing water use. When the user clicks a plant, the sprinkler will adjust water output such that it only sprinklers as much water as the plants actually need. Note, that if the plant was under or overwatered, that will remain so. The clickable HUD of items will become a _common_ think, it should be done in a prorammattic and expandable way.
+- When the player manually waters a plant, it plants up to 1L + `max plant comfortable water use` . So if the plant is already overwatered, no water is being added, whereas if the plant is wilting, more than 1L could be added. 
 - Rainwater tank. 2×1 building, 20$, slowly (0.4/L) gathers water and has internal storage of 100L. All water producers have internal water storage. pump has 50L and well has 150L.
 	- Design consideration: when there are multiple producers and multiple consumers in a network, it should clearly work. It is not important if it is pooled together, or only one is used at all. But if +10L/s is being produced, sprinklers should be able to use all 10L
 	- Track water draw per producer individually (pump, well, rainwater tank, csap). Needed for pump-only water costs later.
+	- Design consideration: like most other things, there could be global effects affecting water production _per type_ 
 - "Csap". It is an acces point for water without having to place an expensive pump or well. 10$, needs to be connected to the water grid to function. Can fill water buckets quickly (5L/s)
 	- Keep in mind, that a pumpjack alone cannot provide this mnuch water. But since it has an internal buffer, that can be used to provide that. Buf it that is empty, then fill speed should still just be 2.5L/s!
 
@@ -64,7 +66,7 @@ When there are no skills left, or not enough to fill all three, only those are g
 ## 0.7 VFX & UI update and Docs ordering
 This update focuses on improving UI & UX and VFX design in terms of game code.
 The docs are right now organised in a very messy way. The main workdocs are okay per-version, but having no other notes about the game is bad. There should be an almanac-style repository of UI items, mechanics, interactions, design considerations. This is because right now it is hard to know if any given value is: calculated by hand based on different things, tuned to another value (and will need to be changed if that other mechanic is rebalanced), or is just a game design pereference. 
-A few (for now) mostly cosmetic items are to be added. They are all placed similarly to tiles, i.e. when the user starts placing it, they enter the "place many of this" mode and they can click and build as much as they want to. 
+A few (for now) mostly cosmetic items are to be added. They are all placed similarly to tiles, i.e. when the user starts placing it, they enter the "place many of this" mode and they can click and build as much as they want to. Theese items alre already mostly implemented - finish up work
 - Wooden Fence (10$) can be built on untilled soil and links up to fences the same way a pipe does, but the fence is in the middle of a tile, not inbetween files.
 - Tiles (Cobblestone, Brick, Paved) 5 / 7 / 11. They later will affect walking speed, but are not doing anything besides visuals now. 
 - Grass seeds - 1$, unlocked by "**landscape architecture**" research, allows planting of grass seeds, use very little water and mature quite quickly (1/4 day), do not have rarity. Once a grass is fully grown, the tilled land becomes untilled again.
@@ -73,13 +75,13 @@ A few (for now) mostly cosmetic items are to be added. They are all placed simil
 UI updates:
 - End of day screen should be better designed, table like, beter summarizing {starting} + {gain (from sources ...)} - expenses (buying and tax)
 
-## 0.8 Stable game log state
+## 0.8 Stable game log state and perf improvements
 The goal of this update is to log actions in a way such that later tools can use it to unlock things.
 Most actions should be logged in a global dump-state, such as number of sold items per type×rarity, number of gold earned and spent. It should be almost like an action log. The tutorial engine attaches to this and every N ticks it checks for the step being complete.
 Uses:
 - Hiding more stuff from the user: unless the user has ever harvested a fruit of type X that is rare or specialty, it is shown as ???, and when clicking on it, the tab instead shows "You have not encountered this rare variant". This unlock check happens only when user opens almanac, with something like gamedump.filter( type harvest)
-- Some research instead of being gated by money or time, is gated by progression. The better carrots-potatoes-wheat all require 20 of the respective plant to be owned cumulatively. check again happens when research is opened, and once unlocked, stay unlocked. Pickaxe is gated behind reaching day 3. Research time still applies to all. Large fruit contain requires you to sell 80 fruits Unlock land requires you to have received total of 200 money.
-
+- Achievements, for now just an empty stub.
+Now the game gets sluggish very fast. Mostly due to unnecesary react state updates and rerendering so many things. A few minutes of gameplay and we hit like 20FPS with lag spikes. Disptach agents to check out a RCA and fix the most pressing issues. 
 ## 0.9 Early Access 1 - playable complete game
 This update is a wrap-up and polish update. No directly new gameplay features.
 Features:
@@ -180,6 +182,8 @@ Refiner mill:
 - olive 5× -> olive oil (1 item)
 - wheat 5× -> flour (1 item)
 - grass 15× -> antifungal extract (unlocked by research gated behind disease management)
+Freezer:
+- fruits (in boxes or individually) do not rot at all.
 Sugar is also unlocked as a buyable item when jam is unlocked, it should be priced in a way such that sugar cane is overall a cheaper was to produce it. 
 
 # 0.13 Early Access 5 Weather patterns.
@@ -209,7 +213,7 @@ Drought:
 
 Since this is PRNG seeded (its own seed lineage obviously), the whole chain of days up to like day 99 can be done after startup, to allow weather predcitions to happen. Add debug options to change weather for next day.
 
-# 0.164 Early Access 6 - Automation III.
+# 0.14 Early Access 6 - Automation III.
 Sensors are added to the game. Sensors are 1×1 buildings that can read data from  places and send them to others through wires. Sensors may have inputs and/or outputs. all wires are one-way, strictly from output to input, strictly binary. Many of them have single pop-up huds that do not require the user to walk there. If there is a single input/output, they are on top (I) and bottom (O). If there are two inputs, they are on the side visually. Circular loops cannot be made.
 Most are research at bulk with the research "Sensors", when researched, a new main option tab "Sensors" is shown, where most of these are 
 Basic sensor providing user IO:

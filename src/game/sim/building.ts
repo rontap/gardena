@@ -1,5 +1,6 @@
 import { CHEST_SLOTS } from '../defs/items.ts'
 import type { Slot } from './item.ts'
+import { Reservoir } from './water.ts'
 
 export type Coord = { col: number; row: number }
 
@@ -140,13 +141,29 @@ export class Pump {
   readonly kind = 'pump' as const
   readonly form: 'starter' | 'jack' | 'well'
   readonly base: Base
+  readonly water: Reservoir
   constructor(base: Base, form: 'starter' | 'jack' | 'well') {
     this.base = base
     this.form = form
+    this.water = new Reservoir(form === 'well' ? 'well' : 'pump')
   }
-  get outputLitersPerSec(): number {
-    if (this.form === 'well') return 5
-    return 2
+}
+
+export class RainTank {
+  readonly kind = 'rain-tank' as const
+  readonly base: RectBase
+  readonly water = new Reservoir('rain-tank')
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class Tap {
+  readonly kind = 'tap' as const
+  readonly base: RectBase
+  drawn = 0
+  constructor(base: RectBase) {
+    this.base = base
   }
 }
 
@@ -227,4 +244,4 @@ export function frontOf(at: Coord): Coord[] {
   ]
 }
 
-export type Building = House | Pump
+export type Building = House | Pump | RainTank

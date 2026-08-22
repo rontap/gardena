@@ -1,3 +1,4 @@
+import { DAY_SECONDS } from '../sim/clock.ts'
 import type { ContainerId, PickaxeId, ShovelId } from '../sim/ids.ts'
 
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
@@ -23,7 +24,8 @@ export const GRIND_MIN = 1
 export const GRIND_MAX = 3
 export const SPEECH_S = 2.5
 export const SHRUB_GROW = 360
-export const SPRINKLER_RATE = 0.5
+export const SPRINKLER_TILE_DAY = 2.5
+export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
 export const FERT_BAG_LITERS = 5
 export const SYNTH_BAG_LITERS = 8
 export const COMPOST_LITERS = 3

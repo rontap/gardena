@@ -12,6 +12,7 @@ export type ResearchDef = {
         | { kind: 'unlock-sku'; sku: SkuId }
         | { kind: 'sale-mul'; crop: CropId; saleMul: number }
         | { kind: 'expand' }
+        | { kind: 'feature' }
 }
 
 export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
@@ -112,7 +113,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         cost: 22,
         seconds: 55,
         reveal: 'unlock-irrigation',
-        blurb: 'Unlocks Pipe and Sprinkler in the general store.',
+        blurb: 'Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pipe'},
     },
     'unlock-adv-irrigation': {
@@ -124,6 +125,16 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         reveal: 'unlock-auto-irrigation',
         blurb: 'Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-well'},
+    },
+    'unlock-smart-sprinkler': {
+        id: 'unlock-smart-sprinkler',
+        name: 'Smart sprinklers',
+        tree: 'automation',
+        cost: 30,
+        seconds: 70,
+        reveal: 'unlock-adv-irrigation',
+        blurb: 'Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks.',
+        effect: {kind: 'feature'},
     },
     'unlock-chest': {
         id: 'unlock-chest',
@@ -240,6 +251,9 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
         show: 'unlock-auto-irrigation',
     },
     'buy-well': {id: 'buy-well', price: 75, unlock: 'unlock-adv-irrigation', show: 'unlock-auto-irrigation'},
+    'buy-valve': {id: 'buy-valve', price: 6, unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
+    'buy-rain-tank': {id: 'buy-rain-tank', price: 20, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
+    'buy-tap': {id: 'buy-tap', price: 10, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
     'buy-tile-paved': {id: 'buy-tile-paved', price: 1, unlock: 'start', show: 'start'},
     'buy-tile-brick': {id: 'buy-tile-brick', price: 1, unlock: 'start', show: 'start'},
     'buy-tile-cobble': {id: 'buy-tile-cobble', price: 1, unlock: 'start', show: 'start'},

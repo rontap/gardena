@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
+  <g id="sprout">
+    <rect fill="#1c1710" x="11" y="17" width="2" height="4"/>
+    <rect fill="#6bc04a" x="11" y="18" width="2" height="3"/>
+    <rect fill="#1c1710" x="6" y="16" width="5" height="3"/>
+    <rect fill="#6bc04a" x="7" y="17" width="3" height="1"/>
+    <rect fill="#1c1710" x="12" y="15" width="5" height="3"/>
+    <rect fill="#6bc04a" x="13" y="16" width="3" height="1"/>
+    <rect fill="#1c1710" x="9" y="14" width="2" height="2"/>
+    <rect fill="#3a6232" x="9" y="14" width="1" height="1"/>
+  </g>
+  <g id="grow">
+    <path fill="#1c1710" d="M11 21h2V12h-2zm-8-3h8v-2H3zm10-4h9v-2h-9zM6 12h5v-2H6zm7-3h5V7h-5z"/>
+    <path fill="#536b45" d="M12 20h1v-8h-1zm-7-3h7v-1H5zm8-4h8v-1h-8zM7 11h4v-1H7zm7-3h4V7h-4z"/>
+    <path fill="#9b6b35" d="M3 18h2v1H3zm17-6h2v1h-2z"/>
+  </g>
+</svg>

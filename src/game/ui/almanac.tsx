@@ -43,7 +43,10 @@ const UTIL_IDS = [
 const AUTO_IDS = [
   'pumpjack',
   'well',
+  'rain-tank',
+  'tap',
   'pipe',
+  'valve',
   'sprinkler',
   'sprinkler-vert',
   'sprinkler-large',

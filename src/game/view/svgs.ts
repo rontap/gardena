@@ -37,6 +37,9 @@ import itemPipe from '../../assets/item-pipe.svg?raw'
 import itemSprinkler from '../../assets/item-sprinkler.svg?raw'
 import itemSprinklerVert from '../../assets/item-sprinkler-vert.svg?raw'
 import itemSprinklerLarge from '../../assets/item-sprinkler-large.svg?raw'
+import itemValve from '../../assets/item-valve.svg?raw'
+import itemRainTank from '../../assets/item-rain-tank.svg?raw'
+import itemTap from '../../assets/item-tap.svg?raw'
 import itemDelete from '../../assets/item-delete.svg?raw'
 import house from '../../assets/prop-house.svg?raw'
 import pump from '../../assets/prop-pump.svg?raw'
@@ -44,6 +47,8 @@ import chest from '../../assets/prop-chest.svg?raw'
 import grinder from '../../assets/prop-grinder.svg?raw'
 import propWell from '../../assets/prop-well.svg?raw'
 import propTruck from '../../assets/prop-truck.svg?raw'
+import propRainTank from '../../assets/prop-rain-tank.svg?raw'
+import propTap from '../../assets/prop-tap.svg?raw'
 import propSprinkler from '../../assets/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/prop-sprinkler-vert.svg?raw'
 import propSprinklerLarge from '../../assets/prop-sprinkler-large.svg?raw'
@@ -52,6 +57,8 @@ import pipeI from '../../assets/pipe-i.svg?raw'
 import pipeL from '../../assets/pipe-l.svg?raw'
 import pipeT from '../../assets/pipe-t.svg?raw'
 import pipeX from '../../assets/pipe-x.svg?raw'
+import pipeSource from '../../assets/pipe-source.svg?raw'
+import pipeValve from '../../assets/pipe-valve.svg?raw'
 import overlayWater from '../../assets/overlay-water.svg?raw'
 import rock from '../../assets/prop-rock.svg?raw'
 import rockLong from '../../assets/prop-rock-long.svg?raw'
@@ -103,6 +110,7 @@ import uiPhaseTwilight from '../../assets/ui-phase-twilight.svg?raw'
 import uiResearchTools from '../../assets/ui-research-tools.svg?raw'
 import uiResearchAuto from '../../assets/ui-research-auto.svg?raw'
 import uiResearchAdv from '../../assets/ui-research-adv.svg?raw'
+import uiResearchSmart from '../../assets/ui-research-smart.svg?raw'
 import uiResearchExpand from '../../assets/ui-research-expand.svg?raw'
 import uiHeader from '../../assets/ui-header.svg'
 import uiRail from '../../assets/ui-rail.svg'
@@ -165,6 +173,9 @@ export function itemInner(item: Face): string {
   if (item.kind === 'sprinkler') return inner(itemSprinkler)
   if (item.kind === 'sprinkler-vert') return inner(itemSprinklerVert)
   if (item.kind === 'sprinkler-large') return inner(itemSprinklerLarge)
+  if (item.kind === 'valve') return inner(itemValve)
+  if (item.kind === 'rain-tank') return inner(itemRainTank)
+  if (item.kind === 'tap') return inner(itemTap)
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -196,6 +207,9 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-sprinkler') return itemInner({ kind: 'sprinkler' })
   if (id === 'buy-sprinkler-vert') return itemInner({ kind: 'sprinkler-vert' })
   if (id === 'buy-sprinkler-large') return itemInner({ kind: 'sprinkler-large' })
+  if (id === 'buy-valve') return itemInner({ kind: 'valve' })
+  if (id === 'buy-rain-tank') return itemInner({ kind: 'rain-tank' })
+  if (id === 'buy-tap') return itemInner({ kind: 'tap' })
   return itemInner(skuItem(id))
 }
 
@@ -239,9 +253,22 @@ export function researchInner(id: ResearchId): string {
       return inner(uiResearchAuto)
     case 'unlock-adv-irrigation':
       return inner(uiResearchAdv)
+    case 'unlock-smart-sprinkler':
+      return inner(uiResearchSmart)
     case 'unlock-expand':
       return inner(uiResearchExpand)
   }
+}
+
+const DRY_CACHE = new Map<string, string>()
+
+export function dryOf(html: string): string {
+  let d = DRY_CACHE.get(html)
+  if (d === undefined) {
+    d = html.replace(/<rect fill="#3d7ea6"[^/]*\/>/g, '')
+    DRY_CACHE.set(html, d)
+  }
+  return d
 }
 
 export function pipeFit(
@@ -300,6 +327,12 @@ export const PIPE_I = inner(pipeI)
 export const PIPE_L = inner(pipeL)
 export const PIPE_T = inner(pipeT)
 export const PIPE_X = inner(pipeX)
+export const PIPE_SOURCE = inner(pipeSource)
+export const RAIN_TANK = inner(propRainTank)
+export const TAP = inner(propTap)
+export function valveArt(open: boolean): string {
+  return stageOnly(pipeValve, open ? 'open' : 'closed')
+}
 export const OVERLAY_WATER = inner(overlayWater)
 export const ITEM_CHEST = inner(itemChest)
 export const ITEM_GRINDER = inner(itemGrinder)

@@ -5,23 +5,60 @@ import type { World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
 import { UI_PHASE } from './svgs.ts'
 
-export function paintMotion(root: HTMLElement, world: World): void {
-  const actor = root.querySelector('[data-actor]')
-  if (actor instanceof SVGGElement) {
-    actor.setAttribute(
+type MotionNodes = {
+  actor: Element | null
+  clock: Element | null
+  phase: Element | null
+  research: Element | null
+  qbar: Element | null
+  banner: Element | null
+  speech: Element | null
+  thirst: Element[]
+  fert: Element[]
+  compost: Element[]
+  fresh: Element[]
+}
+
+let cacheRev = -1
+let nodes: MotionNodes | undefined
+
+function scan(root: HTMLElement): MotionNodes {
+  return {
+    actor: root.querySelector('[data-actor]'),
+    clock: root.querySelector('[data-clock]'),
+    phase: root.querySelector('[data-phase]'),
+    research: root.querySelector('[data-research]'),
+    qbar: root.querySelector('[data-queue-bar]'),
+    banner: root.querySelector('[data-banner]'),
+    speech: root.querySelector('[data-speech]'),
+    thirst: [...root.querySelectorAll('[data-thirst]')],
+    fert: [...root.querySelectorAll('[data-fert]')],
+    compost: [...root.querySelectorAll('[data-compost]')],
+    fresh: [...root.querySelectorAll('[data-fresh]')],
+  }
+}
+
+export function paintMotion(root: HTMLElement, world: World, rev: number): void {
+  if (nodes === undefined || cacheRev !== rev) {
+    cacheRev = rev
+    nodes = scan(root)
+  }
+  const n = nodes
+  if (n.actor instanceof SVGGElement) {
+    n.actor.setAttribute(
       'transform',
       `translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`,
     )
   }
-  const clock = root.querySelector('[data-clock]')
-  if (clock !== null) {
-    clock.textContent = `day ${world.clock.day}`
-    clock.setAttribute('data-clock-t', String(Math.floor(world.clock.t)))
+  let dayText = `day ${world.clock.day}`
+  if (n.clock !== null) {
+    if (n.clock.textContent !== dayText) n.clock.textContent = dayText
+    n.clock.setAttribute('data-clock-t', String(Math.floor(world.clock.t)))
   }
-  const phase = root.querySelector('[data-phase]')
-  if (phase !== null) phase.innerHTML = UI_PHASE[world.clock.phase()]
+  const phaseHtml = UI_PHASE[world.clock.phase()]
+  if (n.phase !== null && n.phase.innerHTML !== phaseHtml) n.phase.innerHTML = phaseHtml
   const job = world.job
-  const research = root.querySelector('[data-research]')
+  const research = n.research
   if (research instanceof HTMLElement) {
     if (job.kind === 'run') {
       research.hidden = false
@@ -34,15 +71,14 @@ export function paintMotion(root: HTMLElement, world: World): void {
       research.hidden = true
     }
   }
-  const qbar = root.querySelector('[data-queue-bar]')
-  if (qbar instanceof HTMLElement) qbar.style.width = `${world.taskProgress() * 100}%`
-  const banner = root.querySelector('[data-banner]')
-  if (banner instanceof HTMLElement) {
+  if (n.qbar instanceof HTMLElement) n.qbar.style.width = `${world.taskProgress() * 100}%`
+  if (n.banner instanceof HTMLElement) {
     const on = world.clock.banner > 0 && world.seam.kind === 'play'
-    banner.hidden = !on
-    if (on) banner.textContent = `Day ${world.clock.day}`
+    const text = on ? `Day ${world.clock.day}` : ''
+    if (n.banner.hidden !== !on) n.banner.hidden = !on
+    if (on && n.banner.textContent !== text) n.banner.textContent = text
   }
-  const speech = root.querySelector('[data-speech]')
+  const speech = n.speech
   if (speech instanceof SVGForeignObjectElement) {
     if (world.speech.kind === 'none') {
       speech.setAttribute('visibility', 'hidden')
@@ -54,7 +90,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       if (line !== null) line.textContent = world.speech.text
     }
   }
-  root.querySelectorAll('[data-thirst]').forEach(el => {
+  n.thirst.forEach(el => {
     const at = el.getAttribute('data-thirst')
     if (at === null) return
     const [cs, rs] = at.split(',')
@@ -64,7 +100,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       el.setAttribute('width', String(((TILE - 6) * cell.soil.water) / SOIL_WATER_MAX))
     }
   })
-  root.querySelectorAll('[data-fert]').forEach(el => {
+  n.fert.forEach(el => {
     const at = el.getAttribute('data-fert')
     if (at === null) return
     const [cs, rs] = at.split(',')
@@ -72,7 +108,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
     if (cell.kind !== 'growing') return
     if (el instanceof SVGRectElement) el.setAttribute('width', String((TILE - 6) * cell.soil.fertilizer))
   })
-  root.querySelectorAll('[data-compost]').forEach(el => {
+  n.compost.forEach(el => {
     const at = el.getAttribute('data-compost')
     if (at === null) return
     const [cs, rs] = at.split(',')
@@ -84,7 +120,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       bar.setAttribute('width', String((TILE - 6) * t))
     }
   })
-  root.querySelectorAll('[data-fresh]').forEach(el => {
+  n.fresh.forEach(el => {
     const at = el.getAttribute('data-fresh')
     if (at === null) return
     const [cs, rs] = at.split(',')

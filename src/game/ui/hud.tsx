@@ -64,7 +64,10 @@ const LENS_ROWS: { id: Lens; label: string; swatches: { face: string; name: stri
 const BUILD_IDS = [
   'buy-pumpjack',
   'buy-well',
+  'buy-rain-tank',
+  'buy-tap',
   'buy-pipe',
+  'buy-valve',
   'buy-sprinkler',
   'buy-sprinkler-vert',
   'buy-sprinkler-large',

@@ -2,6 +2,7 @@
 
 - [[art/apple-tree]]
 - [[art/tilled-edges]]
+- [[art/skills]]
 
 - [[art/v0.1]] — current
 - [[art/beta-6]] — historical

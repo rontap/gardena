@@ -6,7 +6,7 @@ User: senior web dev, GitHub `rontap`. No tutoring. No hedging. No enterprise sl
 
 ## Ask, do not invent
 
-Unspecified product, design, mechanic, copy, visual, or architecture → **stop and ask**.
+Unspecified product, design, mechanic, copy, visual, or architecture → **ask**.
 
 User says you are free to decide → one-line assumption, proceed.
 

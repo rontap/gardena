@@ -13,10 +13,12 @@ import {
   GRIND_WORK,
   PICKAXES,
   SHOVELS,
+  SPRINKLER_TILE_DAY,
   SYNTH_BAG_LITERS,
 } from '../defs/items.ts'
 import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
+import { SOURCE, TAP_RATE } from './water.ts'
 import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId, TileId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 
@@ -70,6 +72,9 @@ export type Face =
   | { kind: 'sprinkler' }
   | { kind: 'sprinkler-vert' }
   | { kind: 'sprinkler-large' }
+  | { kind: 'valve' }
+  | { kind: 'rain-tank' }
+  | { kind: 'tap' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
 
@@ -263,6 +268,12 @@ export function skuLabel(id: SkuId): string {
       return 'Large sprinkler'
     case 'buy-well':
       return 'Well'
+    case 'buy-valve':
+      return 'Manual valve'
+    case 'buy-rain-tank':
+      return 'Rainwater tank'
+    case 'buy-tap':
+      return 'Tap'
     case 'buy-tile-paved':
       return 'Paved tile'
     case 'buy-tile-brick':
@@ -327,7 +338,10 @@ export function skuDesc(id: SkuId): string {
         { need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS },
       )
     case 'buy-pumpjack':
-      return 'Place a 2 L/s pump on two tiles. Fill a bucket here. Pipe its edges to feed sprinklers.'
+      return fill(
+        'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.',
+        { rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity },
+      )
     case 'buy-chest':
       return '9 slots. Walk up and store any item.'
     case 'buy-grinder':
@@ -339,13 +353,29 @@ export function skuDesc(id: SkuId): string {
     case 'buy-pipe':
       return 'Pipe. 4 per edge. Hidden unless the Pipes lens or a pipe tool is out.'
     case 'buy-sprinkler':
-      return 'Waters a 2×2 around a corner. 0.5 L/s when piped to a source.'
+      return fill('Waters a 2×2 around a corner, ${day} L a day per tile.', { day: SPRINKLER_TILE_DAY })
     case 'buy-sprinkler-vert':
-      return 'Waters a 4×2 strip. Rotate while placing to flip NS/EW. 0.5 L/s when piped.'
+      return fill('Waters a 4×2 strip, ${day} L a day per tile. Rotate while placing to flip NS/EW.', {
+        day: SPRINKLER_TILE_DAY,
+      })
     case 'buy-sprinkler-large':
-      return 'Waters a 4×4 around a corner. 0.5 L/s when piped to a source.'
+      return fill('Waters a 4×4 around a corner, ${day} L a day per tile.', { day: SPRINKLER_TILE_DAY })
     case 'buy-well':
-      return 'Place a 5 L/s well on one tile. Fill a bucket here. Pipe its edges to feed sprinklers.'
+      return fill(
+        'One tile. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.',
+        { rate: SOURCE.well.rate, cap: SOURCE.well.capacity },
+      )
+    case 'buy-valve':
+      return 'Sits on an edge like pipe. Click it to send the gardener over and turn the flow off or on.'
+    case 'buy-rain-tank':
+      return fill('Two tiles. Gathers ${rate} L/s into a ${cap} L tank, no pump needed.', {
+        rate: SOURCE['rain-tank'].rate,
+        cap: SOURCE['rain-tank'].capacity,
+      })
+    case 'buy-tap':
+      return fill('One tile. Fills a bucket at ${rate} L/s while the grid holds water, slower once tanks run dry.', {
+        rate: TAP_RATE,
+      })
     case 'buy-tile-paved':
       return 'Place on bare untilled ground. $1 per tile.'
     case 'buy-tile-brick':
@@ -459,6 +489,12 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'sprinkler-large' }
     case 'buy-well':
       return { kind: 'well' }
+    case 'buy-valve':
+      return { kind: 'valve' }
+    case 'buy-rain-tank':
+      return { kind: 'rain-tank' }
+    case 'buy-tap':
+      return { kind: 'tap' }
     case 'buy-tile-paved':
       return { kind: 'tile', tile: 'paved' }
     case 'buy-tile-brick':

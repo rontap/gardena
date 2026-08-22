@@ -1,4 +1,4 @@
-import { BERRY_SALE } from './rarity.ts'
+
 import { CROPS } from './crops.ts'
 import {
   BOX_LARGE,
@@ -16,7 +16,7 @@ import {
   GRIND_WORK,
   PICKAXES,
   SHOVELS,
-  SHRUB_GROW,
+
   SPRINKLER_TILE_DAY,
   SYNTH_BAG_LITERS,
   COMPOST_VALUE,
@@ -61,8 +61,7 @@ const TURF_T =
 const FENCE_T =
   'Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.'
 const PAVING_T = 'Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.'
-const BERRY_T = 'Wild berry. Sells for ${sale} times the rarity multiplier.'
-const SHRUB_T = 'Berry shrub. Matures in ${growSeconds}s, then berries. Shovel to move.'
+
 const PUMP_T =
   'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
 const CHEST_T = '9 slots. Walk up and store any item.'
@@ -97,6 +96,7 @@ const ROTARY_T = 'Motorised. Digs anything a shovel digs, near enough instantly.
 const DIAMOND_T = 'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.'
 
 function cropTitle(id: CropId): string {
+  if (id === 'sugar-cane') return 'Sugar cane'
   return id.slice(0, 1).toUpperCase() + id.slice(1)
 }
 
@@ -107,7 +107,10 @@ export function catalogEntries(): CatalogEntry[] {
     return {
       id,
       title: name,
-      icon: { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
+      icon:
+        id === 'sugar-cane'
+          ? { kind: 'sugar', count: 1, unitSale: d.sale }
+          : { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
       blurb: d.desc,
     }
   })
@@ -254,18 +257,7 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'grass', count: 1 },
       blurb: fill(GRASS_T, { n: COMPOST_VALUE.grass }),
     },
-    {
-      id: 'berry',
-      title: 'Wild berry',
-      icon: { kind: 'berry', rarity: 'common', count: 1 },
-      blurb: fill(BERRY_T, { sale: BERRY_SALE }),
-    },
-    {
-      id: 'shrub',
-      title: 'Berry shrub',
-      icon: { kind: 'shrub' },
-      blurb: fill(SHRUB_T, { growSeconds: SHRUB_GROW }),
-    },
+
     {
       id: 'grass-seeds',
       title: 'Grass seeds',

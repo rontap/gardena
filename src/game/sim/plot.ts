@@ -1,4 +1,4 @@
-import type { AppleTree, Chest, CompostBox, Grinder, House, Pump, RainTank, Rock, Shrub, Tap, Truck } from './building.ts'
+import type { Chest, CompostBox, Grinder, House, Pump, RainTank, Rock, Tap, Tree, Truck } from './building.ts'
 import type { CropId, TileId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
 import type { Soil } from './soil.ts'
@@ -27,8 +27,7 @@ export type Cell =
   | RainTank
   | Tap
   | Rock
-  | Shrub
-  | AppleTree
+  | Tree
   | Chest
   | Grinder
   | CompostBox
@@ -79,8 +78,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'rain-tank' ||
     c.kind === 'tap' ||
     c.kind === 'rock' ||
-    c.kind === 'shrub' ||
-    c.kind === 'apple-tree' ||
+    c.kind === 'tree' ||
     c.kind === 'chest' ||
     c.kind === 'grinder' ||
     c.kind === 'compost-box' ||

@@ -1,0 +1,416 @@
+import type {
+    AnnualId,
+    CropId,
+    DaughterSkillId,
+    HusbandSkillId,
+    MemberId,
+    PlayerSkillId,
+    ResearchId,
+    SkillId,
+} from '../sim/ids.ts'
+import {isTreeId} from '../sim/ids.ts'
+import {SEED_BANK_CHANCE} from './rarity.ts'
+
+export const TEND_WORK = 0.7
+
+export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
+    'boots',
+    'machinery',
+    'tending',
+    'vanilla-tending',
+    'seed-bank',
+    'better-carrot',
+    'better-potato',
+    'better-wheat',
+    'better-tomato',
+    'better-raspberry',
+    'better-watermelon',
+    'better-olive',
+    'better-grape',
+    'better-vanilla',
+    'better-sugar-cane',
+]
+
+export const BETTER_IDS = {
+    carrot: 'better-carrot',
+    potato: 'better-potato',
+    wheat: 'better-wheat',
+    tomato: 'better-tomato',
+    raspberry: 'better-raspberry',
+    watermelon: 'better-watermelon',
+    olive: 'better-olive',
+    grape: 'better-grape',
+    vanilla: 'better-vanilla',
+    'sugar-cane': 'better-sugar-cane',
+} as const satisfies { readonly [K in AnnualId]: PlayerSkillId }
+
+export const BETTER_UP1 = 0.04
+
+export function extraGrowUp1(crop: CropId, has: (id: SkillId) => boolean): number {
+    if (isTreeId(crop)) return 0
+    return has(BETTER_IDS[crop]) ? BETTER_UP1 : 0
+}
+
+export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
+    'research-speed',
+    'tool-contracts',
+    'machine-contracts',
+    'forecast',
+    'tax',
+    'water-study',
+    'land-study',
+    'bulk-buying',
+]
+export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
+    'saleswoman',
+    'heirloom',
+    'bio',
+    'industrial',
+    'open-late',
+    'open-24',
+    'jam',
+    'clearance',
+]
+
+export const JAM_FLOOR = [0.1, 0.2, 0.3, 0.4, 0.5] as const
+
+export type SkillGate =
+    | { kind: 'none' }
+    | { kind: 'research'; id: ResearchId }
+    | { kind: 'skill'; id: 'open-late' | 'vanilla-tending' }
+
+export type SkillEffect =
+    | { kind: 'walk'; mul: 1.05 }
+    | { kind: 'machine'; mul: 1.05 }
+    | { kind: 'tend' }
+    | { kind: 'vanilla-tending' }
+    | { kind: 'research-speed'; mul: 1.05 }
+    | { kind: 'tool-contracts' }
+    | { kind: 'machine-contracts' }
+    | { kind: 'tax'; mul: 0.98 }
+    | { kind: 'water-study' }
+    | { kind: 'land-study' }
+    | { kind: 'bulk-buying' }
+    | { kind: 'saleswoman'; mul: 1.02 }
+    | { kind: 'heirloom'; mul: 1.05 }
+    | { kind: 'better'; crop: CropId; saleMul: 1.04 | 1.06; up1: 0.04 }
+    | { kind: 'seed-bank' }
+    | { kind: 'bio'; mul: 1.03 }
+    | { kind: 'open-late' }
+    | { kind: 'open-24' }
+    | { kind: 'jam'; minFreshMul: typeof JAM_FLOOR }
+    | { kind: 'clearance' }
+    | { kind: 'dummy' }
+
+export type SkillDef<Id extends SkillId = SkillId> = {
+    id: Id
+    member: MemberId
+    name: string
+    blurb: string
+    maxTier: number
+    gate: SkillGate
+    effect: SkillEffect
+}
+
+function row<Id extends SkillId>(
+    id: Id,
+    member: MemberId,
+    name: string,
+    blurb: string,
+    maxTier: number,
+    effect: SkillEffect,
+    gate: SkillGate = {kind: 'none'},
+): SkillDef<Id> {
+    return {id, member, name, blurb, maxTier, gate, effect}
+}
+
+export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
+    boots: row('boots', 'player', 'Boots', 'You walk faster. Each rank adds 5%.', 5, {kind: 'walk', mul: 1.05}),
+    machinery: row('machinery', 'player', 'Machinery', 'Machine work finishes sooner. Each rank adds 5%.', 3, {
+        kind: 'machine',
+        mul: 1.05,
+    }),
+    tending: row(
+        'tending',
+        'player',
+        'Careful tending',
+        'Empty-handed, tend a growing plant once, which makes the plants slightly happier. Ripe plants cannot be tended.',
+        1,
+        {kind: 'tend'},
+    ),
+    'vanilla-tending': row(
+        'vanilla-tending',
+        'player',
+        'Vanilla tending',
+        'You have read the definite book on Vanilla tending. You are now comfortable to buy Vanilla from the Shop.',
+        1,
+        {kind: 'vanilla-tending'},
+        {kind: 'research', id: 'unlock-raspberry'},
+    ),
+    'research-speed': row(
+        'research-speed',
+        'husband',
+        'Speedy research',
+        'Research is 5% faster.',
+        3,
+        {kind: 'research-speed', mul: 1.05},
+    ),
+    'tool-contracts': row(
+        'tool-contracts',
+        'husband',
+        'Tool contracts',
+        'Utility goods in the store cost less. Each rank knocks $1 off the price.',
+        3,
+        {kind: 'tool-contracts'},
+    ),
+    'machine-contracts': row(
+        'machine-contracts',
+        'husband',
+        'Machine contracts',
+        'Automation goods in the store cost less. Each rank knocks $1 off the price.',
+        3,
+        {kind: 'machine-contracts'},
+    ),
+    forecast: row('forecast', 'husband', 'Weather forecast', "Does nothing yet. Will show the next day's weather.", 1, {
+        kind: 'dummy',
+    }),
+    tax: row(
+        'tax',
+        'husband',
+        'Smart tax returns',
+        'By optimizing your taxes, you can shave off 2% off your taxes at the end of the day, per rank.',
+        3,
+        {kind: 'tax', mul: 0.98},
+    ),
+    'water-study': row(
+        'water-study',
+        'husband',
+        'Water study',
+        'Adds Water need to the Lens menu. You can see wet and dry soil across the field.',
+        1,
+        {kind: 'water-study'},
+    ),
+    'land-study': row(
+        'land-study',
+        'husband',
+        'Land quality study',
+        'Adds Land quality to the Lens menu. You can see fertilizer in the dirt across the field.',
+        1,
+        {kind: 'land-study'},
+    ),
+    'bulk-buying': row(
+        'bulk-buying',
+        'husband',
+        'Bulk buying',
+        'In the seed aisle, hold Control and click a pack to buy five at once, 5% off that purchase.',
+        1,
+        {kind: 'bulk-buying'},
+    ),
+    saleswoman: row(
+        'saleswoman',
+        'daughter',
+        'Saleswoman',
+        'Produce at the stall sells for more. Each rank adds 2%.',
+        3,
+        {kind: 'saleswoman', mul: 1.02},
+    ),
+    heirloom: row(
+        'heirloom',
+        'daughter',
+        'Őstermelő',
+        'You have become a noted quality heirloom producer. Heirloom produce sells for more. Each rank adds 5%.',
+        3,
+        {kind: 'heirloom', mul: 1.05},
+        {kind: 'research', id: 'unlock-heirloom'},
+    ),
+    'seed-bank': row(
+        'seed-bank',
+        'player',
+        'Trusted seed bank',
+        'There is some chance that seeds bought from the shops have increased rarity.',
+        5,
+        {kind: 'seed-bank'},
+    ),
+    'better-carrot': row(
+        'better-carrot',
+        'player',
+        'Better carrots',
+        'Carrots sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'carrot', saleMul: 1.04, up1: 0.04},
+    ),
+    'better-potato': row(
+        'better-potato',
+        'player',
+        'Better potatoes',
+        'Potatoes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'potato', saleMul: 1.04, up1: 0.04},
+    ),
+    'better-wheat': row(
+        'better-wheat',
+        'player',
+        'Better wheat',
+        'Wheat sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'wheat', saleMul: 1.04, up1: 0.04},
+    ),
+    'better-tomato': row(
+        'better-tomato',
+        'player',
+        'Experienced tomato grower',
+        'Tomatoes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'tomato', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-tomato'},
+    ),
+    'better-raspberry': row(
+        'better-raspberry',
+        'player',
+        'Experienced raspberry grower',
+        'Raspberries sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'raspberry', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-raspberry'},
+    ),
+    'better-watermelon': row(
+        'better-watermelon',
+        'player',
+        'Better watermelons',
+        'Watermelons sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'watermelon', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-watermelon'},
+    ),
+    'better-olive': row(
+        'better-olive',
+        'player',
+        'Experienced olive harvester',
+        'Olives sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'olive', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-olive'},
+    ),
+    'better-grape': row(
+        'better-grape',
+        'player',
+        'Experienced grape harvester',
+        'Grapes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'grape', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-grape'},
+    ),
+    'better-vanilla': row(
+        'better-vanilla',
+        'player',
+        'Experienced vanilla harvester',
+        'Vanilla sells for 6% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'vanilla', saleMul: 1.06, up1: 0.04},
+        {kind: 'skill', id: 'vanilla-tending'},
+    ),
+    'better-sugar-cane': row(
+        'better-sugar-cane',
+        'player',
+        'Better sugar cane',
+        'Sugar sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        1,
+        {kind: 'better', crop: 'sugar-cane', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-fermentation'},
+    ),
+    bio: row(
+        'bio',
+        'daughter',
+        'Bio farmer',
+        'Organic fruit sells for more. Each rank adds 3%.',
+        5,
+        {kind: 'bio', mul: 1.03},
+    ),
+    industrial: row('industrial', 'daughter', 'Industrial farmer', 'Does nothing yet.', 5, {
+        kind: 'dummy',
+    }),
+    'open-late': row(
+        'open-late',
+        'daughter',
+        'Open late',
+        'The stall keeps selling through sunset. It still shuts at twilight.',
+        1,
+        {kind: 'open-late'},
+    ),
+    'open-24': row(
+        'open-24',
+        'daughter',
+        'Open 24/7',
+        'The stall keeps selling through twilight as well.',
+        1,
+        {kind: 'open-24'},
+        {kind: 'skill', id: 'open-late'},
+    ),
+    jam: row(
+        'jam',
+        'daughter',
+        'Still good for jam',
+        'Fruit that has started to go is still worth something. How much the stall knocks off for being past its prime depends on the rank.',
+        5,
+        {kind: 'jam', minFreshMul: JAM_FLOOR},
+    ),
+    clearance: row(
+        'clearance',
+        'daughter',
+        'Clearance sale',
+        'Fruit that has gone completely off still sells for $1 apiece, no matter the crop.',
+        1,
+        {kind: 'clearance'},
+    ),
+}
+
+export const ROMAN = ['I', 'II', 'III', 'IV', 'V'] as const
+
+export function roman(tier: number): string {
+    return ROMAN[tier - 1]
+}
+
+export function skillLabel(id: SkillId, tier: number): string {
+    const def = SKILLS[id]
+    if (def.maxTier === 1) return def.name
+    return `${def.name} ${roman(tier)}`
+}
+
+export function skillBlurb(id: SkillId, tier: number): string {
+    switch (id) {
+        case 'boots':
+            return `You walk ${5 * tier}% faster.`
+        case 'machinery':
+            return `Machine work finishes ${5 * tier}% sooner.`
+        case 'research-speed':
+            return `Research jobs finish ${5 * tier}% sooner.`
+        case 'tool-contracts':
+            return `Utility goods in the store cost $${tier} less. Never below $1.`
+        case 'machine-contracts':
+            return `Automation goods in the store cost $${tier} less. Never below $1.`
+        case 'tax':
+            return `The bill at the end of the day is ${2 * tier}% lighter. You still pay at least $1.`
+        case 'saleswoman':
+            return `Produce at the stall sells for ${2 * tier}% more.`
+        case 'heirloom':
+            return `Heirloom produce sells for ${5 * tier}% more.`
+        case 'bio':
+            return `Organic fruit sells for ${3 * tier}% more.`
+        case 'jam': {
+            const cut = Math.round((1 - JAM_FLOOR[tier - 1]) * 100)
+            return `Fruit that has started to go is still worth something. The stall will not knock more than ${cut}% off for being past its prime.`
+        }
+        case 'seed-bank': {
+            const n = (rate: number) => `${+(rate * 100 * tier).toFixed(2)}`
+            return `There is some chance that seeds bought from the shops have increased rarity (${n(SEED_BANK_CHANCE.uncommon)}% uncommon, ${n(SEED_BANK_CHANCE.rare)}% rare, ${n(SEED_BANK_CHANCE.heirloom)}% heirloom).`
+        }
+        default:
+            return SKILLS[id].blurb
+    }
+}
+
+export function skillIds(member: MemberId): readonly SkillId[] {
+    if (member === 'player') return PLAYER_SKILL_IDS
+    if (member === 'husband') return HUSBAND_SKILL_IDS
+    return DAUGHTER_SKILL_IDS
+}

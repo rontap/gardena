@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
+  <g id="common">
+    <rect fill="#1c1710" x="11" y="1" width="2" height="5"/>
+    <rect fill="#3a6232" x="11" y="2" width="2" height="3"/>
+    <rect fill="#1c1710" x="13" y="2" width="4" height="2"/>
+    <rect fill="#6bc04a" x="14" y="2" width="2" height="1"/>
+    <rect fill="#1c1710" x="7" y="5" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="8" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="5" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="13" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="5" y="9" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="6" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="9" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="11" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="15" y="9" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="16" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="7" y="13" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="8" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="13" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="13" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="17" width="5" height="5"/>
+    <rect fill="#6b1f8c" x="11" y="18" width="3" height="3"/>
+  </g>
+  <g id="rare">
+    <rect fill="#1c1710" x="11" y="1" width="2" height="5"/>
+    <rect fill="#3a6232" x="11" y="2" width="2" height="3"/>
+    <rect fill="#1c1710" x="13" y="2" width="4" height="2"/>
+    <rect fill="#6bc04a" x="14" y="2" width="2" height="1"/>
+    <rect fill="#1c1710" x="7" y="5" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="8" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="5" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="13" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="5" y="9" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="6" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="9" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="11" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="15" y="9" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="16" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="7" y="13" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="8" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="13" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="13" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="17" width="5" height="5"/>
+    <rect fill="#cfc6b0" x="11" y="18" width="3" height="3"/>
+  </g>
+  <g id="heirloom">
+    <rect fill="#1c1710" x="11" y="1" width="2" height="5"/>
+    <rect fill="#3d7ea6" x="11" y="2" width="2" height="3"/>
+    <rect fill="#1c1710" x="13" y="2" width="4" height="2"/>
+    <rect fill="#6bc04a" x="14" y="2" width="2" height="1"/>
+    <rect fill="#1c1710" x="7" y="5" width="5" height="5"/>
+    <rect fill="#d4a017" x="8" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="5" width="5" height="5"/>
+    <rect fill="#d4a017" x="13" y="6" width="3" height="3"/>
+    <rect fill="#1c1710" x="5" y="9" width="5" height="5"/>
+    <rect fill="#d4a017" x="6" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="9" width="5" height="5"/>
+    <rect fill="#d4a017" x="11" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="15" y="9" width="5" height="5"/>
+    <rect fill="#d4a017" x="16" y="10" width="3" height="3"/>
+    <rect fill="#1c1710" x="7" y="13" width="5" height="5"/>
+    <rect fill="#d4a017" x="8" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="12" y="13" width="5" height="5"/>
+    <rect fill="#d4a017" x="13" y="14" width="3" height="3"/>
+    <rect fill="#1c1710" x="10" y="17" width="5" height="5"/>
+    <rect fill="#d4a017" x="11" y="18" width="3" height="3"/>
+  </g>
+</svg>

@@ -48,7 +48,7 @@ function badge(item: Item): string | undefined {
   if (
     item.kind === 'seeds' ||
     item.kind === 'fruit' ||
-    item.kind === 'berry' ||
+    item.kind === 'sugar' ||
     item.kind === 'rotten' ||
     item.kind === 'dead' ||
     item.kind === 'weed' ||
@@ -57,7 +57,6 @@ function badge(item: Item): string | undefined {
     return String(item.count)
   }
   if (item.kind === 'box' && item.cargo.kind === 'stack') return String(item.cargo.stack.count)
-  if (item.kind === 'box' && item.cargo.kind === 'berry') return String(item.cargo.count)
   return undefined
 }
 
@@ -69,10 +68,10 @@ export function ItemLineView({ item }: { item: Item }) {
       </span>
     )
   }
-  if (item.kind === 'berry') {
+  if (item.kind === 'sugar') {
     return (
       <span className="inline-flex items-center gap-1">
-      Berry - {item.count}
+      Sugar - {item.count}
       </span>
     )
   }
@@ -87,9 +86,8 @@ function heldNumber(item: Item): string {
   }
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return String(item.cap)
-    if (item.cargo.kind === 'berry') return `${item.cargo.count}/${item.cap}`
     return `${item.cargo.stack.count}/${item.cap}`
   }
-  if (item.kind === 'shrub' || item.kind === 'apple-tree') return ''
+  if (item.kind === 'sapling') return ''
   return String(item.count)
 }

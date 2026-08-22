@@ -1,0 +1,73 @@
+# Research
+
+Husband is the research role. One job. `startResearch` no-op if a job is running, already done, or `money < cost`. Pay up front. `left` ticks down. Done: `done.add`, tally that day, apply `effect`.
+
+`unlockAll`: every row done, `money += 999`, job idle, each member `points = 99`. Does not grant skills. Does not reroll — [[mechanics/family]]. UI is the Cheat dock, not Research — [[ui/cheat]].
+
+`cheatFastResearch`: job drain `× 3` on top of Speedy research. Toggle. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` per member.
+
+`RESEARCH[id].name` is the visible label. Trees: plants, utilities, expansion, automation.
+
+`reveal`: `'start'` or a prior id. `skuOpen` / `skuShown` are separate: show vs buy.
+
+`gate` is required on every row. `{ kind: 'none' }` unless the row is earned by play:
+
+- `{ kind: 'digs'; n }` — `World.digs`, bumped once per completed `doShovel`.
+- `{ kind: 'mines'; n }` — `World.mines`, bumped once per completed `doMine` (very-hard soil or a rock, whatever its footprint).
+
+`researchOpen(id)` is `gateProgress(id) >= 1`. `startResearch` no-ops while gated. A gated card is inert, shows a `roof` bar and `{have} / {n} {kind}`. `gateHave` is the raw counter. `GATE_TEXT` holds the callout sentence. Counters never reset and are not spent.
+
+## Rows
+
+Blurbs as `RESEARCH[id].blurb`.
+
+| id | name | tree | $ | s | reveal | blurb |
+|---|---|---|---|---|---|---|
+| unlock-tomato | Tomato seeds | plants | 7 | 30 | start | Unlocks Tomato seeds in the general store. |
+| unlock-olive | Olive seeds | plants | 11 | 42 | unlock-tomato | Unlocks Olive seeds in the general store. |
+| unlock-grape | Grape seeds | plants | 10 | 40 | start | Unlocks Grape seeds in the general store. |
+| unlock-raspberry | Raspberry seeds | plants | 12 | 45 | unlock-grape | Unlocks Raspberry seeds in the general store. |
+| unlock-watermelon | Watermelon seeds | plants | 8 | 35 | start | Unlocks Watermelon seeds in the general store. |
+| unlock-heirloom | Heirloom crops | plants | 20 | 120 | start | Unlocks Őstermelő. Heirloom produce can sell for more. |
+| unlock-fertilizer | Fertilizer | plants | 9 | 40 | start | Unlocks Synthetic fertilizer in the general store. |
+| unlock-better-tools | Better gardening tools | utilities | 16 | 45 | start | Unlocks Better shovel and Large bucket in the general store. |
+| unlock-large-box | Fruit boxes | utilities | 17 | 50 | start | Unlocks Large fruit box in the general store. |
+| unlock-chest | Chest | utilities | 12 | 40 | start | Unlocks Chest in the general store. |
+| unlock-pickaxe | Pickaxes | utilities | 0 | 40 | start | Unlocks Pickaxe and Hardened pickaxe in the general store. |
+| unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
+| unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge. |
+| unlock-irrigation | Irrigation | automation | 20 | 50 | start | Unlocks Pumpjack in the general store. |
+| unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
+| unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
+| unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
+| unlock-grinder | Seed grinder | automation | 18 | 50 | start | Unlocks Seed grinder in the general store. |
+| unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds in the general store. Ripe cane is bagged as sugar. |
+| unlock-landscaping | Landscape architecture | expansion | 12 | 60 | start | Unlocks Grass seeds, Wooden fence and every paving tile in the general store. |
+| unlock-rotary-shovel | Rotary shovel | utilities | 40 | 120 | unlock-better-tools | Unlocks the Rotary shovel in the general store. Earned by digging, not by reading. |
+| unlock-diamond-pickaxe | Diamond pickaxe | utilities | 40 | 120 | unlock-pickaxe | Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading. |
+
+`unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`.
+
+Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. `effect` is `unlock-sku` | `expand` | `feature`. `unlock-heirloom` is `feature` — gates Őstermelő. Better crop is player skills — [[mechanics/family]].
+
+`unlock-olive` → `pack-olive`. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla has no research row. `unlock-fermentation` → `pack-sugar-cane`.
+
+`unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
+
+`unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop.
+
+## Shop gates
+
+`buy-box` unlock `start`, $6. `buy-box-large` unlock `unlock-large-box`, $18.
+
+`buy-fertilizer` unlock `start`, $6. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`, $5.
+
+`buy-compost-box` unlock `unlock-compost`, show `unlock-fertilizer`, $20.
+
+`buy-rotary-shovel` show after `unlock-better-tools`, buy after `unlock-rotary-shovel`, $1000. `buy-diamond-pickaxe` show after `unlock-pickaxe`, buy after `unlock-diamond-pickaxe`, $1000.
+
+`pack-olive` $14 show `unlock-tomato`, buy `unlock-olive`. `pack-grape` $16 show `start`, buy `unlock-grape`. `pack-raspberry` $22 show `unlock-grape`, buy `unlock-raspberry`. `pack-vanilla` $40 show `unlock-raspberry`, buy iff player owns `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` $8 show + buy `unlock-fermentation`.
+
+`pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
+
+`buy-better-pickaxe` show after `unlock-pickaxe`. Sprinkler shown after Irrigation, buyable after Automated. Vert / large / well shown after Automated, buyable after Advanced.

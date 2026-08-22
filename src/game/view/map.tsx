@@ -18,8 +18,7 @@ import type { Place, World } from '../sim/world.ts'
 import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
   ACTOR,
-  BERRY_SHRUB,
-  appleTreeStage,
+  treeStage,
   BUILDING_TILES,
   CHEST,
   COMPOST_BOX,
@@ -38,7 +37,7 @@ import {
   TAP,
   ROCK,
   ROCK_LONG,
-  SHRUB,
+
   TRUCK,
   SPRINKLER,
   SPRINKLER_LARGE,
@@ -470,9 +469,8 @@ const Marks = memo(function Marks({
   void rev
   const plots: { col: number; row: number; cell: Plot }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
-  const shrubs: { col: number; row: number; ripe: boolean }[] = []
   const tufts: { col: number; row: number; cover: Cover }[] = []
-  const appleTrees: { col: number; row: number; ripe: boolean }[] = []
+  const trees: { col: number; row: number; species: 'apple' | 'apricot' | 'lemon' | 'cherry'; stage: 'grow' | 'unripe' | 'ripe' }[] = []
   const chests: Coord[] = []
   const grinders: Coord[] = []
   const composters: { col: number; row: number; units: number; progress: number }[] = []
@@ -516,8 +514,10 @@ const Marks = memo(function Marks({
     if (cell.kind === 'rock' && cell.base.col === at.col && cell.base.row === at.row) {
       rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
     }
-    if (cell.kind === 'shrub') shrubs.push({ col: at.col, row: at.row, ripe: cell.ripe })
-    if (cell.kind === 'apple-tree' && cell.base.col === at.col && cell.base.row === at.row) appleTrees.push({ col: at.col, row: at.row, ripe: cell.ripe })
+    if (cell.kind === 'tree' && cell.base.col === at.col && cell.base.row === at.row) {
+      const stage = cell.juvenile < 1 ? 'grow' : cell.yield.kind === 'on' || cell.fruit >= 1 ? 'ripe' : 'unripe'
+      trees.push({ col: at.col, row: at.row, species: cell.species, stage })
+    }
     if (cell.kind === 'chest') chests.push(at)
     if (cell.kind === 'grinder') grinders.push(at)
     if (cell.kind === 'compost-box') {
@@ -575,15 +575,12 @@ const Marks = memo(function Marks({
       {rocks.map(r => (
         <RockGfx key={`${r.col},${r.row}`} col={r.col} row={r.row} w={r.w} h={r.h} />
       ))}
-      {shrubs.map(s => (
+      {trees.map(t => (
         <g
-          key={`${s.col},${s.row}`}
-          transform={`translate(${s.col * TILE},${s.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: s.ripe ? BERRY_SHRUB : SHRUB }}
+          key={`tree-${t.col},${t.row}`}
+          transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: treeStage(t.species, t.stage) }}
         />
-      ))}
-      {appleTrees.map(t => (
-        <g key={`apple-tree-${t.col},${t.row}`} transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: appleTreeStage(t.ripe) }} />
       ))}
       {world.pumps.map((p, i) => {
         const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
@@ -911,7 +908,7 @@ function lensHit(lens: Lens, cell: Cell): string | undefined {
     cell.kind === 'ripe' ||
     cell.kind === 'dead' ||
     cell.kind === 'weed' ||
-    cell.kind === 'shrub'
+    cell.kind === 'tree'
   ) {
     return LEAF
   }

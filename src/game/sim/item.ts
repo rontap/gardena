@@ -17,13 +17,15 @@ import {
   SPRINKLER_TILE_DAY,
   SYNTH_BAG_LITERS,
 } from '../defs/items.ts'
-import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
+import type { Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
+import { TREE_NAME } from '../defs/trees.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
-import type { ContainerId, CropId, PickaxeId, ShovelId, SkuId, TileId } from './ids.ts'
+import type { AnnualId, ContainerId, CropId, PickaxeId, ShovelId, SkuId, TileId, TreeId } from './ids.ts'
+import { isTreeId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 
-export type Stack = { crop: CropId; rarity: Rarity; count: number }
+export type Stack = { crop: AnnualId; rarity: Rarity; count: number }
 export type FruitStack = {
   crop: CropId
   rarity: Rarity
@@ -47,18 +49,16 @@ export type Item =
         | { kind: 'empty' }
         | { kind: 'stack'; goods: 'seeds'; stack: Stack }
         | { kind: 'stack'; goods: 'fruit'; stack: FruitStack }
-        | { kind: 'berry'; rarity: Rarity; count: number }
     }
-  | { kind: 'seeds'; crop: CropId; rarity: Rarity; count: number }
+  | { kind: 'seeds'; crop: AnnualId; rarity: Rarity; count: number }
   | { kind: 'grass-seeds'; count: number }
   | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
-  | { kind: 'berry'; rarity: Rarity; count: number }
+  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'sugar'; count: number; unitSale: number }
   | { kind: 'rotten'; cls: CropClass; count: number }
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
   | { kind: 'grass'; count: number }
-  | { kind: 'shrub' }
-  | { kind: 'apple-tree' }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -87,14 +87,11 @@ export function compostValue(item: Item): number {
   if (item.kind === 'fruit') {
     return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
   }
-  if (item.kind === 'berry') {
-    return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
-  }
+  if (item.kind === 'sugar') return COMPOST_VALUE.fruit * item.count
   if (item.kind === 'rotten') return COMPOST_VALUE.rotten * item.count
   if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
   if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
   if (item.kind === 'grass') return COMPOST_VALUE.grass * item.count
-  if (item.kind === 'shrub') return COMPOST_VALUE.fruit
   return 0
 }
 
@@ -115,6 +112,7 @@ export const PICKAXE_NAME: { readonly [K in PickaxeId]: string } = {
 }
 
 export function cropName(id: CropId): string {
+  if (id === 'sugar-cane') return 'Sugar cane'
   return id.slice(0, 1).toUpperCase() + id.slice(1)
 }
 
@@ -137,18 +135,17 @@ export function mergeFreshness(
   return (a.freshness * a.count + b.freshness * b.count) / (a.count + b.count)
 }
 
-export function berryMoney(rarity: Rarity, n: number): number {
-  return BERRY_SALE * RARITY_SALE[rarity] * n
-}
-
 export function grindN(hand: Hand): number {
   if (hand.kind !== 'hold') return 0
-  if (hand.item.kind === 'fruit' && hand.item.count >= 1) return 1
+  if (hand.item.kind === 'fruit' && hand.item.count >= 1 && !isTreeId(hand.item.crop) && hand.item.crop !== 'sugar-cane')
+    return 1
   if (
     hand.item.kind === 'box' &&
     hand.item.cargo.kind === 'stack' &&
     hand.item.cargo.goods === 'fruit' &&
-    hand.item.cargo.stack.count >= 1
+    hand.item.cargo.stack.count >= 1 &&
+    !isTreeId(hand.item.cargo.stack.crop) &&
+    hand.item.cargo.stack.crop !== 'sugar-cane'
   ) {
     return hand.item.cargo.stack.count
   }
@@ -168,13 +165,13 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
   if (it.kind === 'grass-seeds') return 'Grass seed'
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
-  if (it.kind === 'berry') return 'Berry'
+  if (it.kind === 'sugar') return 'Sugar'
+  if (it.kind === 'sapling') return `${TREE_NAME[it.tree]} sapling`
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return 'Pulled weed'
   if (it.kind === 'grass') return 'Cut grass'
-  if (it.kind === 'apple-tree') return 'Apple tree'
-  return 'Shrub'
+  return 'Sugar'
 }
 
 export function rottenName(cls: CropClass): string {
@@ -208,7 +205,6 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'box') {
     const name = boxName(item.cap)
     if (item.cargo.kind === 'empty') return `${name} - empty`
-    if (item.cargo.kind === 'berry') return `${name} - Berry ${item.cargo.count}/${item.cap}`
     const n = cropName(item.cargo.stack.crop)
     if (item.cargo.goods === 'seeds') return `${name} - ${n} seed ${item.cargo.stack.count}/${item.cap}`
     return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
@@ -218,13 +214,13 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'fruit') {
     return `${cropVariety(item.crop, item.rarity)} - ${item.count}, freshness ${Math.floor(item.freshness * 100)}%`
   }
-  if (item.kind === 'berry') return `Berry - ${item.count}`
+  if (item.kind === 'sugar') return `Sugar - ${item.count}`
+  if (item.kind === 'sapling') return `${TREE_NAME[item.tree]} sapling - plant on soft ground`
   if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
   if (item.kind === 'grass') return `Cut grass - ${item.count}, compost it`
-  if (item.kind === 'apple-tree') return 'Apple tree'
-  return 'Shrub - plant it'
+  return 'Sugar'
 }
 
 export function heldText(hand: Hand, mods: readonly Modifier[]): string {
@@ -246,6 +242,14 @@ export function skuLabel(id: SkuId): string {
       return 'Raspberry seeds'
     case 'pack-watermelon':
       return 'Watermelon seeds'
+    case 'pack-olive':
+      return 'Olive seeds'
+    case 'pack-grape':
+      return 'Grape seeds'
+    case 'pack-vanilla':
+      return 'Vanilla seeds'
+    case 'pack-sugar-cane':
+      return 'Sugar cane seeds'
     case 'buy-shovel':
       return 'Shovel'
     case 'buy-better-shovel':
@@ -321,6 +325,14 @@ export function skuDesc(id: SkuId): string {
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('raspberry') })
     case 'pack-watermelon':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('watermelon') })
+    case 'pack-olive':
+      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('olive') })
+    case 'pack-grape':
+      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('grape') })
+    case 'pack-vanilla':
+      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('vanilla') })
+    case 'pack-sugar-cane':
+      return fill('Pack of 5 ${name} seeds. Plant on tilled soil. Ripe cane bags as sugar.', { name: cropName('sugar-cane') })
     case 'buy-shovel':
       return fill(
         'Digs grass and hard soil, and uproots plants and shrubs. ${uses} uses, ${workSeconds}s per dig.',
@@ -345,9 +357,9 @@ export function skuDesc(id: SkuId): string {
         n: CONTAINERS['large-bucket'].capacityLiters,
       })
     case 'buy-box':
-      return 'Allows you to gather up to 5 of the same fruits at the same time. Also holds seeds or berries of one kind.'
+      return 'Allows you to gather up to 5 of the same fruits at the same time. Also holds seeds of one kind.'
     case 'buy-box-large':
-      return 'Allows you to gather up to 14 of the same fruits at the same time. Also holds seeds or berries of one kind.'
+      return 'Allows you to gather up to 14 of the same fruits at the same time. Also holds seeds of one kind.'
     case 'buy-fertilizer':
       return fill('Holds ${n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.', {
         n: FERT_BAG_LITERS,
@@ -438,18 +450,18 @@ export function itemTip(item: Item): string {
   if (item.kind === 'compost') return `compost ${item.liters}/${item.capacityLiters}L`
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return `box ${item.cap}`
-    if (item.cargo.kind === 'berry') return `box berry ${item.cargo.count}/${item.cap}`
     return `box ${item.cargo.goods} ${item.cargo.stack.crop} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
   if (item.kind === 'grass-seeds') return `grass-seeds ${item.count}`
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
-  if (item.kind === 'berry') return `berry ${item.count}`
+  if (item.kind === 'sugar') return `sugar ${item.count}`
+  if (item.kind === 'sapling') return `sapling ${item.tree}`
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
   if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
   if (item.kind === 'weed') return `weed ${item.count}`
   if (item.kind === 'grass') return `grass ${item.count}`
-  return 'shrub'
+  return 'sugar'
 }
 
 export function makeShovel(id: ShovelId): Item {
@@ -496,6 +508,14 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'seeds', crop: 'raspberry', rarity: 'common', count: 5 }
     case 'pack-watermelon':
       return { kind: 'seeds', crop: 'watermelon', rarity: 'common', count: 5 }
+    case 'pack-olive':
+      return { kind: 'seeds', crop: 'olive', rarity: 'common', count: 5 }
+    case 'pack-grape':
+      return { kind: 'seeds', crop: 'grape', rarity: 'common', count: 5 }
+    case 'pack-vanilla':
+      return { kind: 'seeds', crop: 'vanilla', rarity: 'common', count: 5 }
+    case 'pack-sugar-cane':
+      return { kind: 'seeds', crop: 'sugar-cane', rarity: 'common', count: 5 }
     case 'buy-shovel':
       return makeShovel('shovel')
     case 'buy-better-shovel':
@@ -563,74 +583,23 @@ export function boxAccepts(
   crop: CropId,
   rarity: Rarity,
   n: number,
-): number
-export function boxAccepts(
-  box: Extract<Item, { kind: 'box' }>,
-  goods: 'berry',
-  rarity: Rarity,
-  n: number,
-): number
-export function boxAccepts(
-  box: Extract<Item, { kind: 'box' }>,
-  goods: 'fruit' | 'seeds' | 'berry',
-  cropOrRarity: CropId | Rarity,
-  rarityOrN: Rarity | number,
-  n?: number,
 ): number {
-  if (goods === 'berry') {
-    const rarity = cropOrRarity as Rarity
-    const count = rarityOrN as number
-    if (box.cargo.kind === 'empty') return Math.min(box.cap, count)
-    if (box.cargo.kind !== 'berry' || box.cargo.rarity !== rarity) return 0
-    return Math.min(count, box.cap - box.cargo.count)
-  }
-  const crop = cropOrRarity as CropId
-  const rarity = rarityOrN as Rarity
-  const count = n as number
-  if (box.cargo.kind === 'empty') return Math.min(box.cap, count)
+  if (box.cargo.kind === 'empty') return Math.min(box.cap, n)
   if (box.cargo.kind !== 'stack') return 0
   if (box.cargo.goods !== goods || box.cargo.stack.crop !== crop || box.cargo.stack.rarity !== rarity) {
     return 0
   }
-  return Math.min(count, box.cap - box.cargo.stack.count)
+  return Math.min(n, box.cap - box.cargo.stack.count)
 }
 
 export function boxAdd(
   box: Extract<Item, { kind: 'box' }>,
   goods: 'seeds',
-  crop: CropId,
+  crop: AnnualId,
   rarity: Rarity,
   n: number,
-): number
-export function boxAdd(
-  box: Extract<Item, { kind: 'box' }>,
-  goods: 'berry',
-  rarity: Rarity,
-  n: number,
-): number
-export function boxAdd(
-  box: Extract<Item, { kind: 'box' }>,
-  goods: 'seeds' | 'berry',
-  cropOrRarity: CropId | Rarity,
-  rarityOrN: Rarity | number,
-  n?: number,
 ): number {
-  if (goods === 'berry') {
-    const rarity = cropOrRarity as Rarity
-    const count = rarityOrN as number
-    const take = boxAccepts(box, 'berry', rarity, count)
-    if (take === 0) return 0
-    if (box.cargo.kind === 'empty') {
-      box.cargo = { kind: 'berry', rarity, count: take }
-      return take
-    }
-    if (box.cargo.kind === 'berry') box.cargo.count += take
-    return take
-  }
-  const crop = cropOrRarity as CropId
-  const rarity = rarityOrN as Rarity
-  const count = n as number
-  const take = boxAccepts(box, 'seeds', crop, rarity, count)
+  const take = boxAccepts(box, 'seeds', crop, rarity, n)
   if (take === 0) return 0
   if (box.cargo.kind === 'empty') {
     box.cargo = { kind: 'stack', goods: 'seeds', stack: { crop, rarity, count: take } }

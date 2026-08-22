@@ -104,7 +104,7 @@ export function Status({ world, hover }: { world: World; hover: PromptHit | unde
           <div className="h-12 w-12 shrink-0 bg-dirt-dark" />
         )}
         <div className="min-w-0 text-base leading-snug font-semibold">
-          {hand.kind === 'hold' && (hand.item.kind === 'fruit' || hand.item.kind === 'berry') ? (
+          {hand.kind === 'hold' && (hand.item.kind === 'fruit' || hand.item.kind === 'sugar') ? (
             <ItemLineView item={hand.item} />
           ) : (
             heldText(hand, world.modifiers)

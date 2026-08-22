@@ -2,6 +2,7 @@ import { inFade, inWorld } from './building.ts'
 import { NOT_OWNED } from './prompt.ts'
 import { onCell } from './drop.ts'
 import type { Rarity } from '../defs/rarity.ts'
+import { TREE_NAME } from '../defs/trees.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
@@ -62,8 +63,14 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'chest') lines.push('Chest')
   else if (cell.kind === 'grinder') lines.push('Seed grinder')
   else if (cell.kind === 'compost-box') lines.push('Compost box')
-  else if (cell.kind === 'shrub') lines.push(cell.ripe ? 'Berry shrub' : 'Shrub')
-  else if (cell.kind === 'apple-tree') lines.push(cell.ripe ? 'Apple tree - ripe' : `Apple tree - growing ${Math.floor(cell.grow * 100)}%`)
+  else if (cell.kind === 'tree') {
+    const name = `${TREE_NAME[cell.species]} tree`
+    if (cell.juvenile < 1) lines.push(`${name} - growing ${Math.floor(cell.juvenile * 100)}%`)
+    else if (cell.yield.kind === 'on') lines.push(`${name} - yielding`)
+    else if (cell.yield.kind === 'pending') lines.push(`${name} - resting`)
+    else lines.push(`${name} - resting`)
+    if (cell.juvenile >= 1) lines.push(`fruit ${Math.floor(cell.fruit * 100)}%`)
+  }
   else if (cell.kind === 'untilled') {
     if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))
     else if (cell.ground === 'soft') lines.push('Grass')

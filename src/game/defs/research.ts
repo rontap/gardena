@@ -30,13 +30,35 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Tomato seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-tomato'},
     },
+    'unlock-olive': {
+        id: 'unlock-olive',
+        name: 'Olive seeds',
+        tree: 'plants',
+        cost: 11,
+        seconds: 42,
+        reveal: 'unlock-tomato',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Olive seeds in the general store.',
+        effect: {kind: 'unlock-sku', sku: 'pack-olive'},
+    },
+    'unlock-grape': {
+        id: 'unlock-grape',
+        name: 'Grape seeds',
+        tree: 'plants',
+        cost: 10,
+        seconds: 40,
+        reveal: 'start',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Grape seeds in the general store.',
+        effect: {kind: 'unlock-sku', sku: 'pack-grape'},
+    },
     'unlock-raspberry': {
         id: 'unlock-raspberry',
         name: 'Raspberry seeds',
         tree: 'plants',
         cost: 12,
         seconds: 45,
-        reveal: 'start',
+        reveal: 'unlock-grape',
         gate: {kind: 'none'},
         blurb: 'Unlocks Raspberry seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-raspberry'},
@@ -195,6 +217,17 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Seed grinder in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-grinder'},
     },
+    'unlock-fermentation': {
+        id: 'unlock-fermentation',
+        name: 'Fermentation',
+        tree: 'automation',
+        cost: 14,
+        seconds: 50,
+        reveal: 'start',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Sugar cane seeds in the general store. Ripe cane is bagged as sugar.',
+        effect: {kind: 'unlock-sku', sku: 'pack-sugar-cane'},
+    },
     'unlock-landscaping': {
         id: 'unlock-landscaping',
         name: 'Landscape architecture',
@@ -244,6 +277,7 @@ export type Sku = {
     tab: SkuTab
     unlock: 'start' | ResearchId
     show: 'start' | ResearchId
+    need?: 'vanilla-tending'
 }
 
 export const SKUS: { readonly [K in SkuId]: Sku } = {
@@ -251,8 +285,19 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'pack-potato': {id: 'pack-potato', price: 6, tab: 'seeds', unlock: 'start', show: 'start'},
     'pack-wheat': {id: 'pack-wheat', price: 10, tab: 'seeds', unlock: 'start', show: 'start'},
     'pack-tomato': {id: 'pack-tomato', price: 15, tab: 'seeds', unlock: 'unlock-tomato', show: 'start'},
-    'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'start'},
     'pack-watermelon': {id: 'pack-watermelon', price: 18, tab: 'seeds', unlock: 'unlock-watermelon', show: 'start'},
+    'pack-olive': {id: 'pack-olive', price: 14, tab: 'seeds', unlock: 'unlock-olive', show: 'unlock-tomato'},
+    'pack-grape': {id: 'pack-grape', price: 16, tab: 'seeds', unlock: 'unlock-grape', show: 'start'},
+    'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'unlock-grape'},
+    'pack-vanilla': {
+        id: 'pack-vanilla',
+        price: 40,
+        tab: 'seeds',
+        unlock: 'start',
+        show: 'unlock-raspberry',
+        need: 'vanilla-tending',
+    },
+    'pack-sugar-cane': {id: 'pack-sugar-cane', price: 8, tab: 'seeds', unlock: 'unlock-fermentation', show: 'unlock-fermentation'},
     'buy-shovel': {id: 'buy-shovel', price: 10, tab: 'utility', unlock: 'start', show: 'start'},
     'buy-better-shovel': {id: 'buy-better-shovel', price: 30, tab: 'utility', unlock: 'unlock-better-tools', show: 'start'},
     'buy-pickaxe': {id: 'buy-pickaxe', price: 18, tab: 'utility', unlock: 'unlock-pickaxe', show: 'start'},

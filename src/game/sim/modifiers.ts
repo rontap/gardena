@@ -1,5 +1,5 @@
 import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
-import { RARITY_GROW, RARITY_ROT, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
+import { RARITY_GROW, RARITY_ROT, raritySale, type Rarity } from '../defs/rarity.ts'
 import type { CropId } from './ids.ts'
 
 export type Modifier = {
@@ -22,7 +22,7 @@ export type Stats = {
 
 export function apply(def: CropDef, rarity: Rarity, mods: readonly Modifier[]): Stats {
   const mine = mods.filter(m => m.crop === undefined || m.crop === def.id)
-  const saleMul = mine.reduce((a, m) => a * m.saleMul, RARITY_SALE[rarity])
+  const saleMul = mine.reduce((a, m) => a * m.saleMul, raritySale(def, rarity))
   const growSpeed = mine.reduce((a, m) => a * m.growSpeed, 1)
   const waterUseMul = mine.reduce((a, m) => a * m.waterUseMul, 1)
   return {

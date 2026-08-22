@@ -1,4 +1,5 @@
 import { CHEST_SLOTS } from '../defs/items.ts'
+import type { TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -203,27 +204,24 @@ export class Rock {
   }
 }
 
-export class Shrub {
-  readonly kind = 'shrub' as const
-  ripe: boolean
-  grow: number
-  constructor(ripe: boolean, grow: number) {
-    this.ripe = ripe
-    this.grow = grow
-  }
-}
+export type TreeYield =
+  | { kind: 'pending' }
+  | { kind: 'on'; daysLeft: 1 | 2 }
+  | { kind: 'off'; chance: number }
 
-export class AppleTree {
-  readonly kind = 'apple-tree' as const
+export class Tree {
+  readonly kind = 'tree' as const
+  readonly species: TreeId
   readonly base: RectBase
-  ripe: boolean
-  grow: number
-  rarity: 'common' | 'uncommon' | 'rare' | 'heirloom'
-  constructor(base: RectBase, ripe: boolean, grow: number, rarity: 'common' | 'uncommon' | 'rare' | 'heirloom' = 'common') {
+  juvenile: number
+  fruit: number
+  yield: TreeYield
+  constructor(species: TreeId, base: RectBase, juvenile = 0, fruit = 0, y: TreeYield = { kind: 'pending' }) {
+    this.species = species
     this.base = base
-    this.ripe = ripe
-    this.grow = grow
-    this.rarity = rarity
+    this.juvenile = juvenile
+    this.fruit = fruit
+    this.yield = y
   }
 }
 

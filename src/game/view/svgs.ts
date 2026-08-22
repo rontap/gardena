@@ -6,6 +6,10 @@ import tomato from '../../assets/crop-tomato.svg?raw'
 import raspberry from '../../assets/crop-raspberry.svg?raw'
 import watermelon from '../../assets/crop-watermelon.svg?raw'
 import apple from '../../assets/crop-apple.svg?raw'
+import olive from '../../assets/crop-olive.svg?raw'
+import grape from '../../assets/crop-grape.svg?raw'
+import vanilla from '../../assets/crop-vanilla.svg?raw'
+import sugarCane from '../../assets/crop-sugar-cane.svg?raw'
 import fruitCarrot from '../../assets/fruit-carrot.svg?raw'
 import fruitPotato from '../../assets/fruit-potato.svg?raw'
 import fruitWheat from '../../assets/fruit-wheat.svg?raw'
@@ -13,6 +17,13 @@ import fruitTomato from '../../assets/fruit-tomato.svg?raw'
 import fruitRaspberry from '../../assets/fruit-raspberry.svg?raw'
 import fruitWatermelon from '../../assets/fruit-watermelon.svg?raw'
 import fruitApple from '../../assets/fruit-apple.svg?raw'
+import fruitOlive from '../../assets/fruit-olive.svg?raw'
+import fruitGrape from '../../assets/fruit-grape.svg?raw'
+import fruitVanilla from '../../assets/fruit-vanilla.svg?raw'
+import fruitApricot from '../../assets/fruit-apricot.svg?raw'
+import fruitLemon from '../../assets/fruit-lemon.svg?raw'
+import fruitCherry from '../../assets/fruit-cherry.svg?raw'
+import itemSugar from '../../assets/item-sugar.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
 import better from '../../assets/item-better-shovel.svg?raw'
 import pickaxe from '../../assets/item-pickaxe.svg?raw'
@@ -42,8 +53,7 @@ import itemBrick from '../../assets/item-brick.svg?raw'
 import itemCobble from '../../assets/item-cobble.svg?raw'
 import uiResearchLandscape from '../../assets/ui-research-landscape.svg?raw'
 import propCompostBox from '../../assets/prop-compost-box.svg?raw'
-import itemShrub from '../../assets/item-shrub.svg?raw'
-import itemBerry from '../../assets/item-berry.svg?raw'
+
 import itemChest from '../../assets/item-chest.svg?raw'
 import itemGrinder from '../../assets/item-grinder.svg?raw'
 import itemWell from '../../assets/item-well.svg?raw'
@@ -76,9 +86,10 @@ import pipeValve from '../../assets/pipe-valve.svg?raw'
 import overlayWater from '../../assets/overlay-water.svg?raw'
 import rock from '../../assets/prop-rock.svg?raw'
 import rockLong from '../../assets/prop-rock-long.svg?raw'
-import shrub from '../../assets/prop-shrub.svg?raw'
-import berryShrub from '../../assets/prop-berry-shrub.svg?raw'
 import appleTree from '../../assets/prop-apple-tree.svg?raw'
+import apricotTree from '../../assets/prop-apricot-tree.svg?raw'
+import lemonTree from '../../assets/prop-lemon-tree.svg?raw'
+import cherryTree from '../../assets/prop-cherry-tree.svg?raw'
 import grass0 from '../../assets/tile-grass-0.svg?raw'
 import grass1 from '../../assets/tile-grass-1.svg?raw'
 import grass2 from '../../assets/tile-grass-2.svg?raw'
@@ -166,7 +177,7 @@ import uiCornerBl from '../../assets/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import type { CropId, MemberId, PickaxeId, ResearchId, ShovelId, SkillId, SkuId, TileId } from '../sim/ids.ts'
+import type { CropId, MemberId, PickaxeId, ResearchId, ShovelId, SkillId, SkuId, TileId, TreeId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -177,6 +188,13 @@ const CROPS: { readonly [K in CropId]: string } = {
   raspberry,
   watermelon,
   apple,
+  olive,
+  grape,
+  vanilla,
+  'sugar-cane': sugarCane,
+  apricot: apple,
+  lemon: apple,
+  cherry: apple,
 }
 
 const FRUIT: { readonly [K in CropId]: string } = {
@@ -187,6 +205,20 @@ const FRUIT: { readonly [K in CropId]: string } = {
   raspberry: fruitRaspberry,
   watermelon: fruitWatermelon,
   apple: fruitApple,
+  olive: fruitOlive,
+  grape: fruitGrape,
+  vanilla: fruitVanilla,
+  'sugar-cane': itemSugar,
+  apricot: fruitApricot,
+  lemon: fruitLemon,
+  cherry: fruitCherry,
+}
+
+const TREE_PROP: { readonly [K in TreeId]: string } = {
+  apple: appleTree,
+  apricot: apricotTree,
+  lemon: lemonTree,
+  cherry: cherryTree,
 }
 
 export type { Face }
@@ -240,8 +272,9 @@ export function itemInner(item: Face): string {
   if (item.kind === 'box') return boxInner(item)
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.rarity))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
-  if (item.kind === 'berry') return stageOnly(itemBerry, fruitGroup(item.rarity))
-  return inner(itemShrub)
+  if (item.kind === 'sugar') return inner(itemSugar)
+  if (item.kind === 'sapling') return treeStage(item.tree, 'grow')
+  return inner(itemSugar)
 }
 
 export function skuInner(id: SkuId): string {
@@ -323,10 +356,16 @@ export function researchInner(id: ResearchId): string {
   switch (id) {
     case 'unlock-tomato':
       return stageOnly(FRUIT.tomato, 'common')
+    case 'unlock-olive':
+      return stageOnly(FRUIT.olive, 'common')
+    case 'unlock-grape':
+      return stageOnly(FRUIT.grape, 'common')
     case 'unlock-raspberry':
       return stageOnly(FRUIT.raspberry, 'common')
     case 'unlock-watermelon':
       return stageOnly(FRUIT.watermelon, 'common')
+    case 'unlock-fermentation':
+      return inner(itemSugar)
     case 'unlock-heirloom':
       return inner(skillHeirloom)
     case 'unlock-large-box':
@@ -406,11 +445,9 @@ function boxInner(item: Extract<Item, { kind: 'box' }>): string {
   const crate = inner(item.cap === 5 ? box : largeBox)
   if (item.cargo.kind === 'empty') return crate
   const cargo =
-    item.cargo.kind === 'berry'
-      ? stageOnly(itemBerry, fruitGroup(item.cargo.rarity))
-      : item.cargo.goods === 'fruit'
-        ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
-        : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
+    item.cargo.goods === 'fruit'
+      ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
+      : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
   return `${crate}<g transform="translate(7,7) scale(${10 / 24})">${cargo}</g>`
 }
 
@@ -440,11 +477,12 @@ export const ITEM_CHEST = inner(itemChest)
 export const ITEM_GRINDER = inner(itemGrinder)
 export const ROCK = inner(rock)
 export const ROCK_LONG = inner(rockLong)
-export const SHRUB = inner(shrub)
-export const BERRY_SHRUB = inner(berryShrub)
 export const APPLE_TREE = inner(appleTree)
+export function treeStage(id: TreeId, stage: 'grow' | 'unripe' | 'ripe'): string {
+  return stageOnly(TREE_PROP[id], stage)
+}
 export function appleTreeStage(ripe: boolean): string {
-  return stageOnly(appleTree, ripe ? 'ripe' : 'unripe')
+  return treeStage('apple', ripe ? 'ripe' : 'unripe')
 }
 export const CROP_ROTTEN = inner(cropRotten)
 const WEED = [weed0, weed1] as const
@@ -502,6 +540,7 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   boots: inner(skillBoots),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
+  'vanilla-tending': inner(skillTending),
   'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
   'tool-contracts': inner(skillToolContracts),
@@ -519,6 +558,10 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'better-tomato': inner(skillBetter),
   'better-raspberry': inner(skillBetter),
   'better-watermelon': inner(skillBetter),
+  'better-olive': inner(skillBetter),
+  'better-grape': inner(skillBetter),
+  'better-vanilla': inner(skillBetter),
+  'better-sugar-cane': inner(skillBetter),
   bio: inner(skillBio),
   industrial: inner(skillIndustrial),
   'open-late': inner(skillOpenLate),
@@ -532,13 +575,18 @@ export function fruitInner(crop: CropId): string {
 }
 
 export function skillInner(id: SkillId): string {
+  if (id === 'vanilla-tending') return `${fruitInner('vanilla')}${inner(skillTending)}`
   if (
     id === 'better-carrot' ||
     id === 'better-potato' ||
     id === 'better-wheat' ||
     id === 'better-tomato' ||
     id === 'better-raspberry' ||
-    id === 'better-watermelon'
+    id === 'better-watermelon' ||
+    id === 'better-olive' ||
+    id === 'better-grape' ||
+    id === 'better-vanilla' ||
+    id === 'better-sugar-cane'
   ) {
     const crop =
       id === 'better-carrot'
@@ -551,7 +599,15 @@ export function skillInner(id: SkillId): string {
               ? 'tomato'
               : id === 'better-raspberry'
                 ? 'raspberry'
-                : 'watermelon'
+                : id === 'better-watermelon'
+                  ? 'watermelon'
+                  : id === 'better-olive'
+                    ? 'olive'
+                    : id === 'better-grape'
+                      ? 'grape'
+                      : id === 'better-vanilla'
+                        ? 'vanilla'
+                        : 'sugar-cane'
     return `${fruitInner(crop)}${inner(skillBetter)}`
   }
   return SKILL_ART[id]
@@ -578,9 +634,8 @@ export function qualityPip(rarity: Rarity): string | undefined {
 }
 
 export function faceRarity(item: Face): Rarity | undefined {
-  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'berry') return item.rarity
+  if (item.kind === 'seeds' || item.kind === 'fruit') return item.rarity
   if (item.kind === 'box' && item.cargo.kind === 'stack') return item.cargo.stack.rarity
-  if (item.kind === 'box' && item.cargo.kind === 'berry') return item.cargo.rarity
   return undefined
 }
 

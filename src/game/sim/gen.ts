@@ -1,13 +1,12 @@
 import {
   CHUNK,
   DOOR,
-  AppleTree,
   HOUSE_BASE,
   PUMP_BASE,
   TRUCK_BASE,
   YARD,
   Rock,
-  Shrub,
+  Tree,
   chunkRect,
   inWorld,
   local,
@@ -56,9 +55,6 @@ export function generateChunk(seed: number, id: ChunkId, house: House, pump: Pum
       }
       const ground = groundOf(goodness(seed, col, row))
       put(cells, at, bare(ground))
-      if (ground === 'soft' && hash(seed, 'shrub', col, row) < 0.0035) {
-        put(cells, at, new Shrub(false, 0))
-      }
     }
   }
   clearBase(cells, id)
@@ -80,7 +76,7 @@ function spawnAppleTree(cells: Cell[][], id: ChunkId): void {
       const ca = atCell(cells, a)
       const cb = atCell(cells, b)
       if (ca.kind !== 'untilled' || cb.kind !== 'untilled' || ca.ground !== 'soft' || cb.ground !== 'soft') continue
-      const tree = new AppleTree({ shape: 'rect', col, row, w: 1, h: 2 }, false, 0)
+      const tree = new Tree('apple', { shape: 'rect', col, row, w: 1, h: 2 })
       put(cells, a, tree)
       put(cells, b, tree)
       return
@@ -127,7 +123,7 @@ function clearBase(cells: Cell[][], id: ChunkId): void {
         occupiedCells(cell.base, [id]).forEach(at => put(cells, at, bare('soft')))
         continue
       }
-      if (cell.kind === 'shrub' || (cell.kind === 'untilled' && cell.ground !== 'soft')) {
+      if (cell.kind === 'untilled' && cell.ground !== 'soft') {
         put(cells, { col, row }, bare('soft'))
       }
     }

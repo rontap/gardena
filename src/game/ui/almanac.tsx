@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
 import { CROPS, cropVariety } from '../defs/crops.ts'
-import { SHRUB_GROW } from '../defs/items.ts'
-import { BERRY_SALE, RARITY_SALE, type Rarity } from '../defs/rarity.ts'
+import { RARITY_SALE, raritySale, type Rarity } from '../defs/rarity.ts'
+import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
+import { ANNUAL_IDS, TREE_IDS, type TreeId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { CropId } from '../sim/ids.ts'
-import { BERRY_SHRUB, SHRUB, appleTreeStage, cropInner, faceGfx, itemInner, meterInner } from '../view/svgs.ts'
+import { cropInner, faceGfx, itemInner, meterInner, treeStage } from '../view/svgs.ts'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 
 const SEED_IDS = [
@@ -18,9 +19,10 @@ const SEED_IDS = [
   'tomato',
   'raspberry',
   'watermelon',
-  'apple',
-  'berry',
-  'shrub',
+  'olive',
+  'grape',
+  'vanilla',
+  'sugar-cane',
   'soil',
   'weed',
   'grass-seeds',
@@ -28,6 +30,7 @@ const SEED_IDS = [
   'rotten',
   'dead',
 ]
+const TREE_TAB_IDS = [...TREE_IDS]
 const UTIL_IDS = [
   'shovel',
   'better-shovel',
@@ -62,6 +65,7 @@ const AUTO_IDS = [
 
 const TABS = [
   { id: 'seeds', label: 'Seeds', ids: SEED_IDS },
+  { id: 'trees', label: 'Trees', ids: TREE_TAB_IDS },
   { id: 'utility', label: 'Utility', ids: UTIL_IDS },
   { id: 'automation', label: 'Automation', ids: AUTO_IDS },
   { id: 'building', label: 'Building', ids: BUILD_IDS },
@@ -76,7 +80,7 @@ const RARITY_TABS: { id: Rarity; label: string }[] = [
   { id: 'heirloom', label: 'Heirloom' },
 ]
 
-const CROP_IDS = Object.keys(CROPS) as CropId[]
+const CROP_IDS = [...ANNUAL_IDS] as CropId[]
 
 function colMin(key: 'growSeconds' | 'waterUsePerSec' | 'sale' | 'seed' | 'rotSeconds'): number {
   return Math.min(...CROP_IDS.map(id => CROPS[id][key]))
@@ -87,6 +91,7 @@ function colMax(key: 'growSeconds' | 'waterUsePerSec' | 'sale' | 'seed' | 'rotSe
 }
 
 function meterN(v: number, min: number, max: number): number {
+  if (max === min) return 3
   return 1 + Math.round((4 * (v - min)) / (max - min))
 }
 
@@ -157,8 +162,8 @@ export function Almanac({ onClose }: { onClose: () => void }) {
 }
 
 function Pane({ entry }: { entry: CatalogEntry }) {
-  if (entry.id === 'berry') return <BerryPane title={entry.title} />
-  if (entry.id === 'apple') return <ApplePane />
+  const tree = TREE_IDS.find(id => id === entry.id)
+  if (tree !== undefined) return <TreePane id={tree} />
   const crop = CROP_IDS.find(id => id === entry.id)
   if (crop !== undefined) return <CropPane id={crop} />
   return (
@@ -206,28 +211,29 @@ function CropPane({ id }: { id: CropId }) {
   }, [])
   const ripe = ripeStage(preview)
   const st = statsOf(id, preview, [])
+  const product =
+    id === 'sugar-cane'
+      ? faceGfx({ kind: 'sugar', count: 1, unitSale: st.sale })
+      : faceGfx({
+          kind: 'fruit',
+          crop: id,
+          rarity: preview,
+          count: 1,
+          unitSale: st.sale,
+          freshness: 1,
+          bio: true,
+        })
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
+      {id === 'sugar-cane' ? (
+        <div className="mb-3 text-base leading-relaxed text-ink/70">Bagged sugar does not rot.</div>
+      ) : null}
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg
-            className="h-16 w-16"
-            viewBox="0 0 24 24"
-            dangerouslySetInnerHTML={{
-              __html: faceGfx({
-                kind: 'fruit',
-                crop: id,
-                rarity: preview,
-                count: 1,
-                unitSale: st.sale,
-                freshness: 1,
-                bio: true,
-              }),
-            }}
-          />
+          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: product }} />
         </div>
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
           <svg
@@ -274,73 +280,95 @@ function CropPane({ id }: { id: CropId }) {
   )
 }
 
-function BerryPane({ title }: { title: string }) {
-  const [preview, setPreview] = useState<Rarity>('common')
-  const [ripe, setRipe] = useState(false)
-  useEffect(() => {
-    const t = window.setInterval(() => setRipe(v => !v), 800)
-    return () => window.clearInterval(t)
-  }, [])
-  return (
-    <>
-      <div className="mb-3 text-lg leading-relaxed text-ink">
-        {preview === 'rare' ? 'Golden berry' : preview === 'heirloom' ? 'Black raspberry' : title}
-      </div>
-      <RarityTabs preview={preview} onPreview={setPreview} />
-      <div className="mb-3 flex gap-3">
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg
-            className="h-16 w-16"
-            viewBox="0 0 24 24"
-            dangerouslySetInnerHTML={{ __html: faceGfx({ kind: 'berry', rarity: preview, count: 1 }) }}
-          />
-        </div>
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg
-            className="h-16 w-16"
-            viewBox="0 0 24 24"
-            dangerouslySetInnerHTML={{ __html: ripe ? BERRY_SHRUB : SHRUB }}
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 text-base text-ink">
-        <div className="flex items-center gap-2">
-          <div className="w-24 shrink-0">Grow time</div>
-          <span>{Number(days(SHRUB_GROW).toFixed(2))} days</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-24 shrink-0">Sell</div>
-          <Coin n={BERRY_SALE * RARITY_SALE[preview]} />
-        </div>
-      </div>
-    </>
-  )
+function treeMin(key: 'juvenileSeconds' | 'fruitSeconds'): number {
+  return Math.min(...TREE_IDS.map(id => TREES[id][key]))
 }
 
-function ApplePane() {
-  const [ripe, setRipe] = useState(false)
+function treeMax(key: 'juvenileSeconds' | 'fruitSeconds'): number {
+  return Math.max(...TREE_IDS.map(id => TREES[id][key]))
+}
+
+function treeSaleMin(): number {
+  return Math.min(...TREE_IDS.map(id => CROPS[id].sale))
+}
+
+function treeSaleMax(): number {
+  return Math.max(...TREE_IDS.map(id => CROPS[id].sale))
+}
+
+function treeRotMin(): number {
+  return Math.min(...TREE_IDS.map(id => CROPS[id].rotSeconds))
+}
+
+function treeRotMax(): number {
+  return Math.max(...TREE_IDS.map(id => CROPS[id].rotSeconds))
+}
+
+function TreePane({ id }: { id: TreeId }) {
+  const d = CROPS[id]
+  const def = TREES[id]
   const [preview, setPreview] = useState<Rarity>('common')
+  const [stage, setStage] = useState(0)
   useEffect(() => {
-    const t = window.setInterval(() => setRipe(v => !v), 800)
+    const t = window.setInterval(() => setStage(s => (s + 1) % 3), 800)
     return () => window.clearInterval(t)
   }, [])
+  const stages = ['grow', 'unripe', 'ripe'] as const
+  const st = statsOf(id, preview, [])
+  const every = 1 / def.fruitSeconds
+  const everyMin = 1 / treeMax('fruitSeconds')
+  const everyMax = 1 / treeMin('fruitSeconds')
   return (
     <>
-      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">{CROPS.apple.desc}</div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">
+        Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.
+      </div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx({ kind: 'fruit', crop: 'apple', rarity: preview, count: 1, unitSale: CROPS.apple.sale * RARITY_SALE[preview], freshness: 1, bio: true }) }} />
+          <svg
+            className="h-16 w-16"
+            viewBox="0 0 24 24"
+            dangerouslySetInnerHTML={{
+              __html: faceGfx({
+                kind: 'fruit',
+                crop: id,
+                rarity: preview,
+                count: 1,
+                unitSale: d.sale * raritySale(d, preview),
+                freshness: 1,
+                bio: true,
+              }),
+            }}
+          />
         </div>
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-10" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: appleTreeStage(ripe) }} />
+        <div className="flex h-20 w-10 items-center justify-center bg-grass">
+          <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage]) }} />
         </div>
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
-        <div className="flex items-center gap-2"><div className="w-24 shrink-0">Grow time</div><span>3 days</span></div>
-        <div className="flex items-center gap-2"><div className="w-24 shrink-0">Water</div><span>None</span></div>
-        <div className="flex items-center gap-2"><div className="w-24 shrink-0">Sell</div><Coin n={CROPS.apple.sale * RARITY_SALE[preview]} /></div>
+        <Stat
+          label="Juvenile"
+          n={meterN(def.juvenileSeconds, treeMin('juvenileSeconds'), treeMax('juvenileSeconds'))}
+          kind={{ t: 'raw', raw: `${Number(days(def.juvenileSeconds).toFixed(2))} days` }}
+        />
+        <Stat
+          label="Fruit every"
+          n={meterN(every, everyMin, everyMax)}
+          kind={{ t: 'raw', raw: `${Number(days(def.fruitSeconds).toFixed(2))} days` }}
+        />
+        <Stat
+          label="Sell"
+          n={meterN(d.sale, treeSaleMin(), treeSaleMax())}
+          kind={{ t: 'coin', n: d.sale * raritySale(d, preview) }}
+        />
+        <Stat
+          label="Freshness"
+          n={meterN(d.rotSeconds, treeRotMin(), treeRotMax())}
+          kind={{ t: 'raw', raw: `${Number(days(st.rotSeconds).toFixed(2))} days` }}
+        />
       </div>
     </>
   )

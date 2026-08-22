@@ -110,7 +110,11 @@ A few (for now) mostly cosmetic items are to be added. They are all placed simil
 - Diamond pickaxe - research gated behind pickaxing 150 times (research time 120sec), cost 1000$, 0.4s pickaxe time, 1k uses
 
 
-## 0.8 Stable game log state and perf improvements
+## 0.8 Plants expansion & Trees Rework
+
+Done. Olive, grape, vanilla, sugar cane. Raspberry hidden behind grape. Vanilla behind raspberry. Sugar cane behind Fermentation (automation); ripe cane bags as sugar. Trees: apple apricot lemon cherry. Species-only, auto-drop, juvenile once, yield windows. Starter saplings apricot/lemon/cherry. Wild berry/shrub removed. See [[mechanics/plants]].
+
+## 0.8b Stable game log state and perf improvements
 The goal of this update is to log actions in a way such that later tools can use it to unlock things.
 Most actions should be logged in a global dump-state, such as number of sold items per type×rarity, number of gold earned and spent. It should be almost like an action log. The tutorial engine attaches to this and every N ticks it checks for the step being complete.
 Uses:
@@ -174,6 +178,8 @@ In addition, at the checkpoints (25..100) there is an additional roll for emergi
 Wild berry and apple tree are not affected
 
 # 0.11 Early Access 3 Plants expansion & Trees Rework
+
+Shipped as 0.8.
 In this cute update, a few new plants are gonna be added.
 - Olives
 - Grapes
@@ -288,3 +294,18 @@ There are 3 different kinds trailers, and each has a respective building where i
 	- Building: produce silo, drops off everything into a 5 × 5 grid, seeds separated by rarity. 
 In the vehicle hangar, the player may have one of each thing bought. Deploying it is basically selecting the vehicle itself (icons of them), then, if the vehicle allows for trailers, selecting a trailer. A trailer is a permanent object, whether it is stored ephemerally inside the vehicle hangar or driven attached to a tractor, the inventory of it is kept. 
 The player may have multiple hangars, multiple silos or multiple trailers, but can only drive at most one truck that has one attached trailer to it.
+
+
+# 0.9 Global state notes
+This is a significant, internal refactor. To the player, there should be no visible changes. This is an enabler task.
+There should be a worker that receives all game state (not react state) updates and tracks them. Since the player is mostly interacting with one button, and has literally one action available per click, it should be pretty simple. logs in JSON, rough draft if sth like
+`[{game_tick:x, coordinates:[x,y], ...}` most likely, for brevity's sake keys should be one lettered.
+Of course there are specialty interactions, such as buying stuff, researching stuff and interacting with inventories. But other than that, given `state(tick=10) -> state(tick=N)` can be predicted, everything is deterministically random.
+This should be verified, there is PRNG but it was not focused on that. PRNG should be seeded, and then sub-prng generators be seeded for that. Each seperate large mechanic (does plant upgrade, is shop bought thing rarer, etc) should have its own seeder. This should make the game less prone to stupid out-of-order issues.
+The worker receives everything async, of course. Related to this, in react setStates and useEffects, only strictly state updates should be set or hooking to other components. I.e. a strong decoupling of game logic and rendering logic is needed. For example, as a plant is drinking water, it is not needed to log each time it sips. Debatable whether rotting should be noted. But it is very calculable from starting conditions + prng + time.
+This ticket is very complex and will be foundational for the 1.0 release. It will be used in these major ways. These are NOT part of this update, but they are the reason why this update is performed:
+- This makes regression testing and use-case testing mega simple. With e2e testing as well, but if it is added such that the actions can be played, not just recorded, the whole game can be automated.
+- This makes it possible for grok agents, who coded the whole damn thing, to play the game. Couple of interfaces added so they can check stuff like current location or money or whatever, and bumm, grok heavy credits amount of playtesting.
+- This makes building up a game state from the individual actions. This allows saving the game and then loading it back in. Also allows for visual replays like in prison architect
+- This makes achievements super easy to implement, like "did you plant 10 apple trees" is basically two filters.
+- A secret fifth thing is enabled by this. can you guess what? ;) 

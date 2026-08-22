@@ -187,7 +187,7 @@ function FaceBtn({
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-11 w-11 shrink-0"
+        className="pointer-events-none h-11 w-11 shrink-0"
         dangerouslySetInnerHTML={{ __html: btnFace(art, state) }}
       />
       <span className="text-center text-sm leading-none font-semibold">{label}</span>

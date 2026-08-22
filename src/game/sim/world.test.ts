@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import { CONTAINERS, GRIND_MAX, GRIND_MIN, GRIND_WORK, SPRINKLER_TILE_RATE } from '../defs/items.ts'
 import {
-  BERRY_SALE,
   HAPPY_MAX,
   HAPPY_START,
   RARITY_SALE,
@@ -19,13 +18,14 @@ import { Chest, Grinder, HOUSE_BASE, PUMP_BASE, occupiedCells } from './building
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
 import { Plant } from './plant.ts'
 import { aoe, junction, type Edge } from './pipe.ts'
-import { Rock, Shrub } from './building.ts'
+import { Rock, Tree } from './building.ts'
 import { hash } from './rng.ts'
 import { Clock, days } from './clock.ts'
 import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT } from './soil.ts'
 import { bare } from './plot.ts'
 import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
+import { statsOf } from './modifiers.ts'
 import { World } from './world.ts'
 import { AUTOMATION } from '../ui/shop.tsx'
 import { qualityPip } from '../view/svgs.ts'
@@ -134,7 +134,7 @@ describe('beta-1 invariants', () => {
   test('shovel 0 removes item', () => {
     const w = new World()
     w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 1, workSeconds: 0 } }
-    w.setCell(AT, { kind: 'untilled', ground: 'soft' })
+    w.setCell(AT, bare('soft'))
     w.actor.x = 10.5
     w.actor.y = 12.5
     w.click(AT)
@@ -230,7 +230,7 @@ describe('beta-2 invariants', () => {
     w.actor.y = 12.5
     const hand = w.hand
     const drops = w.drops.length
-    w.setCell({ col: 8, row: 12 }, { kind: 'untilled', ground: 'soft' })
+    w.setCell({ col: 8, row: 12 }, bare('soft'))
     w.rightClick({ col: 8, row: 12 })
     expect(w.hand).toEqual(hand)
     expect(w.drops).toHaveLength(drops)
@@ -389,7 +389,7 @@ describe('beta-3 invariants', () => {
     const w = new World()
     w.hand = makeShovel('shovel') as never
     w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 5, workSeconds: 1 } }
-    w.setCell(AT, { kind: 'untilled', ground: 'hard' })
+    w.setCell(AT, bare('hard'))
     w.actor.x = 10.5
     w.actor.y = 12.5
     w.actor.x = 4.5
@@ -405,7 +405,7 @@ describe('beta-3 invariants', () => {
     expect(w.hand.kind === 'hold' && w.hand.item.kind === 'shovel' && w.hand.item.usesLeft).toBe(3)
     w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 1, workSeconds: 1 } }
     const hard = { col: 10, row: 14 }
-    w.setCell(hard, { kind: 'untilled', ground: 'hard' })
+    w.setCell(hard, bare('hard'))
     w.actor.x = 10.5
     w.actor.y = 14.5
     w.click(hard)
@@ -417,7 +417,7 @@ describe('beta-3 invariants', () => {
   test('very-hard and rock refuse shovel', () => {
     const w = new World()
     w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
-    w.setCell(AT, { kind: 'untilled', ground: 'very-hard' })
+    w.setCell(AT, bare('very-hard'))
     w.actor.x = 10.5
     w.actor.y = 12.5
     w.click(AT)
@@ -432,7 +432,7 @@ describe('beta-3 invariants', () => {
   test('pickaxe turns very-hard into infertile', () => {
     const w = new World()
     w.hand = { kind: 'hold', item: makePickaxe('pickaxe') }
-    w.setCell(AT, { kind: 'untilled', ground: 'very-hard' })
+    w.setCell(AT, bare('very-hard'))
     w.actor.x = 10.5
     w.actor.y = 12.5
     w.click(AT)
@@ -468,22 +468,19 @@ describe('beta-3 invariants', () => {
     expect(w.hand.kind === 'hold' && w.hand.item.kind === 'pickaxe' && w.hand.item.usesLeft).toBe(22)
   })
 
-  test('same seed same map; fixture 1-3 shrubs', () => {
+  test('same seed same map; no shrub', () => {
     const a = new World(2)
     const b = new World(2)
     const cellsA: string[] = []
     const cellsB: string[] = []
-    let shrubs = 0
     a.forEachCell((at, c) => {
       cellsA.push(`${at.col},${at.row}:${c.kind}`)
-      if (c.kind === 'shrub') shrubs += 1
+
     })
     b.forEachCell((at, c) => {
       cellsB.push(`${at.col},${at.row}:${c.kind}`)
     })
     expect(cellsA).toEqual(cellsB)
-    expect(shrubs).toBeGreaterThanOrEqual(1)
-    expect(shrubs).toBeLessThanOrEqual(6)
     const c = new World(3)
     const cellsC: string[] = []
     c.forEachCell((at, cell) => {
@@ -497,32 +494,24 @@ describe('beta-3 invariants', () => {
     w.forEachCell((at, c) => {
       if (Math.hypot(at.col + 0.5 - 15.5, at.row + 0.5 - 9.5) >= 8) return
       expect(c.kind).not.toBe('rock')
-      expect(c.kind).not.toBe('shrub')
       if (c.kind === 'untilled') expect(c.ground).toBe('soft')
     })
   })
 
-  test('harvest berry cycles; shovel ripe extracts', () => {
+  test('shovel tree drops sapling; cells stay tree until dug', () => {
     const w = new World()
-    const shrub = new Shrub(true, 1)
-    w.setCell(AT, shrub)
-    w.hand = { kind: 'empty' }
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('apricot', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'on', daysLeft: 2 })
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
     w.actor.x = 10.5
     w.actor.y = 12.5
     w.click(AT)
-    for (let i = 0; i < 12; i++) w.tick(1 / 15)
-    {
-      const h = readHand(w)
-      expect(h.kind).toBe('hold')
-      expect(h.kind === 'hold' ? h.item.kind : undefined).toBe('berry')
-    }
-    expect(w.cell(AT).kind === 'shrub' && (w.cell(AT) as Shrub).ripe).toBe(false)
-    w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
-    ;(w.cell(AT) as Shrub).ripe = true
-    w.click(AT)
     w.tick(0.05)
     expect(w.cell(AT)).toEqual(bare('soft'))
-    expect(w.drops.some(d => d.item.kind === 'shrub')).toBe(true)
+    expect(w.cell(below)).toEqual(bare('soft'))
+    expect(w.drops.some(d => d.item.kind === 'sapling' && d.item.kind === 'sapling' && d.item.tree === 'apricot')).toBe(true)
   })
 
   test('pickaxe sku 20 gated on unlock-pickaxe; rarity table', () => {
@@ -531,7 +520,7 @@ describe('beta-3 invariants', () => {
     expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(RARITY_SALE).toEqual({ common: 1, uncommon: 1.25, rare: 2, heirloom: 3.5 })
     expect(RARITY_WEIGHT).toEqual({ common: 0.55, uncommon: 0.35, rare: 0.09, heirloom: 0.01 })
-    expect(BERRY_SALE).toBe(2)
+    expect(RESEARCH['unlock-raspberry'].reveal).toBe('unlock-grape')
   })
 
   test('walk onto rock is legal', () => {
@@ -548,16 +537,10 @@ describe('beta-3 invariants', () => {
 })
 
 describe('beta-4 invariants', () => {
-  test('immature shrub plus shovel extracts', () => {
+  test('starter house has three saplings', () => {
     const w = new World()
-    w.setCell(AT, new Shrub(false, 0.2))
-    w.hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
-    w.actor.x = 10.5
-    w.actor.y = 12.5
-    w.click(AT)
-    w.tick(0.05)
-    expect(w.cell(AT)).toEqual(bare('soft'))
-    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'shrub')).toBe(true)
+    const trees = w.inventory.filter(s => s.kind === 'hold' && s.item.kind === 'sapling').map(s => (s.kind === 'hold' && s.item.kind === 'sapling' ? s.item.tree : ''))
+    expect(trees.sort()).toEqual(['apricot', 'cherry', 'lemon'])
   })
 
   test('buy-chest place 1x1 own slots', () => {
@@ -585,7 +568,7 @@ describe('beta-4 invariants', () => {
     expect(cb.slots).toHaveLength(9)
     expect(ca.slots.every(s => s.kind === 'empty')).toBe(true)
     expect(ca.slots).not.toBe(cb.slots)
-    ca.slots[0] = { kind: 'hold', item: { kind: 'shrub' } }
+    ca.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
     expect(cb.slots[0].kind).toBe('empty')
   })
 
@@ -611,7 +594,7 @@ describe('beta-4 invariants', () => {
     const n = 3
     const w = grindWorld(11)
     w.inventory.forEach((_, i) => {
-      w.inventory[i] = { kind: 'hold', item: { kind: 'shrub' } }
+      w.inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
     })
     w.hand = {
       kind: 'hold',
@@ -641,7 +624,7 @@ describe('beta-4 invariants', () => {
     )
     expect(dropped).toHaveLength(1)
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
-    expect(w.inventory.every(s => s.kind === 'hold' && s.item.kind === 'shrub')).toBe(true)
+    expect(w.inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
   })
 
   test('unlock-grinder automation buy-grinder 30', () => {
@@ -670,7 +653,7 @@ describe('beta-4 invariants', () => {
     expect(
       itemLine({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true }, w.modifiers),
     ).toBe('Carrot - 3, freshness 100%')
-    expect(itemLine({ kind: 'berry', rarity: 'uncommon', count: 2 }, w.modifiers)).toBe('Berry - 2')
+    expect(itemLine({ kind: 'sugar', count: 2, unitSale: 5 }, w.modifiers)).toBe('Sugar - 2')
   })
 
   test('infertile prompt is does not need seeds', () => {
@@ -1150,14 +1133,14 @@ describe('beta-6 invariants', () => {
     const chest = w.cell(AT)
     expect(chest.kind).toBe('chest')
     if (chest.kind !== 'chest') return
-    chest.slots[0] = { kind: 'hold', item: { kind: 'shrub' } }
+    chest.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
     chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
     w.armDelete()
     const n = w.drops.length
     w.deleteBuilding(AT)
     expect(w.cell(AT).kind).toBe('empty')
     expect(w.drops).toHaveLength(n + 2)
-    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'shrub')).toBe(true)
+    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'sapling')).toBe(true)
     const house = { col: 14, row: 6 }
     expect(w.cell(house).kind).toBe('house')
     w.deleteBuilding(house)
@@ -1319,6 +1302,62 @@ function sameEdge(a: Edge, b: Edge): boolean {
 function sorted(cs: { col: number; row: number }[]): { col: number; row: number }[] {
   return [...cs].sort((a, b) => a.row - b.row || a.col - b.col)
 }
+
+describe('0.8 plants and trees', () => {
+  test('vanilla saleMul 1 / 1.25 / 3 / 6; common 22 < raspberry 26', () => {
+    const w = new World()
+    expect(statsOf('vanilla', 'common', w.modifiers).sale).toBe(22)
+    expect(statsOf('vanilla', 'rare', w.modifiers).sale).toBe(66)
+    expect(statsOf('vanilla', 'heirloom', w.modifiers).sale).toBe(132)
+    expect(statsOf('raspberry', 'common', w.modifiers).sale).toBe(26)
+  })
+
+  test('fermentation unlocks cane; raspberry reveal is grape', () => {
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'automation', cost: 14, seconds: 50, reveal: 'start' })
+    expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
+    expect(RESEARCH['unlock-raspberry'].reveal).toBe('unlock-grape')
+    expect(RESEARCH['unlock-olive'].reveal).toBe('unlock-tomato')
+    expect(SKUS['pack-vanilla'].show).toBe('unlock-raspberry')
+    expect(SKUS['pack-vanilla'].need).toBe('vanilla-tending')
+    expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
+  })
+
+  test('vanilla pack shows after raspberry; buy needs vanilla-tending', () => {
+    const w = new World()
+    expect(w.skuShown('pack-vanilla')).toBe(false)
+    w.done.add('unlock-raspberry')
+    expect(w.skuShown('pack-vanilla')).toBe(true)
+    expect(w.skuOpen('pack-vanilla')).toBe(false)
+    w.family.player.owned.set('vanilla-tending', 1)
+    expect(w.skuOpen('pack-vanilla')).toBe(true)
+  })
+
+  test('ripe cane harvests sugar not fruit', () => {
+    const w = new World()
+    w.hand = { kind: 'empty' }
+    w.actor.x = AT.col + 0.5
+    w.actor.y = AT.row + 0.5
+    const p = new Plant('sugar-cane', 'common')
+    w.setCell(AT, { kind: 'ripe', soil: bed(), plant: p })
+    w.click(AT)
+    for (let i = 0; i < 20; i++) w.tick(1 / 15)
+    expect(w.hand.kind === 'hold' && w.hand.item.kind).toBe('sugar')
+    expect(w.cell(AT).kind).toBe('empty')
+  })
+
+  test('tree juvenile then pending; next seam starts yield', () => {
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    expect(tree.yield.kind).toBe('pending')
+    w.clock.t = 239.9
+    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    expect(tree.yield.kind).toBe('on')
+    if (tree.yield.kind === 'on') expect(tree.yield.daysLeft).toBe(2)
+  })
+})
 
 function expectPacked(w: World): void {
   const seen = new Set<string>()

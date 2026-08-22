@@ -7,6 +7,7 @@ import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
+import { TREE_NAME } from '../defs/trees.ts'
 import { fillable, waterable, type Intent, type World } from './world.ts'
 
 export const NOT_OWNED = "I don't own this land"
@@ -227,7 +228,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'rock' || (cell.kind === 'untilled' && cell.ground === 'very-hard')) {
       return { kind: 'blocked', text: 'Need a pickaxe' }
     }
-    if (cell.kind === 'shrub' || cell.kind === 'apple-tree') return intent('Dig', { act: 'shovel', at })
+    if (cell.kind === 'tree') return intent('Dig', { act: 'shovel', at })
     if (cell.kind === 'untilled' && cell.ground === 'hard' && w.hand.item.usesLeft < 2) {
       return { kind: 'blocked', text: 'Cannot dig' }
     }
@@ -238,8 +239,21 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'dead') return intent('Dig out dead plant', { act: 'shovel', at })
     return needSeeds(cell)
   }
-  if (w.hand.kind === 'hold' && w.hand.item.kind === 'shrub') {
-    if (cell.kind === 'untilled' && cell.ground === 'soft') return intent('Plant', { act: 'plant', at })
+  if (w.hand.kind === 'hold' && w.hand.item.kind === 'sapling') {
+    const below = { col: at.col, row: at.row + 1 }
+    const a = cell
+    const b = w.inWorld(below) ? w.cell(below) : undefined
+    if (
+      a.kind === 'untilled' &&
+      a.ground === 'soft' &&
+      a.cover.kind !== 'tile' &&
+      b !== undefined &&
+      b.kind === 'untilled' &&
+      b.ground === 'soft' &&
+      b.cover.kind !== 'tile'
+    ) {
+      return intent(`Plant ${TREE_NAME[w.hand.item.tree]}`, { act: 'plant', at })
+    }
   }
   if (w.hand.kind === 'hold' && w.hand.item.kind === 'seeds') {
     if (cell.kind === 'empty') return intent(`Plant ${w.hand.item.crop}`, { act: 'plant', at })
@@ -260,13 +274,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.soil.fertilizer >= FERT_PLOT_MAX) return { kind: 'blocked', text: 'Soil is fertile' }
     return intent('Fertilize', { act: 'fertilize', at })
   }
-  if (cell.kind === 'shrub' && cell.ripe && canHarvestBerry(w)) {
+  if (cell.kind === 'ripe' && cell.plant.crop === 'sugar-cane' && canHarvestSugar(w)) {
     return intent('Harvest', { act: 'harvest', at })
   }
-  if (cell.kind === 'apple-tree' && cell.ripe && canHarvestHand(w, 'apple', cell.rarity)) {
-    return intent('Harvest', { act: 'harvest', at })
-  }
-  if (cell.kind === 'ripe' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
+  if (cell.kind === 'ripe' && cell.plant.crop !== 'sugar-cane' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
     return intent('Harvest', { act: 'harvest', at })
   }
   if (w.hand.kind === 'empty' && (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass'))) {
@@ -305,20 +316,19 @@ function canHarvestHand(w: World, crop: CropId, rarity: Rarity): boolean {
   return boxAccepts(w.hand.item, 'fruit', crop, rarity, 1) > 0
 }
 
-function canHarvestBerry(w: World): boolean {
+function canHarvestSugar(w: World): boolean {
   if (w.hand.kind === 'empty') return true
-  if (w.hand.item.kind !== 'box') return false
-  const cargo = w.hand.item.cargo
-  return cargo.kind === 'empty' || (cargo.kind === 'berry' && cargo.count < w.hand.item.cap)
+  return w.hand.item.kind === 'sugar'
 }
 
 function canConsign(hand: Hand): boolean {
   if (hand.kind !== 'hold') return false
   const it = hand.item
-  if (it.kind === 'fruit') return it.count >= 1
-  if (it.kind === 'berry') return it.count >= 1
-  if (it.kind === 'box' && it.cargo.kind === 'stack' && it.cargo.goods === 'fruit') return it.cargo.stack.count >= 1
-  if (it.kind === 'box' && it.cargo.kind === 'berry') return it.cargo.count >= 1
+  if (it.kind === 'fruit') return it.count >= 1 && it.crop !== 'sugar-cane'
+  if (it.kind === 'sugar') return it.count >= 1
+  if (it.kind === 'box' && it.cargo.kind === 'stack' && it.cargo.goods === 'fruit') {
+    return it.cargo.stack.count >= 1 && it.cargo.stack.crop !== 'sugar-cane'
+  }
   return false
 }
 

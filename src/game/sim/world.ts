@@ -8,9 +8,9 @@ import {
   GRIND_MIN,
   GRIND_WORK,
   SPEECH_S,
-  SHRUB_GROW,
   SPRINKLER_TILE_RATE,
 } from '../defs/items.ts'
+import { TREES, TREE_NAME, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { extraGrowUp1, JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
@@ -27,6 +27,7 @@ import {
   type Rarity,
 } from '../defs/rarity.ts'
 import type {
+  AnnualId,
   CropId,
   DaughterSkillId,
   HusbandSkillId,
@@ -36,6 +37,7 @@ import type {
   SkillId,
   SkuId,
   StallGoodId,
+  TreeId,
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
 import {
@@ -50,8 +52,8 @@ import {
   PUMP_BASE,
   Pump,
   RainTank,
-  Shrub,
   Tap,
+  Tree,
   TRUCK_BASE,
   Truck,
   chunkKey,
@@ -95,6 +97,7 @@ import {
   goodIx,
   makeStall,
   rate as stallRate,
+  stallRarity,
   stallX,
   tenths,
   STALL_IDS,
@@ -317,16 +320,7 @@ export class World {
     this.house = new House(HOUSE_BASE, DOOR)
     this.truck = new Truck(TRUCK_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
-    this.stall = {
-      carrot: makeStall('carrot', this.modifiers),
-      potato: makeStall('potato', this.modifiers),
-      wheat: makeStall('wheat', this.modifiers),
-      tomato: makeStall('tomato', this.modifiers),
-      raspberry: makeStall('raspberry', this.modifiers),
-      watermelon: makeStall('watermelon', this.modifiers),
-      apple: makeStall('apple', this.modifiers),
-      berry: makeStall('berry', this.modifiers),
-    }
+    this.stall = Object.fromEntries(STALL_IDS.map(id => [id, makeStall(id, this.modifiers)])) as StallMap
     this.family = {
       player: emptyMember(),
       husband: emptyMember(),
@@ -350,6 +344,9 @@ export class World {
       kind: 'hold',
       item: { kind: 'seeds', crop: 'potato', rarity: 'heirloom', count: 2 },
     }
+    this.inventory[4] = { kind: 'hold', item: { kind: 'sapling', tree: 'apricot' } }
+    this.inventory[5] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+    this.inventory[6] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
     this.indexAll()
   }
@@ -396,7 +393,7 @@ export class World {
       cell.kind === 'turf' ||
       cell.kind === 'chest' ||
       cell.kind === 'compost-box' ||
-      ((cell.kind === 'shrub' || cell.kind === 'apple-tree') && !cell.ripe)
+      (cell.kind === 'tree' && cell.base.col === at.col && cell.base.row === at.row)
     if (on) this.live.set(k, { col: at.col, row: at.row })
     else this.live.delete(k)
   }
@@ -536,7 +533,7 @@ export class World {
     const def: SkillDef = SKILLS[id]
     if (this.skillTier(id) >= def.maxTier) return false
     if (def.gate.kind === 'research') return this.done.has(def.gate.id)
-    if (def.gate.kind === 'skill') return this.hasSkill('open-late')
+    if (def.gate.kind === 'skill') return this.hasSkill(def.gate.id)
     return true
   }
 
@@ -589,8 +586,9 @@ export class World {
   }
 
   skuOpen(id: SkuId): boolean {
-    const u = SKUS[id].unlock
-    return u === 'start' || this.done.has(u)
+    const s = SKUS[id]
+    if (s.need !== undefined && !this.hasSkill(s.need)) return false
+    return s.unlock === 'start' || this.done.has(s.unlock)
   }
 
   skuShown(id: SkuId): boolean {
@@ -1372,7 +1370,7 @@ export class World {
     return true
   }
 
-  private putSeeds(crop: CropId, rarity: Rarity, count: number): void {
+  private putSeeds(crop: AnnualId, rarity: Rarity, count: number): void {
     const merge = this.seedSlot(crop, rarity)
     if (merge >= 0) {
       const slot = this.inventory[merge]
@@ -1400,11 +1398,16 @@ export class World {
     const jam = this.jamFloor()
     const clearance = this.hasSkill('clearance')
     return STALL_IDS.reduce((total, id) => {
+      if (id === 'sugar') {
+        const count = this.stall.sugar.stock.common.organic
+        if (count === 0) return total
+        return total + this.stall.sugar.worth.common.organic * saleX
+      }
       const x = stallX(id, this.modifiers)
       return (
         total +
         RARITY_RANK.reduce((goodTotal, rarity) => {
-          const rareX = RARITY_SALE[rarity] * (rarity === 'heirloom' ? heirX : 1)
+          const rareX = stallRarity(id, rarity) * (rarity === 'heirloom' ? heirX : 1)
           return (
             goodTotal +
             BIO_KEYS.reduce((bioTotal, k) => {
@@ -1414,7 +1417,7 @@ export class World {
               if (clearance && worth === 0) return bioTotal + count
               const avg = worth / count
               const fresh = avg < jam ? jam : avg
-              const organicMul = k === 'organic' && id !== 'berry' ? bioX : 1
+              const organicMul = k === 'organic' ? bioX : 1
               return bioTotal + count * fresh * x * rareX * saleX * organicMul
             }, 0)
           )
@@ -1505,6 +1508,7 @@ export class World {
       this.money += DAY_STIPEND
       const tax = this.tax()
       this.money -= tax
+      this.tickTreesSeam()
       this.seam = {
         kind: 'recap',
         recap: {
@@ -1769,25 +1773,8 @@ export class World {
     for (let i = 0; i < live.length; i++) {
       const at = live[i]
       const c = this.cell(at)
-      if (c.kind === 'shrub' && !c.ripe) {
-        c.grow += dt / SHRUB_GROW
-        if (c.grow >= 1) {
-          c.grow = 1
-          c.ripe = true
-          this.track(at, c)
-          dirty = true
-        }
-        continue
-      }
-      if (c.kind === 'apple-tree' && !c.ripe) {
-        c.grow += dt / 720
-        if (c.grow >= 1) {
-          c.grow = 1
-          c.ripe = true
-          c.rarity = rollRarity(hash(this.seed, 'apple', c.base.col, c.base.row, this.clock.day))
-          this.track(at, c)
-          dirty = true
-        }
+      if (c.kind === 'tree') {
+        if (this.tickTree(c, dt)) dirty = true
         continue
       }
       if (c.kind === 'turf') {
@@ -1992,10 +1979,90 @@ export class World {
     return new Soil(SOIL_TILL_WATER, goodness(this.seed, at.col, at.row))
   }
 
+  private tickTreesSeam(): void {
+    this.forEachCell((at, c) => {
+      if (c.kind !== 'tree') return
+      if (c.base.col !== at.col || c.base.row !== at.row) return
+      if (c.juvenile < 1) return
+      this.advanceYield(c)
+    })
+  }
+
+  private advanceYield(t: Tree): void {
+    if (t.yield.kind === 'pending') {
+      t.yield = { kind: 'on', daysLeft: 2 }
+      return
+    }
+    if (t.yield.kind === 'on') {
+      const left = (t.yield.daysLeft - 1) as 0 | 1
+      t.yield = left === 0 ? { kind: 'off', chance: -0.2 } : { kind: 'on', daysLeft: left }
+      return
+    }
+    const chance = t.yield.chance + 0.2
+    const u = hash(this.seed, 'tree-yield', t.base.col, t.base.row, this.clock.day)
+    t.yield = u < chance ? { kind: 'on', daysLeft: 2 } : { kind: 'off', chance }
+  }
+
+  private tickTree(t: Tree, dt: number): boolean {
+    if (t.juvenile < 1) {
+      t.juvenile += dt / TREES[t.species].juvenileSeconds
+      if (t.juvenile >= 1) {
+        t.juvenile = 1
+        t.yield = { kind: 'pending' }
+        t.fruit = 0
+      }
+      return true
+    }
+    if (t.yield.kind === 'pending') return false
+    const mul = t.yield.kind === 'on' ? TREE_YIELD_MUL : TREE_OFF_MUL
+    t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
+    if (t.fruit < 1) return false
+    if (!this.dropTreeFruit(t)) {
+      t.fruit = 1
+      return true
+    }
+    t.fruit = 0
+    this.tally.harvests += 1
+    return true
+  }
+
+  private dropTreeFruit(t: Tree): boolean {
+    const below = { col: t.base.col, row: t.base.row + 1 }
+    const seen = new Set<string>()
+    const spots = [...frontOf({ col: t.base.col, row: t.base.row }), ...frontOf(below)]
+    const hit = spots.find(p => {
+      const k = `${p.col},${p.row}`
+      if (seen.has(k)) return false
+      seen.add(k)
+      if (p.col === t.base.col && (p.row === t.base.row || p.row === t.base.row + 1)) return false
+      if (!this.inWorld(p)) return false
+      return isPlot(this.cell(p))
+    })
+    if (hit === undefined) return false
+    const rarity = rollRarity(hash(this.seed, 'tree-fruit', t.base.col, t.base.row, this.clock.day, Math.floor(t.fruit * 1000)))
+    const sale = CROPS[t.species].sale * RARITY_SALE[rarity]
+    this.drops.push({
+      at: { ...hit },
+      item: { kind: 'fruit', crop: t.species, rarity, count: 1, unitSale: sale, freshness: 1, bio: true },
+    })
+    return true
+  }
+
+  private saplingPair(at: Coord): Coord | undefined {
+    const below = { col: at.col, row: at.row + 1 }
+    if (!this.inWorld(below)) return undefined
+    const a = this.cell(at)
+    const b = this.cell(below)
+    if (a.kind !== 'untilled' || b.kind !== 'untilled') return undefined
+    if (a.ground !== 'soft' || b.ground !== 'soft') return undefined
+    if (a.cover.kind === 'tile' || b.cover.kind === 'tile') return undefined
+    return below
+  }
+
   private canShovel(at: Coord): boolean {
     if (this.hand.kind !== 'hold' || this.hand.item.kind !== 'shovel') return false
     const c = this.cell(at)
-    if (c.kind === 'shrub' || c.kind === 'apple-tree') return true
+    if (c.kind === 'tree') return true
     if (!isPlot(c)) return false
     if (c.kind === 'infertile') return false
     if (c.kind === 'untilled' && c.ground === 'very-hard') return false
@@ -2007,17 +2074,9 @@ export class World {
     if (!this.canShovel(at)) return
     const c = this.cell(at)
     const s = this.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
-    if (c.kind === 'shrub') {
-      this.drops.push({ at: { ...at }, item: { kind: 'shrub' } })
-      this.setCell(at, bare('soft'))
-      s.item.usesLeft -= 1
-      if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
-      this.pulse = { text: 'Dig', at: { ...at } }
-      return
-    }
-    if (c.kind === 'apple-tree') {
+    if (c.kind === 'tree') {
       occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
-      this.drops.push({ at: { ...at }, item: { kind: 'apple-tree' } })
+      this.drops.push({ at: { ...at }, item: { kind: 'sapling', tree: c.species } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.hand = { kind: 'empty' }
       this.pulse = { text: 'Dig', at: { ...at } }
@@ -2079,10 +2138,7 @@ export class World {
 
   private canPlant(at: Coord): boolean {
     if (this.hand.kind !== 'hold') return false
-    if (this.hand.item.kind === 'shrub') {
-      const c = this.cell(at)
-      return c.kind === 'untilled' && c.ground === 'soft'
-    }
+    if (this.hand.item.kind === 'sapling') return this.saplingPair(at) !== undefined
     if (this.hand.item.kind !== 'seeds' && this.hand.item.kind !== 'grass-seeds') return false
     return this.cell(at).kind === 'empty'
   }
@@ -2090,10 +2146,14 @@ export class World {
   private doPlant(at: Coord): void {
     if (!this.canPlant(at)) return
     if (this.hand.kind !== 'hold') return
-    if (this.hand.item.kind === 'shrub') {
-      this.setCell(at, new Shrub(false, 0))
+    if (this.hand.item.kind === 'sapling') {
+      const below = this.saplingPair(at)
+      if (below === undefined) return
+      const tree = new Tree(this.hand.item.tree, { shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+      this.setCell(at, tree)
+      this.setCell(below, tree)
       this.hand = { kind: 'empty' }
-      this.pulse = { text: 'Plant', at: { ...at } }
+      this.pulse = { text: `Plant ${TREE_NAME[tree.species]}`, at: { ...at } }
       return
     }
     const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
@@ -2198,13 +2258,11 @@ export class World {
 
   private canHarvest(at: Coord): boolean {
     const c = this.cell(at)
-    if ((c.kind === 'shrub' || c.kind === 'apple-tree') && c.ripe) {
-      if (this.hand.kind === 'empty') return true
-      if (this.hand.item.kind !== 'box') return false
-      const cargo = this.hand.item.cargo
-      return cargo.kind === 'empty' || (cargo.kind === 'berry' && cargo.count < this.hand.item.cap)
-    }
     if (c.kind !== 'ripe') return false
+    if (c.plant.crop === 'sugar-cane') {
+      if (this.hand.kind === 'empty') return true
+      return this.hand.item.kind === 'sugar'
+    }
     if (this.hand.kind === 'empty') return true
     if (this.hand.item.kind !== 'box') return false
     return boxAccepts(this.hand.item, 'fruit', c.plant.crop, c.plant.rarity, 1) > 0
@@ -2213,32 +2271,24 @@ export class World {
   private doHarvest(at: Coord): void {
     if (!this.canHarvest(at)) return
     const c = this.cell(at)
-    if (c.kind === 'shrub') {
-      const rarity = rollRarity(hash(this.seed, 'berry', at.col, at.row, this.clock.day))
-      if (this.hand.kind === 'hold' && this.hand.item.kind === 'box') {
-        if (boxAccepts(this.hand.item, 'berry', rarity, 1) === 0) return
-        boxAdd(this.hand.item, 'berry', rarity, 1)
-      } else {
-        this.hand = { kind: 'hold', item: { kind: 'berry', rarity, count: 1 } }
-      }
-      c.ripe = false
-      c.grow = 0
-      this.track(at, c)
-      this.tally.harvests += 1
-      this.pulse = { text: 'Harvest', at: { ...at } }
-      return
-    }
-    if (c.kind === 'apple-tree') {
-      const picked = fruitStack('apple', c.rarity, 1, CROPS.apple.sale * RARITY_SALE[c.rarity], 1, true)
-      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
-      this.tally.harvests += 1
-      this.pulse = { text: 'Harvest', at: { ...at } }
-      if (this.hand.kind === 'empty') this.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
-      else if (this.hand.item.kind === 'box') boxAddFruit(this.hand.item, picked)
-      return
-    }
     const bed = c as Extract<Plot, { kind: 'ripe' }>
     const p = bed.plant
+    if (p.crop === 'sugar-cane') {
+      const unitSale = p.stats(this.modifiers).sale
+      this.setCell(at, { kind: 'empty', soil: bed.soil })
+      this.tally.harvests += 1
+      this.pulse = { text: 'Harvest', at: { ...at } }
+      if (this.hand.kind === 'empty') {
+        this.hand = { kind: 'hold', item: { kind: 'sugar', count: 1, unitSale } }
+        return
+      }
+      if (this.hand.item.kind === 'sugar') {
+        const it = this.hand.item
+        it.unitSale = mergeUnitSale(it, { unitSale, count: 1 })
+        it.count += 1
+      }
+      return
+    }
     const picked = fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
     this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
@@ -2298,19 +2348,6 @@ export class World {
           return
         }
       }
-      if (taken.kind === 'berry') {
-        const n = boxAdd(this.hand.item, 'berry', taken.rarity, taken.count)
-        if (n === taken.count) {
-          this.drops.splice(i, 1)
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-        if (n > 0) {
-          taken.count -= n
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-      }
     }
     this.drops.splice(i, 1)
     if (this.hand.kind === 'empty') {
@@ -2334,13 +2371,14 @@ export class World {
     if (this.hand.kind !== 'hold') return
     const item = this.hand.item
     if (item.kind === 'fruit') {
+      if (item.crop === 'sugar-cane') return
       this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness), item.bio)
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
-    if (item.kind === 'berry') {
-      this.stall.berry.take(item.rarity, item.count, 1, true)
+    if (item.kind === 'sugar') {
+      this.stall.sugar.takeSugar(item.count, item.unitSale)
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
@@ -2348,13 +2386,8 @@ export class World {
     if (item.kind !== 'box') return
     if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
       const cargo = item.cargo.stack
+      if (cargo.crop === 'sugar-cane') return
       this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness), cargo.bio)
-      item.cargo = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.cargo.kind === 'berry') {
-      this.stall.berry.take(item.cargo.rarity, item.cargo.count, 1, true)
       item.cargo = { kind: 'empty' }
       this.completeConsign()
     }
@@ -2541,7 +2574,6 @@ export function mood(soil: Soil, st: Stats): string {
 
 function primaryAct(cell: Cell): string | undefined {
   if (cell.kind === 'ripe') return 'harvest'
-  if (cell.kind === 'shrub' && cell.ripe) return 'harvest'
   if (cell.kind === 'growing') return 'water'
   if (cell.kind === 'weed') return 'dig'
   if (cell.kind === 'empty') return 'plant'
@@ -2614,10 +2646,10 @@ function compactSlots(slots: Slot[]): void {
         return
       }
     }
-    if (slot.item.kind === 'berry') {
-      const rarity = slot.item.rarity
-      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'berry' && s.item.rarity === rarity)
-      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'berry') {
+    if (slot.item.kind === 'sugar') {
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
+      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
+        hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
         hit.item.count += slot.item.count
         return
       }

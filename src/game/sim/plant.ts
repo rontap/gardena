@@ -1,5 +1,5 @@
 import { HAPPY_START, type Rarity } from '../defs/rarity.ts'
-import type { CropId } from './ids.ts'
+import type { AnnualId } from './ids.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 
 export type Doom = 'wilt' | 'drown' | 'starve'
@@ -11,10 +11,10 @@ export class Plant {
   bio = true
   tended = false
 
-  readonly crop: CropId
+  readonly crop: AnnualId
   rarity: Rarity
 
-  constructor(crop: CropId, rarity: Rarity) {
+  constructor(crop: AnnualId, rarity: Rarity) {
     this.crop = crop
     this.rarity = rarity
   }

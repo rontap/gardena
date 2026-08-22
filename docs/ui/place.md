@@ -114,13 +114,13 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Then `deleteBuilding(at)`.
 | chest | **Delete chest** | slots become drops on at, cell → empty |
 | grinder | **Delete grinder** | cell → empty |
 | compost-box | **Delete compost box** | cell → empty |
-| house, starter, truck, rock, shrub, apple-tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
+| house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
 `deletePipe` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
 
 Delete pipe / sprinkler uses `EdgeStroke` / `VertexStroke`. Cell outline stays `stroke-ink`.
 
-Rocks, soil, plants, shrubs stay pickaxe / shovel / harvest.
+Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Sapling plant is a hand `plant`, not a Place SKU.
 
 ## Copy
 

@@ -4,7 +4,9 @@ Module map and types for the game as it runs.
 
 - [[architecture/modules]]
 - [[architecture/world]]
+- [[architecture/log]]
+- [[architecture/rng]]
 - [[architecture/family]]
-- [[architecture/apple-tree]]
+- [[architecture/tree]]
 
 See [[canon]].

@@ -55,7 +55,7 @@ function StallRow({ id, world }: { id: StallGoodId; world: World }) {
 }
 
 function boxFace(id: StallGoodId): Item {
-  if (id === 'berry') return { kind: 'box', cap: 5, cargo: { kind: 'berry', rarity: 'common', count: 1 } }
+  if (id === 'sugar') return { kind: 'sugar', count: 1, unitSale: CROPS['sugar-cane'].sale }
   return {
     kind: 'box',
     cap: 5,
@@ -100,5 +100,6 @@ function DynamicStallRow({ id, world, toasts }: { id: StallGoodId; world: World;
 }
 
 function stallX(world: World, id: StallGoodId): number {
-  return id === 'berry' ? 2 : CROPS[id].sale * world.modifiers.filter(m => m.crop === undefined || m.crop === id).reduce((n, m) => n * m.saleMul, 1)
+  if (id === 'sugar') return CROPS['sugar-cane'].sale
+  return CROPS[id].sale * world.modifiers.filter(m => m.crop === undefined || m.crop === id).reduce((n, m) => n * m.saleMul, 1)
 }

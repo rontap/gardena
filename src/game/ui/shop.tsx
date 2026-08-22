@@ -15,6 +15,10 @@ const SEEDS: SkuId[] = [
   'pack-tomato',
   'pack-raspberry',
   'pack-watermelon',
+  'pack-olive',
+  'pack-grape',
+  'pack-vanilla',
+  'pack-sugar-cane',
   'pack-grass',
 ]
 const UTILITY: SkuId[] = [
@@ -63,10 +67,11 @@ const TABS: { id: Tab; label: string; skus: SkuId[] }[] = [
   { id: 'building', label: 'Building', skus: BUILDING },
 ]
 
-type RowState = 'not-researched' | 'cannot-afford' | 'inventory-full' | 'ok'
+type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'ok'
 
 const REASON: { readonly [K in RowState]: string } = {
   'not-researched': 'Locked behind research',
+  'need-skill': 'You need to earn the Vanilla tending skill',
   'cannot-afford': 'Not enough money',
   'inventory-full': 'No room in the inventory',
   ok: '',
@@ -177,6 +182,7 @@ function SkuRow({ id, world, onHot }: { id: SkuId; world: World; onHot: (id: Sku
 }
 
 function gateLine(id: SkuId, state: RowState): string {
+  if (state === 'need-skill') return REASON['need-skill']
   if (state !== 'not-researched') return REASON[state]
   const unlock = SKUS[id].unlock
   if (unlock === 'start') return REASON[state]
@@ -184,6 +190,8 @@ function gateLine(id: SkuId, state: RowState): string {
 }
 
 function rowState(world: World, id: SkuId): RowState {
+  const need = SKUS[id].need
+  if (need !== undefined && !world.hasSkill(need)) return 'need-skill'
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < world.skuPrice(id)) return 'cannot-afford'
   const made = skuItem(id)

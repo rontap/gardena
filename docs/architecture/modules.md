@@ -1,0 +1,110 @@
+# Modules
+
+`src/game/` is four folders. `src/App.tsx` holds the one [[architecture/world]] `World` and the panel union. It ticks `World`. It does not own `Cell`.
+
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the SVG camera.
+
+## defs
+
+No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
+
+| file | owns |
+|---|---|
+| `crops.ts` | `CropDef`, `CROPS`. Sale / rot / desc / class / seed / tols / `waterUsePerSec`. Trees: `waterUsePerSec = 0`. `CropDef.saleMul` optional `{ [Rarity]: number }`; absent → `RARITY_SALE`. Vanilla only. |
+| `trees.ts` | `TREES`, `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`. `TREES[TreeId] = { juvenileSeconds, fruitSeconds }` |
+| `items.ts` | tool, container, box, fert, compost, sprinkler constants |
+| `rarity.ts` | `Rarity`, sale / grow / rot / weight tables |
+| `research.ts` | `RESEARCH`, `SKUS`; `Sku.tab` |
+| `skills.ts` | `SKILLS`, `SkillDef`, `TEND_WORK` |
+| `catalog.ts` | almanac `CatalogEntry` keyed by `Face` |
+
+`sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
+
+`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation`. No `unlock-vanilla`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane`. `pack-vanilla.need` is `vanilla-tending`.
+
+No `bump-*` research ids. No `sale-mul` research effect. Better-crop is player skills — [[architecture/family]]. `unlock-heirloom` is plants `feature`, gates Őstermelő.
+
+## sim
+
+Classes for game objects. Tick and mutation stay here.
+
+| file | owns |
+|---|---|
+| `world.ts` | `World`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `now`, `dispatch` / `apply`, `log`, `rng` |
+| `log.ts` | `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
+| `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
+| `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground` |
+| `soil.ts` | `Soil` |
+| `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended` |
+| `water.ts` | `Reservoir`, `SourceKind`, `pull()` |
+| `stall.ts` | `StallGood`, `StallMap`, `StallSale` |
+| `building.ts` | `House`, `Pump`, `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Coord`, `Base` |
+| `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Tune`, `Gate` |
+| `actor.ts` | `Actor` |
+| `clock.ts` | `Clock`, `DAY_SECONDS` |
+| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm |
+| `prompt.ts` | `Prompt`, `PromptHit` |
+| `look.ts` | `lookText` — HUD copy, read-only on `World` |
+| `drop.ts` | `Drop` |
+| `gen.ts` | `generateChunk` |
+| `noise.ts` | `goodness`, `groundOf` |
+| `modifiers.ts` | `Modifier`, `Stats`. `source` includes `'skill'`. `statsOf` uses `CropDef.saleMul` when present, else `RARITY_SALE` |
+| `rng.ts` | `hash`, `rollRarity`, `Rng`, `Stream` (`Spatial` / `Seq`). `StreamId` |
+
+`ui` and `view` call `World` methods. They do not construct `Soil` / `Plant` / `Reservoir` / `StallGood`.
+
+## ui
+
+Function components. Read `World`. Do not tick. Do not own `Cell` or `Place`.
+
+| file | chrome |
+|---|---|
+| `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn` |
+| `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
+| `hud.tsx` | clock, build ribbon, docks |
+| `status.tsx` | look line |
+| `held.tsx` | hand / item face |
+| `queue.tsx` | intent queue |
+| `shop.tsx` | `World.buy` |
+| `cheat.tsx` | `unlockAll` / `cheatMoney` / `cheatPoints` / `toggleCheatResearch` |
+| `research.tsx` | `World.startResearch` |
+| `market.tsx` | stall overlay; **Sell all** |
+| `inventory.tsx` | house slots |
+| `chest.tsx` | chest slots |
+| `almanac.tsx` | catalog |
+| `objecthud.tsx` | sprinkler tune |
+| `recap.tsx` | end-of-day; `dismissRecap()` |
+| `family.tsx` | family overlay; `offers` / `pickSkill` |
+
+Panel open/close is App-local. `World.cue` is how sim asks App to open inventory or a chest.
+
+## view
+
+SVG world. Camera and `Lens` are view-local, not `World` fields. `Lens` includes `land`. Water lens requires husband `water-study`; `land` requires `land-study` — [[architecture/family]].
+
+| file | owns |
+|---|---|
+| `camera.ts` | `Camera`, `TILE` |
+| `map.tsx` | `MapView`, `Lens` (`off` `water` `ripe` `kind` `rarity` `pipes` `land`); paints `Cell`; hit → `PromptHit` |
+| `motion.ts` | rAF paint of actor / meters |
+| `svgs.ts` | inner SVG fragments |
+
+Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.
+
+## Owners
+
+| unit | owner |
+|---|---|
+| `World` | class `sim/world.ts`. App holds the instance. Family state is `World.family`, not a class. |
+| `Soil` | class `sim/soil.ts`. Required field on every `Tilled` plot. |
+| `Plant` | class `sim/plant.ts`. Required on `growing` / `ripe` / `dead`. `crop: AnnualId`. |
+| `Tree` | class `sim/building.ts`. Same instance in both 1×2 cells. |
+| `Reservoir` | class `sim/water.ts`. `Pump.water`, `RainTank.water`. Not on `Tap`. |
+| `Stall` | `StallGood` in `sim/stall.ts`. `World.stall: StallMap` — one good per `StallGoodId`. |
+| `Place` | type on `sim/world.ts`. Field `World.place`. Always a `Place`, never missing. |
+
+`World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` are the same instances stored in their cells.
+
+`World.segments` and `World.sprinklers` are the pipe graph. Not `Cell`.
+
+Chest, grinder, compost box, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint.

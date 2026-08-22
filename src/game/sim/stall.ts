@@ -1,5 +1,5 @@
 import { CROPS } from '../defs/crops.ts'
-import { BERRY_SALE, RARITY_RANK, type Rarity } from '../defs/rarity.ts'
+import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { YARD, type Coord } from './building.ts'
 import type { CropId, StallGoodId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -12,8 +12,14 @@ export const STALL_IDS: StallGoodId[] = [
   'tomato',
   'raspberry',
   'watermelon',
+  'olive',
+  'grape',
+  'vanilla',
   'apple',
-  'berry',
+  'apricot',
+  'lemon',
+  'cherry',
+  'sugar',
 ]
 
 export const BIO_KEYS = ['organic', 'synth'] as const
@@ -38,8 +44,13 @@ function saleMul(id: CropId, mods: readonly Modifier[]): number {
 }
 
 export function stallX(id: StallGoodId, mods: readonly Modifier[]): number {
-  if (id === 'berry') return BERRY_SALE
+  if (id === 'sugar') return CROPS['sugar-cane'].sale
   return CROPS[id].sale * saleMul(id, mods)
+}
+
+export function stallRarity(id: StallGoodId, rarity: Rarity): number {
+  if (id === 'sugar') return 1
+  return raritySale(CROPS[id], rarity)
 }
 
 export function rate(offered: number, market: number): number {
@@ -76,17 +87,19 @@ export class StallGood {
   }
 
   take(rarity: Rarity, count: number, freshness: number, bio: boolean): void {
-    const k = this.id === 'berry' ? 'organic' : bioKey(bio)
+    const k = bioKey(bio)
     this.stock[rarity][k] += count
     this.worth[rarity][k] += count * freshness
+  }
+
+  takeSugar(count: number, unitSale: number): void {
+    this.stock.common.organic += count
+    this.worth.common.organic += count * unitSale
   }
 }
 
 export function binCount(g: StallGood): number {
-  return RARITY_RANK.reduce(
-    (n, rarity) => n + g.stock[rarity].organic + g.stock[rarity].synth,
-    0,
-  )
+  return RARITY_RANK.reduce((n, rarity) => n + g.stock[rarity].organic + g.stock[rarity].synth, 0)
 }
 
 export type StallMap = { [K in StallGoodId]: StallGood }

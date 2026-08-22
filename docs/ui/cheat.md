@@ -1,0 +1,14 @@
+# Cheat
+
+Debug left [[ui/docks]] `Dock`. Title **Cheat**. Shop-width `w-80`. Four rows, shop row chrome (`bg-dirt`, selected `bg-ink`).
+
+Left ribbon **Cheat** after Almanac. Toggle. Esc / × close.
+
+| row | act |
+|---|---|
+| Unlock all instantly | `unlockAll()` — same as before: every research done, `money += 999`, job idle, each member `points = 99` |
+| Research speed 3× | toggle `World.cheatFastResearch`. Selected while on. Job drain `× 3` on top of Speedy research |
+| Gain 200 | `money += 200` |
+| Gain 10 skill points | each member `points += 10` |
+
+Not in the Research dock. [[mechanics/research]] [[mechanics/family]].

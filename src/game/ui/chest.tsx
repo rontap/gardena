@@ -32,7 +32,7 @@ export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClo
                   </button>
                   {slot.kind === 'hold' && (
                     <div className="text-center text-base leading-tight">
-                      {slot.item.kind === 'fruit' || slot.item.kind === 'berry' ? (
+                      {slot.item.kind === 'fruit' || slot.item.kind === 'sugar' ? (
                         <ItemLineView item={slot.item} />
                       ) : (
                         itemLine(slot.item, world.modifiers)

@@ -1,8 +1,45 @@
-export type CropId = 'carrot' | 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'watermelon' | 'apple'
+export type AnnualId =
+  | 'carrot'
+  | 'potato'
+  | 'wheat'
+  | 'tomato'
+  | 'raspberry'
+  | 'watermelon'
+  | 'olive'
+  | 'grape'
+  | 'vanilla'
+  | 'sugar-cane'
+
+export type TreeId = 'apple' | 'apricot' | 'lemon' | 'cherry'
+
+export type CropId = AnnualId | TreeId
+
+export const ANNUAL_IDS: readonly AnnualId[] = [
+  'carrot',
+  'potato',
+  'wheat',
+  'tomato',
+  'raspberry',
+  'watermelon',
+  'olive',
+  'grape',
+  'vanilla',
+  'sugar-cane',
+]
+
+export const TREE_IDS: readonly TreeId[] = ['apple', 'apricot', 'lemon', 'cherry']
+
+export function isTreeId(id: CropId): id is TreeId {
+  return id === 'apple' || id === 'apricot' || id === 'lemon' || id === 'cherry'
+}
+
+export function isAnnualId(id: CropId): id is AnnualId {
+  return !isTreeId(id)
+}
 
 export type TileId = 'paved' | 'brick' | 'cobble'
 
-export type StallGoodId = CropId | 'berry'
+export type StallGoodId = Exclude<CropId, 'sugar-cane'> | 'sugar'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 
@@ -16,6 +53,7 @@ export type PlayerSkillId =
   | 'boots'
   | 'machinery'
   | 'tending'
+  | 'vanilla-tending'
   | 'seed-bank'
   | 'better-carrot'
   | 'better-potato'
@@ -23,6 +61,10 @@ export type PlayerSkillId =
   | 'better-tomato'
   | 'better-raspberry'
   | 'better-watermelon'
+  | 'better-olive'
+  | 'better-grape'
+  | 'better-vanilla'
+  | 'better-sugar-cane'
 
 export type HusbandSkillId =
   | 'research-speed'
@@ -48,6 +90,8 @@ export type SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
 
 export type ResearchId =
   | 'unlock-tomato'
+  | 'unlock-olive'
+  | 'unlock-grape'
   | 'unlock-raspberry'
   | 'unlock-watermelon'
   | 'unlock-heirloom'
@@ -63,6 +107,7 @@ export type ResearchId =
   | 'unlock-fertilizer'
   | 'unlock-compost'
   | 'unlock-smart-sprinkler'
+  | 'unlock-fermentation'
   | 'unlock-landscaping'
   | 'unlock-rotary-shovel'
   | 'unlock-diamond-pickaxe'
@@ -74,6 +119,10 @@ export type SkuId =
   | 'pack-tomato'
   | 'pack-raspberry'
   | 'pack-watermelon'
+  | 'pack-olive'
+  | 'pack-grape'
+  | 'pack-vanilla'
+  | 'pack-sugar-cane'
   | 'buy-shovel'
   | 'buy-better-shovel'
   | 'buy-pickaxe'

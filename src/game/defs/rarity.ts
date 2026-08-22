@@ -37,7 +37,9 @@ export const TOL_RARITY: { readonly [K in Rarity]: number } = {
 
 export const TOL_MIN = 0.25
 
-export const BERRY_SALE = 2
+export function raritySale(id: { saleMul?: { readonly [K in Rarity]: number } }, rarity: Rarity): number {
+  return id.saleMul?.[rarity] ?? RARITY_SALE[rarity]
+}
 
 export const HAPPY_START = 0.5
 

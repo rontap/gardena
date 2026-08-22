@@ -3,7 +3,7 @@
 - [[art/palette]]
 - [[art/svg]]
 - [[art/actor]]
-- [[art/apple-tree]]
+- [[art/tree]]
 - [[art/recap-night]]
 - [[art/tilled-edges]]
 - [[art/ground-variants]]

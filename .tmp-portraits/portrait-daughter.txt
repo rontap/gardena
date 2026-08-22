@@ -1,0 +1,81 @@
+======================================================================
+portrait-daughter.svg
+y00 ink@0:63
+y15 ink@0:0 roof@1:6 ink@7:8 roof@9:14 ink@15:16 roof@17:22 ink@23:24 roof@25:30 ink@31:32 roof@33:38 ink@39:40 roof@41:46 ink@47:48 roof@49:54 ink@55:56 roof@57:62 ink@63:63
+y19 ink@0:0 water@1:1 roof@2:5 water@6:9 roof@10:13 water@14:17 roof@18:21 water@22:25 roof@26:26 ink@27:36 roof@37:37 water@38:41 roof@42:45 water@46:49 roof@50:53 water@54:57 roof@58:61 water@62:62 ink@63:63
+y20 ink@0:0 water@1:19 ink@20:26 dirt@27:30 dirt-dark@31:36 ink@37:43 water@44:62 ink@63:63
+y21 ink@0:0 water@1:18 ink@19:19 dirt-dark@20:21 dirt@22:30 dirt-dark@31:43 ink@44:44 water@45:62 ink@63:63
+y22 ink@0:0 water@1:18 ink@19:19 dirt-dark@20:21 dirt@22:23 fruit-red@24:30 dirt-dark@31:33 fruit-red@34:40 dirt-dark@41:43 ink@44:44 water@45:62 ink@63:63
+y23 ink@0:0 water@1:18 ink@19:19 dirt-dark@20:23 fruit-red@24:24 roof@25:29 ripe@30:34 roof@35:39 fruit-red@40:40 dirt-dark@41:43 ink@44:44 water@45:62 ink@63:63
+y24 ink@0:0 water@1:17 ink@18:18 dirt-dark@19:23 fruit-red@24:24 roof@25:29 ripe@30:34 roof@35:39 fruit-red@40:40 dirt-dark@41:44 ink@45:45 water@46:62 ink@63:63
+y25 ink@0:0 water@1:17 ink@18:18 dirt-dark@19:23 fruit-red@24:29 ripe@30:34 fruit-red@35:40 dirt-dark@41:44 ink@45:45 water@46:62 ink@63:63
+y26 ink@0:0 water@1:16 ink@17:17 dirt-dark@18:23 fruit-red@24:29 ripe@30:34 fruit-red@35:40 dirt-dark@41:45 ink@46:46 water@47:62 ink@63:63
+y27 ink@0:0 water@1:16 ink@17:17 dirt-dark@18:23 fruit-red@24:30 dirt-dark@31:33 fruit-red@34:40 dirt-dark@41:45 ink@46:46 water@47:62 ink@63:63
+y28 ink@0:0 water@1:16 ink@17:17 dirt-dark@18:45 ink@46:46 water@47:62 ink@63:63
+y29 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:46 ink@47:47 water@48:62 ink@63:63
+y30 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:22 dirt@23:29 dirt-dark@30:46 ink@47:47 water@48:62 ink@63:63
+y31 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:22 dirt@23:29 dirt-dark@30:46 ink@47:47 water@48:62 ink@63:63
+y32 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:46 ink@47:47 water@48:62 ink@63:63
+y33 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:46 ink@47:47 water@48:62 ink@63:63
+y34 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:46 ink@47:47 water@48:62 ink@63:63
+y35 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:24 house@25:26 dirt-dark@27:36 house@37:38 dirt-dark@39:46 ink@47:47 water@48:62 ink@63:63
+y36 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:24 house@25:38 dirt-dark@39:46 ink@47:47 water@48:62 ink@63:63
+y37 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:26 house@27:36 dirt-dark@37:46 ink@47:47 water@48:62 ink@63:63
+y38 ink@0:0 water@1:15 ink@16:16 dirt-dark@17:28 house@29:35 dirt-dark@36:46 ink@47:47 water@48:62 ink@63:63
+y39 ink@0:0 water@1:11 ink@12:16 dirt-dark@17:24 house@25:38 dirt-dark@39:46 ink@47:51 water@52:62 ink@63:63
+y40 ink@0:0 water@1:10 ink@11:11 dirt-dark@12:24 house@25:38 dirt-dark@39:51 ink@52:52 water@53:62 ink@63:63
+y41 ink@0:0 water@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 house@23:23 ink@24:27 house@28:35 ink@36:39 house@40:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 water@53:62 ink@63:63
+y42 ink@0:0 water@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 ink@23:23 house@24:24 grass-dark@25:27 house@28:35 grass-dark@36:38 house@39:39 ink@40:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 water@53:62 ink@63:63
+y43 ink@0:0 water@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 house@23:23 leaf@24:24 ink@25:26 leaf@27:27 dirt-dark@28:28 house@29:34 dirt-dark@35:35 leaf@36:36 ink@37:38 leaf@39:39 house@40:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 water@53:62 ink@63:63
+y44 ink@0:0 grass-dark@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 house@23:23 dirt-dark@24:27 house@28:35 dirt-dark@36:39 house@40:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass-dark@53:62 ink@63:63
+y45 ink@0:0 grass-dark@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 house@23:31 dirt@32:32 house@33:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass-dark@53:62 ink@63:63
+y46 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:22 house@23:24 dirt@25:25 house@26:31 dirt@32:32 house@33:37 dirt@38:38 house@39:40 dirt-dark@41:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y47 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:19 house@20:31 dirt@32:32 house@33:41 dirt@42:43 ink@44:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y48 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:19 house@20:26 dirt@27:27 house@28:30 dirt@31:34 house@35:39 dirt@40:40 house@41:41 dirt@42:43 ink@44:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y49 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:19 house@20:40 dirt@41:42 ink@43:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y50 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:20 house@21:28 dirt-dark@29:29 house@30:34 dirt-dark@35:35 house@36:40 dirt@41:42 ink@43:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y51 ink@0:0 grass@1:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:20 house@21:29 dirt-dark@30:34 house@35:40 dirt@41:42 ink@43:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y52 ink@0:0 grass@1:2 fruit-red@3:6 grass@7:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:19 grass@20:20 ink@21:21 house@22:30 fruit-red@31:33 house@34:40 dirt@41:42 ink@43:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y53 ink@0:0 grass@1:1 fruit-red@2:7 grass@8:10 ink@11:11 dirt-dark@12:12 dirt@13:17 dirt-dark@18:18 ink@19:19 grass@20:20 ink@21:21 house@22:30 dirt@31:33 house@34:39 dirt@40:41 ink@42:42 grass@43:43 ink@44:44 dirt-dark@45:45 dirt@46:50 dirt-dark@51:51 ink@52:52 grass@53:62 ink@63:63
+y54 ink@0:0 fruit-red@1:10 ink@11:11 fruit-red@12:18 ink@19:19 grass@20:21 ink@22:22 house@23:38 dirt@39:40 ink@41:41 grass@42:43 ink@44:44 fruit-red@45:51 ink@52:52 grass@53:62 ink@63:63
+y55 ink@0:0 fruit-red@1:10 ink@11:11 fruit-red@12:18 ink@19:19 grass@20:22 ink@23:24 house@25:36 dirt@37:38 ink@39:40 grass@41:43 ink@44:44 fruit-red@45:51 ink@52:52 grass@53:62 ink@63:63
+y56 ink@0:0 fruit-red@1:10 ink@11:11 fruit-red@12:18 ink@19:19 grass@20:24 ink@25:27 house@28:35 ink@36:38 grass@39:43 ink@44:44 fruit-red@45:51 ink@52:52 grass@53:62 ink@63:63
+y57 ink@0:0 fruit-red@1:10 ink@11:11 dirt-dark@12:18 ink@19:19 grass@20:26 ink@27:27 house@28:35 ink@36:36 grass@37:43 ink@44:44 dirt-dark@45:51 ink@52:52 grass@53:62 ink@63:63
+y58 ink@0:0 dirt@1:1 fruit-red@2:11 ink@12:18 grass@19:26 ink@27:27 house@28:35 ink@36:36 grass@37:44 ink@45:51 grass@52:52 ripe@53:58 grass@59:62 ink@63:63
+y59 ink@0:0 dirt@1:2 fruit-red@3:6 dirt@7:8 fruit-red@9:12 dirt@13:13 grass@14:26 ink@27:27 house@28:35 ink@36:36 grass@37:50 ripe@51:60 grass@61:62 ink@63:63
+y60 ink@0:0 dirt@1:14 grass@15:24 ink@25:26 house@27:36 ink@37:38 grass@39:49 ripe@50:61 grass@62:62 ink@63:63
+y61 ink@0:0 dirt@1:14 dirt-dark@15:15 grass@16:19 ink@20:24 roof@25:25 house@26:37 dirt-dark@38:38 ink@39:43 grass@44:49 ripe@50:61 grass@62:62 ink@63:63
+y62 ink@0:0 dirt@1:13 dirt-dark@14:15 grass@16:17 ink@18:19 roof@20:24 house@25:38 roof@39:40 dirt-dark@41:43 ink@44:45 grass@46:48 dirt@49:50 ripe@51:60 dirt@61:62 ink@63:63
+y63 ink@0:0 dirt@1:12 dirt-dark@13:15 ink@16:17 roof@18:23 house@24:39 roof@40:42 dirt-dark@43:45 ink@46:47 grass@48:48 dirt@49:52 ripe@53:58 dirt@59:62 ink@63:63
+y64 ink@0:0 dirt-dark@1:2 dirt@3:10 dirt-dark@11:14 ink@15:15 roof@16:26 house@27:27 dirt@28:35 house@36:36 roof@37:44 dirt-dark@45:47 ink@48:48 grass@49:49 dirt@50:61 grass@62:62 ink@63:63
+y65 ink@0:0 dirt-dark@1:12 ink@13:14 roof@15:23 house@24:39 roof@40:45 dirt-dark@46:48 ink@49:50 dirt@51:60 grass@61:62 ink@63:63
+y66 ink@0:0 dirt-dark@1:11 ink@12:12 roof@13:23 house@24:27 roof@28:30 ripe@31:32 roof@33:35 house@36:39 roof@40:47 dirt-dark@48:50 ink@51:52 dirt@53:58 ink@59:63
+y67 ink@0:0 dirt-dark@1:10 ink@11:11 roof@12:23 house@24:27 roof@28:30 ripe@31:32 roof@33:35 house@36:39 roof@40:48 dirt-dark@49:51 ink@52:63
+y68 ink@0:0 dirt@1:2 dirt-dark@3:9 ink@10:10 roof@11:23 house@24:27 roof@28:35 house@36:39 roof@40:49 dirt-dark@50:52 ink@53:53 dirt@54:62 ink@63:63
+y69 ink@0:0 dirt@1:8 ink@9:9 roof@10:20 dirt@21:23 house@24:27 dirt@28:35 house@36:39 dirt@40:42 roof@43:50 dirt-dark@51:53 ink@54:54 dirt@55:62 ink@63:63
+y70 ink@0:0 dirt@1:7 ink@8:8 roof@9:20 house@21:42 roof@43:51 dirt-dark@52:54 ink@55:55 dirt@56:62 ink@63:63
+y71 ink@0:0 dirt@1:7 ink@8:8 roof@9:20 house@21:42 roof@43:51 dirt-dark@52:54 ink@55:55 dirt@56:62 ink@63:63
+y72 ink@0:0 dirt@1:6 ink@7:7 roof@8:20 house@21:42 roof@43:52 dirt-dark@53:55 ink@56:56 dirt@57:62 ink@63:63
+y73 ink@0:0 dirt@1:5 ink@6:6 roof@7:20 house@21:42 roof@43:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y74 ink@0:0 dirt@1:5 ink@6:6 roof@7:20 house@21:42 roof@43:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y75 ink@0:0 dirt-dark@1:5 ink@6:6 roof@7:20 house@21:42 roof@43:53 dirt-dark@54:56 ink@57:57 dirt-dark@58:62 ink@63:63
+y76 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 ink@13:13 roof@14:20 house@21:42 roof@43:50 ink@51:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y77 ink@0:0 dirt@1:5 ink@6:6 roof@7:13 ink@14:14 roof@15:20 house@21:42 roof@43:49 ink@50:50 roof@51:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y78 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y79 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y80 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y81 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y82 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y83 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y84 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y85 ink@0:0 dirt-dark@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt-dark@58:62 ink@63:63
+y86 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y87 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y88 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y89 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y90 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y91 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y92 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y93 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y94 ink@0:0 dirt@1:5 ink@6:6 roof@7:12 dirt-dark@13:14 ink@15:15 roof@16:20 house@21:42 roof@43:48 ink@49:49 dirt-dark@50:51 roof@52:53 dirt-dark@54:56 ink@57:57 dirt@58:62 ink@63:63
+y95 ink@0:63

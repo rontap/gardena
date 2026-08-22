@@ -29,7 +29,7 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
                   </button>
                   {slot.kind === 'hold' && (
                     <div className="text-center text-xs leading-tight text-ink/70">
-                      {slot.item.kind === 'fruit' || slot.item.kind === 'berry' ? (
+                      {slot.item.kind === 'fruit' || slot.item.kind === 'sugar' ? (
                         <ItemLineView item={slot.item} />
                       ) : (
                         itemLine(slot.item, world.modifiers)

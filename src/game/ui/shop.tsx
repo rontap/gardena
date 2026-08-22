@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
-import { SKUS } from '../defs/research.ts'
 import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
+import { CalloutHover } from './callout-hover.tsx'
 import { Btn, Coin, Dock, tabTriggerClass } from './frame.tsx'
 
 const SEEDS: SkuId[] = [
@@ -74,18 +74,32 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
           : rowState(world, hot) === 'inventory-full'
             ? 'inventory-full'
             : undefined
+  const bulk =
+    hot !== undefined && SEEDS.includes(hot) && world.hasSkill('bulk-buying')
+      ? 5 * world.skuPrice(hot) * 0.95
+      : undefined
   return (
     <Dock
       title="General store"
       onClose={onClose}
+      aside={
+        hot !== undefined ? (
+          <CalloutHover title={skuLabel(hot)} description={skuDesc(hot)} />
+        ) : undefined
+      }
       footer={
-        <div className="min-h-10 px-1 pt-1 text-sm text-ink">
+        <div className="min-h-10 px-1 pt-1 text-base text-ink">
           {hot === undefined ? (
             <div>{TAB_LINE[tab]}</div>
           ) : (
             <>
-              <div>{skuDesc(hot)}</div>
               {reason !== undefined && <div>{reason}</div>}
+              {bulk !== undefined && (
+                <div>
+                  5% off <Coin n={bulk} />
+                </div>
+              )}
+              {reason === undefined && bulk === undefined && <div>{TAB_LINE[tab]}</div>}
             </>
           )}
         </div>
@@ -135,8 +149,13 @@ function SkuRow({
         className="w-full"
         selected={world.place.kind === 'sku' && world.place.id === id}
         disabled={state !== 'ok'}
-        onClick={() => {
-          if (state === 'ok') world.buy(id)
+        onClick={e => {
+          if (state !== 'ok') return
+          if (e.ctrlKey && SEEDS.includes(id) && world.hasSkill('bulk-buying')) {
+            world.buyPacks(id)
+            return
+          }
+          world.buy(id)
         }}
       >
         <span className="flex items-center gap-2">
@@ -146,7 +165,7 @@ function SkuRow({
             dangerouslySetInnerHTML={{ __html: skuInner(id) }}
           />
           <span className="inline-flex items-center gap-1">
-            {skuLabel(id)} <Coin n={SKUS[id].price} />
+            {skuLabel(id)} <Coin n={world.skuPrice(id)} />
           </span>
         </span>
       </Btn>
@@ -156,7 +175,7 @@ function SkuRow({
 
 function rowState(world: World, id: SkuId): RowState {
   if (!world.skuOpen(id)) return 'not-researched'
-  if (world.money < SKUS[id].price) return 'cannot-afford'
+  if (world.money < world.skuPrice(id)) return 'cannot-afford'
   if (
     id === 'pack-carrot' ||
     id === 'pack-potato' ||

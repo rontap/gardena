@@ -128,7 +128,7 @@ export const Btn = forwardRef<
       ref={ref}
       type="button"
       disabled={off}
-      className={`relative px-3 py-2 pt-3 text-left ${face} ${className ?? ''}`}
+      className={`relative px-3 py-2 pt-3 text-left text-lg ${face} ${className ?? ''}`}
       data-plus={dataPlus}
       data-minus={dataMinus}
       data-sell-all={dataSellAll}
@@ -148,7 +148,68 @@ export const Btn = forwardRef<
 })
 
 export const tabTriggerClass =
-  'cursor-pointer px-2 py-1 text-sm text-ink/50 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
+  'cursor-pointer px-2 py-1 text-lg text-ink/50 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
+
+export function Window({
+  title,
+  onClose,
+  children,
+  footer,
+  aside,
+  className,
+}: {
+  title: string
+  onClose?: () => void
+  children: ReactNode
+  footer?: ReactNode
+  aside?: ReactNode
+  className: string
+}) {
+  return (
+    <div className="relative">
+      <Chrome className={`flex flex-col overflow-hidden ${className}`}>
+        <div className="relative z-20 flex shrink-0 items-center justify-between px-3 py-2">
+          <div className="font-display text-lg leading-relaxed">{title}</div>
+          {onClose !== undefined && (
+            <button type="button" className="cursor-pointer px-2 py-0.5 text-lg text-ink hover:bg-dirt" onClick={onClose}>
+              ×
+            </button>
+          )}
+        </div>
+        <div className="relative z-20 min-h-0 flex-1 overflow-y-auto px-3 pb-3">{children}</div>
+        {footer !== undefined && <div className="relative z-20 px-3 pb-3">{footer}</div>}
+      </Chrome>
+      {aside}
+    </div>
+  )
+}
+
+export function Overlay({
+  title,
+  onClose,
+  children,
+  aside,
+  className,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+  aside?: ReactNode
+  className: string
+}) {
+  return (
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40"
+      onPointerDown={e => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <Window title={title} onClose={onClose} aside={aside} className={className}>
+        {children}
+      </Window>
+    </div>
+  )
+}
 
 export function Dock({
   title,
@@ -156,26 +217,27 @@ export function Dock({
   footer,
   onClose,
   wide,
+  aside,
 }: {
   title: string
   children: ReactNode
   footer?: ReactNode
   onClose: () => void
   wide?: boolean
+  aside?: ReactNode
 }) {
   return (
-    <Chrome
-      className={`absolute top-16 left-32 z-20 flex max-h-[calc(100%-4rem)] flex-col overflow-hidden ${wide === true ? 'w-[28rem]' : 'w-72'}`}
-    >
-      <div className="relative z-20 flex items-center justify-between px-3 py-2">
-        <div className="font-display text-[14px] leading-relaxed">{title}</div>
-        <button type="button" className="cursor-pointer px-2 py-0.5 text-sm text-ink hover:bg-dirt" onClick={onClose}>
-          ×
-        </button>
-      </div>
-      <div className="relative z-20 min-h-0 flex-1 overflow-y-auto px-3 pb-3">{children}</div>
-      {footer !== undefined && <div className="relative z-20 px-3 pb-3">{footer}</div>}
-    </Chrome>
+    <div className="absolute top-16 left-32 z-20">
+      <Window
+        title={title}
+        onClose={onClose}
+        footer={footer}
+        aside={aside}
+        className={`max-h-[calc(100vh-5rem)] ${wide === true ? 'w-[28rem]' : 'w-72'}`}
+      >
+        {children}
+      </Window>
+    </div>
   )
 }
 
@@ -193,18 +255,8 @@ export function Frame({
   className?: string
 }) {
   return (
-    <Chrome className={`relative ${className ?? (wide === true ? 'w-[28rem]' : 'w-80')}`}>
-      <div className="relative px-4 pb-4 pt-2">
-        <div className="mb-3 flex h-7 items-center justify-between">
-          <div className="font-display text-[11px] leading-relaxed text-ink">{title}</div>
-          {onClose !== undefined && (
-            <button type="button" className="px-1.5 text-xs text-ink hover:bg-dirt" onClick={onClose}>
-              ×
-            </button>
-          )}
-        </div>
-        {children}
-      </div>
-    </Chrome>
+    <Window title={title} onClose={onClose} className={className ?? (wide === true ? 'w-[28rem]' : 'w-80')}>
+      {children}
+    </Window>
   )
 }

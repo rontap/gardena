@@ -1,9 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState, type WheelEvent } from 'react'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { CROPS, tolerance } from '../defs/crops.ts'
-import { SKUS } from '../defs/research.ts'
 import { fertBand, waterBand, SOIL_WATER_MAX, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
-import { DOOR, HOUSE_BASE, chunkKey, occupiedCells, type Base, type Coord } from '../sim/building.ts'
+import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
+import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base, type Coord } from '../sim/building.ts'
 import { onCell, type Drop } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell, type Cover, type Plot } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -56,7 +56,7 @@ import {
   weedInner,
 } from './svgs.ts'
 
-export type Lens = 'off' | 'water' | 'ripe' | 'kind' | 'rarity' | 'pipes'
+export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes'
 
 export type { Edge, Sprinkler, Vertex }
 
@@ -408,7 +408,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
             visibility="hidden"
           >
             <div className="flex justify-center">
-              <div data-speech-text className="bg-house px-2 py-0.5 text-xs text-ink" />
+              <div data-speech-text className="bg-house px-2 py-0.5 text-base text-ink" />
             </div>
           </foreignObject>
         </g>
@@ -416,17 +416,17 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       {followSku && placeId !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: skuInner(placeId) }} />
-          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{followText}</div>
+          <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{followText}</div>
         </div>
       )}
       {(pipeTool || sprinklerTool || deleteTool) && followText !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
-          <div className="bg-house px-2 py-0.5 text-sm text-ink">{followText}</div>
+          <div className="bg-house px-2 py-0.5 text-base text-ink">{followText}</div>
         </div>
       )}
       {tip !== undefined && (
         <div
-          className="pointer-events-none fixed z-30 bg-ink px-2 py-1 text-xs text-house"
+          className="pointer-events-none fixed z-30 bg-ink px-2 py-1 text-base text-house"
           style={{ left: ptr.x + 14, top: ptr.y - 28 }}
         >
           {tip}
@@ -435,7 +435,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       {pumpjack && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-8 w-16" viewBox="0 0 48 24" dangerouslySetInnerHTML={{ __html: PUMP }} />
-          <div className="mt-1 bg-house px-2 py-0.5 text-sm text-ink">{placeLine(placeId)}</div>
+          <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
     </div>
@@ -765,7 +765,7 @@ const Marks = memo(function Marks({
             <rect x={o} y={o} width={s} height={s} className={poor ? 'fill-dirt-dark' : 'fill-house'} />
             <foreignObject x={o} y={o} width={s} height={s} pointerEvents="none">
               <div
-                className={`flex h-full w-full items-center justify-center gap-0.5 text-[8px] leading-none ${
+                className={`flex h-full w-full items-center justify-center gap-0.5 text-lg leading-none ${
                   poor ? 'text-ink/50' : 'text-ink'
                 }`}
               >
@@ -780,19 +780,59 @@ const Marks = memo(function Marks({
   )
 })
 
+const VH_BAND = VERY_HARD_MAX / 3
+const HARD_BAND = (HARD_MAX - VERY_HARD_MAX) / 3
+
+function vhBand(g: number): number {
+  return Math.min(2, Math.floor(g / VH_BAND))
+}
+
+function hBand(g: number): number {
+  return Math.min(2, Math.floor((g - VERY_HARD_MAX) / HARD_BAND))
+}
+
+function groundArt(seed: number, col: number, row: number, g: number): string {
+  return g < VERY_HARD_MAX
+    ? VERY_HARD[vhBand(g)]
+    : g < HARD_MAX
+      ? HARD[hBand(g)]
+      : GRASS[tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)]
+}
+
 function bakeGround(world: World): string {
   let s = ''
   world.forEachCell((at, cell) => {
-  const art =
+    const g = goodness(world.seed, at.col, at.row)
+    const art =
       cell.kind === 'untilled' && cell.cover.kind === 'tile'
         ? BUILDING_TILES[cell.cover.tile]
         : cell.kind === 'untilled' && cell.ground === 'hard'
-        ? HARD[tileVariant(at.col, at.row, 2)]
+        ? HARD[hBand(g)]
         : (cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile'
-          ? VERY_HARD
-          : GRASS[tileVariant(at.col, at.row, 8)]
+          ? VERY_HARD[vhBand(g)]
+          : GRASS[
+              tileVariant(at.col, at.row, 2) * 4 + tileVariant(at.col, at.row, 4, 1)
+            ]
     s += `<g transform="translate(${at.col * TILE},${at.row * TILE}) scale(${TILE / 24})">${art}</g>`
   })
+  const b = world.bounds()
+  const keys = new Set(world.owned.map(chunkKey))
+  for (let row = b.row0 - FADE; row < b.row1 + FADE; row++) {
+    for (let col = b.col0 - FADE; col < b.col1 + FADE; col++) {
+      if (keys.has(chunkKey(chunkOf({ col, row })))) continue
+      const g = goodness(world.seed, col, row)
+      const art = groundArt(world.seed, col, row, g)
+      const d = Math.max(
+        b.col0 - col,
+        col - (b.col1 - 1),
+        b.row0 - row,
+        row - (b.row1 - 1),
+        0,
+      )
+      const op = d <= 1 ? 0.65 : 0.35
+      s += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})" opacity="${op}">${art}</g>`
+    }
+  }
   return s
 }
 
@@ -842,6 +882,14 @@ function lensHit(lens: Lens, cell: Cell): string | undefined {
     }
     if (cell.soil.water >= SOIL_WATER_MID) return LENS_DONE
     return scaleTint(cell.soil.water / SOIL_WATER_MID)
+  }
+  if (lens === 'land') {
+    if (!isTilled(cell)) return undefined
+    if (cell.kind === 'growing' || cell.kind === 'ripe') {
+      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).fert]
+    }
+    if (cell.soil.fertilizer >= 1) return LENS_DONE
+    return scaleTint(cell.soil.fertilizer)
   }
   if (lens === 'ripe') {
     if (cell.kind === 'growing') return scaleTint(cell.plant.maturity)
@@ -1289,7 +1337,7 @@ function stayOk(
     return del !== undefined
   }
   if (placeId === undefined) return false
-  if (world.money < SKUS[placeId].price) return false
+  if (world.money < world.skuPrice(placeId)) return false
   if (placeId === 'buy-pipe' || placeId === 'buy-valve') {
     return edge !== undefined && pipeOk(world, placeId, edge)
   }

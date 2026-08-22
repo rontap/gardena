@@ -23,10 +23,13 @@ export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay
                 className="block h-20 w-full"
                 dangerouslySetInnerHTML={{ __html: UI_RECAP_NIGHT }}
               />
-              <Dialog.Title className="font-display mt-3 block text-[11px] leading-relaxed text-ink">
-                Day {recap.day}
-              </Dialog.Title>
-              <div className="mt-3 flex flex-col gap-1 text-sm text-ink">
+              <div className="mt-3 flex items-baseline justify-between">
+                <Dialog.Title className="font-display text-lg leading-relaxed text-ink">
+                  Day {recap.day}
+                </Dialog.Title>
+                <span className="text-base text-ink/60">turned in</span>
+              </div>
+              <div className="mt-3 flex flex-col gap-1 text-base text-ink">
                 <Row label="Harvested" value={`${recap.harvests}`} />
                 <Row label="Lost" value={`${recap.died}`} />
                 <Row
@@ -34,18 +37,18 @@ export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay
                   value={recap.research.length === 0 ? '—' : recap.research.map(id => RESEARCH[id].name).join(', ')}
                 />
               </div>
-              <div className="mt-3 border-t border-ink/20 pt-2 text-sm text-ink">
+              <div className="mt-3 border-t border-ink/20 pt-2 text-base text-ink">
                 <Line label="Stipend" sign="+" n={recap.stipend} />
                 <Line label="Tax" sign="−" n={recap.tax} />
               </div>
               <div className="mt-2 flex items-center justify-between border-t border-ink/20 pt-2">
-                <span className="text-sm text-ink">Balance</span>
-                <span className="text-sm font-medium text-ink">
+                <span className="text-base text-ink">Balance</span>
+                <span className="font-display text-lg leading-relaxed text-ink">
                   <Coin n={recap.money} />
                 </span>
               </div>
-              <Btn className="mt-4 w-full" onClick={onDismiss}>
-                <span className="block text-center">Day {nextDay}</span>
+              <Btn className="mt-4 w-full text-center" onClick={onDismiss}>
+                Day {nextDay}
               </Btn>
             </div>
           </Chrome>

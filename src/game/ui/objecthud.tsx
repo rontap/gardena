@@ -67,8 +67,8 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
       <Chrome className="relative">
         <div className="relative z-20 px-2 pb-2 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-xs text-ink">{spec.title}</div>
-            <button type="button" className="cursor-pointer px-1 text-xs text-ink hover:bg-dirt" onClick={onClose}>
+            <div className="text-lg text-ink">{spec.title}</div>
+            <button type="button" className="cursor-pointer px-1 text-lg text-ink hover:bg-dirt" onClick={onClose}>
               ×
             </button>
           </div>
@@ -86,8 +86,8 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
                 <span className="flex items-center gap-2">
                   <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: o.icon }} />
                   <span className="flex flex-col leading-tight">
-                    <span className="text-xs">{o.label}</span>
-                    <span className="text-[10px] opacity-70">{o.note}</span>
+                    <span className="text-base">{o.label}</span>
+                    <span className="text-base opacity-70">{o.note}</span>
                   </span>
                 </span>
               </Btn>

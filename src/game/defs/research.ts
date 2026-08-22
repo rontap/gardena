@@ -1,4 +1,4 @@
-import type {CropId, ResearchId, SkuId} from '../sim/ids.ts'
+import type {ResearchId, SkuId} from '../sim/ids.ts'
 
 export type ResearchDef = {
     id: ResearchId
@@ -10,7 +10,6 @@ export type ResearchDef = {
     blurb: string
     effect:
         | { kind: 'unlock-sku'; sku: SkuId }
-        | { kind: 'sale-mul'; crop: CropId; saleMul: number }
         | { kind: 'expand' }
         | { kind: 'feature' }
 }
@@ -45,36 +44,6 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         reveal: 'start',
         blurb: 'Unlocks Watermelon seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-watermelon'},
-    },
-    'bump-carrot': {
-        id: 'bump-carrot',
-        name: 'Better carrots',
-        tree: 'plants',
-        cost: 10,
-        seconds: 40,
-        reveal: 'start',
-        blurb: 'Carrot fruit sells for 1.1×.',
-        effect: {kind: 'sale-mul', crop: 'carrot', saleMul: 1.1},
-    },
-    'bump-potato': {
-        id: 'bump-potato',
-        name: 'Better potatoes',
-        tree: 'plants',
-        cost: 10,
-        seconds: 40,
-        reveal: 'start',
-        blurb: 'Potato fruit sells for 1.1×.',
-        effect: {kind: 'sale-mul', crop: 'potato', saleMul: 1.1},
-    },
-    'bump-wheat': {
-        id: 'bump-wheat',
-        name: 'Better wheat',
-        tree: 'plants',
-        cost: 12,
-        seconds: 45,
-        reveal: 'start',
-        blurb: 'Wheat fruit sells for 1.1×.',
-        effect: {kind: 'sale-mul', crop: 'wheat', saleMul: 1.1},
     },
     'unlock-better-tools': {
         id: 'unlock-better-tools',
@@ -198,63 +167,70 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
     },
 }
 
+export type SkuTab = 'seeds' | 'utility' | 'automation' | 'building'
+
 export type Sku = {
     id: SkuId
     price: number
+    tab: SkuTab
     unlock: 'start' | ResearchId
     show: 'start' | ResearchId
 }
 
 export const SKUS: { readonly [K in SkuId]: Sku } = {
-    'pack-carrot': {id: 'pack-carrot', price: 3, unlock: 'start', show: 'start'},
-    'pack-potato': {id: 'pack-potato', price: 6, unlock: 'start', show: 'start'},
-    'pack-wheat': {id: 'pack-wheat', price: 10, unlock: 'start', show: 'start'},
-    'pack-tomato': {id: 'pack-tomato', price: 15, unlock: 'unlock-tomato', show: 'start'},
-    'pack-raspberry': {id: 'pack-raspberry', price: 22, unlock: 'unlock-raspberry', show: 'start'},
-    'pack-watermelon': {id: 'pack-watermelon', price: 18, unlock: 'unlock-watermelon', show: 'start'},
-    'buy-shovel': {id: 'buy-shovel', price: 10, unlock: 'start', show: 'start'},
-    'buy-better-shovel': {id: 'buy-better-shovel', price: 30, unlock: 'unlock-better-tools', show: 'start'},
-    'buy-pickaxe': {id: 'buy-pickaxe', price: 18, unlock: 'unlock-pickaxe', show: 'start'},
+    'pack-carrot': {id: 'pack-carrot', price: 3, tab: 'seeds', unlock: 'start', show: 'start'},
+    'pack-potato': {id: 'pack-potato', price: 6, tab: 'seeds', unlock: 'start', show: 'start'},
+    'pack-wheat': {id: 'pack-wheat', price: 10, tab: 'seeds', unlock: 'start', show: 'start'},
+    'pack-tomato': {id: 'pack-tomato', price: 15, tab: 'seeds', unlock: 'unlock-tomato', show: 'start'},
+    'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'start'},
+    'pack-watermelon': {id: 'pack-watermelon', price: 18, tab: 'seeds', unlock: 'unlock-watermelon', show: 'start'},
+    'buy-shovel': {id: 'buy-shovel', price: 10, tab: 'utility', unlock: 'start', show: 'start'},
+    'buy-better-shovel': {id: 'buy-better-shovel', price: 30, tab: 'utility', unlock: 'unlock-better-tools', show: 'start'},
+    'buy-pickaxe': {id: 'buy-pickaxe', price: 18, tab: 'utility', unlock: 'unlock-pickaxe', show: 'start'},
     'buy-better-pickaxe': {
         id: 'buy-better-pickaxe',
         price: 24,
+        tab: 'utility',
         unlock: 'unlock-pickaxe',
         show: 'unlock-pickaxe',
     },
-    'buy-bucket': {id: 'buy-bucket', price: 8, unlock: 'start', show: 'start'},
-    'buy-bucket-large': {id: 'buy-bucket-large', price: 22, unlock: 'unlock-better-tools', show: 'start'},
-    'buy-box': {id: 'buy-box', price: 6, unlock: 'start', show: 'start'},
-    'buy-box-large': {id: 'buy-box-large', price: 18, unlock: 'unlock-large-box', show: 'start'},
-    'buy-fertilizer': {id: 'buy-fertilizer', price: 6, unlock: 'start', show: 'start'},
+    'buy-bucket': {id: 'buy-bucket', price: 8, tab: 'utility', unlock: 'start', show: 'start'},
+    'buy-bucket-large': {id: 'buy-bucket-large', price: 22, tab: 'utility', unlock: 'unlock-better-tools', show: 'start'},
+    'buy-box': {id: 'buy-box', price: 6, tab: 'utility', unlock: 'start', show: 'start'},
+    'buy-box-large': {id: 'buy-box-large', price: 18, tab: 'utility', unlock: 'unlock-large-box', show: 'start'},
+    'buy-fertilizer': {id: 'buy-fertilizer', price: 6, tab: 'utility', unlock: 'start', show: 'start'},
     'buy-synth-fertilizer': {
         id: 'buy-synth-fertilizer',
         price: 5,
+        tab: 'utility',
         unlock: 'unlock-fertilizer',
         show: 'unlock-fertilizer',
     },
-    'buy-compost-box': {id: 'buy-compost-box', price: 20, unlock: 'unlock-compost', show: 'unlock-fertilizer'},
-    'buy-pumpjack': {id: 'buy-pumpjack', price: 40, unlock: 'unlock-irrigation', show: 'start'},
-    'buy-chest': {id: 'buy-chest', price: 18, unlock: 'unlock-chest', show: 'start'},
-    'buy-grinder': {id: 'buy-grinder', price: 30, unlock: 'unlock-grinder', show: 'start'},
-    'buy-pipe': {id: 'buy-pipe', price: 4, unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
-    'buy-sprinkler': {id: 'buy-sprinkler', price: 15, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
+    'buy-compost-box': {id: 'buy-compost-box', price: 20, tab: 'automation', unlock: 'unlock-compost', show: 'unlock-fertilizer'},
+    'buy-pumpjack': {id: 'buy-pumpjack', price: 40, tab: 'automation', unlock: 'unlock-irrigation', show: 'start'},
+    'buy-chest': {id: 'buy-chest', price: 18, tab: 'automation', unlock: 'unlock-chest', show: 'start'},
+    'buy-grinder': {id: 'buy-grinder', price: 30, tab: 'automation', unlock: 'unlock-grinder', show: 'start'},
+    'buy-pipe': {id: 'buy-pipe', price: 4, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
+    'buy-sprinkler': {id: 'buy-sprinkler', price: 15, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
     'buy-sprinkler-vert': {
         id: 'buy-sprinkler-vert',
         price: 30,
+        tab: 'automation',
         unlock: 'unlock-adv-irrigation',
         show: 'unlock-auto-irrigation',
     },
     'buy-sprinkler-large': {
         id: 'buy-sprinkler-large',
         price: 33,
+        tab: 'automation',
         unlock: 'unlock-adv-irrigation',
         show: 'unlock-auto-irrigation',
     },
-    'buy-well': {id: 'buy-well', price: 75, unlock: 'unlock-adv-irrigation', show: 'unlock-auto-irrigation'},
-    'buy-valve': {id: 'buy-valve', price: 6, unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
-    'buy-rain-tank': {id: 'buy-rain-tank', price: 20, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
-    'buy-tap': {id: 'buy-tap', price: 10, unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
-    'buy-tile-paved': {id: 'buy-tile-paved', price: 5, unlock: 'start', show: 'start'},
-    'buy-tile-brick': {id: 'buy-tile-brick', price: 7, unlock: 'start', show: 'start'},
-    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 11, unlock: 'start', show: 'start'},
+    'buy-well': {id: 'buy-well', price: 75, tab: 'automation', unlock: 'unlock-adv-irrigation', show: 'unlock-auto-irrigation'},
+    'buy-valve': {id: 'buy-valve', price: 6, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-auto-irrigation'},
+    'buy-rain-tank': {id: 'buy-rain-tank', price: 20, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
+    'buy-tap': {id: 'buy-tap', price: 10, tab: 'automation', unlock: 'unlock-auto-irrigation', show: 'unlock-irrigation'},
+    'buy-tile-paved': {id: 'buy-tile-paved', price: 5, tab: 'building', unlock: 'start', show: 'start'},
+    'buy-tile-brick': {id: 'buy-tile-brick', price: 7, tab: 'building', unlock: 'start', show: 'start'},
+    'buy-tile-cobble': {id: 'buy-tile-cobble', price: 11, tab: 'building', unlock: 'start', show: 'start'},
 }

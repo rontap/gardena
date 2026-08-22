@@ -13,11 +13,11 @@ export function Held({ hand }: { hand: Hand }) {
       <Tooltip.Trigger asChild>
         <div className="flex min-h-20 min-w-20 flex-col items-center border-2 border-ink bg-roof px-2 pt-1 pb-1">
           <svg viewBox="0 0 24 24" className="h-20 w-20" dangerouslySetInnerHTML={{ __html: faceGfx(hand.item) }} />
-          <span className="text-2xl leading-none">{heldNumber(hand.item)}</span>
+          <span className="text-lg leading-none">{heldNumber(hand.item)}</span>
         </div>
       </Tooltip.Trigger>
       <Tooltip.Portal>
-        <Tooltip.Content className="z-50 border border-ink bg-ink px-2 py-1 text-xs text-house" sideOffset={6}>
+        <Tooltip.Content className="z-50 border border-ink bg-ink px-2 py-1 text-base text-house" sideOffset={6}>
           {itemTip(hand.item)}
         </Tooltip.Content>
       </Tooltip.Portal>
@@ -38,7 +38,7 @@ function Badge({ item }: { item: Item }) {
   const t = badge(item)
   if (t === undefined) return null
   return (
-    <span className="absolute bottom-0 right-0 bg-ink px-0.5 text-[12px] leading-tight text-house">{t}</span>
+    <span className="absolute bottom-0 right-0 bg-ink px-0.5 text-base leading-tight text-house">{t}</span>
   )
 }
 

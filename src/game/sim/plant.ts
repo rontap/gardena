@@ -9,6 +9,7 @@ export class Plant {
   freshness = 1
   happiness = HAPPY_START
   bio = true
+  tended = false
 
   readonly crop: CropId
   rarity: Rarity

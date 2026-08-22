@@ -12,6 +12,7 @@ import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Research } from './game/ui/research.tsx'
 import { Shop } from './game/ui/shop.tsx'
+import { Family } from './game/ui/family.tsx'
 import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
@@ -21,6 +22,7 @@ import { DT_MAX } from './game/sim/world.ts'
 
 type Panel =
   | { kind: 'none' }
+  | { kind: 'family' }
   | { kind: 'shop' }
   | { kind: 'research' }
   | { kind: 'market' }
@@ -45,6 +47,11 @@ export default function App() {
   const [cam, setCam] = useState<Camera>({ x: 15.5, y: 9.5, scale: 1 })
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
+
+  useEffect(() => {
+    if (lens === 'water' && !world.hasSkill('water-study')) setLens('off')
+    if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
+  }, [n, lens, world])
 
   useEffect(() => {
     ;(window as unknown as { __world?: World }).__world = world
@@ -99,7 +106,10 @@ export default function App() {
       world.cancelPlace()
       world.closeHud()
       setLens(l => (l === 'pipes' ? 'off' : l))
-      if (world.seam.kind === 'recap') world.dismissRecap()
+      if (world.seam.kind === 'recap') {
+        world.dismissRecap()
+        return
+      }
       setPanel(p => {
         if (p.kind === 'chest') world.ackCue()
         return { kind: 'none' }
@@ -148,6 +158,7 @@ export default function App() {
             world={world}
             panel={panel.kind}
             lens={lens}
+            onFamily={() => open({ kind: 'family' })}
             onShop={() => open({ kind: 'shop' })}
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
@@ -158,6 +169,7 @@ export default function App() {
             <Queue world={world} />
             <Status world={world} hover={hover} />
           </div>
+          {panel.kind === 'family' && <Family world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'shop' && (
             <Shop
               world={world}
@@ -189,7 +201,7 @@ export default function App() {
           <div
             data-banner
             hidden
-            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-8 text-3xl text-ink"
+            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-8 text-lg text-ink"
           />
       </div>
     </Tooltip.Provider>

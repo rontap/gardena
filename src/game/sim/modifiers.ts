@@ -4,7 +4,7 @@ import type { CropId } from './ids.ts'
 
 export type Modifier = {
   id: string
-  source: 'research' | 'fertilizer'
+  source: 'research' | 'fertilizer' | 'skill'
   crop?: CropId
   saleMul: number
   growSpeed: number

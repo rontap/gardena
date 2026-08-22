@@ -9,7 +9,7 @@ import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { CropId } from '../sim/ids.ts'
 import { BERRY_SHRUB, SHRUB, appleTreeStage, cropInner, faceGfx, itemInner, meterInner } from '../view/svgs.ts'
-import { Chrome, Coin, tabTriggerClass } from './frame.tsx'
+import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 
 const SEED_IDS = [
   'carrot',
@@ -103,19 +103,7 @@ export function Almanac({ onClose }: { onClose: () => void }) {
   const entry = byId.get(id)
   const shownEntry = entry !== undefined && list.some(e => e.id === id) ? entry : list[0]
   return (
-    <div
-      className="absolute inset-0 z-20 flex items-center justify-center bg-ink/40"
-      onPointerDown={e => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <Chrome className="relative flex max-h-[min(36rem,calc(100%-6rem))] w-[36rem] flex-col overflow-hidden">
-        <div className="relative z-20 flex h-9 shrink-0 items-center justify-between px-4">
-          <div className="font-medium text-ink">Almanac</div>
-          <button type="button" className="cursor-pointer px-1.5 text-ink hover:bg-dirt" onClick={onClose}>
-            ×
-          </button>
-        </div>
+    <Overlay title="Almanac" onClose={onClose} className="max-h-[min(36rem,calc(100%-6rem))] w-[36rem]">
         <Tabs.Root
           value={tab}
           onValueChange={v => {
@@ -133,13 +121,13 @@ export function Almanac({ onClose }: { onClose: () => void }) {
               </Tabs.Trigger>
             ))}
           </Tabs.List>
-          <div className="relative z-20 flex min-h-0 flex-1">
+          <div className="relative z-20 flex min-h-0 flex-1 mx-[-0.75rem]">
             <div className="w-44 shrink-0 overflow-y-auto border-r border-ink/20">
               {list.map(e => (
                 <button
                   key={e.id}
                   type="button"
-                  className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm ${
+                  className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-lg ${
                     e.id === shownEntry.id ? 'bg-dirt text-house' : 'text-ink hover:bg-dirt/30'
                   }`}
                   onClick={() => setId(e.id)}
@@ -158,8 +146,7 @@ export function Almanac({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </Tabs.Root>
-      </Chrome>
-    </div>
+    </Overlay>
   )
 }
 
@@ -170,7 +157,7 @@ function Pane({ entry }: { entry: CatalogEntry }) {
   if (crop !== undefined) return <CropPane id={crop} />
   return (
     <>
-      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">{entry.title}</div>
+      <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
       <div className="mb-3 flex h-20 w-20 items-center justify-center bg-dirt-dark">
         <svg
           className="h-16 w-16"
@@ -178,7 +165,7 @@ function Pane({ entry }: { entry: CatalogEntry }) {
           dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }}
         />
       </div>
-      <div className="text-sm leading-relaxed text-ink">{entry.blurb}</div>
+      <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
     </>
   )
 }
@@ -215,8 +202,8 @@ function CropPane({ id }: { id: CropId }) {
   const st = statsOf(id, preview, [])
   return (
     <>
-      <div className="font-display mb-2 text-[11px] leading-relaxed text-ink">{cropVariety(id, preview)}</div>
-      <div className="mb-3 text-sm leading-relaxed text-ink/70">{d.desc}</div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
@@ -244,7 +231,7 @@ function CropPane({ id }: { id: CropId }) {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2 text-sm text-ink">
+      <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
           label="Grow time"
           n={meterN(d.growSeconds, colMin('growSeconds'), colMax('growSeconds'))}
@@ -290,7 +277,7 @@ function BerryPane({ title }: { title: string }) {
   }, [])
   return (
     <>
-      <div className="font-display mb-3 text-[11px] leading-relaxed text-ink">
+      <div className="mb-3 text-lg leading-relaxed text-ink">
         {preview === 'rare' ? 'Golden berry' : preview === 'heirloom' ? 'Black raspberry' : title}
       </div>
       <RarityTabs preview={preview} onPreview={setPreview} />
@@ -310,7 +297,7 @@ function BerryPane({ title }: { title: string }) {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2 text-sm text-ink">
+      <div className="flex flex-col gap-2 text-base text-ink">
         <div className="flex items-center gap-2">
           <div className="w-24 shrink-0">Grow time</div>
           <span>{Number(days(SHRUB_GROW).toFixed(2))} days</span>
@@ -333,8 +320,8 @@ function ApplePane() {
   }, [])
   return (
     <>
-      <div className="font-display mb-2 text-[11px] leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
-      <div className="mb-3 text-sm leading-relaxed text-ink/70">{CROPS.apple.desc}</div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety('apple', preview)}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">{CROPS.apple.desc}</div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
@@ -344,7 +331,7 @@ function ApplePane() {
           <svg className="h-16 w-10" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: appleTreeStage(ripe) }} />
         </div>
       </div>
-      <div className="flex flex-col gap-2 text-sm text-ink">
+      <div className="flex flex-col gap-2 text-base text-ink">
         <div className="flex items-center gap-2"><div className="w-24 shrink-0">Grow time</div><span>3 days</span></div>
         <div className="flex items-center gap-2"><div className="w-24 shrink-0">Water</div><span>None</span></div>
         <div className="flex items-center gap-2"><div className="w-24 shrink-0">Sell</div><Coin n={CROPS.apple.sale * RARITY_SALE[preview]} /></div>

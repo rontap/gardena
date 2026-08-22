@@ -10,13 +10,45 @@ export type PickaxeId = 'pickaxe' | 'better-pickaxe'
 
 export type ContainerId = 'bucket' | 'large-bucket'
 
+export type MemberId = 'player' | 'husband' | 'daughter'
+
+export type PlayerSkillId =
+  | 'boots'
+  | 'machinery'
+  | 'tending'
+  | 'better-carrot'
+  | 'better-potato'
+  | 'better-wheat'
+  | 'better-tomato'
+  | 'better-raspberry'
+  | 'better-watermelon'
+
+export type HusbandSkillId =
+  | 'research-speed'
+  | 'tool-contracts'
+  | 'machine-contracts'
+  | 'forecast'
+  | 'tax'
+  | 'water-study'
+  | 'land-study'
+  | 'bulk-buying'
+
+export type DaughterSkillId =
+  | 'saleswoman'
+  | 'heirloom'
+  | 'bio'
+  | 'industrial'
+  | 'open-late'
+  | 'open-24'
+  | 'jam'
+  | 'clearance'
+
+export type SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
+
 export type ResearchId =
   | 'unlock-tomato'
   | 'unlock-raspberry'
   | 'unlock-watermelon'
-  | 'bump-carrot'
-  | 'bump-potato'
-  | 'bump-wheat'
   | 'unlock-better-tools'
   | 'unlock-large-box'
   | 'unlock-irrigation'

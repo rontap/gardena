@@ -10,6 +10,7 @@ import {
   SPRINKLER_TILE_RATE,
 } from '../defs/items.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
+import { JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   HAPPY_DROWN_SECONDS,
@@ -22,8 +23,18 @@ import {
   rollGrowRarity,
   type Rarity,
 } from '../defs/rarity.ts'
-import type { CropId, ResearchId, SkuId, StallGoodId } from './ids.ts'
-import { Actor } from './actor.ts'
+import type {
+  CropId,
+  DaughterSkillId,
+  HusbandSkillId,
+  MemberId,
+  PlayerSkillId,
+  ResearchId,
+  SkillId,
+  SkuId,
+  StallGoodId,
+} from './ids.ts'
+import { Actor, WALK } from './actor.ts'
 import {
   CHUNK,
   Chest,
@@ -74,7 +85,18 @@ import {
   type Item,
   type Slot,
 } from './item.ts'
-import { goodIx, makeStall, rate as stallRate, stallX, tenths, STALL_IDS, type StallMap, type StallSale } from './stall.ts'
+import {
+  BIO_KEYS,
+  binCount,
+  goodIx,
+  makeStall,
+  rate as stallRate,
+  stallX,
+  tenths,
+  STALL_IDS,
+  type StallMap,
+  type StallSale,
+} from './stall.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 import { goodness } from './noise.ts'
 import { Plant, Weed, type Doom } from './plant.ts'
@@ -142,6 +164,7 @@ export type Intent =
   | { act: 'chest'; at: Coord }
   | { act: 'grind'; at: Coord }
   | { act: 'valve'; at: Coord; edge: Edge }
+  | { act: 'tend'; at: Coord }
 
 export type TaskName =
   | 'Move here'
@@ -161,6 +184,7 @@ export type TaskName =
   | 'Chest'
   | 'Grind'
   | 'Valve'
+  | 'Tend'
 
 export type Cue = { kind: 'none' } | { kind: 'inventory' } | { kind: 'chest'; at: Coord }
 
@@ -199,6 +223,21 @@ export type Recap = {
 
 export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
 
+export type SkillRef<Id extends SkillId = SkillId> = { id: Id; tier: number }
+
+export type MemberState<Id extends SkillId> = {
+  points: number
+  pickCount: number
+  owned: Map<Id, number>
+  offers: SkillRef<Id>[]
+}
+
+export type Family = {
+  player: MemberState<PlayerSkillId>
+  husband: MemberState<HusbandSkillId>
+  daughter: MemberState<DaughterSkillId>
+}
+
 export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; price: number }
 
 type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
@@ -236,6 +275,7 @@ export class World {
   readonly house: House
   readonly truck: Truck
   readonly stall: StallMap
+  readonly family: Family
   sales: StallSale[] = []
   consignRevision = 0
   readonly actor: Actor
@@ -285,6 +325,14 @@ export class World {
       apple: makeStall('apple', this.modifiers),
       berry: makeStall('berry', this.modifiers),
     }
+    this.family = {
+      player: emptyMember(),
+      husband: emptyMember(),
+      daughter: emptyMember(),
+    }
+    this.rerollOffers('player')
+    this.rerollOffers('husband')
+    this.rerollOffers('daughter')
     this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.seed, this.owned[0], this.house, this.pumps[0], this.truck))
     this.actor = new Actor(DOOR.col + 0.5, DOOR.row + 0.5)
     this.inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
@@ -391,7 +439,102 @@ export class World {
   }
 
   tax(): number {
-    return 2 + 6 * (this.owned.length - 1)
+    let n = 2 + 6 * (this.owned.length - 1)
+    const cut = 0.02 * this.skillTier('tax')
+    if (cut > 0) n *= 1 - cut
+    return n < 1 ? 1 : n
+  }
+
+  hasSkill(id: SkillId): boolean {
+    const m = SKILLS[id].member
+    if (m === 'player') return this.family.player.owned.has(id as PlayerSkillId)
+    if (m === 'husband') return this.family.husband.owned.has(id as HusbandSkillId)
+    return this.family.daughter.owned.has(id as DaughterSkillId)
+  }
+
+  skillTier(id: SkillId): number {
+    const m = SKILLS[id].member
+    if (m === 'player') return this.family.player.owned.get(id as PlayerSkillId) ?? 0
+    if (m === 'husband') return this.family.husband.owned.get(id as HusbandSkillId) ?? 0
+    return this.family.daughter.owned.get(id as DaughterSkillId) ?? 0
+  }
+
+  offers(member: MemberId): SkillRef[] {
+    return this.family[member].offers
+  }
+
+  walkSpeed(): number {
+    return WALK * (1 + 0.05 * this.skillTier('boots'))
+  }
+
+  machineMul(): number {
+    return 1 + 0.05 * this.skillTier('machinery')
+  }
+
+  skuPrice(id: SkuId): number {
+    let p = SKUS[id].price
+    const tab = SKUS[id].tab
+    if (tab === 'utility') p -= this.skillTier('tool-contracts')
+    if (tab === 'automation') p -= this.skillTier('machine-contracts')
+    return p < 1 ? 1 : p
+  }
+
+  marketOpen(): boolean {
+    const p = this.clock.phase()
+    if (p === 'sunrise' || p === 'day') return true
+    if (p === 'sunset') return this.hasSkill('open-late')
+    return this.hasSkill('open-24')
+  }
+
+  grantPoint(member: MemberId): void {
+    this.family[member].points += 1
+  }
+
+  pickSkill(member: MemberId, slot: number): void {
+    const st = this.family[member]
+    if (st.points < 1) return
+    const offer = st.offers[slot]
+    if (offer === undefined) return
+    st.points -= 1
+    st.owned.set(offer.id as never, offer.tier)
+    const effect = SKILLS[offer.id].effect
+    if (effect.kind === 'better') {
+      this.modifiers.push({
+        id: offer.id,
+        source: 'skill',
+        crop: effect.crop,
+        saleMul: effect.saleMul,
+        growSpeed: 1,
+        waterUseMul: 1,
+      })
+    }
+    st.pickCount += 1
+    this.rerollOffers(member)
+    this.ping()
+  }
+
+  private rerollOffers(member: MemberId): void {
+    const st = this.family[member]
+    const pool = skillIds(member).filter(id => this.skillEligible(id))
+    const n = Math.min(3, pool.length)
+    const left = [...pool]
+    const out: SkillRef[] = []
+    for (let i = 0; i < n; i++) {
+      const u = hash(this.seed, member, st.pickCount, i)
+      const ix = Math.floor(u * left.length)
+      const id = left.splice(ix, 1)[0]
+      const have = this.skillTier(id)
+      out.push({ id, tier: have + 1 })
+    }
+    st.offers = out as never
+  }
+
+  private skillEligible(id: SkillId): boolean {
+    const def: SkillDef = SKILLS[id]
+    if (this.skillTier(id) >= def.maxTier) return false
+    if (def.gate.kind === 'research') return this.done.has(def.gate.id)
+    if (def.gate.kind === 'skill') return this.hasSkill('open-late')
+    return true
   }
 
   faces(): ExpandFace[] {
@@ -507,7 +650,7 @@ export class World {
     if (this.place.kind !== 'sku') return
     const id = this.place.id
     if (id !== 'buy-pipe' && id !== 'buy-valve') return
-    if (this.money < SKUS[id].price) return
+    if (this.money < this.skuPrice(id)) return
     if (!this.edgeOwned(e)) return
     if (id === 'buy-pipe') {
       if (this.hasPipe(e)) return
@@ -518,7 +661,7 @@ export class World {
       if (seg === undefined || seg.gate.kind === 'valve') return
       seg.gate = { kind: 'valve', open: true }
     }
-    this.money -= SKUS[id].price
+    this.money -= this.skuPrice(id)
     this.dirtyNets()
     this.pulse = { text: `Place ${placeLabel(id)}`, at: { col: e.col, row: e.row } }
     this.ping()
@@ -570,7 +713,7 @@ export class World {
   placeSprinkler(s: Sprinkler): void {
     const id = sprinklerSku(s)
     if (this.place.kind !== 'sku' || this.place.id !== id) return
-    if (this.money < SKUS[id].price) return
+    if (this.money < this.skuPrice(id)) return
     if (!this.vertexOwned(s.at)) return
     if (this.sprinklerAt(s.at) !== undefined) return
     const placed: Sprinkler =
@@ -578,7 +721,7 @@ export class World {
         ? { variant: 'vert', at: s.at, facing: this.place.facing, tune: { kind: 'flat' } }
         : s
     if (!aoe(placed).every(c => this.inWorld(c))) return
-    this.money -= SKUS[id].price
+    this.money -= this.skuPrice(id)
     this.sprinklers.set(vertexKey(placed.at), placed)
     this.netVerts.add(vertexKey(placed.at))
     this.dirtyNets()
@@ -887,6 +1030,8 @@ export class World {
         return 'Grind'
       case 'valve':
         return 'Valve'
+      case 'tend':
+        return 'Tend'
     }
   }
 
@@ -921,9 +1066,10 @@ export class World {
           s.item.rarity === made.rarity,
       )
       const empty = this.inventory.findIndex(s => s.kind === 'empty')
-      if (this.money < sku.price) return 'Cannot afford'
+      const price = this.skuPrice(id)
+      if (this.money < price) return 'Cannot afford'
       if (merge < 0 && empty < 0) return 'Inventory full'
-      this.money -= sku.price
+      this.money -= price
       if (merge >= 0) {
         const slot = this.inventory[merge]
         if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += made.count
@@ -955,8 +1101,8 @@ export class World {
     ) {
       return
     }
-    const sku = SKUS[this.place.id]
-    if (this.money < sku.price) return
+    const price = this.skuPrice(this.place.id)
+    if (this.money < price) return
     if (
       this.place.id === 'buy-tile-paved' ||
       this.place.id === 'buy-tile-brick' ||
@@ -966,7 +1112,7 @@ export class World {
       const c = this.cell(at)
       if (!isTileSite(c)) return
       const tile = this.place.id === 'buy-tile-paved' ? 'paved' : this.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
-      this.money -= sku.price
+      this.money -= price
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
       this.pulse = { text: `Place ${placeLabel(this.place.id)}`, at: { ...at } }
       this.ping()
@@ -974,7 +1120,7 @@ export class World {
     }
     if (this.place.id === 'buy-pumpjack' || this.place.id === 'buy-rain-tank') {
       if (!wideSiteOk(this, at)) return
-      this.money -= sku.price
+      this.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 2, h: 1 }
       const made = this.place.id === 'buy-pumpjack' ? new Pump(base, 'jack') : new RainTank(base)
       if (made.kind === 'pump') this.pumps.push(made)
@@ -995,7 +1141,7 @@ export class World {
       this.place.id === 'buy-well'
     ) {
       if (!placeSolidOk(this, at)) return
-      this.money -= sku.price
+      this.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
       if (this.place.id === 'buy-chest') this.setCell(at, new Chest(base))
       else if (this.place.id === 'buy-grinder') this.setCell(at, new Grinder(base))
@@ -1037,7 +1183,7 @@ export class World {
     ) {
       return
     }
-    this.money -= sku.price
+    this.money -= price
     this.drops.push({ at: { ...at }, item: made })
     this.pulse = { text: `Place ${placeLabel(this.place.id)}`, at: { ...at } }
     this.place = { kind: 'none' }
@@ -1090,6 +1236,37 @@ export class World {
     })
     this.money += 999
     this.job = { kind: 'idle' }
+    this.family.player.points = 99
+    this.family.husband.points = 99
+    this.family.daughter.points = 99
+    this.ping()
+  }
+
+  buyPacks(id: SkuId): void {
+    if (!this.hasSkill('bulk-buying')) return
+    if (!this.skuOpen(id)) return
+    const made = skuItem(id)
+    if (made.kind !== 'seeds') return
+    const price = 5 * this.skuPrice(id) * 0.95
+    const merge = this.inventory.findIndex(
+      s =>
+        s.kind === 'hold' &&
+        s.item.kind === 'seeds' &&
+        s.item.crop === made.crop &&
+        s.item.rarity === made.rarity,
+    )
+    const empty = this.inventory.findIndex(s => s.kind === 'empty')
+    if (this.money < price) return
+    if (merge < 0 && empty < 0) return
+    this.money -= price
+    const add = made.count * 5
+    if (merge >= 0) {
+      const slot = this.inventory[merge]
+      if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += add
+    } else {
+      this.inventory[empty] = { kind: 'hold', item: { ...made, count: add } }
+    }
+    this.compactInventory()
     this.ping()
   }
 
@@ -1103,21 +1280,50 @@ export class World {
   }
 
   marketGain(): number {
-    return STALL_IDS.reduce(
-      (total, id) =>
+    if (!this.marketOpen()) return 0
+    const saleX = 1 + 0.02 * this.skillTier('saleswoman')
+    const heirX = 1 + 0.05 * this.skillTier('heirloom')
+    const bioX = 1 + 0.03 * this.skillTier('bio')
+    const jam = this.jamFloor()
+    const clearance = this.hasSkill('clearance')
+    return STALL_IDS.reduce((total, id) => {
+      const x = stallX(id, this.modifiers)
+      return (
         total +
-        RARITY_RANK.reduce((goodTotal, rarity) => goodTotal + this.stall[id].worth[rarity] * stallX(id, this.modifiers) * RARITY_SALE[rarity], 0),
-      0,
-    )
+        RARITY_RANK.reduce((goodTotal, rarity) => {
+          const rareX = RARITY_SALE[rarity] * (rarity === 'heirloom' ? heirX : 1)
+          return (
+            goodTotal +
+            BIO_KEYS.reduce((bioTotal, k) => {
+              const count = this.stall[id].stock[rarity][k]
+              if (count === 0) return bioTotal
+              const worth = this.stall[id].worth[rarity][k]
+              if (clearance && worth === 0) return bioTotal + count
+              const avg = worth / count
+              const fresh = avg < jam ? jam : avg
+              const organicMul = k === 'organic' && id !== 'berry' ? bioX : 1
+              return bioTotal + count * fresh * x * rareX * saleX * organicMul
+            }, 0)
+          )
+        }, 0)
+      )
+    }, 0)
+  }
+
+  private jamFloor(): number {
+    const t = this.skillTier('jam')
+    if (t === 0) return 0
+    return JAM_FLOOR[t - 1]
   }
 
   sellAll(): void {
+    if (!this.marketOpen()) return
     const gain = this.marketGain()
     if (gain === 0) return
     STALL_IDS.forEach(id => {
       RARITY_RANK.forEach(rarity => {
-        this.stall[id].stock[rarity] = 0
-        this.stall[id].worth[rarity] = 0
+        this.stall[id].stock[rarity] = { organic: 0, synth: 0 }
+        this.stall[id].worth[rarity] = { organic: 0, synth: 0 }
       })
       this.stall[id].acc = 0
     })
@@ -1147,6 +1353,9 @@ export class World {
 
   dismissRecap(): void {
     if (this.seam.kind !== 'recap') return
+    this.grantPoint('player')
+    this.grantPoint('husband')
+    this.grantPoint('daughter')
     this.seam = { kind: 'play' }
     this.clock.banner = 2
     this.ping()
@@ -1204,28 +1413,11 @@ export class World {
 
   private tickJob(dt: number): void {
     if (this.job.kind === 'idle') return
-    this.job.left -= dt
+    this.job.left -= dt * (1 + 0.05 * this.skillTier('research-speed'))
     if (this.job.left > 0) return
-    const def = RESEARCH[this.job.id]
     this.done.add(this.job.id)
     this.tally.research.push(this.job.id)
     this.job = { kind: 'idle' }
-    if (def.effect.kind === 'sale-mul') {
-      this.modifiers.push({
-        id: def.id,
-        source: 'research',
-        crop: def.effect.crop,
-        saleMul: def.effect.saleMul,
-        growSpeed: 1,
-        waterUseMul: 1,
-      })
-      if (DYNAMIC_MARKET) {
-        const g = this.stall[def.effect.crop]
-        const x = stallX(def.effect.crop, this.modifiers)
-        g.market = clamp(g.market, 0.25 * x, 1.75 * x)
-        g.target = clamp(g.target, 0.25 * x, 1.75 * x)
-      }
-    }
     this.ping()
   }
 
@@ -1244,7 +1436,7 @@ export class World {
     if (next === undefined) return
     const at = dest(next)
     if (!this.actor.inside(at)) {
-      this.actor.walkToward(at, dt)
+      this.actor.walkToward(at, dt, this.walkSpeed())
       return
     }
     this.begin(next)
@@ -1340,10 +1532,17 @@ export class World {
           this.shiftHead()
           return
         }
-        this.arm(GRIND_WORK * grindN(this.hand))
+        this.arm((GRIND_WORK * grindN(this.hand)) / this.machineMul())
         return
       case 'valve':
-        this.arm(0.3)
+        this.arm(0.3 / this.machineMul())
+        return
+      case 'tend':
+        if (!this.canTend(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(TEND_WORK)
         return
     }
   }
@@ -1383,6 +1582,7 @@ export class World {
     if (i.act === 'harvest') this.doHarvest(i.at)
     if (i.act === 'grind') this.doGrind(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
+    if (i.act === 'tend') this.doTend(i.at)
     this.shiftHead()
   }
 
@@ -1817,6 +2017,23 @@ export class World {
     this.pulse = { text: 'Compost', at: { ...at } }
   }
 
+  canTend(at: Coord): boolean {
+    if (!this.hasSkill('tending')) return false
+    if (this.hand.kind !== 'empty') return false
+    const c = this.cell(at)
+    return c.kind === 'growing' && !c.plant.tended
+  }
+
+  private doTend(at: Coord): void {
+    if (!this.canTend(at)) return
+    const c = this.cell(at)
+    if (c.kind !== 'growing') return
+    c.plant.happiness += 0.1
+    if (c.plant.happiness > HAPPY_MAX) c.plant.happiness = HAPPY_MAX
+    c.plant.tended = true
+    this.pulse = { text: 'Tend', at: { ...at } }
+  }
+
   private canHarvest(at: Coord): boolean {
     const c = this.cell(at)
     if ((c.kind === 'shrub' || c.kind === 'apple-tree') && c.ripe) {
@@ -1955,13 +2172,13 @@ export class World {
     if (this.hand.kind !== 'hold') return
     const item = this.hand.item
     if (item.kind === 'fruit') {
-      this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness))
+      this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness), item.bio)
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'berry') {
-      this.stall.berry.take(item.rarity, item.count, 1)
+      this.stall.berry.take(item.rarity, item.count, 1, true)
       this.hand = { kind: 'empty' }
       this.completeConsign()
       return
@@ -1969,13 +2186,13 @@ export class World {
     if (item.kind !== 'box') return
     if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
       const cargo = item.cargo.stack
-      this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness))
+      this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness), cargo.bio)
       item.cargo = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.cargo.kind === 'berry') {
-      this.stall.berry.take(item.cargo.rarity, item.cargo.count, 1)
+      this.stall.berry.take(item.cargo.rarity, item.cargo.count, 1, true)
       item.cargo = { kind: 'empty' }
       this.completeConsign()
     }
@@ -2008,16 +2225,17 @@ export class World {
     }
     STALL_IDS.forEach(id => {
       const g = this.stall[id]
-      if (stockCount(g) === 0) {
+      if (binCount(g) === 0) {
         g.acc = 0
         return
       }
       g.acc += stallRate(g.offered, g.market) * dt
-      while (g.acc >= 1 && stockCount(g) > 0) {
-        const rarity = RARITY_RANK.find(r => g.stock[r] > 0) as Rarity
-        const fresh = g.worth[rarity] / g.stock[rarity]
-        g.stock[rarity] -= 1
-        g.worth[rarity] -= fresh
+      while (g.acc >= 1 && binCount(g) > 0) {
+        const rarity = RARITY_RANK.find(r => g.stock[r].organic + g.stock[r].synth > 0) as Rarity
+        const k = g.stock[rarity].organic > 0 ? 'organic' : 'synth'
+        const fresh = g.worth[rarity][k] / g.stock[rarity][k]
+        g.stock[rarity][k] -= 1
+        g.worth[rarity][k] -= fresh
         const money = g.offered * RARITY_SALE[rarity] * fresh
         this.money += money
         this.sales.push({ good: id, rarity, money })
@@ -2200,8 +2418,8 @@ function sprinklerSku(s: Sprinkler): SkuId {
   return 'buy-sprinkler-large'
 }
 
-function stockCount(g: { readonly stock: { [K in Rarity]: number } }): number {
-  return RARITY_RANK.reduce((n, rarity) => n + g.stock[rarity], 0)
+function emptyMember<Id extends SkillId>(): MemberState<Id> {
+  return { points: 0, pickCount: 0, owned: new Map(), offers: [] }
 }
 
 function clamp(n: number, min: number, max: number): number {

@@ -20,13 +20,13 @@ export class Actor {
     return this.x >= at.col && this.x < at.col + 1 && this.y >= at.row && this.y < at.row + 1
   }
 
-  walkToward(at: Coord, dt: number): void {
+  walkToward(at: Coord, dt: number, speed: number): void {
     const tx = at.col + 0.5
     const ty = at.row + 0.5
     const dx = tx - this.x
     const dy = ty - this.y
     const dist = Math.hypot(dx, dy)
-    const step = WALK * dt
+    const step = speed * dt
     if (dist <= step) {
       this.x = tx
       this.y = ty

@@ -85,7 +85,10 @@ import dirtEdge from '../../assets/tile-dirt-edge.svg?raw'
 import dirtInset from '../../assets/tile-dirt-inset.svg?raw'
 import hard0 from '../../assets/tile-hard-0.svg?raw'
 import hard1 from '../../assets/tile-hard-1.svg?raw'
-import veryHard from '../../assets/tile-very-hard-0.svg?raw'
+import hard2 from '../../assets/tile-hard-2.svg?raw'
+import veryHard0 from '../../assets/tile-very-hard-0.svg?raw'
+import veryHard1 from '../../assets/tile-very-hard-1.svg?raw'
+import veryHard2 from '../../assets/tile-very-hard-2.svg?raw'
 import tilePaved from '../../assets/tile-paved.svg?raw'
 import tileBrick from '../../assets/tile-brick.svg?raw'
 import tileCobble from '../../assets/tile-cobble.svg?raw'
@@ -98,6 +101,31 @@ import uiBtnLens from '../../assets/ui-btn-lens.svg?raw'
 import uiBtnDelete from '../../assets/ui-btn-delete.svg?raw'
 import uiBtnRotate from '../../assets/ui-btn-rotate.svg?raw'
 import uiBtnCancel from '../../assets/ui-btn-cancel.svg?raw'
+import uiBtnFamily from '../../assets/skills/ui-btn-family.svg?raw'
+import skillBoots from '../../assets/skills/skill-boots.svg?raw'
+import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
+import skillTending from '../../assets/skills/skill-tending.svg?raw'
+import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
+import skillToolContracts from '../../assets/skills/skill-tool-contracts.svg?raw'
+import skillMachineContracts from '../../assets/skills/skill-machine-contracts.svg?raw'
+import skillForecast from '../../assets/skills/skill-forecast.svg?raw'
+import skillTax from '../../assets/skills/skill-tax.svg?raw'
+import skillWaterStudy from '../../assets/skills/skill-water-study.svg?raw'
+import skillLandStudy from '../../assets/skills/skill-land-study.svg?raw'
+import skillBulkBuying from '../../assets/skills/skill-bulk-buying.svg?raw'
+import skillSaleswoman from '../../assets/skills/skill-saleswoman.svg?raw'
+import skillHeirloom from '../../assets/skills/skill-heirloom.svg?raw'
+import skillBetter from '../../assets/skills/skill-better.svg?raw'
+import skillBio from '../../assets/skills/skill-bio.svg?raw'
+import skillIndustrial from '../../assets/skills/skill-industrial.svg?raw'
+import skillOpenLate from '../../assets/skills/skill-open-late.svg?raw'
+import skillOpen24 from '../../assets/skills/skill-open-24.svg?raw'
+import skillJam from '../../assets/skills/skill-jam.svg?raw'
+import skillClearance from '../../assets/skills/skill-clearance.svg?raw'
+import skillPoint from '../../assets/skills/skill-point.svg?raw'
+import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
+import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
+import portraitDaughter from '../../assets/skills/portrait-daughter.svg?raw'
 import uiMarketStall from '../../assets/ui-market-stall.svg?raw'
 import uiRecapNight from '../../assets/ui-recap-night.svg?raw'
 import uiCoin from '../../assets/ui-coin.svg?raw'
@@ -122,7 +150,7 @@ import uiCornerBl from '../../assets/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import type { CropId, ResearchId, SkuId, TileId } from '../sim/ids.ts'
+import type { CropId, MemberId, ResearchId, SkillId, SkuId, TileId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -228,12 +256,6 @@ export function researchInner(id: ResearchId): string {
       return stageOnly(FRUIT.raspberry, 'common')
     case 'unlock-watermelon':
       return stageOnly(FRUIT.watermelon, 'common')
-    case 'bump-carrot':
-      return stageOnly(FRUIT.carrot, 'common')
-    case 'bump-potato':
-      return stageOnly(FRUIT.potato, 'common')
-    case 'bump-wheat':
-      return stageOnly(FRUIT.wheat, 'common')
     case 'unlock-large-box':
       return itemInner({ kind: 'box', cap: 14, cargo: { kind: 'empty' } })
     case 'unlock-irrigation':
@@ -371,8 +393,8 @@ export const GRASS = [
 export const DIRT = [inner(dirt0), inner(dirt1)] as const
 export const DIRT_EDGE = inner(dirtEdge)
 export const DIRT_INSET = inner(dirtInset)
-export const HARD = [inner(hard0), inner(hard1)] as const
-export const VERY_HARD = inner(veryHard)
+export const HARD = [inner(hard0), inner(hard1), inner(hard2)] as const
+export const VERY_HARD = [inner(veryHard0), inner(veryHard1), inner(veryHard2)] as const
 export const UI_BTN_IDLE = groupInner(uiBtn, 'idle')
 export const UI_BTN_HOVER = groupInner(uiBtn, 'hover')
 export const UI_BTN_DISABLED = groupInner(uiBtn, 'disabled')
@@ -388,6 +410,71 @@ export const UI_BTN_LENS = uiBtnLens
 export const UI_BTN_DELETE = uiBtnDelete
 export const UI_BTN_ROTATE = uiBtnRotate
 export const UI_BTN_CANCEL = uiBtnCancel
+export const UI_BTN_FAMILY = uiBtnFamily
+export const SKILL_POINT = inner(skillPoint)
+export const PORTRAIT: { readonly [K in MemberId]: string } = {
+  player: inner(portraitPlayer),
+  husband: inner(portraitHusband),
+  daughter: inner(portraitDaughter),
+}
+
+const SKILL_ART: { readonly [K in SkillId]: string } = {
+  boots: inner(skillBoots),
+  machinery: inner(skillMachinery),
+  tending: inner(skillTending),
+  'research-speed': inner(skillResearchSpeed),
+  'tool-contracts': inner(skillToolContracts),
+  'machine-contracts': inner(skillMachineContracts),
+  forecast: inner(skillForecast),
+  tax: inner(skillTax),
+  'water-study': inner(skillWaterStudy),
+  'land-study': inner(skillLandStudy),
+  'bulk-buying': inner(skillBulkBuying),
+  saleswoman: inner(skillSaleswoman),
+  heirloom: inner(skillHeirloom),
+  'better-carrot': inner(skillBetter),
+  'better-potato': inner(skillBetter),
+  'better-wheat': inner(skillBetter),
+  'better-tomato': inner(skillBetter),
+  'better-raspberry': inner(skillBetter),
+  'better-watermelon': inner(skillBetter),
+  bio: inner(skillBio),
+  industrial: inner(skillIndustrial),
+  'open-late': inner(skillOpenLate),
+  'open-24': inner(skillOpen24),
+  jam: inner(skillJam),
+  clearance: inner(skillClearance),
+}
+
+export function fruitInner(crop: CropId): string {
+  return stageOnly(FRUIT[crop], 'common')
+}
+
+export function skillInner(id: SkillId): string {
+  if (
+    id === 'better-carrot' ||
+    id === 'better-potato' ||
+    id === 'better-wheat' ||
+    id === 'better-tomato' ||
+    id === 'better-raspberry' ||
+    id === 'better-watermelon'
+  ) {
+    const crop =
+      id === 'better-carrot'
+        ? 'carrot'
+        : id === 'better-potato'
+          ? 'potato'
+          : id === 'better-wheat'
+            ? 'wheat'
+            : id === 'better-tomato'
+              ? 'tomato'
+              : id === 'better-raspberry'
+                ? 'raspberry'
+                : 'watermelon'
+    return `${fruitInner(crop)}${inner(skillBetter)}`
+  }
+  return SKILL_ART[id]
+}
 export const UI_MARKET_STALL = uiMarketStall
 export const UI_RECAP_NIGHT = inner(uiRecapNight)
 export const UI_PHASE: { readonly [K in DayPhase]: string } = {

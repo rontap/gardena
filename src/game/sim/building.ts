@@ -41,6 +41,34 @@ export function inWorld(at: Coord, owned: readonly ChunkId[]): boolean {
   return owned.some(c => c.cx === id.cx && c.cy === id.cy)
 }
 
+export const FADE = 2
+
+export function fadeRect(owned: readonly ChunkId[]): {
+  col0: number
+  row0: number
+  col1: number
+  row1: number
+} {
+  let col0 = Infinity
+  let row0 = Infinity
+  let col1 = -Infinity
+  let row1 = -Infinity
+  owned.forEach(id => {
+    const r = chunkRect(id)
+    if (r.col0 < col0) col0 = r.col0
+    if (r.row0 < row0) row0 = r.row0
+    if (r.col1 > col1) col1 = r.col1
+    if (r.row1 > row1) row1 = r.row1
+  })
+  return { col0: col0 - FADE, row0: row0 - FADE, col1: col1 + FADE, row1: row1 + FADE }
+}
+
+export function inFade(at: Coord, owned: readonly ChunkId[]): boolean {
+  if (inWorld(at, owned)) return false
+  const b = fadeRect(owned)
+  return at.col >= b.col0 && at.col < b.col1 && at.row >= b.row0 && at.row < b.row1
+}
+
 export function occupiedCells(base: Base, owned: readonly ChunkId[]): Coord[] {
   const box = tileBox(base)
   const out: Coord[] = []

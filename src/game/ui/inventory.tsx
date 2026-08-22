@@ -28,7 +28,7 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
                     {slot.kind === 'hold' ? <ItemFace item={slot.item} /> : null}
                   </button>
                   {slot.kind === 'hold' && (
-                    <div className="text-center text-xs leading-tight">
+                    <div className="text-center text-base leading-tight">
                       {slot.item.kind === 'fruit' || slot.item.kind === 'berry' ? (
                         <ItemLineView item={slot.item} />
                       ) : (

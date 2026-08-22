@@ -7,7 +7,7 @@ export function Queue({ world }: { world: World }) {
   const pct = world.taskProgress() * 100
   return (
     <Chrome className="relative w-full">
-      <div className="relative px-3 py-3">
+      <div className="relative px-3 py-3 text-lg">
         {world.queue.map((intent, i) => (
           <div key={i} className={i === 0 ? 'bg-dirt px-2 py-0.5' : 'px-2 py-0.5 text-ink/70'}>
             {world.taskName(intent)}

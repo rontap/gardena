@@ -1,4 +1,3 @@
-import { SKUS } from '../defs/research.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { inWorld, type Coord } from './building.ts'
 import { onCell } from './drop.ts'
@@ -32,7 +31,7 @@ export function pipePrompt(w: World, e: Edge): Prompt {
   if (w.place.kind !== 'sku') return { kind: 'blocked', text: 'Cannot place here' }
   const id = w.place.id
   if (id !== 'buy-pipe' && id !== 'buy-valve') return { kind: 'blocked', text: 'Cannot place here' }
-  if (w.money < SKUS[id].price) return { kind: 'blocked', text: 'Cannot afford' }
+  if (w.money < w.skuPrice(id)) return { kind: 'blocked', text: 'Cannot afford' }
   if (!w.edgeOwned(e)) return { kind: 'blocked', text: 'Cannot place here' }
   if (id === 'buy-pipe') {
     if (w.hasPipe(e)) return { kind: 'blocked', text: 'Cannot place here' }
@@ -58,7 +57,7 @@ export function valvePrompt(w: World, e: Edge): Prompt {
 export function sprinklerPrompt(w: World, s: Sprinkler): Prompt {
   const id = sprinklerSku(s)
   if (w.place.kind !== 'sku' || w.place.id !== id) return { kind: 'blocked', text: 'Cannot place here' }
-  if (w.money < SKUS[id].price) return { kind: 'blocked', text: 'Cannot afford' }
+  if (w.money < w.skuPrice(id)) return { kind: 'blocked', text: 'Cannot afford' }
   if (!w.vertexOwned(s.at)) return { kind: 'blocked', text: 'Cannot place here' }
   if (w.sprinklerAt(s.at) !== undefined) return { kind: 'blocked', text: 'Cannot place here' }
   if (!aoe(s).every(c => w.inWorld(c))) return { kind: 'blocked', text: 'Cannot place here' }
@@ -102,7 +101,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
 export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   if (w.place.kind === 'sku' && (w.place.id === 'buy-pipe' || w.place.id === 'buy-valve')) {
     if (hit === undefined || hit.kind !== 'edge') {
-      if (w.money < SKUS[w.place.id].price) return { kind: 'blocked', text: 'Cannot afford' }
+      if (w.money < w.skuPrice(w.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
       return { kind: 'blocked', text: 'Cannot place here' }
     }
     return pipePrompt(w, hit.edge)
@@ -118,7 +117,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
       w.place.id === 'buy-sprinkler-large')
   ) {
     if (hit === undefined || hit.kind !== 'sprinkler') {
-      if (w.money < SKUS[w.place.id].price) return { kind: 'blocked', text: 'Cannot afford' }
+      if (w.money < w.skuPrice(w.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
       return { kind: 'blocked', text: 'Cannot place here' }
     }
     return sprinklerPrompt(w, hit.sprinkler)
@@ -131,7 +130,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   }
   if (hit === undefined || hit.kind !== 'cell') {
     if (w.place.kind === 'sku') {
-      if (w.money < SKUS[w.place.id].price) return { kind: 'blocked', text: 'Cannot afford' }
+      if (w.money < w.skuPrice(w.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
       return { kind: 'blocked', text: 'Cannot place here' }
     }
     return { kind: 'blocked', text: 'Cannot place here' }
@@ -151,7 +150,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     ) {
       return readPromptHit(w, undefined)
     }
-    if (w.money < SKUS[w.place.id].price) return { kind: 'blocked', text: 'Cannot afford' }
+    if (w.money < w.skuPrice(w.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
     if (
       w.place.id === 'buy-tile-paved' ||
       w.place.id === 'buy-tile-brick' ||
@@ -258,6 +257,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (w.hand.kind === 'empty' && (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass'))) {
     return intent('Pick up', { act: 'pickup', at })
   }
+  if (w.canTend(at)) return intent('Tend', { act: 'tend', at })
   if (w.hand.kind === 'empty') return intent('Move here', { act: 'walk', at })
   if (isPlot(cell)) return intent('Drop', { act: 'drop', at })
   return needSeeds(cell)

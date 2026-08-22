@@ -9,6 +9,7 @@ import {
   UI_BTN_CANCEL,
   UI_BTN_DELETE,
   UI_BTN_LENS,
+  UI_BTN_FAMILY,
   UI_BTN_MARKET,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
@@ -26,6 +27,15 @@ const LENS_ROWS: { id: Lens; label: string; swatches: { face: string; name: stri
     swatches: [
       { face: 'bg-lens-bad', name: 'dry' },
       { face: 'bg-lens-good', name: 'wet' },
+      { face: 'bg-lens-done', name: 'full' },
+    ],
+  },
+  {
+    id: 'land',
+    label: 'Land quality',
+    swatches: [
+      { face: 'bg-lens-bad', name: 'low' },
+      { face: 'bg-lens-good', name: 'ok' },
       { face: 'bg-lens-done', name: 'full' },
     ],
   },
@@ -79,6 +89,7 @@ export function Hud({
   world,
   panel,
   lens,
+  onFamily,
   onShop,
   onResearch,
   onMarket,
@@ -86,8 +97,9 @@ export function Hud({
   onLens,
 }: {
   world: World
-  panel: 'none' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest'
+  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest'
   lens: Lens
+  onFamily: () => void
   onShop: () => void
   onResearch: () => void
   onMarket: () => void
@@ -114,11 +126,17 @@ export function Hud({
   const labels: { [K in Lens]: string } = {
     off: 'Lens',
     water: 'Lens · Water need',
+    land: 'Lens · Land quality',
     ripe: 'Lens · Ripeness',
     kind: 'Lens · Object type',
     rarity: 'Lens · Rarity',
     pipes: 'Lens · Pipes',
   }
+  const lensRows = LENS_ROWS.filter(row => {
+    if (row.id === 'water') return world.hasSkill('water-study')
+    if (row.id === 'land') return world.hasSkill('land-study')
+    return true
+  })
   const trio =
     world.place.kind === 'delete' ||
     (world.place.kind === 'sku' && (BUILD_IDS as readonly string[]).includes(world.place.id))
@@ -130,7 +148,7 @@ export function Hud({
           <span data-hud-money className="inline-flex items-center text-lg leading-none">
             <Coin n={world.money} />
           </span>
-          <span data-clock data-clock-t={Math.floor(world.clock.t)} className="text-xs">
+          <span data-clock data-clock-t={Math.floor(world.clock.t)} className="text-lg">
             day {world.clock.day}
           </span>
           <svg
@@ -142,7 +160,7 @@ export function Hud({
           <div data-research className="flex min-w-0 flex-1 flex-col justify-center gap-1" hidden={job.kind !== 'run'}>
             {def !== undefined && job.kind === 'run' && (
               <>
-                <span data-research-left className="truncate text-xs">
+                <span data-research-left className="truncate text-lg">
                   {def.name}
                 </span>
                 <Progress.Root className="relative h-2 overflow-hidden bg-dirt-dark" value={pct}>
@@ -155,6 +173,7 @@ export function Hud({
       </Chrome>
       <Chrome className="pointer-events-none absolute top-16 left-4 z-20 w-24">
         <div className="relative z-20 flex flex-col py-1">
+          <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
           <FaceBtn art={UI_BTN_SHOP} label="Shop" selected={panel === 'shop'} onClick={onShop} />
           <FaceBtn art={UI_BTN_RESEARCH} label="Research" selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label="Market" selected={panel === 'market'} onClick={onMarket} />
@@ -186,7 +205,7 @@ export function Hud({
             top: box.current.getBoundingClientRect().top,
           }}
         >
-          {LENS_ROWS.map(row => (
+          {lensRows.map(row => (
             <Btn
               key={row.id}
               className="w-full"
@@ -199,7 +218,7 @@ export function Hud({
               <span className="flex flex-col gap-1">
                 <span>{row.label}</span>
                 {row.swatches.length > 0 && (
-                  <span className="flex flex-wrap gap-2 text-[14px] leading-none">
+                  <span className="flex flex-wrap gap-2 text-lg leading-none">
                     {row.swatches.map(s => (
                       <span key={s.name} className="flex items-center gap-1">
                         <span className={`inline-block size-3 ${s.face}`} />
@@ -243,7 +262,7 @@ function FaceBtn({
       onPointerLeave={() => setHot(false)}
     >
       <svg viewBox="0 0 24 24" className="h-12 w-12 shrink-0" dangerouslySetInnerHTML={{ __html: btnFace(art, state) }} />
-      <span className="text-center text-xs leading-none">{label}</span>
+      <span className="text-center text-lg leading-none">{label}</span>
     </button>
   )
 }

@@ -2,6 +2,14 @@
 
 History. Not current contracts.
 
+## 2026-08-22 — 0.6 Family
+
+- Family overlay: three columns, portraits, skill offers, owned icons. Left-ribbon **Family**.
+- Recap: `dismissRecap()` grants +1 skill point to each member. No pick.
+- Skills: defs `SKILLS`, `World.family`. Better-crop sale moved off research (`bump-*` gone).
+- Market closed at sunset/twilight until Open late / Open 24/7. Water lens gated on Water study. Land quality lens on Land quality study.
+- [[mechanics/family]] [[ui/family]] [[architecture/family]]
+
 ## 2026-08-22 — v0.7.1
 
 - Base soil boost: exponential decay to `r = 16` instead of a linear taper to `r = 8`. No hard ring around the cottage.

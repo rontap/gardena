@@ -149,6 +149,8 @@ Seam, with stipend/tax, before field tick, per tree with `juvenile >= 1`:
 
 Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: drop `{ kind: 'fruit', crop: species, freshness: 1, bio: true, unitSale: CROPS.sale × RARITY_SALE[rarity] }` on the first in-world `frontOf` cell that is a `Plot` and is not in the footprint. Walk `frontOf(base)` then `frontOf({ col, row: row+1 })`. Existing drops on a plot are allowed. Spot found: `rarity = rollRarity(fruit.next())`, `fruit = 0`, `tally.harvests += 1`. No plot → clamp `fruit = 1`, show ripe, no `next()`. No harvest prompt. — [[mechanics/rng]]
 
+`tickTree` dirty only on visual stage change — [[mechanics/trees]].
+
 Shovel: `{ kind: 'sapling'; tree: species }`, both cells bare soft.
 
 Plant sapling: hold sapling, `{ act: 'plant' }`. Both cells untilled, `ground === 'soft'`, owned. Cover bare or grass — grass clears to bare. Work same as sowing a seed. Consumes the sapling. New tree `juvenile = 0`, `yield` unused until mature.

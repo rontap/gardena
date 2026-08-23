@@ -439,9 +439,10 @@ const DYNAMIC_MARKET = false
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
 function groundSig(c: Cell): string {
-  if (c.kind === 'untilled') return `${c.ground}:${c.cover.kind === 'tile' ? c.cover.tile : '-'}`
-  if (c.kind === 'infertile') return 'vh'
-  return '.'
+  if (c.kind === 'untilled' && c.cover.kind === 'tile') return `t:${c.cover.tile}`
+  if (c.kind === 'untilled' && c.ground === 'hard') return 'h'
+  if ((c.kind === 'untilled' && c.ground === 'very-hard') || c.kind === 'infertile') return 'vh'
+  return 'g'
 }
 
 export function dest(i: Intent): Coord {
@@ -2905,20 +2906,20 @@ export class World {
   private tickTree(t: Tree, dt: number): boolean {
     if (t.juvenile < 1) {
       t.juvenile += dt / TREES[t.species].juvenileSeconds
-      if (t.juvenile >= 1) {
-        t.juvenile = 1
-        t.yield = { kind: 'pending' }
-        t.fruit = 0
-      }
+      if (t.juvenile < 1) return false
+      t.juvenile = 1
+      t.yield = { kind: 'pending' }
+      t.fruit = 0
       return true
     }
     if (t.yield.kind === 'pending') return false
+    const ripe = t.fruit >= 1
     const mul = t.yield.kind === 'on' ? TREE_YIELD_MUL : TREE_OFF_MUL
     t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
     if (t.fruit < 1) return false
     if (!this.dropTreeFruit(t)) {
       t.fruit = 1
-      return true
+      return !ripe
     }
     t.fruit = 0
     this.tally.harvests += 1

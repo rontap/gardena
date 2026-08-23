@@ -2,6 +2,16 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.2.1 tick dirty / HUD `<use>`
+
+[[mechanics/trees]] [[architecture/modules]]
+
+- `tickTree` pings `'field'` only on visual stage change. Juvenile growth and blocked-drop repeats do not ping.
+- HUD / coin / actor faces are `<use href={symHref(...)}>`. Phase glyph owned by `paintMotion`.
+- Ground bake clipped to bounds±FADE (same skip as `chunkSig`).
+- rAF: HUD bind registry, actor transform skip, max 2 ticks per frame.
+- `groundRev` matches painted ground. Till grass does not rebake the chunk (dirt is Marks). Pointer path caches the SVG box — no layout read per move.
+
 ## 2026-08-23 — 1.2 Machine Update I
 
 [[mechanics/machines]] [[architecture/save]]

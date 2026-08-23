@@ -36,7 +36,7 @@ class Tree {
 
 `base` always 1×2. `juvenile` 0..1, then stays 1. `fruit` 0..1 toward next drop, only while mature and not pending.
 
-Owner: `sim/building.ts`. Cell only — no `World.trees`.
+Owner: `sim/building.ts`. Cell only — no `World.trees`. `World.tickTree` in `sim/world.ts` pings `'field'` only on visual stage change. Juvenile increment does not ping. [[mechanics/trees]]
 
 ## Defs
 

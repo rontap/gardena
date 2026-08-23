@@ -1391,6 +1391,36 @@ describe('0.8 plants and trees', () => {
     expect(tree.yield.kind).toBe('on')
     if (tree.yield.kind === 'on') expect(tree.yield.daysLeft).toBe(2)
   })
+
+  test('juvenile growth does not ping', () => {
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0, 0, { kind: 'pending' })
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    let n = 0
+    w.on(() => {
+      n += 1
+    })
+    for (let i = 0; i < 30; i++) w.tick(DT_MAX)
+    w.flushDirty()
+    expect(n).toBe(0)
+    expect(tree.juvenile).toBeGreaterThan(0)
+    expect(tree.juvenile).toBeLessThan(1)
+  })
+
+  test('till grass does not bump groundRev', () => {
+    const w = new World()
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
+    w.setCell(AT, bare('soft'))
+    const rev = w.groundRev
+    w.seats[0].actor.x = 10.5
+    w.seats[0].actor.y = 12.5
+    w.click(AT)
+    w.tick(0.05)
+    expect(w.cell(AT).kind).toBe('empty')
+    expect(w.groundRev).toBe(rev)
+  })
 })
 
 describe('1.2 machines', () => {

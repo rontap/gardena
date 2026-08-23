@@ -30,7 +30,7 @@ Classes for game objects. Tick and mutation stay here.
 
 | file | owns |
 |---|---|
-| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `World.stills`. `now`, `dispatch` / `apply`, `log`, `rng`. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
+| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `World.stills`. `now`, `dispatch` / `apply`, `log`, `rng`. `tickTree` dirty `'field'` only on visual stage change — [[mechanics/trees]]. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
 | `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
 | `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
 | `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
@@ -63,9 +63,9 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 
 | file | chrome |
 |---|---|
-| `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn` |
+| `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`. Coin faces are `<use href={symHref(...)}>`. |
 | `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
-| `hud.tsx` | clock, build ribbon, docks, Multiplayer face, pause, gear |
+| `hud.tsx` | clock, build ribbon, docks, Multiplayer face, pause, gear. `FaceBtn` / `IconButton` faces are `<use href={symHref(...)}>`. Phase icon: `paintMotion` owns it; Hud must not also innerHTML `UI_PHASE` every render. |
 | `menu.tsx` | startup / in-play gear shell. [[ui/menu]] |
 | `multiplayer.tsx` | join / host / guest dialogs, catching-up overlay. [[ui/multiplayer]] |
 | `tutorial.tsx` | tour card. [[ui/tutorial]] |
@@ -93,8 +93,8 @@ SVG world. Camera and `Lens` are view-local, not `World` fields. `Lens` includes
 | file | owns |
 |---|---|
 | `camera.ts` | `Camera`, `TILE` |
-| `map.tsx` | `MapView`, `Lens` (`off` `water` `ripe` `kind` `rarity` `pipes` `land`); paints `Cell`; hit → `PromptHit`. Ground is baked per 16×16 chunk, cached by content signature — a dig rebakes one chunk. Marks render per-entity memo components keyed by cell; props are primitives so unchanged entities skip DOM writes. Thirst / fert / fresh / compost bar rects are shells; widths come from `motion.ts` only. Actor bodies stay inline innerHTML (hat CSS targets inside the fragment). |
-| `motion.ts` | rAF paint of actor / meters. Registry not DOM scans: `bindBar(kind, at, el)` for plot + compost bars, `bindActor(id, el)` for seats. `paintMotion(root, world)` signature unchanged. Owns `[data-day-bar]` width outright. |
+| `map.tsx` | `MapView`, `Lens` (`off` `water` `ripe` `kind` `rarity` `pipes` `land`); paints `Cell`; hit → `PromptHit`. Ground bake: one `<g><use>` per tile, clipped to bounds±FADE (same skip as `chunkSig`). Unowned fade tiles use `groundArt` at 0.65/0.35. Cache by content signature. `groundRev` tracks **painted** ground only (tile / hard / very-hard / infertile / grass). Tilling a grass cell does not rebake — dirt is Marks `PlotGfx`. Rebake one chunk on `groundRev`. Clear `bakedChunks` on `World` identity change. Pointer world-coords use a cached SVG box; no `getBoundingClientRect` on the rAF path. Clip only; do not flatten ground to canvas/image. Marks render per-entity memo components keyed by cell; props are primitives so unchanged entities skip DOM writes. Thirst / fert / fresh / compost bar rects are shells; widths come from `motion.ts` only. Actor body is `<use href={symHref(ACTOR)}>`. Hat CSS `--hat` on parent `g`. No actor innerHTML. |
+| `motion.ts` | rAF paint of actor / meters. Registry not DOM scans: `bindBar(kind, at, el)` for plot + compost bars, `bindActor(id, el)` for seats. `paintMotion(root, world)` signature unchanged. Owns `[data-day-bar]` width outright. Owns the phase glyph on `[data-phase]`. Hud must not also innerHTML `UI_PHASE` every render. Assumption: `paintMotion` paints `[data-phase]` from rAF; Hud does not seed `UI_PHASE`. |
 | `svgs.ts` | inner SVG fragments. `symHref(html)` registers a fragment once into a hidden defs host and returns a `<use>` href; map view renders `<use>` clones, never re-parses fragments per instance. Hot fragments pre-registered at module init. |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.

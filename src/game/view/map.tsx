@@ -60,7 +60,7 @@ import {
   valveArt,
   weedInner,
 } from './svgs.ts'
-import { bindActor, bindBar } from './motion.ts'
+import { bindActor, bindBar, bindHud } from './motion.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes'
 
@@ -136,6 +136,7 @@ type Props = {
 export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick }: Props) {
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
+  const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
   const pendingMove = useRef<{ x: number; y: number; buttons: number } | undefined>(undefined)
   const camRef = useRef(cam)
   const lastHoverKey = useRef('')
@@ -206,12 +207,19 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   useEffect(() => {
     const el = svgRef.current
     if (el === null) return
-    const ro = new ResizeObserver(() => {
+    const read = () => {
       const r = el.getBoundingClientRect()
-      setView({ w: r.width, h: r.height })
-    })
+      boxRef.current = { left: r.left, top: r.top, w: r.width, h: r.height }
+      setView(prev => (prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }))
+    }
+    read()
+    const ro = new ResizeObserver(read)
     ro.observe(el)
-    return () => ro.disconnect()
+    window.addEventListener('scroll', read, true)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('scroll', read, true)
+    }
   }, [])
 
   useEffect(() => {
@@ -221,13 +229,11 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       const p = pendingMove.current
       if (p === undefined) return
       pendingMove.current = undefined
-      const el = svgRef.current
-      if (el === null) return
       const camNow = camRef.current
-      const r = el.getBoundingClientRect()
+      const r = boxRef.current
       const w = {
-        x: camNow.x + (p.x - r.left - r.width / 2) / (TILE * camNow.scale),
-        y: camNow.y + (p.y - r.top - r.height / 2) / (TILE * camNow.scale),
+        x: camNow.x + (p.x - r.left - r.w / 2) / (TILE * camNow.scale),
+        y: camNow.y + (p.y - r.top - r.h / 2) / (TILE * camNow.scale),
       }
       setPtr(prev => (prev.x === p.x && prev.y === p.y ? prev : { x: p.x, y: p.y }))
       setWorldPtr(prev => (prev !== undefined && prev.x === w.x && prev.y === w.y ? prev : w))
@@ -252,11 +258,11 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
     return () => cancelAnimationFrame(id)
   }, [world, onHover])
 
-  function worldAt(clientX: number, clientY: number, el: SVGSVGElement): { x: number; y: number } {
-    const r = el.getBoundingClientRect()
+  function worldAt(clientX: number, clientY: number): { x: number; y: number } {
+    const r = boxRef.current
     return {
-      x: cam.x + (clientX - r.left - r.width / 2) / (TILE * cam.scale),
-      y: cam.y + (clientY - r.top - r.height / 2) / (TILE * cam.scale),
+      x: cam.x + (clientX - r.left - r.w / 2) / (TILE * cam.scale),
+      y: cam.y + (clientY - r.top - r.h / 2) / (TILE * cam.scale),
     }
   }
 
@@ -264,9 +270,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
     e.preventDefault()
     const next = cam.scale * (e.deltaY < 0 ? 1.1 : 1 / 1.1)
     const scale = Math.min(3, Math.max(0.5, next))
-    const r = e.currentTarget.getBoundingClientRect()
-    const px = e.clientX - r.left - r.width / 2
-    const py = e.clientY - r.top - r.height / 2
+    const r = boxRef.current
+    const px = e.clientX - r.left - r.w / 2
+    const py = e.clientY - r.top - r.h / 2
     const k = 1 / (TILE * cam.scale) - 1 / (TILE * scale)
     pushCam({ x: cam.x + px * k, y: cam.y + py * k, scale })
   }
@@ -298,7 +304,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
         onWheel={onWheel}
         onContextMenu={e => {
           e.preventDefault()
-          const w = worldAt(e.clientX, e.clientY, e.currentTarget)
+          const w = worldAt(e.clientX, e.clientY)
           world.rightClick({ col: Math.floor(w.x), row: Math.floor(w.y) })
         }}
         onPointerDown={e => {
@@ -315,7 +321,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           if (d === undefined) return
           if (e.button === 2) return
           if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
-          const w = worldAt(e.clientX, e.clientY, e.currentTarget)
+          const w = worldAt(e.clientX, e.clientY)
           const hit = clickHit(world, w.x, w.y)
           if (hit !== undefined) onClick(hit)
         }}
@@ -428,6 +434,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
             </g>
           )}
           <foreignObject
+            ref={el => bindHud('speech', el)}
             data-speech
             pointerEvents="none"
             x={0}
@@ -488,6 +495,7 @@ const GROUND_CHUNK = 16
 type BakedChunk = { sig: string; html: string }
 
 const bakedChunks = new Map<string, BakedChunk>()
+let bakedWorld: World | undefined
 
 type Bounds = ReturnType<World['bounds']>
 
@@ -522,13 +530,7 @@ function chunkSig(world: World, cx: number, cy: number, keys: Set<string>, b: Bo
   for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
     for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
       if (!keys.has(chunkKey(chunkOf({ col, row })))) {
-        const d = Math.max(
-          b.col0 - col,
-          col - (b.col1 - 1),
-          b.row0 - row,
-          row - (b.row1 - 1),
-          0,
-        )
+        const d = Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0)
         if (d > FADE) continue
         sig += `${fadeToken(col, row, goodness(world.rng, col, row))}:${d <= 1 ? 0.65 : 0.35};`
         continue
@@ -548,12 +550,14 @@ function chunkHtml(world: World, cx: number, cy: number, keys: Set<string>, b: B
       const at = { col, row }
       const g = goodness(world.rng, col, row)
       const ownedCell = keys.has(chunkKey(chunkOf(at)))
-      const art = ownedCell ? groundTile(col, row, world.cell(at), g) : groundArt(col, row, g)
-      const op =
-        ownedCell
-          ? ''
-          : ` opacity="${Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0) <= 1 ? 0.65 : 0.35}"`
-      html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"${op}><use href="${symHref(art)}"/></g>`
+      if (!ownedCell) {
+        const d = Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0)
+        if (d > FADE) continue
+        const op = ` opacity="${d <= 1 ? 0.65 : 0.35}"`
+        html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"${op}><use href="${symHref(groundArt(col, row, g))}"/></g>`
+        continue
+      }
+      html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"><use href="${symHref(groundTile(col, row, world.cell(at), g))}"/></g>`
     }
   }
   return html
@@ -570,6 +574,10 @@ const Ground = memo(function Ground({
 }) {
   void owned
   void groundRev
+  if (bakedWorld !== world) {
+    bakedChunks.clear()
+    bakedWorld = world
+  }
   const b = world.bounds()
   const keys = new Set(world.owned.map(chunkKey))
   const chunks: { key: string; html: string }[] = []
@@ -925,7 +933,7 @@ const Marks = memo(function Marks({
             transform={`translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
           >
             <g transform={napping ? 'rotate(90 12 12)' : undefined}>
-              <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
+              <use href={symHref(ACTOR)} />
               {!napping && s.hand.kind === 'hold' && (
                 <g transform={`translate(15,13) scale(${8 / 24})`}>
                   <Use art={faceGfx(s.hand.item)} />

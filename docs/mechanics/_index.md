@@ -5,6 +5,7 @@ Rules as the game runs. Tests follow the numbered list. Numbers: preference / tu
 - [[mechanics/day]]
 - [[mechanics/soil]]
 - [[mechanics/plants]]
+- [[mechanics/trees]]
 - [[mechanics/water]]
 - [[mechanics/weeds]]
 - [[mechanics/market]]
@@ -92,3 +93,4 @@ See [[canon]].
 68. Mixed still `unitSale` = `MIXED_MUL` × that rarity’s spirit sale. Mixed common vodka < 10 common potato fruit $60.
 69. `SUGAR_MILL` 5 / L < `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.
 70. Barrel is grapes → wine only. No whisky. `SAVE_VERSION` 1.2. `PROTOCOL` 1.2. No migrate.
+71. Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.

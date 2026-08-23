@@ -1,5 +1,6 @@
 import { forwardRef, type MouseEvent, type ReactNode } from 'react'
 import {
+  symHref,
   UI_COIN,
   UI_COIN_SILVER,
   UI_CORNER_BL,
@@ -17,7 +18,9 @@ export function moneyParts(n: number): { gold: number; silver: number } {
 
 function Glyph({ html }: { html: string }) {
   return (
-    <svg viewBox="0 0 12 12" className="inline-block h-3.5 w-3.5 shrink-0" dangerouslySetInnerHTML={{ __html: html }} />
+    <svg viewBox="0 0 12 12" className="inline-block h-3.5 w-3.5 shrink-0">
+      <use href={symHref(html)} />
+    </svg>
   )
 }
 

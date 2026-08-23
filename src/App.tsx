@@ -23,7 +23,7 @@ import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
-import { paintMotion } from './game/view/motion.ts'
+import { bindHud, paintMotion } from './game/view/motion.ts'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
@@ -181,15 +181,19 @@ export default function App({ sink }: { sink: WorkerSink }) {
         g.pumpGap(now)
       } else if (host !== undefined) {
         accRef.current += dt
-        while (accRef.current >= DT_MAX) {
+        let n = 0
+        while (accRef.current >= DT_MAX && n < 2) {
           host.pump()
           accRef.current -= DT_MAX
+          n += 1
         }
       } else {
         accRef.current += dt
-        while (accRef.current >= DT_MAX) {
+        let n = 0
+        while (accRef.current >= DT_MAX && n < 2) {
           if (!pausedRef.current) world.tick(DT_MAX)
           accRef.current -= DT_MAX
+          n += 1
         }
       }
       if (root.current !== null) paintMotion(root.current, world)
@@ -735,6 +739,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           )}
           <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
+            ref={el => bindHud('banner', el)}
             data-banner
             hidden
             className="pointer-events-none absolute inset-0 flex items-start justify-center pt-8 text-lg text-ink"

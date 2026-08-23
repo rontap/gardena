@@ -5,7 +5,7 @@ import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
 import type { SeatId, World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
-import { UI_PHASE } from './svgs.ts'
+import { symHref, UI_PHASE } from './svgs.ts'
 
 const WASH = '#cfc6b0'
 const GOOD = '#2fd15a'
@@ -21,7 +21,16 @@ type BarEntry = {
 }
 
 const bars = new Map<string, BarEntry>()
-const actors = new Map<SeatId, SVGGElement>()
+
+type ActorEntry = { el: SVGGElement; transform: string; visibility: string }
+
+const actors = new Map<SeatId, ActorEntry>()
+
+type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech'
+
+const hud = new Map<HudKind, Element>()
+let phaseUse: SVGUseElement | undefined
+let speechText: Element | undefined
 
 function barKey(kind: BarKind, at: Coord): string {
   return `${kind}:${at.col},${at.row}`
@@ -38,7 +47,26 @@ export function bindBar(kind: BarKind, at: Coord, el: SVGRectElement | null): vo
 
 export function bindActor(id: SeatId, el: SVGGElement | null): void {
   if (el === null) actors.delete(id)
-  else actors.set(id, el)
+  else actors.set(id, { el, transform: '', visibility: '' })
+}
+
+export function bindHud(kind: HudKind, el: Element | null): void {
+  if (el === null) {
+    hud.delete(kind)
+    if (kind === 'phase') phaseUse = undefined
+    if (kind === 'speech') speechText = undefined
+    return
+  }
+  hud.set(kind, el)
+  if (kind === 'phase') {
+    const u = el.querySelector('use')
+    phaseUse = u instanceof SVGUseElement ? u : undefined
+    last.phase = ''
+  }
+  if (kind === 'speech') {
+    const line = el.querySelector('[data-speech-text]')
+    speechText = line === null ? undefined : line
+  }
 }
 
 function paintBar(entry: BarEntry, width: number): void {
@@ -51,23 +79,30 @@ function paintBar(entry: BarEntry, width: number): void {
 const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '' }
 
 export function paintMotion(root: HTMLElement, world: World): void {
+  void root
   world.seats.forEach(s => {
-    const el = actors.get(s.id)
-    if (el === undefined || s.napping) return
+    const entry = actors.get(s.id)
+    if (entry === undefined || s.napping) return
     if (s.presence !== 'in') {
-      el.setAttribute('visibility', 'hidden')
+      if (entry.visibility !== 'hidden') {
+        entry.visibility = 'hidden'
+        entry.el.setAttribute('visibility', 'hidden')
+      }
       return
     }
-    el.setAttribute('visibility', 'visible')
-    el.setAttribute(
-      'transform',
-      `translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`,
-    )
+    if (entry.visibility !== 'visible') {
+      entry.visibility = 'visible'
+      entry.el.setAttribute('visibility', 'visible')
+    }
+    const transform = `translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`
+    if (entry.transform === transform) return
+    entry.transform = transform
+    entry.el.setAttribute('transform', transform)
   })
   const phase = world.clock.phase()
   const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
-  const clock = root.querySelector('[data-clock]')
-  if (clock !== null) {
+  const clock = hud.get('clock')
+  if (clock !== undefined) {
     if (clock.textContent !== dayText) clock.textContent = dayText
     const t = String(Math.floor(world.clock.t))
     if (last.clockT !== t) {
@@ -75,7 +110,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       clock.setAttribute('data-clock-t', t)
     }
   }
-  const daybar = root.querySelector('[data-day-bar]')
+  const daybar = hud.get('day-bar')
   if (daybar instanceof HTMLElement) {
     const w = `${(world.clock.t / DAY_SECONDS) * 100}%`
     if (last.dayWidth !== w) {
@@ -83,14 +118,13 @@ export function paintMotion(root: HTMLElement, world: World): void {
       daybar.style.width = w
     }
   }
-  const phaseEl = root.querySelector('[data-phase]')
   const phaseHtml = UI_PHASE[phase]
-  if (phaseEl !== null && last.phase !== phaseHtml) {
+  if (phaseUse !== undefined && last.phase !== phaseHtml) {
     last.phase = phaseHtml
-    phaseEl.innerHTML = phaseHtml
+    phaseUse.setAttribute('href', symHref(phaseHtml))
   }
   const job = world.job
-  const research = root.querySelector('[data-research]')
+  const research = hud.get('research')
   if (research instanceof HTMLElement) {
     if (job.kind === 'run') {
       research.hidden = false
@@ -115,7 +149,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       research.hidden = true
     }
   }
-  const qbar = root.querySelector('[data-queue-bar]')
+  const qbar = hud.get('queue-bar')
   if (qbar instanceof HTMLElement) {
     const w = `${world.taskProgress() * 100}%`
     if (last.queue !== w) {
@@ -123,14 +157,14 @@ export function paintMotion(root: HTMLElement, world: World): void {
       qbar.style.width = w
     }
   }
-  const banner = root.querySelector('[data-banner]')
+  const banner = hud.get('banner')
   if (banner instanceof HTMLElement) {
     const on = world.clock.banner > 0 && world.seam.kind === 'play'
     const text = on ? `Day ${world.clock.day}` : ''
     if (banner.hidden !== !on) banner.hidden = !on
     if (on && banner.textContent !== text) banner.textContent = text
   }
-  const speech = root.querySelector('[data-speech]')
+  const speech = hud.get('speech')
   if (speech instanceof SVGForeignObjectElement) {
     if (world.speech.kind === 'none') {
       speech.setAttribute('visibility', 'hidden')
@@ -139,8 +173,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       const speaker = world.seats[world.local]
       speech.setAttribute('x', String(speaker.actor.x * TILE - 100))
       speech.setAttribute('y', String((speaker.actor.y - 0.5) * TILE - 24))
-      const line = speech.querySelector('[data-speech-text]')
-      if (line !== null) line.textContent = world.speech.text
+      if (speechText !== undefined) speechText.textContent = world.speech.text
     }
   }
   bars.forEach(entry => {

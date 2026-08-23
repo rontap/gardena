@@ -299,7 +299,7 @@ apply(cmd): mutate seats[cmd.p] and shared farm. No log.
 
 No silent flag. Replay calls `apply` only.
 
-`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech'`) and flushes subscribers once per microtask with the reason set. `poured` / `sold` emit synchronously. `flushDirty()` forces a flush.
+`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech'`) and flushes subscribers once per microtask with the reason set. `'field'` means Marks/plots need React. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush.
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 

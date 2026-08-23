@@ -858,6 +858,26 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   ...([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c =>
     CROP_STAGES.map(s => cropInner(c, s)),
   ),
+  ACTOR,
+  UI_COIN,
+  UI_COIN_SILVER,
+  ...Object.values(UI_PHASE),
+  ...[
+    UI_BTN_SHOP,
+    UI_BTN_CHEAT,
+    UI_BTN_RESEARCH,
+    UI_BTN_MARKET,
+    UI_BTN_ALMANAC,
+    UI_BTN_LENS,
+    UI_BTN_DELETE,
+    UI_BTN_ROTATE,
+    UI_BTN_CANCEL,
+    UI_BTN_FAMILY,
+    UI_BTN_GEAR,
+    UI_BTN_PAUSE,
+    UI_BTN_PLAY,
+    UI_BTN_MULTIPLAYER,
+  ].flatMap(art => (['idle', 'hover', 'selected', 'disabled'] as const).map(s => btnFace(art, s))),
 ].forEach(art => {
   symId(art)
 })

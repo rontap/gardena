@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.2
+export const PROTOCOL = 1.4
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -44,6 +44,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-still',
   'buy-barrel',
   'buy-freezer',
+  'buy-hangar',
 ])
 
 const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
@@ -256,11 +257,19 @@ export function digestHex(world: World): string {
     presence: s.presence,
     place: s.place,
   }))
+  const vehicles = world.vehicles.map(v => ({
+    id: v.id,
+    kind: v.kind,
+    fuel: v.fuel,
+    slots: v.slots,
+    pose: v.pose,
+  }))
   const payload = JSON.stringify({
     money: world.money,
     day: world.clock.day,
     t: world.clock.t,
     seats,
+    vehicles,
     cells,
     drops: world.drops.length,
     done: [...world.done].sort(),

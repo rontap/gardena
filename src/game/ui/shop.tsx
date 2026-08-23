@@ -56,6 +56,7 @@ export const AUTOMATION: SkuId[] = [
   'buy-barrel',
   'buy-jam',
   'buy-freezer',
+  'buy-hangar',
 ]
 
 const TAB_LINE = {

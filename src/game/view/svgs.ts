@@ -49,6 +49,11 @@ import propStill from '../../assets/prop-still.svg?raw'
 import propBarrel from '../../assets/prop-barrel.svg?raw'
 import propJam from '../../assets/prop-jam.svg?raw'
 import propFreezer from '../../assets/prop-freezer.svg?raw'
+import propHangar from '../../assets/prop-hangar.svg?raw'
+import propQuad from '../../assets/prop-quad.svg?raw'
+import itemHangar from '../../assets/item-hangar.svg?raw'
+import uiDashQuad from '../../assets/ui-dash-quad.svg?raw'
+import uiHangarReturn from '../../assets/ui-hangar-return.svg?raw'
 import propSeedSilo from '../../assets/prop-seed-silo.svg?raw'
 import propAdditiveStore from '../../assets/prop-additive-store.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
@@ -291,6 +296,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'still') return inner(itemStill)
   if (item.kind === 'barrel') return inner(itemBarrel)
   if (item.kind === 'freezer') return inner(itemFreezer)
+  if (item.kind === 'hangar') return inner(itemHangar)
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -355,6 +361,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer') return itemInner({ kind: 'freezer' })
+  if (id === 'buy-hangar') return itemInner({ kind: 'hangar' })
   return itemInner(skuItem(id))
 }
 
@@ -530,6 +537,10 @@ export const STILL = inner(propStill)
 export const BARREL = inner(propBarrel)
 export const JAM = inner(propJam)
 export const FREEZER = inner(propFreezer)
+export const HANGAR = inner(propHangar)
+export const QUAD = inner(propQuad)
+export const HANGAR_RETURN = inner(uiHangarReturn)
+export const UI_DASH_QUAD = uiDashQuad
 export const SEED_SILO = inner(propSeedSilo)
 export const ADDITIVE_STORE = inner(propAdditiveStore)
 export const SPRINKLER = inner(propSprinkler)
@@ -852,6 +863,9 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   BARREL,
   JAM,
   FREEZER,
+  HANGAR,
+  QUAD,
+  HANGAR_RETURN,
   COMPOST_BOX,
   TRUCK,
   HOUSE,

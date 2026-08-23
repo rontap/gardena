@@ -98,3 +98,22 @@ export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   cherry: 20,
   tomato: 80,
 }
+
+export const QUAD_VMAX = 10
+export const QUAD_SHOW_MUL = 4
+export const QUAD_ACCEL_SECONDS = 1.5
+export const QUAD_ACCEL = QUAD_VMAX / QUAD_ACCEL_SECONDS
+export const QUAD_R = 2
+export const QUAD_YAW = QUAD_VMAX / QUAD_R
+export const QUAD_FUEL_SECONDS = 180
+export const QUAD_REFILL = 25
+export const QUAD_PRICE = 150
+export const QUAD_EMPTY_MUL = 0.1
+export const VEHICLE_SLOTS = 6
+export const HANGAR_W = 3
+export const HANGAR_H = 2
+export const SURFACE_PAVED = 1.2
+export const SURFACE_SLOW = 0.5
+export const SURFACE_NORMAL = 1.0
+export const HEADING_EAST = 0
+export const HEADING_SOUTH = Math.PI / 2

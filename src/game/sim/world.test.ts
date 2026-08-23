@@ -1566,7 +1566,7 @@ describe('1.2 machines', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.3)
+    expect(s.version).toBe(1.4)
     const old = parse(JSON.stringify({ ...s, version: 1.2 }))
     expect(old.ok).toBe(false)
     if (old.ok) return

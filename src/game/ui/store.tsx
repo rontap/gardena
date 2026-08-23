@@ -30,7 +30,7 @@ const ADDITIVE_LABEL: { readonly [K in AdditiveId]: string } = {
  */
 const FIT = 'w-fit min-w-80 max-w-[min(calc(92vw-17rem),72rem)] max-h-[min(88vh,48rem)]'
 
-function Shell({
+export function Shell({
   title,
   onClose,
   children,

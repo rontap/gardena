@@ -1,6 +1,6 @@
 # SVG
 
-`src/assets/*.svg`. Clean paths. One concept per file. Hex from [[art/palette]] cottage tokens.
+`src/assets/*.svg`. Clean paths. One concept per file. Hex from [[art/palette]] (cottage, or industrial metal on vehicle/machine assets).
 
 ## Root
 
@@ -8,7 +8,7 @@
 - No `width` / `height` on component files.
 - No editor metadata.
 - `shape-rendering="crispEdges"`.
-- No new hex. No `currentColor`. No text. No raster.
+- No unnamed hex. No `currentColor`. No text. No raster.
 
 ## Tile grid
 
@@ -19,6 +19,7 @@
 | 1×1 tile, crop, item, actor | `0 0 24 24` |
 | 1×2 tree | `0 0 24 48` |
 | 2×1 pump | `0 0 48 24` |
+| 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |
 
 Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
@@ -39,4 +40,4 @@ Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon u
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]].

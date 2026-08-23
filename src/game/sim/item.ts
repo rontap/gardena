@@ -115,6 +115,7 @@ export type Face =
   | { kind: 'still' }
   | { kind: 'barrel' }
   | { kind: 'freezer' }
+  | { kind: 'hangar' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -376,6 +377,8 @@ export function skuLabel(id: SkuId): string {
       return 'Freezer'
     case 'buy-sugar':
       return 'Sugar'
+    case 'buy-hangar':
+      return 'Vehicle hangar'
   }
 }
 
@@ -529,6 +532,8 @@ export function skuDesc(id: SkuId): string {
       return fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS })
     case 'buy-sugar':
       return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
+    case 'buy-hangar':
+      return '3×2 barn. Buy Quads at a hangar.'
   }
 }
 
@@ -692,6 +697,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'freezer' }
     case 'buy-sugar':
       return makeSugar(SUGAR_BAG, SUGAR_BAG, SUGAR_SHOP)
+    case 'buy-hangar':
+      return { kind: 'hangar' }
   }
 }
 

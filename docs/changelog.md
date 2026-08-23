@@ -2,6 +2,13 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.4 Vehicles I
+
+[[mechanics/vehicles]] [[ui/vehicles]] [[art/vehicles]] [[architecture/save]]
+
+- Hangar 3×2 + Quad. WASD drive, fuel, surfaces, six parked slots. Dash **Disembark** / **Dock**. Menu **Vehicle Update I**. Not Vehicles II.
+- Save `version` → **1.4**. `PROTOCOL` 1.4. Pre-1.4 refused. No migrate.
+
 ## 2026-08-23 — 1.3 Seed silo and additive store
 
 [[mechanics/inventory]] [[ui/store]] [[items/buildings]]

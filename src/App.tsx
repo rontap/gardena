@@ -4,6 +4,8 @@ import type { Peer } from 'peerjs'
 import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
+import { HangarUi } from './game/ui/hangar.tsx'
+import { VehicleUi } from './game/ui/vehicle.tsx'
 import { AdditivesUi, SiloUi } from './game/ui/store.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
@@ -24,7 +26,10 @@ import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
-import { bindHud, paintMotion } from './game/view/motion.ts'
+import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
+import { QUAD_SHOW_MUL } from './game/defs/items.ts'
+import { UI_DASH_QUAD } from './game/view/svgs.ts'
+import type { VehicleId } from './game/sim/ids.ts'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
@@ -44,12 +49,14 @@ type Panel =
   | { kind: 'chest'; at: Coord }
   | { kind: 'silo'; at: Coord }
   | { kind: 'additives'; at: Coord }
+  | { kind: 'hangar'; at: Coord }
+  | { kind: 'vehicle'; id: VehicleId }
   | { kind: 'menu' }
   | { kind: 'multiplayer' }
 
 /** Panels a walk-up cue opened. Closing any of them has to ack the cue. */
 function cued(kind: Panel['kind']): boolean {
-  return kind === 'chest' || kind === 'silo' || kind === 'additives'
+  return kind === 'chest' || kind === 'silo' || kind === 'additives' || kind === 'hangar' || kind === 'vehicle'
 }
 
 const SPEED = (() => {
@@ -89,6 +96,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [roomKey, setRoomKey] = useState('')
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
+  const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
   const [paused, setPaused] = useState(false)
@@ -159,6 +167,19 @@ export default function App({ sink }: { sink: WorkerSink }) {
   useEffect(() => {
     if (world === undefined) return
     const cue = world.seats[world.local].cue
+    if (cue.kind === 'none') {
+      setPanel(p => (p.kind === 'hangar' || p.kind === 'vehicle' ? { kind: 'none' } : p))
+      return
+    }
+    if (cue.kind === 'hangar') {
+      setHangarPick(undefined)
+      setPanel(p => (p.kind === 'hangar' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'hangar', at: cue.at }))
+      return
+    }
+    if (cue.kind === 'vehicle') {
+      setPanel(p => (p.kind === 'vehicle' && p.id === cue.id ? p : { kind: 'vehicle', id: cue.id }))
+      return
+    }
     if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives') return
     const at = cue.at
     setPanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
@@ -203,6 +224,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
           n += 1
         }
       }
+      const driven = world.driverVehicle(world.local)
+      if (driven !== undefined && driven.pose.kind === 'field') {
+        const x = driven.pose.x
+        const y = driven.pose.y
+        setCam(c => (c.x === x && c.y === y ? c : { x, y, scale: c.scale }))
+      }
       if (root.current !== null) paintMotion(root.current, world)
       id = requestAnimationFrame(loop)
     }
@@ -233,6 +260,61 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [world])
+
+  useEffect(() => {
+    const held = { w: false, a: false, s: false, d: false }
+    let wasDriver = world !== undefined && world.driverVehicle(world.local) !== undefined
+    const field = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement
+    const send = () => {
+      const w = worldRef.current
+      if (w === undefined) return
+      const throttle: -1 | 0 | 1 = held.w === held.s ? 0 : held.w ? 1 : -1
+      const steer: -1 | 0 | 1 = held.a === held.d ? 0 : held.a ? -1 : 1
+      if (w.driverVehicle(w.local) === undefined) return
+      w.drive(throttle, steer)
+    }
+    const onPing = () => {
+      const w = worldRef.current
+      if (w === undefined) return
+      const now = w.driverVehicle(w.local) !== undefined
+      if (!wasDriver && now) send()
+      wasDriver = now
+    }
+    const off = world === undefined ? undefined : world.on(onPing)
+    const onDown = (e: KeyboardEvent) => {
+      if (field(e.target)) return
+      const k = e.key.toLowerCase()
+      if (k !== 'w' && k !== 'a' && k !== 's' && k !== 'd') return
+      if (held[k]) return
+      held[k] = true
+      send()
+    }
+    const onUp = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase()
+      if (k !== 'w' && k !== 'a' && k !== 's' && k !== 'd') return
+      held[k] = false
+      send()
+    }
+    const onBlur = () => {
+      held.w = false
+      held.a = false
+      held.s = false
+      held.d = false
+      const w = worldRef.current
+      if (w === undefined) return
+      if (w.driverVehicle(w.local) === undefined) return
+      w.drive(0, 0)
+    }
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      if (off !== undefined) off()
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+      window.removeEventListener('blur', onBlur)
+    }
   }, [world])
 
   useEffect(() => {
@@ -719,6 +801,30 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }}
             />
           )}
+          {panel.kind === 'hangar' && (
+            <HangarUi
+              world={world}
+              at={panel.at}
+              selected={hangarPick}
+              onSelect={setHangarPick}
+              onClose={() => {
+                world.ackCue()
+                setHangarPick(undefined)
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {panel.kind === 'vehicle' && (
+            <VehicleUi
+              world={world}
+              id={panel.id}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {world.driverVehicle(world.local) !== undefined && <Dash world={world} />}
           {panel.kind === 'menu' && world.seam.kind !== 'recap' && (
             <Menu
               mode="play"
@@ -773,6 +879,76 @@ export default function App({ sink }: { sink: WorkerSink }) {
           />
       </div>
     </Tooltip.Provider>
+  )
+}
+
+function Dash({ world }: { world: World }) {
+  const driven = world.driverVehicle(world.local)
+  if (driven === undefined || driven.pose.kind !== 'field') return null
+  const onPad = world.hangarAtPad({ col: Math.floor(driven.pose.x), row: Math.floor(driven.pose.y) }) !== undefined
+  return (
+    <div
+      ref={el => bindDash(el)}
+      className="absolute bottom-4 left-1/2 z-20 w-[30rem] -translate-x-1/2"
+    >
+      <div className="relative">
+        <div
+          className="pointer-events-none w-full [&_svg]:block [&_svg]:w-full"
+          dangerouslySetInnerHTML={{ __html: UI_DASH_QUAD }}
+        />
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            data-dash-fuel
+            className="absolute flex items-center justify-center font-display text-xs tabular-nums text-ink"
+            style={{
+              left: `${(8 / 240) * 100}%`,
+              top: `${(38 / 64) * 100}%`,
+              width: `${(80 / 240) * 100}%`,
+              height: `${(14 / 64) * 100}%`,
+            }}
+          >
+            {`Fuel: ${Math.floor(driven.fuel * 100)}%`}
+          </div>
+          <div
+            data-dash-speed
+            className="absolute flex items-center justify-center font-display text-xs tabular-nums text-ink"
+            style={{
+              left: `${(88 / 240) * 100}%`,
+              top: `${(38 / 64) * 100}%`,
+              width: `${(100 / 240) * 100}%`,
+              height: `${(14 / 64) * 100}%`,
+            }}
+          >
+            {`Speed: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`}
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 flex justify-center gap-2">
+        <button
+          type="button"
+          className="pointer-events-auto cursor-pointer bg-dirt px-3 py-2 text-base text-house hover:bg-dirt-dark"
+          onClick={() => world.disembark()}
+        >
+          Disembark
+        </button>
+        <button
+          type="button"
+          aria-disabled={!onPad}
+          title={onPad ? undefined : 'Dock at the hangar arrows.'}
+          className={`pointer-events-auto px-3 py-2 text-base ${
+            onPad
+              ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+              : 'cursor-default bg-ink/6 text-ink/35'
+          }`}
+          onClick={() => {
+            if (!onPad) return
+            world.dock()
+          }}
+        >
+          Dock
+        </button>
+      </div>
+    </div>
   )
 }
 

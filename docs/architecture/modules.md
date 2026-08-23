@@ -12,15 +12,15 @@ No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
 |---|---|
 | `crops.ts` | `CropDef`, `CROPS`. Sale / rot / desc / class / seed / tols / `waterUsePerSec`. Trees: `waterUsePerSec = 0`. `CropDef.saleMul` optional `{ [Rarity]: number }`; absent → `RARITY_SALE`. Vanilla only. |
 | `trees.ts` | `TREES`, `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`. `TREES[TreeId] = { juvenileSeconds, fruitSeconds }` |
-| `items.ts` | tool, container, box, fert, compost, sprinkler, mill / jam / still / barrel / freezer / sugar constants |
+| `items.ts` | tool, container, box, fert, compost, sprinkler, mill / jam / still / barrel / freezer / sugar / quad / hangar / surface constants |
 | `rarity.ts` | `Rarity`, sale / grow / rot / weight tables |
 | `research.ts` | `RESEARCH`, `SKUS`; `Sku.tab` |
 | `skills.ts` | `SKILLS`, `SkillDef`, `TEND_WORK` |
 | `catalog.ts` | almanac `CatalogEntry` keyed by `Face` |
 
-`sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `SpiritKind`, `JamCrop`, `StillCrop`, `MillRecipe`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
+`sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `SpiritKind`, `JamCrop`, `StillCrop`, `MillRecipe`, `VehicleKind`, `VehicleId`, `VehicleSlot`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
 
-`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar`. `pack-vanilla.need` is `vanilla-tending`.
+`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar`. No Quad SKU. `pack-vanilla.need` is `vanilla-tending`.
 
 No `bump-*` research ids. No `sale-mul` research effect. Better-crop is player skills — [[architecture/family]]. `unlock-heirloom` is plants `feature`, gates Őstermelő.
 
@@ -30,22 +30,22 @@ Classes for game objects. Tick and mutation stay here.
 
 | file | owns |
 |---|---|
-| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `World.stills`. `now`, `dispatch` / `apply`, `log`, `rng`. `tickTree` dirty `'field'` only on visual stage change — [[mechanics/trees]]. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
+| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `World.stills`. `World.hangars`. `World.vehicles`. `World.nextVehicleId`. `now`, `dispatch` / `apply`, `log`, `rng`. `tickTree` dirty `'field'` only on visual stage change — [[mechanics/trees]]. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
 | `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
 | `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
 | `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
 | `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
 | `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
-| `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground`. `Cell` += mill jam still barrel freezer |
+| `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground`. `Cell` += mill jam still barrel freezer hangar |
 | `soil.ts` | `Soil` |
 | `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended` |
 | `water.ts` | `Reservoir`, `SourceKind`, `pull()` |
 | `stall.ts` | `StallGood`, `StallMap`, `StallSale` |
-| `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Mill`, `JamMachine`, `PotStill`, `WineBarrel`, `Freezer`, `Coord`, `Base` |
+| `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Mill`, `JamMachine`, `PotStill`, `WineBarrel`, `Freezer`, `Hangar`, `Coord`, `Base` |
 | `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Well`, `Tune`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock`, `DAY_SECONDS` |
-| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar liters, spirit, wine, jam, oil, flour, extract. Face += mill jam still barrel freezer. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm |
+| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar liters, spirit, wine, jam, oil, flour, extract. Face += mill jam still barrel freezer hangar. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm. No fuel item |
 | `prompt.ts` | `Prompt`, `PromptHit` |
 | `look.ts` | `lookText` — HUD copy, read-only on `World` |
 | `drop.ts` | `Drop` |
@@ -54,6 +54,7 @@ Classes for game objects. Tick and mutation stay here.
 | `modifiers.ts` | `Modifier`, `Stats`. `source` includes `'skill'`. `statsOf` uses `CropDef.saleMul` when present, else `RARITY_SALE` |
 | `rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
 | `machine.ts` | mill recipes, feed helpers, rarity mean, sale bake. No `World`. [[mechanics/machines]] |
+| `vehicle.ts` | `Vehicle`, `Drive`, `VehiclePose`, `surfaceMul`, `hangarPad`, `padCenter`, `seekSpeed`, `integrateVehicle`. No `World`. No `Dismount`. [[mechanics/vehicles]] |
 
 `ui` and `view` call `World` methods. They do not construct `Soil` / `Plant` / `Reservoir` / `StallGood`.
 
@@ -66,7 +67,8 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 | `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`. Coin faces are `<use href={symHref(...)}>`. |
 | `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
 | `hud.tsx` | clock, build ribbon, docks, Multiplayer face, pause, gear. `FaceBtn` / `IconButton` faces are `<use href={symHref(...)}>`. Phase icon: `paintMotion` owns it; Hud must not also innerHTML `UI_PHASE` every render. |
-| `menu.tsx` | startup / in-play gear shell. [[ui/menu]] |
+| `menu.tsx` | startup / in-play gear shell. Menu-local `MenuPage` (home / changelog). Owns changelog open/close. [[ui/menu]] [[architecture/changelog]] |
+| `changelog.tsx` | `ChangeKind` `Change` `Release` `RELEASES` `Changelog` body. Not a `Panel`. Not `Overlay`. [[architecture/changelog]] |
 | `multiplayer.tsx` | join / host / guest dialogs, catching-up overlay. [[ui/multiplayer]] |
 | `tutorial.tsx` | tour card. [[ui/tutorial]] |
 | `lens.tsx` | lens dock. [[ui/lens]] |
@@ -81,14 +83,16 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 | `chest.tsx` | chest slots |
 | `almanac.tsx` | catalog |
 | `objecthud.tsx` | sprinkler tune |
+| `hangar.tsx` | hangar cue: buy / list all owned / Deploy (stored only) / Refill. No 6-slot. No attachment grid |
+| `vehicle.tsx` | parked cue: 6 slots + Embark |
 | `recap.tsx` | end-of-day; `dismissRecap()` |
 | `family.tsx` | family overlay; `offers` / `pickSkill` |
 
-Panel open/close is App-local. `World.cue` is how sim asks App to open inventory or a chest.
+Panel open/close is App-local. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` is how sim asks App to open inventory, a chest, a store, a hangar, or a parked Quad. Hangar and parked-vehicle panels are those cues, not `HudTarget`.
 
 ## view
 
-SVG world. Camera and `Lens` are view-local, not `World` fields. `Lens` includes `land`. Water lens requires husband `water-study`; `land` requires `land-study` — [[architecture/family]].
+SVG world. Camera and `Lens` are view-local, not `World` fields. Camera follow is view-local, not sim — follows local seat actor (tracks vehicle while driver). Hide gardener while seated is view. Hat color is view. `Lens` includes `land`. Water lens requires husband `water-study`; `land` requires `land-study` — [[architecture/family]].
 
 | file | owns |
 |---|---|
@@ -112,7 +116,7 @@ PeerJS only here. Implements `MpWire`. [[architecture/net]]
 | unit | owner |
 |---|---|
 | `World` | class `sim/world.ts`. App holds the instance or none. `World.seats`. Family state is `World.family`, not a class. |
-| `Seat` | on `World.seats`. `id`, `playerId`, `actor`, `hand`, `inventory`, `queue`, `presence`, `place`. |
+| `Seat` | on `World.seats`. `id`, `playerId`, `actor`, `hand`, `inventory`, `queue`, `presence`, `place`, `drive`. |
 | `Soil` | class `sim/soil.ts`. Required field on every `Tilled` plot. |
 | `Plant` | class `sim/plant.ts`. Required on `growing` / `ripe` / `dead`. `crop: AnnualId`. |
 | `Tree` | class `sim/building.ts`. Same instance in both 1×2 cells. |
@@ -122,7 +126,7 @@ PeerJS only here. Implements `MpWire`. [[architecture/net]]
 | `MpWire` | `sim/mp.ts` type. Loopback there. PeerJS in `net/peer.ts` only. |
 | `MpHost` / `MpGuest` | class `sim/mp.ts`. App holds the session. |
 
-`World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` / `World.stills` are the same instances stored in their cells.
+`World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.hangars` are the same instances stored in their cells. `World.vehicles` is the vehicle list, not cells.
 
 `World.segments`, `World.wells` and `World.sprinklers` are the pipe graph. Not `Cell`. Wells sit on edges — [[mechanics/water]].
 
@@ -132,4 +136,4 @@ Tutorial is App session state. `sim/tutorial.ts` checks. Not a `World` field. [[
 
 Save I/O is `sim/save.ts`. App does not own `Save`. [[architecture/save]]
 
-Chest, grinder, compost box, mill, jam, still, barrel, freezer, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint. Still also in `World.stills` for the water grid.
+Chest, grinder, compost box, mill, jam, still, barrel, freezer, hangar, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint. Still also in `World.stills` for the water grid. Hangar also in `World.hangars`. Quad is `World.vehicles`, not a cell.

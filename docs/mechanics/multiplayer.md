@@ -45,7 +45,7 @@ Seat 0 starter kit is the solo kit — [[mechanics/inventory]].
 
 Guest drop → `presence: 'away'`. Seat stays in `seats`. World keeps ticking. That actor vanishes.
 
-`tick` skips that actor's walk/work and that seat's hand/inventory freshness (box cargo included). Field / chest / ground rot continues. Freezer slots never tick freshness.
+`tick` skips that actor's walk/work and that seat's hand/inventory freshness (box cargo included). Field / chest / ground / vehicle-slot rot continues. Freezer slots never tick freshness. Away while driving: that vehicle `driver = 'none'`, field pose kept, speed coasts to 0.
 
 Away occupies a slot. `hello` when `seats.length === 4` → `reject: full`. Rejoin is the same `playerId`.
 
@@ -55,7 +55,7 @@ Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter
 
 Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
 
-**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer), dump mill/jam/still/barrel like compost, **delete building**, Almanac, lens (if shared family owns the skill), Pause.
+**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar), dump mill/jam/still/barrel like compost, hangar HUD, buy Quad, refill, 6-slot `swapVehicle`, embark, disembark, dock, drive, **delete building** (empty hangar), Almanac, lens (if shared family owns the skill), Pause.
 
 House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
 

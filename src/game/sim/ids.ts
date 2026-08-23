@@ -128,6 +128,7 @@ export type ResearchId =
   | 'unlock-landscaping'
   | 'unlock-rotary-shovel'
   | 'unlock-diamond-pickaxe'
+  | 'unlock-vehicles'
 
 export type SkuId =
   | 'pack-carrot'
@@ -175,3 +176,8 @@ export type SkuId =
   | 'buy-barrel'
   | 'buy-freezer'
   | 'buy-sugar'
+  | 'buy-hangar'
+
+export type VehicleKind = 'quad'
+export type VehicleId = number
+export type VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5

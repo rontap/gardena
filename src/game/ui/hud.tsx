@@ -45,6 +45,7 @@ const PLACE_TOOLS = [
   'buy-still',
   'buy-barrel',
   'buy-freezer',
+  'buy-hangar',
 ] as const
 
 export function Hud({
@@ -76,6 +77,8 @@ export function Hud({
     | 'chest'
     | 'silo'
     | 'additives'
+    | 'hangar'
+    | 'vehicle'
     | 'lens'
     | 'cheat'
     | 'menu'

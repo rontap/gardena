@@ -27,11 +27,11 @@ Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + thr
 
 Confirm does **not** set `none` for StayArmed, **valve**, **well**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
-Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` and item SKUs.
+Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-hangar` and item SKUs.
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not shop. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `BUILD_IDS`: pumpjack, well, rain-tank, tap, pipe, valve, sprinklers, chest, grinder, mill, jam, still, barrel, freezer. Tiles and compost-box: no trio. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`.
+Build cluster on the left ribbon, not shop. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `BUILD_IDS`: pumpjack, well, rain-tank, tap, pipe, valve, sprinklers, chest, grinder, mill, jam, still, barrel, freezer, hangar. Tiles and compost-box: no trio. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`. Hangar: door south, no rotate.
 
 Shop dock `left-32` past the `w-24` ribbon. Ghosts stay on the map.
 
@@ -60,13 +60,15 @@ Always one cell rect on `floor` of the world pointer while on the map. Not gated
 
 Unarmed, and while pipe / valve / sprinkler / delete armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not `EdgeStroke`.
 
-Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and rain-tank second-tile outline stays and matches. `data-cell-stroke` on the hover cell only.
+Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and rain-tank second-tile outline stays and matches. Hangar: all six occupied cells. `data-cell-stroke` on the hover cell only.
 
 ## Ghosts
 
 Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer`) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, still, barrel, freezer disarm. Tiles stay armed.
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 well+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
+
+`buy-hangar`: 3×2 ghost, origin = hovered NW cell, extends east and south (`HANGAR_W` × `HANGAR_H`). Confirm occupies the six cells. Disarm. Hover valid: all six `stroke-ink`. Blocked: all six `stroke-roof`. Copy **Place Vehicle hangar**. Pad cells are not in the ghost. Place does not require pad free. [[ui/vehicles]]
 
 ## Pipe / valve / well
 
@@ -123,6 +125,8 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Then `deleteBuilding(at)`.
 | barrel | **Delete wine barrel** | cell → empty |
 | jam | **Delete jam machine** | cell → empty |
 | freezer | **Delete freezer** | slots become drops on at, cell → empty |
+| hangar, stores no vehicle | **Delete vehicle hangar** | six cells → empty |
+| hangar that stores a vehicle | **Cannot delete here (stores a vehicle)** | no-op |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
 `deletePipe` / `deleteWell` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
@@ -150,6 +154,7 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | place / pulse `buy-barrel` | **Place Wine barrel** |
 | place / pulse `buy-jam` | **Place Jam machine** |
 | place / pulse `buy-freezer` | **Place Freezer** |
+| place / pulse `buy-hangar` | **Place Vehicle hangar** |
 | place / pulse tiles | **Place Paved tile** / **Place Brick tile** / **Place Cobble tile** |
 | place / pulse `buy-pipe` | **Place Pipe** |
 | place / pulse `buy-valve` | **Place Manual valve** |
@@ -161,7 +166,8 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | delete, hover piped owned edge | **Delete pipe** / **Delete valve** |
 | delete, hover well edge | **Delete well** |
 | delete, hover sprinkler vertex | **Delete sprinkler** |
-| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** |
+| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** / **Delete vehicle hangar** |
+| delete, hangar that stores a vehicle | **Cannot delete here (stores a vehicle)** |
 | delete else | **Cannot delete here** |
 | blocked | **Cannot place here** |
 | blocked, `money < price` | **Cannot afford** |

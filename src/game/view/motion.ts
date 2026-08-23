@@ -1,8 +1,10 @@
 import { RESEARCH } from '../defs/research.ts'
-import { COMPOST_NEED } from '../defs/items.ts'
+import { COMPOST_NEED, QUAD_SHOW_MUL, QUAD_VMAX } from '../defs/items.ts'
 import { SOIL_WATER_MAX } from '../sim/soil.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
+import type { VehicleId } from '../sim/ids.ts'
+import { wrapHeading } from '../sim/vehicle.ts'
 import type { SeatId, World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
 import { symHref, UI_PHASE } from './svgs.ts'
@@ -26,6 +28,21 @@ type ActorEntry = { el: SVGGElement; transform: string; visibility: string }
 
 const actors = new Map<SeatId, ActorEntry>()
 
+type QuadEntry = { el: SVGGElement; transform: string; x: number; y: number; heading: number; snap: boolean }
+
+const quads = new Map<VehicleId, QuadEntry>()
+
+const QUAD_FOLLOW = 0.35
+
+let dashHost: Element | undefined
+let dashFuel: SVGGElement | undefined
+let dashSpeed: SVGGElement | undefined
+let dashSteer: SVGGElement | undefined
+let dashFuelReadout: Element | undefined
+let dashSpeedReadout: Element | undefined
+const lastNeedle = { fuel: '', speed: '', steer: '' }
+const lastDash = { fuel: '', speed: '' }
+
 type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech'
 
 const hud = new Map<HudKind, Element>()
@@ -48,6 +65,44 @@ export function bindBar(kind: BarKind, at: Coord, el: SVGRectElement | null): vo
 export function bindActor(id: SeatId, el: SVGGElement | null): void {
   if (el === null) actors.delete(id)
   else actors.set(id, { el, transform: '', visibility: '' })
+}
+
+export function bindQuad(id: VehicleId, el: SVGGElement | null): void {
+  if (el === null) quads.delete(id)
+  else quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true })
+}
+
+let dummyRot: SVGGElement | undefined
+let dummyDeg = ''
+
+export function bindDummyQuad(el: SVGGElement | null): void {
+  dummyRot = el === null ? undefined : el
+  dummyDeg = ''
+}
+
+export function bindDash(el: Element | null): void {
+  dashHost = el === null ? undefined : el
+  dashFuel = undefined
+  dashSpeed = undefined
+  dashSteer = undefined
+  dashFuelReadout = undefined
+  dashSpeedReadout = undefined
+  lastNeedle.fuel = ''
+  lastNeedle.speed = ''
+  lastNeedle.steer = ''
+  lastDash.fuel = ''
+  lastDash.speed = ''
+  if (el === null) return
+  const fuel = el.querySelector('#fuel-needle')
+  const speed = el.querySelector('#speed-needle')
+  const steer = el.querySelector('#steer')
+  dashFuel = fuel instanceof SVGGElement ? fuel : undefined
+  dashSpeed = speed instanceof SVGGElement ? speed : undefined
+  dashSteer = steer instanceof SVGGElement ? steer : undefined
+  const fuelReadout = el.querySelector('[data-dash-fuel]')
+  const speedReadout = el.querySelector('[data-dash-speed]')
+  dashFuelReadout = fuelReadout === null ? undefined : fuelReadout
+  dashSpeedReadout = speedReadout === null ? undefined : speedReadout
 }
 
 export function bindHud(kind: HudKind, el: Element | null): void {
@@ -83,7 +138,8 @@ export function paintMotion(root: HTMLElement, world: World): void {
   world.seats.forEach(s => {
     const entry = actors.get(s.id)
     if (entry === undefined || s.napping) return
-    if (s.presence !== 'in') {
+    const seated = world.driverVehicle(s.id) !== undefined
+    if (s.presence !== 'in' || seated) {
       if (entry.visibility !== 'hidden') {
         entry.visibility = 'hidden'
         entry.el.setAttribute('visibility', 'hidden')
@@ -99,6 +155,66 @@ export function paintMotion(root: HTMLElement, world: World): void {
     entry.transform = transform
     entry.el.setAttribute('transform', transform)
   })
+  world.vehicles.forEach(v => {
+    if (v.pose.kind !== 'field') return
+    const entry = quads.get(v.id)
+    if (entry === undefined) return
+    if (entry.snap) {
+      entry.x = v.pose.x
+      entry.y = v.pose.y
+      entry.heading = v.pose.heading
+      entry.snap = false
+    } else {
+      entry.x += (v.pose.x - entry.x) * QUAD_FOLLOW
+      entry.y += (v.pose.y - entry.y) * QUAD_FOLLOW
+      const turn = wrapHeading(v.pose.heading - entry.heading + Math.PI) - Math.PI
+      entry.heading = wrapHeading(entry.heading + turn * QUAD_FOLLOW)
+    }
+    const deg = (entry.heading * 180) / Math.PI
+    const transform = `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
+    if (entry.transform === transform) return
+    entry.transform = transform
+    entry.el.setAttribute('transform', transform)
+  })
+  const driven = world.driverVehicle(world.local)
+  if (driven !== undefined && driven.pose.kind === 'field' && dummyRot !== undefined) {
+    const deg = (driven.pose.heading * 180) / Math.PI
+    const rot = `rotate(${deg} 12 12)`
+    if (dummyDeg !== rot) {
+      dummyDeg = rot
+      dummyRot.setAttribute('transform', rot)
+    }
+  }
+  if (driven !== undefined && driven.pose.kind === 'field' && dashHost !== undefined) {
+    const fuelDeg = -45 + driven.fuel * 90
+    const speedDeg = (driven.pose.speed / QUAD_VMAX) * 36
+    const steerDeg = world.seats[world.local].drive.steer * 90
+    const fuelT = `rotate(${fuelDeg} 48 34)`
+    const speedT = `rotate(${speedDeg} 120 34)`
+    const steerT = `rotate(${steerDeg} 192 34)`
+    if (dashFuel !== undefined && lastNeedle.fuel !== fuelT) {
+      lastNeedle.fuel = fuelT
+      dashFuel.setAttribute('transform', fuelT)
+    }
+    if (dashSpeed !== undefined && lastNeedle.speed !== speedT) {
+      lastNeedle.speed = speedT
+      dashSpeed.setAttribute('transform', speedT)
+    }
+    if (dashSteer !== undefined && lastNeedle.steer !== steerT) {
+      lastNeedle.steer = steerT
+      dashSteer.setAttribute('transform', steerT)
+    }
+    const fuelText = `Fuel: ${Math.floor(driven.fuel * 100)}%`
+    const speedText = `Speed: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`
+    if (dashFuelReadout !== undefined && lastDash.fuel !== fuelText) {
+      lastDash.fuel = fuelText
+      dashFuelReadout.textContent = fuelText
+    }
+    if (dashSpeedReadout !== undefined && lastDash.speed !== speedText) {
+      lastDash.speed = speedText
+      dashSpeedReadout.textContent = speedText
+    }
+  }
   const phase = world.clock.phase()
   const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
   const clock = hud.get('clock')

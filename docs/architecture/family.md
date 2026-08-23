@@ -113,7 +113,7 @@ SkillEffect =
   | { kind: 'dummy' }
 ```
 
-`walk` = boots. `machine` = machinery (`GRIND_WORK`, valve 0.3s, mill tick, jam tick; still / barrel not work jobs; pipe place instant). `tend` work `TEND_WORK` 0.7s. `saleswoman` = every `StallGoodId`. `heirloom` = `rarity === 'heirloom'` on crop fruit, spirit, wine. `bio` = `fruit.bio === true`. `tax` after expansion formula, then `× (1 − 0.02 × tier)`, min $1. Contracts: tab SKU `−$tier`, min $1.
+`walk` = boots. `machine` = machinery (`GRIND_WORK`, valve 0.3s, mill tick, jam tick; Quad vMax and accel; yaw not; still / barrel not work jobs; pipe place instant). `tend` work `TEND_WORK` 0.7s. `saleswoman` = every `StallGoodId`. `heirloom` = `rarity === 'heirloom'` on crop fruit, spirit, wine. `bio` = `fruit.bio === true`. `tax` after expansion formula, then `× (1 − 0.02 × tier)`, min $1. Contracts: tab SKU `−$tier`, min $1.
 
 ## World fields
 
@@ -200,7 +200,8 @@ Crop stall bins keep `bio` (stock + worth per rarity × bio). Illegal: consign t
 
 ## Other effects
 
-- Boots: walk step `WALK × (1 + 0.05 × tier)`
+- Boots: walk step `WALK × (1 + 0.05 × tier)`. Not Quad
+- Machinery: Quad `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. — [[mechanics/vehicles]]
 - Machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0
 - Research speed: `job.left -= dt × (1 + 0.05 × tier)`
 - `skuPrice(id)`: `SKUS[id].price`, then `− tier` if tool-contracts and `Sku.tab === 'utility'`, or machine-contracts and `tab === 'automation'`; min $1. Seeds and building tiles unchanged. Buy / place spend `skuPrice`

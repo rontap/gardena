@@ -110,7 +110,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 ## Other effects
 
 - boots: `WALK × (1 + 0.05 × tier)`
-- machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0
+- machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick `÷ (1 + 0.05 × tier)`. Quad `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. Still / barrel not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`
 - tool-contracts: utility tab `skuPrice` `− $tier` then min $1
 - machine-contracts: automation tab `skuPrice` `− $tier` then min $1

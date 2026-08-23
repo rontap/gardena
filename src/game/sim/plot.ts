@@ -4,6 +4,7 @@ import type {
   CompostBox,
   Freezer,
   Grinder,
+  Hangar,
   House,
   JamMachine,
   Mill,
@@ -55,6 +56,7 @@ export type Cell =
   | PotStill
   | WineBarrel
   | Freezer
+  | Hangar
   | SeedSilo
   | AdditiveStore
 
@@ -112,6 +114,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'jam' ||
     c.kind === 'still' ||
     c.kind === 'barrel' ||
-    c.kind === 'freezer'
+    c.kind === 'freezer' ||
+    c.kind === 'hangar'
   )
 }

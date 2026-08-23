@@ -4,6 +4,13 @@ import {
   COMPOST_NEED,
   COMPOST_SECONDS,
   CONTAINERS,
+  HANGAR_H,
+  HANGAR_W,
+  HEADING_SOUTH,
+  QUAD_ACCEL,
+  QUAD_FUEL_SECONDS,
+  QUAD_PRICE,
+  QUAD_REFILL,
   GRASS_GROW,
   GRASS_WATER_PER_SEC,
   GRIND_MAX,
@@ -48,6 +55,8 @@ import type {
   SkillId,
   SkuId,
   StallGoodId,
+  VehicleId,
+  VehicleSlot,
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
 import {
@@ -60,6 +69,7 @@ import {
   DOOR,
   Freezer,
   Grinder,
+  Hangar,
   HOUSE_BASE,
   House,
   JamMachine,
@@ -190,6 +200,7 @@ import {
 import { pull, Reservoir, TAP_RATE } from './water.ts'
 import {
   placeLabel,
+  hangarSiteOk,
   placeSolidOk,
   wideSiteOk,
   readPrompt,
@@ -202,6 +213,16 @@ import {
 } from './prompt.ts'
 import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
+import {
+  emptyVehicleSlots,
+  hangarPad,
+  integrateVehicle,
+  padCenter,
+  seekSpeed,
+  surfaceMul,
+  Vehicle,
+  type Drive,
+} from './vehicle.ts'
 
 export type Intent =
   | { act: 'walk'; at: Coord }
@@ -226,6 +247,9 @@ export type Intent =
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }
+  | { act: 'hangar'; at: Coord }
+  | { act: 'vehicle'; id: VehicleId }
+  | { act: 'embark'; id: VehicleId }
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'tend'; at: Coord }
 
@@ -252,6 +276,9 @@ export type TaskName =
   | 'Still'
   | 'Barrel'
   | 'Jam'
+  | 'Vehicle hangar'
+  | 'Quad'
+  | 'Embark'
   | 'Valve'
   | 'Tend'
 
@@ -261,6 +288,8 @@ export type Cue =
   | { kind: 'chest'; at: Coord }
   | { kind: 'silo'; at: Coord }
   | { kind: 'additives'; at: Coord }
+  | { kind: 'hangar'; at: Coord }
+  | { kind: 'vehicle'; id: VehicleId }
 
 export type Speech = { kind: 'none' } | { kind: 'say'; text: string; left: number }
 
@@ -287,6 +316,7 @@ export type Seat = {
   napping: boolean
   cue: Cue
   place: Place
+  drive: Drive
   workLeft: number
   workTotal: number
   filling: boolean
@@ -345,6 +375,9 @@ export type Hydrate = {
   tanks: RainTank[]
   taps: Tap[]
   stills: PotStill[]
+  hangars: Hangar[]
+  vehicles: Vehicle[]
+  nextVehicleId: VehicleId
   stall: StallMap
   family: Family
   seats: Seat[]
@@ -428,6 +461,7 @@ function liveSeat(
     napping: false,
     cue: { kind: 'none' },
     place: { kind: 'none' },
+    drive: { throttle: 0, steer: 0 },
     workLeft: 0,
     workTotal: 0,
     filling: false,
@@ -468,11 +502,18 @@ function groundSig(c: Cell): string {
   return 'g'
 }
 
-export function dest(i: Intent): Coord {
+export function dest(i: Intent, w: World): Coord {
   if (i.act === 'fill') return i.at
   if (i.act === 'fillWell') return i.stand
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
+  if (i.act === 'vehicle' || i.act === 'embark') {
+    const v = w.vehicles.find(x => x.id === i.id)
+    if (v !== undefined && v.pose.kind === 'field') {
+      return { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+    }
+    return { col: Number.POSITIVE_INFINITY, row: Number.POSITIVE_INFINITY }
+  }
   return i.at
 }
 
@@ -497,6 +538,9 @@ export class World {
   readonly tanks: RainTank[] = []
   readonly taps: Tap[] = []
   readonly stills: PotStill[] = []
+  readonly hangars: Hangar[] = []
+  readonly vehicles: Vehicle[] = []
+  nextVehicleId: VehicleId = 1
   readonly segments = new Map<string, Segment>()
   readonly wells = new Map<string, Well>()
   readonly fences = new Set<string>()
@@ -556,6 +600,11 @@ export class World {
       this.tanks = h.tanks
       this.taps = h.taps
       this.stills = h.stills
+      this.hangars.length = 0
+      h.hangars.forEach(x => this.hangars.push(x))
+      this.vehicles.length = 0
+      h.vehicles.forEach(x => this.vehicles.push(x))
+      this.nextVehicleId = h.nextVehicleId
       this.stall = h.stall
       this.family = h.family
       this.seats = h.seats
@@ -626,6 +675,12 @@ export class World {
         s.workTotal = 0
         s.filling = false
         s.place = { kind: 'none' }
+        s.drive = { throttle: 0, steer: 0 }
+        const driven = this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === s.id)
+        if (driven !== undefined && driven.pose.kind === 'field') {
+          s.actor.x = driven.pose.x
+          s.actor.y = driven.pose.y
+        }
         s.legStart = { x: s.actor.x, y: s.actor.y }
       })
       this.sink.reset(this.rng.seed)
@@ -707,6 +762,10 @@ export class World {
     s.workTotal = 0
     s.filling = false
     s.place = { kind: 'none' }
+    s.drive = { throttle: 0, steer: 0 }
+    this.vehicles.forEach(v => {
+      if (v.pose.kind === 'field' && v.pose.driver === id) v.pose.driver = 'none'
+    })
     this.ping()
   }
 
@@ -825,6 +884,30 @@ export class World {
         else if (cmd.k === 'money') this.cheatMoneyBody()
         else if (cmd.k === 'points') this.cheatPointsBody()
         else this.toggleCheatResearchBody()
+        return
+      case Act.drive:
+        this.driveBody(cmd.throttle, cmd.steer)
+        return
+      case Act.buyVehicle:
+        this.buyVehicleBody({ col: cmd.c[0], row: cmd.c[1] })
+        return
+      case Act.deploy:
+        this.deployBody(cmd.v, { col: cmd.c[0], row: cmd.c[1] })
+        return
+      case Act.embark:
+        this.embarkBody(cmd.v)
+        return
+      case Act.disembark:
+        this.disembarkBody()
+        return
+      case Act.dock:
+        this.dockBody()
+        return
+      case Act.swapVehicle:
+        this.swapVehicleBody(cmd.v, cmd.i)
+        return
+      case Act.refill:
+        this.refillBody({ col: cmd.c[0], row: cmd.c[1] })
         return
     }
   }
@@ -1452,6 +1535,17 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'hangar') {
+      const origin = { col: c.base.col, row: c.base.row }
+      if (this.hangarStores(origin)) return
+      occupiedCells(c.base, this.owned).forEach(p => {
+        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
+      })
+      this.hangars.splice(this.hangars.indexOf(c), 1)
+      this.pulse = { text: 'Delete vehicle hangar', at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind !== 'grinder') return
     this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
     this.pulse = { text: 'Delete grinder', at: { ...at } }
@@ -1628,6 +1722,7 @@ export class World {
   }
 
   private clickBody(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
+    if (this.driverVehicle(this.act.id) !== undefined) return 'noop'
     if (!inWorld(at, this.owned)) {
       if (inFade(at, this.owned) && this.act.place.kind === 'none') this.say(NOT_OWNED)
       return 'noop'
@@ -1691,7 +1786,7 @@ export class World {
 
   taskName(i: Intent): TaskName {
     this.act = this.seats[this.local]
-    if (!this.act.actor.inside(dest(i))) {
+    if (!this.act.actor.inside(dest(i, this))) {
       if (i.act === 'shovel') return 'Move here and dig'
       if (i.act === 'consign') return 'Drop off'
       return 'Move here'
@@ -1740,6 +1835,12 @@ export class World {
         return 'Barrel'
       case 'jam':
         return 'Jam'
+      case 'hangar':
+        return 'Vehicle hangar'
+      case 'vehicle':
+        return 'Quad'
+      case 'embark':
+        return 'Embark'
       case 'valve':
         return 'Valve'
       case 'tend':
@@ -1755,7 +1856,7 @@ export class World {
     if (this.act.filling && this.act.hand.kind === 'hold' && this.act.hand.item.kind === 'container') {
       return this.act.hand.item.liters / this.act.hand.item.capacityLiters
     }
-    const at = dest(head)
+    const at = dest(head, this)
     if (!this.act.actor.inside(at)) {
       const tx = at.col + 0.5
       const ty = at.row + 0.5
@@ -1889,8 +1990,25 @@ export class World {
       this.act.place.id === 'buy-jam' ||
       this.act.place.id === 'buy-still' ||
       this.act.place.id === 'buy-barrel' ||
-      this.act.place.id === 'buy-freezer'
+      this.act.place.id === 'buy-freezer' ||
+      this.act.place.id === 'buy-hangar'
     ) {
+      if (this.act.place.id === 'buy-hangar') {
+        if (!hangarSiteOk(this, at)) return
+        this.money -= price
+        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: HANGAR_W, h: HANGAR_H }
+        const made = new Hangar(base)
+        this.hangars.push(made)
+        for (let row = 0; row < HANGAR_H; row++) {
+          for (let col = 0; col < HANGAR_W; col++) {
+            this.setCell({ col: at.col + col, row: at.row + row }, made)
+          }
+        }
+        this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
+        this.act.place = { kind: 'none' }
+        this.ping()
+        return
+      }
       if (!placeSolidOk(this, at)) return
       this.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
@@ -1942,6 +2060,7 @@ export class World {
       made.kind === 'still' ||
       made.kind === 'barrel' ||
       made.kind === 'freezer' ||
+      made.kind === 'hangar' ||
       made.kind === 'sugar'
     ) {
       return
@@ -2005,6 +2124,223 @@ export class World {
 
   compactInventory(): void {
     compactSlots(this.act.inventory)
+  }
+
+  drive(throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
+    this.commit({ a: Act.drive, t: this.now, p: this.local, throttle, steer })
+  }
+
+  private driveBody(throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
+    if (this.driverVehicle(this.act.id) === undefined) return
+    this.act.drive = { throttle, steer }
+    this.ping()
+  }
+
+  buyVehicle(at: Coord): void {
+    this.commit({ a: Act.buyVehicle, t: this.now, p: this.local, c: [at.col, at.row] })
+  }
+
+  private buyVehicleBody(at: Coord): void {
+    if (!this.done.has('unlock-vehicles')) return
+    if (this.money < QUAD_PRICE) return
+    const origin = this.hangarOrigin(at)
+    if (origin === undefined) return
+    this.money -= QUAD_PRICE
+    const id = this.nextVehicleId
+    this.nextVehicleId += 1
+    this.vehicles.push(
+      new Vehicle(id, 'quad', 1, emptyVehicleSlots(), { kind: 'stored', hangar: { ...origin } }),
+    )
+    this.ping()
+  }
+
+  deploy(id: VehicleId, at: Coord): void {
+    this.commit({ a: Act.deploy, t: this.now, p: this.local, v: id, c: [at.col, at.row] })
+  }
+
+  private deployBody(id: VehicleId, at: Coord): void {
+    const v = this.vehicles.find(x => x.id === id)
+    if (v === undefined || v.pose.kind !== 'stored') return
+    if (this.driverVehicle(this.act.id) !== undefined) return
+    const origin = this.hangarOrigin(at)
+    if (origin === undefined) return
+    const hangar = this.cell(origin)
+    if (hangar.kind !== 'hangar') return
+    const pad = padCenter(hangar.base)
+    if (!this.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
+    v.pose = {
+      kind: 'field',
+      x: pad.x,
+      y: pad.y,
+      heading: HEADING_SOUTH,
+      speed: 0,
+      driver: this.act.id,
+    }
+    this.act.drive = { throttle: 0, steer: 0 }
+    this.act.queue.length = 0
+    this.act.workLeft = 0
+    this.act.workTotal = 0
+    this.act.filling = false
+    this.act.cue = { kind: 'none' }
+    this.act.actor.x = pad.x
+    this.act.actor.y = pad.y
+    this.ping()
+  }
+
+  embark(id: VehicleId): void {
+    this.commit({ a: Act.embark, t: this.now, p: this.local, v: id })
+  }
+
+  private embarkBody(id: VehicleId): void {
+    const v = this.vehicles.find(x => x.id === id)
+    if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    if (this.driverVehicle(this.act.id) !== undefined) return
+    const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+    if (this.act.actor.inside(floor)) {
+      this.board(v)
+      this.ping()
+      return
+    }
+    this.enqueueOn(this.act, { act: 'embark', id })
+  }
+
+  disembark(): void {
+    this.commit({ a: Act.disembark, t: this.now, p: this.local })
+  }
+
+  private disembarkBody(): void {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return
+    v.pose.speed = 0
+    v.pose.driver = 'none'
+    this.act.actor.x = v.pose.x
+    this.act.actor.y = v.pose.y
+    this.act.drive = { throttle: 0, steer: 0 }
+    this.act.queue.length = 0
+    this.ping()
+  }
+
+  dock(): void {
+    this.commit({ a: Act.dock, t: this.now, p: this.local })
+  }
+
+  private dockBody(): void {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return
+    const hangar = this.hangarAtPad({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    if (hangar === undefined) return
+    const x = v.pose.x
+    const y = v.pose.y
+    v.pose = { kind: 'stored', hangar: { col: hangar.base.col, row: hangar.base.row } }
+    this.act.actor.x = x
+    this.act.actor.y = y
+    this.act.drive = { throttle: 0, steer: 0 }
+    this.act.queue.length = 0
+    this.ping()
+  }
+
+  swapVehicle(id: VehicleId, i: VehicleSlot): void {
+    this.commit({ a: Act.swapVehicle, t: this.now, p: this.local, v: id, i })
+  }
+
+  private swapVehicleBody(id: VehicleId, i: VehicleSlot): void {
+    const v = this.vehicles.find(x => x.id === id)
+    if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    const held = this.act.hand
+    this.act.hand = v.slots[i]
+    v.slots[i] = held
+    compactSlots(v.slots)
+    this.ping()
+  }
+
+  refill(at: Coord): void {
+    this.commit({ a: Act.refill, t: this.now, p: this.local, c: [at.col, at.row] })
+  }
+
+  private refillBody(at: Coord): void {
+    if (this.hangarOrigin(at) === undefined) return
+    const cost = this.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
+    if (this.money < cost) return
+    this.money -= cost
+    this.vehicles.forEach(v => {
+      v.fuel = 1
+    })
+    this.ping()
+  }
+
+  refillCost(): number {
+    return this.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
+  }
+
+  driverVehicle(id: SeatId): Vehicle | undefined {
+    return this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === id)
+  }
+
+  parkedAt(at: Coord): Vehicle | undefined {
+    return this.vehicles.find(
+      v =>
+        v.pose.kind === 'field' &&
+        v.pose.driver === 'none' &&
+        Math.floor(v.pose.x) === at.col &&
+        Math.floor(v.pose.y) === at.row,
+    )
+  }
+
+  hangarOrigin(at: Coord): Coord | undefined {
+    if (!this.inWorld(at)) return undefined
+    const c = this.cell(at)
+    if (c.kind !== 'hangar') return undefined
+    return { col: c.base.col, row: c.base.row }
+  }
+
+  hangarStores(origin: Coord): boolean {
+    return this.vehicles.some(
+      v => v.pose.kind === 'stored' && v.pose.hangar.col === origin.col && v.pose.hangar.row === origin.row,
+    )
+  }
+
+  hangarAtPad(at: Coord): Hangar | undefined {
+    return this.hangars.find(h => hangarPad(h.base).some(p => p.col === at.col && p.row === at.row))
+  }
+
+  private board(v: Vehicle): void {
+    if (v.pose.kind !== 'field') return
+    v.pose.driver = this.act.id
+    this.act.drive = { throttle: 0, steer: 0 }
+    this.act.queue.length = 0
+    this.act.workLeft = 0
+    this.act.workTotal = 0
+    this.act.filling = false
+    this.act.cue = { kind: 'none' }
+    this.act.actor.x = v.pose.x
+    this.act.actor.y = v.pose.y
+  }
+
+  private tickVehicles(dt: number): void {
+    this.vehicles.forEach(v => {
+      if (v.pose.kind !== 'field') return
+      const pose = v.pose
+      const driver = pose.driver === 'none' ? undefined : this.seats[pose.driver]
+      if (driver === undefined) {
+        pose.speed = seekSpeed(pose.speed, 0, QUAD_ACCEL, dt)
+        const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
+        const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
+        if (this.inWorld({ col: Math.floor(nx), row: Math.floor(ny) })) {
+          pose.x = nx
+          pose.y = ny
+        }
+        return
+      }
+      if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
+        const next = v.fuel - dt / QUAD_FUEL_SECONDS
+        v.fuel = next < 0 ? 0 : next
+      }
+      const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
+      const surface = surfaceMul(this.cell(at))
+      integrateVehicle(pose, driver.drive, dt, v.fuel, this.machineMul(), surface, p => this.inWorld(p))
+      driver.actor.x = pose.x
+      driver.actor.y = pose.y
+    })
   }
 
   unlockAll(): void {
@@ -2396,10 +2732,12 @@ export class World {
     this.tickJob(dt)
     this.seats.forEach(s => {
       if (s.presence !== 'in') return
+      if (this.driverVehicle(s.id) !== undefined) return
       this.act = s
       this.tickQueue(dt)
     })
     this.act = this.seats[this.local]
+    this.tickVehicles(dt)
     this.tickField(dt)
     this.tickWater(dt)
     this.tickFreshness(dt)
@@ -2441,7 +2779,14 @@ export class World {
     }
     const next = this.act.queue[0]
     if (next === undefined) return
-    const at = dest(next)
+    if (next.act === 'vehicle' || next.act === 'embark') {
+      const v = this.vehicles.find(x => x.id === next.id)
+      if (v === undefined || v.pose.kind !== 'field') {
+        this.shiftHead()
+        return
+      }
+    }
+    const at = dest(next, this)
     if (!this.act.actor.inside(at)) {
       this.act.actor.walkToward(at, dt, this.walkSpeed())
       return
@@ -2597,6 +2942,45 @@ export class World {
         }
         this.arm(0.4)
         return
+      case 'hangar': {
+        if (this.cell(i.at).kind !== 'hangar') {
+          this.shiftHead()
+          return
+        }
+        this.act.cue = { kind: 'hangar', at: { ...i.at } }
+        this.shiftHead()
+        return
+      }
+      case 'vehicle': {
+        const v = this.vehicles.find(x => x.id === i.id)
+        if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') {
+          this.shiftHead()
+          return
+        }
+        this.act.cue = { kind: 'vehicle', id: i.id }
+        this.shiftHead()
+        return
+      }
+      case 'embark': {
+        const v = this.vehicles.find(x => x.id === i.id)
+        if (
+          v === undefined ||
+          v.pose.kind !== 'field' ||
+          v.pose.driver !== 'none' ||
+          this.driverVehicle(this.act.id) !== undefined
+        ) {
+          this.shiftHead()
+          return
+        }
+        const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+        if (!this.act.actor.inside(floor)) {
+          this.shiftHead()
+          return
+        }
+        this.board(v)
+        this.shiftHead()
+        return
+      }
       case 'valve':
         this.arm(0.3 / this.machineMul())
         return
@@ -2620,7 +3004,7 @@ export class World {
   }
 
   private markWalk(i: Intent): void {
-    if (this.act.actor.inside(dest(i))) return
+    if (this.act.actor.inside(dest(i, this))) return
     this.act.legStart = { x: this.act.actor.x, y: this.act.actor.y }
   }
 
@@ -2865,6 +3249,7 @@ export class World {
       const c = this.cell(at)
       if (c.kind === 'chest') c.slots.forEach(slot)
     })
+    this.vehicles.forEach(v => v.slots.forEach(slot))
   }
 
   private tickMachines(dt: number): void {

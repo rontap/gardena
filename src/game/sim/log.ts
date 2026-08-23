@@ -1,6 +1,6 @@
 import type { AdditiveId, ChunkId } from './building.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { AnnualId, MemberId, ResearchId, SkuId, StallGoodId } from './ids.ts'
+import type { AnnualId, MemberId, ResearchId, SkuId, StallGoodId, VehicleId, VehicleSlot } from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { Intent, SeatId } from './world.ts'
 
@@ -34,6 +34,14 @@ export const Act = {
   ackCue: 'a',
   rightClick: 'z',
   cheat: 'u',
+  drive: 'V',
+  buyVehicle: 'Q',
+  deploy: 'D',
+  embark: 'B',
+  disembark: 'E',
+  dock: 'P',
+  swapVehicle: 'H',
+  refill: 'F',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -78,6 +86,14 @@ export type Cmd =
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'money' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
+  | { a: typeof Act.drive; t: number; p: SeatId; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+  | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.deploy; t: number; p: SeatId; v: VehicleId; c: XY }
+  | { a: typeof Act.embark; t: number; p: SeatId; v: VehicleId }
+  | { a: typeof Act.disembark; t: number; p: SeatId }
+  | { a: typeof Act.dock; t: number; p: SeatId }
+  | { a: typeof Act.swapVehicle; t: number; p: SeatId; v: VehicleId; i: VehicleSlot }
+  | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

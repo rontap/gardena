@@ -169,15 +169,35 @@
 <a name='L104'></a><a href='#L104'>104</a>
 <a name='L105'></a><a href='#L105'>105</a>
 <a name='L106'></a><a href='#L106'>106</a>
-<a name='L107'></a><a href='#L107'>107</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -249,12 +269,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">89x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">130x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">88x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">203x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">225x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">168x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -275,8 +315,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { ChunkId } from './building.ts'
-import type { MemberId, ResearchId, SkuId, StallGoodId } from './ids.ts'
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { AdditiveId, ChunkId } from './building.ts'
+import type { Rarity } from '../defs/rarity.ts'
+import type { AnnualId, MemberId, ResearchId, SkuId, StallGoodId, VehicleId, VehicleSlot } from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { Intent, SeatId } from './world.ts'
 &nbsp;
@@ -299,6 +340,7 @@ export const Act = {
   nudgeOffered: 'o',
   swap: 'w',
   swapChest: 'h',
+  takeStore: 'S',
   tuneSprinkler: 't',
   openHud: 'j',
   closeHud: 'l',
@@ -309,6 +351,14 @@ export const Act = {
   ackCue: 'a',
   rightClick: 'z',
   cheat: 'u',
+  drive: 'V',
+  buyVehicle: 'Q',
+  deploy: 'D',
+  embark: 'B',
+  disembark: 'E',
+  dock: 'P',
+  swapVehicle: 'H',
+  refill: 'F',
 } as const
 &nbsp;
 export type Act = (typeof Act)[keyof typeof Act]
@@ -338,6 +388,8 @@ export type Cmd =
   | { a: typeof Act.nudgeOffered; t: number; p: SeatId; g: StallGoodId; d: 1 | -1 }
   | { a: typeof Act.swap; t: number; p: SeatId; i: number }
   | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }
+  | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: Rarity }
+  | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; d: AdditiveId }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
   | { a: typeof Act.openHud; t: number; p: SeatId; c: XY }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
@@ -351,6 +403,14 @@ export type Cmd =
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'money' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
+  | { a: typeof Act.drive; t: number; p: SeatId; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+  | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.deploy; t: number; p: SeatId; v: VehicleId; c: XY }
+  | { a: typeof Act.embark; t: number; p: SeatId; v: VehicleId }
+  | { a: typeof Act.disembark; t: number; p: SeatId }
+  | { a: typeof Act.dock; t: number; p: SeatId }
+  | { a: typeof Act.swapVehicle; t: number; p: SeatId; v: VehicleId; i: VehicleSlot }
+  | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
 &nbsp;
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 &nbsp;
@@ -388,7 +448,7 @@ export class WorkerSink implements LogSink {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-23T14:49:50.445Z
+                at 2026-08-23T20:31:18.767Z
             </div>
         <script src="../prettify.js"></script>
         <script>

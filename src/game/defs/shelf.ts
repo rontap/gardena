@@ -1,7 +1,7 @@
 import type { SkuId } from '../sim/ids.ts'
 
 export type ShopShelfId = 'seeds' | 'tools' | 'supplies'
-export type BuildShelfId = 'water' | 'processing' | 'storage' | 'land'
+export type BuildShelfId = 'water' | 'processing' | 'storage' | 'vehicles' | 'land'
 export type ShelfId = ShopShelfId | BuildShelfId
 
 export type Group = { label: string; skus: SkuId[] }
@@ -88,6 +88,17 @@ export const SHELVES: readonly Shelf[] = [
     line: 'Keep what you picked.',
     cluster: 'build',
     groups: [{ label: 'Boxes', skus: ['buy-chest', 'buy-freezer'] }],
+  },
+  {
+    panel: 'build',
+    id: 'vehicles',
+    label: 'Vehicles',
+    line: 'Hangar and the field silos that load trailers.',
+    cluster: 'build',
+    groups: [
+      { label: 'Hangar', skus: ['buy-hangar'] },
+      { label: 'Silos', skus: ['buy-silo-seed', 'buy-silo-spray', 'buy-silo-produce'] },
+    ],
   },
   {
     panel: 'build',

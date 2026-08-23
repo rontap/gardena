@@ -69,6 +69,10 @@ const AUTO_IDS = [
   'barrel',
   'jam',
   'freezer',
+  'hangar',
+  'silo-seed',
+  'silo-spray',
+  'silo-produce',
 ]
 
 const TABS = [

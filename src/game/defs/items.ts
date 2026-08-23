@@ -98,3 +98,42 @@ export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   cherry: 20,
   tomato: 80,
 }
+
+export const QUAD_VMAX = 10
+export const QUAD_SHOW_MUL = 4
+export const QUAD_ACCEL_SECONDS = 1.5
+export const QUAD_ACCEL = QUAD_VMAX / QUAD_ACCEL_SECONDS
+export const QUAD_R = 2
+export const QUAD_YAW = QUAD_VMAX / QUAD_R
+export const QUAD_FUEL_SECONDS = 180
+export const QUAD_REFILL = 25
+export const QUAD_PRICE = 150
+export const QUAD_EMPTY_MUL = 0.1
+export const VEHICLE_SLOTS = 6
+export const HANGAR_W = 3
+export const HANGAR_H = 2
+export const SURFACE_PAVED = 1.2
+export const SURFACE_SLOW = 0.5
+export const SURFACE_NORMAL = 1.0
+export const HEADING_EAST = 0
+export const HEADING_SOUTH = Math.PI / 2
+export const TRACTOR_VMAX = QUAD_VMAX * 0.67
+export const TRACTOR_ACCEL = QUAD_ACCEL * 0.5
+export const TRACTOR_R = QUAD_R * 0.75
+export const TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R
+export const TRACTOR_PRICE = 250
+export const TRACTOR_LEN = 0.75
+export const TRACTOR_WIDE = 0.5
+export const HITCH_BACK = TRACTOR_LEN / 2
+export const TRAILER_LEN = 1
+export const TRAILER_WIDE = 0.5
+export const TRAILER_CAP = 100
+export const TRAILER_SEED_PRICE = 80
+export const TRAILER_SPRAY_PRICE = 80
+export const TRAILER_HARVEST_PRICE = 100
+export const HARVEST_SLOTS = 8
+export const BOOM_WIDE = 5
+export const BOOM_LONG = 1
+export const SILO_SEED_PRICE = 70
+export const SILO_SPRAY_PRICE = 70
+export const SILO_PRODUCE_PRICE = 70

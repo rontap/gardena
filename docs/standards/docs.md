@@ -33,7 +33,7 @@ Do not copy a value that `src/game/defs/` already is. Name the identifier.
 
 Obsidian `[[wikilinks]]`, no `.md` suffix. Link every new note from its `_index` and from [[index]] if it is a new category.
 
-Decisions and contracts. Not tutorials. Working notes describe the game as it runs. Roadmap lives in [[plans/Path to V1.0]].
+Decisions and contracts. Not tutorials. Working notes describe the game as it runs. Roadmap lives in [[Path to V1.0 - readonly]].
 
 ## Do not
 

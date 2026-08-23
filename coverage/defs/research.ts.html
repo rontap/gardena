@@ -446,7 +446,22 @@
 <a name='L381'></a><a href='#L381'>381</a>
 <a name='L382'></a><a href='#L382'>382</a>
 <a name='L383'></a><a href='#L383'>383</a>
-<a name='L384'></a><a href='#L384'>384</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L384'></a><a href='#L384'>384</a>
+<a name='L385'></a><a href='#L385'>385</a>
+<a name='L386'></a><a href='#L386'>386</a>
+<a name='L387'></a><a href='#L387'>387</a>
+<a name='L388'></a><a href='#L388'>388</a>
+<a name='L389'></a><a href='#L389'>389</a>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -466,7 +481,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -722,7 +737,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -734,12 +748,28 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -948,6 +978,17 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         gate: {kind: 'none'},
         blurb: 'Unlocks Pumpjack in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pumpjack'},
+    },
+    'unlock-vehicles': {
+        id: 'unlock-vehicles',
+        name: 'Vehicles',
+        tree: 'automation',
+        cost: 32,
+        seconds: 70,
+        reveal: 'unlock-irrigation',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar.',
+        effect: {kind: 'unlock-sku', sku: 'buy-hangar'},
     },
     'unlock-auto-irrigation': {
         id: 'unlock-auto-irrigation',
@@ -1211,6 +1252,10 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-barrel': {id: 'buy-barrel', price: 28, tab: 'automation', unlock: 'unlock-fermentation', show: 'start'},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
     'buy-sugar': {id: 'buy-sugar', price: 16, tab: 'utility', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
+    'buy-hangar': {id: 'buy-hangar', price: 80, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-seed': {id: 'buy-silo-seed', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-spray': {id: 'buy-silo-spray', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-produce': {id: 'buy-silo-produce', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -1219,7 +1264,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-23T14:49:50.445Z
+                at 2026-08-23T21:25:30.480Z
             </div>
         <script src="../prettify.js"></script>
         <script>

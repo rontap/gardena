@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.2
+export const PROTOCOL = 1.5
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -44,6 +44,10 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-still',
   'buy-barrel',
   'buy-freezer',
+  'buy-hangar',
+  'buy-silo-seed',
+  'buy-silo-spray',
+  'buy-silo-produce',
 ])
 
 const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
@@ -256,11 +260,28 @@ export function digestHex(world: World): string {
     presence: s.presence,
     place: s.place,
   }))
+  const vehicles = world.vehicles.map(v => ({
+    id: v.id,
+    kind: v.kind,
+    fuel: v.fuel,
+    pose: v.pose,
+    slots: v.kind === 'quad' ? v.slots : undefined,
+    hitch: v.kind === 'tractor' ? v.hitch : undefined,
+  }))
+  const trailers = world.trailers.map(t => ({
+    id: t.id,
+    kind: t.kind,
+    pose: t.pose,
+    hopper: t.kind === 'harvest' ? undefined : t.hopper,
+    slots: t.kind === 'harvest' ? t.slots : undefined,
+  }))
   const payload = JSON.stringify({
     money: world.money,
     day: world.clock.day,
     t: world.clock.t,
     seats,
+    vehicles,
+    trailers,
     cells,
     drops: world.drops.length,
     done: [...world.done].sort(),

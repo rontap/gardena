@@ -36,9 +36,21 @@ StallGoodId =
 
 Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `'berry'`. No `'berry'` on `StallGoodId`. Sugar-cane fruit is a stall good. Illegal: whisky. Illegal: `sugar.count`.
 
-`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
+`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
 
-`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar`.
+`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. No Quad SKU. No tractor SKU. No trailer SKU.
+
+```
+VehicleKind = 'quad' | 'tractor'
+VehicleId = number
+VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5
+TrailerKind = 'seed' | 'spray' | 'harvest'
+TrailerId = number
+HarvestSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+Drive = { throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+```
+
+[[mechanics/vehicles]].
 
 [[architecture/tree]] `TreeId`. [[architecture/family]] `PlayerSkillId`.
 
@@ -58,6 +70,7 @@ Seat = {
   queue: Intent[]
   presence: Presence
   place: Place
+  drive: Drive
 }
 ```
 
@@ -91,11 +104,15 @@ Cell =
   | PotStill
   | WineBarrel
   | Freezer
+  | Hangar
+  | SiloSeed
+  | SiloSpray
+  | SiloProduce
 ```
 
-`isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`. `isSolid` += mill jam still barrel freezer.
+`isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce`.
 
-Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree.
+Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar and vehicle silos 3×2.
 
 Illegal: `Shrub`. Illegal: `AppleTree`.
 
@@ -103,7 +120,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`.
 
-`World.pumps` / `World.tanks` / `World.taps` / `World.stills` hold those same instances for the water grid. Still joins like tap.
+`World.pumps` / `World.tanks` / `World.taps` / `World.stills` hold those same instances for the water grid. Still joins like tap. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]].
 
 ```
 Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
@@ -118,6 +135,66 @@ Freezer = { kind: 'freezer'; base: RectBase; slots: Slot[] }
 ```
 
 `Freezer.slots` length `FREEZER_SLOTS` 6. Rules: [[mechanics/machines]].
+
+```
+Hangar = { kind: 'hangar'; base: RectBase }
+SiloSeed = { kind: 'silo-seed'; base: RectBase }
+SiloSpray = { kind: 'silo-spray'; base: RectBase }
+SiloProduce = { kind: 'silo-produce'; base: RectBase }
+```
+
+`RectBase` `w = HANGAR_W` `h = HANGAR_H`. Door south. No rotate. Same instance all 6 cells. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` hold those same instances. Pad is geometric, not a cell. Silos reuse `hangarPad`. [[mechanics/vehicles]].
+
+```
+VehiclePose =
+  | { kind: 'stored'; hangar: Coord }
+  | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+
+TrailerPose =
+  | { kind: 'stored'; hangar: Coord }
+  | { kind: 'attached'; vehicle: VehicleId; heading: number }
+
+Vehicle =
+  | {
+      kind: 'quad'
+      id: VehicleId
+      fuel: number
+      slots: Slot[]
+      pose: VehiclePose
+    }
+  | {
+      kind: 'tractor'
+      id: VehicleId
+      fuel: number
+      hitch: TrailerId | 'none'
+      pose: VehiclePose
+    }
+
+SeedHopper =
+  | { kind: 'empty' }
+  | { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
+
+SprayHopper =
+  | { kind: 'empty' }
+  | { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'synth' | 'compost' }> }
+
+Trailer =
+  | { kind: 'seed'; id: TrailerId; pose: TrailerPose; hopper: SeedHopper }
+  | { kind: 'spray'; id: TrailerId; pose: TrailerPose; hopper: SprayHopper }
+  | { kind: 'harvest'; id: TrailerId; pose: TrailerPose; slots: Slot[] }
+```
+
+`World.vehicles: Vehicle[]`. `World.trailers: Trailer[]`. `World.nextVehicleId`. `World.nextTrailerId`. Quad `slots.length` `VEHICLE_SLOTS`. Harvest `slots.length` `HARVEST_SLOTS`. Fuel `0..1`. Illegal: stored + driver. Illegal: two field poses with the same `SeatId` driver. Illegal: quad hitch. Illegal: tractor slots. Illegal: two trailers on one tractor. Illegal: attached + stored. Illegal: trailer attached to missing tractor. Illegal: harvest `slots.length ≠ 8`. Illegal: seed/spray hopper holding the wrong item. Stored tractor `hitch === 'none'`.
+
+`Seat.drive` ignored unless this seat is a driver. Seated ⇒ `queue` empty. No `Seat.dismount`. No `Dismount`.
+
+```
+Cue +=
+  | { kind: 'hangar'; at: Coord }
+  | { kind: 'vehicle'; id: VehicleId }
+```
+
+Hangar HUD is `Seat.cue` hangar: buy Quad / Tractor / trailers / list all owned / Deploy (stored vehicle; tractor hitch optional) / Refill. No 6-slot. No cargo. Parked HUD is `Seat.cue` vehicle: Quad 6 slots + Embark; tractor trailer cargo if hitched + Embark. `HudTarget` stays `{ kind: 'sprinkler'; at: Vertex }`. Illegal: hangar or vehicle on `HudTarget`. Hangar select is App-local. Silo walk-up is look name only — no cue.
 
 ## Plot
 
@@ -196,17 +273,22 @@ Intent =
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }
+  | { act: 'hangar'; at: Coord }
+  | { act: 'vehicle'; id: VehicleId }
+  | { act: 'embark'; id: VehicleId }
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'tend'; at: Coord }
 ```
 
-Illegal: `at` on `consign` or `inventory`. Illegal: `edge` on any act but `valve`.
+Illegal: `at` on `consign` or `inventory`. Illegal: `edge` on any act but `valve`. Illegal: `id` on any act but `vehicle` or `embark`.
 
 `plant` is seeds (`AnnualId`) or sapling (`TreeId`). Same act. No sapling act. [[architecture/tree]].
 
 ```
 dest(consign) = PAD
 dest(inventory) = DOOR
+dest(vehicle) = floor of that vehicle at enqueue
+dest(embark) = floor of that vehicle at enqueue
 dest(else) = at
 ```
 
@@ -303,13 +385,13 @@ No silent flag. Replay calls `apply` only.
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
-`Seat.place` / `World.hud` / `World.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens are not.
+`Seat.place` / `World.hud` / `Seat.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens / hangar select / camera follow are not. Camera follow is view-local, not `World`, not sim.
 
 Cheats are cmds. `DYNAMIC_MARKET` stays false. `nudgeOffered` is still a cmd.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`.
+Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Two trailers on one tractor. Trailer attached + stored.
 
 ## Rng
 

@@ -10,5 +10,6 @@ Module map and types for the game as it runs.
 - [[architecture/family]]
 - [[architecture/tree]]
 - [[architecture/save]]
+- [[architecture/changelog]]
 
 See [[canon]].

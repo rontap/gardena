@@ -118,6 +118,17 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Pumpjack in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-pumpjack'},
     },
+    'unlock-vehicles': {
+        id: 'unlock-vehicles',
+        name: 'Vehicles',
+        tree: 'automation',
+        cost: 32,
+        seconds: 70,
+        reveal: 'unlock-irrigation',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar.',
+        effect: {kind: 'unlock-sku', sku: 'buy-hangar'},
+    },
     'unlock-auto-irrigation': {
         id: 'unlock-auto-irrigation',
         name: 'Automated irrigation',
@@ -380,4 +391,8 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-barrel': {id: 'buy-barrel', price: 28, tab: 'automation', unlock: 'unlock-fermentation', show: 'start'},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
     'buy-sugar': {id: 'buy-sugar', price: 16, tab: 'utility', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
+    'buy-hangar': {id: 'buy-hangar', price: 80, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-seed': {id: 'buy-silo-seed', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-spray': {id: 'buy-silo-spray', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
+    'buy-silo-produce': {id: 'buy-silo-produce', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation'},
 }

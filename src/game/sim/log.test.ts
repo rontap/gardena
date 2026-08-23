@@ -37,6 +37,16 @@ describe('0.9 log', () => {
       { a: Act.cheat, t: 27, p: 0, k: 'money' },
       { a: Act.cheat, t: 28, p: 0, k: 'points' },
       { a: Act.cheat, t: 29, p: 0, k: 'research' },
+      { a: Act.drive, t: 30, p: 0, throttle: 1, steer: -1 },
+      { a: Act.buyVehicle, t: 31, p: 0, c: [1, 2], k: 'quad' },
+      { a: Act.buyTrailer, t: 31, p: 0, c: [1, 2], k: 'seed' },
+      { a: Act.deploy, t: 32, p: 0, v: 1, c: [3, 4], hitch: 'none' },
+      { a: Act.swapTrailer, t: 32, p: 0, u: 1, i: 0 },
+      { a: Act.embark, t: 33, p: 0, v: 1 },
+      { a: Act.disembark, t: 34, p: 0 },
+      { a: Act.dock, t: 35, p: 0 },
+      { a: Act.swapVehicle, t: 36, p: 0, v: 1, i: 2 },
+      { a: Act.refill, t: 37, p: 0, c: [5, 6] },
     ]
     cmds.forEach(cmd => {
       expect(JSON.parse(JSON.stringify(cmd))).toEqual(cmd)

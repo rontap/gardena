@@ -27,11 +27,11 @@ Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + thr
 
 Confirm does **not** set `none` for StayArmed, **valve**, **well**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
-Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` and item SKUs.
+Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Processing, and Storage shelves — [[ui/build]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`.
+Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Processing, Storage, and Vehicles shelves — [[ui/build]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
 Shop and Build docks `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. Both docks can arm: a search result acts where it lives, whichever dock is open — [[ui/shop]].
 
@@ -60,13 +60,15 @@ Always one cell rect on `floor` of the world pointer while on the map. Not gated
 
 Unarmed, and while pipe / valve / sprinkler / delete armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not `EdgeStroke`.
 
-Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and rain-tank second-tile outline stays and matches. `data-cell-stroke` on the hover cell only.
+Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and rain-tank second-tile outline stays and matches. Hangar and field silos: all six occupied cells. `data-cell-stroke` on the hover cell only.
 
 ## Ghosts
 
 Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer`) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, still, barrel, freezer disarm. Tiles stay armed.
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 well+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
+
+`buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`: 3×2 ghost, origin = hovered NW cell, extends east and south (`HANGAR_W` × `HANGAR_H`). Confirm occupies the six cells. Disarm. Hover valid: all six `stroke-ink`. Blocked: all six `stroke-roof`. Copy **Place Vehicle hangar** / **Place Seeding silo** / **Place Spraying silo** / **Place Produce silo**. Pad cells are not in the ghost. Place does not require pad free. Tractor / trailers are hangar-buys, not Place SKUs. [[ui/vehicles]]
 
 ## Pipe / valve / well
 
@@ -123,6 +125,9 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Then `deleteBuilding(at)`.
 | barrel | **Delete wine barrel** | cell → empty |
 | jam | **Delete jam machine** | cell → empty |
 | freezer | **Delete freezer** | slots become drops on at, cell → empty |
+| hangar, stores no vehicle or trailer | **Delete vehicle hangar** | six cells → empty |
+| hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** | no-op |
+| silo-seed / silo-spray / silo-produce | **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** | six cells → empty |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
 `deletePipe` / `deleteWell` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
@@ -150,6 +155,10 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | place / pulse `buy-barrel` | **Place Wine barrel** |
 | place / pulse `buy-jam` | **Place Jam machine** |
 | place / pulse `buy-freezer` | **Place Freezer** |
+| place / pulse `buy-hangar` | **Place Vehicle hangar** |
+| place / pulse `buy-silo-seed` | **Place Seeding silo** |
+| place / pulse `buy-silo-spray` | **Place Spraying silo** |
+| place / pulse `buy-silo-produce` | **Place Produce silo** |
 | place / pulse tiles | **Place Paved tile** / **Place Brick tile** / **Place Cobble tile** |
 | place / pulse `buy-pipe` | **Place Pipe** |
 | place / pulse `buy-valve` | **Place Manual valve** |
@@ -161,7 +170,8 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | delete, hover piped owned edge | **Delete pipe** / **Delete valve** |
 | delete, hover well edge | **Delete well** |
 | delete, hover sprinkler vertex | **Delete sprinkler** |
-| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** |
+| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** / **Delete vehicle hangar** / **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** |
+| delete, hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** |
 | delete else | **Cannot delete here** |
 | blocked | **Cannot place here** |
 | blocked, `money < price` | **Cannot afford** |

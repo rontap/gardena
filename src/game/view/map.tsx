@@ -2,7 +2,9 @@ import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type Wh
 import { CROPS, tolerance } from '../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
 import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
+import { HANGAR_H, HANGAR_W } from '../defs/items.ts'
 import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base } from '../sim/building.ts'
+import { hangarPad } from '../sim/vehicle.ts'
 import { onCell } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -23,6 +25,16 @@ import {
   COMPOST_BOX,
   ADDITIVE_STORE,
   FREEZER,
+  HANGAR,
+  HANGAR_RETURN,
+  QUAD,
+  TRACTOR,
+  TRAILER_HARVEST,
+  TRAILER_SEED,
+  TRAILER_SPRAY,
+  SILO_PRODUCE,
+  SILO_SEED,
+  SILO_SPRAY,
   SEED_SILO,
   JAM,
   MILL,
@@ -62,7 +74,7 @@ import {
   valveArt,
   weedInner,
 } from './svgs.ts'
-import { bindActor, bindBar, bindHud } from './motion.ts'
+import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes'
 
@@ -150,12 +162,13 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
+  const hangarPlace = placeId === 'buy-hangar' || placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const stay = deleteTool || (placeId !== undefined && STAY_ARMED.includes(placeId))
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
-  const followSku = placeId !== undefined && !pumpjack && !edgeTool && !sprinklerTool
+  const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y) : undefined
   const strokeCell =
@@ -240,7 +253,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       setPtr(prev => (prev.x === p.x && prev.y === p.y ? prev : { x: p.x, y: p.y }))
       setWorldPtr(prev => (prev !== undefined && prev.x === w.x && prev.y === w.y ? prev : w))
       const d = drag.current
-      if (d !== undefined && (p.buttons & 1) === 1) {
+      if (d !== undefined && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
         if (Math.hypot(p.x - d.x, p.y - d.y) > 3) {
           pushCam({
             x: d.cx - (p.x - d.x) / (TILE * camNow.scale),
@@ -366,6 +379,26 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
                   strokeWidth={2}
                 />
               )}
+              {hangarPlace &&
+                Array.from({ length: HANGAR_H }, (_, row) =>
+                  Array.from({ length: HANGAR_W }, (_, col) => {
+                    if (row === 0 && col === 0) return undefined
+                    return (
+                      <rect
+                        key={`${col},${row}`}
+                        x={(strokeCell.col + col) * TILE}
+                        y={(strokeCell.row + row) * TILE}
+                        width={TILE}
+                        height={TILE}
+                        fill="none"
+                        className={
+                          skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
+                        }
+                        strokeWidth={2}
+                      />
+                    )
+                  }),
+                )}
             </g>
           )}
           {ghostVerts !== undefined &&
@@ -435,6 +468,25 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               <Use art={placeId === 'buy-pumpjack' ? PUMP : RAIN_TANK} />
             </g>
           )}
+          {hangarPlace && hoverCell !== undefined && (
+            <g
+              pointerEvents="none"
+              opacity={0.7}
+              transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
+            >
+              <Use
+                art={
+                  placeId === 'buy-silo-seed'
+                    ? SILO_SEED
+                    : placeId === 'buy-silo-spray'
+                      ? SILO_SPRAY
+                      : placeId === 'buy-silo-produce'
+                        ? SILO_PRODUCE
+                        : HANGAR
+                }
+              />
+            </g>
+          )}
           <foreignObject
             ref={el => bindHud('speech', el)}
             data-speech
@@ -450,6 +502,49 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
             </div>
           </foreignObject>
         </g>
+        {(() => {
+          const driven = world.driverVehicle(world.local)
+          if (driven === undefined || driven.pose.kind !== 'field') return undefined
+          const hitch =
+            driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
+          if (driven.kind === 'tractor') {
+            return (
+              <g
+                pointerEvents="none"
+                transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
+                style={{ ['--hat']: HAT[world.local] } as CSSProperties}
+              >
+                {hitch !== undefined && hitch.pose.kind === 'attached' && (
+                  <g ref={el => bindDummyTrailer(el)}>
+                    <g transform={`translate(${-0.5 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
+                      <Use
+                        art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST}
+                      />
+                    </g>
+                  </g>
+                )}
+                <g transform={`translate(${-0.375 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
+                  <g ref={el => bindDummyQuad(el)}>
+                    <Use art={TRACTOR} />
+                  </g>
+                </g>
+              </g>
+            )
+          }
+          return (
+            <g
+              pointerEvents="none"
+              transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
+              style={{ ['--hat']: HAT[world.local] } as CSSProperties}
+            >
+              <g transform={`translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}>
+                <g ref={el => bindDummyQuad(el)}>
+                  <Use art={QUAD} />
+                </g>
+              </g>
+            </g>
+          )
+        })()}
       </svg>
       {followSku && placeId !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
@@ -470,6 +565,22 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           style={{ left: ptr.x + 14, top: ptr.y - 28 }}
         >
           {tip}
+        </div>
+      )}
+      {hangarPlace && placeId !== undefined && hoverCell === undefined && (
+        <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
+          {placeId === 'buy-hangar' ? (
+            <svg className="h-16 w-24" viewBox="0 0 72 48">
+              <Use art={HANGAR} />
+            </svg>
+          ) : (
+            <svg className="h-24 w-16" viewBox="0 0 48 72">
+              <Use
+                art={placeId === 'buy-silo-seed' ? SILO_SEED : placeId === 'buy-silo-spray' ? SILO_SPRAY : SILO_PRODUCE}
+              />
+            </svg>
+          )}
+          <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
       {pumpjack && placeId !== undefined && hoverCell === undefined && (
@@ -739,6 +850,18 @@ const Marks = memo(function Marks({
     if (propArt !== undefined) props.push({ col: at.col, row: at.row, art: propArt, kind: cell.kind })
     if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
     // 1x2 stores are not in PROP_ART: they must draw once, at their base origin.
+    if (cell.kind === 'hangar' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: HANGAR, kind: cell.kind })
+    }
+    if (cell.kind === 'silo-seed' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_SEED, kind: cell.kind })
+    }
+    if (cell.kind === 'silo-spray' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_SPRAY, kind: cell.kind })
+    }
+    if (cell.kind === 'silo-produce' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_PRODUCE, kind: cell.kind })
+    }
     if (cell.kind === 'seed-silo' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: SEED_SILO, kind: cell.kind })
     }
@@ -844,6 +967,43 @@ const Marks = memo(function Marks({
       <g transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}>
         <Use art={HOUSE} />
       </g>
+      {world.driverVehicle(world.local) !== undefined &&
+        [...world.hangars, ...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
+          hangarPad(h.base).map(p => (
+            <g
+              key={`return-${h.kind}-${h.base.col},${h.base.row}-${p.col},${p.row}`}
+              pointerEvents="none"
+              transform={`translate(${p.col * TILE},${p.row * TILE}) scale(${TILE / 24})`}
+            >
+              <Use art={HANGAR_RETURN} />
+            </g>
+          )),
+        )}
+      {world.vehicles.flatMap(v => {
+        if (v.pose.kind !== 'field') return []
+        if (v.pose.driver === world.local) return []
+        const hat = v.pose.driver === 'none' ? undefined : HAT[v.pose.driver]
+        const hitch = v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
+        const nodes = []
+        if (hitch !== undefined && hitch.pose.kind === 'attached') {
+          nodes.push(
+            <g key={`trailer-${hitch.id}`} ref={el => bindTrailer(hitch.id, el)} data-trailer={hitch.id}>
+              <Use art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
+            </g>,
+          )
+        }
+        nodes.push(
+          <g
+            key={`veh-${v.id}`}
+            ref={el => bindQuad(v.id, el, v.kind)}
+            data-quad={v.id}
+            style={hat === undefined ? undefined : ({ ['--hat']: hat } as CSSProperties)}
+          >
+            <Use art={v.kind === 'tractor' ? TRACTOR : QUAD} />
+          </g>,
+        )
+        return nodes
+      })}
       {tints.map(t => (
         <rect
           key={`tint-${t.col},${t.row}`}
@@ -1094,6 +1254,10 @@ function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
     cell.kind === 'still' ||
     cell.kind === 'barrel' ||
     cell.kind === 'freezer' ||
+    cell.kind === 'hangar' ||
+    cell.kind === 'silo-seed' ||
+    cell.kind === 'silo-spray' ||
+    cell.kind === 'silo-produce' ||
     cell.kind === 'seed-silo' ||
     cell.kind === 'additive-store'
   ) {

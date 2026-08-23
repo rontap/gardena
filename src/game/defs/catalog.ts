@@ -410,5 +410,29 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'freezer' },
       blurb: fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS }),
     },
+    {
+      id: 'hangar',
+      title: 'Vehicle hangar',
+      icon: { kind: 'hangar' },
+      blurb: '3×2 barn. Buy Quads and tractors at a hangar.',
+    },
+    {
+      id: 'silo-seed',
+      title: 'Seeding silo',
+      icon: { kind: 'silo-seed' },
+      blurb: '3×2 field tank. Look only.',
+    },
+    {
+      id: 'silo-spray',
+      title: 'Spraying silo',
+      icon: { kind: 'silo-spray' },
+      blurb: '3×2 field tank. Look only.',
+    },
+    {
+      id: 'silo-produce',
+      title: 'Produce silo',
+      icon: { kind: 'silo-produce' },
+      blurb: '3×2 field tank. Look only.',
+    },
   ]
 }

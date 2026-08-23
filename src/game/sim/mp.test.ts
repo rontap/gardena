@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.2)
+    expect(PROTOCOL).toBe(1.5)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -89,7 +89,7 @@ describe('1.1 multiplayer', () => {
     expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
   })
 
-  test('Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
+  test('Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pumpjack' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-well' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-rain-tank' })).toBe(true)
@@ -102,6 +102,20 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-still' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-barrel' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-freezer' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar' })).toBe(true)
+    expect(permit({ a: Act.buyVehicle, t: 0, p: 1, c: [0, 0], k: 'quad' })).toBe(true)
+    expect(permit({ a: Act.buyTrailer, t: 0, p: 1, c: [0, 0], k: 'seed' })).toBe(true)
+    expect(permit({ a: Act.deploy, t: 0, p: 1, v: 1, c: [0, 0], hitch: 'none' })).toBe(true)
+    expect(permit({ a: Act.swapTrailer, t: 0, p: 1, u: 1, i: 0 })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-seed' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-spray' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-produce' })).toBe(true)
+    expect(permit({ a: Act.embark, t: 0, p: 1, v: 1 })).toBe(true)
+    expect(permit({ a: Act.disembark, t: 0, p: 1 })).toBe(true)
+    expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
+    expect(permit({ a: Act.swapVehicle, t: 0, p: 1, v: 1, i: 0 })).toBe(true)
+    expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
+    expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe' })).toBe(false)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-valve' })).toBe(false)

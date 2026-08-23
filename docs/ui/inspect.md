@@ -64,3 +64,7 @@ Ripe annual including sugar-cane: **Harvest**. Empty hand or fruit box that acce
 Mill, jam, still, barrel, freezer: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.
 
 Held sugar: **Sugar - {n}L**.
+
+## Vehicles
+
+Hangar, parked Quad, parked tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.

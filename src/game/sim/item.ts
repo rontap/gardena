@@ -115,6 +115,10 @@ export type Face =
   | { kind: 'still' }
   | { kind: 'barrel' }
   | { kind: 'freezer' }
+  | { kind: 'hangar' }
+  | { kind: 'silo-seed' }
+  | { kind: 'silo-spray' }
+  | { kind: 'silo-produce' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -376,6 +380,14 @@ export function skuLabel(id: SkuId): string {
       return 'Freezer'
     case 'buy-sugar':
       return 'Sugar'
+    case 'buy-hangar':
+      return 'Vehicle hangar'
+    case 'buy-silo-seed':
+      return 'Seeding silo'
+    case 'buy-silo-spray':
+      return 'Spraying silo'
+    case 'buy-silo-produce':
+      return 'Produce silo'
   }
 }
 
@@ -529,6 +541,14 @@ export function skuDesc(id: SkuId): string {
       return fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS })
     case 'buy-sugar':
       return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
+    case 'buy-hangar':
+      return '3×2 barn. Buy Quads at a hangar.'
+    case 'buy-silo-seed':
+      return '3×2 field tank. Look only.'
+    case 'buy-silo-spray':
+      return '3×2 field tank. Look only.'
+    case 'buy-silo-produce':
+      return '3×2 field tank. Look only.'
   }
 }
 
@@ -692,6 +712,14 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'freezer' }
     case 'buy-sugar':
       return makeSugar(SUGAR_BAG, SUGAR_BAG, SUGAR_SHOP)
+    case 'buy-hangar':
+      return { kind: 'hangar' }
+    case 'buy-silo-seed':
+      return { kind: 'silo-seed' }
+    case 'buy-silo-spray':
+      return { kind: 'silo-spray' }
+    case 'buy-silo-produce':
+      return { kind: 'silo-produce' }
   }
 }
 

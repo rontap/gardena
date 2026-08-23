@@ -26,7 +26,7 @@ Overlay: optional error. `unusable` (resync parse). `desync` is `bye: kicked`. `
 
 ## Startup join
 
-Boot fourth button **Join Multiplayer** → this dialog. Same menu `Chrome` `relative w-[26rem]`. Inner `relative z-20 px-4 pt-4 pb-3 flex flex-col gap-2`. Illustration, **Gardena**, **1.1.0** stay. Not in-play. Not `#start_now`.
+Boot fourth button **Join Multiplayer** → this dialog. Same menu `Chrome` `relative w-[26rem]`. Inner `relative z-20 px-4 pt-4 pb-3 flex flex-col gap-2`. Illustration, **Gardena**, **1.4.0** stay. [[ui/changelog]] Not in-play. Not `#start_now`.
 
 Copyable? No. Paste key: `input` `w-full` `text-base` `select-text` (body is `user-select: none`). **Join** `Btn` `w-full`. Fail line under the buttons.
 

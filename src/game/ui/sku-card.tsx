@@ -15,8 +15,8 @@ const REASON: { readonly [K in RowState]: string } = {
   'need-skill': 'You need to earn the Vanilla tending skill',
   'cannot-afford': 'Not enough money',
   'inventory-full': 'No room in the inventory',
-  'silo-full': 'Seed silo full',
-  'store-full': 'Additive store full',
+  'silo-full': 'The seed silo is full',
+  'store-full': 'The additive store is full',
   ok: '',
 }
 

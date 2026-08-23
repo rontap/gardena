@@ -1,4 +1,5 @@
 import type { Coord } from '../sim/building.ts'
+import type { VehicleId } from '../sim/ids.ts'
 
 export type Panel =
   | { kind: 'none' }
@@ -14,6 +15,8 @@ export type Panel =
   | { kind: 'chest'; at: Coord }
   | { kind: 'silo'; at: Coord }
   | { kind: 'additives'; at: Coord }
+  | { kind: 'hangar'; at: Coord }
+  | { kind: 'vehicle'; id: VehicleId }
   | { kind: 'menu' }
   | { kind: 'multiplayer' }
 
@@ -21,7 +24,7 @@ export type PanelKind = Panel['kind']
 
 /** Panels a walk-up cue opened. Closing any of them has to ack the cue. */
 export function cued(kind: PanelKind): boolean {
-  return kind === 'chest' || kind === 'silo' || kind === 'additives'
+  return kind === 'chest' || kind === 'silo' || kind === 'additives' || kind === 'hangar' || kind === 'vehicle'
 }
 
 /** Panels that can leave a placement ghost armed on the map. */

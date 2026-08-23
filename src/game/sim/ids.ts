@@ -128,6 +128,7 @@ export type ResearchId =
   | 'unlock-landscaping'
   | 'unlock-rotary-shovel'
   | 'unlock-diamond-pickaxe'
+  | 'unlock-vehicles'
 
 export type SkuId =
   | 'pack-carrot'
@@ -175,3 +176,14 @@ export type SkuId =
   | 'buy-barrel'
   | 'buy-freezer'
   | 'buy-sugar'
+  | 'buy-hangar'
+  | 'buy-silo-seed'
+  | 'buy-silo-spray'
+  | 'buy-silo-produce'
+
+export type VehicleKind = 'quad' | 'tractor'
+export type VehicleId = number
+export type VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5
+export type TrailerKind = 'seed' | 'spray' | 'harvest'
+export type TrailerId = number
+export type HarvestSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7

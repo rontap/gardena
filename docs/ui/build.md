@@ -13,9 +13,10 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 | Water | Source pumpjack, well, rain-tank · Flow tap, pipe, valve · Output sprinkler, vertical, large | Source, flow, output. |
 | Processing | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Compost compost-box | Machines that make goods. |
 | Storage | chest, freezer | Keep what you picked. |
+| Vehicles | Hangar `buy-hangar` · Silos seed, spray, produce | Hangar and the field silos that load trailers. |
 | Land | Paving cobble → brick → paved · Fencing fence | Paving and fencing. Click as many tiles as you like, Escape when done. |
 
-Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer** — [[items/buildings]]. Paving cheapest first — [[items/tiles]].
+Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer** **Vehicle hangar** **Seeding silo** **Spraying silo** **Produce silo** — [[items/buildings]]. Quad, tractor, and trailers are hangar-buys, not shop SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]].
 
 ## Cluster
 

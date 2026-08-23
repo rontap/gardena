@@ -49,6 +49,27 @@ import propStill from '../../assets/prop-still.svg?raw'
 import propBarrel from '../../assets/prop-barrel.svg?raw'
 import propJam from '../../assets/prop-jam.svg?raw'
 import propFreezer from '../../assets/prop-freezer.svg?raw'
+import propHangar from '../../assets/prop-hangar.svg?raw'
+import propQuad from '../../assets/prop-quad.svg?raw'
+import propTractor from '../../assets/prop-tractor.svg?raw'
+import propTrailerSeed from '../../assets/prop-trailer-seed.svg?raw'
+import propTrailerSpray from '../../assets/prop-trailer-spray.svg?raw'
+import propTrailerHarvest from '../../assets/prop-trailer-harvest.svg?raw'
+import propSiloSeed from '../../assets/prop-silo-seed.svg?raw'
+import propSiloSpray from '../../assets/prop-silo-spray.svg?raw'
+import propSiloProduce from '../../assets/prop-silo-produce.svg?raw'
+import itemHangar from '../../assets/item-hangar.svg?raw'
+import itemTractor from '../../assets/item-tractor.svg?raw'
+import itemTrailerSeed from '../../assets/item-trailer-seed.svg?raw'
+import itemTrailerSpray from '../../assets/item-trailer-spray.svg?raw'
+import itemTrailerHarvest from '../../assets/item-trailer-harvest.svg?raw'
+import itemSiloSeed from '../../assets/item-silo-seed.svg?raw'
+import itemSiloSpray from '../../assets/item-silo-spray.svg?raw'
+import itemSiloProduce from '../../assets/item-silo-produce.svg?raw'
+import uiDashQuad from '../../assets/ui-dash-quad.svg?raw'
+import uiDashTractor from '../../assets/ui-dash-tractor.svg?raw'
+import uiHangarReturn from '../../assets/ui-hangar-return.svg?raw'
+import uiSlotDown from '../../assets/ui-slot-down.svg?raw'
 import propSeedSilo from '../../assets/prop-seed-silo.svg?raw'
 import propAdditiveStore from '../../assets/prop-additive-store.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
@@ -292,6 +313,10 @@ export function itemInner(item: Face): string {
   if (item.kind === 'still') return inner(itemStill)
   if (item.kind === 'barrel') return inner(itemBarrel)
   if (item.kind === 'freezer') return inner(itemFreezer)
+  if (item.kind === 'hangar') return inner(itemHangar)
+  if (item.kind === 'silo-seed') return inner(itemSiloSeed)
+  if (item.kind === 'silo-spray') return inner(itemSiloSpray)
+  if (item.kind === 'silo-produce') return inner(itemSiloProduce)
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -356,6 +381,10 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer') return itemInner({ kind: 'freezer' })
+  if (id === 'buy-hangar') return itemInner({ kind: 'hangar' })
+  if (id === 'buy-silo-seed') return itemInner({ kind: 'silo-seed' })
+  if (id === 'buy-silo-spray') return itemInner({ kind: 'silo-spray' })
+  if (id === 'buy-silo-produce') return itemInner({ kind: 'silo-produce' })
   return itemInner(skuItem(id))
 }
 
@@ -466,6 +495,8 @@ export function researchInner(id: ResearchId): string {
       return inner(rotaryShovel)
     case 'unlock-diamond-pickaxe':
       return inner(diamondPickaxe)
+    case 'unlock-vehicles':
+      return inner(itemHangar)
   }
 }
 
@@ -531,6 +562,23 @@ export const STILL = inner(propStill)
 export const BARREL = inner(propBarrel)
 export const JAM = inner(propJam)
 export const FREEZER = inner(propFreezer)
+export const HANGAR = inner(propHangar)
+export const QUAD = inner(propQuad)
+export const TRACTOR = inner(propTractor)
+export const TRAILER_SEED = inner(propTrailerSeed)
+export const TRAILER_SPRAY = inner(propTrailerSpray)
+export const TRAILER_HARVEST = inner(propTrailerHarvest)
+export const SILO_SEED = inner(propSiloSeed)
+export const SILO_SPRAY = inner(propSiloSpray)
+export const SILO_PRODUCE = inner(propSiloProduce)
+export const ITEM_TRACTOR = inner(itemTractor)
+export const ITEM_TRAILER_SEED = inner(itemTrailerSeed)
+export const ITEM_TRAILER_SPRAY = inner(itemTrailerSpray)
+export const ITEM_TRAILER_HARVEST = inner(itemTrailerHarvest)
+export const HANGAR_RETURN = inner(uiHangarReturn)
+export const UI_DASH_QUAD = uiDashQuad
+export const UI_DASH_TRACTOR = uiDashTractor
+export const UI_SLOT_DOWN = inner(uiSlotDown)
 export const SEED_SILO = inner(propSeedSilo)
 export const ADDITIVE_STORE = inner(propAdditiveStore)
 export const SPRINKLER = inner(propSprinkler)
@@ -854,6 +902,21 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   BARREL,
   JAM,
   FREEZER,
+  HANGAR,
+  QUAD,
+  TRACTOR,
+  TRAILER_SEED,
+  TRAILER_SPRAY,
+  TRAILER_HARVEST,
+  SILO_SEED,
+  SILO_SPRAY,
+  SILO_PRODUCE,
+  ITEM_TRACTOR,
+  ITEM_TRAILER_SEED,
+  ITEM_TRAILER_SPRAY,
+  ITEM_TRAILER_HARVEST,
+  HANGAR_RETURN,
+  UI_SLOT_DOWN,
   COMPOST_BOX,
   TRUCK,
   HOUSE,

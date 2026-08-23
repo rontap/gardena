@@ -1,6 +1,6 @@
 # Palette
 
-Cottage tokens. Preference. Asset SVGs use only these hexes. No new hex.
+Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal where named. No unnamed hex.
 
 | token | hex | use |
 |---|---|---|
@@ -20,6 +20,18 @@ Cottage tokens. Preference. Asset SVGs use only these hexes. No new hex.
 
 `src/index.css` `@theme` `--color-*` matches these except `fruit-red` (SVG only).
 
+## Industrial
+
+Vehicle / machine metal only. Not cottage. Do not replace cottage tokens. Ink outlines stay `#1c1710`. Not inspect bars.
+
+| token | hex | use |
+|---|---|---|
+| steel | `#8a9198` | galvanized sheet; hangar walls / roof; quad body |
+| iron | `#4c4844` | structural; corrugation; roller door; chassis |
+| oil | `#2c322c` | grease; tracks; underbody |
+
+SVG only, like `fruit-red`. Not `@theme`.
+
 ## Inspect bars
 
 Separate bar palette. Never in `src/assets/*.svg`. Inspect `STAT_COLOR` / `GROWTH_BLUE` / `GROWTH_EMPTY` / notch. Layout: [[ui/inspect]].
@@ -35,4 +47,6 @@ Separate bar palette. Never in `src/assets/*.svg`. Inspect `STAT_COLOR` / `GROWT
 
 ## Assets
 
-Cottage hex only. No bar hex. No `currentColor`. No text. `shape-rendering="crispEdges"`. 24-unit tile grid — [[art/svg]]. No raster.
+Cottage hex, plus industrial metal on vehicle/machine assets. No bar hex. No `currentColor`. No text. `shape-rendering="crispEdges"`. 24-unit tile grid — [[art/svg]]. No raster.
+
+Assumption: industrial tokens stay SVG-only.

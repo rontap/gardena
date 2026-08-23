@@ -118,6 +118,8 @@ Ripe annual including sugar-cane, empty hand: one fruit, current freshness, plot
 
 Shovel growing or ripe annual: one seed, same soil. Shovel dead or rotten: empty, **no drop**. Compost is from what you already carry.
 
+Harvest boom (driven tractor, hitch harvest, steer 0, speed > 0): ripe same as empty-hand; growing `< 0.2` one seed; growing `> 0.8` fruit (plant rarity, no ripen roll, freshness = maturity); growing mid destroyed; dead/rotten/weed items. Skip trees and turf. Cap / no slot: plant stays. — [[mechanics/vehicles]]
+
 Grinder: annual fruit including sugar-cane. Tree fruit and sugar: refuse. Cane fruit mills to sugar — [[mechanics/machines]].
 
 ## Trees

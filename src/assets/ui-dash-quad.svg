@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" fill="none" shape-rendering="crispEdges">
+  <rect fill="#1c1710" x="0" y="0" width="240" height="64"/>
+  <rect fill="#cfc6b0" x="2" y="2" width="236" height="60"/>
+  <rect fill="#8a5a32" x="2" y="2" width="236" height="8"/>
+  <rect fill="#6b4423" x="6" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="22" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="38" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="54" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="70" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="86" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="102" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="118" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="134" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="150" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="166" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="182" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="198" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="214" y="4" width="2" height="2"/>
+  <rect fill="#6b4423" x="230" y="4" width="2" height="2"/>
+  <rect fill="#8a5a32" x="2" y="56" width="236" height="6"/>
+  <rect fill="#1c1710" x="12" y="14" width="72" height="40"/>
+  <rect fill="#8a9198" x="13" y="15" width="70" height="22"/>
+  <rect fill="#cfc6b0" x="13" y="38" width="70" height="14"/>
+  <rect fill="#2c322c" x="36" y="26" width="24" height="2"/>
+  <rect fill="#6b4423" x="36" y="24" width="4" height="2"/>
+  <rect fill="#4c4844" x="47" y="16" width="2" height="4"/>
+  <rect fill="#3d7ea6" x="56" y="24" width="4" height="2"/>
+  <g id="fuel-needle" transform="rotate(0 48 34)">
+    <rect fill="#1c1710" x="47" y="20" width="2" height="15"/>
+    <rect fill="#d4a017" x="47" y="20" width="2" height="4"/>
+    <rect fill="#1c1710" x="46" y="33" width="4" height="2"/>
+  </g>
+  <rect fill="#1c1710" x="84" y="14" width="72" height="40"/>
+  <rect fill="#8a9198" x="85" y="15" width="70" height="22"/>
+  <rect fill="#cfc6b0" x="85" y="38" width="70" height="14"/>
+  <rect fill="#2c322c" x="110" y="26" width="20" height="2"/>
+  <rect fill="#6b4423" x="110" y="22" width="4" height="2"/>
+  <rect fill="#4c4844" x="119" y="16" width="2" height="4"/>
+  <rect fill="#d4a017" x="126" y="22" width="4" height="2"/>
+  <g id="speed-needle" transform="rotate(0 120 34)">
+    <rect fill="#1c1710" x="119" y="20" width="2" height="15"/>
+    <rect fill="#d4a017" x="119" y="20" width="2" height="4"/>
+    <rect fill="#1c1710" x="118" y="33" width="4" height="2"/>
+  </g>
+  <rect fill="#1c1710" x="176" y="16" width="32" height="36"/>
+  <rect fill="#4c4844" x="177" y="17" width="30" height="34"/>
+  <rect fill="#8a9198" x="180" y="22" width="24" height="24"/>
+  <rect fill="#8a5a32" x="191" y="18" width="2" height="3"/>
+  <rect fill="#8a5a32" x="203" y="33" width="3" height="2"/>
+  <rect fill="#8a5a32" x="178" y="33" width="3" height="2"/>
+  <g id="steer" transform="rotate(0 192 34)">
+    <rect fill="#1c1710" x="191" y="22" width="2" height="13"/>
+    <rect fill="#d4a017" x="191" y="22" width="2" height="4"/>
+    <rect fill="#1c1710" x="186" y="33" width="12" height="2"/>
+  </g>
+</svg>

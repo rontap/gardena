@@ -2,7 +2,7 @@
 
 Design notes for the disease update. **Not rules yet.** Every number here is a proposal; nothing is locked.
 
-Source draft: [[plans/Path to V1.0]] §0.10. This note is the critique of that draft and the redesign that came out of it.
+Source draft: [[Path to V1.0 - readonly]] §0.10. This note is the critique of that draft and the redesign that came out of it.
 
 Reads: [[mechanics/plants]] [[mechanics/soil]] [[mechanics/rng]] [[mechanics/research]] [[mechanics/market]] [[mechanics/family]] [[ui/lens]] [[aims]]
 
@@ -39,7 +39,7 @@ Also unresolved in the draft: `bio` restores when one `feed` lands ≥ `BIO_REST
 
 $15 / 20 uses = $0.75 a plant, +25–30% immunity (the draft says both), plus total negation of Gray Mold — which is the only disease the emergent-overwater roll produces. Always-buy, no decision.
 
-It becomes a refiner-mill product in [[plans/Path to V1.0]] §0.12 (grass 15× → extract). Its cost should be mill throughput, not dollars.
+It becomes a refiner-mill product in [[Path to V1.0 - readonly]] §0.12 (grass 15× → extract). Its cost should be mill throughput, not dollars.
 
 ### The spread rate is an extinction event
 
@@ -53,7 +53,7 @@ Common spread in the draft is **species-agnostic**. A checkerboard of six crops 
 
 - Growth speed varies (`STUNT` 0.67, `growSpeed` mods, `RARITY_GROW`) and disease itself reduces it — so a stunted plant rolls the same four times over a longer window, making slow high-value crops **less** infectious per real second. Backwards.
 - Undefined whether ripe plants spread. Ripe sits for `rotSeconds` (potato 600s = 2.5 days).
-- Trees have no maturity ramp. [[plans/Path to V1.0]] §0.11 already flags this as unsolved.
+- Trees have no maturity ramp. [[Path to V1.0 - readonly]] §0.11 already flags this as unsolved.
 
 ### Smaller defects
 

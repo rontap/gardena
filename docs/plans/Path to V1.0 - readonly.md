@@ -1,4 +1,7 @@
 
+---
+THIS FILE IS READ ONLY FOR AGENTS
+---
 # Establishing prompt (Declaration of Intent)
 
 This is a garden simulator game, similar to alice greenfingers or stardew valley but more focused on factorio-ish automation, expansion and tech-tree like evolution of tools and crops.
@@ -259,13 +262,14 @@ All sensors have a switch cooldown of a few ticks to prevent resource-heavy loop
 
 # 0.15 Early Access 7  - Vehicles I.
 Vehicles will be added to the game, an extensive and modular system, just like real life they will represent the ultimate mechanized farming. This is a demanding update and is split into two parts.
-In general, all vehicles have a speed, acceleration and turning radious. THe player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
+In general, all vehicles have a speed, acceleration and turning radious. The player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
 The first, flagship vehicle is the Quad. It only serves as a baseline vehicle, nothing can be attached,
-The "Vehicles" research allows the buying of vehicle hangar, a large 3×2 building that will contain all future vehicles. When the user clicks it, a large and modular HUD shows up, where new vehicles and components can be bought and assembled for deployment. With the quad, once it is bought, and selected, "Deploy" button closes dialog and user is inside the vehicle now, allowing it to quickly traverse the map. No collision model for object, for now. 
+The "Vehicles" research allows the buying of vehicle hangar, a large 3×2 building that will contain all future vehicles. Vehicles are then bought, managed and assembled in the hangar. When the user clicks it, a large and modular HUD shows up, where new vehicles and components can be bought and assembled for deployment. With the quad, once it is bought, and selected, "Deploy" button closes dialog and user is inside the vehicle now, allowing it to quickly traverse the map. No collision model for object, for now. 
 Vehicle can be returned by going to the door of the vehicle hangar, which is shown with an arrow on the fields below the hangar, only active when player is in a vehicle. The player can dismount the vehicle by clicking somewhere, at which point the vehicle will slow down to 0, then the walk there is done. If the player wants to drive again the vehicle, they click it. The vehicle has a HUD, with 6 slots for storing items and a button "embark". It also has gauges, in general potentially multiple, but in this case its only one, the fuel gauge. 
-In the vehicle bay, there is a button for refill all vehicles ($ ) shown.
+In the vehicle bay, there is a button for refill all vehicles ($ ) shown. Re-use HUD baseline from seed silo.
 Max vehicle speed depends on the exact surface the vehicle is running on. Slowest is tilled soil and rock and objects (0.5× max), fastest is paved road (1.2×) max. Max speed transition is set, so coming off high speed from paved road to rock will take some time to slow vehicle down.
 The VFX and SVG here is important, the vehicle physically turns (top down view always).
+Multiplayer: one person per vehicle. All players can drive vehicles.
 # 0.16 Early Access 8 - Vehicles II.
 A new vehicle type is added, Tractor. A tractor can have trailers, and is by default slower than Quad. 
 There are 3 different kinds trailers, and each has a respective building where it can interact with it.
@@ -292,3 +296,24 @@ This ticket is very complex and will be foundational for the 1.0 release. It wil
 - This makes building up a game state from the individual actions. This allows saving the game and then loading it back in. Also allows for visual replays like in prison architect
 - This makes achievements super easy to implement, like "did you plant 10 apple trees" is basically two filters.
 - A secret fifth thing is enabled by this. can you guess what? ;) 
+
+
+# [draft] 1.next: Eletricity
+In this update, electricity is added. Electricity has simlar systems to water, same general system of producers with internal buffer-buffers-pipes-consumers. The whole network is run on and is updated only on N ticks, not on normal ticks to save compute.
+The way the piping system works, should be refactored out to a ~delivery system generic, which is implemented by Power and Water systems seperately.
+Producers:
+- Windmill 2.5 tall 0.75 wide, classical western style. internal storage of 0, 30$, produces 2Unit (U) of energy every big tick.
+- Generator 2×2, dark machine like, with electricity symbol on it. 250$, produces 25U of energy.
+Storage:
+- Battery: 1×1, can store up to 250U energy.
+Transmission & shutoff: Transmission speed is instant, transmission width of pipes is not a conceren.
+- Underground power line, similarly works to pipes, but different design. 
+- Power switch: trivial.
+Consumers: each consumer has a 2×(power drain) internal buffer.
+- Pot still needs power input, uses 6U of energy while its on.
+- Mill uses 2U of energy while its on.
+- Jam machine uses 3U of energy while its on.
+- Freezer uses 1U if there is at least one item in it.
+Rest of items (seed grinder, compost box, etc) remain unpowered.
+
+ 

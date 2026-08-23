@@ -59,7 +59,13 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   if (place.kind === 'sku') {
     lines.push(`Place ${skuLabel(place.id)}`)
   }
-  if (cell.kind === 'house') lines.push('House')
+  const parked = world.parkedAt(at)
+  if (cell.kind === 'hangar') lines.push('Vehicle hangar')
+  else if (parked !== undefined) lines.push(parked.kind === 'tractor' ? 'Tractor' : 'Quad')
+  else if (cell.kind === 'silo-seed') lines.push('Seeding silo')
+  else if (cell.kind === 'silo-spray') lines.push('Spraying silo')
+  else if (cell.kind === 'silo-produce') lines.push('Produce silo')
+  else if (cell.kind === 'house') lines.push('House')
   else if (cell.kind === 'truck') lines.push('Market truck')
   else if (cell.kind === 'pump') lines.push(`Pump - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'rain-tank') lines.push(`Rainwater tank - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
@@ -113,7 +119,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     const hand: Hand = { kind: 'hold', item: drop.item }
     lines.push(heldText(hand, world.modifiers))
   }
-  lines.push(world.prompt(at).text)
+  if (cell.kind !== 'silo-seed' && cell.kind !== 'silo-spray' && cell.kind !== 'silo-produce') {
+    lines.push(world.prompt(at).text)
+  }
   return lines.join('\n')
 }
 

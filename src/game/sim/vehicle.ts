@@ -3,6 +3,8 @@ import {
   BOOM_WIDE,
   HANGAR_H,
   HANGAR_W,
+  SILO_H,
+  SILO_W,
   HARVEST_SLOTS,
   HITCH_BACK,
   QUAD_ACCEL,
@@ -85,6 +87,11 @@ export function makeTractor(
 export function hangarPad(base: RectBase): Coord[] {
   const row = base.row + HANGAR_H
   return Array.from({ length: HANGAR_W }, (_, i) => ({ col: base.col + i, row }))
+}
+
+export function siloPad(base: RectBase): Coord[] {
+  const row = base.row + SILO_H
+  return Array.from({ length: SILO_W }, (_, i) => ({ col: base.col + i, row }))
 }
 
 export function padCenter(base: RectBase): { x: number; y: number } {

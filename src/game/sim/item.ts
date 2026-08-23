@@ -542,13 +542,13 @@ export function skuDesc(id: SkuId): string {
     case 'buy-sugar':
       return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
     case 'buy-hangar':
-      return '3×2 barn. Buy Quads at a hangar.'
+      return '3×2 industrial shed. Buy Quads and tractors at a hangar.'
     case 'buy-silo-seed':
-      return '3×2 field tank. Look only.'
+      return '2×3 field tank. Look only.'
     case 'buy-silo-spray':
-      return '3×2 field tank. Look only.'
+      return '2×3 field tank. Look only.'
     case 'buy-silo-produce':
-      return '3×2 field tank. Look only.'
+      return '2×3 field tank. Look only.'
   }
 }
 

@@ -8,6 +8,8 @@ import {
   BARREL_MATURE,
   HANGAR_H,
   HANGAR_W,
+  SILO_H,
+  SILO_W,
   JAM_BUFFER,
   JAM_IN,
   JAM_SUGAR,
@@ -248,13 +250,16 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-silo-spray' ||
       w.act.place.id === 'buy-silo-produce'
     ) {
+      if (w.act.place.id === 'buy-hangar') {
+        if (!hangarSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
+        return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
+      }
       if (
-        w.act.place.id === 'buy-hangar' ||
         w.act.place.id === 'buy-silo-seed' ||
         w.act.place.id === 'buy-silo-spray' ||
         w.act.place.id === 'buy-silo-produce'
       ) {
-        if (!hangarSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
+        if (!siloSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
         return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
       }
       if (!placeSolidOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
@@ -411,6 +416,15 @@ export function placeSolidOk(w: World, at: Coord): boolean {
 export function hangarSiteOk(w: World, at: Coord): boolean {
   for (let row = 0; row < HANGAR_H; row++) {
     for (let col = 0; col < HANGAR_W; col++) {
+      if (!placeSolidOk(w, { col: at.col + col, row: at.row + row })) return false
+    }
+  }
+  return true
+}
+
+export function siloSiteOk(w: World, at: Coord): boolean {
+  for (let row = 0; row < SILO_H; row++) {
+    for (let col = 0; col < SILO_W; col++) {
       if (!placeSolidOk(w, { col: at.col + col, row: at.row + row })) return false
     }
   }

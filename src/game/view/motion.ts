@@ -192,10 +192,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       entry.heading = wrapHeading(entry.heading + turn * QUAD_FOLLOW)
     }
     const deg = (entry.heading * 180) / Math.PI
-    const transform =
-      v.kind === 'tractor'
-        ? `translate(${(entry.x - 0.375) * TILE},${(entry.y - 0.25) * TILE}) scale(${TILE / 24}) rotate(${deg} 9 6)`
-        : `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
+    const transform = `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
     if (entry.transform !== transform) {
       entry.transform = transform
       entry.el.setAttribute('transform', transform)
@@ -207,7 +204,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
         const p = hitchP(entry.x, entry.y, entry.heading)
         const c = trailerCenter(p, t.pose.heading)
         const td = (t.pose.heading * 180) / Math.PI
-        const tt = `translate(${(c.x - 0.5) * TILE},${(c.y - 0.25) * TILE}) scale(${TILE / 24}) rotate(${td} 12 6)`
+        const tt = `translate(${(c.x - 0.5) * TILE},${(c.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${td} 12 12)`
         if (te.transform !== tt) {
           te.transform = tt
           te.el.setAttribute('transform', tt)
@@ -218,7 +215,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
   const driven = world.driverVehicle(world.local)
   if (driven !== undefined && driven.pose.kind === 'field' && dummyRot !== undefined) {
     const deg = (driven.pose.heading * 180) / Math.PI
-    const rot = driven.kind === 'tractor' ? `rotate(${deg} 9 6)` : `rotate(${deg} 12 12)`
+    const rot = `rotate(${deg} 12 12)`
     if (dummyDeg !== rot) {
       dummyDeg = rot
       dummyRot.setAttribute('transform', rot)
@@ -230,7 +227,7 @@ export function paintMotion(root: HTMLElement, world: World): void {
       const p = hitchP(driven.pose.x, driven.pose.y, driven.pose.heading)
       const c = trailerCenter(p, t.pose.heading)
       const td = (t.pose.heading * 180) / Math.PI
-      const tt = `translate(${(c.x - driven.pose.x) * TILE},${(c.y - driven.pose.y) * TILE}) rotate(${td} 0 0)`
+      const tt = `translate(${(c.x - driven.pose.x - 0.5) * TILE},${(c.y - driven.pose.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${td} 12 12)`
       if (dummyTrailerT !== tt) {
         dummyTrailerT = tt
         dummyTrailer.setAttribute('transform', tt)

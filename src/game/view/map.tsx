@@ -2,9 +2,9 @@ import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type Wh
 import { CROPS, tolerance } from '../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
 import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
-import { HANGAR_H, HANGAR_W } from '../defs/items.ts'
+import { HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../defs/items.ts'
 import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base } from '../sim/building.ts'
-import { hangarPad } from '../sim/vehicle.ts'
+import { hangarPad, siloPad } from '../sim/vehicle.ts'
 import { onCell } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -30,6 +30,7 @@ import {
   QUAD,
   TRACTOR,
   TRAILER_HARVEST,
+  TRAILER_RAKE,
   TRAILER_SEED,
   TRAILER_SPRAY,
   SILO_PRODUCE,
@@ -162,13 +163,14 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
-  const hangarPlace = placeId === 'buy-hangar' || placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
+  const hangarPlace = placeId === 'buy-hangar'
+  const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const stay = deleteTool || (placeId !== undefined && STAY_ARMED.includes(placeId))
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
-  const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !edgeTool && !sprinklerTool
+  const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y) : undefined
   const strokeCell =
@@ -399,6 +401,26 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
                     )
                   }),
                 )}
+              {siloPlace &&
+                Array.from({ length: SILO_H }, (_, row) =>
+                  Array.from({ length: SILO_W }, (_, col) => {
+                    if (row === 0 && col === 0) return undefined
+                    return (
+                      <rect
+                        key={`silo-${col},${row}`}
+                        x={(strokeCell.col + col) * TILE}
+                        y={(strokeCell.row + row) * TILE}
+                        width={TILE}
+                        height={TILE}
+                        fill="none"
+                        className={
+                          skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
+                        }
+                        strokeWidth={2}
+                      />
+                    )
+                  }),
+                )}
             </g>
           )}
           {ghostVerts !== undefined &&
@@ -468,7 +490,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               <Use art={placeId === 'buy-pumpjack' ? PUMP : RAIN_TANK} />
             </g>
           )}
-          {hangarPlace && hoverCell !== undefined && (
+          {(hangarPlace || siloPlace) && hoverCell !== undefined && (
             <g
               pointerEvents="none"
               opacity={0.7}
@@ -507,39 +529,20 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           if (driven === undefined || driven.pose.kind !== 'field') return undefined
           const hitch =
             driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
-          if (driven.kind === 'tractor') {
-            return (
-              <g
-                pointerEvents="none"
-                transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
-                style={{ ['--hat']: HAT[world.local] } as CSSProperties}
-              >
-                {hitch !== undefined && hitch.pose.kind === 'attached' && (
-                  <g ref={el => bindDummyTrailer(el)}>
-                    <g transform={`translate(${-0.5 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
-                      <Use
-                        art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST}
-                      />
-                    </g>
-                  </g>
-                )}
-                <g transform={`translate(${-0.375 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
-                  <g ref={el => bindDummyQuad(el)}>
-                    <Use art={TRACTOR} />
-                  </g>
-                </g>
-              </g>
-            )
-          }
           return (
             <g
               pointerEvents="none"
               transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
               style={{ ['--hat']: HAT[world.local] } as CSSProperties}
             >
+              {hitch !== undefined && hitch.pose.kind === 'attached' && (
+                <g ref={el => bindDummyTrailer(el)}>
+                  <TrailerGfx kind={hitch.kind} />
+                </g>
+              )}
               <g transform={`translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}>
                 <g ref={el => bindDummyQuad(el)}>
-                  <Use art={QUAD} />
+                  <Use art={driven.kind === 'tractor' ? TRACTOR : QUAD} />
                 </g>
               </g>
             </g>
@@ -567,7 +570,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           {tip}
         </div>
       )}
-      {hangarPlace && placeId !== undefined && hoverCell === undefined && (
+      {(hangarPlace || siloPlace) && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           {placeId === 'buy-hangar' ? (
             <svg className="h-16 w-24" viewBox="0 0 72 48">
@@ -601,6 +604,17 @@ function placeLine(id: SkuId): string {
 
 function Use({ art }: { art: string }) {
   return <use href={symHref(art)} />
+}
+
+function TrailerGfx({ kind }: { kind: 'seed' | 'spray' | 'harvest' }) {
+  return (
+    <>
+      <Use art={kind === 'seed' ? TRAILER_SEED : kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
+      <g transform="translate(0 12) rotate(90) translate(-60 -4)">
+        <Use art={TRAILER_RAKE} />
+      </g>
+    </>
+  )
 }
 
 const GROUND_CHUNK = 16
@@ -968,17 +982,20 @@ const Marks = memo(function Marks({
         <Use art={HOUSE} />
       </g>
       {world.driverVehicle(world.local) !== undefined &&
-        [...world.hangars, ...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
-          hangarPad(h.base).map(p => (
-            <g
-              key={`return-${h.kind}-${h.base.col},${h.base.row}-${p.col},${p.row}`}
-              pointerEvents="none"
-              transform={`translate(${p.col * TILE},${p.row * TILE}) scale(${TILE / 24})`}
-            >
-              <Use art={HANGAR_RETURN} />
-            </g>
-          )),
-        )}
+        [
+          ...world.hangars.flatMap(h => hangarPad(h.base).map(p => ({ kind: h.kind, col: h.base.col, row: h.base.row, p }))),
+          ...[...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
+            siloPad(h.base).map(p => ({ kind: h.kind, col: h.base.col, row: h.base.row, p })),
+          ),
+        ].map(h => (
+          <g
+            key={`return-${h.kind}-${h.col},${h.row}-${h.p.col},${h.p.row}`}
+            pointerEvents="none"
+            transform={`translate(${h.p.col * TILE},${h.p.row * TILE}) scale(${TILE / 24})`}
+          >
+            <Use art={HANGAR_RETURN} />
+          </g>
+        ))}
       {world.vehicles.flatMap(v => {
         if (v.pose.kind !== 'field') return []
         if (v.pose.driver === world.local) return []
@@ -988,7 +1005,7 @@ const Marks = memo(function Marks({
         if (hitch !== undefined && hitch.pose.kind === 'attached') {
           nodes.push(
             <g key={`trailer-${hitch.id}`} ref={el => bindTrailer(hitch.id, el)} data-trailer={hitch.id}>
-              <Use art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
+              <TrailerGfx kind={hitch.kind} />
             </g>,
           )
         }

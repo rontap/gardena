@@ -55,6 +55,7 @@ import propTractor from '../../assets/prop-tractor.svg?raw'
 import propTrailerSeed from '../../assets/prop-trailer-seed.svg?raw'
 import propTrailerSpray from '../../assets/prop-trailer-spray.svg?raw'
 import propTrailerHarvest from '../../assets/prop-trailer-harvest.svg?raw'
+import propTrailerRake from '../../assets/prop-trailer-rake.svg?raw'
 import propSiloSeed from '../../assets/prop-silo-seed.svg?raw'
 import propSiloSpray from '../../assets/prop-silo-spray.svg?raw'
 import propSiloProduce from '../../assets/prop-silo-produce.svg?raw'
@@ -567,6 +568,7 @@ export const TRACTOR = inner(propTractor)
 export const TRAILER_SEED = inner(propTrailerSeed)
 export const TRAILER_SPRAY = inner(propTrailerSpray)
 export const TRAILER_HARVEST = inner(propTrailerHarvest)
+export const TRAILER_RAKE = inner(propTrailerRake)
 export const SILO_SEED = inner(propSiloSeed)
 export const SILO_SPRAY = inner(propSiloSpray)
 export const SILO_PRODUCE = inner(propSiloProduce)
@@ -906,6 +908,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   TRAILER_SEED,
   TRAILER_SPRAY,
   TRAILER_HARVEST,
+  TRAILER_RAKE,
   SILO_SEED,
   SILO_SPRAY,
   SILO_PRODUCE,

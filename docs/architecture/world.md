@@ -112,7 +112,7 @@ Cell =
 
 `isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce`.
 
-Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar and vehicle silos 3×2.
+Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar 3×2. Vehicle silos 2×3.
 
 Illegal: `Shrub`. Illegal: `AppleTree`.
 
@@ -143,7 +143,7 @@ SiloSpray = { kind: 'silo-spray'; base: RectBase }
 SiloProduce = { kind: 'silo-produce'; base: RectBase }
 ```
 
-`RectBase` `w = HANGAR_W` `h = HANGAR_H`. Door south. No rotate. Same instance all 6 cells. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` hold those same instances. Pad is geometric, not a cell. Silos reuse `hangarPad`. [[mechanics/vehicles]].
+Hangar `RectBase` `w = HANGAR_W` `h = HANGAR_H`. Silo `RectBase` `w = SILO_W` `h = SILO_H`. Door south. No rotate. Same instance all 6 cells. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` hold those same instances. Pad is geometric, not a cell. Hangar `hangarPad`. Silos `siloPad`. [[mechanics/vehicles]].
 
 ```
 VehiclePose =

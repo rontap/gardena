@@ -414,25 +414,25 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'hangar',
       title: 'Vehicle hangar',
       icon: { kind: 'hangar' },
-      blurb: '3×2 barn. Buy Quads and tractors at a hangar.',
+      blurb: '3×2 industrial shed. Buy Quads and tractors at a hangar.',
     },
     {
       id: 'silo-seed',
       title: 'Seeding silo',
       icon: { kind: 'silo-seed' },
-      blurb: '3×2 field tank. Look only.',
+      blurb: '2×3 field tank. Look only.',
     },
     {
       id: 'silo-spray',
       title: 'Spraying silo',
       icon: { kind: 'silo-spray' },
-      blurb: '3×2 field tank. Look only.',
+      blurb: '2×3 field tank. Look only.',
     },
     {
       id: 'silo-produce',
       title: 'Produce silo',
       icon: { kind: 'silo-produce' },
-      blurb: '3×2 field tank. Look only.',
+      blurb: '2×3 field tank. Look only.',
     },
   ]
 }

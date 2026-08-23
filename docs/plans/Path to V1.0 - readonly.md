@@ -246,7 +246,7 @@ Basic sensor providing user IO:
 - -> -> AND ->: trivial again
 - -> NOT ->: trivial
 Specific sensors: these interact with various game mechanics to allow for automation.
-- Germ sensor: sends signal if detects germs in the area. Area can be set to be 2×2 ... 4×4
+- Germ sensor: sends signal if detects germs in the area. Area can be set to be 2×2 ... 4×4, area highlighted
 - Water sensor: sends signal if any plant is being underwatered in the area. Has a checkbox to select send signal if : "wilting" andor"overwatered"
 - Fertilizer sensor: trivial
 - Water system sensor: sends out a signal when the connected system does not have enough water to satisfy needs
@@ -257,7 +257,7 @@ Research-wise, many sensors are dual-requirement locked. The basic sensors unloc
 objects and research, locked behind "advanced signalling", requiring advanced irrigation:
 - Smart sprinkler: receives a signal to turn on/off. Also it has a hud with 5×5 grid (center is sprinkler) where each grid can be turned off or on, and the sprinkler will only sprinkle those specific cells. Good to prevent overlaps from accedentally happening. 
 - Smart valve: works same as normal valve, but user cannot manually set its state, instead it is set from input
-- Vehicle detector: sends signal if the vehicle is on the cell. [dummy for now]
+- Vehicle detector: sends signal if the vehicle is on the cell. 
 All sensors have a switch cooldown of a few ticks to prevent resource-heavy loops of plant wilts -> sprinkler turns on -> plant wilts ...
 
 # 0.15 Early Access 7  - Vehicles I.

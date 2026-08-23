@@ -10,14 +10,19 @@ import {
   QUAD_REFILL,
   QUAD_VMAX,
   QUAD_YAW,
+  HITCH_BACK,
   SILO_SEED_PRICE,
   SURFACE_NORMAL,
   SURFACE_PAVED,
   SURFACE_SLOW,
   TRACTOR_ACCEL,
+  TRACTOR_LEN,
   TRACTOR_PRICE,
   TRACTOR_VMAX,
+  TRACTOR_WIDE,
   TRAILER_CAP,
+  TRAILER_LEN,
+  TRAILER_WIDE,
   TRAILER_HARVEST_PRICE,
   TRAILER_SEED_PRICE,
   VEHICLE_SLOTS,
@@ -29,10 +34,11 @@ import { permit } from './mp.ts'
 import { Act } from './log.ts'
 import { lookText } from './look.ts'
 import { dest, DT_MAX, World } from './world.ts'
-import { hangarPad, padCenter, seekSpeed, surfaceMul, trailerUsed } from './vehicle.ts'
+import { boomHits, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, trailerUsed } from './vehicle.ts'
 import { isSolid } from './plot.ts'
-import { Plant } from './plant.ts'
+import { Plant, Weed } from './plant.ts'
 import { FERT_PLOT_MAX, Soil } from './soil.ts'
+import { CROPS } from '../defs/crops.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -417,92 +423,190 @@ describe('vehicles I', () => {
   })
 })
 
+function fieldTractor(w: World) {
+  const v = w.vehicles[0]
+  if (v.kind !== 'tractor') throw new Error('tractor')
+  const { pose } = v
+  if (pose.kind !== 'field') throw new Error('field')
+  return { ...v, pose }
+}
+
+function attachedTrailer(w: World) {
+  const t = w.trailers[0]
+  const { pose } = t
+  if (pose.kind !== 'attached') throw new Error('attached')
+  return { ...t, pose }
+}
+
+function parkSwap(w: World) {
+  w.disembark()
+  const v = fieldTractor(w)
+  w.seats[0].actor.x = v.pose.x
+  w.seats[0].actor.y = v.pose.y
+}
+
+function aimBoom(w: World, at: { col: number; row: number }) {
+  const v = fieldTractor(w)
+  v.pose.heading = Math.PI / 2
+  v.pose.x = 11.5
+  v.pose.y = 16.5
+  v.pose.speed = TRACTOR_VMAX
+  const t = attachedTrailer(w)
+  t.pose.heading = Math.PI / 2
+  const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
+  const hits = boomHits(p, t.pose.heading, c => w.inWorld(c))
+  if (!hits.some(h => h.col === at.col && h.row === at.row)) throw new Error('boom cell')
+  w.drive(1, 0)
+}
+
 describe('vehicles II', () => {
   test('Tractor hitch follow. Deploy hitch optional. Stored tractor hitch is none.', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
     w.buyTrailer(AT, 'seed')
-    expect(w.vehicles[0].kind).toBe('tractor')
-    if (w.vehicles[0].kind !== 'tractor') return
-    expect(w.vehicles[0].hitch).toBe('none')
+    const stored = w.vehicles[0]
+    if (stored.kind !== 'tractor') throw new Error('tractor')
+    expect(stored.hitch).toBe('none')
+    w.deploy(1, AT, 'none')
+    expect(fieldTractor(w).hitch).toBe('none')
+    w.dock()
     w.deploy(1, AT, 1)
-    expect(w.vehicles[0].kind === 'tractor' && w.vehicles[0].hitch).toBe(1)
+    expect(fieldTractor(w).hitch).toBe(1)
     expect(w.trailers[0].pose).toEqual({ kind: 'attached', vehicle: 1, heading: Math.PI / 2 })
     w.drive(1, 0)
-    const t0 = w.trailers[0].pose.kind === 'attached' ? w.trailers[0].pose.heading : 0
+    const t0 = attachedTrailer(w).pose.heading
     w.tick(DT_MAX)
-    expect(w.trailers[0].pose.kind).toBe('attached')
-    if (w.trailers[0].pose.kind !== 'attached') return
-    expect(w.trailers[0].pose.heading).toBeCloseTo(t0, 5)
+    expect(attachedTrailer(w).pose.heading).toBeCloseTo(t0, 5)
     w.drive(0, 1)
     w.tick(DT_MAX)
-    expect(w.trailers[0].pose.heading).not.toBe(t0)
+    expect(attachedTrailer(w).pose.heading).not.toBe(t0)
   })
 
   test('Boom seed band. Fires iff driven tractor, hitch, steer 0, speed > 0.', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
     w.buyTrailer(AT, 'seed')
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
     w.deploy(1, AT, 1)
-    w.disembark()
-    w.seats[0].actor.x = w.vehicles[0].pose.kind === 'field' ? w.vehicles[0].pose.x : 0
-    w.seats[0].actor.y = w.vehicles[0].pose.kind === 'field' ? w.vehicles[0].pose.y : 0
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
     w.swapTrailer(1, 0)
     const south = { col: 11, row: 16 }
     w.setCell(south, { kind: 'empty', soil: new Soil(1, 1) })
-    w.seats[0].actor.x = w.vehicles[0].pose.kind === 'field' ? w.vehicles[0].pose.x : 0
-    w.seats[0].actor.y = w.vehicles[0].pose.kind === 'field' ? w.vehicles[0].pose.y : 0
+    w.seats[0].actor.x = fieldTractor(w).pose.x
+    w.seats[0].actor.y = fieldTractor(w).pose.y
     w.embark(1)
-    const v = w.vehicles[0]
-    if (v.pose.kind !== 'field') throw new Error('field')
-    v.pose.heading = Math.PI / 2
-    v.pose.x = 11.5
-    v.pose.y = 15.5
-    v.pose.speed = TRACTOR_VMAX
-    w.drive(1, 0)
+    aimBoom(w, south)
     w.tick(DT_MAX)
-    expect(w.cell(south).kind === 'growing' || w.cell({ col: 11, row: 15 }).kind === 'growing' || w.cell({ col: 10, row: 16 }).kind === 'growing' || w.cell({ col: 12, row: 16 }).kind === 'growing').toBe(true)
+    const bed = w.cell(south)
+    expect(bed.kind).toBe('growing')
+    if (bed.kind !== 'growing') throw new Error('growing')
+    expect(bed.plant.crop).toBe('carrot')
+    expect(bed.plant.rarity).toBe('common')
   })
 
-  test('Boom spray band. Full plot skip. TRAILER_CAP.', () => {
+  test('Boom spray band. Full plot skip. TRAILER_CAP floor(liters).', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
     w.buyTrailer(AT, 'spray')
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 5, capacityLiters: 5 } }
     w.deploy(1, AT, 1)
-    w.disembark()
-    const v = w.vehicles[0]
-    if (v.pose.kind !== 'field') throw new Error('field')
-    w.seats[0].actor.x = v.pose.x
-    w.seats[0].actor.y = v.pose.y
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 5, capacityLiters: 5 } }
     w.swapTrailer(1, 0)
     expect(trailerUsed(w.trailers[0])).toBe(5)
     w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 101, capacityLiters: 101 } }
     w.swapTrailer(1, 0)
     expect(trailerUsed(w.trailers[0])).toBe(5)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 100.4, capacityLiters: 101 } }
+    w.swapTrailer(1, 0)
+    expect(trailerUsed(w.trailers[0])).toBe(100)
     expect(TRAILER_CAP).toBe(100)
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 5, capacityLiters: 5 } }
+    w.swapTrailer(1, 0)
     const at = { col: 11, row: 16 }
     w.setCell(at, { kind: 'empty', soil: new Soil(1, 0) })
-    w.seats[0].actor.x = v.pose.x
-    w.seats[0].actor.y = v.pose.y
+    w.seats[0].actor.x = fieldTractor(w).pose.x
+    w.seats[0].actor.y = fieldTractor(w).pose.y
     w.embark(1)
-    v.pose.heading = Math.PI / 2
-    v.pose.x = 11.5
-    v.pose.y = 15.5
-    v.pose.speed = TRACTOR_VMAX
-    w.drive(1, 0)
+    aimBoom(w, at)
     w.tick(DT_MAX)
     const c = w.cell(at)
-    if (isSolid(c)) return
-    if (c.kind === 'empty') expect(c.soil.fertilizer).toBeGreaterThan(0)
+    expect(c.kind).toBe('empty')
+    if (c.kind !== 'empty') throw new Error('empty')
+    expect(c.soil.fertilizer).toBe(FERT_PLOT_MAX)
   })
 
-  test('Boom harvest band. Parked-only swap. Persist cargo across dock.', () => {
+  test('Boom harvest bands. ripe fruit, growing seed/destroy/late fruit, dead, rotten, weed.', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
     w.buyTrailer(AT, 'harvest')
-    expect(w.trailers[0].kind === 'harvest' && w.trailers[0].slots.length).toBe(HARVEST_SLOTS)
+    if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
+    expect(w.trailers[0].slots.length).toBe(HARVEST_SLOTS)
+    w.deploy(1, AT, 1)
+    const soil = () => new Soil(1, 1)
+    const ripe = { col: 9, row: 16 }
+    const young = { col: 10, row: 16 }
+    const mid = { col: 11, row: 16 }
+    const late = { col: 12, row: 16 }
+    const dead = { col: 13, row: 16 }
+    const rotten = { col: 9, row: 15 }
+    const weed = { col: 10, row: 15 }
+    const ripePlant = new Plant('carrot', 'common')
+    ripePlant.freshness = 0.9
+    const youngPlant = new Plant('wheat', 'common')
+    youngPlant.maturity = 0.1
+    const midPlant = new Plant('tomato', 'common')
+    midPlant.maturity = 0.5
+    const latePlant = new Plant('potato', 'common')
+    latePlant.maturity = 0.9
+    const deadPlant = new Plant('raspberry', 'common')
+    w.setCell(ripe, { kind: 'ripe', soil: soil(), plant: ripePlant })
+    w.setCell(young, { kind: 'growing', soil: soil(), plant: youngPlant })
+    w.setCell(mid, { kind: 'growing', soil: soil(), plant: midPlant })
+    w.setCell(late, { kind: 'growing', soil: soil(), plant: latePlant })
+    w.setCell(dead, { kind: 'dead', soil: soil(), plant: deadPlant })
+    w.setCell(rotten, { kind: 'rotten', soil: soil(), crop: 'grape' })
+    w.setCell(weed, { kind: 'weed', soil: soil(), weed: new Weed(0) })
+    aimBoom(w, ripe)
+    ;[young, mid, late, dead, rotten, weed].forEach(cell => aimBoom(w, cell))
+    w.tick(DT_MAX)
+    expect(w.cell(ripe).kind).toBe('empty')
+    expect(w.cell(young).kind).toBe('empty')
+    expect(w.cell(mid).kind).toBe('empty')
+    expect(w.cell(late).kind).toBe('empty')
+    expect(w.cell(dead).kind).toBe('empty')
+    expect(w.cell(rotten).kind).toBe('empty')
+    expect(w.cell(weed).kind).toBe('empty')
+    expect(w.tally.harvests).toBe(1)
+    if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
+    const items = w.trailers[0].slots.flatMap(s => (s.kind === 'hold' ? [s.item] : []))
+    const fruitCarrot = items.find(it => it.kind === 'fruit' && it.crop === 'carrot')
+    const seedWheat = items.find(it => it.kind === 'seeds' && it.crop === 'wheat')
+    const fruitPotato = items.find(it => it.kind === 'fruit' && it.crop === 'potato')
+    const deadItem = items.find(it => it.kind === 'dead')
+    const rottenItem = items.find(it => it.kind === 'rotten')
+    const weedItem = items.find(it => it.kind === 'weed')
+    if (fruitCarrot === undefined || fruitCarrot.kind !== 'fruit') throw new Error('ripe fruit')
+    expect(fruitCarrot.freshness).toBeCloseTo(0.9, 2)
+    expect(fruitCarrot.unitSale).toBe(ripePlant.stats(w.modifiers).sale)
+    if (seedWheat === undefined || seedWheat.kind !== 'seeds') throw new Error('young seed')
+    expect(seedWheat.count).toBe(1)
+    if (fruitPotato === undefined || fruitPotato.kind !== 'fruit') throw new Error('late fruit')
+    expect(fruitPotato.freshness).toBeCloseTo(0.9, 2)
+    expect(fruitPotato.unitSale).toBe(latePlant.stats(w.modifiers).sale)
+    if (deadItem === undefined || deadItem.kind !== 'dead') throw new Error('dead')
+    expect(deadItem.cls).toBe(CROPS.raspberry.cls)
+    if (rottenItem === undefined || rottenItem.kind !== 'rotten') throw new Error('rotten')
+    expect(rottenItem.cls).toBe(CROPS.grape.cls)
+    if (weedItem === undefined || weedItem.kind !== 'weed') throw new Error('weed')
+    expect(weedItem.count).toBe(1)
+    expect(items.some(it => it.kind === 'fruit' && it.crop === 'tomato')).toBe(false)
+  })
+
+  test('Parked-only swap. Persist cargo across dock.', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'tractor')
+    w.buyTrailer(AT, 'harvest')
     w.deploy(1, AT, 1)
     const fruit = {
       kind: 'fruit' as const,
@@ -515,15 +619,14 @@ describe('vehicles II', () => {
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
     w.swapTrailer(1, 0)
-    expect(w.trailers[0].kind === 'harvest' && w.trailers[0].slots[0].kind).toBe('empty')
-    w.disembark()
-    const v = w.vehicles[0]
-    if (v.pose.kind !== 'field') throw new Error('field')
-    w.seats[0].actor.x = v.pose.x
-    w.seats[0].actor.y = v.pose.y
+    if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
+    expect(w.trailers[0].slots[0].kind).toBe('empty')
+    parkSwap(w)
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
     w.swapTrailer(1, 0)
-    expect(w.trailers[0].kind === 'harvest' && w.trailers[0].slots[0]).toEqual({ kind: 'hold', item: fruit })
+    if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
+    expect(w.trailers[0].slots[0]).toEqual({ kind: 'hold', item: fruit })
+    const v = fieldTractor(w)
     v.pose.x = 11.5
     v.pose.y = 14.5
     w.seats[0].actor.x = v.pose.x
@@ -531,21 +634,11 @@ describe('vehicles II', () => {
     w.embark(1)
     w.dock()
     expect(w.vehicles[0].pose).toEqual({ kind: 'stored', hangar: AT })
-    expect(w.vehicles[0].kind === 'tractor' && w.vehicles[0].hitch).toBe('none')
+    if (w.vehicles[0].kind !== 'tractor') throw new Error('tractor')
+    expect(w.vehicles[0].hitch).toBe('none')
     expect(w.trailers[0].pose).toEqual({ kind: 'stored', hangar: AT })
-    expect(w.trailers[0].kind === 'harvest' && w.trailers[0].slots[0]).toEqual({ kind: 'hold', item: fruit })
-    const ripe = { col: 11, row: 16 }
-    w.setCell(ripe, { kind: 'ripe', soil: new Soil(1, 1), plant: new Plant('carrot', 'common') })
-    w.deploy(1, AT, 1)
-    const tr = w.vehicles[0]
-    if (tr.pose.kind !== 'field') throw new Error('field')
-    tr.pose.heading = Math.PI / 2
-    tr.pose.x = 11.5
-    tr.pose.y = 15.5
-    tr.pose.speed = TRACTOR_VMAX
-    w.drive(1, 0)
-    w.tick(DT_MAX)
-    expect(w.cell(ripe).kind === 'empty' || w.trailers[0].kind === 'harvest').toBe(true)
+    if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
+    expect(w.trailers[0].slots[0]).toEqual({ kind: 'hold', item: fruit })
   })
 
   test('Silo look-only. Cannot delete hangar storing trailer. Hangar-buys not skuPrice.', () => {
@@ -564,13 +657,31 @@ describe('vehicles II', () => {
     expect(w.cell(AT).kind).toBe('hangar')
     w.cancelPlace()
     w.buy('buy-silo-seed')
-    w.confirmPlace({ col: 16, row: 12 })
-    expect(w.cell({ col: 16, row: 12 }).kind).toBe('silo-seed')
-    expect(isSolid(w.cell({ col: 16, row: 12 }))).toBe(true)
-    w.enqueue({ act: 'walk', at: { col: 16, row: 12 } })
-    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const siloAt = { col: 16, row: 12 }
+    w.confirmPlace(siloAt)
+    expect(w.cell(siloAt).kind).toBe('silo-seed')
+    expect(w.cell({ col: 17, row: 14 }).kind).toBe('silo-seed')
+    expect(w.cell({ col: 18, row: 12 }).kind).not.toBe('silo-seed')
+    expect(isSolid(w.cell(siloAt))).toBe(true)
+    expect(isSolid(w.cell({ col: 17, row: 14 }))).toBe(true)
+    const silo = w.cell(siloAt)
+    expect(silo.kind).toBe('silo-seed')
+    if (silo.kind !== 'silo-seed') return
+    expect(silo.base.w).toBe(2)
+    expect(silo.base.h).toBe(3)
+    expect(siloPad(silo.base)).toHaveLength(2)
+    expect(siloPad(silo.base)).toEqual([
+      { col: 16, row: 15 },
+      { col: 17, row: 15 },
+    ])
+    expect(TRACTOR_LEN).toBe(1)
+    expect(TRACTOR_WIDE).toBe(1)
+    expect(TRAILER_LEN).toBe(1)
+    expect(TRAILER_WIDE).toBe(1)
+    expect(HITCH_BACK).toBe(0.5)
+    expect(w.prompt(siloAt)).toEqual({ kind: 'blocked', text: 'Seeding silo' })
+    expect(lookText(w, { kind: 'cell', at: siloAt }, false)).toBe('Seeding silo')
     expect(w.seats[0].cue.kind).toBe('none')
-    expect(lookText(w, { kind: 'cell', at: { col: 16, row: 12 } }, false)).toContain('Seeding silo')
     expect(TRACTOR_VMAX).toBeCloseTo(QUAD_VMAX * 0.67)
     expect(TRACTOR_ACCEL).toBe(QUAD_ACCEL * 0.5)
     expect(FERT_PLOT_MAX).toBe(1)

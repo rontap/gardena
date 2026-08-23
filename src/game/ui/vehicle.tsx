@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import type { HarvestSlot, VehicleId } from '../sim/ids.ts'
+import type { HarvestSlot, VehicleId, VehicleSlot } from '../sim/ids.ts'
 import { itemLine, type Slot } from '../sim/item.ts'
 import type { Modifier } from '../sim/modifiers.ts'
 import type { Trailer } from '../sim/vehicle.ts'
@@ -8,6 +8,9 @@ import { UI_SLOT_DOWN } from '../view/svgs.ts'
 import { Bar } from './frame.tsx'
 import { Frame } from './frame.tsx'
 import { ItemFace, ItemLineView } from './held.tsx'
+
+const QUAD_SLOTS: readonly VehicleSlot[] = [0, 1, 2, 3, 4, 5]
+const HARVEST_IX: readonly HarvestSlot[] = [0, 1, 2, 3, 4, 5, 6, 7]
 
 function SlotCell({
   slot,
@@ -47,10 +50,9 @@ function SlotCell({
 
 export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId; onClose: () => void }) {
   const v = world.vehicles.find(x => x.id === id)
-  if (v === undefined) return null
-  const title = v.kind === 'tractor' ? 'Tractor' : 'Quad'
+  const title = v !== undefined && v.kind === 'tractor' ? 'Tractor' : 'Quad'
   const trailer: Trailer | undefined =
-    v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
+    v !== undefined && v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
   return (
     <Dialog.Root
       open
@@ -64,7 +66,7 @@ export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId;
           <Frame title={title} onClose={onClose}>
             <Dialog.Title className="sr-only">{title}</Dialog.Title>
             <div className="mb-3 flex items-center gap-3">
-              <Bar value={v.fuel} color="bg-ripe" className="h-1.5 w-20" />
+              {v !== undefined && <Bar value={v.fuel} color="bg-ripe" className="h-1.5 w-20" />}
               <button
                 type="button"
                 className="px-3 py-2 text-base font-semibold cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
@@ -73,14 +75,14 @@ export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId;
                 Embark
               </button>
             </div>
-            {v.kind === 'quad' && (
+            {v !== undefined && v.kind === 'quad' && (
               <div className="grid grid-cols-3 gap-2">
-                {v.slots.map((slot, i) => (
+                {QUAD_SLOTS.map(i => (
                   <SlotCell
                     key={i}
-                    slot={slot}
+                    slot={v.slots[i]}
                     modifiers={world.modifiers}
-                    onClick={() => world.swapVehicle(id, i as 0 | 1 | 2 | 3 | 4 | 5)}
+                    onClick={() => world.swapVehicle(id, i)}
                   />
                 ))}
               </div>
@@ -97,12 +99,12 @@ export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId;
             )}
             {trailer !== undefined && trailer.kind === 'harvest' && (
               <div className="grid grid-cols-4 gap-2">
-                {trailer.slots.map((slot, i) => (
+                {HARVEST_IX.map(i => (
                   <SlotCell
                     key={i}
-                    slot={slot}
+                    slot={trailer.slots[i]}
                     modifiers={world.modifiers}
-                    onClick={() => world.swapTrailer(trailer.id, i as HarvestSlot)}
+                    onClick={() => world.swapTrailer(trailer.id, i)}
                   />
                 ))}
               </div>

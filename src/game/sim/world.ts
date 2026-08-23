@@ -6,6 +6,8 @@ import {
   CONTAINERS,
   HANGAR_H,
   HANGAR_W,
+  SILO_H,
+  SILO_W,
   HARVEST_SLOTS,
   HEADING_SOUTH,
   QUAD_FUEL_SECONDS,
@@ -214,6 +216,7 @@ import {
   placeLabel,
   hangarSiteOk,
   placeSolidOk,
+  siloSiteOk,
   wideSiteOk,
   readPrompt,
   readPromptHit,
@@ -245,7 +248,9 @@ import {
   trailerUsed,
   type Drive,
   type Trailer,
+  type TrailerPose,
   type Vehicle,
+  type VehiclePose,
 } from './vehicle.ts'
 
 export type Intent =
@@ -2061,30 +2066,38 @@ export class World {
       this.act.place.id === 'buy-silo-spray' ||
       this.act.place.id === 'buy-silo-produce'
     ) {
+      if (this.act.place.id === 'buy-hangar') {
+        if (!hangarSiteOk(this, at)) return
+        this.money -= price
+        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: HANGAR_W, h: HANGAR_H }
+        const made = new Hangar(base)
+        this.hangars.push(made)
+        for (let row = 0; row < HANGAR_H; row++) {
+          for (let col = 0; col < HANGAR_W; col++) {
+            this.setCell({ col: at.col + col, row: at.row + row }, made)
+          }
+        }
+        this.pulse = { text: `Place ${placeLabel('buy-hangar')}`, at: { ...at } }
+        this.act.place = { kind: 'none' }
+        this.ping()
+        return
+      }
       if (
-        this.act.place.id === 'buy-hangar' ||
         this.act.place.id === 'buy-silo-seed' ||
         this.act.place.id === 'buy-silo-spray' ||
         this.act.place.id === 'buy-silo-produce'
       ) {
-        if (!hangarSiteOk(this, at)) return
+        if (!siloSiteOk(this, at)) return
         this.money -= price
-        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: HANGAR_W, h: HANGAR_H }
+        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: SILO_W, h: SILO_H }
         const sku = this.act.place.id
         const made =
-          sku === 'buy-hangar'
-            ? new Hangar(base)
-            : sku === 'buy-silo-seed'
-              ? new SiloSeed(base)
-              : sku === 'buy-silo-spray'
-                ? new SiloSpray(base)
-                : new SiloProduce(base)
-        if (made.kind === 'hangar') this.hangars.push(made)
-        else if (made.kind === 'silo-seed') this.seedSilos.push(made)
+          sku === 'buy-silo-seed' ? new SiloSeed(base) : sku === 'buy-silo-spray' ? new SiloSpray(base) : new SiloProduce(base)
+        if (made.kind === 'silo-seed') this.seedSilos.push(made)
         else if (made.kind === 'silo-spray') this.spraySilos.push(made)
         else this.produceSilos.push(made)
-        for (let row = 0; row < HANGAR_H; row++) {
-          for (let col = 0; col < HANGAR_W; col++) {
+        for (let row = 0; row < SILO_H; row++) {
+          for (let col = 0; col < SILO_W; col++) {
             this.setCell({ col: at.col + col, row: at.row + row }, made)
           }
         }

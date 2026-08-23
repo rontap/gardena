@@ -52,7 +52,7 @@ import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
 import { DT_MAX, World } from './world.ts'
-import { AUTOMATION } from '../ui/shop.tsx'
+import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 import { qualityPip } from '../view/svgs.ts'
 
 const HOME = [{ cx: 0, cy: 0 }]
@@ -1197,10 +1197,20 @@ describe('beta-6 invariants', () => {
     if (slot.kind === 'hold' && slot.item.kind === 'fruit') expect(fruitMoney(slot.item)).toBe(10)
   })
 
-  test('buy-delete is not a SkuId; shop automation has no Delete', () => {
+  test('buy-delete is not a SkuId; the build shelf has no Delete', () => {
     expect((Object.keys(SKUS) as string[]).includes('buy-delete')).toBe(false)
-    expect(AUTOMATION.includes('buy-delete' as SkuId)).toBe(false)
-    expect(AUTOMATION.some(id => skuLabel(id) === 'Delete')).toBe(false)
+    expect(BUILD_SKUS.includes('buy-delete' as SkuId)).toBe(false)
+    expect(BUILD_SKUS.some(id => skuLabel(id) === 'Delete')).toBe(false)
+  })
+
+  test('every sku sits in exactly one shelf group', () => {
+    const shelved = SHELVES.flatMap(s => s.groups.flatMap(g => g.skus))
+    expect([...shelved].sort()).toEqual((Object.keys(SKUS) as SkuId[]).sort())
+  })
+
+  test('build shelves hold no seeds tab sku', () => {
+    expect(BUILD_SKUS.filter(id => SKUS[id].tab === 'seeds')).toEqual([])
+    expect(SHOP_SKUS.length + BUILD_SKUS.length).toBe(Object.keys(SKUS).length)
   })
 
   test('delete pumpjack money unchanged both empty starter remains', () => {

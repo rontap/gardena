@@ -83,7 +83,7 @@ export function LensPanel({
   })
   const locked = LENS_ROWS.length - rows.length
   return (
-    <Dock title="Lens" onClose={onClose}>
+    <Dock title="Lens" onClose={onClose} width="w-80">
       <button
         type="button"
         onClick={() => onPick('off')}

@@ -23,7 +23,7 @@ The clock text, the day bar, the research name and its seconds are painted every
 
 `Chrome` `absolute top-20 left-4 z-20` `w-24`. Icon `h-11 w-11` above, `text-sm` semibold label below.
 
-Order: **Shop** **Research** **Market** **Lens** **Family** **Almanac** **Cheat**. Then if build cluster: divider, **Delete** **Rotate** **Cancel**. Guest: **Cheat** hidden. Hidden ≠ disabled. [[ui/multiplayer]]
+Order: **Shop** **Build** **Research** **Market** **Lens** **Family** **Almanac** **Cheat**. Then if build cluster: divider, **Delete** **Rotate** **Cancel**. Guest: **Cheat** hidden. Hidden ≠ disabled. [[ui/multiplayer]]
 
 Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family face `ui-btn-family`. Cheat face `ui-btn-cheat`.
 
@@ -35,7 +35,7 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Build trio visible iff `place.kind === 'delete'` or sku in `PLACE_TOOLS` — every placeable sku, paving and `buy-fence` and `buy-compost-box` included. Hidden ≠ disabled.
+Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Processing, and Storage. Paving and `buy-fence` are out: they are paint tools. Hidden ≠ disabled. [[ui/build]]
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. [[ui/place]].
 

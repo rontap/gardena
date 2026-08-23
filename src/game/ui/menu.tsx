@@ -79,7 +79,7 @@ export function Menu(props: MenuProps) {
         <div className="relative z-20 flex flex-col gap-2 px-4 pt-4 pb-3">
           <svg viewBox="0 0 240 64" className="w-full" dangerouslySetInnerHTML={{ __html: UI_MENU }} />
           <h1 className="text-center font-display text-base leading-none">Gardena</h1>
-          <p className="text-center text-sm text-ink/45">1.3.0</p>
+          <p className="text-center text-sm text-ink/45">1.3.1</p>
           {joining ? (
             <JoinFields
               fail={props.mpFail}

@@ -10,6 +10,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/inspect]]
 - [[ui/machines]]
 - [[ui/shop]]
+- [[ui/build]]
 - [[ui/store]]
 - [[ui/cheat]]
 - [[ui/market]]

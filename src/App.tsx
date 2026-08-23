@@ -14,13 +14,13 @@ import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Research } from './game/ui/research.tsx'
 import { Cheat } from './game/ui/cheat.tsx'
-import { Shop } from './game/ui/shop.tsx'
+import { Build, Shop } from './game/ui/shop.tsx'
 import { Family } from './game/ui/family.tsx'
 import { LensPanel } from './game/ui/lens.tsx'
 import { Menu } from './game/ui/menu.tsx'
 import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
-import type { Coord } from './game/sim/building.ts'
+import { arming, cued, type Panel } from './game/ui/panel.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
@@ -30,27 +30,6 @@ import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
-
-type Panel =
-  | { kind: 'none' }
-  | { kind: 'family' }
-  | { kind: 'shop' }
-  | { kind: 'research' }
-  | { kind: 'market' }
-  | { kind: 'inventory' }
-  | { kind: 'almanac' }
-  | { kind: 'cheat' }
-  | { kind: 'lens' }
-  | { kind: 'chest'; at: Coord }
-  | { kind: 'silo'; at: Coord }
-  | { kind: 'additives'; at: Coord }
-  | { kind: 'menu' }
-  | { kind: 'multiplayer' }
-
-/** Panels a walk-up cue opened. Closing any of them has to ack the cue. */
-function cued(kind: Panel['kind']): boolean {
-  return kind === 'chest' || kind === 'silo' || kind === 'additives'
-}
 
 const SPEED = (() => {
   const raw = new URLSearchParams(window.location.search).get('speed')
@@ -88,6 +67,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [catching, setCatching] = useState(false)
   const [roomKey, setRoomKey] = useState('')
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
+  const [query, setQuery] = useState('')
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
@@ -221,6 +201,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       world.cancelPlace()
       world.closeHud()
       setLens(l => (l === 'pipes' ? 'off' : l))
+      setQuery('')
       if (world.seam.kind === 'recap') {
         if (world.local === 0) world.dismissRecap()
         return
@@ -352,18 +333,23 @@ export default function App({ sink }: { sink: WorkerSink }) {
     URL.revokeObjectURL(url)
   }
 
+  /** Leaving the shop system: drop the ghost, the pipe layer, and the search. */
+  function leaveShop(): void {
+    if (world === undefined) return
+    world.cancelPlace()
+    setLens(l => (l === 'pipes' ? 'off' : l))
+    setQuery('')
+  }
+
   function open(next: Panel): void {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
-    if (panel.kind === 'shop' && next.kind === 'shop') {
-      world.cancelPlace()
-      setLens(l => (l === 'pipes' ? 'off' : l))
-    }
     setPanel(p => {
-      if (p.kind === 'shop') world.cancelPlace()
+      const to = p.kind === next.kind ? { kind: 'none' as const } : next
+      if (arming(p.kind) && !arming(to.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
-      return p.kind === next.kind ? { kind: 'none' } : next
+      return to
     })
   }
 
@@ -378,7 +364,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
     setPanel(p => {
-      if (p.kind === 'shop') world.cancelPlace()
+      if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === 'menu' ? { kind: 'none' } : { kind: 'menu' }
@@ -442,7 +428,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seam.kind === 'recap') return
     if (role === 'off') startHost()
     setPanel(p => {
-      if (p.kind === 'shop') world.cancelPlace()
+      if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       const open = p.kind !== 'multiplayer'
       setMpPanel(open)
@@ -655,6 +641,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             lens={lens}
             onFamily={() => open({ kind: 'family' })}
             onShop={() => open({ kind: 'shop' })}
+            onBuild={() => open({ kind: 'build' })}
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
             onAlmanac={() => open({ kind: 'almanac' })}
@@ -677,9 +664,23 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'shop' && (
             <Shop
               world={world}
+              query={query}
+              setQuery={setQuery}
+              onGo={p => setPanel({ kind: p })}
               onClose={() => {
-                world.cancelPlace()
-                setLens(l => (l === 'pipes' ? 'off' : l))
+                leaveShop()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {panel.kind === 'build' && (
+            <Build
+              world={world}
+              query={query}
+              setQuery={setQuery}
+              onGo={p => setPanel({ kind: p })}
+              onClose={() => {
+                leaveShop()
                 setPanel({ kind: 'none' })
               }}
             />

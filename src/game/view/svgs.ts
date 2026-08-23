@@ -146,6 +146,7 @@ import tileBrick from '../../assets/tile-brick.svg?raw'
 import tileCobble from '../../assets/tile-cobble.svg?raw'
 import uiBtn from '../../assets/ui-btn.svg?raw'
 import uiBtnShop from '../../assets/ui-btn-shop.svg?raw'
+import uiBtnBuild from '../../assets/ui-btn-build.svg?raw'
 import uiBtnCheat from '../../assets/ui-btn-cheat.svg?raw'
 import uiBtnResearch from '../../assets/ui-btn-research.svg?raw'
 import uiBtnMarket from '../../assets/ui-btn-market.svg?raw'
@@ -594,6 +595,7 @@ export const UI_COIN_SILVER = inner(uiCoinSilver)
 export const UI_METER = uiMeter
 export const UI_QUALITY = inner(uiQuality)
 export const UI_BTN_SHOP = uiBtnShop
+export const UI_BTN_BUILD = uiBtnBuild
 export const UI_BTN_CHEAT = uiBtnCheat
 export const UI_BTN_RESEARCH = uiBtnResearch
 export const UI_BTN_MARKET = uiBtnMarket
@@ -880,6 +882,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   ...Object.values(UI_PHASE),
   ...[
     UI_BTN_SHOP,
+    UI_BTN_BUILD,
     UI_BTN_CHEAT,
     UI_BTN_RESEARCH,
     UI_BTN_MARKET,

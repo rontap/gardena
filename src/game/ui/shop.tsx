@@ -1,230 +1,138 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
-import { RESEARCH, SKUS } from '../defs/research.ts'
+import { BUILD_SHELVES, SHELVES, SHOP_SHELVES, shelfOf, type Shelf, type ShelfId } from '../defs/shelf.ts'
 import type { SkuId } from '../sim/ids.ts'
-import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
-import { guestBlockedSku } from '../sim/mp.ts'
 import type { World } from '../sim/world.ts'
-import { skuInner } from '../view/svgs.ts'
-import { CalloutHover } from './callout-hover.tsx'
-import { Coin, Dock, tabTriggerClass } from './frame.tsx'
+import { Dock, SearchField, tabRailClass, tabRailListClass } from './frame.tsx'
+import { locked, matches, SkuCallout, SkuCard } from './sku-card.tsx'
 
-const SEEDS: SkuId[] = [
-  'pack-carrot',
-  'pack-potato',
-  'pack-wheat',
-  'pack-tomato',
-  'pack-raspberry',
-  'pack-watermelon',
-  'pack-olive',
-  'pack-grape',
-  'pack-vanilla',
-  'pack-sugar-cane',
-  'pack-grass',
-]
-const UTILITY: SkuId[] = [
-  'buy-shovel',
-  'buy-better-shovel',
-  'buy-rotary-shovel',
-  'buy-pickaxe',
-  'buy-better-pickaxe',
-  'buy-diamond-pickaxe',
-  'buy-bucket',
-  'buy-bucket-large',
-  'buy-box',
-  'buy-box-large',
-  'buy-fertilizer',
-  'buy-synth-fertilizer',
-  'buy-sugar',
-]
-const BUILDING: SkuId[] = ['buy-fence', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved']
-export const AUTOMATION: SkuId[] = [
-  'buy-pumpjack',
-  'buy-well',
-  'buy-rain-tank',
-  'buy-tap',
-  'buy-pipe',
-  'buy-valve',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-  'buy-chest',
-  'buy-grinder',
-  'buy-compost-box',
-  'buy-mill',
-  'buy-still',
-  'buy-barrel',
-  'buy-jam',
-  'buy-freezer',
-]
-
-const TAB_LINE = {
-  seeds: 'Sow on tilled soil.',
-  utility: 'Tools and carry.',
-  automation: 'Machines you place.',
-  building: 'Paving and fencing. Click as many tiles as you like, Escape when done.',
-} as const
-
-type Tab = keyof typeof TAB_LINE
-
-const TABS: { id: Tab; label: string; skus: SkuId[] }[] = [
-  { id: 'seeds', label: 'Seeds', skus: SEEDS },
-  { id: 'utility', label: 'Utility', skus: UTILITY },
-  { id: 'automation', label: 'Automation', skus: AUTOMATION },
-  { id: 'building', label: 'Building', skus: BUILDING },
-]
-
-type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'silo-full' | 'store-full' | 'ok'
-
-const REASON: { readonly [K in RowState]: string } = {
-  'not-researched': 'Locked behind research',
-  'need-skill': 'You need to earn the Vanilla tending skill',
-  'cannot-afford': 'Not enough money',
-  'inventory-full': 'No room in the inventory',
-  'silo-full': 'The seed silo is full',
-  'store-full': 'The additive store is full',
-  ok: '',
+type Deck = {
+  panel: 'shop' | 'build'
+  title: string
+  shelves: readonly Shelf[]
+  hint: string
 }
 
-export function Shop({ world, onClose }: { world: World; onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>('seeds')
+const WIDTH = 'w-[28rem]'
+
+const SHOP: Deck = {
+  panel: 'shop',
+  title: 'General store',
+  shelves: SHOP_SHELVES,
+  hint: 'Search the store and the build menu',
+}
+
+const BUILD: Deck = {
+  panel: 'build',
+  title: 'Build',
+  shelves: BUILD_SHELVES,
+  hint: 'Search the build menu and the store',
+}
+
+export function Shop(props: DeckProps) {
+  return <SkuDock deck={SHOP} {...props} />
+}
+
+export function Build(props: DeckProps) {
+  return <SkuDock deck={BUILD} {...props} />
+}
+
+type DeckProps = {
+  world: World
+  onClose: () => void
+  query: string
+  setQuery: (q: string) => void
+  onGo: (panel: 'shop' | 'build') => void
+}
+
+function SkuDock({ deck, world, onClose, query, setQuery, onGo }: DeckProps & { deck: Deck }) {
   const [hot, setHot] = useState<SkuId | undefined>(undefined)
-  const state = hot === undefined ? undefined : rowState(world, hot)
-  const bulkFail = hot === undefined ? 'Locked' : world.buyPacksFail(hot)
-  const bulk = hot !== undefined && bulkFail !== 'Locked' ? world.packsPrice(hot) : undefined
+  const open = deck.shelves.filter(s => shown(world, s).length > 0)
+  const [tab, setTab] = useState<ShelfId | undefined>(undefined)
+  const at = tab !== undefined && open.some(s => s.id === tab) ? tab : open[0]?.id
+  const hits = query.trim() === '' ? undefined : found(world, query)
+
+  function act(id: SkuId): void {
+    const home = shelfOf(id).panel
+    world.buy(id)
+    if (home !== deck.panel) onGo(home)
+  }
+
   return (
     <Dock
-      wide
-      title="General store"
+      width={WIDTH}
+      title={deck.title}
       onClose={onClose}
-      aside={
-        hot !== undefined && state !== undefined ? (
-          <CalloutHover
-            title={skuLabel(hot)}
-            description={
-              <>
-                <span>{skuDesc(hot)}</span>
-                {state !== 'ok' && !(world.local !== 0 && guestBlockedSku(hot)) && (
-                  <span className="mt-2 block font-bold text-roof">{gateLine(hot, state)}</span>
-                )}
-                {bulk !== undefined && (
-                  <span
-                    className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}
-                  >
-                    Ctrl-click: 5 packs for <Coin n={bulk} />
-                    {bulkFail !== undefined && <span>&mdash; {bulkFail.toLowerCase()}</span>}
-                  </span>
-                )}
-              </>
-            }
-          />
-        ) : undefined
-      }
-      footer={<div className="text-sm text-ink/55">{TAB_LINE[tab]}</div>}
+      aside={hot !== undefined ? <SkuCallout world={world} id={hot} /> : undefined}
+      footer={<div className="text-sm text-ink/55">{footer(deck, at, hits)}</div>}
     >
-      <Tabs.Root
-        value={tab}
-        onValueChange={v => {
-          setTab(v as Tab)
-          setHot(undefined)
-        }}
-      >
-        <Tabs.List className="sticky top-0 z-10 -mx-1 mb-2 flex gap-1 border-b border-ink/20 bg-house px-1">
-          {TABS.map(t => (
-            <Tabs.Trigger key={t.id} value={t.id} className={tabTriggerClass}>
-              {t.label}
-            </Tabs.Trigger>
-          ))}
-        </Tabs.List>
-        {TABS.map(t => (
-          <Tabs.Content key={t.id} value={t.id} className="flex flex-col gap-1.5">
-            {t.skus.filter(id => world.skuShown(id)).length === 0 && (
-              <div className="py-4 text-sm text-ink/50">Nothing here yet. Research opens this shelf.</div>
-            )}
-            {t.skus
-              .filter(id => world.skuShown(id))
-              .map(id => (
-                <SkuRow key={id} id={id} world={world} onHot={setHot} />
-              ))}
-          </Tabs.Content>
-        ))}
-      </Tabs.Root>
+      <div className="mb-2">
+        <SearchField value={query} onChange={setQuery} placeholder={deck.hint} />
+      </div>
+      {at === undefined ? (
+        <div className="py-4 text-sm text-ink/50">Nothing here yet. Research opens this shelf.</div>
+      ) : (
+        <Tabs.Root
+          value={hits === undefined ? at : ''}
+          orientation="vertical"
+          className="flex gap-2"
+          onValueChange={v => {
+            setTab(v as ShelfId)
+            setQuery('')
+            setHot(undefined)
+          }}
+        >
+          <Tabs.List className={tabRailListClass}>
+            {open.map(s => (
+              <Tabs.Trigger key={s.id} value={s.id} className={tabRailClass}>
+                {s.label}
+              </Tabs.Trigger>
+            ))}
+          </Tabs.List>
+          {hits !== undefined ? (
+            <div className="min-w-0 flex-1">
+              <Grid>
+                {hits.map(id => (
+                  <SkuCard key={id} id={id} world={world} onHot={setHot} onAct={act} />
+                ))}
+              </Grid>
+            </div>
+          ) : (
+            open.map(s => (
+              <Tabs.Content key={s.id} value={s.id} className="min-w-0 flex-1">
+                <Grid>
+                  {s.groups.flatMap(g => sorted(world, g.skus)).map(id => (
+                    <SkuCard key={id} id={id} world={world} onHot={setHot} onAct={act} />
+                  ))}
+                </Grid>
+              </Tabs.Content>
+            ))
+          )}
+        </Tabs.Root>
+      )}
     </Dock>
   )
 }
 
-function SkuRow({ id, world, onHot }: { id: SkuId; world: World; onHot: (id: SkuId | undefined) => void }) {
-  const state = rowState(world, id)
-  const place = world.seats[world.local].place
-  const armed = place.kind === 'sku' && place.id === id
-  const guestOff = world.local !== 0 && guestBlockedSku(id)
-  const off = state !== 'ok' || guestOff
-  const face = off
-    ? 'cursor-default bg-ink/6 text-ink/35'
-    : armed
-      ? 'cursor-pointer bg-ink text-house'
-      : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
-  return (
-    <button
-      type="button"
-      aria-disabled={off}
-      onPointerEnter={() => onHot(id)}
-      onPointerLeave={() => onHot(undefined)}
-      onFocus={() => onHot(id)}
-      onClick={e => {
-        if (off) return
-        if (e.ctrlKey && SEEDS.includes(id) && world.hasSkill('bulk-buying')) {
-          world.buyPacks(id)
-          return
-        }
-        world.buy(id)
-      }}
-      className={`flex w-full items-center gap-3 px-3 py-2 text-left ${face}`}
-    >
-      <svg
-        className={`h-7 w-7 shrink-0 ${off ? 'opacity-40' : ''}`}
-        viewBox="0 0 24 24"
-        dangerouslySetInnerHTML={{ __html: skuInner(id) }}
-      />
-      <span className="min-w-0 flex-1 truncate text-base font-semibold">{skuLabel(id)}</span>
-      {armed && <span className="shrink-0 text-xs opacity-70">placing</span>}
-      <span className="shrink-0 text-base tabular-nums">
-        <Coin n={world.skuPrice(id)} />
-      </span>
-    </button>
-  )
+function Grid({ children }: { children: ReactNode }) {
+  return <div className="grid auto-rows-[6.75rem] grid-cols-3 gap-1">{children}</div>
 }
 
-function gateLine(id: SkuId, state: RowState): string {
-  if (state === 'need-skill') return REASON['need-skill']
-  if (state !== 'not-researched') return REASON[state]
-  const unlock = SKUS[id].unlock
-  if (unlock === 'start') return REASON[state]
-  return `Needs the ${RESEARCH[unlock].name} research`
+function shown(world: World, shelf: Shelf): SkuId[] {
+  return shelf.groups.flatMap(g => g.skus).filter(id => world.skuShown(id))
 }
 
-function rowState(world: World, id: SkuId): RowState {
-  const need = SKUS[id].need
-  if (need !== undefined && !world.hasSkill(need)) return 'need-skill'
-  if (!world.skuOpen(id)) return 'not-researched'
-  if (world.money < world.skuPrice(id)) return 'cannot-afford'
-  const made = skuItem(id)
-  if (made.kind === 'seeds') {
-    return world.silo.free < made.count ? 'silo-full' : 'ok'
-  }
-  if (made.kind === 'fertilizer' || made.kind === 'synth') {
-    return world.additives.free < made.liters ? 'store-full' : 'ok'
-  }
-  const inv = world.seats[world.local].inventory
-  if (made.kind === 'grass-seeds') {
-    const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
-    const empty = inv.findIndex(s => s.kind === 'empty')
-    if (merge < 0 && empty < 0) return 'inventory-full'
-  }
-  if (made.kind === 'sugar') {
-    const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'sugar')
-    const empty = inv.findIndex(s => s.kind === 'empty')
-    if (merge < 0 && empty < 0) return 'inventory-full'
-  }
-  return 'ok'
+function sorted(world: World, skus: SkuId[]): SkuId[] {
+  return skus.filter(id => world.skuShown(id)).sort((a, b) => Number(locked(world, a)) - Number(locked(world, b)))
+}
+
+function found(world: World, query: string): SkuId[] {
+  const all = SHELVES.flatMap(s => s.groups.flatMap(g => g.skus))
+  return all.filter(id => world.skuShown(id) && matches(id, query))
+}
+
+function footer(deck: Deck, at: ShelfId | undefined, hits: SkuId[] | undefined): string {
+  if (hits !== undefined) return hits.length === 0 ? 'Nothing matches. Escape clears.' : `${hits.length} found. Escape clears.`
+  const shelf = deck.shelves.find(s => s.id === at)
+  return shelf === undefined ? 'Research opens these shelves.' : shelf.line
 }

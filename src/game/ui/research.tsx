@@ -6,7 +6,7 @@ import type { ResearchId } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
 import { researchInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Bar, Coin, Dock, tabTriggerClass } from './frame.tsx'
+import { Bar, Coin, Dock, tabRailClass, tabRailListClass } from './frame.tsx'
 
 const TREES = ['plants', 'utilities', 'expansion', 'automation'] as const
 
@@ -20,7 +20,7 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
   const job = world.job
   return (
     <Dock
-      wide
+      width="w-[28rem]"
       title="Research"
       onClose={onClose}
       aside={
@@ -46,21 +46,23 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
     >
       <Tabs.Root
         value={tab}
+        orientation="vertical"
+        className="flex gap-2"
         onValueChange={v => {
           setTab(v as Tree)
           setTip(undefined)
         }}
       >
-        <Tabs.List className="sticky top-0 z-10 -mx-1 mb-2 flex flex-wrap gap-1 border-b border-ink/20 bg-house px-1">
+        <Tabs.List className={tabRailListClass}>
           {TREES.map(id => (
-            <Tabs.Trigger key={id} value={id} className={tabTriggerClass}>
+            <Tabs.Trigger key={id} value={id} className={tabRailClass}>
               {id.slice(0, 1).toUpperCase() + id.slice(1)}
             </Tabs.Trigger>
           ))}
         </Tabs.List>
         {TREES.map(id => (
-          <Tabs.Content key={id} value={id}>
-            <div className="grid grid-cols-2 gap-1.5">
+          <Tabs.Content key={id} value={id} className="min-w-0 flex-1">
+            <div className="grid auto-rows-[8.5rem] grid-cols-2 gap-1">
               {idsIn(id, world).map(rid => (
                 <Card key={rid} id={rid} world={world} onTip={setTip} />
               ))}
@@ -116,37 +118,35 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
         if (off) return
         world.startResearch(id)
       }}
-      className={`flex w-full flex-col gap-1.5 p-2 text-left ${face}`}
+      className={`flex h-full w-full flex-col items-center justify-center gap-0.5 overflow-hidden px-1 py-1.5 text-center ${face}`}
     >
-      <div className="flex items-start gap-2">
-        <svg
-          viewBox="0 0 24 24"
-          className={`h-6 w-6 shrink-0 ${off && !run && !done ? 'opacity-45' : ''}`}
-          dangerouslySetInnerHTML={{ __html: researchInner(id) }}
-        />
-        <span className="min-w-0 flex-1 text-base leading-snug font-semibold">{d.name}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm tabular-nums">
+      <svg
+        viewBox="0 0 24 24"
+        className={`h-10 w-10 shrink-0 ${off && !run && !done ? 'opacity-45' : ''}`}
+        dangerouslySetInnerHTML={{ __html: researchInner(id) }}
+      />
+      <span className="line-clamp-2 min-h-8 text-sm leading-tight font-semibold">{d.name}</span>
+      <span className="flex items-center gap-2 text-sm tabular-nums">
         {done ? (
           <span className="font-semibold">Done</span>
         ) : (
           <>
             <Coin n={d.cost} />
-            <span className="opacity-70">{run ? `${Math.ceil(world.job.kind === 'run' ? world.job.left : 0)}s` : `${d.seconds}s`}</span>
+            <span className="opacity-70">
+              {run ? `${Math.ceil(world.job.kind === 'run' ? world.job.left : 0)}s` : `${d.seconds}s`}
+            </span>
           </>
         )}
-      </div>
+      </span>
       {gated && d.gate.kind !== 'none' && (
         <>
-          <Bar value={world.gateProgress(id)} color="bg-roof" />
-          <span className="text-xs leading-snug text-roof">
+          <Bar value={world.gateProgress(id)} color="bg-roof" className="h-1.5 w-full" />
+          <span className="text-xs leading-none text-roof">
             {world.gateHave(id)} / {d.gate.n} {d.gate.kind}
           </span>
         </>
       )}
-      {(run || done) && (
-        <Bar value={pct / 100} color="bg-leaf" track="bg-ink/25" />
-      )}
+      {(run || done) && <Bar value={pct / 100} color="bg-leaf" track="bg-ink/25" className="h-1.5 w-full" />}
     </button>
   )
 }

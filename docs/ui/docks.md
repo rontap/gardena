@@ -1,27 +1,36 @@
 # Docks and dialogs
 
-Shop, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, and recap are dialogs. Sprinkler tune is an object HUD on the map.
+Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, and recap are dialogs. Sprinkler tune is an object HUD on the map.
 
 ## Left docks
 
-`Dock` `absolute top-24 left-32 z-20`, `max-h-[calc(100vh-6rem)]`. Clears the `h-14` [[ui/hud]] ribbon and the icon rail. Ghosts stay on the map.
+`Dock` `absolute top-20 left-32 z-20`, `max-h-[calc(100vh-6rem)]`. `top-20` is the [[ui/hud]] icon rail's own top: a dock and the rail beside it start on the same line. Clears the `h-14` ribbon. Ghosts stay on the map. Ghosts stay on the map.
 
 | panel | title | width |
 |---|---|---|
-| shop | General store | `wide` `w-[30rem]` |
-| research | Research | `wide` `w-[30rem]` |
+| shop | General store | `w-[28rem]` |
+| build | Build | `w-[28rem]` |
+| research | Research | `w-[28rem]` |
 | lens | Lens | `w-80` |
 | cheat | Cheat | `w-80` |
 
-`Window` is the shell for all three: display-font title, hairline under it, `scroll-pane` body, hairline over an optional footer. Sized so the common case does not scroll at 1440×900 — [[ui/type]].
+`Window` is the shell for all of them: display-font title, hairline under it, `scroll-pane` body, hairline over an optional footer. Sized so the common case does not scroll at 1440×900 — [[ui/type]].
 
-[[ui/shop]]. [[ui/lens]]. [[ui/cheat]].
+## The rail
 
-Research: trees **Plants** **Utilities** **Expansion** **Automation**. 2-col cards. Card = icon + name, then `Coin` + seconds. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Gated cards add a `roof` bar and `{have} / {n} {digs|mines}` — [[mechanics/research]]. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the gate sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
+Shop, Build, and Research all pick a category the same way: a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`.
+
+Cards under it share one anatomy: icon `h-10` centred, `skuLabel` / research name `text-sm` `line-clamp-2 min-h-8`, then the meta line. A constant `auto-rows-*` per panel, never `fr`, so no card changes size as content changes.
+
+[[ui/almanac]] is a centred overlay and keeps the underline `tabTriggerClass`.
+
+[[ui/shop]]. [[ui/build]]. [[ui/lens]]. [[ui/cheat]].
+
+Research: trees **Plants** **Utilities** **Expansion** **Automation** on the rail. 2-col cards on `auto-rows-[8.5rem]` — two columns, not three, because the gate and progress bars need the width. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Gated cards add a `roof` bar and `{have} / {n} {digs|mines}` — [[mechanics/research]]. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the gate sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
 
 Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after tomato. `unlock-raspberry` after grape. No vanilla research card. Automation: **Fermentation** (`unlock-fermentation`) at start.
 
-**×** / Shop toggle that closes shop: `cancelPlace`; pipes lens `off`. Research **×** only closes the dock.
+**×** / a rail toggle that closes **Shop** or **Build**: `cancelPlace`, pipes lens `off`, search query cleared. Switching between those two keeps all three — [[ui/build]]. Research **×** only closes the dock.
 
 ## Overlays
 

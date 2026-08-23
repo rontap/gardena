@@ -2,6 +2,21 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.3 Seed silo and additive store
+
+[[mechanics/inventory]] [[ui/store]] [[items/buildings]]
+
+- **Seeds leave the house.** New `seed-silo`, 1×2 at `(17,9)`, placed at world start. Rows are rarities, columns are crops. `SILO_SEED_CAP = 100` cumulative. Starter seed stock moves here; saplings stay in the house.
+- **Fertilizer stops being a placed bag.** New `additive-store`, 1×2 at `(18,9)`. `ADDITIVE_CAP_LITERS = 200` cumulative over fertilizer / synth / compost. `buy-fertilizer` and `buy-synth-fertilizer` no longer arm a place ghost.
+- Shared `Store` base: `cap` + `useDefault`. Neither store is a SKU, researchable, deletable, or in the almanac. `useDefault` is the seam for multiple stores later; nothing else is buyable yet.
+- Walk up → the store takes back what it keeps, from hand and house. Click a stack → hand. A held item the store will not keep is set down first.
+- Shop rows read the store caps instead of house slots, and stop re-implementing the fit rule. New `BuyFail` values *Seed silo full* / *Additive store full*. The Ctrl-click bulk hint now shows its own blocking reason instead of advertising a buy that would bounce.
+- Silo cells are `4.25rem`, the panel is `w-fit` inside a max box, and the max reserves the callout gutter so the panel widens with what you unlock but never pushes the hover off screen.
+- Hovering a silo cell opens the usual right-hand `CalloutHover`: crop name, pack price, and the stall price at that cell's rarity.
+- Rarity gems in the row heads. Heirloom is the `unlock-heirloom` research icon itself; uncommon and rare are the same drawing recolored. Common has none — the label carries it.
+- New `Bar` in `frame.tsx` — `value` / `color` / `track`. Store capacity uses it inline beside the count; research cards moved onto it. HUD bars stay hand-rolled for `motion.ts`.
+- Save `version` → **1.3**. Pre-1.3 refused. No migrate.
+
 ## 2026-08-23 — 1.2.1 tick dirty / HUD `<use>`
 
 [[mechanics/trees]] [[architecture/modules]]

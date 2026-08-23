@@ -6,4 +6,6 @@
 
 `mill` — `buy-mill`. `jam` — `buy-jam`. `still` — `buy-still`. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`. Rules: [[mechanics/machines]].
 
+`seed-silo` — starter, not a SKU. `additive-store` — starter, not a SKU. 1×2, `SILO_BASE` `(17,9)` / `ADDITIVE_BASE` `(18,9)`. Not placeable, not researchable, not deletable, no almanac entry. Contents and caps: [[mechanics/inventory]]. Panels: [[ui/store]].
+
 `truck` — not a Place SKU. Consign: [[mechanics/market]].

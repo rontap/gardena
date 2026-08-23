@@ -49,6 +49,8 @@ import propStill from '../../assets/prop-still.svg?raw'
 import propBarrel from '../../assets/prop-barrel.svg?raw'
 import propJam from '../../assets/prop-jam.svg?raw'
 import propFreezer from '../../assets/prop-freezer.svg?raw'
+import propSeedSilo from '../../assets/prop-seed-silo.svg?raw'
+import propAdditiveStore from '../../assets/prop-additive-store.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
 import better from '../../assets/item-better-shovel.svg?raw'
 import pickaxe from '../../assets/item-pickaxe.svg?raw'
@@ -528,6 +530,8 @@ export const STILL = inner(propStill)
 export const BARREL = inner(propBarrel)
 export const JAM = inner(propJam)
 export const FREEZER = inner(propFreezer)
+export const SEED_SILO = inner(propSeedSilo)
+export const ADDITIVE_STORE = inner(propAdditiveStore)
 export const SPRINKLER = inner(propSprinkler)
 export const SPRINKLER_VERT = inner(propSprinklerVert)
 export const SPRINKLER_LARGE = inner(propSprinklerLarge)
@@ -700,6 +704,18 @@ export type BtnState = 'idle' | 'hover' | 'selected' | 'disabled'
 
 export function btnFace(raw: string, state: BtnState): string {
   return groupInner(raw, state)
+}
+
+/**
+ * Standalone rarity gem, big enough to read in a row head — the pip on an item face is
+ * fused into the item and far too small. Heirloom is the `unlock-heirloom` research icon
+ * itself, and the other tiers are that same gem recolored, so the two screens never drift.
+ * Common has no gem; plain stock needs no badge.
+ */
+export function rarityInner(rarity: Rarity): string | undefined {
+  if (rarity === 'common') return undefined
+  const fill = rarity === 'uncommon' ? '#6bc04a' : rarity === 'rare' ? '#3d7ea6' : '#d4a017'
+  return inner(skillHeirloom).replace('id="fill" fill="#d4a017"', `id="fill" fill="${fill}"`)
 }
 
 export function qualityPip(rarity: Rarity): string | undefined {

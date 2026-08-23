@@ -74,13 +74,15 @@ const TABS: { id: Tab; label: string; skus: SkuId[] }[] = [
   { id: 'building', label: 'Building', skus: BUILDING },
 ]
 
-type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'ok'
+type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'silo-full' | 'store-full' | 'ok'
 
 const REASON: { readonly [K in RowState]: string } = {
   'not-researched': 'Locked behind research',
   'need-skill': 'You need to earn the Vanilla tending skill',
   'cannot-afford': 'Not enough money',
   'inventory-full': 'No room in the inventory',
+  'silo-full': 'The seed silo is full',
+  'store-full': 'The additive store is full',
   ok: '',
 }
 
@@ -88,10 +90,8 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
   const [tab, setTab] = useState<Tab>('seeds')
   const [hot, setHot] = useState<SkuId | undefined>(undefined)
   const state = hot === undefined ? undefined : rowState(world, hot)
-  const bulk =
-    hot !== undefined && SEEDS.includes(hot) && world.hasSkill('bulk-buying')
-      ? 5 * world.skuPrice(hot) * 0.95
-      : undefined
+  const bulkFail = hot === undefined ? 'Locked' : world.buyPacksFail(hot)
+  const bulk = hot !== undefined && bulkFail !== 'Locked' ? world.packsPrice(hot) : undefined
   return (
     <Dock
       wide
@@ -107,9 +107,12 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
                 {state !== 'ok' && !(world.local !== 0 && guestBlockedSku(hot)) && (
                   <span className="mt-2 block font-bold text-roof">{gateLine(hot, state)}</span>
                 )}
-                {state === 'ok' && bulk !== undefined && (
-                  <span className="mt-2 flex items-center gap-1 font-bold">
+                {bulk !== undefined && (
+                  <span
+                    className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}
+                  >
                     Ctrl-click: 5 packs for <Coin n={bulk} />
+                    {bulkFail !== undefined && <span>&mdash; {bulkFail.toLowerCase()}</span>}
                   </span>
                 )}
               </>
@@ -205,8 +208,14 @@ function rowState(world: World, id: SkuId): RowState {
   if (need !== undefined && !world.hasSkill(need)) return 'need-skill'
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < world.skuPrice(id)) return 'cannot-afford'
-  const inv = world.seats[world.local].inventory
   const made = skuItem(id)
+  if (made.kind === 'seeds') {
+    return world.silo.free < made.count ? 'silo-full' : 'ok'
+  }
+  if (made.kind === 'fertilizer' || made.kind === 'synth') {
+    return world.additives.free < made.liters ? 'store-full' : 'ok'
+  }
+  const inv = world.seats[world.local].inventory
   if (made.kind === 'grass-seeds') {
     const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
     const empty = inv.findIndex(s => s.kind === 'empty')
@@ -214,14 +223,6 @@ function rowState(world: World, id: SkuId): RowState {
   }
   if (made.kind === 'sugar') {
     const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'sugar')
-    const empty = inv.findIndex(s => s.kind === 'empty')
-    if (merge < 0 && empty < 0) return 'inventory-full'
-  }
-  if (made.kind === 'seeds') {
-    const merge = inv.findIndex(
-      s =>
-        s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === made.crop && s.item.rarity === made.rarity,
-    )
     const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'
   }

@@ -28,7 +28,10 @@ One row per `skuShown` sku. The row **is** the button — no nested `Btn`, no se
 
 The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Never say "not researched" and leave the player guessing which one.
 
-`inventory-full` is packs only (`seeds` and `grass-seeds`), when there is no merge slot and no empty house slot.
+| `silo-full` | same | The seed silo is full |
+| `store-full` | same | The additive store is full |
+
+`inventory-full` is `grass-seeds` and `sugar` only, when there is no merge slot and no empty house slot. Seed packs answer to the silo cap and fertilizer to the additive-store cap instead — [[mechanics/inventory]]. The row never re-implements a fit rule: it asks the same numbers `buy` does, so a green row cannot fail silently.
 
 ## Hover
 
@@ -38,9 +41,11 @@ The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Neve
 
 Footer is the tab's one-line description and nothing else.
 
-Packs never arm. Place SKUs arm `Seat.place` — [[ui/place]].
+Packs never arm. `buy-fertilizer` and `buy-synth-fertilizer` no longer arm either: they are delivered to the additive store. Remaining Place SKUs arm `Seat.place` — [[ui/place]].
 
-Husband owns `bulk-buying`: seed row Ctrl+click calls `buyPacks(id)`, and the footer says so with the discounted `Coin`. Normal click stays `buy(id)`. Non-seed rows ignore Ctrl.
+Husband owns `bulk-buying`: seed row Ctrl+click calls `buyPacks(id)`, and the callout says so with the discounted `Coin` from `packsPrice(id)`. Normal click stays `buy(id)`. Non-seed rows ignore Ctrl.
+
+The bulk line has its own state, `world.buyPacksFail(id)`. `'Locked'` hides the line. Any other reason still shows the line, in `roof`, with the reason appended — a hint that advertises a purchase must say when that purchase would bounce.
 
 ## Shelves
 

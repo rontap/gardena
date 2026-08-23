@@ -50,6 +50,8 @@ export const COMPOST_VALUE = {
 } as const
 
 export const FREEZER_SLOTS = 6
+export const SILO_SEED_CAP = 100
+export const ADDITIVE_CAP_LITERS = 200
 export const SUGAR_BAG = 2
 export const SUGAR_MILL = 5
 export const SUGAR_SHOP = 8

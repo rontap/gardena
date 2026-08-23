@@ -8,16 +8,38 @@ Chest: `CHEST_SLOTS = 9` — preference. 1×1, $18, `unlock-chest`. Walk up, swa
 
 Freezer: `FREEZER_SLOTS = 6` — preference. 1×1, $36, `unlock-preservatives`. Reuses chest act / `swapChest`. Slots skip `tickFreshness`. Guest may not open — [[mechanics/machines]].
 
+## Stores
+
+Seeds and additives do not live in the house. Each has a store building, placed at world start, 1 wide × 2 tall, not a SKU, not researchable, not deletable, no almanac entry — [[items/buildings]].
+
+`Store` is the shared base: a `cap` and `useDefault`. `useDefault` marks the instance a shop purchase flows into. One default per kind today; nothing else is buyable. The flag is the seam multiple stores will hang off, not a feature yet.
+
+| store | base | cap | holds |
+|---|---|---|---|
+| `seed-silo` | `(17,9)` 1×2 | `SILO_SEED_CAP = 100` seeds | `{ crop, rarity, count }[]` |
+| `additive-store` | `(18,9)` 1×2 | `ADDITIVE_CAP_LITERS = 200` L | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost` |
+
+Both caps are cumulative across every stack / kind in that store.
+
+Walk up → the store takes back everything it keeps, from hand and from the 16 house slots, then the panel opens ([[ui/store]]). Overflow past the cap stays on you.
+
+Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. If the hand already holds something the store would not take back, that item is set down on the nearest plot first — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
+
+Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` → additive store. Neither arms a place ghost any more. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds and sugar are not seeds or additives; they still go to the house.
+
 ## Starter
 
 Shovel in hand. Bucket on the doorstep (full 3 L). Money $50 — preference.
 
-House:
+Seed silo:
 
 - 5 common carrot
 - 2 rare carrot
 - 2 rare tomato
 - 2 heirloom potato
+
+House:
+
 - 1 apricot sapling
 - 1 lemon sapling
 - 1 cherry sapling

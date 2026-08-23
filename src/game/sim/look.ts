@@ -65,6 +65,8 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'rain-tank') lines.push(`Rainwater tank - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'tap') lines.push('Tap')
   else if (cell.kind === 'rock') lines.push('Rock')
+  else if (cell.kind === 'seed-silo') lines.push(`Seed silo - ${cell.used} of ${cell.cap} seeds`)
+  else if (cell.kind === 'additive-store') lines.push(`Additive store - ${liters(cell.used)} of ${liters(cell.cap)}`)
   else if (cell.kind === 'chest') lines.push('Chest')
   else if (cell.kind === 'freezer') lines.push('Freezer')
   else if (cell.kind === 'grinder') lines.push('Seed grinder')

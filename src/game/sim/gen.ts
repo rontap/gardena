@@ -1,7 +1,9 @@
 import {
+  ADDITIVE_BASE,
   CHUNK,
   DOOR,
   HOUSE_BASE,
+  SILO_BASE,
   PUMP_BASE,
   TRUCK_BASE,
   YARD,
@@ -13,8 +15,10 @@ import {
   occupiedCells,
   type ChunkId,
   type Coord,
+  type AdditiveStore,
   type House,
   type Pump,
+  type SeedSilo,
   type Truck,
 } from './building.ts'
 import { goodness, groundOf } from './noise.ts'
@@ -29,11 +33,21 @@ const RESERVED = new Set(
     ...occupiedCells(PUMP_BASE, HOME),
     DOOR,
     ...occupiedCells(TRUCK_BASE, HOME),
+    ...occupiedCells(SILO_BASE, HOME),
+    ...occupiedCells(ADDITIVE_BASE, HOME),
     ...YARD,
   ].map(a => `${a.col},${a.row}`),
 )
 
-export function generateChunk(rng: Rng, id: ChunkId, house: House, pump: Pump, truck: Truck): Cell[][] {
+export function generateChunk(
+  rng: Rng,
+  id: ChunkId,
+  house: House,
+  pump: Pump,
+  truck: Truck,
+  silo: SeedSilo,
+  additives: AdditiveStore,
+): Cell[][] {
   const cells: Cell[][] = []
   for (let row = 0; row < CHUNK; row++) {
     const line: Cell[] = []
@@ -63,6 +77,8 @@ export function generateChunk(rng: Rng, id: ChunkId, house: House, pump: Pump, t
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
   occupiedCells(truck.base, owned).forEach(at => put(cells, at, truck))
+  occupiedCells(silo.base, owned).forEach(at => put(cells, at, silo))
+  occupiedCells(additives.base, owned).forEach(at => put(cells, at, additives))
   return cells
 }
 

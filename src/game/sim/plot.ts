@@ -1,4 +1,5 @@
 import type {
+  AdditiveStore,
   Chest,
   CompostBox,
   Freezer,
@@ -10,6 +11,7 @@ import type {
   Pump,
   RainTank,
   Rock,
+  SeedSilo,
   Tap,
   Tree,
   Truck,
@@ -53,6 +55,8 @@ export type Cell =
   | PotStill
   | WineBarrel
   | Freezer
+  | SeedSilo
+  | AdditiveStore
 
 export function bare(ground: Ground): Plot {
   return { kind: 'untilled', ground, cover: { kind: 'bare' } }

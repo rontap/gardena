@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, and recap are dialogs. Sprinkler tune is an object HUD on the map.
+Shop, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, and recap are dialogs. Sprinkler tune is an object HUD on the map.
 
 ## Left docks
 
@@ -32,6 +32,10 @@ Every dialog and overlay closes on backdrop, except recap until a member is pick
 ## Inventory
 
 Walk to the house → cue → dialog **Inventory**. 4×4, this seat's 16 (`App.local`). Click slot `swap(i)` with that seat's hand. Fruit line via `ItemLineView`. Wide `w-[30rem]`.
+
+## Stores
+
+Walk to the seed silo or the additive store → cue → dialog. Deposit happens on arrival; the panel only withdraws. [[ui/store]] [[mechanics/inventory]]
 
 ## Chest
 

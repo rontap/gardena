@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import * as Progress from '@radix-ui/react-progress'
 import * as Tabs from '@radix-ui/react-tabs'
 import { GATE_TEXT, RESEARCH } from '../defs/research.ts'
 import { fill } from '../defs/catalog.ts'
@@ -7,7 +6,7 @@ import type { ResearchId } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
 import { researchInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Coin, Dock, tabTriggerClass } from './frame.tsx'
+import { Bar, Coin, Dock, tabTriggerClass } from './frame.tsx'
 
 const TREES = ['plants', 'utilities', 'expansion', 'automation'] as const
 
@@ -139,18 +138,14 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
       </div>
       {gated && d.gate.kind !== 'none' && (
         <>
-          <Progress.Root className="relative h-1.5 overflow-hidden bg-ink/15" value={world.gateProgress(id) * 100}>
-            <Progress.Indicator className="h-full bg-roof" style={{ width: `${world.gateProgress(id) * 100}%` }} />
-          </Progress.Root>
+          <Bar value={world.gateProgress(id)} color="bg-roof" />
           <span className="text-xs leading-snug text-roof">
             {world.gateHave(id)} / {d.gate.n} {d.gate.kind}
           </span>
         </>
       )}
       {(run || done) && (
-        <Progress.Root className="relative h-1.5 overflow-hidden bg-ink/25" value={pct}>
-          <Progress.Indicator className="h-full bg-leaf" style={{ width: `${pct}%` }} />
-        </Progress.Root>
+        <Bar value={pct / 100} color="bg-leaf" track="bg-ink/25" />
       )}
     </button>
   )

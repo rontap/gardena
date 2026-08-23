@@ -15,6 +15,7 @@ Rules as the game runs. Tests follow the numbered list. Numbers: preference / tu
 - [[mechanics/log]]
 - [[mechanics/rng]]
 - [[mechanics/tutorial]]
+- [[mechanics/multiplayer]]
 
 See [[canon]].
 
@@ -59,7 +60,7 @@ See [[canon]].
 37. `World.now` starts 0. Each `tick()` entry, including recap return, `now += 1`. `dispatch` stamps `Cmd.t = now`. Same-`t` cmds apply in log order. Ticks are not cmds.
 38. `dispatch` appends to `World.log` and `sink`, then `apply`. `apply` does not log. Replay is `apply` only. `enqueue` does not `dispatch`.
 39. Log is player `Cmd`s only. Not sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, walk, panel, camera, hover, lens.
-40. Same seed + same `Cmd[]` applied at those `t` with `dt = 1/15` → equal digest: `money`, `clock.day`, `clock.t`, `hand`, inventory, cell kinds, plant crop/rarity/maturity, drop count, `done`, family `owned`, stall stock.
+40. Same seed + same `Cmd[]` applied at those `t` with `dt = 1/15` → equal digest: `money`, `clock.day`, `clock.t`, each seat `hand`/`inventory`, cell kinds, plant crop/rarity/maturity, drop count, `done`, family `owned`, stall stock.
 41. Two Worlds, same seed, no cmds, N ticks of `1/15` → equal digest.
 42. `shop.next()` does not move when `grow` rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.
 43. Two growing→ripe on one cell the same day use distinct `n`. Rarities need not match.
@@ -77,3 +78,11 @@ See [[canon]].
 55. Step 9 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
 56. Step 10 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
 57. Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.
+58. Live App accumulator calls `tick(DT_MAX)` only. Leftover rAF never ticks a non-`DT_MAX` slice. View paints every rAF. Solo and MP.
+59. Per host `bundle`: apply `cmds` in log order, then `tick(DT_MAX)`. Empty `cmds` still tick. `bundle.t` is `now` after that tick. Same seed + same bundles → equal digest: invariant 40 plus every seat `actor.x`/`actor.y`, `hand`, `inventory`, `presence`, `place`.
+60. Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.
+61. Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box. Guest chest `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.
+62. `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Seat stays in `seats`.
+63. `parse` of `version === 1.0` with `actor`/`hand`/`inventory` hydrates one `in` seat, `playerId` of this machine. Fail → existing `version` / `unusable`.
+64. `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
+65. Digest mismatch: pause, `resync`, Ready, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.

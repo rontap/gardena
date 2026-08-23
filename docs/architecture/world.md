@@ -28,6 +28,35 @@ Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds
 
 [[architecture/tree]] `TreeId`. [[architecture/family]] `PlayerSkillId`.
 
+## Seats
+
+```
+SeatId = 0 | 1 | 2 | 3
+Presence = 'in' | 'away'
+PlayerId = string
+
+Seat = {
+  id: SeatId
+  playerId: PlayerId
+  actor: Actor
+  hand: Hand
+  inventory: Slot[]
+  queue: Intent[]
+  presence: Presence
+  place: Place
+}
+```
+
+`World.seats: Seat[]`. Length 1..4. Index 0 is always the host / solo player. Each `inventory` length 16.
+
+No `World.actor` / `hand` / `inventory` / `queue` / `place`.
+
+`App.local: SeatId` is who this page is. Solo and tests: one in-seat, `local === 0`.
+
+`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work and that seat hand/inventory freshness. Seat stays in `seats`. [[mechanics/multiplayer]]
+
+Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`) live on the seat, not `World`.
+
 ## Cell
 
 ```
@@ -103,7 +132,7 @@ StayArmed =
   | 'delete'
 ```
 
-`World.place` is always a `Place`.
+`Seat.place` is always a `Place`. No `World.place`. Place is per-seat.
 
 Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `buy` merges seeds into inventory.
 
@@ -211,11 +240,11 @@ toggleCheatResearch(): void
 
 ## Time
 
-`World.now: number` — integer count of `tick()` entries (each rAF substep). Starts 0. Increments by 1 at every `tick()` entry, including recap return.
+`World.now: number` — integer count of `tick()` entries. Starts 0. Increments by 1 at every `tick()` entry, including recap return.
 
-`Cmd.t` is `now` after last completed tick, before apply. [[architecture/log]]
+`Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
 
-Keep current rAF remainder stepping. Tests replay with `dt = 1/15`.
+Live: App accumulator fires `tick(DT_MAX)` only (`DT_MAX = 1/15`). Never a leftover. View paints every rAF. No sim interpolation. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]]
 
 ## Log
 
@@ -223,20 +252,20 @@ Keep current rAF remainder stepping. Tests replay with `dt = 1/15`.
 
 ```
 dispatch(cmd): log then apply
-apply(cmd): mutate only
+apply(cmd): mutate seats[cmd.p] and shared farm. No log.
 ```
 
 No silent flag. Replay calls `apply` only.
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
-`World.place` / `hud` / `cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens are not.
+`Seat.place` / `World.hud` / `World.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens are not.
 
 Cheats are cmds. `DYNAMIC_MARKET` stays false. `nudgeOffered` is still a cmd.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. Two meanings for one `a`.
+Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`.
 
 ## Rng
 

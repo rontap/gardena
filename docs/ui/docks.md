@@ -27,15 +27,15 @@ Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after to
 
 [[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
 
-Every dialog and overlay closes on backdrop, except recap until a member is picked. Radix dialogs (inventory, chest, recap) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself.
+Every dialog and overlay closes on backdrop, except recap until a member is picked, and except guest recap (no dismiss). Radix dialogs (inventory, chest, recap) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 
 ## Inventory
 
-Walk to the house → cue → dialog **Inventory**. 4×4, 16 house slots. Click slot `swap(i)` with hand. Fruit line via `ItemLineView`. Wide `w-[30rem]`.
+Walk to the house → cue → dialog **Inventory**. 4×4, this seat's 16 (`App.local`). Click slot `swap(i)` with that seat's hand. Fruit line via `ItemLineView`. Wide `w-[30rem]`.
 
 ## Chest
 
-Walk to a chest → cue → dialog **Chest**. 3×3, `CHEST_SLOTS` 9. Click `swapChest(at, i)`. Close acks the cue.
+Walk to a chest → cue → dialog **Chest**. 3×3, `CHEST_SLOTS` 9. Click `swapChest(at, i)`. Close acks the cue. Guests: dialog does not open; `swapChest` locked.
 
 ## Recap
 
@@ -43,7 +43,7 @@ Seam dialog, `w-[26rem]`. `ui-recap-night` strip on top ([[art/recap-night]]). T
 
 Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). Rule, then ledger **Stipend** `+` coin and **Tax** `−` coin. Rule, then **Balance** coin — money after tax.
 
-**Day {next}**. Backdrop / Esc also `dismissRecap()`. Play frozen until that call. Each dismiss grants +1 skill point to every member — not shown on this screen. [[mechanics/day]] [[mechanics/family]].
+**Day {next}**. Backdrop / Esc also `dismissRecap()`. Play frozen until that call. Each dismiss grants +1 skill point to every member — not shown on this screen. Guest: no dismiss. **Day {next}**, backdrop, and Esc do not `dismissRecap()`. [[mechanics/day]] [[mechanics/family]] [[ui/multiplayer]]
 
 ## Object HUD
 

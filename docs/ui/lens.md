@@ -12,6 +12,8 @@ Card: name `text-base` semibold, one-line blurb `text-sm`, then the swatch legen
 |---|---|---|
 | `water` | Water need | dry `lens-bad` · wet `lens-good` · full `lens-done` |
 | `land` | Land quality | low `lens-bad` · ok `lens-good` · full `lens-done` |
+
+`land` also tints **untilled** ground by the goodness field (the fertility a dig would give): very-hard / hard reads red-orange, soft runs orange → green. Infertile is flat `lens-bad`. Use it to pick where to dig.
 | `ripe` | Ripeness | early `lens-bad` · ready `lens-good` · ripe `lens-done` |
 | `kind` | Object type | plant `leaf` · machine `water` · obstruction `ink` · building `roof` |
 | `rarity` | Rarity | common `house` · uncommon `leaf` · rare `water` · **heirloom** `ripe` |

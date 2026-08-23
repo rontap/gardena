@@ -12,3 +12,14 @@
 | boots | 20–22 | `#8a5a32` over `#6b4423`, sole `#1c1710` |
 
 Silhouette is 1 px ink all round; arms break out to `x = 2` and `x = 21` so the shape reads against grass at tile size.
+
+Hat group `id="hat"` wraps the straw-gold CROWN rects (`#d4a017` crown + brim). Band and underside stay `#6b4423` outside the group. Default fill is straw gold. One pose still. Seat crown is CSS `--hat` only — not in the SVG.
+
+| seat | `--hat` |
+|---|---|
+| 0 | `#d4a017` |
+| 1 | `#ff3d8e` |
+| 2 | `#2de8ff` |
+| 3 | `#b85cff` |
+
+1–3 are off-palette, loud on grass, not cottage (not water / leaf / ripe / fruit-red / overalls). Band `#6b4423`.

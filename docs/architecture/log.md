@@ -2,7 +2,7 @@
 
 Player commands. Not ticks. Not sim. [[architecture/world]] [[architecture/rng]] [[architecture/modules]]
 
-Internal enabler. No player-visible change. Not save UI. Not replay viewer. Not multiplayer.
+Internal enabler. No player-visible change. Not save UI. Not replay viewer. Multiplayer uses this log. [[architecture/net]]
 
 ## Files
 
@@ -49,12 +49,12 @@ No silent flag.
 
 ```
 dispatch(cmd): this.log.push(cmd); this.sink.push(cmd); return apply(cmd)
-apply(cmd): mutate. No log. No sink.
+apply(cmd): mutate seats[cmd.p] and shared farm. No log. No sink.
 ```
 
 Replay calls `apply` only.
 
-`dispatch` stamps `t = World.now` on the cmd the wrapper builds. Callers do not pick `t`.
+`dispatch` stamps `t = World.now` on the cmd the wrapper builds. Callers do not pick `t`. Every `Cmd` has required `p: SeatId`. Solo and tests: `p = 0`. Host sequencer sets guest `p` from that connection's seat. `p` is not in `Save`.
 
 ## Wrappers vs mutators
 
@@ -82,7 +82,7 @@ Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree
 
 Not logged (view-local): panel open/close, camera, hover, lens.
 
-Logged via the mutators that set them: `World.place`, `World.hud`, `World.cue`.
+Logged via the mutators that set them: `Seat.place`, `World.hud`, `World.cue`.
 
 Cheats are cmds.
 
@@ -94,16 +94,16 @@ Cheats are cmds.
 
 `Cmd.t` is `now` after last completed tick, before apply.
 
-Keep current rAF remainder stepping (`min(left, DT_MAX)`). Tests replay with `dt = 1/15`:
+Live tick is `DT_MAX` only (`1/15`). App accumulator. Never tick a leftover. View paints every rAF. Solo and MP. Tests replay with `dt = DT_MAX`:
 
 ```
 w = new World(seed)
 for cmd of cmds:
-  while (w.now < cmd.t) w.tick(1/15)
+  while (w.now < cmd.t) w.tick(DT_MAX)
   w.apply(cmd)
 ```
 
-Same-`t` cmds apply in log order. `t` is non-decreasing. Ticks are not cmds.
+Same-`t` cmds apply in log order. First wins, second no-op. `t` is non-decreasing. Ticks are not cmds. MP: one `tick(DT_MAX)` per host `bundle`. [[architecture/net]]
 
 ## JSON
 
@@ -121,47 +121,47 @@ Vertex uses `XY`. Edge in the log is `Edge` (`axis`, `col`, `row`). Intent in th
 
 ## Cmd
 
-Every arm has required `t: number`. `a` is `typeof Act.<name>`.
+Every arm has required `t: number` and `p: SeatId`. `a` is `typeof Act.<name>`. Solo and tests: `p = 0`.
 
 ```
 Cmd =
-  | { a: typeof Act.click; t; c: XY }
-  | { a: typeof Act.clickValve; t; e: Edge }
-  | { a: typeof Act.enqueue; t; i: Intent }
-  | { a: typeof Act.buy; t; s: SkuId }
-  | { a: typeof Act.buyPacks; t; s: SkuId }
-  | { a: typeof Act.placePipe; t; e: Edge }
-  | { a: typeof Act.placeSprinkler; t; s: Sprinkler }
-  | { a: typeof Act.delete; t; k: 'pipe'; e: Edge }
-  | { a: typeof Act.delete; t; k: 'sprinkler'; c: XY }
-  | { a: typeof Act.delete; t; k: 'building'; c: XY }
-  | { a: typeof Act.expand; t; k: ChunkId }
-  | { a: typeof Act.startResearch; t; r: ResearchId }
-  | { a: typeof Act.pickSkill; t; m: MemberId; s: number }
-  | { a: typeof Act.sellAll; t }
-  | { a: typeof Act.nudgeOffered; t; g: StallGoodId; d: 1 | -1 }
-  | { a: typeof Act.swap; t; i: number }
-  | { a: typeof Act.swapChest; t; c: XY; i: number }
-  | { a: typeof Act.tuneSprinkler; t; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t; c: XY }
-  | { a: typeof Act.closeHud; t }
-  | { a: typeof Act.armDelete; t }
-  | { a: typeof Act.cancelPlace; t }
-  | { a: typeof Act.rotatePlace; t }
-  | { a: typeof Act.dismissRecap; t }
-  | { a: typeof Act.ackCue; t }
-  | { a: typeof Act.rightClick; t; c: XY }
-  | { a: typeof Act.cheat; t; k: 'all' }
-  | { a: typeof Act.cheat; t; k: 'money' }
-  | { a: typeof Act.cheat; t; k: 'points' }
-  | { a: typeof Act.cheat; t; k: 'research' }
+  | { a: typeof Act.click; t; p; c: XY }
+  | { a: typeof Act.clickValve; t; p; e: Edge }
+  | { a: typeof Act.enqueue; t; p; i: Intent }
+  | { a: typeof Act.buy; t; p; s: SkuId }
+  | { a: typeof Act.buyPacks; t; p; s: SkuId }
+  | { a: typeof Act.placePipe; t; p; e: Edge }
+  | { a: typeof Act.placeSprinkler; t; p; s: Sprinkler }
+  | { a: typeof Act.delete; t; p; k: 'pipe'; e: Edge }
+  | { a: typeof Act.delete; t; p; k: 'sprinkler'; c: XY }
+  | { a: typeof Act.delete; t; p; k: 'building'; c: XY }
+  | { a: typeof Act.expand; t; p; k: ChunkId }
+  | { a: typeof Act.startResearch; t; p; r: ResearchId }
+  | { a: typeof Act.pickSkill; t; p; m: MemberId; s: number }
+  | { a: typeof Act.sellAll; t; p }
+  | { a: typeof Act.nudgeOffered; t; p; g: StallGoodId; d: 1 | -1 }
+  | { a: typeof Act.swap; t; p; i: number }
+  | { a: typeof Act.swapChest; t; p; c: XY; i: number }
+  | { a: typeof Act.tuneSprinkler; t; p; c: XY; u: Tune }
+  | { a: typeof Act.openHud; t; p; c: XY }
+  | { a: typeof Act.closeHud; t; p }
+  | { a: typeof Act.armDelete; t; p }
+  | { a: typeof Act.cancelPlace; t; p }
+  | { a: typeof Act.rotatePlace; t; p }
+  | { a: typeof Act.dismissRecap; t; p }
+  | { a: typeof Act.ackCue; t; p }
+  | { a: typeof Act.rightClick; t; p; c: XY }
+  | { a: typeof Act.cheat; t; p; k: 'all' }
+  | { a: typeof Act.cheat; t; p; k: 'money' }
+  | { a: typeof Act.cheat; t; p; k: 'points' }
+  | { a: typeof Act.cheat; t; p; k: 'research' }
 ```
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building. Not one mushy target.
 
 `Act.cheat` inner `k` is a closed union.
 
-Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm: if `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
+Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm uses `seats[cmd.p]`: if that `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and that hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 
 Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickValve` / `openHud` / `click` / `expand` — those public methods.
 
@@ -170,6 +170,7 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 ## Illegal
 
 - `Cmd` missing `t`
+- `Cmd` missing `p`
 - two meanings for one `a`
 - a letter for `a` written outside `Act`
 - classes in the log

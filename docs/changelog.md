@@ -2,6 +2,14 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.0.1 early-access tuning
+
+- **Weed / grass grace.** Spawn chance ramps linearly from **−10%** to full over the first day of big ticks (`ramped`, `CHANCE_RAMP_TICKS = 24`). No weed on the first tick of a fresh plot. [[mechanics/weeds]]
+- **Pause.** Top-ribbon **Pause** button next to Gear (`ui-btn-pause.svg`). Freezes the sim; selected while paused. [[ui/hud]]
+- **Well is edge-based** like a valve. Sits on one owned edge, joins its two vertices, feeds its 5 L / 150 L reservoir into that net. No pipe or valve on a well edge. Fill by clicking it with a container (gardener walks to an adjacent cell). Delete lifts the whole edge. Save `version` → **1.1**: pre-1.1 saves are refused with *different version*. [[mechanics/water]] [[architecture/save]]
+- **Valve place ghost.** Armed `buy-valve` now draws the open-valve body on the hovered edge at 0.7, on top of the junction preview. Well ghost likewise. [[ui/place]]
+- **Land lens reads untilled ground.** `land` tints untilled tiles by the goodness field (red = not worth digging), infertile flat red. [[ui/lens]]
+
 ## 2026-08-22 — cheat dock
 
 - Left ribbon **Cheat**. Dock: Unlock all instantly (moved off Research), research speed 3× toggle, gain 200, gain 10 skill points each.

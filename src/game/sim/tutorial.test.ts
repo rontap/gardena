@@ -116,7 +116,7 @@ describe('tutorial', () => {
     const t = check(w, on(1))
     expect(t.kind === 'on' && t.step === 7).toBe(true)
     w.setCell({ col: 16, row: 12 }, new CompostBox({ shape: 'rect', col: 16, row: 12, w: 1, h: 1 }))
-    w.place = { kind: 'sku', id: 'buy-box' }
+    w.seats[0].place = { kind: 'sku', id: 'buy-box' }
     const still = check(w, t)
     expect(still.kind === 'on' && still.step === 7).toBe(true)
     w.drops.push({
@@ -129,7 +129,7 @@ describe('tutorial', () => {
     plots(w2, 4, 'growing')
     w2.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
     w2.done.add('unlock-tomato')
-    w2.hand = { kind: 'hold', item: { kind: 'box', cap: BOX_LARGE, cargo: { kind: 'empty' } } }
+    w2.seats[0].hand = { kind: 'hold', item: { kind: 'box', cap: BOX_LARGE, cargo: { kind: 'empty' } } }
     const handBox = check(w2, on(1))
     expect(handBox.kind === 'on' && handBox.step === 8).toBe(true)
   })
@@ -204,8 +204,8 @@ describe('tutorial', () => {
     w.clock.day = 3
     w.clock.t = 41
     w.money = 88
-    w.actor.x = 12.25
-    w.actor.y = 9.75
+    w.seats[0].actor.x = 12.25
+    w.seats[0].actor.y = 9.75
     w.enqueue({ act: 'walk', at: AT })
     const text = JSON.stringify(dump(w))
     const r = parse(text)
@@ -218,10 +218,10 @@ describe('tutorial', () => {
     expect(r.world.rng.consumed('shop')).toBe(2)
     expect(r.world.rng.consumed('fruit')).toBe(1)
     expect(r.world.cell(AT).kind).toBe('empty')
-    expect(r.world.queue).toEqual([])
-    expect(r.world.actor.work).toBe(0)
-    expect(r.world.actor.x).toBe(12.25)
-    expect(r.world.actor.y).toBe(9.75)
+    expect(r.world.seats[0].queue).toEqual([])
+    expect(r.world.seats[0].actor.work).toBe(0)
+    expect(r.world.seats[0].actor.x).toBe(12.25)
+    expect(r.world.seats[0].actor.y).toBe(9.75)
     const seq = new Rng(1)
     seq.stream('shop').next()
     seq.stream('shop').next()
@@ -231,7 +231,7 @@ describe('tutorial', () => {
   test('bad item kind fails parse', () => {
     const w = new World(1)
     const badHand = dump(w)
-    badHand.hand = { kind: 'hold', item: { kind: 'nope' } as never }
+    badHand.seats[0].hand = { kind: 'hold', item: { kind: 'nope' } as never }
     const r = parse(JSON.stringify(badHand))
     expect(r.ok).toBe(false)
     if (r.ok) return

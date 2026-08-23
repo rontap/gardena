@@ -1,6 +1,6 @@
 # Modules
 
-`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, and the `DT_MAX` accumulator. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
+`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
 `defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the SVG camera. `net` is PeerJS. `World` does not import `peerjs`.
 
@@ -31,7 +31,7 @@ Classes for game objects. Tick and mutation stay here.
 | file | owns |
 |---|---|
 | `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `now`, `dispatch` / `apply`, `log`, `rng`. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
-| `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
+| `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
 | `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
 | `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
 | `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
@@ -64,8 +64,9 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 |---|---|
 | `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn` |
 | `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
-| `hud.tsx` | clock, build ribbon, docks, pause, gear |
+| `hud.tsx` | clock, build ribbon, docks, Multiplayer face, pause, gear |
 | `menu.tsx` | startup / in-play gear shell. [[ui/menu]] |
+| `multiplayer.tsx` | join / host / guest dialogs, catching-up overlay. [[ui/multiplayer]] |
 | `tutorial.tsx` | tour card. [[ui/tutorial]] |
 | `lens.tsx` | lens dock. [[ui/lens]] |
 | `status.tsx` | look line |
@@ -118,6 +119,7 @@ PeerJS only here. Implements `MpWire`. [[architecture/net]]
 | `Stall` | `StallGood` in `sim/stall.ts`. `World.stall: StallMap` — one good per `StallGoodId`. |
 | `Place` | type on `sim/world.ts`. Field `Seat.place`. Always a `Place`, never missing. |
 | `MpWire` | `sim/mp.ts` type. Loopback there. PeerJS in `net/peer.ts` only. |
+| `MpHost` / `MpGuest` | class `sim/mp.ts`. App holds the session. |
 
 `World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` are the same instances stored in their cells.
 

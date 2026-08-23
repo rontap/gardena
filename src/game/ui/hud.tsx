@@ -14,6 +14,7 @@ import {
   UI_BTN_FAMILY,
   UI_BTN_GEAR,
   UI_BTN_MARKET,
+  UI_BTN_MULTIPLAYER,
   UI_BTN_PAUSE,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
@@ -58,9 +59,10 @@ export function Hud({
   onCheat,
   onGear,
   onPause,
+  onMultiplayer,
 }: {
   world: World
-  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat' | 'menu'
+  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat' | 'menu' | 'multiplayer'
   lens: Lens
   paused: boolean
   onFamily: () => void
@@ -72,16 +74,18 @@ export function Hud({
   onCheat: () => void
   onGear: () => void
   onPause: () => void
+  onMultiplayer: () => void
 }) {
   const job = world.job
   const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
   const pct = def !== undefined && job.kind === 'run' ? ((def.seconds - job.left) / def.seconds) * 100 : 0
   const phase = world.clock.phase()
   const dayPct = (world.clock.t / DAY_SECONDS) * 100
+  const place = world.seats[world.local].place
   const trio =
-    world.place.kind === 'delete' ||
-    (world.place.kind === 'sku' && (PLACE_TOOLS as readonly string[]).includes(world.place.id))
-  const canRotate = world.place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(world.place.id)
+    place.kind === 'delete' || (place.kind === 'sku' && (PLACE_TOOLS as readonly string[]).includes(place.id))
+  const canRotate = place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(place.id)
+  const guest = world.local !== 0
   return (
     <>
       <Chrome className="pointer-events-none absolute top-4 left-4 right-4 z-20 h-14">
@@ -131,6 +135,7 @@ export function Hud({
               <span>·</span>
               <span>mines {world.mines}</span>
             </div>
+            <IconButton art={UI_BTN_MULTIPLAYER} label="Multiplayer" selected={panel === 'multiplayer'} onClick={onMultiplayer} />
             <PauseBtn selected={paused} onClick={onPause} />
             <GearBtn selected={panel === 'menu'} onClick={onGear} />
           </div>
@@ -150,14 +155,14 @@ export function Hud({
           />
           <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
           <FaceBtn art={UI_BTN_ALMANAC} label="Almanac" selected={panel === 'almanac'} onClick={onAlmanac} />
-          <FaceBtn art={UI_BTN_CHEAT} label="Cheat" selected={panel === 'cheat'} onClick={onCheat} />
+          {!guest && <FaceBtn art={UI_BTN_CHEAT} label="Cheat" selected={panel === 'cheat'} onClick={onCheat} />}
           {trio && (
             <>
               <div className="mx-3 my-1.5 border-t border-ink/20" />
               <FaceBtn
                 art={UI_BTN_DELETE}
                 label="Delete"
-                selected={world.place.kind === 'delete'}
+                selected={place.kind === 'delete'}
                 onClick={() => world.armDelete()}
               />
               {canRotate && <FaceBtn art={UI_BTN_ROTATE} label="Rotate" onClick={() => world.rotatePlace()} />}

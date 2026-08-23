@@ -72,6 +72,11 @@ body,
   background: var(--color-dirt-dark);
 }
 
+[data-actor] [id='hat'],
+[data-actor] [id='hat'] rect {
+  fill: var(--hat);
+}
+
 .plant-quality-pip {
   opacity: 0;
   transition: opacity 100ms linear;

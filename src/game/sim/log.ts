@@ -1,7 +1,7 @@
 import type { ChunkId } from './building.ts'
 import type { MemberId, ResearchId, SkuId, StallGoodId } from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
-import type { Intent } from './world.ts'
+import type { Intent, SeatId } from './world.ts'
 
 export type XY = [col: number, row: number]
 
@@ -42,38 +42,38 @@ export type WorkerIn =
   | { kind: 'dump' }
 
 export type Cmd =
-  | { a: typeof Act.click; t: number; c: XY }
-  | { a: typeof Act.clickValve; t: number; e: Edge }
-  | { a: typeof Act.clickWell; t: number; e: Edge }
-  | { a: typeof Act.enqueue; t: number; i: Intent }
-  | { a: typeof Act.buy; t: number; s: SkuId }
-  | { a: typeof Act.buyPacks; t: number; s: SkuId }
-  | { a: typeof Act.placePipe; t: number; e: Edge }
-  | { a: typeof Act.placeSprinkler; t: number; s: Sprinkler }
-  | { a: typeof Act.delete; t: number; k: 'pipe'; e: Edge }
-  | { a: typeof Act.delete; t: number; k: 'well'; e: Edge }
-  | { a: typeof Act.delete; t: number; k: 'sprinkler'; c: XY }
-  | { a: typeof Act.delete; t: number; k: 'building'; c: XY }
-  | { a: typeof Act.expand; t: number; k: ChunkId }
-  | { a: typeof Act.startResearch; t: number; r: ResearchId }
-  | { a: typeof Act.pickSkill; t: number; m: MemberId; s: number }
-  | { a: typeof Act.sellAll; t: number }
-  | { a: typeof Act.nudgeOffered; t: number; g: StallGoodId; d: 1 | -1 }
-  | { a: typeof Act.swap; t: number; i: number }
-  | { a: typeof Act.swapChest; t: number; c: XY; i: number }
-  | { a: typeof Act.tuneSprinkler; t: number; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t: number; c: XY }
-  | { a: typeof Act.closeHud; t: number }
-  | { a: typeof Act.armDelete; t: number }
-  | { a: typeof Act.cancelPlace; t: number }
-  | { a: typeof Act.rotatePlace; t: number }
-  | { a: typeof Act.dismissRecap; t: number }
-  | { a: typeof Act.ackCue; t: number }
-  | { a: typeof Act.rightClick; t: number; c: XY }
-  | { a: typeof Act.cheat; t: number; k: 'all' }
-  | { a: typeof Act.cheat; t: number; k: 'money' }
-  | { a: typeof Act.cheat; t: number; k: 'points' }
-  | { a: typeof Act.cheat; t: number; k: 'research' }
+  | { a: typeof Act.click; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.clickValve; t: number; p: SeatId; e: Edge }
+  | { a: typeof Act.clickWell; t: number; p: SeatId; e: Edge }
+  | { a: typeof Act.enqueue; t: number; p: SeatId; i: Intent }
+  | { a: typeof Act.buy; t: number; p: SeatId; s: SkuId }
+  | { a: typeof Act.buyPacks; t: number; p: SeatId; s: SkuId }
+  | { a: typeof Act.placePipe; t: number; p: SeatId; e: Edge }
+  | { a: typeof Act.placeSprinkler; t: number; p: SeatId; s: Sprinkler }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'pipe'; e: Edge }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'well'; e: Edge }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'sprinkler'; c: XY }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'building'; c: XY }
+  | { a: typeof Act.expand; t: number; p: SeatId; k: ChunkId }
+  | { a: typeof Act.startResearch; t: number; p: SeatId; r: ResearchId }
+  | { a: typeof Act.pickSkill; t: number; p: SeatId; m: MemberId; s: number }
+  | { a: typeof Act.sellAll; t: number; p: SeatId }
+  | { a: typeof Act.nudgeOffered; t: number; p: SeatId; g: StallGoodId; d: 1 | -1 }
+  | { a: typeof Act.swap; t: number; p: SeatId; i: number }
+  | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }
+  | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
+  | { a: typeof Act.openHud; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.closeHud; t: number; p: SeatId }
+  | { a: typeof Act.armDelete; t: number; p: SeatId }
+  | { a: typeof Act.cancelPlace; t: number; p: SeatId }
+  | { a: typeof Act.rotatePlace; t: number; p: SeatId }
+  | { a: typeof Act.dismissRecap; t: number; p: SeatId }
+  | { a: typeof Act.ackCue; t: number; p: SeatId }
+  | { a: typeof Act.rightClick; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'all' }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'money' }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

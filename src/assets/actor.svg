@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
   <rect fill="#1c1710" x="8" y="1" width="8" height="1"/>
   <rect fill="#1c1710" x="7" y="2" width="1" height="1"/>
-  <g id="hat">
-    <rect fill="#d4a017" x="8" y="2" width="8" height="1"/>
-    <rect fill="#d4a017" x="5" y="4" width="14" height="1"/>
+  <g id="hat" fill="var(--hat, #d4a017)">
+    <rect fill="var(--hat, #d4a017)" x="8" y="2" width="8" height="1"/>
+    <rect fill="var(--hat, #d4a017)" x="5" y="4" width="14" height="1"/>
   </g>
   <rect fill="#1c1710" x="16" y="2" width="1" height="1"/>
   <rect fill="#1c1710" x="6" y="3" width="1" height="1"/>

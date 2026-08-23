@@ -1,0 +1,1 @@
+(function(){let e=[];self.onmessage=t=>{let n=t.data;if(n.kind===`cmd`){e.push(n.cmd);return}if(n.kind===`reset`){e.length=0;return}self.postMessage(e.slice())}})();

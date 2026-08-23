@@ -70,7 +70,8 @@ function MemberCol({
 }) {
   const st = world.family[member]
   const owned = [...st.owned.entries()]
-  const canPick = st.points > 0
+  const guest = world.local !== 0
+  const canPick = st.points > 0 && !guest
   const empty = st.offers.length === 0
   return (
     <div className="flex flex-col bg-ink/6">
@@ -120,6 +121,7 @@ function MemberCol({
                 }
                 onPointerLeave={() => onTip(undefined)}
                 onClick={() => {
+                  // TODO 1.1 multiplayer guest family pick
                   if (!canPick) return
                   world.pickSkill(member, slot)
                 }}

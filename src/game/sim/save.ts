@@ -55,12 +55,16 @@ import { Soil } from './soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from './stall.ts'
 import {
   World,
+  localPlayerId,
   type DayTally,
   type Family,
   type Hydrate,
   type Job,
   type MemberState,
+  type Presence,
   type Recap,
+  type Seat,
+  type SeatId,
   type Seam,
   type SkillRef,
 } from './world.ts'
@@ -129,6 +133,14 @@ export type SaveCell =
   | { kind: 'truck'; base: RectBase }
   | { kind: 'occ'; of: Coord }
 
+export type SaveSeat = {
+  playerId: string
+  presence: Presence
+  actor: { x: number; y: number }
+  hand: Hand
+  inventory: Slot[]
+}
+
 export type Save = {
   game: 'gardena'
   version: 1.1
@@ -140,9 +152,7 @@ export type Save = {
   digs: number
   mines: number
   bigTicks: number
-  actor: { x: number; y: number }
-  hand: Hand
-  inventory: Slot[]
+  seats: SaveSeat[]
   done: ResearchId[]
   job: { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
   family: {
@@ -174,9 +184,13 @@ export function dump(world: World): Save {
     digs: world.digs,
     mines: world.mines,
     bigTicks: world.bigTicks,
-    actor: { x: world.actor.x, y: world.actor.y },
-    hand: world.hand,
-    inventory: world.inventory.slice(),
+    seats: world.seats.map(s => ({
+      playerId: s.playerId,
+      presence: s.presence,
+      actor: { x: s.actor.x, y: s.actor.y },
+      hand: s.hand,
+      inventory: s.inventory.slice(),
+    })),
     done: [...world.done],
     job: world.job,
     family: {
@@ -391,15 +405,69 @@ function dumpPlant(p: Plant): SavePlant {
   }
 }
 
+function readSeats(rec: Record<string, unknown>): SaveSeat[] | undefined {
+  const v = num(rec.version)
+  if (v === 1) return hydrate10(rec)
+  if (v === 1.1) return readSeats11(rec)
+  return undefined
+}
+
+function hydrate10(rec: Record<string, unknown>): SaveSeat[] | undefined {
+  const actorIn = obj(rec.actor)
+  if (actorIn === undefined) return undefined
+  const ax = num(actorIn.x)
+  const ay = num(actorIn.y)
+  if (ax === undefined || ay === undefined) return undefined
+  const hand = readHand(rec.hand)
+  if (hand === undefined) return undefined
+  const inventory = readInv(rec.inventory)
+  if (inventory === undefined) return undefined
+  return [{ playerId: localPlayerId(), presence: 'in', actor: { x: ax, y: ay }, hand, inventory }]
+}
+
+function readSeats11(rec: Record<string, unknown>): SaveSeat[] | undefined {
+  const seatsIn = arr(rec.seats)
+  if (seatsIn === undefined || seatsIn.length < 1) return undefined
+  const seats: SaveSeat[] = []
+  for (let i = 0; i < seatsIn.length; i++) {
+    const o = obj(seatsIn[i])
+    if (o === undefined) return undefined
+    if (typeof o.playerId !== 'string') return undefined
+    if (o.presence !== 'in' && o.presence !== 'away') return undefined
+    const actorIn = obj(o.actor)
+    if (actorIn === undefined) return undefined
+    const ax = num(actorIn.x)
+    const ay = num(actorIn.y)
+    if (ax === undefined || ay === undefined) return undefined
+    const hand = readHand(o.hand)
+    if (hand === undefined) return undefined
+    const inventory = readInv(o.inventory)
+    if (inventory === undefined) return undefined
+    seats.push({ playerId: o.playerId, presence: o.presence, actor: { x: ax, y: ay }, hand, inventory })
+  }
+  return seats
+}
+
+function readInv(raw: unknown): Slot[] | undefined {
+  const inventoryIn = arr(raw)
+  if (inventoryIn === undefined || inventoryIn.length !== INV) return undefined
+  const inventory: Slot[] = []
+  for (let i = 0; i < INV; i++) {
+    const s = readHand(inventoryIn[i])
+    if (s === undefined) return undefined
+    inventory.push(s)
+  }
+  return inventory
+}
+
 function readSave(rec: Record<string, unknown>): Save | undefined {
   if (num(rec.version) === undefined) return undefined
   const rngIn = obj(rec.rng)
   const clockIn = obj(rec.clock)
-  const actorIn = obj(rec.actor)
   const familyIn = obj(rec.family)
   const stallIn = rec.stall
   const tallyIn = obj(rec.tally)
-  if (rngIn === undefined || clockIn === undefined || actorIn === undefined) return undefined
+  if (rngIn === undefined || clockIn === undefined) return undefined
   if (familyIn === undefined || tallyIn === undefined) return undefined
   const seed = num(rngIn.seed)
   const shop = num(rngIn.shop)
@@ -411,9 +479,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const digs = num(rec.digs)
   const mines = num(rec.mines)
   const bigTicks = num(rec.bigTicks)
-  const ax = num(actorIn.x)
-  const ay = num(actorIn.y)
   const savedAt = rec.savedAt
+  const seats = readSeats(rec)
   if (
     seed === undefined ||
     shop === undefined ||
@@ -425,21 +492,10 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     digs === undefined ||
     mines === undefined ||
     bigTicks === undefined ||
-    ax === undefined ||
-    ay === undefined ||
+    seats === undefined ||
     typeof savedAt !== 'string'
   ) {
     return undefined
-  }
-  const hand = readHand(rec.hand)
-  if (hand === undefined) return undefined
-  const inventoryIn = arr(rec.inventory)
-  if (inventoryIn === undefined || inventoryIn.length !== INV) return undefined
-  const inventory: Slot[] = []
-  for (let i = 0; i < INV; i++) {
-    const s = readHand(inventoryIn[i])
-    if (s === undefined) return undefined
-    inventory.push(s)
   }
   const doneIn = arr(rec.done)
   if (doneIn === undefined) return undefined
@@ -554,9 +610,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     digs,
     mines,
     bigTicks,
-    actor: { x: ax, y: ay },
-    hand,
-    inventory,
+    seats,
     done,
     job,
     family: { player, husband, daughter },
@@ -587,7 +641,20 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     taps: live.taps,
     stall: makeStallMap(save.stall),
     family: makeFamily(save.family),
-    actor: new Actor(save.actor.x, save.actor.y),
+    seats: save.seats.map((s, i): Seat => ({
+      id: i as SeatId,
+      playerId: s.playerId,
+      presence: s.presence,
+      actor: new Actor(s.actor.x, s.actor.y),
+      hand: s.hand,
+      inventory: s.inventory.slice(),
+      queue: [],
+      place: { kind: 'none' },
+      workLeft: 0,
+      workTotal: 0,
+      filling: false,
+      legStart: { x: s.actor.x, y: s.actor.y },
+    })),
     owned,
     chunks: live.chunks,
     clock: save.clock,
@@ -596,8 +663,6 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     digs: save.digs,
     mines: save.mines,
     bigTicks: save.bigTicks,
-    hand: save.hand,
-    inventory: save.inventory,
     done: save.done,
     job: save.job,
     tally: save.tally,

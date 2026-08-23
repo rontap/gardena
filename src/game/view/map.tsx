@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, type WheelEvent } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { CROPS, tolerance } from '../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MAX, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
@@ -14,7 +14,7 @@ import type { Soil } from '../sim/soil.ts'
 import type { Modifier } from '../sim/modifiers.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
-import type { Place, World } from '../sim/world.ts'
+import type { Place, SeatId, World } from '../sim/world.ts'
 import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
   ACTOR,
@@ -110,6 +110,13 @@ const STAY_ARMED: readonly SkuId[] = [
 
 const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
 
+const HAT: { readonly [K in SeatId]: string } = {
+  0: '#d4a017',
+  1: '#ff3d8e',
+  2: '#2de8ff',
+  3: '#b85cff',
+}
+
 type Props = {
   world: World
   cam: Camera
@@ -131,11 +138,12 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const [ptr, setPtr] = useState({ x: 0, y: 0 })
   const [worldPtr, setWorldPtr] = useState<{ x: number; y: number } | undefined>(undefined)
   camRef.current = cam
-  const placing = world.place.kind === 'sku' || world.place.kind === 'delete'
-  const placeId = world.place.kind === 'sku' ? world.place.id : undefined
+  const place = world.seats[world.local].place
+  const placing = place.kind === 'sku' || place.kind === 'delete'
+  const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
-  const deleteTool = world.place.kind === 'delete'
+  const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const stay = deleteTool || (placeId !== undefined && STAY_ARMED.includes(placeId))
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
@@ -153,8 +161,8 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   )
   const ghostWet = edgeHit !== undefined && world.pendingWet(edgeHit)
   const ghostSprinkler =
-    sprinklerTool && world.place.kind === 'sku' && vertexHit !== undefined
-      ? makeSprinkler(world.place, vertexHit)
+    sprinklerTool && place.kind === 'sku' && vertexHit !== undefined
+      ? makeSprinkler(place, vertexHit)
       : undefined
   const deleteTarget = deleteTool ? deleteHit(world, edgeHit, vertexHit) : undefined
   const hoverCell = hover !== undefined && hover.kind === 'cell' ? hover.at : undefined
@@ -229,7 +237,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           return
         }
       }
-      const key = `${Math.floor(w.x)},${Math.floor(w.y)}|${Math.round(w.x)},${Math.round(w.y)}|${world.place.kind}`
+      const key = `${Math.floor(w.x)},${Math.floor(w.y)}|${Math.round(w.x)},${Math.round(w.y)}|${place.kind}`
       if (key !== lastHoverKey.current) {
         lastHoverKey.current = key
         onHover(clickHit(world, w.x, w.y))
@@ -507,14 +515,15 @@ const Marks = memo(function Marks({
   world.segments.forEach(seg => {
     if (seg.gate.kind === 'valve') valves.push({ at: seg.at, open: seg.gate.open })
   })
+  const place = world.seats[world.local].place
   const showPipes =
     lens === 'pipes' ||
-    world.place.kind === 'delete' ||
-    (world.place.kind === 'sku' && PIPE_PLACE.includes(world.place.id))
+    place.kind === 'delete' ||
+    (place.kind === 'sku' && PIPE_PLACE.includes(place.id))
   const washAoe =
     lens === 'pipes' ||
-    world.place.kind === 'delete' ||
-    (world.place.kind === 'sku' && AOE_WASH.includes(world.place.id))
+    place.kind === 'delete' ||
+    (place.kind === 'sku' && AOE_WASH.includes(place.id))
   const aoeWash = new Set<string>()
   if (washAoe) {
     world.sprinklers.forEach(s => {
@@ -772,15 +781,21 @@ const Marks = memo(function Marks({
         </g>
       )}
       <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
-      <g
-        data-actor
-        transform={`translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
-      >
-        <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
-        {world.hand.kind === 'hold' && (
-          <g transform={`translate(15,13) scale(${8 / 24})`} dangerouslySetInnerHTML={{ __html: faceGfx(world.hand.item) }} />
-        )}
-      </g>
+      {world.seats
+        .filter(s => s.presence === 'in')
+        .map(s => (
+          <g
+            key={s.id}
+            data-actor={s.id}
+            style={{ ['--hat']: HAT[s.id] } as CSSProperties}
+            transform={`translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
+          >
+            <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
+            {s.hand.kind === 'hold' && (
+              <g transform={`translate(15,13) scale(${8 / 24})`} dangerouslySetInnerHTML={{ __html: faceGfx(s.hand.item) }} />
+            )}
+          </g>
+        ))}
       {faces.map(face => {
         const s = TILE * 0.85
         const o = (TILE - s) / 2
@@ -1409,7 +1424,7 @@ function stayOk(
   s: Sprinkler | undefined,
   del: DeleteTarget | undefined,
 ): boolean {
-  if (world.place.kind === 'delete') {
+  if (world.seats[world.local].place.kind === 'delete') {
     if (del !== undefined) return true
     if (edge === undefined && s === undefined) return false
     return del !== undefined
@@ -1432,7 +1447,7 @@ function stayOk(
 }
 
 function clickHit(world: World, wx: number, wy: number): MapClick | undefined {
-  const place = world.place
+  const place = world.seats[world.local].place
   if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well')) {
     const edge = nearestEdge(wx, wy)
     if (edge === undefined) return undefined

@@ -81,8 +81,9 @@ function helpers(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>) {
   let wilted = false
   let ripe = false
   const found: Item[] = []
-  if (world.hand.kind === 'hold') found.push(world.hand.item)
-  world.inventory.forEach(s => {
+  const seat = world.seats[world.local]
+  if (seat.hand.kind === 'hold') found.push(seat.hand.item)
+  seat.inventory.forEach(s => {
     if (s.kind === 'hold') found.push(s.item)
   })
   world.drops.forEach(d => found.push(d.item))
@@ -99,7 +100,7 @@ function helpers(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>) {
       })
     }
   })
-  const holdingSeeds = world.hand.kind === 'hold' && world.hand.item.kind === 'seeds'
+  const holdingSeeds = seat.hand.kind === 'hold' && seat.hand.item.kind === 'seeds'
   const hasBox = found.some(it => it.kind === 'box' && (it.cap === BOX_SMALL || it.cap === BOX_LARGE))
   const hasFruit = found.some(
     it =>

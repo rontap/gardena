@@ -452,7 +452,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -852,8 +852,8 @@ export function placeLabel(id: SkuId): string {
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >pipePrompt(w</span>: World, e: Edge): Prompt {
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind !== 'sku') <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
-  const id = <span class="cstat-no" title="statement not covered" >w.place.id</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind !== 'sku') <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
+  const id = <span class="cstat-no" title="statement not covered" >w.act.place.id</span>
 <span class="cstat-no" title="statement not covered" >  if (id !== 'buy-pipe' &amp;&amp; id !== 'buy-valve' &amp;&amp; id !== 'buy-well') {</span>
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Cannot place here' }</span>
   }
@@ -886,7 +886,7 @@ export function <span class="fstat-no" title="function not covered" >valvePrompt
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >wellPrompt(w</span>: World, e: Edge): Prompt {
 <span class="cstat-no" title="statement not covered" >  if (w.wellAt(e) === undefined) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot reach here' }</span></span>
-<span class="cstat-no" title="statement not covered" >  if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'container') {</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'container') {</span>
 <span class="cstat-no" title="statement not covered" >    return intent('Fill', { act: 'fillWell', stand: valveStand(w, e), edge: e })</span>
   }
 <span class="cstat-no" title="statement not covered" >  return { kind: 'blocked', text: 'Need a bucket' }</span>
@@ -894,7 +894,7 @@ export function <span class="fstat-no" title="function not covered" >wellPrompt(
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >sprinklerPrompt(w</span>: World, s: Sprinkler): Prompt {
   const id = <span class="cstat-no" title="statement not covered" >sprinklerSku(s)</span>
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind !== 'sku' || w.place.id !== id) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind !== 'sku' || w.act.place.id !== id) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
 <span class="cstat-no" title="statement not covered" >  if (w.money &lt; w.skuPrice(id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
 <span class="cstat-no" title="statement not covered" >  if (!w.vertexOwned(s.at)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
 <span class="cstat-no" title="statement not covered" >  if (w.sprinklerAt(s.at) !== undefined) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
@@ -908,7 +908,7 @@ export function <span class="fstat-no" title="function not covered" >deletePromp
   w: World,
   hit: { kind: 'pipe'; edge: Edge } | { kind: 'well'; edge: Edge } | { kind: 'sprinkler'; at: Vertex },
 ): Prompt {
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind !== 'delete') {</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind !== 'delete') {</span>
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Cannot delete here' }</span>
   }
 <span class="cstat-no" title="statement not covered" >  if (hit.kind === 'pipe') {</span>
@@ -927,7 +927,7 @@ export function <span class="fstat-no" title="function not covered" >deletePromp
 }
 &nbsp;
 export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.place.kind !== 'delete') <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot delete here' }</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.place.kind !== 'delete') <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot delete here' }</span>
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!inWorld(at, w.owned)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: NOT_OWNED }</span>
   const cell = w.cell(at)
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'pump' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >cell.form === 'jack') <span class="cstat-no" title="statement not covered" >r</span>eturn { kind: 'place', text: 'Delete pumpjack' }</span>
@@ -942,31 +942,31 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >readPromptHit(w</span>: World, hit: PromptHit | undefined): Prompt {
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind === 'sku' &amp;&amp; (w.place.id === 'buy-pipe' || w.place.id === 'buy-valve' || w.place.id === 'buy-well')) {</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind === 'sku' &amp;&amp; (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well')) {</span>
 <span class="cstat-no" title="statement not covered" >    if (hit === undefined || hit.kind !== 'edge') {</span>
-<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
+<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.act.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
 <span class="cstat-no" title="statement not covered" >      return { kind: 'blocked', text: 'Cannot place here' }</span>
     }
 <span class="cstat-no" title="statement not covered" >    return pipePrompt(w, hit.edge)</span>
   }
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'valve') <span class="cstat-no" title="statement not covered" >return valvePrompt(w, hit.edge)</span></span>
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'well') <span class="cstat-no" title="statement not covered" >return wellPrompt(w, hit.edge)</span></span>
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'sprinkler-hud') {</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'valve') <span class="cstat-no" title="statement not covered" >return valvePrompt(w, hit.edge)</span></span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'well') <span class="cstat-no" title="statement not covered" >return wellPrompt(w, hit.edge)</span></span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind === 'none' &amp;&amp; hit !== undefined &amp;&amp; hit.kind === 'sprinkler-hud') {</span>
 <span class="cstat-no" title="statement not covered" >    return { kind: 'place', text: 'Tune sprinkler' }</span>
   }
 <span class="cstat-no" title="statement not covered" >  if (</span>
-    w.place.kind === 'sku' &amp;&amp;
-    (w.place.id === 'buy-sprinkler' ||
-      w.place.id === 'buy-sprinkler-vert' ||
-      w.place.id === 'buy-sprinkler-large')
+    w.act.place.kind === 'sku' &amp;&amp;
+    (w.act.place.id === 'buy-sprinkler' ||
+      w.act.place.id === 'buy-sprinkler-vert' ||
+      w.act.place.id === 'buy-sprinkler-large')
   ) {
 <span class="cstat-no" title="statement not covered" >    if (hit === undefined || hit.kind !== 'sprinkler') {</span>
-<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
+<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.act.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
 <span class="cstat-no" title="statement not covered" >      return { kind: 'blocked', text: 'Cannot place here' }</span>
     }
 <span class="cstat-no" title="statement not covered" >    return sprinklerPrompt(w, hit.sprinkler)</span>
   }
-<span class="cstat-no" title="statement not covered" >  if (w.place.kind === 'delete') {</span>
+<span class="cstat-no" title="statement not covered" >  if (w.act.place.kind === 'delete') {</span>
 <span class="cstat-no" title="statement not covered" >    if (hit !== undefined &amp;&amp; hit.kind === 'delete-pipe') <span class="cstat-no" title="statement not covered" >return deletePrompt(w, { kind: 'pipe', edge: hit.edge })</span></span>
 <span class="cstat-no" title="statement not covered" >    if (hit !== undefined &amp;&amp; hit.kind === 'delete-well') <span class="cstat-no" title="statement not covered" >return deletePrompt(w, { kind: 'well', edge: hit.edge })</span></span>
 <span class="cstat-no" title="statement not covered" >    if (hit !== undefined &amp;&amp; hit.kind === 'delete-sprinkler') <span class="cstat-no" title="statement not covered" >return deletePrompt(w, { kind: 'sprinkler', at: hit.at })</span></span>
@@ -974,8 +974,8 @@ export function <span class="fstat-no" title="function not covered" >readPromptH
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Cannot delete here' }</span>
   }
 <span class="cstat-no" title="statement not covered" >  if (hit === undefined || hit.kind !== 'cell') {</span>
-<span class="cstat-no" title="statement not covered" >    if (w.place.kind === 'sku') {</span>
-<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
+<span class="cstat-no" title="statement not covered" >    if (w.act.place.kind === 'sku') {</span>
+<span class="cstat-no" title="statement not covered" >      if (w.money &lt; w.skuPrice(w.act.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
 <span class="cstat-no" title="statement not covered" >      return { kind: 'blocked', text: 'Cannot place here' }</span>
     }
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Cannot place here' }</span>
@@ -984,79 +984,79 @@ export function <span class="fstat-no" title="function not covered" >readPromptH
 }
 &nbsp;
 export function readPrompt(w: World, at: Coord): Prompt {
-  if (w.place.kind === 'delete') return deleteBuildingPrompt(w, at)
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.place.kind === 'sku') {
+  if (w.act.place.kind === 'delete') return deleteBuildingPrompt(w, at)
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.place.kind === 'sku') {
 <span class="cstat-no" title="statement not covered" >    if (</span>
-      w.place.id === 'buy-pipe' ||
-      w.place.id === 'buy-valve' ||
-      w.place.id === 'buy-well' ||
-      w.place.id === 'buy-sprinkler' ||
-      w.place.id === 'buy-sprinkler-vert' ||
-      w.place.id === 'buy-sprinkler-large'
+      w.act.place.id === 'buy-pipe' ||
+      w.act.place.id === 'buy-valve' ||
+      w.act.place.id === 'buy-well' ||
+      w.act.place.id === 'buy-sprinkler' ||
+      w.act.place.id === 'buy-sprinkler-vert' ||
+      w.act.place.id === 'buy-sprinkler-large'
     ) {
 <span class="cstat-no" title="statement not covered" >      return readPromptHit(w, undefined)</span>
     }
-<span class="cstat-no" title="statement not covered" >    if (w.money &lt; w.skuPrice(w.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
+<span class="cstat-no" title="statement not covered" >    if (w.money &lt; w.skuPrice(w.act.place.id)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot afford' }</span></span>
 <span class="cstat-no" title="statement not covered" >    if (</span>
-      w.place.id === 'buy-tile-paved' ||
-      w.place.id === 'buy-tile-brick' ||
-      w.place.id === 'buy-tile-cobble'
+      w.act.place.id === 'buy-tile-paved' ||
+      w.act.place.id === 'buy-tile-brick' ||
+      w.act.place.id === 'buy-tile-cobble'
     ) {
 <span class="cstat-no" title="statement not covered" >      if (!inWorld(at, w.owned)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: NOT_OWNED }</span></span>
 <span class="cstat-no" title="statement not covered" >      if (!isTileSite(w.cell(at))) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
-<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }</span>
+<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }</span>
     }
-<span class="cstat-no" title="statement not covered" >    if (w.place.id === 'buy-fence') {</span>
+<span class="cstat-no" title="statement not covered" >    if (w.act.place.id === 'buy-fence') {</span>
 <span class="cstat-no" title="statement not covered" >      if (!inWorld(at, w.owned)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: NOT_OWNED }</span></span>
 <span class="cstat-no" title="statement not covered" >      if (!isFenceSite(w.cell(at))) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Fences need untilled ground' }</span></span>
 <span class="cstat-no" title="statement not covered" >      if (w.hasFence(at)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Already fenced' }</span></span>
-<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }</span>
+<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }</span>
     }
-<span class="cstat-no" title="statement not covered" >    if (w.place.id === 'buy-pumpjack' || w.place.id === 'buy-rain-tank') {</span>
+<span class="cstat-no" title="statement not covered" >    if (w.act.place.id === 'buy-pumpjack' || w.act.place.id === 'buy-rain-tank') {</span>
 <span class="cstat-no" title="statement not covered" >      if (!wideSiteOk(w, at)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
-<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }</span>
+<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }</span>
     }
 <span class="cstat-no" title="statement not covered" >    if (</span>
-      w.place.id === 'buy-chest' ||
-      w.place.id === 'buy-grinder' ||
-      w.place.id === 'buy-compost-box' ||
-      w.place.id === 'buy-tap'
+      w.act.place.id === 'buy-chest' ||
+      w.act.place.id === 'buy-grinder' ||
+      w.act.place.id === 'buy-compost-box' ||
+      w.act.place.id === 'buy-tap'
     ) {
 <span class="cstat-no" title="statement not covered" >      if (!placeSolidOk(w, at)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
-<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }</span>
+<span class="cstat-no" title="statement not covered" >      return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }</span>
     }
 <span class="cstat-no" title="statement not covered" >    if (!inWorld(at, w.owned)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: NOT_OWNED }</span></span>
 <span class="cstat-no" title="statement not covered" >    if (!isPlot(w.cell(at))) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Cannot place here' }</span></span>
-<span class="cstat-no" title="statement not covered" >    return { kind: 'place', text: `Place ${placeLabel(w.place.id)}` }</span>
+<span class="cstat-no" title="statement not covered" >    return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }</span>
   }
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!inWorld(at, w.owned)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: NOT_OWNED }</span>
   const cell = w.cell(at)
   if (cell.kind === 'house') return intent('Inventory', { act: 'inventory' })
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'truck') {
-<span class="cstat-no" title="statement not covered" >    if (canConsign(w.hand)) <span class="cstat-no" title="statement not covered" >return intent('Drop off', { act: 'consign' })</span></span>
+<span class="cstat-no" title="statement not covered" >    if (canConsign(w.act.hand)) <span class="cstat-no" title="statement not covered" >return intent('Drop off', { act: 'consign' })</span></span>
 <span class="cstat-no" title="statement not covered" >    return needSeeds(cell)</span>
   }
   <span class="missing-if-branch" title="if path not taken" >I</span>if (onCell(w.drops, at).length &gt; 0) <span class="cstat-no" title="statement not covered" >return intent('Pick up', { act: 'pickup', at })</span>
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'chest') <span class="cstat-no" title="statement not covered" >return intent('Chest', { act: 'chest', at })</span>
   if (cell.kind === 'grinder') {
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (grindN(w.hand) &gt; 0) return intent('Grind', { act: 'grind', at })
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (grindN(w.act.hand) &gt; 0) return intent('Grind', { act: 'grind', at })
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Seed grinder' }</span>
   }
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'compost-box') {
-<span class="cstat-no" title="statement not covered" >    if (w.hand.kind === 'hold' &amp;&amp; organic(w.hand.item)) <span class="cstat-no" title="statement not covered" >return intent('Compost', { act: 'compost', at })</span></span>
+<span class="cstat-no" title="statement not covered" >    if (w.act.hand.kind === 'hold' &amp;&amp; organic(w.act.hand.item)) <span class="cstat-no" title="statement not covered" >return intent('Compost', { act: 'compost', at })</span></span>
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: compostLine(cell.units, cell.progress) }</span>
   }
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap') {
 <span class="cstat-no" title="statement not covered" >    if (!fillable(w, at)) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Tap has no water grid' }</span></span>
-<span class="cstat-no" title="statement not covered" >    if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'container') {</span>
+<span class="cstat-no" title="statement not covered" >    if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'container') {</span>
 <span class="cstat-no" title="statement not covered" >      return intent('Fill', { act: 'fill', at })</span>
     }
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Need a bucket' }</span>
   }
-  if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'pickaxe') {
+  if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'pickaxe') {
     if (cell.kind === 'rock') {
       const n = cell.base.w * cell.base.h
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (n &gt; 1 &amp;&amp; w.hand.item.usesLeft &lt; 2) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Need a pickaxe' }</span>
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (n &gt; 1 &amp;&amp; w.act.hand.item.usesLeft &lt; 2) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Need a pickaxe' }</span>
       return intent('Mine', { act: 'mine', at })
     }
     if (cell.kind === 'untilled' &amp;&amp; cell.ground === 'very-hard') {
@@ -1064,12 +1064,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     return needSeeds(cell)
   }
-  if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'shovel') {
+  if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'shovel') {
     if (cell.kind === 'rock' || (cell.kind === 'untilled' &amp;&amp; cell.ground === 'very-hard')) {
       return { kind: 'blocked', text: 'Need a pickaxe' }
     }
     if (cell.kind === 'tree') return intent('Dig', { act: 'shovel', at })
-    if (cell.kind === 'untilled' &amp;&amp; cell.ground === 'hard' &amp;&amp; w.hand.item.usesLeft &lt; 2) {
+    if (cell.kind === 'untilled' &amp;&amp; cell.ground === 'hard' &amp;&amp; w.act.hand.item.usesLeft &lt; 2) {
       return { kind: 'blocked', text: 'Cannot dig' }
     }
     <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'weed') <span class="cstat-no" title="statement not covered" >return intent('Pull weed', { act: 'shovel', at })</span>
@@ -1079,7 +1079,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'dead') return intent('Dig out dead plant', { act: 'shovel', at })
     return needSeeds(cell)
   }
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'sapling') {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'sapling') {
     const below = <span class="cstat-no" title="statement not covered" >{ col: at.col, row: at.row + 1 }</span>
     const a = <span class="cstat-no" title="statement not covered" >cell</span>
     const b = <span class="cstat-no" title="statement not covered" >w.inWorld(below) ? w.cell(below) : undefined</span>
@@ -1092,25 +1092,25 @@ export function readPrompt(w: World, at: Coord): Prompt {
       b.ground === 'soft' &amp;&amp;
       b.cover.kind !== 'tile'
     ) {
-<span class="cstat-no" title="statement not covered" >      return intent(`Plant ${TREE_NAME[w.hand.item.tree]}`, { act: 'plant', at })</span>
+<span class="cstat-no" title="statement not covered" >      return intent(`Plant ${TREE_NAME[w.act.hand.item.tree]}`, { act: 'plant', at })</span>
     }
   }
-  if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'seeds') {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'empty') <span class="cstat-no" title="statement not covered" >return intent(`Plant ${w.hand.item.crop}`, { act: 'plant', at })</span>
+  if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'seeds') {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (cell.kind === 'empty') <span class="cstat-no" title="statement not covered" >return intent(`Plant ${w.act.hand.item.crop}`, { act: 'plant', at })</span>
     return needSeeds(cell)
   }
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'grass-seeds') {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'grass-seeds') {
 <span class="cstat-no" title="statement not covered" >    if (cell.kind === 'empty') <span class="cstat-no" title="statement not covered" >return intent('Sow grass', { act: 'plant', at })</span></span>
 <span class="cstat-no" title="statement not covered" >    return needSeeds(cell)</span>
   }
-  if (w.hand.kind === 'hold' &amp;&amp; w.hand.item.kind === 'container' &amp;&amp; isTilled(cell)) {
+  if (w.act.hand.kind === 'hold' &amp;&amp; w.act.hand.item.kind === 'container' &amp;&amp; isTilled(cell)) {
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!waterable(cell, w.modifiers)) {
 <span class="cstat-no" title="statement not covered" >      return { kind: 'blocked', text: cell.soil.drowning ? 'Soil is drowning' : 'Soil is watered' }</span>
     }
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (w.hand.item.liters &gt; 0) return intent('Water', { act: 'water', at })
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (w.act.hand.item.liters &gt; 0) return intent('Water', { act: 'water', at })
 <span class="cstat-no" title="statement not covered" >    return { kind: 'blocked', text: 'Bucket empty' }</span>
   }
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.hand.kind === 'hold' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >feedKind(w.hand.item) &amp;&amp; <span class="branch-2 cbranch-no" title="branch not covered" >i</span>sTilled(cell)) {</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.hand.kind === 'hold' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >feedKind(w.act.hand.item) &amp;&amp; <span class="branch-2 cbranch-no" title="branch not covered" >i</span>sTilled(cell)) {</span>
 <span class="cstat-no" title="statement not covered" >    if (cell.soil.fertilizer &gt;= FERT_PLOT_MAX) <span class="cstat-no" title="statement not covered" >return { kind: 'blocked', text: 'Soil is fertile' }</span></span>
 <span class="cstat-no" title="statement not covered" >    return intent('Fertilize', { act: 'fertilize', at })</span>
   }
@@ -1120,11 +1120,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'ripe' &amp;&amp; cell.plant.crop !== 'sugar-cane' &amp;&amp; canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
     return intent('Harvest', { act: 'harvest', at })
   }
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.hand.kind === 'empty' &amp;&amp; (cell.kind === 'weed' || (cell.kind === 'untilled' &amp;&amp; <span class="branch-3 cbranch-no" title="branch not covered" >cell.cover.kind === 'grass'))) {</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (w.act.hand.kind === 'empty' &amp;&amp; (cell.kind === 'weed' || (cell.kind === 'untilled' &amp;&amp; <span class="branch-3 cbranch-no" title="branch not covered" >cell.cover.kind === 'grass'))) {</span>
 <span class="cstat-no" title="statement not covered" >    return intent('Pick up', { act: 'pickup', at })</span>
   }
   <span class="missing-if-branch" title="if path not taken" >I</span>if (w.canTend(at)) <span class="cstat-no" title="statement not covered" >return intent('Tend', { act: 'tend', at })</span>
-  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.hand.kind === 'empty') return intent('Move here', { act: 'walk', at })
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.act.hand.kind === 'empty') return intent('Move here', { act: 'walk', at })
 <span class="cstat-no" title="statement not covered" >  if (isPlot(cell)) <span class="cstat-no" title="statement not covered" >return intent('Drop', { act: 'drop', at })</span></span>
 <span class="cstat-no" title="statement not covered" >  return needSeeds(cell)</span>
 }
@@ -1151,14 +1151,14 @@ export function wideSiteOk(w: World, at: Coord): boolean {
 }
 &nbsp;
 function canHarvestHand(w: World, crop: CropId, rarity: Rarity): boolean {
-  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.hand.kind === 'empty') return true
-<span class="cstat-no" title="statement not covered" >  if (w.hand.item.kind !== 'box') <span class="cstat-no" title="statement not covered" >return false</span></span>
-<span class="cstat-no" title="statement not covered" >  return boxAccepts(w.hand.item, 'fruit', crop, rarity, 1) &gt; 0</span>
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.act.hand.kind === 'empty') return true
+<span class="cstat-no" title="statement not covered" >  if (w.act.hand.item.kind !== 'box') <span class="cstat-no" title="statement not covered" >return false</span></span>
+<span class="cstat-no" title="statement not covered" >  return boxAccepts(w.act.hand.item, 'fruit', crop, rarity, 1) &gt; 0</span>
 }
 &nbsp;
 function canHarvestSugar(w: World): boolean {
-  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.hand.kind === 'empty') return true
-<span class="cstat-no" title="statement not covered" >  return w.hand.item.kind === 'sugar'</span>
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (w.act.hand.kind === 'empty') return true
+<span class="cstat-no" title="statement not covered" >  return w.act.hand.item.kind === 'sugar'</span>
 }
 &nbsp;
 function <span class="fstat-no" title="function not covered" >canConsign(h</span>and: Hand): boolean {
@@ -1201,7 +1201,7 @@ function <span class="fstat-no" title="function not covered" >sprinklerSku(s</sp
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-22T23:42:13.462Z
+                at 2026-08-23T01:55:04.450Z
             </div>
         <script src="../prettify.js"></script>
         <script>

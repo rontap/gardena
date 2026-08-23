@@ -3,6 +3,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
+import { guestBlockedSku } from '../sim/mp.ts'
 import type { World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
@@ -97,7 +98,9 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
             description={
               <>
                 <span>{skuDesc(hot)}</span>
-                {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(hot, state)}</span>}
+                {state !== 'ok' && !(world.local !== 0 && guestBlockedSku(hot)) && (
+                  <span className="mt-2 block font-bold text-roof">{gateLine(hot, state)}</span>
+                )}
                 {state === 'ok' && bulk !== undefined && (
                   <span className="mt-2 flex items-center gap-1 font-bold">
                     Ctrl-click: 5 packs for <Coin n={bulk} />
@@ -143,8 +146,10 @@ export function Shop({ world, onClose }: { world: World; onClose: () => void }) 
 
 function SkuRow({ id, world, onHot }: { id: SkuId; world: World; onHot: (id: SkuId | undefined) => void }) {
   const state = rowState(world, id)
-  const armed = world.place.kind === 'sku' && world.place.id === id
-  const off = state !== 'ok'
+  const place = world.seats[world.local].place
+  const armed = place.kind === 'sku' && place.id === id
+  const guestOff = world.local !== 0 && guestBlockedSku(id)
+  const off = state !== 'ok' || guestOff
   const face = off
     ? 'cursor-default bg-ink/6 text-ink/35'
     : armed
@@ -194,18 +199,19 @@ function rowState(world: World, id: SkuId): RowState {
   if (need !== undefined && !world.hasSkill(need)) return 'need-skill'
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < world.skuPrice(id)) return 'cannot-afford'
+  const inv = world.seats[world.local].inventory
   const made = skuItem(id)
   if (made.kind === 'grass-seeds') {
-    const merge = world.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
-    const empty = world.inventory.findIndex(s => s.kind === 'empty')
+    const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
+    const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'
   }
   if (made.kind === 'seeds') {
-    const merge = world.inventory.findIndex(
+    const merge = inv.findIndex(
       s =>
         s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === made.crop && s.item.rarity === made.rarity,
     )
-    const empty = world.inventory.findIndex(s => s.kind === 'empty')
+    const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'
   }
   return 'ok'

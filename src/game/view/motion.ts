@@ -7,7 +7,7 @@ import { TILE } from './camera.ts'
 import { UI_PHASE } from './svgs.ts'
 
 type MotionNodes = {
-  actor: Element | null
+  actors: Element[]
   clock: Element | null
   phase: Element | null
   research: Element | null
@@ -26,7 +26,7 @@ let nodes: MotionNodes | undefined
 
 function scan(root: HTMLElement): MotionNodes {
   return {
-    actor: root.querySelector('[data-actor]'),
+    actors: [...root.querySelectorAll('[data-actor]')],
     clock: root.querySelector('[data-clock]'),
     phase: root.querySelector('[data-phase]'),
     research: root.querySelector('[data-research]'),
@@ -47,12 +47,20 @@ export function paintMotion(root: HTMLElement, world: World, rev: number): void 
     nodes = scan(root)
   }
   const n = nodes
-  if (n.actor instanceof SVGGElement) {
-    n.actor.setAttribute(
+  n.actors.forEach(el => {
+    if (!(el instanceof SVGGElement)) return
+    const id = Number(el.getAttribute('data-actor'))
+    const s = world.seats.find(seat => seat.id === id)
+    if (s === undefined || s.presence !== 'in') {
+      el.setAttribute('visibility', 'hidden')
+      return
+    }
+    el.setAttribute('visibility', 'visible')
+    el.setAttribute(
       'transform',
-      `translate(${(world.actor.x - 0.5) * TILE},${(world.actor.y - 0.5) * TILE}) scale(${TILE / 24})`,
+      `translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`,
     )
-  }
+  })
   const phase = world.clock.phase()
   const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
   if (n.clock !== null) {
@@ -93,8 +101,9 @@ export function paintMotion(root: HTMLElement, world: World, rev: number): void 
       speech.setAttribute('visibility', 'hidden')
     } else {
       speech.setAttribute('visibility', 'visible')
-      speech.setAttribute('x', String(world.actor.x * TILE - 100))
-      speech.setAttribute('y', String((world.actor.y - 0.5) * TILE - 24))
+      const speaker = world.seats[world.local]
+      speech.setAttribute('x', String(speaker.actor.x * TILE - 100))
+      speech.setAttribute('y', String((speaker.actor.y - 0.5) * TILE - 24))
       const line = speech.querySelector('[data-speech-text]')
       if (line !== null) line.textContent = world.speech.text
     }

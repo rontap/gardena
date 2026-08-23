@@ -94,7 +94,8 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
 }
 
 export function Status({ world, hover }: { world: World; hover: PromptHit | undefined }) {
-  const hand = world.hand
+  const seat = world.seats[world.local]
+  const hand = seat.hand
   return (
     <Chrome className="relative w-full">
       <div className="relative flex items-center gap-3 px-3 py-3">
@@ -113,7 +114,7 @@ export function Status({ world, hover }: { world: World; hover: PromptHit | unde
       </div>
       <div
         className={`relative px-3 py-3 leading-snug whitespace-pre-line ${
-          world.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
+          seat.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
         }`}
       >
           {lookText(world, hover, false)}

@@ -4,12 +4,22 @@ import type { Recap as RecapData } from '../sim/world.ts'
 import { UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { Btn, Chrome, Coin } from './frame.tsx'
 
-export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay: number; onDismiss: () => void }) {
+export function Recap({
+  recap,
+  nextDay,
+  guest,
+  onDismiss,
+}: {
+  recap: RecapData
+  nextDay: number
+  guest: boolean
+  onDismiss: () => void
+}) {
   return (
     <Dialog.Root
       open
       onOpenChange={o => {
-        if (!o) onDismiss()
+        if (!o && !guest) onDismiss()
       }}
     >
       <Dialog.Portal>
@@ -47,7 +57,7 @@ export function Recap({ recap, nextDay, onDismiss }: { recap: RecapData; nextDay
                   <Coin n={recap.money} />
                 </span>
               </div>
-              <Btn className="mt-4 w-full text-center" onClick={onDismiss}>
+              <Btn className="mt-4 w-full text-center" disabled={guest} onClick={guest ? undefined : onDismiss}>
                 Day {nextDay}
               </Btn>
             </div>

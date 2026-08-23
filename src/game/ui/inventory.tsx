@@ -18,7 +18,7 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
           <Frame title="Inventory" onClose={onClose} wide>
             <Dialog.Title className="sr-only">Inventory</Dialog.Title>
             <div className="grid grid-cols-4 gap-2">
-              {world.inventory.map((slot, i) => (
+              {world.seats[world.local].inventory.map((slot, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <button
                     type="button"

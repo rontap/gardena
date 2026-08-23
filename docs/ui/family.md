@@ -6,6 +6,8 @@ Three **cards**, not three loose columns — `grid-cols-3 gap-3`, each card `bg-
 
 HUD **Family** toggles it. × closes. Esc closes. Backdrop pointer-down on the dim closes. Selected on the ribbon while open.
 
+Guest: overlay opens. Offers not clickable. [[ui/multiplayer]]
+
 ## Cards
 
 Left → right `player` `husband` `daughter`. Each card, top → bottom:

@@ -8,8 +8,9 @@ No dedicated server. No host migration. No mesh. No TURN. No client prediction. 
 
 | file | owns |
 |---|---|
-| `src/game/sim/mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, loopback, digest, sequencer / permissions. No `peerjs`. |
+| `src/game/sim/mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No `peerjs`. |
 | `src/game/net/peer.ts` | PeerJS `MpWire`. Default cloud broker + default STUN. No TURN. |
+| `src/App.tsx` | MP session. `MpHost` / `MpGuest`, PeerJS peer, pause + catching. `DT_MAX` accumulator. Does not own `Save`. |
 | `src/game/sim/world.ts` | `World.seats`, `dispatch` / `apply` / `tick`. Does not import `peerjs`. |
 | `src/game/sim/save.ts` | join / resync snapshot. Same `Save`. |
 

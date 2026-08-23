@@ -16,7 +16,8 @@ const FERT_WORD: { readonly [K in Band]: string } = {
 }
 
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
-  if (world.place.kind === 'delete') return world.promptHit(hit).text
+  const place = world.seats[world.local].place
+  if (place.kind === 'delete') return world.promptHit(hit).text
   if (
     hit !== undefined &&
     (hit.kind === 'valve' || hit.kind === 'well' || hit.kind === 'sprinkler-hud')
@@ -24,13 +25,13 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     return world.promptHit(hit).text
   }
   if (
-    world.place.kind === 'sku' &&
-    (world.place.id === 'buy-pipe' ||
-      world.place.id === 'buy-valve' ||
-      world.place.id === 'buy-well' ||
-      world.place.id === 'buy-sprinkler' ||
-      world.place.id === 'buy-sprinkler-vert' ||
-      world.place.id === 'buy-sprinkler-large')
+    place.kind === 'sku' &&
+    (place.id === 'buy-pipe' ||
+      place.id === 'buy-valve' ||
+      place.id === 'buy-well' ||
+      place.id === 'buy-sprinkler' ||
+      place.id === 'buy-sprinkler-vert' ||
+      place.id === 'buy-sprinkler-large')
   ) {
     return world.promptHit(hit).text
   }
@@ -43,20 +44,20 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     }
   }
   if (at === undefined) {
-    if (world.place.kind === 'sku') return `Place ${skuLabel(world.place.id)}`
+    if (place.kind === 'sku') return `Place ${skuLabel(place.id)}`
     return '—'
   }
   if (!inWorld(at, world.owned)) {
     if (inFade(at, world.owned)) return NOT_OWNED
-    if (world.place.kind === 'sku') {
-      return `Place ${skuLabel(world.place.id)}`
+    if (place.kind === 'sku') {
+      return `Place ${skuLabel(place.id)}`
     }
     return '—'
   }
   const cell = world.cell(at)
   const lines: string[] = []
-  if (world.place.kind === 'sku') {
-    lines.push(`Place ${skuLabel(world.place.id)}`)
+  if (place.kind === 'sku') {
+    lines.push(`Place ${skuLabel(place.id)}`)
   }
   if (cell.kind === 'house') lines.push('House')
   else if (cell.kind === 'truck') lines.push('Market truck')

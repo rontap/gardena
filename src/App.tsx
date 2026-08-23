@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { DT_MAX, World } from './game/sim/world.ts'
+import type { Peer } from 'peerjs'
+import { DT_MAX, localPlayerId, World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
 import { Hud } from './game/ui/hud.tsx'
@@ -16,6 +17,7 @@ import { Shop } from './game/ui/shop.tsx'
 import { Family } from './game/ui/family.tsx'
 import { LensPanel } from './game/ui/lens.tsx'
 import { Menu } from './game/ui/menu.tsx'
+import { CatchingUp, GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
@@ -23,6 +25,8 @@ import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { paintMotion } from './game/view/motion.ts'
 import { type WorkerSink } from './game/sim/log.ts'
+import { MpGuest, MpHost } from './game/sim/mp.ts'
+import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
 
@@ -38,6 +42,7 @@ type Panel =
   | { kind: 'lens' }
   | { kind: 'chest'; at: Coord }
   | { kind: 'menu' }
+  | { kind: 'multiplayer' }
 
 const SPEED = (() => {
   const raw = new URLSearchParams(window.location.search).get('speed')
@@ -67,6 +72,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     START_NOW ? startTutorial('start_now', slotExists()) : { kind: 'off' },
   )
   const [fail, setFail] = useState<LoadFailReason | undefined>(undefined)
+  const [mpFail, setMpFail] = useState<MpFail | undefined>(undefined)
+  const [joining, setJoining] = useState(false)
+  const [catching, setCatching] = useState(false)
+  const [roomKey, setRoomKey] = useState('')
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
@@ -74,6 +83,17 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
   pausedRef.current = paused
+  const catchingRef = useRef(false)
+  catchingRef.current = catching
+  const accRef = useRef(0)
+  const hostRef = useRef<MpHost | undefined>(undefined)
+  const guestRef = useRef<MpGuest | undefined>(undefined)
+  const peerRef = useRef<Peer | undefined>(undefined)
+  const worldRef = useRef(world)
+  worldRef.current = world
+  const [role, setRole] = useState<'off' | 'host' | 'guest'>('off')
+  const connected = role !== 'off'
+  const guest = role === 'guest'
 
   useEffect(() => {
     if (world === undefined) return
@@ -122,6 +142,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     const cue = world.cue
     if (cue.kind !== 'chest') return
+    if (world.local !== 0) return
     setPanel(p =>
       p.kind === 'chest' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'chest', at: cue.at },
     )
@@ -131,7 +152,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     const kind = world.seam.kind
     if (kind === 'recap' && prevSeam.current === 'play') {
-      writeSlot(dump(world))
+      if (world.local === 0) writeSlot(dump(world))
       setPanel({ kind: 'none' })
     }
     prevSeam.current = kind
@@ -140,15 +161,26 @@ export default function App({ sink }: { sink: WorkerSink }) {
   useEffect(() => {
     if (world === undefined) return
     let last = performance.now()
+    accRef.current = 0
     let id = 0
     const loop = (now: number) => {
-      let left = ((now - last) / 1000) * SPEED
+      const dt = ((now - last) / 1000) * SPEED
       last = now
-      if (!pausedRef.current) {
-        while (left > 1e-6) {
-          const step = Math.min(left, DT_MAX)
-          world.tick(step)
-          left -= step
+      const host = hostRef.current
+      const g = guestRef.current
+      if (g !== undefined) {
+        g.pumpGap(now)
+      } else if (host !== undefined) {
+        accRef.current += dt
+        while (accRef.current >= DT_MAX) {
+          host.pump()
+          accRef.current -= DT_MAX
+        }
+      } else {
+        accRef.current += dt
+        while (accRef.current >= DT_MAX) {
+          if (!pausedRef.current) world.tick(DT_MAX)
+          accRef.current -= DT_MAX
         }
       }
       if (root.current !== null) paintMotion(root.current, world, revRef.current)
@@ -161,12 +193,16 @@ export default function App({ sink }: { sink: WorkerSink }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (world === undefined) return
+      if (catchingRef.current) return
+      if (world === undefined) {
+        setJoining(false)
+        return
+      }
       world.cancelPlace()
       world.closeHud()
       setLens(l => (l === 'pipes' ? 'off' : l))
       if (world.seam.kind === 'recap') {
-        world.dismissRecap()
+        if (world.local === 0) world.dismissRecap()
         return
       }
       setPanel(p => {
@@ -178,6 +214,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [world])
 
+  useEffect(() => {
+    const onPageHide = () => {
+      if (hostRef.current === undefined) return
+      toStartup(undefined, true)
+    }
+    window.addEventListener('pagehide', onPageHide)
+    return () => window.removeEventListener('pagehide', onPageHide)
+  }, [])
+
   function session(next: World, tut: Tutorial): void {
     prevSeam.current = next.seam.kind
     consignRevision.current = next.consignRevision
@@ -188,6 +233,39 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setCam(BOOT_CAM)
     setHover(undefined)
     setLens('off')
+    setPaused(false)
+  }
+
+  function killPeer(): void {
+    const peer = peerRef.current
+    peerRef.current = undefined
+    if (peer !== undefined) peer.destroy()
+  }
+
+  function toStartup(line: MpFail | undefined, saveHost: boolean): void {
+    const host = hostRef.current
+    const g = guestRef.current
+    const w = worldRef.current
+    if (host !== undefined) {
+      if (saveHost && w !== undefined) writeSlot(dump(w))
+      host.leave()
+      hostRef.current = undefined
+    }
+    if (g !== undefined) {
+      g.leave()
+      guestRef.current = undefined
+    }
+    killPeer()
+    setRole('off')
+    setRoomKey('')
+    setCatching(false)
+    setJoining(false)
+    setPaused(false)
+    setPanel({ kind: 'none' })
+    setWorld(undefined)
+    setTutorial({ kind: 'off' })
+    setFail(undefined)
+    setMpFail(line)
   }
 
   function playNew(): void {
@@ -258,6 +336,101 @@ export default function App({ sink }: { sink: WorkerSink }) {
     })
   }
 
+  function startHost(): void {
+    const w = worldRef.current
+    if (w === undefined) return
+    if (hostRef.current !== undefined || peerRef.current !== undefined) return
+    void openPeer()
+      .then(peer => {
+        if (worldRef.current !== w) {
+          peer.destroy()
+          return
+        }
+        peerRef.current = peer
+        setRoomKey(peer.id)
+        setRole('host')
+        const host = new MpHost(w)
+        hostRef.current = host
+        host.onPause = on => setPaused(on)
+        host.onCatching = on => setCatching(on)
+        const endHost = () => {
+          if (hostRef.current === undefined) return
+          toStartup(undefined, true)
+        }
+        peer.on('close', endHost)
+        listen(peer, (wire, conn) => {
+          host.attach(wire)
+          conn.on('close', () => host.drop(wire))
+          conn.on('error', () => host.drop(wire))
+        })
+      })
+      .catch(() => {
+        setMpFail('ice')
+      })
+  }
+
+  function toggleMp(): void {
+    if (world === undefined) return
+    if (world.seam.kind === 'recap') return
+    if (role === 'off') startHost()
+    setPanel(p => {
+      if (p.kind === 'shop') world.cancelPlace()
+      if (p.kind === 'chest') world.ackCue()
+      return p.kind === 'multiplayer' ? { kind: 'none' } : { kind: 'multiplayer' }
+    })
+  }
+
+  function onJoin(key: string): void {
+    setMpFail(undefined)
+    void openPeer()
+      .then(peer => {
+        peerRef.current = peer
+        return dial(peer, key).then(wire => {
+          const g = new MpGuest(wire, localPlayerId())
+          guestRef.current = g
+          g.onWorld = (next, seat) => {
+            next.local = seat
+            setRole('guest')
+            setJoining(false)
+            setCatching(true)
+            session(next, { kind: 'off' })
+          }
+          g.onCatching = on => setCatching(on)
+          g.onPause = on => setPaused(on)
+          g.onReject = reason => {
+            setMpFail(reason)
+            g.leave()
+            guestRef.current = undefined
+            killPeer()
+          }
+          g.onBye = why => {
+            toStartup(why === 'kicked' ? 'desync' : 'host-left', false)
+          }
+          g.hello()
+        })
+      })
+      .catch(() => {
+        killPeer()
+        guestRef.current = undefined
+        setMpFail('ice')
+      })
+  }
+
+  function onPause(): void {
+    const host = hostRef.current
+    const g = guestRef.current
+    if (g !== undefined) {
+      g.togglePause()
+      setPaused(g.paused)
+      return
+    }
+    if (host !== undefined) {
+      host.setPaused(!host.paused)
+      return
+    }
+    setPaused(p => !p)
+  }
+
   if (world === undefined) {
     return (
       <Tooltip.Provider delayDuration={200}>
@@ -276,7 +449,21 @@ export default function App({ sink }: { sink: WorkerSink }) {
               />
             </div>
           )}
-          <Menu mode="boot" fail={fail} onNew={playNew} onLoad={playLoad} onUpload={playUpload} />
+          <Menu
+            mode="boot"
+            fail={fail}
+            mpFail={mpFail}
+            joining={joining}
+            onNew={playNew}
+            onLoad={playLoad}
+            onUpload={playUpload}
+            onJoinOpen={() => {
+              setJoining(true)
+              setMpFail(undefined)
+            }}
+            onJoin={onJoin}
+            onJoinClose={() => setJoining(false)}
+          />
         </div>
       </Tooltip.Provider>
     )
@@ -285,7 +472,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
   return (
     <Tooltip.Provider delayDuration={200}>
       <div ref={root} className="relative h-full min-h-0 overflow-hidden">
-        <MapView
+        <div className={catching ? 'pointer-events-none' : undefined}>
+          <MapView
             world={world}
             cam={cam}
             rev={n}
@@ -304,6 +492,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               dispatchClick(world, hit)
             }}
           />
+        </div>
           <Hud
             world={world}
             panel={panel.kind}
@@ -316,8 +505,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onLens={() => open({ kind: 'lens' })}
             onCheat={() => open({ kind: 'cheat' })}
             onGear={toggleMenu}
+            onMultiplayer={toggleMp}
             paused={paused}
-            onPause={() => setPaused(p => !p)}
+            onPause={onPause}
           />
           <div className="pointer-events-none absolute right-4 bottom-4 z-20 flex w-80 flex-col gap-3">
             <Queue world={world} />
@@ -356,18 +546,41 @@ export default function App({ sink }: { sink: WorkerSink }) {
             <Menu
               mode="play"
               fail={fail}
+              connected={connected}
+              guest={guest}
               onNew={playNew}
               onLoad={playLoad}
               onUpload={playUpload}
               onSave={saveGame}
               onDownload={downloadSave}
+              onLeave={() => toStartup(undefined, false)}
               onClose={() => setPanel({ kind: 'none' })}
             />
           )}
+          {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && !guest && (
+            <HostDialog
+              roomKey={roomKey}
+              world={world}
+              local={world.local}
+              onCopy={() => {
+                void navigator.clipboard.writeText(roomKey)
+              }}
+              onClose={() => setPanel({ kind: 'none' })}
+            />
+          )}
+          {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && guest && (
+            <GuestDialog onLeave={() => toStartup(undefined, false)} onClose={() => setPanel({ kind: 'none' })} />
+          )}
           <ObjectHud world={world} cam={cam} onClose={() => world.closeHud()} />
           {world.seam.kind === 'recap' && (
-            <Recap recap={world.seam.recap} nextDay={world.clock.day} onDismiss={() => world.dismissRecap()} />
+            <Recap
+              recap={world.seam.recap}
+              nextDay={world.clock.day}
+              guest={guest}
+              onDismiss={() => world.dismissRecap()}
+            />
           )}
+          {catching && <CatchingUp fail={mpFail} />}
           <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
             data-banner

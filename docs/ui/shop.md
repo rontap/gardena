@@ -38,7 +38,7 @@ The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Neve
 
 Footer is the tab's one-line description and nothing else.
 
-Packs never arm. Place SKUs arm `World.place` — [[ui/place]].
+Packs never arm. Place SKUs arm `Seat.place` — [[ui/place]].
 
 Husband owns `bulk-buying`: seed row Ctrl+click calls `buyPacks(id)`, and the footer says so with the discounted `Coin`. Normal click stays `buy(id)`. Non-seed rows ignore Ctrl.
 

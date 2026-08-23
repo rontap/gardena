@@ -3,6 +3,7 @@ import type { LoadFailReason } from '../sim/save.ts'
 import { slotExists, slotStamp } from '../sim/save.ts'
 import { UI_MENU } from '../view/svgs.ts'
 import { Btn, Chrome } from './frame.tsx'
+import { JoinFields, MP_COPY, type MpFail } from './multiplayer.tsx'
 
 const FAIL: { readonly [K in LoadFailReason]: string } = {
   'not-gardena': 'This file is not a Gardena save.',
@@ -14,18 +15,26 @@ type MenuProps =
   | {
       mode: 'boot'
       fail: LoadFailReason | undefined
+      mpFail: MpFail | undefined
+      joining: boolean
       onNew: () => void
       onLoad: () => void
       onUpload: (text: string) => void
+      onJoinOpen: () => void
+      onJoin: (key: string) => void
+      onJoinClose: () => void
     }
   | {
       mode: 'play'
       fail: LoadFailReason | undefined
+      connected: boolean
+      guest: boolean
       onNew: () => void
       onLoad: () => void
       onUpload: (text: string) => void
       onSave: () => void
       onDownload: () => void
+      onLeave: () => void
       onClose: () => void
     }
 
@@ -38,6 +47,10 @@ export function Menu(props: MenuProps) {
     mode === 'boot'
       ? 'absolute inset-0 z-20 flex items-center justify-center'
       : 'absolute inset-0 z-20 flex items-center justify-center bg-ink/50'
+  const joining = mode === 'boot' && props.joining
+  const mpLocked = mode === 'play' && props.connected
+  const guest = mode === 'play' && props.guest
+  const showX = mode === 'play' || joining
   return (
     <div
       className={shell}
@@ -50,12 +63,12 @@ export function Menu(props: MenuProps) {
       }
     >
       <Chrome className="relative w-[26rem]">
-        {mode === 'play' && (
+        {showX && (
           <button
             type="button"
             aria-label="Close"
             className="absolute top-4 right-4 z-30 cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
-            onClick={props.onClose}
+            onClick={mode === 'boot' ? props.onJoinClose : props.onClose}
           >
             ×
           </button>
@@ -63,34 +76,54 @@ export function Menu(props: MenuProps) {
         <div className="relative z-20 flex flex-col gap-2 px-4 pt-4 pb-3">
           <svg viewBox="0 0 240 64" className="w-full" dangerouslySetInnerHTML={{ __html: UI_MENU }} />
           <h1 className="text-center font-display text-base leading-none">Gardena</h1>
-          <p className="text-center text-sm text-ink/45">1.0.0</p>
-          <Btn className="w-full" onClick={onNew}>
-            New Game
-          </Btn>
-          <Btn className="w-full" disabled={!slotExists()} onClick={onLoad}>
-            {loadLabel}
-          </Btn>
-          <Btn
-            className="w-full"
-            onClick={() => {
-              const el = input.current
-              if (el === null) return
-              el.click()
-            }}
-          >
-            Upload Save
-          </Btn>
-          {mode === 'play' && (
-            <Btn className="w-full" onClick={props.onSave}>
-              Save game
-            </Btn>
+          <p className="text-center text-sm text-ink/45">1.1.0</p>
+          {joining ? (
+            <JoinFields fail={props.mpFail} onJoin={props.onJoin} onClose={props.onJoinClose} />
+          ) : (
+            <>
+              <Btn className="w-full" disabled={mpLocked} onClick={onNew}>
+                New Game
+              </Btn>
+              <Btn className="w-full" disabled={!slotExists() || mpLocked} onClick={onLoad}>
+                {loadLabel}
+              </Btn>
+              <Btn
+                className="w-full"
+                disabled={mpLocked}
+                onClick={() => {
+                  const el = input.current
+                  if (el === null) return
+                  el.click()
+                }}
+              >
+                Upload Save
+              </Btn>
+              {mode === 'boot' && (
+                <Btn className="w-full" onClick={props.onJoinOpen}>
+                  Join Multiplayer
+                </Btn>
+              )}
+              {mode === 'play' && (
+                <Btn className="w-full" disabled={guest} onClick={props.onSave}>
+                  Save game
+                </Btn>
+              )}
+              {mode === 'play' && (
+                <Btn className="w-full" disabled={guest} onClick={props.onDownload}>
+                  Download Save
+                </Btn>
+              )}
+              {mode === 'play' && guest && (
+                <Btn className="w-full" onClick={props.onLeave}>
+                  Leave Multiplayer
+                </Btn>
+              )}
+              {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]}</div>}
+              {mode === 'boot' && props.mpFail !== undefined && (
+                <div className="text-sm text-roof">{MP_COPY[props.mpFail]}</div>
+              )}
+            </>
           )}
-          {mode === 'play' && (
-            <Btn className="w-full" onClick={props.onDownload}>
-              Download Save
-            </Btn>
-          )}
-          {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]}</div>}
           <input
             ref={input}
             type="file"

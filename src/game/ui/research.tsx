@@ -86,7 +86,8 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
   const gated = !world.researchOpen(id)
   const busy = world.job.kind === 'run' && !run
   const pct = run && world.job.kind === 'run' ? ((d.seconds - world.job.left) / d.seconds) * 100 : done ? 100 : 0
-  const off = run || done || gated || busy
+  const guest = world.local !== 0
+  const off = run || done || gated || busy || guest
   const why = done
     ? 'Already researched.'
     : run
@@ -112,6 +113,7 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
       onPointerEnter={() => onTip({ title: d.name, description: d.blurb, why })}
       onPointerLeave={() => onTip(undefined)}
       onClick={() => {
+        // TODO 1.1 multiplayer guest research start
         if (off) return
         world.startResearch(id)
       }}

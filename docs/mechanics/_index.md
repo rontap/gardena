@@ -83,6 +83,6 @@ See [[canon]].
 60. Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.
 61. Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box. Guest chest `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.
 62. `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Seat stays in `seats`.
-63. `parse` of `version === 1.0` with `actor`/`hand`/`inventory` hydrates one `in` seat, `playerId` of this machine. Fail → existing `version` / `unusable`.
+63. `parse(text)`: `JSON.parse` throw or non-object → `{ ok: false, reason: 'unusable' }`. `game !== "gardena"` → `reason: 'not-gardena'`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. Else one hydrate of live fields including `seats`. Reconstruct → `{ ok: true, world }`. Hydrate fail → `reason: 'unusable'`. No migrate. `LoadFailReason` is `'not-gardena' | 'version' | 'unusable'`.
 64. `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 65. Digest mismatch: pause, `resync`, Ready, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.

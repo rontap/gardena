@@ -156,7 +156,7 @@ SaveSeat = {
 }
 ```
 
-Parse `version === 1.0` with the old three fields → one in-seat, `playerId` of this machine, `presence: 'in'`. Named hydrate. Fail → existing `version` / `unusable`.
+Dump writes `version: 1.1`. Load: file `version` ≠ dump `version` → `version` alert. No migrate. Same version → hydrate live fields (`seats`). Fail → `unusable`. RFC: [[architecture/save]].
 
 Host leave and recap still `writeSlot`. Guest never `writeSlot` for a hosted farm.
 
@@ -205,7 +205,7 @@ Host migration. TURN. Voice. Names. Guest save slot. Client prediction. Cmd repl
 - Lockstep. Host sequences. Everyone ticks `DT_MAX` only.
 - Star. PeerJS default broker. No TURN.
 - `Cmd.p` required. Sequencer drops illegal guest cmds.
-- Save `1.1` seats array. 1.0 hydrates to one seat.
+- Save `1.1` seats array. Dump writes `version: 1.1`. File `version` ≠ dump `version` → version alert. No migrate.
 - Buildings place/delete allowed for guests. Chest swap, pipes, tiles, fences, expand, research, family, cheat: not.
 - Away inventory does not rot. Field rot continues.
 - Host leave saves host slot only.

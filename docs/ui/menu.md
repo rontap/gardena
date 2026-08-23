@@ -60,7 +60,7 @@ Join dialog showing → MP reasons, not `LoadFailReason`. [[ui/multiplayer]]
 | `LoadFailReason` | copy |
 |---|---|
 | `not-gardena` | This file is not a Gardena save. |
-| `version` | This save is a different version and could not be reconstructed. |
+| `version` | This save could not be loaded because of a version difference. |
 | `unusable` | This file could not be used. |
 
 Missing slot is not a reason — Load is greyed.

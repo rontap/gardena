@@ -2,14 +2,24 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Identity: `game === "gardena"`. `version` is the number `1.1`.
+One file shape. Dump writes `game: "gardena"`, `version: 1.1`, `seats`. Parse identity: `game === "gardena"`. `version` is the number `1.1` on dump. Wordmark **1.1.0**.
+
+## RFC — versions (active)
+
+Active since first commit. Not 1.1-only. Not a plan.
+
+A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
+
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change.
+
+Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
 ## Files
 
 | file | owns |
 |---|---|
 | `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp` |
-| `src/game/sim/world.ts` | live `World`. Does not own `Save`. Hydrate hook if parse needs one — not a second format. |
+| `src/game/sim/world.ts` | live `World`. Does not own `Save`. Constructs live objects for parse. Not a second reader. |
 
 Do not create `src/` here.
 
@@ -57,15 +67,17 @@ LoadResult =
   | { ok: false; reason: LoadFailReason }
 ```
 
+`'version'` means file `version` ≠ dump `version`. Not a migrate. MP `reject: version` is PROTOCOL — [[architecture/net]]. Copy: [[ui/menu]].
+
 ```
 parse(text: string, sink?: LogSink): LoadResult
 ```
 
 1. `JSON.parse` throws, or the value is not an object → `unusable`.
 2. `game` missing or not `"gardena"` → `not-gardena`. Stop.
-3. `game` matches. Hydrate. Version mismatch is not an automatic refuse.
-4. `version === 1.0` with `actor` / `hand` / `inventory` → named `hydrate10`: one `in` seat, `playerId` of this machine, `presence: 'in'`. `version === 1.1` uses `seats`.
-5. Hydrate fails: `version` is the number `1.1` → `unusable`; otherwise `version`.
+3. File `version` ≠ dump `version` (absent or not a number included) → `version`. Stop. Do not hydrate.
+4. One hydrate of the live fields (`seats`, …). No `hydrate10`. No per-version reader.
+5. Hydrate fails → `unusable`. Reconstructs → `{ ok: true; world }`.
 
 `ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate is total.
 
@@ -131,7 +143,7 @@ Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Cir
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.1` and `seats`.
 
 ```
 SaveSeat = {
@@ -228,7 +240,7 @@ SaveCell =
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map.
 
-`version: 1.1` is a number. JSON `1.1` is that number. `version: 1.0` is a number. JSON `1` is `1.0` and takes `hydrate10`.
+`version: 1.1` is a number. JSON `1.1` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
@@ -243,6 +255,11 @@ SaveCell =
 - optional that means unsure
 - App owning `Save`
 - a second snapshot type
+- a second reader
+- `hydrate10` or any migrate / conversion / recovery of an older save
+- picking a parse path from `rec.version`
+- hydrating when file `version` ≠ dump `version`
+- root `actor` / `hand` / `inventory` as a parse path
 - `Cmd[]` as the save
 - `World.now` in the file
 - Seq `shop` / `fruit` cursors omitted
@@ -261,7 +278,7 @@ SaveCell =
 - stall missing a `StallGoodId`
 - inventory length ≠ 16
 - `seats` length < 1
-- 1.1 dump with `actor` / `hand` / `inventory` instead of `seats`
+- dump with `actor` / `hand` / `inventory` instead of `seats`
 - guest `writeSlot` for a hosted farm
 - chest slots length ≠ `CHEST_SLOTS`
 - chunk grid not `CHUNK` × `CHUNK`

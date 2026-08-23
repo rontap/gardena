@@ -55,7 +55,6 @@ import { Soil } from './soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from './stall.ts'
 import {
   World,
-  localPlayerId,
   type DayTally,
   type Family,
   type Hydrate,
@@ -71,6 +70,7 @@ import {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
+export const SAVE_VERSION = 1.1 as const
 
 const INV = 16
 
@@ -175,7 +175,7 @@ export type Save = {
 export function dump(world: World): Save {
   return {
     game: 'gardena',
-    version: 1.1,
+    version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
     rng: { seed: world.rng.seed, shop: world.rng.consumed('shop'), fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },
@@ -243,10 +243,11 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
   if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'unusable' }
   const rec = raw as Record<string, unknown>
   if (rec.game !== 'gardena') return { ok: false, reason: 'not-gardena' }
+  if (num(rec.version) !== SAVE_VERSION) return { ok: false, reason: 'version' }
   const save = readSave(rec)
-  if (save === undefined) return { ok: false, reason: rec.version === 1.1 ? 'unusable' : 'version' }
+  if (save === undefined) return { ok: false, reason: 'unusable' }
   const world = worldFromSave(save, sink)
-  if (world === undefined) return { ok: false, reason: rec.version === 1.1 ? 'unusable' : 'version' }
+  if (world === undefined) return { ok: false, reason: 'unusable' }
   return { ok: true, world }
 }
 
@@ -406,26 +407,6 @@ function dumpPlant(p: Plant): SavePlant {
 }
 
 function readSeats(rec: Record<string, unknown>): SaveSeat[] | undefined {
-  const v = num(rec.version)
-  if (v === 1) return hydrate10(rec)
-  if (v === 1.1) return readSeats11(rec)
-  return undefined
-}
-
-function hydrate10(rec: Record<string, unknown>): SaveSeat[] | undefined {
-  const actorIn = obj(rec.actor)
-  if (actorIn === undefined) return undefined
-  const ax = num(actorIn.x)
-  const ay = num(actorIn.y)
-  if (ax === undefined || ay === undefined) return undefined
-  const hand = readHand(rec.hand)
-  if (hand === undefined) return undefined
-  const inventory = readInv(rec.inventory)
-  if (inventory === undefined) return undefined
-  return [{ playerId: localPlayerId(), presence: 'in', actor: { x: ax, y: ay }, hand, inventory }]
-}
-
-function readSeats11(rec: Record<string, unknown>): SaveSeat[] | undefined {
   const seatsIn = arr(rec.seats)
   if (seatsIn === undefined || seatsIn.length < 1) return undefined
   const seats: SaveSeat[] = []
@@ -461,7 +442,6 @@ function readInv(raw: unknown): Slot[] | undefined {
 }
 
 function readSave(rec: Record<string, unknown>): Save | undefined {
-  if (num(rec.version) === undefined) return undefined
   const rngIn = obj(rec.rng)
   const clockIn = obj(rec.clock)
   const familyIn = obj(rec.family)
@@ -601,7 +581,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   }
   return {
     game: 'gardena',
-    version: 1.1,
+    version: SAVE_VERSION,
     savedAt,
     rng: { seed, shop, fruit },
     clock: { day, t },

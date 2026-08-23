@@ -45,7 +45,7 @@ Seat 0 starter kit is the solo kit — [[mechanics/inventory]].
 
 Guest drop → `presence: 'away'`. Seat stays in `seats`. World keeps ticking. That actor vanishes.
 
-`tick` skips that actor's walk/work and that seat's hand/inventory freshness (box cargo included). Field / chest / ground rot continues.
+`tick` skips that actor's walk/work and that seat's hand/inventory freshness (box cargo included). Field / chest / ground rot continues. Freezer slots never tick freshness.
 
 Away occupies a slot. `hello` when `seats.length === 4` → `reject: full`. Rejoin is the same `playerId`.
 
@@ -55,11 +55,11 @@ Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter
 
 Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
 
-**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box), **delete building**, Almanac, lens (if shared family owns the skill), Pause.
+**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer), dump mill/jam/still/barrel like compost, **delete building**, Almanac, lens (if shared family owns the skill), Pause.
 
-House click opens *this* seat's 16. Placing a chest is allowed; opening it is not.
+House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
 
-**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest `swapChest`, sprinkler tune, stall `nudgeOffered`, recap dismiss, cheat, New/Load/Upload.
+**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest/freezer `swapChest`, sprinkler tune, stall `nudgeOffered`, recap dismiss, cheat, New/Load/Upload.
 
 Guest never `writeSlot` for a hosted farm.
 

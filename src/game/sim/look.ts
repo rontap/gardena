@@ -66,8 +66,13 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'tap') lines.push('Tap')
   else if (cell.kind === 'rock') lines.push('Rock')
   else if (cell.kind === 'chest') lines.push('Chest')
+  else if (cell.kind === 'freezer') lines.push('Freezer')
   else if (cell.kind === 'grinder') lines.push('Seed grinder')
   else if (cell.kind === 'compost-box') lines.push('Compost box')
+  else if (cell.kind === 'mill') lines.push('Mill')
+  else if (cell.kind === 'still') lines.push('Pot still')
+  else if (cell.kind === 'barrel') lines.push('Wine barrel')
+  else if (cell.kind === 'jam') lines.push('Jam machine')
   else if (cell.kind === 'tree') {
     const name = `${TREE_NAME[cell.species]} tree`
     if (cell.juvenile < 1) lines.push(`${name} - growing ${Math.floor(cell.juvenile * 100)}%`)

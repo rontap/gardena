@@ -142,7 +142,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   'sugar-cane': {
     id: 'sugar-cane',
     cls: 'grain',
-    desc: 'Water hungry and sells poorly. Ripe cane is bagged as sugar, which does not rot.',
+    desc: 'Water hungry and sells poorly. Ripe cane is fruit. Mill 5 cane into 2 L sugar.',
     growSeconds: 200,
     waterUsePerSec: 0.0104167,
     waterTolerance: 0.55,

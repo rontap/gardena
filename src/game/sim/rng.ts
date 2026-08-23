@@ -29,7 +29,7 @@ export function rollRarity(u: number): Rarity {
   return 'heirloom'
 }
 
-export type SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'market'
+export type SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'still' | 'barrel' | 'market'
 export type SeqId = 'shop' | 'fruit'
 export type StreamId = SpatialId | SeqId
 export type Stream = Spatial | Seq

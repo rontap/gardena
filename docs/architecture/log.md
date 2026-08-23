@@ -78,7 +78,7 @@ Public UI methods wrap `dispatch` so call sites stay:
 
 Log = player commands only.
 
-Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, actor walk, `DYNAMIC_MARKET` retarget.
+Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, actor walk, `DYNAMIC_MARKET` retarget.
 
 Not logged (view-local): panel open/close, camera, hover, lens.
 
@@ -178,7 +178,7 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 - Worker applying cmds
 - Worker owning `World`
 - Vitest using a Worker
-- logging sips / rot / weed / ripen / tree drop / grass
+- logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel ticks
 - logging panel / camera / hover / lens
 - `confirmPlace` as a cmd
 - silent apply (dispatch without log, or a silent flag)

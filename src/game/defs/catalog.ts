@@ -18,8 +18,17 @@ import {
   SHOVELS,
 
   SPRINKLER_TILE_DAY,
+  SUGAR_BAG,
+  SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   COMPOST_VALUE,
+  FREEZER_SLOTS,
+  MILL_IN,
+  MILL_WORK,
+  JAM_IN,
+  JAM_SECONDS,
+  STILL_CAP,
+  STILL_SECONDS,
 } from './items.ts'
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
 import { BIO_RESTORE, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
@@ -107,10 +116,7 @@ export function catalogEntries(): CatalogEntry[] {
     return {
       id,
       title: name,
-      icon:
-        id === 'sugar-cane'
-          ? { kind: 'sugar', count: 1, unitSale: d.sale }
-          : { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
+      icon: { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
       blurb: d.desc,
     }
   })
@@ -367,6 +373,42 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Tap',
       icon: { kind: 'tap' },
       blurb: fill(TAP_T, { rate: TAP_RATE }),
+    },
+    {
+      id: 'sugar',
+      title: 'Sugar',
+      icon: { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_SHOP },
+      blurb: fill('${bag} L bag. Does not rot. Mill cane is cheaper per litre.', { bag: SUGAR_BAG }),
+    },
+    {
+      id: 'mill',
+      title: 'Mill',
+      icon: { kind: 'mill' },
+      blurb: fill('Hopper mill. ${in} cane, olive or wheat crush in ${work}s.', { in: MILL_IN, work: MILL_WORK }),
+    },
+    {
+      id: 'still',
+      title: 'Pot still',
+      icon: { kind: 'still' },
+      blurb: fill('Distills ${cap} potato, wheat or apricot in ${seconds}s.', { cap: STILL_CAP, seconds: STILL_SECONDS }),
+    },
+    {
+      id: 'barrel',
+      title: 'Wine barrel',
+      icon: { kind: 'barrel' },
+      blurb: 'Grapes only. Five fill a barrel. Wine, not whisky.',
+    },
+    {
+      id: 'jam',
+      title: 'Jam machine',
+      icon: { kind: 'jam-machine' },
+      blurb: fill('${fruit} fruit plus sugar cook in ${seconds}s. Tomato is ketchup.', { fruit: JAM_IN, seconds: JAM_SECONDS }),
+    },
+    {
+      id: 'freezer',
+      title: 'Freezer',
+      icon: { kind: 'freezer' },
+      blurb: fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS }),
     },
   ]
 }

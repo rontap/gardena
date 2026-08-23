@@ -31,6 +31,7 @@ Stages are sibling `<g id>` in one file. View shows exactly one group. All group
 |---|---|
 | `crop-*.svg` | `sprout` `grow` `ripe` `ripe-rare` `ripe-heirloom` `dead` |
 | `fruit-*.svg` | `common` `rare` `heirloom` |
+| `item-wine.svg` | `common` `rare` `heirloom` |
 | `prop-*-tree.svg` | `grow` `unripe` `ripe` |
 | `crop-weed-*.svg` | `sprout` `grow` |
 

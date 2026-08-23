@@ -20,8 +20,13 @@ import {
   ACTOR,
   treeStage,
   BUILDING_TILES,
+  BARREL,
   CHEST,
   COMPOST_BOX,
+  FREEZER,
+  JAM,
+  MILL,
+  STILL,
   CROP_ROTTEN,
   DIRT,
   DIRT_EDGE,
@@ -110,7 +115,7 @@ const STAY_ARMED: readonly SkuId[] = [
 
 const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
 
-const HAT: { readonly [K in SeatId]: string } = {
+export const HAT: { readonly [K in SeatId]: string } = {
   0: '#d4a017',
   1: '#ff3d8e',
   2: '#2de8ff',
@@ -503,6 +508,11 @@ const Marks = memo(function Marks({
   const trees: { col: number; row: number; species: 'apple' | 'apricot' | 'lemon' | 'cherry'; stage: 'grow' | 'unripe' | 'ripe' }[] = []
   const chests: Coord[] = []
   const grinders: Coord[] = []
+  const mills: Coord[] = []
+  const stills: Coord[] = []
+  const barrels: Coord[] = []
+  const jams: Coord[] = []
+  const freezers: Coord[] = []
   const composters: { col: number; row: number; units: number; progress: number }[] = []
   const truck = { col: world.truck.base.col, row: world.truck.base.row }
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
@@ -553,6 +563,11 @@ const Marks = memo(function Marks({
     }
     if (cell.kind === 'chest') chests.push(at)
     if (cell.kind === 'grinder') grinders.push(at)
+    if (cell.kind === 'mill') mills.push(at)
+    if (cell.kind === 'still') stills.push(at)
+    if (cell.kind === 'barrel') barrels.push(at)
+    if (cell.kind === 'jam') jams.push(at)
+    if (cell.kind === 'freezer') freezers.push(at)
     if (cell.kind === 'compost-box') {
       composters.push({ col: at.col, row: at.row, units: cell.units, progress: cell.progress })
     }
@@ -657,6 +672,41 @@ const Marks = memo(function Marks({
           key={`grinder-${g.col},${g.row}`}
           transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
           dangerouslySetInnerHTML={{ __html: GRINDER }}
+        />
+      ))}
+      {mills.map(g => (
+        <g
+          key={`mill-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: MILL }}
+        />
+      ))}
+      {stills.map(g => (
+        <g
+          key={`still-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: STILL }}
+        />
+      ))}
+      {barrels.map(g => (
+        <g
+          key={`barrel-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: BARREL }}
+        />
+      ))}
+      {jams.map(g => (
+        <g
+          key={`jam-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: JAM }}
+        />
+      ))}
+      {freezers.map(g => (
+        <g
+          key={`freezer-${g.col},${g.row}`}
+          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
+          dangerouslySetInnerHTML={{ __html: FREEZER }}
         />
       ))}
       {composters.map(c => (
@@ -781,21 +831,35 @@ const Marks = memo(function Marks({
         </g>
       )}
       <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
-      {world.seats
-        .filter(s => s.presence === 'in')
-        .map(s => (
+      {world.seats.map(s => {
+        const gone = s.presence === 'away'
+        // A short absence is probably a reconnect in flight; the host tells us when it is a real nap.
+        const napping = gone && s.napping
+        return (
           <g
             key={s.id}
-            data-actor={s.id}
+            data-actor={napping ? undefined : s.id}
             style={{ ['--hat']: HAT[s.id] } as CSSProperties}
+            opacity={gone ? 0.65 : 1}
             transform={`translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
           >
-            <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
-            {s.hand.kind === 'hold' && (
-              <g transform={`translate(15,13) scale(${8 / 24})`} dangerouslySetInnerHTML={{ __html: faceGfx(s.hand.item) }} />
+            <g transform={napping ? 'rotate(90 12 12)' : undefined}>
+              <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
+              {!napping && s.hand.kind === 'hold' && (
+                <g
+                  transform={`translate(15,13) scale(${8 / 24})`}
+                  dangerouslySetInnerHTML={{ __html: faceGfx(s.hand.item) }}
+                />
+              )}
+            </g>
+            {napping && (
+              <text x={20} y={6} fontSize={7} fill="#1c1710" fontFamily="monospace">
+                zZZ
+              </text>
             )}
           </g>
-        ))}
+        )
+      })}
       {faces.map(face => {
         const s = TILE * 0.85
         const o = (TILE - s) / 2
@@ -960,7 +1024,17 @@ function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
   ) {
     return LEAF
   }
-  if (cell.kind === 'pump' || cell.kind === 'chest' || cell.kind === 'grinder' || cell.kind === 'compost-box') {
+  if (
+    cell.kind === 'pump' ||
+    cell.kind === 'chest' ||
+    cell.kind === 'grinder' ||
+    cell.kind === 'compost-box' ||
+    cell.kind === 'mill' ||
+    cell.kind === 'jam' ||
+    cell.kind === 'still' ||
+    cell.kind === 'barrel' ||
+    cell.kind === 'freezer'
+  ) {
     return WATER
   }
   if (cell.kind === 'rock') return INK

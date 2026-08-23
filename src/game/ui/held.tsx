@@ -45,10 +45,16 @@ function Badge({ item }: { item: Item }) {
 function badge(item: Item): string | undefined {
   if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
   if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
+  if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
   if (
     item.kind === 'seeds' ||
     item.kind === 'fruit' ||
-    item.kind === 'sugar' ||
+    item.kind === 'spirit' ||
+    item.kind === 'wine' ||
+    item.kind === 'jam' ||
+    item.kind === 'oil' ||
+    item.kind === 'flour' ||
+    item.kind === 'extract' ||
     item.kind === 'rotten' ||
     item.kind === 'dead' ||
     item.kind === 'weed' ||
@@ -71,7 +77,7 @@ export function ItemLineView({ item }: { item: Item }) {
   if (item.kind === 'sugar') {
     return (
       <span className="inline-flex items-center gap-1">
-      Sugar - {item.count}
+      Sugar - {item.liters}L
       </span>
     )
   }
@@ -88,6 +94,7 @@ function heldNumber(item: Item): string {
     if (item.cargo.kind === 'empty') return String(item.cap)
     return `${item.cargo.stack.count}/${item.cap}`
   }
+  if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'sapling') return ''
   return String(item.count)
 }

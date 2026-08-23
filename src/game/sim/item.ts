@@ -1,5 +1,7 @@
 import { fill } from '../defs/catalog.ts'
 import {
+  BARREL_AGE,
+  BARREL_MATURE,
   BOX_LARGE,
   BOX_SMALL,
   COMPOST_LITERS,
@@ -8,20 +10,45 @@ import {
   COMPOST_VALUE,
   CONTAINERS,
   FERT_BAG_LITERS,
+  FREEZER_SLOTS,
   GRIND_MAX,
   GRIND_MIN,
   GRASS_PACK,
   GRIND_WORK,
+  JAM_BUFFER,
+  JAM_IN,
+  JAM_SECONDS,
+  JAM_SUGAR,
+  MILL_GRASS,
+  MILL_IN,
+  MILL_WORK,
   PICKAXES,
   SHOVELS,
   SPRINKLER_TILE_DAY,
+  STILL_CAP,
+  STILL_SECONDS,
+  STILL_WATER,
+  SUGAR_BAG,
+  SUGAR_MILL,
+  SUGAR_SHOP,
   SYNTH_BAG_LITERS,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
-import type { AnnualId, ContainerId, CropId, PickaxeId, ShovelId, SkuId, TileId, TreeId } from './ids.ts'
+import type {
+  AnnualId,
+  ContainerId,
+  CropId,
+  JamCrop,
+  PickaxeId,
+  ShovelId,
+  SkuId,
+  SpiritKind,
+  TileId,
+  TreeId,
+} from './ids.ts'
 import { isTreeId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 
@@ -54,7 +81,13 @@ export type Item =
   | { kind: 'grass-seeds'; count: number }
   | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
   | { kind: 'sapling'; tree: TreeId }
-  | { kind: 'sugar'; count: number; unitSale: number }
+  | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number }
+  | { kind: 'spirit'; spirit: SpiritKind; rarity: Rarity; count: number; unitSale: number }
+  | { kind: 'wine'; rarity: Rarity; count: number; unitSale: number }
+  | { kind: 'jam'; crop: JamCrop; count: number; unitSale: number }
+  | { kind: 'oil'; count: number; unitSale: number }
+  | { kind: 'flour'; count: number; unitSale: number }
+  | { kind: 'extract'; count: number; unitSale: number }
   | { kind: 'rotten'; cls: CropClass; count: number }
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
@@ -77,6 +110,11 @@ export type Face =
   | { kind: 'valve' }
   | { kind: 'rain-tank' }
   | { kind: 'tap' }
+  | { kind: 'mill' }
+  | { kind: 'jam-machine' }
+  | { kind: 'still' }
+  | { kind: 'barrel' }
+  | { kind: 'freezer' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -87,7 +125,7 @@ export function compostValue(item: Item): number {
   if (item.kind === 'fruit') {
     return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
   }
-  if (item.kind === 'sugar') return COMPOST_VALUE.fruit * item.count
+  if (item.kind === 'sugar') return COMPOST_VALUE.fruit * item.liters
   if (item.kind === 'rotten') return COMPOST_VALUE.rotten * item.count
   if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
   if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
@@ -137,15 +175,13 @@ export function mergeFreshness(
 
 export function grindN(hand: Hand): number {
   if (hand.kind !== 'hold') return 0
-  if (hand.item.kind === 'fruit' && hand.item.count >= 1 && !isTreeId(hand.item.crop) && hand.item.crop !== 'sugar-cane')
-    return 1
+  if (hand.item.kind === 'fruit' && hand.item.count >= 1 && !isTreeId(hand.item.crop)) return 1
   if (
     hand.item.kind === 'box' &&
     hand.item.cargo.kind === 'stack' &&
     hand.item.cargo.goods === 'fruit' &&
     hand.item.cargo.stack.count >= 1 &&
-    !isTreeId(hand.item.cargo.stack.crop) &&
-    hand.item.cargo.stack.crop !== 'sugar-cane'
+    !isTreeId(hand.item.cargo.stack.crop)
   ) {
     return hand.item.cargo.stack.count
   }
@@ -166,12 +202,24 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'grass-seeds') return 'Grass seed'
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
   if (it.kind === 'sugar') return 'Sugar'
+  if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]
+  if (it.kind === 'wine') return 'Wine'
+  if (it.kind === 'jam') return it.crop === 'tomato' ? 'Ketchup' : `${cropName(it.crop)} jam`
+  if (it.kind === 'oil') return 'Olive oil'
+  if (it.kind === 'flour') return 'Flour'
+  if (it.kind === 'extract') return 'Extract'
   if (it.kind === 'sapling') return `${TREE_NAME[it.tree]} sapling`
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return 'Pulled weed'
-  if (it.kind === 'grass') return 'Cut grass'
-  return 'Sugar'
+  return 'Cut grass'
+}
+
+const SPIRIT_NAME: { readonly [K in SpiritKind]: string } = {
+  vodka: 'Vodka',
+  beer: 'Beer',
+  brandy: 'Brandy',
+  mixed: 'Mixed spirit',
 }
 
 export function rottenName(cls: CropClass): string {
@@ -214,13 +262,21 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'fruit') {
     return `${cropVariety(item.crop, item.rarity)} - ${item.count}, freshness ${Math.floor(item.freshness * 100)}%`
   }
-  if (item.kind === 'sugar') return `Sugar - ${item.count}`
+  if (item.kind === 'sugar') return `Sugar - ${item.liters}L`
+  if (item.kind === 'spirit') return `${SPIRIT_NAME[item.spirit]} - ${item.count}`
+  if (item.kind === 'wine') return `Wine - ${item.count}`
+  if (item.kind === 'jam') {
+    const name = item.crop === 'tomato' ? 'Ketchup' : `${cropName(item.crop)} jam`
+    return `${name} - ${item.count}`
+  }
+  if (item.kind === 'oil') return `Olive oil - ${item.count}`
+  if (item.kind === 'flour') return `Flour - ${item.count}`
+  if (item.kind === 'extract') return `Extract - ${item.count}`
   if (item.kind === 'sapling') return `${TREE_NAME[item.tree]} sapling - plant on soft ground`
   if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
-  if (item.kind === 'grass') return `Cut grass - ${item.count}, compost it`
-  return 'Sugar'
+  return `Cut grass - ${item.count}, compost it`
 }
 
 export function heldText(hand: Hand, mods: readonly Modifier[]): string {
@@ -308,6 +364,18 @@ export function skuLabel(id: SkuId): string {
       return 'Rotary shovel'
     case 'buy-diamond-pickaxe':
       return 'Diamond pickaxe'
+    case 'buy-mill':
+      return 'Mill'
+    case 'buy-jam':
+      return 'Jam machine'
+    case 'buy-still':
+      return 'Pot still'
+    case 'buy-barrel':
+      return 'Wine barrel'
+    case 'buy-freezer':
+      return 'Freezer'
+    case 'buy-sugar':
+      return 'Sugar'
   }
 }
 
@@ -332,7 +400,9 @@ export function skuDesc(id: SkuId): string {
     case 'pack-vanilla':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('vanilla') })
     case 'pack-sugar-cane':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil. Ripe cane bags as sugar.', { name: cropName('sugar-cane') })
+      return fill('Pack of 5 ${name} seeds. Plant on tilled soil. Ripe cane is fruit. Mill cane for sugar.', {
+        name: cropName('sugar-cane'),
+      })
     case 'buy-shovel':
       return fill(
         'Digs grass and hard soil, and uproots plants and shrubs. ${uses} uses, ${workSeconds}s per dig.',
@@ -432,6 +502,33 @@ export function skuDesc(id: SkuId): string {
         'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.',
         PICKAXES['diamond-pickaxe'],
       )
+    case 'buy-mill':
+      return fill(
+        'Hopper mill. ${in} cane, olive or wheat, or ${grass} grass, crush in ${work}s. Cane makes ${bag} L sugar at ${sale}/L.',
+        { in: MILL_IN, grass: MILL_GRASS, work: MILL_WORK, bag: SUGAR_BAG, sale: SUGAR_MILL },
+      )
+    case 'buy-jam':
+      return fill('${fruit} fruit and ${sugar} L sugar cook in ${seconds}s. Buffer ${buffer} L.', {
+        fruit: JAM_IN,
+        sugar: JAM_SUGAR,
+        seconds: JAM_SECONDS,
+        buffer: JAM_BUFFER,
+      })
+    case 'buy-still':
+      return fill('Distills ${cap} potato, wheat or apricot with ${water} L water in ${seconds}s.', {
+        cap: STILL_CAP,
+        water: STILL_WATER,
+        seconds: STILL_SECONDS,
+      })
+    case 'buy-barrel':
+      return fill('Five grapes. Matures in ${mature}s, ages to ${age}s.', {
+        mature: BARREL_MATURE,
+        age: BARREL_AGE,
+      })
+    case 'buy-freezer':
+      return fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS })
+    case 'buy-sugar':
+      return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
   }
 }
 
@@ -455,13 +552,18 @@ export function itemTip(item: Item): string {
   if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
   if (item.kind === 'grass-seeds') return `grass-seeds ${item.count}`
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
-  if (item.kind === 'sugar') return `sugar ${item.count}`
+  if (item.kind === 'sugar') return `sugar ${item.liters}L`
+  if (item.kind === 'spirit') return `spirit ${item.spirit} ${item.count}`
+  if (item.kind === 'wine') return `wine ${item.count}`
+  if (item.kind === 'jam') return `jam ${item.crop} ${item.count}`
+  if (item.kind === 'oil') return `oil ${item.count}`
+  if (item.kind === 'flour') return `flour ${item.count}`
+  if (item.kind === 'extract') return `extract ${item.count}`
   if (item.kind === 'sapling') return `sapling ${item.tree}`
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
   if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
   if (item.kind === 'weed') return `weed ${item.count}`
-  if (item.kind === 'grass') return `grass ${item.count}`
-  return 'sugar'
+  return `grass ${item.count}`
 }
 
 export function makeShovel(id: ShovelId): Item {
@@ -492,6 +594,10 @@ export function makeSynth(): Item {
 
 export function makeCompost(): Item {
   return { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS }
+}
+
+export function makeSugar(liters: number, capacityLiters: number, unitSale: number): Item {
+  return { kind: 'sugar', liters, capacityLiters, unitSale }
 }
 
 export function skuItem(id: SkuId): Face {
@@ -574,6 +680,18 @@ export function skuItem(id: SkuId): Face {
       return makeShovel('rotary-shovel')
     case 'buy-diamond-pickaxe':
       return makePickaxe('diamond-pickaxe')
+    case 'buy-mill':
+      return { kind: 'mill' }
+    case 'buy-jam':
+      return { kind: 'jam-machine' }
+    case 'buy-still':
+      return { kind: 'still' }
+    case 'buy-barrel':
+      return { kind: 'barrel' }
+    case 'buy-freezer':
+      return { kind: 'freezer' }
+    case 'buy-sugar':
+      return makeSugar(SUGAR_BAG, SUGAR_BAG, SUGAR_SHOP)
   }
 }
 

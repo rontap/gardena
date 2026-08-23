@@ -15,6 +15,8 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `fruit` | tree drop rarity | `next()` per successful drop |
 | `skill` | offer draw | `at(memberIx, pickCount, i)` |
 | `grind` | grind units | `at(col, row, day, i)` |
+| `still` | still rarity clamp | `at(col, row, day, n)` on finish only |
+| `barrel` | barrel rarity clamp | `at(col, row, day, n)` at mature only |
 | `market` | `retarget` | `at(goodIx, day, slot)` |
 
 `n` is `World.ripenN` keyed `col,row`. Absent 0. Not a `Soil` field. Failed buy / bulk / drop consumes 0 `next()`.

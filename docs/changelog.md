@@ -2,6 +2,15 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.2 Machine Update I
+
+[[mechanics/machines]] [[architecture/save]]
+
+- Mill, jam machine, pot still, wine barrel, freezer. Secondary goods. Place like chest.
+- No whisky. Barrel is grapes → wine. Cane harvests as fruit. Sugar is liters, mill or shop.
+- Research merges: Seed grinder → mill. Preservatives → jam + freezer + sugar. Fermentation → still + barrel (+ cane).
+- Save `version` → **1.2**. Pre-1.2 refused. No migrate.
+
 ## 2026-08-23 — 1.0.1 early-access tuning
 
 - **Weed / grass grace.** Spawn chance ramps linearly from **−10%** to full over the first day of big ticks (`ramped`, `CHANCE_RAMP_TICKS = 24`). No weed on the first tick of a fresh plot. [[mechanics/weeds]]

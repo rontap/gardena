@@ -14,7 +14,9 @@ import {
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { SKILLS } from '../defs/skills.ts'
 import type { ResearchId, SkuId } from './ids.ts'
-import { Chest, Grinder, HOUSE_BASE, PUMP_BASE, occupiedCells } from './building.ts'
+import { Chest, Freezer, Grinder, HOUSE_BASE, Mill, PAD, PotStill, PUMP_BASE, occupiedCells } from './building.ts'
+import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
+import { dump, parse, SAVE_VERSION } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
 import { Plant } from './plant.ts'
 import { aoe, junction, type Edge } from './pipe.ts'
@@ -28,7 +30,7 @@ import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
-import { World } from './world.ts'
+import { DT_MAX, World } from './world.ts'
 import { AUTOMATION } from '../ui/shop.tsx'
 import { qualityPip } from '../view/svgs.ts'
 
@@ -247,7 +249,7 @@ describe('beta-2 invariants', () => {
     expect(w.seats[0].queue[0]).toEqual({ act: 'drop', at: { col: 8, row: 12 } })
     w.click({ col: 14, row: 6 })
     expect(w.seats[0].queue[1]).toEqual({ act: 'inventory' })
-    expect(w.cue).toEqual({ kind: 'none' })
+    expect(w.seats[0].cue).toEqual({ kind: 'none' })
     expect(w.seats[0].hand).toEqual(hand)
   })
 
@@ -663,7 +665,7 @@ describe('beta-4 invariants', () => {
     expect(
       itemLine({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true }, w.modifiers),
     ).toBe('Carrot - 3, freshness 100%')
-    expect(itemLine({ kind: 'sugar', count: 2, unitSale: 5 }, w.modifiers)).toBe('Sugar - 2')
+    expect(itemLine({ kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 }, w.modifiers)).toBe('Sugar - 2L')
   })
 
   test('infertile prompt is does not need seeds', () => {
@@ -1360,7 +1362,7 @@ describe('0.8 plants and trees', () => {
     expect(w.skuOpen('pack-vanilla')).toBe(true)
   })
 
-  test('ripe cane harvests sugar not fruit', () => {
+  test('Ripe cane harvests as fruit. Mill 5 cane → `SUGAR_BAG` 2 L at `SUGAR_MILL` 5 / L. Sugar `{ kind: \'sugar\'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'empty' }
     w.seats[0].actor.x = AT.col + 0.5
@@ -1370,9 +1372,11 @@ describe('0.8 plants and trees', () => {
     w.click(AT)
     for (let i = 0; i < 20; i++) w.tick(1 / 15)
     const h = w.seats[0].hand as Hand
-    const held = h.kind === 'hold' ? h.item.kind : 'empty'
-    expect(held).toBe('sugar')
+    expect(h.kind).toBe('hold')
+    if (h.kind !== 'hold' || h.item.kind !== 'fruit') throw new Error('fruit')
+    expect(h.item.crop).toBe('sugar-cane')
     expect(w.cell(AT).kind).toBe('empty')
+    expect('count' in { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 }).toBe(false)
   })
 
   test('tree juvenile then pending; next seam starts yield', () => {
@@ -1386,6 +1390,84 @@ describe('0.8 plants and trees', () => {
     for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
     expect(tree.yield.kind).toBe('on')
     if (tree.yield.kind === 'on') expect(tree.yield.daysLeft).toBe(2)
+  })
+})
+
+describe('1.2 machines', () => {
+  test('Mill 5 cane → 2 L', () => {
+    const w = new World()
+    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    w.setCell(AT, mill)
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 5, unitSale: 5, freshness: 1, bio: true },
+    }
+    w.enqueue({ act: 'mill', at: AT })
+    for (let i = 0; i < 80; i++) w.tick(DT_MAX)
+    const drop = w.drops.find(d => d.item.kind === 'sugar')
+    expect(drop?.item).toEqual({ kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL })
+    expect(mill.units).toBe(0)
+  })
+
+  test('still water refuse', () => {
+    const w = new World()
+    const still = new PotStill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    w.setCell(AT, still)
+    w.stills.push(still)
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 10, unitSale: 6, freshness: 1, bio: true },
+    }
+    w.enqueue({ act: 'still', at: AT })
+    for (let i = 0; i < 40; i++) w.tick(DT_MAX)
+    expect(still.progress).toBe(0)
+    expect(w.drops.some(d => d.item.kind === 'spirit')).toBe(false)
+  })
+
+  test('freezer skip rot', () => {
+    const w = new World()
+    const fz = new Freezer({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    w.setCell(AT, fz)
+    const chestAt = { col: AT.col + 1, row: AT.row }
+    const chest = new Chest({ shape: 'rect', col: chestAt.col, row: chestAt.row, w: 1, h: 1 })
+    w.setCell(chestAt, chest)
+    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, rarity: 'common' as const, count: 1, unitSale: 4, freshness: 1, bio: true }
+    fz.slots[0] = { kind: 'hold', item: { ...fruit } }
+    chest.slots[0] = { kind: 'hold', item: { ...fruit } }
+    w.tick(1)
+    const frozen = fz.slots[0]
+    const stored = chest.slots[0]
+    expect(frozen.kind === 'hold' && frozen.item.kind === 'fruit' && frozen.item.freshness).toBe(1)
+    expect(stored.kind === 'hold' && stored.item.kind === 'fruit' && stored.item.freshness).toBeLessThan(1)
+  })
+
+  test('consign processed', () => {
+    const w = new World()
+    w.seats[0].actor.x = PAD.col + 0.5
+    w.seats[0].actor.y = PAD.row + 0.5
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 72 },
+    }
+    w.enqueue({ act: 'consign' })
+    w.tick(DT_MAX)
+    expect(w.stall.vodka.stock.common.organic).toBe(1)
+    expect(w.stall.vodka.worth.common.organic).toBe(72)
+  })
+
+  test('parse 1.1 → version', () => {
+    const w = new World(1)
+    const s = dump(w)
+    expect(s.version).toBe(SAVE_VERSION)
+    expect(s.version).toBe(1.2)
+    const old = parse(JSON.stringify({ ...s, version: 1.1 }))
+    expect(old.ok).toBe(false)
+    if (old.ok) return
+    expect(old.reason).toBe('version')
   })
 })
 

@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.1`, `seats`. Parse identity: `game === "gardena"`. `version` is the number `1.1` on dump. Wordmark **1.1.0**.
+One file shape. Dump writes `game: "gardena"`, `version: 1.2`, `seats`. Parse identity: `game === "gardena"`. `version` is the number `1.2` on dump. Assumption: wordmark **1.2.0**.
 
 ## RFC — versions (active)
 
@@ -97,7 +97,7 @@ Camera, panels, hover, `Lens`: not in the file. New session.
 
 Spatial streams: seed + identity ints. No cursor in the file.
 
-`grow` needs `ripenN`. `weed` / `grass` need `bigTicks`. `skill` needs `pickCount`. `tree` / `grind` / `market` / `gen` use cells, day, seed.
+`grow` needs `ripenN`. `weed` / `grass` need `bigTicks`. `skill` needs `pickCount`. `tree` / `grind` / `still` / `barrel` / `market` / `gen` use cells, day, seed.
 
 Seq streams: cursor in the file.
 
@@ -111,7 +111,7 @@ SaveRng = { seed: number; shop: number; fruit: number }
 
 ## Classes → JSON
 
-No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
+No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
 
 | live | file |
 |---|---|
@@ -127,6 +127,11 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `Tree` | origin cell `kind: 'tree'` |
 | `Chest` | origin cell `kind: 'chest'` |
 | `CompostBox` | origin cell `kind: 'compost-box'` |
+| `Mill` | origin cell `kind: 'mill'` |
+| `JamMachine` | origin cell `kind: 'jam'` |
+| `PotStill` | origin cell `kind: 'still'` |
+| `WineBarrel` | origin cell `kind: 'barrel'` |
+| `Freezer` | origin cell `kind: 'freezer'` |
 | `Item` `Hand` `Slot` | as live. Already JSON. |
 | `StallGood` | `SaveStallGood` per `StallGoodId` |
 | `Family` maps | `owned` / `offers` arrays |
@@ -137,13 +142,13 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `World.fences` | `Coord[]` |
 | `World.done` | `ResearchId[]` |
 
-Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` are those instances.
+Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` are those instances.
 
 `modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`: rebuild. `purchases` is in the file.
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.1` and `seats`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.2` and `seats`.
 
 ```
 SaveSeat = {
@@ -156,7 +161,7 @@ SaveSeat = {
 
 Save = {
   game: 'gardena'
-  version: 1.1
+  version: 1.2
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
@@ -234,13 +239,18 @@ SaveCell =
   | { kind: 'chest'; base: RectBase; slots: Slot[] }
   | { kind: 'grinder'; base: RectBase }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
+  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
+  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
+  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+  | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
+  | { kind: 'freezer'; base: RectBase; slots: Slot[] }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'occ'; of: Coord }
 ```
 
-`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map.
+`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map.
 
-`version: 1.1` is a number. JSON `1.1` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it.
+`version: 1.2` is a number. JSON `1.2` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
@@ -281,5 +291,7 @@ SaveCell =
 - dump with `actor` / `hand` / `inventory` instead of `seats`
 - guest `writeSlot` for a hosted farm
 - chest slots length ≠ `CHEST_SLOTS`
+- freezer slots length ≠ `FREEZER_SLOTS`
+- `sugar.count`
 - chunk grid not `CHUNK` × `CHUNK`
 - UI copy in this note

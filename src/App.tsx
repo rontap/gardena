@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Peer } from 'peerjs'
-import { DT_MAX, localPlayerId, World } from './game/sim/world.ts'
+import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
 import { Hud } from './game/ui/hud.tsx'
@@ -17,7 +17,7 @@ import { Shop } from './game/ui/shop.tsx'
 import { Family } from './game/ui/family.tsx'
 import { LensPanel } from './game/ui/lens.tsx'
 import { Menu } from './game/ui/menu.tsx'
-import { CatchingUp, GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
+import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import type { Coord } from './game/sim/building.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
@@ -25,7 +25,7 @@ import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { paintMotion } from './game/view/motion.ts'
 import { type WorkerSink } from './game/sim/log.ts'
-import { MpGuest, MpHost } from './game/sim/mp.ts'
+import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
@@ -52,6 +52,8 @@ const SPEED = (() => {
 
 const START_NOW = window.location.hash === '#start_now'
 const BOOT_CAM: Camera = { x: 15.5, y: 9.5, scale: 1 }
+const DIAL_TIMEOUT_MS = 20000
+const RECONNECT_DELAY_MS = 1500
 
 function ignoreHover(_h: PromptHit | undefined): void {}
 function ignoreCam(_c: Camera): void {}
@@ -74,6 +76,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [fail, setFail] = useState<LoadFailReason | undefined>(undefined)
   const [mpFail, setMpFail] = useState<MpFail | undefined>(undefined)
   const [joining, setJoining] = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [name, setName] = useState(() => localPlayerName())
+  const [retry, setRetry] = useState(0)
   const [catching, setCatching] = useState(false)
   const [roomKey, setRoomKey] = useState('')
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
@@ -89,6 +94,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const hostRef = useRef<MpHost | undefined>(undefined)
   const guestRef = useRef<MpGuest | undefined>(undefined)
   const peerRef = useRef<Peer | undefined>(undefined)
+  const resumeRef = useRef(false)
+  const mpOpenRef = useRef(false)
+  const roomRef = useRef('')
+  const closeMpRef = useRef(() => {})
+  const retryRef = useRef(0)
+  const reconnectRef = useRef(0)
   const worldRef = useRef(world)
   worldRef.current = world
   const [role, setRole] = useState<'off' | 'host' | 'guest'>('off')
@@ -126,7 +137,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     if (world === undefined) return
-    if (world.cue.kind !== 'inventory') return
+    // The cue belongs to one seat: without this every client popped open the host's inventory.
+    if (world.seats[world.local].cue.kind !== 'inventory') return
     setPanel({ kind: 'inventory' })
     world.ackCue()
   }, [n, world])
@@ -140,9 +152,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     if (world === undefined) return
-    const cue = world.cue
+    const cue = world.seats[world.local].cue
     if (cue.kind !== 'chest') return
-    if (world.local !== 0) return
     setPanel(p =>
       p.kind === 'chest' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'chest', at: cue.at },
     )
@@ -207,6 +218,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       }
       setPanel(p => {
         if (p.kind === 'chest') world.ackCue()
+        if (p.kind === 'multiplayer') closeMpRef.current()
         return { kind: 'none' }
       })
     }
@@ -216,6 +228,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     const onPageHide = () => {
+      // Close the guest link deliberately so the host frees the seat now, not on a WebRTC timeout.
+      const g = guestRef.current
+      if (g !== undefined) g.leave()
       if (hostRef.current === undefined) return
       toStartup(undefined, true)
     }
@@ -260,12 +275,28 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setRoomKey('')
     setCatching(false)
     setJoining(false)
+    setConnecting(false)
+    setRetry(0)
+    retryRef.current = 0
+    roomRef.current = ''
+    window.clearTimeout(reconnectRef.current)
     setPaused(false)
     setPanel({ kind: 'none' })
     setWorld(undefined)
     setTutorial({ kind: 'off' })
     setFail(undefined)
     setMpFail(line)
+  }
+
+  function renameLocal(v: string): void {
+    setName(v)
+    setLocalPlayerName(v)
+    const w = worldRef.current
+    if (w === undefined) return
+    w.seats[w.local].name = localPlayerName()
+    const host = hostRef.current
+    if (host !== undefined) host.pushRoster()
+    setN(x => x + 1)
   }
 
   function playNew(): void {
@@ -322,9 +353,17 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
       if (p.kind === 'chest') world.ackCue()
+      if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === next.kind ? { kind: 'none' } : next
     })
   }
+
+  function closeMp(): void {
+    setMpPanel(false)
+    setPanel({ kind: 'none' })
+  }
+
+  closeMpRef.current = closeMp
 
   function toggleMenu(): void {
     if (world === undefined) return
@@ -332,6 +371,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
       if (p.kind === 'chest') world.ackCue()
+      if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === 'menu' ? { kind: 'none' } : { kind: 'menu' }
     })
   }
@@ -353,6 +393,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
         hostRef.current = host
         host.onPause = on => setPaused(on)
         host.onCatching = on => setCatching(on)
+        host.onRoster = () => setN(x => x + 1)
+        // startHost resolves after the lobby opened, so re-apply the hold the panel asked for.
+        if (mpOpenRef.current) host.setPaused(true)
         const endHost = () => {
           if (hostRef.current === undefined) return
           toStartup(undefined, true)
@@ -369,6 +412,22 @@ export default function App({ sink }: { sink: WorkerSink }) {
       })
   }
 
+  /** The multiplayer panel is a lobby: hold the world still while it is open, then hand time back. */
+  function setMpPanel(open: boolean): void {
+    mpOpenRef.current = open
+    const host = hostRef.current
+    if (open) {
+      resumeRef.current = !paused
+      if (host !== undefined) host.setPaused(true)
+      else setPaused(true)
+      return
+    }
+    if (!resumeRef.current) return
+    resumeRef.current = false
+    if (host !== undefined) host.setPaused(false)
+    else setPaused(false)
+  }
+
   function toggleMp(): void {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
@@ -376,42 +435,120 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
       if (p.kind === 'chest') world.ackCue()
-      return p.kind === 'multiplayer' ? { kind: 'none' } : { kind: 'multiplayer' }
+      const open = p.kind !== 'multiplayer'
+      setMpPanel(open)
+      return open ? { kind: 'multiplayer' } : { kind: 'none' }
     })
+  }
+
+  /** Wires one MpGuest. Used for the first join and for every reconnect after a dropped link. */
+  function bindGuest(g: MpGuest, stop: () => void, resume: boolean): void {
+    guestRef.current = g
+    g.onWorld = (next, seat) => {
+      stop()
+      next.local = seat
+      setRole('guest')
+      setJoining(false)
+      setConnecting(false)
+      setRetry(0)
+      retryRef.current = 0
+      if (resume) return
+      setCatching(true)
+      session(next, { kind: 'off' })
+    }
+    g.onCatching = on => setCatching(on)
+    g.onRetry = n => {
+      retryRef.current = n
+      setRetry(n)
+    }
+    g.onPause = on => setPaused(on)
+    g.onReject = reason => {
+      stop()
+      setConnecting(false)
+      setMpFail(reason)
+      g.leave()
+      guestRef.current = undefined
+      killPeer()
+    }
+    g.onBye = why => {
+      stop()
+      if (why === 'lost' && roomRef.current !== '') {
+        reconnect()
+        return
+      }
+      toStartup(why === 'kicked' ? 'desync' : 'host-left', false)
+    }
+  }
+
+  /** A dropped transport is retried in place; only a spent budget ends the session. */
+  function reconnect(): void {
+    const n = retryRef.current + 1
+    retryRef.current = n
+    setRetry(n)
+    const old = guestRef.current
+    guestRef.current = undefined
+    if (old !== undefined) old.leave()
+    killPeer()
+    if (n > RETRY_MAX) {
+      toStartup('lost', false)
+      return
+    }
+    setCatching(true)
+    const key = roomRef.current
+    reconnectRef.current = window.setTimeout(() => {
+      void openPeer()
+        .then(peer => {
+          peerRef.current = peer
+          return dial(peer, key).then(wire => {
+            const g = new MpGuest(wire, localPlayerId(), localPlayerName())
+            bindGuest(g, () => {}, true)
+            g.hello()
+          })
+        })
+        .catch(() => {
+          reconnect()
+        })
+    }, RECONNECT_DELAY_MS)
   }
 
   function onJoin(key: string): void {
     setMpFail(undefined)
+    setConnecting(true)
+    roomRef.current = key
+    retryRef.current = 0
+    setRetry(0)
+    // PeerJS can sit on a dead room key forever; give up rather than spin with no word.
+    let settled = false
+    const bail = window.setTimeout(() => {
+      if (settled) return
+      settled = true
+      const g = guestRef.current
+      if (g !== undefined) g.leave()
+      guestRef.current = undefined
+      killPeer()
+      setConnecting(false)
+      roomRef.current = ''
+      setMpFail('ice')
+    }, DIAL_TIMEOUT_MS)
+    const stop = () => {
+      settled = true
+      window.clearTimeout(bail)
+    }
     void openPeer()
       .then(peer => {
         peerRef.current = peer
         return dial(peer, key).then(wire => {
-          const g = new MpGuest(wire, localPlayerId())
-          guestRef.current = g
-          g.onWorld = (next, seat) => {
-            next.local = seat
-            setRole('guest')
-            setJoining(false)
-            setCatching(true)
-            session(next, { kind: 'off' })
-          }
-          g.onCatching = on => setCatching(on)
-          g.onPause = on => setPaused(on)
-          g.onReject = reason => {
-            setMpFail(reason)
-            g.leave()
-            guestRef.current = undefined
-            killPeer()
-          }
-          g.onBye = why => {
-            toStartup(why === 'kicked' ? 'desync' : 'host-left', false)
-          }
+          const g = new MpGuest(wire, localPlayerId(), localPlayerName())
+          bindGuest(g, stop, false)
           g.hello()
         })
       })
       .catch(() => {
+        stop()
         killPeer()
         guestRef.current = undefined
+        setConnecting(false)
+        roomRef.current = ''
         setMpFail('ice')
       })
   }
@@ -430,6 +567,13 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
     setPaused(p => !p)
   }
+
+  const netLine =
+    retry > 0
+      ? `Reconnecting ${Math.min(retry, RETRY_MAX)} of ${RETRY_MAX}`
+      : catching
+        ? 'Catching up'
+        : undefined
 
   if (world === undefined) {
     return (
@@ -454,6 +598,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
             fail={fail}
             mpFail={mpFail}
             joining={joining}
+            connecting={connecting}
+            name={name}
+            onName={renameLocal}
             onNew={playNew}
             onLoad={playLoad}
             onUpload={playUpload}
@@ -508,6 +655,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onMultiplayer={toggleMp}
             paused={paused}
             onPause={onPause}
+            net={netLine}
           />
           <div className="pointer-events-none absolute right-4 bottom-4 z-20 flex w-80 flex-col gap-3">
             <Queue world={world} />
@@ -531,7 +679,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
-          {panel.kind === 'almanac' && <Almanac onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (
             <ChestUi
               world={world}
@@ -554,7 +702,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               onSave={saveGame}
               onDownload={downloadSave}
               onLeave={() => toStartup(undefined, false)}
-              onClose={() => setPanel({ kind: 'none' })}
+              onClose={closeMp}
             />
           )}
           {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && !guest && (
@@ -562,14 +710,21 @@ export default function App({ sink }: { sink: WorkerSink }) {
               roomKey={roomKey}
               world={world}
               local={world.local}
-              onCopy={() => {
-                void navigator.clipboard.writeText(roomKey)
-              }}
-              onClose={() => setPanel({ kind: 'none' })}
+              name={name}
+              onName={renameLocal}
+              onCopy={() => navigator.clipboard.writeText(roomKey).then(() => true, () => false)}
+              onClose={closeMp}
             />
           )}
           {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && guest && (
-            <GuestDialog onLeave={() => toStartup(undefined, false)} onClose={() => setPanel({ kind: 'none' })} />
+            <GuestDialog
+              world={world}
+              local={world.local}
+              name={name}
+              onName={renameLocal}
+              onLeave={() => toStartup(undefined, false)}
+              onClose={() => setPanel({ kind: 'none' })}
+            />
           )}
           <ObjectHud world={world} cam={cam} onClose={() => world.closeHud()} />
           {world.seam.kind === 'recap' && (
@@ -580,7 +735,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
               onDismiss={() => world.dismissRecap()}
             />
           )}
-          {catching && <CatchingUp fail={mpFail} />}
           <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
             data-banner

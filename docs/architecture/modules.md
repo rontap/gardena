@@ -12,15 +12,15 @@ No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
 |---|---|
 | `crops.ts` | `CropDef`, `CROPS`. Sale / rot / desc / class / seed / tols / `waterUsePerSec`. Trees: `waterUsePerSec = 0`. `CropDef.saleMul` optional `{ [Rarity]: number }`; absent → `RARITY_SALE`. Vanilla only. |
 | `trees.ts` | `TREES`, `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`. `TREES[TreeId] = { juvenileSeconds, fruitSeconds }` |
-| `items.ts` | tool, container, box, fert, compost, sprinkler constants |
+| `items.ts` | tool, container, box, fert, compost, sprinkler, mill / jam / still / barrel / freezer / sugar constants |
 | `rarity.ts` | `Rarity`, sale / grow / rot / weight tables |
 | `research.ts` | `RESEARCH`, `SKUS`; `Sku.tab` |
 | `skills.ts` | `SKILLS`, `SkillDef`, `TEND_WORK` |
 | `catalog.ts` | almanac `CatalogEntry` keyed by `Face` |
 
-`sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
+`sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `SpiritKind`, `JamCrop`, `StillCrop`, `MillRecipe`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
 
-`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation`. No `unlock-vanilla`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane`. `pack-vanilla.need` is `vanilla-tending`.
+`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar`. `pack-vanilla.need` is `vanilla-tending`.
 
 No `bump-*` research ids. No `sale-mul` research effect. Better-crop is player skills — [[architecture/family]]. `unlock-heirloom` is plants `feature`, gates Őstermelő.
 
@@ -30,22 +30,22 @@ Classes for game objects. Tick and mutation stay here.
 
 | file | owns |
 |---|---|
-| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `now`, `dispatch` / `apply`, `log`, `rng`. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
+| `world.ts` | `World`, `Seat`, `SeatId`, `Presence`, `PlayerId`, `Intent`, `Place`, `StayArmed`, `Cue`, `Speech`, `Seam`, `Net`, `Family`, `dest()`. `World.seats`. `World.stills`. `now`, `dispatch` / `apply`, `log`, `rng`. No `World.actor` / `hand` / `inventory` / `queue` / `place` |
 | `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
 | `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
 | `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
 | `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
 | `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
-| `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground` |
+| `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground`. `Cell` += mill jam still barrel freezer |
 | `soil.ts` | `Soil` |
 | `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended` |
 | `water.ts` | `Reservoir`, `SourceKind`, `pull()` |
 | `stall.ts` | `StallGood`, `StallMap`, `StallSale` |
-| `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Coord`, `Base` |
+| `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Mill`, `JamMachine`, `PotStill`, `WineBarrel`, `Freezer`, `Coord`, `Base` |
 | `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Well`, `Tune`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock`, `DAY_SECONDS` |
-| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm |
+| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar liters, spirit, wine, jam, oil, flour, extract. Face += mill jam still barrel freezer. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm |
 | `prompt.ts` | `Prompt`, `PromptHit` |
 | `look.ts` | `lookText` — HUD copy, read-only on `World` |
 | `drop.ts` | `Drop` |
@@ -53,6 +53,7 @@ Classes for game objects. Tick and mutation stay here.
 | `noise.ts` | `goodness`, `groundOf` |
 | `modifiers.ts` | `Modifier`, `Stats`. `source` includes `'skill'`. `statsOf` uses `CropDef.saleMul` when present, else `RARITY_SALE` |
 | `rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
+| `machine.ts` | mill recipes, feed helpers, rarity mean, sale bake. No `World`. [[mechanics/machines]] |
 
 `ui` and `view` call `World` methods. They do not construct `Soil` / `Plant` / `Reservoir` / `StallGood`.
 
@@ -121,7 +122,7 @@ PeerJS only here. Implements `MpWire`. [[architecture/net]]
 | `MpWire` | `sim/mp.ts` type. Loopback there. PeerJS in `net/peer.ts` only. |
 | `MpHost` / `MpGuest` | class `sim/mp.ts`. App holds the session. |
 
-`World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` are the same instances stored in their cells.
+`World.house` / `World.truck` / `World.pumps` / `World.tanks` / `World.taps` / `World.stills` are the same instances stored in their cells.
 
 `World.segments`, `World.wells` and `World.sprinklers` are the pipe graph. Not `Cell`. Wells sit on edges — [[mechanics/water]].
 
@@ -131,4 +132,4 @@ Tutorial is App session state. `sim/tutorial.ts` checks. Not a `World` field. [[
 
 Save I/O is `sim/save.ts`. App does not own `Save`. [[architecture/save]]
 
-Chest, grinder, compost box, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint.
+Chest, grinder, compost box, mill, jam, still, barrel, freezer, rock, tree: cell only. No shrub. [[architecture/tree]] for the 1×2 footprint. Still also in `World.stills` for the water grid.

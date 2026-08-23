@@ -1,5 +1,5 @@
 import { type CropClass } from '../defs/crops.ts'
-import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, PICKAXES, SHOVELS } from '../defs/items.ts'
+import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, FREEZER_SLOTS, PICKAXES, SHOVELS } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
@@ -9,14 +9,19 @@ import {
   Chest,
   CompostBox,
   DOOR,
+  Freezer,
   Grinder,
   House,
+  JamMachine,
+  Mill,
+  PotStill,
   Pump,
   RainTank,
   Rock,
   Tap,
   Tree,
   Truck,
+  WineBarrel,
   chunkKey,
   chunkRect,
   occupiedCells,
@@ -37,12 +42,17 @@ import {
   type CropId,
   type DaughterSkillId,
   type HusbandSkillId,
+  JAM_CROPS,
+  type JamCrop,
+  type MillRecipe,
   type PickaxeId,
   type PlayerSkillId,
   type ResearchId,
   type ShovelId,
   type SkillId,
+  type SpiritKind,
   type StallGoodId,
+  type StillCrop,
   type TileId,
   type TreeId,
 } from './ids.ts'
@@ -64,13 +74,15 @@ import {
   type Recap,
   type Seat,
   type SeatId,
+  cleanName,
+  defaultSeatName,
   type Seam,
   type SkillRef,
 } from './world.ts'
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.1 as const
+export const SAVE_VERSION = 1.2 as const
 
 const INV = 16
 
@@ -130,11 +142,17 @@ export type SaveCell =
   | { kind: 'chest'; base: RectBase; slots: Slot[] }
   | { kind: 'grinder'; base: RectBase }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
+  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
+  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
+  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+  | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
+  | { kind: 'freezer'; base: RectBase; slots: Slot[] }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'occ'; of: Coord }
 
 export type SaveSeat = {
   playerId: string
+  name: string
   presence: Presence
   actor: { x: number; y: number }
   hand: Hand
@@ -143,7 +161,7 @@ export type SaveSeat = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.1
+  version: 1.2
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -186,6 +204,7 @@ export function dump(world: World): Save {
     bigTicks: world.bigTicks,
     seats: world.seats.map(s => ({
       playerId: s.playerId,
+      name: s.name,
       presence: s.presence,
       actor: { x: s.actor.x, y: s.actor.y },
       hand: s.hand,
@@ -329,6 +348,11 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'chest' ||
     c.kind === 'grinder' ||
     c.kind === 'compost-box' ||
+    c.kind === 'mill' ||
+    c.kind === 'jam' ||
+    c.kind === 'still' ||
+    c.kind === 'barrel' ||
+    c.kind === 'freezer' ||
     c.kind === 'truck'
   ) {
     if (c.base.shape === 'rect') return { col: c.base.col, row: c.base.row }
@@ -385,6 +409,16 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'grinder', base: c.base }
     case 'compost-box':
       return { kind: 'compost-box', base: c.base, units: c.units, progress: c.progress }
+    case 'mill':
+      return { kind: 'mill', base: c.base, recipe: c.recipe, units: c.units, progress: c.progress }
+    case 'jam':
+      return { kind: 'jam', base: c.base, crop: c.crop, fruit: c.fruit, sugar: c.sugar, progress: c.progress }
+    case 'still':
+      return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n }
+    case 'barrel':
+      return { kind: 'barrel', base: c.base, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
+    case 'freezer':
+      return { kind: 'freezer', base: c.base, slots: c.slots.slice() }
     case 'truck':
       return { kind: 'truck', base: c.base }
   }
@@ -424,7 +458,16 @@ function readSeats(rec: Record<string, unknown>): SaveSeat[] | undefined {
     if (hand === undefined) return undefined
     const inventory = readInv(o.inventory)
     if (inventory === undefined) return undefined
-    seats.push({ playerId: o.playerId, presence: o.presence, actor: { x: ax, y: ay }, hand, inventory })
+    // Saves written before names existed still load; the seat just gets its default label.
+    const name = typeof o.name === 'string' ? cleanName(o.name) : ''
+    seats.push({
+      playerId: o.playerId,
+      name: name === '' ? defaultSeatName(i as SeatId) : name,
+      presence: o.presence,
+      actor: { x: ax, y: ay },
+      hand,
+      inventory,
+    })
   }
   return seats
 }
@@ -619,12 +662,16 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     pumps: live.pumps,
     tanks: live.tanks,
     taps: live.taps,
+    stills: live.stills,
     stall: makeStallMap(save.stall),
     family: makeFamily(save.family),
     seats: save.seats.map((s, i): Seat => ({
       id: i as SeatId,
       playerId: s.playerId,
+      name: s.name,
       presence: s.presence,
+      napping: false,
+      cue: { kind: 'none' },
       actor: new Actor(s.actor.x, s.actor.y),
       hand: s.hand,
       inventory: s.inventory.slice(),
@@ -707,12 +754,14 @@ function stampChunks(
       pumps: Pump[]
       tanks: RainTank[]
       taps: Tap[]
+      stills: PotStill[]
     }
   | undefined {
   const origins = new Map<string, Cell>()
   const pumps: Pump[] = []
   const tanks: RainTank[] = []
   const taps: Tap[] = []
+  const stills: PotStill[] = []
   let house: House | undefined
   let truck: Truck | undefined
   for (const ch of chunkSaves) {
@@ -733,6 +782,7 @@ function stampChunks(
         }
         if (made.kind === 'rain-tank') tanks.push(made)
         if (made.kind === 'tap') taps.push(made)
+        if (made.kind === 'still') stills.push(made)
       }
     }
   }
@@ -761,6 +811,11 @@ function stampChunks(
               inst.kind === 'chest' ||
               inst.kind === 'grinder' ||
               inst.kind === 'compost-box' ||
+              inst.kind === 'mill' ||
+              inst.kind === 'jam' ||
+              inst.kind === 'still' ||
+              inst.kind === 'barrel' ||
+              inst.kind === 'freezer' ||
               inst.kind === 'truck'
               ? inst.base
               : { shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 },
@@ -778,7 +833,7 @@ function stampChunks(
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, pumps, tanks, taps }
+  return { chunks, house, truck, pumps, tanks, taps, stills }
 }
 
 function makeLive(sc: SaveCell): Cell | undefined {
@@ -835,6 +890,40 @@ function makeLive(sc: SaveCell): Cell | undefined {
       box.units = sc.units
       box.progress = sc.progress
       return box
+    }
+    case 'mill': {
+      const mill = new Mill(sc.base)
+      mill.recipe = sc.recipe
+      mill.units = sc.units
+      mill.progress = sc.progress
+      return mill
+    }
+    case 'jam': {
+      const jam = new JamMachine(sc.base)
+      jam.crop = sc.crop
+      jam.fruit = sc.fruit
+      jam.sugar = sc.sugar
+      jam.progress = sc.progress
+      return jam
+    }
+    case 'still': {
+      const still = new PotStill(sc.base)
+      still.feed = sc.feed.map(f => ({ ...f }))
+      still.progress = sc.progress
+      still.n = sc.n
+      return still
+    }
+    case 'barrel': {
+      const barrel = new WineBarrel(sc.base)
+      barrel.feed = sc.feed.map(f => ({ ...f }))
+      barrel.age = sc.age
+      barrel.n = sc.n
+      return barrel
+    }
+    case 'freezer': {
+      const freezer = new Freezer(sc.base)
+      for (let i = 0; i < FREEZER_SLOTS; i++) freezer.slots[i] = sc.slots[i]
+      return freezer
     }
     case 'truck':
       return new Truck(sc.base)
@@ -959,6 +1048,65 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const progress = num(o.progress)
     if (base === undefined || units === undefined || progress === undefined) return undefined
     return { kind: 'compost-box', base, units, progress }
+  }
+  if (kind === 'mill') {
+    const base = readRectBase(o.base)
+    const recipe = readMillRecipe(o.recipe)
+    const units = num(o.units)
+    const progress = num(o.progress)
+    if (base === undefined || recipe === undefined || units === undefined || progress === undefined) return undefined
+    return { kind: 'mill', base, recipe, units, progress }
+  }
+  if (kind === 'jam') {
+    const base = readRectBase(o.base)
+    const crop = readJamCropOrNone(o.crop)
+    const fruit = num(o.fruit)
+    const sugar = num(o.sugar)
+    const progress = num(o.progress)
+    if (base === undefined || crop === undefined || fruit === undefined || sugar === undefined || progress === undefined) {
+      return undefined
+    }
+    return { kind: 'jam', base, crop, fruit, sugar, progress }
+  }
+  if (kind === 'still') {
+    const base = readRectBase(o.base)
+    const feedIn = arr(o.feed)
+    const progress = num(o.progress)
+    const n = num(o.n)
+    if (base === undefined || feedIn === undefined || progress === undefined || n === undefined) return undefined
+    const feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
+    for (const f of feedIn) {
+      const e = readStillFeed(f)
+      if (e === undefined) return undefined
+      feed.push(e)
+    }
+    return { kind: 'still', base, feed, progress, n }
+  }
+  if (kind === 'barrel') {
+    const base = readRectBase(o.base)
+    const feedIn = arr(o.feed)
+    const age = num(o.age)
+    const n = num(o.n)
+    if (base === undefined || feedIn === undefined || age === undefined || n === undefined) return undefined
+    const feed: { rarity: Rarity; count: number }[] = []
+    for (const f of feedIn) {
+      const e = readBarrelFeed(f)
+      if (e === undefined) return undefined
+      feed.push(e)
+    }
+    return { kind: 'barrel', base, feed, age, n }
+  }
+  if (kind === 'freezer') {
+    const base = readRectBase(o.base)
+    const slotsIn = arr(o.slots)
+    if (base === undefined || slotsIn === undefined || slotsIn.length !== FREEZER_SLOTS) return undefined
+    const slots: Slot[] = []
+    for (const s of slotsIn) {
+      const slot = readHand(s)
+      if (slot === undefined) return undefined
+      slots.push(slot)
+    }
+    return { kind: 'freezer', base, slots }
   }
   if (kind === 'truck') {
     const base = readRectBase(o.base)
@@ -1369,10 +1517,41 @@ function readItem(v: unknown): Item | undefined {
       return { kind: 'sapling', tree: o.tree }
     }
     case 'sugar': {
+      const liters = num(o.liters)
+      const capacityLiters = num(o.capacityLiters)
+      const unitSale = num(o.unitSale)
+      if (liters === undefined || capacityLiters === undefined || unitSale === undefined) return undefined
+      return { kind: 'sugar', liters, capacityLiters, unitSale }
+    }
+    case 'spirit': {
+      if (!isSpiritKind(o.spirit)) return undefined
+      const rarity = readRarity(o.rarity)
+      const count = num(o.count)
+      const unitSale = num(o.unitSale)
+      if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: 'spirit', spirit: o.spirit, rarity, count, unitSale }
+    }
+    case 'wine': {
+      const rarity = readRarity(o.rarity)
+      const count = num(o.count)
+      const unitSale = num(o.unitSale)
+      if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: 'wine', rarity, count, unitSale }
+    }
+    case 'jam': {
+      if (!isJamCrop(o.crop)) return undefined
       const count = num(o.count)
       const unitSale = num(o.unitSale)
       if (count === undefined || unitSale === undefined) return undefined
-      return { kind: 'sugar', count, unitSale }
+      return { kind: 'jam', crop: o.crop, count, unitSale }
+    }
+    case 'oil':
+    case 'flour':
+    case 'extract': {
+      const count = num(o.count)
+      const unitSale = num(o.unitSale)
+      if (count === undefined || unitSale === undefined) return undefined
+      return { kind: o.kind, count, unitSale }
     }
     case 'rotten':
     case 'dead': {
@@ -1472,6 +1651,47 @@ function isTreeIdValue(v: unknown): v is TreeId {
 
 function isCropId(v: unknown): v is CropId {
   return typeof v === 'string' && ((ANNUAL_IDS as readonly string[]).includes(v) || (TREE_IDS as readonly string[]).includes(v))
+}
+
+function isSpiritKind(v: unknown): v is SpiritKind {
+  return v === 'vodka' || v === 'beer' || v === 'brandy' || v === 'mixed'
+}
+
+function isJamCrop(v: unknown): v is JamCrop {
+  return typeof v === 'string' && (JAM_CROPS as readonly string[]).includes(v)
+}
+
+function isStillCrop(v: unknown): v is StillCrop {
+  return v === 'potato' || v === 'wheat' || v === 'apricot'
+}
+
+function readMillRecipe(v: unknown): MillRecipe | 'none' | undefined {
+  if (v === 'none' || v === 'sugar-cane' || v === 'olive' || v === 'wheat' || v === 'grass') return v
+  return undefined
+}
+
+function readJamCropOrNone(v: unknown): JamCrop | 'none' | undefined {
+  if (v === 'none') return 'none'
+  if (isJamCrop(v)) return v
+  return undefined
+}
+
+function readStillFeed(v: unknown): { crop: StillCrop; rarity: Rarity; count: number } | undefined {
+  const o = obj(v)
+  if (o === undefined || !isStillCrop(o.crop)) return undefined
+  const rarity = readRarity(o.rarity)
+  const count = num(o.count)
+  if (rarity === undefined || count === undefined) return undefined
+  return { crop: o.crop, rarity, count }
+}
+
+function readBarrelFeed(v: unknown): { rarity: Rarity; count: number } | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const rarity = readRarity(o.rarity)
+  const count = num(o.count)
+  if (rarity === undefined || count === undefined) return undefined
+  return { rarity, count }
 }
 
 function readRarity(v: unknown): Rarity | undefined {

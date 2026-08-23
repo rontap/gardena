@@ -57,4 +57,10 @@ Sapling in hand (`{ kind: 'sapling'; tree }`), valid owned 1×2 untilled `ground
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
 
-Ripe sugar-cane: **Harvest**. Empty hand or holding sugar. Not a box. `{ act: 'harvest' }`.
+Ripe annual including sugar-cane: **Harvest**. Empty hand or fruit box that accepts. `{ act: 'harvest' }`. Cane is fruit, not sugar liters. Not holding sugar.
+
+## Machines
+
+Mill, jam, still, barrel, freezer: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.
+
+Held sugar: **Sugar - {n}L**.

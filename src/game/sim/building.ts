@@ -1,5 +1,6 @@
-import { CHEST_SLOTS } from '../defs/items.ts'
-import type { TreeId } from './ids.ts'
+import { CHEST_SLOTS, FREEZER_SLOTS } from '../defs/items.ts'
+import type { Rarity } from '../defs/rarity.ts'
+import type { JamCrop, MillRecipe, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -258,6 +259,61 @@ export class Truck {
   readonly base: RectBase
   constructor(base: RectBase) {
     this.base = base
+  }
+}
+
+export class Mill {
+  readonly kind = 'mill' as const
+  readonly base: RectBase
+  recipe: MillRecipe | 'none' = 'none'
+  units = 0
+  progress = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class JamMachine {
+  readonly kind = 'jam' as const
+  readonly base: RectBase
+  crop: JamCrop | 'none' = 'none'
+  fruit = 0
+  sugar = 0
+  progress = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class PotStill {
+  readonly kind = 'still' as const
+  readonly base: RectBase
+  feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
+  progress = 0
+  n = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class WineBarrel {
+  readonly kind = 'barrel' as const
+  readonly base: RectBase
+  feed: { rarity: Rarity; count: number }[] = []
+  age = 0
+  n = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class Freezer {
+  readonly kind = 'freezer' as const
+  readonly base: RectBase
+  readonly slots: Slot[]
+  constructor(base: RectBase) {
+    this.base = base
+    this.slots = Array.from({ length: FREEZER_SLOTS }, (): Slot => ({ kind: 'empty' }))
   }
 }
 

@@ -13,6 +13,12 @@ import {
   MpGuest,
   MpHost,
   PROTOCOL,
+  RETRY_MAX,
+  AWAY_MS,
+  NAP_MS,
+  DROP_MS,
+  rosterOf,
+  applyRoster,
   type MpMsg,
   type MpWire,
 } from './mp.ts'
@@ -64,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.1)
+    expect(PROTOCOL).toBe(1.2)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -83,7 +89,7 @@ describe('1.1 multiplayer', () => {
     expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
   })
 
-  test('Guest may shop + place + delete building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box. Guest chest swapChest, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
+  test('Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pumpjack' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-well' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-rain-tank' })).toBe(true)
@@ -91,6 +97,11 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-chest' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-grinder' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-compost-box' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-mill' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-jam' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-still' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-barrel' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-freezer' })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe' })).toBe(false)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-valve' })).toBe(false)
@@ -112,7 +123,7 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [2, 2], i: 0 })).toBe(false)
   })
 
-  test('presence === \'away\': tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Seat stays in seats.', () => {
+  test('presence === \'away\': tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.', () => {
     const w = new World(1)
     expect(w.join('g')).toBe(1)
     const s1 = w.seats[1]
@@ -142,7 +153,8 @@ describe('1.1 multiplayer', () => {
     const box0 =
       s1.hand.kind === 'hold' &&
       s1.hand.item.kind === 'box' &&
-      s1.hand.item.cargo.kind === 'stack'
+      s1.hand.item.cargo.kind === 'stack' &&
+      s1.hand.item.cargo.goods === 'fruit'
         ? s1.hand.item.cargo.stack.freshness
         : -1
     const x = s1.actor.x
@@ -153,7 +165,8 @@ describe('1.1 multiplayer', () => {
     const box1 =
       s1.hand.kind === 'hold' &&
       s1.hand.item.kind === 'box' &&
-      s1.hand.item.cargo.kind === 'stack'
+      s1.hand.item.cargo.kind === 'stack' &&
+      s1.hand.item.cargo.goods === 'fruit'
         ? s1.hand.item.cargo.stack.freshness
         : -1
     expect(box1).toBe(box0)
@@ -162,12 +175,14 @@ describe('1.1 multiplayer', () => {
   })
 
   test('parse(text): JSON.parse throw or non-object → { ok: false, reason: \'unusable\' }. game !== "gardena" → reason: \'not-gardena\'. File version ≠ dump version (absent included) → reason: \'version\'. Else one hydrate of live fields including seats. Reconstruct → { ok: true, world }. Hydrate fail → reason: \'unusable\'. No migrate. LoadFailReason is \'not-gardena\' | \'version\' | \'unusable\'.', () => {
-    expect(parse('not-json').ok).toBe(false)
-    if (parse('not-json').ok) return
-    expect(parse('not-json').reason).toBe('unusable')
-    expect(parse(JSON.stringify({ game: 'nope' })).ok).toBe(false)
-    if (parse(JSON.stringify({ game: 'nope' })).ok) return
-    expect(parse(JSON.stringify({ game: 'nope' })).reason).toBe('not-gardena')
+    const notJson = parse('not-json')
+    expect(notJson.ok).toBe(false)
+    if (notJson.ok) return
+    expect(notJson.reason).toBe('unusable')
+    const notGardena = parse(JSON.stringify({ game: 'nope' }))
+    expect(notGardena.ok).toBe(false)
+    if (notGardena.ok) return
+    expect(notGardena.reason).toBe('not-gardena')
     const w = new World(1)
     const s = dump(w)
     const ok = parse(JSON.stringify(s))
@@ -219,7 +234,7 @@ describe('1.1 multiplayer', () => {
     const w = new World(1)
     const { host, guest } = pair(w)
     expect(guest.world !== undefined).toBe(true)
-    let bye: 'host-left' | 'kicked' | undefined
+    let bye: 'host-left' | 'kicked' | 'lost' | undefined
     guest.onBye = why => {
       bye = why
     }
@@ -249,7 +264,7 @@ describe('1.1 multiplayer', () => {
     const { hostW, guestW, flush } = delayToHost()
     host.attach(hostW)
     const guest = new MpGuest(guestW, 'g1')
-    let bye: 'host-left' | 'kicked' | undefined
+    let bye: 'host-left' | 'kicked' | 'lost' | undefined
     guest.onBye = why => {
       bye = why
     }
@@ -292,7 +307,7 @@ describe('1.1 multiplayer', () => {
     const { hostW, guestW, flush } = delayToHost()
     host.attach(hostW)
     const guest = new MpGuest(guestW, 'g1')
-    let bye: 'host-left' | 'kicked' | undefined
+    let bye: 'host-left' | 'kicked' | 'lost' | undefined
     guest.onBye = why => {
       bye = why
     }
@@ -401,7 +416,7 @@ describe('1.1 multiplayer', () => {
   test('MpHost.leave sends bye host-left. Guest world is cleared.', () => {
     const w = new World(1)
     const { host, guest } = pair(w)
-    let bye: 'host-left' | 'kicked' | undefined
+    let bye: 'host-left' | 'kicked' | 'lost' | undefined
     guest.onBye = why => {
       bye = why
     }
@@ -417,6 +432,123 @@ describe('1.1 multiplayer', () => {
     expect(readMpMsg({ a: 'bye', why: 'kicked' })).toEqual({ a: 'bye', why: 'kicked' })
     expect(readMpMsg({ a: 'bye', why: 'nope' })).toBeUndefined()
   })
+
+  test('cue is per seat: one seat opening the inventory never cues another.', () => {
+    const w = new World(1)
+    expect(w.join('g1')).toBe(1)
+    w.dispatch({ a: Act.enqueue, t: 0, p: 0, i: { act: 'inventory' } })
+    for (let i = 0; i < 4; i++) w.tick(DT_MAX)
+    expect(w.seats[0].cue).toEqual({ kind: 'inventory' })
+    expect(w.seats[1].cue).toEqual({ kind: 'none' })
+    w.dispatch({ a: Act.ackCue, t: 0, p: 0 })
+    expect(w.seats[0].cue).toEqual({ kind: 'none' })
+  })
+
+  test('hello carries a name; join keeps the seat and refreshes the name on rejoin.', () => {
+    const w = new World(1)
+    expect(w.join('g1', 'Ada')).toBe(1)
+    expect(w.seats[1].name).toBe('Ada')
+    w.away(1)
+    expect(w.seats[1].presence).toBe('away')
+    expect(w.seats[1].napping).toBe(false)
+    expect(w.join('g1', 'Ada Two')).toBe(1)
+    expect(w.seats[1].name).toBe('Ada Two')
+    expect(w.seats[1].presence).toBe('in')
+    expect(w.seats[1].napping).toBe(false)
+    expect(readMpMsg({ a: 'hello', protocol: PROTOCOL, playerId: 'g1', name: '  Ada  ' })).toEqual({
+      a: 'hello',
+      protocol: PROTOCOL,
+      playerId: 'g1',
+      name: 'Ada',
+    })
+  })
+
+  test('roster carries names, presence and awaySince over the wire.', () => {
+    const w = new World(1)
+    w.join('g1', 'Ada')
+    w.away(1)
+    const rows = rosterOf(w)
+    expect(rows[1]).toEqual({ id: 1, name: 'Ada', presence: 'away', napping: false })
+    expect(readMpMsg({ a: 'roster', seats: rows })).toEqual({ a: 'roster', seats: rows })
+    const mirror = new World(1)
+    mirror.join('g1', 'stale')
+    applyRoster(mirror, rows)
+    expect(mirror.seats[1].name).toBe('Ada')
+    expect(mirror.seats[1].presence).toBe('away')
+  })
+
+  test(`a stalled guest retries ${RETRY_MAX} times, then byes with 'lost'. A live host resets the budget.`, () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1', 'Ada')
+    guest.hello()
+    expect(guest.world !== undefined).toBe(true)
+    let bye: 'host-left' | 'kicked' | 'lost' | undefined
+    guest.onBye = why => {
+      bye = why
+    }
+    // The host goes silent: hellos leave, nothing comes back.
+    b.send = () => {}
+    let wall = 1000
+    guest.pumpGap(wall)
+    for (let i = 1; i <= RETRY_MAX; i++) {
+      wall += 5001
+      guest.pumpGap(wall)
+      expect(guest.retries).toBe(i)
+      expect(bye).toBeUndefined()
+    }
+    wall += 5001
+    guest.pumpGap(wall)
+    expect(bye).toBe('lost')
+    expect(guest.world).toBeUndefined()
+  })
+
+  test('a host that answers the stall hello resets the retry budget.', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1', 'Ada')
+    guest.hello()
+    guest.pumpGap(1000)
+    guest.pumpGap(1000 + 5001)
+    // The loopback host answered with a resync, so the guest is not stalled after all.
+    expect(guest.retries).toBe(0)
+  })
+
+  test('a silent guest goes away (nap timer), then loses the link. A ping brings them back.', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    let wall = 0
+    host.wall = () => wall
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1', 'Ada')
+    guest.hello()
+    expect(w.seats[1].presence).toBe('in')
+    wall = AWAY_MS - 1
+    host.sweep()
+    expect(w.seats[1].presence).toBe('in')
+    wall = AWAY_MS
+    host.sweep()
+    expect(w.seats[1].presence).toBe('away')
+    expect(w.seats[1].napping).toBe(false)
+    wall = NAP_MS
+    host.sweep()
+    expect(w.seats[1].napping).toBe(true)
+    b.send({ a: 'ping' })
+    expect(w.seats[1].presence).toBe('in')
+    expect(w.seats[1].napping).toBe(false)
+    wall += DROP_MS
+    host.sweep()
+    expect(w.seats[1].presence).toBe('away')
+    // The seat survives the drop so the same playerId lands back in it.
+    expect(w.seats).toHaveLength(2)
+    expect(w.join('g1', 'Ada')).toBe(1)
+  })
+
 })
 
 function delayToHost(): { hostW: MpWire; guestW: MpWire; flush: () => void } {

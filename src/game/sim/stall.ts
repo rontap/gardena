@@ -1,26 +1,40 @@
 import { CROPS } from '../defs/crops.ts'
 import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { YARD, type Coord } from './building.ts'
-import type { CropId, StallGoodId } from './ids.ts'
+import {
+  ANNUAL_IDS,
+  JAM_IDS,
+  SPIRIT_KINDS,
+  TREE_IDS,
+  type CropId,
+  type StallGoodId,
+} from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 import type { Rng } from './rng.ts'
 
 export const STALL_IDS: StallGoodId[] = [
-  'carrot',
-  'potato',
-  'wheat',
-  'tomato',
-  'raspberry',
-  'watermelon',
-  'olive',
-  'grape',
-  'vanilla',
-  'apple',
-  'apricot',
-  'lemon',
-  'cherry',
+  ...ANNUAL_IDS,
+  ...TREE_IDS,
   'sugar',
+  ...SPIRIT_KINDS,
+  'wine',
+  ...JAM_IDS,
+  'oil',
+  'flour',
+  'extract',
 ]
+
+export function isCropStall(id: StallGoodId): id is CropId {
+  return (ANNUAL_IDS as readonly string[]).includes(id) || (TREE_IDS as readonly string[]).includes(id)
+}
+
+export function isBakedStall(id: StallGoodId): boolean {
+  return id === 'sugar' || id === 'oil' || id === 'flour' || id === 'extract' || id.startsWith('jam-')
+}
+
+export function isSpiritStall(id: StallGoodId): boolean {
+  return (SPIRIT_KINDS as readonly string[]).includes(id) || id === 'wine'
+}
 
 export const BIO_KEYS = ['organic', 'synth'] as const
 export type BioKey = (typeof BIO_KEYS)[number]
@@ -44,12 +58,12 @@ function saleMul(id: CropId, mods: readonly Modifier[]): number {
 }
 
 export function stallX(id: StallGoodId, mods: readonly Modifier[]): number {
-  if (id === 'sugar') return CROPS['sugar-cane'].sale
+  if (!isCropStall(id)) return 1
   return CROPS[id].sale * saleMul(id, mods)
 }
 
 export function stallRarity(id: StallGoodId, rarity: Rarity): number {
-  if (id === 'sugar') return 1
+  if (!isCropStall(id)) return 1
   return raritySale(CROPS[id], rarity)
 }
 
@@ -92,9 +106,19 @@ export class StallGood {
     this.worth[rarity][k] += count * freshness
   }
 
-  takeSugar(count: number, unitSale: number): void {
+  takeSugar(liters: number, unitSale: number): void {
+    this.stock.common.organic += liters
+    this.worth.common.organic += liters * unitSale
+  }
+
+  takeBaked(count: number, unitSale: number): void {
     this.stock.common.organic += count
     this.worth.common.organic += count * unitSale
+  }
+
+  takeSpirit(rarity: Rarity, count: number, unitSale: number): void {
+    this.stock[rarity].organic += count
+    this.worth[rarity].organic += count * unitSale
   }
 }
 

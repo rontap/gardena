@@ -40,8 +40,9 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
 | unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
 | unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
-| unlock-grinder | Seed grinder | automation | 18 | 50 | start | Unlocks Seed grinder in the general store. |
-| unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds in the general store. Ripe cane is bagged as sugar. |
+| unlock-grinder | Seed grinder | automation | 18 | 50 | start | Unlocks Seed grinder and Mill in the general store. |
+| unlock-preservatives | Preservatives | automation | 20 | 55 | unlock-grinder | Unlocks Jam machine, Freezer, and Sugar in the general store. |
+| unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar. |
 | unlock-landscaping | Landscape architecture | expansion | 12 | 60 | start | Unlocks Grass seeds, Wooden fence and every paving tile in the general store. |
 | unlock-rotary-shovel | Rotary shovel | utilities | 40 | 120 | unlock-better-tools | Unlocks the Rotary shovel in the general store. Earned by digging, not by reading. |
 | unlock-diamond-pickaxe | Diamond pickaxe | utilities | 40 | 120 | unlock-pickaxe | Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading. |
@@ -50,7 +51,7 @@ Blurbs as `RESEARCH[id].blurb`.
 
 Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. `effect` is `unlock-sku` | `expand` | `feature`. `unlock-heirloom` is `feature` — gates Őstermelő. Better crop is player skills — [[mechanics/family]].
 
-`unlock-olive` → `pack-olive`. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla has no research row. `unlock-fermentation` → `pack-sugar-cane`.
+`unlock-olive` → `pack-olive`. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla has no research row. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
 
 `unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
 
@@ -67,6 +68,8 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 `buy-rotary-shovel` show after `unlock-better-tools`, buy after `unlock-rotary-shovel`, $1000. `buy-diamond-pickaxe` show after `unlock-pickaxe`, buy after `unlock-diamond-pickaxe`, $1000.
 
 `pack-olive` $14 show `unlock-tomato`, buy `unlock-olive`. `pack-grape` $16 show `start`, buy `unlock-grape`. `pack-raspberry` $22 show `unlock-grape`, buy `unlock-raspberry`. `pack-vanilla` $40 show `unlock-raspberry`, buy iff player owns `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` $8 show + buy `unlock-fermentation`.
+
+`buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. Assumption: `buy-sugar` tab utility. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 
 `pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
 

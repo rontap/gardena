@@ -44,12 +44,12 @@ Husband owns `bulk-buying`: seed row Ctrl+click calls `buyPacks(id)`, and the fo
 
 ## Shelves
 
-Utility runs shovel → better → rotary, pickaxe → better → diamond, then buckets, boxes, fertilizer. Tiers read down the list — [[items/tools]].
+Utility runs shovel → better → rotary, pickaxe → better → diamond, then buckets, boxes, fertilizer, then `buy-sugar`. Tiers read down the list — [[items/tools]]. `buy-sugar` does not arm.
 
 Seeds: `pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-raspberry` `pack-watermelon` `pack-olive` `pack-grape` `pack-vanilla` `pack-sugar-cane`, then `pack-grass` — [[mechanics/plants]]. No sapling SKU. No berry.
 
-Gates: `skuShown` / `skuOpen` from [[mechanics/research]] Shop gates. `pack-olive` show `unlock-tomato` buy `unlock-olive`. `pack-grape` show `start` buy `unlock-grape`. `pack-raspberry` show `unlock-grape` buy `unlock-raspberry`. `pack-vanilla` show `unlock-raspberry` buy `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` show + buy `unlock-fermentation`.
+Gates: `skuShown` / `skuOpen` from [[mechanics/research]] Shop gates. `pack-olive` show `unlock-tomato` buy `unlock-olive`. `pack-grape` show `start` buy `unlock-grape`. `pack-raspberry` show `unlock-grape` buy `unlock-raspberry`. `pack-vanilla` show `unlock-raspberry` buy `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` show + buy `unlock-fermentation`. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` `buy-barrel` show `start`, buy `unlock-fermentation`.
 
 Building is `buy-fence` then cobble / brick / paved, cheapest paving first — [[items/tiles]].
 
-Automation includes `buy-compost-box` (gated) plus rain-tank, tap, valve, sprinklers, well, pumpjack, chest, grinder.
+Automation: pumpjack, well, rain-tank, tap, pipe, valve, sprinklers, chest, grinder, compost-box, then `buy-mill` `buy-still` `buy-barrel` `buy-jam` `buy-freezer`. Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer**. `buy-sugar` is Utility, label **Sugar**.

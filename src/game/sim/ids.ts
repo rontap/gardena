@@ -39,7 +39,23 @@ export function isAnnualId(id: CropId): id is AnnualId {
 
 export type TileId = 'paved' | 'brick' | 'cobble'
 
-export type StallGoodId = Exclude<CropId, 'sugar-cane'> | 'sugar'
+export type SpiritKind = 'vodka' | 'beer' | 'brandy' | 'mixed'
+
+export type JamCrop = 'apricot' | 'grape' | 'raspberry' | 'apple' | 'cherry' | 'tomato'
+
+export type StillCrop = 'potato' | 'wheat' | 'apricot'
+
+export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass'
+
+export type JamId = `jam-${JamCrop}`
+
+export const SPIRIT_KINDS: readonly SpiritKind[] = ['vodka', 'beer', 'brandy', 'mixed']
+
+export const JAM_CROPS: readonly JamCrop[] = ['apricot', 'grape', 'raspberry', 'apple', 'cherry', 'tomato']
+
+export const JAM_IDS: readonly JamId[] = JAM_CROPS.map(c => `jam-${c}` as JamId)
+
+export type StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 
@@ -108,6 +124,7 @@ export type ResearchId =
   | 'unlock-compost'
   | 'unlock-smart-sprinkler'
   | 'unlock-fermentation'
+  | 'unlock-preservatives'
   | 'unlock-landscaping'
   | 'unlock-rotary-shovel'
   | 'unlock-diamond-pickaxe'
@@ -152,3 +169,9 @@ export type SkuId =
   | 'pack-grass'
   | 'buy-rotary-shovel'
   | 'buy-diamond-pickaxe'
+  | 'buy-mill'
+  | 'buy-jam'
+  | 'buy-still'
+  | 'buy-barrel'
+  | 'buy-freezer'
+  | 'buy-sugar'

@@ -35,6 +35,7 @@ const UTILITY: SkuId[] = [
   'buy-box-large',
   'buy-fertilizer',
   'buy-synth-fertilizer',
+  'buy-sugar',
 ]
 const BUILDING: SkuId[] = ['buy-fence', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved']
 export const AUTOMATION: SkuId[] = [
@@ -50,6 +51,11 @@ export const AUTOMATION: SkuId[] = [
   'buy-chest',
   'buy-grinder',
   'buy-compost-box',
+  'buy-mill',
+  'buy-still',
+  'buy-barrel',
+  'buy-jam',
+  'buy-freezer',
 ]
 
 const TAB_LINE = {
@@ -203,6 +209,11 @@ function rowState(world: World, id: SkuId): RowState {
   const made = skuItem(id)
   if (made.kind === 'grass-seeds') {
     const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
+    const empty = inv.findIndex(s => s.kind === 'empty')
+    if (merge < 0 && empty < 0) return 'inventory-full'
+  }
+  if (made.kind === 'sugar') {
+    const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === 'sugar')
     const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'
   }

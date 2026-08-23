@@ -3,7 +3,7 @@ import type { LoadFailReason } from '../sim/save.ts'
 import { slotExists, slotStamp } from '../sim/save.ts'
 import { UI_MENU } from '../view/svgs.ts'
 import { Btn, Chrome } from './frame.tsx'
-import { JoinFields, MP_COPY, type MpFail } from './multiplayer.tsx'
+import { JoinFields, Notice, type MpFail } from './multiplayer.tsx'
 
 const FAIL: { readonly [K in LoadFailReason]: string } = {
   'not-gardena': 'This file is not a Gardena save.',
@@ -17,6 +17,9 @@ type MenuProps =
       fail: LoadFailReason | undefined
       mpFail: MpFail | undefined
       joining: boolean
+      connecting: boolean
+      name: string
+      onName: (v: string) => void
       onNew: () => void
       onLoad: () => void
       onUpload: (text: string) => void
@@ -76,9 +79,16 @@ export function Menu(props: MenuProps) {
         <div className="relative z-20 flex flex-col gap-2 px-4 pt-4 pb-3">
           <svg viewBox="0 0 240 64" className="w-full" dangerouslySetInnerHTML={{ __html: UI_MENU }} />
           <h1 className="text-center font-display text-base leading-none">Gardena</h1>
-          <p className="text-center text-sm text-ink/45">1.1.0</p>
+          <p className="text-center text-sm text-ink/45">1.2.0</p>
           {joining ? (
-            <JoinFields fail={props.mpFail} onJoin={props.onJoin} onClose={props.onJoinClose} />
+            <JoinFields
+              fail={props.mpFail}
+              connecting={props.connecting}
+              name={props.name}
+              onName={props.onName}
+              onJoin={props.onJoin}
+              onClose={props.onJoinClose}
+            />
           ) : (
             <>
               <Btn className="w-full" disabled={mpLocked} onClick={onNew}>
@@ -118,10 +128,19 @@ export function Menu(props: MenuProps) {
                   Leave Multiplayer
                 </Btn>
               )}
-              {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]}</div>}
-              {mode === 'boot' && props.mpFail !== undefined && (
-                <div className="text-sm text-roof">{MP_COPY[props.mpFail]}</div>
+              {mpLocked && !guest && (
+                <p className="text-xs text-ink/55">
+                  Starting or loading another farm is off while you are hosting — it would drop everyone who
+                  joined.
+                </p>
               )}
+              {guest && (
+                <p className="text-xs text-ink/55">
+                  This farm belongs to the host, so it is theirs to save, load, and download.
+                </p>
+              )}
+              {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]}</div>}
+              {mode === 'boot' && <Notice fail={props.mpFail} />}
             </>
           )}
           <input

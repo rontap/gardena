@@ -1,4 +1,6 @@
 import {
+  BARREL_CAP,
+  BARREL_MATURE,
   COMPOST_NEED,
   COMPOST_SECONDS,
   CONTAINERS,
@@ -7,8 +9,16 @@ import {
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
+  JAM_BUFFER,
+  JAM_IN,
+  JAM_SECONDS,
+  JAM_SUGAR,
+  MILL_WORK,
   SPEECH_S,
   SPRINKLER_TILE_RATE,
+  STILL_CAP,
+  STILL_SECONDS,
+  STILL_WATER,
 } from '../defs/items.ts'
 import { TREES, TREE_NAME, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
@@ -45,17 +55,22 @@ import {
   Chest,
   CompostBox,
   DOOR,
+  Freezer,
   Grinder,
   HOUSE_BASE,
   House,
+  JamMachine,
+  Mill,
   PAD,
   PUMP_BASE,
+  PotStill,
   Pump,
   RainTank,
   Tap,
   Tree,
   TRUCK_BASE,
   Truck,
+  WineBarrel,
   chunkKey,
   chunkOf,
   chunkRect,
@@ -92,9 +107,32 @@ import {
   type Slot,
 } from './item.ts'
 import {
+  addBarrelFeed,
+  addStillFeed,
+  bakeSpiritSale,
+  bakeWineSale,
+  feedUnits,
+  fruitCount,
+  fruitCrop,
+  fruitRarity,
+  jamCropOf,
+  jamSale,
+  meanRarity,
+  millDumpUnits,
+  millNeed,
+  millProduct,
+  millProductName,
+  millRecipeOf,
+  mergeSugar,
+  spiritKind,
+  stillCropOf,
+} from './machine.ts'
+import {
   BIO_KEYS,
   binCount,
   goodIx,
+  isBakedStall,
+  isSpiritStall,
   makeStall,
   rate as stallRate,
   stallRarity,
@@ -176,6 +214,10 @@ export type Intent =
   | { act: 'inventory' }
   | { act: 'chest'; at: Coord }
   | { act: 'grind'; at: Coord }
+  | { act: 'still'; at: Coord }
+  | { act: 'barrel'; at: Coord }
+  | { act: 'jam'; at: Coord }
+  | { act: 'mill'; at: Coord }
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'tend'; at: Coord }
 
@@ -196,6 +238,10 @@ export type TaskName =
   | 'Inventory'
   | 'Chest'
   | 'Grind'
+  | 'Mill'
+  | 'Still'
+  | 'Barrel'
+  | 'Jam'
   | 'Valve'
   | 'Tend'
 
@@ -216,11 +262,15 @@ export type PlayerId = string
 export type Seat = {
   id: SeatId
   playerId: PlayerId
+  name: string
   actor: Actor
   hand: Hand
   inventory: Slot[]
   queue: Intent[]
   presence: Presence
+  /** Set by the host after a long silence; drives the sleeping sprite. Never saved. */
+  napping: boolean
+  cue: Cue
   place: Place
   workLeft: number
   workTotal: number
@@ -230,7 +280,7 @@ export type Seat = {
 
 export type Pulse = { text: string; at: Coord }
 
-export type Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[] }
+export type Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
 
 export type HudTarget = { kind: 'sprinkler'; at: Vertex }
 
@@ -275,6 +325,7 @@ export type Hydrate = {
   pumps: Pump[]
   tanks: RainTank[]
   taps: Tap[]
+  stills: PotStill[]
   stall: StallMap
   family: Family
   seats: Seat[]
@@ -305,6 +356,22 @@ const QUEUE_CAP = 8
 export const DT_MAX = 1 / 15
 const INV = 16
 
+export const MP_NAME_KEY = 'gardena-mp-name'
+export const NAME_MAX = 16
+
+/** Trim to something that fits a roster row and never renders as blank. */
+export function cleanName(raw: string): string {
+  return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
+}
+
+export function localPlayerName(): string {
+  return cleanName(localStorage.getItem(MP_NAME_KEY) ?? '')
+}
+
+export function setLocalPlayerName(raw: string): void {
+  localStorage.setItem(MP_NAME_KEY, cleanName(raw))
+}
+
 export function localPlayerId(): PlayerId {
   const have = localStorage.getItem(MP_ID_KEY)
   if (have !== null) return have
@@ -317,9 +384,14 @@ function emptyInv(): Slot[] {
   return Array.from({ length: INV }, (): Slot => ({ kind: 'empty' }))
 }
 
+export function defaultSeatName(id: SeatId): string {
+  return `P${id + 1}`
+}
+
 function liveSeat(
   id: SeatId,
   playerId: PlayerId,
+  name: string,
   actor: Actor,
   hand: Hand,
   inventory: Slot[],
@@ -328,11 +400,14 @@ function liveSeat(
   return {
     id,
     playerId,
+    name: name === '' ? defaultSeatName(id) : name,
     actor,
     hand,
     inventory,
     queue: [],
     presence,
+    napping: false,
+    cue: { kind: 'none' },
     place: { kind: 'none' },
     workLeft: 0,
     workTotal: 0,
@@ -341,13 +416,13 @@ function liveSeat(
   }
 }
 
-export function joinKit(id: SeatId, playerId: PlayerId): Seat {
+export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
   const x = DOOR.col + 0.5 + id * 0.6
   const y = DOOR.row + 0.5
-  return liveSeat(id, playerId, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, emptyInv(), 'in')
+  return liveSeat(id, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, emptyInv(), 'in')
 }
 
-function soloSeat(playerId: PlayerId): Seat {
+function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
   inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
   inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'rare', count: 2 } }
@@ -358,7 +433,7 @@ function soloSeat(playerId: PlayerId): Seat {
   inventory[6] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
-  return liveSeat(0, playerId, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
+  return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
 }
 const DYNAMIC_MARKET = false
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
@@ -388,6 +463,7 @@ export class World {
   readonly pumps: Pump[]
   readonly tanks: RainTank[] = []
   readonly taps: Tap[] = []
+  readonly stills: PotStill[] = []
   readonly segments = new Map<string, Segment>()
   readonly wells = new Map<string, Well>()
   readonly fences = new Set<string>()
@@ -409,7 +485,6 @@ export class World {
   readonly done = new Set<ResearchId>()
   money = 50
   job: Job = { kind: 'idle' }
-  cue: Cue = { kind: 'none' }
   speech: Speech = { kind: 'none' }
   pulse: Pulse | undefined = undefined
   hud: HudTarget | undefined = undefined
@@ -441,6 +516,7 @@ export class World {
       this.pumps = h.pumps
       this.tanks = h.tanks
       this.taps = h.taps
+      this.stills = h.stills
       this.stall = h.stall
       this.family = h.family
       this.seats = h.seats
@@ -493,7 +569,6 @@ export class World {
       h.wells.forEach(well => vertsOf(well.at).forEach(v => this.netVerts.add(vertexKey(v))))
       h.sprinklers.forEach(s => this.netVerts.add(vertexKey(s.at)))
       this.now = 0
-      this.cue = { kind: 'none' }
       this.speech = { kind: 'none' }
       this.pulse = undefined
       this.hud = undefined
@@ -506,6 +581,7 @@ export class World {
       this.nets = undefined
       this.seats.forEach(s => {
         s.queue.length = 0
+        s.cue = { kind: 'none' }
         s.actor.work = 0
         s.workLeft = 0
         s.workTotal = 0
@@ -533,7 +609,7 @@ export class World {
     this.rerollOffers('husband')
     this.rerollOffers('daughter')
     this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck))
-    this.seats = [soloSeat(localPlayerId())]
+    this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
     this.indexAll()
@@ -551,21 +627,24 @@ export class World {
     return this.pumps[0]
   }
 
-  join(playerId: PlayerId): SeatId | 'full' {
+  join(playerId: PlayerId, name = ''): SeatId | 'full' {
     const hit = this.seats.find(s => s.playerId === playerId)
     if (hit !== undefined) {
       hit.presence = 'in'
+      hit.napping = false
+      if (name !== '') hit.name = name
       return hit.id
     }
     if (this.seats.length >= 4) return 'full'
     const id = this.seats.length as SeatId
-    this.seats.push(joinKit(id, playerId))
+    this.seats.push(joinKit(id, playerId, name === '' ? defaultSeatName(id) : name))
     return id
   }
 
   away(id: SeatId): void {
     const s = this.seats[id]
     s.presence = 'away'
+    s.cue = { kind: 'none' }
     s.queue.length = 0
     s.workLeft = 0
     s.workTotal = 0
@@ -692,7 +771,7 @@ export class World {
     }
   }
 
-  private ping(): void {
+  ping(): void {
     this.emit('dirty')
   }
 
@@ -727,6 +806,11 @@ export class World {
       cell.kind === 'turf' ||
       cell.kind === 'chest' ||
       cell.kind === 'compost-box' ||
+      cell.kind === 'mill' ||
+      cell.kind === 'jam' ||
+      cell.kind === 'still' ||
+      cell.kind === 'barrel' ||
+      cell.kind === 'freezer' ||
       (cell.kind === 'tree' && cell.base.col === at.col && cell.base.row === at.row)
     if (on) this.live.set(k, { col: at.col, row: at.row })
     else this.live.delete(k)
@@ -1246,6 +1330,41 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'mill') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.pulse = { text: 'Delete mill', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'jam') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.pulse = { text: 'Delete jam machine', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'still') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.stills.splice(this.stills.indexOf(c), 1)
+      this.dirtyNets()
+      this.pulse = { text: 'Delete pot still', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'barrel') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.pulse = { text: 'Delete wine barrel', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'freezer') {
+      c.slots.forEach(s => {
+        if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
+      })
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.pulse = { text: 'Delete freezer', at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind !== 'grinder') return
     this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
     this.pulse = { text: 'Delete grinder', at: { ...at } }
@@ -1296,7 +1415,7 @@ export class World {
       const r = root(k)
       const hit = byRoot.get(r)
       if (hit !== undefined) return hit
-      const made: Net = { sources: [], sprinklers: [], taps: [] }
+      const made: Net = { sources: [], sprinklers: [], taps: [], stills: [] }
       byRoot.set(r, made)
       return made
     }
@@ -1319,6 +1438,13 @@ export class World {
       )
       if (hit === undefined) return
       netOf(vertexKey(hit)).taps.push(t)
+    })
+    this.stills.forEach(s => {
+      const hit = corners(occupiedCells(s.base, this.owned)).find(
+        v => up.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
+      )
+      if (hit === undefined) return
+      netOf(vertexKey(hit)).stills.push(s)
     })
     this.netAt = new Map([...up.keys()].map(k => [k, netOf(k)]))
     this.nets = [...byRoot.values()]
@@ -1457,7 +1583,7 @@ export class World {
   }
 
   private ackCueBody(): void {
-    this.cue = { kind: 'none' }
+    this.act.cue = { kind: 'none' }
     this.ping()
   }
 
@@ -1515,6 +1641,14 @@ export class World {
         return 'Chest'
       case 'grind':
         return 'Grind'
+      case 'mill':
+        return 'Mill'
+      case 'still':
+        return 'Still'
+      case 'barrel':
+        return 'Barrel'
+      case 'jam':
+        return 'Jam'
       case 'valve':
         return 'Valve'
       case 'tend':
@@ -1554,6 +1688,16 @@ export class World {
       if (!this.canFitGrass()) return 'Inventory full'
       this.money -= price
       this.putGrass(made.count)
+      this.compactInventory()
+      this.ping()
+      return undefined
+    }
+    if (made.kind === 'sugar') {
+      const price = this.skuPrice(id)
+      if (this.money < price) return 'Cannot afford'
+      if (!this.canFitSugar()) return 'Inventory full'
+      this.money -= price
+      this.putSugar(made)
       this.compactInventory()
       this.ping()
       return undefined
@@ -1647,7 +1791,12 @@ export class World {
       this.act.place.id === 'buy-chest' ||
       this.act.place.id === 'buy-grinder' ||
       this.act.place.id === 'buy-compost-box' ||
-      this.act.place.id === 'buy-tap'
+      this.act.place.id === 'buy-tap' ||
+      this.act.place.id === 'buy-mill' ||
+      this.act.place.id === 'buy-jam' ||
+      this.act.place.id === 'buy-still' ||
+      this.act.place.id === 'buy-barrel' ||
+      this.act.place.id === 'buy-freezer'
     ) {
       if (!placeSolidOk(this, at)) return
       this.money -= price
@@ -1655,6 +1804,15 @@ export class World {
       if (this.act.place.id === 'buy-chest') this.setCell(at, new Chest(base))
       else if (this.act.place.id === 'buy-grinder') this.setCell(at, new Grinder(base))
       else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
+      else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
+      else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
+      else if (this.act.place.id === 'buy-still') {
+        const still = new PotStill(base)
+        this.stills.push(still)
+        this.setCell(at, still)
+        this.dirtyNets()
+      } else if (this.act.place.id === 'buy-barrel') this.setCell(at, new WineBarrel(base))
+      else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
       else {
         const tap = new Tap(base)
         this.taps.push(tap)
@@ -1685,7 +1843,13 @@ export class World {
       made.kind === 'delete' ||
       made.kind === 'tile' ||
       made.kind === 'fence' ||
-      made.kind === 'grass-seeds'
+      made.kind === 'grass-seeds' ||
+      made.kind === 'mill' ||
+      made.kind === 'jam-machine' ||
+      made.kind === 'still' ||
+      made.kind === 'barrel' ||
+      made.kind === 'freezer' ||
+      made.kind === 'sugar'
     ) {
       return
     }    this.money -= price
@@ -1738,7 +1902,7 @@ export class World {
 
   private swapChestBody(at: Coord, i: number): void {
     const cell = this.cell(at)
-    if (cell.kind !== 'chest') return
+    if (cell.kind !== 'chest' && cell.kind !== 'freezer') return
     const held = this.act.hand
     this.act.hand = cell.slots[i]
     cell.slots[i] = held
@@ -1900,10 +2064,21 @@ export class World {
     const jam = this.jamFloor()
     const clearance = this.hasSkill('clearance')
     return STALL_IDS.reduce((total, id) => {
-      if (id === 'sugar') {
-        const count = this.stall.sugar.stock.common.organic
+      if (isBakedStall(id)) {
+        const count = this.stall[id].stock.common.organic
         if (count === 0) return total
-        return total + this.stall.sugar.worth.common.organic * saleX
+        return total + this.stall[id].worth.common.organic * saleX
+      }
+      if (isSpiritStall(id)) {
+        return (
+          total +
+          RARITY_RANK.reduce((goodTotal, rarity) => {
+            const count = this.stall[id].stock[rarity].organic
+            if (count === 0) return goodTotal
+            const worth = this.stall[id].worth[rarity].organic
+            return goodTotal + worth * saleX * (rarity === 'heirloom' ? heirX : 1)
+          }, 0)
+        )
       }
       const x = stallX(id, this.modifiers)
       return (
@@ -2055,6 +2230,7 @@ export class World {
     this.tickWater(dt)
     this.tickFreshness(dt)
     this.tickCompost(dt)
+    this.tickMachines(dt)
     this.tickBig(dt)
     if (this.tickStall(dt) || this.sales.length > 0) this.ping()
   }
@@ -2174,11 +2350,12 @@ export class World {
         this.shiftHead()
         return
       case 'inventory':
-        this.cue = { kind: 'inventory' }
+        this.act.cue = { kind: 'inventory' }
         this.shiftHead()
         return
-      case 'chest':
-        if (this.cell(i.at).kind !== 'chest') {
+      case 'chest': {
+        const c = this.cell(i.at)
+        if (c.kind !== 'chest' && c.kind !== 'freezer') {
           this.shiftHead()
           return
         }
@@ -2187,15 +2364,44 @@ export class World {
           this.shiftHead()
           return
         }
-        this.cue = { kind: 'chest', at: { ...i.at } }
+        this.act.cue = { kind: 'chest', at: { ...i.at } }
         this.shiftHead()
         return
+      }
       case 'grind':
         if (!this.canGrind(i.at)) {
           this.shiftHead()
           return
         }
         this.arm((GRIND_WORK * grindN(this.act.hand)) / this.machineMul())
+        return
+      case 'mill':
+        if (!this.canMill(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
+        return
+      case 'still':
+        if (!this.canStill(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
+        return
+      case 'barrel':
+        if (!this.canBarrel(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
+        return
+      case 'jam':
+        if (!this.canJam(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
         return
       case 'valve':
         this.arm(0.3 / this.machineMul())
@@ -2244,6 +2450,10 @@ export class World {
     if (i.act === 'compost') this.doCompost(i.at)
     if (i.act === 'harvest') this.doHarvest(i.at)
     if (i.act === 'grind') this.doGrind(i.at)
+    if (i.act === 'mill') this.doMill(i.at)
+    if (i.act === 'still') this.doStill(i.at)
+    if (i.act === 'barrel') this.doBarrel(i.at)
+    if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
     if (i.act === 'tend') this.doTend(i.at)
     this.shiftHead()
@@ -2461,6 +2671,97 @@ export class World {
       const c = this.cell(at)
       if (c.kind === 'chest') c.slots.forEach(slot)
     })
+  }
+
+  private tickMachines(dt: number): void {
+    let dirty = false
+    for (const at of this.live.values()) {
+      const c = this.cell(at)
+      if (c.kind === 'mill') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.recipe === 'none') continue
+        const need = millNeed(c.recipe)
+        if (c.units < need) continue
+        c.progress += (dt * this.machineMul()) / MILL_WORK
+        if (c.progress < 1) continue
+        const spot = this.dropSpot(at)
+        if (spot === undefined) continue
+        c.progress = 0
+        c.units -= need
+        this.drops.push({ at: spot, item: millProduct(c.recipe) })
+        if (c.units === 0) c.recipe = 'none'
+        this.track(at, c)
+        dirty = true
+        continue
+      }
+      if (c.kind === 'jam') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.crop === 'none' || c.fruit < JAM_IN || c.sugar < JAM_SUGAR) continue
+        c.progress += (dt * this.machineMul()) / JAM_SECONDS
+        if (c.progress < 1) continue
+        const spot = this.dropSpot(at)
+        if (spot === undefined) continue
+        c.progress = 0
+        c.fruit -= JAM_IN
+        c.sugar -= JAM_SUGAR
+        this.drops.push({ at: spot, item: { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) } })
+        if (c.fruit === 0) c.crop = 'none'
+        this.track(at, c)
+        dirty = true
+        continue
+      }
+      if (c.kind === 'still') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (feedUnits(c.feed) !== STILL_CAP) continue
+        if (c.progress === 0) {
+          if (!this.pullStillWater(c)) continue
+        }
+        c.progress += dt / STILL_SECONDS
+        if (c.progress < 1) continue
+        const spot = this.dropSpot(at)
+        if (spot === undefined) continue
+        const kind = spiritKind(c.feed)
+        const u = this.rng.stream('still').at(at.col, at.row, this.clock.day, c.n)
+        const rarity = meanRarity(c.feed, u)
+        this.drops.push({
+          at: spot,
+          item: { kind: 'spirit', spirit: kind, rarity, count: 1, unitSale: bakeSpiritSale(kind, rarity) },
+        })
+        c.feed = []
+        c.progress = 0
+        c.n += 1
+        this.track(at, c)
+        dirty = true
+        continue
+      }
+      if (c.kind === 'barrel') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (feedUnits(c.feed) !== BARREL_CAP) continue
+        const was = c.age
+        c.age += dt
+        if (was < BARREL_MATURE && c.age >= BARREL_MATURE) {
+          const u = this.rng.stream('barrel').at(at.col, at.row, this.clock.day, c.n)
+          const rarity = meanRarity(c.feed, u)
+          c.feed = [{ rarity, count: BARREL_CAP }]
+          c.n += 1
+        }
+        this.track(at, c)
+      }
+    }
+    if (dirty) this.ping()
+  }
+
+  private dropSpot(at: Coord): Coord | undefined {
+    return frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
+  }
+
+  private pullStillWater(still: PotStill): boolean {
+    const net = this.netOfCell(still.base)
+    if (net === undefined) return false
+    const held = net.sources.reduce((n, s) => n + s.stored, 0)
+    if (held < STILL_WATER) return false
+    pull(net.sources, STILL_WATER)
+    return true
   }
 
   private tickBig(dt: number): void {
@@ -2812,10 +3113,6 @@ export class World {
   private canHarvest(at: Coord): boolean {
     const c = this.cell(at)
     if (c.kind !== 'ripe') return false
-    if (c.plant.crop === 'sugar-cane') {
-      if (this.act.hand.kind === 'empty') return true
-      return this.act.hand.item.kind === 'sugar'
-    }
     if (this.act.hand.kind === 'empty') return true
     if (this.act.hand.item.kind !== 'box') return false
     return boxAccepts(this.act.hand.item, 'fruit', c.plant.crop, c.plant.rarity, 1) > 0
@@ -2826,22 +3123,6 @@ export class World {
     const c = this.cell(at)
     const bed = c as Extract<Plot, { kind: 'ripe' }>
     const p = bed.plant
-    if (p.crop === 'sugar-cane') {
-      const unitSale = p.stats(this.modifiers).sale
-      this.setCell(at, { kind: 'empty', soil: bed.soil })
-      this.tally.harvests += 1
-      this.pulse = { text: 'Harvest', at: { ...at } }
-      if (this.act.hand.kind === 'empty') {
-        this.act.hand = { kind: 'hold', item: { kind: 'sugar', count: 1, unitSale } }
-        return
-      }
-      if (this.act.hand.item.kind === 'sugar') {
-        const it = this.act.hand.item
-        it.unitSale = mergeUnitSale(it, { unitSale, count: 1 })
-        it.count += 1
-      }
-      return
-    }
     const picked = fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
     this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
@@ -2924,14 +3205,37 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const item = this.act.hand.item
     if (item.kind === 'fruit') {
-      if (item.crop === 'sugar-cane') return
       this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness), item.bio)
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'sugar') {
-      this.stall.sugar.takeSugar(item.count, item.unitSale)
+      this.stall.sugar.takeSugar(item.liters, item.unitSale)
+      this.act.hand = { kind: 'empty' }
+      this.completeConsign()
+      return
+    }
+    if (item.kind === 'spirit') {
+      this.stall[item.spirit].takeSpirit(item.rarity, item.count, item.unitSale)
+      this.act.hand = { kind: 'empty' }
+      this.completeConsign()
+      return
+    }
+    if (item.kind === 'wine') {
+      this.stall.wine.takeSpirit(item.rarity, item.count, item.unitSale)
+      this.act.hand = { kind: 'empty' }
+      this.completeConsign()
+      return
+    }
+    if (item.kind === 'jam') {
+      this.stall[`jam-${item.crop}`].takeBaked(item.count, item.unitSale)
+      this.act.hand = { kind: 'empty' }
+      this.completeConsign()
+      return
+    }
+    if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
+      this.stall[item.kind].takeBaked(item.count, item.unitSale)
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
@@ -2939,7 +3243,6 @@ export class World {
     if (item.kind !== 'box') return
     if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
       const cargo = item.cargo.stack
-      if (cargo.crop === 'sugar-cane') return
       this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness), cargo.bio)
       item.cargo = { kind: 'empty' }
       this.completeConsign()
@@ -2992,6 +3295,184 @@ export class World {
       }
     })
     return changed
+  }
+
+  private canMill(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'mill') return false
+    const recipe = millRecipeOf(this.act.hand.item)
+    if (recipe === undefined) return false
+    if (c.recipe !== 'none' && c.recipe !== recipe) return false
+    return millDumpUnits(this.act.hand.item, recipe) > 0
+  }
+
+  private doMill(at: Coord): void {
+    if (!this.canMill(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const mill = this.cell(at) as Mill
+    const recipe = millRecipeOf(this.act.hand.item)
+    if (recipe === undefined) return
+    const n = millDumpUnits(this.act.hand.item, recipe)
+    if (n <= 0) return
+    if (mill.recipe === 'none') mill.recipe = recipe
+    mill.units += n
+    this.takeHandCount(n)
+    this.track(at, mill)
+    this.pulse = { text: millProductName(recipe) === 'sugar' ? 'Crush into sugar' : `Crush into ${millProductName(recipe)}`, at: { ...at } }
+  }
+
+  private canStill(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'still') return false
+    const crop = stillCropOf(this.act.hand.item)
+    if (crop === undefined) return false
+    const room = STILL_CAP - feedUnits(c.feed)
+    return room > 0 && fruitCount(this.act.hand.item) > 0
+  }
+
+  private doStill(at: Coord): void {
+    if (!this.canStill(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const still = this.cell(at) as PotStill
+    const crop = stillCropOf(this.act.hand.item)
+    const rarity = fruitRarity(this.act.hand.item)
+    if (crop === undefined || rarity === undefined) return
+    const room = STILL_CAP - feedUnits(still.feed)
+    const n = Math.min(room, fruitCount(this.act.hand.item))
+    if (n <= 0) return
+    addStillFeed(still.feed, crop, rarity, n)
+    this.takeHandCount(n)
+    this.track(at, still)
+    this.pulse = { text: 'Distill', at: { ...at } }
+  }
+
+  private canBarrelCollect(at: Coord): boolean {
+    const c = this.cell(at)
+    if (c.kind !== 'barrel') return false
+    if (feedUnits(c.feed) !== BARREL_CAP || c.age < BARREL_MATURE) return false
+    if (this.act.hand.kind === 'empty') return true
+    if (this.act.hand.item.kind !== 'wine') return false
+    return this.act.hand.item.rarity === c.feed[0].rarity
+  }
+
+  private canBarrel(at: Coord): boolean {
+    if (this.canBarrelCollect(at)) return true
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'barrel') return false
+    if (fruitCrop(this.act.hand.item) !== 'grape') return false
+    const room = BARREL_CAP - feedUnits(c.feed)
+    return room > 0 && fruitCount(this.act.hand.item) > 0
+  }
+
+  private doBarrel(at: Coord): void {
+    if (this.canBarrelCollect(at)) {
+      const barrel = this.cell(at) as WineBarrel
+      const rarity = barrel.feed[0].rarity
+      const wine: Item = {
+        kind: 'wine',
+        rarity,
+        count: 1,
+        unitSale: bakeWineSale(rarity, barrel.age),
+      }
+      if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: wine }
+      else if (this.act.hand.item.kind === 'wine') {
+        const it = this.act.hand.item
+        it.unitSale = mergeUnitSale(it, wine)
+        it.count += 1
+      }
+      barrel.feed = []
+      barrel.age = 0
+      this.track(at, barrel)
+      this.pulse = { text: 'Collect wine', at: { ...at } }
+      return
+    }
+    if (!this.canBarrel(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const barrel = this.cell(at) as WineBarrel
+    const rarity = fruitRarity(this.act.hand.item)
+    if (rarity === undefined) return
+    const room = BARREL_CAP - feedUnits(barrel.feed)
+    const n = Math.min(room, fruitCount(this.act.hand.item))
+    if (n <= 0) return
+    addBarrelFeed(barrel.feed, rarity, n)
+    this.takeHandCount(n)
+    this.track(at, barrel)
+    this.pulse = { text: 'Fill barrel', at: { ...at } }
+  }
+
+  private canJam(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'jam') return false
+    const it = this.act.hand.item
+    if (it.kind === 'sugar') return it.liters > 0 && c.sugar < JAM_BUFFER
+    const crop = jamCropOf(it)
+    if (crop === undefined) return false
+    if (c.crop !== 'none' && c.crop !== crop) return false
+    return fruitCount(it) > 0
+  }
+
+  private doJam(at: Coord): void {
+    if (!this.canJam(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const jam = this.cell(at) as JamMachine
+    const it = this.act.hand.item
+    if (it.kind === 'sugar') {
+      const room = JAM_BUFFER - jam.sugar
+      const take = it.liters < room ? it.liters : room
+      if (take <= 0) return
+      jam.sugar += take
+      it.liters -= take
+      if (it.liters <= 0) this.act.hand = { kind: 'empty' }
+      this.track(at, jam)
+      this.pulse = { text: 'Fill sugar', at: { ...at } }
+      return
+    }
+    const crop = jamCropOf(it)
+    if (crop === undefined) return
+    const n = fruitCount(it)
+    if (jam.crop === 'none') jam.crop = crop
+    jam.fruit += n
+    this.takeHandCount(n)
+    this.track(at, jam)
+    this.pulse = { text: crop === 'tomato' ? 'Make ketchup' : 'Make jam', at: { ...at } }
+  }
+
+  private takeHandCount(n: number): void {
+    if (this.act.hand.kind !== 'hold') return
+    const it = this.act.hand.item
+    if (it.kind === 'fruit' || it.kind === 'grass') {
+      it.count -= n
+      if (it.count <= 0) this.act.hand = { kind: 'empty' }
+      return
+    }
+    if (it.kind === 'box' && it.cargo.kind === 'stack') {
+      it.cargo.stack.count -= n
+      if (it.cargo.stack.count <= 0) it.cargo = { kind: 'empty' }
+    }
+  }
+
+  private canFitSugar(): boolean {
+    return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'sugar'))
+  }
+
+  private putSugar(item: Extract<Item, { kind: 'sugar' }>): void {
+    const merge = this.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'sugar')
+    if (merge >= 0) {
+      const slot = this.act.inventory[merge]
+      if (slot.kind === 'hold' && slot.item.kind === 'sugar') {
+        const m = mergeSugar(slot.item, item)
+        slot.item.liters = m.liters
+        slot.item.capacityLiters = m.capacityLiters
+        slot.item.unitSale = m.unitSale
+      }
+      return
+    }
+    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
+    this.act.inventory[empty] = { kind: 'hold', item }
   }
 
   private canGrind(at: Coord): boolean {
@@ -3203,8 +3684,33 @@ function compactSlots(slots: Slot[]): void {
     if (slot.item.kind === 'sugar') {
       const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
       if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
-        hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
-        hit.item.count += slot.item.count
+        const m = mergeSugar(hit.item, slot.item)
+        hit.item.liters = m.liters
+        hit.item.capacityLiters = m.capacityLiters
+        hit.item.unitSale = m.unitSale
+        return
+      }
+    }
+    if (
+      slot.item.kind === 'spirit' ||
+      slot.item.kind === 'wine' ||
+      slot.item.kind === 'jam' ||
+      slot.item.kind === 'oil' ||
+      slot.item.kind === 'flour' ||
+      slot.item.kind === 'extract'
+    ) {
+      const it = slot.item
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === it.kind &&
+          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.rarity === it.rarity)) &&
+          (it.kind !== 'wine' || (s.item.kind === 'wine' && s.item.rarity === it.rarity)) &&
+          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop)),
+      )
+      if (hit !== undefined && hit.kind === 'hold' && 'count' in hit.item && 'unitSale' in hit.item && 'count' in it) {
+        hit.item.unitSale = mergeUnitSale(hit.item, it)
+        hit.item.count += it.count
         return
       }
     }

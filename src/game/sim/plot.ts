@@ -1,4 +1,20 @@
-import type { Chest, CompostBox, Grinder, House, Pump, RainTank, Rock, Tap, Tree, Truck } from './building.ts'
+import type {
+  Chest,
+  CompostBox,
+  Freezer,
+  Grinder,
+  House,
+  JamMachine,
+  Mill,
+  PotStill,
+  Pump,
+  RainTank,
+  Rock,
+  Tap,
+  Tree,
+  Truck,
+  WineBarrel,
+} from './building.ts'
 import type { CropId, TileId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
 import type { Soil } from './soil.ts'
@@ -32,6 +48,11 @@ export type Cell =
   | Grinder
   | CompostBox
   | Truck
+  | Mill
+  | JamMachine
+  | PotStill
+  | WineBarrel
+  | Freezer
 
 export function bare(ground: Ground): Plot {
   return { kind: 'untilled', ground, cover: { kind: 'bare' } }
@@ -82,6 +103,11 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'chest' ||
     c.kind === 'grinder' ||
     c.kind === 'compost-box' ||
-    c.kind === 'truck'
+    c.kind === 'truck' ||
+    c.kind === 'mill' ||
+    c.kind === 'jam' ||
+    c.kind === 'still' ||
+    c.kind === 'barrel' ||
+    c.kind === 'freezer'
   )
 }

@@ -6,8 +6,8 @@ Centered overlay, `w-[36rem]`, `max-h-[min(36rem,calc(100%-6rem))]`. Title **Alm
 |---|---|
 | Seeds | carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass rotten dead |
 | Trees | apple apricot lemon cherry |
-| Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer compost |
-| Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box |
+| Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer compost sugar |
+| Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer |
 
 Crop and Tree panes carry `CROPS.desc` under the name: one plain-language line on how the plant behaves, no numbers. It is also the crop's `CatalogEntry.blurb`.
 
@@ -15,7 +15,11 @@ Crop panes: rarity tabs **Common** **Uncommon** **Rare** **Heirloom**. Last tab 
 
 Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price.
 
-Sugar-cane is a CropPane. Product face is the sugar bag (`{ kind: 'sugar' }`), not a fruit. Sell is sugar `unitSale` at common — `statsOf('sugar-cane', 'common')`. One line: bagged sugar does not rot.
+Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.**
+
+`unlock-preservatives` done: third `h-20 w-20` `bg-dirt-dark` plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
+
+Utility `sugar`: liters bag face. Automation order after compost-box: mill, still, barrel, jam, freezer.
 
 Apple is not on Seeds.
 

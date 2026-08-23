@@ -429,7 +429,24 @@
 <a name='L364'></a><a href='#L364'>364</a>
 <a name='L365'></a><a href='#L365'>365</a>
 <a name='L366'></a><a href='#L366'>366</a>
-<a name='L367'></a><a href='#L367'>367</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a>
+<a name='L369'></a><a href='#L369'>369</a>
+<a name='L370'></a><a href='#L370'>370</a>
+<a name='L371'></a><a href='#L371'>371</a>
+<a name='L372'></a><a href='#L372'>372</a>
+<a name='L373'></a><a href='#L373'>373</a>
+<a name='L374'></a><a href='#L374'>374</a>
+<a name='L375'></a><a href='#L375'>375</a>
+<a name='L376'></a><a href='#L376'>376</a>
+<a name='L377'></a><a href='#L377'>377</a>
+<a name='L378'></a><a href='#L378'>378</a>
+<a name='L379'></a><a href='#L379'>379</a>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a>
+<a name='L383'></a><a href='#L383'>383</a>
+<a name='L384'></a><a href='#L384'>384</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -449,7 +466,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -694,7 +711,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -706,12 +722,30 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1011,8 +1045,19 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         seconds: 50,
         reveal: 'start',
         gate: {kind: 'none'},
-        blurb: 'Unlocks Seed grinder in the general store.',
+        blurb: 'Unlocks Seed grinder and Mill in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-grinder'},
+    },
+    'unlock-preservatives': {
+        id: 'unlock-preservatives',
+        name: 'Preservatives',
+        tree: 'automation',
+        cost: 20,
+        seconds: 55,
+        reveal: 'unlock-grinder',
+        gate: {kind: 'none'},
+        blurb: 'Unlocks Jam machine, Freezer, and Sugar in the general store.',
+        effect: {kind: 'unlock-sku', sku: 'buy-jam'},
     },
     'unlock-fermentation': {
         id: 'unlock-fermentation',
@@ -1022,7 +1067,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         seconds: 50,
         reveal: 'start',
         gate: {kind: 'none'},
-        blurb: 'Unlocks Sugar cane seeds in the general store. Ripe cane is bagged as sugar.',
+        blurb: 'Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar.',
         effect: {kind: 'unlock-sku', sku: 'pack-sugar-cane'},
     },
     'unlock-landscaping': {
@@ -1160,6 +1205,12 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
         unlock: 'unlock-diamond-pickaxe',
         show: 'unlock-pickaxe',
     },
+    'buy-mill': {id: 'buy-mill', price: 35, tab: 'automation', unlock: 'unlock-grinder', show: 'start'},
+    'buy-jam': {id: 'buy-jam', price: 40, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
+    'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'start'},
+    'buy-barrel': {id: 'buy-barrel', price: 28, tab: 'automation', unlock: 'unlock-fermentation', show: 'start'},
+    'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
+    'buy-sugar': {id: 'buy-sugar', price: 16, tab: 'utility', unlock: 'unlock-preservatives', show: 'unlock-grinder'},
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -1168,7 +1219,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-23T02:20:29.000Z
+                at 2026-08-23T11:27:50.827Z
             </div>
         <script src="../prettify.js"></script>
         <script>

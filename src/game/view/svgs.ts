@@ -23,7 +23,32 @@ import fruitVanilla from '../../assets/fruit-vanilla.svg?raw'
 import fruitApricot from '../../assets/fruit-apricot.svg?raw'
 import fruitLemon from '../../assets/fruit-lemon.svg?raw'
 import fruitCherry from '../../assets/fruit-cherry.svg?raw'
+import fruitSugarCane from '../../assets/fruit-sugar-cane.svg?raw'
 import itemSugar from '../../assets/item-sugar.svg?raw'
+import itemMill from '../../assets/item-mill.svg?raw'
+import itemStill from '../../assets/item-still.svg?raw'
+import itemBarrel from '../../assets/item-barrel.svg?raw'
+import itemJamMachine from '../../assets/item-jam-machine.svg?raw'
+import itemFreezer from '../../assets/item-freezer.svg?raw'
+import itemSpiritVodka from '../../assets/item-spirit-vodka.svg?raw'
+import itemSpiritBeer from '../../assets/item-spirit-beer.svg?raw'
+import itemSpiritBrandy from '../../assets/item-spirit-brandy.svg?raw'
+import itemSpiritMixed from '../../assets/item-spirit-mixed.svg?raw'
+import itemWine from '../../assets/item-wine.svg?raw'
+import itemJamApricot from '../../assets/item-jam-apricot.svg?raw'
+import itemJamGrape from '../../assets/item-jam-grape.svg?raw'
+import itemJamRaspberry from '../../assets/item-jam-raspberry.svg?raw'
+import itemJamApple from '../../assets/item-jam-apple.svg?raw'
+import itemJamCherry from '../../assets/item-jam-cherry.svg?raw'
+import itemKetchup from '../../assets/item-ketchup.svg?raw'
+import itemOil from '../../assets/item-oil.svg?raw'
+import itemFlour from '../../assets/item-flour.svg?raw'
+import itemExtract from '../../assets/item-extract.svg?raw'
+import propMill from '../../assets/prop-mill.svg?raw'
+import propStill from '../../assets/prop-still.svg?raw'
+import propBarrel from '../../assets/prop-barrel.svg?raw'
+import propJam from '../../assets/prop-jam.svg?raw'
+import propFreezer from '../../assets/prop-freezer.svg?raw'
 import shovel from '../../assets/item-shovel.svg?raw'
 import better from '../../assets/item-better-shovel.svg?raw'
 import pickaxe from '../../assets/item-pickaxe.svg?raw'
@@ -130,6 +155,7 @@ import uiBtnCancel from '../../assets/ui-btn-cancel.svg?raw'
 import uiBtnFamily from '../../assets/skills/ui-btn-family.svg?raw'
 import uiBtnGear from '../../assets/ui-btn-gear.svg?raw'
 import uiBtnPause from '../../assets/ui-btn-pause.svg?raw'
+import uiBtnPlay from '../../assets/ui-btn-play.svg?raw'
 import uiBtnMultiplayer from '../../assets/ui-btn-multiplayer.svg?raw'
 import uiMenu from '../../assets/ui-menu.svg?raw'
 import skillBoots from '../../assets/skills/skill-boots.svg?raw'
@@ -212,7 +238,7 @@ const FRUIT: { readonly [K in CropId]: string } = {
   olive: fruitOlive,
   grape: fruitGrape,
   vanilla: fruitVanilla,
-  'sugar-cane': itemSugar,
+  'sugar-cane': fruitSugarCane,
   apricot: fruitApricot,
   lemon: fruitLemon,
   cherry: fruitCherry,
@@ -258,6 +284,11 @@ export function itemInner(item: Face): string {
   if (item.kind === 'valve') return inner(itemValve)
   if (item.kind === 'rain-tank') return inner(itemRainTank)
   if (item.kind === 'tap') return inner(itemTap)
+  if (item.kind === 'mill') return inner(itemMill)
+  if (item.kind === 'jam-machine') return inner(itemJamMachine)
+  if (item.kind === 'still') return inner(itemStill)
+  if (item.kind === 'barrel') return inner(itemBarrel)
+  if (item.kind === 'freezer') return inner(itemFreezer)
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -277,9 +308,32 @@ export function itemInner(item: Face): string {
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.rarity))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
   if (item.kind === 'sugar') return inner(itemSugar)
+  if (item.kind === 'spirit') return SPIRIT_ART[item.spirit]
+  if (item.kind === 'wine') return stageOnly(itemWine, fruitGroup(item.rarity))
+  if (item.kind === 'jam') return item.crop === 'tomato' ? inner(itemKetchup) : inner(JAM_ART[item.crop])
+  if (item.kind === 'oil') return inner(itemOil)
+  if (item.kind === 'flour') return inner(itemFlour)
+  if (item.kind === 'extract') return inner(itemExtract)
   if (item.kind === 'sapling') return treeStage(item.tree, 'grow')
-  return inner(itemSugar)
+  const _x: never = item
+  return _x
 }
+
+const SPIRIT_ART = {
+  vodka: inner(itemSpiritVodka),
+  beer: inner(itemSpiritBeer),
+  brandy: inner(itemSpiritBrandy),
+  mixed: inner(itemSpiritMixed),
+} as const
+
+const JAM_ART = {
+  apricot: itemJamApricot,
+  grape: itemJamGrape,
+  raspberry: itemJamRaspberry,
+  apple: itemJamApple,
+  cherry: itemJamCherry,
+  tomato: itemKetchup,
+} as const
 
 export function skuInner(id: SkuId): string {
   if (id === 'buy-chest') return itemInner({ kind: 'chest' })
@@ -294,6 +348,11 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-valve') return itemInner({ kind: 'valve' })
   if (id === 'buy-rain-tank') return itemInner({ kind: 'rain-tank' })
   if (id === 'buy-tap') return itemInner({ kind: 'tap' })
+  if (id === 'buy-mill') return itemInner({ kind: 'mill' })
+  if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
+  if (id === 'buy-still') return itemInner({ kind: 'still' })
+  if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
+  if (id === 'buy-freezer') return itemInner({ kind: 'freezer' })
   return itemInner(skuItem(id))
 }
 
@@ -369,7 +428,9 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-watermelon':
       return stageOnly(FRUIT.watermelon, 'common')
     case 'unlock-fermentation':
-      return inner(itemSugar)
+      return inner(itemStill)
+    case 'unlock-preservatives':
+      return inner(itemJamMachine)
     case 'unlock-heirloom':
       return inner(skillHeirloom)
     case 'unlock-large-box':
@@ -462,6 +523,11 @@ export const WELL = inner(propWell)
 export const TRUCK = inner(propTruck)
 export const CHEST = inner(chest)
 export const GRINDER = inner(grinder)
+export const MILL = inner(propMill)
+export const STILL = inner(propStill)
+export const BARREL = inner(propBarrel)
+export const JAM = inner(propJam)
+export const FREEZER = inner(propFreezer)
 export const SPRINKLER = inner(propSprinkler)
 export const SPRINKLER_VERT = inner(propSprinklerVert)
 export const SPRINKLER_LARGE = inner(propSprinklerLarge)
@@ -535,6 +601,7 @@ export const UI_BTN_CANCEL = uiBtnCancel
 export const UI_BTN_FAMILY = uiBtnFamily
 export const UI_BTN_GEAR = uiBtnGear
 export const UI_BTN_PAUSE = uiBtnPause
+export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
 export const UI_MENU = inner(uiMenu)
 export const SKILL_POINT = inner(skillPoint)

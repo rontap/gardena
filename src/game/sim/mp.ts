@@ -2,21 +2,24 @@ import { SKUS } from '../defs/research.ts'
 import type { SkuId } from './ids.ts'
 import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
-import { DT_MAX, type PlayerId, type SeatId, type World } from './world.ts'
+import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.1
+export const PROTOCOL = 1.2
 
 export type MpMsg =
-  | { a: 'hello'; protocol: number; playerId: PlayerId }
+  | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
   | { a: 'welcome'; protocol: number; seat: SeatId; save: Save; now: number; paused: boolean }
   | { a: 'reject'; reason: 'version' | 'full' | 'busy' }
   | { a: 'ready' }
+  | { a: 'ping' }
   | { a: 'bundle'; t: number; cmds: Cmd[] }
   | { a: 'intent'; cmd: Cmd }
   | { a: 'pause'; on: boolean }
   | { a: 'digest'; t: number; hex: string }
   | { a: 'resync'; save: Save; now: number }
-  | { a: 'bye'; why: 'host-left' | 'kicked' }
+  | { a: 'roster'; seats: RosterSeat[] }
+  // 'lost' is the transport dropping under us; only 'host-left' means the host meant it.
+  | { a: 'bye'; why: 'host-left' | 'kicked' | 'lost' }
 
 export type MpWire = {
   send(msg: MpMsg): void
@@ -26,6 +29,8 @@ export type MpWire = {
 
 export type RejectReason = 'version' | 'full' | 'busy'
 
+export type RosterSeat = { id: SeatId; name: string; presence: Presence; napping: boolean }
+
 const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-pumpjack',
   'buy-well',
@@ -34,6 +39,11 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-chest',
   'buy-grinder',
   'buy-compost-box',
+  'buy-mill',
+  'buy-jam',
+  'buy-still',
+  'buy-barrel',
+  'buy-freezer',
 ])
 
 const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
@@ -62,7 +72,8 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
   switch (data.a) {
     case 'hello': {
       if (typeof data.protocol !== 'number' || typeof data.playerId !== 'string') return undefined
-      return { a: 'hello', protocol: data.protocol, playerId: data.playerId }
+      const name = typeof data.name === 'string' ? cleanName(data.name) : ''
+      return { a: 'hello', protocol: data.protocol, playerId: data.playerId, name }
     }
     case 'welcome': {
       const seat = seatId(data.seat)
@@ -83,6 +94,8 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
     }
     case 'ready':
       return { a: 'ready' }
+    case 'ping':
+      return { a: 'ping' }
     case 'bundle': {
       if (typeof data.t !== 'number' || !Array.isArray(data.cmds)) return undefined
       return { a: 'bundle', t: data.t, cmds: data.cmds as Cmd[] }
@@ -103,13 +116,44 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
       if (!isRec(data.save) || typeof data.now !== 'number') return undefined
       return { a: 'resync', save: data.save as Save, now: data.now }
     }
+    case 'roster': {
+      const rows = Array.isArray(data.seats) ? data.seats : undefined
+      if (rows === undefined) return undefined
+      const seats: RosterSeat[] = []
+      for (const raw of rows) {
+        if (!isRec(raw)) return undefined
+        const id = seatId(raw.id)
+        if (id === undefined || typeof raw.name !== 'string') return undefined
+        if (raw.presence !== 'in' && raw.presence !== 'away') return undefined
+        if (typeof raw.napping !== 'boolean') return undefined
+        seats.push({ id, name: cleanName(raw.name), presence: raw.presence, napping: raw.napping })
+      }
+      return { a: 'roster', seats }
+    }
     case 'bye': {
-      if (data.why !== 'host-left' && data.why !== 'kicked') return undefined
+      if (data.why !== 'host-left' && data.why !== 'kicked' && data.why !== 'lost') return undefined
       return { a: 'bye', why: data.why }
     }
     default:
       return undefined
   }
+}
+
+export function rosterOf(world: World): RosterSeat[] {
+  return world.seats.map(s => ({ id: s.id, name: s.name, presence: s.presence, napping: s.napping }))
+}
+
+/** Presence and names never ride the command log, so the host pushes them directly. */
+export function applyRoster(world: World | undefined, rows: RosterSeat[]): void {
+  if (world === undefined) return
+  rows.forEach(row => {
+    const seat = world.seats[row.id]
+    if (seat === undefined) return
+    seat.name = row.name
+    seat.presence = row.presence
+    seat.napping = row.napping
+  })
+  world.ping()
 }
 
 export function loopback(): [MpWire, MpWire] {
@@ -241,6 +285,7 @@ type Link = {
   wire: MpWire
   seat: SeatId | undefined
   playerId: PlayerId | undefined
+  lastHeard: number
   fails: number
   ready: boolean
   digestWait: boolean
@@ -255,6 +300,7 @@ export class MpHost {
   private readonly guests: Link[] = []
   onPause: ((on: boolean) => void) | undefined
   onCatching: ((on: boolean) => void) | undefined
+  onRoster: (() => void) | undefined
   constructor(world: World) {
     this.world = world
   }
@@ -263,6 +309,7 @@ export class MpHost {
       wire,
       seat: undefined,
       playerId: undefined,
+      lastHeard: this.wall(),
       fails: 0,
       ready: false,
       digestWait: false,
@@ -277,13 +324,51 @@ export class MpHost {
     if (i < 0) return
     const g = this.guests[i]
     this.guests.splice(i, 1)
-    if (g.seat !== undefined && g.seat !== 0) this.world.away(g.seat)
+    if (g.seat !== undefined && g.seat !== 0) {
+      this.world.away(g.seat)
+      this.pushRoster()
+    }
     if (this.joining && !g.ready) {
       this.joining = false
       this.setPaused(false)
     }
   }
+  /** Overridable so tests can drive wall time; the app just lets it read the clock. */
+  wall(): number {
+    return performance.now()
+  }
+  /**
+   * WebRTC can take minutes to admit a peer is gone, so silence is the signal:
+   * quiet guests go away (and start napping), very quiet ones lose the link.
+   */
+  sweep(nowMs = this.wall()): void {
+    let changed = false
+    for (let i = this.guests.length - 1; i >= 0; i--) {
+      const g = this.guests[i]
+      if (g.seat === undefined || g.seat === 0) continue
+      const quiet = nowMs - g.lastHeard
+      if (quiet >= DROP_MS) {
+        this.guests.splice(i, 1)
+        g.wire.close()
+        if (this.world.seats[g.seat].presence !== 'away') this.world.away(g.seat)
+        this.world.seats[g.seat].napping = true
+        changed = true
+        continue
+      }
+      if (quiet >= AWAY_MS && this.world.seats[g.seat].presence !== 'away') {
+        this.world.away(g.seat)
+        changed = true
+      }
+      const napping = quiet >= NAP_MS
+      if (this.world.seats[g.seat].napping !== napping) {
+        this.world.seats[g.seat].napping = napping
+        changed = true
+      }
+    }
+    if (changed) this.pushRoster()
+  }
   pump(): void {
+    this.sweep()
     if (this.paused) return
     this.world.tick(DT_MAX)
     const t = this.world.now
@@ -304,6 +389,10 @@ export class MpHost {
       }
     })
   }
+  pushRoster(): void {
+    this.broadcast({ a: 'roster', seats: rosterOf(this.world) })
+    if (this.onRoster !== undefined) this.onRoster()
+  }
   setPaused(on: boolean): void {
     this.paused = on
     this.broadcast({ a: 'pause', on })
@@ -320,6 +409,15 @@ export class MpHost {
     })
   }
   private recv(link: Link, msg: MpMsg): void {
+    link.lastHeard = this.wall()
+    if (msg.a === 'ping') {
+      // A ping from a seat we had written off means they are back at the keyboard.
+      if (link.seat !== undefined && link.seat !== 0 && this.world.seats[link.seat].presence === 'away') {
+        this.world.join(this.world.seats[link.seat].playerId)
+        this.pushRoster()
+      }
+      return
+    }
     if (msg.a === 'hello') {
       this.onHello(link, msg)
       return
@@ -364,14 +462,16 @@ export class MpHost {
       this.setPaused(true)
       if (this.onCatching !== undefined) this.onCatching(true)
       link.n = this.world.log.length
+      this.world.join(msg.playerId, msg.name)
       link.wire.send({ a: 'resync', save: dump(this.world), now: this.world.now })
+      this.pushRoster()
       return
     }
     if (this.joining) {
       link.wire.send({ a: 'reject', reason: 'busy' })
       return
     }
-    const seat = this.world.join(msg.playerId)
+    const seat = this.world.join(msg.playerId, msg.name)
     if (seat === 'full') {
       link.wire.send({ a: 'reject', reason: 'full' })
       return
@@ -391,31 +491,53 @@ export class MpHost {
       now: this.world.now,
       paused: true,
     })
+    this.pushRoster()
   }
 }
+
+/** A stalled link gets this many resync attempts before we call it dead. */
+export const RETRY_MAX = 3
+export const STALL_MS = 5000
+/** Guests beat this often so a host can tell a quiet player from a vanished one. */
+export const PING_MS = 2000
+/** Silence past this and the seat is marked away. */
+export const AWAY_MS = 8000
+/**
+ * Silence past this and the player is drawn asleep. Measured on the host's wall clock,
+ * because world time runs many times faster than real time and scales with ?speed.
+ */
+export const NAP_MS = 30000
+/** Silence past this and the link itself is released. */
+export const DROP_MS = 60000
 
 export class MpGuest {
   world: World | undefined
   seat: SeatId | undefined
   paused = false
   catching = false
+  /** Consecutive stalls with no traffic back; reset by anything the host sends. */
+  retries = 0
   fail: 'version' | 'full' | 'busy' | 'host-left' | 'desync' | 'unusable' | 'ice' | undefined
   private readonly wire: MpWire
   private readonly playerId: PlayerId
+  private readonly name: string
   private readonly queued: Extract<MpMsg, { a: 'bundle' }>[] = []
   private lastWall = 0
+  private lastPing = 0
   onWorld: ((world: World, seat: SeatId) => void) | undefined
   onCatching: ((on: boolean) => void) | undefined
+  onRetry: ((n: number) => void) | undefined
   onPause: ((on: boolean) => void) | undefined
-  onBye: ((why: 'host-left' | 'kicked') => void) | undefined
+  onBye: ((why: 'host-left' | 'kicked' | 'lost') => void) | undefined
   onReject: ((reason: RejectReason | 'unusable') => void) | undefined
-  constructor(wire: MpWire, playerId: PlayerId) {
+  constructor(wire: MpWire, playerId: PlayerId, name = '') {
     this.wire = wire
     this.playerId = playerId
+    this.name = name
     wire.onRecv(msg => this.recv(msg))
   }
   hello(): void {
-    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId })
+    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name })
   }
   intent(cmd: Cmd): void {
     // TODO 1.1 multiplayer client prediction
@@ -430,6 +552,11 @@ export class MpGuest {
     this.wire.close()
   }
   pumpGap(now: number): void {
+    // The heartbeat runs even while paused: being idle is not the same as being gone.
+    if (this.world !== undefined && now - this.lastPing >= PING_MS) {
+      this.lastPing = now
+      this.wire.send({ a: 'ping' })
+    }
     if (this.lastWall === 0) {
       this.lastWall = now
       return
@@ -438,12 +565,29 @@ export class MpGuest {
       this.lastWall = now
       return
     }
-    if (now - this.lastWall <= 5000 || this.world === undefined) return
+    if (now - this.lastWall <= STALL_MS || this.world === undefined) return
     this.flush()
     if (this.world === undefined) return
-    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId })
+    this.retries += 1
+    if (this.onRetry !== undefined) this.onRetry(this.retries)
+    if (this.retries > RETRY_MAX) {
+      this.fail = 'host-left'
+      if (this.onBye !== undefined) this.onBye('lost')
+      this.world = undefined
+      return
+    }
+    this.hello()
     this.catchUp(true)
     this.lastWall = now
+  }
+  /**
+   * Anything from the host proves the link is alive, so the retry budget resets.
+   * The stall clock stays with the bundle branch: digests alone do not mean we are keeping up.
+   */
+  private settle(): void {
+    if (this.retries === 0) return
+    this.retries = 0
+    if (this.onRetry !== undefined) this.onRetry(0)
   }
   private catchUp(on: boolean): void {
     this.catching = on
@@ -478,6 +622,11 @@ export class MpGuest {
       this.wire.send({ a: 'ready' })
       return
     }
+    if (msg.a !== 'bye') this.settle()
+    if (msg.a === 'roster') {
+      applyRoster(this.world, msg.seats)
+      return
+    }
     if (msg.a === 'bundle') {
       this.lastWall = performance.now()
       if (this.world === undefined || this.catching) {
@@ -498,7 +647,7 @@ export class MpGuest {
         return
       }
       if (digestHex(this.world) !== msg.hex) {
-        this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId })
+        this.hello()
         this.catchUp(true)
       }
       return

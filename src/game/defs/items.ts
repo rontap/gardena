@@ -1,5 +1,6 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
-import type { ContainerId, PickaxeId, ShovelId } from '../sim/ids.ts'
+import type { ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
+import type { Rarity } from './rarity.ts'
 
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
   shovel: { uses: 80, workSeconds: 1.2 },
@@ -47,3 +48,51 @@ export const COMPOST_VALUE = {
   rotten: 2,
   dead: 1,
 } as const
+
+export const FREEZER_SLOTS = 6
+export const SUGAR_BAG = 2
+export const SUGAR_MILL = 5
+export const SUGAR_SHOP = 8
+export const MILL_IN = 5
+export const MILL_GRASS = 15
+export const MILL_WORK = 3
+export const JAM_IN = 5
+export const JAM_SUGAR = 0.4
+export const JAM_SECONDS = 20
+export const JAM_BUFFER = 4
+export const STILL_CAP = 10
+export const STILL_WATER = 0.1
+export const STILL_SECONDS = 180
+export const BARREL_CAP = 5
+export const BARREL_MATURE = DAY_SECONDS
+export const BARREL_AGE = 3 * DAY_SECONDS
+export const OIL = 96
+export const FLOUR = 72
+export const EXTRACT = 8
+export const MIXED_MUL = 0.7
+export const WINE_SALE = 108
+export const SPIRIT_SALE: { readonly [K in Exclude<SpiritKind, 'mixed'>]: number } = {
+  vodka: 72,
+  beer: 144,
+  brandy: 108,
+}
+export const SPIRIT_RARITY: { readonly [K in Rarity]: number } = {
+  common: 1,
+  uncommon: 1.15,
+  rare: 1.3,
+  heirloom: 1.45,
+}
+export const WINE_AGE: { readonly [K in Rarity]: number } = {
+  common: 1.5,
+  uncommon: 2,
+  rare: 2.5,
+  heirloom: 3,
+}
+export const JAM_SALE: { readonly [K in JamCrop]: number } = {
+  apricot: 36,
+  grape: 72,
+  raspberry: 104,
+  apple: 80,
+  cherry: 20,
+  tomato: 80,
+}

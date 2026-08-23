@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { CROPS } from '../defs/crops.ts'
+import { SUGAR_MILL } from '../defs/items.ts'
 import { RARITY_RANK, RARITY_SALE } from '../defs/rarity.ts'
-import { STALL_IDS, binCount, type StallSale } from '../sim/stall.ts'
-import type { StallGoodId } from '../sim/ids.ts'
+import { STALL_IDS, binCount, isCropStall, type StallSale } from '../sim/stall.ts'
+import type { JamCrop, StallGoodId } from '../sim/ids.ts'
 import type { Item } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { qualityPip, UI_MARKET_STALL } from '../view/svgs.ts'
@@ -55,7 +56,16 @@ function StallRow({ id, world }: { id: StallGoodId; world: World }) {
 }
 
 function boxFace(id: StallGoodId): Item {
-  if (id === 'sugar') return { kind: 'sugar', count: 1, unitSale: CROPS['sugar-cane'].sale }
+  if (id === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL }
+  if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') {
+    return { kind: 'spirit', spirit: id, rarity: 'common', count: 1, unitSale: 1 }
+  }
+  if (id === 'wine') return { kind: 'wine', rarity: 'common', count: 1, unitSale: 1 }
+  if (id.startsWith('jam-')) {
+    const crop = id.slice(4) as JamCrop
+    return { kind: 'jam', crop, count: 1, unitSale: 1 }
+  }
+  if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, count: 1, unitSale: 1 }
   return {
     kind: 'box',
     cap: 5,
@@ -100,6 +110,6 @@ function DynamicStallRow({ id, world, toasts }: { id: StallGoodId; world: World;
 }
 
 function stallX(world: World, id: StallGoodId): number {
-  if (id === 'sugar') return CROPS['sugar-cane'].sale
+  if (!isCropStall(id)) return 1
   return CROPS[id].sale * world.modifiers.filter(m => m.crop === undefined || m.crop === id).reduce((n, m) => n * m.saleMul, 1)
 }

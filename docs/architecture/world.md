@@ -17,14 +17,28 @@ TreeId = 'apple' | 'apricot' | 'lemon' | 'cherry'
 
 CropId = AnnualId | TreeId
 
-StallGoodId = CropId | 'sugar'
+SpiritKind = 'vodka' | 'beer' | 'brandy' | 'mixed'
+JamCrop = 'apricot' | 'grape' | 'raspberry' | 'apple' | 'cherry' | 'tomato'
+StillCrop = 'potato' | 'wheat' | 'apricot'
+MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass'
+JamId = `jam-${JamCrop}`
+
+StallGoodId =
+  | CropId
+  | 'sugar'
+  | SpiritKind
+  | 'wine'
+  | JamId
+  | 'oil'
+  | 'flour'
+  | 'extract'
 ```
 
-Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `'berry'`. No `'berry'` on `StallGoodId`. Sugar-cane fruit is not a stall good; sugar is.
+Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `'berry'`. No `'berry'` on `StallGoodId`. Sugar-cane fruit is a stall good. Illegal: whisky. Illegal: `sugar.count`.
 
-`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation`. No `unlock-vanilla`.
+`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
 
-`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane`.
+`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar`.
 
 [[architecture/tree]] `TreeId`. [[architecture/family]] `PlayerSkillId`.
 
@@ -53,7 +67,7 @@ No `World.actor` / `hand` / `inventory` / `queue` / `place`.
 
 `App.local: SeatId` is who this page is. Solo and tests: one in-seat, `local === 0`.
 
-`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work and that seat hand/inventory freshness. Seat stays in `seats`. [[mechanics/multiplayer]]
+`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work and that seat hand/inventory freshness. Seat stays in `seats`. Freezer slots skip `tickFreshness`. [[mechanics/multiplayer]]
 
 Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`) live on the seat, not `World`.
 
@@ -72,9 +86,14 @@ Cell =
   | Grinder
   | CompostBox
   | Truck
+  | Mill
+  | JamMachine
+  | PotStill
+  | WineBarrel
+  | Freezer
 ```
 
-`isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`.
+`isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`. `isSolid` += mill jam still barrel freezer.
 
 Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree.
 
@@ -84,7 +103,21 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`.
 
-`World.pumps` / `World.tanks` / `World.taps` hold those same instances for the water grid.
+`World.pumps` / `World.tanks` / `World.taps` / `World.stills` hold those same instances for the water grid. Still joins like tap.
+
+```
+Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
+```
+
+```
+Mill = { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
+JamMachine = { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
+PotStill = { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+WineBarrel = { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
+Freezer = { kind: 'freezer'; base: RectBase; slots: Slot[] }
+```
+
+`Freezer.slots` length `FREEZER_SLOTS` 6. Rules: [[mechanics/machines]].
 
 ## Plot
 
@@ -159,6 +192,10 @@ Intent =
   | { act: 'inventory' }
   | { act: 'chest'; at: Coord }
   | { act: 'grind'; at: Coord }
+  | { act: 'still'; at: Coord }
+  | { act: 'barrel'; at: Coord }
+  | { act: 'jam'; at: Coord }
+  | { act: 'mill'; at: Coord }
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'tend'; at: Coord }
 ```
@@ -178,13 +215,12 @@ Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 ## Stall
 
 ```
-StallGoodId = CropId | 'sugar'
 StallMap = { [K in StallGoodId]: StallGood }
 ```
 
-`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is not a stall good; sugar is.
+`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky.
 
-Saleswoman `(1 + 0.02 × tier)` and Őstermelő `(1 + 0.05 × tier)` (`rarity === 'heirloom'`) apply to every `StallGoodId`. Not a `CropClass` test. [[architecture/family]].
+Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on `rarity === 'heirloom'` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract. Not a `CropClass` test. [[architecture/family]].
 
 Crop goods: stock and worth per rarity × `bio`. Illegal: fruit consign that drops `fruit.bio`.
 
@@ -201,12 +237,18 @@ No `Item | null`. Chest slots and inventory slots are `Slot[]`.
 { kind: 'seeds'; crop: AnnualId; rarity: Rarity; count: number }
 { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
 { kind: 'sapling'; tree: TreeId }
-{ kind: 'sugar'; count: number; unitSale: number }
+{ kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number }
+{ kind: 'spirit'; spirit: SpiritKind; rarity: Rarity; count: number; unitSale: number }
+{ kind: 'wine'; rarity: Rarity; count: number; unitSale: number }
+{ kind: 'jam'; crop: JamCrop; count: number; unitSale: number }
+{ kind: 'oil'; count: number; unitSale: number }
+{ kind: 'flour'; count: number; unitSale: number }
+{ kind: 'extract'; count: number; unitSale: number }
 ```
 
-Fruit / box fruit / grind input stay `CropId` except sugar-cane harvest never produces fruit.
+Fruit / box fruit / grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`.
 
-Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Box cargo: no berry arm.
+Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Box cargo: no berry arm. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
 
 ## Recap / Seam
 

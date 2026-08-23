@@ -112,7 +112,7 @@ A few (for now) mostly cosmetic items are to be added. They are all placed simil
 
 ## 0.8 Plants expansion & Trees Rework
 
-Done. Olive, grape, vanilla, sugar cane. Raspberry hidden behind grape. Vanilla behind raspberry. Sugar cane behind Fermentation (automation); ripe cane bags as sugar. Trees: apple apricot lemon cherry. Species-only, auto-drop, juvenile once, yield windows. Starter saplings apricot/lemon/cherry. Wild berry/shrub removed. See [[mechanics/plants]].
+Done. Olive, grape, vanilla, sugar cane. Raspberry hidden behind grape. Vanilla behind raspberry. Sugar cane behind Fermentation (automation); ripe cane is fruit, mill for sugar. Trees: apple apricot lemon cherry. Species-only, auto-drop, juvenile once, yield windows. Starter saplings apricot/lemon/cherry. Wild berry/shrub removed. See [[mechanics/plants]].
 
 ## 0.8b Stable game log state and perf improvements
 The goal of this update is to log actions in a way such that later tools can use it to unlock things.
@@ -179,17 +179,21 @@ In general gameplay wise, trees are intended as low-effort, low maintenance but 
 In terms of planting trees, in the future tree seeds will be obtainably in special ways, for now they can be used in the seed grinder and give the user one apricot-lemon-cherry-apple seed in the house inventory. 
 
 # 0.12 Early Access 4 Machines Machines Machines
+
+Shipped. Running spec: [[mechanics/machines]]. Roadmap below is original intent, not rules. Whisky cancelled.
+
 This update focuses on adding a lot of machines to the game to create secondary products that are better in some ways and in the future can be used as consumable goods. First, to make the tools desirable, the freshness mechanism should be changed such that rotting continues once picked, until it is dropped off at the market. 
 Pot still:
 - potatoes, wheat and apricot can be used to make spirits. It has a similar working to the compost, the user fills it up with stuff and then the production beings, but here the capacity == max, so no overload. The type of spirit produced depends on the input fruits (Vodka, Beer, Brandy). If there are more than one type is mixed in, it will produce mixed spirit which is cheaper. The spirits have rarities too, averaged from the rarities of the fruits, so if i mix common and uncommon 50%-50%, its rarity will be 1.5, and at finish random decides where to clamp to. Rot does not decrease quality (very realistic). In general, it should be worth it marginally to do pot stilling, but not to heirlooms and not to produce mixed spirit. Pot still needs to be connected to water system and uses 0.1L to produce the mix.
 barrels:
 - grapes can be turned into wine. A wine barrel holds less fruits than a pot still does. It takes 1 day to mature, has similar rarity decision. A wine can be aged for a further three days, and depending on rarity, the sell price will increase by 1.5× / 2 / 2.5 / 3. 
-- beer can be turned into whisky. It takes 2 days to mature and can be aged for a further of five days, and depending the rarity, the sell price will increase by 3 / 4 / 5 / 6. A full batch of rare heirloom potatoes turned to whisky and aged so long should be very rewarding financially, so make sure the numbers add up to a positive EV compared to just spamming carrots. 
+- ~~beer can be turned into whisky. It takes 2 days to mature and can be aged for a further of five days, and depending the rarity, the sell price will increase by 3 / 4 / 5 / 6. A full batch of rare heirloom potatoes turned to whisky and aged so long should be very rewarding financially, so make sure the numbers add up to a positive EV compared to just spamming carrots.~~ **Cancelled.** No whisky. Barrel is grapes → wine only. 
 Jam machine:
 - Very useful for upcoming updates (where price of fruits may fluctuate).
-- apricot, grape, raspberry, wild berry can be turned into Jam, tomato into ketchup. Jam machine is quite quick and does not care about rottenness OR quality, good mid-game item for preserving stuff. 
+- apricot, grape, raspberry, apple and cherry can be turned into respective Jam, tomato into ketchup (just icon and price difference). Jam machine is quite quick and does not care about rottenness OR quality, good mid-game item for preserving stuff. 
 - Items cannot be mixed.
 - Jam machine has an internal buffer of sugar that needs to be filled and uses it to create jam.
+- When this machine is unlocked, in the almanac, in the repective fruit section, a third icon is shown, with the jam.
 Refiner mill:
 - will crush items down (and should show what the item will be crushed into)
 - is researchable item in automation, like pot still and jam machine (jam machine is dependent on this item, and this item is available from the start)
@@ -198,8 +202,8 @@ Refiner mill:
 - wheat 5× -> flour (1 item)
 - grass 15× -> antifungal extract (unlocked by research gated behind disease management)
 Freezer:
-- fruits (in boxes or individually) do not rot at all.
-Sugar is also unlocked as a buyable item when jam is unlocked, it should be priced in a way such that sugar cane is overall a cheaper was to produce it. 
+- fruits (in boxes or individually) do not rot at all. 6 slots.
+Sugar is also unlocked as a buyable item when jam is unlocked, it should be priced in a way such that sugar cane is overall a cheaper way to produce it. 
 
 # 0.13 Early Access 5 Weather patterns.
 Weather is added to the game. A weather indicator is shown, and if the appropriate skill is shown, next day's weather is shown. The current "no weather" is still gonna be the default weather state in the game. Two new main weathers are introduced, rainy days and dry days. They have bunch of overarching effects that slightly modify the gameplay.

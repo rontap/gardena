@@ -19,7 +19,7 @@ Do not create `src/` here. `World` does not import `peerjs`. `mp.ts` does not im
 ## Protocol
 
 ```
-PROTOCOL = 1.1
+PROTOCOL = 1.2
 ```
 
 Number. Hello compares `PROTOCOL`, not `Save.version` alone. Guest protocol ≠ `PROTOCOL` → `reject: version`. Never hydrate.

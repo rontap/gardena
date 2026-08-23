@@ -10,7 +10,7 @@ Fields: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `sal
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals except none for trees. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Olive `reveal: unlock-tomato`. Raspberry `reveal: unlock-grape`. Vanilla pack shows after raspberry; buy requires player skill `vanilla-tending`. Sugar cane `unlock-fermentation` on automation. Trees have no pack.
+Packs of 5: `SKUS` `pack-*` for annuals except none for trees. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Olive `reveal: unlock-tomato`. Raspberry `reveal: unlock-grape`. Vanilla pack shows after raspberry; buy requires player skill `vanilla-tending`. Sugar cane `unlock-fermentation` on automation; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
 
 New annuals — preference. Drink L/day derived:
 
@@ -102,7 +102,7 @@ Wild weights `RARITY_WEIGHT` 0.55 / 0.35 / 0.09 / 0.01 — preference. `rollRari
 
 On the plant, while ripe: `freshness -= dt / rotSeconds`. `<= 0` → `{ kind: 'rotten', soil, crop }`. No plant left.
 
-After pick, fruit keeps rotting in hand, house, chest, ground, and box cargo until sold. `tickFreshness`. Hits 0 and stays fruit, worth nothing useful. Sugar does not tick.
+After pick, fruit keeps rotting in hand, house, chest, ground, and box cargo until sold. `tickFreshness`. Freezer slots skip. Hits 0 and stays fruit, worth nothing useful. Sugar does not tick.
 
 `freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale` (rarity + skill `saleMul` already in). Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam floor — [[mechanics/family]].
 
@@ -114,13 +114,11 @@ Merge same crop+rarity: weighted `unitSale` and `freshness`. Different rarity ne
 
 ## Harvest / shovel
 
-Ripe annual except sugar-cane, empty hand: one fruit, current freshness, plot `empty` same soil. Fruit box: into the box if it accepts.
-
-Ripe sugar-cane: one `{ kind: 'sugar'; count: 1; unitSale: stats.sale }`. Empty hand, or hand already holding sugar (merge weighted `unitSale`). Not a box cargo. Plot `empty` same soil. Bagged sugar does not rot. Ripe cane on the plot still ticks freshness and can become `rotten`.
+Ripe annual including sugar-cane, empty hand: one fruit, current freshness, plot `empty` same soil. Fruit box: into the box if it accepts.
 
 Shovel growing or ripe annual: one seed, same soil. Shovel dead or rotten: empty, **no drop**. Compost is from what you already carry.
 
-Grinder: annual fruit except sugar-cane (cane is never fruit). Tree fruit: refuse.
+Grinder: annual fruit including sugar-cane. Tree fruit and sugar: refuse. Cane fruit mills to sugar — [[mechanics/machines]].
 
 ## Trees
 

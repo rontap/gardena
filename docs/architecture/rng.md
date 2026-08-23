@@ -9,7 +9,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 | file | owns |
 |---|---|
 | `src/game/sim/rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
-| `src/game/sim/world.ts` | `World.rng`, `World.ripenN`. Shop / grow / weed / grass / tree / fruit / skill / grind / market call sites |
+| `src/game/sim/world.ts` | `World.rng`, `World.ripenN`. Shop / grow / weed / grass / tree / fruit / skill / grind / still / barrel / market call sites |
 | `src/game/sim/gen.ts` | rocks, rock-shape. Uses `gen` |
 | `src/game/sim/noise.ts` | soil-noise, soil-boost. Uses `gen` |
 | `src/game/sim/stall.ts` | crate. Uses `gen` |
@@ -32,7 +32,7 @@ seed omitted → (Math.random() * 0x100000000) >>> 0 once
 ```
 StreamId = SpatialId | SeqId
 
-SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'market'
+SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'still' | 'barrel' | 'market'
 SeqId = 'shop' | 'fruit'
 
 class Rng {
@@ -116,6 +116,14 @@ memberIx: player = 0, husband = 1, daughter = 2
 ### grind — `at(col, row, day, i)`
 
 `i` is the unit index in that grind.
+
+### still — `at(col, row, day, n)`
+
+`n` is the still’s batch index. Consume on finish only (output dropped). Failed start (no water) consumes 0.
+
+### barrel — `at(col, row, day, n)`
+
+`n` is the barrel’s batch index. Consume at mature only. Collect does not consume.
 
 ### market — `at(goodIx, day, slot)`
 

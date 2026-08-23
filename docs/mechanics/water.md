@@ -26,6 +26,8 @@ A closed valve blocks **its own edge only**. Water still reaches a sprinkler by 
 
 `TAP_RATE = 5` L/s — preference. Tap 1×1, $10. Not a producer. Fills a bucket at `TAP_RATE` while the net’s tanks hold; once dry, only as fast as sources make. No net or no source: nothing.
 
+Still 1×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. Not a fill target. Start still only if `pull(sources, STILL_WATER)` returns `STILL_WATER` 0.1 L — once at start. Stored `< 0.1` → pull 0, retry each tick. — [[mechanics/machines]]
+
 Fill at pump / rain-tank: that tank at its `rate`. Fill at a well edge: the well's tank at its `rate`.
 
 ## Sprinklers

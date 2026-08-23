@@ -2,7 +2,28 @@ import type { Rarity } from '../defs/rarity.ts'
 import { inWorld, type Coord } from './building.ts'
 import { onCell } from './drop.ts'
 import type { CropId, SkuId } from './ids.ts'
+import { DAY_SECONDS } from './clock.ts'
+import {
+  BARREL_CAP,
+  BARREL_MATURE,
+  JAM_BUFFER,
+  JAM_IN,
+  JAM_SUGAR,
+  STILL_CAP,
+} from '../defs/items.ts'
+import type { JamMachine, Mill, PotStill, WineBarrel } from './building.ts'
 import { boxAccepts, grindN, organic, skuLabel, type Hand, type Item } from './item.ts'
+import {
+  feedUnits,
+  fruitCrop,
+  jamCropName,
+  jamCropOf,
+  millDumpUnits,
+  millNeed,
+  millProductName,
+  millRecipeOf,
+  stillCropOf,
+} from './machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
@@ -119,6 +140,11 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'chest') return { kind: 'place', text: 'Delete chest' }
   if (cell.kind === 'grinder') return { kind: 'place', text: 'Delete grinder' }
   if (cell.kind === 'compost-box') return { kind: 'place', text: 'Delete compost box' }
+  if (cell.kind === 'mill') return { kind: 'place', text: 'Delete mill' }
+  if (cell.kind === 'still') return { kind: 'place', text: 'Delete pot still' }
+  if (cell.kind === 'barrel') return { kind: 'place', text: 'Delete wine barrel' }
+  if (cell.kind === 'jam') return { kind: 'place', text: 'Delete jam machine' }
+  if (cell.kind === 'freezer') return { kind: 'place', text: 'Delete freezer' }
   return { kind: 'blocked', text: 'Cannot delete here' }
 }
 
@@ -201,7 +227,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-chest' ||
       w.act.place.id === 'buy-grinder' ||
       w.act.place.id === 'buy-compost-box' ||
-      w.act.place.id === 'buy-tap'
+      w.act.place.id === 'buy-tap' ||
+      w.act.place.id === 'buy-mill' ||
+      w.act.place.id === 'buy-jam' ||
+      w.act.place.id === 'buy-still' ||
+      w.act.place.id === 'buy-barrel' ||
+      w.act.place.id === 'buy-freezer'
     ) {
       if (!placeSolidOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
       return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
@@ -219,9 +250,41 @@ export function readPrompt(w: World, at: Coord): Prompt {
   }
   if (onCell(w.drops, at).length > 0) return intent('Pick up', { act: 'pickup', at })
   if (cell.kind === 'chest') return intent('Chest', { act: 'chest', at })
+  if (cell.kind === 'freezer') return intent('Freezer', { act: 'chest', at })
   if (cell.kind === 'grinder') {
     if (grindN(w.act.hand) > 0) return intent('Grind', { act: 'grind', at })
     return { kind: 'blocked', text: 'Seed grinder' }
+  }
+  if (cell.kind === 'mill') {
+    const look = millLook(cell, w.act.hand)
+    if (w.act.hand.kind === 'hold' && millDumpOk(cell, w.act.hand)) {
+      const recipe = millRecipeOf(w.act.hand.item)
+      if (recipe !== undefined) {
+        const name = millProductName(recipe)
+        return intent(name === 'sugar' ? 'Crush into sugar' : `Crush into ${name}`, { act: 'mill', at })
+      }
+    }
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'still') {
+    const look = stillLook(cell, w.act.hand)
+    if (stillDumpOk(cell, w.act.hand)) return intent('Distill', { act: 'still', at })
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'barrel') {
+    const look = barrelLook(cell, w.act.hand)
+    if (barrelCollectOk(cell, w.act.hand)) return intent('Collect wine', { act: 'barrel', at })
+    if (barrelDumpOk(cell, w.act.hand)) return intent('Fill barrel', { act: 'barrel', at })
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'jam') {
+    const look = jamLook(cell, w.act.hand)
+    if (jamSugarOk(cell, w.act.hand)) return intent('Fill sugar', { act: 'jam', at })
+    if (w.act.hand.kind === 'hold' && jamFruitOk(cell, w.act.hand)) {
+      const crop = jamCropOf(w.act.hand.item)
+      return intent(crop === 'tomato' ? 'Make ketchup' : 'Make jam', { act: 'jam', at })
+    }
+    return { kind: 'blocked', text: look }
   }
   if (cell.kind === 'compost-box') {
     if (w.act.hand.kind === 'hold' && organic(w.act.hand.item)) return intent('Compost', { act: 'compost', at })
@@ -295,10 +358,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.soil.fertilizer >= FERT_PLOT_MAX) return { kind: 'blocked', text: 'Soil is fertile' }
     return intent('Fertilize', { act: 'fertilize', at })
   }
-  if (cell.kind === 'ripe' && cell.plant.crop === 'sugar-cane' && canHarvestSugar(w)) {
-    return intent('Harvest', { act: 'harvest', at })
-  }
-  if (cell.kind === 'ripe' && cell.plant.crop !== 'sugar-cane' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
+  if (cell.kind === 'ripe' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
     return intent('Harvest', { act: 'harvest', at })
   }
   if (w.act.hand.kind === 'empty' && (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass'))) {
@@ -337,20 +397,106 @@ function canHarvestHand(w: World, crop: CropId, rarity: Rarity): boolean {
   return boxAccepts(w.act.hand.item, 'fruit', crop, rarity, 1) > 0
 }
 
-function canHarvestSugar(w: World): boolean {
-  if (w.act.hand.kind === 'empty') return true
-  return w.act.hand.item.kind === 'sugar'
-}
-
 function canConsign(hand: Hand): boolean {
   if (hand.kind !== 'hold') return false
   const it = hand.item
-  if (it.kind === 'fruit') return it.count >= 1 && it.crop !== 'sugar-cane'
-  if (it.kind === 'sugar') return it.count >= 1
+  if (it.kind === 'fruit') return it.count >= 1
+  if (it.kind === 'sugar') return it.liters > 0
+  if (it.kind === 'spirit' || it.kind === 'wine' || it.kind === 'jam' || it.kind === 'oil' || it.kind === 'flour' || it.kind === 'extract') {
+    return it.count >= 1
+  }
   if (it.kind === 'box' && it.cargo.kind === 'stack' && it.cargo.goods === 'fruit') {
-    return it.cargo.stack.count >= 1 && it.cargo.stack.crop !== 'sugar-cane'
+    return it.cargo.stack.count >= 1
   }
   return false
+}
+
+export function millLook(mill: Mill, hand: Hand): string {
+  if (mill.recipe !== 'none' && hand.kind === 'hold') {
+    const recipe = millRecipeOf(hand.item)
+    if (recipe !== undefined && recipe !== mill.recipe) return `Mill - ${millProductName(mill.recipe)} only`
+  }
+  if (mill.recipe === 'none') return 'Mill'
+  const need = millNeed(mill.recipe)
+  if (mill.units >= need) return 'Mill - full'
+  return `${mill.units}/${need} → ${millProductName(mill.recipe)}`
+}
+
+function millDumpOk(mill: Mill, hand: Hand): boolean {
+  if (hand.kind !== 'hold') return false
+  const recipe = millRecipeOf(hand.item)
+  if (recipe === undefined) return false
+  if (mill.recipe !== 'none' && mill.recipe !== recipe) return false
+  return millDumpUnits(hand.item, recipe) > 0
+}
+
+export function stillLook(still: PotStill, hand: Hand): string {
+  const n = feedUnits(still.feed)
+  if (still.progress > 0) return `Pot still - working ${Math.floor(still.progress * 100)}%`
+  if (hand.kind === 'hold' && stillCropOf(hand.item) === undefined && fruitCrop(hand.item) !== undefined) {
+    return 'Pot still - potatoes, wheat or apricot'
+  }
+  if (n === STILL_CAP && hand.kind === 'hold' && stillCropOf(hand.item) !== undefined) return 'Pot still - full'
+  if (n === STILL_CAP) return 'Pot still - 10/10, needs water'
+  return `Pot still - ${n}/10`
+}
+
+function stillDumpOk(still: PotStill, hand: Hand): boolean {
+  if (hand.kind !== 'hold') return false
+  if (stillCropOf(hand.item) === undefined) return false
+  return feedUnits(still.feed) < STILL_CAP
+}
+
+export function barrelLook(barrel: WineBarrel, hand: Hand): string {
+  const n = feedUnits(barrel.feed)
+  if (n === BARREL_CAP && barrel.age >= BARREL_MATURE) return `Wine barrel - aging ${Math.floor(barrel.age / DAY_SECONDS)}d`
+  if (n === BARREL_CAP) return `Wine barrel - maturing ${Math.floor((barrel.age / BARREL_MATURE) * 100)}%`
+  if (hand.kind === 'hold' && fruitCrop(hand.item) !== undefined && fruitCrop(hand.item) !== 'grape') {
+    return 'Wine barrel - grapes'
+  }
+  if (n === BARREL_CAP && hand.kind === 'hold' && fruitCrop(hand.item) === 'grape') return 'Wine barrel - full'
+  return `Wine barrel - ${n}/5`
+}
+
+function barrelDumpOk(barrel: WineBarrel, hand: Hand): boolean {
+  if (hand.kind !== 'hold') return false
+  if (fruitCrop(hand.item) !== 'grape') return false
+  return feedUnits(barrel.feed) < BARREL_CAP
+}
+
+function barrelCollectOk(barrel: WineBarrel, hand: Hand): boolean {
+  if (feedUnits(barrel.feed) !== BARREL_CAP || barrel.age < BARREL_MATURE) return false
+  if (hand.kind === 'empty') return true
+  return hand.item.kind === 'wine' && hand.item.rarity === barrel.feed[0].rarity
+}
+
+export function jamLook(jam: JamMachine, hand: Hand): string {
+  if (jam.fruit >= JAM_IN && jam.sugar >= JAM_SUGAR && jam.crop !== 'none') {
+    return `Jam machine - working ${Math.floor(jam.progress * 100)}%`
+  }
+  if (jam.crop !== 'none' && hand.kind === 'hold') {
+    const crop = jamCropOf(hand.item)
+    if (crop !== undefined && crop !== jam.crop) return `Jam machine - ${jamCropName(jam.crop)} only`
+  }
+  if (jam.crop === 'none' && jam.fruit === 0 && jam.sugar === 0) return 'Jam machine'
+  const fruitLine =
+    jam.crop === 'none' ? undefined : `Jam machine - ${jam.fruit}/5 ${jamCropName(jam.crop)}`
+  const buf = `${jam.sugar}L / ${JAM_BUFFER}L`
+  if (fruitLine !== undefined) return `${fruitLine}\n${buf}`
+  return buf
+}
+
+function jamFruitOk(jam: JamMachine, hand: Hand): boolean {
+  if (hand.kind !== 'hold') return false
+  const crop = jamCropOf(hand.item)
+  if (crop === undefined) return false
+  if (jam.crop !== 'none' && jam.crop !== crop) return false
+  return true
+}
+
+function jamSugarOk(jam: JamMachine, hand: Hand): boolean {
+  if (hand.kind !== 'hold' || hand.item.kind !== 'sugar') return false
+  return hand.item.liters > 0 && jam.sugar < JAM_BUFFER
 }
 
 function feedKind(item: Item): boolean {

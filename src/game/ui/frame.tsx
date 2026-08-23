@@ -110,6 +110,7 @@ export const Btn = forwardRef<
   {
     children: ReactNode
     onClick?: (e: MouseEvent<HTMLButtonElement>) => void
+    type?: 'button' | 'submit'
     disabled?: boolean
     selected?: boolean
     className?: string
@@ -121,6 +122,7 @@ export const Btn = forwardRef<
   {
     children,
     onClick,
+    type,
     disabled,
     selected,
     className,
@@ -140,7 +142,7 @@ export const Btn = forwardRef<
   return (
     <button
       ref={ref}
-      type="button"
+      type={type ?? 'button'}
       disabled={off}
       className={`relative px-3 pt-3 pb-2 text-left text-base ${face} ${className ?? ''}`}
       data-plus={dataPlus}
@@ -158,6 +160,31 @@ export const Btn = forwardRef<
       />
       <span className="relative block">{children}</span>
     </button>
+  )
+})
+
+export const Field = forwardRef<HTMLInputElement, {
+  name: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  'aria-label': string
+}>(function Field({ name, value, onChange, placeholder, 'aria-label': label }, ref) {
+  return (
+    <input
+      ref={ref}
+      name={name}
+      value={value}
+      aria-label={label}
+      placeholder={placeholder}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      className="w-full select-text border-2 border-ink/30 bg-parch px-2 py-2 font-mono text-sm text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink"
+      onChange={e => onChange(e.target.value)}
+      onFocus={e => e.currentTarget.select()}
+    />
   )
 })
 

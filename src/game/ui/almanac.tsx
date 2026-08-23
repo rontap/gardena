@@ -8,7 +8,9 @@ import { ANNUAL_IDS, TREE_IDS, type TreeId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
-import type { CropId } from '../sim/ids.ts'
+import type { CropId, JamCrop } from '../sim/ids.ts'
+import type { World } from '../sim/world.ts'
+import { JAM_SALE } from '../defs/items.ts'
 import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, treeStage } from '../view/svgs.ts'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 
@@ -43,6 +45,7 @@ const UTIL_IDS = [
   'fertilizer',
   'synth-fertilizer',
   'compost',
+  'sugar',
   'rotary-shovel',
   'diamond-pickaxe',
 ]
@@ -61,6 +64,11 @@ const AUTO_IDS = [
   'chest',
   'grinder',
   'compost-box',
+  'mill',
+  'still',
+  'barrel',
+  'jam',
+  'freezer',
 ]
 
 const TABS = [
@@ -101,7 +109,7 @@ function liters(n: number): string {
 
 const STAGES = ['sprout', 'grow', 'ripe'] as const
 
-export function Almanac({ onClose }: { onClose: () => void }) {
+export function Almanac({ world, onClose }: { world: World; onClose: () => void }) {
   const entries = catalogEntries()
   const [tab, setTab] = useState<Tab>('seeds')
   const [id, setId] = useState(SEED_IDS[0])
@@ -153,7 +161,7 @@ export function Almanac({ onClose }: { onClose: () => void }) {
               ))}
             </div>
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
-              {shownEntry !== undefined && <Pane entry={shownEntry} />}
+              {shownEntry !== undefined && <Pane entry={shownEntry} jam={world.done.has('unlock-preservatives')} />}
             </div>
           </div>
         </Tabs.Root>
@@ -163,11 +171,11 @@ export function Almanac({ onClose }: { onClose: () => void }) {
 
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
-function Pane({ entry }: { entry: CatalogEntry }) {
+function Pane({ entry, jam }: { entry: CatalogEntry; jam: boolean }) {
   const tree = TREE_IDS.find(id => id === entry.id)
-  if (tree !== undefined) return <TreePane id={tree} />
+  if (tree !== undefined) return <TreePane id={tree} jam={jam} />
   const crop = CROP_IDS.find(id => id === entry.id)
-  if (crop !== undefined) return <CropPane id={crop} />
+  if (crop !== undefined) return <CropPane id={crop} jam={jam} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
   return (
     <>
@@ -225,7 +233,7 @@ function RarityTabs({ preview, onPreview }: { preview: Rarity; onPreview: (p: Ra
   )
 }
 
-function CropPane({ id }: { id: CropId }) {
+function CropPane({ id, jam }: { id: CropId; jam: boolean }) {
   const d = CROPS[id]
   const [preview, setPreview] = useState<Rarity>('common')
   const [stage, setStage] = useState(0)
@@ -235,24 +243,22 @@ function CropPane({ id }: { id: CropId }) {
   }, [])
   const ripe = ripeStage(preview)
   const st = statsOf(id, preview, [])
-  const product =
-    id === 'sugar-cane'
-      ? faceGfx({ kind: 'sugar', count: 1, unitSale: st.sale })
-      : faceGfx({
-          kind: 'fruit',
-          crop: id,
-          rarity: preview,
-          count: 1,
-          unitSale: st.sale,
-          freshness: 1,
-          bio: true,
-        })
+  const product = faceGfx({
+    kind: 'fruit',
+    crop: id,
+    rarity: preview,
+    count: 1,
+    unitSale: st.sale,
+    freshness: 1,
+    bio: true,
+  })
+  const jamCrop = id === 'grape' || id === 'raspberry' || id === 'tomato' ? id : undefined
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
       {id === 'sugar-cane' ? (
-        <div className="mb-3 text-base leading-relaxed text-ink/70">Bagged sugar does not rot.</div>
+        <div className="mb-3 text-base leading-relaxed text-ink/70">Mill 5 cane into 2 L sugar.</div>
       ) : null}
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex gap-3">
@@ -266,6 +272,7 @@ function CropPane({ id }: { id: CropId }) {
             dangerouslySetInnerHTML={{ __html: cropInner(id, STAGES[stage] === 'ripe' ? ripe : STAGES[stage]) }}
           />
         </div>
+        {jam && jamCrop !== undefined ? <JamPlate crop={jamCrop} /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -328,7 +335,7 @@ function treeRotMax(): number {
   return Math.max(...TREE_IDS.map(id => CROPS[id].rotSeconds))
 }
 
-function TreePane({ id }: { id: TreeId }) {
+function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
   const d = CROPS[id]
   const def = TREES[id]
   const [preview, setPreview] = useState<Rarity>('common')
@@ -371,6 +378,7 @@ function TreePane({ id }: { id: TreeId }) {
         <div className="flex h-20 w-10 items-center justify-center bg-grass">
           <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage]) }} />
         </div>
+        {jam && (id === 'apple' || id === 'apricot' || id === 'cherry') ? <JamPlate crop={id} /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -395,6 +403,20 @@ function TreePane({ id }: { id: TreeId }) {
         />
       </div>
     </>
+  )
+}
+
+function JamPlate({ crop }: { crop: JamCrop }) {
+  return (
+    <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
+      <svg
+        className="h-16 w-16"
+        viewBox="0 0 24 24"
+        dangerouslySetInnerHTML={{
+          __html: faceGfx({ kind: 'jam', crop, count: 1, unitSale: JAM_SALE[crop] }),
+        }}
+      />
+    </div>
   )
 }
 

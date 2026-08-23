@@ -8,6 +8,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/tutorial]]
 - [[ui/place]]
 - [[ui/inspect]]
+- [[ui/machines]]
 - [[ui/shop]]
 - [[ui/cheat]]
 - [[ui/market]]

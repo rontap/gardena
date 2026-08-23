@@ -100,17 +100,17 @@ Closed copy: “Stall closed until morning.” / “Stall closed at twilight.”
 At `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
-- heirloom: `rarity === 'heirloom'` of every stall good × `(1 + 0.05 × tier)`
-- bio: crop fruit `bio === true` × `(1 + 0.03 × tier)`. Not sugar
-- jam: `freshMul` floored to `0.10 / 0.20 / 0.30 / 0.40 / 0.50` by owned tier
-- clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar does not rot
+- heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
+- bio: crop fruit `bio === true` × `(1 + 0.03 × tier)`. Not sugar / machine goods
+- jam: `freshMul` floored to `0.10 / 0.20 / 0.30 / 0.40 / 0.50` by owned tier. Not the jam machine
+- clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar and machine goods do not rot
 
 Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `fruit.bio`.
 
 ## Other effects
 
 - boots: `WALK × (1 + 0.05 × tier)`
-- machinery: `GRIND_WORK` and valve 0.3s `÷ (1 + 0.05 × tier)`. Pipe place stays 0
+- machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`
 - tool-contracts: utility tab `skuPrice` `− $tier` then min $1
 - machine-contracts: automation tab `skuPrice` `− $tier` then min $1

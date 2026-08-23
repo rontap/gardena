@@ -16,6 +16,7 @@ import {
   UI_BTN_MARKET,
   UI_BTN_MULTIPLAYER,
   UI_BTN_PAUSE,
+  UI_BTN_PLAY,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
   UI_BTN_SHOP,
@@ -38,11 +39,11 @@ const PLACE_TOOLS = [
   'buy-sprinkler-large',
   'buy-chest',
   'buy-grinder',
-  'buy-compost-box',
-  'buy-tile-cobble',
-  'buy-tile-brick',
-  'buy-tile-paved',
-  'buy-fence',
+  'buy-mill',
+  'buy-jam',
+  'buy-still',
+  'buy-barrel',
+  'buy-freezer',
 ] as const
 
 export function Hud({
@@ -60,6 +61,7 @@ export function Hud({
   onGear,
   onPause,
   onMultiplayer,
+  net,
 }: {
   world: World
   panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat' | 'menu' | 'multiplayer'
@@ -75,6 +77,8 @@ export function Hud({
   onGear: () => void
   onPause: () => void
   onMultiplayer: () => void
+  /** Live link state ('Catching up', 'Reconnecting 2 of 3'); absent when the link is healthy. */
+  net: string | undefined
 }) {
   const job = world.job
   const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
@@ -130,6 +134,12 @@ export function Hud({
             )}
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {net !== undefined && (
+              <span className="flex items-center gap-1.5 border border-ink/20 bg-parch px-2 py-1 text-sm text-ink/70">
+                <span aria-hidden className="size-2 shrink-0 animate-pulse bg-ripe" />
+                {net}
+              </span>
+            )}
             <div className="flex items-center gap-2 text-sm text-ink/45">
               <span>digs {world.digs}</span>
               <span>·</span>
@@ -182,8 +192,14 @@ function GearBtn({ selected, onClick }: { selected: boolean; onClick: () => void
 }
 
 function PauseBtn({ selected, onClick }: { selected: boolean; onClick: () => void }) {
+  // Paused shows play: the icon is the action you get, not the state you are in.
   return (
-    <IconButton art={UI_BTN_PAUSE} label={selected ? 'Resume' : 'Pause'} selected={selected} onClick={onClick} />
+    <IconButton
+      art={selected ? UI_BTN_PLAY : UI_BTN_PAUSE}
+      label={selected ? 'Resume' : 'Pause'}
+      selected={selected}
+      onClick={onClick}
+    />
   )
 }
 

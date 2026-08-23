@@ -7,7 +7,8 @@ import { ItemFace, ItemLineView } from './held.tsx'
 
 export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const cell = world.cell(at)
-  if (cell.kind !== 'chest') return null
+  if (cell.kind !== 'chest' && cell.kind !== 'freezer') return null
+  const title = cell.kind === 'freezer' ? 'Freezer' : 'Chest'
   return (
     <Dialog.Root
       open
@@ -18,8 +19,8 @@ export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClo
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-20 bg-ink/50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 outline-none">
-          <Frame title="Chest" onClose={onClose}>
-            <Dialog.Title className="sr-only">Chest</Dialog.Title>
+          <Frame title={title} onClose={onClose}>
+            <Dialog.Title className="sr-only">{title}</Dialog.Title>
             <div className="grid grid-cols-3 gap-2">
               {cell.slots.map((slot, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">

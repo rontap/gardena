@@ -6,11 +6,16 @@ import {
   CONTAINERS,
   HANGAR_H,
   HANGAR_W,
+  HARVEST_SLOTS,
   HEADING_SOUTH,
-  QUAD_ACCEL,
   QUAD_FUEL_SECONDS,
   QUAD_PRICE,
   QUAD_REFILL,
+  TRACTOR_PRICE,
+  TRAILER_CAP,
+  TRAILER_HARVEST_PRICE,
+  TRAILER_SEED_PRICE,
+  TRAILER_SPRAY_PRICE,
   GRASS_GROW,
   GRASS_WATER_PER_SEC,
   GRIND_MAX,
@@ -53,9 +58,13 @@ import type {
   PlayerSkillId,
   ResearchId,
   SkillId,
+  HarvestSlot,
   SkuId,
   StallGoodId,
+  TrailerId,
+  TrailerKind,
   VehicleId,
+  VehicleKind,
   VehicleSlot,
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
@@ -71,6 +80,9 @@ import {
   Grinder,
   Hangar,
   HOUSE_BASE,
+  SiloProduce,
+  SiloSeed,
+  SiloSpray,
   House,
   JamMachine,
   Mill,
@@ -214,14 +226,26 @@ import {
 import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
 import {
+  boomHits,
+  cargoCount,
+  emptyHarvestSlots,
   emptyVehicleSlots,
+  followHitch,
   hangarPad,
+  hitchP,
   integrateVehicle,
+  kindAccel,
+  kindVMax,
+  kindYaw,
+  makeQuad,
+  makeTractor,
   padCenter,
   seekSpeed,
   surfaceMul,
-  Vehicle,
+  trailerUsed,
   type Drive,
+  type Trailer,
+  type Vehicle,
 } from './vehicle.ts'
 
 export type Intent =
@@ -278,6 +302,7 @@ export type TaskName =
   | 'Jam'
   | 'Vehicle hangar'
   | 'Quad'
+  | 'Tractor'
   | 'Embark'
   | 'Valve'
   | 'Tend'
@@ -376,8 +401,13 @@ export type Hydrate = {
   taps: Tap[]
   stills: PotStill[]
   hangars: Hangar[]
+  seedSilos: SiloSeed[]
+  spraySilos: SiloSpray[]
+  produceSilos: SiloProduce[]
   vehicles: Vehicle[]
   nextVehicleId: VehicleId
+  trailers: Trailer[]
+  nextTrailerId: TrailerId
   stall: StallMap
   family: Family
   seats: Seat[]
@@ -539,8 +569,13 @@ export class World {
   readonly taps: Tap[] = []
   readonly stills: PotStill[] = []
   readonly hangars: Hangar[] = []
+  readonly seedSilos: SiloSeed[] = []
+  readonly spraySilos: SiloSpray[] = []
+  readonly produceSilos: SiloProduce[] = []
   readonly vehicles: Vehicle[] = []
   nextVehicleId: VehicleId = 1
+  readonly trailers: Trailer[] = []
+  nextTrailerId: TrailerId = 1
   readonly segments = new Map<string, Segment>()
   readonly wells = new Map<string, Well>()
   readonly fences = new Set<string>()
@@ -602,9 +637,18 @@ export class World {
       this.stills = h.stills
       this.hangars.length = 0
       h.hangars.forEach(x => this.hangars.push(x))
+      this.seedSilos.length = 0
+      h.seedSilos.forEach(x => this.seedSilos.push(x))
+      this.spraySilos.length = 0
+      h.spraySilos.forEach(x => this.spraySilos.push(x))
+      this.produceSilos.length = 0
+      h.produceSilos.forEach(x => this.produceSilos.push(x))
       this.vehicles.length = 0
       h.vehicles.forEach(x => this.vehicles.push(x))
       this.nextVehicleId = h.nextVehicleId
+      this.trailers.length = 0
+      h.trailers.forEach(x => this.trailers.push(x))
+      this.nextTrailerId = h.nextTrailerId
       this.stall = h.stall
       this.family = h.family
       this.seats = h.seats
@@ -889,10 +933,13 @@ export class World {
         this.driveBody(cmd.throttle, cmd.steer)
         return
       case Act.buyVehicle:
-        this.buyVehicleBody({ col: cmd.c[0], row: cmd.c[1] })
+        this.buyVehicleBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.k)
+        return
+      case Act.buyTrailer:
+        this.buyTrailerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.k)
         return
       case Act.deploy:
-        this.deployBody(cmd.v, { col: cmd.c[0], row: cmd.c[1] })
+        this.deployBody(cmd.v, { col: cmd.c[0], row: cmd.c[1] }, cmd.hitch)
         return
       case Act.embark:
         this.embarkBody(cmd.v)
@@ -905,6 +952,9 @@ export class World {
         return
       case Act.swapVehicle:
         this.swapVehicleBody(cmd.v, cmd.i)
+        return
+      case Act.swapTrailer:
+        this.swapTrailerBody(cmd.u, cmd.i)
         return
       case Act.refill:
         this.refillBody({ col: cmd.c[0], row: cmd.c[1] })
@@ -1546,6 +1596,18 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'silo-seed' || c.kind === 'silo-spray' || c.kind === 'silo-produce') {
+      occupiedCells(c.base, this.owned).forEach(p => {
+        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
+      })
+      if (c.kind === 'silo-seed') this.seedSilos.splice(this.seedSilos.indexOf(c), 1)
+      else if (c.kind === 'silo-spray') this.spraySilos.splice(this.spraySilos.indexOf(c), 1)
+      else this.produceSilos.splice(this.produceSilos.indexOf(c), 1)
+      const name = c.kind === 'silo-seed' ? 'seeding silo' : c.kind === 'silo-spray' ? 'spraying silo' : 'produce silo'
+      this.pulse = { text: `Delete ${name}`, at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind !== 'grinder') return
     this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
     this.pulse = { text: 'Delete grinder', at: { ...at } }
@@ -1837,8 +1899,11 @@ export class World {
         return 'Jam'
       case 'hangar':
         return 'Vehicle hangar'
-      case 'vehicle':
-        return 'Quad'
+      case 'vehicle': {
+        const v = this.vehicles.find(x => x.id === i.id)
+        if (v === undefined) throw new Error('vehicle')
+        return v.kind === 'tractor' ? 'Tractor' : 'Quad'
+      }
       case 'embark':
         return 'Embark'
       case 'valve':
@@ -1991,20 +2056,39 @@ export class World {
       this.act.place.id === 'buy-still' ||
       this.act.place.id === 'buy-barrel' ||
       this.act.place.id === 'buy-freezer' ||
-      this.act.place.id === 'buy-hangar'
+      this.act.place.id === 'buy-hangar' ||
+      this.act.place.id === 'buy-silo-seed' ||
+      this.act.place.id === 'buy-silo-spray' ||
+      this.act.place.id === 'buy-silo-produce'
     ) {
-      if (this.act.place.id === 'buy-hangar') {
+      if (
+        this.act.place.id === 'buy-hangar' ||
+        this.act.place.id === 'buy-silo-seed' ||
+        this.act.place.id === 'buy-silo-spray' ||
+        this.act.place.id === 'buy-silo-produce'
+      ) {
         if (!hangarSiteOk(this, at)) return
         this.money -= price
         const base = { shape: 'rect' as const, col: at.col, row: at.row, w: HANGAR_W, h: HANGAR_H }
-        const made = new Hangar(base)
-        this.hangars.push(made)
+        const sku = this.act.place.id
+        const made =
+          sku === 'buy-hangar'
+            ? new Hangar(base)
+            : sku === 'buy-silo-seed'
+              ? new SiloSeed(base)
+              : sku === 'buy-silo-spray'
+                ? new SiloSpray(base)
+                : new SiloProduce(base)
+        if (made.kind === 'hangar') this.hangars.push(made)
+        else if (made.kind === 'silo-seed') this.seedSilos.push(made)
+        else if (made.kind === 'silo-spray') this.spraySilos.push(made)
+        else this.produceSilos.push(made)
         for (let row = 0; row < HANGAR_H; row++) {
           for (let col = 0; col < HANGAR_W; col++) {
             this.setCell({ col: at.col + col, row: at.row + row }, made)
           }
         }
-        this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
+        this.pulse = { text: `Place ${placeLabel(sku)}`, at: { ...at } }
         this.act.place = { kind: 'none' }
         this.ping()
         return
@@ -2061,10 +2145,14 @@ export class World {
       made.kind === 'barrel' ||
       made.kind === 'freezer' ||
       made.kind === 'hangar' ||
+      made.kind === 'silo-seed' ||
+      made.kind === 'silo-spray' ||
+      made.kind === 'silo-produce' ||
       made.kind === 'sugar'
     ) {
       return
-    }    this.money -= price
+    }
+    this.money -= price
     this.drops.push({ at: { ...at }, item: made })
     this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
     this.act.place = { kind: 'none' }
@@ -2136,29 +2224,53 @@ export class World {
     this.ping()
   }
 
-  buyVehicle(at: Coord): void {
-    this.commit({ a: Act.buyVehicle, t: this.now, p: this.local, c: [at.col, at.row] })
+  buyVehicle(at: Coord, k: VehicleKind): void {
+    this.commit({ a: Act.buyVehicle, t: this.now, p: this.local, c: [at.col, at.row], k })
   }
 
-  private buyVehicleBody(at: Coord): void {
+  private buyVehicleBody(at: Coord, k: VehicleKind): void {
     if (!this.done.has('unlock-vehicles')) return
-    if (this.money < QUAD_PRICE) return
+    const price = k === 'quad' ? QUAD_PRICE : TRACTOR_PRICE
+    if (this.money < price) return
     const origin = this.hangarOrigin(at)
     if (origin === undefined) return
-    this.money -= QUAD_PRICE
+    this.money -= price
     const id = this.nextVehicleId
     this.nextVehicleId += 1
-    this.vehicles.push(
-      new Vehicle(id, 'quad', 1, emptyVehicleSlots(), { kind: 'stored', hangar: { ...origin } }),
-    )
+    const pose = { kind: 'stored' as const, hangar: { ...origin } }
+    this.vehicles.push(k === 'quad' ? makeQuad(id, 1, emptyVehicleSlots(), pose) : makeTractor(id, 1, 'none', pose))
     this.ping()
   }
 
-  deploy(id: VehicleId, at: Coord): void {
-    this.commit({ a: Act.deploy, t: this.now, p: this.local, v: id, c: [at.col, at.row] })
+  buyTrailer(at: Coord, k: TrailerKind): void {
+    this.commit({ a: Act.buyTrailer, t: this.now, p: this.local, c: [at.col, at.row], k })
   }
 
-  private deployBody(id: VehicleId, at: Coord): void {
+  private buyTrailerBody(at: Coord, k: TrailerKind): void {
+    if (!this.done.has('unlock-vehicles')) return
+    const price = k === 'seed' ? TRAILER_SEED_PRICE : k === 'spray' ? TRAILER_SPRAY_PRICE : TRAILER_HARVEST_PRICE
+    if (this.money < price) return
+    const origin = this.hangarOrigin(at)
+    if (origin === undefined) return
+    this.money -= price
+    const id = this.nextTrailerId
+    this.nextTrailerId += 1
+    const pose = { kind: 'stored' as const, hangar: { ...origin } }
+    const trailer: Trailer =
+      k === 'seed'
+        ? { kind: 'seed', id, pose, hopper: { kind: 'empty' } }
+        : k === 'spray'
+          ? { kind: 'spray', id, pose, hopper: { kind: 'empty' } }
+          : { kind: 'harvest', id, pose, slots: emptyHarvestSlots() }
+    this.trailers.push(trailer)
+    this.ping()
+  }
+
+  deploy(id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
+    this.commit({ a: Act.deploy, t: this.now, p: this.local, v: id, c: [at.col, at.row], hitch })
+  }
+
+  private deployBody(id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
     const v = this.vehicles.find(x => x.id === id)
     if (v === undefined || v.pose.kind !== 'stored') return
     if (this.driverVehicle(this.act.id) !== undefined) return
@@ -2168,6 +2280,15 @@ export class World {
     if (hangar.kind !== 'hangar') return
     const pad = padCenter(hangar.base)
     if (!this.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
+    if (v.kind === 'quad' && hitch !== 'none') return
+    let trailer: Trailer | undefined
+    if (v.kind === 'tractor') {
+      if (hitch !== 'none') {
+        trailer = this.trailers.find(x => x.id === hitch)
+        if (trailer === undefined || trailer.pose.kind !== 'stored') return
+      }
+      v.hitch = hitch
+    }
     v.pose = {
       kind: 'field',
       x: pad.x,
@@ -2175,6 +2296,9 @@ export class World {
       heading: HEADING_SOUTH,
       speed: 0,
       driver: this.act.id,
+    }
+    if (trailer !== undefined) {
+      trailer.pose = { kind: 'attached', vehicle: id, heading: HEADING_SOUTH }
     }
     this.act.drive = { throttle: 0, steer: 0 }
     this.act.queue.length = 0
@@ -2231,7 +2355,13 @@ export class World {
     if (hangar === undefined) return
     const x = v.pose.x
     const y = v.pose.y
-    v.pose = { kind: 'stored', hangar: { col: hangar.base.col, row: hangar.base.row } }
+    const origin = { col: hangar.base.col, row: hangar.base.row }
+    if (v.kind === 'tractor' && v.hitch !== 'none') {
+      const t = this.trailers.find(x => x.id === v.hitch)
+      if (t !== undefined) t.pose = { kind: 'stored', hangar: origin }
+      v.hitch = 'none'
+    }
+    v.pose = { kind: 'stored', hangar: origin }
     this.act.actor.x = x
     this.act.actor.y = y
     this.act.drive = { throttle: 0, steer: 0 }
@@ -2245,11 +2375,62 @@ export class World {
 
   private swapVehicleBody(id: VehicleId, i: VehicleSlot): void {
     const v = this.vehicles.find(x => x.id === id)
-    if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
     const held = this.act.hand
     this.act.hand = v.slots[i]
     v.slots[i] = held
     compactSlots(v.slots)
+    this.ping()
+  }
+
+  swapTrailer(u: TrailerId, i: HarvestSlot): void {
+    this.commit({ a: Act.swapTrailer, t: this.now, p: this.local, u, i })
+  }
+
+  private swapTrailerBody(u: TrailerId, i: HarvestSlot): void {
+    const t = this.trailers.find(x => x.id === u)
+    if (t === undefined || t.pose.kind !== 'attached') return
+    const hitch = t.pose.vehicle
+    const v = this.vehicles.find(x => x.id === hitch)
+    if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    if (t.kind === 'seed') {
+      if (i !== 0) return
+      const hand = this.act.hand
+      if (hand.kind === 'hold') {
+        if (hand.item.kind !== 'seeds') return
+        if (hand.item.count > TRAILER_CAP) return
+        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+        t.hopper = { kind: 'hold', item: hand.item }
+      } else {
+        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+        t.hopper = { kind: 'empty' }
+      }
+      this.ping()
+      return
+    }
+    if (t.kind === 'spray') {
+      if (i !== 0) return
+      const hand = this.act.hand
+      if (hand.kind === 'hold') {
+        if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'synth' && hand.item.kind !== 'compost') return
+        if (Math.floor(hand.item.liters) > TRAILER_CAP) return
+        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+        t.hopper = { kind: 'hold', item: hand.item }
+      } else {
+        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+        t.hopper = { kind: 'empty' }
+      }
+      this.ping()
+      return
+    }
+    const slot = t.slots[i]
+    const incoming = this.act.hand.kind === 'hold' ? cargoCount(this.act.hand.item) : 0
+    const outgoing = slot.kind === 'hold' ? cargoCount(slot.item) : 0
+    if (trailerUsed(t) - outgoing + incoming > TRAILER_CAP) return
+    const held = this.act.hand
+    this.act.hand = slot
+    t.slots[i] = held
+    compactSlots(t.slots)
     this.ping()
   }
 
@@ -2294,9 +2475,7 @@ export class World {
   }
 
   hangarStores(origin: Coord): boolean {
-    return this.vehicles.some(
-      v => v.pose.kind === 'stored' && v.pose.hangar.col === origin.col && v.pose.hangar.row === origin.row,
-    )
+    return this.vehicles.some(v => storedHere(v.pose, origin)) || this.trailers.some(t => storedHere(t.pose, origin))
   }
 
   hangarAtPad(at: Coord): Hangar | undefined {
@@ -2320,27 +2499,112 @@ export class World {
     this.vehicles.forEach(v => {
       if (v.pose.kind !== 'field') return
       const pose = v.pose
+      const before = { x: pose.x, y: pose.y, heading: pose.heading }
       const driver = pose.driver === 'none' ? undefined : this.seats[pose.driver]
+      const accel = kindAccel(v.kind)
       if (driver === undefined) {
-        pose.speed = seekSpeed(pose.speed, 0, QUAD_ACCEL, dt)
+        pose.speed = seekSpeed(pose.speed, 0, accel, dt)
         const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
         const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
         if (this.inWorld({ col: Math.floor(nx), row: Math.floor(ny) })) {
           pose.x = nx
           pose.y = ny
         }
-        return
+      } else {
+        if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
+          const next = v.fuel - dt / QUAD_FUEL_SECONDS
+          v.fuel = next < 0 ? 0 : next
+        }
+        const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
+        const surface = surfaceMul(this.cell(at))
+        integrateVehicle(
+          pose,
+          driver.drive,
+          dt,
+          v.fuel,
+          this.machineMul(),
+          surface,
+          p => this.inWorld(p),
+          kindVMax(v.kind),
+          accel,
+          kindYaw(v.kind),
+        )
+        driver.actor.x = pose.x
+        driver.actor.y = pose.y
       }
-      if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
-        const next = v.fuel - dt / QUAD_FUEL_SECONDS
-        v.fuel = next < 0 ? 0 : next
+      if (v.kind === 'tractor' && v.hitch !== 'none') {
+        const t = this.trailers.find(x => x.id === v.hitch)
+        if (t !== undefined && t.pose.kind === 'attached') {
+          followHitch(t.pose, before, pose)
+          this.boom(v, t, driver, t.pose.heading)
+        }
       }
-      const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
-      const surface = surfaceMul(this.cell(at))
-      integrateVehicle(pose, driver.drive, dt, v.fuel, this.machineMul(), surface, p => this.inWorld(p))
-      driver.actor.x = pose.x
-      driver.actor.y = pose.y
     })
+  }
+
+  private boom(v: Extract<Vehicle, { kind: 'tractor' }>, t: Trailer, driver: Seat | undefined, heading: number): void {
+    if (v.pose.kind !== 'field') return
+    if (driver === undefined) return
+    if (driver.drive.steer !== 0) return
+    if (v.pose.speed <= 0) return
+    const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
+    boomHits(p, heading, at => this.inWorld(at)).forEach(at => this.boomCell(t, at))
+  }
+
+  private boomCell(t: Trailer, at: Coord): void {
+    const c = this.cell(at)
+    if (t.kind === 'seed') {
+      if (t.hopper.kind === 'empty') return
+      if (c.kind !== 'empty') return
+      const seeds = t.hopper.item
+      this.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.rarity) })
+      seeds.count -= 1
+      if (seeds.count === 0) t.hopper = { kind: 'empty' }
+      return
+    }
+    if (t.kind === 'spray') {
+      if (t.hopper.kind === 'empty') return
+      if (!isTilled(c) || c.soil.fertilizer >= FERT_PLOT_MAX) return
+      const bag = t.hopper.item
+      const need = FERT_PLOT_MAX - c.soil.fertilizer
+      const use = need > bag.liters ? bag.liters : need
+      if (bag.kind === 'synth') c.soil.spike(use)
+      else c.soil.feed(use)
+      bag.liters -= use
+      if (bag.liters <= 0) t.hopper = { kind: 'empty' }
+      return
+    }
+    if (c.kind === 'tree' || c.kind === 'turf') return
+    const item = this.harvestItem(c)
+    if (item === undefined) {
+      if (c.kind === 'growing' && c.plant.maturity >= 0.2 && c.plant.maturity <= 0.8) {
+        this.setCell(at, { kind: 'empty', soil: c.soil })
+      }
+      return
+    }
+    if (!harvestInsert(t.slots, item)) return
+    if (c.kind === 'ripe') this.tally.harvests += 1
+    if (isTilled(c)) this.setCell(at, { kind: 'empty', soil: c.soil })
+  }
+
+  private harvestItem(c: Cell): Item | undefined {
+    if (c.kind === 'ripe') {
+      const p = c.plant
+      return { kind: 'fruit', ...fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio) }
+    }
+    if (c.kind === 'growing') {
+      const m = c.plant.maturity
+      if (m < 0.2) return { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 }
+      if (m > 0.8) {
+        const p = c.plant
+        return { kind: 'fruit', ...fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, m, p.bio) }
+      }
+      return undefined
+    }
+    if (c.kind === 'dead') return { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 }
+    if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 }
+    if (c.kind === 'weed') return { kind: 'weed', count: 1 }
+    return undefined
   }
 
   unlockAll(): void {
@@ -3249,7 +3513,12 @@ export class World {
       const c = this.cell(at)
       if (c.kind === 'chest') c.slots.forEach(slot)
     })
-    this.vehicles.forEach(v => v.slots.forEach(slot))
+    this.vehicles.forEach(v => {
+      if (v.kind === 'quad') v.slots.forEach(slot)
+    })
+    this.trailers.forEach(t => {
+      if (t.kind === 'harvest') t.slots.forEach(slot)
+    })
   }
 
   private tickMachines(dt: number): void {
@@ -4232,6 +4501,27 @@ function emptyMember<Id extends SkillId>(): MemberState<Id> {
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n))
+}
+
+function harvestInsert(slots: Slot[], item: Item): boolean {
+  const n = cargoCount(item)
+  const used = slots.reduce((s, x) => s + (x.kind === 'hold' ? cargoCount(x.item) : 0), 0)
+  if (used + n > TRAILER_CAP) return false
+  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: s.item }))
+  const empty = copy.findIndex(s => s.kind === 'empty')
+  if (empty >= 0) copy[empty] = { kind: 'hold', item }
+  else copy.push({ kind: 'hold', item })
+  compactSlots(copy)
+  const kept = copy.filter(s => s.kind === 'hold')
+  if (kept.length > HARVEST_SLOTS) return false
+  for (let i = 0; i < HARVEST_SLOTS; i++) {
+    slots[i] = i < kept.length ? kept[i] : { kind: 'empty' }
+  }
+  return true
+}
+
+function storedHere(p: VehiclePose | TrailerPose, origin: Coord): boolean {
+  return p.kind === 'stored' && p.hangar.col === origin.col && p.hangar.row === origin.row
 }
 
 function compactSlots(slots: Slot[]): void {

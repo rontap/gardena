@@ -2,6 +2,13 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.5 Vehicles II
+
+[[mechanics/vehicles]] [[ui/vehicles]] [[art/vehicles]] [[architecture/save]]
+
+- Tractor, three trailers, boom. `TRAILER_CAP` 100 on the dash. Three inert 3×2 silos (**Seeding** / **Spraying** / **Produce**). Hangar-buys. Starter Seed silo unchanged.
+- Save `version` → **1.5**. `PROTOCOL` 1.5. No migrate.
+
 ## 2026-08-23 — 1.4 Vehicles I
 
 [[mechanics/vehicles]] [[ui/vehicles]] [[art/vehicles]] [[architecture/save]]

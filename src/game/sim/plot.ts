@@ -6,6 +6,9 @@ import type {
   Grinder,
   Hangar,
   House,
+  SiloProduce,
+  SiloSeed,
+  SiloSpray,
   JamMachine,
   Mill,
   PotStill,
@@ -57,6 +60,9 @@ export type Cell =
   | WineBarrel
   | Freezer
   | Hangar
+  | SiloSeed
+  | SiloSpray
+  | SiloProduce
   | SeedSilo
   | AdditiveStore
 
@@ -115,6 +121,9 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'still' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
-    c.kind === 'hangar'
+    c.kind === 'hangar' ||
+    c.kind === 'silo-seed' ||
+    c.kind === 'silo-spray' ||
+    c.kind === 'silo-produce'
   )
 }

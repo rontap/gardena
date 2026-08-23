@@ -57,6 +57,9 @@ export const AUTOMATION: SkuId[] = [
   'buy-jam',
   'buy-freezer',
   'buy-hangar',
+  'buy-silo-seed',
+  'buy-silo-spray',
+  'buy-silo-produce',
 ]
 
 const TAB_LINE = {

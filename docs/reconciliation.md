@@ -8,7 +8,7 @@ Not in here, on purpose:
 - Diseases, weather, sensors. Those are not in the game. They will not be written into the working docs.
 - Family / skills are in. [[mechanics/family]].
 - Machines are in. [[mechanics/machines]].
-- Vehicles I is in. [[mechanics/vehicles]].
+- Vehicles I is in. Vehicles II is in. [[mechanics/vehicles]].
 - Renaming buckets back to watering cans, or selling at the house door. The game has buckets and the market truck.
 
 ---

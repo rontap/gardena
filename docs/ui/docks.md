@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad are dialogs. Sprinkler tune is an object HUD on the map. Hangar and vehicle cues are not docks.
+Shop, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune is an object HUD on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]].
 
 ## Left docks
 
@@ -27,7 +27,7 @@ Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after to
 
 [[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
 
-Every dialog and overlay closes on backdrop, except recap until a member is picked, and except guest recap (no dismiss). Radix dialogs (inventory, chest, recap, hangar, parked Quad) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
+Every dialog and overlay closes on backdrop, except recap until a member is picked, and except guest recap (no dismiss). Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 
 ## Inventory
 
@@ -41,9 +41,9 @@ Walk to the seed silo or the additive store → cue → dialog. Deposit happens 
 
 Walk to a chest → cue → dialog **Chest**. 3×3, `CHEST_SLOTS` 9. Click `swapChest(at, i)`. Close acks the cue. Guests: dialog does not open; `swapChest` locked.
 
-## Hangar / parked Quad
+## Hangar / parked vehicle
 
-Walk-up hangar or parked Quad → cue → dialog. Not docks. Not Object HUD. Close acks. Map click closes like chest. Guests: both dialogs open. Driving HUD is overlay chrome, not a dock or dialog; **Dock** is that dash button. [[ui/vehicles]]
+Walk-up hangar or parked Quad / tractor → cue → dialog. Not docks. Not Object HUD. Close acks. Map click closes like chest. Guests: both dialogs open. Driving HUD is overlay chrome, not a dock or dialog; **Dock** is that dash button. Field silos: no cue. [[ui/vehicles]]
 
 ## Recap
 

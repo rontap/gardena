@@ -28,6 +28,13 @@ import {
   HANGAR,
   HANGAR_RETURN,
   QUAD,
+  TRACTOR,
+  TRAILER_HARVEST,
+  TRAILER_SEED,
+  TRAILER_SPRAY,
+  SILO_PRODUCE,
+  SILO_SEED,
+  SILO_SPRAY,
   SEED_SILO,
   JAM,
   MILL,
@@ -67,7 +74,7 @@ import {
   valveArt,
   weedInner,
 } from './svgs.ts'
-import { bindActor, bindBar, bindDummyQuad, bindHud, bindQuad } from './motion.ts'
+import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes'
 
@@ -155,7 +162,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
-  const hangarPlace = placeId === 'buy-hangar'
+  const hangarPlace = placeId === 'buy-hangar' || placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
@@ -467,7 +474,17 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               opacity={0.7}
               transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
             >
-              <Use art={HANGAR} />
+              <Use
+                art={
+                  placeId === 'buy-silo-seed'
+                    ? SILO_SEED
+                    : placeId === 'buy-silo-spray'
+                      ? SILO_SPRAY
+                      : placeId === 'buy-silo-produce'
+                        ? SILO_PRODUCE
+                        : HANGAR
+                }
+              />
             </g>
           )}
           <foreignObject
@@ -488,6 +505,32 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
         {(() => {
           const driven = world.driverVehicle(world.local)
           if (driven === undefined || driven.pose.kind !== 'field') return undefined
+          const hitch =
+            driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
+          if (driven.kind === 'tractor') {
+            return (
+              <g
+                pointerEvents="none"
+                transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
+                style={{ ['--hat']: HAT[world.local] } as CSSProperties}
+              >
+                {hitch !== undefined && hitch.pose.kind === 'attached' && (
+                  <g ref={el => bindDummyTrailer(el)}>
+                    <g transform={`translate(${-0.5 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
+                      <Use
+                        art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST}
+                      />
+                    </g>
+                  </g>
+                )}
+                <g transform={`translate(${-0.375 * TILE},${-0.25 * TILE}) scale(${TILE / 24})`}>
+                  <g ref={el => bindDummyQuad(el)}>
+                    <Use art={TRACTOR} />
+                  </g>
+                </g>
+              </g>
+            )
+          }
           return (
             <g
               pointerEvents="none"
@@ -526,9 +569,17 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       )}
       {hangarPlace && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
-          <svg className="h-16 w-24" viewBox="0 0 72 48">
-            <Use art={HANGAR} />
-          </svg>
+          {placeId === 'buy-hangar' ? (
+            <svg className="h-16 w-24" viewBox="0 0 72 48">
+              <Use art={HANGAR} />
+            </svg>
+          ) : (
+            <svg className="h-24 w-16" viewBox="0 0 48 72">
+              <Use
+                art={placeId === 'buy-silo-seed' ? SILO_SEED : placeId === 'buy-silo-spray' ? SILO_SPRAY : SILO_PRODUCE}
+              />
+            </svg>
+          )}
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
@@ -802,6 +853,15 @@ const Marks = memo(function Marks({
     if (cell.kind === 'hangar' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: HANGAR, kind: cell.kind })
     }
+    if (cell.kind === 'silo-seed' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_SEED, kind: cell.kind })
+    }
+    if (cell.kind === 'silo-spray' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_SPRAY, kind: cell.kind })
+    }
+    if (cell.kind === 'silo-produce' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SILO_PRODUCE, kind: cell.kind })
+    }
     if (cell.kind === 'seed-silo' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: SEED_SILO, kind: cell.kind })
     }
@@ -908,10 +968,10 @@ const Marks = memo(function Marks({
         <Use art={HOUSE} />
       </g>
       {world.driverVehicle(world.local) !== undefined &&
-        world.hangars.flatMap(h =>
+        [...world.hangars, ...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
           hangarPad(h.base).map(p => (
             <g
-              key={`return-${h.base.col},${h.base.row}-${p.col},${p.row}`}
+              key={`return-${h.kind}-${h.base.col},${h.base.row}-${p.col},${p.row}`}
               pointerEvents="none"
               transform={`translate(${p.col * TILE},${p.row * TILE}) scale(${TILE / 24})`}
             >
@@ -919,20 +979,30 @@ const Marks = memo(function Marks({
             </g>
           )),
         )}
-      {world.vehicles.map(v => {
-        if (v.pose.kind !== 'field') return undefined
-        if (v.pose.driver === world.local) return undefined
+      {world.vehicles.flatMap(v => {
+        if (v.pose.kind !== 'field') return []
+        if (v.pose.driver === world.local) return []
         const hat = v.pose.driver === 'none' ? undefined : HAT[v.pose.driver]
-        return (
+        const hitch = v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
+        const nodes = []
+        if (hitch !== undefined && hitch.pose.kind === 'attached') {
+          nodes.push(
+            <g key={`trailer-${hitch.id}`} ref={el => bindTrailer(hitch.id, el)} data-trailer={hitch.id}>
+              <Use art={hitch.kind === 'seed' ? TRAILER_SEED : hitch.kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
+            </g>,
+          )
+        }
+        nodes.push(
           <g
-            key={`quad-${v.id}`}
-            ref={el => bindQuad(v.id, el)}
+            key={`veh-${v.id}`}
+            ref={el => bindQuad(v.id, el, v.kind)}
             data-quad={v.id}
             style={hat === undefined ? undefined : ({ ['--hat']: hat } as CSSProperties)}
           >
-            <Use art={QUAD} />
-          </g>
+            <Use art={v.kind === 'tractor' ? TRACTOR : QUAD} />
+          </g>,
         )
+        return nodes
       })}
       {tints.map(t => (
         <rect
@@ -1185,6 +1255,9 @@ function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
     cell.kind === 'barrel' ||
     cell.kind === 'freezer' ||
     cell.kind === 'hangar' ||
+    cell.kind === 'silo-seed' ||
+    cell.kind === 'silo-spray' ||
+    cell.kind === 'silo-produce' ||
     cell.kind === 'seed-silo' ||
     cell.kind === 'additive-store'
   ) {

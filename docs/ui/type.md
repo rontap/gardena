@@ -12,7 +12,7 @@ One scale, one body face. Set in `src/index.css` under `@theme`. Do not hand-rol
 
 Faces:
 
-- `--font-display` **Press Start 2P**. Window titles, the **Gardena** wordmark, family member names, dash fuel and speed readouts. Nothing else. Never body copy — it does not wrap or scan.
+- `--font-display` **Press Start 2P**. Window titles, the **Gardena** wordmark, family member names, dash fuel and speed readouts, tractor hitch `{used}/100`. Nothing else. Never body copy — it does not wrap or scan.
 - `--font-body` **Nunito**, set on `html, body, #root`. Everything else. Weights 400 / 600 / 700; `font-semibold` carries emphasis, colour opacity (`text-ink/55`, `/45`) carries de-emphasis.
 
 Display text sits one or two steps *below* the body size it heads — `text-sm` Press Start 2P reads larger than `text-base` Nunito.

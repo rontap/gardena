@@ -27,9 +27,10 @@ import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
-import { QUAD_SHOW_MUL } from './game/defs/items.ts'
-import { UI_DASH_QUAD } from './game/view/svgs.ts'
-import type { VehicleId } from './game/sim/ids.ts'
+import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
+import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
+import type { TrailerId, VehicleId } from './game/sim/ids.ts'
+import { trailerUsed } from './game/sim/vehicle.ts'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
@@ -97,6 +98,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
+  const [hangarTrailer, setHangarTrailer] = useState<TrailerId | undefined>(undefined)
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
   const [paused, setPaused] = useState(false)
@@ -806,10 +808,16 @@ export default function App({ sink }: { sink: WorkerSink }) {
               world={world}
               at={panel.at}
               selected={hangarPick}
-              onSelect={setHangarPick}
+              selectedTrailer={hangarTrailer}
+              onSelect={id => {
+                setHangarPick(id)
+                setHangarTrailer(undefined)
+              }}
+              onSelectTrailer={setHangarTrailer}
               onClose={() => {
                 world.ackCue()
                 setHangarPick(undefined)
+                setHangarTrailer(undefined)
                 setPanel({ kind: 'none' })
               }}
             />
@@ -886,6 +894,8 @@ function Dash({ world }: { world: World }) {
   const driven = world.driverVehicle(world.local)
   if (driven === undefined || driven.pose.kind !== 'field') return null
   const onPad = world.hangarAtPad({ col: Math.floor(driven.pose.x), row: Math.floor(driven.pose.y) }) !== undefined
+  const hitch =
+    driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
   return (
     <div
       ref={el => bindDash(el)}
@@ -894,7 +904,7 @@ function Dash({ world }: { world: World }) {
       <div className="relative">
         <div
           className="pointer-events-none w-full [&_svg]:block [&_svg]:w-full"
-          dangerouslySetInnerHTML={{ __html: UI_DASH_QUAD }}
+          dangerouslySetInnerHTML={{ __html: driven.kind === 'tractor' ? UI_DASH_TRACTOR : UI_DASH_QUAD }}
         />
         <div className="pointer-events-none absolute inset-0">
           <div
@@ -907,7 +917,7 @@ function Dash({ world }: { world: World }) {
               height: `${(14 / 64) * 100}%`,
             }}
           >
-            {`Fuel: ${Math.floor(driven.fuel * 100)}%`}
+            {`F: ${Math.floor(driven.fuel * 100)}%`}
           </div>
           <div
             data-dash-speed
@@ -919,8 +929,22 @@ function Dash({ world }: { world: World }) {
               height: `${(14 / 64) * 100}%`,
             }}
           >
-            {`Speed: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`}
+            {`V: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`}
           </div>
+          {hitch !== undefined && (
+            <div
+              data-dash-used
+              className="absolute flex items-center justify-center font-display text-xs tabular-nums text-ink"
+              style={{
+                left: `${(208 / 240) * 100}%`,
+                top: `${(38 / 64) * 100}%`,
+                width: `${(30 / 240) * 100}%`,
+                height: `${(14 / 64) * 100}%`,
+              }}
+            >
+              {`${trailerUsed(hitch)}/${TRAILER_CAP}`}
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-2 flex justify-center gap-2">

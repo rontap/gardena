@@ -7,7 +7,7 @@ Centered overlay, `w-[36rem]`, `max-h-[min(36rem,calc(100%-6rem))]`. Title **Alm
 | Seeds | carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass rotten dead |
 | Trees | apple apricot lemon cherry |
 | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer compost sugar |
-| Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer hangar |
+| Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-spray silo-produce |
 
 Crop and Tree panes carry `CROPS.desc` under the name: one plain-language line on how the plant behaves, no numbers. It is also the crop's `CatalogEntry.blurb`.
 
@@ -19,7 +19,7 @@ Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not t
 
 `unlock-preservatives` done: third `h-20 w-20` `bg-dirt-dark` plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
 
-Utility `sugar`: liters bag face. Automation order after compost-box: mill, still, barrel, jam, freezer, hangar. Hangar pane [[ui/vehicles]]. Assumption: hangar is on Automation (item-hangar shop/almanac). No Quad SKU pane.
+Utility `sugar`: liters bag face. Automation order after compost-box: mill, still, barrel, jam, freezer, hangar, silo-seed, silo-spray, silo-produce. Hangar and field silo panes [[ui/vehicles]]. Assumption: hangar and three silos are on Automation. No Quad / tractor / trailer SKU pane.
 
 Apple is not on Seeds.
 

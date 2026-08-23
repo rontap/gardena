@@ -5,7 +5,7 @@ Things the player can hold, buy, plant, or place. Identifiers here. Numbers stay
 - [[items/crops]]
 - [[items/tools]]
 - [[items/irrigation]]
-- [[items/buildings]]
+- [[items/buildings]] — hangar, three field silos (Seeding / Spraying / Produce). Starter Seed silo is not those SKUs.
 - [[items/fertilizer]]
 - [[items/wild]]
 - [[items/tiles]]

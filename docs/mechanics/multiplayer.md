@@ -55,7 +55,7 @@ Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter
 
 Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
 
-**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar), dump mill/jam/still/barrel like compost, hangar HUD, buy Quad, refill, 6-slot `swapVehicle`, embark, disembark, dock, drive, **delete building** (empty hangar), Almanac, lens (if shared family owns the skill), Pause.
+**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce), dump mill/jam/still/barrel like compost, hangar HUD, buy Quad / tractor / trailers, refill, 6-slot `swapVehicle`, `swapTrailer`, embark, disembark, dock, drive, **delete building** (empty hangar), Almanac, lens (if shared family owns the skill), Pause.
 
 House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
 

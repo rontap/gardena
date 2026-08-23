@@ -152,6 +152,9 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
     if (w.hangarStores(origin)) return { kind: 'blocked', text: 'Cannot delete here (stores a vehicle)' }
     return { kind: 'place', text: 'Delete vehicle hangar' }
   }
+  if (cell.kind === 'silo-seed') return { kind: 'place', text: 'Delete seeding silo' }
+  if (cell.kind === 'silo-spray') return { kind: 'place', text: 'Delete spraying silo' }
+  if (cell.kind === 'silo-produce') return { kind: 'place', text: 'Delete produce silo' }
   return { kind: 'blocked', text: 'Cannot delete here' }
 }
 
@@ -240,9 +243,17 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-still' ||
       w.act.place.id === 'buy-barrel' ||
       w.act.place.id === 'buy-freezer' ||
-      w.act.place.id === 'buy-hangar'
+      w.act.place.id === 'buy-hangar' ||
+      w.act.place.id === 'buy-silo-seed' ||
+      w.act.place.id === 'buy-silo-spray' ||
+      w.act.place.id === 'buy-silo-produce'
     ) {
-      if (w.act.place.id === 'buy-hangar') {
+      if (
+        w.act.place.id === 'buy-hangar' ||
+        w.act.place.id === 'buy-silo-seed' ||
+        w.act.place.id === 'buy-silo-spray' ||
+        w.act.place.id === 'buy-silo-produce'
+      ) {
         if (!hangarSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
         return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
       }
@@ -256,8 +267,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
   const cell = w.cell(at)
   const parked = w.parkedAt(at)
-  if (parked !== undefined) return intent('Quad', { act: 'vehicle', id: parked.id })
+  if (parked !== undefined) return intent(parked.kind === 'tractor' ? 'Tractor' : 'Quad', { act: 'vehicle', id: parked.id })
   if (cell.kind === 'hangar') return intent('Vehicle hangar', { act: 'hangar', at })
+  if (cell.kind === 'silo-seed') return { kind: 'blocked', text: 'Seeding silo' }
+  if (cell.kind === 'silo-spray') return { kind: 'blocked', text: 'Spraying silo' }
+  if (cell.kind === 'silo-produce') return { kind: 'blocked', text: 'Produce silo' }
   if (cell.kind === 'house') return intent('Inventory', { act: 'inventory' })
   if (cell.kind === 'truck') {
     if (canConsign(w.act.hand)) return intent('Drop off', { act: 'consign' })

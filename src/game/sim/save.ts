@@ -1,5 +1,5 @@
 import { type CropClass } from '../defs/crops.ts'
-import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, FREEZER_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
+import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
@@ -15,6 +15,9 @@ import {
   Grinder,
   Hangar,
   House,
+  SiloProduce,
+  SiloSeed,
+  SiloSpray,
   JamMachine,
   Mill,
   PotStill,
@@ -62,8 +65,8 @@ import {
   type StillCrop,
   type TileId,
   type TreeId,
+  type TrailerId,
   type VehicleId,
-  type VehicleKind,
 } from './ids.ts'
 import type { FruitStack, Hand, Item, Slot, Stack } from './item.ts'
 import { MemorySink, type LogSink } from './log.ts'
@@ -88,11 +91,11 @@ import {
   type Seam,
   type SkillRef,
 } from './world.ts'
-import { Vehicle } from './vehicle.ts'
+import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer, type TrailerPose, type Vehicle } from './vehicle.ts'
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.4 as const
+export const SAVE_VERSION = 1.5 as const
 
 const INV = 16
 
@@ -158,6 +161,9 @@ export type SaveCell =
   | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[] }
   | { kind: 'hangar'; base: RectBase }
+  | { kind: 'silo-seed'; base: RectBase }
+  | { kind: 'silo-spray'; base: RectBase }
+  | { kind: 'silo-produce'; base: RectBase }
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[] }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[] }
   | { kind: 'truck'; base: RectBase }
@@ -172,19 +178,49 @@ export type SaveSeat = {
   inventory: Slot[]
 }
 
-export type SaveVehicle = {
-  id: VehicleId
-  kind: VehicleKind
-  fuel: number
-  slots: Slot[]
-  pose:
-    | { kind: 'stored'; hangar: Coord }
-    | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
-}
+export type SaveVehicle =
+  | {
+      kind: 'quad'
+      id: VehicleId
+      fuel: number
+      slots: Slot[]
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+    }
+  | {
+      kind: 'tractor'
+      id: VehicleId
+      fuel: number
+      hitch: TrailerId | 'none'
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+    }
+
+export type SaveTrailer =
+  | {
+      kind: 'seed'
+      id: TrailerId
+      pose: TrailerPose
+      hopper: SeedHopper
+    }
+  | {
+      kind: 'spray'
+      id: TrailerId
+      pose: TrailerPose
+      hopper: SprayHopper
+    }
+  | {
+      kind: 'harvest'
+      id: TrailerId
+      pose: TrailerPose
+      slots: Slot[]
+    }
 
 export type Save = {
   game: 'gardena'
-  version: 1.4
+  version: 1.5
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -196,6 +232,8 @@ export type Save = {
   seats: SaveSeat[]
   vehicles: SaveVehicle[]
   nextVehicleId: VehicleId
+  trailers: SaveTrailer[]
+  nextTrailerId: TrailerId
   done: ResearchId[]
   job: { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
   family: {
@@ -235,23 +273,10 @@ export function dump(world: World): Save {
       hand: s.hand,
       inventory: s.inventory.slice(),
     })),
-    vehicles: world.vehicles.map(v => ({
-      id: v.id,
-      kind: v.kind,
-      fuel: v.fuel,
-      slots: v.slots.slice(),
-      pose: v.pose.kind === 'stored'
-        ? { kind: 'stored' as const, hangar: { col: v.pose.hangar.col, row: v.pose.hangar.row } }
-        : {
-            kind: 'field' as const,
-            x: v.pose.x,
-            y: v.pose.y,
-            heading: v.pose.heading,
-            speed: v.pose.speed,
-            driver: v.pose.driver,
-          },
-    })),
+    vehicles: world.vehicles.map(dumpVehicle),
     nextVehicleId: world.nextVehicleId,
+    trailers: world.trailers.map(dumpTrailer),
+    nextTrailerId: world.nextTrailerId,
     done: [...world.done],
     job: world.job,
     family: {
@@ -396,6 +421,9 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
     c.kind === 'hangar' ||
+    c.kind === 'silo-seed' ||
+    c.kind === 'silo-spray' ||
+    c.kind === 'silo-produce' ||
     c.kind === 'seed-silo' ||
     c.kind === 'additive-store' ||
     c.kind === 'truck'
@@ -470,6 +498,12 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'freezer', base: c.base, slots: c.slots.slice() }
     case 'hangar':
       return { kind: 'hangar', base: c.base }
+    case 'silo-seed':
+      return { kind: 'silo-seed', base: c.base }
+    case 'silo-spray':
+      return { kind: 'silo-spray', base: c.base }
+    case 'silo-produce':
+      return { kind: 'silo-produce', base: c.base }
     case 'truck':
       return { kind: 'truck', base: c.base }
   }
@@ -682,6 +716,15 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     if (v === undefined) return undefined
     vehicles.push(v)
   }
+  const trailersIn = arr(rec.trailers)
+  const nextTrailerId = num(rec.nextTrailerId)
+  if (trailersIn === undefined || nextTrailerId === undefined) return undefined
+  const trailers: SaveTrailer[] = []
+  for (const raw of trailersIn) {
+    const t = readTrailer(raw)
+    if (t === undefined) return undefined
+    trailers.push(t)
+  }
   return {
     game: 'gardena',
     version: SAVE_VERSION,
@@ -709,6 +752,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     drops,
     vehicles,
     nextVehicleId,
+    trailers,
+    nextTrailerId,
   }
 }
 
@@ -748,10 +793,13 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
       legStart: { x: s.actor.x, y: s.actor.y },
     })),
     hangars: live.hangars,
-    vehicles: save.vehicles.map(
-      v => new Vehicle(v.id, v.kind, v.fuel, v.slots.slice(), v.pose.kind === 'stored' ? { kind: 'stored', hangar: { ...v.pose.hangar } } : { ...v.pose }),
-    ),
+    seedSilos: live.seedSilos,
+    spraySilos: live.spraySilos,
+    produceSilos: live.produceSilos,
+    vehicles: save.vehicles.map(liveVehicle),
     nextVehicleId: save.nextVehicleId,
+    trailers: save.trailers.map(liveTrailer),
+    nextTrailerId: save.nextTrailerId,
     owned,
     chunks: live.chunks,
     clock: save.clock,
@@ -828,6 +876,9 @@ function stampChunks(
       taps: Tap[]
       stills: PotStill[]
       hangars: Hangar[]
+      seedSilos: SiloSeed[]
+      spraySilos: SiloSpray[]
+      produceSilos: SiloProduce[]
     }
   | undefined {
   const origins = new Map<string, Cell>()
@@ -836,6 +887,9 @@ function stampChunks(
   const taps: Tap[] = []
   const stills: PotStill[] = []
   const hangars: Hangar[] = []
+  const seedSilos: SiloSeed[] = []
+  const spraySilos: SiloSpray[] = []
+  const produceSilos: SiloProduce[] = []
   let house: House | undefined
   let truck: Truck | undefined
   let silo: SeedSilo | undefined
@@ -862,6 +916,9 @@ function stampChunks(
         if (made.kind === 'tap') taps.push(made)
         if (made.kind === 'still') stills.push(made)
         if (made.kind === 'hangar') hangars.push(made)
+        if (made.kind === 'silo-seed') seedSilos.push(made)
+        if (made.kind === 'silo-spray') spraySilos.push(made)
+        if (made.kind === 'silo-produce') produceSilos.push(made)
       }
     }
   }
@@ -896,6 +953,9 @@ function stampChunks(
               inst.kind === 'barrel' ||
               inst.kind === 'freezer' ||
               inst.kind === 'hangar' ||
+              inst.kind === 'silo-seed' ||
+              inst.kind === 'silo-spray' ||
+              inst.kind === 'silo-produce' ||
               inst.kind === 'seed-silo' ||
               inst.kind === 'additive-store' ||
               inst.kind === 'truck'
@@ -915,7 +975,7 @@ function stampChunks(
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills, hangars }
+  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(sc: SaveCell): Cell | undefined {
@@ -1019,6 +1079,12 @@ function makeLive(sc: SaveCell): Cell | undefined {
     }
     case 'hangar':
       return new Hangar(sc.base)
+    case 'silo-seed':
+      return new SiloSeed(sc.base)
+    case 'silo-spray':
+      return new SiloSpray(sc.base)
+    case 'silo-produce':
+      return new SiloProduce(sc.base)
     case 'truck':
       return new Truck(sc.base)
     case 'occ':
@@ -1233,6 +1299,21 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined) return undefined
     return { kind: 'hangar', base }
   }
+  if (kind === 'silo-seed') {
+    const base = readRectBase(o.base)
+    if (base === undefined) return undefined
+    return { kind: 'silo-seed', base }
+  }
+  if (kind === 'silo-spray') {
+    const base = readRectBase(o.base)
+    if (base === undefined) return undefined
+    return { kind: 'silo-spray', base }
+  }
+  if (kind === 'silo-produce') {
+    const base = readRectBase(o.base)
+    if (base === undefined) return undefined
+    return { kind: 'silo-produce', base }
+  }
   if (kind === 'truck') {
     const base = readRectBase(o.base)
     if (base === undefined) return undefined
@@ -1246,40 +1327,165 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   return undefined
 }
 
-function readVehicle(v: unknown): SaveVehicle | undefined {
-  const o = obj(v)
-  if (o === undefined) return undefined
-  const id = num(o.id)
-  if (id === undefined || o.kind !== 'quad') return undefined
-  const fuel = num(o.fuel)
-  if (fuel === undefined) return undefined
-  const slotsIn = arr(o.slots)
-  if (slotsIn === undefined || slotsIn.length !== VEHICLE_SLOTS) return undefined
-  const slots: Slot[] = []
-  for (const s of slotsIn) {
-    const slot = readHand(s)
-    if (slot === undefined) return undefined
-    slots.push(slot)
-  }
-  const poseIn = obj(o.pose)
+function dumpPose(pose: Vehicle['pose']): SaveVehicle['pose'] {
+  return pose.kind === 'stored'
+    ? { kind: 'stored', hangar: { col: pose.hangar.col, row: pose.hangar.row } }
+    : {
+        kind: 'field',
+        x: pose.x,
+        y: pose.y,
+        heading: pose.heading,
+        speed: pose.speed,
+        driver: pose.driver,
+      }
+}
+
+function dumpVehicle(v: Vehicle): SaveVehicle {
+  if (v.kind === 'quad') return { kind: 'quad', id: v.id, fuel: v.fuel, slots: v.slots.slice(), pose: dumpPose(v.pose) }
+  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, pose: dumpPose(v.pose) }
+}
+
+function dumpTrailer(t: Trailer): SaveTrailer {
+  const pose = t.pose.kind === 'stored'
+    ? { kind: 'stored' as const, hangar: { col: t.pose.hangar.col, row: t.pose.hangar.row } }
+    : { kind: 'attached' as const, vehicle: t.pose.vehicle, heading: t.pose.heading }
+  if (t.kind === 'seed') return { kind: 'seed', id: t.id, pose, hopper: t.hopper }
+  if (t.kind === 'spray') return { kind: 'spray', id: t.id, pose, hopper: t.hopper }
+  return { kind: 'harvest', id: t.id, pose, slots: t.slots.slice() }
+}
+
+function liveVehicle(v: SaveVehicle): Vehicle {
+  const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
+  if (v.kind === 'quad') return makeQuad(v.id, v.fuel, v.slots.slice(), pose)
+  return makeTractor(v.id, v.fuel, v.hitch, pose)
+}
+
+function liveTrailer(t: SaveTrailer): Trailer {
+  const pose = t.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...t.pose.hangar } } : { ...t.pose }
+  if (t.kind === 'seed') return { kind: 'seed', id: t.id, pose, hopper: t.hopper }
+  if (t.kind === 'spray') return { kind: 'spray', id: t.id, pose, hopper: t.hopper }
+  return { kind: 'harvest', id: t.id, pose, slots: t.slots.slice() }
+}
+
+function readVehiclePose(v: unknown): SaveVehicle['pose'] | undefined {
+  const poseIn = obj(v)
   if (poseIn === undefined) return undefined
   if (poseIn.kind === 'stored') {
     const hangar = readCoord(poseIn.hangar)
     if (hangar === undefined) return undefined
-    return { id, kind: 'quad', fuel, slots, pose: { kind: 'stored', hangar } }
+    return { kind: 'stored', hangar }
   }
   if (poseIn.kind === 'field') {
     const x = num(poseIn.x)
     const y = num(poseIn.y)
     const heading = num(poseIn.heading)
     const speed = num(poseIn.speed)
-    const driver = poseIn.driver === 'none' || poseIn.driver === 0 || poseIn.driver === 1 || poseIn.driver === 2 || poseIn.driver === 3
-      ? poseIn.driver
-      : undefined
+    const driver =
+      poseIn.driver === 'none' || poseIn.driver === 0 || poseIn.driver === 1 || poseIn.driver === 2 || poseIn.driver === 3
+        ? poseIn.driver
+        : undefined
     if (x === undefined || y === undefined || heading === undefined || speed === undefined || driver === undefined) {
       return undefined
     }
-    return { id, kind: 'quad', fuel, slots, pose: { kind: 'field', x, y, heading, speed, driver } }
+    return { kind: 'field', x, y, heading, speed, driver }
+  }
+  return undefined
+}
+
+function readTrailerPose(v: unknown): TrailerPose | undefined {
+  const poseIn = obj(v)
+  if (poseIn === undefined) return undefined
+  if (poseIn.kind === 'stored') {
+    const hangar = readCoord(poseIn.hangar)
+    if (hangar === undefined) return undefined
+    return { kind: 'stored', hangar }
+  }
+  if (poseIn.kind === 'attached') {
+    const vehicle = num(poseIn.vehicle)
+    const heading = num(poseIn.heading)
+    if (vehicle === undefined || heading === undefined) return undefined
+    return { kind: 'attached', vehicle, heading }
+  }
+  return undefined
+}
+
+function readSlots(v: unknown, n: number): Slot[] | undefined {
+  const slotsIn = arr(v)
+  if (slotsIn === undefined || slotsIn.length !== n) return undefined
+  const slots: Slot[] = []
+  for (const s of slotsIn) {
+    const slot = readHand(s)
+    if (slot === undefined) return undefined
+    slots.push(slot)
+  }
+  return slots
+}
+
+function readVehicle(v: unknown): SaveVehicle | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const id = num(o.id)
+  const fuel = num(o.fuel)
+  const pose = readVehiclePose(o.pose)
+  if (id === undefined || fuel === undefined || pose === undefined) return undefined
+  if (o.kind === 'quad') {
+    const slots = readSlots(o.slots, VEHICLE_SLOTS)
+    if (slots === undefined) return undefined
+    return { kind: 'quad', id, fuel, slots, pose }
+  }
+  if (o.kind === 'tractor') {
+    const hitch = o.hitch === 'none' || typeof o.hitch === 'number' ? o.hitch : undefined
+    if (hitch === undefined) return undefined
+    if (pose.kind === 'stored' && hitch !== 'none') return undefined
+    return { kind: 'tractor', id, fuel, hitch, pose }
+  }
+  return undefined
+}
+
+function readSeedHopper(v: unknown): SeedHopper | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'empty') return { kind: 'empty' }
+  if (o.kind === 'hold') {
+    const item = readItem(o.item)
+    if (item === undefined || item.kind !== 'seeds') return undefined
+    return { kind: 'hold', item }
+  }
+  return undefined
+}
+
+function readSprayHopper(v: unknown): SprayHopper | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'empty') return { kind: 'empty' }
+  if (o.kind === 'hold') {
+    const item = readItem(o.item)
+    if (item === undefined || (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost')) return undefined
+    return { kind: 'hold', item }
+  }
+  return undefined
+}
+
+function readTrailer(v: unknown): SaveTrailer | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const id = num(o.id)
+  const pose = readTrailerPose(o.pose)
+  if (id === undefined || pose === undefined) return undefined
+  if (o.kind === 'seed') {
+    const hopper = readSeedHopper(o.hopper)
+    if (hopper === undefined) return undefined
+    return { kind: 'seed', id, pose, hopper }
+  }
+  if (o.kind === 'spray') {
+    const hopper = readSprayHopper(o.hopper)
+    if (hopper === undefined) return undefined
+    return { kind: 'spray', id, pose, hopper }
+  }
+  if (o.kind === 'harvest') {
+    const slots = readSlots(o.slots, HARVEST_SLOTS)
+    if (slots === undefined) return undefined
+    return { kind: 'harvest', id, pose, slots }
   }
   return undefined
 }

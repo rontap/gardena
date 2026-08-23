@@ -177,7 +177,13 @@ export type SkuId =
   | 'buy-freezer'
   | 'buy-sugar'
   | 'buy-hangar'
+  | 'buy-silo-seed'
+  | 'buy-silo-spray'
+  | 'buy-silo-produce'
 
-export type VehicleKind = 'quad'
+export type VehicleKind = 'quad' | 'tractor'
 export type VehicleId = number
 export type VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5
+export type TrailerKind = 'seed' | 'spray' | 'harvest'
+export type TrailerId = number
+export type HarvestSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7

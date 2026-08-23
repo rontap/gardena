@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8"/>
+<title>power vs water</title>
+<style>
+  body { background: #3a6232; color: #cfc6b0; font: 14px sans-serif; margin: 24px; }
+  h2 { margin: 16px 0 8px; font-size: 14px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; }
+  figure { margin: 0; text-align: center; }
+  figcaption { font-size: 11px; margin-top: 4px; }
+  .tile { image-rendering: pixelated; background: #8a5a32; }
+  .on g#closed { display: none; }
+  .off g#open { display: none; }
+  .on g#closed, .off g#open { visibility: hidden; }
+</style>
+<h2>shop</h2>
+<div class="row">
+  <figure><img class="tile" width="96" height="96" src="item-power-line.svg"/><figcaption>item-power-line</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="item-pipe.svg"/><figcaption>item-pipe</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="item-power-switch.svg"/><figcaption>item-power-switch</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="item-valve.svg"/><figcaption>item-valve</figcaption></figure>
+</div>
+<h2>field</h2>
+<div class="row">
+  <figure><img class="tile" width="96" height="96" src="power-i.svg"/><figcaption>power-i</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="pipe-i.svg"/><figcaption>pipe-i</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="power-l.svg"/><figcaption>power-l</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="pipe-l.svg"/><figcaption>pipe-l</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="power-t.svg"/><figcaption>power-t</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="power-x.svg"/><figcaption>power-x</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="power-stub.svg"/><figcaption>power-stub</figcaption></figure>
+  <figure><img class="tile" width="96" height="96" src="power-source.svg"/><figcaption>power-source</figcaption></figure>
+  <figure>
+    <svg class="tile on" width="96" height="96" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
+      <g id="open">
+        <rect fill="#1c1710" x="0" y="11" width="24" height="4"/>
+        <rect fill="#8a5a32" x="0" y="12" width="24" height="2"/>
+        <rect fill="#d4a017" x="0" y="12" width="24" height="2"/>
+        <rect fill="#1c1710" x="7" y="2" width="10" height="20"/>
+        <rect fill="#4c4844" x="8" y="3" width="8" height="18"/>
+        <rect fill="#8a9198" x="9" y="4" width="6" height="16"/>
+        <rect fill="#1c1710" x="11" y="6" width="2" height="12"/>
+        <rect fill="#2c322c" x="11" y="7" width="2" height="10"/>
+        <rect fill="#1c1710" x="9" y="3" width="6" height="7"/>
+        <rect fill="#d4a017" x="10" y="4" width="4" height="5"/>
+        <rect fill="#d4a017" x="8" y="12" width="8" height="2"/>
+      </g>
+    </svg>
+    <figcaption>switch open</figcaption>
+  </figure>
+  <figure>
+    <svg class="tile off" width="96" height="96" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
+      <g id="closed">
+        <rect fill="#1c1710" x="0" y="11" width="24" height="4"/>
+        <rect fill="#8a5a32" x="0" y="12" width="24" height="2"/>
+        <rect fill="#d4a017" x="0" y="12" width="7" height="2"/>
+        <rect fill="#d4a017" x="17" y="12" width="7" height="2"/>
+        <rect fill="#1c1710" x="7" y="2" width="10" height="20"/>
+        <rect fill="#4c4844" x="8" y="3" width="8" height="18"/>
+        <rect fill="#8a9198" x="9" y="4" width="6" height="16"/>
+        <rect fill="#1c1710" x="11" y="6" width="2" height="12"/>
+        <rect fill="#2c322c" x="11" y="7" width="2" height="10"/>
+        <rect fill="#1c1710" x="9" y="14" width="6" height="7"/>
+        <rect fill="#c43c3c" x="10" y="15" width="4" height="5"/>
+      </g>
+    </svg>
+    <figcaption>switch closed</figcaption>
+  </figure>
+  <figure><img class="tile" width="96" height="96" src="pipe-valve.svg"/><figcaption>pipe-valve (both)</figcaption></figure>
+</div>

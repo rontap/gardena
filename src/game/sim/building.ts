@@ -335,6 +335,30 @@ export class Hangar {
   }
 }
 
+export class SiloSeed {
+  readonly kind = 'silo-seed' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class SiloSpray {
+  readonly kind = 'silo-spray' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+export class SiloProduce {
+  readonly kind = 'silo-produce' as const
+  readonly base: RectBase
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
 /**
  * Shared contract for storage buildings: a capacity and the flag that marks which
  * instance a shop purchase flows into. Only one default exists per store kind today

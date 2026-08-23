@@ -67,4 +67,4 @@ Held sugar: **Sugar - {n}L**.
 
 ## Vehicles
 
-Hangar and parked Quad: look and prompt [[ui/vehicles]]. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
+Hangar, parked Quad, parked tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.

@@ -21,6 +21,8 @@
 | 2×1 pump | `0 0 48 24` |
 | 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |
+| 1×2.5 windmill | `0 0 24 60` |
+| 2×2 generator | `0 0 48 48` |
 
 Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
 
@@ -40,4 +42,4 @@ Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon u
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]].

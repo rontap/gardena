@@ -1,10 +1,10 @@
 import { RESEARCH } from '../defs/research.ts'
-import { COMPOST_NEED, QUAD_SHOW_MUL, QUAD_VMAX } from '../defs/items.ts'
+import { COMPOST_NEED, QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
 import { SOIL_WATER_MAX } from '../sim/soil.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
 import type { VehicleId } from '../sim/ids.ts'
-import { wrapHeading } from '../sim/vehicle.ts'
+import { hitchP, kindVMax, trailerCenter, trailerUsed, wrapHeading } from '../sim/vehicle.ts'
 import type { SeatId, World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
 import { symHref, UI_PHASE } from './svgs.ts'
@@ -28,9 +28,13 @@ type ActorEntry = { el: SVGGElement; transform: string; visibility: string }
 
 const actors = new Map<SeatId, ActorEntry>()
 
-type QuadEntry = { el: SVGGElement; transform: string; x: number; y: number; heading: number; snap: boolean }
+type QuadEntry = { el: SVGGElement; transform: string; x: number; y: number; heading: number; snap: boolean; kind: 'quad' | 'tractor' }
 
-const quads = new Map<VehicleId, QuadEntry>()
+const quads = new Map<VehicleId, QuadEntry>
+
+type TrailerEntry = { el: SVGGElement; transform: string }
+
+const trailers = new Map<number, TrailerEntry>()
 
 const QUAD_FOLLOW = 0.35
 
@@ -40,8 +44,9 @@ let dashSpeed: SVGGElement | undefined
 let dashSteer: SVGGElement | undefined
 let dashFuelReadout: Element | undefined
 let dashSpeedReadout: Element | undefined
+let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
-const lastDash = { fuel: '', speed: '' }
+const lastDash = { fuel: '', speed: '', used: '' }
 
 type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech'
 
@@ -67,17 +72,29 @@ export function bindActor(id: SeatId, el: SVGGElement | null): void {
   else actors.set(id, { el, transform: '', visibility: '' })
 }
 
-export function bindQuad(id: VehicleId, el: SVGGElement | null): void {
+export function bindQuad(id: VehicleId, el: SVGGElement | null, kind: 'quad' | 'tractor' = 'quad'): void {
   if (el === null) quads.delete(id)
-  else quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true })
+  else quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true, kind })
+}
+
+export function bindTrailer(id: number, el: SVGGElement | null): void {
+  if (el === null) trailers.delete(id)
+  else trailers.set(id, { el, transform: '' })
 }
 
 let dummyRot: SVGGElement | undefined
 let dummyDeg = ''
+let dummyTrailer: SVGGElement | undefined
+let dummyTrailerT = ''
 
 export function bindDummyQuad(el: SVGGElement | null): void {
   dummyRot = el === null ? undefined : el
   dummyDeg = ''
+}
+
+export function bindDummyTrailer(el: SVGGElement | null): void {
+  dummyTrailer = el === null ? undefined : el
+  dummyTrailerT = ''
 }
 
 export function bindDash(el: Element | null): void {
@@ -87,11 +104,13 @@ export function bindDash(el: Element | null): void {
   dashSteer = undefined
   dashFuelReadout = undefined
   dashSpeedReadout = undefined
+  dashUsedReadout = undefined
   lastNeedle.fuel = ''
   lastNeedle.speed = ''
   lastNeedle.steer = ''
   lastDash.fuel = ''
   lastDash.speed = ''
+  lastDash.used = ''
   if (el === null) return
   const fuel = el.querySelector('#fuel-needle')
   const speed = el.querySelector('#speed-needle')
@@ -101,8 +120,10 @@ export function bindDash(el: Element | null): void {
   dashSteer = steer instanceof SVGGElement ? steer : undefined
   const fuelReadout = el.querySelector('[data-dash-fuel]')
   const speedReadout = el.querySelector('[data-dash-speed]')
+  const usedReadout = el.querySelector('[data-dash-used]')
   dashFuelReadout = fuelReadout === null ? undefined : fuelReadout
   dashSpeedReadout = speedReadout === null ? undefined : speedReadout
+  dashUsedReadout = usedReadout === null ? undefined : usedReadout
 }
 
 export function bindHud(kind: HudKind, el: Element | null): void {
@@ -171,23 +192,55 @@ export function paintMotion(root: HTMLElement, world: World): void {
       entry.heading = wrapHeading(entry.heading + turn * QUAD_FOLLOW)
     }
     const deg = (entry.heading * 180) / Math.PI
-    const transform = `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
-    if (entry.transform === transform) return
-    entry.transform = transform
-    entry.el.setAttribute('transform', transform)
+    const transform =
+      v.kind === 'tractor'
+        ? `translate(${(entry.x - 0.375) * TILE},${(entry.y - 0.25) * TILE}) scale(${TILE / 24}) rotate(${deg} 9 6)`
+        : `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
+    if (entry.transform !== transform) {
+      entry.transform = transform
+      entry.el.setAttribute('transform', transform)
+    }
+    if (v.kind === 'tractor' && v.hitch !== 'none') {
+      const t = world.trailers.find(x => x.id === v.hitch)
+      const te = trailers.get(v.hitch)
+      if (t !== undefined && t.pose.kind === 'attached' && te !== undefined) {
+        const p = hitchP(entry.x, entry.y, entry.heading)
+        const c = trailerCenter(p, t.pose.heading)
+        const td = (t.pose.heading * 180) / Math.PI
+        const tt = `translate(${(c.x - 0.5) * TILE},${(c.y - 0.25) * TILE}) scale(${TILE / 24}) rotate(${td} 12 6)`
+        if (te.transform !== tt) {
+          te.transform = tt
+          te.el.setAttribute('transform', tt)
+        }
+      }
+    }
   })
   const driven = world.driverVehicle(world.local)
   if (driven !== undefined && driven.pose.kind === 'field' && dummyRot !== undefined) {
     const deg = (driven.pose.heading * 180) / Math.PI
-    const rot = `rotate(${deg} 12 12)`
+    const rot = driven.kind === 'tractor' ? `rotate(${deg} 9 6)` : `rotate(${deg} 12 12)`
     if (dummyDeg !== rot) {
       dummyDeg = rot
       dummyRot.setAttribute('transform', rot)
     }
   }
+  if (driven !== undefined && driven.pose.kind === 'field' && driven.kind === 'tractor' && driven.hitch !== 'none' && dummyTrailer !== undefined) {
+    const t = world.trailers.find(x => x.id === driven.hitch)
+    if (t !== undefined && t.pose.kind === 'attached') {
+      const p = hitchP(driven.pose.x, driven.pose.y, driven.pose.heading)
+      const c = trailerCenter(p, t.pose.heading)
+      const td = (t.pose.heading * 180) / Math.PI
+      const tt = `translate(${(c.x - driven.pose.x) * TILE},${(c.y - driven.pose.y) * TILE}) rotate(${td} 0 0)`
+      if (dummyTrailerT !== tt) {
+        dummyTrailerT = tt
+        dummyTrailer.setAttribute('transform', tt)
+      }
+    }
+  }
   if (driven !== undefined && driven.pose.kind === 'field' && dashHost !== undefined) {
     const fuelDeg = -45 + driven.fuel * 90
-    const speedDeg = (driven.pose.speed / QUAD_VMAX) * 36
+    const vMax = kindVMax(driven.kind)
+    const speedDeg = (driven.pose.speed / vMax) * 36
     const steerDeg = world.seats[world.local].drive.steer * 90
     const fuelT = `rotate(${fuelDeg} 48 34)`
     const speedT = `rotate(${speedDeg} 120 34)`
@@ -204,8 +257,8 @@ export function paintMotion(root: HTMLElement, world: World): void {
       lastNeedle.steer = steerT
       dashSteer.setAttribute('transform', steerT)
     }
-    const fuelText = `Fuel: ${Math.floor(driven.fuel * 100)}%`
-    const speedText = `Speed: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`
+    const fuelText = `F: ${Math.floor(driven.fuel * 100)}%`
+    const speedText = `V: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`
     if (dashFuelReadout !== undefined && lastDash.fuel !== fuelText) {
       lastDash.fuel = fuelText
       dashFuelReadout.textContent = fuelText
@@ -213,6 +266,12 @@ export function paintMotion(root: HTMLElement, world: World): void {
     if (dashSpeedReadout !== undefined && lastDash.speed !== speedText) {
       lastDash.speed = speedText
       dashSpeedReadout.textContent = speedText
+    }
+    const hitch = driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
+    const usedText = hitch === undefined ? '' : `${trailerUsed(hitch)}/${TRAILER_CAP}`
+    if (dashUsedReadout !== undefined && lastDash.used !== usedText) {
+      lastDash.used = usedText
+      dashUsedReadout.textContent = usedText
     }
   }
   const phase = world.clock.phase()

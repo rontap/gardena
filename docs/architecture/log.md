@@ -8,7 +8,7 @@ Internal enabler. No player-visible change. Not save UI. Not replay viewer. Mult
 
 | file | owns |
 |---|---|
-| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `buyVehicle` `deploy` `embark` `disembark` `dock` `swapVehicle` `refill` |
+| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` |
 | `src/game/sim/log.worker.ts` | worker. Holds `Cmd[]`. Does not apply. Does not own `World`. |
 | `src/game/sim/world.ts` | `World.now`, `World.log`, `dispatch`, `apply`. Wrappers. |
 
@@ -62,7 +62,7 @@ Replay calls `apply` only.
 
 Public UI methods wrap `dispatch` so call sites stay:
 
-`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `buyVehicle` `deploy` `embark` `disembark` `dock` `swapVehicle` `refill`
+`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill`
 
 `enqueue` is a mutator. Tests call it. `apply` of `click` / `clickValve` / `rightClick` (drop) calls `enqueue`. It does not wrap `dispatch`.
 
@@ -80,7 +80,7 @@ Public UI methods wrap `dispatch` so call sites stay:
 
 Log = player commands only.
 
-Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn, actor walk, `DYNAMIC_MARKET` retarget.
+Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, actor walk, `DYNAMIC_MARKET` retarget.
 
 Not logged (view-local): panel open/close, camera, camera follow, hover, lens, hangar select, hide gardener.
 
@@ -158,16 +158,18 @@ Cmd =
   | { a: typeof Act.cheat; t; p; k: 'points' }
   | { a: typeof Act.cheat; t; p; k: 'research' }
   | { a: typeof Act.drive; t; p; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
-  | { a: typeof Act.buyVehicle; t; p; c: XY }
-  | { a: typeof Act.deploy; t; p; v: VehicleId; c: XY }
+  | { a: typeof Act.buyVehicle; t; p; c: XY; k: VehicleKind }
+  | { a: typeof Act.buyTrailer; t; p; c: XY; k: TrailerKind }
+  | { a: typeof Act.deploy; t; p; v: VehicleId; c: XY; hitch: TrailerId | 'none' }
   | { a: typeof Act.embark; t; p; v: VehicleId }
   | { a: typeof Act.disembark; t; p }
   | { a: typeof Act.dock; t; p }
   | { a: typeof Act.swapVehicle; t; p; v: VehicleId; i: VehicleSlot }
+  | { a: typeof Act.swapTrailer; t; p; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t; p; c: XY }
 ```
 
-`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.refill` `'F'`. Latest `Act.drive` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. [[mechanics/vehicles]].
+`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. Latest `Act.drive` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. [[mechanics/vehicles]].
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building. Not one mushy target.
 
@@ -190,7 +192,7 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 - Worker applying cmds
 - Worker owning `World`
 - Vitest using a Worker
-- logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel / vehicle ticks
+- logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel / vehicle ticks / boom
 - logging panel / camera / camera follow / hover / lens / hangar select
 - `confirmPlace` as a cmd
 - silent apply (dispatch without log, or a silent flag)

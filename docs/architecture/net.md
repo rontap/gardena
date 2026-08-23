@@ -19,7 +19,7 @@ Do not create `src/` here. `World` does not import `peerjs`. `mp.ts` does not im
 ## Protocol
 
 ```
-PROTOCOL = 1.4
+PROTOCOL = 1.5
 ```
 
 Number. Hello compares `PROTOCOL`, not `Save.version` alone. Guest protocol ≠ `PROTOCOL` → `reject: version`. Never hydrate.
@@ -103,7 +103,7 @@ Net flag. Not a `Cmd`. Not in `Save`. Host stops bundling while paused. Any play
 
 ## Digest
 
-Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `slots` `pose`. Not `savedAt`. Not camera. Not panels. Not hangar select.
+Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch`, plus every trailer `id` `kind` `pose` hopper or `slots`. Not `savedAt`. Not camera. Not panels. Not hangar select.
 
 Guest behind `t`: apply queued bundles. Digest mismatch: pause, `resync`, `ready`, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.
 

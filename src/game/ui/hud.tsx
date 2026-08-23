@@ -46,6 +46,9 @@ const PLACE_TOOLS = [
   'buy-barrel',
   'buy-freezer',
   'buy-hangar',
+  'buy-silo-seed',
+  'buy-silo-spray',
+  'buy-silo-produce',
 ] as const
 
 export function Hud({

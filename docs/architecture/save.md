@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.4`, `seats`, `vehicles`. Parse identity: `game === "gardena"`. `version` is the number `1.4` on dump. Assumption: wordmark **1.4.0**.
+One file shape. Dump writes `game: "gardena"`, `version: 1.5`, `seats`, `vehicles`, `trailers`. Parse identity: `game === "gardena"`. `version` is the number `1.5` on dump. Assumption: wordmark **1.5.0**.
 
 ## RFC — versions (active)
 
@@ -10,7 +10,7 @@ Active since first commit. Not 1.1-only. Not a plan.
 
 A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
 
-Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Vehicles I: 1.4. No migrate.
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Vehicles II: 1.5. No migrate.
 
 Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
@@ -111,7 +111,7 @@ SaveRng = { seed: number; shop: number; fruit: number }
 
 ## Classes → JSON
 
-No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `Vehicle` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
+No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` `Vehicle` `Trailer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
 
 | live | file |
 |---|---|
@@ -133,7 +133,11 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `WineBarrel` | origin cell `kind: 'barrel'` |
 | `Freezer` | origin cell `kind: 'freezer'` |
 | `Hangar` | origin cell `kind: 'hangar'` |
+| `SiloSeed` | origin cell `kind: 'silo-seed'` |
+| `SiloSpray` | origin cell `kind: 'silo-spray'` |
+| `SiloProduce` | origin cell `kind: 'silo-produce'` |
 | `Vehicle` | `Save.vehicles[]`. Not a cell |
+| `Trailer` | `Save.trailers[]`. Not a cell |
 | `Item` `Hand` `Slot` | as live. Already JSON. |
 | `StallGood` | `SaveStallGood` per `StallGoodId` |
 | `Family` maps | `owned` / `offers` arrays |
@@ -144,13 +148,13 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `World.fences` | `Coord[]` |
 | `World.done` | `ResearchId[]` |
 
-Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `hangars` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`.
+Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`.
 
 `modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`: rebuild. `purchases` is in the file.
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.4`, `seats`, `vehicles`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.5`, `seats`, `vehicles`, `trailers`.
 
 ```
 SaveSeat = {
@@ -161,19 +165,55 @@ SaveSeat = {
   inventory: Slot[]
 }
 
-SaveVehicle = {
-  id: VehicleId
-  kind: VehicleKind
-  fuel: number
-  slots: Slot[]
-  pose:
-    | { kind: 'stored'; hangar: Coord }
-    | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
-}
+SaveVehicle =
+  | {
+      kind: 'quad'
+      id: VehicleId
+      fuel: number
+      slots: Slot[]
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+    }
+  | {
+      kind: 'tractor'
+      id: VehicleId
+      fuel: number
+      hitch: TrailerId | 'none'
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+    }
+
+SaveTrailer =
+  | {
+      kind: 'seed'
+      id: TrailerId
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'attached'; vehicle: VehicleId; heading: number }
+      hopper: SeedHopper
+    }
+  | {
+      kind: 'spray'
+      id: TrailerId
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'attached'; vehicle: VehicleId; heading: number }
+      hopper: SprayHopper
+    }
+  | {
+      kind: 'harvest'
+      id: TrailerId
+      pose:
+        | { kind: 'stored'; hangar: Coord }
+        | { kind: 'attached'; vehicle: VehicleId; heading: number }
+      slots: Slot[]
+    }
 
 Save = {
   game: 'gardena'
-  version: 1.4
+  version: 1.5
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
@@ -184,6 +224,8 @@ Save = {
   seats: SaveSeat[]
   vehicles: SaveVehicle[]
   nextVehicleId: VehicleId
+  trailers: SaveTrailer[]
+  nextTrailerId: TrailerId
   done: ResearchId[]
   job: { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
   family: {
@@ -259,13 +301,16 @@ SaveCell =
   | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[] }
   | { kind: 'hangar'; base: RectBase }
+  | { kind: 'silo-seed'; base: RectBase }
+  | { kind: 'silo-spray'; base: RectBase }
+  | { kind: 'silo-produce'; base: RectBase }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'occ'; of: Coord }
 ```
 
-`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Vehicle `slots` length `VEHICLE_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint.
+`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
 
-`version: 1.4` is a number. JSON `1.4` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it.
+`version: 1.5` is a number. JSON `1.5` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
@@ -307,10 +352,16 @@ SaveCell =
 - guest `writeSlot` for a hosted farm
 - chest slots length ≠ `CHEST_SLOTS`
 - freezer slots length ≠ `FREEZER_SLOTS`
-- vehicle slots length ≠ `VEHICLE_SLOTS`
+- quad slots length ≠ `VEHICLE_SLOTS`
+- harvest slots length ≠ `HARVEST_SLOTS`
 - `vehicles` omitted
 - `nextVehicleId` omitted
+- `trailers` omitted
+- `nextTrailerId` omitted
 - stored + driver
+- quad hitch / tractor slots
+- stored tractor hitch ≠ `'none'`
+- trailer attached + stored
 - `sugar.count`
 - chunk grid not `CHUNK` × `CHUNK`
 - UI copy in this note

@@ -189,7 +189,35 @@
 <a name='L124'></a><a href='#L124'>124</a>
 <a name='L125'></a><a href='#L125'>125</a>
 <a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -289,12 +317,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">203x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">225x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">168x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">208x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">271x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">173x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -317,7 +349,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { AdditiveId, ChunkId } from './building.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { AnnualId, MemberId, ResearchId, SkuId, StallGoodId, VehicleId, VehicleSlot } from './ids.ts'
+import type {
+  AnnualId,
+  HarvestSlot,
+  MemberId,
+  ResearchId,
+  SkuId,
+  StallGoodId,
+  TrailerId,
+  TrailerKind,
+  VehicleId,
+  VehicleKind,
+  VehicleSlot,
+} from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { Intent, SeatId } from './world.ts'
 &nbsp;
@@ -353,11 +397,13 @@ export const Act = {
   cheat: 'u',
   drive: 'V',
   buyVehicle: 'Q',
+  buyTrailer: 'T',
   deploy: 'D',
   embark: 'B',
   disembark: 'E',
   dock: 'P',
   swapVehicle: 'H',
+  swapTrailer: 'A',
   refill: 'F',
 } as const
 &nbsp;
@@ -404,12 +450,14 @@ export type Cmd =
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
   | { a: typeof Act.drive; t: number; p: SeatId; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
-  | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY }
-  | { a: typeof Act.deploy; t: number; p: SeatId; v: VehicleId; c: XY }
+  | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY; k: VehicleKind }
+  | { a: typeof Act.buyTrailer; t: number; p: SeatId; c: XY; k: TrailerKind }
+  | { a: typeof Act.deploy; t: number; p: SeatId; v: VehicleId; c: XY; hitch: TrailerId | 'none' }
   | { a: typeof Act.embark; t: number; p: SeatId; v: VehicleId }
   | { a: typeof Act.disembark; t: number; p: SeatId }
   | { a: typeof Act.dock; t: number; p: SeatId }
   | { a: typeof Act.swapVehicle; t: number; p: SeatId; v: VehicleId; i: VehicleSlot }
+  | { a: typeof Act.swapTrailer; t: number; p: SeatId; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
 &nbsp;
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
@@ -448,7 +496,7 @@ export class WorkerSink implements LogSink {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-23T20:31:18.767Z
+                at 2026-08-23T21:25:30.480Z
             </div>
         <script src="../prettify.js"></script>
         <script>

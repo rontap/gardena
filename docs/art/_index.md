@@ -10,6 +10,7 @@
 - [[art/tilled-edges]]
 - [[art/ground-variants]]
 - [[art/machines]]
+- [[art/electricity]]
 - [[art/vehicles]]
 
 SVGs live in `src/assets/`.

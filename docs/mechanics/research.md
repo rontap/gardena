@@ -37,7 +37,7 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
 | unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge. |
 | unlock-irrigation | Irrigation | automation | 20 | 50 | start | Unlocks Pumpjack in the general store. |
-| unlock-vehicles | Vehicles | automation | 32 | 70 | unlock-irrigation | Unlocks Hangar. Buy Quads at a hangar. |
+| unlock-vehicles | Vehicles | automation | 32 | 70 | unlock-irrigation | Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar. |
 | unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
 | unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
 | unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
@@ -48,7 +48,7 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-rotary-shovel | Rotary shovel | utilities | 40 | 120 | unlock-better-tools | Unlocks the Rotary shovel in the general store. Earned by digging, not by reading. |
 | unlock-diamond-pickaxe | Diamond pickaxe | utilities | 40 | 120 | unlock-pickaxe | Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading. |
 
-`unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad is not a SKU.
+`unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
 
 Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. `effect` is `unlock-sku` | `expand` | `feature`. `unlock-heirloom` is `feature` — gates Őstermelő. Better crop is player skills — [[mechanics/family]].
 
@@ -72,7 +72,7 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 
 `buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. Assumption: `buy-sugar` tab utility. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 
-`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `machine-contracts` applies. Quad hangar-buy `QUAD_PRICE`, not a shop place SKU, contracts do not discount. — [[mechanics/vehicles]]
+`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `machine-contracts` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-irrigation`, buy `unlock-vehicles`, contracts apply. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, contracts do not discount. — [[mechanics/vehicles]]
 
 `pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
 

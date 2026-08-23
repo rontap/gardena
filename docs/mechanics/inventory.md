@@ -8,7 +8,9 @@ Chest: `CHEST_SLOTS = 9` — preference. 1×1, $18, `unlock-chest`. Walk up, swa
 
 Freezer: `FREEZER_SLOTS = 6` — preference. 1×1, $36, `unlock-preservatives`. Reuses chest act / `swapChest`. Slots skip `tickFreshness`. Guest may not open — [[mechanics/machines]].
 
-Quad: `VEHICLE_SLOTS = 6` — preference. Any `Item`, chest swap + compact. Freshness ticks (not freezer). `Act.swapVehicle` legal iff parked (`field` && `driver === 'none'`). Stored: no-op. Driven: no-op. Guests may swap. Hangar HUD has no 6-slot. Fuel is not an item. — [[mechanics/vehicles]]
+Quad: `VEHICLE_SLOTS = 6` — preference. Any `Item`, chest swap + compact. Freshness ticks (not freezer). `Act.swapVehicle` legal iff parked (`field` && `driver === 'none'`). Stored: no-op. Driven: no-op. Guests may swap. Hangar HUD has no 6-slot. Tractor has no 6-slot. Fuel is not an item.
+
+Trailer cargo: `TRAILER_CAP = 100`. Seed hopper one seeds stack. Spray hopper one fertilizer|synth|compost bag. Harvest `HARVEST_SLOTS` 8, mixed produce, chest merge+compact. `Act.swapTrailer` legal iff trailer attached to a tractor that is field && `driver === 'none'`. Hangar / driving / stored unattached: no-op. Seeder/sprayer refuse wrong kind. — [[mechanics/vehicles]]
 
 ## Stores
 

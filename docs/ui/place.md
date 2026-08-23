@@ -31,11 +31,11 @@ Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-gri
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not shop. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `BUILD_IDS`: pumpjack, well, rain-tank, tap, pipe, valve, sprinklers, chest, grinder, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce. Tiles and compost-box: no trio. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
+Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Processing, Storage, and Vehicles shelves — [[ui/build]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
-Shop dock `left-32` past the `w-24` ribbon. Ghosts stay on the map.
+Shop and Build docks `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. Both docks can arm: a search result acts where it lives, whichever dock is open — [[ui/shop]].
 
-Esc / shop dock **×** / left-ribbon **Shop** that closes shop → `cancelPlace`; if `lens === 'pipes'` then `off`. Other lenses stay. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
+Esc / dock **×** / a rail toggle that closes **Shop** or **Build** → `cancelPlace`; if `lens === 'pipes'` then `off`. Other lenses stay. **Shop ↔ Build** is not a close: the ghost survives the switch. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
 
 ## Pointer
 

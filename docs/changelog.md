@@ -2,6 +2,20 @@
 
 History. Not current contracts.
 
+## 2026-08-23 — 1.5.1 shop split
+
+[[ui/shop]] [[ui/build]] [[ui/docks]]
+
+- **The shop is two docks.** **General store** keeps Seeds / Tools / Supplies; a new **Build** dock takes everything that arms a ghost, under Water / Processing / Storage / Vehicles / Land. New rail button under **Shop**, `ui-btn-build.svg`.
+- **One axis per level, filed by primary output.** Signal → Logic, water → Water, goods → Processing, ground → Land. Half of the old Automation tab was water; `chest` and `freezer` were ten rows apart. Sensors land in 0.14 and now have a rule to land against.
+- New `src/game/defs/shelf.ts` is the only source of panel membership and order — the four hand-written arrays in `shop.tsx` are gone. `Sku.tab` still means the commerce class (price skills, guest permission) and is untouched. Two invariants hold the two apart.
+- **Three-column cards** instead of one-column rows: `h-10` icon over a `text-sm` label over the price, on a constant `auto-rows-[6.75rem]`, with the category rail kept mounted during search, so a card is the same box in every state — the shelf crumb moved to the hover callout rather than adding a fourth line that only search cards had. Both docks are `w-[28rem]` with the same vertical category rail. Groups order the grid but draw nothing — the categories already carry the division. Locked cards sort to the end of their own group, on research gating only, never money or capacity, which flip under the cursor.
+- **Global search** on both docks, one shared query, autofocused. Results ignore the dock you opened and carry a `Build · Water` crumb; acting on one switches to its dock, keeping the query and the armed ghost. Escape clears the box before it closes anything.
+- Build cluster reads `GHOST_SKUS` off the shelves. `buy-compost-box` was missing from the old `PLACE_TOOLS` list, so **Delete** / **Cancel** never appeared while it was armed.
+- `Dock` takes a required `width` instead of a `wide` boolean, and moves `top-24` → `top-20` so every dock starts level with the icon rail instead of hanging a row below it. Leaving the shop system is one helper in `App`; the menu and multiplayer toggles used to cancel the ghost but leave the pipes lens on.
+- **Research picks up the same shell**: vertical tree rail, one card anatomy, `w-[28rem]` like the other two. The rail bleeds `-my-3 -ml-4` through the pane padding on all three docks so it touches the window edge instead of floating in the margin. Almanac keeps the underline tabs — it is a centred overlay, not a dock.
+- The 1.5 hangar and field silos file under a **Vehicles** shelf rather than swelling Water or Storage.
+- Wordmark **1.5.1**. Save `version` stays **1.5** — nothing about the save shape changed.
 ## 2026-08-23 — 1.5 Vehicles II
 
 [[mechanics/vehicles]] [[ui/vehicles]] [[art/vehicles]] [[architecture/save]]

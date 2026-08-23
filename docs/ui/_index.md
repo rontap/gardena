@@ -12,6 +12,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/machines]]
 - [[ui/vehicles]]
 - [[ui/shop]]
+- [[ui/build]]
 - [[ui/store]]
 - [[ui/cheat]]
 - [[ui/market]]

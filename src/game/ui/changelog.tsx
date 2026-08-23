@@ -24,6 +24,39 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.5.1',
+    name: 'Shop split',
+    summary: 'The store and the build menu are two panels, with search across both.',
+    changes: [
+      {
+        kind: 'improvement',
+        text: 'The shop is two panels: General store to buy, Build to place.',
+        notes: [
+          'Categories are filed by what a thing does, not when it shipped. Water holds every pump, pipe, and sprinkler; the chest and the freezer sit together.',
+          'Cards in a grid, three across, with a category rail down the side. Research uses the same shell.',
+        ],
+      },
+      {
+        kind: 'feature',
+        text: 'Search both panels at once.',
+        notes: [
+          'Type in either panel and results come from both. Picking one that lives in the other panel takes you there.',
+          'Escape clears the box before it closes anything.',
+        ],
+      },
+      {
+        kind: 'bugfix',
+        text: 'The build buttons appear for the compost box.',
+        notes: ['Delete and Cancel were missing while a compost box was on the cursor.'],
+      },
+      {
+        kind: 'bugfix',
+        text: 'Opening the settings menu no longer leaves the pipe layer on.',
+        notes: ['Closing the shop through the gear or multiplayer button dropped the ghost but kept the pipe overlay up.'],
+      },
+    ],
+  },
+  {
     id: '1.5',
     name: 'Vehicle Update II',
     summary: 'Tractor, trailers, and field silos.',

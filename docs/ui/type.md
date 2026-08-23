@@ -5,7 +5,7 @@ One scale, one body face. Set in `src/index.css` under `@theme`. Do not hand-rol
 | token | px | use |
 |---|---|---|
 | `text-xs` | 11 | badges, counts, swatch legends, `Label` eyebrows, chip tiers |
-| `text-sm` | 13 | secondary and meta: tab labels, stat rows, blurbs, footers, queue |
+| `text-sm` | 13 | secondary and meta: tab labels, stat rows, blurbs, footers, queue, shop card labels and their price |
 | `text-base` | 15 | body default, row labels, buttons |
 | `text-lg` | 17 | money in the top ribbon, close glyph |
 | `text-xl` / `text-2xl` / `text-3xl` | 20 / 24 / 28 | reserved |

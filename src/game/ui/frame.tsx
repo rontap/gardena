@@ -218,6 +218,48 @@ export const Field = forwardRef<HTMLInputElement, {
 export const tabTriggerClass =
   'cursor-pointer whitespace-nowrap px-2 pt-1 pb-1.5 text-sm font-semibold tracking-wide text-ink/45 hover:text-ink/75 data-[state=active]:border-b-2 data-[state=active]:border-ink data-[state=active]:text-ink'
 
+export const tabRailListClass = '-my-3 -ml-4 flex w-28 shrink-0 flex-col gap-0.5 border-r border-ink/20 py-3'
+
+export const tabRailClass =
+  'cursor-pointer whitespace-nowrap border-l-2 border-transparent py-1 pr-2 pl-4 text-left text-sm font-semibold tracking-wide text-ink/45 hover:text-ink/75 data-[state=active]:border-ink data-[state=active]:bg-ink/6 data-[state=active]:text-ink'
+
+/**
+ * Incremental search. Unlike Field it does not select on focus, and it swallows
+ * Escape only while it has something to clear — an empty box lets Escape through
+ * to cancel the armed ghost.
+ */
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+}) {
+  return (
+    <input
+      name="search"
+      value={value}
+      aria-label="Search"
+      placeholder={placeholder}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      autoFocus
+      className="w-full select-text border-2 border-ink/30 bg-parch px-2 py-1.5 text-sm text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink"
+      onChange={e => onChange(e.target.value)}
+      onKeyDown={e => {
+        if (e.key !== 'Escape') return
+        if (value === '') return
+        e.stopPropagation()
+        onChange('')
+      }}
+    />
+  )
+}
+
 export function Label({ children }: { children: ReactNode }) {
   return <div className="mt-1 mb-1 text-xs font-bold tracking-[0.14em] text-ink/45 uppercase">{children}</div>
 }
@@ -295,24 +337,24 @@ export function Dock({
   children,
   footer,
   onClose,
-  wide,
+  width,
   aside,
 }: {
   title: string
   children: ReactNode
   footer?: ReactNode
   onClose: () => void
-  wide?: boolean
+  width: string
   aside?: ReactNode
 }) {
   return (
-    <div className="absolute top-24 left-32 z-20">
+    <div className="absolute top-20 left-32 z-20">
       <Window
         title={title}
         onClose={onClose}
         footer={footer}
         aside={aside}
-        className={`max-h-[calc(100vh-6rem)] ${wide === true ? 'w-[30rem]' : 'w-80'}`}
+        className={`max-h-[calc(100vh-6rem)] ${width}`}
       >
         {children}
       </Window>

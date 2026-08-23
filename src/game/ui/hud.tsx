@@ -9,6 +9,7 @@ import {
   btnFace,
   symHref,
   UI_BTN_ALMANAC,
+  UI_BTN_BUILD,
   UI_BTN_CANCEL,
   UI_BTN_CHEAT,
   UI_BTN_DELETE,
@@ -24,32 +25,11 @@ import {
   UI_BTN_SHOP,
   type BtnState,
 } from '../view/svgs.ts'
+import { GHOST_SKUS } from '../defs/shelf.ts'
 import { Chrome, Coin } from './frame.tsx'
+import type { PanelKind } from './panel.ts'
 
 const ROTATABLE = ['buy-sprinkler-vert'] as const
-
-const PLACE_TOOLS = [
-  'buy-pumpjack',
-  'buy-well',
-  'buy-rain-tank',
-  'buy-tap',
-  'buy-pipe',
-  'buy-valve',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-  'buy-chest',
-  'buy-grinder',
-  'buy-mill',
-  'buy-jam',
-  'buy-still',
-  'buy-barrel',
-  'buy-freezer',
-  'buy-hangar',
-  'buy-silo-seed',
-  'buy-silo-spray',
-  'buy-silo-produce',
-] as const
 
 export function Hud({
   world,
@@ -58,6 +38,7 @@ export function Hud({
   paused,
   onFamily,
   onShop,
+  onBuild,
   onResearch,
   onMarket,
   onAlmanac,
@@ -69,27 +50,12 @@ export function Hud({
   net,
 }: {
   world: World
-  panel:
-    | 'none'
-    | 'family'
-    | 'shop'
-    | 'research'
-    | 'market'
-    | 'inventory'
-    | 'almanac'
-    | 'chest'
-    | 'silo'
-    | 'additives'
-    | 'hangar'
-    | 'vehicle'
-    | 'lens'
-    | 'cheat'
-    | 'menu'
-    | 'multiplayer'
+  panel: PanelKind
   lens: Lens
   paused: boolean
   onFamily: () => void
   onShop: () => void
+  onBuild: () => void
   onResearch: () => void
   onMarket: () => void
   onAlmanac: () => void
@@ -107,7 +73,7 @@ export function Hud({
   const phase = world.clock.phase()
   const place = world.seats[world.local].place
   const trio =
-    place.kind === 'delete' || (place.kind === 'sku' && (PLACE_TOOLS as readonly string[]).includes(place.id))
+    place.kind === 'delete' || (place.kind === 'sku' && (GHOST_SKUS as readonly string[]).includes(place.id))
   const canRotate = place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(place.id)
   const guest = world.local !== 0
   return (
@@ -186,6 +152,7 @@ export function Hud({
       <Chrome className="pointer-events-none absolute top-20 left-4 z-20 w-24">
         <div className="relative z-20 flex flex-col py-1.5">
           <FaceBtn art={UI_BTN_SHOP} label="Shop" selected={panel === 'shop'} onClick={onShop} />
+          <FaceBtn art={UI_BTN_BUILD} label="Build" selected={panel === 'build'} onClick={onBuild} />
           <FaceBtn art={UI_BTN_RESEARCH} label="Research" selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label="Market" selected={panel === 'market'} onClick={onMarket} />
           <FaceBtn

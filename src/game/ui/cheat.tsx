@@ -5,7 +5,7 @@ import { Coin, Dock } from './frame.tsx'
 
 export function Cheat({ world, onClose }: { world: World; onClose: () => void }) {
   return (
-    <Dock title="Cheat" onClose={onClose}>
+    <Dock title="Cheat" onClose={onClose} width="w-80">
       <div className="flex flex-col gap-1.5">
         <Row label="Unlock all instantly" onClick={() => world.unlockAll()} />
         <Row

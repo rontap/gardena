@@ -51,6 +51,9 @@ import type {
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
 import {
+  ADDITIVE_BAG,
+  ADDITIVE_BASE,
+  AdditiveStore,
   CHUNK,
   Chest,
   CompostBox,
@@ -66,6 +69,8 @@ import {
   PotStill,
   Pump,
   RainTank,
+  SILO_BASE,
+  SeedSilo,
   Tap,
   Tree,
   TRUCK_BASE,
@@ -79,6 +84,7 @@ import {
   inWorld,
   local,
   occupiedCells,
+  type AdditiveId,
   type Base,
   type ChunkId,
   type Coord,
@@ -213,6 +219,8 @@ export type Intent =
   | { act: 'drop'; at: Coord }
   | { act: 'inventory' }
   | { act: 'chest'; at: Coord }
+  | { act: 'silo'; at: Coord }
+  | { act: 'additives'; at: Coord }
   | { act: 'grind'; at: Coord }
   | { act: 'still'; at: Coord }
   | { act: 'barrel'; at: Coord }
@@ -237,6 +245,8 @@ export type TaskName =
   | 'Drop'
   | 'Inventory'
   | 'Chest'
+  | 'Seed silo'
+  | 'Additives'
   | 'Grind'
   | 'Mill'
   | 'Still'
@@ -245,7 +255,12 @@ export type TaskName =
   | 'Valve'
   | 'Tend'
 
-export type Cue = { kind: 'none' } | { kind: 'inventory' } | { kind: 'chest'; at: Coord }
+export type Cue =
+  | { kind: 'none' }
+  | { kind: 'inventory' }
+  | { kind: 'chest'; at: Coord }
+  | { kind: 'silo'; at: Coord }
+  | { kind: 'additives'; at: Coord }
 
 export type Speech = { kind: 'none' } | { kind: 'say'; text: string; left: number }
 
@@ -279,6 +294,8 @@ export type Seat = {
 }
 
 export type Pulse = { text: string; at: Coord }
+
+export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
 
 export type Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
 
@@ -322,6 +339,8 @@ export type Hydrate = {
   sink: LogSink
   house: House
   truck: Truck
+  silo: SeedSilo
+  additives: AdditiveStore
   pumps: Pump[]
   tanks: RainTank[]
   taps: Tap[]
@@ -424,17 +443,21 @@ export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
 
 function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
-  inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 } }
-  inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'rare', count: 2 } }
-  inventory[2] = { kind: 'hold', item: { kind: 'seeds', crop: 'tomato', rarity: 'rare', count: 2 } }
-  inventory[3] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', rarity: 'heirloom', count: 2 } }
-  inventory[4] = { kind: 'hold', item: { kind: 'sapling', tree: 'apricot' } }
-  inventory[5] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
-  inventory[6] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
+  inventory[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'apricot' } }
+  inventory[1] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+  inventory[2] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
   return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
 }
+/** Starter seed stock. Lives in the seed silo, not the house. */
+const STARTER_SEEDS: readonly { crop: AnnualId; rarity: Rarity; count: number }[] = [
+  { crop: 'carrot', rarity: 'common', count: 5 },
+  { crop: 'carrot', rarity: 'rare', count: 2 },
+  { crop: 'tomato', rarity: 'rare', count: 2 },
+  { crop: 'potato', rarity: 'heirloom', count: 2 },
+]
+
 const DYNAMIC_MARKET = false
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
@@ -481,6 +504,8 @@ export class World {
   readonly netVerts = new Set<string>()
   readonly house: House
   readonly truck: Truck
+  readonly silo: SeedSilo
+  readonly additives: AdditiveStore
   readonly stall: StallMap
   readonly family: Family
   sales: StallSale[] = []
@@ -525,6 +550,8 @@ export class World {
       this.sink = h.sink
       this.house = h.house
       this.truck = h.truck
+      this.silo = h.silo
+      this.additives = h.additives
       this.pumps = h.pumps
       this.tanks = h.tanks
       this.taps = h.taps
@@ -610,6 +637,8 @@ export class World {
     this.sink.reset(this.rng.seed)
     this.house = new House(HOUSE_BASE, DOOR)
     this.truck = new Truck(TRUCK_BASE)
+    this.silo = new SeedSilo(SILO_BASE)
+    this.additives = new AdditiveStore(ADDITIVE_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
     this.stall = Object.fromEntries(STALL_IDS.map(id => [id, makeStall(id, this.modifiers)])) as StallMap
     this.family = {
@@ -620,9 +649,13 @@ export class World {
     this.rerollOffers('player')
     this.rerollOffers('husband')
     this.rerollOffers('daughter')
-    this.chunks.set(chunkKey(this.owned[0]), generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck))
+    this.chunks.set(
+      chunkKey(this.owned[0]),
+      generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck, this.silo, this.additives),
+    )
     this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
+    STARTER_SEEDS.forEach(st => this.putSilo(st.crop, st.rarity, st.count))
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
     this.indexAll()
   }
@@ -678,9 +711,9 @@ export class World {
   }
 
   commit(cmd: Extract<Cmd, { a: typeof Act.click }>): 'queued' | 'placed' | 'blocked' | 'noop'
-  commit(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
+  commit(cmd: Extract<Cmd, { a: typeof Act.buy }>): BuyFail | undefined
   commit(cmd: Cmd): void
-  commit(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
+  commit(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | BuyFail | undefined | void {
     if (this.remote !== undefined) {
       this.remote(cmd)
       return
@@ -689,9 +722,9 @@ export class World {
   }
 
   dispatch(cmd: Extract<Cmd, { a: typeof Act.click }>): 'queued' | 'placed' | 'blocked' | 'noop'
-  dispatch(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
+  dispatch(cmd: Extract<Cmd, { a: typeof Act.buy }>): BuyFail | undefined
   dispatch(cmd: Cmd): void
-  dispatch(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
+  dispatch(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | BuyFail | undefined | void {
     this.cmds.push(cmd)
     if (this.cmds.length > LOG_CAP) {
       this.cmds.shift()
@@ -702,9 +735,9 @@ export class World {
   }
 
   apply(cmd: Extract<Cmd, { a: typeof Act.click }>): 'queued' | 'placed' | 'blocked' | 'noop'
-  apply(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
+  apply(cmd: Extract<Cmd, { a: typeof Act.buy }>): BuyFail | undefined
   apply(cmd: Cmd): void
-  apply(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
+  apply(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | BuyFail | undefined | void {
     this.act = this.seats[cmd.p]
     switch (cmd.a) {
       case Act.click:
@@ -752,6 +785,10 @@ export class World {
         return
       case Act.swap:
         this.swapBody(cmd.i)
+        return
+      case Act.takeStore:
+        if (cmd.k === 'silo') this.takeSiloBody(cmd.c, cmd.r)
+        else this.takeAdditiveBody(cmd.d)
         return
       case Act.swapChest:
         this.swapChestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.i)
@@ -1053,7 +1090,10 @@ export class World {
     this.owned.push(id)
     this.purchases += 1
     this.dirtyNets()
-    this.chunks.set(chunkKey(id), generateChunk(this.rng, id, this.house, this.pumps[0], this.truck))
+    this.chunks.set(
+      chunkKey(id),
+      generateChunk(this.rng, id, this.house, this.pumps[0], this.truck, this.silo, this.additives),
+    )
     this.indexAll()
     this.ping()
   }
@@ -1686,6 +1726,10 @@ export class World {
         return 'Inventory'
       case 'chest':
         return 'Chest'
+      case 'silo':
+        return 'Seed silo'
+      case 'additives':
+        return 'Additives'
       case 'grind':
         return 'Grind'
       case 'mill':
@@ -1722,11 +1766,11 @@ export class World {
     return 1
   }
 
-  buy(id: SkuId): 'Cannot afford' | 'Inventory full' | undefined {
+  buy(id: SkuId): BuyFail | undefined {
     return this.commit({ a: Act.buy, t: this.now, p: this.local, s: id })
   }
 
-  private buyBody(id: SkuId): 'Cannot afford' | 'Inventory full' | undefined {
+  private buyBody(id: SkuId): BuyFail | undefined {
     if (!this.skuOpen(id)) return undefined
     const made = skuItem(id)
     if (made.kind === 'grass-seeds') {
@@ -1752,17 +1796,19 @@ export class World {
     if (made.kind === 'seeds') {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
-      const tier = this.skillTier('seed-bank')
-      const fits =
-        tier <= 0
-          ? this.canFitSeeds(made.crop, [{ rarity: 'common', count: made.count }])
-          : this.act.inventory.some(s => s.kind === 'empty') ||
-            RARITY_RANK.every(rarity => this.seedSlot(made.crop, rarity) >= 0)
-      if (!fits) return 'Inventory full'
-      const rarity = rollShopRarity(tier, this.rng.stream('shop').next())
+      if (this.silo.free < made.count) return 'Seed silo full'
+      const rarity = rollShopRarity(this.skillTier('seed-bank'), this.rng.stream('shop').next())
       this.money -= price
-      this.putSeeds(made.crop, rarity, made.count)
-      this.compactInventory()
+      this.putSilo(made.crop, rarity, made.count)
+      this.ping()
+      return undefined
+    }
+    if (made.kind === 'fertilizer' || made.kind === 'synth') {
+      const price = this.skuPrice(id)
+      if (this.money < price) return 'Cannot afford'
+      if (this.additives.free < made.liters) return 'Additive store full'
+      this.money -= price
+      this.putAdditive(made.kind, made.liters)
       this.ping()
       return undefined
     }
@@ -2011,36 +2057,36 @@ export class World {
   }
 
   private buyPacksBody(id: SkuId): void {
-    if (!this.hasSkill('bulk-buying')) return
-    if (!this.skuOpen(id)) return
+    if (this.buyPacksFail(id) !== undefined) return
     const made = skuItem(id)
     if (made.kind !== 'seeds') return
-    const price = 5 * this.skuPrice(id) * 0.95
-    if (this.money < price) return
-    const fits =
-      this.skillTier('seed-bank') <= 0
-        ? this.canFitSeeds(made.crop, [{ rarity: 'common', count: made.count }])
-        : this.canFitSeeds(
-            made.crop,
-            RARITY_RANK.map(rarity => ({ rarity, count: made.count })),
-          )
-    if (!fits) return
     const shop = this.rng.stream('shop')
     const rarityOf = [0, 1, 2, 3, 4].map(() => rollShopRarity(this.skillTier('seed-bank'), shop.next()))
     const stacks = RARITY_RANK.flatMap(rarity => {
       const n = rarityOf.filter(x => x === rarity).length
       return n === 0 ? [] : [{ rarity, count: n * made.count }]
     })
-    this.money -= price
-    stacks.forEach(s => this.putSeeds(made.crop, s.rarity, s.count))
-    this.compactInventory()
+    this.money -= this.packsPrice(id)
+    stacks.forEach(st => this.putSilo(made.crop, st.rarity, st.count))
     this.ping()
   }
 
-  private seedSlot(crop: CropId, rarity: Rarity): number {
-    return this.act.inventory.findIndex(
-      s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === crop && s.item.rarity === rarity,
-    )
+  packsPrice(id: SkuId): number {
+    return 5 * this.skuPrice(id) * 0.95
+  }
+
+  /**
+   * Why a bulk buy would fail, or undefined when it would go through. The shop renders
+   * this instead of guessing — one rule, not a second copy that drifts.
+   */
+  buyPacksFail(id: SkuId): BuyFail | 'Locked' | undefined {
+    if (!this.hasSkill('bulk-buying')) return 'Locked'
+    if (!this.skuOpen(id)) return 'Locked'
+    const made = skuItem(id)
+    if (made.kind !== 'seeds') return 'Locked'
+    if (this.money < this.packsPrice(id)) return 'Cannot afford'
+    if (this.silo.free < 5 * made.count) return 'Seed silo full'
+    return undefined
   }
 
   private grassSlot(): number {
@@ -2064,30 +2110,111 @@ export class World {
     }
   }
 
-  private canFitSeeds(crop: CropId, stacks: readonly { rarity: Rarity; count: number }[]): boolean {
-    let empties = this.act.inventory.filter(s => s.kind === 'empty').length
-    const seen = new Set<Rarity>()
-    for (const s of stacks) {
-      if (this.seedSlot(crop, s.rarity) >= 0 || seen.has(s.rarity)) {
-        seen.add(s.rarity)
-        continue
-      }
-      seen.add(s.rarity)
-      if (empties < 1) return false
-      empties -= 1
+
+  // --- seed silo -------------------------------------------------------------
+
+  /** Adds to the silo up to its cap. Returns how many seeds actually landed. */
+  putSilo(crop: AnnualId, rarity: Rarity, count: number): number {
+    const n = Math.min(count, this.silo.free)
+    if (n <= 0) return 0
+    const hit = this.silo.seeds.find(st => st.crop === crop && st.rarity === rarity)
+    if (hit !== undefined) hit.count += n
+    else this.silo.seeds.push({ crop, rarity, count: n })
+    return n
+  }
+
+  takeSilo(crop: AnnualId, rarity: Rarity): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', c: crop, r: rarity })
+  }
+
+  private takeSiloBody(crop: AnnualId, rarity: Rarity): void {
+    const i = this.silo.seeds.findIndex(st => st.crop === crop && st.rarity === rarity)
+    if (i < 0) return
+    const st = this.silo.seeds[i]
+    if (st.count <= 0) return
+    if (!this.freeHand()) return
+    this.silo.seeds.splice(i, 1)
+    this.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, rarity, count: st.count } }
+    this.ping()
+  }
+
+  /** Walking up puts every seed you carry away. Overflow stays on you. */
+  private depositSilo(): void {
+    const take = (it: Item): boolean => {
+      if (it.kind !== 'seeds') return false
+      const n = this.putSilo(it.crop, it.rarity, it.count)
+      it.count -= n
+      return it.count <= 0
     }
+    if (this.act.hand.kind === 'hold' && take(this.act.hand.item)) this.act.hand = { kind: 'empty' }
+    this.act.inventory.forEach((slot, i) => {
+      if (slot.kind === 'hold' && take(slot.item)) this.act.inventory[i] = { kind: 'empty' }
+    })
+    this.compactInventory()
+  }
+
+  // --- additive store --------------------------------------------------------
+
+  /** Adds liters up to the shared cap. Returns how many liters actually landed. */
+  putAdditive(id: AdditiveId, liters: number): number {
+    const n = Math.min(liters, this.additives.free)
+    if (n <= 0) return 0
+    const hit = this.additives.held.find(h => h.id === id)
+    if (hit !== undefined) hit.liters += n
+    else this.additives.held.push({ id, liters: n })
+    return n
+  }
+
+  takeAdditive(id: AdditiveId): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', d: id })
+  }
+
+  private takeAdditiveBody(id: AdditiveId): void {
+    const i = this.additives.held.findIndex(h => h.id === id)
+    if (i < 0) return
+    const held = this.additives.held[i]
+    const bag = ADDITIVE_BAG[id]
+    const liters = Math.min(bag, held.liters)
+    if (liters <= 0) return
+    if (!this.freeHand()) return
+    held.liters -= liters
+    if (held.liters <= 0) this.additives.held.splice(i, 1)
+    this.act.hand = { kind: 'hold', item: { kind: id, liters, capacityLiters: bag } }
+    this.ping()
+  }
+
+  private depositAdditives(): void {
+    const take = (it: Item): boolean => {
+      if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost') return false
+      const n = this.putAdditive(it.kind, it.liters)
+      it.liters -= n
+      return it.liters <= 0
+    }
+    if (this.act.hand.kind === 'hold' && take(this.act.hand.item)) this.act.hand = { kind: 'empty' }
+    this.act.inventory.forEach((slot, i) => {
+      if (slot.kind === 'hold' && take(slot.item)) this.act.inventory[i] = { kind: 'empty' }
+    })
+    this.compactInventory()
+  }
+
+  /**
+   * Clears the hand for a withdrawal. Anything the store would not take back is set
+   * down first, so taking never silently destroys what you were carrying.
+   */
+  private freeHand(): boolean {
+    if (this.act.hand.kind !== 'hold') return true
+    const at = this.dropSite()
+    if (at === undefined) return false
+    this.drops.push({ at, item: this.act.hand.item })
+    this.act.hand = { kind: 'empty' }
     return true
   }
 
-  private putSeeds(crop: AnnualId, rarity: Rarity, count: number): void {
-    const merge = this.seedSlot(crop, rarity)
-    if (merge >= 0) {
-      const slot = this.act.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += count
-      return
-    }
-    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
-    this.act.inventory[empty] = { kind: 'hold', item: { kind: 'seeds', crop, rarity, count } }
+  private dropSite(): Coord | undefined {
+    const here = { col: Math.floor(this.act.actor.x), row: Math.floor(this.act.actor.y) }
+    if (this.inWorld(here) && isPlot(this.cell(here))) return here
+    const near = frontOf(here).find(p => this.inWorld(p) && isPlot(this.cell(p)))
+    return near === undefined ? undefined : { ...near }
   }
 
   nudgeOffered(id: StallGoodId, dir: 1 | -1): void {
@@ -2400,6 +2527,26 @@ export class World {
         this.act.cue = { kind: 'inventory' }
         this.shiftHead()
         return
+      case 'silo': {
+        if (this.cell(i.at).kind !== 'seed-silo') {
+          this.shiftHead()
+          return
+        }
+        this.depositSilo()
+        this.act.cue = { kind: 'silo', at: { ...i.at } }
+        this.shiftHead()
+        return
+      }
+      case 'additives': {
+        if (this.cell(i.at).kind !== 'additive-store') {
+          this.shiftHead()
+          return
+        }
+        this.depositAdditives()
+        this.act.cue = { kind: 'additives', at: { ...i.at } }
+        this.shiftHead()
+        return
+      }
       case 'chest': {
         const c = this.cell(i.at)
         if (c.kind !== 'chest' && c.kind !== 'freezer') {

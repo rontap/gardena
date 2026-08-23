@@ -4,6 +4,7 @@ import type { Peer } from 'peerjs'
 import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
+import { AdditivesUi, SiloUi } from './game/ui/store.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
@@ -41,8 +42,15 @@ type Panel =
   | { kind: 'cheat' }
   | { kind: 'lens' }
   | { kind: 'chest'; at: Coord }
+  | { kind: 'silo'; at: Coord }
+  | { kind: 'additives'; at: Coord }
   | { kind: 'menu' }
   | { kind: 'multiplayer' }
+
+/** Panels a walk-up cue opened. Closing any of them has to ack the cue. */
+function cued(kind: Panel['kind']): boolean {
+  return kind === 'chest' || kind === 'silo' || kind === 'additives'
+}
 
 const SPEED = (() => {
   const raw = new URLSearchParams(window.location.search).get('speed')
@@ -151,10 +159,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   useEffect(() => {
     if (world === undefined) return
     const cue = world.seats[world.local].cue
-    if (cue.kind !== 'chest') return
-    setPanel(p =>
-      p.kind === 'chest' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'chest', at: cue.at },
-    )
+    if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives') return
+    const at = cue.at
+    setPanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
   }, [n, world])
 
   useEffect(() => {
@@ -219,7 +226,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
         return
       }
       setPanel(p => {
-        if (p.kind === 'chest') world.ackCue()
+        if (cued(p.kind)) world.ackCue()
         if (p.kind === 'multiplayer') closeMpRef.current()
         return { kind: 'none' }
       })
@@ -354,7 +361,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
-      if (p.kind === 'chest') world.ackCue()
+      if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === next.kind ? { kind: 'none' } : next
     })
@@ -372,7 +379,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seam.kind === 'recap') return
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
-      if (p.kind === 'chest') world.ackCue()
+      if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === 'menu' ? { kind: 'none' } : { kind: 'menu' }
     })
@@ -436,7 +443,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (role === 'off') startHost()
     setPanel(p => {
       if (p.kind === 'shop') world.cancelPlace()
-      if (p.kind === 'chest') world.ackCue()
+      if (cued(p.kind)) world.ackCue()
       const open = p.kind !== 'multiplayer'
       setMpPanel(open)
       return open ? { kind: 'multiplayer' } : { kind: 'none' }
@@ -633,8 +640,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onClick={hit => {
               if (world.seam.kind === 'recap') return
               if (hit.kind !== 'sprinkler-hud') world.closeHud()
-              if (panel.kind === 'inventory' || panel.kind === 'chest') {
-                if (panel.kind === 'chest') world.ackCue()
+              if (panel.kind === 'inventory' || cued(panel.kind)) {
+                if (cued(panel.kind)) world.ackCue()
                 setPanel({ kind: 'none' })
                 return
               }
@@ -684,6 +691,26 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (
             <ChestUi
+              world={world}
+              at={panel.at}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {panel.kind === 'silo' && (
+            <SiloUi
+              world={world}
+              at={panel.at}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {panel.kind === 'additives' && (
+            <AdditivesUi
               world={world}
               at={panel.at}
               onClose={() => {

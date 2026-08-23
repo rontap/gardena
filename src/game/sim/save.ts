@@ -5,6 +5,8 @@ import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
 import { Actor } from './actor.ts'
 import {
+  ADDITIVE_IDS,
+  AdditiveStore,
   CHUNK,
   Chest,
   CompostBox,
@@ -18,6 +20,7 @@ import {
   Pump,
   RainTank,
   Rock,
+  SeedSilo,
   Tap,
   Tree,
   Truck,
@@ -25,10 +28,13 @@ import {
   chunkKey,
   chunkRect,
   occupiedCells,
+  type AdditiveHold,
+  type AdditiveId,
   type Base,
   type ChunkId,
   type Coord,
   type RectBase,
+  type SiloStack,
   type TreeYield,
 } from './building.ts'
 import type { Cell, Cover, Ground } from './plot.ts'
@@ -82,7 +88,7 @@ import {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.2 as const
+export const SAVE_VERSION = 1.3 as const
 
 const INV = 16
 
@@ -147,6 +153,8 @@ export type SaveCell =
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
   | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[] }
+  | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[] }
+  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[] }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'occ'; of: Coord }
 
@@ -161,7 +169,7 @@ export type SaveSeat = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.2
+  version: 1.3
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -353,6 +361,8 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'still' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
+    c.kind === 'seed-silo' ||
+    c.kind === 'additive-store' ||
     c.kind === 'truck'
   ) {
     if (c.base.shape === 'rect') return { col: c.base.col, row: c.base.row }
@@ -405,6 +415,10 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       }
     case 'chest':
       return { kind: 'chest', base: c.base, slots: c.slots.slice() }
+    case 'seed-silo':
+      return { kind: 'seed-silo', base: c.base, useDefault: c.useDefault, seeds: c.seeds.map(st => ({ ...st })) }
+    case 'additive-store':
+      return { kind: 'additive-store', base: c.base, useDefault: c.useDefault, held: c.held.map(h => ({ ...h })) }
     case 'grinder':
       return { kind: 'grinder', base: c.base }
     case 'compost-box':
@@ -658,6 +672,8 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     rng: new Rng(save.rng.seed, { shop: save.rng.shop, fruit: save.rng.fruit }),
     sink,
     house: live.house,
+    silo: live.silo,
+    additives: live.additives,
     truck: live.truck,
     pumps: live.pumps,
     tanks: live.tanks,
@@ -751,6 +767,8 @@ function stampChunks(
       chunks: Map<string, Cell[][]>
       house: House
       truck: Truck
+      silo: SeedSilo
+      additives: AdditiveStore
       pumps: Pump[]
       tanks: RainTank[]
       taps: Tap[]
@@ -764,6 +782,8 @@ function stampChunks(
   const stills: PotStill[] = []
   let house: House | undefined
   let truck: Truck | undefined
+  let silo: SeedSilo | undefined
+  let additives: AdditiveStore | undefined
   for (const ch of chunkSaves) {
     const { col0, row0 } = chunkRect(ch.id)
     for (let row = 0; row < CHUNK; row++) {
@@ -776,6 +796,8 @@ function stampChunks(
         origins.set(`${at.col},${at.row}`, made)
         if (made.kind === 'house') house = made
         if (made.kind === 'truck') truck = made
+        if (made.kind === 'seed-silo' && made.useDefault) silo = made
+        if (made.kind === 'additive-store' && made.useDefault) additives = made
         if (made.kind === 'pump') {
           if (made.form === 'starter') pumps.unshift(made)
           else pumps.push(made)
@@ -786,7 +808,7 @@ function stampChunks(
       }
     }
   }
-  if (house === undefined || truck === undefined) return undefined
+  if (house === undefined || truck === undefined || silo === undefined || additives === undefined) return undefined
   const chunks = new Map<string, Cell[][]>()
   for (const ch of chunkSaves) {
     const { col0, row0 } = chunkRect(ch.id)
@@ -816,6 +838,8 @@ function stampChunks(
               inst.kind === 'still' ||
               inst.kind === 'barrel' ||
               inst.kind === 'freezer' ||
+              inst.kind === 'seed-silo' ||
+              inst.kind === 'additive-store' ||
               inst.kind === 'truck'
               ? inst.base
               : { shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 },
@@ -833,7 +857,7 @@ function stampChunks(
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, pumps, tanks, taps, stills }
+  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills }
 }
 
 function makeLive(sc: SaveCell): Cell | undefined {
@@ -882,6 +906,16 @@ function makeLive(sc: SaveCell): Cell | undefined {
       const chest = new Chest(sc.base)
       for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = sc.slots[i]
       return chest
+    }
+    case 'seed-silo': {
+      const silo = new SeedSilo(sc.base, sc.useDefault)
+      sc.seeds.forEach(st => silo.seeds.push({ ...st }))
+      return silo
+    }
+    case 'additive-store': {
+      const store = new AdditiveStore(sc.base, sc.useDefault)
+      sc.held.forEach(h => store.held.push({ ...h }))
+      return store
     }
     case 'grinder':
       return new Grinder(sc.base)
@@ -1036,6 +1070,32 @@ function readSaveCell(v: unknown): SaveCell | undefined {
       slots.push(slot)
     }
     return { kind: 'chest', base, slots }
+  }
+  if (kind === 'seed-silo') {
+    const base = readRectBase(o.base)
+    const useDefault = bool(o.useDefault)
+    const seedsIn = arr(o.seeds)
+    if (base === undefined || useDefault === undefined || seedsIn === undefined) return undefined
+    const seeds: SiloStack[] = []
+    for (const v of seedsIn) {
+      const st = readSiloStack(v)
+      if (st === undefined) return undefined
+      seeds.push(st)
+    }
+    return { kind: 'seed-silo', base, useDefault, seeds }
+  }
+  if (kind === 'additive-store') {
+    const base = readRectBase(o.base)
+    const useDefault = bool(o.useDefault)
+    const heldIn = arr(o.held)
+    if (base === undefined || useDefault === undefined || heldIn === undefined) return undefined
+    const held: AdditiveHold[] = []
+    for (const v of heldIn) {
+      const h = readAdditiveHold(v)
+      if (h === undefined) return undefined
+      held.push(h)
+    }
+    return { kind: 'additive-store', base, useDefault, held }
   }
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
@@ -1692,6 +1752,27 @@ function readBarrelFeed(v: unknown): { rarity: Rarity; count: number } | undefin
   const count = num(o.count)
   if (rarity === undefined || count === undefined) return undefined
   return { rarity, count }
+}
+
+function readSiloStack(v: unknown): SiloStack | undefined {
+  const o = obj(v)
+  if (o === undefined || !isAnnual(o.crop)) return undefined
+  const rarity = readRarity(o.rarity)
+  const count = num(o.count)
+  if (rarity === undefined || count === undefined) return undefined
+  return { crop: o.crop, rarity, count }
+}
+
+function readAdditiveHold(v: unknown): AdditiveHold | undefined {
+  const o = obj(v)
+  if (o === undefined || !isAdditiveId(o.id)) return undefined
+  const liters = num(o.liters)
+  if (liters === undefined) return undefined
+  return { id: o.id, liters }
+}
+
+function isAdditiveId(v: unknown): v is AdditiveId {
+  return typeof v === 'string' && (ADDITIVE_IDS as readonly string[]).includes(v)
 }
 
 function readRarity(v: unknown): Rarity | undefined {

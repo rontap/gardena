@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.2`, `seats`. Parse identity: `game === "gardena"`. `version` is the number `1.2` on dump. Assumption: wordmark **1.2.0**.
+One file shape. Dump writes `game: "gardena"`, `version: 1.3`, `seats`. Parse identity: `game === "gardena"`. `version` is the number `1.3` on dump. Assumption: wordmark **1.3.0**.
 
 ## RFC — versions (active)
 

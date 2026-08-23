@@ -1,5 +1,6 @@
-import type { ChunkId } from './building.ts'
-import type { MemberId, ResearchId, SkuId, StallGoodId } from './ids.ts'
+import type { AdditiveId, ChunkId } from './building.ts'
+import type { Rarity } from '../defs/rarity.ts'
+import type { AnnualId, MemberId, ResearchId, SkuId, StallGoodId } from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { Intent, SeatId } from './world.ts'
 
@@ -22,6 +23,7 @@ export const Act = {
   nudgeOffered: 'o',
   swap: 'w',
   swapChest: 'h',
+  takeStore: 'S',
   tuneSprinkler: 't',
   openHud: 'j',
   closeHud: 'l',
@@ -61,6 +63,8 @@ export type Cmd =
   | { a: typeof Act.nudgeOffered; t: number; p: SeatId; g: StallGoodId; d: 1 | -1 }
   | { a: typeof Act.swap; t: number; p: SeatId; i: number }
   | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }
+  | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: Rarity }
+  | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; d: AdditiveId }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
   | { a: typeof Act.openHud; t: number; p: SeatId; c: XY }
   | { a: typeof Act.closeHud; t: number; p: SeatId }

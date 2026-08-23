@@ -65,7 +65,21 @@ export function Hud({
   net,
 }: {
   world: World
-  panel: 'none' | 'family' | 'shop' | 'research' | 'market' | 'inventory' | 'almanac' | 'chest' | 'lens' | 'cheat' | 'menu' | 'multiplayer'
+  panel:
+    | 'none'
+    | 'family'
+    | 'shop'
+    | 'research'
+    | 'market'
+    | 'inventory'
+    | 'almanac'
+    | 'chest'
+    | 'silo'
+    | 'additives'
+    | 'lens'
+    | 'cheat'
+    | 'menu'
+    | 'multiplayer'
   lens: Lens
   paused: boolean
   onFamily: () => void

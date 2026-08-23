@@ -1,4 +1,5 @@
 import { forwardRef, type MouseEvent, type ReactNode } from 'react'
+import * as Progress from '@radix-ui/react-progress'
 import {
   symHref,
   UI_COIN,
@@ -49,6 +50,29 @@ export function Coin({ n }: { n: number }) {
       <Glyph html={UI_COIN_SILVER} />
       <span>{silver}</span>
     </span>
+  )
+}
+
+/**
+ * The one filled bar. Day clock, research, store capacity. `value` is 0..1; `color`
+ * and `track` are palette classes so a caller picks meaning, not pixels.
+ */
+export function Bar({
+  value,
+  color,
+  track = 'bg-ink/15',
+  className = 'h-1.5',
+}: {
+  value: number
+  color: string
+  track?: string
+  className?: string
+}) {
+  const pct = value <= 0 ? 0 : value >= 1 ? 100 : value * 100
+  return (
+    <Progress.Root className={`relative overflow-hidden ${track} ${className}`} value={pct}>
+      <Progress.Indicator className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+    </Progress.Root>
   )
 }
 
@@ -302,15 +326,22 @@ export function Frame({
   onClose,
   wide,
   className,
+  aside,
 }: {
   title: string
   children: ReactNode
   onClose?: () => void
   wide?: boolean
   className?: string
+  aside?: ReactNode
 }) {
   return (
-    <Window title={title} onClose={onClose} className={className ?? (wide === true ? 'w-[30rem]' : 'w-80')}>
+    <Window
+      title={title}
+      onClose={onClose}
+      aside={aside}
+      className={className ?? (wide === true ? 'w-[30rem]' : 'w-80')}
+    >
       {children}
     </Window>
   )

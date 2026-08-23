@@ -21,7 +21,9 @@ import {
   BARREL,
   CHEST,
   COMPOST_BOX,
+  ADDITIVE_STORE,
   FREEZER,
+  SEED_SILO,
   JAM,
   MILL,
   STILL,
@@ -736,6 +738,13 @@ const Marks = memo(function Marks({
     const propArt = PROP_ART[cell.kind]
     if (propArt !== undefined) props.push({ col: at.col, row: at.row, art: propArt, kind: cell.kind })
     if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
+    // 1x2 stores are not in PROP_ART: they must draw once, at their base origin.
+    if (cell.kind === 'seed-silo' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: SEED_SILO, kind: cell.kind })
+    }
+    if (cell.kind === 'additive-store' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: ADDITIVE_STORE, kind: cell.kind })
+    }
     if (world.hasFence(at)) {
       const a = world.fenceArms(at)
       const fit = fenceFit(a.n, a.e, a.s, a.w)
@@ -1084,7 +1093,9 @@ function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
     cell.kind === 'jam' ||
     cell.kind === 'still' ||
     cell.kind === 'barrel' ||
-    cell.kind === 'freezer'
+    cell.kind === 'freezer' ||
+    cell.kind === 'seed-silo' ||
+    cell.kind === 'additive-store'
   ) {
     return WATER
   }

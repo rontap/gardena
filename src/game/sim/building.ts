@@ -1,6 +1,14 @@
-import { CHEST_SLOTS, FREEZER_SLOTS } from '../defs/items.ts'
+import {
+  ADDITIVE_CAP_LITERS,
+  CHEST_SLOTS,
+  COMPOST_LITERS,
+  FERT_BAG_LITERS,
+  FREEZER_SLOTS,
+  SILO_SEED_CAP,
+  SYNTH_BAG_LITERS,
+} from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { JamCrop, MillRecipe, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, JamCrop, MillRecipe, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -156,6 +164,8 @@ export const YARD: Coord[] = [
   { col: 14, row: 9 },
 ]
 export const PAD: Coord = { col: 12, row: 9 }
+export const SILO_BASE: RectBase = { shape: 'rect', col: 17, row: 9, w: 1, h: 2 }
+export const ADDITIVE_BASE: RectBase = { shape: 'rect', col: 18, row: 9, w: 1, h: 2 }
 
 export class House {
   readonly kind = 'house' as const
@@ -314,6 +324,66 @@ export class Freezer {
   constructor(base: RectBase) {
     this.base = base
     this.slots = Array.from({ length: FREEZER_SLOTS }, (): Slot => ({ kind: 'empty' }))
+  }
+}
+
+/**
+ * Shared contract for storage buildings: a capacity and the flag that marks which
+ * instance a shop purchase flows into. Only one default exists per store kind today
+ * and none are buyable, but `useDefault` is the seam multiple stores will hang off.
+ */
+export abstract class Store {
+  readonly base: RectBase
+  readonly cap: number
+  useDefault: boolean
+  constructor(base: RectBase, cap: number, useDefault = true) {
+    this.base = base
+    this.cap = cap
+    this.useDefault = useDefault
+  }
+  abstract get used(): number
+  get free(): number {
+    const n = this.cap - this.used
+    return n < 0 ? 0 : n
+  }
+}
+
+export type SiloStack = { crop: AnnualId; rarity: Rarity; count: number }
+
+export class SeedSilo extends Store {
+  readonly kind = 'seed-silo' as const
+  readonly seeds: SiloStack[] = []
+  constructor(base: RectBase, useDefault = true) {
+    super(base, SILO_SEED_CAP, useDefault)
+  }
+  get used(): number {
+    return this.seeds.reduce((n, s) => n + s.count, 0)
+  }
+}
+
+/** Additive kinds the store accepts. New consumable feeds append here. */
+export const ADDITIVE_IDS = ['fertilizer', 'synth', 'compost'] as const
+export type AdditiveId = (typeof ADDITIVE_IDS)[number]
+
+export const ADDITIVE_BAG: { readonly [K in AdditiveId]: number } = {
+  fertilizer: FERT_BAG_LITERS,
+  synth: SYNTH_BAG_LITERS,
+  compost: COMPOST_LITERS,
+}
+
+export type AdditiveHold = { id: AdditiveId; liters: number }
+
+export class AdditiveStore extends Store {
+  readonly kind = 'additive-store' as const
+  readonly held: AdditiveHold[] = []
+  constructor(base: RectBase, useDefault = true) {
+    super(base, ADDITIVE_CAP_LITERS, useDefault)
+  }
+  get used(): number {
+    return this.held.reduce((n, h) => n + h.liters, 0)
+  }
+  litersOf(id: AdditiveId): number {
+    return this.held.find(h => h.id === id)?.liters ?? 0
   }
 }
 

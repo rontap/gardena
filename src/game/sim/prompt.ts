@@ -249,6 +249,8 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return needSeeds(cell)
   }
   if (onCell(w.drops, at).length > 0) return intent('Pick up', { act: 'pickup', at })
+  if (cell.kind === 'seed-silo') return intent('Seed silo', { act: 'silo', at })
+  if (cell.kind === 'additive-store') return intent('Additives', { act: 'additives', at })
   if (cell.kind === 'chest') return intent('Chest', { act: 'chest', at })
   if (cell.kind === 'freezer') return intent('Freezer', { act: 'chest', at })
   if (cell.kind === 'grinder') {

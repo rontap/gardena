@@ -207,7 +207,7 @@ import uiCornerBl from '../../assets/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import type { CropId, MemberId, PickaxeId, ResearchId, ShovelId, SkillId, SkuId, TileId, TreeId } from '../sim/ids.ts'
+import { ANNUAL_IDS, TREE_IDS, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -754,3 +754,114 @@ function stageOnly(raw: string, stage: string): string {
     id === stage ? `<g id="${id}"` : `<g id="${id}" display="none"`,
   )
 }
+
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const SYM_IDS = new Map<string, string>()
+const SYM_QUEUE: { id: string; html: string }[] = []
+let symSeq = 0
+let symAcc: SVGGElement | undefined
+
+function symAdopt(id: string, html: string): void {
+  if (symAcc === undefined) {
+    SYM_QUEUE.push({ id, html })
+    return
+  }
+  const g = document.createElementNS(SVG_NS, 'g')
+  g.id = id
+  g.innerHTML = html
+  symAcc.appendChild(g)
+}
+
+function symId(html: string): string {
+  let id = SYM_IDS.get(html)
+  if (id === undefined) {
+    id = `sym${symSeq++}`
+    SYM_IDS.set(html, id)
+    symAdopt(id, html)
+  }
+  return id
+}
+
+export function symHref(html: string): string {
+  if (symAcc === undefined && typeof document !== 'undefined') {
+    const host = document.createElement('div')
+    host.setAttribute('aria-hidden', 'true')
+    host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'
+    const svg = document.createElementNS(SVG_NS, 'svg')
+    symAcc = document.createElementNS(SVG_NS, 'g')
+    svg.appendChild(symAcc)
+    host.appendChild(svg)
+    document.body.appendChild(host)
+    SYM_QUEUE.forEach(e => symAdopt(e.id, e.html))
+    SYM_QUEUE.length = 0
+  }
+  return `#${symId(html)}`
+}
+
+const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-rare', 'ripe-heirloom', 'dead'] as const
+const TREE_STAGES = ['grow', 'unripe', 'ripe'] as const
+const GRASS_STAGES = ['sprout', 'grow'] as const
+
+;[
+  ...GRASS,
+  ...DIRT,
+  DIRT_EDGE,
+  DIRT_INSET,
+  ...HARD,
+  ...VERY_HARD,
+  ...Object.values(BUILDING_TILES),
+  FENCE_POST,
+  FENCE_STUB,
+  FENCE_I,
+  FENCE_L,
+  FENCE_T,
+  FENCE_X,
+  PIPE_STUB,
+  PIPE_I,
+  PIPE_L,
+  PIPE_T,
+  PIPE_X,
+  dryOf(PIPE_STUB),
+  dryOf(PIPE_I),
+  dryOf(PIPE_L),
+  dryOf(PIPE_T),
+  dryOf(PIPE_X),
+  PUMP,
+  RAIN_TANK,
+  TAP,
+  CHEST,
+  GRINDER,
+  MILL,
+  STILL,
+  BARREL,
+  JAM,
+  FREEZER,
+  COMPOST_BOX,
+  TRUCK,
+  HOUSE,
+  WELL,
+  ROCK,
+  ROCK_LONG,
+  SPRINKLER,
+  SPRINKLER_VERT,
+  SPRINKLER_LARGE,
+  PIPE_SOURCE,
+  CROP_ROTTEN,
+  valveArt(true),
+  valveArt(false),
+  ...GRASS_STAGES.map(turfInner),
+  weedInner(0, 'sprout'),
+  weedInner(0, 'grow'),
+  weedInner(1, 'sprout'),
+  weedInner(1, 'grow'),
+  ...(TREE_IDS as TreeId[]).flatMap(t => TREE_STAGES.map(s => treeStage(t, s))),
+  ...([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c =>
+    CROP_STAGES.map(s => cropInner(c, s)),
+  ),
+].forEach(art => {
+  symId(art)
+})
+;(['uncommon', 'rare', 'heirloom'] as const).forEach(r => {
+  const pip = qualityPip(r)
+  if (pip !== undefined) symId(pip)
+})

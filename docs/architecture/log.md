@@ -18,6 +18,8 @@ Do not create `src/` here.
 
 `World.log: Cmd[]` is source of truth. In-process. Vitest never constructs a Worker, never uses `WorkerSink`, never loads `log.worker.ts`.
 
+`World.log` retains the last 500 cmds (ring: `cmds` + `logBase`). The worker holds full history. Replay from main thread beyond 500 cmds must go through the worker `dump`. `World.logEnd` is absolute; `logSince(n)` returns retained cmds from cursor `n`, clamped to `logBase` — a clamped read means a gap; MP digest/resync covers it.
+
 Worker is an async JSON copy. Main thread owns `World`.
 
 React does not own the log. App holds `World` or none. Panel open/close, camera, hover, `Lens` are view-local and not logged.

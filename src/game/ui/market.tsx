@@ -66,6 +66,7 @@ function boxFace(id: StallGoodId): Item {
     return { kind: 'jam', crop, count: 1, unitSale: 1 }
   }
   if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, count: 1, unitSale: 1 }
+  if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
   return {
     kind: 'box',
     cap: 5,

@@ -93,9 +93,9 @@ SVG world. Camera and `Lens` are view-local, not `World` fields. `Lens` includes
 | file | owns |
 |---|---|
 | `camera.ts` | `Camera`, `TILE` |
-| `map.tsx` | `MapView`, `Lens` (`off` `water` `ripe` `kind` `rarity` `pipes` `land`); paints `Cell`; hit → `PromptHit` |
-| `motion.ts` | rAF paint of actor / meters |
-| `svgs.ts` | inner SVG fragments |
+| `map.tsx` | `MapView`, `Lens` (`off` `water` `ripe` `kind` `rarity` `pipes` `land`); paints `Cell`; hit → `PromptHit`. Ground is baked per 16×16 chunk, cached by content signature — a dig rebakes one chunk. Marks render per-entity memo components keyed by cell; props are primitives so unchanged entities skip DOM writes. Thirst / fert / fresh / compost bar rects are shells; widths come from `motion.ts` only. Actor bodies stay inline innerHTML (hat CSS targets inside the fragment). |
+| `motion.ts` | rAF paint of actor / meters. Registry not DOM scans: `bindBar(kind, at, el)` for plot + compost bars, `bindActor(id, el)` for seats. `paintMotion(root, world)` signature unchanged. Owns `[data-day-bar]` width outright. |
+| `svgs.ts` | inner SVG fragments. `symHref(html)` registers a fragment once into a hidden defs host and returns a `<use>` href; map view renders `<use>` clones, never re-parses fragments per instance. Hot fragments pre-registered at module init. |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.
 

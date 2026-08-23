@@ -376,8 +376,8 @@ export class MpHost {
     const hex = sendDigest ? digestHex(this.world) : ''
     this.guests.forEach(g => {
       if (g.seat === undefined) return
-      const cmds = this.world.log.slice(g.n)
-      g.n = this.world.log.length
+      const cmds = this.world.logSince(g.n)
+      g.n = this.world.logEnd
       g.wire.send({ a: 'bundle', t, cmds })
       if (sendDigest) {
         g.digestWait = true
@@ -461,7 +461,7 @@ export class MpHost {
       this.joining = true
       this.setPaused(true)
       if (this.onCatching !== undefined) this.onCatching(true)
-      link.n = this.world.log.length
+      link.n = this.world.logEnd
       this.world.join(msg.playerId, msg.name)
       link.wire.send({ a: 'resync', save: dump(this.world), now: this.world.now })
       this.pushRoster()
@@ -482,7 +482,7 @@ export class MpHost {
     this.joining = true
     this.setPaused(true)
     if (this.onCatching !== undefined) this.onCatching(true)
-    link.n = this.world.log.length
+    link.n = this.world.logEnd
     link.wire.send({
       a: 'welcome',
       protocol: PROTOCOL,

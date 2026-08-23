@@ -299,6 +299,8 @@ apply(cmd): mutate seats[cmd.p] and shared farm. No log.
 
 No silent flag. Replay calls `apply` only.
 
+`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech'`) and flushes subscribers once per microtask with the reason set. `poured` / `sold` emit synchronously. `flushDirty()` forces a flush.
+
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
 `Seat.place` / `World.hud` / `World.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens are not.

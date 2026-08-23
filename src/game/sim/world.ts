@@ -452,9 +452,18 @@ export function dest(i: Intent): Coord {
   return i.at
 }
 
+const LOG_CAP = 500
+
+export type PingKind = 'dirty' | 'poured' | 'sold'
+
+export type DirtyReason = 'act' | 'field' | 'big' | 'speech'
+
+const NO_REASONS: ReadonlySet<DirtyReason> = new Set()
+
 export class World {
   readonly rng: Rng
-  readonly log: Cmd[] = []
+  private readonly cmds: Cmd[] = []
+  private logBase = 0
   now = 0
   readonly ripenN = new Map<string, number>()
   private readonly sink: LogSink
@@ -502,7 +511,9 @@ export class World {
   private readonly chunks = new Map<string, Cell[][]>()
   private readonly live = new Map<string, Coord>()
   private readonly vfx = new Map<string, boolean>()
-  private readonly subs = new Set<(kind: 'dirty' | 'poured' | 'sold') => void>()
+  private readonly subs = new Set<(kind: PingKind, reasons: ReadonlySet<DirtyReason>) => void>()
+  private pendingDirty = new Set<DirtyReason>()
+  private flushQueued = false
 
   constructor(seed?: number, sink?: LogSink)
   constructor(h: Hydrate)
@@ -623,6 +634,18 @@ export class World {
     return this.rng.seed
   }
 
+  get log(): Cmd[] {
+    return this.cmds
+  }
+
+  get logEnd(): number {
+    return this.logBase + this.cmds.length
+  }
+
+  logSince(n: number): Cmd[] {
+    return this.cmds.slice(Math.max(0, n - this.logBase))
+  }
+
   get pump(): Pump {
     return this.pumps[0]
   }
@@ -668,7 +691,11 @@ export class World {
   dispatch(cmd: Extract<Cmd, { a: typeof Act.buy }>): 'Cannot afford' | 'Inventory full' | undefined
   dispatch(cmd: Cmd): void
   dispatch(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | 'Cannot afford' | 'Inventory full' | undefined | void {
-    this.log.push(cmd)
+    this.cmds.push(cmd)
+    if (this.cmds.length > LOG_CAP) {
+      this.cmds.shift()
+      this.logBase += 1
+    }
     this.sink.push(cmd)
     return this.apply(cmd)
   }
@@ -764,7 +791,7 @@ export class World {
     }
   }
 
-  on(fn: (kind: 'dirty' | 'poured' | 'sold') => void): () => void {
+  on(fn: (kind: PingKind, reasons: ReadonlySet<DirtyReason>) => void): () => void {
     this.subs.add(fn)
     return () => {
       this.subs.delete(fn)
@@ -772,11 +799,30 @@ export class World {
   }
 
   ping(): void {
-    this.emit('dirty')
+    this.mark('act')
   }
 
-  private emit(kind: 'dirty' | 'poured' | 'sold'): void {
-    this.subs.forEach(f => f(kind))
+  pingFor(reason: DirtyReason): void {
+    this.mark(reason)
+  }
+
+  flushDirty(): void {
+    this.flushQueued = false
+    if (this.pendingDirty.size === 0) return
+    const reasons = this.pendingDirty
+    this.pendingDirty = new Set()
+    this.subs.forEach(f => f('dirty', reasons))
+  }
+
+  private mark(reason: DirtyReason): void {
+    this.pendingDirty.add(reason)
+    if (this.flushQueued) return
+    this.flushQueued = true
+    queueMicrotask(() => this.flushDirty())
+  }
+
+  private emit(kind: Exclude<PingKind, 'dirty'>): void {
+    this.subs.forEach(f => f(kind, NO_REASONS))
   }
 
   inWorld(at: Coord): boolean {
@@ -2240,7 +2286,7 @@ export class World {
     this.speech.left -= dt
     if (this.speech.left > 0) return
     this.speech = { kind: 'none' }
-    this.ping()
+    this.pingFor('speech')
   }
 
   private tickJob(dt: number): void {
@@ -2604,7 +2650,7 @@ export class World {
       if (now.kind !== 'growing' && now.kind !== 'ripe') continue
       if (now.plant.stage(now.kind) !== stage0 || mood(now.soil, st) !== mood0) dirty = true
     }
-    if (dirty) this.ping()
+    if (dirty) this.pingFor('field')
   }
 
   private tickWater(dt: number): void {
@@ -2646,7 +2692,7 @@ export class World {
       this.drops.push({ at: spot, item: makeCompost() })
       dirty = true
     }
-    if (dirty) this.ping()
+    if (dirty) this.pingFor('field')
   }
 
   private tickFreshness(dt: number): void {
@@ -2748,7 +2794,7 @@ export class World {
         this.track(at, c)
       }
     }
-    if (dirty) this.ping()
+    if (dirty) this.pingFor('field')
   }
 
   private dropSpot(at: Coord): Coord | undefined {
@@ -2772,7 +2818,7 @@ export class World {
     const weeds = this.sproutWeeds()
     const grass = this.sproutGrass()
     const vfx = this.tickVfx()
-    if (weeds || grass || vfx) this.ping()
+    if (weeds || grass || vfx) this.pingFor('big')
   }
 
   private tickVfx(): boolean {

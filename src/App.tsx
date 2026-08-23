@@ -61,11 +61,9 @@ function ignoreClick(_h: MapClick): void {}
 
 export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
-  const revRef = useRef(0)
   const consignRevision = useRef(0)
   const prevSeam = useRef<'play' | 'recap'>('play')
   const [n, setN] = useState(0)
-  revRef.current = n
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
   const [world, setWorld] = useState<World | undefined>(() =>
     START_NOW ? new World(undefined, sink) : undefined,
@@ -121,7 +119,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     if (world === undefined) return
-    return world.on(kind => {
+    return world.on((kind, reasons) => {
       setTutorial(t => {
         if (t.kind !== 'on') return t
         return check(world, {
@@ -131,7 +129,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           sold: t.sold || kind === 'sold',
         })
       })
-      setN(x => x + 1)
+      if (kind !== 'dirty' || reasons.size > 1 || !reasons.has('speech')) setN(x => x + 1)
     })
   }, [world])
 
@@ -194,7 +192,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           accRef.current -= DT_MAX
         }
       }
-      if (root.current !== null) paintMotion(root.current, world, revRef.current)
+      if (root.current !== null) paintMotion(root.current, world)
       id = requestAnimationFrame(loop)
     }
     id = requestAnimationFrame(loop)

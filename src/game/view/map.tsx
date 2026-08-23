@@ -1,17 +1,15 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
-import { COMPOST_NEED } from '../defs/items.ts'
 import { CROPS, tolerance } from '../defs/crops.ts'
-import { fertBand, waterBand, SOIL_WATER_MAX, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
+import { fertBand, waterBand, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
 import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
-import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base, type Coord } from '../sim/building.ts'
-import { onCell, type Drop } from '../sim/drop.ts'
-import { isPlot, isTilled, type Cell, type Cover, type Plot } from '../sim/plot.ts'
+import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base } from '../sim/building.ts'
+import { onCell } from '../sim/drop.ts'
+import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import { Coin } from '../ui/frame.tsx'
 import type { CropId, SkuId } from '../sim/ids.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { Soil } from '../sim/soil.ts'
-import type { Modifier } from '../sim/modifiers.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import type { Place, SeatId, World } from '../sim/world.ts'
@@ -58,9 +56,11 @@ import {
   ripeGroup,
   skuInner,
   dryOf,
+  symHref,
   valveArt,
   weedInner,
 } from './svgs.ts'
+import { bindActor, bindBar } from './motion.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes'
 
@@ -372,8 +372,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
                   data-pipe-ghost
                   pointerEvents="none"
                   transform={`translate(${v.col * TILE},${v.row * TILE}) rotate(${fit.rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-                  dangerouslySetInnerHTML={{ __html: ghostWet ? fit.html : dryOf(fit.html) }}
-                />
+                >
+                  <Use art={ghostWet ? fit.html : dryOf(fit.html)} />
+                </g>
               )
             })}
           {ghostSprinkler !== undefined && (
@@ -393,17 +394,13 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
             </g>
           )}
           {placeId === 'buy-valve' && edgeHit !== undefined && (
-            <g
-              data-valve-ghost
-              pointerEvents="none"
-              opacity={0.7}
-              transform={edgeTransform(edgeHit)}
-              dangerouslySetInnerHTML={{ __html: valveArt(true) }}
-            />
+            <g data-valve-ghost pointerEvents="none" opacity={0.7} transform={edgeTransform(edgeHit)}>
+              <Use art={valveArt(true)} />
+            </g>
           )}
           {placeId === 'buy-well' && edgeHit !== undefined && (
             <g data-well-ghost pointerEvents="none" opacity={0.7}>
-              <WellGfx at={edgeHit} />
+              <WellGfx col={edgeHit.col} row={edgeHit.row} axis={edgeHit.axis} />
             </g>
           )}
           {deleteTool && deleteTarget?.kind === 'pipe' && (
@@ -426,8 +423,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               pointerEvents="none"
               opacity={0.7}
               transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
-              dangerouslySetInnerHTML={{ __html: placeId === 'buy-pumpjack' ? PUMP : RAIN_TANK }}
-            />
+            >
+              <Use art={placeId === 'buy-pumpjack' ? PUMP : RAIN_TANK} />
+            </g>
           )}
           <foreignObject
             data-speech
@@ -446,7 +444,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       </svg>
       {followSku && placeId !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: skuInner(placeId) }} />
+          <svg className="h-16 w-16" viewBox="0 0 24 24">
+            <Use art={skuInner(placeId)} />
+          </svg>
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{followText}</div>
         </div>
       )}
@@ -465,7 +465,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       )}
       {pumpjack && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
-          <svg className="h-8 w-16" viewBox="0 0 48 24" dangerouslySetInnerHTML={{ __html: PUMP }} />
+          <svg className="h-8 w-16" viewBox="0 0 48 24">
+            <Use art={PUMP} />
+          </svg>
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
@@ -477,6 +479,86 @@ function placeLine(id: SkuId): string {
   return `Place ${skuLabel(id)}`
 }
 
+function Use({ art }: { art: string }) {
+  return <use href={symHref(art)} />
+}
+
+const GROUND_CHUNK = 16
+
+type BakedChunk = { sig: string; html: string }
+
+const bakedChunks = new Map<string, BakedChunk>()
+
+type Bounds = ReturnType<World['bounds']>
+
+function groundToken(col: number, row: number, cell: Cell, g: number): string {
+  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return `t:${cell.cover.tile}`
+  if (cell.kind === 'untilled' && cell.ground === 'hard') return `h${hBand(g)}`
+  if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') {
+    return `v${vhBand(g)}`
+  }
+  return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`
+}
+
+function fadeToken(col: number, row: number, g: number): string {
+  if (g < VERY_HARD_MAX) return `v${vhBand(g)}`
+  if (g < HARD_MAX) return `h${hBand(g)}`
+  return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`
+}
+
+function groundTile(col: number, row: number, cell: Cell, g: number): string {
+  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return BUILDING_TILES[cell.cover.tile]
+  if (cell.kind === 'untilled' && cell.ground === 'hard') return HARD[hBand(g)]
+  if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') {
+    return VERY_HARD[vhBand(g)]
+  }
+  return GRASS[tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)]
+}
+
+function chunkSig(world: World, cx: number, cy: number, keys: Set<string>, b: Bounds): string {
+  const c0 = cx * GROUND_CHUNK
+  const r0 = cy * GROUND_CHUNK
+  let sig = ''
+  for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
+    for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
+      if (!keys.has(chunkKey(chunkOf({ col, row })))) {
+        const d = Math.max(
+          b.col0 - col,
+          col - (b.col1 - 1),
+          b.row0 - row,
+          row - (b.row1 - 1),
+          0,
+        )
+        if (d > FADE) continue
+        sig += `${fadeToken(col, row, goodness(world.rng, col, row))}:${d <= 1 ? 0.65 : 0.35};`
+        continue
+      }
+      sig += `${groundToken(col, row, world.cell({ col, row }), goodness(world.rng, col, row))};`
+    }
+  }
+  return sig
+}
+
+function chunkHtml(world: World, cx: number, cy: number, keys: Set<string>, b: Bounds): string {
+  const c0 = cx * GROUND_CHUNK
+  const r0 = cy * GROUND_CHUNK
+  let html = ''
+  for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
+    for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
+      const at = { col, row }
+      const g = goodness(world.rng, col, row)
+      const ownedCell = keys.has(chunkKey(chunkOf(at)))
+      const art = ownedCell ? groundTile(col, row, world.cell(at), g) : groundArt(col, row, g)
+      const op =
+        ownedCell
+          ? ''
+          : ` opacity="${Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0) <= 1 ? 0.65 : 0.35}"`
+      html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"${op}><use href="${symHref(art)}"/></g>`
+    }
+  }
+  return html
+}
+
 const Ground = memo(function Ground({
   world,
   owned,
@@ -486,8 +568,40 @@ const Ground = memo(function Ground({
   owned: number
   groundRev: number
 }) {
-  const html = useMemo(() => bakeGround(world), [world, owned, groundRev])
-  return <g dangerouslySetInnerHTML={{ __html: html }} />
+  void owned
+  void groundRev
+  const b = world.bounds()
+  const keys = new Set(world.owned.map(chunkKey))
+  const chunks: { key: string; html: string }[] = []
+  const cyEnd = Math.floor((b.row1 + FADE - 1) / GROUND_CHUNK)
+  const cxBnd = Math.floor((b.col1 + FADE - 1) / GROUND_CHUNK)
+  for (let cy = Math.floor((b.row0 - FADE) / GROUND_CHUNK); cy <= cyEnd; cy++) {
+    for (let cx = Math.floor((b.col0 - FADE) / GROUND_CHUNK); cx <= cxBnd; cx++) {
+      const key = `${cx},${cy}`
+      const prev = bakedChunks.get(key)
+      if (prev !== undefined) {
+        const sig = chunkSig(world, cx, cy, keys, b)
+        if (prev.sig === sig) {
+          chunks.push({ key, html: prev.html })
+          continue
+        }
+        const made = { sig, html: chunkHtml(world, cx, cy, keys, b) }
+        bakedChunks.set(key, made)
+        chunks.push({ key, html: made.html })
+        continue
+      }
+      const made = { sig: chunkSig(world, cx, cy, keys, b), html: chunkHtml(world, cx, cy, keys, b) }
+      bakedChunks.set(key, made)
+      chunks.push({ key, html: made.html })
+    }
+  }
+  return (
+    <g>
+      {chunks.map(c => (
+        <g key={c.key} dangerouslySetInnerHTML={{ __html: c.html }} />
+      ))}
+    </g>
+  )
 })
 
 const Marks = memo(function Marks({
@@ -502,23 +616,31 @@ const Marks = memo(function Marks({
   hideVerts: readonly Vertex[] | undefined
 }) {
   void rev
-  const plots: { col: number; row: number; cell: Plot }[] = []
+  const plots: {
+    col: number
+    row: number
+    kind: Cell['kind']
+    dv: number
+    e: string
+    turfStage: string
+    weedV: number
+    weedStage: string
+    crop: string
+    stage: string
+    pip: string
+    water: Band | ''
+    fert: Band | ''
+    fresh: boolean
+  }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
-  const tufts: { col: number; row: number; cover: Cover }[] = []
+  const tufts: { col: number; row: number; v: 0 | 1 | 2 }[] = []
   const trees: { col: number; row: number; species: 'apple' | 'apricot' | 'lemon' | 'cherry'; stage: 'grow' | 'unripe' | 'ripe' }[] = []
-  const chests: Coord[] = []
-  const grinders: Coord[] = []
-  const mills: Coord[] = []
-  const stills: Coord[] = []
-  const barrels: Coord[] = []
-  const jams: Coord[] = []
-  const freezers: Coord[] = []
-  const composters: { col: number; row: number; units: number; progress: number }[] = []
+  const props: { col: number; row: number; art: string; kind: string }[] = []
   const truck = { col: world.truck.base.col, row: world.truck.base.row }
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
-  const pipes: { v: Vertex; html: string; rot: number; wet: boolean }[] = []
+  const pipes: { col: number; row: number; art: string; rot: number; wet: boolean }[] = []
   const sprinklers: Sprinkler[] = []
-  const fences: { col: number; row: number; html: string; rot: number }[] = []
+  const fences: { col: number; row: number; art: string; rot: number }[] = []
   const valves: { at: Edge; open: boolean }[] = []
   const wellEdges: Edge[] = []
   world.wells.forEach(w => wellEdges.push(w.at))
@@ -547,12 +669,54 @@ const Marks = memo(function Marks({
   const expandUnlocked = world.done.has('unlock-expand')
   const purchases = world.purchases
   const faces = useMemo(() => world.faces(), [world, expandUnlocked, purchases])
+  const PROP_ART: Record<string, string> = {
+    chest: CHEST,
+    grinder: GRINDER,
+    mill: MILL,
+    still: STILL,
+    barrel: BARREL,
+    jam: JAM,
+    freezer: FREEZER,
+    tap: TAP,
+  }
+  const boxes: { col: number; row: number }[] = []
   world.forEachCell((at, cell) => {
+    const key = `${at.col},${at.row}`
     if (isPlot(cell) && cell.kind !== 'untilled' && cell.kind !== 'infertile') {
-      plots.push({ col: at.col, row: at.row, cell })
+      const stage =
+        cell.kind === 'ripe'
+          ? ripeGroup(cell.plant.rarity)
+          : cell.kind === 'growing' || cell.kind === 'dead'
+            ? cell.plant.stage(cell.kind)
+            : ''
+      const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
+      const rarity =
+        cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' ? cell.plant.rarity : undefined
+      const pip = rarity !== undefined ? qualityPip(rarity) : undefined
+      plots.push({
+        col: at.col,
+        row: at.row,
+        kind: cell.kind,
+        dv: tileVariant(at.col, at.row, 2),
+        e: edgeSig(dirtEdges(world, at.col, at.row)),
+        turfStage: cell.kind === 'turf' ? cell.turf.stage() : '',
+        weedV: cell.kind === 'weed' ? cell.weed.variant : -1,
+        weedStage: cell.kind === 'weed' ? cell.weed.stage() : '',
+        crop:
+          cell.kind === 'rotten'
+            ? cell.crop
+            : cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead'
+              ? cell.plant.crop
+              : '',
+        stage,
+        pip: pip ?? '',
+        water: bands !== undefined && bands.water !== 'green' ? bands.water : '',
+        fert: bands !== undefined && bands.fert !== 'green' ? bands.fert : '',
+        fresh: cell.kind === 'ripe' && cell.plant.freshness < 0.8,
+      })
     }
     if (cell.kind === 'untilled' && cell.cover.kind === 'grass') {
-      tufts.push({ col: at.col, row: at.row, cover: cell.cover })
+      tufts.push({ col: at.col, row: at.row, v: cell.cover.variant })
     }
     if (cell.kind === 'rock' && cell.base.col === at.col && cell.base.row === at.row) {
       rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
@@ -561,23 +725,16 @@ const Marks = memo(function Marks({
       const stage = cell.juvenile < 1 ? 'grow' : cell.yield.kind === 'on' || cell.fruit >= 1 ? 'ripe' : 'unripe'
       trees.push({ col: at.col, row: at.row, species: cell.species, stage })
     }
-    if (cell.kind === 'chest') chests.push(at)
-    if (cell.kind === 'grinder') grinders.push(at)
-    if (cell.kind === 'mill') mills.push(at)
-    if (cell.kind === 'still') stills.push(at)
-    if (cell.kind === 'barrel') barrels.push(at)
-    if (cell.kind === 'jam') jams.push(at)
-    if (cell.kind === 'freezer') freezers.push(at)
-    if (cell.kind === 'compost-box') {
-      composters.push({ col: at.col, row: at.row, units: cell.units, progress: cell.progress })
-    }
+    const propArt = PROP_ART[cell.kind]
+    if (propArt !== undefined) props.push({ col: at.col, row: at.row, art: propArt, kind: cell.kind })
+    if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
     if (world.hasFence(at)) {
       const a = world.fenceArms(at)
       const fit = fenceFit(a.n, a.e, a.s, a.w)
-      fences.push({ col: at.col, row: at.row, html: fit.html, rot: fit.rot })
+      fences.push({ col: at.col, row: at.row, art: fit.html, rot: fit.rot })
     }
     const g = lens === 'land' ? goodness(world.rng, at.col, at.row) : 0
-    const tint = lensFill(lens, cell, aoeWash.has(`${at.col},${at.row}`), g)
+    const tint = lensFill(lens, cell, aoeWash.has(key), g)
     if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
   })
   visitVerts(world, v => {
@@ -586,7 +743,7 @@ const Marks = memo(function Marks({
       const fit = pipeFit(a.n, a.e, a.s, a.w)
       if (fit !== undefined) {
         const wet = world.vertexWet(v)
-        pipes.push({ v, html: wet ? fit.html : dryOf(fit.html), rot: fit.rot, wet })
+        pipes.push({ col: v.col, row: v.row, art: wet ? fit.html : dryOf(fit.html), rot: fit.rot, wet })
       }
     }
     const s = world.sprinklerAt(v)
@@ -595,146 +752,81 @@ const Marks = memo(function Marks({
   return (
     <g>
       {tufts.map(t => (
-        <g
-          key={`tuft-${t.col},${t.row}`}
-          data-tuft={`${t.col},${t.row}`}
-          transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{
-            __html: t.cover.kind === 'grass' ? GRASS_TUFT[t.cover.variant] : '',
-          }}
-        />
+        <TuftGfx key={`tuft-${t.col},${t.row}`} col={t.col} row={t.row} v={t.v} />
       ))}
       {plots.map(t => (
         <PlotGfx
           key={`${t.col},${t.row}`}
           col={t.col}
           row={t.row}
-          cell={t.cell}
-          edge={dirtEdges(world, t.col, t.row)}
+          kind={t.kind}
+          dv={t.dv}
+          e={t.e}
+          turfStage={t.turfStage}
+          weedV={t.weedV}
+          weedStage={t.weedStage}
+          crop={t.crop}
+          stage={t.stage}
+          pip={t.pip}
+          water={t.water}
+          fert={t.fert}
+          fresh={t.fresh}
         />
       ))}
       {fences.map(f => (
-        <g
-          key={`fence-${f.col},${f.row}`}
-          data-fence={`${f.col},${f.row}`}
-          transform={`translate(${f.col * TILE},${f.row * TILE}) scale(${TILE / 24}) rotate(${f.rot} 12 12)`}
-          dangerouslySetInnerHTML={{ __html: f.html }}
-        />
+        <FenceGfx key={`fence-${f.col},${f.row}`} col={f.col} row={f.row} art={f.art} rot={f.rot} />
       ))}
       {rocks.map(r => (
         <RockGfx key={`${r.col},${r.row}`} col={r.col} row={r.row} w={r.w} h={r.h} />
       ))}
       {trees.map(t => (
-        <g
-          key={`tree-${t.col},${t.row}`}
-          transform={`translate(${t.col * TILE},${t.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: treeStage(t.species, t.stage) }}
-        />
+        <TreeGfx key={`tree-${t.col},${t.row}`} col={t.col} row={t.row} species={t.species} stage={t.stage} />
       ))}
       {world.pumps.map((p, i) => {
         const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
         const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
         return (
           <g key={`pump-${i}`}>
-            <g
-              transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
-              dangerouslySetInnerHTML={{ __html: PUMP }}
-            />
+            <PropGfx art={PUMP} col={col} row={row} />
             {showPipes && <SourceGfx world={world} base={p.base} />}
           </g>
         )
       })}
       {world.tanks.map((t, i) => (
         <g key={`tank-${i}`}>
-          <g
-            transform={`translate(${t.base.col * TILE},${t.base.row * TILE}) scale(${TILE / 24})`}
-            dangerouslySetInnerHTML={{ __html: RAIN_TANK }}
-          />
+          <PropGfx art={RAIN_TANK} col={t.base.col} row={t.base.row} />
           {showPipes && <SourceGfx world={world} base={t.base} />}
         </g>
       ))}
-      {world.taps.map((t, i) => (
-        <g
-          key={`tap-${i}`}
-          transform={`translate(${t.base.col * TILE},${t.base.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: TAP }}
-        />
+      {props.map(p => (
+        <PropGfx key={`${p.kind}-${p.col},${p.row}`} art={p.art} col={p.col} row={p.row} />
       ))}
-      {chests.map(c => (
-        <g
-          key={`chest-${c.col},${c.row}`}
-          transform={`translate(${c.col * TILE},${c.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: CHEST }}
-        />
-      ))}
-      {grinders.map(g => (
-        <g
-          key={`grinder-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: GRINDER }}
-        />
-      ))}
-      {mills.map(g => (
-        <g
-          key={`mill-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: MILL }}
-        />
-      ))}
-      {stills.map(g => (
-        <g
-          key={`still-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: STILL }}
-        />
-      ))}
-      {barrels.map(g => (
-        <g
-          key={`barrel-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: BARREL }}
-        />
-      ))}
-      {jams.map(g => (
-        <g
-          key={`jam-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: JAM }}
-        />
-      ))}
-      {freezers.map(g => (
-        <g
-          key={`freezer-${g.col},${g.row}`}
-          transform={`translate(${g.col * TILE},${g.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: FREEZER }}
-        />
-      ))}
-      {composters.map(c => (
-        <g key={`compost-${c.col},${c.row}`} data-compost={`${c.col},${c.row}`}>
-          <g
-            transform={`translate(${c.col * TILE},${c.row * TILE}) scale(${TILE / 24})`}
-            dangerouslySetInnerHTML={{ __html: COMPOST_BOX }}
+      {world.drops.map((d, i) => {
+        const n = i % 4
+        const tool =
+          d.item.kind === 'shovel' ||
+          d.item.kind === 'pickaxe' ||
+          d.item.kind === 'container' ||
+          d.item.kind === 'box'
+        return (
+          <DropGfx
+            key={i}
+            x={d.at.col * TILE + 4 + (n % 2) * 6}
+            y={d.at.row * TILE + 4 + Math.floor(n / 2) * 6}
+            art={faceGfx(d.item)}
+            title={tool ? itemLine(d.item, world.modifiers) : undefined}
           />
-          <rect x={c.col * TILE + 2} y={c.row * TILE + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
-          <rect
-            data-compost-bar
-            x={c.col * TILE + 3}
-            y={c.row * TILE + TILE - 5}
-            width={(TILE - 6) * (c.units < COMPOST_NEED ? c.units / COMPOST_NEED : c.progress)}
-            height={2}
-            fill={c.units < COMPOST_NEED ? WASH : LENS_GOOD}
-          />
-        </g>
-      ))}
+        )
+      })}
       <g
         data-truck
         transform={`translate(${truck.col * TILE},${truck.row * TILE}) scale(${TILE / 24})`}
-        dangerouslySetInnerHTML={{ __html: TRUCK }}
-      />
-      <g
-        transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}
-        dangerouslySetInnerHTML={{ __html: HOUSE }}
-      />
+      >
+        <Use art={TRUCK} />
+      </g>
+      <g transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}>
+        <Use art={HOUSE} />
+      </g>
       {tints.map(t => (
         <rect
           key={`tint-${t.col},${t.row}`}
@@ -768,46 +860,35 @@ const Marks = memo(function Marks({
         )
       })}
       {wellEdges.map(e => (
-        <WellGfx key={`well-${edgeKey(e)}`} at={e} />
+        <WellGfx key={`well-${edgeKey(e)}`} col={e.col} row={e.row} axis={e.axis} />
       ))}
       {valves.map(v => (
-        <ValveGfx key={`valve-${edgeKey(v.at)}`} at={v.at} open={v.open} />
+        <ValveGfx key={`valve-${edgeKey(v.at)}`} col={v.at.col} row={v.at.row} axis={v.at.axis} open={v.open} />
       ))}
       {pipes.map(p => (
-        <g
-          key={`pipe-${p.v.col},${p.v.row}`}
-          data-pipe
-          data-wet={p.wet ? '1' : '0'}
-          transform={`translate(${p.v.col * TILE},${p.v.row * TILE}) rotate(${p.rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: p.html }}
+        <PipeGfx
+          key={`pipe-${p.col},${p.row}`}
+          col={p.col}
+          row={p.row}
+          art={p.art}
+          rot={p.rot}
+          wet={p.wet}
         />
       ))}
       {sprinklers.map(s => (
-        <g key={`sp-${s.at.col},${s.at.row}`}>
-          {lens === 'kind' && (
-            <circle
-              cx={s.at.col * TILE}
-              cy={s.at.row * TILE}
-              r={TILE * 0.22}
-              fill={WATER}
-              fillOpacity={0.72}
-              style={{ mixBlendMode: 'multiply' }}
-              pointerEvents="none"
-            />
-          )}
-          <SprinklerGfx s={s} placed />
-          {working(world, s) && <SprinklerVfx s={s} />}
-          {s.tune.kind === 'crop' && (
-            <g
-              pointerEvents="none"
-              transform={`translate(${s.at.col * TILE - TILE * 0.22},${s.at.row * TILE - TILE * 0.62}) scale(${TILE * 0.44 / 24})`}
-              dangerouslySetInnerHTML={{ __html: cropInner(s.tune.crop, ripeGroup('common')) }}
-            />
-          )}
-        </g>
+        <SprinklerMark
+          key={`sp-${s.at.col},${s.at.row}`}
+          col={s.at.col}
+          row={s.at.row}
+          variant={s.variant}
+          facing={'facing' in s ? s.facing : undefined}
+          lensKind={lens === 'kind'}
+          working={working(world, s)}
+          tuneCrop={s.tune.kind === 'crop' ? s.tune.crop : undefined}
+        />
       ))}
-      {world.drops.map((d, i) => (
-        <DropGfx key={i} drop={d} i={i} mods={world.modifiers} />
+      {boxes.map(b => (
+        <CompostGfx key={`compost-${b.col},${b.row}`} col={b.col} row={b.row} />
       ))}
       {world.pulse !== undefined && (
         <g pointerEvents="none">
@@ -833,11 +914,11 @@ const Marks = memo(function Marks({
       <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
       {world.seats.map(s => {
         const gone = s.presence === 'away'
-        // A short absence is probably a reconnect in flight; the host tells us when it is a real nap.
         const napping = gone && s.napping
         return (
           <g
             key={s.id}
+            ref={el => bindActor(s.id, el)}
             data-actor={napping ? undefined : s.id}
             style={{ ['--hat']: HAT[s.id] } as CSSProperties}
             opacity={gone ? 0.65 : 1}
@@ -846,10 +927,9 @@ const Marks = memo(function Marks({
             <g transform={napping ? 'rotate(90 12 12)' : undefined}>
               <g dangerouslySetInnerHTML={{ __html: ACTOR }} />
               {!napping && s.hand.kind === 'hold' && (
-                <g
-                  transform={`translate(15,13) scale(${8 / 24})`}
-                  dangerouslySetInnerHTML={{ __html: faceGfx(s.hand.item) }}
-                />
+                <g transform={`translate(15,13) scale(${8 / 24})`}>
+                  <Use art={faceGfx(s.hand.item)} />
+                </g>
               )}
             </g>
             {napping && (
@@ -910,43 +990,6 @@ function groundArt(col: number, row: number, g: number): string {
     : g < HARD_MAX
       ? HARD[hBand(g)]
       : GRASS[tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)]
-}
-
-function bakeGround(world: World): string {
-  let s = ''
-  world.forEachCell((at, cell) => {
-    const g = goodness(world.rng, at.col, at.row)
-    const art =
-      cell.kind === 'untilled' && cell.cover.kind === 'tile'
-        ? BUILDING_TILES[cell.cover.tile]
-        : cell.kind === 'untilled' && cell.ground === 'hard'
-        ? HARD[hBand(g)]
-        : (cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile'
-          ? VERY_HARD[vhBand(g)]
-          : GRASS[
-              tileVariant(at.col, at.row, 2) * 4 + tileVariant(at.col, at.row, 4, 1)
-            ]
-    s += `<g transform="translate(${at.col * TILE},${at.row * TILE}) scale(${TILE / 24})">${art}</g>`
-  })
-  const b = world.bounds()
-  const keys = new Set(world.owned.map(chunkKey))
-  for (let row = b.row0 - FADE; row < b.row1 + FADE; row++) {
-    for (let col = b.col0 - FADE; col < b.col1 + FADE; col++) {
-      if (keys.has(chunkKey(chunkOf({ col, row })))) continue
-      const g = goodness(world.rng, col, row)
-      const art = groundArt(col, row, g)
-      const d = Math.max(
-        b.col0 - col,
-        col - (b.col1 - 1),
-        b.row0 - row,
-        row - (b.row1 - 1),
-        0,
-      )
-      const op = d <= 1 ? 0.65 : 0.35
-      s += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})" opacity="${op}">${art}</g>`
-    }
-  }
-  return s
 }
 
 function lensFill(
@@ -1054,30 +1097,113 @@ function mix(a: string, b: string, t: number): string {
   return `#${hex(Math.round(pa[0] + (pb[0] - pa[0]) * t))}${hex(Math.round(pa[1] + (pb[1] - pa[1]) * t))}${hex(Math.round(pa[2] + (pb[2] - pa[2]) * t))}`
 }
 
-function RockGfx({ col, row, w, h }: { col: number; row: number; w: number; h: number }) {
+function edgeSig(e: DirtEdges): string {
+  return `${e.top ? 1 : 0}${e.right ? 1 : 0}${e.bottom ? 1 : 0}${e.left ? 1 : 0}${e.topLeftInset ? 1 : 0}${e.topRightInset ? 1 : 0}${e.bottomRightInset ? 1 : 0}${e.bottomLeftInset ? 1 : 0}`
+}
+
+const TuftGfx = memo(function TuftGfx({ col, row, v }: { col: number; row: number; v: 0 | 1 | 2 }) {
+  return (
+    <g
+      data-tuft={`${col},${row}`}
+      transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
+    >
+      <Use art={GRASS_TUFT[v]} />
+    </g>
+  )
+})
+
+const FenceGfx = memo(function FenceGfx({
+  col,
+  row,
+  art,
+  rot,
+}: {
+  col: number
+  row: number
+  art: string
+  rot: number
+}) {
+  return (
+    <g
+      data-fence={`${col},${row}`}
+      transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24}) rotate(${rot} 12 12)`}
+    >
+      <Use art={art} />
+    </g>
+  )
+})
+
+const TreeGfx = memo(function TreeGfx({
+  col,
+  row,
+  species,
+  stage,
+}: {
+  col: number
+  row: number
+  species: 'apple' | 'apricot' | 'lemon' | 'cherry'
+  stage: 'grow' | 'unripe' | 'ripe'
+}) {
+  return (
+    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
+      <Use art={treeStage(species, stage)} />
+    </g>
+  )
+})
+
+const PropGfx = memo(function PropGfx({ art, col, row }: { art: string; col: number; row: number }) {
+  return (
+    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
+      <Use art={art} />
+    </g>
+  )
+})
+
+const PipeGfx = memo(function PipeGfx({
+  col,
+  row,
+  art,
+  rot,
+  wet,
+}: {
+  col: number
+  row: number
+  art: string
+  rot: number
+  wet: boolean
+}) {
+  return (
+    <g
+      data-pipe
+      data-wet={wet ? '1' : '0'}
+      transform={`translate(${col * TILE},${row * TILE}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
+    >
+      <Use art={art} />
+    </g>
+  )
+})
+
+const RockGfx = memo(function RockGfx({ col, row, w, h }: { col: number; row: number; w: number; h: number }) {
   if (w === 1 && h === 2) {
     return (
-      <g
-        transform={`translate(${col * TILE + TILE},${row * TILE}) rotate(90) scale(${TILE / 24})`}
-        dangerouslySetInnerHTML={{ __html: ROCK_LONG }}
-      />
+      <g transform={`translate(${col * TILE + TILE},${row * TILE}) rotate(90) scale(${TILE / 24})`}>
+        <Use art={ROCK_LONG} />
+      </g>
     )
   }
   if (w === 2 && h === 1) {
     return (
-      <g
-        transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
-        dangerouslySetInnerHTML={{ __html: ROCK_LONG }}
-      />
+      <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
+        <Use art={ROCK_LONG} />
+      </g>
     )
   }
   return (
-    <g
-      transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
-      dangerouslySetInnerHTML={{ __html: ROCK }}
-    />
+    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
+      <Use art={ROCK} />
+    </g>
   )
-}
+})
 
 type DirtEdges = {
   top: boolean
@@ -1111,108 +1237,149 @@ function dirtEdges(world: World, col: number, row: number): DirtEdges {
 function DirtInsetG({ x, y, angle }: { x: number; y: number; angle: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <g transform={`rotate(${angle}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: DIRT_INSET }} />
+      <g transform={`rotate(${angle}) scale(${TILE / 24})`}>
+        <Use art={DIRT_INSET} />
+      </g>
     </g>
   )
 }
 
-function PlotGfx({ col, row, cell, edge }: { col: number; row: number; cell: Plot; edge: DirtEdges }) {
+const PlotGfx = memo(function PlotGfx({
+  col,
+  row,
+  kind,
+  dv,
+  e,
+  turfStage,
+  weedV,
+  weedStage,
+  crop,
+  stage,
+  pip,
+  water,
+  fert,
+  fresh,
+}: {
+  col: number
+  row: number
+  kind: Cell['kind']
+  dv: number
+  e: string
+  turfStage: string
+  weedV: number
+  weedStage: string
+  crop: string
+  stage: string
+  pip: string
+  water: Band | ''
+  fert: Band | ''
+  fresh: boolean
+}) {
   const x = col * TILE
   const y = row * TILE
-  const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
-  const fresh = cell.kind === 'ripe' && cell.plant.freshness < 0.8
-  const pip =
-    (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') && qualityPip(cell.plant.rarity)
-  const stage =
-    cell.kind === 'ripe'
-      ? ripeGroup(cell.plant.rarity)
-      : cell.kind === 'growing' || cell.kind === 'dead'
-        ? cell.plant.stage(cell.kind)
-        : undefined
+  const edge = {
+    top: e[0] === '1',
+    right: e[1] === '1',
+    bottom: e[2] === '1',
+    left: e[3] === '1',
+    topLeftInset: e[4] === '1',
+    topRightInset: e[5] === '1',
+    bottomRightInset: e[6] === '1',
+    bottomLeftInset: e[7] === '1',
+  }
+  const at = { col, row }
   return (
-    <g className={pip !== undefined ? 'plant-rarity' : undefined}>
-      <g
-        transform={`translate(${x},${y}) scale(${TILE / 24})`}
-        dangerouslySetInnerHTML={{ __html: DIRT[tileVariant(col, row, 2)] }}
-      />
-      {edge.bottom && <g transform={`translate(${x},${y}) scale(${TILE / 24})`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
-      {edge.top && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(180 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
-      {edge.right && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(-90 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
-      {edge.left && <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(90 12 12)`} dangerouslySetInnerHTML={{ __html: DIRT_EDGE }} />}
+    <g className={pip !== '' ? 'plant-rarity' : undefined}>
+      <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+        <Use art={DIRT[dv]} />
+      </g>
+      {edge.bottom && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+          <Use art={DIRT_EDGE} />
+        </g>
+      )}
+      {edge.top && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(180 12 12)`}>
+          <Use art={DIRT_EDGE} />
+        </g>
+      )}
+      {edge.right && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(-90 12 12)`}>
+          <Use art={DIRT_EDGE} />
+        </g>
+      )}
+      {edge.left && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(90 12 12)`}>
+          <Use art={DIRT_EDGE} />
+        </g>
+      )}
       {edge.topLeftInset && <DirtInsetG x={x} y={y} angle={0} />}
       {edge.topRightInset && <DirtInsetG x={x + TILE} y={y} angle={90} />}
       {edge.bottomRightInset && <DirtInsetG x={x + TILE} y={y + TILE} angle={180} />}
       {edge.bottomLeftInset && <DirtInsetG x={x} y={y + TILE} angle={-90} />}
-      {cell.kind === 'rotten' && (
-        <g
-          transform={`translate(${x},${y}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: CROP_ROTTEN }}
-        />
+      {kind === 'rotten' && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+          <Use art={CROP_ROTTEN} />
+        </g>
       )}
-      {cell.kind === 'turf' && (
-        <g
-          data-turf={`${col},${row}`}
-          transform={`translate(${x},${y}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: turfInner(cell.turf.stage()) }}
-        />
+      {turfStage !== '' && (
+        <g data-turf={`${col},${row}`} transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+          <Use art={turfInner(turfStage as 'sprout' | 'grow')} />
+        </g>
       )}
-      {cell.kind === 'weed' && (
-        <g
-          data-weed={`${col},${row}`}
-          transform={`translate(${x},${y}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: weedInner(cell.weed.variant, cell.weed.stage()) }}
-        />
+      {weedV >= 0 && (
+        <g data-weed={`${col},${row}`} transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+          <Use art={weedInner(weedV as 0 | 1, weedStage as 'sprout' | 'grow')} />
+        </g>
       )}
-      {stage !== undefined && (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') && (
-        <g
-          transform={`translate(${x},${y}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{
-            __html: cropInner(cell.plant.crop, stage),
-          }}
-        />
+      {stage !== '' && crop !== '' && (
+        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
+          <Use art={cropInner(crop as CropId, stage)} />
+        </g>
       )}
-      {pip !== undefined && pip !== false && (
+      {pip !== '' && (
         <g
           className="plant-quality-pip"
           transform={`translate(${x},${y}) scale(${TILE / 24}) translate(16,16)`}
-          dangerouslySetInnerHTML={{ __html: pip }}
-        />
+        >
+          <Use art={pip} />
+        </g>
       )}
-      {bands !== undefined && cell.kind === 'growing' && bands.water !== 'green' && (
-        <g className={bands.water === 'red' ? 'animate-pulse' : undefined}>
+      {water !== '' && (
+        <g className={water === 'red' ? 'animate-pulse' : undefined}>
           <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
+            ref={el => bindBar('thirst', at, el)}
             data-thirst={`${col},${row}`}
             x={x + 3}
             y={y + TILE - 5}
-            width={((TILE - 6) * cell.soil.water) / SOIL_WATER_MAX}
             height={2}
-            fill={BAND_TINT[bands.water]}
+            fill={BAND_TINT[water]}
           />
           <rect x={x + 2 + (TILE - 4) / 2} y={y + TILE - 7} width={1} height={6} fill="#1c1710" />
         </g>
       )}
-      {bands !== undefined && cell.kind === 'growing' && bands.fert !== 'green' && (
-        <g className={bands.fert === 'red' ? 'animate-pulse' : undefined}>
+      {fert !== '' && (
+        <g className={fert === 'red' ? 'animate-pulse' : undefined}>
           <rect x={x + 2} y={y + TILE - 11} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
+            ref={el => bindBar('fert', at, el)}
             data-fert={`${col},${row}`}
             x={x + 3}
             y={y + TILE - 10}
-            width={(TILE - 6) * cell.soil.fertilizer}
             height={2}
-            fill={BAND_TINT[bands.fert]}
+            fill={BAND_TINT[fert]}
           />
         </g>
       )}
-      {fresh && cell.kind === 'ripe' && (
+      {fresh && kind === 'ripe' && (
         <g>
           <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
           <rect
+            ref={el => bindBar('fresh', at, el)}
             data-fresh={`${col},${row}`}
             x={x + 3}
             y={y + TILE - 5}
-            width={(TILE - 6) * cell.plant.freshness}
             height={2}
             className="fill-lens-bad"
           />
@@ -1220,35 +1387,49 @@ function PlotGfx({ col, row, cell, edge }: { col: number; row: number; cell: Plo
       )}
     </g>
   )
-}
+})
 
-function DropGfx({ drop, i, mods }: { drop: Drop; i: number; mods: readonly Modifier[] }) {
-  const n = i % 4
-  const s = 33
-  const tool =
-    drop.item.kind === 'shovel' ||
-    drop.item.kind === 'pickaxe' ||
-    drop.item.kind === 'container' ||
-    drop.item.kind === 'box'
+const CompostGfx = memo(function CompostGfx({ col, row }: { col: number; row: number }) {
   return (
-    <g
-      transform={`translate(${drop.at.col * TILE + 4 + (n % 2) * 6},${drop.at.row * TILE + 4 + Math.floor(n / 2) * 6}) scale(${s / 24})`}
-    >
-      <g dangerouslySetInnerHTML={{ __html: faceGfx(drop.item) }} />
-      {tool && <title>{itemLine(drop.item, mods)}</title>}
+    <g data-compost={`${col},${row}`}>
+      <PropGfx art={COMPOST_BOX} col={col} row={row} />
+      <rect x={col * TILE + 2} y={row * TILE + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
+      <rect
+        ref={el => bindBar('compost', { col, row }, el)}
+        data-compost-bar
+        x={col * TILE + 3}
+        y={row * TILE + TILE - 5}
+        height={2}
+        fill={WASH}
+      />
     </g>
   )
-}
+})
+
+const DropGfx = memo(function DropGfx({
+  x,
+  y,
+  art,
+  title,
+}: {
+  x: number
+  y: number
+  art: string
+  title: string | undefined
+}) {
+  return (
+    <g transform={`translate(${x},${y}) scale(${33 / 24})`}>
+      <Use art={art} />
+      {title !== undefined && <title>{title}</title>}
+    </g>
+  )
+})
 
 function SourceGfx({ world, base }: { world: World; base: Base }) {
   return (
     <g pointerEvents="none">
       {occupiedCells(base, world.owned).map(at => (
-        <g
-          key={`src-${at.col},${at.row}`}
-          transform={`translate(${at.col * TILE},${at.row * TILE}) scale(${TILE / 24})`}
-          dangerouslySetInnerHTML={{ __html: PIPE_SOURCE }}
-        />
+        <PropGfx key={`src-${at.col},${at.row}`} art={PIPE_SOURCE} col={at.col} row={at.row} />
       ))}
     </g>
   )
@@ -1261,40 +1442,105 @@ function edgeTransform(e: Edge): string {
   return `translate(${x},${y}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`
 }
 
-function ValveGfx({ at, open }: { at: Edge; open: boolean }) {
+const ValveGfx = memo(function ValveGfx({
+  col,
+  row,
+  axis,
+  open,
+}: {
+  col: number
+  row: number
+  axis: 'h' | 'v'
+  open: boolean
+}) {
   return (
     <g
-      data-valve={edgeKey(at)}
+      data-valve={edgeKey({ axis, col, row })}
       data-open={open ? '1' : '0'}
       pointerEvents="none"
-      transform={edgeTransform(at)}
-      dangerouslySetInnerHTML={{ __html: valveArt(open) }}
-    />
+      transform={edgeTransform({ axis, col, row })}
+    >
+      <Use art={valveArt(open)} />
+    </g>
   )
-}
+})
 
-function WellGfx({ at }: { at: Edge }) {
+const WellGfx = memo(function WellGfx({
+  col,
+  row,
+  axis,
+}: {
+  col: number
+  row: number
+  axis: 'h' | 'v'
+}) {
   return (
-    <g
-      data-well={edgeKey(at)}
-      pointerEvents="none"
-      transform={edgeTransform(at)}
-      dangerouslySetInnerHTML={{ __html: WELL }}
-    />
+    <g data-well={edgeKey({ axis, col, row })} pointerEvents="none" transform={edgeTransform({ axis, col, row })}>
+      <Use art={WELL} />
+    </g>
   )
-}
+})
+
+const SprinklerMark = memo(function SprinklerMark({
+  col,
+  row,
+  variant,
+  facing,
+  lensKind,
+  working,
+  tuneCrop,
+}: {
+  col: number
+  row: number
+  variant: Sprinkler['variant']
+  facing: 'ns' | 'ew' | undefined
+  lensKind: boolean
+  working: boolean
+  tuneCrop: CropId | undefined
+}) {
+  const s: Sprinkler =
+    variant === 'vert'
+      ? { variant, at: { col, row }, facing: facing ?? 'ns', tune: { kind: 'flat' } }
+      : { variant, at: { col, row }, tune: { kind: 'flat' } }
+  return (
+    <g>
+      {lensKind && (
+        <circle
+          cx={col * TILE}
+          cy={row * TILE}
+          r={TILE * 0.22}
+          fill={WATER}
+          fillOpacity={0.72}
+          style={{ mixBlendMode: 'multiply' }}
+          pointerEvents="none"
+        />
+      )}
+      <SprinklerGfx s={s} placed />
+      {working && <SprinklerVfx s={s} />}
+      {tuneCrop !== undefined && (
+        <g
+          pointerEvents="none"
+          transform={`translate(${col * TILE - TILE * 0.22},${row * TILE - TILE * 0.62}) scale(${TILE * 0.44 / 24})`}
+        >
+          <Use art={cropInner(tuneCrop, ripeGroup('common'))} />
+        </g>
+      )}
+    </g>
+  )
+})
 
 function SprinklerGfx({ s, opacity, placed }: { s: Sprinkler; opacity?: number; placed: boolean }) {
   const rot = s.variant === 'vert' && s.facing === 'ns' ? 90 : 0
-  const html = s.variant === 'basic' ? SPRINKLER : s.variant === 'large' ? SPRINKLER_LARGE : SPRINKLER_VERT
+  const art = s.variant === 'basic' ? SPRINKLER : s.variant === 'large' ? SPRINKLER_LARGE : SPRINKLER_VERT
   return (
     <g
       data-sprinkler={placed ? '' : undefined}
       pointerEvents="none"
       opacity={opacity}
       transform={`translate(${s.at.col * TILE},${s.at.row * TILE}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    >
+      <Use art={art} />
+    </g>
   )
 }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as Progress from '@radix-ui/react-progress'
 import { RESEARCH } from '../defs/research.ts'
-import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
+import { PHASE_NAME } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
 import type { Lens } from '../view/map.tsx'
 import {
@@ -84,7 +84,6 @@ export function Hud({
   const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
   const pct = def !== undefined && job.kind === 'run' ? ((def.seconds - job.left) / def.seconds) * 100 : 0
   const phase = world.clock.phase()
-  const dayPct = (world.clock.t / DAY_SECONDS) * 100
   const place = world.seats[world.local].place
   const trio =
     place.kind === 'delete' || (place.kind === 'sku' && (PLACE_TOOLS as readonly string[]).includes(place.id))
@@ -110,9 +109,9 @@ export function Hud({
               <span data-clock data-clock-t={Math.floor(world.clock.t)} className="text-sm leading-none font-semibold">
                 Day {world.clock.day} · {PHASE_NAME[phase]}
               </span>
-              <Progress.Root className="relative h-1 w-28 overflow-hidden bg-ink/20" value={dayPct}>
-                <Progress.Indicator data-day-bar className="h-full bg-ripe" style={{ width: `${dayPct}%` }} />
-              </Progress.Root>
+              <div className="relative h-1 w-28 overflow-hidden bg-ink/20">
+                <div data-day-bar className="h-full bg-ripe" style={{ width: '0%' }} />
+              </div>
             </div>
           </div>
           <div className="h-7 w-px shrink-0 bg-ink/20" />

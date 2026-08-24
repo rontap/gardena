@@ -63,6 +63,12 @@ export const LENS_ROWS: Row[] = [
     blurb: 'Reveals the whole water grid and every sprinkler reach.',
     swatches: [],
   },
+  {
+    id: 'sensors',
+    label: 'Sensors',
+    blurb: 'Reveals wires and sensor reach.',
+    swatches: [],
+  },
 ]
 
 export function LensPanel({
@@ -79,9 +85,10 @@ export function LensPanel({
   const rows = LENS_ROWS.filter(row => {
     if (row.id === 'water') return world.hasSkill('water-study')
     if (row.id === 'land') return world.hasSkill('land-study')
+    if (row.id === 'sensors') return world.done.has('unlock-sensors')
     return true
   })
-  const locked = LENS_ROWS.length - rows.length
+  const locked = LENS_ROWS.filter(row => row.id === 'water' || row.id === 'land').length - rows.filter(row => row.id === 'water' || row.id === 'land').length
   return (
     <Dock title="Lens" onClose={onClose} width="w-80">
       <button

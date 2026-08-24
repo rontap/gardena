@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.52
+export const PROTOCOL = 1.6
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -48,6 +48,18 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-silo-seed',
   'buy-silo-spray',
   'buy-silo-produce',
+  'buy-lever',
+  'buy-button',
+  'buy-lamp',
+  'buy-or',
+  'buy-and',
+  'buy-not',
+  'buy-sensor-water',
+  'buy-sensor-fert',
+  'buy-sensor-harvest',
+  'buy-water-system',
+  'buy-vehicle-detector',
+  'buy-smart-valve',
 ])
 
 const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
@@ -213,15 +225,15 @@ export function permit(cmd: Cmd): boolean {
       // TODO 1.1 multiplayer guest chest swap
       return false
     case Act.delete:
-      if (cmd.k === 'building') return true
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
+      if (cmd.k === 'building' || cmd.k === 'wire' || cmd.k === 'smart') return true
       return false
     case Act.tuneSprinkler:
     case Act.nudgeOffered:
     case Act.dismissRecap:
     case Act.cheat:
-    case Act.openHud:
       return false
+    case Act.openHud:
+      return cmd.k === 'water' || cmd.k === 'harvest'
     case Act.buy:
       if (GUEST_PIPE.has(cmd.s)) return false
       if (SKUS[cmd.s].tab === 'seeds' || SKUS[cmd.s].tab === 'utility') return true
@@ -248,6 +260,21 @@ export function digestHex(world: World): string {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
       s += `:${c.plant.crop}:${c.plant.rarity}:${c.plant.maturity}`
+    }
+    if (c.kind === 'lamp') s += `:inn${c.inn}`
+    else if (
+      c.kind === 'lever' ||
+      c.kind === 'button' ||
+      c.kind === 'or' ||
+      c.kind === 'and' ||
+      c.kind === 'not' ||
+      c.kind === 'sensor-water' ||
+      c.kind === 'sensor-fert' ||
+      c.kind === 'sensor-harvest' ||
+      c.kind === 'water-system' ||
+      c.kind === 'vehicle-detector'
+    ) {
+      s += `:out${c.out}`
     }
     cells.push(s)
   })
@@ -284,6 +311,16 @@ export function digestHex(world: World): string {
     vehicles,
     trailers,
     cells,
+    wires: world.wires,
+    smart: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
+    sprinklers: [...world.sprinklers.values()].map(s => ({
+      at: s.at,
+      sig: world.wires.some(
+        w => w.to.kind === 'sprinkler' && w.to.at.col === s.at.col && w.to.at.row === s.at.row,
+      )
+        ? s.inn
+        : 'u',
+    })),
     drops: world.drops.length,
     done: [...world.done].sort(),
     family: {

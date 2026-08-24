@@ -6,13 +6,13 @@ Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home
 
 `menu.tsx` owns `MenuPage`, wordmark click, and whether `Changelog` is shown.
 
-Wordmark **1.5.2**.
+Wordmark **1.6.0**.
 
-Assumption: heading version is `id` as written (`1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). 1.5.1 stays from the live `RELEASES` list.
+Assumption: heading version is `id` as written (`1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
 
 ## Shell
 
-Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.5.2** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.6.0** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
 
 | mode | dim | backdrop | Esc |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Show ×: play, or joining, or `{ kind: 'changelog' }`.
 
 ## Wordmark
 
-The **1.5.2** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+The **1.6.0** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
 
 Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
 
@@ -43,7 +43,7 @@ Click toggles home ↔ changelog. While boot `joining`: no-op. `joining` true �
 
 `scroll-pane max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto flex flex-col gap-3`. Column already `px-4` — do not pad again.
 
-`RELEASES[0]` is 1.5.2. Array order is render order.
+`RELEASES[0]` is 1.6. Array order is render order.
 
 Per release, body face only (not Press Start):
 
@@ -109,6 +109,49 @@ MenuPage = { kind: 'home' } | { kind: 'changelog' }
 
 ```
 export const RELEASES: readonly Release[] = [
+  {
+    id: '1.6',
+    name: 'Automation III',
+    summary: 'Sensors and Smart Irrigation.',
+    changes: [
+      {
+        kind: 'major-feature',
+        text: 'Added the Sensors shelf: wires, lever, button, lamp, AND, OR, and NOT.',
+        notes: [
+          'Research Sensors. Click a port to draw a wire.',
+          'Throw the lever. Press the button for a short pulse. The lamp lights when its input is high.',
+          'AND is high if both inputs are. OR if either is. NOT inverts.',
+        ],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Field readers: water, fertilizer, harvest, and water-system sensors.',
+        notes: [
+          'Water reads nearby plant water. High when a plot matches the checked boxes.',
+          'Fertilizer reads nearby growing plants. High when any is starving.',
+          'Harvest: Any — one ripe. All — every growing or ripe plant is ripe.',
+          'Water-system joins a net. High when sprinklers want more than the tanks hold.',
+        ],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Smart Irrigation: existing sprinklers gain a signal input.',
+        notes: ['Unwired sprinklers still pour. Wire one to turn it on and off.'],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Added a smart valve and a vehicle detector.',
+        notes: [
+          'Smart valve sits on an edge. Closed unless its input is high. No manual click.',
+          'Vehicle detector is a flush plate. High when a field Quad or tractor sits on this tile.',
+        ],
+        changes: [],
+      },
+    ],
+  },
   {
     id: '1.5.2',
     name: 'Vehicles II patch',

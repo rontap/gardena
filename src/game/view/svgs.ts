@@ -104,6 +104,30 @@ import itemBrick from '../../assets/items/item-brick.svg?raw'
 import itemCobble from '../../assets/items/item-cobble.svg?raw'
 import uiResearchLandscape from '../../assets/ui/ui-research-landscape.svg?raw'
 import propCompostBox from '../../assets/props/prop-compost-box.svg?raw'
+import itemLever from '../../assets/items/item-lever.svg?raw'
+import itemButton from '../../assets/items/item-button.svg?raw'
+import itemLamp from '../../assets/items/item-lamp.svg?raw'
+import itemOr from '../../assets/items/item-or.svg?raw'
+import itemAnd from '../../assets/items/item-and.svg?raw'
+import itemNot from '../../assets/items/item-not.svg?raw'
+import itemSensorWater from '../../assets/items/item-sensor-water.svg?raw'
+import itemSensorFert from '../../assets/items/item-sensor-fert.svg?raw'
+import itemSensorHarvest from '../../assets/items/item-sensor-harvest.svg?raw'
+import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
+import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
+import itemSmartValve from '../../assets/items/item-smart-valve.svg?raw'
+import propLever from '../../assets/props/prop-lever.svg?raw'
+import propButton from '../../assets/props/prop-button.svg?raw'
+import propLamp from '../../assets/props/prop-lamp.svg?raw'
+import propOr from '../../assets/props/prop-or.svg?raw'
+import propAnd from '../../assets/props/prop-and.svg?raw'
+import propNot from '../../assets/props/prop-not.svg?raw'
+import propSensorWater from '../../assets/props/prop-sensor-water.svg?raw'
+import propSensorFert from '../../assets/props/prop-sensor-fert.svg?raw'
+import propSensorHarvest from '../../assets/props/prop-sensor-harvest.svg?raw'
+import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
+import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
+import pipeSmartValve from '../../assets/joints/pipe-smart-valve.svg?raw'
 
 import itemChest from '../../assets/items/item-chest.svg?raw'
 import itemGrinder from '../../assets/items/item-grinder.svg?raw'
@@ -319,6 +343,18 @@ export function itemInner(item: Face): string {
   if (item.kind === 'silo-seed') return inner(itemSiloSeed)
   if (item.kind === 'silo-spray') return inner(itemSiloSpray)
   if (item.kind === 'silo-produce') return inner(itemSiloProduce)
+  if (item.kind === 'lever') return stageOnly(itemLever, 'off')
+  if (item.kind === 'button') return stageOnly(itemButton, 'off')
+  if (item.kind === 'lamp') return stageOnly(itemLamp, 'off')
+  if (item.kind === 'or') return inner(itemOr)
+  if (item.kind === 'and') return inner(itemAnd)
+  if (item.kind === 'not') return inner(itemNot)
+  if (item.kind === 'sensor-water') return stageOnly(itemSensorWater, 'blue')
+  if (item.kind === 'sensor-fert') return stageOnly(itemSensorFert, 'ok')
+  if (item.kind === 'sensor-harvest') return stageOnly(itemSensorHarvest, 'off')
+  if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
+  if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
+  if (item.kind === 'smart-valve') return stageOnly(itemSmartValve, 'closed')
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -500,6 +536,10 @@ export function researchInner(id: ResearchId): string {
       return inner(diamondPickaxe)
     case 'unlock-vehicles':
       return inner(itemHangar)
+    case 'unlock-sensors':
+      return stageOnly(itemLever, 'off')
+    case 'unlock-smart-irrigation':
+      return stageOnly(itemSmartValve, 'closed')
   }
 }
 
@@ -600,6 +640,39 @@ export const RAIN_TANK = inner(propRainTank)
 export const TAP = inner(propTap)
 export function valveArt(open: boolean): string {
   return stageOnly(pipeValve, open ? 'open' : 'closed')
+}
+export function smartValveArt(open: boolean): string {
+  return stageOnly(pipeSmartValve, open ? 'open' : 'closed')
+}
+export const PROP_LEVER = propLever
+export const PROP_BUTTON = propButton
+export const PROP_LAMP = propLamp
+export const PROP_OR = inner(propOr)
+export const PROP_AND = inner(propAnd)
+export const PROP_NOT = inner(propNot)
+export function leverArt(on: boolean): string {
+  return stageOnly(propLever, on ? 'on' : 'off')
+}
+export function buttonArt(on: boolean): string {
+  return stageOnly(propButton, on ? 'on' : 'off')
+}
+export function lampArt(on: boolean): string {
+  return stageOnly(propLamp, on ? 'on' : 'off')
+}
+export function waterSensorArt(on: boolean): string {
+  return stageOnly(propSensorWater, on ? 'blue' : 'red')
+}
+export function fertSensorArt(ok: boolean): string {
+  return stageOnly(propSensorFert, ok ? 'ok' : 'red')
+}
+export function harvestSensorArt(on: boolean): string {
+  return stageOnly(propSensorHarvest, on ? 'on' : 'off')
+}
+export function waterSystemArt(on: boolean): string {
+  return stageOnly(propWaterSystem, on ? 'on' : 'off')
+}
+export function vehicleDetectorArt(on: boolean): string {
+  return stageOnly(propVehicleDetector, on ? 'on' : 'off')
 }
 export const OVERLAY_WATER = inner(overlayWater)
 export const ITEM_CHEST = inner(itemChest)
@@ -936,6 +1009,27 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   CROP_ROTTEN,
   valveArt(true),
   valveArt(false),
+  smartValveArt(true),
+  smartValveArt(false),
+  leverArt(true),
+  leverArt(false),
+  buttonArt(true),
+  buttonArt(false),
+  lampArt(true),
+  lampArt(false),
+  PROP_OR,
+  PROP_AND,
+  PROP_NOT,
+  waterSensorArt(true),
+  waterSensorArt(false),
+  fertSensorArt(true),
+  fertSensorArt(false),
+  harvestSensorArt(true),
+  harvestSensorArt(false),
+  waterSystemArt(true),
+  waterSystemArt(false),
+  vehicleDetectorArt(true),
+  vehicleDetectorArt(false),
   ...GRASS_STAGES.map(turfInner),
   weedInner(0, 'sprout'),
   weedInner(0, 'grow'),

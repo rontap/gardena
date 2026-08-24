@@ -71,6 +71,21 @@ import {
 import type { FruitStack, Hand, Item, Slot, Stack } from './item.ts'
 import { MemorySink, type LogSink } from './log.ts'
 import { type Edge, type Gate, type Segment, type Sprinkler, type Tune, Well } from './pipe.ts'
+import {
+  AndGate,
+  Button,
+  FertSensor,
+  HarvestSensor,
+  Lamp,
+  Lever,
+  NotGate,
+  OrGate,
+  VehicleSensor,
+  WaterSensor,
+  WaterSystem,
+  type Wire,
+  type WireEnd,
+} from './sensor.ts'
 import { Plant, Turf, Weed } from './plant.ts'
 import { Rng } from './rng.ts'
 import { Soil } from './soil.ts'
@@ -95,7 +110,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.52 as const
+export const SAVE_VERSION = 1.6 as const
 
 const INV = 16
 
@@ -167,6 +182,17 @@ export type SaveCell =
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[] }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[] }
   | { kind: 'truck'; base: RectBase }
+  | { kind: 'lever'; base: RectBase; on: boolean; out: 0 | 1 }
+  | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
+  | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }
+  | { kind: 'or'; base: RectBase; out: 0 | 1 }
+  | { kind: 'and'; base: RectBase; out: 0 | 1 }
+  | { kind: 'not'; base: RectBase; out: 0 | 1 }
+  | { kind: 'sensor-water'; base: RectBase; wilt: boolean; over: boolean; out: 0 | 1; hold: number }
+  | { kind: 'sensor-fert'; base: RectBase; out: 0 | 1; hold: number }
+  | { kind: 'sensor-harvest'; base: RectBase; mode: 'any' | 'all'; out: 0 | 1; hold: number }
+  | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
+  | { kind: 'vehicle-detector'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'occ'; of: Coord }
 
 export type SaveSeat = {
@@ -221,7 +247,7 @@ export type SaveTrailer =
 
 export type Save = {
   game: 'gardena'
-  version: 1.52
+  version: 1.6
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -250,6 +276,8 @@ export type Save = {
   segments: Segment[]
   wells: { at: Edge; stored: number }[]
   sprinklers: Sprinkler[]
+  wires: Wire[]
+  smartHold: { e: Edge; level: 0 | 1; hold: number }[]
   fences: Coord[]
   drops: { at: Coord; item: Item }[]
 }
@@ -312,6 +340,8 @@ export function dump(world: World): Save {
     segments: [...world.segments.values()],
     wells: [...world.wells.values()].map(well => ({ at: well.at, stored: well.water.stored })),
     sprinklers: [...world.sprinklers.values()],
+    wires: world.wires.map(w => ({ from: w.from, to: w.to })),
+    smartHold: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
     fences: [...world.fences].map(k => {
       const i = k.indexOf(',')
       return { col: Number(k.slice(0, i)), row: Number(k.slice(i + 1)) }
@@ -507,6 +537,28 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'silo-produce', base: c.base }
     case 'truck':
       return { kind: 'truck', base: c.base }
+    case 'lever':
+      return { kind: 'lever', base: c.base, on: c.on, out: c.out }
+    case 'button':
+      return { kind: 'button', base: c.base, left: c.left, out: c.out }
+    case 'lamp':
+      return { kind: 'lamp', base: c.base, inn: c.inn }
+    case 'or':
+      return { kind: 'or', base: c.base, out: c.out }
+    case 'and':
+      return { kind: 'and', base: c.base, out: c.out }
+    case 'not':
+      return { kind: 'not', base: c.base, out: c.out }
+    case 'sensor-water':
+      return { kind: 'sensor-water', base: c.base, wilt: c.wilt, over: c.over, out: c.out, hold: c.hold }
+    case 'sensor-fert':
+      return { kind: 'sensor-fert', base: c.base, out: c.out, hold: c.hold }
+    case 'sensor-harvest':
+      return { kind: 'sensor-harvest', base: c.base, mode: c.mode, out: c.out, hold: c.hold }
+    case 'water-system':
+      return { kind: 'water-system', base: c.base, out: c.out, hold: c.hold }
+    case 'vehicle-detector':
+      return { kind: 'vehicle-detector', base: c.base, out: c.out, hold: c.hold }
   }
 }
 
@@ -667,9 +719,19 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const segmentsIn = arr(rec.segments)
   const wellsIn = arr(rec.wells)
   const sprinklersIn = arr(rec.sprinklers)
+  const wiresIn = arr(rec.wires)
+  const smartHoldIn = arr(rec.smartHold)
   const fencesIn = arr(rec.fences)
   const dropsIn = arr(rec.drops)
-  if (segmentsIn === undefined || wellsIn === undefined || sprinklersIn === undefined || fencesIn === undefined || dropsIn === undefined) {
+  if (
+    segmentsIn === undefined ||
+    wellsIn === undefined ||
+    sprinklersIn === undefined ||
+    wiresIn === undefined ||
+    smartHoldIn === undefined ||
+    fencesIn === undefined ||
+    dropsIn === undefined
+  ) {
     return undefined
   }
   const segments: Segment[] = []
@@ -692,6 +754,18 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     const sp = readSprinkler(s)
     if (sp === undefined) return undefined
     sprinklers.push(sp)
+  }
+  const wires: Wire[] = []
+  for (const raw of wiresIn) {
+    const w = readWire(raw)
+    if (w === undefined) return undefined
+    wires.push(w)
+  }
+  const smartHold: Save['smartHold'] = []
+  for (const raw of smartHoldIn) {
+    const h = readSmartHold(raw)
+    if (h === undefined) return undefined
+    smartHold.push(h)
   }
   const fences: Coord[] = []
   for (const f of fencesIn) {
@@ -749,6 +823,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     segments,
     wells,
     sprinklers,
+    wires,
+    smartHold,
     fences,
     drops,
     vehicles,
@@ -773,6 +849,9 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     tanks: live.tanks,
     taps: live.taps,
     stills: live.stills,
+    waterSystems: live.waterSystems,
+    wires: save.wires,
+    smartHold: save.smartHold,
     stall: makeStallMap(save.stall),
     family: makeFamily(save.family),
     seats: save.seats.map((s, i): Seat => ({
@@ -876,6 +955,7 @@ function stampChunks(
       tanks: RainTank[]
       taps: Tap[]
       stills: PotStill[]
+      waterSystems: WaterSystem[]
       hangars: Hangar[]
       seedSilos: SiloSeed[]
       spraySilos: SiloSpray[]
@@ -887,6 +967,7 @@ function stampChunks(
   const tanks: RainTank[] = []
   const taps: Tap[] = []
   const stills: PotStill[] = []
+  const waterSystems: WaterSystem[] = []
   const hangars: Hangar[] = []
   const seedSilos: SiloSeed[] = []
   const spraySilos: SiloSpray[] = []
@@ -916,6 +997,7 @@ function stampChunks(
         if (made.kind === 'rain-tank') tanks.push(made)
         if (made.kind === 'tap') taps.push(made)
         if (made.kind === 'still') stills.push(made)
+        if (made.kind === 'water-system') waterSystems.push(made)
         if (made.kind === 'hangar') hangars.push(made)
         if (made.kind === 'silo-seed') seedSilos.push(made)
         if (made.kind === 'silo-spray') spraySilos.push(made)
@@ -976,7 +1058,7 @@ function stampChunks(
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills, hangars, seedSilos, spraySilos, produceSilos }
+  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(sc: SaveCell): Cell | undefined {
@@ -1089,6 +1171,71 @@ function makeLive(sc: SaveCell): Cell | undefined {
       return new SiloProduce(sc.base)
     case 'truck':
       return new Truck(sc.base)
+    case 'lever': {
+      const made = new Lever(sc.base)
+      made.on = sc.on
+      made.out = sc.out
+      return made
+    }
+    case 'button': {
+      const made = new Button(sc.base)
+      made.left = sc.left
+      made.out = sc.out
+      return made
+    }
+    case 'lamp': {
+      const made = new Lamp(sc.base)
+      made.inn = sc.inn
+      return made
+    }
+    case 'or': {
+      const made = new OrGate(sc.base)
+      made.out = sc.out
+      return made
+    }
+    case 'and': {
+      const made = new AndGate(sc.base)
+      made.out = sc.out
+      return made
+    }
+    case 'not': {
+      const made = new NotGate(sc.base)
+      made.out = sc.out
+      return made
+    }
+    case 'sensor-water': {
+      const made = new WaterSensor(sc.base)
+      made.wilt = sc.wilt
+      made.over = sc.over
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
+    case 'sensor-fert': {
+      const made = new FertSensor(sc.base)
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
+    case 'sensor-harvest': {
+      const made = new HarvestSensor(sc.base)
+      made.mode = sc.mode
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
+    case 'water-system': {
+      const made = new WaterSystem(sc.base)
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
+    case 'vehicle-detector': {
+      const made = new VehicleSensor(sc.base)
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
     case 'occ':
       return undefined
   }
@@ -1320,6 +1467,50 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const base = readRectBase(o.base)
     if (base === undefined) return undefined
     return { kind: 'truck', base }
+  }
+  if (kind === 'lever') {
+    const base = readRectBase(o.base)
+    const on = bool(o.on)
+    if (base === undefined || on === undefined || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind: 'lever', base, on, out: o.out }
+  }
+  if (kind === 'button') {
+    const base = readRectBase(o.base)
+    const left = num(o.left)
+    if (base === undefined || left === undefined || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind: 'button', base, left, out: o.out }
+  }
+  if (kind === 'lamp') {
+    const base = readRectBase(o.base)
+    if (base === undefined || (o.inn !== 0 && o.inn !== 1)) return undefined
+    return { kind: 'lamp', base, inn: o.inn }
+  }
+  if (kind === 'or' || kind === 'and' || kind === 'not') {
+    const base = readRectBase(o.base)
+    if (base === undefined || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind, base, out: o.out }
+  }
+  if (kind === 'sensor-water') {
+    const base = readRectBase(o.base)
+    const wilt = bool(o.wilt)
+    const over = bool(o.over)
+    const hold = num(o.hold)
+    if (base === undefined || wilt === undefined || over === undefined || hold === undefined) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
+    return { kind: 'sensor-water', base, wilt, over, out: o.out, hold }
+  }
+  if (kind === 'sensor-fert' || kind === 'water-system' || kind === 'vehicle-detector') {
+    const base = readRectBase(o.base)
+    const hold = num(o.hold)
+    if (base === undefined || hold === undefined || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind, base, out: o.out, hold }
+  }
+  if (kind === 'sensor-harvest') {
+    const base = readRectBase(o.base)
+    const hold = num(o.hold)
+    if (base === undefined || hold === undefined || (o.mode !== 'any' && o.mode !== 'all')) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
+    return { kind: 'sensor-harvest', base, mode: o.mode, out: o.out, hold }
   }
   if (kind === 'occ') {
     const of = readCoord(o.of)
@@ -1791,7 +1982,49 @@ function readGate(v: unknown): Gate | undefined {
     if (open === undefined) return undefined
     return { kind: 'valve', open }
   }
+  if (o.kind === 'smart') return { kind: 'smart' }
   return undefined
+}
+
+function readWire(v: unknown): Wire | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const from = readWireEnd(o.from)
+  const to = readWireEnd(o.to)
+  if (from === undefined || to === undefined) return undefined
+  return { from, to }
+}
+
+function readWireEnd(v: unknown): WireEnd | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'cell') {
+    const at = readCoord(o.at)
+    if (at === undefined) return undefined
+    if (o.port !== 'out' && o.port !== 'in' && o.port !== 'in-l' && o.port !== 'in-r') return undefined
+    return { kind: 'cell', at, port: o.port }
+  }
+  if (o.kind === 'sprinkler') {
+    const at = readCoord(o.at)
+    if (at === undefined || o.port !== 'in') return undefined
+    return { kind: 'sprinkler', at, port: 'in' }
+  }
+  if (o.kind === 'valve') {
+    const e = readEdge(o.e)
+    if (e === undefined || o.port !== 'in') return undefined
+    return { kind: 'valve', e, port: 'in' }
+  }
+  return undefined
+}
+
+function readSmartHold(v: unknown): Save['smartHold'][number] | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const e = readEdge(o.e)
+  const hold = num(o.hold)
+  if (e === undefined || hold === undefined) return undefined
+  if (o.level !== 0 && o.level !== 1) return undefined
+  return { e, level: o.level, hold }
 }
 
 function readSprinkler(v: unknown): Sprinkler | undefined {
@@ -1799,12 +2032,14 @@ function readSprinkler(v: unknown): Sprinkler | undefined {
   if (o === undefined) return undefined
   const at = readCoord(o.at)
   const tune = readTune(o.tune)
-  if (at === undefined || tune === undefined) return undefined
-  if (o.variant === 'basic') return { variant: 'basic', at, tune }
-  if (o.variant === 'large') return { variant: 'large', at, tune }
+  const hold = num(o.hold)
+  if (at === undefined || tune === undefined || hold === undefined) return undefined
+  if (o.inn !== 0 && o.inn !== 1) return undefined
+  if (o.variant === 'basic') return { variant: 'basic', at, tune, inn: o.inn, hold }
+  if (o.variant === 'large') return { variant: 'large', at, tune, inn: o.inn, hold }
   if (o.variant === 'vert') {
     if (o.facing !== 'ns' && o.facing !== 'ew') return undefined
-    return { variant: 'vert', at, facing: o.facing, tune }
+    return { variant: 'vert', at, facing: o.facing, tune, inn: o.inn, hold }
   }
   return undefined
 }

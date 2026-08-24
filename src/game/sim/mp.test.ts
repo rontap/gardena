@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.52)
+    expect(PROTOCOL).toBe(1.6)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -127,7 +127,7 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tile-cobble' })).toBe(false)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-fence' })).toBe(false)
     expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
-    expect(permit({ a: Act.placeSprinkler, t: 0, p: 1, s: { variant: 'basic', at: { col: 1, row: 1 }, tune: { kind: 'flat' } } })).toBe(false)
+    expect(permit({ a: Act.placeSprinkler, t: 0, p: 1, s: { variant: 'basic', at: { col: 1, row: 1 }, tune: { kind: 'flat' }, inn: 0, hold: 0 } })).toBe(false)
     expect(permit({ a: Act.clickValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'pipe', e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
     expect(permit({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })).toBe(false)

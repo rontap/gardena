@@ -1,0 +1,722 @@
+import { describe, expect, test } from 'vitest'
+import { BUTTON_PULSE, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
+import { Tree } from './building.ts'
+import { Act } from './log.ts'
+import { digestHex, permit, PROTOCOL } from './mp.ts'
+import { statsOf } from './modifiers.ts'
+import { Plant } from './plant.ts'
+import { dump, parse, SAVE_VERSION } from './save.ts'
+import { lookText } from './look.ts'
+import { evalDag, HarvestSensor, Lamp, Lever, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { Soil, WEED_CHANCE } from './soil.ts'
+import { DT_MAX, World } from './world.ts'
+
+const A = { col: 10, row: 12 }
+const B = { col: 10, row: 13 }
+const C = { col: 11, row: 12 }
+
+function ready(w: World): void {
+  w.done.add('unlock-sensors')
+  w.done.add('unlock-smart-irrigation')
+  w.money = 999
+}
+
+function put(
+  w: World,
+  id:
+    | 'buy-lever'
+    | 'buy-button'
+    | 'buy-lamp'
+    | 'buy-not'
+    | 'buy-and'
+    | 'buy-or'
+    | 'buy-sensor-water'
+    | 'buy-sensor-fert'
+    | 'buy-sensor-harvest'
+    | 'buy-water-system'
+    | 'buy-vehicle-detector',
+  at: { col: number; row: number },
+): void {
+  w.buy(id)
+  w.confirmPlace(at)
+}
+
+function grow(
+  w: World,
+  at: { col: number; row: number },
+  kind: 'growing' | 'ripe',
+  water: number,
+  fert = 1,
+): void {
+  w.setCell(at, { kind, soil: new Soil(water, fert, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+}
+
+describe('1.6 sensors', () => {
+  test('SAVE_VERSION 1.6. PROTOCOL 1.6. 1.5 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.6)
+    expect(PROTOCOL).toBe(1.6)
+    const w = new World(1)
+    const s = dump(w)
+    expect(s.version).toBe(1.6)
+    expect(s.wires).toEqual([])
+    expect(s.smartHold).toEqual([])
+    const old = parse(JSON.stringify({ ...s, version: 1.5 }))
+    expect(old.ok).toBe(false)
+    if (old.ok) return
+    expect(old.reason).toBe('version')
+  })
+
+  test('New wire that would cycle: no-op.', () => {
+    const from = { kind: 'cell' as const, at: A, port: 'out' as const }
+    const to = { kind: 'cell' as const, at: B, port: 'in' as const }
+    expect(wouldCycle([], from, to)).toBe(false)
+    expect(wouldCycle([{ from, to }], to, from)).toBe(true)
+    expect(wouldCycle([], from, from)).toBe(true)
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-not', A)
+    put(w, 'buy-not', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(1)
+    w.armWire({ kind: 'cell', at: B, port: 'out' })
+    const place = w.seats[0].place
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    expect(w.wires).toHaveLength(1)
+    expect(w.seats[0].place).toEqual(place)
+  })
+
+  test('Button: high exactly BUTTON_PULSE ticks.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-button', A)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    const b = w.cell(A)
+    if (b.kind !== 'button') throw new Error('button')
+    expect(b.out).toBe(1)
+    for (let i = 0; i < BUTTON_PULSE - 1; i++) {
+      w.tick(DT_MAX)
+      const c = w.cell(A)
+      if (c.kind !== 'button') throw new Error('button')
+      expect(c.out).toBe(1)
+    }
+    w.tick(DT_MAX)
+    const d = w.cell(A)
+    if (d.kind !== 'button') throw new Error('button')
+    expect(d.out).toBe(0)
+  })
+
+  test('evalDag lever to lamp.', () => {
+    const lever = new Lever({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+    lever.on = true
+    const lamp = new Lamp({ shape: 'rect', col: 0, row: 1, w: 1, h: 1 })
+    const sensors = new Map<string, typeof lever | typeof lamp>([
+      ['0,0', lever],
+      ['0,1', lamp],
+    ])
+    evalDag({
+      sensors,
+      wires: [
+        {
+          from: { kind: 'cell', at: { col: 0, row: 0 }, port: 'out' },
+          to: { kind: 'cell', at: { col: 0, row: 1 }, port: 'in' },
+        },
+      ],
+      smart: new Map(),
+      sprinklers: new Map(),
+      raw: new Map(),
+    })
+    expect(lever.out).toBe(1)
+    expect(lamp.inn).toBe(1)
+  })
+
+  test('Fan-out: one lever drives two lamps.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lamp', B)
+    put(w, 'buy-lamp', C)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: C, port: 'in' })
+    expect(w.wires).toHaveLength(2)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    const l1 = w.cell(B)
+    const l2 = w.cell(C)
+    if (l1.kind !== 'lamp' || l2.kind !== 'lamp') throw new Error('lamp')
+    expect(l1.inn).toBe(1)
+    expect(l2.inn).toBe(1)
+  })
+
+  test('Guest placeWire permitted; guest placePipe still not.', () => {
+    const from = { kind: 'cell' as const, at: A, port: 'out' as const }
+    const to = { kind: 'cell' as const, at: B, port: 'in' as const }
+    expect(permit({ a: Act.placeWire, t: 0, p: 1, from, to })).toBe(true)
+    expect(permit({ a: Act.armWire, t: 0, p: 1, from })).toBe(true)
+    expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-lever' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe' })).toBe(false)
+    expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
+  })
+
+  test('Second wire on one input replaces.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lever', C)
+    put(w, 'buy-lamp', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    w.armWire({ kind: 'cell', at: C, port: 'out' })
+    w.placeWire({ kind: 'cell', at: C, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(1)
+    expect(w.wires[0].from).toEqual({ kind: 'cell', at: C, port: 'out' })
+  })
+
+  test('Dump wires + sensor cells. Sku.need required.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lamp', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    const s = dump(w)
+    expect(s.wires).toHaveLength(1)
+    const loaded = parse(JSON.stringify(s))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.wires).toHaveLength(1)
+    expect(loaded.world.cell(A).kind).toBe('lever')
+  })
+
+  test('3×3 does not read plants outside the square; center building is not a plant.', () => {
+    const origin = { col: 5, row: 5 }
+    const s = new WaterSensor({ shape: 'rect', col: origin.col, row: origin.row, w: 1, h: 1 })
+    const cells = new Map([
+      [
+        '5,5',
+        { kind: 'growing' as const, soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') },
+      ],
+    ])
+    const at = (c: { col: number; row: number }) => cells.get(`${c.col},${c.row}`)
+    expect(readerRaw(s, at, [])).toBe(0)
+    cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    expect(readerRaw(s, at, [])).toBe(0)
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-sensor-water', A)
+    grow(w, { col: A.col + 2, row: A.row }, 'growing', 0)
+    w.tick(DT_MAX)
+    const far = w.cell(A)
+    if (far.kind !== 'sensor-water') throw new Error('water')
+    expect(far.out).toBe(0)
+    grow(w, { col: A.col + 1, row: A.row }, 'growing', 0)
+    w.tick(DT_MAX)
+    const near = w.cell(A)
+    if (near.kind !== 'sensor-water') throw new Error('water')
+    expect(near.out).toBe(1)
+  })
+
+  test('Water sensor wilt/over boxes.', () => {
+    const wilt = new World(1)
+    ready(wilt)
+    put(wilt, 'buy-sensor-water', A)
+    wilt.tuneWater(A, true, false)
+    grow(wilt, B, 'growing', 0)
+    wilt.tick(DT_MAX)
+    const w1 = wilt.cell(A)
+    if (w1.kind !== 'sensor-water') throw new Error('water')
+    expect(w1.out).toBe(1)
+    const over = new World(1)
+    ready(over)
+    put(over, 'buy-sensor-water', A)
+    over.tuneWater(A, true, false)
+    grow(over, B, 'growing', 2)
+    over.tick(DT_MAX)
+    const w2 = over.cell(A)
+    if (w2.kind !== 'sensor-water') throw new Error('water')
+    expect(w2.out).toBe(0)
+    const drown = new World(1)
+    ready(drown)
+    put(drown, 'buy-sensor-water', A)
+    drown.tuneWater(A, false, true)
+    grow(drown, B, 'growing', 2)
+    drown.tick(DT_MAX)
+    const w3 = drown.cell(A)
+    if (w3.kind !== 'sensor-water') throw new Error('water')
+    expect(w3.out).toBe(1)
+    const off = new World(1)
+    ready(off)
+    put(off, 'buy-sensor-water', A)
+    off.tuneWater(A, false, false)
+    grow(off, B, 'growing', 0)
+    off.tick(DT_MAX)
+    const w4 = off.cell(A)
+    if (w4.kind !== 'sensor-water') throw new Error('water')
+    expect(w4.out).toBe(0)
+    const both = new World(1)
+    ready(both)
+    put(both, 'buy-sensor-water', A)
+    grow(both, B, 'growing', 2)
+    both.tick(DT_MAX)
+    const w5 = both.cell(A)
+    if (w5.kind !== 'sensor-water') throw new Error('water')
+    expect(w5.out).toBe(1)
+    const ripe = new World(1)
+    ready(ripe)
+    put(ripe, 'buy-sensor-water', A)
+    grow(ripe, B, 'ripe', 0)
+    ripe.tick(DT_MAX)
+    const w6 = ripe.cell(A)
+    if (w6.kind !== 'sensor-water') throw new Error('water')
+    expect(w6.out).toBe(0)
+  })
+
+  test('Harvest any/all.', () => {
+    const anyRipe = new World(1)
+    ready(anyRipe)
+    put(anyRipe, 'buy-sensor-harvest', A)
+    grow(anyRipe, B, 'ripe', 1)
+    anyRipe.tick(DT_MAX)
+    const a1 = anyRipe.cell(A)
+    if (a1.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a1.mode).toBe('any')
+    expect(a1.out).toBe(1)
+    const anyGrow = new World(1)
+    ready(anyGrow)
+    put(anyGrow, 'buy-sensor-harvest', A)
+    grow(anyGrow, B, 'growing', 1)
+    anyGrow.tick(DT_MAX)
+    const a2 = anyGrow.cell(A)
+    if (a2.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a2.out).toBe(0)
+    const allRipe = new World(1)
+    ready(allRipe)
+    put(allRipe, 'buy-sensor-harvest', A)
+    allRipe.tuneHarvest(A, 'all')
+    grow(allRipe, B, 'ripe', 1)
+    allRipe.tick(DT_MAX)
+    const a3 = allRipe.cell(A)
+    if (a3.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a3.out).toBe(1)
+    const allMix = new World(1)
+    ready(allMix)
+    put(allMix, 'buy-sensor-harvest', A)
+    allMix.tuneHarvest(A, 'all')
+    grow(allMix, B, 'ripe', 1)
+    grow(allMix, C, 'growing', 1)
+    allMix.tick(DT_MAX)
+    const a4 = allMix.cell(A)
+    if (a4.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a4.out).toBe(0)
+    const empty = new World(1)
+    ready(empty)
+    put(empty, 'buy-sensor-harvest', A)
+    empty.tuneHarvest(A, 'all')
+    empty.tick(DT_MAX)
+    const a5 = empty.cell(A)
+    if (a5.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a5.out).toBe(0)
+    const trees = new World(1)
+    ready(trees)
+    put(trees, 'buy-sensor-harvest', A)
+    trees.setCell(B, new Tree('apple', { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 1 }))
+    trees.tick(DT_MAX)
+    const a6 = trees.cell(A)
+    if (a6.kind !== 'sensor-harvest') throw new Error('harvest')
+    expect(a6.out).toBe(0)
+    const s = new HarvestSensor({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+    s.mode = 'any'
+    expect(readerRaw(s, () => undefined, [])).toBe(0)
+  })
+
+  test('Water sensor hold: output edge then hold SENSOR_HOLD ticks.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-sensor-water', A)
+    grow(w, B, 'growing', 0)
+    w.tick(DT_MAX)
+    const on = w.cell(A)
+    if (on.kind !== 'sensor-water') throw new Error('water')
+    expect(on.out).toBe(1)
+    w.setCell(B, { kind: 'empty', soil: new Soil(1, 1, WEED_CHANCE) })
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      w.tick(DT_MAX)
+      const c = w.cell(A)
+      if (c.kind !== 'sensor-water') throw new Error('water')
+      expect(c.out).toBe(1)
+    }
+    w.tick(DT_MAX)
+    const off = w.cell(A)
+    if (off.kind !== 'sensor-water') throw new Error('water')
+    expect(off.out).toBe(0)
+  })
+
+  test('pourEligible: unwired on; wired follows inn. Unwired ≠ low.', () => {
+    expect(pourEligible(false, 0)).toBe(true)
+    expect(pourEligible(false, 1)).toBe(true)
+    expect(pourEligible(true, 0)).toBe(false)
+    expect(pourEligible(true, 1)).toBe(true)
+  })
+
+  test('Water-system joins net like tap. High iff sprinkler want > stored. Taps/stills not in demand. SENSOR_HOLD. Pre-eval pourEligible.', () => {
+    const wsAt = { col: 10, row: 18 }
+    const v = { col: 10, row: 18 }
+    const pipe = { axis: 'h' as const, col: 10, row: 18 }
+    const cropAt = { col: 9, row: 17 }
+    const tapAt = { col: 11, row: 18 }
+    const stillAt = { col: 9, row: 18 }
+    const isolated = new World(1)
+    ready(isolated)
+    isolated.done.add('unlock-auto-irrigation')
+    isolated.done.add('unlock-fermentation')
+    put(isolated, 'buy-water-system', wsAt)
+    isolated.buy('buy-pipe')
+    isolated.placePipe(pipe)
+    isolated.buy('buy-sprinkler')
+    isolated.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    const ws0 = isolated.cell(wsAt)
+    if (ws0.kind !== 'water-system') throw new Error('water-system')
+    const net0 = isolated.netOfCell(ws0.base)
+    expect(net0).toBeDefined()
+    expect(net0?.waterSystems).toContain(ws0)
+    isolated.tick(DT_MAX)
+    const dry = isolated.cell(wsAt)
+    if (dry.kind !== 'water-system') throw new Error('water-system')
+    expect(dry.out).toBe(0)
+    grow(isolated, cropAt, 'growing', 1)
+    isolated.tick(DT_MAX)
+    const high = isolated.cell(wsAt)
+    if (high.kind !== 'water-system') throw new Error('water-system')
+    expect(high.out).toBe(1)
+    isolated.buy('buy-tap')
+    isolated.confirmPlace(tapAt)
+    isolated.buy('buy-still')
+    isolated.confirmPlace(stillAt)
+    const netTap = isolated.netOfCell(ws0.base)
+    expect(netTap?.taps).toHaveLength(1)
+    expect(netTap?.stills).toHaveLength(1)
+    const tapOnly = new World(1)
+    ready(tapOnly)
+    tapOnly.done.add('unlock-auto-irrigation')
+    put(tapOnly, 'buy-water-system', wsAt)
+    tapOnly.buy('buy-pipe')
+    tapOnly.placePipe(pipe)
+    tapOnly.buy('buy-tap')
+    tapOnly.confirmPlace(tapAt)
+    tapOnly.tick(DT_MAX)
+    const t1 = tapOnly.cell(wsAt)
+    if (t1.kind !== 'water-system') throw new Error('water-system')
+    expect(t1.out).toBe(0)
+    isolated.setCell(cropAt, { kind: 'empty', soil: new Soil(1, 1, WEED_CHANCE) })
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      isolated.tick(DT_MAX)
+      const c = isolated.cell(wsAt)
+      if (c.kind !== 'water-system') throw new Error('water-system')
+      expect(c.out).toBe(1)
+    }
+    isolated.tick(DT_MAX)
+    const heldOff = isolated.cell(wsAt)
+    if (heldOff.kind !== 'water-system') throw new Error('water-system')
+    expect(heldOff.out).toBe(0)
+    const pre = new World(1)
+    ready(pre)
+    pre.done.add('unlock-auto-irrigation')
+    put(pre, 'buy-water-system', wsAt)
+    put(pre, 'buy-lever', A)
+    pre.buy('buy-pipe')
+    pre.placePipe(pipe)
+    pre.buy('buy-sprinkler')
+    pre.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    grow(pre, cropAt, 'growing', 1)
+    pre.armWire({ kind: 'cell', at: A, port: 'out' })
+    pre.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
+    pre.tick(DT_MAX)
+    const p0 = pre.cell(wsAt)
+    if (p0.kind !== 'water-system') throw new Error('water-system')
+    expect(p0.out).toBe(0)
+    pre.enqueue({ act: 'toggle', at: A })
+    pre.seats[0].actor.x = A.col + 0.5
+    pre.seats[0].actor.y = A.row + 0.5
+    pre.tick(DT_MAX)
+    const p1 = pre.cell(wsAt)
+    if (p1.kind !== 'water-system') throw new Error('water-system')
+    expect(p1.out).toBe(0)
+    const spr = pre.sprinklerAt(v)
+    if (spr === undefined) throw new Error('sprinkler')
+    expect(spr.inn).toBe(1)
+    pre.tick(DT_MAX)
+    const p2 = pre.cell(wsAt)
+    if (p2.kind !== 'water-system') throw new Error('water-system')
+    expect(p2.out).toBe(1)
+  })
+
+  test('Smart valve: unwired closed; high open, low closed; hold; no manual click; guest place yes, pipe/valve no.', () => {
+    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const v = { col: 19, row: 7 }
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-auto-irrigation')
+    put(w, 'buy-lever', A)
+    w.buy('buy-smart-valve')
+    w.placeSmartValve(e)
+    expect(w.hasSmart(e)).toBe(true)
+    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
+    expect(w.conducts(e)).toBe(false)
+    w.buy('buy-sprinkler')
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    grow(w, { col: 18, row: 6 }, 'growing', 0.5)
+    w.tick(DT_MAX)
+    expect(w.conducts(e)).toBe(false)
+    expect(w.rate(v)).toBe(0)
+    w.buy('buy-pipe')
+    w.placePipe(e)
+    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
+    w.clickValve(e)
+    expect(w.seats[0].queue).toEqual([])
+    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    expect(w.conducts(e)).toBe(true)
+    expect(w.rate(v)).toBeGreaterThan(0)
+    w.armDelete()
+    w.deleteWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      w.tick(DT_MAX)
+      expect(w.conducts(e)).toBe(true)
+    }
+    w.tick(DT_MAX)
+    expect(w.conducts(e)).toBe(false)
+    expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e })).toBe(true)
+    expect(permit({ a: Act.placePipe, t: 0, p: 1, e })).toBe(false)
+    expect(permit({ a: Act.clickValve, t: 0, p: 1, e })).toBe(false)
+    const s = dump(w)
+    expect(s.smartHold).toHaveLength(1)
+    expect(s.segments.some(seg => seg.gate.kind === 'smart')).toBe(true)
+  })
+
+  test('Smart irrigation: unwired on; wired held in; digest distinguishes; wire before unlock is a no-op; dial unchanged; pour this tick.', () => {
+    const v = { col: 19, row: 7 }
+    const cropAt = { col: 18, row: 6 }
+    const unwired = new World(1)
+    ready(unwired)
+    unwired.done.add('unlock-auto-irrigation')
+    unwired.buy('buy-pipe')
+    unwired.placePipe({ axis: 'h', col: 18, row: 7 })
+    unwired.buy('buy-sprinkler')
+    unwired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    const soilU = new Soil(0.5, 1, WEED_CHANCE)
+    unwired.setCell(cropAt, { kind: 'growing', soil: soilU, plant: new Plant('carrot', 'common') })
+    unwired.tick(DT_MAX)
+    expect(soilU.water).toBeGreaterThan(0.5)
+    expect(unwired.rate(v)).toBeCloseTo(SPRINKLER_TILE_RATE, 9)
+    const locked = new World(1)
+    locked.done.add('unlock-sensors')
+    locked.done.add('unlock-auto-irrigation')
+    locked.money = 999
+    put(locked, 'buy-lever', A)
+    locked.buy('buy-sprinkler')
+    locked.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    locked.armWire({ kind: 'cell', at: A, port: 'out' })
+    locked.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
+    expect(locked.wires).toHaveLength(0)
+    const wired = new World(1)
+    ready(wired)
+    wired.done.add('unlock-auto-irrigation')
+    wired.done.add('unlock-smart-sprinkler')
+    put(wired, 'buy-lever', A)
+    wired.buy('buy-pipe')
+    wired.placePipe({ axis: 'h', col: 18, row: 7 })
+    wired.buy('buy-sprinkler')
+    wired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    wired.armWire({ kind: 'cell', at: A, port: 'out' })
+    wired.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
+    expect(wired.wires).toHaveLength(1)
+    const soilOff = new Soil(0.5, 1, WEED_CHANCE)
+    wired.setCell(cropAt, { kind: 'growing', soil: soilOff, plant: new Plant('carrot', 'common') })
+    wired.tick(DT_MAX)
+    expect(soilOff.water).toBeLessThan(0.5)
+    expect(wired.rate(v)).toBe(0)
+    const sprLow = wired.sprinklerAt(v)
+    if (sprLow === undefined) throw new Error('sprinkler')
+    expect(sprLow.inn).toBe(0)
+    const twin = new World(1)
+    ready(twin)
+    twin.done.add('unlock-auto-irrigation')
+    put(twin, 'buy-lever', A)
+    twin.buy('buy-pipe')
+    twin.placePipe({ axis: 'h', col: 18, row: 7 })
+    twin.buy('buy-sprinkler')
+    twin.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    twin.tick(DT_MAX)
+    const clone = new World(1)
+    ready(clone)
+    clone.done.add('unlock-auto-irrigation')
+    put(clone, 'buy-lever', A)
+    clone.buy('buy-pipe')
+    clone.placePipe({ axis: 'h', col: 18, row: 7 })
+    clone.buy('buy-sprinkler')
+    clone.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    clone.armWire({ kind: 'cell', at: A, port: 'out' })
+    clone.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
+    clone.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    clone.tick(DT_MAX)
+    expect(clone.sprinklerAt(v)?.inn).toBe(0)
+    expect(twin.sprinklerAt(v)?.inn).toBe(0)
+    expect(digestHex(clone)).not.toBe(digestHex(twin))
+    wired.enqueue({ act: 'toggle', at: A })
+    wired.seats[0].actor.x = A.col + 0.5
+    wired.seats[0].actor.y = A.row + 0.5
+    const before = soilOff.water
+    wired.tick(DT_MAX)
+    expect(soilOff.water).toBeGreaterThan(before)
+    const sprOn = wired.sprinklerAt(v)
+    if (sprOn === undefined) throw new Error('sprinkler')
+    expect(sprOn.inn).toBe(1)
+    wired.tuneSprinkler(v, { kind: 'crop', crop: 'carrot' })
+    expect(sprOn.tune).toEqual({ kind: 'crop', crop: 'carrot' })
+    expect(wired.demand(sprOn)).toBe(statsOf('carrot', 'common', wired.modifiers).waterUsePerSec)
+    const s = dump(wired)
+    expect(s.sprinklers[0].inn).toBe(1)
+    expect(s.sprinklers[0].hold).toBe(SENSOR_HOLD)
+    const loaded = parse(JSON.stringify(s))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.sprinklerAt(v)?.inn).toBe(1)
+  })
+
+  test('Vehicle: field Quad or tractor floor(x,y) equals the cell. Stored no. Trailer no. SENSOR_HOLD.', () => {
+    const hangar = { col: 10, row: 12 }
+    const on = { col: 16, row: 16 }
+    const off = { col: 20, row: 20 }
+    const field = new World(1)
+    ready(field)
+    field.done.add('unlock-vehicles')
+    field.buy('buy-hangar')
+    field.confirmPlace(hangar)
+    put(field, 'buy-vehicle-detector', on)
+    field.buyVehicle(hangar, 'quad')
+    field.deploy(1, hangar, 'none')
+    const q = field.vehicles[0]
+    if (q.pose.kind !== 'field') throw new Error('field')
+    q.pose.x = on.col + 0.5
+    q.pose.y = on.row + 0.5
+    field.tick(DT_MAX)
+    const onCell = field.cell(on)
+    if (onCell.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(onCell.out).toBe(1)
+    const stored = new World(1)
+    ready(stored)
+    stored.done.add('unlock-vehicles')
+    stored.buy('buy-hangar')
+    stored.confirmPlace(hangar)
+    put(stored, 'buy-vehicle-detector', on)
+    stored.buyVehicle(hangar, 'quad')
+    stored.tick(DT_MAX)
+    const st = stored.cell(on)
+    if (st.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(st.out).toBe(0)
+    const trailer = new World(1)
+    ready(trailer)
+    trailer.done.add('unlock-vehicles')
+    trailer.buy('buy-hangar')
+    trailer.confirmPlace(hangar)
+    put(trailer, 'buy-vehicle-detector', on)
+    trailer.buyTrailer(hangar, 'seed')
+    trailer.tick(DT_MAX)
+    const tr = trailer.cell(on)
+    if (tr.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(tr.out).toBe(0)
+    const far = new World(1)
+    ready(far)
+    far.done.add('unlock-vehicles')
+    far.buy('buy-hangar')
+    far.confirmPlace(hangar)
+    put(far, 'buy-vehicle-detector', on)
+    far.buyVehicle(hangar, 'quad')
+    far.deploy(1, hangar, 'none')
+    const f = far.vehicles[0]
+    if (f.pose.kind !== 'field') throw new Error('field')
+    f.pose.x = off.col + 0.5
+    f.pose.y = off.row + 0.5
+    far.tick(DT_MAX)
+    const away = far.cell(on)
+    if (away.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(away.out).toBe(0)
+    const tractor = new World(1)
+    ready(tractor)
+    tractor.done.add('unlock-vehicles')
+    tractor.buy('buy-hangar')
+    tractor.confirmPlace(hangar)
+    put(tractor, 'buy-vehicle-detector', on)
+    tractor.buyVehicle(hangar, 'tractor')
+    tractor.deploy(1, hangar, 'none')
+    const t = tractor.vehicles[0]
+    if (t.pose.kind !== 'field') throw new Error('field')
+    t.pose.x = on.col + 0.5
+    t.pose.y = on.row + 0.5
+    tractor.tick(DT_MAX)
+    const tOn = tractor.cell(on)
+    if (tOn.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(tOn.out).toBe(1)
+    q.pose.x = off.col + 0.5
+    q.pose.y = off.row + 0.5
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      field.tick(DT_MAX)
+      const c = field.cell(on)
+      if (c.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+      expect(c.out).toBe(1)
+    }
+    field.tick(DT_MAX)
+    const heldOff = field.cell(on)
+    if (heldOff.kind !== 'vehicle-detector') throw new Error('vehicle-detector')
+    expect(heldOff.out).toBe(0)
+  })
+
+  test('buy-valve on a smart edge is Cannot place here.', () => {
+    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-auto-irrigation')
+    w.buy('buy-smart-valve')
+    w.placeSmartValve(e)
+    w.buy('buy-valve')
+    expect(w.promptHit({ kind: 'edge', edge: e })).toEqual({ kind: 'blocked', text: 'Cannot place here' })
+    const money = w.money
+    w.placePipe(e)
+    expect(w.hasSmart(e)).toBe(true)
+    expect(w.hasValve(e)).toBe(false)
+    expect(w.money).toBe(money)
+  })
+
+  test('Unarmed smart-valve hover is Smart valve - on/off.', () => {
+    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-auto-irrigation')
+    w.buy('buy-smart-valve')
+    w.placeSmartValve(e)
+    w.cancelPlace()
+    expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - off')
+    put(w, 'buy-lever', A)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - on')
+  })
+})

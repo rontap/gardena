@@ -122,6 +122,18 @@ export type Face =
   | { kind: 'silo-seed' }
   | { kind: 'silo-spray' }
   | { kind: 'silo-produce' }
+  | { kind: 'lever' }
+  | { kind: 'button' }
+  | { kind: 'lamp' }
+  | { kind: 'or' }
+  | { kind: 'and' }
+  | { kind: 'not' }
+  | { kind: 'sensor-water' }
+  | { kind: 'sensor-fert' }
+  | { kind: 'sensor-harvest' }
+  | { kind: 'water-system' }
+  | { kind: 'vehicle-detector' }
+  | { kind: 'smart-valve' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -399,6 +411,30 @@ export function skuLabel(id: SkuId): string {
       return 'Spraying silo'
     case 'buy-silo-produce':
       return 'Produce silo'
+    case 'buy-lever':
+      return 'Lever'
+    case 'buy-button':
+      return 'Button'
+    case 'buy-lamp':
+      return 'Lamp'
+    case 'buy-or':
+      return 'OR gate'
+    case 'buy-and':
+      return 'AND gate'
+    case 'buy-not':
+      return 'NOT gate'
+    case 'buy-sensor-water':
+      return 'Water sensor'
+    case 'buy-sensor-fert':
+      return 'Fertilizer sensor'
+    case 'buy-sensor-harvest':
+      return 'Harvest sensor'
+    case 'buy-water-system':
+      return 'Water-system sensor'
+    case 'buy-smart-valve':
+      return 'Smart valve'
+    case 'buy-vehicle-detector':
+      return 'Vehicle detector'
   }
 }
 
@@ -562,6 +598,30 @@ export function skuDesc(id: SkuId): string {
       return '2×3 field tank. Look only.'
     case 'buy-silo-produce':
       return '2×3 field tank. Look only.'
+    case 'buy-lever':
+      return 'Throw it. Output high when on.'
+    case 'buy-button':
+      return 'Press. Output high for a short pulse.'
+    case 'buy-lamp':
+      return 'Lights when its input is high.'
+    case 'buy-or':
+      return 'Output high if either input is high.'
+    case 'buy-and':
+      return 'Output high if both inputs are high.'
+    case 'buy-not':
+      return 'Output is the inverse of its input.'
+    case 'buy-sensor-water':
+      return 'Reads nearby plant water. Output high when a plot matches the checked boxes.'
+    case 'buy-sensor-fert':
+      return 'Reads nearby growing plants. Output high when any is starving.'
+    case 'buy-sensor-harvest':
+      return 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.'
+    case 'buy-water-system':
+      return 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.'
+    case 'buy-smart-valve':
+      return 'Sits on an edge. Closed unless its input is high. No manual click.'
+    case 'buy-vehicle-detector':
+      return 'Flush plate. Output high when a field Quad or tractor sits on this tile.'
   }
 }
 
@@ -737,6 +797,30 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'silo-spray' }
     case 'buy-silo-produce':
       return { kind: 'silo-produce' }
+    case 'buy-lever':
+      return { kind: 'lever' }
+    case 'buy-button':
+      return { kind: 'button' }
+    case 'buy-lamp':
+      return { kind: 'lamp' }
+    case 'buy-or':
+      return { kind: 'or' }
+    case 'buy-and':
+      return { kind: 'and' }
+    case 'buy-not':
+      return { kind: 'not' }
+    case 'buy-sensor-water':
+      return { kind: 'sensor-water' }
+    case 'buy-sensor-fert':
+      return { kind: 'sensor-fert' }
+    case 'buy-sensor-harvest':
+      return { kind: 'sensor-harvest' }
+    case 'buy-water-system':
+      return { kind: 'water-system' }
+    case 'buy-smart-valve':
+      return { kind: 'smart-valve' }
+    case 'buy-vehicle-detector':
+      return { kind: 'vehicle-detector' }
   }
 }
 

@@ -75,13 +75,13 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.52. `PROTOCOL` 1.52. Wordmark 1.5.2. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
-    expect(SAVE_VERSION).toBe(1.52)
-    expect(PROTOCOL).toBe(1.52)
+  test('`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
+    expect(SAVE_VERSION).toBe(1.6)
+    expect(PROTOCOL).toBe(1.6)
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(1.52)
+    expect(s.version).toBe(1.6)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)

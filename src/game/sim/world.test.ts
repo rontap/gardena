@@ -882,7 +882,7 @@ describe('beta-5 invariants', () => {
     })
     w.buy('buy-sprinkler')
     ;[5, 6, 7, 8, 9].forEach(col => {
-      w.placeSprinkler({ variant: 'basic', at: { col, row: 20 }, tune: { kind: 'flat' } })
+      w.placeSprinkler({ variant: 'basic', at: { col, row: 20 }, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     })
     const soils: Soil[] = []
     ;[5, 6, 7, 8, 9].forEach(col => {
@@ -908,7 +908,7 @@ describe('beta-5 invariants', () => {
     const e: Edge = { axis: 'h', col: 10, row: 20 }
     w.placePipe(e)
     w.buy('buy-sprinkler')
-    w.placeSprinkler({ variant: 'basic', at: { col: 10, row: 20 }, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: { col: 10, row: 20 }, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     expect(w.rate({ col: 10, row: 20 })).toBe(0)
   })
 
@@ -965,7 +965,7 @@ describe('beta-5 invariants', () => {
     w.placePipe(e)
     w.buy('buy-sprinkler')
     const v = { col: 10, row: 12 }
-    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     w.buy('buy-grinder')
     const g = { col: 8, row: 12 }
     w.setCell(g, { kind: 'empty', soil: bed() })
@@ -987,7 +987,7 @@ describe('beta-5 invariants', () => {
 
   test('aoe formulas', () => {
     const v = { col: 10, row: 12 }
-    expect(sorted(aoe({ variant: 'basic', at: v, tune: { kind: 'flat' } }))).toEqual(
+    expect(sorted(aoe({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 }))).toEqual(
       sorted([
         { col: 9, row: 11 },
         { col: 10, row: 11 },
@@ -995,17 +995,17 @@ describe('beta-5 invariants', () => {
         { col: 10, row: 12 },
       ]),
     )
-    expect(sorted(aoe({ variant: 'large', at: v, tune: { kind: 'flat' } }))).toEqual(
+    expect(sorted(aoe({ variant: 'large', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 }))).toEqual(
       sorted(
         [-2, -1, 0, 1].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
     )
-    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ns', tune: { kind: 'flat' } }))).toEqual(
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ns', tune: { kind: 'flat' }, inn: 0, hold: 0 }))).toEqual(
       sorted(
         [-2, -1, 0, 1].flatMap(dr => [-1, 0].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
     )
-    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ew', tune: { kind: 'flat' } }))).toEqual(
+    expect(sorted(aoe({ variant: 'vert', at: v, facing: 'ew', tune: { kind: 'flat' }, inn: 0, hold: 0 }))).toEqual(
       sorted(
         [-1, 0].flatMap(dr => [-2, -1, 0, 1].map(dc => ({ col: 10 + dc, row: 12 + dr }))),
       ),
@@ -1019,7 +1019,7 @@ describe('beta-5 invariants', () => {
     w.buy('buy-pipe')
     w.placePipe({ axis: 'h', col: 18, row: 7 })
     w.buy('buy-sprinkler')
-    w.placeSprinkler({ variant: 'basic', at: { col: 19, row: 7 }, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: { col: 19, row: 7 }, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const gs = bed(0.5)
     const g = new Plant('carrot', 'common')
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: gs, plant: g })
@@ -1038,8 +1038,8 @@ describe('beta-5 invariants', () => {
     w.money = 100
     w.buy('buy-sprinkler')
     const v = { col: 10, row: 12 }
-    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' } })
-    expect(w.sprinklerAt(v)).toEqual({ variant: 'basic', at: v, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    expect(w.sprinklerAt(v)).toEqual({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     expect(w.rate(v)).toBe(0)
   })
 
@@ -1049,7 +1049,7 @@ describe('beta-5 invariants', () => {
     w.money = 100
     w.buy('buy-sprinkler')
     const v = { col: 19, row: 7 }
-    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const g = new Plant('carrot', 'common')
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: bed(0.5), plant: g })
     expect(w.rate(v)).toBe(0)
@@ -1067,7 +1067,7 @@ describe('beta-5 invariants', () => {
     w.placePipe({ axis: 'h', col: 18, row: 7 })
     w.buy('buy-sprinkler')
     const v = { col: 19, row: 7 }
-    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' } })
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const s = bed(0.5)
     const g = new Plant('carrot', 'common')
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: s, plant: g })
@@ -1579,7 +1579,7 @@ describe('1.2 machines', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.52)
+    expect(s.version).toBe(1.6)
     const old = parse(JSON.stringify({ ...s, version: 1.2 }))
     expect(old.ok).toBe(false)
     if (old.ok) return

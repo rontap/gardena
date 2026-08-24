@@ -24,6 +24,49 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.6',
+    name: 'Automation III',
+    summary: 'Sensors and Smart Irrigation.',
+    changes: [
+      {
+        kind: 'major-feature',
+        text: 'Added the Sensors shelf: wires, lever, button, lamp, AND, OR, and NOT.',
+        notes: [
+          'Research Sensors. Click a port to draw a wire.',
+          'Throw the lever. Press the button for a short pulse. The lamp lights when its input is high.',
+          'AND is high if both inputs are. OR if either is. NOT inverts.',
+        ],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Field readers: water, fertilizer, harvest, and water-system sensors.',
+        notes: [
+          'Water reads nearby plant water. High when a plot matches the checked boxes.',
+          'Fertilizer reads nearby growing plants. High when any is starving.',
+          'Harvest: Any — one ripe. All — every growing or ripe plant is ripe.',
+          'Water-system joins a net. High when sprinklers want more than the tanks hold.',
+        ],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Smart Irrigation: existing sprinklers gain a signal input.',
+        notes: ['Unwired sprinklers still pour. Wire one to turn it on and off.'],
+        changes: [],
+      },
+      {
+        kind: 'major-feature',
+        text: 'Added a smart valve and a vehicle detector.',
+        notes: [
+          'Smart valve sits on an edge. Closed unless its input is high. No manual click.',
+          'Vehicle detector is a flush plate. High when a field Quad or tractor sits on this tile.',
+        ],
+        changes: [],
+      },
+    ],
+  },
+  {
     id: '1.5.2',
     name: 'Vehicles II patch',
     summary: 'Boom width, slower machines, weed spray, and skill moves.',

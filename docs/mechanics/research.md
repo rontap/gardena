@@ -10,6 +10,10 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `reveal`: `'start'` or a prior id. `skuOpen` / `skuShown` are separate: show vs buy.
 
+`Sku.need` is required: `ResearchId | 'vanilla-tending' | 'none'`. `'none'` is no extra lock. Vanilla stays `'vanilla-tending'`. Dual-lock SKUs set `unlock` to one research and `need` to the other. `skuOpen` is unlock done (or `'start'`) and the need: `'none'` | skill owned | that research done. Assumption: vanilla keeps this field.
+
+Future germ / weather SKUs use this dual-lock only (`Sku.unlock` + `Sku.need` as `ResearchId`). Do not add those SKUs or research rows in 1.6.
+
 `gate` is required on every row. `{ kind: 'none' }` unless the row is earned by play:
 
 - `{ kind: 'digs'; n }` — `World.digs`, bumped once per completed `doShovel`.
@@ -41,6 +45,8 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
 | unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
 | unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
+| unlock-sensors | Sensors | automation | 24 | 55 | unlock-auto-irrigation | Unlocks the Sensors shelf: lever, button, lamp, gates, and field readers. |
+| unlock-smart-irrigation | Smart Irrigation | automation | 32 | 70 | unlock-sensors | Sprinklers gain a signal input. Unlocks Smart valve and Vehicle detector. |
 | unlock-grinder | Seed grinder | automation | 18 | 50 | start | Unlocks Seed grinder and Mill in the general store. |
 | unlock-preservatives | Preservatives | automation | 20 | 55 | unlock-grinder | Unlocks Jam machine, Freezer, and Sugar in the general store. |
 | unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar. |
@@ -49,6 +55,10 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-diamond-pickaxe | Diamond pickaxe | utilities | 40 | 120 | unlock-pickaxe | Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading. |
 
 `unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
+
+`unlock-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. No Advanced signalling. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Assumption: no new `ResearchGate` arm.
+
+Sensor-cell SKUs: `show` + `unlock` `unlock-sensors`, `need: 'none'`. `buy-smart-valve` `buy-vehicle-detector`: `show: unlock-sensors`, `unlock: unlock-smart-irrigation`, `need: unlock-sensors`. `skuShown` Sensors shelf (`logic`) after `unlock-sensors`. Smart Irrigation cards shown after Sensors, buy after both.
 
 Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. `effect` is `unlock-sku` | `expand` | `feature`. `unlock-heirloom` is `feature` — gates Őstermelő. Better crop is player skills — [[mechanics/family]].
 
@@ -77,3 +87,5 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 `pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
 
 `buy-better-pickaxe` show after `unlock-pickaxe`. Sprinkler shown after Irrigation, buyable after Automated. Vert / large / well shown after Automated, buyable after Advanced.
+
+Sensors shelf after `unlock-sensors`. `buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors. Prices [[mechanics/sensors]].

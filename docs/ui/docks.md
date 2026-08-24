@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune is an object HUD on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]].
+Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. [[ui/sensors]]
 
 ## Left docks
 
@@ -30,7 +30,7 @@ Research: trees **Plants** **Utilities** **Expansion** **Automation** on the rai
 
 Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after tomato. `unlock-raspberry` after grape. No vanilla research card. Automation: **Fermentation** (`unlock-fermentation`) at start.
 
-**×** / a rail toggle that closes **Shop** or **Build**: `cancelPlace`, pipes lens `off`, search query cleared. Switching between those two keeps all three — [[ui/build]]. Research **×** only closes the dock.
+**×** / a rail toggle that closes **Shop** or **Build**: `cancelPlace`, pipes or sensors lens `off`, search query cleared. Switching between those two keeps all three — [[ui/build]]. Research **×** only closes the dock.
 
 ## Overlays
 
@@ -64,6 +64,10 @@ Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joine
 
 ## Object HUD
 
-Only sprinklers, and only after **Tune sprinkler** (`unlock-smart-sprinkler`). Anchored at the vertex. Title **Sprinkler output**.
+Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest sensor config. No new chrome. [[ui/sensors]]
 
-**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud hit.
+Sprinklers, only after **Tune sprinkler** (`unlock-smart-sprinkler`). Anchored at the vertex. Title **Sprinkler output**.
+
+**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest hit. Guest: no sprinkler HUD.
+
+Water / harvest: remote, no walk. Anchored at the cell. Titles **Water sensor** / **Harvest sensor**. Checkboxes **Wilting** **Overwatered** (default both on) / **Any** **All** (default Any). Not a crop list. Toggle applies and stays open. Guest: yes. While that HUD is open, that sensor’s 3×3 `fill-water` 0.35.

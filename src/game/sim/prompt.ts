@@ -1,7 +1,7 @@
 import type { Rarity } from '../defs/rarity.ts'
 import { inWorld, type Coord } from './building.ts'
 import { onCell } from './drop.ts'
-import type { CropId, SkuId } from './ids.ts'
+import type { CropId, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
 import {
   BARREL_CAP,
@@ -28,8 +28,10 @@ import {
   millRecipeOf,
   stillCropOf,
 } from './machine.ts'
-import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
+import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
+import { SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
+import { isSensor, sameEnd, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { TREE_NAME } from '../defs/trees.ts'
@@ -52,6 +54,11 @@ export type PromptHit =
   | { kind: 'valve'; edge: Edge }
   | { kind: 'well'; edge: Edge }
   | { kind: 'sprinkler-hud'; at: Vertex }
+  | { kind: 'port'; end: WireEnd }
+  | { kind: 'delete-wire'; from: WireEnd; to: WireEnd }
+  | { kind: 'smart-valve'; edge: Edge }
+  | { kind: 'water-hud'; at: Coord }
+  | { kind: 'harvest-hud'; at: Coord }
 
 export function placeLabel(id: SkuId): string {
   return skuLabel(id)
@@ -60,19 +67,24 @@ export function placeLabel(id: SkuId): string {
 export function pipePrompt(w: World, e: Edge): Prompt {
   if (w.act.place.kind !== 'sku') return { kind: 'blocked', text: 'Cannot place here' }
   const id = w.act.place.id
-  if (id !== 'buy-pipe' && id !== 'buy-valve' && id !== 'buy-well') {
+  if (id !== 'buy-pipe' && id !== 'buy-valve' && id !== 'buy-well' && id !== 'buy-smart-valve') {
     return { kind: 'blocked', text: 'Cannot place here' }
   }
   if (w.money < w.skuPrice(id)) return { kind: 'blocked', text: 'Cannot afford' }
   if (!w.edgeOwned(e)) return { kind: 'blocked', text: 'Cannot place here' }
   if (id === 'buy-pipe') {
-    if (w.hasPipe(e) || w.hasWell(e)) return { kind: 'blocked', text: 'Cannot place here' }
+    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
     return { kind: 'place', text: 'Place Pipe' }
   }
   if (id === 'buy-well') {
-    if (w.hasPipe(e) || w.hasWell(e)) return { kind: 'blocked', text: 'Cannot place here' }
+    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
     return { kind: 'place', text: 'Place Well' }
   }
+  if (id === 'buy-smart-valve') {
+    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
+    return { kind: 'place', text: 'Place Smart valve' }
+  }
+  if (w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
   if (!w.hasPipe(e)) return { kind: 'blocked', text: 'Valve needs a pipe' }
   if (w.hasValve(e)) return { kind: 'blocked', text: 'Pipe already has a valve' }
   return { kind: 'place', text: 'Place Manual valve' }
@@ -157,11 +169,28 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'silo-seed') return { kind: 'place', text: 'Delete seeding silo' }
   if (cell.kind === 'silo-spray') return { kind: 'place', text: 'Delete spraying silo' }
   if (cell.kind === 'silo-produce') return { kind: 'place', text: 'Delete produce silo' }
+  if (cell.kind === 'lever') return { kind: 'place', text: 'Delete lever' }
+  if (cell.kind === 'button') return { kind: 'place', text: 'Delete button' }
+  if (cell.kind === 'lamp') return { kind: 'place', text: 'Delete lamp' }
+  if (cell.kind === 'or') return { kind: 'place', text: 'Delete OR gate' }
+  if (cell.kind === 'and') return { kind: 'place', text: 'Delete AND gate' }
+  if (cell.kind === 'not') return { kind: 'place', text: 'Delete NOT gate' }
+  if (cell.kind === 'sensor-water') return { kind: 'place', text: 'Delete water sensor' }
+  if (cell.kind === 'sensor-fert') return { kind: 'place', text: 'Delete fertilizer sensor' }
+  if (cell.kind === 'sensor-harvest') return { kind: 'place', text: 'Delete harvest sensor' }
+  if (cell.kind === 'water-system') return { kind: 'place', text: 'Delete water-system sensor' }
+  if (cell.kind === 'vehicle-detector') return { kind: 'place', text: 'Delete vehicle detector' }
   return { kind: 'blocked', text: 'Cannot delete here' }
 }
 
 export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
-  if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well')) {
+  if (w.act.place.kind === 'wire') {
+    if (hit === undefined || hit.kind !== 'port') return { kind: 'blocked', text: 'Cannot wire here' }
+    const rest = w.wires.filter(x => !sameEnd(x.to, hit.end))
+    if (wouldCycle(rest, w.act.place.from, hit.end)) return { kind: 'blocked', text: 'Cannot loop' }
+    return { kind: 'place', text: 'Place' }
+  }
+  if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well' || w.act.place.id === 'buy-smart-valve')) {
     if (hit === undefined || hit.kind !== 'edge') {
       if (w.money < w.skuPrice(w.act.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
       return { kind: 'blocked', text: 'Cannot place here' }
@@ -169,9 +198,28 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     return pipePrompt(w, hit.edge)
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'valve') return valvePrompt(w, hit.edge)
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'smart-valve') {
+    const h = w.smartHold.get(edgeKey(hit.edge)) as SmartHold
+    return { kind: 'blocked', text: `Smart valve - ${h.level === 1 ? 'on' : 'off'}` }
+  }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'well') return wellPrompt(w, hit.edge)
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'sprinkler-hud') {
     return { kind: 'place', text: 'Tune sprinkler' }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'water-hud') {
+    return { kind: 'place', text: 'Tune water sensor' }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'harvest-hud') {
+    return { kind: 'place', text: 'Tune harvest sensor' }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'port') {
+    return { kind: 'place', text: 'Place' }
+  }
+  if (w.act.place.kind === 'delete' && hit !== undefined && hit.kind === 'delete-wire') {
+    return { kind: 'place', text: 'Delete wire' }
+  }
+  if (w.act.place.kind === 'delete' && hit !== undefined && hit.kind === 'smart-valve') {
+    return { kind: 'place', text: 'Delete smart valve' }
   }
   if (
     w.act.place.kind === 'sku' &&
@@ -248,7 +296,8 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-hangar' ||
       w.act.place.id === 'buy-silo-seed' ||
       w.act.place.id === 'buy-silo-spray' ||
-      w.act.place.id === 'buy-silo-produce'
+      w.act.place.id === 'buy-silo-produce' ||
+      (SENSOR_CELL_SKUS as readonly string[]).includes(w.act.place.id)
     ) {
       if (w.act.place.id === 'buy-hangar') {
         if (!hangarSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
@@ -325,6 +374,13 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'compost-box') {
     if (w.act.hand.kind === 'hold' && organic(w.act.hand.item)) return intent('Compost', { act: 'compost', at })
     return { kind: 'blocked', text: compostLine(cell.units, cell.progress) }
+  }
+  if (isSensor(cell)) {
+    if (cell.kind === 'lever') return intent('Flip lever', { act: 'toggle', at })
+    if (cell.kind === 'button') return intent('Press button', { act: 'toggle', at })
+    if (cell.kind === 'sensor-water') return { kind: 'place', text: 'Tune water sensor' }
+    if (cell.kind === 'sensor-harvest') return { kind: 'place', text: 'Tune harvest sensor' }
+    return { kind: 'blocked', text: lookSensor(cell.kind) }
   }
   if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap') {
     if (!fillable(w, at)) return { kind: 'blocked', text: 'Tap has no water grid' }
@@ -587,4 +643,18 @@ function sprinklerSku(s: Sprinkler): SkuId {
   if (s.variant === 'basic') return 'buy-sprinkler'
   if (s.variant === 'vert') return 'buy-sprinkler-vert'
   return 'buy-sprinkler-large'
+}
+
+function lookSensor(k: SensorKind): string {
+  if (k === 'lever') return 'Lever'
+  if (k === 'button') return 'Button'
+  if (k === 'lamp') return 'Lamp'
+  if (k === 'or') return 'OR gate'
+  if (k === 'and') return 'AND gate'
+  if (k === 'not') return 'NOT gate'
+  if (k === 'sensor-water') return 'Water sensor'
+  if (k === 'sensor-fert') return 'Fertilizer sensor'
+  if (k === 'sensor-harvest') return 'Harvest sensor'
+  if (k === 'water-system') return 'Water-system sensor'
+  return 'Vehicle detector'
 }

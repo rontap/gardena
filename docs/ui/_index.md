@@ -21,6 +21,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/callout-hover]]
 - [[ui/docks]]
 - [[ui/lens]]
+- [[ui/sensors]]
 - [[ui/type]]
 
 See [[canon]] and [[stack]].

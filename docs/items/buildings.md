@@ -13,3 +13,5 @@
 `seed-silo` — starter, not a SKU. `additive-store` — starter, not a SKU. 1×2, `SILO_BASE` `(17,9)` / `ADDITIVE_BASE` `(18,9)`. Not placeable, not researchable, not deletable, no almanac entry. Contents and caps: [[mechanics/inventory]]. Panels: [[ui/store]]. Starter **Seed silo** is not `silo-seed`.
 
 `truck` — not a Place SKU. Consign: [[mechanics/market]].
+
+Sensor cells are not this note — [[items/sensors]].

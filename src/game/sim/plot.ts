@@ -23,6 +23,7 @@ import type {
 } from './building.ts'
 import type { CropId, TileId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
+import type { Sensor } from './sensor.ts'
 import type { Soil } from './soil.ts'
 
 export type Ground = 'soft' | 'hard' | 'very-hard'
@@ -65,6 +66,7 @@ export type Cell =
   | SiloProduce
   | SeedSilo
   | AdditiveStore
+  | Sensor
 
 export function bare(ground: Ground): Plot {
   return { kind: 'untilled', ground, cover: { kind: 'bare' } }
@@ -124,6 +126,17 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'hangar' ||
     c.kind === 'silo-seed' ||
     c.kind === 'silo-spray' ||
-    c.kind === 'silo-produce'
+    c.kind === 'silo-produce' ||
+    c.kind === 'lever' ||
+    c.kind === 'button' ||
+    c.kind === 'lamp' ||
+    c.kind === 'or' ||
+    c.kind === 'and' ||
+    c.kind === 'not' ||
+    c.kind === 'sensor-water' ||
+    c.kind === 'sensor-fert' ||
+    c.kind === 'sensor-harvest' ||
+    c.kind === 'water-system' ||
+    c.kind === 'vehicle-detector'
   )
 }

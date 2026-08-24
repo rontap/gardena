@@ -7,6 +7,7 @@ Rules as the game runs. Tests follow the numbered list. Numbers: preference / tu
 - [[mechanics/plants]]
 - [[mechanics/trees]]
 - [[mechanics/water]]
+- [[mechanics/sensors]]
 - [[mechanics/weeds]]
 - [[mechanics/market]]
 - [[mechanics/research]]
@@ -63,7 +64,7 @@ See [[canon]].
 37. `World.now` starts 0. Each `tick()` entry, including recap return, `now += 1`. `dispatch` stamps `Cmd.t = now`. Same-`t` cmds apply in log order. Ticks are not cmds.
 38. `dispatch` appends to `World.log` and `sink`, then `apply`. `apply` does not log. Replay is `apply` only. `enqueue` does not `dispatch`.
 39. Log is player `Cmd`s only. Not sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, walk, panel, camera, hover, lens. `Act.setBoom` is a cmd.
-40. Same seed + same `Cmd[]` applied at those `t` with `dt = 1/15` → equal digest: `money`, `clock.day`, `clock.t`, each seat `hand`/`inventory`, cell kinds, plant crop/rarity/maturity, drop count, `done`, family `owned`, stall stock.
+40. Same seed + same `Cmd[]` applied at those `t` with `dt = 1/15` → equal digest: `money`, `clock.day`, `clock.t`, each seat `hand`/`inventory`, cell kinds, plant crop/rarity/maturity, drop count, `done`, family `owned`, stall stock, every wire `from`/`to`, every sensor `out`/`inn`, sprinkler unwired vs wired level, smart-valve held level.
 41. Two Worlds, same seed, no cmds, N ticks of `1/15` → equal digest.
 42. `shop.next()` does not move when `grow` rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.
 43. Two growing→ripe on one cell the same day use distinct `n`. Rarities need not match.
@@ -84,7 +85,7 @@ See [[canon]].
 58. Live App accumulator calls `tick(DT_MAX)` only. Leftover rAF never ticks a non-`DT_MAX` slice. View paints every rAF. Solo and MP.
 59. Per host `bundle`: apply `cmds` in log order, then `tick(DT_MAX)`. Empty `cmds` still tick. `bundle.t` is `now` after that tick. Same seed + same bundles → equal digest: invariant 40 plus every seat `actor.x`/`actor.y`, `hand`, `inventory`, `presence`, `place`.
 60. Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.
-61. Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce. Guest may dump mill/jam/still/barrel like compost. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.
+61. Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce, lever, button, lamp, AND, OR, NOT, water/fert/harvest/water-system sensors, vehicle detector. Guest may dump mill/jam/still/barrel like compost. Guest may `placeSmartValve`, wires (`armWire` `placeWire` delete wire), toggle lever/button, water/harvest HUD. Guest chest/freezer `swapChest`, pipes, manual valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not. Guest `placeWire` permitted; guest `placePipe` still not.
 62. `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.
 63. `parse(text)`: `JSON.parse` throw or non-object → `{ ok: false, reason: 'unusable' }`. `game !== "gardena"` → `reason: 'not-gardena'`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. Else one hydrate of live fields including `seats`. Reconstruct → `{ ok: true, world }`. Hydrate fail → `reason: 'unusable'`. No migrate. `LoadFailReason` is `'not-gardena' | 'version' | 'unusable'`.
 64. `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
@@ -95,7 +96,7 @@ See [[canon]].
 69. `SUGAR_MILL` 5 / L < `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.
 70. Barrel is grapes → wine only. No whisky. No migrate.
 71. Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.
-72. `SAVE_VERSION` 1.52. `PROTOCOL` 1.52. Wordmark 1.5.2. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.
+72. `SAVE_VERSION` 1.6. `PROTOCOL` 1.6. Wordmark 1.6.0. No migrate. 1.5 / 1.52 file → `'version'`. Dump `vehicles` + `trailers` + hangar/silo cells + `wires` + sensor cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every wire, every sensor output.
 73. `VehicleKind` is `'quad' | 'tractor'`. Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom field. Tractor no slots, `hitch: TrailerId | 'none'`, `boom: 3 | 5` default 5, persist, survives trailer swap. Fuel is `0..1` on the vehicle, not an Item. Trailer is stored or attached, never loose. `TRAILER_CAP` 100 is the only cargo cap.
 74. Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `contracts` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (contracts apply).
 75. Guests: hangar cue HUD, `buy-hangar` + three silo SKUs in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar. Guest `swapChest` still not.
@@ -114,5 +115,16 @@ See [[canon]].
 88. Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Box in hand: into box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Shovel: no drop, `weedChance = −0.3`. Box cargo `{ kind: 'stack'; goods: 'weed'; count }`. Compost accepts boxed weeds (`COMPOST_VALUE.weed`).
 89. `PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `contracts`; no `tool-contracts` `machine-contracts` `bulk-buying`. `contracts` max 3. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_FLOOR` `0.10 / 0.20 / 0.30`. `industrial` max 3.
 90. `CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
+91. Same seed + cmds → equal digest including wires and outputs.
+92. New wire that would cycle: no-op.
+93. Button: high exactly `BUTTON_PULSE` ticks.
+94. Water sensor hold: output edge then hold `SENSOR_HOLD` ticks.
+95. Unwired sprinkler still pours after Smart Irrigation.
+96. Unwired smart valve does not conduct.
+97. Fan-out: one lever drives two lamps.
+98. Guest `placeWire` permitted; guest `placePipe` still not.
+99. `SAVE_VERSION` 1.6; 1.5 / 1.52 file → `'version'`.
+100. 3×3 does not read plants outside the square; center building is not a plant.
+101. Signal is `0 | 1`. Graph is a DAG. Hold on world-readers + sprinkler input + smart valve only. Digest distinguishes unwired sprinkler vs wired-low.
 
-Assumption: `Act.setBoom` `'W'`; spray click is `Intent` `{ act: 'weed-spray'; at }`.
+Assumption: `Act.setBoom` `'W'`; `Act.placeWire` `'N'`; spray click is `Intent` `{ act: 'weed-spray'; at }`.

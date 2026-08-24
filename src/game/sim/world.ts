@@ -50,7 +50,7 @@ import {
   rollShopRarity,
   type Rarity,
 } from '../defs/rarity.ts'
-import { isAnnualId } from './ids.ts'
+import { isAnnualId, SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -253,6 +253,30 @@ import {
   type Vehicle,
   type VehiclePose,
 } from './vehicle.ts'
+import {
+  cellKey,
+  dropIncident,
+  evalDag,
+  flipLever,
+  hitsCell,
+  tickButton,
+  hitsEdge,
+  hitsVertex,
+  isSensor,
+  makeSensor,
+  pressButton,
+  pourEligible,
+  readerRaw,
+  sameEnd,
+  vehicleRaw,
+  skuKind,
+  wouldCycle,
+  type Sensor,
+  type SmartHold,
+  type WaterSystem,
+  type Wire,
+  type WireEnd,
+} from './sensor.ts'
 
 export type Intent =
   | { act: 'walk'; at: Coord }
@@ -281,6 +305,7 @@ export type Intent =
   | { act: 'vehicle'; id: VehicleId }
   | { act: 'embark'; id: VehicleId }
   | { act: 'valve'; at: Coord; edge: Edge }
+  | { act: 'toggle'; at: Coord }
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
 
@@ -312,6 +337,8 @@ export type TaskName =
   | 'Tractor'
   | 'Embark'
   | 'Valve'
+  | 'Flip'
+  | 'Press'
   | 'Tend'
   | 'Spray'
 
@@ -330,7 +357,27 @@ export type Place =
   | { kind: 'none' }
   | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert'> }
   | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
+  | { kind: 'wire'; from: WireEnd }
   | { kind: 'delete' }
+
+export type StayArmed =
+  | 'buy-pipe'
+  | 'buy-sprinkler'
+  | 'buy-sprinkler-vert'
+  | 'buy-sprinkler-large'
+  | 'buy-lever'
+  | 'buy-button'
+  | 'buy-lamp'
+  | 'buy-or'
+  | 'buy-and'
+  | 'buy-not'
+  | 'buy-sensor-water'
+  | 'buy-sensor-fert'
+  | 'buy-sensor-harvest'
+  | 'buy-water-system'
+  | 'buy-smart-valve'
+  | 'buy-vehicle-detector'
+  | 'delete'
 
 export type SeatId = 0 | 1 | 2 | 3
 export type Presence = 'in' | 'away'
@@ -360,9 +407,18 @@ export type Pulse = { text: string; at: Coord }
 
 export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
 
-export type Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
+export type Net = {
+  sources: Reservoir[]
+  sprinklers: Sprinkler[]
+  taps: Tap[]
+  stills: PotStill[]
+  waterSystems: WaterSystem[]
+}
 
-export type HudTarget = { kind: 'sprinkler'; at: Vertex }
+export type HudTarget =
+  | { kind: 'sprinkler'; at: Vertex }
+  | { kind: 'water'; at: Coord }
+  | { kind: 'harvest'; at: Coord }
 
 export type DayTally = { died: number; harvests: number; research: ResearchId[] }
 
@@ -408,6 +464,9 @@ export type Hydrate = {
   tanks: RainTank[]
   taps: Tap[]
   stills: PotStill[]
+  waterSystems: WaterSystem[]
+  wires: Wire[]
+  smartHold: SmartHold[]
   hangars: Hangar[]
   seedSilos: SiloSeed[]
   spraySilos: SiloSpray[]
@@ -545,6 +604,7 @@ export function dest(i: Intent, w: World): Coord {
   if (i.act === 'fillWell') return i.stand
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
+  if (i.act === 'toggle') return i.at
   if (i.act === 'vehicle' || i.act === 'embark') {
     const v = w.vehicles.find(x => x.id === i.id)
     if (v !== undefined && v.pose.kind === 'field') {
@@ -576,6 +636,9 @@ export class World {
   readonly tanks: RainTank[] = []
   readonly taps: Tap[] = []
   readonly stills: PotStill[] = []
+  readonly waterSystems: WaterSystem[] = []
+  readonly wires: Wire[] = []
+  readonly smartHold = new Map<string, SmartHold>()
   readonly hangars: Hangar[] = []
   readonly seedSilos: SiloSeed[] = []
   readonly spraySilos: SiloSpray[] = []
@@ -643,6 +706,12 @@ export class World {
       this.tanks = h.tanks
       this.taps = h.taps
       this.stills = h.stills
+      this.waterSystems.length = 0
+      h.waterSystems.forEach(x => this.waterSystems.push(x))
+      this.wires.length = 0
+      h.wires.forEach(x => this.wires.push(x))
+      this.smartHold.clear()
+      h.smartHold.forEach(x => this.smartHold.set(edgeKey(x.e), x))
       this.hangars.length = 0
       h.hangars.forEach(x => this.hangars.push(x))
       this.seedSilos.length = 0
@@ -877,6 +946,8 @@ export class World {
         if (cmd.k === 'pipe') this.deletePipeBody(cmd.e)
         else if (cmd.k === 'well') this.deleteWellBody(cmd.e)
         else if (cmd.k === 'sprinkler') this.deleteSprinklerBody({ col: cmd.c[0], row: cmd.c[1] })
+        else if (cmd.k === 'wire') this.deleteWireBody(cmd.from, cmd.to)
+        else if (cmd.k === 'smart') this.deleteSmartBody(cmd.e)
         else this.deleteBuildingBody({ col: cmd.c[0], row: cmd.c[1] })
         return
       case Act.expand:
@@ -908,7 +979,9 @@ export class World {
         this.tuneSprinklerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.u)
         return
       case Act.openHud:
-        this.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
+        if (cmd.k === 'sprinkler') this.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
+        else if (cmd.k === 'water') this.openHudBody({ kind: 'water', at: { col: cmd.c[0], row: cmd.c[1] } })
+        else this.openHudBody({ kind: 'harvest', at: { col: cmd.c[0], row: cmd.c[1] } })
         return
       case Act.closeHud:
         this.closeHudBody()
@@ -969,6 +1042,21 @@ export class World {
         return
       case Act.setBoom:
         this.setBoomBody(cmd.w)
+        return
+      case Act.armWire:
+        this.armWireBody(cmd.from)
+        return
+      case Act.placeWire:
+        this.placeWireBody(cmd.from, cmd.to)
+        return
+      case Act.placeSmartValve:
+        this.placeSmartValveBody(cmd.e)
+        return
+      case Act.tuneWater:
+        this.tuneWaterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.wilt, cmd.over)
+        return
+      case Act.tuneHarvest:
+        this.tuneHarvestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.mode)
         return
     }
   }
@@ -1243,7 +1331,8 @@ export class World {
 
   skuOpen(id: SkuId): boolean {
     const s = SKUS[id]
-    if (s.need !== undefined && !this.hasSkill(s.need)) return false
+    if (s.need === 'vanilla-tending' && !this.hasSkill('vanilla-tending')) return false
+    if (s.need !== 'none' && s.need !== 'vanilla-tending' && !this.done.has(s.need)) return false
     return s.unlock === 'start' || this.done.has(s.unlock)
   }
 
@@ -1280,12 +1369,22 @@ export class World {
 
   conducts(e: Edge): boolean {
     const seg = this.segments.get(edgeKey(e))
-    return seg !== undefined && flows(seg)
+    if (seg === undefined) return false
+    if (seg.gate.kind === 'smart') {
+      const h = this.smartHold.get(edgeKey(e))
+      return h !== undefined && h.level === 1
+    }
+    return flows(seg)
   }
 
   hasValve(e: Edge): boolean {
     const seg = this.segments.get(edgeKey(e))
     return seg !== undefined && seg.gate.kind === 'valve'
+  }
+
+  hasSmart(e: Edge): boolean {
+    const seg = this.segments.get(edgeKey(e))
+    return seg !== undefined && seg.gate.kind === 'smart'
   }
 
   wellAt(e: Edge): Well | undefined {
@@ -1335,15 +1434,15 @@ export class World {
     if (this.money < this.skuPrice(id)) return
     if (!this.edgeOwned(e)) return
     if (id === 'buy-pipe') {
-      if (this.hasPipe(e) || this.hasWell(e)) return
+      if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
       this.segments.set(edgeKey(e), { at: e, gate: { kind: 'bare' } })
       vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     } else if (id === 'buy-valve') {
       const seg = this.segmentAt(e)
-      if (seg === undefined || seg.gate.kind === 'valve') return
+      if (seg === undefined || seg.gate.kind !== 'bare') return
       seg.gate = { kind: 'valve', open: true }
     } else {
-      if (this.hasPipe(e) || this.hasWell(e)) return
+      if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
       this.wells.set(edgeKey(e), new Well(e))
       vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     }
@@ -1361,6 +1460,7 @@ export class World {
     if (this.act.place.kind !== 'delete') return
     const seg = this.segmentAt(e)
     if (!this.edgeOwned(e) || seg === undefined) return
+    if (seg.gate.kind === 'smart') return
     if (seg.gate.kind === 'valve') {
       seg.gate = { kind: 'bare' }
       this.pulse = { text: 'Delete valve', at: { col: e.col, row: e.row } }
@@ -1397,7 +1497,13 @@ export class World {
   }
 
   openHud(target: HudTarget): void {
-    this.commit({ a: Act.openHud, t: this.now, p: this.local, c: [target.at.col, target.at.row] })
+    this.commit({
+      a: Act.openHud,
+      t: this.now,
+      p: this.local,
+      k: target.kind,
+      c: [target.at.col, target.at.row],
+    })
   }
 
   private openHudBody(target: HudTarget): void {
@@ -1438,8 +1544,8 @@ export class World {
     if (this.sprinklerAt(s.at) !== undefined) return
     const placed: Sprinkler =
       this.act.place.id === 'buy-sprinkler-vert'
-        ? { variant: 'vert', at: s.at, facing: this.act.place.facing, tune: { kind: 'flat' } }
-        : s
+        ? { variant: 'vert', at: s.at, facing: this.act.place.facing, tune: { kind: 'flat' }, inn: 0, hold: 0 }
+        : { ...s, inn: 0, hold: 0 }
     if (!aoe(placed).every(c => this.inWorld(c))) return
     this.money -= this.skuPrice(id)
     this.sprinklers.set(vertexKey(placed.at), placed)
@@ -1463,6 +1569,7 @@ export class World {
     if (this.act.place.kind !== 'delete') return
     if (this.sprinklerAt(v) === undefined) return
     this.sprinklers.delete(vertexKey(v))
+    this.dropWires(w => hitsVertex(w.from, v) || hitsVertex(w.to, v))
     this.pruneVert(v)
     this.dirtyNets()
     this.pulse = { text: 'Delete sprinkler', at: { col: v.col, row: v.row } }
@@ -1476,6 +1583,138 @@ export class World {
   private armDeleteBody(): void {
     this.act.place = { kind: 'delete' }
     this.ping()
+  }
+
+  armWire(from: WireEnd): void {
+    this.commit({ a: Act.armWire, t: this.now, p: this.local, from })
+  }
+
+  private armWireBody(from: WireEnd): void {
+    if (!this.portLegal(from, 'from')) return
+    this.act.place = { kind: 'wire', from }
+    this.ping()
+  }
+
+  placeWire(from: WireEnd, to: WireEnd): void {
+    this.commit({ a: Act.placeWire, t: this.now, p: this.local, from, to })
+  }
+
+  private placeWireBody(from: WireEnd, to: WireEnd): void {
+    if (this.act.place.kind !== 'wire') return
+    if (!this.portLegal(from, 'from') || !this.portLegal(to, 'to')) return
+    const rest = this.wires.filter(w => !sameEnd(w.to, to))
+    if (wouldCycle(rest, from, to)) return
+    this.wires.length = 0
+    rest.forEach(w => this.wires.push(w))
+    this.wires.push({ from, to })
+    this.act.place = { kind: 'none' }
+    this.ping()
+  }
+
+  deleteWire(from: WireEnd, to: WireEnd): void {
+    this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'wire', from, to })
+  }
+
+  private deleteWireBody(from: WireEnd, to: WireEnd): void {
+    if (this.act.place.kind !== 'delete') return
+    const next = this.wires.filter(w => !sameEnd(w.from, from) || !sameEnd(w.to, to))
+    if (next.length === this.wires.length) return
+    this.wires.length = 0
+    next.forEach(w => this.wires.push(w))
+    this.pulse = { text: 'Delete wire', at: { col: 0, row: 0 } }
+    if (from.kind === 'cell') this.pulse.at = { ...from.at }
+    else if (from.kind === 'sprinkler') this.pulse.at = { col: from.at.col, row: from.at.row }
+    else this.pulse.at = { col: from.e.col, row: from.e.row }
+    this.ping()
+  }
+
+  placeSmartValve(e: Edge): void {
+    this.commit({ a: Act.placeSmartValve, t: this.now, p: this.local, e })
+  }
+
+  private placeSmartValveBody(e: Edge): void {
+    if (this.act.place.kind !== 'sku' || this.act.place.id !== 'buy-smart-valve') return
+    if (this.money < this.skuPrice('buy-smart-valve')) return
+    if (!this.edgeOwned(e)) return
+    if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
+    this.money -= this.skuPrice('buy-smart-valve')
+    this.segments.set(edgeKey(e), { at: e, gate: { kind: 'smart' } })
+    this.smartHold.set(edgeKey(e), { e, level: 0, hold: 0 })
+    vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
+    this.dirtyNets()
+    this.pulse = { text: 'Place Smart valve', at: { col: e.col, row: e.row } }
+    this.ping()
+  }
+
+  deleteSmart(e: Edge): void {
+    this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'smart', e })
+  }
+
+  private deleteSmartBody(e: Edge): void {
+    if (this.act.place.kind !== 'delete') return
+    if (!this.hasSmart(e)) return
+    this.segments.delete(edgeKey(e))
+    this.smartHold.delete(edgeKey(e))
+    this.dropWires(w => hitsEdge(w.from, e) || hitsEdge(w.to, e))
+    this.pruneVert(e)
+    this.dirtyNets()
+    this.pulse = { text: 'Delete smart valve', at: { col: e.col, row: e.row } }
+    this.ping()
+  }
+
+  tuneWater(at: Coord, wilt: boolean, over: boolean): void {
+    this.commit({ a: Act.tuneWater, t: this.now, p: this.local, c: [at.col, at.row], wilt, over })
+  }
+
+  private tuneWaterBody(at: Coord, wilt: boolean, over: boolean): void {
+    const c = this.cell(at)
+    if (c.kind !== 'sensor-water') return
+    c.wilt = wilt
+    c.over = over
+    this.ping()
+  }
+
+  tuneHarvest(at: Coord, mode: 'any' | 'all'): void {
+    this.commit({ a: Act.tuneHarvest, t: this.now, p: this.local, c: [at.col, at.row], mode })
+  }
+
+  private tuneHarvestBody(at: Coord, mode: 'any' | 'all'): void {
+    const c = this.cell(at)
+    if (c.kind !== 'sensor-harvest') return
+    c.mode = mode
+    this.ping()
+  }
+
+  private dropWires(gone: (w: Wire) => boolean): void {
+    const next = dropIncident(this.wires, gone)
+    this.wires.length = 0
+    next.forEach(w => this.wires.push(w))
+  }
+
+  private portLegal(end: WireEnd, side: 'from' | 'to'): boolean {
+    if (end.kind === 'sprinkler') {
+      if (side !== 'to' || end.port !== 'in') return false
+      if (!this.done.has('unlock-smart-irrigation')) return false
+      return this.sprinklerAt(end.at) !== undefined
+    }
+    if (end.kind === 'valve') {
+      if (side !== 'to' || end.port !== 'in') return false
+      return this.hasSmart(end.e)
+    }
+    const c = this.inWorld(end.at) ? this.cell(end.at) : undefined
+    if (c === undefined || !isSensor(c)) return false
+    if (side === 'from') return end.port === 'out' && c.kind !== 'lamp'
+    if (c.kind === 'lamp') return end.port === 'in'
+    if (c.kind === 'not') return end.port === 'in'
+    if (c.kind === 'and' || c.kind === 'or') return end.port === 'in-l' || end.port === 'in-r'
+    return false
+  }
+
+  sensorAt(at: Coord): Sensor | undefined {
+    if (!this.inWorld(at)) return undefined
+    const c = this.cell(at)
+    if (!isSensor(c)) return undefined
+    return c
   }
 
   rotatePlace(): void {
@@ -1618,6 +1857,15 @@ export class World {
       this.ping()
       return
     }
+    if (isSensor(c)) {
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
+      if (c.kind === 'water-system') this.waterSystems.splice(this.waterSystems.indexOf(c), 1)
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      if (c.kind === 'water-system') this.dirtyNets()
+      this.pulse = { text: `Delete ${sensorDeleteName(c.kind)}`, at: { ...at } }
+      this.ping()
+      return
+    }
     if (c.kind !== 'grinder') return
     this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
     this.pulse = { text: 'Delete grinder', at: { ...at } }
@@ -1649,7 +1897,7 @@ export class World {
       up.set(root(a), root(b))
     }
     this.segments.forEach(seg => {
-      if (!flows(seg)) return
+      if (!this.conducts(seg.at)) return
       const [a, b] = vertsOf(seg.at)
       join(vertexKey(a), vertexKey(b))
     })
@@ -1668,7 +1916,7 @@ export class World {
       const r = root(k)
       const hit = byRoot.get(r)
       if (hit !== undefined) return hit
-      const made: Net = { sources: [], sprinklers: [], taps: [], stills: [] }
+      const made: Net = { sources: [], sprinklers: [], taps: [], stills: [], waterSystems: [] }
       byRoot.set(r, made)
       return made
     }
@@ -1698,6 +1946,13 @@ export class World {
       )
       if (hit === undefined) return
       netOf(vertexKey(hit)).stills.push(s)
+    })
+    this.waterSystems.forEach(s => {
+      const hit = corners(occupiedCells(s.base, this.owned)).find(
+        v => up.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
+      )
+      if (hit === undefined) return
+      netOf(vertexKey(hit)).waterSystems.push(s)
     })
     this.netAt = new Map([...up.keys()].map(k => [k, netOf(k)]))
     this.nets = [...byRoot.values()]
@@ -1761,13 +2016,23 @@ export class World {
     return this.sprinklerTargets(s).length * this.tileRate(s)
   }
 
+  private sprinklerWired(at: Vertex): boolean {
+    if (!this.done.has('unlock-smart-irrigation')) return false
+    return this.wires.some(w => hitsVertex(w.to, at))
+  }
+
+  private mayPour(s: Sprinkler): boolean {
+    return pourEligible(this.sprinklerWired(s.at), s.inn)
+  }
+
   rate(v: Vertex): number {
     const s = this.sprinklerAt(v)
     if (s === undefined) return 0
+    if (!this.mayPour(s)) return 0
     const net = this.netOfVertex(v)
     if (net === undefined || net.sprinklers.length === 0) return 0
     if (net.sources.every(r => r.stored === 0)) return 0
-    const total = net.sprinklers.reduce((a, x) => a + this.demand(x), 0)
+    const total = net.sprinklers.reduce((a, x) => a + (this.mayPour(x) ? this.demand(x) : 0), 0)
     if (total === 0) return 0
     const supply = net.sources.reduce((a, r) => a + r.rate, 0)
     const served = total > supply ? supply : total
@@ -1918,6 +2183,10 @@ export class World {
         return 'Embark'
       case 'valve':
         return 'Valve'
+      case 'toggle': {
+        const c = this.cell(i.at)
+        return c.kind === 'button' ? 'Press' : 'Flip'
+      }
       case 'tend':
         return 'Tend'
       case 'weed-spray':
@@ -2016,6 +2285,7 @@ export class World {
       this.act.place.id === 'buy-pipe' ||
       this.act.place.id === 'buy-valve' ||
       this.act.place.id === 'buy-well' ||
+      this.act.place.id === 'buy-smart-valve' ||
       this.act.place.id === 'buy-sprinkler' ||
       this.act.place.id === 'buy-sprinkler-vert' ||
       this.act.place.id === 'buy-sprinkler-large'
@@ -2081,7 +2351,8 @@ export class World {
       this.act.place.id === 'buy-hangar' ||
       this.act.place.id === 'buy-silo-seed' ||
       this.act.place.id === 'buy-silo-spray' ||
-      this.act.place.id === 'buy-silo-produce'
+      this.act.place.id === 'buy-silo-produce' ||
+      (SENSOR_CELL_SKUS as readonly string[]).includes(this.act.place.id)
     ) {
       if (this.act.place.id === 'buy-hangar') {
         if (!hangarSiteOk(this, at)) return
@@ -2120,6 +2391,21 @@ export class World {
         }
         this.pulse = { text: `Place ${placeLabel(sku)}`, at: { ...at } }
         this.act.place = { kind: 'none' }
+        this.ping()
+        return
+      }
+      const kind = skuKind(this.act.place.id)
+      if (kind !== undefined) {
+        if (!placeSolidOk(this, at)) return
+        this.money -= price
+        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
+        const made = makeSensor(kind, base)
+        this.setCell(at, made)
+        if (made.kind === 'water-system') {
+          this.waterSystems.push(made)
+          this.dirtyNets()
+        }
+        this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
         this.ping()
         return
       }
@@ -2178,7 +2464,19 @@ export class World {
       made.kind === 'silo-seed' ||
       made.kind === 'silo-spray' ||
       made.kind === 'silo-produce' ||
-      made.kind === 'sugar'
+      made.kind === 'sugar' ||
+      made.kind === 'lever' ||
+      made.kind === 'button' ||
+      made.kind === 'lamp' ||
+      made.kind === 'or' ||
+      made.kind === 'and' ||
+      made.kind === 'not' ||
+      made.kind === 'sensor-water' ||
+      made.kind === 'sensor-fert' ||
+      made.kind === 'sensor-harvest' ||
+      made.kind === 'water-system' ||
+      made.kind === 'vehicle-detector' ||
+      made.kind === 'smart-valve'
     ) {
       return
     }
@@ -2996,6 +3294,7 @@ export class World {
   private startResearchBody(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
+    if (id === 'unlock-smart-irrigation' && !this.done.has('unlock-adv-irrigation')) return
     if (!this.researchOpen(id)) return
     const def = RESEARCH[id]
     if (this.money < def.cost) return
@@ -3055,6 +3354,7 @@ export class World {
     if (DYNAMIC_MARKET && t0 < 120 && this.clock.t >= 120) this.retarget(0)
     this.tickSpeech(dt)
     this.tickJob(dt)
+    this.tickButtons()
     this.seats.forEach(s => {
       if (s.presence !== 'in') return
       if (this.driverVehicle(s.id) !== undefined) return
@@ -3064,6 +3364,8 @@ export class World {
     this.act = this.seats[this.local]
     this.tickVehicles(dt)
     this.tickField(dt)
+    this.gatherWater(dt)
+    this.evalSensors(dt)
     this.tickWater(dt)
     this.tickFreshness(dt)
     this.tickCompost(dt)
@@ -3309,6 +3611,9 @@ export class World {
       case 'valve':
         this.arm(0.3 / this.machineMul())
         return
+      case 'toggle':
+        this.arm(0)
+        return
       case 'tend':
         if (!this.canTend(i.at)) {
           this.shiftHead()
@@ -3362,6 +3667,7 @@ export class World {
     if (i.act === 'barrel') this.doBarrel(i.at)
     if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
+    if (i.act === 'toggle') this.doToggle(i.at)
     if (i.act === 'tend') this.doTend(i.at)
     if (i.act === 'weed-spray') this.doWeedSpray(i.at)
     this.shiftHead()
@@ -3427,6 +3733,53 @@ export class World {
       return got
     }
     return source.water.take(source.water.rate * dt)
+  }
+
+  private tickButtons(): void {
+    this.forEachCell((_at, c) => {
+      if (c.kind === 'button') tickButton(c)
+    })
+  }
+
+  private evalSensors(dt: number): void {
+    const sensors = new Map<string, Sensor>()
+    this.forEachCell((at, c) => {
+      if (isSensor(c)) sensors.set(cellKey(at), c)
+    })
+    const raw = new Map<string, 0 | 1>()
+    sensors.forEach((s, k) => {
+      if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
+        raw.set(k, readerRaw(s, at => (this.inWorld(at) ? this.cell(at) : undefined), this.modifiers))
+      } else if (s.kind === 'water-system') {
+        const net = this.netOfCell(s.base)
+        if (net === undefined) {
+          raw.set(k, 0)
+          return
+        }
+        const stored = net.sources.reduce((a, r) => a + r.stored, 0)
+        const want = net.sprinklers.reduce((a, spr) => a + (this.mayPour(spr) ? this.demand(spr) * dt : 0), 0)
+        raw.set(k, want > stored ? 1 : 0)
+      } else if (s.kind === 'vehicle-detector') {
+        raw.set(k, vehicleRaw({ col: s.base.col, row: s.base.row }, this.vehicles))
+      }
+    })
+    evalDag({ sensors, wires: this.wires, smart: this.smartHold, sprinklers: this.sprinklers, raw })
+    if (this.smartHold.size > 0) this.dirtyNets()
+  }
+
+  private doToggle(at: Coord): void {
+    const c = this.cell(at)
+    if (c.kind === 'lever') {
+      flipLever(c)
+      this.pulse = { text: 'Flip lever', at: { ...at } }
+      this.ping()
+      return
+    }
+    if (c.kind === 'button') {
+      pressButton(c)
+      this.pulse = { text: 'Press button', at: { ...at } }
+      this.ping()
+    }
   }
 
   private tickField(dt: number): void {
@@ -3524,16 +3877,20 @@ export class World {
     if (dirty) this.pingFor('field')
   }
 
-  private tickWater(dt: number): void {
+  private gatherWater(dt: number): void {
     this.sources().forEach(s => s.water.gather(dt))
     this.wells.forEach(w => w.water.gather(dt))
+  }
+
+  private tickWater(dt: number): void {
     this.grid().forEach(net => {
-      const want = net.sprinklers.map(s => this.demand(s) * dt)
+      const active = net.sprinklers.filter(s => this.mayPour(s))
+      const want = active.map(s => this.demand(s) * dt)
       const total = want.reduce((a, b) => a + b, 0)
       if (total === 0) return
       const got = pull(net.sources, total)
       if (got === 0) return
-      net.sprinklers.forEach((s, i) => {
+      active.forEach((s, i) => {
         const targets = this.sprinklerTargets(s)
         if (targets.length === 0) return
         const add = ((want[i] / total) * got) / targets.length
@@ -4627,6 +4984,33 @@ function mineTime(w: World, at: Coord): number {
   if (c.kind !== 'rock') return p.workSeconds
   const n = occupiedCells(c.base, w.owned).length
   return n === 1 ? p.workSeconds : p.workSeconds * 2
+}
+
+function sensorDeleteName(k: Sensor['kind']): string {
+  switch (k) {
+    case 'lever':
+      return 'lever'
+    case 'button':
+      return 'button'
+    case 'lamp':
+      return 'lamp'
+    case 'or':
+      return 'OR gate'
+    case 'and':
+      return 'AND gate'
+    case 'not':
+      return 'NOT gate'
+    case 'sensor-water':
+      return 'water sensor'
+    case 'sensor-fert':
+      return 'fertilizer sensor'
+    case 'sensor-harvest':
+      return 'harvest sensor'
+    case 'water-system':
+      return 'water-system sensor'
+    case 'vehicle-detector':
+      return 'vehicle detector'
+  }
 }
 
 function sprinklerSku(s: Sprinkler): SkuId {

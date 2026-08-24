@@ -36,9 +36,20 @@ StallGoodId =
 
 Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `'berry'`. No `'berry'` on `StallGoodId`. Sugar-cane fruit is a stall good. Illegal: whisky. Illegal: `sugar.count`.
 
-`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
+`ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles` `unlock-sensors` `unlock-smart-irrigation`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. No Advanced signalling. No germ / weather research.
 
-`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` `buy-weed-spray`. No Quad SKU. No tractor SKU. No trailer SKU.
+`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` `buy-weed-spray` `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-water-system` `buy-smart-valve` `buy-vehicle-detector`. No Quad SKU. No tractor SKU. No trailer SKU. No germ SKU. No weather SKU. No wire SKU.
+
+```
+SensorKind =
+  | 'lever' | 'button' | 'lamp' | 'or' | 'and' | 'not'
+  | 'sensor-water' | 'sensor-fert' | 'sensor-harvest'
+  | 'water-system' | 'vehicle-detector'
+
+Signal = 0 | 1
+```
+
+[[mechanics/sensors]].
 
 ```
 VehicleKind = 'quad' | 'tractor'
@@ -108,9 +119,10 @@ Cell =
   | SiloSeed
   | SiloSpray
   | SiloProduce
+  | Sensor
 ```
 
-`isPlot` / `isSolid` split that union. A pipe or sprinkler is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce`.
+`isPlot` / `isSolid` split that union. A pipe, sprinkler, wire, or smart valve is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce` every `SensorKind`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
 Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar 3×2. Vehicle silos 2×3.
 
@@ -120,10 +132,10 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`.
 
-`World.pumps` / `World.tanks` / `World.taps` / `World.stills` hold those same instances for the water grid. Still joins like tap. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]].
+`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still and water-system join like tap. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]]. `World.wires` — [[mechanics/sensors]].
 
 ```
-Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[] }
+Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[]; waterSystems: WaterSystem[] }
 ```
 
 ```
@@ -135,6 +147,19 @@ Freezer = { kind: 'freezer'; base: RectBase; slots: Slot[] }
 ```
 
 `Freezer.slots` length `FREEZER_SLOTS` 6. Rules: [[mechanics/machines]].
+
+```
+WireEnd =
+  | { kind: 'cell'; at: Coord; port: 'out' | 'in' | 'in-l' | 'in-r' }
+  | { kind: 'sprinkler'; at: Vertex; port: 'in' }
+  | { kind: 'valve'; e: Edge; port: 'in' }
+
+Wire = { from: WireEnd; to: WireEnd }
+```
+
+`World.wires: Wire[]`. `{ kind: 'valve' }` is smart valve only. Port legality per device. Sensor classes live in `sim/sensor.ts` — [[mechanics/sensors]].
+
+Sprinkler += required `inn: Signal` `hold: number` (unwired still 0; pourEligible uses wire presence). Smart-valve hold is `World.smartHold` keyed by edge, dumped as `Save.smartHold`.
 
 ```
 Hangar = { kind: 'hangar'; base: RectBase }
@@ -195,7 +220,16 @@ Cue +=
   | { kind: 'vehicle'; id: VehicleId }
 ```
 
-Hangar HUD is `Seat.cue` hangar: buy Quad / Tractor / trailers / list all owned / Deploy (stored vehicle; tractor hitch optional) / Refill. No 6-slot. No cargo. Parked HUD is `Seat.cue` vehicle: Quad 6 slots + Embark; tractor trailer cargo if hitched + Embark. `HudTarget` stays `{ kind: 'sprinkler'; at: Vertex }`. Illegal: hangar or vehicle on `HudTarget`. Hangar select is App-local. Silo walk-up is look name only — no cue.
+Hangar HUD is `Seat.cue` hangar: buy Quad / Tractor / trailers / list all owned / Deploy (stored vehicle; tractor hitch optional) / Refill. No 6-slot. No cargo. Parked HUD is `Seat.cue` vehicle: Quad 6 slots + Embark; tractor trailer cargo if hitched + Embark.
+
+```
+HudTarget =
+  | { kind: 'sprinkler'; at: Vertex }
+  | { kind: 'water'; at: Coord }
+  | { kind: 'harvest'; at: Coord }
+```
+
+Illegal: hangar or vehicle on `HudTarget`. Hangar select is App-local. Silo walk-up is look name only — no cue. Water / harvest HUD remote, no walk.
 
 ## Plot
 
@@ -234,22 +268,26 @@ Place =
   | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert'> }
   | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
   | { kind: 'delete' }
+  | { kind: 'wire'; from: WireEnd }
 
 StayArmed =
   | 'buy-pipe'
   | 'buy-sprinkler'
   | 'buy-sprinkler-vert'
   | 'buy-sprinkler-large'
+  | 'buy-lever' | 'buy-button' | 'buy-lamp' | 'buy-or' | 'buy-and' | 'buy-not'
+  | 'buy-sensor-water' | 'buy-sensor-fert' | 'buy-sensor-harvest' | 'buy-water-system'
+  | 'buy-smart-valve' | 'buy-vehicle-detector'
   | 'delete'
 ```
 
-`Seat.place` is always a `Place`. No `World.place`. Place is per-seat.
+`Seat.place` is always a `Place`. No `World.place`. Place is per-seat. `Place` += `{ kind: 'wire'; from: WireEnd }`. `armWire` sets it. `buy` never arms wire.
 
 Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `buy` merges seeds into inventory.
 
 `buy` sets `{ kind: 'sku'; id }` except vert, which is `{ kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' }`. `armDelete()` sets `{ kind: 'delete' }`. `buy` never arms delete.
 
-Confirm: cell buildings and item drops set `none`. Pipe, valve, sprinkler, tile, and delete do not.
+Confirm: cell buildings and item drops set `none` except StayArmed sensor cells. Pipe, valve, smart valve, sprinkler, tile, sensor cells, and delete do not.
 
 ## Intent
 
@@ -278,11 +316,12 @@ Intent =
   | { act: 'vehicle'; id: VehicleId }
   | { act: 'embark'; id: VehicleId }
   | { act: 'valve'; at: Coord; edge: Edge }
+  | { act: 'toggle'; at: Coord }
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
 ```
 
-Illegal: `at` on `consign` or `inventory`. Illegal: `edge` on any act but `valve`. Illegal: `id` on any act but `vehicle` or `embark`.
+Illegal: `at` on `consign` or `inventory`. Illegal: `edge` on any act but `valve`. Illegal: `id` on any act but `vehicle` or `embark`. `toggle` is lever / button only.
 
 `plant` is seeds (`AnnualId`) or sapling (`TreeId`). Same act. No sapling act. [[architecture/tree]].
 
@@ -291,6 +330,7 @@ dest(consign) = PAD
 dest(inventory) = DOOR
 dest(vehicle) = floor of that vehicle at enqueue
 dest(embark) = floor of that vehicle at enqueue
+dest(toggle) = at
 dest(else) = at
 ```
 
@@ -398,7 +438,7 @@ Cheats are cmds. `DYNAMIC_MARKET` stays false. `nudgeOffered` is still a cmd.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Quad boom. Boom other than `3 | 5`. Two trailers on one tractor. Trailer attached + stored.
+Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Quad boom. Boom other than `3 | 5`. Two trailers on one tractor. Trailer attached + stored. Cycle wire. Two wires on one input. Wire into an output. Analogue signal.
 
 ## Rng
 

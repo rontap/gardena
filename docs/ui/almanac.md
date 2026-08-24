@@ -7,7 +7,7 @@ Centered overlay, `w-[36rem]`, `max-h-[min(36rem,calc(100%-6rem))]`. Title **Alm
 | Seeds | carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass rotten dead |
 | Trees | apple apricot lemon cherry |
 | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer weed-spray compost sugar |
-| Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-spray silo-produce |
+| Automation | pumpjack well rain-tank tap pipe valve smart-valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-spray silo-produce lever button lamp or and not sensor-water sensor-fert sensor-harvest water-system vehicle-detector |
 
 Crop and Tree panes carry `CROPS.desc` under the name: one plain-language line on how the plant behaves, no numbers. It is also the crop's `CatalogEntry.blurb`.
 
@@ -19,7 +19,7 @@ Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not t
 
 `unlock-preservatives` done: third `h-20 w-20` `bg-dirt-dark` plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
 
-Utility `sugar`: liters bag face. Automation order after compost-box: mill, still, barrel, jam, freezer, hangar, silo-seed, silo-spray, silo-produce. Hangar and field silo panes [[ui/vehicles]]. Assumption: hangar and three silos are on Automation. No Quad / tractor / trailer SKU pane.
+Utility `sugar`: liters bag face. Automation order after compost-box: mill, still, barrel, jam, freezer, hangar, silo-seed, silo-spray, silo-produce, then lever, button, lamp, or, and, not, sensor-water, sensor-fert, sensor-harvest, water-system, vehicle-detector. `smart-valve` after `valve`. Hangar and field silo panes [[ui/vehicles]]. Sensor / smart-valve panes: same generic chrome as other non-crop entries — title, one `h-20 w-20` `bg-dirt-dark` plate, blurb. Titles match look names [[ui/sensors]]. No germ. No weather. No new sprinkler pane. Assumption: hangar and three silos are on Automation. No Quad / tractor / trailer SKU pane.
 
 Apple is not on Seeds.
 
@@ -40,7 +40,7 @@ No Water. No Yield row. No Drink. No Fertilizer. No Seed price.
 
 ## Pipe
 
-Automation list row `pipe` only. Valve and the sprinklers stay their own static rows.
+Automation list row `pipe` only. Valve, smart valve, and the sprinklers stay their own static rows.
 
 Same generic pane chrome as other non-crop entries: title, one `h-20 w-20` `bg-dirt-dark` plate (`h-16 w-16` svg, `viewBox="0 0 24 24"`), blurb. The plate is not `itemInner({ kind: 'pipe' })`.
 

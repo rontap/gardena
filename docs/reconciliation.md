@@ -5,10 +5,11 @@ The game is not out. Nobody is playing an old build. This file is only the place
 Not in here, on purpose:
 
 - How to folder the docs (you already said: items, mechanics, aims, coding/testing standards — not per version).
-- Diseases, weather, sensors. Those are not in the game. They will not be written into the working docs.
+- Diseases, weather. Those are not in the game. They will not be written into the working docs.
 - Family / skills are in. [[mechanics/family]].
 - Machines are in. [[mechanics/machines]].
 - Vehicles I is in. Vehicles II is in. [[mechanics/vehicles]].
+- Sensors / Automation III is in. [[mechanics/sensors]] [[items/sensors]] [[ui/sensors]] [[art/sensors]].
 - Renaming buckets back to watering cans, or selling at the house door. The game has buckets and the market truck.
 
 ---

@@ -14,6 +14,7 @@ import type {
   VehicleSlot,
 } from './ids.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
+import type { WireEnd } from './sensor.ts'
 import type { Intent, SeatId } from './world.ts'
 
 export type XY = [col: number, row: number]
@@ -57,6 +58,11 @@ export const Act = {
   swapTrailer: 'A',
   refill: 'F',
   setBoom: 'W',
+  armWire: 'R',
+  placeWire: 'N',
+  placeSmartValve: 'I',
+  tuneWater: 'C',
+  tuneHarvest: 'G',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -79,6 +85,8 @@ export type Cmd =
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'well'; e: Edge }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'sprinkler'; c: XY }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'building'; c: XY }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'wire'; from: WireEnd; to: WireEnd }
+  | { a: typeof Act.delete; t: number; p: SeatId; k: 'smart'; e: Edge }
   | { a: typeof Act.expand; t: number; p: SeatId; k: ChunkId }
   | { a: typeof Act.startResearch; t: number; p: SeatId; r: ResearchId }
   | { a: typeof Act.pickSkill; t: number; p: SeatId; m: MemberId; s: number }
@@ -89,7 +97,7 @@ export type Cmd =
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: Rarity }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; d: AdditiveId }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.openHud; t: number; p: SeatId; k: 'sprinkler' | 'water' | 'harvest'; c: XY }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
   | { a: typeof Act.armDelete; t: number; p: SeatId }
   | { a: typeof Act.cancelPlace; t: number; p: SeatId }
@@ -112,6 +120,11 @@ export type Cmd =
   | { a: typeof Act.swapTrailer; t: number; p: SeatId; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
   | { a: typeof Act.setBoom; t: number; p: SeatId; w: 3 | 5 }
+  | { a: typeof Act.armWire; t: number; p: SeatId; from: WireEnd }
+  | { a: typeof Act.placeWire; t: number; p: SeatId; from: WireEnd; to: WireEnd }
+  | { a: typeof Act.placeSmartValve; t: number; p: SeatId; e: Edge }
+  | { a: typeof Act.tuneWater; t: number; p: SeatId; c: XY; wilt: boolean; over: boolean }
+  | { a: typeof Act.tuneHarvest; t: number; p: SeatId; c: XY; mode: 'any' | 'all' }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

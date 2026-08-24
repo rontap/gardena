@@ -113,13 +113,14 @@ import {
   type ChunkId,
   type Coord,
 } from './building.ts'
-import { Clock } from './clock.ts'
+import { Clock, DAY_SECONDS } from './clock.ts'
 import { onCell, topIndex, type Drop } from './drop.ts'
 import { generateChunk } from './gen.ts'
 import {
   boxAdd,
   boxAccepts,
   boxAddFruit,
+  boxAddWeed,
   compostValue,
   fruitStack,
   grindN,
@@ -281,6 +282,7 @@ export type Intent =
   | { act: 'embark'; id: VehicleId }
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'tend'; at: Coord }
+  | { act: 'weed-spray'; at: Coord }
 
 export type TaskName =
   | 'Move here'
@@ -311,6 +313,7 @@ export type TaskName =
   | 'Embark'
   | 'Valve'
   | 'Tend'
+  | 'Spray'
 
 export type Cue =
   | { kind: 'none' }
@@ -964,6 +967,9 @@ export class World {
       case Act.refill:
         this.refillBody({ col: cmd.c[0], row: cmd.c[1] })
         return
+      case Act.setBoom:
+        this.setBoomBody(cmd.w)
+        return
     }
   }
 
@@ -1114,8 +1120,7 @@ export class World {
   skuPrice(id: SkuId): number {
     let p = SKUS[id].price
     const tab = SKUS[id].tab
-    if (tab === 'utility') p -= this.skillTier('tool-contracts')
-    if (tab === 'automation') p -= this.skillTier('machine-contracts')
+    if (tab === 'utility' || tab === 'automation') p -= this.skillTier('contracts')
     return p < 1 ? 1 : p
   }
 
@@ -1915,6 +1920,8 @@ export class World {
         return 'Valve'
       case 'tend':
         return 'Tend'
+      case 'weed-spray':
+        return 'Spray'
     }
   }
 
@@ -1960,6 +1967,16 @@ export class World {
       if (!this.canFitSugar()) return 'Inventory full'
       this.money -= price
       this.putSugar(made)
+      this.compactInventory()
+      this.ping()
+      return undefined
+    }
+    if (made.kind === 'weed-spray') {
+      const price = this.skuPrice(id)
+      if (this.money < price) return 'Cannot afford'
+      if (!this.canFitWeedSpray()) return 'Inventory full'
+      this.money -= price
+      this.putWeedSpray(made)
       this.compactInventory()
       this.ping()
       return undefined
@@ -2251,7 +2268,7 @@ export class World {
     const id = this.nextVehicleId
     this.nextVehicleId += 1
     const pose = { kind: 'stored' as const, hangar: { ...origin } }
-    this.vehicles.push(k === 'quad' ? makeQuad(id, 1, emptyVehicleSlots(), pose) : makeTractor(id, 1, 'none', pose))
+    this.vehicles.push(k === 'quad' ? makeQuad(id, 1, emptyVehicleSlots(), pose) : makeTractor(id, 1, 'none', 5, pose))
     this.ping()
   }
 
@@ -2466,6 +2483,41 @@ export class World {
     return this.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
   }
 
+  setBoom(w: 3 | 5): void {
+    this.commit({ a: Act.setBoom, t: this.now, p: this.local, w })
+  }
+
+  private setBoomBody(w: 3 | 5): void {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.kind !== 'tractor') return
+    v.boom = w
+    this.ping()
+  }
+
+  enter(): void {
+    const driven = this.driverVehicle(this.local)
+    if (driven !== undefined) {
+      this.disembark()
+      return
+    }
+    const actor = this.seats[this.local].actor
+    let best: Vehicle | undefined
+    let bestD = Infinity
+    this.vehicles.forEach(v => {
+      if (v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+      const d = Math.hypot(actor.x - v.pose.x, actor.y - v.pose.y)
+      if (d > 1.5) return
+      if (best === undefined || d < bestD) {
+        best = v
+        bestD = d
+      }
+    })
+    if (best === undefined || best.pose.kind !== 'field') return
+    this.seats[this.local].actor.x = best.pose.x
+    this.seats[this.local].actor.y = best.pose.y
+    this.embark(best.id)
+  }
+
   driverVehicle(id: SeatId): Vehicle | undefined {
     return this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === id)
   }
@@ -2524,22 +2576,23 @@ export class World {
           pose.y = ny
         }
       } else {
+        const driving = this.skillTier('driving-classes')
         if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
-          const next = v.fuel - dt / QUAD_FUEL_SECONDS
+          const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
           v.fuel = next < 0 ? 0 : next
         }
         const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
         const surface = surfaceMul(this.cell(at))
+        const drivingMul = 1 + 0.05 * driving
         integrateVehicle(
           pose,
           driver.drive,
           dt,
           v.fuel,
-          this.machineMul(),
           surface,
           p => this.inWorld(p),
-          kindVMax(v.kind),
-          accel,
+          kindVMax(v.kind) * drivingMul,
+          accel * drivingMul,
           kindYaw(v.kind),
         )
         driver.actor.x = pose.x
@@ -2561,7 +2614,7 @@ export class World {
     if (driver.drive.steer !== 0) return
     if (v.pose.speed <= 0) return
     const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
-    boomHits(p, heading, at => this.inWorld(at)).forEach(at => this.boomCell(t, at))
+    boomHits(p, heading, v.boom, at => this.inWorld(at)).forEach(at => this.boomCell(t, at))
   }
 
   private boomCell(t: Trailer, at: Coord): void {
@@ -2688,12 +2741,7 @@ export class World {
     return 5 * this.skuPrice(id) * 0.95
   }
 
-  /**
-   * Why a bulk buy would fail, or undefined when it would go through. The shop renders
-   * this instead of guessing — one rule, not a second copy that drifts.
-   */
   buyPacksFail(id: SkuId): BuyFail | 'Locked' | undefined {
-    if (!this.hasSkill('bulk-buying')) return 'Locked'
     if (!this.skuOpen(id)) return 'Locked'
     const made = skuItem(id)
     if (made.kind !== 'seeds') return 'Locked'
@@ -2847,7 +2895,7 @@ export class World {
     if (!this.marketOpen()) return 0
     const saleX = 1 + 0.02 * this.skillTier('saleswoman')
     const heirX = 1 + 0.05 * this.skillTier('heirloom')
-    const bioX = 1 + 0.03 * this.skillTier('bio')
+    const bioX = 1 + 0.04 * this.skillTier('bio')
     const jam = this.jamFloor()
     const clearance = this.hasSkill('clearance')
     return STALL_IDS.reduce((total, id) => {
@@ -3268,6 +3316,10 @@ export class World {
         }
         this.arm(TEND_WORK)
         return
+      case 'weed-spray':
+        this.doWeedSpray(i.at)
+        this.shiftHead()
+        return
     }
   }
 
@@ -3311,6 +3363,7 @@ export class World {
     if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
     if (i.act === 'tend') this.doTend(i.at)
+    if (i.act === 'weed-spray') this.doWeedSpray(i.at)
     this.shiftHead()
   }
 
@@ -3378,6 +3431,11 @@ export class World {
 
   private tickField(dt: number): void {
     let dirty = false
+    this.forEachCell((_at, c) => {
+      if (!isTilled(c) || c.soil.weedChance >= WEED_CHANCE) return
+      const next = c.soil.weedChance + (0.15 * dt) / DAY_SECONDS
+      c.soil.weedChance = next > WEED_CHANCE ? WEED_CHANCE : next
+    })
     const live = [...this.live.values()]
     for (let i = 0; i < live.length; i++) {
       const at = live[i]
@@ -3404,6 +3462,10 @@ export class World {
         c.soil.starve(WEED_FERT_PER_SEC * dt)
         const grown = c.weed.maturity + dt / WEED_GROW
         c.weed.maturity = grown > 1 ? 1 : grown
+        if (c.weed.maturity === 1 && !c.weed.spread) {
+          this.outbreak(at)
+          c.weed.spread = true
+        }
         if (c.weed.stage() !== stage0) dirty = true
         continue
       }
@@ -3663,12 +3725,26 @@ export class World {
     fallow.forEach(at => {
       const c = this.cell(at)
       if (c.kind !== 'empty') return
-      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(WEED_CHANCE, this.bigTicks)) return
+      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks)) return
       const variant = this.rng.stream('weed').at(at.col, at.row, this.bigTicks, 1) < 0.5 ? 0 : 1
       this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
       grew = true
     })
     return grew
+  }
+
+  private outbreak(at: Coord): void {
+    ;[
+      { col: at.col - 1, row: at.row },
+      { col: at.col + 1, row: at.row },
+      { col: at.col, row: at.row - 1 },
+      { col: at.col, row: at.row + 1 },
+    ].forEach(n => {
+      if (!this.inWorld(n)) return
+      const c = this.cell(n)
+      if (c.kind !== 'empty') return
+      c.soil.weedChance += 0.05
+    })
   }
 
   private sproutGrass(): boolean {
@@ -3690,7 +3766,7 @@ export class World {
   }
 
   private freshSoil(at: Coord): Soil {
-    return new Soil(SOIL_TILL_WATER, goodness(this.rng, at.col, at.row))
+    return new Soil(SOIL_TILL_WATER, goodness(this.rng, at.col, at.row), WEED_CHANCE)
   }
 
   private tickTreesSeam(): void {
@@ -3810,6 +3886,7 @@ export class World {
         item: { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 },
       })
     }
+    if (c.kind === 'weed') c.soil.weedChance = -0.3
     this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
     this.digs += 1
@@ -4003,12 +4080,18 @@ export class World {
   private doPickup(at: Coord): void {
     const i = topIndex(this.drops, at)
     if (i < 0) {
-      if (this.act.hand.kind !== 'empty') return
       const c = this.cell(at)
       if (c.kind === 'weed') {
-        this.setCell(at, { kind: 'empty', soil: c.soil })
-        this.act.hand = { kind: 'hold', item: { kind: 'weed', count: 1 } }
-      } else if (c.kind === 'untilled' && c.cover.kind === 'grass') {
+        if (this.act.hand.kind === 'empty') {
+          c.soil.weedChance = 0
+          this.setCell(at, { kind: 'empty', soil: c.soil })
+          this.act.hand = { kind: 'hold', item: { kind: 'weed', count: 1 } }
+        } else if (this.act.hand.item.kind === 'box') {
+          if (boxAddWeed(this.act.hand.item, 1) === 0) return
+          c.soil.weedChance = 0
+          this.setCell(at, { kind: 'empty', soil: c.soil })
+        } else return
+      } else if (this.act.hand.kind === 'empty' && c.kind === 'untilled' && c.cover.kind === 'grass') {
         this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
         this.act.hand = { kind: 'hold', item: { kind: 'grass', count: 1 } }
       } else return
@@ -4017,6 +4100,19 @@ export class World {
     }
     const taken = this.drops[i].item
     if (this.act.hand.kind === 'hold' && this.act.hand.item.kind === 'box') {
+      if (taken.kind === 'weed') {
+        const n = boxAddWeed(this.act.hand.item, taken.count)
+        if (n === taken.count) {
+          this.drops.splice(i, 1)
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
+        if (n > 0) {
+          taken.count -= n
+          this.pulse = { text: 'Pick up', at: { ...at } }
+          return
+        }
+      }
       if (taken.kind === 'seeds') {
         const n = boxAdd(this.act.hand.item, 'seeds', taken.crop, taken.rarity, taken.count)
         if (n === taken.count) {
@@ -4311,6 +4407,11 @@ export class World {
       return
     }
     if (it.kind === 'box' && it.cargo.kind === 'stack') {
+      if (it.cargo.goods === 'weed') {
+        it.cargo.count -= n
+        if (it.cargo.count <= 0) it.cargo = { kind: 'empty' }
+        return
+      }
       it.cargo.stack.count -= n
       if (it.cargo.stack.count <= 0) it.cargo = { kind: 'empty' }
     }
@@ -4318,6 +4419,32 @@ export class World {
 
   private canFitSugar(): boolean {
     return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'sugar'))
+  }
+
+  private canFitWeedSpray(): boolean {
+    return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'weed-spray'))
+  }
+
+  private putWeedSpray(item: Extract<Item, { kind: 'weed-spray' }>): void {
+    const merge = this.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'weed-spray')
+    if (merge >= 0) {
+      const slot = this.act.inventory[merge]
+      if (slot.kind === 'hold' && slot.item.kind === 'weed-spray') slot.item.usesLeft += item.usesLeft
+      return
+    }
+    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
+    this.act.inventory[empty] = { kind: 'hold', item }
+  }
+
+  private doWeedSpray(at: Coord): void {
+    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'weed-spray') return
+    if (!this.inWorld(at)) return
+    const c = this.cell(at)
+    if (!isTilled(c)) return
+    c.soil.weedChance = -1
+    this.act.hand.item.usesLeft -= 1
+    if (this.act.hand.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
+    this.pulse = { text: 'Spray', at: { ...at } }
   }
 
   private putSugar(item: Extract<Item, { kind: 'sugar' }>): void {

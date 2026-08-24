@@ -394,8 +394,21 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.soil.fertilizer >= FERT_PLOT_MAX) return { kind: 'blocked', text: 'Soil is fertile' }
     return intent('Fertilize', { act: 'fertilize', at })
   }
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell)) {
+    return intent('Spray', { act: 'weed-spray', at })
+  }
   if (cell.kind === 'ripe' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
     return intent('Harvest', { act: 'harvest', at })
+  }
+  if (cell.kind === 'weed' && w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'box') {
+    const box = w.act.hand.item
+    const room =
+      box.cargo.kind === 'empty'
+        ? box.cap
+        : box.cargo.kind === 'stack' && box.cargo.goods === 'weed'
+          ? box.cap - box.cargo.count
+          : 0
+    if (room > 0) return intent('Pick up', { act: 'pickup', at })
   }
   if (w.act.hand.kind === 'empty' && (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass'))) {
     return intent('Pick up', { act: 'pickup', at })

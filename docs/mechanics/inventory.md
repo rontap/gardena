@@ -29,11 +29,13 @@ Walk up → the store takes back everything it keeps, from hand and from the 16 
 
 Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. If the hand already holds something the store would not take back, that item is set down on the nearest plot first — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
-Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` → additive store. Neither arms a place ghost any more. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds and sugar are not seeds or additives; they still go to the house.
+Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` → additive store. Neither arms a place ghost any more. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds, sugar, and weed-spray are not seeds or additives; they still go to the house.
+
+`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. — [[mechanics/family]]
 
 ## Starter
 
-Shovel in hand. Bucket on the doorstep (full 3 L). Money $50 — preference.
+Shovel in hand. Bucket on the doorstep (full 5 L). Money $50 — preference.
 
 Seed silo:
 
@@ -58,20 +60,30 @@ Shop `pack-*` are five seeds. Always common unless the player owns `seed-bank` �
 | better shovel | 200 | 0.6 | 30 | `unlock-better-tools` |
 | pickaxe | 25 | 4 | 18 | `unlock-pickaxe` |
 | hardened pickaxe | 40 | 2 | 24 | `unlock-pickaxe` |
-| bucket | — | 3 L | 8 | start |
-| large bucket | — | 8 L | 22 | `unlock-better-tools` |
+| bucket | — | 5 L | 8 | start |
+| large bucket | — | 10 L | 22 | `unlock-better-tools` |
 
-Uses / work / capacities — preference. 0 uses: hand empty.
+`CONTAINERS.bucket` 5. `CONTAINERS['large-bucket']` 10. Uses / work / capacities — preference. 0 uses: hand empty.
+
+Weed spray: `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` 30. `buy-weed-spray` $12. Illegal: `usesLeft` 0 as held. — [[mechanics/weeds]]
 
 ## Boxes
 
 `BOX_SMALL = 5`, `BOX_LARGE = 14` — preference. Small $6, in the shop from the start. Large $18, `unlock-large-box` only.
 
-One kind: fruit or seeds, one crop+rarity. Harvest and pickup fill the box if it accepts. Sugar-cane is fruit. Not sugar liters. Not saplings. Not spirit / wine / jam / oil / flour / extract.
+```
+cargo =
+  | { kind: 'empty' }
+  | { kind: 'stack'; goods: 'seeds'; stack: Stack }
+  | { kind: 'stack'; goods: 'fruit'; stack: FruitStack }
+  | { kind: 'stack'; goods: 'weed'; count: number }
+```
+
+One kind: fruit or seeds (one crop+rarity) or weeds. Harvest and pickup fill the box if it accepts. Weed pull: into the box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Sugar-cane is fruit. Not sugar liters. Not saplings. Not spirit / wine / jam / oil / flour / extract. Illegal: box weed+fruit mix. Illegal: weed+seeds mix.
 
 ## Fertilizer / compost
 
-Ordinary bag `FERT_BAG_LITERS = 5`, $6, always in the shop. Synthetic `SYNTH_BAG_LITERS = 8`, $5, research. Compost `COMPOST_LITERS = 3`, organic feed.
+Ordinary bag `FERT_BAG_LITERS = 10`, $18, always in the shop. Synthetic `SYNTH_BAG_LITERS = 16`, $15, research. Compost `COMPOST_LITERS = 5`, organic feed.
 
 Compost box $20. `unlock-compost` $14 / 45s. `COMPOST_NEED = 10` units → one bag in `COMPOST_SECONDS = 120` (half a day — derived). Output drop on a plot in front.
 
@@ -87,7 +99,7 @@ Compost box $20. `unlock-compost` $14 / 45s. `COMPOST_NEED = 10` units → one b
 | rotten | 2 |
 | dead | 1 |
 
-Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
+Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts boxed weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
 
 ## Grind
 

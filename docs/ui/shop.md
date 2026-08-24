@@ -8,7 +8,7 @@ Title **General store**. Rail button **Shop**. Categories are a vertical rail, s
 |---|---|
 | Seeds | Sow on tilled soil. |
 | Tools | Tools and carry. |
-| Supplies | Feeds go to the additive store. Sugar to your hands. |
+| Supplies | Feeds go to the additive store. Sugar and weed spray to your hands. |
 
 A tab with no `skuShown` sku is not rendered at all — the shelf appears when research opens it, and never reorders. With no tab left, the pane reads *Nothing here yet. Research opens this shelf.*
 
@@ -40,7 +40,7 @@ Three per row on `auto-rows-[6.75rem]`, and **the card is one box everywhere**: 
 
 The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Never say "not researched" and leave the player guessing which one.
 
-`inventory-full` is `grass-seeds` and `sugar` only, when there is no merge slot and no empty house slot. Seed packs answer to the silo cap and fertilizer to the additive-store cap instead — [[mechanics/inventory]]. The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently.
+`inventory-full` is `grass-seeds`, `sugar`, and `buy-weed-spray` only, when there is no merge slot and no empty house slot. Seed packs answer to the silo cap and fertilizer to the additive-store cap instead — [[mechanics/inventory]]. The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently.
 
 **Locked cards sort to the end of their own group.** The `locked` predicate is research gating alone — never money or capacity, which flip while the player hovers and would reshuffle cards under the cursor.
 
@@ -66,11 +66,11 @@ Escape in the field clears the query and goes no further. Escape with the field 
 
 ## Buying
 
-Packs never arm. `buy-fertilizer` and `buy-synth-fertilizer` do not arm either: they are delivered to the additive store. Everything on the Build shelves arms `Seat.place` — [[ui/place]].
+Packs never arm. `buy-fertilizer` and `buy-synth-fertilizer` do not arm either: they are delivered to the additive store. `buy-weed-spray` does not arm `Seat.place`: it is a hand tool, delivered to the house like sugar — [[mechanics/inventory]]. Everything on the Build shelves arms `Seat.place` — [[ui/place]].
 
-Husband owns `bulk-buying`: Ctrl+click calls `buyPacks(id)`, and the callout says so with the discounted `Coin` from `packsPrice(id)`. The card asks `world.buyPacksFail(id)` rather than testing the skill itself, so Ctrl on anything that cannot bulk-buy is a plain `buy(id)`.
+Bulk buying is on. No skill. Ctrl+click on a seed SKU always calls `buyPacks(id)`. The callout still shows the discounted `Coin` from `packsPrice(id)`. Ctrl on anything that cannot bulk-buy is a plain `buy(id)`.
 
-The bulk line has its own state, `world.buyPacksFail(id)`. `'Locked'` hides the line. Any other reason still shows the line, in `roof`, with the reason appended — a hint that advertises a purchase must say when that purchase would bounce.
+The bulk line has its own state, `world.buyPacksFail(id)`. `'Locked'` hides the line (not a seed, or the sku is closed). `buyPacksFail` does not return Locked-for-skill. Any other reason still shows the line, in `roof`, with the reason appended — a hint that advertises a purchase must say when that purchase would bounce.
 
 ## Shelves
 
@@ -78,6 +78,8 @@ Seeds: crops `pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-waterm
 
 Tools: Digging shovel → better → rotary, Mining pickaxe → better → diamond, Carry buckets then boxes. Tiers read along the group — [[items/tools]].
 
-Supplies: Feeds `buy-fertilizer` `buy-synth-fertilizer`, Pantry `buy-sugar`, label **Sugar**. Neither arms.
+Supplies: Feeds `buy-fertilizer` `buy-synth-fertilizer` `buy-weed-spray`, Pantry `buy-sugar`, label **Sugar**. None of them arm.
 
-Gates: `skuShown` / `skuOpen` from [[mechanics/research]] Shop gates. `pack-olive` show `unlock-tomato` buy `unlock-olive`. `pack-grape` show `start` buy `unlock-grape`. `pack-raspberry` show `unlock-grape` buy `unlock-raspberry`. `pack-vanilla` show `unlock-raspberry` buy `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` show + buy `unlock-fermentation`. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-hangar` and the three silo SKUs show `unlock-irrigation`, buy `unlock-vehicles`.
+Gates: `skuShown` / `skuOpen` from [[mechanics/research]] Shop gates. `pack-olive` show `unlock-tomato` buy `unlock-olive`. `pack-grape` show `start` buy `unlock-grape`. `pack-raspberry` show `unlock-grape` buy `unlock-raspberry`. `pack-vanilla` show `unlock-raspberry` buy `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` show + buy `unlock-fermentation`. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-hangar` and the three silo SKUs show `unlock-irrigation`, buy `unlock-vehicles`. `buy-weed-spray` show + buy `unlock-fertilizer`.
+
+Assumption: `buy-weed-spray` files under Feeds and goes to house/hand; it does not arm a place ghost. `buyPacksFail` still returns `'Locked'` for non-seed / closed skus (hides the bulk line), never for a missing skill.

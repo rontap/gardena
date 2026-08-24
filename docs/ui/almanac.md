@@ -6,7 +6,7 @@ Centered overlay, `w-[36rem]`, `max-h-[min(36rem,calc(100%-6rem))]`. Title **Alm
 |---|---|
 | Seeds | carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass rotten dead |
 | Trees | apple apricot lemon cherry |
-| Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer compost sugar |
+| Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer weed-spray compost sugar |
 | Automation | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-spray silo-produce |
 
 Crop and Tree panes carry `CROPS.desc` under the name: one plain-language line on how the plant behaves, no numbers. It is also the crop's `CatalogEntry.blurb`.

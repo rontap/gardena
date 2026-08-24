@@ -266,6 +266,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
     const onDown = (e: KeyboardEvent) => {
       if (field(e.target)) return
       const k = e.key.toLowerCase()
+      if (e.key === 'Enter') {
+        const w = worldRef.current
+        if (w === undefined) return
+        w.enter()
+        return
+      }
       if (k !== 'w' && k !== 'a' && k !== 's' && k !== 'd') return
       if (held[k]) return
       held[k] = true
@@ -910,9 +916,9 @@ function Dash({ world }: { world: World }) {
             data-dash-fuel
             className="absolute flex items-center justify-center font-display text-xs tabular-nums text-ink"
             style={{
-              left: `${(8 / 240) * 100}%`,
+              left: `${(13 / 240) * 100}%`,
               top: `${(38 / 64) * 100}%`,
-              width: `${(80 / 240) * 100}%`,
+              width: `${(70 / 240) * 100}%`,
               height: `${(14 / 64) * 100}%`,
             }}
           >
@@ -922,9 +928,9 @@ function Dash({ world }: { world: World }) {
             data-dash-speed
             className="absolute flex items-center justify-center font-display text-xs tabular-nums text-ink"
             style={{
-              left: `${(88 / 240) * 100}%`,
+              left: `${(85 / 240) * 100}%`,
               top: `${(38 / 64) * 100}%`,
-              width: `${(100 / 240) * 100}%`,
+              width: `${(70 / 240) * 100}%`,
               height: `${(14 / 64) * 100}%`,
             }}
           >
@@ -970,6 +976,15 @@ function Dash({ world }: { world: World }) {
         >
           Dock
         </button>
+        {driven.kind === 'tractor' && (
+          <button
+            type="button"
+            className="pointer-events-auto cursor-pointer bg-dirt px-3 py-2 text-base text-house hover:bg-dirt-dark"
+            onClick={() => world.setBoom(driven.boom === 5 ? 3 : 5)}
+          >
+            {driven.boom === 3 ? 'Boom 3' : 'Boom 5'}
+          </button>
+        )}
       </div>
     </div>
   )

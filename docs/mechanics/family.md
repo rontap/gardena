@@ -5,12 +5,12 @@ Skill screen. Roles stay: player gardens, husband research, daughter stall. No F
 Ids: `player` | `husband` | `daughter`.
 
 ```
-PlayerSkillId = boots | machinery | tending | vanilla-tending | seed-bank | better-carrot | better-potato | better-wheat | better-tomato | better-raspberry | better-watermelon | better-olive | better-grape | better-vanilla | better-sugar-cane
-HusbandSkillId = research-speed | tool-contracts | machine-contracts | forecast | tax | water-study | land-study | bulk-buying
+PlayerSkillId = boots | driving-classes | tending | vanilla-tending | seed-bank | better-carrot | better-potato | better-wheat | better-tomato | better-raspberry | better-watermelon | better-olive | better-grape | better-vanilla | better-sugar-cane
+HusbandSkillId = research-speed | machinery | contracts | forecast | tax | water-study | land-study
 DaughterSkillId = saleswoman | heirloom | bio | industrial | open-late | open-24 | jam | clearance
 ```
 
-Illegal: `better-apple`, `better-apricot`, `better-lemon`, `better-cherry`, `better-berry`. Owned maps are per member.
+Illegal: `better-apple`, `better-apricot`, `better-lemon`, `better-cherry`, `better-berry`. Illegal: player `machinery`. Illegal: husband `tool-contracts` `machine-contracts` `bulk-buying`. Owned maps are per member.
 
 Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)` — jam names the rank’s freshness cap; seed-bank names the rank’s shop pack odds.
 
@@ -23,7 +23,7 @@ Family = { player, husband, daughter }
 
 Start: `points` 0, `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
 
-`forecast` max 1. `industrial` max 5 (dummy I–V). `jam` max 5. `seed-bank` max 5. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max.
+`forecast` max 1. `driving-classes` max 3. `contracts` max 3. `industrial` max 3 (dummy). `jam` max 3. `bio` max 3. `seed-bank` max 5. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max.
 
 Ranked `%` and `$` add per owned tier (`5+5+5`), they do not multiply. Jam uses the per-tier floor table.
 
@@ -65,6 +65,7 @@ Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: another 
 | `better-grape` | research `unlock-grape` done |
 | `better-vanilla` | player owns `vanilla-tending` |
 | `better-sugar-cane` | research `unlock-fermentation` done |
+| `driving-classes` | research `unlock-vehicles` done |
 | else | none |
 
 Carrot / potato / wheat better: eligible until owned.
@@ -101,8 +102,8 @@ At `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
 - heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
-- bio: crop fruit `bio === true` × `(1 + 0.03 × tier)`. Not sugar / machine goods
-- jam: `freshMul` floored to `0.10 / 0.20 / 0.30 / 0.40 / 0.50` by owned tier. Not the jam machine
+- bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
+- jam: `freshMul` floored to `0.10 / 0.20 / 0.30` by owned tier. Not the jam machine
 - clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar and machine goods do not rot
 
 Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `fruit.bio`.
@@ -110,13 +111,15 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 ## Other effects
 
 - boots: `WALK × (1 + 0.05 × tier)`
-- machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick `÷ (1 + 0.05 × tier)`. Quad `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. Still / barrel not work jobs. Pipe place stays 0
+- driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Additive ranks. Yaw not. Boots not. — [[mechanics/vehicles]]
+- machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick `÷ (1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`
-- tool-contracts: utility tab `skuPrice` `− $tier` then min $1
-- machine-contracts: automation tab `skuPrice` `− $tier` then min $1
+- contracts: utility AND automation tab `skuPrice` `− $tier` then min $1. Hangar-buys still not `skuPrice`
 - tax: expansion formula then `× (1 − 0.02 × tier)` then min $1 — [[mechanics/expansion]]
 - water-study: unlocks water lens. Water lens gated until owned
 - land-study: unlocks land lens
-- bulk-buying: seed SKU `buyPacks(id)` five packs at `5 × skuPrice(id) × 0.95`. Else no-op. `buy(id)` stays one
-- seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five if the bulk grant succeeds. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
+- `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
+- seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
 - forecast / industrial: dummy
+
+Assumption: `SkillEffect` `{ kind: 'driving-classes' }` `{ kind: 'contracts' }` `{ kind: 'machine' }` on husband.

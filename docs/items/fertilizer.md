@@ -1,5 +1,7 @@
 # Fertilizer
 
-`fertilizer` — `buy-fertilizer`. `synth-fertilizer` — `buy-synth-fertilizer`. `compost` from the box, not a SKU.
+`fertilizer` — `buy-fertilizer`, `FERT_BAG_LITERS`. `synth-fertilizer` — `buy-synth-fertilizer`, `SYNTH_BAG_LITERS`. `compost` from the box, `COMPOST_LITERS`, not a SKU.
 
-Feed / spike / `bio`: [[mechanics/soil]]. Bags, box, `COMPOST_*`: [[mechanics/inventory]].
+Shop bags fill the additive store. Not a place ghost. Feed / spike / `bio`: [[mechanics/soil]]. Caps, bags, box, drink: [[mechanics/inventory]] [[mechanics/_index]].
+
+`weed-spray` is not fertilizer — [[items/tools]] [[mechanics/weeds]].

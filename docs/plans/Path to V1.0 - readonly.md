@@ -39,6 +39,7 @@ Architecture & style:
 # Prior versions
 see detailed beta-1 ... beta-6 then v0.1..v0.5
 ## 0.3 Dirt Overhaul & Fertilizers
+Shipped. 1.5.2: `WEED_CHANCE` 0.03, `weed-spray`, outbreak. `FERT_BAG_LITERS`. Running spec: [[mechanics/weeds]] [[mechanics/soil]] [[mechanics/inventory]]. Below is original intent, not rules.
 Currently, each tile is a single thing, and the dirt underneath has no properties. This makes many things about the game bit unrealistic: for example, poorer dirt is not modelled, fertilizer use cannot be easily added, only seeded soil can be watered, excess water is removed when plant is removed. In this update, each tile of dirt will get its own identity.
 Main change: In this update, dirt will own two properties: water and fertilizer. When the player tills hard or very hard soil, the difference is that those will have lower base fertilization.
 Instead of RNG based individual soils, create a Perlin noise map where [0,1] represents dirt "goodness", 0 is 0 fertilizer and 1 is completely fertilized. below a threshold, the hard dirt will get generated, and at a very low, very hard dirt. The area around the starting base should get a random, decaying boost, clamping to max 1, the effect tapering out to +0 in r=8, so the whole starting area gets a bit of buff. 
@@ -78,6 +79,7 @@ New buildings and mechanics:
 	- Keep in mind, that a pumpjack alone cannot provide this mnuch water. But since it has an internal buffer, that can be used to provide that. Buf it that is empty, then fill speed should still just be 2.5L/s!
 
 ## 0.6 Family Update
+Shipped. 1.5.2: player `driving-classes` not `machinery`. Husband `machinery` + `contracts`. No `bulk-buying` `tool-contracts` `machine-contracts`. `buyPacks` always on. Running spec: [[mechanics/family]]. Below is original intent, not rules.
 The game mechanics of research-farming-market is done by personifying the three aspects as the player (you, female), your husband (research) and you daughter, who is at the market. 
 Add a new main button to the left called "Family", which opens an almost full screen view.  It is a grid view, 3 vertical panels for the three characters, with high-quality detailed pixel art SVG for each of them. In the future, they will be able to earn _skills_ by gaining XP through various mechanics, but for now, implement only the skill points's system, each day one of them gets one skill point. "unlock all" gives all three of them 99. 
 Each of them have seperate skills, with 3 random showing up based on the seed, and when one is selected, all three are rerolled. There are tiered skills, implemented such that if idk "gardening" gets rolled, but user has gardening II already, then the skill will be gardening III. These skills have modifiers that are wide-reaching and extremely useful. Each skill has an icon, and existing skills are shown as icons with hover-on showing name and effect. Icons are already implemented. The better {fruit} icons require composing the grown base fruit + icon In the selectable skills, same is true but name is also displayed on the button. LEvel is also displayed. Skills can be gated behind research unlocks, or skill unlocks.
@@ -261,6 +263,7 @@ objects and research, locked behind "advanced signalling", requiring advanced ir
 All sensors have a switch cooldown of a few ticks to prevent resource-heavy loops of plant wilts -> sprinkler turns on -> plant wilts ...
 
 # 0.15 Early Access 7  - Vehicles I.
+Shipped as 1.4. 1.5.2 patch: `QUAD_VMAX` 9, `QUAD_R` 3, surfaces 1.3 / 1.0 / 0.4, Enter nearest parked ≤ 1.5, player `driving-classes`. Running spec: [[mechanics/vehicles]]. Below is original intent, not rules.
 Vehicles will be added to the game, an extensive and modular system, just like real life they will represent the ultimate mechanized farming. This is a demanding update and is split into two parts.
 In general, all vehicles have a speed, acceleration and turning radious. The player can sit inside them and then navigate with WASD, a lower HUD mimicking the car dashboard is SVG-ified there and is actively changing dpeending on what is happening. 
 The first, flagship vehicle is the Quad. It only serves as a baseline vehicle, nothing can be attached,
@@ -271,6 +274,7 @@ Max vehicle speed depends on the exact surface the vehicle is running on. Slowes
 The VFX and SVG here is important, the vehicle physically turns (top down view always).
 Multiplayer: one person per vehicle. All players can drive vehicles.
 # 0.16 Early Access 8 - Vehicles II.
+Shipped as 1.5 / 1.5.2. Tractor `boom` 3|5 default 5. `TRACTOR_R` 3. One trailer width. Field silos inert. Running spec: [[mechanics/vehicles]]. Below is original intent, not rules.
 A new vehicle type is added, Tractor. A tractor can have trailers, and is by default slower than Quad. 
 There are 3 different kinds trailers, and each has a respective building where it can interact with it.
 - Seeding trailer. Two variants, 2×1 and 5×1.  When attached and driven straight over an area, any tilled empty fields where the wide seeding trailer is touching the soil, it will plant it. seeding trailer can only have one type of fruit in it. 

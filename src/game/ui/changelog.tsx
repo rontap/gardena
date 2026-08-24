@@ -24,6 +24,46 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.5.2',
+    name: 'Vehicles II patch',
+    summary: 'Boom width, slower machines, weed spray, and skill moves.',
+    changes: [
+      {
+        kind: 'feature',
+        text: 'Tractor boom switches between 3 and 5 while you drive.',
+        notes: ['A dash button shows the current width. Quad has no boom.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Vehicles are slower. Tilled soil and rocks drag more; paving is still faster.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Enter boards the nearest parked machine, or gets you off if you are driving.',
+        notes: ['Works within a short walk. The dash Disembark button and the parked Embark button stay.'],
+      },
+      {
+        kind: 'feature',
+        text: 'Weed spray and weed outbreaks.',
+        notes: [
+          'Buy spray in Supplies. Click tilled soil to starve weeds there.',
+          'A fully grown weed seeds its four neighbours.',
+        ],
+      },
+      {
+        kind: 'improvement',
+        text: 'Driving classes sit on you. Machinery and contracts sit on your husband. Bulk buying is always on.',
+        notes: ['Ctrl-click seed packs to buy five at a discount. No skill lock.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Fertilizer bags and buckets hold more.',
+        notes: [],
+      },
+    ],
+  },
+  {
     id: '1.5.1',
     name: 'Shop split',
     summary: 'The store and the build menu are two panels, with search across both.',

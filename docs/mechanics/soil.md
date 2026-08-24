@@ -6,6 +6,12 @@ Water and fertilizer belong to the dirt. One `Soil` per tilled plot, carried thr
 
 Only tilling fresh ground, or clearing a deleted building, mints a new `Soil`.
 
+```
+Soil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
+```
+
+`weedChance` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Recover / outbreak / spray: [[mechanics/weeds]].
+
 ## Water
 
 | id | | |
@@ -20,13 +26,13 @@ Clamp `0..SOIL_WATER_MAX`. `drowning` iff `water > SOIL_WATER_MID`.
 
 `FERT_PLOT_MAX = 1` — preference.
 
-Growing draw `PLANT_FERT_PER_SEC = (1 / 720) * 0.6` — tuned-to 3-day empty, then ×0.6. Full plot empties in 5 days (derived, `1 / PLANT_FERT_PER_SEC / DAY_SECONDS`).
+Growing draw `PLANT_FERT_PER_SEC = (1 / 720) * 0.6 * 0.9` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
 
 Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one `feed` lands `>= BIO_RESTORE` (0.3 — preference). Produce copies soil `bio` while growing.
 
 Tops a plot to full, spends only the gap. Empty bag leaves the hand.
 
-Ordinary bag always in shop. Synthetic is [[mechanics/research]] `unlock-fertilizer`.
+Ordinary bag always in shop. Synthetic is [[mechanics/research]] `unlock-fertilizer`. Weed spray gates on the same research id — [[mechanics/weeds]].
 
 ## Goodness / ground
 
@@ -44,7 +50,7 @@ Base boost centred on the door, exponential decay (`BOOST_FALLOFF = 8` — prefe
 
 ## Till
 
-Shovel untilled → `empty`, `water = SOIL_TILL_WATER`, `fertilizer = goodness(...)`.
+Shovel untilled → `empty`, `water = SOIL_TILL_WATER`, `fertilizer = goodness(...)`, `weedChance = WEED_CHANCE`.
 
 Soft: 1 use, `workSeconds`. Hard: 2 uses, 2× `workSeconds`. Very-hard: shovel no-op; pickaxe → `infertile`.
 

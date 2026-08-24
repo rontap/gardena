@@ -11,7 +11,7 @@ MemberId = 'player' | 'husband' | 'daughter'
 
 PlayerSkillId =
   | 'boots'
-  | 'machinery'
+  | 'driving-classes'
   | 'tending'
   | 'vanilla-tending'
   | 'seed-bank'
@@ -28,13 +28,12 @@ PlayerSkillId =
 
 HusbandSkillId =
   | 'research-speed'
-  | 'tool-contracts'
-  | 'machine-contracts'
+  | 'machinery'
+  | 'contracts'
   | 'forecast'
   | 'tax'
   | 'water-study'
   | 'land-study'
-  | 'bulk-buying'
 
 DaughterSkillId =
   | 'saleswoman'
@@ -49,7 +48,7 @@ DaughterSkillId =
 SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
 ```
 
-Illegal: `better-*` on `TreeId`. No `better-apple`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed.
+Illegal: `better-*` on `TreeId`. No `better-apple`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed. Illegal: player `machinery`. Illegal: husband `tool-contracts` `machine-contracts` `bulk-buying`.
 
 ## Defs
 
@@ -66,7 +65,7 @@ SkillGate =
 SkillDef<Id> = { id: Id; maxTier: number; gate: SkillGate; effect: SkillEffect }
 ```
 
-`maxTier` 1 = one-shot. `forecast` max 1. `industrial` max 5. Both `effect: { kind: 'dummy' }`. `seed-bank` max 5.
+`maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `contracts` max 3. `industrial` max 3. `jam` max 3. `bio` max 3. Dummy: `forecast` `industrial`. `seed-bank` max 5.
 
 Gates — only these:
 
@@ -82,38 +81,38 @@ Gates — only these:
 | `vanilla-tending` | research `unlock-raspberry` |
 | `better-vanilla` | skill `vanilla-tending` |
 | `better-sugar-cane` | research `unlock-fermentation` |
+| `driving-classes` | research `unlock-vehicles` |
 | else | `none` |
 
 Carrot / potato / wheat better: always eligible until owned. No extra gates.
 
-`SkillEffect` arms. Amounts live in `SKILLS`. Ranked `%` and `$` add per owned tier, not multiply: Boots I–V walk `WALK × (1 + 0.05 × tier)`. Machinery / research-speed same 5% add. Tax `× (1 − 0.02 × tier)`. Saleswoman `+2%` per tier, Őstermelő `+5%`, bio `+3%`. Contracts `−$1` per tier, min $1. Jam: `minFreshMul[tier-1]` is 0.10 / 0.20 / 0.30 / 0.40 / 0.50.
+`SkillEffect` arms. Amounts live in `SKILLS`. Ranked `%` and `$` add per owned tier, not multiply: Boots I–V walk `WALK × (1 + 0.05 × tier)`. Machinery / driving-classes / research-speed same 5% add. Tax `× (1 − 0.02 × tier)`. Saleswoman `+2%` per tier, Őstermelő `+5%`, bio `+4%`. Contracts `−$1` per tier on utility AND automation, min $1. Jam: `minFreshMul[tier-1]` is 0.10 / 0.20 / 0.30.
 
 ```
 SkillEffect =
   | { kind: 'walk'; mul: 1.05 }
+  | { kind: 'driving-classes' }
   | { kind: 'machine'; mul: 1.05 }
   | { kind: 'tend' }
   | { kind: 'vanilla-tending' }
   | { kind: 'research-speed'; mul: 1.05 }
-  | { kind: 'tool-contracts' }
-  | { kind: 'machine-contracts' }
+  | { kind: 'contracts' }
   | { kind: 'tax'; mul: 0.98 }
   | { kind: 'water-study' }
   | { kind: 'land-study' }
-  | { kind: 'bulk-buying' }
   | { kind: 'saleswoman'; mul: 1.02 }
   | { kind: 'heirloom'; mul: 1.05 }
   | { kind: 'better'; crop: AnnualId; saleMul: 1.04; up1: 0.04 }
   | { kind: 'seed-bank' }
-  | { kind: 'bio'; mul: 1.03 }
+  | { kind: 'bio'; mul: 1.04 }
   | { kind: 'open-late' }
   | { kind: 'open-24' }
-  | { kind: 'jam'; minFreshMul: [0.10, 0.20, 0.30, 0.40, 0.50] }
+  | { kind: 'jam'; minFreshMul: [0.10, 0.20, 0.30] }
   | { kind: 'clearance' }
   | { kind: 'dummy' }
 ```
 
-`walk` = boots. `machine` = machinery (`GRIND_WORK`, valve 0.3s, mill tick, jam tick; Quad vMax and accel; yaw not; still / barrel not work jobs; pipe place instant). `tend` work `TEND_WORK` 0.7s. `saleswoman` = every `StallGoodId`. `heirloom` = `rarity === 'heirloom'` on crop fruit, spirit, wine. `bio` = `fruit.bio === true`. `tax` after expansion formula, then `× (1 − 0.02 × tier)`, min $1. Contracts: tab SKU `−$tier`, min $1.
+`walk` = boots. `driving-classes` = burn `× (1 − 0.05 × tier)`, Quad/Tractor vMax and accel `× (1 + 0.05 × tier)`; yaw not; boots not. `machine` = husband machinery (`GRIND_WORK`, valve 0.3s, mill tick, jam tick only; not Quad/Tractor vMax/accel; still / barrel not work jobs; pipe place instant). `tend` work `TEND_WORK` 0.7s. `saleswoman` = every `StallGoodId`. `heirloom` = `rarity === 'heirloom'` on crop fruit, spirit, wine. `bio` = `fruit.bio === true`. `tax` after expansion formula, then `× (1 − 0.02 × tier)`, min $1. `contracts`: utility AND automation tab SKU `−$tier`, min $1. Hangar-buys still not `skuPrice`.
 
 ## World fields
 
@@ -192,7 +191,7 @@ Other sale skills at `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
 - heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`
-- bio: crop fruit with `bio === true` × `(1 + 0.03 × tier)`. Not sugar / machine goods
+- bio: crop fruit with `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - jam: `freshMul` floored to that tier’s min. Not the jam machine
 - clearance: freshness-0 item-kind fruit → $1 each, regardless of crop/rarity. Else jam floor. Sugar and machine goods do not rot
 
@@ -201,12 +200,12 @@ Crop stall bins keep `bio` (stock + worth per rarity × bio). Illegal: consign t
 ## Other effects
 
 - Boots: walk step `WALK × (1 + 0.05 × tier)`. Not Quad
-- Machinery: Quad `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. — [[mechanics/vehicles]]
-- Machinery: `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0
+- driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. — [[mechanics/vehicles]]
+- Machinery (husband): `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
 - Research speed: `job.left -= dt × (1 + 0.05 × tier)`
-- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if tool-contracts and `Sku.tab === 'utility'`, or machine-contracts and `tab === 'automation'`; min $1. Seeds and building tiles unchanged. Buy / place spend `skuPrice`
+- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `contracts` and `Sku.tab === 'utility' | 'automation'`; min $1. Hangar-buys still not `skuPrice`. Seeds and building tiles unchanged. Buy / place spend `skuPrice`
 - `Sku.tab` on `defs/research.ts`: `'seeds' | 'utility' | 'automation' | 'building'` — same membership as [[ui/shop]]
-- Bulk: seed SKU, husband owns `bulk-buying` → `buyPacks(id)` five packs at `5 * skuPrice(id) * 0.95`. Else no-op. `buy(id)` stays one
+- `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`. `buy(id)` stays one
 - Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. `buy` one roll; `buyPacks` five. Base always common.
 - Tax: `World.tax()` applies smart tax after the expansion formula
 - Water lens: husband owns `water-study`. Land lens (`land`): husband owns `land-study`. View-local `Lens`; architecture names the unlock. Default `off`
@@ -218,3 +217,5 @@ Drop `ResearchId` `bump-carrot` `bump-potato` `bump-wheat`. Drop `ResearchDef.ef
 ```
 effect = { kind: 'unlock-sku'; sku: SkuId } | { kind: 'expand' } | { kind: 'feature' }
 ```
+
+Assumption: `SkillEffect` `{ kind: 'driving-classes' }` `{ kind: 'contracts' }`.

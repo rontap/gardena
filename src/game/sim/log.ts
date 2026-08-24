@@ -56,6 +56,7 @@ export const Act = {
   swapVehicle: 'H',
   swapTrailer: 'A',
   refill: 'F',
+  setBoom: 'W',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -110,6 +111,7 @@ export type Cmd =
   | { a: typeof Act.swapVehicle; t: number; p: SeatId; v: VehicleId; i: VehicleSlot }
   | { a: typeof Act.swapTrailer; t: number; p: SeatId; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.setBoom; t: number; p: SeatId; w: 3 | 5 }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

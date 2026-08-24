@@ -12,7 +12,7 @@ No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
 |---|---|
 | `crops.ts` | `CropDef`, `CROPS`. Sale / rot / desc / class / seed / tols / `waterUsePerSec`. Trees: `waterUsePerSec = 0`. `CropDef.saleMul` optional `{ [Rarity]: number }`; absent → `RARITY_SALE`. Vanilla only. |
 | `trees.ts` | `TREES`, `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`. `TREES[TreeId] = { juvenileSeconds, fruitSeconds }` |
-| `items.ts` | tool, container, box, fert, compost, sprinkler, mill / jam / still / barrel / freezer / sugar / quad / tractor / trailer / hangar / silo / surface constants |
+| `items.ts` | tool, container, box, fert, compost, weed-spray, sprinkler, mill / jam / still / barrel / freezer / sugar / quad / tractor / trailer / hangar / silo / surface constants |
 | `rarity.ts` | `Rarity`, sale / grow / rot / weight tables |
 | `research.ts` | `RESEARCH`, `SKUS`; `Sku.tab` |
 | `skills.ts` | `SKILLS`, `SkillDef`, `TEND_WORK` |
@@ -20,7 +20,7 @@ No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
 
 `sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `SpiritKind`, `JamCrop`, `StillCrop`, `MillRecipe`, `VehicleKind`, `VehicleId`, `VehicleSlot`, `TrailerKind`, `TrailerId`, `HarvestSlot`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
 
-`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. No Quad SKU. No tractor SKU. No trailer SKU. `pack-vanilla.need` is `vanilla-tending`.
+`CropId = AnnualId | TreeId`. `StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. No `'berry'`. `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. `SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` `buy-weed-spray`. No Quad SKU. No tractor SKU. No trailer SKU. `pack-vanilla.need` is `vanilla-tending`.
 
 No `bump-*` research ids. No `sale-mul` research effect. Better-crop is player skills — [[architecture/family]]. `unlock-heirloom` is plants `feature`, gates Őstermelő.
 
@@ -34,18 +34,18 @@ Classes for game objects. Tick and mutation stay here.
 | `mp.ts` | `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer / permissions. No PeerJS. [[architecture/net]] |
 | `save.ts` | `Save`, `dump` / `parse` / slot I/O. Snapshot, not `Cmd[]`. App does not own `Save`. [[architecture/save]] |
 | `tutorial.ts` | Session check. Not a `World` field. Not in `Save`. [[mechanics/tutorial]] |
-| `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink` |
+| `log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.setBoom` |
 | `log.worker.ts` | worker JSON sink. Does not apply cmds. Does not own `World`. |
 | `plot.ts` | `Cell`, `Plot`, `Tilled`, `Cover`, `Ground`. `Cell` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce` |
-| `soil.ts` | `Soil` |
-| `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended` |
+| `soil.ts` | `Soil`. `weedChance` required |
+| `plant.ts` | `Plant`, `Weed`, `Doom`. `Plant.crop: AnnualId`. `Plant.tended`. `Weed.spread` |
 | `water.ts` | `Reservoir`, `SourceKind`, `pull()` |
 | `stall.ts` | `StallGood`, `StallMap`, `StallSale` |
 | `building.ts` | `House`, `Pump` (`starter` / `jack`, no `well`), `RainTank`, `Tap`, `Rock`, `Tree`, `Chest`, `Grinder`, `CompostBox`, `Truck`, `Mill`, `JamMachine`, `PotStill`, `WineBarrel`, `Freezer`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `Coord`, `Base` |
 | `pipe.ts` | `Edge`, `Vertex`, `Segment`, `Sprinkler`, `Well`, `Tune`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock`, `DAY_SECONDS` |
-| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar liters, spirit, wine, jam, oil, flour, extract. Face += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce`. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm. No fuel item |
+| `item.ts` | `Item`, `Hand`, `Slot`, `Face`. Sapling, sugar liters, spirit, wine, jam, oil, flour, extract, weed-spray. Face += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce`. No `apple-tree` / `berry` / `shrub`. Box cargo: no berry arm. Box cargo weed. No fuel item. Illegal: `weed-spray.usesLeft` 0 as held |
 | `prompt.ts` | `Prompt`, `PromptHit` |
 | `look.ts` | `lookText` — HUD copy, read-only on `World` |
 | `drop.ts` | `Drop` |
@@ -54,7 +54,7 @@ Classes for game objects. Tick and mutation stay here.
 | `modifiers.ts` | `Modifier`, `Stats`. `source` includes `'skill'`. `statsOf` uses `CropDef.saleMul` when present, else `RARITY_SALE` |
 | `rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
 | `machine.ts` | mill recipes, feed helpers, rarity mean, sale bake. No `World`. [[mechanics/machines]] |
-| `vehicle.ts` | `Vehicle`, `Trailer`, `Drive`, `VehiclePose`, `TrailerPose`, `surfaceMul`, `hangarPad`, `padCenter`, `hitchP`, `trailerCenter`, `followHitch`, `boomHits`, `seekSpeed`, `integrateVehicle`. No `World`. No `Dismount`. [[mechanics/vehicles]] |
+| `vehicle.ts` | `Vehicle`, `Trailer`, `Drive`, `VehiclePose`, `TrailerPose`, `surfaceMul`, `hangarPad`, `padCenter`, `hitchP`, `trailerCenter`, `followHitch`, `boomHits` (takes width), `seekSpeed`, `integrateVehicle`. Tractor `boom: 3 | 5`. No `World`. No `Dismount`. [[mechanics/vehicles]] |
 
 `ui` and `view` call `World` methods. They do not construct `Soil` / `Plant` / `Reservoir` / `StallGood`.
 
@@ -117,7 +117,7 @@ PeerJS only here. Implements `MpWire`. [[architecture/net]]
 |---|---|
 | `World` | class `sim/world.ts`. App holds the instance or none. `World.seats`. Family state is `World.family`, not a class. |
 | `Seat` | on `World.seats`. `id`, `playerId`, `actor`, `hand`, `inventory`, `queue`, `presence`, `place`, `drive`. |
-| `Soil` | class `sim/soil.ts`. Required field on every `Tilled` plot. |
+| `Soil` | class `sim/soil.ts`. Required field on every `Tilled` plot. `weedChance` required. |
 | `Plant` | class `sim/plant.ts`. Required on `growing` / `ripe` / `dead`. `crop: AnnualId`. |
 | `Tree` | class `sim/building.ts`. Same instance in both 1×2 cells. |
 | `Reservoir` | class `sim/water.ts`. `Pump.water`, `RainTank.water`. Not on `Tap`. |

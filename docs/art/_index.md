@@ -12,6 +12,7 @@
 - [[art/machines]]
 - [[art/electricity]]
 - [[art/vehicles]]
+- [[art/items]]
 
 SVGs live in `src/assets/`.
 

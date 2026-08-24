@@ -77,7 +77,7 @@ Illegal: `Spatial.at()` with no ints. Illegal: `next()` on a spatial id. Illegal
 
 ### shop — `next()` per pack granted
 
-One `next()` per pack actually put in inventory. `buyPacks` = 5 `next()`s, in order, only if the bulk grant succeeds. Failed afford / fit / closed sku consumes 0. `u` still goes to `rollShopRarity(seed-bank tier, u)`.
+One `next()` per pack actually put in inventory. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. Success = 5 `next()`s, in order. Failed afford / fit / closed sku consumes 0. `u` still goes to `rollShopRarity(seed-bank tier, u)`. No `bulk-buying` skill.
 
 ### weed — `at(col, row, bigTicks)` including kind
 

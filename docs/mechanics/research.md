@@ -56,13 +56,13 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 
 `unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
 
-`unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop.
+`unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop. `buy-weed-spray` gates on `unlock-fertilizer`; the research `effect` stays one SKU.
 
 ## Shop gates
 
 `buy-box` unlock `start`, $6. `buy-box-large` unlock `unlock-large-box`, $18.
 
-`buy-fertilizer` unlock `start`, $6. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`, $5.
+`buy-fertilizer` unlock `start`, $18. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`, $15. `buy-weed-spray` $12 utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU (`buy-synth-fertilizer`); spray gates on the research id.
 
 `buy-compost-box` unlock `unlock-compost`, show `unlock-fertilizer`, $20.
 
@@ -72,7 +72,7 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 
 `buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. Assumption: `buy-sugar` tab utility. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 
-`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `machine-contracts` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-irrigation`, buy `unlock-vehicles`, contracts apply. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, contracts do not discount. — [[mechanics/vehicles]]
+`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `contracts` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-irrigation`, buy `unlock-vehicles`, contracts apply. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, contracts do not discount. — [[mechanics/vehicles]]
 
 `pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
 

@@ -15,7 +15,7 @@ export const TEND_WORK = 0.7
 
 export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'boots',
-    'machinery',
+    'driving-classes',
     'tending',
     'vanilla-tending',
     'seed-bank',
@@ -53,13 +53,12 @@ export function extraGrowUp1(crop: CropId, has: (id: SkillId) => boolean): numbe
 
 export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
     'research-speed',
-    'tool-contracts',
-    'machine-contracts',
+    'machinery',
+    'contracts',
     'forecast',
     'tax',
     'water-study',
     'land-study',
-    'bulk-buying',
 ]
 export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'saleswoman',
@@ -72,7 +71,7 @@ export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'clearance',
 ]
 
-export const JAM_FLOOR = [0.1, 0.2, 0.3, 0.4, 0.5] as const
+export const JAM_FLOOR = [0.1, 0.2, 0.3] as const
 
 export type SkillGate =
     | { kind: 'none' }
@@ -81,21 +80,20 @@ export type SkillGate =
 
 export type SkillEffect =
     | { kind: 'walk'; mul: 1.05 }
+    | { kind: 'driving-classes' }
     | { kind: 'machine'; mul: 1.05 }
     | { kind: 'tend' }
     | { kind: 'vanilla-tending' }
     | { kind: 'research-speed'; mul: 1.05 }
-    | { kind: 'tool-contracts' }
-    | { kind: 'machine-contracts' }
+    | { kind: 'contracts' }
     | { kind: 'tax'; mul: 0.98 }
     | { kind: 'water-study' }
     | { kind: 'land-study' }
-    | { kind: 'bulk-buying' }
     | { kind: 'saleswoman'; mul: 1.02 }
     | { kind: 'heirloom'; mul: 1.05 }
-    | { kind: 'better'; crop: CropId; saleMul: 1.04 | 1.06; up1: 0.04 }
+    | { kind: 'better'; crop: CropId; saleMul: 1.04; up1: 0.04 }
     | { kind: 'seed-bank' }
-    | { kind: 'bio'; mul: 1.03 }
+    | { kind: 'bio'; mul: 1.04 }
     | { kind: 'open-late' }
     | { kind: 'open-24' }
     | { kind: 'jam'; minFreshMul: typeof JAM_FLOOR }
@@ -126,7 +124,16 @@ function row<Id extends SkillId>(
 
 export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     boots: row('boots', 'player', 'Boots', 'You walk faster. Each rank adds 5%.', 5, {kind: 'walk', mul: 1.05}),
-    machinery: row('machinery', 'player', 'Machinery', 'Machine work finishes sooner. Each rank adds 5%.', 3, {
+    'driving-classes': row(
+        'driving-classes',
+        'player',
+        'Driving classes',
+        'You drive faster and burn less fuel. Each rank adds 5% to top speed and acceleration, and cuts burn 5%.',
+        3,
+        {kind: 'driving-classes'},
+        {kind: 'research', id: 'unlock-vehicles'},
+    ),
+    machinery: row('machinery', 'husband', 'Machinery', 'Machine work finishes sooner. Each rank adds 5%.', 3, {
         kind: 'machine',
         mul: 1.05,
     }),
@@ -155,21 +162,13 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         3,
         {kind: 'research-speed', mul: 1.05},
     ),
-    'tool-contracts': row(
-        'tool-contracts',
+    contracts: row(
+        'contracts',
         'husband',
-        'Tool contracts',
-        'Utility goods in the store cost less. Each rank knocks $1 off the price.',
+        'Contracts',
+        'Utility and automation goods in the store cost less. Each rank knocks $1 off the price.',
         3,
-        {kind: 'tool-contracts'},
-    ),
-    'machine-contracts': row(
-        'machine-contracts',
-        'husband',
-        'Machine contracts',
-        'Automation goods in the store cost less. Each rank knocks $1 off the price.',
-        3,
-        {kind: 'machine-contracts'},
+        {kind: 'contracts'},
     ),
     forecast: row('forecast', 'husband', 'Weather forecast', "Does nothing yet. Will show the next day's weather.", 1, {
         kind: 'dummy',
@@ -197,14 +196,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'Adds Land quality to the Lens menu. You can see fertilizer in the dirt across the field.',
         1,
         {kind: 'land-study'},
-    ),
-    'bulk-buying': row(
-        'bulk-buying',
-        'husband',
-        'Bulk buying',
-        'In the seed aisle, hold Control and click a pack to buy five at once, 5% off that purchase.',
-        1,
-        {kind: 'bulk-buying'},
     ),
     saleswoman: row(
         'saleswoman',
@@ -304,9 +295,9 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'better-vanilla',
         'player',
         'Experienced vanilla harvester',
-        'Vanilla sells for 6% more. Increased chance that a happy plant will produce a superior fruit.',
+        'Vanilla sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
         1,
-        {kind: 'better', crop: 'vanilla', saleMul: 1.06, up1: 0.04},
+        {kind: 'better', crop: 'vanilla', saleMul: 1.04, up1: 0.04},
         {kind: 'skill', id: 'vanilla-tending'},
     ),
     'better-sugar-cane': row(
@@ -322,11 +313,11 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'bio',
         'daughter',
         'Bio farmer',
-        'Organic fruit sells for more. Each rank adds 3%.',
-        5,
-        {kind: 'bio', mul: 1.03},
+        'Organic fruit sells for more. Each rank adds 4%.',
+        3,
+        {kind: 'bio', mul: 1.04},
     ),
-    industrial: row('industrial', 'daughter', 'Industrial farmer', 'Does nothing yet.', 5, {
+    industrial: row('industrial', 'daughter', 'Industrial farmer', 'Does nothing yet.', 3, {
         kind: 'dummy',
     }),
     'open-late': row(
@@ -351,7 +342,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'daughter',
         'Still good for jam',
         'Fruit that has started to go is still worth something. How much the stall knocks off for being past its prime depends on the rank.',
-        5,
+        3,
         {kind: 'jam', minFreshMul: JAM_FLOOR},
     ),
     clearance: row(
@@ -380,14 +371,14 @@ export function skillBlurb(id: SkillId, tier: number): string {
     switch (id) {
         case 'boots':
             return `You walk ${5 * tier}% faster.`
+        case 'driving-classes':
+            return `You drive ${5 * tier}% faster and burn ${5 * tier}% less fuel.`
         case 'machinery':
             return `Machine work finishes ${5 * tier}% sooner.`
         case 'research-speed':
             return `Research jobs finish ${5 * tier}% sooner.`
-        case 'tool-contracts':
-            return `Utility goods in the store cost $${tier} less. Never below $1.`
-        case 'machine-contracts':
-            return `Automation goods in the store cost $${tier} less. Never below $1.`
+        case 'contracts':
+            return `Utility and automation goods in the store cost $${tier} less. Never below $1.`
         case 'tax':
             return `The bill at the end of the day is ${2 * tier}% lighter. You still pay at least $1.`
         case 'saleswoman':
@@ -395,7 +386,7 @@ export function skillBlurb(id: SkillId, tier: number): string {
         case 'heirloom':
             return `Heirloom produce sells for ${5 * tier}% more.`
         case 'bio':
-            return `Organic fruit sells for ${3 * tier}% more.`
+            return `Organic fruit sells for ${4 * tier}% more.`
         case 'jam': {
             const cut = Math.round((1 - JAM_FLOOR[tier - 1]) * 100)
             return `Fruit that has started to go is still worth something. The stall will not knock more than ${cut}% off for being past its prime.`

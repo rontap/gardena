@@ -1,27 +1,113 @@
-export type ChangeKind = 'bugfix' | 'improvement' | 'feature' | 'deprecation' | 'major-feature'
+# Changelog
 
-export type Change =
-  | { kind: 'bugfix'; text: string; notes: readonly string[] }
-  | { kind: 'improvement'; text: string; notes: readonly string[] }
-  | { kind: 'feature'; text: string; notes: readonly string[] }
-  | { kind: 'deprecation'; text: string; notes: readonly string[] }
-  | { kind: 'major-feature'; text: string; notes: readonly string[]; changes: readonly Change[] }
+Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home `w-[26rem]`. Not Overlay. Not Window. Not a `Panel`. Not a HUD overlay. [[ui/menu]] [[architecture/changelog]] [[ui/type]]
 
-export type Release = {
-  id: string
-  name: string
-  summary: string
-  changes: readonly Change[]
-}
+`src/game/ui/changelog.tsx` owns `ChangeKind`, `Change`, `Release`, `RELEASES`, `KIND_EMOJI`, and `Changelog`. No props. No `World`. Copy is this `RELEASES` const — paste it. Do not fetch. Do not import from `docs/`.
 
-export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
+`menu.tsx` owns `MenuPage`, wordmark click, and whether `Changelog` is shown.
+
+Wordmark **1.5.2**.
+
+Assumption: heading version is `id` as written (`1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). 1.5.1 stays from the live `RELEASES` list.
+
+## Shell
+
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.5.2** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+
+| mode | dim | backdrop | Esc |
+|---|---|---|---|
+| boot | none | none | join-close only (App). Changelog does not change that. No Esc-to-home. |
+| play | `bg-ink/50` | dismiss → `onClose`, unmounts Menu | closes the menu (unchanged) |
+
+Chrome × (`text-lg`, aria-label Close, `text-ink/60 hover:bg-dirt hover:text-house`):
+
+| state | does |
+|---|---|
+| changelog (boot and play) | Menu → home |
+| boot joining, home | `onJoinClose` |
+| play home | `onClose` |
+
+Boot home: no ×.
+
+Show ×: play, or joining, or `{ kind: 'changelog' }`.
+
+## Wordmark
+
+The **1.5.2** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+
+Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
+
+Click toggles home ↔ changelog. While boot `joining`: no-op. `joining` true → `MenuPage` forced home.
+
+## Body
+
+`scroll-pane max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto flex flex-col gap-3`. Column already `px-4` — do not pad again.
+
+`RELEASES[0]` is 1.5.2. Array order is render order.
+
+Per release, body face only (not Press Start):
+
+1. `{id} {name}` — `text-lg font-semibold`
+2. `summary` — `text-base text-ink/45`
+3. bullets — `pl-3` under the heading
+
+Hairline between releases, not after the last: `h-px bg-ink/20 my-1`.
+
+No body title. No lorem.
+
+## Bullets
+
+One emoji per `ChangeKind`, on the bullet, not the release header. Change list `pl-3` so markers sit under the heading, never left of `{id} {name}`. No `list-disc`.
+
+| kind | emoji |
+|---|---|
+| `major-feature` | 🎉 |
+| `feature` | ✨ |
+| `improvement` | 🔧 |
+| `bugfix` | 🐛 |
+| `deprecation` | 🚫 |
+
+```
+KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
   'major-feature': '🎉',
   feature: '✨',
   improvement: '🔧',
   bugfix: '🐛',
   deprecation: '🚫',
 }
+```
 
+Change line: emoji then `text`, `text-base`, `flex`. Emoji `w-6 shrink-0`. `notes` under that change, `pl-6 text-base text-ink/45` — indent past the parent emoji, not left of it. Nested `changes` under a major-feature indent one step (`pl-4`), same bullet shape. Empty `notes` / empty nested `changes` render nothing.
+
+## Types
+
+```
+ChangeKind = 'bugfix' | 'improvement' | 'feature' | 'deprecation' | 'major-feature'
+
+Change =
+  | { kind: 'bugfix'; text: string; notes: readonly string[] }
+  | { kind: 'improvement'; text: string; notes: readonly string[] }
+  | { kind: 'feature'; text: string; notes: readonly string[] }
+  | { kind: 'deprecation'; text: string; notes: readonly string[] }
+  | { kind: 'major-feature'; text: string; notes: readonly string[]; changes: readonly Change[] }
+
+Release = {
+  id: string
+  name: string
+  summary: string
+  changes: readonly Change[]
+}
+
+RELEASES: readonly Release[]
+
+MenuPage = { kind: 'home' } | { kind: 'changelog' }
+```
+
+`notes` always present. None → `[]`. Only `major-feature` nests `Change[]`. None → `changes: []`.
+
+## RELEASES
+
+```
 export const RELEASES: readonly Release[] = [
   {
     id: '1.5.2',
@@ -114,15 +200,16 @@ export const RELEASES: readonly Release[] = [
   },
   {
     id: '1.4',
-    name: 'Vehicle Update I',
-    summary: 'Vehicles arrive on the farms! Jet around with a quad around your large farm!',
+    name: 'Vehicles I',
+    summary: 'Drive a Quad around the farm.',
     changes: [
       {
         kind: 'major-feature',
-        text: 'New research unlocks a new building, hangar. First vehicle: quad',
+        text: 'Added a vehicle hangar and a Quad you can drive.',
         notes: [
-          'Quad is deployed from the hangar, has six item slots, and docks back on the arrows.',
-          'Fuel and speed are shown on the dashboard. Surfaces affect how fast the quad is.',
+          'Research Vehicles, place a hangar, then buy a Quad there.',
+          'WASD to drive. Fuel burns while you throttle or steer.',
+          'Parked Quads hold six items. Disembark to get off. Dock at the hangar arrows to store.',
         ],
         changes: [],
       },
@@ -131,14 +218,15 @@ export const RELEASES: readonly Release[] = [
   {
     id: '1.3',
     name: 'Seed silo and fertilizer store',
-    summary: 'Seeds and fertilizer no longer spawn in the house.',
+    summary: 'Seeds and fertilizer no longer live in the house.',
     changes: [
       {
         kind: 'major-feature',
         text: 'Added a seed silo next to the house.',
         notes: [
-          'Bought seed packs go into the silo, up to individual 100 seeds.',
-          'Starter packs start are also spawned there.',
+          'Bought seed packs go into the silo, up to 100 seeds.',
+          'Starter packs start there.',
+          'Tree saplings still stay in the house.',
         ],
         changes: [],
       },
@@ -274,7 +362,7 @@ export const RELEASES: readonly Release[] = [
   {
     id: '0.6',
     name: 'Family',
-    summary: 'Added family menu, where family members can gain skills that help you in minor ways as you progress the game.',
+    summary: 'The farm is three people.',
     changes: [
       {
         kind: 'major-feature',
@@ -296,7 +384,7 @@ export const RELEASES: readonly Release[] = [
   },
   {
     id: '0.5',
-    name: 'Irrigation II',
+    name: 'Automation II',
     summary: 'More control over watering.',
     changes: [
       { kind: 'feature', text: 'Added manual valves to control the flow in pipes.', notes: [] },
@@ -383,7 +471,7 @@ export const RELEASES: readonly Release[] = [
   },
   {
     id: 'beta-6',
-    name: 'Staleness mechanics',
+    name: 'Update 7',
     summary: 'Picked fruit goes stale. Better fruit shows a gem.',
     changes: [
       { kind: 'feature', text: 'Picked fruit now goes stale and can rot.', notes: [] },
@@ -403,7 +491,7 @@ export const RELEASES: readonly Release[] = [
   {
     id: 'beta-5',
     name: 'Irrigation',
-    summary: 'Pipes and sprinklers water the tilled lands for you.',
+    summary: 'Pipes and sprinklers water the beds for you.',
     changes: [
       {
         kind: 'major-feature',
@@ -424,7 +512,7 @@ export const RELEASES: readonly Release[] = [
   {
     id: 'beta-4',
     name: 'Almanac',
-    summary: 'A catalog of crops and tools, plus storage is added.',
+    summary: 'A catalog of crops and tools, plus storage.',
     changes: [
       {
         kind: 'feature',
@@ -447,7 +535,7 @@ export const RELEASES: readonly Release[] = [
   },
   {
     id: 'beta-3',
-    name: 'Land Expansion',
+    name: 'Land',
     summary: 'Buy more land. Rocks and shrubs show up farther out.',
     changes: [
       {
@@ -505,47 +593,4 @@ export const RELEASES: readonly Release[] = [
     ],
   },
 ]
-
-function ChangeItems({ changes }: { changes: readonly Change[] }) {
-  return (
-    <>
-      {changes.map((change, i) => (
-        <div key={i}>
-          <div className="flex text-base">
-            <span className="w-6 shrink-0">{KIND_EMOJI[change.kind]}</span>
-            <span>{change.text}</span>
-          </div>
-          {change.notes.map((note, j) => (
-            <div key={j} className="pl-6 text-base text-ink/45">
-              {note}
-            </div>
-          ))}
-          {change.kind === 'major-feature' && change.changes.length > 0 ? (
-            <div className="pl-4">
-              <ChangeItems changes={change.changes} />
-            </div>
-          ) : null}
-        </div>
-      ))}
-    </>
-  )
-}
-
-export function Changelog() {
-  return (
-    <div className="scroll-pane max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto flex flex-col gap-3">
-      {RELEASES.map((release, i) => (
-        <div key={release.id}>
-          <div className="text-lg font-semibold">
-            {release.id} {release.name}
-          </div>
-          <div className="text-base text-ink/45">{release.summary}</div>
-          <div className="pl-3">
-            <ChangeItems changes={release.changes} />
-          </div>
-          {i < RELEASES.length - 1 ? <div className="h-px bg-ink/20 my-1" /> : null}
-        </div>
-      ))}
-    </div>
-  )
-}
+```

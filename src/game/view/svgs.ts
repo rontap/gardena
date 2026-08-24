@@ -82,6 +82,8 @@ import largeBox from '../../assets/items/item-large-box.svg?raw'
 import bucket from '../../assets/items/item-bucket.svg?raw'
 import largeBucket from '../../assets/items/item-large-bucket.svg?raw'
 import itemFertilizer from '../../assets/items/item-fertilizer.svg?raw'
+import itemWeedSpray from '../../assets/items/item-weed-spray.svg?raw'
+import uiResearchFertilizer from '../../assets/ui/ui-research-fertilizer.svg?raw'
 import itemSynth from '../../assets/items/item-synth.svg?raw'
 import itemCompost from '../../assets/items/item-compost.svg?raw'
 import itemRotten from '../../assets/items/item-rotten.svg?raw'
@@ -184,17 +186,16 @@ import uiBtnPlay from '../../assets/ui/ui-btn-play.svg?raw'
 import uiBtnMultiplayer from '../../assets/ui/ui-btn-multiplayer.svg?raw'
 import uiMenu from '../../assets/ui/ui-menu.svg?raw'
 import skillBoots from '../../assets/skills/skill-boots.svg?raw'
+import skillDrivingClasses from '../../assets/skills/skill-driving-classes.svg?raw'
 import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
 import skillTending from '../../assets/skills/skill-tending.svg?raw'
 import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
-import skillToolContracts from '../../assets/skills/skill-tool-contracts.svg?raw'
-import skillMachineContracts from '../../assets/skills/skill-machine-contracts.svg?raw'
+import skillContracts from '../../assets/skills/skill-contracts.svg?raw'
 import skillForecast from '../../assets/skills/skill-forecast.svg?raw'
 import skillTax from '../../assets/skills/skill-tax.svg?raw'
 import skillWaterStudy from '../../assets/skills/skill-water-study.svg?raw'
 import skillLandStudy from '../../assets/skills/skill-land-study.svg?raw'
-import skillBulkBuying from '../../assets/skills/skill-bulk-buying.svg?raw'
 import skillSaleswoman from '../../assets/skills/skill-saleswoman.svg?raw'
 import skillHeirloom from '../../assets/skills/skill-heirloom.svg?raw'
 import skillBetter from '../../assets/skills/skill-better.svg?raw'
@@ -331,6 +332,7 @@ export function itemInner(item: Face): string {
     return inner(largeBucket)
   }
   if (item.kind === 'fertilizer') return inner(itemFertilizer)
+  if (item.kind === 'weed-spray') return inner(itemWeedSpray)
   if (item.kind === 'synth') return inner(itemSynth)
   if (item.kind === 'compost') return inner(itemCompost)
   if (item.kind === 'box') return boxInner(item)
@@ -477,7 +479,7 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-pickaxe':
       return inner(pickaxe)
     case 'unlock-fertilizer':
-      return inner(itemFertilizer)
+      return inner(uiResearchFertilizer)
     case 'unlock-compost':
       return COMPOST_BOX
     case 'unlock-better-tools':
@@ -545,9 +547,11 @@ function boxInner(item: Extract<Item, { kind: 'box' }>): string {
   const crate = inner(item.cap === 5 ? box : largeBox)
   if (item.cargo.kind === 'empty') return crate
   const cargo =
-    item.cargo.goods === 'fruit'
-      ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
-      : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
+    item.cargo.goods === 'weed'
+      ? weedInner(0, 'grow')
+      : item.cargo.goods === 'fruit'
+        ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
+        : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
   return `${crate}<g transform="translate(7,7) scale(${10 / 24})">${cargo}</g>`
 }
 
@@ -669,18 +673,17 @@ export const PORTRAIT: { readonly [K in MemberId]: string } = {
 
 const SKILL_ART: { readonly [K in SkillId]: string } = {
   boots: inner(skillBoots),
+  'driving-classes': inner(skillDrivingClasses),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
   'vanilla-tending': inner(skillTending),
   'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
-  'tool-contracts': inner(skillToolContracts),
-  'machine-contracts': inner(skillMachineContracts),
+  contracts: inner(skillContracts),
   forecast: inner(skillForecast),
   tax: inner(skillTax),
   'water-study': inner(skillWaterStudy),
   'land-study': inner(skillLandStudy),
-  'bulk-buying': inner(skillBulkBuying),
   saleswoman: inner(skillSaleswoman),
   heirloom: inner(skillHeirloom),
   'better-carrot': inner(skillBetter),
@@ -778,7 +781,7 @@ export function qualityPip(rarity: Rarity): string | undefined {
 
 export function faceRarity(item: Face): Rarity | undefined {
   if (item.kind === 'seeds' || item.kind === 'fruit') return item.rarity
-  if (item.kind === 'box' && item.cargo.kind === 'stack') return item.cargo.stack.rarity
+  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods !== 'weed') return item.cargo.stack.rarity
   return undefined
 }
 

@@ -67,7 +67,7 @@ export type MemberId = 'player' | 'husband' | 'daughter'
 
 export type PlayerSkillId =
   | 'boots'
-  | 'machinery'
+  | 'driving-classes'
   | 'tending'
   | 'vanilla-tending'
   | 'seed-bank'
@@ -84,13 +84,12 @@ export type PlayerSkillId =
 
 export type HusbandSkillId =
   | 'research-speed'
-  | 'tool-contracts'
-  | 'machine-contracts'
+  | 'machinery'
+  | 'contracts'
   | 'forecast'
   | 'tax'
   | 'water-study'
   | 'land-study'
-  | 'bulk-buying'
 
 export type DaughterSkillId =
   | 'saleswoman'
@@ -151,6 +150,7 @@ export type SkuId =
   | 'buy-box-large'
   | 'buy-fertilizer'
   | 'buy-synth-fertilizer'
+  | 'buy-weed-spray'
   | 'buy-compost-box'
   | 'buy-pumpjack'
   | 'buy-chest'

@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.5
+export const PROTOCOL = 1.52
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -267,6 +267,7 @@ export function digestHex(world: World): string {
     pose: v.pose,
     slots: v.kind === 'quad' ? v.slots : undefined,
     hitch: v.kind === 'tractor' ? v.hitch : undefined,
+    boom: v.kind === 'tractor' ? v.boom : undefined,
   }))
   const trailers = world.trailers.map(t => ({
     id: t.id,

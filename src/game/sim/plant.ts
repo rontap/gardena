@@ -47,6 +47,7 @@ export class Turf {
 
 export class Weed {
   maturity = 0
+  spread = false
 
   readonly variant: 0 | 1
 

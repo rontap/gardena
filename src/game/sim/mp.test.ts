@@ -27,7 +27,7 @@ import { DT_MAX, World } from './world.ts'
 const AT = { col: 10, row: 12 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
-  return new Soil(water, fertilizer)
+  return new Soil(water, fertilizer, 0.03)
 }
 
 function pair(world: World, playerId = 'g1'): { host: MpHost; guest: MpGuest } {
@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.5)
+    expect(PROTOCOL).toBe(1.52)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {

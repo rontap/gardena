@@ -2,6 +2,15 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.5.2 Vehicles II patch
+
+[[mechanics/vehicles]] [[mechanics/weeds]] [[mechanics/family]] [[architecture/save]]
+
+- Tractor `boom` 3|5, default 5, persist, `Act.setBoom`. `QUAD_VMAX` 9, `QUAD_R` 3, `TRACTOR_R` 3. Surfaces 1.3 / 1.0 / 0.4. Brake 2×. Enter nearest parked ≤ 1.5. Player `driving-classes`. Husband `machinery`.
+- `Soil.weedChance`, outbreak, `weed-spray`, box weeds. `WEED_CHANCE` 0.03.
+- `contracts` one skill. `buyPacks` always 5×0.95. bio +4% max 3. jam / industrial max 3. Bags ×2 L ×3 $. Buckets 5 / 10. Compost 5 L. Fert/weed drink ×0.9.
+- Wordmark **1.5.2**. Save `version` → **1.52**. `PROTOCOL` 1.52. No migrate.
+
 ## 2026-08-23 — 1.5.1 shop split
 
 [[ui/shop]] [[ui/build]] [[ui/docks]]

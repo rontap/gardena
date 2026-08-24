@@ -47,6 +47,7 @@ describe('0.9 log', () => {
       { a: Act.dock, t: 35, p: 0 },
       { a: Act.swapVehicle, t: 36, p: 0, v: 1, i: 2 },
       { a: Act.refill, t: 37, p: 0, c: [5, 6] },
+      { a: Act.setBoom, t: 38, p: 0, w: 3 },
     ]
     cmds.forEach(cmd => {
       expect(JSON.parse(JSON.stringify(cmd))).toEqual(cmd)

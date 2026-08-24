@@ -63,6 +63,8 @@ export const Act = {
   placeSmartValve: 'I',
   tuneWater: 'C',
   tuneHarvest: 'G',
+  load: 'L',
+  unload: 'U',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -125,6 +127,8 @@ export type Cmd =
   | { a: typeof Act.placeSmartValve; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.tuneWater; t: number; p: SeatId; c: XY; wilt: boolean; over: boolean }
   | { a: typeof Act.tuneHarvest; t: number; p: SeatId; c: XY; mode: 'any' | 'all' }
+  | { a: typeof Act.load; t: number; p: SeatId }
+  | { a: typeof Act.unload; t: number; p: SeatId }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

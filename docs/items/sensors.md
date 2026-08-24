@@ -10,4 +10,4 @@ SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-sens
 
 Build shelf **Sensors**, id `logic`. Filing: signal → Sensors. Vehicle detector → Sensors. Smart valve → Water (flow).
 
-`Sku.tab` `automation`. `machine-contracts`. Almanac entries exist; copy [[ui/almanac]].
+`Sku.tab` `automation`. `machine-contracts`. Almanac **Sensors**: Overview, then lever. Tab click lands Overview. Smart valve and sprinklers on Almanac **Water systems**. Copy [[ui/almanac]].

@@ -30,7 +30,7 @@ Research: trees **Plants** **Utilities** **Expansion** **Automation** on the rai
 
 Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after tomato. `unlock-raspberry` after grape. No vanilla research card. Automation: **Fermentation** (`unlock-fermentation`) at start.
 
-**×** / a rail toggle that closes **Shop** or **Build**: `cancelPlace`, pipes or sensors lens `off`, search query cleared. Switching between those two keeps all three — [[ui/build]]. Research **×** only closes the dock.
+**×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace`, pipes or sensors lens `off`, search query cleared. Switching between those two keeps all three — [[ui/build]]. Selecting Build **Sensors** (`logic`) is not a close: `onShelf('logic')` → `setLens('sensors')`, no SKU armed. Switching to another Build category does not force that lens off. Research **×** only closes the dock.
 
 ## Overlays
 

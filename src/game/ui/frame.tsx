@@ -295,7 +295,7 @@ export function Window({
             </button>
           )}
         </div>
-        <div className="scroll-pane relative z-20 min-h-0 flex-1 overflow-y-auto px-4 py-3">{children}</div>
+        <div className="scroll-pane relative z-20 min-h-0 flex-1 overflow-y-auto px-4 py-3 flex flex-col">{children}</div>
         {footer !== undefined && (
           <div className="relative z-20 shrink-0 border-t border-ink/15 px-4 pt-2 pb-3">{footer}</div>
         )}

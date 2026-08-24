@@ -321,3 +321,14 @@ Consumers: each consumer has a 2×(power drain) internal buffer.
 Rest of items (seed grinder, compost box, etc) remain unpowered.
 
  
+Almanac
+- Automation tab is now massive. Split it into [sensors], [automation] and [water systems]. Add an overview tab for each tab explaining basic mechanics.
+- Almanac now supports Links, (new component, brown color: and underline), allowing navigation inside the almanac
+- New almanac tab: Game concepts. Menuitems:
+	- Rarity, with showing the 5 rarities and what they mean
+	- Freshness
+	- Happiness
+	- Day & Night
+	- Market
+	- Skills
+	- Family

@@ -423,11 +423,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     URL.revokeObjectURL(url)
   }
 
-  /** Leaving the shop system: drop the ghost, the pipe layer, and the search. */
   function leaveShop(): void {
     if (world === undefined) return
     world.cancelPlace()
-    setLens(l => (l === 'pipes' ? 'off' : l))
+    setLens(l => (l === 'pipes' || l === 'sensors' ? 'off' : l))
     setQuery('')
   }
 
@@ -757,6 +756,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
+              onShelf={id => {
+                if (id === 'logic') setLens('sensors')
+              }}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })
@@ -769,6 +771,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
+              onShelf={id => {
+                if (id === 'logic') setLens('sensors')
+              }}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })
@@ -978,6 +983,40 @@ function Dash({ world }: { world: World }) {
         >
           Dock
         </button>
+        {world.vehicleCargo() && world.onDropoffPad() && (
+          <button
+            type="button"
+            aria-disabled={!world.canUnload()}
+            className={`pointer-events-auto px-3 py-2 text-base ${
+              world.canUnload()
+                ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                : 'cursor-default bg-ink/6 text-ink/35'
+            }`}
+            onClick={() => {
+              if (!world.canUnload()) return
+              world.unload()
+            }}
+          >
+            Unload
+          </button>
+        )}
+        {world.vehicleCargo() && world.onTakeupPad() && (
+          <button
+            type="button"
+            aria-disabled={!world.canLoad()}
+            className={`pointer-events-auto px-3 py-2 text-base ${
+              world.canLoad()
+                ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                : 'cursor-default bg-ink/6 text-ink/35'
+            }`}
+            onClick={() => {
+              if (!world.canLoad()) return
+              world.load()
+            }}
+          >
+            Load
+          </button>
+        )}
         {driven.kind === 'tractor' && (
           <button
             type="button"

@@ -55,11 +55,11 @@ Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter
 
 Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
 
-**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce), dump mill/jam/still/barrel like compost, hangar HUD, buy Quad / tractor / trailers, refill, 6-slot `swapVehicle`, `swapTrailer`, embark, disembark, dock, drive, **delete building** (empty hangar), Almanac, lens (if shared family owns the skill), Pause.
+**Guests may:** walk, till, plant, water, harvest, tend, mine, pick up / drop, fill at pump/tap, own house inventory (`swap`), **Sell all**, shop Seeds and Utility, shop + place buildings (pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce), dump mill/jam/still/barrel like compost, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store, hangar HUD, buy Quad / tractor / trailers, refill, 6-slot `swapVehicle`, `swapTrailer`, embark, disembark, dock, drive, **delete building** (empty hangar), Almanac, lens (if shared family owns the skill), Pause.
 
 House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
 
-**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest/freezer `swapChest`, sprinkler tune, stall `nudgeOffered`, recap dismiss, cheat, New/Load/Upload.
+**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest/freezer `swapChest`, chest/freezer `load`/`unload`, sprinkler tune, stall `nudgeOffered`, recap dismiss, cheat, New/Load/Upload. Guest Unload chest no-op.
 
 Guest never `writeSlot` for a hosted farm.
 

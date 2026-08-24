@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.6
+export const PROTOCOL = 1.62
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -261,7 +261,7 @@ export function digestHex(world: World): string {
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
       s += `:${c.plant.crop}:${c.plant.rarity}:${c.plant.maturity}`
     }
-    if (c.kind === 'lamp') s += `:inn${c.inn}`
+    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
     else if (
       c.kind === 'lever' ||
       c.kind === 'button' ||
@@ -272,7 +272,11 @@ export function digestHex(world: World): string {
       c.kind === 'sensor-fert' ||
       c.kind === 'sensor-harvest' ||
       c.kind === 'water-system' ||
-      c.kind === 'vehicle-detector'
+      c.kind === 'vehicle-detector' ||
+      c.kind === 'chest' ||
+      c.kind === 'freezer' ||
+      c.kind === 'seed-silo' ||
+      c.kind === 'additive-store'
     ) {
       s += `:out${c.out}`
     }

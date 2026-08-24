@@ -1,11 +1,11 @@
-import { inFade, inWorld } from './building.ts'
+import { inFade, inWorld, occupiedCells } from './building.ts'
 import { NOT_OWNED } from './prompt.ts'
 import { onCell } from './drop.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
-import { edgeKey } from './pipe.ts'
+import { corners, edgeKey, incident } from './pipe.ts'
 import { isSensor, type SmartHold } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
 import type { TileId } from './ids.ts'
@@ -125,30 +125,36 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   } else if (cell.kind === 'rotten') {
     lines.push(`Rotten ${cropName(cell.crop)} - ${soilLine(cell.soil)}`)
   } else if (isSensor(cell)) {
-    const on = cell.kind === 'lever' ? cell.on : cell.kind === 'lamp' ? cell.inn === 1 : cell.out === 1
-    const name =
-      cell.kind === 'lever'
-        ? 'Lever'
-        : cell.kind === 'button'
-          ? 'Button'
-          : cell.kind === 'lamp'
-            ? 'Lamp'
-            : cell.kind === 'or'
-              ? 'OR gate'
-              : cell.kind === 'and'
-                ? 'AND gate'
-                : cell.kind === 'not'
-                  ? 'NOT gate'
-                  : cell.kind === 'sensor-water'
-                    ? 'Water sensor'
-                    : cell.kind === 'sensor-fert'
-                      ? 'Fertilizer sensor'
-                      : cell.kind === 'sensor-harvest'
-                        ? 'Harvest sensor'
-                        : cell.kind === 'water-system'
-                          ? 'Water-system sensor'
+    if (cell.kind === 'water-system') {
+      const around = corners(occupiedCells(cell.base, world.owned)).some(v =>
+        incident(v).some(e => world.hasPipe(e) || world.hasWell(e) || world.hasSmart(e)),
+      )
+      if (!around) lines.push('Water-system sensor - no pipes around sensor!')
+      else lines.push(`Water-system sensor - ${cell.out === 1 ? 'on' : 'off'}`)
+    } else {
+      const on = cell.kind === 'lever' ? cell.on : cell.kind === 'lamp' ? cell.inn === 1 : cell.out === 1
+      const name =
+        cell.kind === 'lever'
+          ? 'Lever'
+          : cell.kind === 'button'
+            ? 'Button'
+            : cell.kind === 'lamp'
+              ? 'Lamp'
+              : cell.kind === 'or'
+                ? 'OR gate'
+                : cell.kind === 'and'
+                  ? 'AND gate'
+                  : cell.kind === 'not'
+                    ? 'NOT gate'
+                    : cell.kind === 'sensor-water'
+                      ? 'Water sensor'
+                      : cell.kind === 'sensor-fert'
+                        ? 'Fertilizer sensor'
+                        : cell.kind === 'sensor-harvest'
+                          ? 'Harvest sensor'
                           : 'Vehicle detector'
-    lines.push(`${name} - ${on ? 'on' : 'off'}`)
+      lines.push(`${name} - ${on ? 'on' : 'off'}`)
+    }
   } else {
     lines.push(`${cropName(cell.plant.crop)} - dead`)
   }

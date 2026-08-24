@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.6)
+    expect(PROTOCOL).toBe(1.62)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -116,6 +116,8 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.swapVehicle, t: 0, p: 1, v: 1, i: 0 })).toBe(true)
     expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
     expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
+    expect(permit({ a: Act.load, t: 0, p: 1 })).toBe(true)
+    expect(permit({ a: Act.unload, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe' })).toBe(false)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-valve' })).toBe(false)
@@ -561,6 +563,110 @@ describe('1.1 multiplayer', () => {
     // The seat survives the drop so the same playerId lands back in it.
     expect(w.seats).toHaveLength(2)
     expect(w.join('g1', 'Ada')).toBe(1)
+  })
+
+  test('Guest Unload chest no-op. Guest Load chest no-op.', () => {
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 999
+    w.join('g')
+    const chestAt = { col: 10, row: 16 }
+    w.buy('buy-chest')
+    w.confirmPlace(chestAt)
+    w.buy('buy-hangar')
+    w.confirmPlace({ col: 10, row: 12 })
+    w.buyVehicle({ col: 10, row: 12 }, 'quad')
+    const v = w.vehicles[0]
+    expect(v.kind).toBe('quad')
+    if (v.kind !== 'quad') return
+    v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
+    v.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+    }
+    w.apply({ a: Act.unload, t: w.now, p: 1 })
+    const chest = w.cell(chestAt)
+    expect(chest.kind).toBe('chest')
+    if (chest.kind !== 'chest') return
+    expect(chest.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(v.slots[0].kind).toBe('hold')
+    chest.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 1, unitSale: 6, freshness: 1, bio: true },
+    }
+    v.pose.x = 10.5
+    v.pose.y = 17.5
+    v.slots[0] = { kind: 'empty' }
+    w.apply({ a: Act.load, t: w.now, p: 1 })
+    expect(chest.slots[0].kind).toBe('hold')
+    expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
+  })
+
+  test('Guest Unload freezer no-op. Guest Load freezer no-op.', () => {
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 999
+    w.join('g')
+    const fzAt = { col: 10, row: 16 }
+    w.buy('buy-freezer')
+    w.confirmPlace(fzAt)
+    w.buy('buy-hangar')
+    w.confirmPlace({ col: 10, row: 12 })
+    w.buyVehicle({ col: 10, row: 12 }, 'quad')
+    const v = w.vehicles[0]
+    expect(v.kind).toBe('quad')
+    if (v.kind !== 'quad') return
+    v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
+    v.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+    }
+    w.apply({ a: Act.unload, t: w.now, p: 1 })
+    const fz = w.cell(fzAt)
+    expect(fz.kind).toBe('freezer')
+    if (fz.kind !== 'freezer') return
+    expect(fz.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(v.slots[0].kind).toBe('hold')
+    fz.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 1, unitSale: 6, freshness: 1, bio: true },
+    }
+    v.pose.x = 10.5
+    v.pose.y = 17.5
+    v.slots[0] = { kind: 'empty' }
+    w.apply({ a: Act.load, t: w.now, p: 1 })
+    expect(fz.slots[0].kind).toBe('hold')
+    expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
+  })
+
+  test('Digest includes mill/jam/still `inn` and chest/freezer/seed-silo/additive-store `out`.', () => {
+    const a = new World(1)
+    const b = new World(1)
+    a.unlockAll()
+    b.unlockAll()
+    a.money = 999
+    b.money = 999
+    a.buy('buy-mill')
+    a.confirmPlace({ col: 10, row: 16 })
+    b.buy('buy-mill')
+    b.confirmPlace({ col: 10, row: 16 })
+    expect(digestHex(a)).toBe(digestHex(b))
+    const mill = a.cell({ col: 10, row: 16 })
+    expect(mill.kind).toBe('mill')
+    if (mill.kind !== 'mill') return
+    mill.inn = 1
+    expect(digestHex(a)).not.toBe(digestHex(b))
+    const chestAt = { col: 12, row: 16 }
+    b.buy('buy-chest')
+    b.confirmPlace(chestAt)
+    a.buy('buy-chest')
+    a.confirmPlace(chestAt)
+    mill.inn = 0
+    expect(digestHex(a)).toBe(digestHex(b))
+    const chest = a.cell(chestAt)
+    if (chest.kind !== 'chest') return
+    chest.out = 1
+    expect(digestHex(a)).not.toBe(digestHex(b))
   })
 
 })

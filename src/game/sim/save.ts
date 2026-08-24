@@ -110,7 +110,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.6 as const
+export const SAVE_VERSION = 1.62 as const
 
 const INV = 16
 
@@ -167,20 +167,20 @@ export type SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield }
-  | { kind: 'chest'; base: RectBase; slots: Slot[] }
+  | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
-  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
-  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
-  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
+  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
+  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
-  | { kind: 'freezer'; base: RectBase; slots: Slot[] }
+  | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
   | { kind: 'silo-seed'; base: RectBase }
   | { kind: 'silo-spray'; base: RectBase }
   | { kind: 'silo-produce'; base: RectBase }
-  | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[] }
-  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[] }
+  | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
+  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'lever'; base: RectBase; on: boolean; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
@@ -247,7 +247,7 @@ export type SaveTrailer =
 
 export type Save = {
   game: 'gardena'
-  version: 1.6
+  version: 1.62
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -508,25 +508,39 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         yield: c.yield,
       }
     case 'chest':
-      return { kind: 'chest', base: c.base, slots: c.slots.slice() }
+      return { kind: 'chest', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
     case 'seed-silo':
-      return { kind: 'seed-silo', base: c.base, useDefault: c.useDefault, seeds: c.seeds.map(st => ({ ...st })) }
+      return {
+        kind: 'seed-silo',
+        base: c.base,
+        useDefault: c.useDefault,
+        seeds: c.seeds.map(st => ({ ...st })),
+        out: c.out,
+        hold: c.hold,
+      }
     case 'additive-store':
-      return { kind: 'additive-store', base: c.base, useDefault: c.useDefault, held: c.held.map(h => ({ ...h })) }
+      return {
+        kind: 'additive-store',
+        base: c.base,
+        useDefault: c.useDefault,
+        held: c.held.map(h => ({ ...h })),
+        out: c.out,
+        hold: c.hold,
+      }
     case 'grinder':
       return { kind: 'grinder', base: c.base }
     case 'compost-box':
       return { kind: 'compost-box', base: c.base, units: c.units, progress: c.progress }
     case 'mill':
-      return { kind: 'mill', base: c.base, recipe: c.recipe, units: c.units, progress: c.progress }
+      return { kind: 'mill', base: c.base, recipe: c.recipe, units: c.units, progress: c.progress, inn: c.inn }
     case 'jam':
-      return { kind: 'jam', base: c.base, crop: c.crop, fruit: c.fruit, sugar: c.sugar, progress: c.progress }
+      return { kind: 'jam', base: c.base, crop: c.crop, fruit: c.fruit, sugar: c.sugar, progress: c.progress, inn: c.inn }
     case 'still':
-      return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n }
+      return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
     case 'barrel':
       return { kind: 'barrel', base: c.base, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
     case 'freezer':
-      return { kind: 'freezer', base: c.base, slots: c.slots.slice() }
+      return { kind: 'freezer', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
     case 'hangar':
       return { kind: 'hangar', base: c.base }
     case 'silo-seed':
@@ -1107,16 +1121,22 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'chest': {
       const chest = new Chest(sc.base)
       for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = sc.slots[i]
+      chest.out = sc.out
+      chest.hold = sc.hold
       return chest
     }
     case 'seed-silo': {
       const silo = new SeedSilo(sc.base, sc.useDefault)
       sc.seeds.forEach(st => silo.seeds.push({ ...st }))
+      silo.out = sc.out
+      silo.hold = sc.hold
       return silo
     }
     case 'additive-store': {
       const store = new AdditiveStore(sc.base, sc.useDefault)
       sc.held.forEach(h => store.held.push({ ...h }))
+      store.out = sc.out
+      store.hold = sc.hold
       return store
     }
     case 'grinder':
@@ -1132,6 +1152,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
       mill.recipe = sc.recipe
       mill.units = sc.units
       mill.progress = sc.progress
+      mill.inn = sc.inn
       return mill
     }
     case 'jam': {
@@ -1140,6 +1161,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
       jam.fruit = sc.fruit
       jam.sugar = sc.sugar
       jam.progress = sc.progress
+      jam.inn = sc.inn
       return jam
     }
     case 'still': {
@@ -1147,6 +1169,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
       still.feed = sc.feed.map(f => ({ ...f }))
       still.progress = sc.progress
       still.n = sc.n
+      still.inn = sc.inn
       return still
     }
     case 'barrel': {
@@ -1159,6 +1182,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'freezer': {
       const freezer = new Freezer(sc.base)
       for (let i = 0; i < FREEZER_SLOTS; i++) freezer.slots[i] = sc.slots[i]
+      freezer.out = sc.out
+      freezer.hold = sc.hold
       return freezer
     }
     case 'hangar':
@@ -1337,40 +1362,46 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   if (kind === 'chest') {
     const base = readRectBase(o.base)
     const slotsIn = arr(o.slots)
-    if (base === undefined || slotsIn === undefined || slotsIn.length !== CHEST_SLOTS) return undefined
+    const hold = num(o.hold)
+    if (base === undefined || slotsIn === undefined || slotsIn.length !== CHEST_SLOTS || hold === undefined) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
     const slots: Slot[] = []
     for (const s of slotsIn) {
       const slot = readHand(s)
       if (slot === undefined) return undefined
       slots.push(slot)
     }
-    return { kind: 'chest', base, slots }
+    return { kind: 'chest', base, slots, out: o.out, hold }
   }
   if (kind === 'seed-silo') {
     const base = readRectBase(o.base)
     const useDefault = bool(o.useDefault)
     const seedsIn = arr(o.seeds)
-    if (base === undefined || useDefault === undefined || seedsIn === undefined) return undefined
+    const hold = num(o.hold)
+    if (base === undefined || useDefault === undefined || seedsIn === undefined || hold === undefined) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
     const seeds: SiloStack[] = []
     for (const v of seedsIn) {
       const st = readSiloStack(v)
       if (st === undefined) return undefined
       seeds.push(st)
     }
-    return { kind: 'seed-silo', base, useDefault, seeds }
+    return { kind: 'seed-silo', base, useDefault, seeds, out: o.out, hold }
   }
   if (kind === 'additive-store') {
     const base = readRectBase(o.base)
     const useDefault = bool(o.useDefault)
     const heldIn = arr(o.held)
-    if (base === undefined || useDefault === undefined || heldIn === undefined) return undefined
+    const hold = num(o.hold)
+    if (base === undefined || useDefault === undefined || heldIn === undefined || hold === undefined) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
     const held: AdditiveHold[] = []
     for (const v of heldIn) {
       const h = readAdditiveHold(v)
       if (h === undefined) return undefined
       held.push(h)
     }
-    return { kind: 'additive-store', base, useDefault, held }
+    return { kind: 'additive-store', base, useDefault, held, out: o.out, hold }
   }
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
@@ -1390,7 +1421,8 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const units = num(o.units)
     const progress = num(o.progress)
     if (base === undefined || recipe === undefined || units === undefined || progress === undefined) return undefined
-    return { kind: 'mill', base, recipe, units, progress }
+    if (o.inn !== 0 && o.inn !== 1) return undefined
+    return { kind: 'mill', base, recipe, units, progress, inn: o.inn }
   }
   if (kind === 'jam') {
     const base = readRectBase(o.base)
@@ -1401,7 +1433,8 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined || crop === undefined || fruit === undefined || sugar === undefined || progress === undefined) {
       return undefined
     }
-    return { kind: 'jam', base, crop, fruit, sugar, progress }
+    if (o.inn !== 0 && o.inn !== 1) return undefined
+    return { kind: 'jam', base, crop, fruit, sugar, progress, inn: o.inn }
   }
   if (kind === 'still') {
     const base = readRectBase(o.base)
@@ -1409,13 +1442,15 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const progress = num(o.progress)
     const n = num(o.n)
     if (base === undefined || feedIn === undefined || progress === undefined || n === undefined) return undefined
+    if (base.w !== 2 || base.h !== 1) return undefined
+    if (o.inn !== 0 && o.inn !== 1) return undefined
     const feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
     for (const f of feedIn) {
       const e = readStillFeed(f)
       if (e === undefined) return undefined
       feed.push(e)
     }
-    return { kind: 'still', base, feed, progress, n }
+    return { kind: 'still', base, feed, progress, n, inn: o.inn }
   }
   if (kind === 'barrel') {
     const base = readRectBase(o.base)
@@ -1434,14 +1469,18 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   if (kind === 'freezer') {
     const base = readRectBase(o.base)
     const slotsIn = arr(o.slots)
-    if (base === undefined || slotsIn === undefined || slotsIn.length !== FREEZER_SLOTS) return undefined
+    const hold = num(o.hold)
+    if (base === undefined || slotsIn === undefined || slotsIn.length !== FREEZER_SLOTS || hold === undefined) {
+      return undefined
+    }
+    if (o.out !== 0 && o.out !== 1) return undefined
     const slots: Slot[] = []
     for (const s of slotsIn) {
       const slot = readHand(s)
       if (slot === undefined) return undefined
       slots.push(slot)
     }
-    return { kind: 'freezer', base, slots }
+    return { kind: 'freezer', base, slots, out: o.out, hold }
   }
   if (kind === 'hangar') {
     const base = readRectBase(o.base)

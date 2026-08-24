@@ -31,7 +31,7 @@ import {
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
-import { isSensor, sameEnd, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
+import { isSensor, sameNode, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { TREE_NAME } from '../defs/trees.ts'
@@ -185,9 +185,13 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
 
 export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   if (w.act.place.kind === 'wire') {
+    const from = w.act.place.from
     if (hit === undefined || hit.kind !== 'port') return { kind: 'blocked', text: 'Cannot wire here' }
-    const rest = w.wires.filter(x => !sameEnd(x.to, hit.end))
-    if (wouldCycle(rest, w.act.place.from, hit.end)) return { kind: 'blocked', text: 'Cannot loop' }
+    if (hit.end.port === 'out') return { kind: 'blocked', text: 'Cannot wire here' }
+    if (w.wires.some(x => sameNode(x.from, from) && sameNode(x.to, hit.end))) {
+      return { kind: 'place', text: 'Remove wire' }
+    }
+    if (wouldCycle(w.wires, from, hit.end)) return { kind: 'blocked', text: 'Cannot loop' }
     return { kind: 'place', text: 'Place' }
   }
   if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well' || w.act.place.id === 'buy-smart-valve')) {
@@ -279,7 +283,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (w.hasFence(at)) return { kind: 'blocked', text: 'Already fenced' }
       return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
     }
-    if (w.act.place.id === 'buy-pumpjack' || w.act.place.id === 'buy-rain-tank') {
+    if (w.act.place.id === 'buy-pumpjack' || w.act.place.id === 'buy-rain-tank' || w.act.place.id === 'buy-still') {
       if (!wideSiteOk(w, at)) return { kind: 'blocked', text: 'Cannot place here' }
       return { kind: 'place', text: `Place ${placeLabel(w.act.place.id)}` }
     }
@@ -290,7 +294,6 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-tap' ||
       w.act.place.id === 'buy-mill' ||
       w.act.place.id === 'buy-jam' ||
-      w.act.place.id === 'buy-still' ||
       w.act.place.id === 'buy-barrel' ||
       w.act.place.id === 'buy-freezer' ||
       w.act.place.id === 'buy-hangar' ||

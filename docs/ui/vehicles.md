@@ -100,11 +100,15 @@ Dashboard `Btn`s, not the parked dialog. `pointer-events-auto`. Face `bg-dirt te
 |---|---|---|
 | **Disembark** | always, while driving | dismount |
 | **Dock** | iff vehicle `floor(x,y)` is a hangar return-pad cell | store |
+| **Unload** | shown iff `floor` is a dropoff pad. Hidden ≠ disabled. Tractor `hitch === 'none'`: hidden | `Act.unload` |
+| **Load** | shown iff `floor` is a takeup pad. Hidden ≠ disabled. Tractor `hitch === 'none'`: hidden | `Act.load` |
 | boom combobutton | local driver of a tractor (hitch optional). Quad: no button | `Act.setBoom` the other width |
 
 Boom label is the current width: **Boom 3** or **Boom 5**. Cycles `3 ↔ 5`. Persist on the tractor. Guest may.
 
 **Dock** off: shop-row face `bg-ink/6 text-ink/35`, `aria-disabled`, guarded click — not the `disabled` attribute. Hover: **Dock at the hangar arrows.** Boom has no off face.
+
+**Load** / **Unload** same row. Shown+inactive: Dock-off face `bg-ink/6 text-ink/35` `aria-disabled` guarded click. Copy **Load** **Unload**.
 
 Map click while driving does not dismount. Pad click is not Return. Esc does not dismount. Silo pad is not Dock.
 
@@ -137,6 +141,8 @@ Enter, same text-field ignore. If driving → `Act.disembark`. Else closest park
 ## Return arrows
 
 `ui-hangar-return` on each hangar’s three pad tiles and on every seed/spray/produce silo’s two pad tiles (`siloPad`). `pointer-events-none`. Only if the local seat is a driver. Else hidden. Silo pads: no dialog.
+
+`ui-pad-drop` on dropoff tiles, `ui-pad-take` on takeup. Mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store. Not barrel, grinder, field silos. Local driver only. Else hidden. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `pointer-events-none`.
 
 ## View
 
@@ -171,7 +177,7 @@ Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on con
 | `buy-silo-spray` | **Spraying silo** | 2×3 field tank. Look only. | **Place Spraying silo** |
 | `buy-silo-produce` | **Produce silo** | 2×3 field tank. Look only. | **Place Produce silo** |
 
-Almanac: hangar + three silos, automation tab.
+Almanac **Automation**: hangar + three silos. Not Sensors. Not Water systems. [[ui/almanac]]
 
 ## Copy
 
@@ -194,11 +200,11 @@ Lock these strings:
 | prompt parked tractor | **Tractor** |
 | look silo | **Seeding silo** **Spraying silo** **Produce silo** |
 | hangar | **Deploy** **Embark** **Refill all** **Buy Quad** **Buy Tractor** **Buy seeder** **Buy sprayer** **Buy harvester** |
-| driving dash | **Disembark** **Dock** **Boom 3** **Boom 5** |
+| driving dash | **Disembark** **Dock** **Load** **Unload** **Boom 3** **Boom 5** |
 | Dock hover (off pad) | **Dock at the hangar arrows.** |
 | row status | **Stored** **Deployed** **Driven** **Attached** |
 | empty fuel | no toast |
 
 No `$`. `Coin`. Cottage tokens. No new hex.
 
-Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines, patches `13 38 70×14` and `85 38 70×14`. Tractor hitch readout is `{used}/100` over **used-readout**. `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place.
+Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines, patches `13 38 70×14` and `85 38 70×14`. Tractor hitch readout is `{used}/100` over **used-readout**. `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place. Load/Unload shown+inactive has no extra hover string.

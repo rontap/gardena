@@ -75,4 +75,6 @@ Hangar, parked Quad, parked tractor: look and prompt [[ui/vehicles]]. Field silo
 
 Sensor cells and smart valve: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**.
 
+Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**.
+
 Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest HUD: **Tune water sensor** / **Tune harvest sensor** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / vehicle detector / gates / lamp: look only.

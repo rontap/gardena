@@ -2,6 +2,49 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.7 Sight lines
+
+[[art/vfx]] [[ui/changelog]]
+
+- Sprinkler spray VFX, tend/pour bursts. Five prop redraws (pump, tap, freezer, mill, grinder).
+- Wordmark **1.7.0**. `SAVE_VERSION` / `PROTOCOL` stay **1.62**. No migrate.
+
+## 2026-08-24 — Almanac Overview
+
+[[ui/almanac]]
+
+- Overview back on Seeds / Sensors / Automation. Window 48rem. No version bump.
+
+## 2026-08-24 — Almanac Automation split
+
+[[ui/almanac]]
+
+- Almanac Automation split into Sensors / Automation / Water systems with Overview.
+- AlmanacLink.
+- Game concepts: four rarities, not five.
+- Wordmark stays **1.6.2**. `SAVE_VERSION` / `PROTOCOL` stay **1.62**. No menu RELEASES row.
+
+## 2026-08-24 — 1.6.2 Machine — Vehicle patch
+
+[[mechanics/machines]] [[mechanics/vehicles]] [[mechanics/sensors]] [[mechanics/inventory]] [[ui/machines]] [[ui/vehicles]] [[art/machines]] [[architecture/save]]
+
+- Still 2×1.
+- Pads + Load/Unload.
+- Mill/jam/still `inn` disable.
+- Chest/freezer/silo/additive `out` when full.
+- Wordmark **1.6.2**. `SAVE_VERSION` / `PROTOCOL` **1.62**. No migrate.
+
+## 2026-08-24 — 1.6.1 Sensors patch
+
+[[mechanics/sensors]] [[ui/sensors]] [[ui/build]] [[ui/lens]] [[art/sensors]] [[architecture/save]]
+
+- Fan-in OR. Many wires on one input. One direct path `nodeKey(from)` → `nodeKey(to)`. Toggle-remove A→B. Replace rule dead.
+- Build Sensors tab (`logic`) enters sensors lens. `leaveShop` / Esc / Shop×: pipes or sensors → off.
+- Sensor tiles unfaded on sensors lens. Port chrome: circle out, square in (sprinkler + smart valve too).
+- AND/OR compact IEEE-ish. Lamp `in` on top. Wire sag/stroke pass.
+- Water-system look: **Water-system sensor - no pipes around sensor!** when no incident pipe/well/smart-valve.
+- Wordmark **1.6.1**. `SAVE_VERSION` / `PROTOCOL` stay **1.6**. No migrate.
+
 ## 2026-08-24 — 1.5.2 Vehicles II patch
 
 [[mechanics/vehicles]] [[mechanics/weeds]] [[mechanics/family]] [[architecture/save]]

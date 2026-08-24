@@ -16,12 +16,39 @@ import {
   TRACTOR_ACCEL,
   TRACTOR_VMAX,
   TRACTOR_YAW,
+  TRAILER_CAP,
   TRAILER_LEN,
   VEHICLE_SLOTS,
 } from '../defs/items.ts'
-import type { HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
-import type { Item, Slot } from './item.ts'
-import type { Coord, RectBase } from './building.ts'
+import type { Rarity } from '../defs/rarity.ts'
+import type { AnnualId, HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
+import { compostValue, mergeFreshness, mergeUnitSale, organic, type Item, type Slot } from './item.ts'
+import {
+  ADDITIVE_BAG,
+  type AdditiveId,
+  type AdditiveStore,
+  type Chest,
+  type CompostBox,
+  type Coord,
+  type Freezer,
+  type JamMachine,
+  type Mill,
+  type PotStill,
+  type RectBase,
+  type SeedSilo,
+} from './building.ts'
+import type { Drop } from './drop.ts'
+import {
+  jamFruitAccept,
+  jamFruitApply,
+  jamSugarAccept,
+  jamSugarApply,
+  mergeSugar,
+  millAccept,
+  millApply,
+  stillAccept,
+  stillApply,
+} from './machine.ts'
 import { isSolid, isTilled, type Cell } from './plot.ts'
 import type { SeatId } from './world.ts'
 
@@ -93,6 +120,18 @@ export function hangarPad(base: RectBase): Coord[] {
 export function siloPad(base: RectBase): Coord[] {
   const row = base.row + SILO_H
   return Array.from({ length: SILO_W }, (_, i) => ({ col: base.col + i, row }))
+}
+
+export function dropoffPad(base: RectBase): Coord[] {
+  return Array.from({ length: base.w }, (_, i) => ({ row: base.row - 1, col: base.col + i }))
+}
+
+export function takeupPad(base: RectBase): Coord[] {
+  return Array.from({ length: base.w }, (_, i) => ({ row: base.row + base.h, col: base.col + i }))
+}
+
+export function onPad(pads: readonly Coord[], at: Coord): boolean {
+  return pads.some(p => p.col === at.col && p.row === at.row)
 }
 
 export function padCenter(base: RectBase): { x: number; y: number } {
@@ -255,4 +294,493 @@ export function integrateVehicle(
     pose.x = nx
     pose.y = ny
   }
+}
+
+export type PadCell = Mill | JamMachine | PotStill | CompostBox | Chest | Freezer | SeedSilo | AdditiveStore
+
+export type Cargo =
+  | { kind: 'quad'; slots: Slot[] }
+  | { kind: 'harvest'; slots: Slot[] }
+  | { kind: 'seed'; trailer: Extract<Trailer, { kind: 'seed' }> }
+  | { kind: 'spray'; trailer: Extract<Trailer, { kind: 'spray' }> }
+
+export function trailerOf(trailers: readonly Trailer[], id: TrailerId): Trailer {
+  const t = trailers.find(x => x.id === id)
+  if (t === undefined) throw new Error('hitch')
+  return t
+}
+
+export function vehicleCargo(v: Vehicle, trailers: readonly Trailer[]): Cargo | undefined {
+  if (v.kind === 'quad') return { kind: 'quad', slots: v.slots }
+  if (v.hitch === 'none') return undefined
+  const t = trailerOf(trailers, v.hitch)
+  if (t.kind === 'harvest') return { kind: 'harvest', slots: t.slots }
+  if (t.kind === 'seed') return { kind: 'seed', trailer: t }
+  return { kind: 'spray', trailer: t }
+}
+
+export function dumpAccept(dest: PadCell, item: Item): number {
+  if (dest.kind === 'mill') {
+    const take = millAccept(dest, item)
+    if (take === undefined) return 0
+    return take.n
+  }
+  if (dest.kind === 'jam') {
+    const sugar = jamSugarAccept(dest, item)
+    if (sugar > 0) return sugar
+    return jamFruitAccept(dest, item)
+  }
+  if (dest.kind === 'still') return stillAccept(dest, item)
+  if (dest.kind === 'compost-box') return organic(item) ? 1 : 0
+  if (dest.kind === 'chest' || dest.kind === 'freezer') return slotsCouldTake(dest.slots, item, dest.slots.length, undefined) ? 1 : 0
+  if (dest.kind === 'seed-silo') {
+    if (item.kind !== 'seeds') return 0
+    const n = dest.free < item.count ? dest.free : item.count
+    return n > 0 ? n : 0
+  }
+  if (dest.kind === 'additive-store') {
+    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return 0
+    const n = dest.free < item.liters ? dest.free : item.liters
+    return n > 0 ? n : 0
+  }
+  return 0
+}
+
+function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => void): void {
+  if (dest.kind === 'mill') {
+    millApply(dest, item, n)
+    take(n)
+    return
+  }
+  if (dest.kind === 'jam') {
+    if (item.kind === 'sugar') {
+      jamSugarApply(dest, n)
+      take(n)
+      return
+    }
+    jamFruitApply(dest, item, n)
+    take(n)
+    return
+  }
+  if (dest.kind === 'still') {
+    stillApply(dest, item, n)
+    take(n)
+    return
+  }
+  if (dest.kind === 'compost-box') {
+    dest.units += compostValue(item)
+    take(-1)
+    return
+  }
+  if (dest.kind === 'chest' || dest.kind === 'freezer') {
+    if (!giveSlots(dest.slots, item, dest.slots.length, undefined)) return
+    take(-1)
+    return
+  }
+  if (dest.kind === 'seed-silo' && item.kind === 'seeds') {
+    const got = putSiloInto(dest, item.crop, item.rarity, n)
+    if (got > 0) take(got)
+    return
+  }
+  if (dest.kind === 'additive-store' && (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost')) {
+    const got = putAdditiveInto(dest, item.kind, n)
+    if (got > 0) take(got)
+  }
+}
+
+export function canDumpCargo(cargo: Cargo, dest: PadCell): boolean {
+  return cargoSome(cargo, item => dumpAccept(dest, item) > 0)
+}
+
+export function dumpCargo(cargo: Cargo, dest: PadCell): void {
+  cargoEach(cargo, (item, take) => {
+    const n = dumpAccept(dest, item)
+    if (n <= 0) return
+    dumpApply(dest, item, n, take)
+  })
+  compactCargo(cargo)
+}
+
+export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[]): boolean {
+  if (src.kind === 'chest' || src.kind === 'freezer') {
+    return src.slots.some(s => s.kind === 'hold' && cargoCouldTake(cargo, s.item))
+  }
+  if (src.kind === 'seed-silo') {
+    return src.seeds.some(
+      st => st.count > 0 && cargoCouldTake(cargo, { kind: 'seeds', crop: st.crop, rarity: st.rarity, count: st.count }),
+    )
+  }
+  if (src.kind === 'additive-store') {
+    return src.held.some(h => {
+      if (h.liters <= 0) return false
+      const bag = ADDITIVE_BAG[h.id]
+      const liters = bag < h.liters ? bag : h.liters
+      return cargoCouldTake(cargo, { kind: h.id, liters, capacityLiters: bag })
+    })
+  }
+  return takeupPad(src.base).some(p => drops.some(d => d.at.col === p.col && d.at.row === p.row && cargoCouldTake(cargo, d.item)))
+}
+
+export function pullFrom(src: PadCell, cargo: Cargo, drops: Drop[]): void {
+  if (src.kind === 'chest' || src.kind === 'freezer') pullSlots(src.slots, cargo)
+  else if (src.kind === 'seed-silo') pullSilo(src, cargo)
+  else if (src.kind === 'additive-store') pullAdditive(src, cargo)
+  else pullDrops(takeupPad(src.base), cargo, drops)
+}
+
+function pullSlots(slots: Slot[], cargo: Cargo): void {
+  slots.forEach((s, i) => {
+    if (s.kind !== 'hold') return
+    if (giveCargo(cargo, s.item)) slots[i] = { kind: 'empty' }
+  })
+  compactSlots(slots)
+}
+
+function pullSilo(silo: SeedSilo, cargo: Cargo): void {
+  for (let i = 0; i < silo.seeds.length; ) {
+    const st = silo.seeds[i]
+    const item: Item = { kind: 'seeds', crop: st.crop, rarity: st.rarity, count: st.count }
+    giveCargo(cargo, item)
+    st.count = item.count
+    if (st.count <= 0) silo.seeds.splice(i, 1)
+    else i += 1
+  }
+}
+
+function pullAdditive(store: AdditiveStore, cargo: Cargo): void {
+  for (let i = 0; i < store.held.length; ) {
+    const h = store.held[i]
+    const bag = ADDITIVE_BAG[h.id]
+    while (h.liters > 0) {
+      const liters = bag < h.liters ? bag : h.liters
+      const item: Extract<Item, { kind: AdditiveId }> = { kind: h.id, liters, capacityLiters: bag }
+      const before = item.liters
+      giveCargo(cargo, item)
+      const taken = before - item.liters
+      if (taken <= 0) break
+      h.liters -= taken
+    }
+    if (h.liters <= 0) store.held.splice(i, 1)
+    else i += 1
+  }
+}
+
+function pullDrops(pads: Coord[], cargo: Cargo, drops: Drop[]): void {
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i]
+    if (!onPad(pads, d.at)) continue
+    if (giveCargo(cargo, d.item)) drops.splice(i, 1)
+  }
+}
+
+function cargoSome(cargo: Cargo, fn: (item: Item) => boolean): boolean {
+  if (cargo.kind === 'quad' || cargo.kind === 'harvest') {
+    return cargo.slots.some(s => s.kind === 'hold' && fn(s.item))
+  }
+  if (cargo.kind === 'seed') return cargo.trailer.hopper.kind === 'hold' && fn(cargo.trailer.hopper.item)
+  return cargo.trailer.hopper.kind === 'hold' && fn(cargo.trailer.hopper.item)
+}
+
+function cargoEach(cargo: Cargo, fn: (item: Item, take: (n: number) => void) => void): void {
+  if (cargo.kind === 'quad' || cargo.kind === 'harvest') {
+    cargo.slots.forEach((s, i) => {
+      if (s.kind !== 'hold') return
+      fn(s.item, n => {
+        if (n < 0 || takeItemCount(s.item, n)) cargo.slots[i] = { kind: 'empty' }
+      })
+    })
+    return
+  }
+  if (cargo.trailer.hopper.kind !== 'hold') return
+  const held = cargo.trailer.hopper.item
+  fn(held, n => {
+    if (n < 0 || takeItemCount(held, n)) cargo.trailer.hopper = { kind: 'empty' }
+  })
+}
+
+function compactCargo(cargo: Cargo): void {
+  if (cargo.kind === 'quad' || cargo.kind === 'harvest') compactSlots(cargo.slots)
+}
+
+function cargoCouldTake(cargo: Cargo, item: Item): boolean {
+  if (cargo.kind === 'quad') return slotsCouldTake(cargo.slots, item, VEHICLE_SLOTS, undefined)
+  if (cargo.kind === 'harvest') return slotsCouldTake(cargo.slots, item, HARVEST_SLOTS, TRAILER_CAP)
+  if (cargo.kind === 'seed') {
+    if (item.kind !== 'seeds') return false
+    if (cargo.trailer.hopper.kind === 'empty') return item.count > 0
+    const h = cargo.trailer.hopper.item
+    if (h.crop !== item.crop || h.rarity !== item.rarity) return false
+    return h.count < TRAILER_CAP
+  }
+  if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return false
+  if (cargo.trailer.hopper.kind === 'empty') return item.liters > 0
+  if (cargo.trailer.hopper.item.kind !== item.kind) return false
+  return Math.floor(cargo.trailer.hopper.item.liters) < TRAILER_CAP
+}
+
+function copyItem(item: Item): Item {
+  switch (item.kind) {
+    case 'box': {
+      if (item.cargo.kind === 'empty') return { kind: 'box', cap: item.cap, cargo: { kind: 'empty' } }
+      if (item.cargo.goods === 'weed') {
+        return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'weed', count: item.cargo.count } }
+      }
+      if (item.cargo.goods === 'seeds') {
+        return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'seeds', stack: { ...item.cargo.stack } } }
+      }
+      return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'fruit', stack: { ...item.cargo.stack } } }
+    }
+    case 'shovel':
+    case 'pickaxe':
+    case 'container':
+    case 'fertilizer':
+    case 'synth':
+    case 'compost':
+    case 'seeds':
+    case 'grass-seeds':
+    case 'fruit':
+    case 'sapling':
+    case 'sugar':
+    case 'spirit':
+    case 'wine':
+    case 'jam':
+    case 'oil':
+    case 'flour':
+    case 'extract':
+    case 'rotten':
+    case 'dead':
+    case 'weed':
+    case 'grass':
+    case 'weed-spray':
+      return { ...item }
+  }
+}
+
+function slotsCouldTake(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const add = cargoCount(item)
+  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
+  if (maxUsed !== undefined && add > 0 && used >= maxUsed) return false
+  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: copyItem(s.item) }))
+  const piece =
+    add > 0 && maxUsed !== undefined && (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'dead' || item.kind === 'rotten' || item.kind === 'weed')
+      ? { ...item, count: add < maxUsed - used ? add : maxUsed - used }
+      : copyItem(item)
+  const empty = copy.findIndex(s => s.kind === 'empty')
+  if (empty >= 0) copy[empty] = { kind: 'hold', item: piece }
+  else copy.push({ kind: 'hold', item: piece })
+  compactSlots(copy)
+  return copy.filter(s => s.kind === 'hold').length <= maxSlots
+}
+
+function giveCargo(cargo: Cargo, item: Item): boolean {
+  if (cargo.kind === 'quad') return giveSlots(cargo.slots, item, VEHICLE_SLOTS, undefined)
+  if (cargo.kind === 'harvest') return giveSlots(cargo.slots, item, HARVEST_SLOTS, TRAILER_CAP)
+  if (cargo.kind === 'seed') {
+    if (item.kind !== 'seeds') return false
+    const have = cargo.trailer.hopper.kind === 'empty' ? 0 : cargo.trailer.hopper.item.count
+    if (cargo.trailer.hopper.kind === 'hold') {
+      const h = cargo.trailer.hopper.item
+      if (h.crop !== item.crop || h.rarity !== item.rarity) return false
+    }
+    const n = item.count < TRAILER_CAP - have ? item.count : TRAILER_CAP - have
+    if (n <= 0) return false
+    if (cargo.trailer.hopper.kind === 'empty') {
+      cargo.trailer.hopper = { kind: 'hold', item: { kind: 'seeds', crop: item.crop, rarity: item.rarity, count: n } }
+    } else cargo.trailer.hopper.item.count += n
+    item.count -= n
+    return item.count <= 0
+  }
+  if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return false
+  const have = cargo.trailer.hopper.kind === 'empty' ? 0 : cargo.trailer.hopper.item.liters
+  if (cargo.trailer.hopper.kind === 'hold' && cargo.trailer.hopper.item.kind !== item.kind) return false
+  const room = TRAILER_CAP - Math.floor(have)
+  const n = item.liters < room ? item.liters : room
+  if (n <= 0) return false
+  if (cargo.trailer.hopper.kind === 'empty') {
+    cargo.trailer.hopper = { kind: 'hold', item: { kind: item.kind, liters: n, capacityLiters: item.capacityLiters } }
+  } else cargo.trailer.hopper.item.liters += n
+  item.liters -= n
+  return item.liters <= 0
+}
+
+function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
+  if (
+    item.kind === 'fruit' ||
+    item.kind === 'seeds' ||
+    item.kind === 'dead' ||
+    item.kind === 'rotten' ||
+    item.kind === 'weed' ||
+    item.kind === 'grass'
+  ) {
+    const room = maxUsed === undefined ? item.count : maxUsed - used
+    const n = item.count < room ? item.count : room
+    if (n <= 0) return false
+    const piece = { ...item, count: n }
+    if (!insertSlots(slots, piece, maxSlots, maxUsed)) return false
+    item.count -= n
+    return item.count <= 0
+  }
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+    const piece = { ...item }
+    if (!insertSlots(slots, piece, maxSlots, undefined)) return false
+    item.liters = 0
+    return true
+  }
+  if (!insertSlots(slots, item, maxSlots, undefined)) return false
+  return true
+}
+
+function putSiloInto(silo: SeedSilo, crop: AnnualId, rarity: Rarity, count: number): number {
+  const n = Math.min(count, silo.free)
+  if (n <= 0) return 0
+  const hit = silo.seeds.find(st => st.crop === crop && st.rarity === rarity)
+  if (hit !== undefined) hit.count += n
+  else silo.seeds.push({ crop, rarity, count: n })
+  return n
+}
+
+function putAdditiveInto(store: AdditiveStore, id: AdditiveId, liters: number): number {
+  const n = Math.min(liters, store.free)
+  if (n <= 0) return 0
+  const hit = store.held.find(h => h.id === id)
+  if (hit !== undefined) hit.liters += n
+  else store.held.push({ id, liters: n })
+  return n
+}
+
+function takeItemCount(item: Item, n: number): boolean {
+  if (
+    item.kind === 'fruit' ||
+    item.kind === 'grass' ||
+    item.kind === 'seeds' ||
+    item.kind === 'weed' ||
+    item.kind === 'dead' ||
+    item.kind === 'rotten'
+  ) {
+    item.count -= n
+    return item.count <= 0
+  }
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+    item.liters -= n
+    return item.liters <= 0
+  }
+  if (item.kind === 'box' && item.cargo.kind === 'stack') {
+    if (item.cargo.goods === 'weed') {
+      item.cargo.count -= n
+      if (item.cargo.count <= 0) item.cargo = { kind: 'empty' }
+      return false
+    }
+    item.cargo.stack.count -= n
+    if (item.cargo.stack.count <= 0) item.cargo = { kind: 'empty' }
+    return false
+  }
+  return true
+}
+
+export function insertSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const n = cargoCount(item)
+  const used = slots.reduce((s, x) => s + (x.kind === 'hold' ? cargoCount(x.item) : 0), 0)
+  if (maxUsed !== undefined && used + n > maxUsed) return false
+  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: s.item }))
+  const empty = copy.findIndex(s => s.kind === 'empty')
+  if (empty >= 0) copy[empty] = { kind: 'hold', item }
+  else copy.push({ kind: 'hold', item })
+  compactSlots(copy)
+  const kept = copy.filter(s => s.kind === 'hold')
+  if (kept.length > maxSlots) return false
+  for (let i = 0; i < maxSlots; i++) {
+    slots[i] = i < kept.length ? kept[i] : { kind: 'empty' }
+  }
+  return true
+}
+
+export function compactSlots(slots: Slot[]): void {
+  const kept: Slot[] = []
+  slots.forEach(slot => {
+    if (slot.kind === 'empty') return
+    if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
+      const kind = slot.item.kind
+      const crop = slot.item.crop
+      const rarity = slot.item.rarity
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === kind &&
+          (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
+          s.item.crop === crop &&
+          s.item.rarity === rarity,
+      )
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
+        if (hit.item.kind === 'fruit' && slot.item.kind === 'fruit') {
+          hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
+          hit.item.freshness = mergeFreshness(hit.item, slot.item)
+          hit.item.bio = hit.item.bio && slot.item.bio
+        }
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    if (slot.item.kind === 'sugar') {
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
+      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
+        const m = mergeSugar(hit.item, slot.item)
+        hit.item.liters = m.liters
+        hit.item.capacityLiters = m.capacityLiters
+        hit.item.unitSale = m.unitSale
+        return
+      }
+    }
+    if (
+      slot.item.kind === 'spirit' ||
+      slot.item.kind === 'wine' ||
+      slot.item.kind === 'jam' ||
+      slot.item.kind === 'oil' ||
+      slot.item.kind === 'flour' ||
+      slot.item.kind === 'extract'
+    ) {
+      const it = slot.item
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === it.kind &&
+          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.rarity === it.rarity)) &&
+          (it.kind !== 'wine' || (s.item.kind === 'wine' && s.item.rarity === it.rarity)) &&
+          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop)),
+      )
+      if (hit !== undefined && hit.kind === 'hold' && 'count' in hit.item && 'unitSale' in hit.item && 'count' in it) {
+        hit.item.unitSale = mergeUnitSale(hit.item, it)
+        hit.item.count += it.count
+        return
+      }
+    }
+    if (slot.item.kind === 'rotten' || slot.item.kind === 'dead') {
+      const kind = slot.item.kind
+      const cls = slot.item.cls
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === kind &&
+          (s.item.kind === 'rotten' || s.item.kind === 'dead') &&
+          s.item.cls === cls,
+      )
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'rotten' || hit.item.kind === 'dead')) {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    if (slot.item.kind === 'weed' || slot.item.kind === 'grass') {
+      const kind = slot.item.kind
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === kind)
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'weed' || hit.item.kind === 'grass')) {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    kept.push(slot)
+  })
+  kept.forEach((s, i) => {
+    slots[i] = s
+  })
+  for (let i = kept.length; i < slots.length; i++) slots[i] = { kind: 'empty' }
 }

@@ -150,11 +150,11 @@ import {
   jamCropOf,
   jamSale,
   meanRarity,
-  millDumpUnits,
+  millAccept,
+  millApply,
   millNeed,
   millProduct,
   millProductName,
-  millRecipeOf,
   mergeSugar,
   spiritKind,
   stillCropOf,
@@ -232,23 +232,34 @@ import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
 import {
   boomHits,
+  canDumpCargo,
+  canPull,
   cargoCount,
+  compactSlots,
+  dropoffPad,
+  dumpCargo,
   emptyHarvestSlots,
   emptyVehicleSlots,
   followHitch,
   hangarPad,
   hitchP,
+  insertSlots,
   integrateVehicle,
   kindAccel,
   kindVMax,
   kindYaw,
   makeQuad,
   makeTractor,
+  onPad,
   padCenter,
+  pullFrom,
   seekSpeed,
   surfaceMul,
+  takeupPad,
   trailerUsed,
+  vehicleCargo,
   type Drive,
+  type PadCell,
   type Trailer,
   type TrailerPose,
   type Vehicle,
@@ -263,12 +274,17 @@ import {
   tickButton,
   hitsEdge,
   hitsVertex,
+  isInEnd,
+  isOutEnd,
   isSensor,
   makeSensor,
   pressButton,
   pourEligible,
+  rawMap,
   readerRaw,
   sameEnd,
+  sameNode,
+  storeRaw,
   vehicleRaw,
   skuKind,
   wouldCycle,
@@ -1063,6 +1079,12 @@ export class World {
       case Act.tuneHarvest:
         this.tuneHarvestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.mode)
         return
+      case Act.load:
+        this.loadBody()
+        return
+      case Act.unload:
+        this.unloadBody()
+        return
     }
   }
 
@@ -1607,10 +1629,15 @@ export class World {
   private placeWireBody(from: WireEnd, to: WireEnd): void {
     if (this.act.place.kind !== 'wire') return
     if (!this.portLegal(from, 'from') || !this.portLegal(to, 'to')) return
-    const rest = this.wires.filter(w => !sameEnd(w.to, to))
-    if (wouldCycle(rest, from, to)) return
-    this.wires.length = 0
-    rest.forEach(w => this.wires.push(w))
+    const next = this.wires.filter(w => !(sameNode(w.from, from) && sameNode(w.to, to)))
+    if (next.length !== this.wires.length) {
+      this.wires.length = 0
+      next.forEach(w => this.wires.push(w))
+      this.act.place = { kind: 'none' }
+      this.ping()
+      return
+    }
+    if (wouldCycle(this.wires, from, to)) return
     this.wires.push({ from, to })
     this.act.place = { kind: 'none' }
     this.ping()
@@ -1697,22 +1724,12 @@ export class World {
   }
 
   private portLegal(end: WireEnd, side: 'from' | 'to'): boolean {
-    if (end.kind === 'sprinkler') {
-      if (side !== 'to' || end.port !== 'in') return false
-      if (!this.done.has('unlock-smart-irrigation')) return false
-      return this.sprinklerAt(end.at) !== undefined
-    }
-    if (end.kind === 'valve') {
-      if (side !== 'to' || end.port !== 'in') return false
-      return this.hasSmart(end.e)
-    }
-    const c = this.inWorld(end.at) ? this.cell(end.at) : undefined
-    if (c === undefined || !isSensor(c)) return false
-    if (side === 'from') return end.port === 'out' && c.kind !== 'lamp'
-    if (c.kind === 'lamp') return end.port === 'in'
-    if (c.kind === 'not') return end.port === 'in'
-    if (c.kind === 'and' || c.kind === 'or') return end.port === 'in-l' || end.port === 'in-r'
-    return false
+    const c = end.kind === 'cell' && this.inWorld(end.at) ? this.cell(end.at) : undefined
+    if (side === 'from') return isOutEnd(end, c)
+    const smart = end.kind === 'valve' && this.hasSmart(end.e)
+    const sprinkler =
+      end.kind === 'sprinkler' && this.done.has('unlock-smart-irrigation') && this.sprinklerAt(end.at) !== undefined
+    return isInEnd(end, c, smart, sprinkler)
   }
 
   sensorAt(at: Coord): Sensor | undefined {
@@ -1790,6 +1807,7 @@ export class World {
       return
     }
     if (c.kind === 'chest') {
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       c.slots.forEach(s => {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
       })
@@ -1805,22 +1823,28 @@ export class World {
       return
     }
     if (c.kind === 'mill') {
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete mill', at: { ...at } }
       this.ping()
       return
     }
     if (c.kind === 'jam') {
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete jam machine', at: { ...at } }
       this.ping()
       return
     }
     if (c.kind === 'still') {
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      const origin = { col: c.base.col, row: c.base.row }
+      occupiedCells(c.base, this.owned).forEach(p => {
+        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
+        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
+      })
       this.stills.splice(this.stills.indexOf(c), 1)
       this.dirtyNets()
-      this.pulse = { text: 'Delete pot still', at: { ...at } }
+      this.pulse = { text: 'Delete pot still', at: { ...origin } }
       this.ping()
       return
     }
@@ -1831,6 +1855,7 @@ export class World {
       return
     }
     if (c.kind === 'freezer') {
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       c.slots.forEach(s => {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
       })
@@ -2328,16 +2353,24 @@ export class World {
       this.ping()
       return
     }
-    if (this.act.place.id === 'buy-pumpjack' || this.act.place.id === 'buy-rain-tank') {
+    if (this.act.place.id === 'buy-pumpjack' || this.act.place.id === 'buy-rain-tank' || this.act.place.id === 'buy-still') {
       if (!wideSiteOk(this, at)) return
       this.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 2, h: 1 }
-      const made = this.act.place.id === 'buy-pumpjack' ? new Pump(base, 'jack') : new RainTank(base)
-      if (made.kind === 'pump') this.pumps.push(made)
-      else this.tanks.push(made)
-      this.setCell(at, made)
-      this.setCell({ col: at.col + 1, row: at.row }, made)
-      this.dirtyNets()
+      if (this.act.place.id === 'buy-still') {
+        const still = new PotStill(base)
+        this.stills.push(still)
+        this.setCell(at, still)
+        this.setCell({ col: at.col + 1, row: at.row }, still)
+        this.dirtyNets()
+      } else {
+        const made = this.act.place.id === 'buy-pumpjack' ? new Pump(base, 'jack') : new RainTank(base)
+        if (made.kind === 'pump') this.pumps.push(made)
+        else this.tanks.push(made)
+        this.setCell(at, made)
+        this.setCell({ col: at.col + 1, row: at.row }, made)
+        this.dirtyNets()
+      }
       this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
       this.act.place = { kind: 'none' }
       this.ping()
@@ -2350,7 +2383,6 @@ export class World {
       this.act.place.id === 'buy-tap' ||
       this.act.place.id === 'buy-mill' ||
       this.act.place.id === 'buy-jam' ||
-      this.act.place.id === 'buy-still' ||
       this.act.place.id === 'buy-barrel' ||
       this.act.place.id === 'buy-freezer' ||
       this.act.place.id === 'buy-hangar' ||
@@ -2422,12 +2454,7 @@ export class World {
       else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
       else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
       else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
-      else if (this.act.place.id === 'buy-still') {
-        const still = new PotStill(base)
-        this.stills.push(still)
-        this.setCell(at, still)
-        this.dirtyNets()
-      } else if (this.act.place.id === 'buy-barrel') this.setCell(at, new WineBarrel(base))
+      else if (this.act.place.id === 'buy-barrel') this.setCell(at, new WineBarrel(base))
       else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
       else {
         const tap = new Tap(base)
@@ -2790,6 +2817,14 @@ export class World {
     this.commit({ a: Act.setBoom, t: this.now, p: this.local, w })
   }
 
+  load(): void {
+    this.commit({ a: Act.load, t: this.now, p: this.local })
+  }
+
+  unload(): void {
+    this.commit({ a: Act.unload, t: this.now, p: this.local })
+  }
+
   private setBoomBody(w: 3 | 5): void {
     const v = this.driverVehicle(this.act.id)
     if (v === undefined || v.kind !== 'tractor') return
@@ -2848,6 +2883,52 @@ export class World {
 
   hangarAtPad(at: Coord): Hangar | undefined {
     return this.hangars.find(h => hangarPad(h.base).some(p => p.col === at.col && p.row === at.row))
+  }
+
+  vehicleCargo(): boolean {
+    const v = this.driverVehicle(this.local)
+    if (v === undefined || v.pose.kind !== 'field') return false
+    if (v.kind === 'tractor' && v.hitch === 'none') return false
+    return true
+  }
+
+  onDropoffPad(): boolean {
+    return this.padSideOfLocal() === 'dropoff'
+  }
+
+  onTakeupPad(): boolean {
+    return this.padSideOfLocal() === 'takeup'
+  }
+
+  canLoad(): boolean {
+    this.act = this.seats[this.local]
+    return this.loadWould()
+  }
+
+  canUnload(): boolean {
+    this.act = this.seats[this.local]
+    return this.unloadWould()
+  }
+
+  machinePads(): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
+    this.act = this.seats[this.local]
+    const v = this.driverVehicle(this.local)
+    const floor =
+      v !== undefined && v.pose.kind === 'field'
+        ? { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+        : undefined
+    const out: { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] = []
+    this.padBuildings().forEach(b => {
+      dropoffPad(b.base).forEach(p => {
+        const on = floor !== undefined && p.col === floor.col && p.row === floor.row
+        out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && this.unloadWould() })
+      })
+      takeupPad(b.base).forEach(p => {
+        const on = floor !== undefined && p.col === floor.col && p.row === floor.row
+        out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && this.loadWould() })
+      })
+    })
+    return out
   }
 
   private board(v: Vehicle): void {
@@ -3371,10 +3452,10 @@ export class World {
     this.tickField(dt)
     this.gatherWater(dt)
     this.evalSensors(dt)
+    this.tickMachines(dt)
     this.tickWater(dt)
     this.tickFreshness(dt)
     this.tickCompost(dt)
-    this.tickMachines(dt)
     this.tickBig(dt)
     if (this.tickStall(dt) || this.sales.length > 0) this.ping()
   }
@@ -3763,15 +3844,31 @@ export class World {
 
   private evalSensors(dt: number): void {
     const sensors = new Map<string, Sensor>()
+    const machines = new Map<string, Mill | JamMachine | PotStill>()
+    const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore>()
     this.forEachCell((at, c) => {
       if (isSensor(c)) sensors.set(cellKey(at), c)
+      if (
+        (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') &&
+        c.base.col === at.col &&
+        c.base.row === at.row
+      ) {
+        machines.set(cellKey(at), c)
+      }
+      if (
+        (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') &&
+        c.base.col === at.col &&
+        c.base.row === at.row
+      ) {
+        stores.set(cellKey(at), c)
+      }
     })
     const raw = new Map<string, 0 | 1>()
     sensors.forEach((s, k) => {
       if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
         raw.set(k, readerRaw(s, at => (this.inWorld(at) ? this.cell(at) : undefined), this.modifiers))
       } else if (s.kind === 'water-system') {
-        const net = this.netOfCell(s.base)
+        const net = this.grid().find(n => n.waterSystems.includes(s))
         if (net === undefined) {
           raw.set(k, 0)
           return
@@ -3783,7 +3880,10 @@ export class World {
         raw.set(k, vehicleRaw({ col: s.base.col, row: s.base.row }, this.vehicles))
       }
     })
-    evalDag({ sensors, wires: this.wires, smart: this.smartHold, sprinklers: this.sprinklers, raw })
+    stores.forEach((s, k) => {
+      raw.set(k, storeRaw(s))
+    })
+    evalDag({ sensors, wires: this.wires, smart: this.smartHold, sprinklers: this.sprinklers, raw: rawMap(raw), machines, stores })
     if (this.smartHold.size > 0) this.dirtyNets()
   }
 
@@ -3982,6 +4082,7 @@ export class World {
       const c = this.cell(at)
       if (c.kind === 'mill') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.inn === 1) continue
         if (c.recipe === 'none') continue
         const need = millNeed(c.recipe)
         if (c.units < need) continue
@@ -3999,6 +4100,7 @@ export class World {
       }
       if (c.kind === 'jam') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.inn === 1) continue
         if (c.crop === 'none' || c.fruit < JAM_IN || c.sugar < JAM_SUGAR) continue
         c.progress += (dt * this.machineMul()) / JAM_SECONDS
         if (c.progress < 1) continue
@@ -4015,6 +4117,7 @@ export class World {
       }
       if (c.kind === 'still') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.inn === 1) continue
         if (feedUnits(c.feed) !== STILL_CAP) continue
         if (c.progress === 0) {
           if (!this.pullStillWater(c)) continue
@@ -4633,29 +4736,110 @@ export class World {
     return changed
   }
 
+  private padBuildings(): PadCell[] {
+    const out: PadCell[] = []
+    this.forEachCell((at, c) => {
+      if (
+        c.kind !== 'mill' &&
+        c.kind !== 'jam' &&
+        c.kind !== 'still' &&
+        c.kind !== 'compost-box' &&
+        c.kind !== 'chest' &&
+        c.kind !== 'freezer' &&
+        c.kind !== 'seed-silo' &&
+        c.kind !== 'additive-store'
+      ) {
+        return
+      }
+      if (c.base.col !== at.col || c.base.row !== at.row) return
+      out.push(c)
+    })
+    return out
+  }
+
+  private padHit(at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
+    for (const cell of this.padBuildings()) {
+      if (onPad(dropoffPad(cell.base), at)) return { cell, side: 'dropoff' }
+      if (onPad(takeupPad(cell.base), at)) return { cell, side: 'takeup' }
+    }
+    return undefined
+  }
+
+  private padSideOfLocal(): 'dropoff' | 'takeup' | undefined {
+    const v = this.driverVehicle(this.local)
+    if (v === undefined || v.pose.kind !== 'field') return undefined
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    return hit === undefined ? undefined : hit.side
+  }
+
+  private cargo() {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return undefined
+    return vehicleCargo(v, this.trailers)
+  }
+
+  private loadBody(): void {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    const cargo = this.cargo()
+    if (hit === undefined || hit.side !== 'takeup' || cargo === undefined) return
+    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
+    pullFrom(hit.cell, cargo, this.drops)
+    this.ping()
+  }
+
+  private unloadBody(): void {
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    const cargo = this.cargo()
+    if (hit === undefined || hit.side !== 'dropoff' || cargo === undefined) return
+    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
+    dumpCargo(cargo, hit.cell)
+    this.ping()
+  }
+
+  private loadWould(): boolean {
+    const cargo = this.cargo()
+    if (cargo === undefined) return false
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return false
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    if (hit === undefined || hit.side !== 'takeup') return false
+    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
+    return canPull(hit.cell, cargo, this.drops)
+  }
+
+  private unloadWould(): boolean {
+    const cargo = this.cargo()
+    if (cargo === undefined) return false
+    const v = this.driverVehicle(this.act.id)
+    if (v === undefined || v.pose.kind !== 'field') return false
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    if (hit === undefined || hit.side !== 'dropoff') return false
+    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
+    return canDumpCargo(cargo, hit.cell)
+  }
+
   private canMill(at: Coord): boolean {
     if (this.act.hand.kind !== 'hold') return false
     const c = this.cell(at)
     if (c.kind !== 'mill') return false
-    const recipe = millRecipeOf(this.act.hand.item)
-    if (recipe === undefined) return false
-    if (c.recipe !== 'none' && c.recipe !== recipe) return false
-    return millDumpUnits(this.act.hand.item, recipe) > 0
+    return millAccept(c, this.act.hand.item) !== undefined
   }
 
   private doMill(at: Coord): void {
     if (!this.canMill(at)) return
     if (this.act.hand.kind !== 'hold') return
     const mill = this.cell(at) as Mill
-    const recipe = millRecipeOf(this.act.hand.item)
-    if (recipe === undefined) return
-    const n = millDumpUnits(this.act.hand.item, recipe)
-    if (n <= 0) return
-    if (mill.recipe === 'none') mill.recipe = recipe
-    mill.units += n
-    this.takeHandCount(n)
+    const take = millAccept(mill, this.act.hand.item)
+    if (take === undefined) return
+    millApply(mill, this.act.hand.item, take.n)
+    this.takeHandCount(take.n)
     this.track(at, mill)
-    this.pulse = { text: millProductName(recipe) === 'sugar' ? 'Crush into sugar' : `Crush into ${millProductName(recipe)}`, at: { ...at } }
+    const name = millProductName(take.recipe)
+    this.pulse = { text: name === 'sugar' ? 'Crush into sugar' : `Crush into ${name}`, at: { ...at } }
   }
 
   private canStill(at: Coord): boolean {
@@ -5050,112 +5234,9 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function harvestInsert(slots: Slot[], item: Item): boolean {
-  const n = cargoCount(item)
-  const used = slots.reduce((s, x) => s + (x.kind === 'hold' ? cargoCount(x.item) : 0), 0)
-  if (used + n > TRAILER_CAP) return false
-  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: s.item }))
-  const empty = copy.findIndex(s => s.kind === 'empty')
-  if (empty >= 0) copy[empty] = { kind: 'hold', item }
-  else copy.push({ kind: 'hold', item })
-  compactSlots(copy)
-  const kept = copy.filter(s => s.kind === 'hold')
-  if (kept.length > HARVEST_SLOTS) return false
-  for (let i = 0; i < HARVEST_SLOTS; i++) {
-    slots[i] = i < kept.length ? kept[i] : { kind: 'empty' }
-  }
-  return true
+  return insertSlots(slots, item, HARVEST_SLOTS, TRAILER_CAP)
 }
 
 function storedHere(p: VehiclePose | TrailerPose, origin: Coord): boolean {
   return p.kind === 'stored' && p.hangar.col === origin.col && p.hangar.row === origin.row
-}
-
-function compactSlots(slots: Slot[]): void {
-  const kept: Slot[] = []
-  slots.forEach(slot => {
-    if (slot.kind === 'empty') return
-    if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
-      const kind = slot.item.kind
-      const crop = slot.item.crop
-      const rarity = slot.item.rarity
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === kind &&
-          (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
-          s.item.crop === crop &&
-          s.item.rarity === rarity,
-      )
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
-        if (hit.item.kind === 'fruit' && slot.item.kind === 'fruit') {
-          hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
-          hit.item.freshness = mergeFreshness(hit.item, slot.item)
-          hit.item.bio = hit.item.bio && slot.item.bio
-        }
-        hit.item.count += slot.item.count
-        return
-      }
-    }
-    if (slot.item.kind === 'sugar') {
-      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
-      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
-        const m = mergeSugar(hit.item, slot.item)
-        hit.item.liters = m.liters
-        hit.item.capacityLiters = m.capacityLiters
-        hit.item.unitSale = m.unitSale
-        return
-      }
-    }
-    if (
-      slot.item.kind === 'spirit' ||
-      slot.item.kind === 'wine' ||
-      slot.item.kind === 'jam' ||
-      slot.item.kind === 'oil' ||
-      slot.item.kind === 'flour' ||
-      slot.item.kind === 'extract'
-    ) {
-      const it = slot.item
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === it.kind &&
-          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.rarity === it.rarity)) &&
-          (it.kind !== 'wine' || (s.item.kind === 'wine' && s.item.rarity === it.rarity)) &&
-          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop)),
-      )
-      if (hit !== undefined && hit.kind === 'hold' && 'count' in hit.item && 'unitSale' in hit.item && 'count' in it) {
-        hit.item.unitSale = mergeUnitSale(hit.item, it)
-        hit.item.count += it.count
-        return
-      }
-    }
-    if (slot.item.kind === 'rotten' || slot.item.kind === 'dead') {
-      const kind = slot.item.kind
-      const cls = slot.item.cls
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === kind &&
-          (s.item.kind === 'rotten' || s.item.kind === 'dead') &&
-          s.item.cls === cls,
-      )
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'rotten' || hit.item.kind === 'dead')) {
-        hit.item.count += slot.item.count
-        return
-      }
-    }
-    if (slot.item.kind === 'weed' || slot.item.kind === 'grass') {
-      const kind = slot.item.kind
-      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === kind)
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'weed' || hit.item.kind === 'grass')) {
-        hit.item.count += slot.item.count
-        return
-      }
-    }
-    kept.push(slot)
-  })
-  kept.forEach((s, i) => {
-    slots[i] = s
-  })
-  for (let i = kept.length; i < slots.length; i++) slots[i] = { kind: 'empty' }
 }

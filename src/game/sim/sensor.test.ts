@@ -7,7 +7,7 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
-import { evalDag, HarvestSensor, Lamp, Lever, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -52,15 +52,15 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.6. PROTOCOL 1.6. 1.5 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.6)
-    expect(PROTOCOL).toBe(1.6)
+  test('SAVE_VERSION 1.62. PROTOCOL 1.62. Wordmark 1.7.0. No migrate. 1.6 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.62)
+    expect(PROTOCOL).toBe(1.62)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.6)
+    expect(s.version).toBe(1.62)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
-    const old = parse(JSON.stringify({ ...s, version: 1.5 }))
+    const old = parse(JSON.stringify({ ...s, version: 1.6 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
     expect(old.reason).toBe('version')
@@ -127,7 +127,9 @@ describe('1.6 sensors', () => {
       ],
       smart: new Map(),
       sprinklers: new Map(),
-      raw: new Map(),
+      raw: rawMap(new Map()),
+      machines: new Map(),
+      stores: new Map(),
     })
     expect(lever.out).toBe(1)
     expect(lamp.inn).toBe(1)
@@ -166,7 +168,7 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
   })
 
-  test('Second wire on one input replaces.', () => {
+  test('Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is.', () => {
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
@@ -176,8 +178,74 @@ describe('1.6 sensors', () => {
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
     w.armWire({ kind: 'cell', at: C, port: 'out' })
     w.placeWire({ kind: 'cell', at: C, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(2)
+    w.tick(DT_MAX)
+    const off = w.cell(B)
+    if (off.kind !== 'lamp') throw new Error('lamp')
+    expect(off.inn).toBe(0)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    const aOn = w.cell(B)
+    if (aOn.kind !== 'lamp') throw new Error('lamp')
+    expect(aOn.inn).toBe(1)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    w.enqueue({ act: 'toggle', at: C })
+    w.seats[0].actor.x = C.col + 0.5
+    w.seats[0].actor.y = C.row + 0.5
+    w.tick(DT_MAX)
+    const cOn = w.cell(B)
+    if (cOn.kind !== 'lamp') throw new Error('lamp')
+    expect(cOn.inn).toBe(1)
+  })
+
+  test('Toggle A→B: wires length 0.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lamp', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
     expect(w.wires).toHaveLength(1)
-    expect(w.wires[0].from).toEqual({ kind: 'cell', at: C, port: 'out' })
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(0)
+  })
+
+  test('Direct path unique on node pair (A→AND in-l then A→AND in-r removes, does not stack).', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-and', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
+    expect(w.wires).toHaveLength(1)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-r' })
+    expect(w.wires).toHaveLength(0)
+  })
+
+  test('Lamp portXY in is top.', () => {
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'lamp')).toEqual({ x: 4.5, y: 7 })
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'not')).toEqual({ x: 4.5, y: 7 })
+  })
+
+  test('isolated water-system out stays 0.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-water-system', A)
+    w.cancelPlace()
+    w.tick(DT_MAX)
+    const c = w.cell(A)
+    if (c.kind !== 'water-system') throw new Error('water-system')
+    expect(c.out).toBe(0)
+    expect(lookText(w, { kind: 'cell', at: A }, false).split('\n')[0]).toBe(
+      'Water-system sensor - no pipes around sensor!',
+    )
   })
 
   test('Dump wires + sensor cells. Sku.need required.', () => {
@@ -372,7 +440,7 @@ describe('1.6 sensors', () => {
     const pipe = { axis: 'h' as const, col: 10, row: 18 }
     const cropAt = { col: 9, row: 17 }
     const tapAt = { col: 11, row: 18 }
-    const stillAt = { col: 9, row: 18 }
+    const stillAt = { col: 8, row: 18 }
     const isolated = new World(1)
     ready(isolated)
     isolated.done.add('unlock-auto-irrigation')
@@ -718,5 +786,62 @@ describe('1.6 sensors', () => {
     w.seats[0].actor.y = A.row + 0.5
     w.tick(DT_MAX)
     expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - on')
+  })
+
+  test('Unwired mill/jam/still `inn` 0 ticks (enabled).', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-grinder')
+    w.buy('buy-mill')
+    w.confirmPlace(A)
+    const mill = w.cell(A)
+    expect(mill.kind).toBe('mill')
+    if (mill.kind !== 'mill') return
+    expect(mill.inn).toBe(0)
+    mill.recipe = 'wheat'
+    mill.units = 5
+    mill.progress = 0
+    w.tick(DT_MAX)
+    expect(mill.progress).toBeGreaterThan(0)
+  })
+
+  test('Chest no empty slot (`CHEST_SLOTS` 9/9) → `out` 1 after `SENSOR_HOLD`.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-chest')
+    w.buy('buy-chest')
+    w.confirmPlace(A)
+    const chest = w.cell(A)
+    expect(chest.kind).toBe('chest')
+    if (chest.kind !== 'chest') return
+    expect(chest.out).toBe(0)
+    for (let i = 0; i < 9; i++) {
+      chest.slots[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'apple' } }
+    }
+    w.tick(DT_MAX)
+    expect(chest.out).toBe(1)
+    expect(chest.hold).toBe(SENSOR_HOLD)
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      w.tick(DT_MAX)
+      expect(chest.out).toBe(1)
+    }
+    w.tick(DT_MAX)
+    expect(chest.hold).toBe(0)
+    expect(chest.out).toBe(1)
+  })
+
+  test('Seed silo `used >= SILO_SEED_CAP` → `out` 1 after hold. Additive `used >= ADDITIVE_CAP_LITERS` → `out` 1 after hold.', () => {
+    const w = new World(1)
+    const silo = w.silo
+    const add = w.additives
+    expect(silo.out).toBe(0)
+    expect(add.out).toBe(0)
+    silo.seeds.push({ crop: 'carrot', rarity: 'common', count: silo.cap - silo.used })
+    add.held.push({ id: 'fertilizer', liters: add.cap - add.used })
+    w.tick(DT_MAX)
+    expect(silo.out).toBe(1)
+    expect(add.out).toBe(1)
+    expect(silo.hold).toBe(SENSOR_HOLD)
+    expect(add.hold).toBe(SENSOR_HOLD)
   })
 })

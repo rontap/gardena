@@ -11,16 +11,16 @@ Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprin
 | `src/game/defs/items.ts` | `LEVER_PRICE` `BUTTON_PRICE` `LAMP_PRICE` `OR_PRICE` `AND_PRICE` `NOT_PRICE` `SENSOR_WATER_PRICE` `SENSOR_FERT_PRICE` `SENSOR_HARVEST_PRICE` `WATER_SYSTEM_PRICE` `SMART_VALVE_PRICE` `VEHICLE_DETECTOR_PRICE` `BUTTON_PULSE` `SENSOR_HOLD` |
 | `src/game/defs/research.ts` | `unlock-sensors` `unlock-smart-irrigation`. SKUs. `Sku.need` required |
 | `src/game/defs/shelf.ts` | `BuildShelfId` += `'logic'`. Shelf **Sensors**, id `logic` |
-| `src/game/defs/catalog.ts` | almanac entries exist for every sensor SKU + smart valve. Copy layout [[ui/almanac]] |
+| `src/game/defs/catalog.ts` | SKU `CatalogEntry` for every sensor SKU + smart valve. Game concepts not CatalogEntry. Overview is not CatalogEntry. Almanac Sensors: Overview, then lever. Copy [[ui/almanac]] |
 | `src/game/sim/ids.ts` | `SensorKind` `ResearchId` += `unlock-sensors` `unlock-smart-irrigation`. `SkuId` += the twelve |
-| `src/game/sim/sensor.ts` | `Wire` `WireEnd` `Sensor` classes, ports, `wouldCycle`, `evalDag`, `area3`, hold, reader raw, `pourEligible`. No `World` |
-| `src/game/sim/building.ts` | not sensor classes |
+| `src/game/sim/sensor.ts` | `Wire` `WireEnd` `Sensor` classes, ports, `ownsPort` += mill/jam/still/chest/freezer/seed-silo/additive-store, `wouldCycle`, `evalDag`, `area3`, hold, reader raw, `pourEligible`. No `World` |
+| `src/game/sim/building.ts` | mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Not sensor classes |
 | `src/game/sim/plot.ts` | `Cell` += `Sensor`. `isSolid` += every `SensorKind` |
 | `src/game/sim/pipe.ts` | `Gate` += `{ kind: 'smart' }`. `Sprinkler` keeps variant/tune. `flows` for smart uses eval, not a stored open |
-| `src/game/sim/world.ts` | `World.wires` `World.waterSystems`. `Net.waterSystems`. Place / StayArmed / Intent / HudTarget. tick: field → eval → water. apply place/delete/tune |
+| `src/game/sim/world.ts` | `World.wires` `World.waterSystems`. `Net.waterSystems`. Place / StayArmed / Intent / HudTarget. tick: field → eval → mill/jam/still unless `inn === 1` → water. apply place/delete/tune / load / unload |
 | `src/game/sim/log.ts` | `Act.armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest`. `Act.delete` += `wire` `smart`. `Act.openHud` += `k` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.6. dump wires + sensor cells + actuator hold. No migrate |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.6. `GUEST_BUILD` += eleven sensor-cell SKUs. permit wire / smart valve / sensor HUD. digest wires + outputs |
+| `src/game/sim/save.ts` | `SAVE_VERSION` 1.62. dump wires + sensor cells + actuator hold + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate |
+| `src/game/sim/mp.ts` | `PROTOCOL` 1.62. `GUEST_BUILD` += eleven sensor-cell SKUs. permit wire / smart valve / sensor HUD. digest wires + outputs + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` |
 | `src/game/sim/prompt.ts` | sensor place / port hit / delete wire bezier / smart valve edge |
 | `src/game/sim/look.ts` | sensor names |
 | `src/game/sim/item.ts` | `Face` += each sensor SKU + `smart-valve` |
@@ -148,15 +148,21 @@ Illegal: optional config. Illegal: lamp `out`. Illegal: size HUD. Illegal: analo
 | kind | in | out |
 |---|---|---|
 | lever, button, sensor-water, sensor-fert, sensor-harvest, water-system, vehicle-detector | — | `out` bottom |
-| lamp | `in` | — |
+| lamp | `in` top | — |
 | not | `in` top | `out` bottom |
 | and, or | `in-l` left, `in-r` right | `out` bottom |
 | sprinkler (after `unlock-smart-irrigation`) | `in` | — |
 | smart valve | `in` on the body | — |
+| mill, jam, still | `in` origin top | — |
+| chest, freezer, seed-silo, additive-store | — | `out` origin bottom |
 
-Illegal combos unrepresentable per device: a lamp has no out port; a lever has no in port; AND/OR have no single `in`. Finalize no-ops a `WireEnd` that the device does not own.
+Not `SensorKind`. Compost-box: pads, no port. Barrel, grinder, field silos: no port.
 
-Output-only: whole-cell click = bottom `out`. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT: top `in`, bottom `out`. Lamp: the cell is `in`. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
+Illegal combos unrepresentable per device: a lamp has no out port; a lever has no in port; AND/OR have no single `in`; mill/jam/still have no out; chest/freezer/silo/additive have no in. Finalize no-ops a `WireEnd` that the device does not own.
+
+No prop nubs on mill/jam/still/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port.
+
+Output-only: whole-cell click = bottom `out`. Chest/freezer/seed-silo/additive-store: origin only, same. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top, same as NOT `in`. Whole-cell click still = `in`. Still east cell: no port. `portXY` lamp/`in` → `{ x: origin.col+0.5, y: origin.row }`. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
 
 ## Wire
 
@@ -169,13 +175,17 @@ WireEnd =
 Wire = { from: WireEnd; to: WireEnd }
 ```
 
-`World.wires: Wire[]`. Directed `from` → `to`. Signal `0 \| 1`. Fan-out: many wires may share `from`. One wire per input (`to`); second finalize **replaces** (drop the old, then add; cycle check after the drop). Visual cross is paint, no join.
+`World.wires: Wire[]`. Directed `from` → `to`. Signal `0 | 1`. Fan-out: many wires may share `from`. Fan-in: many wires may share a `to` port. Port level = OR of those wires. Unwired port still 0. Visual cross is paint, no join.
+
+One direct path: unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. A lever cannot occupy both `in-l` and `in-r` of the same AND. Indirect paths legal. Cycle still rejected at finalize (`wouldCycle`).
+
+Toggle-remove: finalize of `from` → `to` when a wire already exists with the same node pair: drop that wire, `place = none`. Same ports or different ports on those two nodes — one path, so it removes. Not a retarget. Prompt **Remove wire** (ui-ux).
 
 `from` is an output port. `to` is an input port. `{ kind: 'valve' }` is a **smart** valve only. Manual valve has no port.
 
 No wire SKU. No price. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU or `buy-smart-valve` forces that lens (pipes pattern). Wires are always sim-state. View-gated paint and port hits.
 
-Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
+Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire, `place = none`. Cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
 
 Delete: Delete tool, nearest bezier within `VERTEX_HIT`. `Act.delete` `{ k: 'wire'; from; to }`. Building delete, sprinkler delete, smart-valve delete drop incident wires.
 
@@ -183,7 +193,7 @@ Delete: Delete tool, nearest bezier within `VERTEX_HIT`. `Act.delete` `{ k: 'wir
 
 `sim/sensor.ts` `wouldCycle(wires, from, to): boolean`. `evalDag` topo-eval. Loops rejected at finalize. Live graph is a DAG; do not runtime-check acyclicity on tick.
 
-Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / sprinkler-input-port / smart-valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators.
+Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / sprinkler-input-port / smart-valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators. An input is high iff any incoming wire is high.
 
 Tick, after vehicles and field, before water:
 
@@ -195,13 +205,15 @@ Tick, after vehicles and field, before water:
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
-World-readers: water, fert, harvest, water-system, vehicle. Not lamps. Not gates. Not lever. Not button.
+World-readers: water, fert, harvest, water-system, vehicle, chest, freezer, seed-silo, additive-store. Not lamps. Not gates. Not lever. Not button. Not mill/jam/still (`inn` like lamp, no hold).
 
 Button: `out` high exactly `BUTTON_PULSE` ticks. `left` counts down on `tick()`. Reach 0 → `out = 0`. Assumption: toggle while high restarts `BUTTON_PULSE`.
 
 Lever: walk-to toggle `on`. `out = on ? 1 : 0`.
 
-NOT: `out = 1 - inn`. AND: both inputs 1. OR: either input 1. Lamp: `inn` only, display.
+NOT / lamp / sprinkler / smart valve / mill / jam / still: `inn` = OR of wires on `in`. NOT: `out = 1 - inn`. AND: (OR of wires on `in-l`) AND (OR of wires on `in-r`). OR: (OR of `in-l`) OR (OR of `in-r`). Lamp: `inn` only, display. Mill/jam/still: `inn === 1` skip tick; unwired 0 ticks. No hold.
+
+Chest / freezer / seed-silo / additive-store: `out` + `SENSOR_HOLD`. Full: chest/freezer no empty slot; silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`.
 
 ## Readers
 
@@ -220,7 +232,7 @@ Growing annuals unless noted.
 
 Vehicle: stored no. Trailer no. `tickVehicles` already ran this `tick()`.
 
-Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
+Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Not on/off. Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
 
 ## Actuators
 
@@ -314,9 +326,9 @@ Assumption: invariant 61; eleven cells including vehicle detector.
 
 ## Save / net
 
-`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. Wordmark **1.6.0**. No migrate. 1.5 file → `LoadFailReason` `'version'`.
+`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark **1.6.2**. No migrate. 1.6 file → `LoadFailReason` `'version'`. `World.wires[]` already a list. Dump mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`.
 
-Dump `World.wires`, `Save.smartHold`, sensor origin cells (config + `out` / `inn` / `on` / `left` / `hold`), sprinkler `inn`/`hold`, `World.waterSystems` as those cells, smart-valve segments (`Gate` `'smart'`). Digest: invariant 40 plus every wire `from`/`to`, every sensor `out`/`inn`, every sprinkler unwired vs level, every smart valve held level.
+Dump `World.wires`, `Save.smartHold`, sensor origin cells (config + `out` / `inn` / `on` / `left` / `hold`), sprinkler `inn`/`hold`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`/`hold`, `World.waterSystems` as those cells, smart-valve segments (`Gate` `'smart'`). Digest: invariant 40 plus every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, every sprinkler unwired vs level, every smart valve held level. Unchanged except fan-in OR. Wired-low still ≠ unwired.
 
 ## Dual lock (later)
 
@@ -325,7 +337,7 @@ Future germ / weather SKUs use `Sku.unlock` + `Sku.need` as `ResearchId` the sam
 ## Illegal
 
 - cycle
-- two wires on one input (replace, do not stack)
+- two direct paths same `nodeKey(from)` → `nodeKey(to)`
 - wire into an output, or out of an input-only lamp
 - analogue / XOR
 - germ / weather SKUs
@@ -336,5 +348,7 @@ Future germ / weather SKUs use `Sku.unlock` + `Sku.need` as `ResearchId` the sam
 - guest `placePipe` / `clickValve` / place sprinkler
 - `Partial<T>` / optional that means unsure
 - electricity / power-line as this system
+- mill / jam / still `inn` hold
+- prop nubs on mill/jam/still/chest/freezer/silo/additive
 - `HudTarget` hangar or vehicle
 - comments in `src/`

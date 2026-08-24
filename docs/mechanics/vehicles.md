@@ -11,13 +11,13 @@ Vehicles I remains. Not collision. Not vehicle-detector. Walk speed unchanged �
 | `src/game/defs/items.ts` | `QUAD_*` `VEHICLE_SLOTS` `HANGAR_W` `HANGAR_H` `SILO_W` `SILO_H` `SURFACE_*` `HEADING_*` `TRACTOR_VMAX` `TRACTOR_ACCEL` `TRACTOR_R` `TRACTOR_YAW` `TRACTOR_PRICE` `TRACTOR_LEN` `TRACTOR_WIDE` `HITCH_BACK` `TRAILER_LEN` `TRAILER_WIDE` `TRAILER_CAP` `TRAILER_SEED_PRICE` `TRAILER_SPRAY_PRICE` `TRAILER_HARVEST_PRICE` `HARVEST_SLOTS` `BOOM_LONG` `SILO_SEED_PRICE` `SILO_SPRAY_PRICE` `SILO_PRODUCE_PRICE` |
 | `src/game/defs/research.ts` | `unlock-vehicles` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` |
 | `src/game/sim/ids.ts` | `VehicleKind` `VehicleId` `VehicleSlot` `TrailerKind` `TrailerId` `HarvestSlot` `SkuId` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` |
-| `src/game/sim/vehicle.ts` | `Vehicle` `Trailer` `Drive` `VehiclePose` `TrailerPose` `surfaceMul` `hangarPad` `siloPad` `padCenter` `hitchP` `trailerCenter` `followHitch` `boomHits` `seekSpeed` `integrateVehicle`. No `World`. No `Dismount`. |
+| `src/game/sim/vehicle.ts` | `Vehicle` `Trailer` `Drive` `VehiclePose` `TrailerPose` `surfaceMul` `hangarPad` `siloPad` `dropoffPad` `takeupPad` `padCenter` `hitchP` `trailerCenter` `followHitch` `boomHits` `seekSpeed` `integrateVehicle`. No `World`. No `Dismount`. |
 | `src/game/sim/building.ts` | `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` |
 | `src/game/sim/plot.ts` | `Cell` += hangar `silo-seed` `silo-spray` `silo-produce`. `isSolid` += those |
 | `src/game/sim/world.ts` | `World.vehicles` `World.trailers` `World.hangars` `World.seedSilos` `World.spraySilos` `World.produceSilos` `World.nextVehicleId` `World.nextTrailerId`. `Seat.drive`. Cue hangar. Cue vehicle. apply / tick / boom after integrate / `away` |
-| `src/game/sim/log.ts` | `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.52. dump vehicles + trailers + hangar/silo cells. No migrate |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.52. `GUEST_BUILD` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. digest vehicles + trailers |
+| `src/game/sim/log.ts` | `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` |
+| `src/game/sim/save.ts` | `SAVE_VERSION` 1.62. dump vehicles + trailers + hangar/silo cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate |
+| `src/game/sim/mp.ts` | `PROTOCOL` 1.62. permit `load` `unload` except guest chest/freezer. digest += mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` |
 | `src/game/sim/field.ts` | quad slot + harvest-trailer slot `tickFreshness` |
 | `src/game/sim/intents.ts` | `hangar` `vehicle` `embark` |
 | `src/game/sim/prompt.ts` | hangar / parked vehicle / silo look / delete block. `hangarSiteOk` `siloSiteOk` |
@@ -26,7 +26,7 @@ Vehicles I remains. Not collision. Not vehicle-detector. Walk speed unchanged �
 | `src/game/sim/vehicle.test.ts` | named invariants |
 | `src/game/ui/hangar.tsx` | hangar cue: buy Quad / Tractor / three trailers / list / Deploy (stored vehicle; tractor may hitch a stored trailer or none) / Refill. No 6-slot. No cargo. |
 | `src/game/ui/vehicle.tsx` | parked Quad: 6 slots + Embark. parked tractor: trailer cargo if hitched + Embark |
-| `src/game/view/map.tsx` | paint field quad / tractor / attached trailer; hide gardener while seated; hangar + silo pad arrows view-only, local driver only |
+| `src/game/view/map.tsx` | paint field quad / tractor / attached trailer; hide gardener while seated; hangar + silo + machine pad arrows view-only, local driver only; pad opacity 0.5, 1 iff that pad action legal |
 | `src/game/view/camera.ts` | follow local actor. View-local. Not sim |
 
 Do not create `src/` here.
@@ -347,6 +347,39 @@ Seed: swap that would exceed 100 is no-op. Spray: swap/pour that would put `floo
 
 Parked only. `Act.swapTrailer { u, i }` swaps `seats[p].hand` with hopper (`i` must be 0) or `slots[i]`, then `compactSlots` on harvest. Legal iff that trailer is `attached` to a tractor that is `field` && `driver === 'none'`. Hangar: no cargo UI. Driving: no cargo swap. Stored unattached: no-op. Seed/spray refuse wrong item kind (hopper type cannot represent it) — no-op. Guests may swap.
 
+## Machine pads
+
+Geometric, not a `Cell`. Stay plots. Place does not require pad free.
+
+Pads: mill, still, jam, compost-box, chest, freezer, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos.
+
+```
+dropoffPad(base) = { row: base.row - 1, col: base.col + i } for i in 0..w-1
+takeupPad(base)  = { row: base.row + h, col: base.col + i } for i in 0..w-1
+```
+
+Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad (hangar `Act.dock`). Else no-op.
+
+Paint: local driver only. Opacity 0.5; 1 iff that pad’s Load or Unload is legal.
+
+## Load / Unload
+
+Cargo: Quad `slots`. Tractor harvest `slots` `TRAILER_CAP`; seed hopper; spray hopper. Tractor `hitch === 'none'`: buttons hidden, both cmds no-op.
+
+```
+Cmd +=
+  | { a: typeof Act.load; t; p }
+  | { a: typeof Act.unload; t; p }
+```
+
+`Act.load` `'L'`. `Act.unload` `'U'`. No coord. Floor of the driven vehicle. Instant. Logged. Legal while driven.
+
+Unload: cargo → building, all legal until dest full. Same accept as walk dump (boxes). Mill/jam fruit/compost: no extra hopper cap. Still `STILL_CAP`. Jam sugar `JAM_BUFFER`. Chest/freezer merge+compact. Seed silo `SILO_SEED_CAP`. Additive `ADDITIVE_CAP_LITERS`.
+
+Load: chest/freezer pull until cargo full. Silo seeds. Additive bags `min(ADDITIVE_BAG, stored)`. Machines: pick all ground drops on takeup cells the cargo accepts. Keep `frontOf`.
+
+Guest: mill/jam/still/compost/seed-silo/additive-store yes. Chest/freezer no (`swapChest`).
+
 ## Surfaces
 
 Mul applies to the cap, not accel, not walk. Speed seeks the new cap at accel. Same cell classes.
@@ -422,25 +455,27 @@ Cmd +=
   | { a: typeof Act.swapTrailer; t; p; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t; p; c: XY }
   | { a: typeof Act.setBoom; t; p; w: 3 | 5 }
+  | { a: typeof Act.load; t; p }
+  | { a: typeof Act.unload; t; p }
 ```
 
-`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. Latest `Act.drive` same `t` wins. Latest `Act.setBoom` same `t` wins.
+`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. `Act.load` `'L'`. `Act.unload` `'U'`. Latest `Act.drive` same `t` wins. Latest `Act.setBoom` same `t` wins.
 
 Place hangar / silos is existing place path.
 
-Wrappers: `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom`.
+Wrappers: `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload`.
 
-Not logged: integrate, follow hitch, boom, burn, camera follow, hide gardener, hangar select, pad arrows.
+Not logged: integrate, follow hitch, boom, burn, camera follow, hide gardener, hangar select, pad arrows, pad opacity.
 
-Logged: `Act.disembark` `Act.dock` `Act.setBoom`. Store is not a tick.
+Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload`. Store is not a tick.
 
 ## Save / net
 
-`SAVE_VERSION` 1.52. `PROTOCOL` 1.52. Wordmark 1.5.2. No migrate. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`. `Seat.drive` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `'version'`. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Mill/jam/still `inn`. Chest/freezer/seed-silo/additive-store `out` `hold`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.drive` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
 
 ## Guest
 
-Full parity: hangar HUD, buy hangar / Quad / tractor / trailers, place/delete silos, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar. `permit` default true on the new cmds. `GUEST_BUILD` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. Guest `swapChest` still not.
+Full parity: hangar HUD, buy hangar / Quad / tractor / trailers, place/delete silos, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store. `permit` default true on the new cmds except guest chest/freezer `load`/`unload`. `GUEST_BUILD` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. Guest `swapChest` still not. Guest Unload chest no-op.
 
 ## Look
 

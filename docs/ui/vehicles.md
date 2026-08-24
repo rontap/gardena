@@ -177,7 +177,7 @@ Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on con
 | `buy-silo-spray` | **Spraying silo** | 2×3 field tank. Look only. | **Place Spraying silo** |
 | `buy-silo-produce` | **Produce silo** | 2×3 field tank. Look only. | **Place Produce silo** |
 
-Almanac: hangar + three silos, automation tab.
+Almanac **Automation**: hangar + three silos. Not Sensors. Not Water systems. [[ui/almanac]]
 
 ## Copy
 

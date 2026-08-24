@@ -20,6 +20,7 @@ import {
   isSensor,
   nearestWire,
   ownsPort,
+  portDevice,
   portXY,
   sameEnd,
   type PortId,
@@ -40,6 +41,8 @@ import {
   FREEZER,
   HANGAR,
   HANGAR_RETURN,
+  PAD_DROP,
+  PAD_TAKE,
   QUAD,
   TRACTOR,
   TRAILER_HARVEST,
@@ -189,7 +192,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
   const place = world.seats[world.local].place
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
-  const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank'
+  const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank' || placeId === 'buy-still'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well' || placeId === 'buy-smart-valve'
@@ -529,7 +532,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               opacity={0.7}
               transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
             >
-              <Use art={placeId === 'buy-pumpjack' ? PUMP : RAIN_TANK} />
+              <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
             </g>
           )}
           {(hangarPlace || siloPlace) && hoverCell !== undefined && (
@@ -631,7 +634,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
       {pumpjack && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-8 w-16" viewBox="0 0 48 24">
-            <Use art={PUMP} />
+            <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
           </svg>
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
@@ -864,7 +867,6 @@ const Marks = memo(function Marks({
     chest: CHEST,
     grinder: GRINDER,
     mill: MILL,
-    still: STILL,
     barrel: BARREL,
     jam: JAM,
     freezer: FREEZER,
@@ -929,6 +931,9 @@ const Marks = memo(function Marks({
     }
     if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
     // 1x2 stores are not in PROP_ART: they must draw once, at their base origin.
+    if (cell.kind === 'still' && cell.base.col === at.col && cell.base.row === at.row) {
+      props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
+    }
     if (cell.kind === 'hangar' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: HANGAR, kind: cell.kind })
     }
@@ -1059,6 +1064,17 @@ const Marks = memo(function Marks({
             transform={`translate(${h.p.col * TILE},${h.p.row * TILE}) scale(${TILE / 24})`}
           >
             <Use art={HANGAR_RETURN} />
+          </g>
+        ))}
+      {world.driverVehicle(world.local) !== undefined &&
+        world.machinePads().map(p => (
+          <g
+            key={`pad-${p.side}-${p.col},${p.row}`}
+            pointerEvents="none"
+            opacity={p.legal ? 1 : 0.5}
+            transform={`translate(${p.col * TILE},${p.row * TILE}) scale(${TILE / 24})`}
+          >
+            <Use art={p.side === 'dropoff' ? PAD_DROP : PAD_TAKE} />
           </g>
         ))}
       {world.vehicles.flatMap(v => {
@@ -1959,12 +1975,8 @@ function sensorProp(cell: Sensor): string {
 }
 
 function wireEndXY(world: World, end: WireEnd): { x: number; y: number } {
-  if (end.kind === 'cell') {
-    const c = world.inWorld(end.at) ? world.cell(end.at) : undefined
-    const kind = c !== undefined && isSensor(c) ? c.kind : undefined
-    return portXY(end, kind)
-  }
-  return portXY(end, undefined)
+  if (end.kind === 'cell') return portXY(end, portDevice(world.cell(end.at)))
+  return portXY(end)
 }
 
 function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
@@ -1982,6 +1994,14 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
       if (c.kind === 'lamp') return { kind: 'cell', at, port: 'in' }
       return { kind: 'cell', at, port: 'out' }
     }
+    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
+      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'in' }
+      return undefined
+    }
+    if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
+      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'out' }
+      return undefined
+    }
   }
   const v = nearestVertex(wx, wy)
   if (
@@ -1998,9 +2018,12 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
 
 function wireSignal(world: World, from: WireEnd): boolean {
   if (from.kind !== 'cell') return false
-  const c = world.inWorld(from.at) ? world.cell(from.at) : undefined
-  if (c === undefined || !isSensor(c) || c.kind === 'lamp') return false
-  return c.out === 1
+  const c = world.cell(from.at)
+  if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') return false
+  if (isSensor(c) || c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
+    return c.out === 1
+  }
+  return false
 }
 
 function wirePathD(from: { x: number; y: number }, to: { x: number; y: number }): string {
@@ -2047,7 +2070,7 @@ function PendingWire({
 
 const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
 
-function portHigh(world: World, end: WireEnd, cell: Sensor | undefined): boolean {
+function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind === 'sprinkler') {
     const s = world.sprinklerAt(end.at)
     return s !== undefined && s.inn === 1
@@ -2057,8 +2080,12 @@ function portHigh(world: World, end: WireEnd, cell: Sensor | undefined): boolean
     return h !== undefined && h.level === 1
   }
   if (end.port === 'out') {
-    if (cell === undefined || cell.kind === 'lamp') return false
-    return cell.out === 1
+    if (cell === undefined) return false
+    if (cell.kind === 'lamp' || cell.kind === 'mill' || cell.kind === 'jam' || cell.kind === 'still') return false
+    if (isSensor(cell) || cell.kind === 'chest' || cell.kind === 'freezer' || cell.kind === 'seed-silo' || cell.kind === 'additive-store') {
+      return cell.out === 1
+    }
+    return false
   }
   return world.wires.some(w => sameEnd(w.to, end) && wireSignal(world, w.from))
 }
@@ -2066,24 +2093,23 @@ function portHigh(world: World, end: WireEnd, cell: Sensor | undefined): boolean
 function PortChrome({ world }: { world: World }) {
   const marks: { key: string; x: number; y: number; out: boolean; high: boolean }[] = []
   world.forEachCell((at, c) => {
-    if (!isSensor(c)) return
     PORTS.forEach(port => {
-      if (!ownsPort(c, port)) return
+      if (!ownsPort(c, at, port)) return
       const end: WireEnd = { kind: 'cell', at, port }
-      const p = portXY(end, c.kind)
+      const p = portXY(end, portDevice(c))
       marks.push({ key: endKey(end), x: p.x, y: p.y, out: port === 'out', high: portHigh(world, end, c) })
     })
   })
   if (world.done.has('unlock-smart-irrigation')) {
     world.sprinklers.forEach(s => {
       const end: WireEnd = { kind: 'sprinkler', at: s.at, port: 'in' }
-      const p = portXY(end, undefined)
+      const p = portXY(end)
       marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: s.inn === 1 })
     })
   }
   world.smartHold.forEach(h => {
     const end: WireEnd = { kind: 'valve', e: h.e, port: 'in' }
-    const p = portXY(end, undefined)
+    const p = portXY(end)
     marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: h.level === 1 })
   })
   return (

@@ -1529,8 +1529,9 @@ describe('1.2 machines', () => {
 
   test('still water refuse', () => {
     const w = new World()
-    const still = new PotStill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    const still = new PotStill({ shape: 'rect', col: AT.col, row: AT.row, w: 2, h: 1 })
     w.setCell(AT, still)
+    w.setCell({ col: AT.col + 1, row: AT.row }, still)
     w.stills.push(still)
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
@@ -1575,15 +1576,77 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('parse older → version', () => {
+  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.6)
-    const old = parse(JSON.stringify({ ...s, version: 1.2 }))
+    expect(s.version).toBe(1.62)
+    const old = parse(JSON.stringify({ ...s, version: 1.6 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
     expect(old.reason).toBe('version')
+  })
+
+  test('`PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner.', () => {
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 999
+    const at = { col: 10, row: 16 }
+    w.buy('buy-still')
+    w.confirmPlace(at)
+    const a = w.cell(at)
+    const b = w.cell({ col: 11, row: 16 })
+    expect(a.kind).toBe('still')
+    expect(b.kind).toBe('still')
+    expect(a).toBe(b)
+    if (a.kind !== 'still') return
+    expect(a.base.w).toBe(2)
+    expect(a.base.h).toBe(1)
+    expect(a.base.col).toBe(10)
+    expect(a.base.row).toBe(16)
+    expect(w.stills).toContain(a)
+    a.feed = [{ crop: 'potato', rarity: 'common', count: 10 }]
+    a.progress = 0.5
+    w.tick(DT_MAX)
+    expect(a.progress).toBeGreaterThan(0.5)
+  })
+
+  test('`inn === 1` freezes mill/jam/still ticks (progress + still water pull). Dump and Unload still fill.', () => {
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 999
+    const millAt = { col: 10, row: 16 }
+    w.buy('buy-mill')
+    w.confirmPlace(millAt)
+    const mill = w.cell(millAt)
+    expect(mill.kind).toBe('mill')
+    if (mill.kind !== 'mill') return
+    mill.recipe = 'wheat'
+    mill.units = 5
+    mill.progress = 0.2
+    const leverAt = { col: 10, row: 15 }
+    w.buy('buy-lever')
+    w.confirmPlace(leverAt)
+    const lever = w.cell(leverAt)
+    expect(lever.kind).toBe('lever')
+    if (lever.kind !== 'lever') return
+    lever.on = true
+    lever.out = 1
+    w.armWire({ kind: 'cell', at: leverAt, port: 'out' })
+    w.placeWire({ kind: 'cell', at: leverAt, port: 'out' }, { kind: 'cell', at: millAt, port: 'in' })
+    w.tick(DT_MAX)
+    expect(mill.inn).toBe(1)
+    expect(mill.progress).toBe(0.2)
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'wheat', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true },
+    }
+    w.seats[0].actor.x = millAt.col + 0.5
+    w.seats[0].actor.y = millAt.row + 0.5
+    w.enqueue({ act: 'mill', at: millAt })
+    for (let i = 0; i < 10; i++) w.tick(DT_MAX)
+    expect(mill.units).toBe(8)
+    expect(mill.progress).toBe(0.2)
   })
 })
 

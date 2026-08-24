@@ -138,6 +138,6 @@ May append **on** / **off** from signal: lever `on`, lamp `inn`, else `out`; sma
 
 Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sensors. Vehicle detector → Sensors. Smart valve → Water (flow), after manual valve.
 
-Almanac Automation: every new SKU, generic building pane. No germ / weather. No new sprinkler pane. [[ui/almanac]]
+Almanac **Sensors**: Overview, then lever button lamp or and not sensor-water sensor-fert sensor-harvest water-system vehicle-detector. Tab click lands Overview. Generic pane. Smart valve and sprinklers on Almanac **Water systems**. No germ / weather. No new sprinkler pane. [[ui/almanac]]
 
 Assumption: Flip / Press / Tune-water / Tune-harvest fire when `place.kind === 'none'` and port hits are off (`lens !== 'sensors'`); in `sensors`, output-only whole-cell starts a wire. HUD toggles stay open. Sensors tab after Vehicles, before Land. Off-net water-system = tap-join with no incident pipe. Fan-in / A→B toggle copy here wins over the stale replace-rule in [[mechanics/sensors]]. Additive-store south cell is the same no-port as south silo.

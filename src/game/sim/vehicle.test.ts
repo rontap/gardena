@@ -36,7 +36,8 @@ import { permit } from './mp.ts'
 import { Act } from './log.ts'
 import { lookText } from './look.ts'
 import { dest, DT_MAX, World } from './world.ts'
-import { boomHits, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, trailerUsed } from './vehicle.ts'
+import { SILO_BASE } from './building.ts'
+import { boomHits, dropoffPad, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, trailerUsed } from './vehicle.ts'
 import { isSolid } from './plot.ts'
 import { Plant, Weed } from './plant.ts'
 import { FERT_PLOT_MAX, Soil } from './soil.ts'
@@ -75,13 +76,13 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
-    expect(SAVE_VERSION).toBe(1.6)
-    expect(PROTOCOL).toBe(1.6)
+  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
+    expect(SAVE_VERSION).toBe(1.62)
+    expect(PROTOCOL).toBe(1.62)
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(1.6)
+    expect(s.version).toBe(1.62)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)
@@ -134,6 +135,8 @@ describe('vehicles I', () => {
     expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
     expect(permit({ a: Act.setBoom, t: 0, p: 1, w: 3 })).toBe(true)
+    expect(permit({ a: Act.load, t: 0, p: 1 })).toBe(true)
+    expect(permit({ a: Act.unload, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [0, 0], i: 0 })).toBe(false)
   })
@@ -743,6 +746,63 @@ describe('vehicles II', () => {
     w.seats[0].actor.y = v.pose.y
     w.enter()
     expect(v.pose.driver).toBe('none')
+  })
+
+  test('assumption: dropoff is (17,8). Seed-silo dropoff is house SE; drive onto it isSolid SURFACE_SLOW.', () => {
+    expect(dropoffPad(SILO_BASE)).toEqual([{ col: 17, row: 8 }])
+    const w = new World(1)
+    const at = { col: 17, row: 8 }
+    expect(w.cell(at).kind).toBe('house')
+    expect(isSolid(w.cell(at))).toBe(true)
+    expect(surfaceMul(w.cell(at))).toBe(SURFACE_SLOW)
+  })
+
+  test('Quad on mill dropoff: Unload cane into mill.', () => {
+    const w = farm()
+    const millAt = { col: 16, row: 12 }
+    w.buy('buy-mill')
+    w.confirmPlace(millAt)
+    w.buyVehicle(AT, 'quad')
+    const v = w.vehicles[0]
+    expect(v.kind).toBe('quad')
+    if (v.kind !== 'quad') return
+    v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 0 }
+    v.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 5, unitSale: 5, freshness: 1, bio: true },
+    }
+    w.unload()
+    const mill = w.cell(millAt)
+    expect(mill.kind).toBe('mill')
+    if (mill.kind !== 'mill') return
+    expect(mill.units).toBe(5)
+    expect(mill.recipe).toBe('sugar-cane')
+    expect(v.slots[0].kind).toBe('empty')
+  })
+
+  test('Tractor harvest on mill takeup: Load sugar drop.', () => {
+    const w = farm()
+    const millAt = { col: 16, row: 12 }
+    w.buy('buy-mill')
+    w.confirmPlace(millAt)
+    w.buyVehicle(AT, 'tractor')
+    w.buyTrailer(AT, 'harvest')
+    w.deploy(1, AT, 1)
+    const v = w.vehicles[0]
+    expect(v.pose.kind).toBe('field')
+    if (v.pose.kind !== 'field') return
+    v.pose.x = 16.5
+    v.pose.y = 13.5
+    w.drops.push({
+      at: { col: 16, row: 13 },
+      item: { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 },
+    })
+    w.load()
+    const t = w.trailers[0]
+    expect(t.kind).toBe('harvest')
+    if (t.kind !== 'harvest') return
+    expect(t.slots.some(s => s.kind === 'hold' && s.item.kind === 'sugar')).toBe(true)
+    expect(w.drops.some(d => d.item.kind === 'sugar')).toBe(false)
   })
 })
 

@@ -16,7 +16,7 @@ No `World`. No tick. Numbers and copy live here; do not duplicate them in notes.
 | `rarity.ts` | `Rarity`, sale / grow / rot / weight tables |
 | `research.ts` | `RESEARCH`, `SKUS`; `Sku.tab`; `Sku.need` required |
 | `skills.ts` | `SKILLS`, `SkillDef`, `TEND_WORK` |
-| `catalog.ts` | almanac `CatalogEntry` keyed by `Face`. Sensor + smart-valve entries exist |
+| `catalog.ts` | almanac SKU `CatalogEntry` keyed by `Face`. Sensor + smart-valve entries exist. Game concepts are not `CatalogEntry`. Overview is not `CatalogEntry`. |
 | `shelf.ts` | `BuildShelfId` += `'logic'`. Shelf **Sensors** |
 
 `sim/ids.ts` owns id unions (`AnnualId`, `TreeId`, `CropId`, `SkuId`, `ResearchId`, `StallGoodId`, `SpiritKind`, `JamCrop`, `StillCrop`, `MillRecipe`, `VehicleKind`, `VehicleId`, `VehicleSlot`, `TrailerKind`, `TrailerId`, `HarvestSlot`, `SensorKind`, `MemberId`, `PlayerSkillId`, `HusbandSkillId`, `DaughterSkillId`, …). defs import those ids.
@@ -66,7 +66,7 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 
 | file | chrome |
 |---|---|
-| `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`. Coin faces are `<use href={symHref(...)}>`. |
+| `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`. Coin faces are `<use href={symHref(...)}>`. Not `AlmanacLink`. |
 | `callout-hover.tsx` | `CalloutHover` — Chrome card off the right of a panel |
 | `hud.tsx` | clock, build ribbon, docks, Multiplayer face, pause, gear. `FaceBtn` / `IconButton` faces are `<use href={symHref(...)}>`. Phase icon: `paintMotion` owns it; Hud must not also innerHTML `UI_PHASE` every render. |
 | `menu.tsx` | startup / in-play gear shell. Menu-local `MenuPage` (home / changelog). Owns changelog open/close. [[ui/menu]] [[architecture/changelog]] |
@@ -83,7 +83,7 @@ Function components. Play chrome reads `World`. Do not tick. Do not own `Cell` o
 | `market.tsx` | stall overlay; **Sell all** |
 | `inventory.tsx` | house slots |
 | `chest.tsx` | chest slots |
-| `almanac.tsx` | catalog |
+| `almanac.tsx` | Overview on Seeds / Sensors / Automation, catalog SKUs, Game concepts, `AlmanacLink` |
 | `objecthud.tsx` | sprinkler tune. water / harvest sensor HUD |
 | `hangar.tsx` | hangar cue: buy Quad / Tractor / trailers / list all owned / Deploy (stored vehicle; tractor hitch optional) / Refill. No 6-slot. No cargo |
 | `vehicle.tsx` | parked Quad: 6 slots + Embark. parked tractor: trailer cargo if hitched + Embark |

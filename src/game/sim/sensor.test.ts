@@ -7,7 +7,7 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
-import { evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -52,15 +52,15 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.6. PROTOCOL 1.6. 1.5 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.6)
-    expect(PROTOCOL).toBe(1.6)
+  test('SAVE_VERSION 1.62. PROTOCOL 1.62. Wordmark 1.6.2. No migrate. 1.6 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.62)
+    expect(PROTOCOL).toBe(1.62)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.6)
+    expect(s.version).toBe(1.62)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
-    const old = parse(JSON.stringify({ ...s, version: 1.5 }))
+    const old = parse(JSON.stringify({ ...s, version: 1.6 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
     expect(old.reason).toBe('version')
@@ -127,7 +127,9 @@ describe('1.6 sensors', () => {
       ],
       smart: new Map(),
       sprinklers: new Map(),
-      raw: new Map(),
+      raw: rawMap(new Map()),
+      machines: new Map(),
+      stores: new Map(),
     })
     expect(lever.out).toBe(1)
     expect(lamp.inn).toBe(1)
@@ -438,7 +440,7 @@ describe('1.6 sensors', () => {
     const pipe = { axis: 'h' as const, col: 10, row: 18 }
     const cropAt = { col: 9, row: 17 }
     const tapAt = { col: 11, row: 18 }
-    const stillAt = { col: 9, row: 18 }
+    const stillAt = { col: 8, row: 18 }
     const isolated = new World(1)
     ready(isolated)
     isolated.done.add('unlock-auto-irrigation')
@@ -784,5 +786,62 @@ describe('1.6 sensors', () => {
     w.seats[0].actor.y = A.row + 0.5
     w.tick(DT_MAX)
     expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - on')
+  })
+
+  test('Unwired mill/jam/still `inn` 0 ticks (enabled).', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-grinder')
+    w.buy('buy-mill')
+    w.confirmPlace(A)
+    const mill = w.cell(A)
+    expect(mill.kind).toBe('mill')
+    if (mill.kind !== 'mill') return
+    expect(mill.inn).toBe(0)
+    mill.recipe = 'wheat'
+    mill.units = 5
+    mill.progress = 0
+    w.tick(DT_MAX)
+    expect(mill.progress).toBeGreaterThan(0)
+  })
+
+  test('Chest no empty slot (`CHEST_SLOTS` 9/9) → `out` 1 after `SENSOR_HOLD`.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-chest')
+    w.buy('buy-chest')
+    w.confirmPlace(A)
+    const chest = w.cell(A)
+    expect(chest.kind).toBe('chest')
+    if (chest.kind !== 'chest') return
+    expect(chest.out).toBe(0)
+    for (let i = 0; i < 9; i++) {
+      chest.slots[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'apple' } }
+    }
+    w.tick(DT_MAX)
+    expect(chest.out).toBe(1)
+    expect(chest.hold).toBe(SENSOR_HOLD)
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      w.tick(DT_MAX)
+      expect(chest.out).toBe(1)
+    }
+    w.tick(DT_MAX)
+    expect(chest.hold).toBe(0)
+    expect(chest.out).toBe(1)
+  })
+
+  test('Seed silo `used >= SILO_SEED_CAP` → `out` 1 after hold. Additive `used >= ADDITIVE_CAP_LITERS` → `out` 1 after hold.', () => {
+    const w = new World(1)
+    const silo = w.silo
+    const add = w.additives
+    expect(silo.out).toBe(0)
+    expect(add.out).toBe(0)
+    silo.seeds.push({ crop: 'carrot', rarity: 'common', count: silo.cap - silo.used })
+    add.held.push({ id: 'fertilizer', liters: add.cap - add.used })
+    w.tick(DT_MAX)
+    expect(silo.out).toBe(1)
+    expect(add.out).toBe(1)
+    expect(silo.hold).toBe(SENSOR_HOLD)
+    expect(add.hold).toBe(SENSOR_HOLD)
   })
 })

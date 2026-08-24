@@ -11,7 +11,7 @@ Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprin
 | `src/game/defs/items.ts` | `LEVER_PRICE` `BUTTON_PRICE` `LAMP_PRICE` `OR_PRICE` `AND_PRICE` `NOT_PRICE` `SENSOR_WATER_PRICE` `SENSOR_FERT_PRICE` `SENSOR_HARVEST_PRICE` `WATER_SYSTEM_PRICE` `SMART_VALVE_PRICE` `VEHICLE_DETECTOR_PRICE` `BUTTON_PULSE` `SENSOR_HOLD` |
 | `src/game/defs/research.ts` | `unlock-sensors` `unlock-smart-irrigation`. SKUs. `Sku.need` required |
 | `src/game/defs/shelf.ts` | `BuildShelfId` += `'logic'`. Shelf **Sensors**, id `logic` |
-| `src/game/defs/catalog.ts` | almanac entries exist for every sensor SKU + smart valve. Copy layout [[ui/almanac]] |
+| `src/game/defs/catalog.ts` | SKU `CatalogEntry` for every sensor SKU + smart valve. Game concepts not CatalogEntry. Overview is not CatalogEntry. Almanac Sensors: Overview, then lever. Copy [[ui/almanac]] |
 | `src/game/sim/ids.ts` | `SensorKind` `ResearchId` += `unlock-sensors` `unlock-smart-irrigation`. `SkuId` += the twelve |
 | `src/game/sim/sensor.ts` | `Wire` `WireEnd` `Sensor` classes, ports, `ownsPort` += mill/jam/still/chest/freezer/seed-silo/additive-store, `wouldCycle`, `evalDag`, `area3`, hold, reader raw, `pourEligible`. No `World` |
 | `src/game/sim/building.ts` | mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Not sensor classes |

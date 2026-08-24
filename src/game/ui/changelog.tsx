@@ -24,6 +24,38 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.6.2',
+    name: 'Machine — Vehicle patch',
+    summary: 'Machines, stores, and vehicles pass goods. Sensors can pause machines and read full stores.',
+    changes: [
+      {
+        kind: 'improvement',
+        text: 'The pot still is 2×1 steel.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Dropoff and takeup pads while you drive.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Load and Unload from the dash.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Wire a mill, jam machine, or still to disable its input.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Chests, freezers, the seed silo, and the additive store output when full.',
+        notes: [],
+      },
+    ],
+  },
+  {
     id: '1.6.1',
     name: 'Sensors polish',
     summary: 'The Sensors tab opens the overlay. Ports, wires, and water-system look are clearer.',

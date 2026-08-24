@@ -1,5 +1,5 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
-import type { Coord, RectBase } from './building.ts'
+import type { AdditiveStore, Chest, Coord, Freezer, JamMachine, Mill, PotStill, RectBase, SeedSilo } from './building.ts'
 import type { SensorKind, Signal } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
@@ -182,24 +182,74 @@ export function isSensor(c: { kind: string }): c is Sensor {
   return isSensorKind(c.kind)
 }
 
-export function ownsPort(s: Sensor, port: PortId): boolean {
-  if (s.kind === 'lamp') return port === 'in'
-  if (s.kind === 'not') return port === 'in' || port === 'out'
-  if (s.kind === 'and' || s.kind === 'or') return port === 'in-l' || port === 'in-r' || port === 'out'
+export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
+  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
+    return port === 'in' && c.base.col === at.col && c.base.row === at.row
+  }
+  if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
+    return port === 'out' && c.base.col === at.col && c.base.row === at.row
+  }
+  if (!isSensor(c)) return false
+  if (c.kind === 'lamp') return port === 'in'
+  if (c.kind === 'not') return port === 'in' || port === 'out'
+  if (c.kind === 'and' || c.kind === 'or') return port === 'in-l' || port === 'in-r' || port === 'out'
   return port === 'out'
 }
 
-export function isOutEnd(end: WireEnd, cell: Sensor | undefined): boolean {
+export function isOutEnd(end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind !== 'cell') return false
   if (cell === undefined) return false
-  return ownsPort(cell, end.port) && end.port === 'out'
+  return ownsPort(cell, end.at, end.port) && end.port === 'out'
 }
 
-export function isInEnd(end: WireEnd, cell: Sensor | undefined, smart: boolean, sprinklerOk: boolean): boolean {
+export function isInEnd(end: WireEnd, cell: Cell | undefined, smart: boolean, sprinklerOk: boolean): boolean {
   if (end.kind === 'sprinkler') return sprinklerOk && end.port === 'in'
   if (end.kind === 'valve') return smart && end.port === 'in'
   if (cell === undefined) return false
-  return ownsPort(cell, end.port) && end.port !== 'out'
+  return ownsPort(cell, end.at, end.port) && end.port !== 'out'
+}
+
+export type PortDevice =
+  | SensorKind
+  | 'mill'
+  | 'jam'
+  | 'still'
+  | 'chest'
+  | 'freezer'
+  | 'seed-silo'
+  | 'additive-store'
+
+export function portDevice(c: Cell): PortDevice {
+  if (
+    isSensor(c) ||
+    c.kind === 'mill' ||
+    c.kind === 'jam' ||
+    c.kind === 'still' ||
+    c.kind === 'chest' ||
+    c.kind === 'freezer' ||
+    c.kind === 'seed-silo' ||
+    c.kind === 'additive-store'
+  ) {
+    return c.kind
+  }
+  throw new Error('port')
+}
+
+export type Raw = { get(k: string): Signal }
+
+export function rawMap(m: ReadonlyMap<string, Signal>): Raw {
+  return {
+    get(k: string): Signal {
+      const v = m.get(k)
+      if (v === undefined) throw new Error('raw')
+      return v
+    },
+  }
+}
+
+export function storeRaw(c: Chest | Freezer | SeedSilo | AdditiveStore): Signal {
+  if (c.kind === 'chest' || c.kind === 'freezer') return c.slots.every(s => s.kind !== 'empty') ? 1 : 0
+  return c.used >= c.cap ? 1 : 0
 }
 
 export function endKey(e: WireEnd): string {
@@ -345,11 +395,13 @@ export type EvalIn = {
   wires: readonly Wire[]
   smart: Map<string, SmartHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
-  raw: ReadonlyMap<string, Signal>
+  raw: Raw
+  machines: ReadonlyMap<string, Mill | JamMachine | PotStill>
+  stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore>
 }
 
 export function evalDag(input: EvalIn): void {
-  const { sensors, wires, smart, sprinklers, raw } = input
+  const { sensors, wires, smart, sprinklers, raw, machines, stores } = input
   const byTo = new Map<string, Wire[]>()
   wires.forEach(w => {
     const k = endKey(w.to)
@@ -365,12 +417,23 @@ export function evalDag(input: EvalIn): void {
   const innOf = (at: Coord, port: PortId): Signal => orTo(endKey({ kind: 'cell', at, port }))
   const outOf = (from: WireEnd): Signal => {
     if (from.kind === 'cell') {
-      const s = sensors.get(cellKey(from.at)) as Sensor
-      if (s.kind === 'lamp') return 0
-      return s.out
+      const s = sensors.get(cellKey(from.at))
+      if (s !== undefined) {
+        if (s.kind === 'lamp') throw new Error('out')
+        return s.out
+      }
+      const store = stores.get(cellKey(from.at))
+      if (store === undefined) throw new Error('out')
+      return store.out
     }
-    if (from.kind === 'sprinkler') return (sprinklers.get(vertexKey(from.at)) as Sprinkler).inn
-    return (smart.get(edgeKey(from.e)) as SmartHold).level
+    if (from.kind === 'sprinkler') {
+      const s = sprinklers.get(vertexKey(from.at))
+      if (s === undefined) throw new Error('out')
+      return s.inn
+    }
+    const h = smart.get(edgeKey(from.e))
+    if (h === undefined) throw new Error('out')
+    return h.level
   }
   sensors.forEach(s => {
     if (s.kind === 'lever') s.out = s.on ? 1 : 0
@@ -381,11 +444,17 @@ export function evalDag(input: EvalIn): void {
       s.kind === 'water-system' ||
       s.kind === 'vehicle-detector'
     ) {
-      const r = raw.get(cellKey({ col: s.base.col, row: s.base.row })) as Signal
+      const r = raw.get(cellKey({ col: s.base.col, row: s.base.row }))
       const next = stepHold(s.out, s.hold, r)
       s.out = next.out
       s.hold = next.hold
     }
+  })
+  stores.forEach((s, k) => {
+    const r = raw.get(k)
+    const next = stepHold(s.out, s.hold, r)
+    s.out = next.out
+    s.hold = next.hold
   })
   const nodes: string[] = []
   sensors.forEach((s, k) => {
@@ -431,6 +500,9 @@ export function evalDag(input: EvalIn): void {
     else if (s.kind === 'and') s.out = innOf(at, 'in-l') === 1 && innOf(at, 'in-r') === 1 ? 1 : 0
     else if (s.kind === 'or') s.out = innOf(at, 'in-l') === 1 || innOf(at, 'in-r') === 1 ? 1 : 0
   })
+  machines.forEach(m => {
+    m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
+  })
   smart.forEach(h => {
     const inn = orTo(endKey({ kind: 'valve', e: h.e, port: 'in' }))
     const next = stepHold(h.level, h.hold, inn)
@@ -461,7 +533,7 @@ export function hitsEdge(end: WireEnd, e: Edge): boolean {
   return end.kind === 'valve' && end.e.axis === e.axis && end.e.col === e.col && end.e.row === e.row
 }
 
-export function portXY(end: WireEnd, kind: SensorKind | 'lamp' | undefined): { x: number; y: number } {
+export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number } {
   if (end.kind === 'sprinkler') return { x: end.at.col, y: end.at.row }
   if (end.kind === 'valve') {
     if (end.e.axis === 'h') return { x: end.e.col + 0.5, y: end.e.row }
@@ -471,7 +543,9 @@ export function portXY(end: WireEnd, kind: SensorKind | 'lamp' | undefined): { x
   if (end.port === 'out') return { x: col + 0.5, y: row + 1 }
   if (end.port === 'in-l') return { x: col, y: row + 0.5 }
   if (end.port === 'in-r') return { x: col + 1, y: row + 0.5 }
-  if (kind === 'not' || kind === 'lamp') return { x: col + 0.5, y: row }
+  if (kind === 'not' || kind === 'lamp' || kind === 'mill' || kind === 'jam' || kind === 'still') {
+    return { x: col + 0.5, y: row }
+  }
   return { x: col + 0.5, y: row + 0.5 }
 }
 

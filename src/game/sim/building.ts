@@ -8,7 +8,7 @@ import {
   SYNTH_BAG_LITERS,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { AnnualId, JamCrop, MillRecipe, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -240,6 +240,8 @@ export class Chest {
   readonly kind = 'chest' as const
   readonly base: RectBase
   readonly slots: Slot[]
+  out: Signal = 0
+  hold = 0
   constructor(base: RectBase) {
     this.base = base
     this.slots = Array.from({ length: CHEST_SLOTS }, (): Slot => ({ kind: 'empty' }))
@@ -278,6 +280,7 @@ export class Mill {
   recipe: MillRecipe | 'none' = 'none'
   units = 0
   progress = 0
+  inn: Signal = 0
   constructor(base: RectBase) {
     this.base = base
   }
@@ -290,6 +293,7 @@ export class JamMachine {
   fruit = 0
   sugar = 0
   progress = 0
+  inn: Signal = 0
   constructor(base: RectBase) {
     this.base = base
   }
@@ -301,8 +305,9 @@ export class PotStill {
   feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
   progress = 0
   n = 0
+  inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = base
+    this.base = { shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 }
   }
 }
 
@@ -321,6 +326,8 @@ export class Freezer {
   readonly kind = 'freezer' as const
   readonly base: RectBase
   readonly slots: Slot[]
+  out: Signal = 0
+  hold = 0
   constructor(base: RectBase) {
     this.base = base
     this.slots = Array.from({ length: FREEZER_SLOTS }, (): Slot => ({ kind: 'empty' }))
@@ -385,6 +392,8 @@ export type SiloStack = { crop: AnnualId; rarity: Rarity; count: number }
 export class SeedSilo extends Store {
   readonly kind = 'seed-silo' as const
   readonly seeds: SiloStack[] = []
+  out: Signal = 0
+  hold = 0
   constructor(base: RectBase, useDefault = true) {
     super(base, SILO_SEED_CAP, useDefault)
   }
@@ -408,6 +417,8 @@ export type AdditiveHold = { id: AdditiveId; liters: number }
 export class AdditiveStore extends Store {
   readonly kind = 'additive-store' as const
   readonly held: AdditiveHold[] = []
+  out: Signal = 0
+  hold = 0
   constructor(base: RectBase, useDefault = true) {
     super(base, ADDITIVE_CAP_LITERS, useDefault)
   }

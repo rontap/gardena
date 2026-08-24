@@ -2,6 +2,31 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — Almanac Overview
+
+[[ui/almanac]]
+
+- Overview back on Seeds / Sensors / Automation. Window 48rem. No version bump.
+
+## 2026-08-24 — Almanac Automation split
+
+[[ui/almanac]]
+
+- Almanac Automation split into Sensors / Automation / Water systems with Overview.
+- AlmanacLink.
+- Game concepts: four rarities, not five.
+- Wordmark stays **1.6.2**. `SAVE_VERSION` / `PROTOCOL` stay **1.62**. No menu RELEASES row.
+
+## 2026-08-24 — 1.6.2 Machine — Vehicle patch
+
+[[mechanics/machines]] [[mechanics/vehicles]] [[mechanics/sensors]] [[mechanics/inventory]] [[ui/machines]] [[ui/vehicles]] [[art/machines]] [[architecture/save]]
+
+- Still 2×1.
+- Pads + Load/Unload.
+- Mill/jam/still `inn` disable.
+- Chest/freezer/silo/additive `out` when full.
+- Wordmark **1.6.2**. `SAVE_VERSION` / `PROTOCOL` **1.62**. No migrate.
+
 ## 2026-08-24 — 1.6.1 Sensors patch
 
 [[mechanics/sensors]] [[ui/sensors]] [[ui/build]] [[ui/lens]] [[art/sensors]] [[architecture/save]]

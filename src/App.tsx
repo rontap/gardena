@@ -983,6 +983,40 @@ function Dash({ world }: { world: World }) {
         >
           Dock
         </button>
+        {world.vehicleCargo() && world.onDropoffPad() && (
+          <button
+            type="button"
+            aria-disabled={!world.canUnload()}
+            className={`pointer-events-auto px-3 py-2 text-base ${
+              world.canUnload()
+                ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                : 'cursor-default bg-ink/6 text-ink/35'
+            }`}
+            onClick={() => {
+              if (!world.canUnload()) return
+              world.unload()
+            }}
+          >
+            Unload
+          </button>
+        )}
+        {world.vehicleCargo() && world.onTakeupPad() && (
+          <button
+            type="button"
+            aria-disabled={!world.canLoad()}
+            className={`pointer-events-auto px-3 py-2 text-base ${
+              world.canLoad()
+                ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                : 'cursor-default bg-ink/6 text-ink/35'
+            }`}
+            onClick={() => {
+              if (!world.canLoad()) return
+              world.load()
+            }}
+          >
+            Load
+          </button>
+        )}
         {driven.kind === 'tractor' && (
           <button
             type="button"

@@ -6,13 +6,13 @@ Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home
 
 `menu.tsx` owns `MenuPage`, wordmark click, and whether `Changelog` is shown.
 
-Wordmark **1.6.0**.
+Wordmark **1.7.0**.
 
-Assumption: heading version is `id` as written (`1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
+Assumption: heading version is `id` as written (`1.7`, `1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
 
 ## Shell
 
-Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.6.0** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.7.0** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
 
 | mode | dim | backdrop | Esc |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Show ×: play, or joining, or `{ kind: 'changelog' }`.
 
 ## Wordmark
 
-The **1.6.0** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+The **1.7.0** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
 
 Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
 

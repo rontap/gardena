@@ -2,6 +2,8 @@
 
 - [[art/palette]]
 - [[art/svg]]
+- [[art/props]]
+- [[art/vfx]]
 - [[art/actor]]
 - [[art/tree]]
 - [[art/recap-night]]

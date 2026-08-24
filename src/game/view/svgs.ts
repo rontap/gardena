@@ -886,7 +886,7 @@ function inner(raw: string): string {
   return raw.replace(/^[\s\S]*?<svg[^>]*>/i, '').replace(/<\/svg>[\s\S]*$/i, '')
 }
 
-function groupInner(raw: string, id: string): string {
+export function groupInner(raw: string, id: string): string {
   const open = `<g id="${id}">`
   const start = raw.indexOf(open) + open.length
   return raw.slice(start, raw.indexOf('</g>', start))
@@ -916,7 +916,7 @@ function symAdopt(id: string, html: string): void {
   symAcc.appendChild(g)
 }
 
-function symId(html: string): string {
+export function symId(html: string): string {
   let id = SYM_IDS.get(html)
   if (id === undefined) {
     id = `sym${symSeq++}`

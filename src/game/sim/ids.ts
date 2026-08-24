@@ -246,3 +246,10 @@ export type VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5
 export type TrailerKind = 'seed' | 'spray' | 'harvest'
 export type TrailerId = number
 export type HarvestSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+
+export type VfxId =
+  | 'sprinkler-spray'
+  | 'sprinkler-spray-large'
+  | 'sprinkler-spray-vert'
+  | 'tend'
+  | 'pour'

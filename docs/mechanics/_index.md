@@ -127,4 +127,6 @@ See [[canon]].
 100. 3×3 does not read plants outside the square; center building is not a plant.
 101. Signal is `0 | 1`. Graph is a DAG. Hold on world-readers + sprinkler input + smart valve only. Digest distinguishes unwired sprinkler vs wired-low.
 
+102. Sprinkler VFX flips on the tick the pour changes. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
+
 Assumption: `Act.setBoom` `'W'`; `Act.placeWire` `'N'`; spray click is `Intent` `{ act: 'weed-spray'; at }`.

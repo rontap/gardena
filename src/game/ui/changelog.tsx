@@ -24,6 +24,34 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.7',
+    name: 'Sight lines',
+    summary: 'Effects that tell you what is running, and clearer props.',
+    changes: [
+      {
+        kind: 'major-feature',
+        text: 'Machines now show what they are doing.',
+        notes: [
+          'A working sprinkler throws an animated arc out to the edge of the ground it covers.',
+          'The spray stops the moment the water does, instead of lingering.',
+          'Tending a plant and pouring a bucket leave a brief mark on the tile.',
+          'Effects never block a click, and they stop moving if your system asks for reduced motion.',
+        ],
+        changes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'Redrew five props that were hard to read on the farm.',
+        notes: [
+          'The pump is one machine now: a rocker arm over a water sump, not two halves seen from two angles.',
+          'The tap has a proper handwheel and spout, and the water lands on its base.',
+          'The freezer is a steel cabinet instead of a blue chest.',
+          'The mill has a millstone and a flour sack; the grinder has a drum and a crank.',
+        ],
+      },
+    ],
+  },
+  {
     id: '1.6',
     name: 'Automation III',
     summary: 'Sensors and Smart Irrigation.',

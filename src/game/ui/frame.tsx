@@ -208,7 +208,7 @@ export const Field = forwardRef<HTMLInputElement, {
       autoCorrect="off"
       autoCapitalize="off"
       spellCheck={false}
-      className="w-full select-text border-2 border-ink/30 bg-parch px-2 py-2 font-mono text-sm text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink"
+      className="w-full select-text border-2 border-ink/30 bg-parch px-2 py-2 font-mono text-sm tabular-nums text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink"
       onChange={e => onChange(e.target.value)}
       onFocus={e => e.currentTarget.select()}
     />

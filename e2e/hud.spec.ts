@@ -1,18 +1,15 @@
 import { mkdir } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
+import { gotoPlay, unlockWorld } from './helpers.ts'
 
 test('hud shots', async ({ page }) => {
   await mkdir('e2e/shots', { recursive: true })
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
+  await gotoPlay(page)
   await page.screenshot({ path: 'e2e/shots/hud.png' })
   await page.getByRole('button', { name: 'Shop', exact: true }).click()
   await expect(page.getByText('General store')).toBeVisible()
   await page.screenshot({ path: 'e2e/shots/shop.png' })
-  await page.getByRole('button', { name: 'Cheat', exact: true }).click()
-  const unlock = page.getByRole('button', { name: 'Unlock all instantly' })
-  await expect(unlock).toBeVisible()
-  await unlock.click()
+  await unlockWorld(page)
   await page.getByRole('button', { name: 'Research', exact: true }).click()
   await expect(page.getByText('Research', { exact: true }).first()).toBeVisible()
   await page.screenshot({ path: 'e2e/shots/research.png' })

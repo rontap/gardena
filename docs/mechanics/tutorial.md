@@ -10,15 +10,16 @@ Decided when play starts. Not re-checked mid-farm.
 
 | start | tutorial |
 |---|---|
-| New Game, `!slotExists()`, fragment not `start_now` | on |
+| New Game, `!slotExists()`, fragment not `start_now` or `unlockall` | on |
 | New Game, `slotExists()` | off |
 | Load Save | off |
 | Upload Save | off |
 | fragment `start_now` (`#start_now`) | off |
+| fragment `unlockall` (`#unlockall`) | off |
 
 `slotExists()` is `SLOT_KEY` present. Off even if they press New Game.
 
-`#start_now` is `new World`. It does not read or write the slot.
+`#start_now` is `new World`. `#unlockall` is `new World` then `unlockAll()`. Neither reads or writes the slot. App maps both fragments to `startTutorial('start_now')`.
 
 On only for first-time New Game with no stored farm.
 
@@ -126,7 +127,7 @@ Crops, buildings, skills, economy. Shop prices out of scope. No tutorial field o
 
 ## Illegal
 
-- tutorial on when `slotExists()` or fragment `start_now`
+- tutorial on when `slotExists()` or fragment `start_now` or `unlockall`
 - tutorial on after Load / Upload
 - `Save` or `World` carrying a step
 - load resuming a mid-tour step

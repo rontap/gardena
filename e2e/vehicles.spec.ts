@@ -1,18 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-
-const TILE = 48
-const CAM_X = 15.5
-const CAM_Y = 9.5
+import { armSku, gotoPlay, tapWorld } from './helpers.ts'
 
 type Pose =
   | { kind: 'stored'; hangar: { col: number; row: number } }
   | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: number | 'none' }
 
 test('vehicles smoke', async ({ page }) => {
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
-  await unlockAll(page)
-  await armSku(page, /Vehicle hangar/)
+  await gotoPlay(page, { unlock: true })
+  await armSku(page, /Vehicle hangar/, 'Vehicles')
   await tapWorld(page, 20.5, 14.5)
   const placed = await page.evaluate(() => {
     const w = (
@@ -90,9 +85,7 @@ test('vehicles smoke', async ({ page }) => {
 })
 
 test('tractor seeder boom', async ({ page }) => {
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
-  await unlockAll(page)
+  await gotoPlay(page, { unlock: true })
   await page.evaluate(() => {
     const w = (
       window as unknown as {
@@ -181,9 +174,7 @@ test('tractor seeder boom', async ({ page }) => {
 })
 
 test('Enter embark/disembark; boom toggle paints rake width', async ({ page }) => {
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
-  await unlockAll(page)
+  await gotoPlay(page, { unlock: true })
   await page.evaluate(() => {
     const w = (
       window as unknown as {
@@ -245,40 +236,4 @@ async function poseOf(page: Page): Promise<Pose> {
     const w = (window as unknown as { __world: { vehicles: { pose: Pose }[] } }).__world
     return w.vehicles[0].pose
   })
-}
-
-async function svgBox(page: Page) {
-  const box = await page.locator('svg.bg-grass').boundingBox()
-  if (box === null) throw new Error('map svg')
-  return box
-}
-
-async function tapWorld(page: Page, wx: number, wy: number) {
-  const b = await svgBox(page)
-  const x = b.x + b.width / 2 + (wx - CAM_X) * TILE
-  const y = b.y + b.height / 2 + (wy - CAM_Y) * TILE
-  await page.mouse.move(x, y)
-  await page.mouse.down()
-  await page.mouse.up()
-}
-
-async function unlockAll(page: Page) {
-  await page.getByRole('button', { name: 'Cheat', exact: true }).click()
-  const unlock = page.getByRole('button', { name: 'Unlock all instantly' })
-  await expect(unlock).toBeVisible()
-  await unlock.click()
-  await page.getByRole('button', { name: '×' }).click()
-}
-
-async function openShop(page: Page) {
-  const dock = page.getByText('General store')
-  if (await dock.isVisible()) return
-  await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(dock).toBeVisible({ timeout: 10_000 })
-}
-
-async function armSku(page: Page, sku: string | RegExp) {
-  await openShop(page)
-  await page.getByRole('tab', { name: 'Automation' }).click()
-  await page.getByRole('button', { name: sku }).click()
 }

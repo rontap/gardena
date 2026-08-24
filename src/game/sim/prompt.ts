@@ -59,6 +59,8 @@ export type PromptHit =
   | { kind: 'smart-valve'; edge: Edge }
   | { kind: 'water-hud'; at: Coord }
   | { kind: 'harvest-hud'; at: Coord }
+  | { kind: 'counter-hud'; at: Coord }
+  | { kind: 'day-hud'; at: Coord }
 
 export function placeLabel(id: SkuId): string {
   return skuLabel(id)
@@ -175,9 +177,12 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'or') return { kind: 'place', text: 'Delete OR gate' }
   if (cell.kind === 'and') return { kind: 'place', text: 'Delete AND gate' }
   if (cell.kind === 'not') return { kind: 'place', text: 'Delete NOT gate' }
+  if (cell.kind === 'pulser') return { kind: 'place', text: 'Delete pulser' }
+  if (cell.kind === 'counter') return { kind: 'place', text: 'Delete counter' }
   if (cell.kind === 'sensor-water') return { kind: 'place', text: 'Delete water sensor' }
   if (cell.kind === 'sensor-fert') return { kind: 'place', text: 'Delete fertilizer sensor' }
   if (cell.kind === 'sensor-harvest') return { kind: 'place', text: 'Delete harvest sensor' }
+  if (cell.kind === 'sensor-day') return { kind: 'place', text: 'Delete day sensor' }
   if (cell.kind === 'water-system') return { kind: 'place', text: 'Delete water-system sensor' }
   if (cell.kind === 'vehicle-detector') return { kind: 'place', text: 'Delete vehicle detector' }
   return { kind: 'blocked', text: 'Cannot delete here' }
@@ -215,6 +220,12 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'harvest-hud') {
     return { kind: 'place', text: 'Tune harvest sensor' }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'counter-hud') {
+    return { kind: 'place', text: 'Tune counter' }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'day-hud') {
+    return { kind: 'place', text: 'Tune day sensor' }
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'port') {
     return { kind: 'place', text: 'Place' }
@@ -383,6 +394,8 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'button') return intent('Press button', { act: 'toggle', at })
     if (cell.kind === 'sensor-water') return { kind: 'place', text: 'Tune water sensor' }
     if (cell.kind === 'sensor-harvest') return { kind: 'place', text: 'Tune harvest sensor' }
+    if (cell.kind === 'counter') return { kind: 'place', text: 'Tune counter' }
+    if (cell.kind === 'sensor-day') return { kind: 'place', text: 'Tune day sensor' }
     return { kind: 'blocked', text: lookSensor(cell.kind) }
   }
   if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap') {
@@ -655,9 +668,12 @@ function lookSensor(k: SensorKind): string {
   if (k === 'or') return 'OR gate'
   if (k === 'and') return 'AND gate'
   if (k === 'not') return 'NOT gate'
+  if (k === 'pulser') return 'Pulser'
+  if (k === 'counter') return 'Counter'
   if (k === 'sensor-water') return 'Water sensor'
   if (k === 'sensor-fert') return 'Fertilizer sensor'
   if (k === 'sensor-harvest') return 'Harvest sensor'
+  if (k === 'sensor-day') return 'Day sensor'
   if (k === 'water-system') return 'Water-system sensor'
   return 'Vehicle detector'
 }

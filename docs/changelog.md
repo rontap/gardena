@@ -2,6 +2,14 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.7.1 QoL Patch I
+
+[[mechanics/sensors]] [[mechanics/vehicles]] [[mechanics/machines]] [[mechanics/inventory]] [[mechanics/trees]] [[ui/changelog]] [[architecture/save]]
+
+- Pulser, counter, day sensor. Lever Flip on wire `in` 0→1. AND / OR / NOT `unlock-advanced-sensors`. `Act.stride`. Driving dash occupied Face icons.
+- `QUAD_VMAX` 8. `COMPOST_SECONDS` 90. `STILL_WATER` 0.5. `TREE_YIELD_MUL` 3.5. Still prop `48×24`.
+- Wordmark **1.7.1**. `SAVE_VERSION` / `PROTOCOL` **1.71**. No migrate. 1.62 file → `'version'`.
+
 ## 2026-08-24 — 1.7 Sight lines
 
 [[art/vfx]] [[ui/changelog]]

@@ -25,4 +25,4 @@ Read [[canon]] and [[art/_index]]. Write `docs/art/` and SVGs immediately. No ha
 
 Halt: [[canon]].
 
-Done when the named SVGs exist. Final message: paths only.
+Done when the named SVGs exist.

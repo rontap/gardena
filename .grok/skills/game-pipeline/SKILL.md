@@ -52,7 +52,7 @@ Read first:
 - <docs the previous specialist just wrote>
 
 Write immediately where docs/agents/<type>.md allows.
-When those files exist, stop. Final message: paths only.
+When those files exist, stop.
 No handoff block. No chat contract. No code comments.
 Halt only if the task as given is blocked before any write: one-line question, then stop.
 A gap found after reading or after a write: one-line assumption in the note, finish.

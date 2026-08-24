@@ -12,3 +12,5 @@ Left ribbon **Cheat** after Almanac. Toggle. Esc / × close.
 | Gain 10 skill points | each member `points += 10` |
 
 Not in the Research dock. [[mechanics/research]] [[mechanics/family]].
+
+Boot `#unlockall`: skip menu like `#start_now`, then `unlockAll()`. Not a Cheat row. Play tests use the hash or `window.__world.unlockAll()`, not this dock. [[ui/menu]] [[architecture/save]]

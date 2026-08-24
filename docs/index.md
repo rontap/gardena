@@ -36,6 +36,10 @@ Vault for this game. Agents read this first.
 
 - [[architecture/_index]]
 
+## Infra
+
+- [[infra/index]]
+
 ## UI
 
 - [[ui/_index]]

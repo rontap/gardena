@@ -28,7 +28,7 @@ Smart valve: edge SKU `buy-smart-valve`. `Gate` `{ kind: 'smart' }`. No manual c
 
 `TAP_RATE = 5` L/s — preference. Tap 1×1, $10. Not a producer. Fills a bucket at `TAP_RATE` while the net’s tanks hold; once dry, only as fast as sources make. No net or no source: nothing.
 
-Still 1×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. Not a fill target. Start still only if `pull(sources, STILL_WATER)` returns `STILL_WATER` 0.1 L — once at start. Stored `< 0.1` → pull 0, retry each tick. — [[mechanics/machines]]
+Still 2×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. Not a fill target. Start still only if `pull(sources, STILL_WATER)` returns `STILL_WATER` 0.5 L — once at start. Stored `< 0.5` → pull 0, retry each tick. — [[mechanics/machines]]
 
 Water-system sensor 1×1 joins a net like a tap. `Net.waterSystems`. Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Not on/off. Raw 0. High iff this net’s sprinkler want this tick > stored. Taps / stills not in demand. — [[mechanics/sensors]]
 

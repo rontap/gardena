@@ -32,7 +32,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       hit.kind === 'port' ||
       hit.kind === 'delete-wire' ||
       hit.kind === 'water-hud' ||
-      hit.kind === 'harvest-hud')
+      hit.kind === 'harvest-hud' ||
+      hit.kind === 'counter-hud' ||
+      hit.kind === 'day-hud')
   ) {
     return world.promptHit(hit).text
   }
@@ -146,13 +148,19 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
                   ? 'AND gate'
                   : cell.kind === 'not'
                     ? 'NOT gate'
-                    : cell.kind === 'sensor-water'
-                      ? 'Water sensor'
-                      : cell.kind === 'sensor-fert'
-                        ? 'Fertilizer sensor'
-                        : cell.kind === 'sensor-harvest'
-                          ? 'Harvest sensor'
-                          : 'Vehicle detector'
+                    : cell.kind === 'pulser'
+                      ? 'Pulser'
+                      : cell.kind === 'counter'
+                        ? 'Counter'
+                        : cell.kind === 'sensor-water'
+                          ? 'Water sensor'
+                          : cell.kind === 'sensor-fert'
+                            ? 'Fertilizer sensor'
+                            : cell.kind === 'sensor-harvest'
+                              ? 'Harvest sensor'
+                              : cell.kind === 'sensor-day'
+                                ? 'Day sensor'
+                                : 'Vehicle detector'
       lines.push(`${name} - ${on ? 'on' : 'off'}`)
     }
   } else {

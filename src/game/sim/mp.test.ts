@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.62)
+    expect(PROTOCOL).toBe(1.71)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -115,6 +115,10 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.swapVehicle, t: 0, p: 1, v: 1, i: 0 })).toBe(true)
     expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
+    expect(permit({ a: Act.stride, t: 0, p: 1, x: 1, y: 0 })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pulser' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-counter' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sensor-day' })).toBe(true)
     expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.load, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.unload, t: 0, p: 1 })).toBe(true)

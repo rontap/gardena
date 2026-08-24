@@ -22,12 +22,14 @@ StayArmed =
   | 'buy-sprinkler-vert'
   | 'buy-sprinkler-large'
   | 'buy-lever' | 'buy-button' | 'buy-lamp' | 'buy-or' | 'buy-and' | 'buy-not'
-  | 'buy-sensor-water' | 'buy-sensor-fert' | 'buy-sensor-harvest' | 'buy-water-system'
+  | 'buy-pulser' | 'buy-counter'
+  | 'buy-sensor-water' | 'buy-sensor-fert' | 'buy-sensor-harvest' | 'buy-sensor-day'
+  | 'buy-water-system'
   | 'buy-smart-valve' | 'buy-vehicle-detector'
   | 'delete'
 ```
 
-Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + `buy-well` + twelve sensor SKUs. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
+Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + `buy-well` + fourteen sensor-cell SKUs + `buy-smart-valve`. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
 
 Confirm does **not** set `none` for StayArmed, **valve**, **well**, **smart-valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
@@ -178,13 +180,13 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | place / pulse `buy-valve` | **Place Manual valve** |
 | place / pulse `buy-smart-valve` | **Place Smart valve** |
 | place / pulse sprinklers | **Place Sprinkler** / **Place Vertical sprinkler** / **Place Large sprinkler** |
-| place / pulse sensor cells | **Place Lever** / **Place Button** / **Place Lamp** / **Place OR gate** / **Place AND gate** / **Place NOT gate** / **Place Water sensor** / **Place Fertilizer sensor** / **Place Harvest sensor** / **Place Water-system sensor** / **Place Vehicle detector** |
+| place / pulse sensor cells | **Place Lever** / **Place Button** / **Place Lamp** / **Place OR gate** / **Place AND gate** / **Place NOT gate** / **Place Pulser** / **Place Counter** / **Place Water sensor** / **Place Fertilizer sensor** / **Place Harvest sensor** / **Place Day sensor** / **Place Water-system sensor** / **Place Vehicle detector** |
 | unarmed valve | **Open valve** / **Close valve** |
 | unarmed well edge, container in hand | **Fill** |
 | unarmed well edge, no container | **Need a bucket** |
 | unarmed sprinkler vertex, smart unlocked | **Tune sprinkler** |
 | unarmed lever / button, port hits off | **Flip lever** / **Press button** |
-| unarmed water / harvest, port hits off | **Tune water sensor** / **Tune harvest sensor** |
+| unarmed water / harvest / counter / day, port hits off | **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** |
 | pending wire, illegal port | **Cannot wire here** |
 | pending wire, cycle | **Cannot loop** |
 | pending wire, that A→B already exists | **Remove wire** |
@@ -193,7 +195,7 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | delete, hover smart-valve edge | **Delete smart valve** |
 | delete, hover well edge | **Delete well** |
 | delete, hover sprinkler vertex | **Delete sprinkler** |
-| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** / **Delete vehicle hangar** / **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** / **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete water-system sensor** / **Delete vehicle detector** |
+| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** / **Delete vehicle hangar** / **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** / **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete day sensor** / **Delete water-system sensor** / **Delete vehicle detector** |
 | delete, hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** |
 | delete else | **Cannot delete here** |
 | blocked | **Cannot place here** |

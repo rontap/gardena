@@ -24,4 +24,4 @@ Read [[canon]] and [[stack]]. Write immediately. No handoff text.
 4. Name invariants the coder must not runtime-check. Testable only.
 5. Name the files.
 6. Halt: [[canon]].
-7. Done when architecture and mechanics notes match the task. Final message: paths only.
+7. Done when architecture and mechanics notes match the task.

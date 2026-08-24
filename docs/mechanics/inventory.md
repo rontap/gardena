@@ -87,7 +87,7 @@ One kind: fruit or seeds (one crop+rarity) or weeds. Harvest and pickup fill the
 
 Ordinary bag `FERT_BAG_LITERS = 10`, $18, always in the shop. Synthetic `SYNTH_BAG_LITERS = 16`, $15, research. Compost `COMPOST_LITERS = 5`, organic feed.
 
-Compost box $20. `unlock-compost` $14 / 45s. `COMPOST_NEED = 10` units → one bag in `COMPOST_SECONDS = 120` (half a day — derived). Output drop on a plot in front. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Keep `frontOf`.
+Compost box $20. `unlock-compost` $14 / 45s. `COMPOST_NEED = 10` units → one bag in `COMPOST_SECONDS = 90` — preference. Output drop on a plot in front. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Keep `frontOf`.
 
 `COMPOST_VALUE` — preference:
 

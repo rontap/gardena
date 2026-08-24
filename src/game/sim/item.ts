@@ -128,9 +128,12 @@ export type Face =
   | { kind: 'or' }
   | { kind: 'and' }
   | { kind: 'not' }
+  | { kind: 'pulser' }
+  | { kind: 'counter' }
   | { kind: 'sensor-water' }
   | { kind: 'sensor-fert' }
   | { kind: 'sensor-harvest' }
+  | { kind: 'sensor-day' }
   | { kind: 'water-system' }
   | { kind: 'vehicle-detector' }
   | { kind: 'smart-valve' }
@@ -423,12 +426,18 @@ export function skuLabel(id: SkuId): string {
       return 'AND gate'
     case 'buy-not':
       return 'NOT gate'
+    case 'buy-pulser':
+      return 'Pulser'
+    case 'buy-counter':
+      return 'Counter'
     case 'buy-sensor-water':
       return 'Water sensor'
     case 'buy-sensor-fert':
       return 'Fertilizer sensor'
     case 'buy-sensor-harvest':
       return 'Harvest sensor'
+    case 'buy-sensor-day':
+      return 'Day sensor'
     case 'buy-water-system':
       return 'Water-system sensor'
     case 'buy-smart-valve':
@@ -599,7 +608,7 @@ export function skuDesc(id: SkuId): string {
     case 'buy-silo-produce':
       return '2×3 field tank. Look only.'
     case 'buy-lever':
-      return 'Throw it. Output high when on.'
+      return 'Throw it, or a wire turning on throws it. Output high when on.'
     case 'buy-button':
       return 'Press. Output high for a short pulse.'
     case 'buy-lamp':
@@ -610,12 +619,18 @@ export function skuDesc(id: SkuId): string {
       return 'Output high if both inputs are high.'
     case 'buy-not':
       return 'Output is the inverse of its input.'
+    case 'buy-pulser':
+      return 'When its input turns on, the output turns on once, then off until the input turns off.'
+    case 'buy-counter':
+      return 'Counts while its input is on. Set a number; when the count reaches it, the output turns on once and the count starts over.'
     case 'buy-sensor-water':
       return 'Reads nearby plant water. Output high when a plot matches the checked boxes.'
     case 'buy-sensor-fert':
       return 'Reads nearby growing plants. Output high when any is starving.'
     case 'buy-sensor-harvest':
       return 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.'
+    case 'buy-sensor-day':
+      return 'Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it.'
     case 'buy-water-system':
       return 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.'
     case 'buy-smart-valve':
@@ -809,12 +824,18 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'and' }
     case 'buy-not':
       return { kind: 'not' }
+    case 'buy-pulser':
+      return { kind: 'pulser' }
+    case 'buy-counter':
+      return { kind: 'counter' }
     case 'buy-sensor-water':
       return { kind: 'sensor-water' }
     case 'buy-sensor-fert':
       return { kind: 'sensor-fert' }
     case 'buy-sensor-harvest':
       return { kind: 'sensor-harvest' }
+    case 'buy-sensor-day':
+      return { kind: 'sensor-day' }
     case 'buy-water-system':
       return { kind: 'water-system' }
     case 'buy-smart-valve':

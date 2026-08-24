@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.62
+export const PROTOCOL = 1.71
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -54,9 +54,12 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-or',
   'buy-and',
   'buy-not',
+  'buy-pulser',
+  'buy-counter',
   'buy-sensor-water',
   'buy-sensor-fert',
   'buy-sensor-harvest',
+  'buy-sensor-day',
   'buy-water-system',
   'buy-vehicle-detector',
   'buy-smart-valve',
@@ -233,7 +236,7 @@ export function permit(cmd: Cmd): boolean {
     case Act.cheat:
       return false
     case Act.openHud:
-      return cmd.k === 'water' || cmd.k === 'harvest'
+      return cmd.k === 'water' || cmd.k === 'harvest' || cmd.k === 'counter' || cmd.k === 'day'
     case Act.buy:
       if (GUEST_PIPE.has(cmd.s)) return false
       if (SKUS[cmd.s].tab === 'seeds' || SKUS[cmd.s].tab === 'utility') return true
@@ -262,8 +265,8 @@ export function digestHex(world: World): string {
       s += `:${c.plant.crop}:${c.plant.rarity}:${c.plant.maturity}`
     }
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
+    else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (
-      c.kind === 'lever' ||
       c.kind === 'button' ||
       c.kind === 'or' ||
       c.kind === 'and' ||
@@ -271,6 +274,7 @@ export function digestHex(world: World): string {
       c.kind === 'sensor-water' ||
       c.kind === 'sensor-fert' ||
       c.kind === 'sensor-harvest' ||
+      c.kind === 'sensor-day' ||
       c.kind === 'water-system' ||
       c.kind === 'vehicle-detector' ||
       c.kind === 'chest' ||

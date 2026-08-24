@@ -129,6 +129,7 @@ export type ResearchId =
   | 'unlock-diamond-pickaxe'
   | 'unlock-vehicles'
   | 'unlock-sensors'
+  | 'unlock-advanced-sensors'
   | 'unlock-smart-irrigation'
 
 export type SkuId =
@@ -188,9 +189,12 @@ export type SkuId =
   | 'buy-or'
   | 'buy-and'
   | 'buy-not'
+  | 'buy-pulser'
+  | 'buy-counter'
   | 'buy-sensor-water'
   | 'buy-sensor-fert'
   | 'buy-sensor-harvest'
+  | 'buy-sensor-day'
   | 'buy-water-system'
   | 'buy-smart-valve'
   | 'buy-vehicle-detector'
@@ -202,9 +206,12 @@ export type SensorKind =
   | 'or'
   | 'and'
   | 'not'
+  | 'pulser'
+  | 'counter'
   | 'sensor-water'
   | 'sensor-fert'
   | 'sensor-harvest'
+  | 'sensor-day'
   | 'water-system'
   | 'vehicle-detector'
 
@@ -217,9 +224,12 @@ export const SENSOR_KINDS: readonly SensorKind[] = [
   'or',
   'and',
   'not',
+  'pulser',
+  'counter',
   'sensor-water',
   'sensor-fert',
   'sensor-harvest',
+  'sensor-day',
   'water-system',
   'vehicle-detector',
 ]
@@ -231,9 +241,12 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-or',
   'buy-and',
   'buy-not',
+  'buy-pulser',
+  'buy-counter',
   'buy-sensor-water',
   'buy-sensor-fert',
   'buy-sensor-harvest',
+  'buy-sensor-day',
   'buy-water-system',
   'buy-vehicle-detector',
 ]

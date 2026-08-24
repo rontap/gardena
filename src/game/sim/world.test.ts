@@ -3,6 +3,7 @@ import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   ADDITIVE_CAP_LITERS,
   COMPOST_LITERS,
+  COMPOST_SECONDS,
   CONTAINERS,
   FERT_BAG_LITERS,
   GRIND_MAX,
@@ -10,6 +11,7 @@ import {
   GRIND_WORK,
   SILO_SEED_CAP,
   SPRINKLER_TILE_RATE,
+  STILL_WATER,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_USES,
 } from '../defs/items.ts'
@@ -40,6 +42,7 @@ import {
   occupiedCells,
 } from './building.ts'
 import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
+import { TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
 import { Plant, Weed } from './plant.ts'
@@ -1602,12 +1605,12 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.7.0. No migrate. 1.6 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark 1.7.1. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.62)
-    const old = parse(JSON.stringify({ ...s, version: 1.6 }))
+    expect(s.version).toBe(1.71)
+    const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
     expect(old.reason).toBe('version')
@@ -2090,7 +2093,36 @@ describe('1.5.2', () => {
     expect(SYNTH_BAG_LITERS).toBe(16)
     expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
     expect(COMPOST_LITERS).toBe(5)
+    expect(COMPOST_SECONDS).toBe(90)
     expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
+  })
+
+  test('`Seat.stride`. Not driver, `presence === \'in\'`, not recap: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.', () => {
+    const w = new World(1)
+    const x0 = w.seats[0].actor.x
+    const y0 = w.seats[0].actor.y
+    w.stride(1, 0)
+    expect(w.log.some(c => c.a === Act.stride)).toBe(true)
+    w.tick(DT_MAX)
+    expect(w.seats[0].actor.x).toBeCloseTo(x0 + w.walkSpeed() * DT_MAX, 8)
+    expect(w.seats[0].actor.y).toBe(y0)
+    const s = dump(w)
+    expect('stride' in s.seats[0]).toBe(false)
+    w.stride(1, 1)
+    const x1 = w.seats[0].actor.x
+    const y1 = w.seats[0].actor.y
+    w.tick(DT_MAX)
+    const step = (w.walkSpeed() * DT_MAX) / Math.hypot(1, 1)
+    expect(w.seats[0].actor.x).toBeCloseTo(x1 + step, 8)
+    expect(w.seats[0].actor.y).toBeCloseTo(y1 + step, 8)
+  })
+
+  test('`STILL_WATER` 0.5. Start still requires full pull.', () => {
+    expect(STILL_WATER).toBe(0.5)
+  })
+
+  test('Tree juvenile `TREES.juvenileSeconds` (480) then `pending`. Next seam → `TREE_YIELD_MUL` 3.5× for 2 days.', () => {
+    expect(TREE_YIELD_MUL).toBe(3.5)
   })
 })

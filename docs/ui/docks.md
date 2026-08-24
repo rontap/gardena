@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. [[ui/sensors]]
+Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo is driving overlay, not a dock or Object HUD — [[ui/vehicles]]. [[ui/sensors]]
 
 ## Left docks
 
@@ -64,10 +64,10 @@ Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joine
 
 ## Object HUD
 
-Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest sensor config. No new chrome. [[ui/sensors]]
+Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day sensor config. No new chrome. [[ui/sensors]]
 
 Sprinklers, only after **Tune sprinkler** (`unlock-smart-sprinkler`). Anchored at the vertex. Title **Sprinkler output**.
 
-**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest hit. Guest: no sprinkler HUD.
+**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest / counter / day hit. Guest: no sprinkler HUD.
 
-Water / harvest: remote, no walk. Anchored at the cell. Titles **Water sensor** / **Harvest sensor**. Checkboxes **Wilting** **Overwatered** (default both on) / **Any** **All** (default Any). Not a crop list. Toggle applies and stays open. Guest: yes. While that HUD is open, that sensor’s 3×3 `fill-water` 0.35.
+Water / harvest / counter / day: remote, no walk. Anchored at the cell. Titles **Water sensor** / **Harvest sensor** / **Counter** / **Day sensor**. Checkboxes **Wilting** **Overwatered** (default both on) / **Any** **All** (default Any) / **Sunrise** **Day** **Sunset** **Twilight** (default **Day** on). Counter: live count, **Count to** + `Field` **n**, **Reset**. Not a crop list. Apply immediately and stays open. Guest: yes. While water / harvest HUD is open, that sensor’s 3×3 `fill-water` 0.35. Counter / day: no wash.

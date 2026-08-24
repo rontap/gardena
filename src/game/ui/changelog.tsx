@@ -24,6 +24,69 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.7.1',
+    name: 'QoL Patch I',
+    summary: 'Pulser, counter, and day sensor. A wire can throw a lever. The dash shows what you are carrying.',
+    changes: [
+      {
+        kind: 'feature',
+        text: 'Added a pulser, a counter, and a day sensor.',
+        notes: [
+          'The pulser turns on once when its input turns on, then stays off until the input turns off.',
+          'The counter counts while its input is on. Set a number; when the count reaches it, the output turns on once and counting starts over.',
+          'The day sensor turns on during the parts of the day you check. Day is on when you place it.',
+        ],
+      },
+      {
+        kind: 'improvement',
+        text: 'A wire turning on throws a lever.',
+        notes: ['You can still throw it by hand. Its output is on when the lever is on.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'AND, OR, and NOT wait on Advanced sensors.',
+        notes: ['They show on the Sensors shelf after Sensors. Research Advanced sensors to buy them.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'The driving dash shows what you are carrying.',
+        notes: [
+          'A Quad shows occupied slot faces. A tractor with a seeder or sprayer shows the hopper. A harvester shows occupied harvest faces.',
+        ],
+      },
+      {
+        kind: 'feature',
+        text: 'WASD walks you around the farm when you are not driving.',
+        notes: ['Click-to-walk still works.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Vehicles are slower.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'The pot still looks two tiles wide.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'The compost box finishes a bag faster.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'The pot still uses more water.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'Trees drop fruit faster in season.',
+        notes: [],
+      },
+    ],
+  },
+  {
     id: '1.7',
     name: 'Sight lines',
     summary: 'Effects that tell you what is running, and clearer props.',

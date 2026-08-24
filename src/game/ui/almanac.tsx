@@ -85,11 +85,14 @@ const SENSOR_IDS = [
   'or',
   'and',
   'not',
+  'pulser',
+  'counter',
   'sensor-water',
   'sensor-fert',
   'sensor-harvest',
   'water-system',
   'vehicle-detector',
+  'sensor-day',
 ]
 const AUTO_IDS = [
   'chest',

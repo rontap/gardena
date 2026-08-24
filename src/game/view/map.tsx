@@ -17,6 +17,7 @@ import type { PromptHit } from '../sim/prompt.ts'
 import {
   area3,
   endKey,
+  counterDial,
   isSensor,
   nearestWire,
   ownsPort,
@@ -93,12 +94,15 @@ import {
   leverArt,
   buttonArt,
   lampArt,
+  pulserArt,
+  counterArt,
   PROP_OR,
   PROP_AND,
   PROP_NOT,
   waterSensorArt,
   fertSensorArt,
   harvestSensorArt,
+  daySensorArt,
   waterSystemArt,
   vehicleDetectorArt,
   weedInner,
@@ -2004,9 +2008,12 @@ function sensorProp(cell: Sensor): string {
   if (cell.kind === 'or') return PROP_OR
   if (cell.kind === 'and') return PROP_AND
   if (cell.kind === 'not') return PROP_NOT
+  if (cell.kind === 'pulser') return pulserArt(cell.out === 1)
+  if (cell.kind === 'counter') return counterArt(counterDial(cell))
   if (cell.kind === 'sensor-water') return waterSensorArt(cell.out === 1)
   if (cell.kind === 'sensor-fert') return fertSensorArt(cell.out === 0)
   if (cell.kind === 'sensor-harvest') return harvestSensorArt(cell.out === 1)
+  if (cell.kind === 'sensor-day') return daySensorArt(cell.out === 1)
   if (cell.kind === 'water-system') return waterSystemArt(cell.out === 1)
   return vehicleDetectorArt(cell.out === 1)
 }
@@ -2027,7 +2034,9 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
         if (fy > 0.65) return { kind: 'cell', at, port: 'out' }
         return { kind: 'cell', at, port: fx < 0.5 ? 'in-l' : 'in-r' }
       }
-      if (c.kind === 'not') return { kind: 'cell', at, port: fy < 0.5 ? 'in' : 'out' }
+      if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever') {
+        return { kind: 'cell', at, port: fy < 0.5 ? 'in' : 'out' }
+      }
       if (c.kind === 'lamp') return { kind: 'cell', at, port: 'in' }
       return { kind: 'cell', at, port: 'out' }
     }
@@ -2363,6 +2372,8 @@ function clickHit(world: World, wx: number, wy: number, lens: Lens): MapClick | 
       const c = world.cell(cellAt)
       if (c.kind === 'sensor-water' && lens !== 'sensors') return { kind: 'water-hud', at: cellAt }
       if (c.kind === 'sensor-harvest' && lens !== 'sensors') return { kind: 'harvest-hud', at: cellAt }
+      if (c.kind === 'counter' && lens !== 'sensors') return { kind: 'counter-hud', at: cellAt }
+      if (c.kind === 'sensor-day' && lens !== 'sensors') return { kind: 'day-hud', at: cellAt }
     }
   }
   return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }

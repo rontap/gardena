@@ -451,7 +451,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'lever',
       title: 'Lever',
       icon: { kind: 'lever' },
-      blurb: 'Throw it. Output high when on.',
+      blurb: 'Throw it, or a wire turning on throws it. Output high when on.',
     },
     {
       id: 'button',
@@ -484,6 +484,18 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: 'Output is the inverse of its input.',
     },
     {
+      id: 'pulser',
+      title: 'Pulser',
+      icon: { kind: 'pulser' },
+      blurb: 'When its input turns on, the output turns on once, then off until the input turns off.',
+    },
+    {
+      id: 'counter',
+      title: 'Counter',
+      icon: { kind: 'counter' },
+      blurb: 'Counts while its input is on. Set a number; when the count reaches it, the output turns on once and the count starts over.',
+    },
+    {
       id: 'sensor-water',
       title: 'Water sensor',
       icon: { kind: 'sensor-water' },
@@ -500,6 +512,12 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Harvest sensor',
       icon: { kind: 'sensor-harvest' },
       blurb: 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.',
+    },
+    {
+      id: 'sensor-day',
+      title: 'Day sensor',
+      icon: { kind: 'sensor-day' },
+      blurb: 'Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it.',
     },
     {
       id: 'water-system',

@@ -76,13 +76,13 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
-    expect(SAVE_VERSION).toBe(1.62)
-    expect(PROTOCOL).toBe(1.62)
+  test('`SAVE_VERSION` 1.71. `PROTOCOL` 1.71. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
+    expect(SAVE_VERSION).toBe(1.71)
+    expect(PROTOCOL).toBe(1.71)
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(1.62)
+    expect(s.version).toBe(1.71)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)
@@ -169,7 +169,7 @@ describe('vehicles I', () => {
     expect(w.walkSpeed()).toBe(6)
   })
 
-  test('Empty fuel cap `QUAD_EMPTY_MUL × vMax × surfaceMul` (`vMax` already includes driving-classes). No auto-dismount. Can still `Act.embark`. Burn `dt / QUAD_FUEL_SECONDS × (1 − 0.05 × driving-classes tier)` while driver and (`throttle ≠ 0` || `steer ≠ 0`). `QUAD_VMAX` 9. `QUAD_R` 3. Tractor `TRACTOR_VMAX = QUAD_VMAX × 0.67`, `TRACTOR_ACCEL = QUAD_ACCEL × 0.5`, `TRACTOR_R` 3, `TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R`.', () => {
+  test('Empty fuel cap `QUAD_EMPTY_MUL × vMax × surfaceMul` (`vMax` already includes driving-classes). No auto-dismount. Can still `Act.embark`. Burn `dt / QUAD_FUEL_SECONDS × (1 − 0.05 × driving-classes tier)` while driver and (`throttle ≠ 0` || `steer ≠ 0`). `QUAD_VMAX` 8. `QUAD_R` 3. Tractor `TRACTOR_VMAX = QUAD_VMAX × 0.67`, `TRACTOR_ACCEL = QUAD_ACCEL × 0.5`, `TRACTOR_R` 3, `TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R`.', () => {
     const w = farm()
     w.buyVehicle(AT, 'quad')
     w.deploy(1, AT, 'none')
@@ -237,7 +237,7 @@ describe('vehicles I', () => {
     expect(w.machineMul()).toBe(1)
     w.family.husband.owned.set('machinery', 2)
     expect(w.machineMul()).toBe(1.1)
-    expect(QUAD_VMAX).toBe(9)
+    expect(QUAD_VMAX).toBe(8)
     expect(QUAD_R).toBe(3)
     expect(TRACTOR_R).toBe(3)
     expect(QUAD_ACCEL).toBe(QUAD_VMAX / 1.5)

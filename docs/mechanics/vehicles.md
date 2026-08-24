@@ -2,7 +2,7 @@
 
 Quad + hangar + tractor + 3 trailers + boom + 3 inert silos. Types [[architecture/world]]. Shop gates [[mechanics/research]]. Dump [[architecture/save]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Numbers preference unless marked.
 
-Vehicles I remains. Not collision. Not vehicle-detector. Walk speed unchanged — [[items/tiles]]. `HudTarget` stays sprinkler-only.
+Vehicles I remains. Not collision. Not vehicle-detector. Click-walk speed unchanged — [[items/tiles]]. WASD walk and dash cargo below. `HudTarget` counter / day — [[mechanics/sensors]]. Dash cargo is driving overlay, not `HudTarget`.
 
 ## Files
 
@@ -15,9 +15,9 @@ Vehicles I remains. Not collision. Not vehicle-detector. Walk speed unchanged �
 | `src/game/sim/building.ts` | `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` |
 | `src/game/sim/plot.ts` | `Cell` += hangar `silo-seed` `silo-spray` `silo-produce`. `isSolid` += those |
 | `src/game/sim/world.ts` | `World.vehicles` `World.trailers` `World.hangars` `World.seedSilos` `World.spraySilos` `World.produceSilos` `World.nextVehicleId` `World.nextTrailerId`. `Seat.drive`. Cue hangar. Cue vehicle. apply / tick / boom after integrate / `away` |
-| `src/game/sim/log.ts` | `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.62. dump vehicles + trailers + hangar/silo cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.62. permit `load` `unload` except guest chest/freezer. digest += mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` |
+| `src/game/sim/log.ts` | `Act.drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` |
+| `src/game/sim/save.ts` | `SAVE_VERSION` 1.71. dump vehicles + trailers + hangar/silo cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate. `Seat.stride` not in the file |
+| `src/game/sim/mp.ts` | `PROTOCOL` 1.71. permit `load` `unload` except guest chest/freezer. permit `stride`. digest += mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` |
 | `src/game/sim/field.ts` | quad slot + harvest-trailer slot `tickFreshness` |
 | `src/game/sim/intents.ts` | `hangar` `vehicle` `embark` |
 | `src/game/sim/prompt.ts` | hangar / parked vehicle / silo look / delete block. `hangarSiteOk` `siloSiteOk` |
@@ -25,7 +25,7 @@ Vehicles I remains. Not collision. Not vehicle-detector. Walk speed unchanged �
 | `src/game/sim/item.ts` | `Face` += hangar `silo-seed` `silo-spray` `silo-produce` |
 | `src/game/sim/vehicle.test.ts` | named invariants |
 | `src/game/ui/hangar.tsx` | hangar cue: buy Quad / Tractor / three trailers / list / Deploy (stored vehicle; tractor may hitch a stored trailer or none) / Refill. No 6-slot. No cargo. |
-| `src/game/ui/vehicle.tsx` | parked Quad: 6 slots + Embark. parked tractor: trailer cargo if hitched + Embark |
+| `src/game/ui/vehicle.tsx` | parked Quad: 6 slots + Embark. parked tractor: trailer cargo if hitched + Embark. Parked dialog unchanged — no dash cargo |
 | `src/game/view/map.tsx` | paint field quad / tractor / attached trailer; hide gardener while seated; hangar + silo + machine pad arrows view-only, local driver only; pad opacity 0.5, 1 iff that pad action legal |
 | `src/game/view/camera.ts` | follow local actor. View-local. Not sim |
 
@@ -36,7 +36,7 @@ Do not create `src/` here.
 | id | value | |
 |---|---|---|
 | `WALK` | 6 | existing `actor.ts` |
-| `QUAD_VMAX` | 9 | preference |
+| `QUAD_VMAX` | 8 | preference |
 | `QUAD_SHOW_MUL` | 4 | preference. Dash km/h only. Not sim |
 | `QUAD_ACCEL_SECONDS` | 1.5 | preference |
 | `QUAD_ACCEL` | `QUAD_VMAX / QUAD_ACCEL_SECONDS` | derived |
@@ -163,10 +163,10 @@ SiloProduce = { kind: 'silo-produce'; base: RectBase }
 Hangar `RectBase` `w = HANGAR_W` `h = HANGAR_H`. Silo `RectBase` `w = SILO_W` `h = SILO_H`. Door south. No rotate. Same instance all 6 cells.
 
 ```
-Seat += { drive: Drive }
+Seat += { drive: Drive; stride: { x: -1 | 0 | 1; y: -1 | 0 | 1 } }
 ```
 
-`Seat.drive` ignored unless this seat is a driver.
+`Seat.drive` ignored unless this seat is a driver. `Seat.stride` ignored while this seat is a driver. Load stride `{0,0}` — not in Save.
 
 No `Seat.dismount`. No `Dismount` type.
 
@@ -259,11 +259,13 @@ No auto-store. Store is not on tick when center enters pad. Store is `Act.dock`.
 
 ## Drive
 
-WASD is UI → `Act.drive`. Not per rAF. Send on change.
+Driver WASD is UI → `Act.drive`. Not per rAF. Send on change / blur / become-not-driver.
 
-W `throttle` 1. S `throttle` −1. A `steer` −1. D `steer` 1. Release 0. Tank-steer: A/D yaw in place. Same kind yaw at speed 0. S reverse. W forward. Quad dash / WASD / follow-cam / pad-dock unchanged.
+W `throttle` 1. S `throttle` −1. A `steer` −1. D `steer` 1. Release 0. Tank-steer: A/D yaw in place. Same kind yaw at speed 0. S reverse. W forward. Quad dash / follow-cam / pad-dock unchanged. Not driver: WASD is stride, not tank.
 
 `Act.drive { throttle, steer }` writes `seats[p].drive`. Latest same `t` wins. Ignored unless this seat is a driver.
+
+App: existing WASD `held` — if driver `drive`, else `stride`. Text fields ignore.
 
 Tick, per field vehicle, array order. Recap: no integrate. After each field vehicle’s integrate: if tractor with hitch, `followHitch`, then boom (that vehicle). Boom is not a `Cmd`. No pulse.
 
@@ -281,6 +283,40 @@ Driver present: read that `Drive`.
 No driver: Drive ignored. No burn. No yaw. Seek speed 0 at that kind’s accel (not driving-classes). Translate. Hitch still follows.
 
 No store-on-tick. No coast-to-walk.
+
+## WASD walk
+
+Not tank. W north (−y), S south (+y), A west (−x), D east (+x). W+A northwest. Both of an axis → 0. Diagonal: `speed * dt / hypot(dx, dy)` so not √2.
+
+```
+Seat.stride = { x: -1 | 0 | 1; y: -1 | 0 | 1 }
+Cmd += { a: typeof Act.stride; t; p; x: -1 | 0 | 1; y: -1 | 0 | 1 }
+```
+
+`Act.stride` `'K'`. `pickSkill` stays `'k'`. Send on key change / blur / become-not-driver, same as `Act.drive`. Latest same `t` wins. Ignored while this seat is a driver. Load `{0,0}` — not in Save.
+
+Tick (`tickQueue` / per-seat, `presence === 'in'`, not recap): if `stride !== {0,0}` and not driver: clear queue + work (stop shovel mid-swing), `actor.x/y += dir * walkSpeed() * dt`. Boots apply. Surfaces not. No owned-land reject (click-walk has none). Away skips. Actor SVG stays one pose.
+
+Click while stride held still enqueues; next tick stride wins until keys up. WASD walk **and** click-queue.
+
+Window blur → stride `{0,0}`.
+
+Not logged: the integrate. Logged: `Act.stride` (MP digest already has `actor.x/y`).
+
+## Dash cargo
+
+Driving dash only (`src/game/ui` overlay on `ui-dash-*`). Not parked cue. Not hangar.
+
+Small `ItemFace` of current load. Occupied Face icons only (almanac/shop faces). Empty omitted. Reuse Face SVGs. No new item art. Size: smaller than shop `h-10` (ui-ux).
+
+| driven | icons |
+|---|---|
+| Quad | occupied of `slots` (≤6), slot order |
+| Tractor + seed/spray | hopper item, or none if empty |
+| Tractor + harvest | occupied of 8, slot order |
+| Tractor no hitch | none |
+
+Quad dash currently has no cargo strip — add one. Tractor keeps `{used}/100`; icons sit with that readout. Parked dialog unchanged.
 
 ## Hitch / visual
 
@@ -445,6 +481,7 @@ Tractor paint 1×1 red. Trailer 1×1, front on `P`. Quad paint unchanged. Rake i
 ```
 Cmd +=
   | { a: typeof Act.drive; t; p; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+  | { a: typeof Act.stride; t; p; x: -1 | 0 | 1; y: -1 | 0 | 1 }
   | { a: typeof Act.buyVehicle; t; p; c: XY; k: VehicleKind }
   | { a: typeof Act.buyTrailer; t; p; c: XY; k: TrailerKind }
   | { a: typeof Act.deploy; t; p; v: VehicleId; c: XY; hitch: TrailerId | 'none' }
@@ -459,23 +496,23 @@ Cmd +=
   | { a: typeof Act.unload; t; p }
 ```
 
-`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. `Act.load` `'L'`. `Act.unload` `'U'`. Latest `Act.drive` same `t` wins. Latest `Act.setBoom` same `t` wins.
+`Act.drive` `'V'`. `Act.stride` `'K'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. `Act.load` `'L'`. `Act.unload` `'U'`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins.
 
 Place hangar / silos is existing place path.
 
-Wrappers: `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload`.
+Wrappers: `drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload`.
 
-Not logged: integrate, follow hitch, boom, burn, camera follow, hide gardener, hangar select, pad arrows, pad opacity.
+Not logged: integrate, follow hitch, boom, burn, stride integrate, camera follow, hide gardener, hangar select, pad arrows, pad opacity, dash faces.
 
-Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload`. Store is not a tick.
+Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload` `Act.stride`. Store is not a tick.
 
 ## Save / net
 
-`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `'version'`. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Mill/jam/still `inn`. Chest/freezer/seed-silo/additive-store `out` `hold`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.drive` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark 1.7.1. No migrate. 1.62 file → `'version'`. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Mill/jam/still `inn`. Chest/freezer/seed-silo/additive-store `out` `hold`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.drive` not in the file — load `{0,0}`. `Seat.stride` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
 
 ## Guest
 
-Full parity: hangar HUD, buy hangar / Quad / tractor / trailers, place/delete silos, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store. `permit` default true on the new cmds except guest chest/freezer `load`/`unload`. `GUEST_BUILD` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. Guest `swapChest` still not. Guest Unload chest no-op.
+Full parity: hangar HUD, buy hangar / Quad / tractor / trailers, place/delete silos, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, stride, `setBoom`, delete empty hangar, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store. `permit` default true on the new cmds except guest chest/freezer `load`/`unload`. `GUEST_BUILD` += `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`. Guest `swapChest` still not. Guest Unload chest no-op.
 
 ## Look
 
@@ -490,4 +527,4 @@ Full parity: hangar HUD, buy hangar / Quad / tractor / trailers, place/delete si
 
 Silo: look name only. No prompt act. No dialog.
 
-Assumption: `Act.setBoom` `'W'`; attached `TrailerPose` carries `heading` (non-rigid hitch); `Act.swapTrailer` JSON `u` is TrailerId (`Cmd.t` is time); growing `m > 0.8` boom fruit `unitSale = stats.sale`.
+Assumption: `Act.setBoom` `'W'`; `Act.stride` `'K'`; latest same-`t` `Act.stride` wins like drive; attached `TrailerPose` carries `heading` (non-rigid hitch); `Act.swapTrailer` JSON `u` is TrailerId (`Cmd.t` is time); growing `m > 0.8` boom fruit `unitSale = stats.sale`.

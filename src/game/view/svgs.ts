@@ -112,9 +112,12 @@ import itemLamp from '../../assets/items/item-lamp.svg?raw'
 import itemOr from '../../assets/items/item-or.svg?raw'
 import itemAnd from '../../assets/items/item-and.svg?raw'
 import itemNot from '../../assets/items/item-not.svg?raw'
+import itemPulser from '../../assets/items/item-pulser.svg?raw'
+import itemCounter from '../../assets/items/item-counter.svg?raw'
 import itemSensorWater from '../../assets/items/item-sensor-water.svg?raw'
 import itemSensorFert from '../../assets/items/item-sensor-fert.svg?raw'
 import itemSensorHarvest from '../../assets/items/item-sensor-harvest.svg?raw'
+import itemSensorDay from '../../assets/items/item-sensor-day.svg?raw'
 import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
 import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
 import itemSmartValve from '../../assets/items/item-smart-valve.svg?raw'
@@ -124,9 +127,12 @@ import propLamp from '../../assets/props/prop-lamp.svg?raw'
 import propOr from '../../assets/props/prop-or.svg?raw'
 import propAnd from '../../assets/props/prop-and.svg?raw'
 import propNot from '../../assets/props/prop-not.svg?raw'
+import propPulser from '../../assets/props/prop-pulser.svg?raw'
+import propCounter from '../../assets/props/prop-counter.svg?raw'
 import propSensorWater from '../../assets/props/prop-sensor-water.svg?raw'
 import propSensorFert from '../../assets/props/prop-sensor-fert.svg?raw'
 import propSensorHarvest from '../../assets/props/prop-sensor-harvest.svg?raw'
+import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
 import pipeSmartValve from '../../assets/joints/pipe-smart-valve.svg?raw'
@@ -351,9 +357,12 @@ export function itemInner(item: Face): string {
   if (item.kind === 'or') return inner(itemOr)
   if (item.kind === 'and') return inner(itemAnd)
   if (item.kind === 'not') return inner(itemNot)
+  if (item.kind === 'pulser') return stageOnly(itemPulser, 'off')
+  if (item.kind === 'counter') return stageOnly(itemCounter, 's0')
   if (item.kind === 'sensor-water') return stageOnly(itemSensorWater, 'blue')
   if (item.kind === 'sensor-fert') return stageOnly(itemSensorFert, 'ok')
   if (item.kind === 'sensor-harvest') return stageOnly(itemSensorHarvest, 'off')
+  if (item.kind === 'sensor-day') return stageOnly(itemSensorDay, 'off')
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
   if (item.kind === 'smart-valve') return stageOnly(itemSmartValve, 'closed')
@@ -540,6 +549,8 @@ export function researchInner(id: ResearchId): string {
       return inner(itemHangar)
     case 'unlock-sensors':
       return stageOnly(itemLever, 'off')
+    case 'unlock-advanced-sensors':
+      return inner(itemAnd)
     case 'unlock-smart-irrigation':
       return stageOnly(itemSmartValve, 'closed')
   }
@@ -663,6 +674,12 @@ export function buttonArt(on: boolean): string {
 export function lampArt(on: boolean): string {
   return stageOnly(propLamp, on ? 'on' : 'off')
 }
+export function pulserArt(on: boolean): string {
+  return stageOnly(propPulser, on ? 'on' : 'off')
+}
+export function counterArt(group: 's0' | 's1' | 's2' | 's3' | 's4'): string {
+  return stageOnly(propCounter, group)
+}
 export function waterSensorArt(on: boolean): string {
   return stageOnly(propSensorWater, on ? 'blue' : 'red')
 }
@@ -671,6 +688,9 @@ export function fertSensorArt(ok: boolean): string {
 }
 export function harvestSensorArt(on: boolean): string {
   return stageOnly(propSensorHarvest, on ? 'on' : 'off')
+}
+export function daySensorArt(on: boolean): string {
+  return stageOnly(propSensorDay, on ? 'on' : 'off')
 }
 export function waterSystemArt(on: boolean): string {
   return stageOnly(propWaterSystem, on ? 'on' : 'off')

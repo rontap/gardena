@@ -30,7 +30,7 @@ No Intent / Assumptions / Artifacts / Open questions / Handoff block. Next agent
 
 Halt only before any write, and only if the task as given is blocked: one-line question, then **stop**. After a write, or a gap found only while reading: one-line assumption in the note, finish. Do not keep reading in order to halt.
 
-Done: allowed files written → stop. Final chat line is paths only.
+Done: allowed files written → stop.
 
 There is no handoff block. `.grok/agents/*` must not ask for one. Confirm-only / “write nothing if complete” tasks are forbidden — the child has no exit.
 

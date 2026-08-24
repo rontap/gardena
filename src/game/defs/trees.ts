@@ -1,7 +1,7 @@
 import type { TreeId } from '../sim/ids.ts'
 
 export const TREE_YIELD_DAYS = 2
-export const TREE_YIELD_MUL = 3
+export const TREE_YIELD_MUL = 3.5
 export const TREE_OFF_MUL = 0.75
 
 export type TreeDef = {

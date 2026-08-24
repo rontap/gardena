@@ -3,6 +3,7 @@ import {
   BARREL_MATURE,
   COMPOST_NEED,
   COMPOST_SECONDS,
+  COUNTER_MAX,
   CONTAINERS,
   HANGAR_H,
   HANGAR_W,
@@ -128,7 +129,6 @@ import {
   makeCompost,
   makeContainer,
   makeShovel,
-  mergeFreshness,
   mergeUnitSale,
   organic,
   skuItem,
@@ -267,6 +267,7 @@ import {
 } from './vehicle.ts'
 import {
   cellKey,
+  dayRaw,
   dropIncident,
   evalDag,
   flipLever,
@@ -388,9 +389,12 @@ export type StayArmed =
   | 'buy-or'
   | 'buy-and'
   | 'buy-not'
+  | 'buy-pulser'
+  | 'buy-counter'
   | 'buy-sensor-water'
   | 'buy-sensor-fert'
   | 'buy-sensor-harvest'
+  | 'buy-sensor-day'
   | 'buy-water-system'
   | 'buy-smart-valve'
   | 'buy-vehicle-detector'
@@ -414,6 +418,7 @@ export type Seat = {
   cue: Cue
   place: Place
   drive: Drive
+  stride: { x: -1 | 0 | 1; y: -1 | 0 | 1 }
   workLeft: number
   workTotal: number
   filling: boolean
@@ -438,6 +443,8 @@ export type HudTarget =
   | { kind: 'sprinkler'; at: Vertex }
   | { kind: 'water'; at: Coord }
   | { kind: 'harvest'; at: Coord }
+  | { kind: 'counter'; at: Coord }
+  | { kind: 'day'; at: Coord }
 
 export type DayTally = { died: number; harvests: number; research: ResearchId[] }
 
@@ -578,6 +585,7 @@ function liveSeat(
     cue: { kind: 'none' },
     place: { kind: 'none' },
     drive: { throttle: 0, steer: 0 },
+    stride: { x: 0, y: 0 },
     workLeft: 0,
     workTotal: 0,
     filling: false,
@@ -905,6 +913,7 @@ export class World {
     s.filling = false
     s.place = { kind: 'none' }
     s.drive = { throttle: 0, steer: 0 }
+    s.stride = { x: 0, y: 0 }
     this.vehicles.forEach(v => {
       if (v.pose.kind === 'field' && v.pose.driver === id) v.pose.driver = 'none'
     })
@@ -1002,7 +1011,9 @@ export class World {
       case Act.openHud:
         if (cmd.k === 'sprinkler') this.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
         else if (cmd.k === 'water') this.openHudBody({ kind: 'water', at: { col: cmd.c[0], row: cmd.c[1] } })
-        else this.openHudBody({ kind: 'harvest', at: { col: cmd.c[0], row: cmd.c[1] } })
+        else if (cmd.k === 'harvest') this.openHudBody({ kind: 'harvest', at: { col: cmd.c[0], row: cmd.c[1] } })
+        else if (cmd.k === 'counter') this.openHudBody({ kind: 'counter', at: { col: cmd.c[0], row: cmd.c[1] } })
+        else this.openHudBody({ kind: 'day', at: { col: cmd.c[0], row: cmd.c[1] } })
         return
       case Act.closeHud:
         this.closeHudBody()
@@ -1033,6 +1044,9 @@ export class World {
         return
       case Act.drive:
         this.driveBody(cmd.throttle, cmd.steer)
+        return
+      case Act.stride:
+        this.strideBody(cmd.x, cmd.y)
         return
       case Act.buyVehicle:
         this.buyVehicleBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.k)
@@ -1078,6 +1092,15 @@ export class World {
         return
       case Act.tuneHarvest:
         this.tuneHarvestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.mode)
+        return
+      case Act.tuneCounter:
+        this.tuneCounterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.n)
+        return
+      case Act.resetCounter:
+        this.resetCounterBody({ col: cmd.c[0], row: cmd.c[1] })
+        return
+      case Act.tuneDay:
+        this.tuneDayBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.sunrise, cmd.day, cmd.sunset, cmd.twilight)
         return
       case Act.load:
         this.loadBody()
@@ -1714,6 +1737,52 @@ export class World {
     const c = this.cell(at)
     if (c.kind !== 'sensor-harvest') return
     c.mode = mode
+    this.ping()
+  }
+
+  tuneCounter(at: Coord, n: number): void {
+    this.commit({ a: Act.tuneCounter, t: this.now, p: this.local, c: [at.col, at.row], n })
+  }
+
+  private tuneCounterBody(at: Coord, n: number): void {
+    if (!Number.isInteger(n) || n < 1 || n > COUNTER_MAX) return
+    const c = this.cell(at)
+    if (c.kind !== 'counter') return
+    c.n = n
+    this.ping()
+  }
+
+  resetCounter(at: Coord): void {
+    this.commit({ a: Act.resetCounter, t: this.now, p: this.local, c: [at.col, at.row] })
+  }
+
+  private resetCounterBody(at: Coord): void {
+    const c = this.cell(at)
+    if (c.kind !== 'counter') return
+    c.count = 0
+    this.ping()
+  }
+
+  tuneDay(at: Coord, sunrise: boolean, day: boolean, sunset: boolean, twilight: boolean): void {
+    this.commit({
+      a: Act.tuneDay,
+      t: this.now,
+      p: this.local,
+      c: [at.col, at.row],
+      sunrise,
+      day,
+      sunset,
+      twilight,
+    })
+  }
+
+  private tuneDayBody(at: Coord, sunrise: boolean, day: boolean, sunset: boolean, twilight: boolean): void {
+    const c = this.cell(at)
+    if (c.kind !== 'sensor-day') return
+    c.sunrise = sunrise
+    c.day = day
+    c.sunset = sunset
+    c.twilight = twilight
     this.ping()
   }
 
@@ -2503,9 +2572,12 @@ export class World {
       made.kind === 'or' ||
       made.kind === 'and' ||
       made.kind === 'not' ||
+      made.kind === 'pulser' ||
+      made.kind === 'counter' ||
       made.kind === 'sensor-water' ||
       made.kind === 'sensor-fert' ||
       made.kind === 'sensor-harvest' ||
+      made.kind === 'sensor-day' ||
       made.kind === 'water-system' ||
       made.kind === 'vehicle-detector' ||
       made.kind === 'smart-valve'
@@ -2581,6 +2653,16 @@ export class World {
   private driveBody(throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
     if (this.driverVehicle(this.act.id) === undefined) return
     this.act.drive = { throttle, steer }
+    this.ping()
+  }
+
+  stride(x: -1 | 0 | 1, y: -1 | 0 | 1): void {
+    this.commit({ a: Act.stride, t: this.now, p: this.local, x, y })
+  }
+
+  private strideBody(x: -1 | 0 | 1, y: -1 | 0 | 1): void {
+    if (this.driverVehicle(this.act.id) !== undefined) return
+    this.act.stride = { x, y }
     this.ping()
   }
 
@@ -3445,6 +3527,17 @@ export class World {
       if (s.presence !== 'in') return
       if (this.driverVehicle(s.id) !== undefined) return
       this.act = s
+      if (s.stride.x !== 0 || s.stride.y !== 0) {
+        s.queue.length = 0
+        s.workLeft = 0
+        s.workTotal = 0
+        s.filling = false
+        const hypot = Math.hypot(s.stride.x, s.stride.y)
+        const step = this.walkSpeed() * dt
+        s.actor.x += (s.stride.x / hypot) * step
+        s.actor.y += (s.stride.y / hypot) * step
+        return
+      }
       this.tickQueue(dt)
     })
     this.act = this.seats[this.local]
@@ -3452,6 +3545,7 @@ export class World {
     this.tickField(dt)
     this.gatherWater(dt)
     this.evalSensors(dt)
+    if (this.hud !== undefined && this.hud.kind === 'counter') this.ping()
     this.tickMachines(dt)
     this.tickWater(dt)
     this.tickFreshness(dt)
@@ -3867,6 +3961,8 @@ export class World {
     sensors.forEach((s, k) => {
       if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
         raw.set(k, readerRaw(s, at => (this.inWorld(at) ? this.cell(at) : undefined), this.modifiers))
+      } else if (s.kind === 'sensor-day') {
+        raw.set(k, dayRaw(s, this.clock.phase()))
       } else if (s.kind === 'water-system') {
         const net = this.grid().find(n => n.waterSystems.includes(s))
         if (net === undefined) {
@@ -5206,12 +5302,18 @@ function sensorDeleteName(k: Sensor['kind']): string {
       return 'AND gate'
     case 'not':
       return 'NOT gate'
+    case 'pulser':
+      return 'pulser'
+    case 'counter':
+      return 'counter'
     case 'sensor-water':
       return 'water sensor'
     case 'sensor-fert':
       return 'fertilizer sensor'
     case 'sensor-harvest':
       return 'harvest sensor'
+    case 'sensor-day':
+      return 'day sensor'
     case 'water-system':
       return 'water-system sensor'
     case 'vehicle-detector':

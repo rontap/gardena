@@ -15,6 +15,8 @@ Share of the day, then `t` range (derived from share × `DAY_SECONDS`):
 
 `'night'` is not a `DayPhase`. `t >= DAY_SECONDS` is the seam, not a phase.
 
+Day sensor reads `clock.phase()` — [[mechanics/sensors]].
+
 At `t = 0` sunrise; `t = 60` day; `t = 156` sunset; `t = 216` twilight.
 
 ## Seam / recap

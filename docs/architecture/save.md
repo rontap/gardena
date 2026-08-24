@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.62` on dump. Assumption: wordmark **1.7.0**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. No migrate.
+One file shape. Dump writes `game: "gardena"`, `version: 1.71`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.71` on dump. Wordmark **1.7.1**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate.
 
 ## RFC — versions (active)
 
@@ -10,7 +10,7 @@ Active since first commit. Not 1.1-only. Not a plan.
 
 A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
 
-Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Automation machine-vehicle: 1.62. No migrate. 1.6 file → `'version'`.
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. 1.71. No migrate. 1.62 file → `'version'`.
 
 Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
@@ -18,12 +18,12 @@ Load **compares** file `version` to the dump number. Unequal (missing included) 
 
 | file | owns |
 |---|---|
-| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp`. `SAVE_VERSION` 1.62 |
+| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp`. `SAVE_VERSION` 1.71 |
 | `src/game/sim/world.ts` | live `World`. Does not own `Save`. Constructs live objects for parse. Not a second reader. |
 
 Do not create `src/` here.
 
-App holds the play `World` or none. App does not own `Save`. App calls `dump` / `parse` / slot I/O. Startup [[ui/menu]] backdrop is a separate unticked `World` (not play). `#start_now` is `new World`, not parse.
+App holds the play `World` or none. App does not own `Save`. App calls `dump` / `parse` / slot I/O. Startup [[ui/menu]] backdrop is a separate unticked `World` (not play). `#start_now` is `new World`, not parse. `#unlockall` is `new World` then `unlockAll()`, not parse.
 
 ## Slot
 
@@ -53,7 +53,7 @@ Host leave and recap still `writeSlot`. Guest never `writeSlot` for a hosted far
 
 Download Save writes `gardena.json`. It may also `writeSlot`.
 
-`#start_now` does not read or write the slot.
+`#start_now` and `#unlockall` do not read or write the slot.
 
 ## Load
 
@@ -81,7 +81,7 @@ parse(text: string, sink?: LogSink): LoadResult
 
 `ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate is total.
 
-After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`. `cue` `none`. `speech` `none`. `pulse` / `hud` absent. `cheatFastResearch` false. `clock.banner` 0. `sales` empty.
+After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `pulse` / `hud` absent. `cheatFastResearch` false. `clock.banner` 0. `sales` empty.
 
 Join / resync: `parse` then stamp `World.now` from the wire. Same `Save`. Not a second snapshot.
 
@@ -111,7 +111,7 @@ SaveRng = { seed: number; shop: number; fruit: number }
 
 ## Classes → JSON
 
-No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` `SeedSilo` `AdditiveStore` `Lever` `Button` `Lamp` `NotGate` `AndGate` `OrGate` `WaterSensor` `FertSensor` `HarvestSensor` `WaterSystem` `VehicleSensor` `Vehicle` `Trailer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
+No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` `SeedSilo` `AdditiveStore` `Lever` `Button` `Lamp` `NotGate` `AndGate` `OrGate` `Pulser` `Counter` `WaterSensor` `FertSensor` `HarvestSensor` `DaySensor` `WaterSystem` `VehicleSensor` `Vehicle` `Trailer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
 
 | live | file |
 |---|---|
@@ -151,15 +151,18 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `World.smartHold` | `{ e: Edge; level; hold }[]` |
 | `World.fences` | `Coord[]` |
 | `World.done` | `ResearchId[]` |
-| `Lever` | origin cell `kind: 'lever'` |
+| `Lever` | origin cell `kind: 'lever'` + `inn` `prev` `on` `out` |
 | `Button` | origin cell `kind: 'button'` |
 | `Lamp` | origin cell `kind: 'lamp'` |
 | `OrGate` | origin cell `kind: 'or'` |
 | `AndGate` | origin cell `kind: 'and'` |
 | `NotGate` | origin cell `kind: 'not'` |
+| `Pulser` | origin cell `kind: 'pulser'` + `inn` `prev` `out` |
+| `Counter` | origin cell `kind: 'counter'` + `inn` `n` `count` `out` |
 | `WaterSensor` | origin cell `kind: 'sensor-water'` |
 | `FertSensor` | origin cell `kind: 'sensor-fert'` |
 | `HarvestSensor` | origin cell `kind: 'sensor-harvest'` |
+| `DaySensor` | origin cell `kind: 'sensor-day'` + flags `out` `hold` |
 | `WaterSystem` | origin cell `kind: 'water-system'` |
 | `VehicleSensor` | origin cell `kind: 'vehicle-detector'` |
 
@@ -169,7 +172,7 @@ Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Cir
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.71`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
 
 ```
 SaveSeat = {
@@ -229,7 +232,7 @@ SaveTrailer =
 
 Save = {
   game: 'gardena'
-  version: 1.62
+  version: 1.71
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
@@ -325,15 +328,18 @@ SaveCell =
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
-  | { kind: 'lever'; base: RectBase; on: boolean; out: 0 | 1 }
+  | { kind: 'lever'; base: RectBase; on: boolean; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
   | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }
   | { kind: 'or'; base: RectBase; out: 0 | 1 }
   | { kind: 'and'; base: RectBase; out: 0 | 1 }
   | { kind: 'not'; base: RectBase; out: 0 | 1 }
+  | { kind: 'pulser'; base: RectBase; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
+  | { kind: 'counter'; base: RectBase; inn: 0 | 1; n: number; count: number; out: 0 | 1 }
   | { kind: 'sensor-water'; base: RectBase; wilt: boolean; over: boolean; out: 0 | 1; hold: number }
   | { kind: 'sensor-fert'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'sensor-harvest'; base: RectBase; mode: 'any' | 'all'; out: 0 | 1; hold: number }
+  | { kind: 'sensor-day'; base: RectBase; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean; out: 0 | 1; hold: number }
   | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'vehicle-detector'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'occ'; of: Coord }
@@ -341,13 +347,13 @@ SaveCell =
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
 
-`version: 1.62` is a number. JSON `1.62` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.6 file → `'version'`. No migrate. Still `base.w = 2` `base.h = 1`.
+`version: 1.71` is a number. JSON `1.71` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.62 file → `'version'`. No migrate. Still `base.w = 2` `base.h = 1`. Prop `48×24` occupying both cells.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
 ## Not in the file
 
-`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `clock.banner`. `cheatFastResearch`. `sales`. `consignRevision`. `groundRev`. `mktAcc` / `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `sales`. `consignRevision`. `groundRev`. `mktAcc` / `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
 
 ## Illegal
 

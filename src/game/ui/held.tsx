@@ -34,6 +34,15 @@ export function ItemFace({ item }: { item: Item }) {
   )
 }
 
+export function DashFace({ item }: { item: Item }) {
+  return (
+    <span className="relative flex h-6 w-6 items-center justify-center">
+      <svg viewBox="0 0 24 24" className="h-6 w-6" dangerouslySetInnerHTML={{ __html: faceGfx(item) }} />
+      <Badge item={item} />
+    </span>
+  )
+}
+
 function Badge({ item }: { item: Item }) {
   const t = badge(item)
   if (t === undefined) return null

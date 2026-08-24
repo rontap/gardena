@@ -22,4 +22,4 @@ React + Tailwind sketches only when `src/` exists and the contract is complete.
 2. Tokens the coder can paste. No unnamed hex.
 3. Tailwind. No new CSS framework. No CSS-in-JS.
 4. Halt: [[canon]].
-5. Done when `docs/ui/` matches the named mechanics. Final message: paths only.
+5. Done when `docs/ui/` matches the named mechanics.

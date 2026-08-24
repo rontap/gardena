@@ -1,5 +1,6 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
 import type { AdditiveStore, Chest, Coord, Freezer, JamMachine, Mill, PotStill, RectBase, SeedSilo } from './building.ts'
+import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
@@ -20,10 +21,14 @@ export class Lever {
   readonly kind = 'lever' as const
   readonly base: RectBase
   on: boolean
+  inn: Signal
+  prev: Signal
   out: Signal
   constructor(base: RectBase) {
     this.base = base
     this.on = false
+    this.inn = 0
+    this.prev = 0
     this.out = 0
   }
 }
@@ -80,6 +85,36 @@ export class OrGate {
   }
 }
 
+export class Pulser {
+  readonly kind = 'pulser' as const
+  readonly base: RectBase
+  inn: Signal
+  prev: Signal
+  out: Signal
+  constructor(base: RectBase) {
+    this.base = base
+    this.inn = 0
+    this.prev = 0
+    this.out = 0
+  }
+}
+
+export class Counter {
+  readonly kind = 'counter' as const
+  readonly base: RectBase
+  inn: Signal
+  n: number
+  count: number
+  out: Signal
+  constructor(base: RectBase) {
+    this.base = base
+    this.inn = 0
+    this.n = 1
+    this.count = 0
+    this.out = 0
+  }
+}
+
 export class WaterSensor {
   readonly kind = 'sensor-water' as const
   readonly base: RectBase
@@ -122,6 +157,26 @@ export class HarvestSensor {
   }
 }
 
+export class DaySensor {
+  readonly kind = 'sensor-day' as const
+  readonly base: RectBase
+  sunrise: boolean
+  day: boolean
+  sunset: boolean
+  twilight: boolean
+  out: Signal
+  hold: number
+  constructor(base: RectBase) {
+    this.base = base
+    this.sunrise = false
+    this.day = true
+    this.sunset = false
+    this.twilight = false
+    this.out = 0
+    this.hold = 0
+  }
+}
+
 export class WaterSystem {
   readonly kind = 'water-system' as const
   readonly base: RectBase
@@ -153,9 +208,12 @@ export type Sensor =
   | NotGate
   | AndGate
   | OrGate
+  | Pulser
+  | Counter
   | WaterSensor
   | FertSensor
   | HarvestSensor
+  | DaySensor
   | WaterSystem
   | VehicleSensor
 
@@ -167,9 +225,12 @@ const OUT_KINDS: ReadonlySet<SensorKind> = new Set([
   'or',
   'and',
   'not',
+  'pulser',
+  'counter',
   'sensor-water',
   'sensor-fert',
   'sensor-harvest',
+  'sensor-day',
   'water-system',
   'vehicle-detector',
 ])
@@ -191,7 +252,9 @@ export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
   }
   if (!isSensor(c)) return false
   if (c.kind === 'lamp') return port === 'in'
-  if (c.kind === 'not') return port === 'in' || port === 'out'
+  if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever') {
+    return port === 'in' || port === 'out'
+  }
   if (c.kind === 'and' || c.kind === 'or') return port === 'in-l' || port === 'in-r' || port === 'out'
   return port === 'out'
 }
@@ -316,6 +379,25 @@ export function readerRaw(
   return crop.every(c => c.kind === 'ripe') ? 1 : 0
 }
 
+export function dayRaw(s: DaySensor, phase: DayPhase): Signal {
+  if (phase === 'sunrise') return s.sunrise ? 1 : 0
+  if (phase === 'day') return s.day ? 1 : 0
+  if (phase === 'sunset') return s.sunset ? 1 : 0
+  return s.twilight ? 1 : 0
+}
+
+export type CounterDial = 's0' | 's1' | 's2' | 's3' | 's4'
+
+export function counterDial(c: Counter): CounterDial {
+  if (c.out === 1) return 's4'
+  const pct = c.count / c.n
+  if (pct === 0) return 's0'
+  if (pct < 0.25) return 's1'
+  if (pct < 0.5) return 's2'
+  if (pct < 0.75) return 's3'
+  return 's4'
+}
+
 export function vehicleRaw(at: Coord, vehicles: readonly Vehicle[]): Signal {
   return vehicles.some(
     v => v.pose.kind === 'field' && Math.floor(v.pose.x) === at.col && Math.floor(v.pose.y) === at.row,
@@ -436,11 +518,11 @@ export function evalDag(input: EvalIn): void {
     return h.level
   }
   sensors.forEach(s => {
-    if (s.kind === 'lever') s.out = s.on ? 1 : 0
-    else if (
+    if (
       s.kind === 'sensor-water' ||
       s.kind === 'sensor-fert' ||
       s.kind === 'sensor-harvest' ||
+      s.kind === 'sensor-day' ||
       s.kind === 'water-system' ||
       s.kind === 'vehicle-detector'
     ) {
@@ -458,7 +540,17 @@ export function evalDag(input: EvalIn): void {
   })
   const nodes: string[] = []
   sensors.forEach((s, k) => {
-    if (s.kind === 'not' || s.kind === 'and' || s.kind === 'or' || s.kind === 'lamp') nodes.push(k)
+    if (
+      s.kind === 'not' ||
+      s.kind === 'and' ||
+      s.kind === 'or' ||
+      s.kind === 'lamp' ||
+      s.kind === 'pulser' ||
+      s.kind === 'counter' ||
+      s.kind === 'lever'
+    ) {
+      nodes.push(k)
+    }
   })
   const indeg = new Map<string, number>()
   const adj = new Map<string, string[]>()
@@ -499,6 +591,23 @@ export function evalDag(input: EvalIn): void {
     else if (s.kind === 'not') s.out = as01(1 - innOf(at, 'in'))
     else if (s.kind === 'and') s.out = innOf(at, 'in-l') === 1 && innOf(at, 'in-r') === 1 ? 1 : 0
     else if (s.kind === 'or') s.out = innOf(at, 'in-l') === 1 || innOf(at, 'in-r') === 1 ? 1 : 0
+    else if (s.kind === 'pulser') {
+      s.inn = innOf(at, 'in')
+      s.out = s.prev === 0 && s.inn === 1 ? 1 : 0
+      s.prev = s.inn
+    } else if (s.kind === 'counter') {
+      s.inn = innOf(at, 'in')
+      if (s.inn === 1) s.count += 1
+      if (s.count >= s.n) {
+        s.out = 1
+        s.count = 0
+      } else s.out = 0
+    } else if (s.kind === 'lever') {
+      s.inn = innOf(at, 'in')
+      if (s.prev === 0 && s.inn === 1) s.on = !s.on
+      s.prev = s.inn
+      s.out = s.on ? 1 : 0
+    }
   })
   machines.forEach(m => {
     m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
@@ -543,7 +652,16 @@ export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number 
   if (end.port === 'out') return { x: col + 0.5, y: row + 1 }
   if (end.port === 'in-l') return { x: col, y: row + 0.5 }
   if (end.port === 'in-r') return { x: col + 1, y: row + 0.5 }
-  if (kind === 'not' || kind === 'lamp' || kind === 'mill' || kind === 'jam' || kind === 'still') {
+  if (
+    kind === 'not' ||
+    kind === 'lamp' ||
+    kind === 'mill' ||
+    kind === 'jam' ||
+    kind === 'still' ||
+    kind === 'pulser' ||
+    kind === 'counter' ||
+    kind === 'lever'
+  ) {
     return { x: col + 0.5, y: row }
   }
   return { x: col + 0.5, y: row + 0.5 }
@@ -610,12 +728,18 @@ export function makeSensor(id: SensorKind, base: RectBase): Sensor {
       return new AndGate(base)
     case 'or':
       return new OrGate(base)
+    case 'pulser':
+      return new Pulser(base)
+    case 'counter':
+      return new Counter(base)
     case 'sensor-water':
       return new WaterSensor(base)
     case 'sensor-fert':
       return new FertSensor(base)
     case 'sensor-harvest':
       return new HarvestSensor(base)
+    case 'sensor-day':
+      return new DaySensor(base)
     case 'water-system':
       return new WaterSystem(base)
     case 'vehicle-detector':
@@ -630,9 +754,12 @@ export function skuKind(id: string): SensorKind | undefined {
   if (id === 'buy-or') return 'or'
   if (id === 'buy-and') return 'and'
   if (id === 'buy-not') return 'not'
+  if (id === 'buy-pulser') return 'pulser'
+  if (id === 'buy-counter') return 'counter'
   if (id === 'buy-sensor-water') return 'sensor-water'
   if (id === 'buy-sensor-fert') return 'sensor-fert'
   if (id === 'buy-sensor-harvest') return 'sensor-harvest'
+  if (id === 'buy-sensor-day') return 'sensor-day'
   if (id === 'buy-water-system') return 'water-system'
   if (id === 'buy-vehicle-detector') return 'vehicle-detector'
   return undefined

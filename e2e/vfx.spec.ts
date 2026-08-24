@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
+import { gotoPlay } from './helpers.ts'
 
 type At = { col: number; row: number }
 
 async function fedSprinkler(page: Page): Promise<void> {
   await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
-    w.unlockAll()
     w.buy('buy-pipe')
     w.placePipe({ axis: 'h', col: 18, row: 7 })
     w.buy('buy-sprinkler')
@@ -31,8 +31,7 @@ async function setCrop(page: Page, at: At, growing: boolean): Promise<void> {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
+  await gotoPlay(page, { unlock: true })
 })
 
 test('sprinkler state vfx follows the pour, on and off', async ({ page }) => {
@@ -71,11 +70,9 @@ test('spray cuts between frames, one at a time', async ({ page }) => {
 
 test('vertical spray is oriented like its AoE, both facings', async ({ page }) => {
   for (const rotate of [false, true]) {
-    await page.goto('/#start_now')
-    await expect(page.locator('svg.bg-grass')).toBeVisible()
+    await gotoPlay(page, { unlock: true })
     await page.evaluate(async (turn) => {
       const w = (window as unknown as { __world: any }).__world
-      w.unlockAll()
       w.buy('buy-pipe')
       w.placePipe({ axis: 'h', col: 18, row: 7 })
       w.buy('buy-sprinkler-vert')

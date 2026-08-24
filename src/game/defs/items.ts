@@ -39,7 +39,7 @@ export const SYNTH_BAG_LITERS = 16
 export const COMPOST_LITERS = 5
 export const WEED_SPRAY_USES = 30
 export const COMPOST_NEED = 10
-export const COMPOST_SECONDS = 120
+export const COMPOST_SECONDS = 90
 export const COMPOST_VALUE = {
   seeds: 1,
   fruit: 5,
@@ -64,7 +64,7 @@ export const JAM_SUGAR = 0.4
 export const JAM_SECONDS = 20
 export const JAM_BUFFER = 4
 export const STILL_CAP = 10
-export const STILL_WATER = 0.1
+export const STILL_WATER = 0.5
 export const STILL_SECONDS = 180
 export const BARREL_CAP = 5
 export const BARREL_MATURE = DAY_SECONDS
@@ -100,7 +100,7 @@ export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   tomato: 80,
 }
 
-export const QUAD_VMAX = 9
+export const QUAD_VMAX = 8
 export const QUAD_SHOW_MUL = 4
 export const QUAD_ACCEL_SECONDS = 1.5
 export const QUAD_ACCEL = QUAD_VMAX / QUAD_ACCEL_SECONDS
@@ -146,12 +146,16 @@ export const LAMP_PRICE = 3
 export const OR_PRICE = 5
 export const AND_PRICE = 5
 export const NOT_PRICE = 4
+export const PULSER_PRICE = 5
+export const COUNTER_PRICE = 6
 export const SENSOR_WATER_PRICE = 7
 export const SENSOR_FERT_PRICE = 7
 export const SENSOR_HARVEST_PRICE = 8
+export const SENSOR_DAY_PRICE = 7
 export const WATER_SYSTEM_PRICE = 9
 export const SMART_VALVE_PRICE = 6
 export const VEHICLE_DETECTOR_PRICE = 8
 export const BUTTON_PULSE = 4
 export const SENSOR_HOLD = 8
+export const COUNTER_MAX = 9999
 export const VERTEX_HIT = 0.3

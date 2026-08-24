@@ -84,8 +84,8 @@ describe('machines', () => {
   })
 
   test('Barrel is grapes → wine only. No whisky. No migrate.', () => {
-    expect(SAVE_VERSION).toBe(1.62)
-    expect(PROTOCOL).toBe(1.62)
+    expect(SAVE_VERSION).toBe(1.71)
+    expect(PROTOCOL).toBe(1.71)
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
     expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')

@@ -133,9 +133,12 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'or' ||
     c.kind === 'and' ||
     c.kind === 'not' ||
+    c.kind === 'pulser' ||
+    c.kind === 'counter' ||
     c.kind === 'sensor-water' ||
     c.kind === 'sensor-fert' ||
     c.kind === 'sensor-harvest' ||
+    c.kind === 'sensor-day' ||
     c.kind === 'water-system' ||
     c.kind === 'vehicle-detector'
   )

@@ -30,7 +30,9 @@ import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
 import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
 import { SENSOR_LENS_SKUS, type TrailerId, type VehicleId } from './game/sim/ids.ts'
+import type { Item } from './game/sim/item.ts'
 import { trailerUsed } from './game/sim/vehicle.ts'
+import { DashFace } from './game/ui/held.tsx'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
@@ -43,7 +45,9 @@ const SPEED = (() => {
   return Number.isFinite(n) && n >= 1 ? Math.min(20, n) : 1
 })()
 
-const START_NOW = window.location.hash === '#start_now'
+const HASH = window.location.hash
+const START_NOW = HASH === '#start_now' || HASH === '#unlockall'
+const UNLOCK_ALL = HASH === '#unlockall'
 const BOOT_CAM: Camera = { x: 15.5, y: 9.5, scale: 1 }
 const DIAL_TIMEOUT_MS = 20000
 const RECONNECT_DELAY_MS = 1500
@@ -58,9 +62,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const prevSeam = useRef<'play' | 'recap'>('play')
   const [n, setN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
-  const [world, setWorld] = useState<World | undefined>(() =>
-    START_NOW ? new World(undefined, sink) : undefined,
-  )
+  const [world, setWorld] = useState<World | undefined>(() => {
+    if (!START_NOW) return undefined
+    const w = new World(undefined, sink)
+    if (UNLOCK_ALL) w.unlockAll()
+    return w
+  })
   const [tutorial, setTutorial] = useState<Tutorial>(() =>
     START_NOW ? startTutorial('start_now', slotExists()) : { kind: 'off' },
   )
@@ -254,14 +261,19 @@ export default function App({ sink }: { sink: WorkerSink }) {
       if (w === undefined) return
       const throttle: -1 | 0 | 1 = held.w === held.s ? 0 : held.w ? 1 : -1
       const steer: -1 | 0 | 1 = held.a === held.d ? 0 : held.a ? -1 : 1
-      if (w.driverVehicle(w.local) === undefined) return
-      w.drive(throttle, steer)
+      if (w.driverVehicle(w.local) !== undefined) {
+        w.drive(throttle, steer)
+        return
+      }
+      const x: -1 | 0 | 1 = held.a === held.d ? 0 : held.a ? -1 : 1
+      const y: -1 | 0 | 1 = held.w === held.s ? 0 : held.w ? -1 : 1
+      w.stride(x, y)
     }
     const onPing = () => {
       const w = worldRef.current
       if (w === undefined) return
       const now = w.driverVehicle(w.local) !== undefined
-      if (!wasDriver && now) send()
+      if (wasDriver !== now) send()
       wasDriver = now
     }
     const off = world === undefined ? undefined : world.on(onPing)
@@ -292,8 +304,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
       held.d = false
       const w = worldRef.current
       if (w === undefined) return
-      if (w.driverVehicle(w.local) === undefined) return
-      w.drive(0, 0)
+      if (w.driverVehicle(w.local) !== undefined) w.drive(0, 0)
+      else w.stride(0, 0)
     }
     window.addEventListener('keydown', onDown)
     window.addEventListener('keyup', onUp)
@@ -714,7 +726,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onCam={setCam}
             onClick={hit => {
               if (world.seam.kind === 'recap') return
-              if (hit.kind !== 'sprinkler-hud' && hit.kind !== 'water-hud' && hit.kind !== 'harvest-hud') world.closeHud()
+              if (
+                hit.kind !== 'sprinkler-hud' &&
+                hit.kind !== 'water-hud' &&
+                hit.kind !== 'harvest-hud' &&
+                hit.kind !== 'counter-hud' &&
+                hit.kind !== 'day-hud'
+              ) {
+                world.closeHud()
+              }
               if (panel.kind === 'inventory' || cued(panel.kind)) {
                 if (cued(panel.kind)) world.ackCue()
                 setPanel({ kind: 'none' })
@@ -902,17 +922,46 @@ export default function App({ sink }: { sink: WorkerSink }) {
   )
 }
 
+function trailerOf(world: World, id: number) {
+  const t = world.trailers.find(x => x.id === id)
+  if (t === undefined) throw new Error('hitch')
+  return t
+}
+
+function dashCargo(world: World, driven: NonNullable<ReturnType<World['driverVehicle']>>): Item[] {
+  if (driven.kind === 'quad') {
+    return driven.slots.flatMap(s => (s.kind === 'hold' ? [s.item] : []))
+  }
+  if (driven.hitch === 'none') return []
+  const hitch = trailerOf(world, driven.hitch)
+  if (hitch.kind === 'harvest') return hitch.slots.flatMap(s => (s.kind === 'hold' ? [s.item] : []))
+  if (hitch.hopper.kind === 'empty') return []
+  return [hitch.hopper.item]
+}
+
 function Dash({ world }: { world: World }) {
   const driven = world.driverVehicle(world.local)
   if (driven === undefined || driven.pose.kind !== 'field') return null
   const onPad = world.hangarAtPad({ col: Math.floor(driven.pose.x), row: Math.floor(driven.pose.y) }) !== undefined
   const hitch =
-    driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
+    driven.kind === 'tractor' && driven.hitch !== 'none' ? trailerOf(world, driven.hitch) : undefined
+  const cargo = dashCargo(world, driven)
   return (
     <div
       ref={el => bindDash(el)}
       className="absolute bottom-4 left-1/2 z-20 w-[30rem] -translate-x-1/2"
     >
+      {cargo.length > 0 && (
+        <div
+          className={`pointer-events-none mb-1 flex flex-wrap items-center gap-0.5 ${
+            driven.kind === 'tractor' ? 'justify-end' : 'justify-center'
+          }`}
+        >
+          {cargo.map((item, i) => (
+            <DashFace key={i} item={item} />
+          ))}
+        </div>
+      )}
       <div className="relative">
         <div
           className="pointer-events-none w-full [&_svg]:block [&_svg]:w-full"
@@ -1064,6 +1113,14 @@ function dispatchClick(world: World, hit: MapClick): void {
   }
   if (hit.kind === 'harvest-hud') {
     world.openHud({ kind: 'harvest', at: hit.at })
+    return
+  }
+  if (hit.kind === 'counter-hud') {
+    world.openHud({ kind: 'counter', at: hit.at })
+    return
+  }
+  if (hit.kind === 'day-hud') {
+    world.openHud({ kind: 'day', at: hit.at })
     return
   }
   if (hit.kind === 'sprinkler') {

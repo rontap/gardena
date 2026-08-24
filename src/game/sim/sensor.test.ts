@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { BUTTON_PULSE, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
+import { BUTTON_PULSE, COUNTER_MAX, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
 import { Tree } from './building.ts'
 import { Act } from './log.ts'
 import { digestHex, permit, PROTOCOL } from './mp.ts'
@@ -7,7 +7,7 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
-import { evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { counterDial, evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -17,6 +17,7 @@ const C = { col: 11, row: 12 }
 
 function ready(w: World): void {
   w.done.add('unlock-sensors')
+  w.done.add('unlock-advanced-sensors')
   w.done.add('unlock-smart-irrigation')
   w.money = 999
 }
@@ -30,9 +31,12 @@ function put(
     | 'buy-not'
     | 'buy-and'
     | 'buy-or'
+    | 'buy-pulser'
+    | 'buy-counter'
     | 'buy-sensor-water'
     | 'buy-sensor-fert'
     | 'buy-sensor-harvest'
+    | 'buy-sensor-day'
     | 'buy-water-system'
     | 'buy-vehicle-detector',
   at: { col: number; row: number },
@@ -52,15 +56,15 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.62. PROTOCOL 1.62. Wordmark 1.7.0. No migrate. 1.6 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.62)
-    expect(PROTOCOL).toBe(1.62)
+  test('SAVE_VERSION 1.71. PROTOCOL 1.71. Wordmark 1.7.1. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.71)
+    expect(PROTOCOL).toBe(1.71)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.62)
+    expect(s.version).toBe(1.71)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
-    const old = parse(JSON.stringify({ ...s, version: 1.6 }))
+    const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
     expect(old.reason).toBe('version')
@@ -843,5 +847,171 @@ describe('1.6 sensors', () => {
     expect(add.out).toBe(1)
     expect(silo.hold).toBe(SENSOR_HOLD)
     expect(add.hold).toBe(SENSOR_HOLD)
+  })
+
+  test('Button: high exactly `BUTTON_PULSE` ticks. Pulser: `out` 1 exactly 1 tick on `inn` 0→1, else 0; then `prev = inn`.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-pulser', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    const p1 = w.cell(B)
+    if (p1.kind !== 'pulser') throw new Error('pulser')
+    expect(p1.out).toBe(1)
+    expect(p1.prev).toBe(1)
+    w.tick(DT_MAX)
+    const p2 = w.cell(B)
+    if (p2.kind !== 'pulser') throw new Error('pulser')
+    expect(p2.out).toBe(0)
+    expect(p2.prev).toBe(1)
+  })
+
+  test('Counter: each tick `inn === 1`, `count += 1`; `count >= n` → `out = 1` `count = 0` else `out = 0`. `n` default 1, min 1, max `COUNTER_MAX` 9999. Tune out of range no-op. Changing `n` keeps `count`. Dial from `pct = count / n` vs 0 / 25% / 50% / 75% / 100% (`s0`…`s4`); this tick `out === 1` → `s4`. Not `floor(4 * count / n)`.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-counter', A)
+    const c0 = w.cell(A)
+    if (c0.kind !== 'counter') throw new Error('counter')
+    expect(c0.n).toBe(1)
+    expect(c0.count).toBe(0)
+    expect(counterDial(c0)).toBe('s0')
+    w.tuneCounter(A, 0)
+    expect(c0.n).toBe(1)
+    w.tuneCounter(A, COUNTER_MAX + 1)
+    expect(c0.n).toBe(1)
+    w.tuneCounter(A, 5)
+    expect(c0.n).toBe(5)
+    put(w, 'buy-lever', B)
+    w.armWire({ kind: 'cell', at: B, port: 'out' })
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    w.enqueue({ act: 'toggle', at: B })
+    w.seats[0].actor.x = B.col + 0.5
+    w.seats[0].actor.y = B.row + 0.5
+    w.tick(DT_MAX)
+    expect(c0.count).toBe(1)
+    expect(c0.out).toBe(0)
+    expect(counterDial(c0)).toBe('s1')
+    w.tick(DT_MAX)
+    expect(c0.count).toBe(2)
+    expect(counterDial(c0)).toBe('s2')
+    w.tick(DT_MAX)
+    expect(c0.count).toBe(3)
+    expect(counterDial(c0)).toBe('s3')
+    w.tick(DT_MAX)
+    expect(c0.count).toBe(4)
+    expect(counterDial(c0)).toBe('s4')
+    w.tick(DT_MAX)
+    expect(c0.out).toBe(1)
+    expect(c0.count).toBe(0)
+    expect(counterDial(c0)).toBe('s4')
+    c0.count = 3
+    c0.out = 0
+    w.tuneCounter(A, 10)
+    expect(c0.n).toBe(10)
+    expect(c0.count).toBe(3)
+    w.resetCounter(A)
+    expect(c0.count).toBe(0)
+    expect(c0.n).toBe(10)
+    w.resetCounter(B)
+    expect(c0.count).toBe(0)
+    expect(c0.n).toBe(10)
+  })
+
+  test('Day sensor: four flags, default `day` on others off. Raw 1 iff `clock.phase()` is a true flag. All off → raw 0. `SENSOR_HOLD`. No 3×3.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-sensor-day', A)
+    const d = w.cell(A)
+    if (d.kind !== 'sensor-day') throw new Error('day')
+    expect(d.day).toBe(true)
+    expect(d.sunrise).toBe(false)
+    expect(d.sunset).toBe(false)
+    expect(d.twilight).toBe(false)
+    w.clock.t = 0
+    w.tick(DT_MAX)
+    expect(d.out).toBe(0)
+    w.clock.t = 60
+    w.tick(DT_MAX)
+    expect(d.out).toBe(1)
+    expect(d.hold).toBe(SENSOR_HOLD)
+    w.tuneDay(A, false, false, false, false)
+    d.hold = 0
+    w.tick(DT_MAX)
+    expect(d.out).toBe(0)
+  })
+
+  test('Lever Flip always toggles. Wired `in` 0→1 also toggles. Same-tick Flip + rising edge: both apply (net zero). Unwired `inn` 0: no edge.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lever', B)
+    w.armWire({ kind: 'cell', at: B, port: 'out' })
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    const a = w.cell(A)
+    const src = w.cell(B)
+    if (a.kind !== 'lever' || src.kind !== 'lever') throw new Error('lever')
+    src.on = true
+    src.out = 1
+    expect(a.on).toBe(false)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    expect(a.on).toBe(false)
+    expect(a.inn).toBe(1)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    expect(a.on).toBe(true)
+    const u = new World(1)
+    ready(u)
+    put(u, 'buy-lever', A)
+    const l = u.cell(A)
+    if (l.kind !== 'lever') throw new Error('lever')
+    u.tick(DT_MAX)
+    expect(l.on).toBe(false)
+    expect(l.inn).toBe(0)
+  })
+
+  test('AND / OR / NOT require `unlock-advanced-sensors`.', () => {
+    const w = new World(1)
+    w.done.add('unlock-sensors')
+    w.money = 999
+    expect(w.skuShown('buy-and')).toBe(true)
+    expect(w.skuShown('buy-or')).toBe(true)
+    expect(w.skuShown('buy-not')).toBe(true)
+    expect(w.skuOpen('buy-and')).toBe(false)
+    expect(w.skuOpen('buy-or')).toBe(false)
+    expect(w.skuOpen('buy-not')).toBe(false)
+    w.done.add('unlock-advanced-sensors')
+    expect(w.skuOpen('buy-and')).toBe(true)
+    expect(w.skuOpen('buy-or')).toBe(true)
+    expect(w.skuOpen('buy-not')).toBe(true)
+  })
+
+  test('`SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. Guest `placeWire` permitted; guest `placePipe` still not.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-pulser', A)
+    put(w, 'buy-counter', B)
+    put(w, 'buy-sensor-day', C)
+    expect(w.cell(A).kind).toBe('pulser')
+    expect(w.cell(B).kind).toBe('counter')
+    expect(w.cell(C).kind).toBe('sensor-day')
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pulser' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-counter' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sensor-day' })).toBe(true)
+    expect(permit({ a: Act.tuneCounter, t: 0, p: 1, c: [B.col, B.row], n: 2 })).toBe(true)
+    expect(permit({ a: Act.resetCounter, t: 0, p: 1, c: [B.col, B.row] })).toBe(true)
+    expect(permit({ a: Act.tuneDay, t: 0, p: 1, c: [C.col, C.row], sunrise: false, day: true, sunset: false, twilight: false })).toBe(true)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'counter', c: [B.col, B.row] })).toBe(true)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'day', c: [C.col, C.row] })).toBe(true)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(false)
   })
 })

@@ -25,7 +25,7 @@ Tab order and lists:
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot lemon cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
-| `sensors` | Sensors | **Overview**, then lever button lamp or and not sensor-water sensor-fert sensor-harvest water-system vehicle-detector |
+| `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-spray silo-produce |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve smart-valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
@@ -47,7 +47,7 @@ Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not t
 
 `unlock-preservatives` done: third `h-20 w-20` `bg-dirt-dark` plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
 
-Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor / smart-valve panes: same generic chrome as other non-crop entries — title, one `h-20 w-20` `bg-dirt-dark` plate, blurb. Titles match look names [[ui/sensors]]. No germ. No weather. No new sprinkler pane. No Quad / tractor / trailer SKU pane.
+Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor / smart-valve panes: same generic chrome as other non-crop entries — title, one `h-20 w-20` `bg-dirt-dark` plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor panes. Blurbs [[ui/sensors]]. No germ. No weather. No new sprinkler pane. No Quad / tractor / trailer SKU pane. Advanced sensors is a research card, not a `CatalogEntry`.
 
 SKU panes stay generic / crop / tree / pipe.
 

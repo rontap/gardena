@@ -1,5 +1,5 @@
 import { type CropClass } from '../defs/crops.ts'
-import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
+import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
@@ -74,12 +74,15 @@ import { type Edge, type Gate, type Segment, type Sprinkler, type Tune, Well } f
 import {
   AndGate,
   Button,
+  Counter,
+  DaySensor,
   FertSensor,
   HarvestSensor,
   Lamp,
   Lever,
   NotGate,
   OrGate,
+  Pulser,
   VehicleSensor,
   WaterSensor,
   WaterSystem,
@@ -110,7 +113,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.62 as const
+export const SAVE_VERSION = 1.71 as const
 
 const INV = 16
 
@@ -182,15 +185,18 @@ export type SaveCell =
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
-  | { kind: 'lever'; base: RectBase; on: boolean; out: 0 | 1 }
+  | { kind: 'lever'; base: RectBase; on: boolean; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
   | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }
   | { kind: 'or'; base: RectBase; out: 0 | 1 }
   | { kind: 'and'; base: RectBase; out: 0 | 1 }
   | { kind: 'not'; base: RectBase; out: 0 | 1 }
+  | { kind: 'pulser'; base: RectBase; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
+  | { kind: 'counter'; base: RectBase; inn: 0 | 1; n: number; count: number; out: 0 | 1 }
   | { kind: 'sensor-water'; base: RectBase; wilt: boolean; over: boolean; out: 0 | 1; hold: number }
   | { kind: 'sensor-fert'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'sensor-harvest'; base: RectBase; mode: 'any' | 'all'; out: 0 | 1; hold: number }
+  | { kind: 'sensor-day'; base: RectBase; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean; out: 0 | 1; hold: number }
   | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'vehicle-detector'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'occ'; of: Coord }
@@ -247,7 +253,7 @@ export type SaveTrailer =
 
 export type Save = {
   game: 'gardena'
-  version: 1.62
+  version: 1.71
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -552,7 +558,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'truck':
       return { kind: 'truck', base: c.base }
     case 'lever':
-      return { kind: 'lever', base: c.base, on: c.on, out: c.out }
+      return { kind: 'lever', base: c.base, on: c.on, inn: c.inn, prev: c.prev, out: c.out }
     case 'button':
       return { kind: 'button', base: c.base, left: c.left, out: c.out }
     case 'lamp':
@@ -563,12 +569,27 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'and', base: c.base, out: c.out }
     case 'not':
       return { kind: 'not', base: c.base, out: c.out }
+    case 'pulser':
+      return { kind: 'pulser', base: c.base, inn: c.inn, prev: c.prev, out: c.out }
+    case 'counter':
+      return { kind: 'counter', base: c.base, inn: c.inn, n: c.n, count: c.count, out: c.out }
     case 'sensor-water':
       return { kind: 'sensor-water', base: c.base, wilt: c.wilt, over: c.over, out: c.out, hold: c.hold }
     case 'sensor-fert':
       return { kind: 'sensor-fert', base: c.base, out: c.out, hold: c.hold }
     case 'sensor-harvest':
       return { kind: 'sensor-harvest', base: c.base, mode: c.mode, out: c.out, hold: c.hold }
+    case 'sensor-day':
+      return {
+        kind: 'sensor-day',
+        base: c.base,
+        sunrise: c.sunrise,
+        day: c.day,
+        sunset: c.sunset,
+        twilight: c.twilight,
+        out: c.out,
+        hold: c.hold,
+      }
     case 'water-system':
       return { kind: 'water-system', base: c.base, out: c.out, hold: c.hold }
     case 'vehicle-detector':
@@ -884,6 +905,7 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
       workTotal: 0,
       filling: false,
       drive: { throttle: 0, steer: 0 },
+      stride: { x: 0, y: 0 },
       legStart: { x: s.actor.x, y: s.actor.y },
     })),
     hangars: live.hangars,
@@ -1199,6 +1221,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'lever': {
       const made = new Lever(sc.base)
       made.on = sc.on
+      made.inn = sc.inn
+      made.prev = sc.prev
       made.out = sc.out
       return made
     }
@@ -1228,6 +1252,21 @@ function makeLive(sc: SaveCell): Cell | undefined {
       made.out = sc.out
       return made
     }
+    case 'pulser': {
+      const made = new Pulser(sc.base)
+      made.inn = sc.inn
+      made.prev = sc.prev
+      made.out = sc.out
+      return made
+    }
+    case 'counter': {
+      const made = new Counter(sc.base)
+      made.inn = sc.inn
+      made.n = sc.n
+      made.count = sc.count
+      made.out = sc.out
+      return made
+    }
     case 'sensor-water': {
       const made = new WaterSensor(sc.base)
       made.wilt = sc.wilt
@@ -1245,6 +1284,16 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'sensor-harvest': {
       const made = new HarvestSensor(sc.base)
       made.mode = sc.mode
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
+    case 'sensor-day': {
+      const made = new DaySensor(sc.base)
+      made.sunrise = sc.sunrise
+      made.day = sc.day
+      made.sunset = sc.sunset
+      made.twilight = sc.twilight
       made.out = sc.out
       made.hold = sc.hold
       return made
@@ -1510,8 +1559,9 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   if (kind === 'lever') {
     const base = readRectBase(o.base)
     const on = bool(o.on)
-    if (base === undefined || on === undefined || (o.out !== 0 && o.out !== 1)) return undefined
-    return { kind: 'lever', base, on, out: o.out }
+    if (base === undefined || on === undefined) return undefined
+    if ((o.inn !== 0 && o.inn !== 1) || (o.prev !== 0 && o.prev !== 1) || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind: 'lever', base, on, inn: o.inn, prev: o.prev, out: o.out }
   }
   if (kind === 'button') {
     const base = readRectBase(o.base)
@@ -1528,6 +1578,23 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const base = readRectBase(o.base)
     if (base === undefined || (o.out !== 0 && o.out !== 1)) return undefined
     return { kind, base, out: o.out }
+  }
+  if (kind === 'pulser') {
+    const base = readRectBase(o.base)
+    if (base === undefined) return undefined
+    if ((o.inn !== 0 && o.inn !== 1) || (o.prev !== 0 && o.prev !== 1) || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind: 'pulser', base, inn: o.inn, prev: o.prev, out: o.out }
+  }
+  if (kind === 'counter') {
+    const base = readRectBase(o.base)
+    const n = num(o.n)
+    const count = num(o.count)
+    if (base === undefined || n === undefined || count === undefined) return undefined
+    if (!Number.isInteger(n) || n < 1 || n > COUNTER_MAX) return undefined
+    if (!Number.isInteger(count) || count < 0) return undefined
+    if (o.inn !== 0 && o.inn !== 1) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
+    return { kind: 'counter', base, inn: o.inn, n, count, out: o.out }
   }
   if (kind === 'sensor-water') {
     const base = readRectBase(o.base)
@@ -1550,6 +1617,19 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined || hold === undefined || (o.mode !== 'any' && o.mode !== 'all')) return undefined
     if (o.out !== 0 && o.out !== 1) return undefined
     return { kind: 'sensor-harvest', base, mode: o.mode, out: o.out, hold }
+  }
+  if (kind === 'sensor-day') {
+    const base = readRectBase(o.base)
+    const hold = num(o.hold)
+    const sunrise = bool(o.sunrise)
+    const day = bool(o.day)
+    const sunset = bool(o.sunset)
+    const twilight = bool(o.twilight)
+    if (base === undefined || hold === undefined || sunrise === undefined || day === undefined || sunset === undefined || twilight === undefined) {
+      return undefined
+    }
+    if (o.out !== 0 && o.out !== 1) return undefined
+    return { kind: 'sensor-day', base, sunrise, day, sunset, twilight, out: o.out, hold }
   }
   if (kind === 'occ') {
     const of = readCoord(o.of)

@@ -1,8 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-
-const TILE = 48
-const CAM_X = 15.5
-const CAM_Y = 9.5
+import { armSku, gotoPlay, screenOf, tapWorld, unlockWorld } from './helpers.ts'
 
 type At = { col: number; row: number }
 
@@ -33,12 +30,11 @@ async function worldTrue(page: Page, arg: unknown, body: string, timeout = 60_00
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/#start_now')
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
+  await gotoPlay(page)
 })
 
 test.fixme('valve feeds while open and starves the line when closed', async ({ page }) => {
-  await unlockAll(page)
+  await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
   await placeEdge(page, 'h', 20, 7)
@@ -63,7 +59,7 @@ test.fixme('valve feeds while open and starves the line when closed', async ({ p
 })
 
 test.fixme('closed valve still waters through a bypass', async ({ page }) => {
-  await unlockAll(page)
+  await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await convertToValve(page, 18, 7)
   await placeEdge(page, 'v', 18, 7)
@@ -81,7 +77,7 @@ test.fixme('closed valve still waters through a bypass', async ({ page }) => {
 })
 
 test('two sources join one network', async ({ page }) => {
-  await unlockAll(page)
+  await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
   await armSku(page, 'Well 75')
@@ -118,7 +114,7 @@ test('two sources join one network', async ({ page }) => {
 })
 
 test('weeds sprout on fallow tilled soil', async ({ page }) => {
-  await page.goto('/?speed=10#start_now')
+  await gotoPlay(page, { speed: 10 })
   const spots: At[] = [
     { col: 13, row: 11 },
     { col: 14, row: 11 },
@@ -129,7 +125,7 @@ test('weeds sprout on fallow tilled soil', async ({ page }) => {
   for (const at of spots) {
     await tapWorld(page, at.col + 0.5, at.row + 0.5)
   }
-  await worldTrue(page, spots, 'at.every(p => w.cell(p).kind === "empty") && w.queue.length === 0')
+  await worldTrue(page, spots, 'at.every(p => w.cell(p).kind === "empty") && w.seats[0].queue.length === 0')
   await expect
     .poll(async () => {
       await dismissRecap(page)
@@ -140,9 +136,9 @@ test('weeds sprout on fallow tilled soil', async ({ page }) => {
 
 test.fixme('ripe fruit rots', async ({ page }) => {
   test.setTimeout(240_000)
-  await page.goto('/?speed=10#start_now')
+  await gotoPlay(page, { speed: 10 })
   await tapWorld(page, 13.5, 11.5)
-  await worldTrue(page, { col: 13, row: 11 }, 'w.cell(at).kind === "empty" && w.queue.length === 0')
+  await worldTrue(page, { col: 13, row: 11 }, 'w.cell(at).kind === "empty" && w.seats[0].queue.length === 0')
 
   const inv = page.locator('div.font-medium').filter({ hasText: /^Inventory$/ })
   await expect
@@ -156,10 +152,10 @@ test.fixme('ripe fruit rots', async ({ page }) => {
     )
     .toBe(1)
   await page.getByText('Carrot seed - 5, plant it').locator('..').getByRole('button').click()
-  await inv.locator('..').getByRole('button', { name: '×' }).click()
-  await worldTrue(page, null, 'w.queue.length === 0', 45_000)
+  await inv.locator('..').getByRole('button', { name: 'Close' }).click()
+  await worldTrue(page, null, 'w.seats[0].queue.length === 0', 45_000)
   if (await inv.isVisible().catch(() => false)) {
-    await inv.locator('..').getByRole('button', { name: '×' }).click()
+    await inv.locator('..').getByRole('button', { name: 'Close' }).click()
   }
 
   await tapWorld(page, 13.5, 11.5)
@@ -239,54 +235,10 @@ async function valveOpen(page: Page): Promise<boolean | null> {
   })
 }
 
-async function svgBox(page: Page) {
-  const box = await page.locator('svg.bg-grass').boundingBox()
-  if (box === null) throw new Error('map svg')
-  return box
-}
-
-async function screenOf(page: Page, wx: number, wy: number) {
-  const b = await svgBox(page)
-  return {
-    x: b.x + b.width / 2 + (wx - CAM_X) * TILE,
-    y: b.y + b.height / 2 + (wy - CAM_Y) * TILE,
-  }
-}
-
-async function tapWorld(page: Page, wx: number, wy: number) {
-  const p = await screenOf(page, wx, wy)
-  await page.mouse.move(p.x, p.y)
-  await page.mouse.down()
-  await page.mouse.up()
-}
-
 async function tapValveMid(page: Page, wx: number, wy: number) {
   const p = await screenOf(page, wx, wy)
   await page.mouse.move(p.x + 1, p.y + 1)
   await page.mouse.move(p.x, p.y)
   await page.mouse.down()
   await page.mouse.up()
-}
-
-async function unlockAll(page: Page) {
-  await page.getByRole('button', { name: 'Cheat', exact: true }).click()
-  const unlock = page.getByRole('button', { name: 'Unlock all instantly' })
-  await expect(unlock).toBeVisible()
-  await unlock.click()
-  await expect(page.locator('[data-hud-money] span').last()).toHaveText('1049')
-  await page.getByRole('button', { name: '×' }).click()
-  await expect(unlock).toHaveCount(0)
-}
-
-async function openShop(page: Page) {
-  const dock = page.getByText('General store')
-  if (await dock.isVisible()) return
-  await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(dock).toBeVisible({ timeout: 10_000 })
-}
-
-async function armSku(page: Page, sku: string) {
-  await openShop(page)
-  await page.getByRole('tab', { name: 'Automation' }).click()
-  await page.getByRole('button', { name: sku }).click()
 }

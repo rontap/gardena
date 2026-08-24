@@ -4,7 +4,7 @@ Startup and in-play gear share one Chrome shell. Type [[ui/type]]. Chrome tokens
 
 `Chrome` `relative w-[26rem]` home and join. Changelog `{ kind: 'changelog' }`: `relative w-[36rem]`. Inner column `relative z-20 px-4 pt-4 pb-3 flex flex-col gap-2`.
 
-Top of the column: `ui-menu.svg` `w-full` (illustration only — no text in the SVG). Then `h1` **Gardena** (`font-display` `text-base` `leading-none` `text-center`). Then wordmark **1.7.0** — [[ui/changelog]]. Then the body. Then fail copy if any (home only).
+Top of the column: `ui-menu.svg` `w-full` (illustration only — no text in the SVG). Then `h1` **Gardena** (`font-display` `text-base` `leading-none` `text-center`). Then wordmark **1.7.1** — [[ui/changelog]]. Then the body. Then fail copy if any (home only).
 
 No `$`. No Window title (the `h1` is the name). Not Overlay. Not Window. Not a `Panel`.
 
@@ -22,7 +22,7 @@ Menu-local `useState<MenuPage>({ kind: 'home' })`. Dies with Menu.
 
 `joining` true → force `{ kind: 'home' }`. JoinFields still wins.
 
-Wordmark **1.7.0** is a `button`, `cursor-pointer`, `aria-label="Version history"`. Rest `text-sm text-ink/45 text-center px-2 py-0.5`. Hover `hover:bg-dirt hover:text-house`. While changelog: `bg-ink text-house`, `aria-pressed`. Click toggles home ↔ changelog. While joining: no-op.
+Wordmark **1.7.1** is a `button`, `cursor-pointer`, `aria-label="Version history"`. Rest `text-sm text-ink/45 text-center px-2 py-0.5`. Hover `hover:bg-dirt hover:text-house`. While changelog: `bg-ink text-house`, `aria-pressed`. Click toggles home ↔ changelog. While joining: no-op.
 
 Chrome × (`text-lg`, aria-label Close, `text-ink/60 hover:bg-dirt hover:text-house`):
 
@@ -40,7 +40,7 @@ First paint. A `new World` (random seed, MemorySink) is the backdrop: map full-b
 
 Menu shell `absolute inset-0 z-20 flex items-center justify-center`. No `bg-dirt`. No dim. Backdrop does not dismiss. Esc is App join-close only — not changelog-to-home. Boot home: no ×. Changelog × → home.
 
-Skip this screen only when the fragment is `start_now` (`#start_now`) → new farm, tutorial off, play.
+Skip this screen only when the fragment is `start_now` (`#start_now`) or `unlockall` (`#unlockall`) → new farm, tutorial off, play. `#unlockall` then `unlockAll()` — [[ui/cheat]].
 
 Four buttons, in order:
 

@@ -109,7 +109,7 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       {
         label: 'Signal',
-        skus: ['buy-lever', 'buy-button', 'buy-lamp', 'buy-or', 'buy-and', 'buy-not'],
+        skus: ['buy-lever', 'buy-button', 'buy-lamp', 'buy-or', 'buy-and', 'buy-not', 'buy-pulser', 'buy-counter'],
       },
       {
         label: 'Readers',
@@ -119,6 +119,7 @@ export const SHELVES: readonly Shelf[] = [
           'buy-sensor-harvest',
           'buy-water-system',
           'buy-vehicle-detector',
+          'buy-sensor-day',
         ],
       },
     ],

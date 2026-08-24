@@ -48,6 +48,7 @@ export const Act = {
   rightClick: 'z',
   cheat: 'u',
   drive: 'V',
+  stride: 'K',
   buyVehicle: 'Q',
   buyTrailer: 'T',
   deploy: 'D',
@@ -63,6 +64,9 @@ export const Act = {
   placeSmartValve: 'I',
   tuneWater: 'C',
   tuneHarvest: 'G',
+  tuneCounter: 'M',
+  resetCounter: 'X',
+  tuneDay: 'O',
   load: 'L',
   unload: 'U',
 } as const
@@ -99,7 +103,7 @@ export type Cmd =
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: Rarity }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; d: AdditiveId }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t: number; p: SeatId; k: 'sprinkler' | 'water' | 'harvest'; c: XY }
+  | { a: typeof Act.openHud; t: number; p: SeatId; k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day'; c: XY }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
   | { a: typeof Act.armDelete; t: number; p: SeatId }
   | { a: typeof Act.cancelPlace; t: number; p: SeatId }
@@ -112,6 +116,7 @@ export type Cmd =
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
   | { a: typeof Act.drive; t: number; p: SeatId; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+  | { a: typeof Act.stride; t: number; p: SeatId; x: -1 | 0 | 1; y: -1 | 0 | 1 }
   | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY; k: VehicleKind }
   | { a: typeof Act.buyTrailer; t: number; p: SeatId; c: XY; k: TrailerKind }
   | { a: typeof Act.deploy; t: number; p: SeatId; v: VehicleId; c: XY; hitch: TrailerId | 'none' }
@@ -127,6 +132,9 @@ export type Cmd =
   | { a: typeof Act.placeSmartValve; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.tuneWater; t: number; p: SeatId; c: XY; wilt: boolean; over: boolean }
   | { a: typeof Act.tuneHarvest; t: number; p: SeatId; c: XY; mode: 'any' | 'all' }
+  | { a: typeof Act.tuneCounter; t: number; p: SeatId; c: XY; n: number }
+  | { a: typeof Act.resetCounter; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.tuneDay; t: number; p: SeatId; c: XY; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean }
   | { a: typeof Act.load; t: number; p: SeatId }
   | { a: typeof Act.unload; t: number; p: SeatId }
 

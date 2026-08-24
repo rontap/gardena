@@ -13,6 +13,7 @@ Working notes for the game as it runs. Not a version gallery.
 | `docs/ui/` | HUD, docks, inspect, place, copy. |
 | `docs/art/` | Palette, SVG rules, named assets. |
 | `docs/standards/` | How code, tests, and notes are written. |
+| `docs/infra/` | GitHub Actions, Pages, release. Not game rules. |
 | `docs/agents/` | Who writes where. |
 | `docs/plans/` | Roadmap. Not rules. |
 | `docs/archive/` | Old versioned notes. Do not read as current. |

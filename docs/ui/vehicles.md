@@ -72,9 +72,24 @@ Lower host, local driver only. Hidden when this seat is not a driver, including 
 
 Host `absolute bottom-4 left-1/2 z-20 w-[30rem] -translate-x-1/2`. Not `pointer-events-none` on the host. SVG underneath (`pointer-events-none`). HTML overlay on top. Needles [[art/vehicles]] — overlay, not SVG paths.
 
-Quad: `ui-dash-quad`. Tractor: `ui-dash-tractor`. Quad dash unchanged.
+Quad: `ui-dash-quad`. Tractor: `ui-dash-tractor`.
 
-`paintMotion` owns needle angles, fuel/speed readouts, and tractor hitch `{used}/{TRAILER_CAP}` over **used-readout**. React paints the first frame.
+`paintMotion` owns needle angles, fuel/speed readouts, and tractor hitch `{used}/{TRAILER_CAP}` over **used-readout**. React paints the first frame. Dash faces are React, not `paintMotion`.
+
+### Cargo
+
+Driving overlay only. Not parked cue. Not hangar. Not `HudTarget`. Occupied `ItemFace` only (almanac/shop faces). Empty omitted. Reuse Face SVGs. No new item art. Not clickable. No swap.
+
+Face svg `h-6 w-6` `viewBox="0 0 24 24"` — smaller than shop `skuInner` `h-10`. Wrapper `relative flex h-6 w-6 items-center justify-center`. Badge stays `absolute bottom-0 right-0 bg-ink px-1 text-xs leading-tight font-bold text-house`. Row `flex flex-wrap items-center gap-0.5`. `pointer-events-none` on the strip.
+
+| driven | icons |
+|---|---|
+| Quad | occupied of `slots` (≤6), slot order |
+| Tractor + seed/spray | hopper item, or none if empty |
+| Tractor + harvest | occupied of 8, slot order |
+| Tractor no hitch | none |
+
+Quad: strip above the SVG, `justify-center` in the host. Tractor: same strip above the SVG, `justify-end` (hitch side). `{used}/{TRAILER_CAP}` stays on **used-readout**. Icons are not inside the 30×14 patch. Parked dialog unchanged.
 
 ### Readouts
 
@@ -207,4 +222,4 @@ Lock these strings:
 
 No `$`. `Coin`. Cottage tokens. No new hex.
 
-Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines, patches `13 38 70×14` and `85 38 70×14`. Tractor hitch readout is `{used}/100` over **used-readout**. `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place. Load/Unload shown+inactive has no extra hover string.
+Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines, patches `13 38 70×14` and `85 38 70×14`. Tractor hitch readout is `{used}/100` over **used-readout**. Dash cargo Face svg is `h-6 w-6`; Quad and tractor strips sit above the SVG (`justify-center` / `justify-end`). `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place. Load/Unload shown+inactive has no extra hover string.

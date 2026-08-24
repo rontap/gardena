@@ -126,7 +126,7 @@ Grinder: annual fruit including sugar-cane. Tree fruit and sugar: refuse. Cane f
 
 Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. Species-only — no sapling rarity, no `better-*`.
 
-`TREES` in `defs/trees.ts`. `TREE_YIELD_DAYS` 2, `TREE_YIELD_MUL` 3, `TREE_OFF_MUL` 0.75 — preference.
+`TREES` in `defs/trees.ts`. `TREE_YIELD_DAYS` 2, `TREE_YIELD_MUL` 3.5, `TREE_OFF_MUL` 0.75 — preference. Juvenile unchanged.
 
 | | sale | juvenile s | fruit s | rot s |
 |---|---|---|---|---|

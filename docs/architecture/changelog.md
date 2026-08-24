@@ -4,9 +4,9 @@ Player-facing release list in the menu. Menu-local view state. Not World. Not Sa
 
 Assumption: boot `joining` stays App-owned; Menu forces home when `joining`; wordmark click is a no-op while joining.
 
-Wordmark **1.7.0**. Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate.
+Wordmark **1.7.1**. Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate.
 
-Assumption: wordmark **1.7.0**; this note does not invent 1.7 `RELEASES` copy.
+Assumption: wordmark **1.7.1**; this note does not invent 1.7.1 `RELEASES` copy.
 
 ## Files
 
@@ -46,7 +46,7 @@ MenuPage = { kind: 'home' } | { kind: 'changelog' }
 
 `notes` is sub-bullets. Always present. None → `[]`. Only `major-feature` nests `Change[]`. None → `changes: []`. No `Partial`. No optional that means unsure.
 
-`RELEASES` spans Beta-1 through the current wordmark `1.7.0`. Array order is render order. `id` is the version key the copy owner names. Duplicate `id` illegal.
+`RELEASES` spans Beta-1 through the current wordmark `1.7.1`. Array order is render order. `id` is the version key the copy owner names. Duplicate `id` illegal.
 
 `Changelog` reads `RELEASES` in-module. No props for copy. No `World`.
 
@@ -54,7 +54,7 @@ MenuPage = { kind: 'home' } | { kind: 'changelog' }
 
 `menu.tsx` owns it. `useState<MenuPage>({ kind: 'home' })`. Not App. Not `World`. Dies when `Menu` unmounts.
 
-Open: click the existing wordmark `<p>1.7.0</p>` (boot and play). Sets `{ kind: 'changelog' }`. Toggle: click again → `{ kind: 'home' }`. While boot `joining`: no-op.
+Open: click the existing wordmark `<p>1.7.1</p>` (boot and play). Sets `{ kind: 'changelog' }`. Toggle: click again → `{ kind: 'home' }`. While boot `joining`: no-op.
 
 Close changelog (Menu):
 
@@ -77,7 +77,7 @@ Chrome ×:
 
 Two menu shells only. Boot: no dim, no backdrop dismiss, no × on home. Play: `bg-ink/50`, backdrop dismiss, × on home. [[ui/menu]]
 
-Changelog is Chrome body, same as JoinFields. Illustration, **Gardena**, wordmark stay. Not `Overlay` (`Overlay` always dims and backdrop-dismisses). Not `Window`. Not a second `absolute inset-0`. Not a HUD overlay. Chrome stays `relative w-[26rem]`.
+Changelog is Chrome body, same as JoinFields. Illustration, **Gardena**, wordmark stay. Not `Overlay` (`Overlay` always dims and backdrop-dismisses). Not `Window`. Not a second `absolute inset-0`. Not a HUD overlay. Home and join Chrome `relative w-[26rem]`. Changelog `relative w-[36rem]`. — [[ui/menu]] [[ui/changelog]]
 
 No new SVG.
 

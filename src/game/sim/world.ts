@@ -68,6 +68,7 @@ import type {
   VehicleId,
   VehicleKind,
   VehicleSlot,
+  VfxId,
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
 import {
@@ -421,6 +422,8 @@ export type Seat = {
 
 export type Pulse = { text: string; at: Coord }
 
+export type Burst = { id: VfxId; at: Coord; seq: number }
+
 export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
 
 export type Net = {
@@ -635,7 +638,7 @@ const LOG_CAP = 500
 
 export type PingKind = 'dirty' | 'poured' | 'sold'
 
-export type DirtyReason = 'act' | 'field' | 'big' | 'speech'
+export type DirtyReason = 'act' | 'field' | 'big' | 'speech' | 'vfx'
 
 const NO_REASONS: ReadonlySet<DirtyReason> = new Set()
 
@@ -702,7 +705,9 @@ export class World {
   private netAt = new Map<string, Net>()
   private readonly chunks = new Map<string, Cell[][]>()
   private readonly live = new Map<string, Coord>()
-  private readonly vfx = new Map<string, boolean>()
+  readonly vfx = new Map<string, boolean>()
+  readonly bursts: Burst[] = []
+  private burstSeq = 0
   private readonly subs = new Set<(kind: PingKind, reasons: ReadonlySet<DirtyReason>) => void>()
   private pendingDirty = new Set<DirtyReason>()
   private flushQueued = false
@@ -3732,13 +3737,25 @@ export class World {
     this.ping()
   }
 
+  burst(id: VfxId, at: Coord): void {
+    this.burstSeq += 1
+    this.bursts.push({ id, at: { ...at }, seq: this.burstSeq })
+  }
+
+  drainBursts(): Burst[] {
+    return this.bursts.splice(0, this.bursts.length)
+  }
+
   private finishWork(): void {
     const i = this.act.queue[0]
     if (i === undefined) return
     if (i.act === 'shovel') this.doShovel(i.at)
     if (i.act === 'mine') this.doMine(i.at)
     if (i.act === 'plant') this.doPlant(i.at)
-    if (i.act === 'water' && this.doWater(i.at)) this.emit('poured')
+    if (i.act === 'water' && this.doWater(i.at)) {
+      this.emit('poured')
+      this.burst('pour', i.at)
+    }
     if (i.act === 'fertilize') this.doFertilize(i.at)
     if (i.act === 'compost') this.doCompost(i.at)
     if (i.act === 'harvest') this.doHarvest(i.at)
@@ -3749,7 +3766,10 @@ export class World {
     if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
     if (i.act === 'toggle') this.doToggle(i.at)
-    if (i.act === 'tend') this.doTend(i.at)
+    if (i.act === 'tend') {
+      this.doTend(i.at)
+      this.burst('tend', i.at)
+    }
     if (i.act === 'weed-spray') this.doWeedSpray(i.at)
     this.shiftHead()
   }
@@ -3983,6 +4003,7 @@ export class World {
   }
 
   private tickWater(dt: number): void {
+    const pouring = new Set<string>()
     this.grid().forEach(net => {
       const active = net.sprinklers.filter(s => this.mayPour(s))
       const want = active.map(s => this.demand(s) * dt)
@@ -3993,6 +4014,7 @@ export class World {
       active.forEach((s, i) => {
         const targets = this.sprinklerTargets(s)
         if (targets.length === 0) return
+        pouring.add(vertexKey(s.at))
         const add = ((want[i] / total) * got) / targets.length
         targets.forEach(at => {
           const c = this.cell(at)
@@ -4001,6 +4023,7 @@ export class World {
         })
       })
     })
+    if (this.tickVfx(pouring)) this.pingFor('vfx')
   }
 
   private tickCompost(dt: number): void {
@@ -4154,11 +4177,10 @@ export class World {
     this.bigTicks += 1
     const weeds = this.sproutWeeds()
     const grass = this.sproutGrass()
-    const vfx = this.tickVfx()
-    if (weeds || grass || vfx) this.pingFor('big')
+    if (weeds || grass) this.pingFor('big')
   }
 
-  private tickVfx(): boolean {
+  private tickVfx(pouring: ReadonlySet<string>): boolean {
     let changed = false
     this.vfx.forEach((_on, k) => {
       if (!this.sprinklers.has(k)) {
@@ -4166,8 +4188,8 @@ export class World {
         changed = true
       }
     })
-    this.sprinklers.forEach((s, k) => {
-      const now = this.rate(s.at) > 0
+    this.sprinklers.forEach((_s, k) => {
+      const now = pouring.has(k)
       if (this.vfx.get(k) !== now) {
         this.vfx.set(k, now)
         changed = true

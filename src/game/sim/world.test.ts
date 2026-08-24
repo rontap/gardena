@@ -43,12 +43,12 @@ import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
 import { Plant, Weed } from './plant.ts'
-import { aoe, junction, type Edge } from './pipe.ts'
+import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
 import { Clock, days } from './clock.ts'
-import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
+import { BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
 import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
@@ -900,6 +900,32 @@ describe('beta-5 invariants', () => {
     expect(jack.water.drawn).toBeGreaterThan(0)
   })
 
+  test('sprinkler vfx flips on the tick the pour changes, not on the big tick', () => {
+    const w = new World()
+    w.done.add('unlock-irrigation')
+    w.done.add('unlock-auto-irrigation')
+    w.money = 500
+    w.buy('buy-pumpjack')
+    const at = { col: 5, row: 20 }
+    w.setCell(at, bare('soft'))
+    w.setCell({ col: 6, row: 20 }, bare('soft'))
+    w.confirmPlace(at)
+    w.buy('buy-pipe')
+    w.placePipe({ axis: 'h', col: 5, row: 20 })
+    w.buy('buy-sprinkler')
+    const v = { col: 5, row: 20 }
+    w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    w.setCell({ col: 5, row: 19 }, { kind: 'growing', soil: bed(0.2), plant: new Plant('carrot', 'common') })
+
+    w.tick(DT_MAX)
+    expect(w.vfx.get(vertexKey(v))).toBe(true)
+
+    w.setCell({ col: 5, row: 19 }, bare('soft'))
+    w.tick(DT_MAX)
+    expect(w.vfx.get(vertexKey(v))).toBe(false)
+    expect(w.now * DT_MAX).toBeLessThan(BIG_TICK)
+  })
+
   test('pipes no source rate 0', () => {
     const w = new World()
     w.done.add('unlock-auto-irrigation')
@@ -1576,7 +1602,7 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.7.0. No migrate. 1.6 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)

@@ -2,6 +2,13 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.7 Sight lines
+
+[[art/vfx]] [[ui/changelog]]
+
+- Sprinkler spray VFX, tend/pour bursts. Five prop redraws (pump, tap, freezer, mill, grinder).
+- Wordmark **1.7.0**. `SAVE_VERSION` / `PROTOCOL` stay **1.62**. No migrate.
+
 ## 2026-08-24 — Almanac Overview
 
 [[ui/almanac]]

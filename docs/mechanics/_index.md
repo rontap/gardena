@@ -96,7 +96,7 @@ See [[canon]].
 69. `SUGAR_MILL` 5 / L < `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.
 70. Barrel is grapes → wine only. No whisky. No migrate.
 71. Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.
-72. `SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `'version'`. Dump `vehicles` + `trailers` + hangar/silo cells + `wires` + sensor cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every wire, every sensor output, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`.
+72. `SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.7.0. No migrate. 1.6 file → `'version'`. Dump `vehicles` + `trailers` + hangar/silo cells + `wires` + sensor cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every wire, every sensor output, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`.
 73. `VehicleKind` is `'quad' | 'tractor'`. Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom field. Tractor no slots, `hitch: TrailerId | 'none'`, `boom: 3 | 5` default 5, persist, survives trailer swap. Fuel is `0..1` on the vehicle, not an Item. Trailer is stored or attached, never loose. `TRAILER_CAP` 100 is the only cargo cap.
 74. Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `contracts` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (contracts apply).
 75. Guests: hangar cue HUD, `buy-hangar` + three silo SKUs in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store. Guest `swapChest` still not. Guest chest/freezer Load/Unload no-op.
@@ -135,6 +135,7 @@ See [[canon]].
 108. Tractor harvest on mill takeup: Load sugar drop.
 109. Guest Unload chest no-op. Guest Load chest no-op.
 110. Digest includes mill/jam/still `inn` and chest/freezer/seed-silo/additive-store `out`.
-111. `SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.6.2. No migrate. 1.6 file → `'version'`.
+111. `SAVE_VERSION` 1.62. `PROTOCOL` 1.62. Wordmark 1.7.0. No migrate. 1.6 file → `'version'`.
+112. Sprinkler VFX flips on the tick the pour changes. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
 
 Assumption: `Act.setBoom` `'W'`; `Act.placeWire` `'N'`; `Act.load` `'L'`; `Act.unload` `'U'`; spray click is `Intent` `{ act: 'weed-spray'; at }`.

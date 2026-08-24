@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.62` on dump. Assumption: wordmark **1.6.2**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. No migrate.
+One file shape. Dump writes `game: "gardena"`, `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.62` on dump. Assumption: wordmark **1.7.0**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. No migrate.
 
 ## RFC — versions (active)
 

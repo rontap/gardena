@@ -9,10 +9,10 @@ import { onCell } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import { Coin } from '../ui/frame.tsx'
-import { SENSOR_CELL_SKUS, type CropId, type SkuId } from '../sim/ids.ts'
+import { SENSOR_CELL_SKUS, type CropId, type SkuId, type VfxId } from '../sim/ids.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { Soil } from '../sim/soil.ts'
-import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
+import { aoe, edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import {
   area3,
@@ -28,7 +28,7 @@ import {
   type WireEnd,
   wireControls,
 } from '../sim/sensor.ts'
-import type { Place, SeatId, World } from '../sim/world.ts'
+import type { Burst, Place, SeatId, World } from '../sim/world.ts'
 import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
   ACTOR,
@@ -104,6 +104,7 @@ import {
   weedInner,
 } from './svgs.ts'
 import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
+import { VFX, VFX_REDUCED } from './vfx.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors'
 
@@ -797,6 +798,13 @@ const Marks = memo(function Marks({
   hideVerts: readonly Vertex[] | undefined
 }) {
   void rev
+  const [bursts, setBursts] = useState<Burst[]>([])
+  useEffect(() => {
+    const got = world.drainBursts()
+    if (got.length === 0) return
+    if (VFX_REDUCED) return
+    setBursts(b => [...b, ...got])
+  }, [world, rev])
   const plots: {
     col: number
     row: number
@@ -1185,7 +1193,7 @@ const Marks = memo(function Marks({
           variant={s.variant}
           facing={'facing' in s ? s.facing : undefined}
           lensKind={lens === 'kind'}
-          working={working(world, s)}
+          working={world.vfx.get(vertexKey(s.at)) === true}
           tuneCrop={s.tune.kind === 'crop' ? s.tune.crop : undefined}
         />
       ))}
@@ -1271,6 +1279,19 @@ const Marks = memo(function Marks({
           </g>
         )
       })}
+      <g
+        className="vfx-layer"
+        pointerEvents="none"
+        onAnimationEnd={e => {
+          if (e.animationName !== 'vfx-burst-life') return
+          const seq = Number((e.target as SVGElement).getAttribute('data-burst'))
+          setBursts(x => x.filter(y => y.seq !== seq))
+        }}
+      >
+        {bursts.map(b => (
+          <VfxLayers key={b.seq} id={b.id} col={b.at.col} row={b.at.row} burst seq={b.seq} />
+        ))}
+      </g>
     </g>
   )
 })
@@ -1825,7 +1846,7 @@ const SprinklerMark = memo(function SprinklerMark({
         />
       )}
       <SprinklerGfx s={s} placed />
-      {working && <SprinklerVfx s={s} />}
+      {working && <VfxLayers id={sprayId(variant)} col={col} row={row} rot={vertRot(variant, facing)} />}
       {tuneCrop !== undefined && (
         <g
           pointerEvents="none"
@@ -1853,35 +1874,51 @@ function SprinklerGfx({ s, opacity, placed }: { s: Sprinkler; opacity?: number; 
   )
 }
 
-function SprinklerVfx({ s }: { s: Sprinkler }) {
-  const x = s.at.col * TILE
-  const y = s.at.row * TILE
-  if (s.variant === 'vert') {
-    const ew = s.facing === 'ew'
-    return (
-      <line
-        x1={ew ? x - 2 * TILE : x}
-        y1={ew ? y : y - 2 * TILE}
-        x2={ew ? x + 2 * TILE : x}
-        y2={ew ? y : y + 2 * TILE}
-        className="stroke-water"
-        strokeWidth={2}
-        strokeDasharray="4 6"
-        pointerEvents="none"
-      >
-        <animate attributeName="stroke-dashoffset" from="0" to="20" dur="0.45s" repeatCount="indefinite" />
-      </line>
-    )
-  }
+function sprayId(variant: Sprinkler['variant']): VfxId {
+  if (variant === 'basic') return 'sprinkler-spray'
+  if (variant === 'large') return 'sprinkler-spray-large'
+  return 'sprinkler-spray-vert'
+}
+
+function vertRot(variant: Sprinkler['variant'], facing: 'ns' | 'ew' | undefined): number {
+  return variant === 'vert' && facing === 'ns' ? 90 : 0
+}
+
+function VfxLayers({
+  id,
+  col,
+  row,
+  rot,
+  burst,
+  seq,
+}: {
+  id: VfxId
+  col: number
+  row: number
+  rot?: number
+  burst?: boolean
+  seq?: number
+}) {
+  const def = VFX[id]
+  const off = def.anchor === 'vertex' ? ` translate(${-def.span / 2},${-def.tall / 2})` : ''
   return (
-    <g transform={`translate(${x},${y})`} pointerEvents="none">
-      <g>
-        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.2s" repeatCount="indefinite" />
-        <rect x={6} y={-1} width={8} height={2} className="fill-water" />
-        <rect x={-14} y={-1} width={8} height={2} className="fill-water" />
-        <rect x={-1} y={6} width={2} height={8} className="fill-water" />
-        <rect x={-1} y={-14} width={2} height={8} className="fill-water" />
-      </g>
+    <g
+      className={burst === true ? 'vfx vfx-burst' : 'vfx'}
+      data-vfx={id}
+      data-burst={seq}
+      pointerEvents="none"
+      transform={`translate(${col * TILE},${row * TILE}) rotate(${rot ?? 0}) scale(${TILE / 24})${off}`}
+      style={{ ['--vfx-cut']: def.cut, ['--vfx-dur']: `${def.dur}s` } as CSSProperties}
+    >
+      {def.frames.map((f, i) => (
+        <use
+          key={i}
+          className="vfx-frame"
+          data-vfx-i={i}
+          style={{ ['--vfx-t']: i / def.frames.length } as CSSProperties}
+          href={symHref(f)}
+        />
+      ))}
     </g>
   )
 }
@@ -2188,10 +2225,6 @@ function sprinklerOk(world: World, s: Sprinkler): boolean {
 function vertsOf(e: Edge): [Vertex, Vertex] {
   if (e.axis === 'h') return [{ col: e.col, row: e.row }, { col: e.col + 1, row: e.row }]
   return [{ col: e.col, row: e.row }, { col: e.col, row: e.row + 1 }]
-}
-
-function working(world: World, s: Sprinkler): boolean {
-  return world.rate(s.at) > 0
 }
 
 function valveHit(world: World, wx: number, wy: number): Edge | undefined {

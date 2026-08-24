@@ -85,3 +85,55 @@ body,
 .plant-rarity:hover .plant-quality-pip {
   opacity: 1;
 }
+
+.vfx {
+  pointer-events: none;
+}
+
+.vfx-frame {
+  opacity: 0;
+  animation-name: var(--vfx-cut);
+  animation-duration: var(--vfx-dur);
+  animation-timing-function: steps(1, end);
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-delay: calc((var(--vfx-t) - 1) * var(--vfx-dur));
+}
+
+.vfx-burst .vfx-frame {
+  animation-iteration-count: 1;
+  animation-delay: calc(var(--vfx-t) * var(--vfx-dur));
+}
+
+.vfx-burst {
+  animation: vfx-burst-life var(--vfx-dur) linear 1 forwards;
+}
+
+@keyframes vfx-cut-2 {
+  0% { opacity: 1 }
+  49.99% { opacity: 1 }
+  50% { opacity: 0 }
+  100% { opacity: 0 }
+}
+
+@keyframes vfx-cut-4 {
+  0% { opacity: 1 }
+  24.99% { opacity: 1 }
+  25% { opacity: 0 }
+  100% { opacity: 0 }
+}
+
+@keyframes vfx-burst-life {
+  0% { opacity: 1 }
+  70% { opacity: 1 }
+  100% { opacity: 0 }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vfx-frame {
+    animation: none;
+  }
+  .vfx-frame[data-vfx-i='0'] {
+    opacity: 1;
+  }
+}

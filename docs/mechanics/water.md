@@ -46,7 +46,7 @@ Pour per covered **growing** tile, not as one lump.
 | vertical | 4×2 strip, rotate NS/EW | 30 |
 | large | 4×4 around the corner | 33 |
 
-Dry, sourceless, or unreachable: rate 0, no VFX.
+Dry, sourceless, unreachable, or nothing growing in the AoE: rate 0, no VFX. `tickWater` writes `World.vfx` from the sprinklers it actually poured and pings `'vfx'`. Not `BIG_TICK` — [[art/vfx]].
 
 `unlock-smart-irrigation`: every vertex sprinkler gains a signal `in`. No new SKU. No mask HUD. Unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. Crop dial `unlock-smart-sprinkler` unchanged. — [[mechanics/sensors]]
 

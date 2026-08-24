@@ -1,5 +1,5 @@
 import type { Coord } from './building.ts'
-import type { CropId } from './ids.ts'
+import type { CropId, Signal } from './ids.ts'
 import { Reservoir } from './water.ts'
 
 export type Edge =
@@ -10,16 +10,16 @@ export type Vertex = { col: number; row: number }
 
 export type Junction = 'stub' | 'I' | 'L' | 'T' | 'X'
 
-export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }
+export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean } | { kind: 'smart' }
 
 export type Segment = { at: Edge; gate: Gate }
 
 export type Tune = { kind: 'flat' } | { kind: 'crop'; crop: CropId }
 
 export type Sprinkler =
-  | { variant: 'basic'; at: Vertex; tune: Tune }
-  | { variant: 'vert'; at: Vertex; facing: 'ns' | 'ew'; tune: Tune }
-  | { variant: 'large'; at: Vertex; tune: Tune }
+  | { variant: 'basic'; at: Vertex; tune: Tune; inn: Signal; hold: number }
+  | { variant: 'vert'; at: Vertex; facing: 'ns' | 'ew'; tune: Tune; inn: Signal; hold: number }
+  | { variant: 'large'; at: Vertex; tune: Tune; inn: Signal; hold: number }
 
 export class Well {
   readonly kind = 'well' as const
@@ -32,7 +32,9 @@ export class Well {
 }
 
 export function flows(s: Segment): boolean {
-  return s.gate.kind === 'bare' || s.gate.open
+  if (s.gate.kind === 'bare') return true
+  if (s.gate.kind === 'valve') return s.gate.open
+  return false
 }
 
 export function vertsOf(e: Edge): [Vertex, Vertex] {

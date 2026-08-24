@@ -5,6 +5,8 @@ import type { Rarity } from '../defs/rarity.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
+import { edgeKey } from './pipe.ts'
+import { isSensor, type SmartHold } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
 import type { TileId } from './ids.ts'
 import type { World } from './world.ts'
@@ -18,17 +20,29 @@ const FERT_WORD: { readonly [K in Band]: string } = {
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
   const place = world.seats[world.local].place
   if (place.kind === 'delete') return world.promptHit(hit).text
+  if (hit !== undefined && hit.kind === 'smart-valve') {
+    const h = world.smartHold.get(edgeKey(hit.edge)) as SmartHold
+    return `Smart valve - ${h.level === 1 ? 'on' : 'off'}`
+  }
   if (
     hit !== undefined &&
-    (hit.kind === 'valve' || hit.kind === 'well' || hit.kind === 'sprinkler-hud')
+    (hit.kind === 'valve' ||
+      hit.kind === 'well' ||
+      hit.kind === 'sprinkler-hud' ||
+      hit.kind === 'port' ||
+      hit.kind === 'delete-wire' ||
+      hit.kind === 'water-hud' ||
+      hit.kind === 'harvest-hud')
   ) {
     return world.promptHit(hit).text
   }
+  if (place.kind === 'wire') return world.promptHit(hit).text
   if (
     place.kind === 'sku' &&
     (place.id === 'buy-pipe' ||
       place.id === 'buy-valve' ||
       place.id === 'buy-well' ||
+      place.id === 'buy-smart-valve' ||
       place.id === 'buy-sprinkler' ||
       place.id === 'buy-sprinkler-vert' ||
       place.id === 'buy-sprinkler-large')
@@ -110,6 +124,31 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     lines.push(`${cropName(cell.plant.crop)} - ripe, ${rarityText(cell.plant.rarity)}${plantStats ? `, freshness ${Math.floor(cell.plant.freshness * 100)}%` : ''}`)
   } else if (cell.kind === 'rotten') {
     lines.push(`Rotten ${cropName(cell.crop)} - ${soilLine(cell.soil)}`)
+  } else if (isSensor(cell)) {
+    const on = cell.kind === 'lever' ? cell.on : cell.kind === 'lamp' ? cell.inn === 1 : cell.out === 1
+    const name =
+      cell.kind === 'lever'
+        ? 'Lever'
+        : cell.kind === 'button'
+          ? 'Button'
+          : cell.kind === 'lamp'
+            ? 'Lamp'
+            : cell.kind === 'or'
+              ? 'OR gate'
+              : cell.kind === 'and'
+                ? 'AND gate'
+                : cell.kind === 'not'
+                  ? 'NOT gate'
+                  : cell.kind === 'sensor-water'
+                    ? 'Water sensor'
+                    : cell.kind === 'sensor-fert'
+                      ? 'Fertilizer sensor'
+                      : cell.kind === 'sensor-harvest'
+                        ? 'Harvest sensor'
+                        : cell.kind === 'water-system'
+                          ? 'Water-system sensor'
+                          : 'Vehicle detector'
+    lines.push(`${name} - ${on ? 'on' : 'off'}`)
   } else {
     lines.push(`${cropName(cell.plant.crop)} - dead`)
   }

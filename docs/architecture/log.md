@@ -8,7 +8,7 @@ Internal enabler. No player-visible change. Not save UI. Not replay viewer. Mult
 
 | file | owns |
 |---|---|
-| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` |
+| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest` |
 | `src/game/sim/log.worker.ts` | worker. Holds `Cmd[]`. Does not apply. Does not own `World`. |
 | `src/game/sim/world.ts` | `World.now`, `World.log`, `dispatch`, `apply`. Wrappers. |
 
@@ -62,7 +62,7 @@ Replay calls `apply` only.
 
 Public UI methods wrap `dispatch` so call sites stay:
 
-`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill`
+`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `armWire` `placeWire` `placeSmartValve` `deleteWire` `tuneWater` `tuneHarvest`
 
 `enqueue` is a mutator. Tests call it. `apply` of `click` / `clickValve` / `rightClick` (drop) calls `enqueue`. It does not wrap `dispatch`.
 
@@ -80,7 +80,7 @@ Public UI methods wrap `dispatch` so call sites stay:
 
 Log = player commands only.
 
-Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, actor walk, `DYNAMIC_MARKET` retarget.
+Not logged (follow from seed + cmds + time): sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, sensor eval / hold / pourEligible, actor walk, `DYNAMIC_MARKET` retarget.
 
 Not logged (view-local): panel open/close, camera, camera follow, hover, lens, hangar select, hide gardener.
 
@@ -117,7 +117,7 @@ Letters for `a` live only in `Act` (`src/game/sim/log.ts`). Call sites use `Act.
 XY = [col: number, row: number]
 ```
 
-Vertex uses `XY`. Edge in the log is `Edge` (`axis`, `col`, `row`). Intent in the log is `Intent`. Sprinkler in the log is `Sprinkler` (variant, at, facing if vert, tune). Tune is `Tune`. ChunkId is `ChunkId`. No `Partial`. No optional that means unsure. `facing` only on vert sprinkler.
+Vertex uses `XY`. Edge in the log is `Edge` (`axis`, `col`, `row`). Intent in the log is `Intent`. Sprinkler in the log is `Sprinkler` (variant, at, facing if vert, tune). Tune is `Tune`. WireEnd in the log is `WireEnd`. ChunkId is `ChunkId`. No `Partial`. No optional that means unsure. `facing` only on vert sprinkler.
 
 `e` is the Edge field. `Act` has no key whose value is `'e'`.
 
@@ -137,6 +137,8 @@ Cmd =
   | { a: typeof Act.delete; t; p; k: 'pipe'; e: Edge }
   | { a: typeof Act.delete; t; p; k: 'sprinkler'; c: XY }
   | { a: typeof Act.delete; t; p; k: 'building'; c: XY }
+  | { a: typeof Act.delete; t; p; k: 'wire'; from: WireEnd; to: WireEnd }
+  | { a: typeof Act.delete; t; p; k: 'smart'; e: Edge }
   | { a: typeof Act.expand; t; p; k: ChunkId }
   | { a: typeof Act.startResearch; t; p; r: ResearchId }
   | { a: typeof Act.pickSkill; t; p; m: MemberId; s: number }
@@ -145,7 +147,7 @@ Cmd =
   | { a: typeof Act.swap; t; p; i: number }
   | { a: typeof Act.swapChest; t; p; c: XY; i: number }
   | { a: typeof Act.tuneSprinkler; t; p; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t; p; c: XY }
+  | { a: typeof Act.openHud; t; p; k: 'sprinkler' | 'water' | 'harvest'; c: XY }
   | { a: typeof Act.closeHud; t; p }
   | { a: typeof Act.armDelete; t; p }
   | { a: typeof Act.cancelPlace; t; p }
@@ -167,11 +169,16 @@ Cmd =
   | { a: typeof Act.swapVehicle; t; p; v: VehicleId; i: VehicleSlot }
   | { a: typeof Act.swapTrailer; t; p; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t; p; c: XY }
+  | { a: typeof Act.armWire; t; p; from: WireEnd }
+  | { a: typeof Act.placeWire; t; p; from: WireEnd; to: WireEnd }
+  | { a: typeof Act.placeSmartValve; t; p; e: Edge }
+  | { a: typeof Act.tuneWater; t; p; c: XY; wilt: boolean; over: boolean }
+  | { a: typeof Act.tuneHarvest; t; p; c: XY; mode: 'any' | 'all' }
 ```
 
-`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. Latest `Act.drive` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. [[mechanics/vehicles]].
+`Act.drive` `'V'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.armWire` `'R'`. `Act.placeWire` `'W'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`. Latest `Act.drive` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. [[mechanics/vehicles]]. Cycle `placeWire` no-op. [[mechanics/sensors]].
 
-`Act.delete` inner `k` is a closed union: pipe / sprinkler / building. Not one mushy target.
+`Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart. Not one mushy target.
 
 `Act.cheat` inner `k` is a closed union.
 
@@ -192,7 +199,7 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 - Worker applying cmds
 - Worker owning `World`
 - Vitest using a Worker
-- logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel / vehicle ticks / boom
+- logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel / vehicle ticks / boom / sensor eval
 - logging panel / camera / camera follow / hover / lens / hangar select
 - `confirmPlace` as a cmd
 - silent apply (dispatch without log, or a silent flag)

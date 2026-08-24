@@ -35,11 +35,11 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Processing, and Storage. Paving and `buy-fence` are out: they are paint tools. Hidden ≠ disabled. [[ui/build]]
+Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Processing, Storage, Vehicles, and Sensors. Paving and `buy-fence` are out: they are paint tools. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
 
-**Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. [[ui/place]].
+**Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**): `cancelPlace`; if `lens === 'pipes'` then `off`. Leave `water` / `land` / `ripe` / `kind` / `rarity`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes → `off`; close HUD target and panel.
+Cancel does not change lens. Shop close (toggle, dock **×**): `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Leave `water` / `land` / `ripe` / `kind` / `rarity`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel.
 
 ## Lenses
 

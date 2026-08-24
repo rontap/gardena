@@ -58,6 +58,7 @@ const AUTO_IDS = [
   'tap',
   'pipe',
   'valve',
+  'smart-valve',
   'sprinkler',
   'sprinkler-vert',
   'sprinkler-large',
@@ -73,6 +74,17 @@ const AUTO_IDS = [
   'silo-seed',
   'silo-spray',
   'silo-produce',
+  'lever',
+  'button',
+  'lamp',
+  'or',
+  'and',
+  'not',
+  'sensor-water',
+  'sensor-fert',
+  'sensor-harvest',
+  'water-system',
+  'vehicle-detector',
 ]
 
 const TABS = [

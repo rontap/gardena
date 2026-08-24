@@ -29,7 +29,7 @@ import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
 import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
-import type { TrailerId, VehicleId } from './game/sim/ids.ts'
+import { SENSOR_LENS_SKUS, type TrailerId, type VehicleId } from './game/sim/ids.ts'
 import { trailerUsed } from './game/sim/vehicle.ts'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
@@ -104,6 +104,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (lens === 'water' && !world.hasSkill('water-study')) setLens('off')
     if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
+    const p = world.seats[world.local].place
+    if (p.kind === 'sku' && (SENSOR_LENS_SKUS as readonly string[]).includes(p.id)) setLens('sensors')
   }, [n, lens, world])
 
   useEffect(() => {
@@ -227,7 +229,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       }
       world.cancelPlace()
       world.closeHud()
-      setLens(l => (l === 'pipes' ? 'off' : l))
+      setLens(l => (l === 'pipes' || l === 'sensors' ? 'off' : l))
       setQuery('')
       if (world.seam.kind === 'recap') {
         if (world.local === 0) world.dismissRecap()
@@ -707,7 +709,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onCam={setCam}
             onClick={hit => {
               if (world.seam.kind === 'recap') return
-              if (hit.kind !== 'sprinkler-hud') world.closeHud()
+              if (hit.kind !== 'sprinkler-hud' && hit.kind !== 'water-hud' && hit.kind !== 'harvest-hud') world.closeHud()
               if (panel.kind === 'inventory' || cued(panel.kind)) {
                 if (cued(panel.kind)) world.ackCue()
                 setPanel({ kind: 'none' })
@@ -977,7 +979,37 @@ function Dash({ world }: { world: World }) {
 
 function dispatchClick(world: World, hit: MapClick): void {
   if (hit.kind === 'edge') {
+    const place = world.seats[world.local].place
+    if (place.kind === 'sku' && place.id === 'buy-smart-valve') {
+      world.placeSmartValve(hit.edge)
+      return
+    }
     world.placePipe(hit.edge)
+    return
+  }
+  if (hit.kind === 'port') {
+    const place = world.seats[world.local].place
+    if (place.kind === 'wire') {
+      world.placeWire(place.from, hit.end)
+      return
+    }
+    world.armWire(hit.end)
+    return
+  }
+  if (hit.kind === 'delete-wire') {
+    world.deleteWire(hit.from, hit.to)
+    return
+  }
+  if (hit.kind === 'smart-valve') {
+    world.deleteSmart(hit.edge)
+    return
+  }
+  if (hit.kind === 'water-hud') {
+    world.openHud({ kind: 'water', at: hit.at })
+    return
+  }
+  if (hit.kind === 'harvest-hud') {
+    world.openHud({ kind: 'harvest', at: hit.at })
     return
   }
   if (hit.kind === 'sprinkler') {

@@ -68,3 +68,9 @@ Held sugar: **Sugar - {n}L**.
 ## Vehicles
 
 Hangar, parked Quad, parked tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
+
+## Sensors
+
+Sensor cells and smart valve: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**.
+
+Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest HUD: **Tune water sensor** / **Tune harvest sensor** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / vehicle detector / gates / lamp: look only.

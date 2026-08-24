@@ -434,5 +434,77 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'silo-produce' },
       blurb: '2×3 field tank. Look only.',
     },
+    {
+      id: 'smart-valve',
+      title: 'Smart valve',
+      icon: { kind: 'smart-valve' },
+      blurb: 'Sits on an edge. Closed unless its input is high. No manual click.',
+    },
+    {
+      id: 'lever',
+      title: 'Lever',
+      icon: { kind: 'lever' },
+      blurb: 'Throw it. Output high when on.',
+    },
+    {
+      id: 'button',
+      title: 'Button',
+      icon: { kind: 'button' },
+      blurb: 'Press. Output high for a short pulse.',
+    },
+    {
+      id: 'lamp',
+      title: 'Lamp',
+      icon: { kind: 'lamp' },
+      blurb: 'Lights when its input is high.',
+    },
+    {
+      id: 'or',
+      title: 'OR gate',
+      icon: { kind: 'or' },
+      blurb: 'Output high if either input is high.',
+    },
+    {
+      id: 'and',
+      title: 'AND gate',
+      icon: { kind: 'and' },
+      blurb: 'Output high if both inputs are high.',
+    },
+    {
+      id: 'not',
+      title: 'NOT gate',
+      icon: { kind: 'not' },
+      blurb: 'Output is the inverse of its input.',
+    },
+    {
+      id: 'sensor-water',
+      title: 'Water sensor',
+      icon: { kind: 'sensor-water' },
+      blurb: 'Reads nearby plant water. Output high when a plot matches the checked boxes.',
+    },
+    {
+      id: 'sensor-fert',
+      title: 'Fertilizer sensor',
+      icon: { kind: 'sensor-fert' },
+      blurb: 'Reads nearby growing plants. Output high when any is starving.',
+    },
+    {
+      id: 'sensor-harvest',
+      title: 'Harvest sensor',
+      icon: { kind: 'sensor-harvest' },
+      blurb: 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.',
+    },
+    {
+      id: 'water-system',
+      title: 'Water-system sensor',
+      icon: { kind: 'water-system' },
+      blurb: 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.',
+    },
+    {
+      id: 'vehicle-detector',
+      title: 'Vehicle detector',
+      icon: { kind: 'vehicle-detector' },
+      blurb: 'Flush plate. Output high when a field Quad or tractor sits on this tile.',
+    },
   ]
 }

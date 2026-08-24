@@ -37,9 +37,13 @@ Stages are sibling `<g id>` in one file. View shows exactly one group. All group
 | `item-wine.svg` | `common` `rare` `heirloom` |
 | `prop-*-tree.svg` | `grow` `unripe` `ripe` |
 | `crop-weed-*.svg` | `sprout` `grow` |
+| `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-sensor-harvest` `prop-sensor-harvest` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` | `off` `on` |
+| `item-sensor-water` `prop-sensor-water` | `red` `blue` |
+| `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
+| `item-smart-valve` `pipe-smart-valve` | `closed` `open` |
 
 Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon uses `common` / `ripe`.
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]], [[art/sensors]].

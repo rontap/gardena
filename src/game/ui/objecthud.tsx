@@ -11,7 +11,14 @@ import { Btn, Chrome } from './frame.tsx'
 
 export type HudOption = { id: string; label: string; note: string; icon: string; on: boolean }
 
-export type HudSpec = { title: string; at: Vertex; options: HudOption[]; pick: (id: string) => void }
+export type HudSpec = {
+  title: string
+  col: number
+  row: number
+  options: HudOption[]
+  pick: (id: string) => void
+  stay: boolean
+}
 
 const TUNABLE = (Object.keys(CROPS) as CropId[]).filter(id => CROPS[id].waterUsePerSec > 0)
 
@@ -24,7 +31,9 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
   if (s === undefined) return undefined
   return {
     title: 'Sprinkler output',
-    at,
+    col: at.col,
+    row: at.row,
+    stay: false,
     options: [
       {
         id: 'flat',
@@ -47,8 +56,71 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
   }
 }
 
+function waterSpec(world: World, at: Vertex): HudSpec | undefined {
+  const c = world.cell(at)
+  if (c.kind !== 'sensor-water') return undefined
+  return {
+    title: 'Water sensor',
+    col: at.col,
+    row: at.row,
+    stay: true,
+    options: [
+      {
+        id: 'wilt',
+        label: 'Wilting',
+        note: '',
+        icon: itemInner({ kind: 'sensor-water' }),
+        on: c.wilt,
+      },
+      {
+        id: 'over',
+        label: 'Overwatered',
+        note: '',
+        icon: itemInner({ kind: 'sensor-water' }),
+        on: c.over,
+      },
+    ],
+    pick: id => {
+      if (id === 'wilt') world.tuneWater(at, !c.wilt, c.over)
+      else world.tuneWater(at, c.wilt, !c.over)
+    },
+  }
+}
+
+function harvestSpec(world: World, at: Vertex): HudSpec | undefined {
+  const c = world.cell(at)
+  if (c.kind !== 'sensor-harvest') return undefined
+  return {
+    title: 'Harvest sensor',
+    col: at.col,
+    row: at.row,
+    stay: true,
+    options: [
+      {
+        id: 'any',
+        label: 'Any',
+        note: '',
+        icon: itemInner({ kind: 'sensor-harvest' }),
+        on: c.mode === 'any',
+      },
+      {
+        id: 'all',
+        label: 'All',
+        note: '',
+        icon: itemInner({ kind: 'sensor-harvest' }),
+        on: c.mode === 'all',
+      },
+    ],
+    pick: id => {
+      world.tuneHarvest(at, id === 'all' ? 'all' : 'any')
+    },
+  }
+}
+
 export function hudSpec(world: World, target: HudTarget): HudSpec | undefined {
-  return sprinklerSpec(world, target.at)
+  if (target.kind === 'sprinkler') return sprinklerSpec(world, target.at)
+  if (target.kind === 'water') return waterSpec(world, target.at)
+  return harvestSpec(world, target.at)
 }
 
 export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; onClose: () => void }) {
@@ -60,8 +132,8 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
     <div
       className="pointer-events-auto absolute z-30 w-56"
       style={{
-        left: `calc(50% + ${(spec.at.col - cam.x) * TILE * cam.scale}px)`,
-        top: `calc(50% + ${(spec.at.row - cam.y) * TILE * cam.scale}px)`,
+        left: `calc(50% + ${(spec.col - cam.x) * TILE * cam.scale}px)`,
+        top: `calc(50% + ${(spec.row - cam.y) * TILE * cam.scale}px)`,
       }}
     >
       <Chrome className="relative">
@@ -80,7 +152,7 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
                 selected={o.on}
                 onClick={() => {
                   spec.pick(o.id)
-                  onClose()
+                  if (!spec.stay) onClose()
                 }}
               >
                 <span className="flex items-center gap-2">

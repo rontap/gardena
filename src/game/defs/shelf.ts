@@ -1,7 +1,7 @@
 import type { SkuId } from '../sim/ids.ts'
 
 export type ShopShelfId = 'seeds' | 'tools' | 'supplies'
-export type BuildShelfId = 'water' | 'processing' | 'storage' | 'vehicles' | 'land'
+export type BuildShelfId = 'water' | 'processing' | 'storage' | 'vehicles' | 'logic' | 'land'
 export type ShelfId = ShopShelfId | BuildShelfId
 
 export type Group = { label: string; skus: SkuId[] }
@@ -64,7 +64,7 @@ export const SHELVES: readonly Shelf[] = [
     cluster: 'build',
     groups: [
       { label: 'Source', skus: ['buy-pumpjack', 'buy-well', 'buy-rain-tank'] },
-      { label: 'Flow', skus: ['buy-tap', 'buy-pipe', 'buy-valve'] },
+      { label: 'Flow', skus: ['buy-tap', 'buy-pipe', 'buy-valve', 'buy-smart-valve'] },
       { label: 'Output', skus: ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large'] },
     ],
   },
@@ -98,6 +98,29 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       { label: 'Hangar', skus: ['buy-hangar'] },
       { label: 'Silos', skus: ['buy-silo-seed', 'buy-silo-spray', 'buy-silo-produce'] },
+    ],
+  },
+  {
+    panel: 'build',
+    id: 'logic',
+    label: 'Sensors',
+    line: 'Signal, gates, readers.',
+    cluster: 'build',
+    groups: [
+      {
+        label: 'Signal',
+        skus: ['buy-lever', 'buy-button', 'buy-lamp', 'buy-or', 'buy-and', 'buy-not'],
+      },
+      {
+        label: 'Readers',
+        skus: [
+          'buy-sensor-water',
+          'buy-sensor-fert',
+          'buy-sensor-harvest',
+          'buy-water-system',
+          'buy-vehicle-detector',
+        ],
+      },
     ],
   },
   {

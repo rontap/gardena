@@ -129,6 +129,8 @@ export type ResearchId =
   | 'unlock-rotary-shovel'
   | 'unlock-diamond-pickaxe'
   | 'unlock-vehicles'
+  | 'unlock-sensors'
+  | 'unlock-smart-irrigation'
 
 export type SkuId =
   | 'pack-carrot'
@@ -180,6 +182,63 @@ export type SkuId =
   | 'buy-silo-seed'
   | 'buy-silo-spray'
   | 'buy-silo-produce'
+  | 'buy-lever'
+  | 'buy-button'
+  | 'buy-lamp'
+  | 'buy-or'
+  | 'buy-and'
+  | 'buy-not'
+  | 'buy-sensor-water'
+  | 'buy-sensor-fert'
+  | 'buy-sensor-harvest'
+  | 'buy-water-system'
+  | 'buy-smart-valve'
+  | 'buy-vehicle-detector'
+
+export type SensorKind =
+  | 'lever'
+  | 'button'
+  | 'lamp'
+  | 'or'
+  | 'and'
+  | 'not'
+  | 'sensor-water'
+  | 'sensor-fert'
+  | 'sensor-harvest'
+  | 'water-system'
+  | 'vehicle-detector'
+
+export type Signal = 0 | 1
+
+export const SENSOR_KINDS: readonly SensorKind[] = [
+  'lever',
+  'button',
+  'lamp',
+  'or',
+  'and',
+  'not',
+  'sensor-water',
+  'sensor-fert',
+  'sensor-harvest',
+  'water-system',
+  'vehicle-detector',
+]
+
+export const SENSOR_CELL_SKUS: readonly SkuId[] = [
+  'buy-lever',
+  'buy-button',
+  'buy-lamp',
+  'buy-or',
+  'buy-and',
+  'buy-not',
+  'buy-sensor-water',
+  'buy-sensor-fert',
+  'buy-sensor-harvest',
+  'buy-water-system',
+  'buy-vehicle-detector',
+]
+
+export const SENSOR_LENS_SKUS: readonly SkuId[] = [...SENSOR_CELL_SKUS, 'buy-smart-valve']
 
 export type VehicleKind = 'quad' | 'tractor'
 export type VehicleId = number

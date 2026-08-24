@@ -72,13 +72,13 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.5. `PROTOCOL` 1.5. No migrate. Dump `vehicles` + hangar cells. Digest includes every vehicle `id` `kind` `fuel` `slots` `pose`.', () => {
-    expect(SAVE_VERSION).toBe(1.5)
-    expect(PROTOCOL).toBe(1.5)
+  test('`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. No migrate. Dump `vehicles` + hangar cells. Digest includes every vehicle `id` `kind` `fuel` `slots` `pose`.', () => {
+    expect(SAVE_VERSION).toBe(1.6)
+    expect(PROTOCOL).toBe(1.6)
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(1.5)
+    expect(s.version).toBe(1.6)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)

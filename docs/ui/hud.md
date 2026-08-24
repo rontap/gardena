@@ -39,7 +39,7 @@ Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — deri
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**): `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Leave `water` / `land` / `ripe` / `kind` / `rarity`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel.
+Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
 
 ## Lenses
 

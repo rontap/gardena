@@ -423,11 +423,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     URL.revokeObjectURL(url)
   }
 
-  /** Leaving the shop system: drop the ghost, the pipe layer, and the search. */
   function leaveShop(): void {
     if (world === undefined) return
     world.cancelPlace()
-    setLens(l => (l === 'pipes' ? 'off' : l))
+    setLens(l => (l === 'pipes' || l === 'sensors' ? 'off' : l))
     setQuery('')
   }
 
@@ -757,6 +756,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
+              onShelf={id => {
+                if (id === 'logic') setLens('sensors')
+              }}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })
@@ -769,6 +771,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
+              onShelf={id => {
+                if (id === 'logic') setLens('sensors')
+              }}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })

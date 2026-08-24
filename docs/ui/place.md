@@ -39,7 +39,7 @@ Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Ca
 
 Shop and Build docks `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. Both docks can arm: a search result acts where it lives, whichever dock is open — [[ui/shop]].
 
-Esc / dock **×** / a rail toggle that closes **Shop** or **Build** → `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Other lenses stay. **Shop ↔ Build** is not a close: the ghost survives the switch. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
+Esc / dock **×** / a rail toggle that closes **Shop** or **Build** / leaving the shop system → `leaveShop`: `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Other lenses stay. **Shop ↔ Build** is not a close: the ghost and this lens survive the switch. Selecting Build **Sensors** (`logic`) sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
 
 ## Pointer
 
@@ -49,11 +49,12 @@ Esc / dock **×** / a rail toggle that closes **Shop** or **Build** → `cancelP
 | hover valid, can pay | `prompt.kind === 'place'` | Map `cursor-pointer` |
 | hover else | blocked or off-map | Map `cursor-crosshair` |
 | left valid, can pay | confirm | StayArmed / valve / tiles / sensors: stay. Else ghost off |
-| left valid input, `kind === 'wire'` | `placeWire` | fan-out ok; second wire on one input replaces |
+| left valid input, `kind === 'wire'` | `placeWire` | fan-out ok; fan-in stacks (many wires on one input; second finalize does **not** replace) |
+| left, that A→B already exists | drop that wire | **Remove wire**. `place none` |
 | left cycle | no-op | **Cannot loop**. Place stays |
 | left blocked | no-op | look already has the string. Wire: **Cannot wire here** |
 | right | `cancelPlace` | ghost off. Lens untouched |
-| Esc / shop **×** / Shop close | `cancelPlace`; pipes or sensors lens `off` | ghost off |
+| Esc / shop **×** / Shop close / leave shop | `cancelPlace`; pipes or sensors lens `off` | ghost off |
 | left-ribbon Cancel | `cancelPlace` | ghost off. Lens untouched |
 
 Armed shop row (`place.kind === 'sku' && place.id === id`): selected. Label `skuLabel` + coin + price.
@@ -66,13 +67,15 @@ Always one cell rect on `floor` of the world pointer while on the map. Not gated
 
 Unarmed, and while pipe / valve / smart-valve / sprinkler / delete / sensor-cell / wire armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not `EdgeStroke`.
 
-Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack and rain-tank second-tile outline stays and matches. Hangar and field silos: all six occupied cells. `data-cell-stroke` on the hover cell only.
+Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Pumpjack, rain-tank, still: both occupied cells. Outline stays and matches. Hangar and field silos: all six occupied cells. `data-cell-stroke` on the hover cell only.
 
 ## Ghosts
 
-Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` and the eleven sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, still, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
+Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-barrel` `buy-freezer` and the eleven sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 well+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
+
+`buy-still`: 2-tile ghost like pumpjack (48×24). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
 `buy-hangar`: 3×2 ghost (`HANGAR_W` × `HANGAR_H`). `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`: 2×3 ghost (`SILO_W` × `SILO_H`). Origin = hovered NW cell, extends east and south. Confirm occupies the six cells. Disarm. Hover valid: all six `stroke-ink`. Blocked: all six `stroke-roof`. Copy **Place Vehicle hangar** / **Place Seeding silo** / **Place Spraying silo** / **Place Produce silo**. Pad cells are not in the ghost. Place does not require pad free. Tractor / trailers are hangar-buys, not Place SKUs. [[ui/vehicles]]
 
@@ -184,6 +187,7 @@ Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no h
 | unarmed water / harvest, port hits off | **Tune water sensor** / **Tune harvest sensor** |
 | pending wire, illegal port | **Cannot wire here** |
 | pending wire, cycle | **Cannot loop** |
+| pending wire, that A→B already exists | **Remove wire** |
 | delete, bezier in `VERTEX_HIT` | **Delete wire** |
 | delete, hover piped owned edge | **Delete pipe** / **Delete valve** |
 | delete, hover smart-valve edge | **Delete smart valve** |

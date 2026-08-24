@@ -32,4 +32,8 @@ Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e
 
 Pipes wash on the map when `lens === 'pipes'` or place is delete / a `PIPE_PLACE` sku.
 
-Sensors: wires + 3×3 reader wash when `lens === 'sensors'`. Armed sensor-cell SKU or `buy-smart-valve` forces this lens. Wire stroke idle palette `fruit-red`, active `water` — [[ui/sensors]]. No new `@theme` color.
+Sensors: wires + port chrome + 3×3 reader wash when `lens === 'sensors'`. Armed sensor-cell SKU or `buy-smart-valve` forces this lens. Build shelf `logic` sets it and does not arm. Close / `leaveShop` / Esc: pipes or sensors → `off`. Switching Build category does not force it off. Shop ↔ Build keeps it.
+
+`lens === 'sensors'`: no house `WASH` on `isSensor` cells (pipes pattern: relevant tiles stay clear). Other cells may keep the kind-style fade. 3×3 reader wash unchanged. Sensor center is a sensor cell → not faded.
+
+Wire stroke idle palette `fruit-red`, active `water`. Port overlay: output circle / input square at `portXY`, idle `fruit-red`, high `water`, stroke `ink` — [[ui/sensors]]. No new `@theme` color.

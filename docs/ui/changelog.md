@@ -6,13 +6,13 @@ Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home
 
 `menu.tsx` owns `MenuPage`, wordmark click, and whether `Changelog` is shown.
 
-Wordmark **1.6.0**.
+Wordmark **1.6.2**. This note does not own `SAVE_VERSION` / dump `version` / `PROTOCOL`.
 
-Assumption: heading version is `id` as written (`1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
+Assumption: heading version is `id` as written (`1.6.2`, `1.6.1`, `1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`).
 
 ## Shell
 
-Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.6.0** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.6.2** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
 
 | mode | dim | backdrop | Esc |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Show ×: play, or joining, or `{ kind: 'changelog' }`.
 
 ## Wordmark
 
-The **1.6.0** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+The **1.6.2** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
 
 Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
 
@@ -43,7 +43,7 @@ Click toggles home ↔ changelog. While boot `joining`: no-op. `joining` true �
 
 `scroll-pane max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto flex flex-col gap-3`. Column already `px-4` — do not pad again.
 
-`RELEASES[0]` is 1.6. Array order is render order.
+`RELEASES[0]` is 1.6.2. Array order is render order.
 
 Per release, body face only (not Press Start):
 
@@ -109,6 +109,72 @@ MenuPage = { kind: 'home' } | { kind: 'changelog' }
 
 ```
 export const RELEASES: readonly Release[] = [
+  {
+    id: '1.6.2',
+    name: 'Machine — Vehicle patch',
+    summary: 'Machines, stores, and vehicles pass goods. Sensors can pause machines and read full stores.',
+    changes: [
+      {
+        kind: 'improvement',
+        text: 'The pot still is 2×1 steel.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Dropoff and takeup pads while you drive.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Load and Unload from the dash.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Wire a mill, jam machine, or still to disable its input.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Chests, freezers, the seed silo, and the additive store output when full.',
+        notes: [],
+      },
+    ],
+  },
+  {
+    id: '1.6.1',
+    name: 'Sensors polish',
+    summary: 'The Sensors tab opens the overlay. Ports, wires, and water-system look are clearer.',
+    changes: [
+      {
+        kind: 'bugfix',
+        text: 'Opening the Sensors shelf turns on the Sensors overlay. Closing Build, Shop, or Escape turns it off.',
+        notes: [
+          'Switching to another Build category does not turn it off. Shop to Build keeps the overlay.',
+        ],
+      },
+      {
+        kind: 'bugfix',
+        text: 'Sensor tiles stay unfaded on the Sensors overlay.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'Ports draw as small circles (outputs) and squares (inputs), including sprinklers and smart valves.',
+        notes: ['AND and OR gates are more compact. The lamp input sits on top.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Drawing the same wire again removes it. Inputs take many wires (OR).',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'A water-system sensor with no pipes around it says so.',
+        notes: [],
+      },
+    ],
+  },
   {
     id: '1.6',
     name: 'Automation III',

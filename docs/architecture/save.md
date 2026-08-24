@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.6`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.6` on dump. Assumption: wordmark **1.6.0**.
+One file shape. Dump writes `game: "gardena"`, `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.62` on dump. Assumption: wordmark **1.6.2**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. No migrate.
 
 ## RFC — versions (active)
 
@@ -10,7 +10,7 @@ Active since first commit. Not 1.1-only. Not a plan.
 
 A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
 
-Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Automation III: 1.6. No migrate. 1.5 / 1.52 file → `'version'`.
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Automation machine-vehicle: 1.62. No migrate. 1.6 file → `'version'`.
 
 Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
@@ -18,7 +18,7 @@ Load **compares** file `version` to the dump number. Unequal (missing included) 
 
 | file | owns |
 |---|---|
-| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp` |
+| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp`. `SAVE_VERSION` 1.62 |
 | `src/game/sim/world.ts` | live `World`. Does not own `Save`. Constructs live objects for parse. Not a second reader. |
 
 Do not create `src/` here.
@@ -111,7 +111,7 @@ SaveRng = { seed: number; shop: number; fruit: number }
 
 ## Classes → JSON
 
-No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` `Lever` `Button` `Lamp` `NotGate` `AndGate` `OrGate` `WaterSensor` `FertSensor` `HarvestSensor` `WaterSystem` `VehicleSensor` `Vehicle` `Trailer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
+No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` `Weed` `Turf` `Reservoir` `Pump` `RainTank` `Tap` `Rock` `Tree` `Chest` `Grinder` `CompostBox` `Mill` `JamMachine` `PotStill` `WineBarrel` `Freezer` `Hangar` `SiloSeed` `SiloSpray` `SiloProduce` `SeedSilo` `AdditiveStore` `Lever` `Button` `Lamp` `NotGate` `AndGate` `OrGate` `WaterSensor` `FertSensor` `HarvestSensor` `WaterSystem` `VehicleSensor` `Vehicle` `Trailer` `House` `Truck` `StallGood` `Clock` `Actor` `Rng` `World`.
 
 | live | file |
 |---|---|
@@ -125,13 +125,15 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `RainTank` | origin cell `kind: 'rain-tank'` |
 | `Tap` | origin cell `kind: 'tap'`. Not `drawn`. |
 | `Tree` | origin cell `kind: 'tree'` |
-| `Chest` | origin cell `kind: 'chest'` |
+| `Chest` | origin cell `kind: 'chest'` + `out` `hold` |
 | `CompostBox` | origin cell `kind: 'compost-box'` |
-| `Mill` | origin cell `kind: 'mill'` |
-| `JamMachine` | origin cell `kind: 'jam'` |
-| `PotStill` | origin cell `kind: 'still'` |
+| `Mill` | origin cell `kind: 'mill'` + `inn` |
+| `JamMachine` | origin cell `kind: 'jam'` + `inn` |
+| `PotStill` | origin cell `kind: 'still'` + `inn`. 2×1 |
 | `WineBarrel` | origin cell `kind: 'barrel'` |
-| `Freezer` | origin cell `kind: 'freezer'` |
+| `Freezer` | origin cell `kind: 'freezer'` + `out` `hold` |
+| `SeedSilo` | origin cell `kind: 'seed-silo'` + `out` `hold` |
+| `AdditiveStore` | origin cell `kind: 'additive-store'` + `out` `hold` |
 | `Hangar` | origin cell `kind: 'hangar'` |
 | `SiloSeed` | origin cell `kind: 'silo-seed'` |
 | `SiloSpray` | origin cell `kind: 'silo-spray'` |
@@ -161,13 +163,13 @@ No classes in the file. `dump` copies fields. `parse` constructs `Soil` `Plant` 
 | `WaterSystem` | origin cell `kind: 'water-system'` |
 | `VehicleSensor` | origin cell `kind: 'vehicle-detector'` |
 
-Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`. `World.wires` from `Save.wires`.
+Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` / `silo` / `additives` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`. `World.wires` from `Save.wires`.
 
 `modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`: rebuild. `purchases` is in the file.
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.6`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.62`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
 
 ```
 SaveSeat = {
@@ -227,7 +229,7 @@ SaveTrailer =
 
 Save = {
   game: 'gardena'
-  version: 1.6
+  version: 1.62
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
@@ -308,18 +310,20 @@ SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield }
-  | { kind: 'chest'; base: RectBase; slots: Slot[] }
+  | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
-  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
-  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
-  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
+  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
+  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
-  | { kind: 'freezer'; base: RectBase; slots: Slot[] }
+  | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
   | { kind: 'silo-seed'; base: RectBase }
   | { kind: 'silo-spray'; base: RectBase }
   | { kind: 'silo-produce'; base: RectBase }
+  | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
+  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'lever'; base: RectBase; on: boolean; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
@@ -337,7 +341,7 @@ SaveCell =
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
 
-`version: 1.6` is a number. JSON `1.6` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.5 / 1.52 file → `'version'`. No migrate.
+`version: 1.62` is a number. JSON `1.62` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.6 file → `'version'`. No migrate. Still `base.w = 2` `base.h = 1`.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
@@ -387,6 +391,9 @@ SaveCell =
 - `nextTrailerId` omitted
 - `wires` omitted
 - `smartHold` omitted
+- mill/jam/still `inn` omitted
+- chest/freezer/seed-silo/additive-store `out` `hold` omitted
+- still `w ≠ 2` or `h ≠ 1`
 - stored + driver
 - quad hitch / tractor slots
 - quad boom / boom other than `3 | 5`

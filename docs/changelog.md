@@ -2,6 +2,17 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.6.1 Sensors patch
+
+[[mechanics/sensors]] [[ui/sensors]] [[ui/build]] [[ui/lens]] [[art/sensors]] [[architecture/save]]
+
+- Fan-in OR. Many wires on one input. One direct path `nodeKey(from)` → `nodeKey(to)`. Toggle-remove A→B. Replace rule dead.
+- Build Sensors tab (`logic`) enters sensors lens. `leaveShop` / Esc / Shop×: pipes or sensors → off.
+- Sensor tiles unfaded on sensors lens. Port chrome: circle out, square in (sprinkler + smart valve too).
+- AND/OR compact IEEE-ish. Lamp `in` on top. Wire sag/stroke pass.
+- Water-system look: **Water-system sensor - no pipes around sensor!** when no incident pipe/well/smart-valve.
+- Wordmark **1.6.1**. `SAVE_VERSION` / `PROTOCOL` stay **1.6**. No migrate.
+
 ## 2026-08-24 — 1.5.2 Vehicles II patch
 
 [[mechanics/vehicles]] [[mechanics/weeds]] [[mechanics/family]] [[architecture/save]]

@@ -7,7 +7,7 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
-import { evalDag, HarvestSensor, Lamp, Lever, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -166,7 +166,7 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
   })
 
-  test('Second wire on one input replaces.', () => {
+  test('Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is.', () => {
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
@@ -176,8 +176,74 @@ describe('1.6 sensors', () => {
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
     w.armWire({ kind: 'cell', at: C, port: 'out' })
     w.placeWire({ kind: 'cell', at: C, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(2)
+    w.tick(DT_MAX)
+    const off = w.cell(B)
+    if (off.kind !== 'lamp') throw new Error('lamp')
+    expect(off.inn).toBe(0)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    const aOn = w.cell(B)
+    if (aOn.kind !== 'lamp') throw new Error('lamp')
+    expect(aOn.inn).toBe(1)
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    w.enqueue({ act: 'toggle', at: C })
+    w.seats[0].actor.x = C.col + 0.5
+    w.seats[0].actor.y = C.row + 0.5
+    w.tick(DT_MAX)
+    const cOn = w.cell(B)
+    if (cOn.kind !== 'lamp') throw new Error('lamp')
+    expect(cOn.inn).toBe(1)
+  })
+
+  test('Toggle A→B: wires length 0.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-lamp', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
     expect(w.wires).toHaveLength(1)
-    expect(w.wires[0].from).toEqual({ kind: 'cell', at: C, port: 'out' })
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    expect(w.wires).toHaveLength(0)
+  })
+
+  test('Direct path unique on node pair (A→AND in-l then A→AND in-r removes, does not stack).', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-and', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
+    expect(w.wires).toHaveLength(1)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-r' })
+    expect(w.wires).toHaveLength(0)
+  })
+
+  test('Lamp portXY in is top.', () => {
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'lamp')).toEqual({ x: 4.5, y: 7 })
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'not')).toEqual({ x: 4.5, y: 7 })
+  })
+
+  test('isolated water-system out stays 0.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-water-system', A)
+    w.cancelPlace()
+    w.tick(DT_MAX)
+    const c = w.cell(A)
+    if (c.kind !== 'water-system') throw new Error('water-system')
+    expect(c.out).toBe(0)
+    expect(lookText(w, { kind: 'cell', at: A }, false).split('\n')[0]).toBe(
+      'Water-system sensor - no pipes around sensor!',
+    )
   })
 
   test('Dump wires + sensor cells. Sku.need required.', () => {

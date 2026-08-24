@@ -14,7 +14,19 @@ import type { Rarity } from '../defs/rarity.ts'
 import type { Soil } from '../sim/soil.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
-import { area3, isSensor, nearestWire, portXY, type Sensor, type WireEnd } from '../sim/sensor.ts'
+import {
+  area3,
+  endKey,
+  isSensor,
+  nearestWire,
+  ownsPort,
+  portXY,
+  sameEnd,
+  type PortId,
+  type Sensor,
+  type WireEnd,
+  wireControls,
+} from '../sim/sensor.ts'
 import type { Place, SeatId, World } from '../sim/world.ts'
 import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
 import {
@@ -490,6 +502,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           {place.kind === 'wire' && worldPtr !== undefined && (
             <PendingWire from={place.from} x={worldPtr.x} y={worldPtr.y} world={world} />
           )}
+          {(lens === 'sensors' || place.kind === 'wire') && <PortChrome world={world} />}
           {placeId === 'buy-well' && edgeHit !== undefined && (
             <g data-well-ghost pointerEvents="none" opacity={0.7}>
               <WellGfx col={edgeHit.col} row={edgeHit.row} axis={edgeHit.axis} />
@@ -1286,6 +1299,7 @@ function lensFill(
     if (aoe) return undefined
     return { fill: WASH, op: 0.35, hard: false }
   }
+  if (lens === 'sensors' && isSensor(cell)) return undefined
   const hit = lensHit(lens, cell, g)
   if (hit === undefined) return { fill: WASH, op: 0.35, hard: false }
   return { fill: hit, op: 0.72, hard: true }
@@ -1989,28 +2003,28 @@ function wireSignal(world: World, from: WireEnd): boolean {
   return c.out === 1
 }
 
+function wirePathD(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  const { c1, c2 } = wireControls(from, to)
+  return `M ${from.x * TILE} ${from.y * TILE} C ${c1.x * TILE} ${c1.y * TILE}, ${c2.x * TILE} ${c2.y * TILE}, ${to.x * TILE} ${to.y * TILE}`
+}
+
+function WireStroke({ d, color }: { d: string; color: string }) {
+  return (
+    <g pointerEvents="none">
+      <path d={d} fill="none" stroke="#1c1710" strokeWidth={4.5} strokeLinecap="round" />
+      <path d={d} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    </g>
+  )
+}
+
 function WiresGfx({ world }: { world: World }) {
   return (
     <g pointerEvents="none">
       {world.wires.map((w, i) => {
         const a = wireEndXY(world, w.from)
         const b = wireEndXY(world, w.to)
-        const dx = b.x - a.x
-        const dy = b.y - a.y
-        const c1x = a.x + dx * 0.35
-        const c1y = a.y + dy * 0.05
-        const c2x = b.x - dx * 0.35
-        const c2y = b.y - dy * 0.05
         const on = wireSignal(world, w.from)
-        return (
-          <path
-            key={`wire-${i}`}
-            d={`M ${a.x * TILE} ${a.y * TILE} C ${c1x * TILE} ${c1y * TILE}, ${c2x * TILE} ${c2y * TILE}, ${b.x * TILE} ${b.y * TILE}`}
-            fill="none"
-            stroke={on ? WATER : '#c43c3c'}
-            strokeWidth={2}
-          />
-        )
+        return <WireStroke key={`wire-${i}`} d={wirePathD(a, b)} color={on ? WATER : '#c43c3c'} />
       })}
     </g>
   )
@@ -2028,16 +2042,77 @@ function PendingWire({
   world: World
 }) {
   const a = wireEndXY(world, from)
-  const dx = x - a.x
-  const dy = y - a.y
+  return <WireStroke d={wirePathD(a, { x, y })} color="#c43c3c" />
+}
+
+const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
+
+function portHigh(world: World, end: WireEnd, cell: Sensor | undefined): boolean {
+  if (end.kind === 'sprinkler') {
+    const s = world.sprinklerAt(end.at)
+    return s !== undefined && s.inn === 1
+  }
+  if (end.kind === 'valve') {
+    const h = world.smartHold.get(edgeKey(end.e))
+    return h !== undefined && h.level === 1
+  }
+  if (end.port === 'out') {
+    if (cell === undefined || cell.kind === 'lamp') return false
+    return cell.out === 1
+  }
+  return world.wires.some(w => sameEnd(w.to, end) && wireSignal(world, w.from))
+}
+
+function PortChrome({ world }: { world: World }) {
+  const marks: { key: string; x: number; y: number; out: boolean; high: boolean }[] = []
+  world.forEachCell((at, c) => {
+    if (!isSensor(c)) return
+    PORTS.forEach(port => {
+      if (!ownsPort(c, port)) return
+      const end: WireEnd = { kind: 'cell', at, port }
+      const p = portXY(end, c.kind)
+      marks.push({ key: endKey(end), x: p.x, y: p.y, out: port === 'out', high: portHigh(world, end, c) })
+    })
+  })
+  if (world.done.has('unlock-smart-irrigation')) {
+    world.sprinklers.forEach(s => {
+      const end: WireEnd = { kind: 'sprinkler', at: s.at, port: 'in' }
+      const p = portXY(end, undefined)
+      marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: s.inn === 1 })
+    })
+  }
+  world.smartHold.forEach(h => {
+    const end: WireEnd = { kind: 'valve', e: h.e, port: 'in' }
+    const p = portXY(end, undefined)
+    marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: h.level === 1 })
+  })
   return (
-    <path
-      d={`M ${a.x * TILE} ${a.y * TILE} C ${(a.x + dx * 0.35) * TILE} ${(a.y + dy * 0.05) * TILE}, ${(x - dx * 0.35) * TILE} ${(y - dy * 0.05) * TILE}, ${x * TILE} ${y * TILE}`}
-      fill="none"
-      stroke="#c43c3c"
-      strokeWidth={2}
-      pointerEvents="none"
-    />
+    <g pointerEvents="none">
+      {marks.map(m =>
+        m.out ? (
+          <circle
+            key={m.key}
+            cx={m.x * TILE}
+            cy={m.y * TILE}
+            r={2.5}
+            fill={m.high ? WATER : '#c43c3c'}
+            stroke={INK}
+            strokeWidth={1}
+          />
+        ) : (
+          <rect
+            key={m.key}
+            x={m.x * TILE - 2.5}
+            y={m.y * TILE - 2.5}
+            width={5}
+            height={5}
+            fill={m.high ? WATER : '#c43c3c'}
+            stroke={INK}
+            strokeWidth={1}
+          />
+        ),
+      )}
+    </g>
   )
 }
 

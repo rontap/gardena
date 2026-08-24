@@ -28,6 +28,9 @@ Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer** **Vehi
 Build owns the placement ghost, but the store can arm one too — a cross-panel search result acts where it lives. So both docks count as arming panels:
 
 - **Shop ↔ Build** keeps the armed ghost and the pipes / sensors lens. Switching decks is not putting the tool down.
-- Leaving both for any other panel, or closing the dock, or Escape: `cancelPlace`, pipes or sensors lens `off`, query cleared.
+- Leaving both for any other panel, or closing the dock, or Escape: `leaveShop` = `cancelPlace`, pipes or sensors lens `off`, query cleared. Matches Esc.
+- Right-click: `cancelPlace` only.
 
-One helper in `App` owns that, and every path calls it — the menu and multiplayer toggles used to cancel the ghost while leaving the pipes lens on.
+`SkuDock` `onShelf: (id: ShelfId) => void`. Shop and Build both receive it. Category rail fires it. App: `id === 'logic'` → `setLens('sensors')`. Does not arm a SKU. Switching to another Build category does **not** force the lens off.
+
+One helper in `App` owns leave, and every path calls it — the menu and multiplayer toggles used to cancel the ghost while leaving the overlay on.

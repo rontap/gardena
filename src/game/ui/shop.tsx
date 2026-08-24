@@ -43,9 +43,10 @@ type DeckProps = {
   query: string
   setQuery: (q: string) => void
   onGo: (panel: 'shop' | 'build') => void
+  onShelf: (id: ShelfId) => void
 }
 
-function SkuDock({ deck, world, onClose, query, setQuery, onGo }: DeckProps & { deck: Deck }) {
+function SkuDock({ deck, world, onClose, query, setQuery, onGo, onShelf }: DeckProps & { deck: Deck }) {
   const [hot, setHot] = useState<SkuId | undefined>(undefined)
   const open = deck.shelves.filter(s => shown(world, s).length > 0)
   const [tab, setTab] = useState<ShelfId | undefined>(undefined)
@@ -77,9 +78,11 @@ function SkuDock({ deck, world, onClose, query, setQuery, onGo }: DeckProps & { 
           orientation="vertical"
           className="flex gap-2"
           onValueChange={v => {
-            setTab(v as ShelfId)
+            const id = v as ShelfId
+            setTab(id)
             setQuery('')
             setHot(undefined)
+            onShelf(id)
           }}
         >
           <Tabs.List className={tabRailListClass}>

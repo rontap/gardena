@@ -24,6 +24,40 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.6.1',
+    name: 'Sensors polish',
+    summary: 'The Sensors tab opens the overlay. Ports, wires, and water-system look are clearer.',
+    changes: [
+      {
+        kind: 'bugfix',
+        text: 'Opening the Sensors shelf turns on the Sensors overlay. Closing Build, Shop, or Escape turns it off.',
+        notes: [
+          'Switching to another Build category does not turn it off. Shop to Build keeps the overlay.',
+        ],
+      },
+      {
+        kind: 'bugfix',
+        text: 'Sensor tiles stay unfaded on the Sensors overlay.',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'Ports draw as small circles (outputs) and squares (inputs), including sprinklers and smart valves.',
+        notes: ['AND and OR gates are more compact. The lamp input sits on top.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Drawing the same wire again removes it. Inputs take many wires (OR).',
+        notes: [],
+      },
+      {
+        kind: 'improvement',
+        text: 'A water-system sensor with no pipes around it says so.',
+        notes: [],
+      },
+    ],
+  },
+  {
     id: '1.6',
     name: 'Automation III',
     summary: 'Sensors and Smart Irrigation.',

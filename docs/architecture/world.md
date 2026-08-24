@@ -119,12 +119,14 @@ Cell =
   | SiloSeed
   | SiloSpray
   | SiloProduce
+  | SeedSilo
+  | AdditiveStore
   | Sensor
 ```
 
-`isPlot` / `isSolid` split that union. A pipe, sprinkler, wire, or smart valve is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce` every `SensorKind`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
+`isPlot` / `isSolid` split that union. A pipe, sprinkler, wire, or smart valve is not a `Cell`. `isSolid` += mill jam still barrel freezer hangar `silo-seed` `silo-spray` `silo-produce` `seed-silo` `additive-store` every `SensorKind`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
-Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar 3×2. Vehicle silos 2×3.
+Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar 3×2. Vehicle silos 2×3. Still 2×1. House seed silo / additive-store 1×2.
 
 Illegal: `Shrub`. Illegal: `AppleTree`.
 
@@ -132,21 +134,24 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`.
 
-`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still and water-system join like tap. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]]. `World.wires` — [[mechanics/sensors]].
+`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
 
 ```
 Net = { sources: Reservoir[]; sprinklers: Sprinkler[]; taps: Tap[]; stills: PotStill[]; waterSystems: WaterSystem[] }
 ```
 
 ```
-Mill = { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number }
-JamMachine = { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number }
-PotStill = { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number }
+Mill = { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: Signal }
+JamMachine = { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: Signal }
+PotStill = { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: Signal }
 WineBarrel = { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
-Freezer = { kind: 'freezer'; base: RectBase; slots: Slot[] }
+Freezer = { kind: 'freezer'; base: RectBase; slots: Slot[]; out: Signal; hold: number }
+Chest = { kind: 'chest'; base: RectBase; slots: Slot[]; out: Signal; hold: number }
+SeedSilo = { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: Signal; hold: number }
+AdditiveStore = { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: Signal; hold: number }
 ```
 
-`Freezer.slots` length `FREEZER_SLOTS` 6. Rules: [[mechanics/machines]].
+`Freezer.slots` length `FREEZER_SLOTS` 6. Chest `CHEST_SLOTS` 9. Still `base.w = 2` `base.h = 1`. Mill/jam/still `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Rules: [[mechanics/machines]] [[mechanics/sensors]] [[mechanics/inventory]].
 
 ```
 WireEnd =
@@ -168,7 +173,7 @@ SiloSpray = { kind: 'silo-spray'; base: RectBase }
 SiloProduce = { kind: 'silo-produce'; base: RectBase }
 ```
 
-Hangar `RectBase` `w = HANGAR_W` `h = HANGAR_H`. Silo `RectBase` `w = SILO_W` `h = SILO_H`. Door south. No rotate. Same instance all 6 cells. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` hold those same instances. Pad is geometric, not a cell. Hangar `hangarPad`. Silos `siloPad`. [[mechanics/vehicles]].
+Hangar `RectBase` `w = HANGAR_W` `h = HANGAR_H`. Silo `RectBase` `w = SILO_W` `h = SILO_H`. Door south. No rotate. Same instance all 6 cells. `World.hangars` / `World.seedSilos` / `World.spraySilos` / `World.produceSilos` hold those same instances. Pad is geometric, not a cell. Hangar `hangarPad`. Silos `siloPad`. Machine/store `dropoffPad` `takeupPad`. [[mechanics/vehicles]].
 
 ```
 VehiclePose =
@@ -229,7 +234,7 @@ HudTarget =
   | { kind: 'harvest'; at: Coord }
 ```
 
-Illegal: hangar or vehicle on `HudTarget`. Hangar select is App-local. Silo walk-up is look name only — no cue. Water / harvest HUD remote, no walk.
+Illegal: hangar or vehicle on `HudTarget`. Hangar select is App-local. Silo walk-up is look name only — no cue. Water / harvest HUD remote, no walk. `Act.load` / `Act.unload` are cmds, not intents. No coord. Floor of driven vehicle.
 
 ## Plot
 
@@ -438,7 +443,7 @@ Cheats are cmds. `DYNAMIC_MARKET` stays false. `nudgeOffered` is still a cmd.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Quad boom. Boom other than `3 | 5`. Two trailers on one tractor. Trailer attached + stored. Cycle wire. Two wires on one input. Wire into an output. Analogue signal.
+Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Quad boom. Boom other than `3 | 5`. Two trailers on one tractor. Trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Mill/jam/still `inn` hold. Pad as a `Cell`.
 
 ## Rng
 

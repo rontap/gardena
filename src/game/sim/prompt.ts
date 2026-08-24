@@ -31,7 +31,7 @@ import {
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
-import { isSensor, sameEnd, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
+import { isSensor, sameNode, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { TREE_NAME } from '../defs/trees.ts'
@@ -186,8 +186,11 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
 export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   if (w.act.place.kind === 'wire') {
     if (hit === undefined || hit.kind !== 'port') return { kind: 'blocked', text: 'Cannot wire here' }
-    const rest = w.wires.filter(x => !sameEnd(x.to, hit.end))
-    if (wouldCycle(rest, w.act.place.from, hit.end)) return { kind: 'blocked', text: 'Cannot loop' }
+    if (hit.end.port === 'out') return { kind: 'blocked', text: 'Cannot wire here' }
+    if (w.wires.some(x => sameNode(x.from, w.act.place.from) && sameNode(x.to, hit.end))) {
+      return { kind: 'place', text: 'Remove wire' }
+    }
+    if (wouldCycle(w.wires, w.act.place.from, hit.end)) return { kind: 'blocked', text: 'Cannot loop' }
     return { kind: 'place', text: 'Place' }
   }
   if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well' || w.act.place.id === 'buy-smart-valve')) {

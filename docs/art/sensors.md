@@ -4,17 +4,19 @@
 
 Not electricity. Do not reuse [[art/electricity]] windmill, generator, battery, power-line, power-switch. Not cottage tap. Not `item-valve` / `pipe-valve`.
 
-Wire idle `fruit-red` `#c43c3c`, active `water` `#3d7ea6`. Bezier in view. No wire SKU file.
-
 Body `oil` `#2c322c` / `iron` `#4c4844` / `steel` `#8a9198`. Outlines `ink` `#1c1710`. Sunk collar `dirt` / `dirt-dark`. No unnamed hex.
+
+AND/OR are compact IEEE-ish pixel glyphs, output down. AND: flat back, D front. OR: pointed/curved back, pointed front. Not a tall slotted box. Collar is a pad, not empty dirt. Side steel nubs + bottom out nub. No port-marker circles/squares in the SVG.
+
+Lamp jack is the top nub (NOT `in` language). Housing sits low so the nub reads. No out. Globe is status: `off` oil + `fruit-red` window, `on` `ripe` + steel window. Jack stays steel.
 
 | file | viewBox | groups | depicts |
 |---|---|---|---|
 | `item-lever.svg` `prop-lever.svg` | `0 0 24 24` | `off` `on` | throw lever, grip, bottom out |
 | `item-button.svg` `prop-button.svg` | `0 0 24 24` | `off` `on` | pad, bottom out |
-| `item-lamp.svg` `prop-lamp.svg` | `0 0 24 24` | `off` `on` | lantern, jack on the body, no out |
-| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | two side-by-side slots, side ins, bottom out |
-| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | two stacked slots, side ins, bottom out |
+| `item-lamp.svg` `prop-lamp.svg` | `0 0 24 24` | `off` `on` | lantern, jack on top of housing, no out |
+| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | IEEE-ish, pointed/curved back, pointed front, side ins, bottom out |
+| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | IEEE-ish, flat back, D front, side ins, bottom out |
 | `item-not.svg` `prop-not.svg` | `0 0 24 24` | — | stepped body, bubble, top in, bottom out |
 | `item-sensor-water.svg` `prop-sensor-water.svg` | `0 0 24 24` | `red` `blue` | droplet, bottom out |
 | `item-sensor-fert.svg` `prop-sensor-fert.svg` | `0 0 24 24` | `red` `ok` | sack, bottom out |
@@ -28,8 +30,34 @@ Items `src/assets/items/`. Props `src/assets/props/`. Edge `src/assets/joints/pi
 
 ## Ports
 
-Steel nubs, readable at 24×24. AND/OR `in-l` left + `in-r` right + `out` bottom. NOT `in` top + `out` bottom. Output-only `out` bottom. Lamp jack on the housing (cell is `in`). Smart valve jack on the body.
+Steel nubs, readable at 24×24. AND/OR `in-l` left + `in-r` right + `out` bottom. NOT `in` top + `out` bottom. Lamp `in` top of housing, no out. Output-only `out` bottom. Smart valve jack on the body.
+
+Port chrome (circle on out, square on in) is a view overlay. Not baked into these SVGs.
 
 `off` out nub `fruit-red`. `on` out nub `water`. Water `red` droplet `fruit-red` / `blue` droplet `water`. Fert `red` sack `fruit-red` / `ok` sack `leaf`. Valve `closed` `fruit-red` gate, dry pipe; `open` water through.
 
-Assumption: harvest / water-system / vehicle-detector groups `off` `on`. Edge file `pipe-smart-valve.svg`.
+Lamp overlay attach: top edge, same as NOT `in` (`col+0.5`, `row`).
+
+## Wires
+
+No wire SKU file. Cubic bezier in view (`WiresGfx` / `PendingWire`). `wireControls` / `wirePoint` must match paint. No new `@theme` color.
+
+Idle `fruit-red` `#c43c3c`. Active `water` `#3d7ea6`.
+
+Stroke pass (coder, `map.tsx` + hit-test):
+
+- `stroke-linecap="round"`
+- color stroke `2.5`
+- optional ink understroke `#1c1710` `4.5` (1px per side), same cap, under the color path
+- stronger sag so crossings separate. Preference:
+
+```
+c1.x = from.x + dx * 0.35
+c1.y = from.y + dy * 0.12 + 0.16
+c2.x = to.x - dx * 0.35
+c2.y = to.y - dy * 0.12 + 0.16
+```
+
+`+0.16` is downward droop in tiles (y-down). Was `dy * 0.05` and no droop — horizontal runs sat on top of each other.
+
+Assumption: harvest / water-system / vehicle-detector groups `off` `on`. Lamp `in` portXY at the top nub. Wire sag numbers preference; hit-test follows view.

@@ -268,6 +268,7 @@ import {
   pourEligible,
   readerRaw,
   sameEnd,
+  sameNode,
   vehicleRaw,
   skuKind,
   wouldCycle,
@@ -1602,10 +1603,15 @@ export class World {
   private placeWireBody(from: WireEnd, to: WireEnd): void {
     if (this.act.place.kind !== 'wire') return
     if (!this.portLegal(from, 'from') || !this.portLegal(to, 'to')) return
-    const rest = this.wires.filter(w => !sameEnd(w.to, to))
-    if (wouldCycle(rest, from, to)) return
-    this.wires.length = 0
-    rest.forEach(w => this.wires.push(w))
+    const next = this.wires.filter(w => !(sameNode(w.from, from) && sameNode(w.to, to)))
+    if (next.length !== this.wires.length) {
+      this.wires.length = 0
+      next.forEach(w => this.wires.push(w))
+      this.act.place = { kind: 'none' }
+      this.ping()
+      return
+    }
+    if (wouldCycle(this.wires, from, to)) return
     this.wires.push({ from, to })
     this.act.place = { kind: 'none' }
     this.ping()
@@ -3751,7 +3757,7 @@ export class World {
       if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
         raw.set(k, readerRaw(s, at => (this.inWorld(at) ? this.cell(at) : undefined), this.modifiers))
       } else if (s.kind === 'water-system') {
-        const net = this.netOfCell(s.base)
+        const net = this.grid().find(n => n.waterSystems.includes(s))
         if (net === undefined) {
           raw.set(k, 0)
           return

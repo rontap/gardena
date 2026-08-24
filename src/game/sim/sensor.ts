@@ -212,6 +212,16 @@ export function sameEnd(a: WireEnd, b: WireEnd): boolean {
   return endKey(a) === endKey(b)
 }
 
+export function nodeKey(e: WireEnd): string {
+  if (e.kind === 'cell') return `c:${e.at.col},${e.at.row}`
+  if (e.kind === 'sprinkler') return `s:${e.at.col},${e.at.row}`
+  return `v:${e.e.axis}:${e.e.col},${e.e.row}`
+}
+
+export function sameNode(a: WireEnd, b: WireEnd): boolean {
+  return nodeKey(a) === nodeKey(b)
+}
+
 export function cellKey(at: Coord): string {
   return `${at.col},${at.row}`
 }
@@ -298,12 +308,6 @@ export function pourEligible(wired: boolean, inn: Signal): boolean {
   return inn === 1
 }
 
-function nodeKey(e: WireEnd): string {
-  if (e.kind === 'cell') return `c:${e.at.col},${e.at.row}`
-  if (e.kind === 'sprinkler') return `s:${e.at.col},${e.at.row}`
-  return `v:${e.e.axis}:${e.e.col},${e.e.row}`
-}
-
 export function wouldCycle(wires: readonly Wire[], from: WireEnd, to: WireEnd): boolean {
   if (nodeKey(from) === nodeKey(to)) return true
   const adj = new Map<string, string[]>()
@@ -346,13 +350,19 @@ export type EvalIn = {
 
 export function evalDag(input: EvalIn): void {
   const { sensors, wires, smart, sprinklers, raw } = input
-  const byTo = new Map<string, Wire>()
-  wires.forEach(w => byTo.set(endKey(w.to), w))
-  const innOf = (at: Coord, port: PortId): Signal => {
-    const w = byTo.get(endKey({ kind: 'cell', at, port }))
-    if (w === undefined) return 0
-    return outOf(w.from)
+  const byTo = new Map<string, Wire[]>()
+  wires.forEach(w => {
+    const k = endKey(w.to)
+    const list = byTo.get(k)
+    if (list === undefined) byTo.set(k, [w])
+    else list.push(w)
+  })
+  const orTo = (k: string): Signal => {
+    const list = byTo.get(k)
+    if (list === undefined) return 0
+    return list.some(w => outOf(w.from) === 1) ? 1 : 0
   }
+  const innOf = (at: Coord, port: PortId): Signal => orTo(endKey({ kind: 'cell', at, port }))
   const outOf = (from: WireEnd): Signal => {
     if (from.kind === 'cell') {
       const s = sensors.get(cellKey(from.at)) as Sensor
@@ -422,15 +432,13 @@ export function evalDag(input: EvalIn): void {
     else if (s.kind === 'or') s.out = innOf(at, 'in-l') === 1 || innOf(at, 'in-r') === 1 ? 1 : 0
   })
   smart.forEach(h => {
-    const w = byTo.get(endKey({ kind: 'valve', e: h.e, port: 'in' }))
-    const inn: Signal = w === undefined ? 0 : outOf(w.from)
+    const inn = orTo(endKey({ kind: 'valve', e: h.e, port: 'in' }))
     const next = stepHold(h.level, h.hold, inn)
     h.level = next.out
     h.hold = next.hold
   })
   sprinklers.forEach(s => {
-    const w = byTo.get(endKey({ kind: 'sprinkler', at: s.at, port: 'in' }))
-    const inn: Signal = w === undefined ? 0 : outOf(w.from)
+    const inn = orTo(endKey({ kind: 'sprinkler', at: s.at, port: 'in' }))
     const next = stepHold(s.inn, s.hold, inn)
     s.inn = next.out
     s.hold = next.hold
@@ -463,7 +471,7 @@ export function portXY(end: WireEnd, kind: SensorKind | 'lamp' | undefined): { x
   if (end.port === 'out') return { x: col + 0.5, y: row + 1 }
   if (end.port === 'in-l') return { x: col, y: row + 0.5 }
   if (end.port === 'in-r') return { x: col + 1, y: row + 0.5 }
-  if (kind === 'not') return { x: col + 0.5, y: row }
+  if (kind === 'not' || kind === 'lamp') return { x: col + 0.5, y: row }
   return { x: col + 0.5, y: row + 0.5 }
 }
 
@@ -477,10 +485,7 @@ export function wirePoint(
   to: { x: number; y: number },
   t: number,
 ): { x: number; y: number } {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const c1 = { x: from.x + dx * 0.35, y: from.y + dy * 0.05 }
-  const c2 = { x: to.x - dx * 0.35, y: to.y - dy * 0.05 }
+  const { c1, c2 } = wireControls(from, to)
   return { x: cube(from.x, c1.x, c2.x, to.x, t), y: cube(from.y, c1.y, c2.y, to.y, t) }
 }
 
@@ -488,8 +493,8 @@ export function wireControls(from: { x: number; y: number }, to: { x: number; y:
   const dx = to.x - from.x
   const dy = to.y - from.y
   return {
-    c1: { x: from.x + dx * 0.35, y: from.y + dy * 0.05 },
-    c2: { x: to.x - dx * 0.35, y: to.y - dy * 0.05 },
+    c1: { x: from.x + dx * 0.35, y: from.y + dy * 0.12 + 0.16 },
+    c2: { x: to.x - dx * 0.35, y: to.y - dy * 0.12 + 0.16 },
   }
 }
 

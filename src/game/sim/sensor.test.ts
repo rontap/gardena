@@ -8,7 +8,7 @@ import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
 import { evalDag, HarvestSensor, Lamp, Lever, pourEligible, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
-import { Soil } from './soil.ts'
+import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
 const A = { col: 10, row: 12 }
@@ -48,7 +48,7 @@ function grow(
   water: number,
   fert = 1,
 ): void {
-  w.setCell(at, { kind, soil: new Soil(water, fert), plant: new Plant('carrot', 'common') })
+  w.setCell(at, { kind, soil: new Soil(water, fert, WEED_CHANCE), plant: new Plant('carrot', 'common') })
 }
 
 describe('1.6 sensors', () => {
@@ -202,12 +202,12 @@ describe('1.6 sensors', () => {
     const cells = new Map([
       [
         '5,5',
-        { kind: 'growing' as const, soil: new Soil(0, 1), plant: new Plant('carrot', 'common') },
+        { kind: 'growing' as const, soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') },
       ],
     ])
     const at = (c: { col: number; row: number }) => cells.get(`${c.col},${c.row}`)
     expect(readerRaw(s, at, [])).toBe(0)
-    cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1), plant: new Plant('carrot', 'common') })
+    cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
     expect(readerRaw(s, at, [])).toBe(0)
     const w = new World(1)
     ready(w)
@@ -346,7 +346,7 @@ describe('1.6 sensors', () => {
     const on = w.cell(A)
     if (on.kind !== 'sensor-water') throw new Error('water')
     expect(on.out).toBe(1)
-    w.setCell(B, { kind: 'empty', soil: new Soil(1, 1) })
+    w.setCell(B, { kind: 'empty', soil: new Soil(1, 1, WEED_CHANCE) })
     for (let i = 0; i < SENSOR_HOLD - 1; i++) {
       w.tick(DT_MAX)
       const c = w.cell(A)
@@ -415,7 +415,7 @@ describe('1.6 sensors', () => {
     const t1 = tapOnly.cell(wsAt)
     if (t1.kind !== 'water-system') throw new Error('water-system')
     expect(t1.out).toBe(0)
-    isolated.setCell(cropAt, { kind: 'empty', soil: new Soil(1, 1) })
+    isolated.setCell(cropAt, { kind: 'empty', soil: new Soil(1, 1, WEED_CHANCE) })
     for (let i = 0; i < SENSOR_HOLD - 1; i++) {
       isolated.tick(DT_MAX)
       const c = isolated.cell(wsAt)
@@ -516,7 +516,7 @@ describe('1.6 sensors', () => {
     unwired.placePipe({ axis: 'h', col: 18, row: 7 })
     unwired.buy('buy-sprinkler')
     unwired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    const soilU = new Soil(0.5, 1)
+    const soilU = new Soil(0.5, 1, WEED_CHANCE)
     unwired.setCell(cropAt, { kind: 'growing', soil: soilU, plant: new Plant('carrot', 'common') })
     unwired.tick(DT_MAX)
     expect(soilU.water).toBeGreaterThan(0.5)
@@ -543,7 +543,7 @@ describe('1.6 sensors', () => {
     wired.armWire({ kind: 'cell', at: A, port: 'out' })
     wired.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
     expect(wired.wires).toHaveLength(1)
-    const soilOff = new Soil(0.5, 1)
+    const soilOff = new Soil(0.5, 1, WEED_CHANCE)
     wired.setCell(cropAt, { kind: 'growing', soil: soilOff, plant: new Plant('carrot', 'common') })
     wired.tick(DT_MAX)
     expect(soilOff.water).toBeLessThan(0.5)
@@ -559,7 +559,7 @@ describe('1.6 sensors', () => {
     twin.placePipe({ axis: 'h', col: 18, row: 7 })
     twin.buy('buy-sprinkler')
     twin.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1), plant: new Plant('carrot', 'common') })
+    twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
     twin.tick(DT_MAX)
     const clone = new World(1)
     ready(clone)
@@ -571,7 +571,7 @@ describe('1.6 sensors', () => {
     clone.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     clone.armWire({ kind: 'cell', at: A, port: 'out' })
     clone.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
-    clone.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1), plant: new Plant('carrot', 'common') })
+    clone.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
     clone.tick(DT_MAX)
     expect(clone.sprinklerAt(v)?.inn).toBe(0)
     expect(twin.sprinklerAt(v)?.inn).toBe(0)

@@ -1,6 +1,5 @@
 import {
   BOOM_LONG,
-  BOOM_WIDE,
   HANGAR_H,
   HANGAR_W,
   SILO_H,
@@ -53,6 +52,7 @@ export type Vehicle =
       id: VehicleId
       fuel: number
       hitch: TrailerId | 'none'
+      boom: 3 | 5
       pose: VehiclePose
     }
 
@@ -79,9 +79,10 @@ export function makeTractor(
   id: VehicleId,
   fuel: number,
   hitch: TrailerId | 'none',
+  boom: 3 | 5,
   pose: VehiclePose,
 ): Extract<Vehicle, { kind: 'tractor' }> {
-  return { kind: 'tractor', id, fuel, hitch, pose }
+  return { kind: 'tractor', id, fuel, hitch, boom, pose }
 }
 
 export function hangarPad(base: RectBase): Coord[] {
@@ -151,13 +152,13 @@ function overlaps(a0: number, a1: number, b0: number, b1: number): boolean {
   return a1 >= b0 && b1 >= a0
 }
 
-export function boomHits(p: { x: number; y: number }, heading: number, inWorld: (at: Coord) => boolean): Coord[] {
+export function boomHits(p: { x: number; y: number }, heading: number, wide: number, inWorld: (at: Coord) => boolean): Coord[] {
   const cos = Math.cos(heading)
   const sin = Math.sin(heading)
   const px = -sin
   const py = cos
   const ha = BOOM_LONG / 2
-  const hp = BOOM_WIDE / 2
+  const hp = wide / 2
   const corners = [
     { x: p.x + cos * ha + px * hp, y: p.y + sin * ha + py * hp },
     { x: p.x + cos * ha - px * hp, y: p.y + sin * ha - py * hp },
@@ -237,7 +238,6 @@ export function integrateVehicle(
   drive: Drive,
   dt: number,
   fuel: number,
-  machineryMul: number,
   surface: number,
   inWorld: (at: Coord) => boolean,
   vMax: number,
@@ -245,11 +245,10 @@ export function integrateVehicle(
   yaw: number,
 ): void {
   pose.heading = wrapHeading(pose.heading + drive.steer * yaw * dt)
-  const capMax = vMax * machineryMul
-  const capAccel = accel * machineryMul
-  const cap = capMax * surface * (fuel > 0 ? 1 : QUAD_EMPTY_MUL)
+  const cap = vMax * surface * (fuel > 0 ? 1 : QUAD_EMPTY_MUL)
   const target = drive.throttle === 1 ? cap : drive.throttle === -1 ? -cap : 0
-  pose.speed = seekSpeed(pose.speed, target, capAccel, dt)
+  const braking = pose.speed !== 0 && Math.sign(drive.throttle) === -Math.sign(pose.speed)
+  pose.speed = seekSpeed(pose.speed, target, braking ? accel * 2 : accel, dt)
   const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
   const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
   if (inWorld({ col: Math.floor(nx), row: Math.floor(ny) })) {

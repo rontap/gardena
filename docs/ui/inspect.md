@@ -59,6 +59,8 @@ Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
 
 Ripe annual including sugar-cane: **Harvest**. Empty hand or fruit box that accepts. `{ act: 'harvest' }`. Cane is fruit, not sugar liters. Not holding sugar.
 
+Held `weed-spray`, tilled plot: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Not untilled. [[mechanics/weeds]]
+
 ## Machines
 
 Mill, jam, still, barrel, freezer: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.

@@ -56,7 +56,7 @@ Dry, sourceless, or unreachable: rate 0, no VFX.
 
 ## Hand pour
 
-Bucket 3 L, large 8 L — [[mechanics/inventory]].  Fill at a source or tap.
+`CONTAINERS.bucket` / `CONTAINERS['large-bucket']` — [[mechanics/inventory]]. Fill at a source or tap.
 
 `pourTarget`: empty / weed → `SOIL_WATER_MID`. Growing / ripe → `SOIL_WATER_MID + waterTolerance` (top of the green band). Spends only the gap, clamped to bucket. Already at or above target: nothing.
 

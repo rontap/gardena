@@ -2,13 +2,29 @@
 
 Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
+```
+Weed = { variant: 0 | 1; maturity: number; spread: boolean }
+```
+
+`spread` starts `false`.
+
 ## Spawn
 
-`BIG_TICK = 10` s — preference. Each tick, each `empty` plot: `weed.at(col, row, bigTicks) < ramped(WEED_CHANCE, bigTicks)`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. — [[mechanics/rng]]
+`BIG_TICK = 10` s — preference. Each tick, each `empty` plot: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. — [[mechanics/rng]]
 
-`WEED_CHANCE = 0.035` — preference.
+`WEED_CHANCE = 0.03` — preference.
+
+`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field.
 
 `ramped(chance, bigTicks)` — linear from **−0.10** at tick 0 to `chance` at `CHANCE_RAMP_TICKS = DAY_SECONDS / BIG_TICK`, then flat. Negative → never sprouts. First weed lands minutes into a fresh day one, not on the first tick. Grass uses the same ramp.
+
+## Recover
+
+Iff `weedChance < WEED_CHANCE`, `weedChance = min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on every `Soil` that exists (tilled cells).
+
+## Outbreak
+
+When a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.
 
 ## Drink / grow
 
@@ -16,17 +32,29 @@ Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
 `WEED_WATER_PER_SEC = 0.008` — preference.
 
-`WEED_FERT_PER_SEC = (1 / 240) * 0.6` — tuned-to full-plot-in-a-day, then ×0.6 same as plants.
+`WEED_FERT_PER_SEC = (1 / 240) * 0.6 * 0.9` — tuned-to full-plot-in-a-day, then ×0.6 same as plants, then ×0.9.
 
 Same `Soil`. Drinks the whole time.
 
 ## Gather vs shovel
 
-Empty hand on a weed: pick up `{ kind: 'weed' }`, plot `empty`, same soil.
+Empty hand on a weed: drop `{ kind: 'weed' }`, plot `empty`, same soil, `weedChance = 0`.
 
-Shovel: plot `empty`, same soil, **no drop**. 1 use.
+Box in hand: into the box if empty or already weed cargo, up to cap; else no-op (do not empty-hand).
 
-Held item cannot gather. Compost takes gathered weeds — [[mechanics/inventory]].
+Shovel: plot `empty`, same soil, **no drop**, `weedChance = −0.3`. 1 use.
+
+Held item cannot gather except box as above. Compost takes gathered weeds and boxed weeds — [[mechanics/inventory]].
+
+## Spray
+
+Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` 30 — preference. Illegal: `usesLeft` 0 as held (throw away at 0).
+
+`buy-weed-spray` $12 utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU; spray gates on the research id. — [[mechanics/research]]
+
+Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.
+
+Assumption: spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work 0.
 
 ## Grass
 

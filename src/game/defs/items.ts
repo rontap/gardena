@@ -15,8 +15,8 @@ export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds:
 }
 
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {
-  bucket: { capacityLiters: 3 },
-  'large-bucket': { capacityLiters: 8 },
+  bucket: { capacityLiters: 5 },
+  'large-bucket': { capacityLiters: 10 },
 }
 
 export const BOX_SMALL = 5
@@ -34,9 +34,10 @@ export const ROTARY_DIGS = 200
 export const DIAMOND_MINES = 150
 export const SPRINKLER_TILE_DAY = 2.5
 export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
-export const FERT_BAG_LITERS = 5
-export const SYNTH_BAG_LITERS = 8
-export const COMPOST_LITERS = 3
+export const FERT_BAG_LITERS = 10
+export const SYNTH_BAG_LITERS = 16
+export const COMPOST_LITERS = 5
+export const WEED_SPRAY_USES = 30
 export const COMPOST_NEED = 10
 export const COMPOST_SECONDS = 120
 export const COMPOST_VALUE = {
@@ -99,11 +100,11 @@ export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   tomato: 80,
 }
 
-export const QUAD_VMAX = 10
+export const QUAD_VMAX = 9
 export const QUAD_SHOW_MUL = 4
 export const QUAD_ACCEL_SECONDS = 1.5
 export const QUAD_ACCEL = QUAD_VMAX / QUAD_ACCEL_SECONDS
-export const QUAD_R = 2
+export const QUAD_R = 3
 export const QUAD_YAW = QUAD_VMAX / QUAD_R
 export const QUAD_FUEL_SECONDS = 180
 export const QUAD_REFILL = 25
@@ -114,14 +115,14 @@ export const HANGAR_W = 3
 export const HANGAR_H = 2
 export const SILO_W = 2
 export const SILO_H = 3
-export const SURFACE_PAVED = 1.2
-export const SURFACE_SLOW = 0.5
+export const SURFACE_PAVED = 1.3
+export const SURFACE_SLOW = 0.4
 export const SURFACE_NORMAL = 1.0
 export const HEADING_EAST = 0
 export const HEADING_SOUTH = Math.PI / 2
 export const TRACTOR_VMAX = QUAD_VMAX * 0.67
 export const TRACTOR_ACCEL = QUAD_ACCEL * 0.5
-export const TRACTOR_R = QUAD_R * 0.75
+export const TRACTOR_R = 3
 export const TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R
 export const TRACTOR_PRICE = 250
 export const TRACTOR_LEN = 1
@@ -134,7 +135,6 @@ export const TRAILER_SEED_PRICE = 80
 export const TRAILER_SPRAY_PRICE = 80
 export const TRAILER_HARVEST_PRICE = 100
 export const HARVEST_SLOTS = 8
-export const BOOM_WIDE = 5
 export const BOOM_LONG = 1
 export const SILO_SEED_PRICE = 70
 export const SILO_SPRAY_PRICE = 70

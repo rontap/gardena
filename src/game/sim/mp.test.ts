@@ -27,7 +27,7 @@ import { DT_MAX, World } from './world.ts'
 const AT = { col: 10, row: 12 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
-  return new Soil(water, fertilizer)
+  return new Soil(water, fertilizer, 0.03)
 }
 
 function pair(world: World, playerId = 'g1'): { host: MpHost; guest: MpGuest } {

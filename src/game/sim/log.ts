@@ -57,8 +57,9 @@ export const Act = {
   swapVehicle: 'H',
   swapTrailer: 'A',
   refill: 'F',
+  setBoom: 'W',
   armWire: 'R',
-  placeWire: 'W',
+  placeWire: 'N',
   placeSmartValve: 'I',
   tuneWater: 'C',
   tuneHarvest: 'G',
@@ -118,6 +119,7 @@ export type Cmd =
   | { a: typeof Act.swapVehicle; t: number; p: SeatId; v: VehicleId; i: VehicleSlot }
   | { a: typeof Act.swapTrailer; t: number; p: SeatId; u: TrailerId; i: HarvestSlot }
   | { a: typeof Act.refill; t: number; p: SeatId; c: XY }
+  | { a: typeof Act.setBoom; t: number; p: SeatId; w: 3 | 5 }
   | { a: typeof Act.armWire; t: number; p: SeatId; from: WireEnd }
   | { a: typeof Act.placeWire; t: number; p: SeatId; from: WireEnd; to: WireEnd }
   | { a: typeof Act.placeSmartValve; t: number; p: SeatId; e: Edge }

@@ -180,6 +180,66 @@ test('tractor seeder boom', async ({ page }) => {
   await page.keyboard.up('w')
 })
 
+test('Enter embark/disembark; boom toggle paints rake width', async ({ page }) => {
+  await page.goto('/#start_now')
+  await expect(page.locator('svg.bg-grass')).toBeVisible()
+  await unlockAll(page)
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as {
+        __world: {
+          buy: (id: string) => void
+          confirmPlace: (at: { col: number; row: number }) => void
+          buyVehicle: (at: { col: number; row: number }, k: string) => void
+          buyTrailer: (at: { col: number; row: number }, k: string) => void
+          deploy: (id: number, at: { col: number; row: number }, hitch: number | 'none') => void
+          seats: { actor: { x: number; y: number } }[]
+          vehicles: { pose: Pose; boom?: 3 | 5 }[]
+        }
+      }
+    ).__world
+    w.buy('buy-hangar')
+    w.confirmPlace({ col: 10, row: 12 })
+    const at = { col: 10, row: 12 }
+    w.buyVehicle(at, 'tractor')
+    w.buyTrailer(at, 'seed')
+    w.deploy(1, at, 1)
+  })
+  await expect.poll(async () => {
+    const p = await poseOf(page)
+    return p.kind === 'field' && p.driver === 0
+  }).toBe(true)
+  await expect(page.getByRole('button', { name: 'Boom 5' })).toBeVisible()
+  await page.getByRole('button', { name: 'Boom 5' }).click()
+  await expect(page.getByRole('button', { name: 'Boom 3' })).toBeVisible()
+  const rake = await page.evaluate(() => {
+    const el = document.querySelector('[data-rake]')
+    return el === null ? '' : el.getAttribute('transform')
+  })
+  expect(rake).toContain('scale(0.6')
+  await page.keyboard.press('Enter')
+  await expect.poll(async () => {
+    const p = await poseOf(page)
+    return p.kind === 'field' && p.driver === 'none'
+  }).toBe(true)
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as {
+        __world: { seats: { actor: { x: number; y: number } }[]; vehicles: { pose: Pose }[] }
+      }
+    ).__world
+    const v = w.vehicles[0].pose
+    if (v.kind !== 'field') return
+    w.seats[0].actor.x = v.x
+    w.seats[0].actor.y = v.y
+  })
+  await page.keyboard.press('Enter')
+  await expect.poll(async () => {
+    const p = await poseOf(page)
+    return p.kind === 'field' && p.driver === 0
+  }).toBe(true)
+})
+
 async function poseOf(page: Page): Promise<Pose> {
   return page.evaluate(() => {
     const w = (window as unknown as { __world: { vehicles: { pose: Pose }[] } }).__world

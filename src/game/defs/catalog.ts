@@ -11,6 +11,7 @@ import {
   COMPOST_SECONDS,
   CONTAINERS,
   FERT_BAG_LITERS,
+  WEED_SPRAY_USES,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -211,6 +212,12 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Synthetic fertilizer',
       icon: { kind: 'synth', liters: SYNTH_BAG_LITERS, capacityLiters: SYNTH_BAG_LITERS },
       blurb: fill(SYNTH_T, { n: SYNTH_BAG_LITERS, restore: BIO_RESTORE }),
+    },
+    {
+      id: 'weed-spray',
+      title: 'Weed spray',
+      icon: { kind: 'weed-spray', usesLeft: WEED_SPRAY_USES },
+      blurb: fill('Hand sprayer. ${n} uses. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_USES }),
     },
     {
       id: 'compost',

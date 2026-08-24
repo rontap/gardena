@@ -296,7 +296,7 @@ Cmd +=
   | { a: typeof Act.openHud; t; p; k: 'sprinkler' | 'water' | 'harvest'; c: XY }
 ```
 
-`Act.armWire` `'R'`. `Act.placeWire` `'W'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`.
+`Act.armWire` `'R'`. `Act.placeWire` `'N'`. `Act.setBoom` `'W'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`.
 
 `openHud` `k: 'sprinkler'` stays host-only. Water / harvest HUD: guest yes.
 

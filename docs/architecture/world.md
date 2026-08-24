@@ -38,7 +38,7 @@ Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds
 
 `ResearchId` += `unlock-grape` `unlock-olive` `unlock-fermentation` `unlock-preservatives` `unlock-vehicles` `unlock-sensors` `unlock-smart-irrigation`. No `unlock-vanilla`. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`. No Advanced signalling. No germ / weather research.
 
-`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-water-system` `buy-smart-valve` `buy-vehicle-detector`. No Quad SKU. No tractor SKU. No trailer SKU. No germ SKU. No weather SKU. No wire SKU.
+`SkuId` += `pack-grape` `pack-olive` `pack-vanilla` `pack-sugar-cane` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-sugar` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` `buy-weed-spray` `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-water-system` `buy-smart-valve` `buy-vehicle-detector`. No Quad SKU. No tractor SKU. No trailer SKU. No germ SKU. No weather SKU. No wire SKU.
 
 ```
 SensorKind =
@@ -192,6 +192,7 @@ Vehicle =
       id: VehicleId
       fuel: number
       hitch: TrailerId | 'none'
+      boom: 3 | 5
       pose: VehiclePose
     }
 
@@ -209,7 +210,7 @@ Trailer =
   | { kind: 'harvest'; id: TrailerId; pose: TrailerPose; slots: Slot[] }
 ```
 
-`World.vehicles: Vehicle[]`. `World.trailers: Trailer[]`. `World.nextVehicleId`. `World.nextTrailerId`. Quad `slots.length` `VEHICLE_SLOTS`. Harvest `slots.length` `HARVEST_SLOTS`. Fuel `0..1`. Illegal: stored + driver. Illegal: two field poses with the same `SeatId` driver. Illegal: quad hitch. Illegal: tractor slots. Illegal: two trailers on one tractor. Illegal: attached + stored. Illegal: trailer attached to missing tractor. Illegal: harvest `slots.length ≠ 8`. Illegal: seed/spray hopper holding the wrong item. Stored tractor `hitch === 'none'`.
+`World.vehicles: Vehicle[]`. `World.trailers: Trailer[]`. `World.nextVehicleId`. `World.nextTrailerId`. Quad `slots.length` `VEHICLE_SLOTS`. Harvest `slots.length` `HARVEST_SLOTS`. Fuel `0..1`. Tractor `boom: 3 | 5` default 5. Illegal: stored + driver. Illegal: two field poses with the same `SeatId` driver. Illegal: quad hitch. Illegal: tractor slots. Illegal: quad boom. Illegal: boom other than `3 | 5`. Illegal: two trailers on one tractor. Illegal: attached + stored. Illegal: trailer attached to missing tractor. Illegal: harvest `slots.length ≠ 8`. Illegal: seed/spray hopper holding the wrong item. Stored tractor `hitch === 'none'`.
 
 `Seat.drive` ignored unless this seat is a driver. Seated ⇒ `queue` empty. No `Seat.dismount`. No `Dismount`.
 
@@ -253,7 +254,7 @@ Plot =
 Tilled = Extract<Plot, { soil: Soil }>
 ```
 
-`soil` is required on every tilled arm. A tilled plot without dirt cannot be written. `untilled` and `infertile` have no `soil` field.
+`soil` is required on every tilled arm. A tilled plot without dirt cannot be written. `untilled` and `infertile` have no `soil` field. `Soil.weedChance: number` required. `Weed.spread: boolean` required, starts `false`.
 
 Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `rotten` — `crop: CropId` only. Illegal: grass as a nullable index; it is a `Cover` arm. Illegal: `untilled` without `ground` and `cover`. Illegal: `Plant.crop` not `AnnualId`.
 
@@ -317,6 +318,7 @@ Intent =
   | { act: 'valve'; at: Coord; edge: Edge }
   | { act: 'toggle'; at: Coord }
   | { act: 'tend'; at: Coord }
+  | { act: 'weed-spray'; at: Coord }
 ```
 
 Illegal: `at` on `consign` or `inventory`. Illegal: `edge` on any act but `valve`. Illegal: `id` on any act but `vehicle` or `embark`. `toggle` is lever / button only.
@@ -366,11 +368,16 @@ No `Item | null`. Chest slots and inventory slots are `Slot[]`.
 { kind: 'oil'; count: number; unitSale: number }
 { kind: 'flour'; count: number; unitSale: number }
 { kind: 'extract'; count: number; unitSale: number }
+{ kind: 'weed-spray'; usesLeft: number }
+{ kind: 'box'; cap: 5 | 14; cargo:
+    | { kind: 'empty' }
+    | { kind: 'stack'; goods: 'seeds'; stack: Stack }
+    | { kind: 'stack'; goods: 'fruit'; stack: FruitStack }
+    | { kind: 'stack'; goods: 'weed'; count: number }
+  }
 ```
 
-Fruit / box fruit / grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`.
-
-Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Box cargo: no berry arm. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
+Fruit / box fruit / grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Illegal: `weed-spray.usesLeft` 0 as held. Box cargo: no berry arm. Illegal: box weed+fruit mix. Illegal: weed+seeds mix. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
 
 ## Recap / Seam
 
@@ -400,7 +407,7 @@ cheatPoints(): void
 toggleCheatResearch(): void
 ```
 
-`offers` length 0..3. `buyPacks` is five seed packs at bulk discount. `unlockAll` still every research done, `money += 999`, job idle, and each member `points = 99`. `cheatFastResearch` multiplies job drain by 3. `cheatMoney` `+200`. `cheatPoints` `+10` each member.
+`offers` length 0..3. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. `unlockAll` still every research done, `money += 999`, job idle, and each member `points = 99`. `cheatFastResearch` multiplies job drain by 3. `cheatMoney` `+200`. `cheatPoints` `+10` each member.
 
 ## Time
 
@@ -431,7 +438,7 @@ Cheats are cmds. `DYNAMIC_MARKET` stays false. `nudgeOffered` is still a cmd.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Two trailers on one tractor. Trailer attached + stored. Cycle wire. Two wires on one input. Wire into an output. Analogue signal.
+Illegal: React owning the log. Worker applying cmds. `Cmd` missing `t`. `Cmd` missing `p`. Two meanings for one `a`. Parallel `World.actor` / `hand` / `inventory` / `queue` / `place`. Two drivers on one vehicle. Seated + walk/work queue. Stored + driver. Quad hitch. Quad boom. Boom other than `3 | 5`. Two trailers on one tractor. Trailer attached + stored. Cycle wire. Two wires on one input. Wire into an output. Analogue signal.
 
 ## Rng
 

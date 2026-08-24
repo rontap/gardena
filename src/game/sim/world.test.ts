@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   ADDITIVE_CAP_LITERS,
+  COMPOST_LITERS,
   CONTAINERS,
   FERT_BAG_LITERS,
   GRIND_MAX,
@@ -9,6 +10,8 @@ import {
   GRIND_WORK,
   SILO_SEED_CAP,
   SPRINKLER_TILE_RATE,
+  SYNTH_BAG_LITERS,
+  WEED_SPRAY_USES,
 } from '../defs/items.ts'
 import {
   HAPPY_MAX,
@@ -22,7 +25,7 @@ import {
   type Rarity,
 } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { SKILLS } from '../defs/skills.ts'
+import { HUSBAND_SKILL_IDS, JAM_FLOOR, PLAYER_SKILL_IDS, SKILLS } from '../defs/skills.ts'
 import type { AnnualId, ResearchId, SkuId } from './ids.ts'
 import {
   Chest,
@@ -39,13 +42,13 @@ import {
 import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
-import { Plant } from './plant.ts'
+import { Plant, Weed } from './plant.ts'
 import { aoe, junction, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
 import { Clock, days } from './clock.ts'
-import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, GRASS_CHANCE, ramped } from './soil.ts'
+import { Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
 import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
@@ -59,7 +62,7 @@ const HOME = [{ cx: 0, cy: 0 }]
 const AT = { col: 10, row: 12 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
-  return new Soil(water, fertilizer)
+  return new Soil(water, fertilizer, WEED_CHANCE)
 }
 
 describe('beta-1 invariants', () => {
@@ -302,9 +305,9 @@ describe('beta-2 invariants', () => {
     }
   })
 
-  test('bucket 3L large-bucket 8L no can ids', () => {
-    expect(CONTAINERS.bucket.capacityLiters).toBe(3)
-    expect(CONTAINERS['large-bucket'].capacityLiters).toBe(8)
+  test('bucket 5L large-bucket 10L no can ids', () => {
+    expect(CONTAINERS.bucket.capacityLiters).toBe(5)
+    expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
     expect(Object.keys(CONTAINERS).sort()).toEqual(['bucket', 'large-bucket'])
     expect(Object.keys(SKUS).includes('buy-can')).toBe(false)
     expect(Object.keys(SKUS).includes('buy-can-large')).toBe(false)
@@ -1795,7 +1798,6 @@ describe('0.9 log and rng', () => {
   test('Failed buy / buyPacks (closed, cannot afford, cannot fit) consumes 0 shop.next(). Failed tree drop consumes 0 fruit.next(). Granted pack: one next() each. buyPacks success: 5.', () => {
     const seed = 3
     const w = new World(seed)
-    w.family.husband.owned.set('bulk-buying', 1)
     w.money = 0
     expect(w.buy('pack-carrot')).toBe('Cannot afford')
     w.buyPacks('pack-wheat')
@@ -1809,7 +1811,6 @@ describe('0.9 log and rng', () => {
     const u0 = new Rng(seed).stream('shop').next()
     expect(w.silo.seeds.find(st => st.crop === 'wheat')?.rarity).toBe(rollShopRarity(0, u0))
     const bulk = new World(seed)
-    bulk.family.husband.owned.set('bulk-buying', 1)
     bulk.money = 1000
     bulk.buyPacks('pack-wheat')
     const shop = new Rng(seed).stream('shop')
@@ -1855,7 +1856,6 @@ describe('0.9 log and rng', () => {
     seq1.next()
     expect(w.rng.stream('shop').next()).toBe(seq1.next())
     const bulk = new World(1)
-    bulk.family.husband.owned.set('bulk-buying', 1)
     bulk.money = 50
     bulk.buyPacks('pack-carrot')
     expect(siloCount(bulk, 'carrot', 'common')).toBe(30)
@@ -1876,5 +1876,132 @@ describe('0.9 log and rng', () => {
       rarity: rollShopRarity(5, u),
       count: 5,
     })
+  })
+})
+
+describe('1.5.2', () => {
+  test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on every `Soil` that exists (tilled cells).', () => {
+    expect(WEED_CHANCE).toBe(0.03)
+    const w = new World()
+    const soil = bed()
+    expect(soil.weedChance).toBe(WEED_CHANCE)
+    w.setCell(AT, { kind: 'empty', soil })
+    soil.weedChance = 0
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
+    soil.weedChance = 0.08
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBe(0.08)
+  })
+
+  test('Outbreak: when a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.', () => {
+    const w = new World()
+    const soil = bed()
+    const weed = new Weed(0)
+    weed.maturity = 0.999
+    w.setCell(AT, { kind: 'weed', soil, weed })
+    const n = { col: AT.col + 1, row: AT.row }
+    const adj = bed()
+    w.setCell(n, { kind: 'empty', soil: adj })
+    w.tick(1)
+    expect(weed.spread).toBe(true)
+    expect(weed.maturity).toBe(1)
+    expect(adj.weedChance).toBeCloseTo(WEED_CHANCE + 0.05, 8)
+    const again = adj.weedChance
+    w.tick(1)
+    expect(adj.weedChance).toBe(again)
+  })
+
+  test("Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` 30. Illegal: `usesLeft` 0 as held (throw away at 0). `buy-weed-spray` $12 utility, unlock and show `unlock-fertilizer`. Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.", () => {
+    expect(WEED_SPRAY_USES).toBe(30)
+    expect(SKUS['buy-weed-spray'].price).toBe(12)
+    const w = new World()
+    w.done.add('unlock-fertilizer')
+    w.money = 50
+    expect(w.buy('buy-weed-spray')).toBeUndefined()
+    expect(w.seats[0].place.kind).toBe('none')
+    const slot = w.seats[0].inventory.find(s => s.kind === 'hold' && s.item.kind === 'weed-spray')
+    expect(slot?.kind === 'hold' && slot.item.kind === 'weed-spray' && slot.item.usesLeft).toBe(30)
+    const soil = bed()
+    w.setCell(AT, { kind: 'empty', soil })
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', usesLeft: 1 } }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.enqueue({ act: 'weed-spray', at: AT })
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBeCloseTo(-1 + (0.15 * DT_MAX) / 240, 8)
+    expect(w.seats[0].hand.kind).toBe('empty')
+  })
+
+  test("Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Box in hand: into box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Shovel: no drop, `weedChance = −0.3`. Box cargo `{ kind: 'stack'; goods: 'weed'; count }`. Compost accepts boxed weeds (`COMPOST_VALUE.weed`).", () => {
+    const w = new World()
+    const soil = bed()
+    w.setCell(AT, { kind: 'weed', soil, weed: new Weed(0) })
+    w.seats[0].hand = { kind: 'empty' }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.enqueue({ act: 'pickup', at: AT })
+    w.tick(DT_MAX)
+    expect(w.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'weed', count: 1 } })
+    expect(soil.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
+    const soil2 = bed()
+    const at2 = { col: 11, row: 12 }
+    w.setCell(at2, { kind: 'weed', soil: soil2, weed: new Weed(0) })
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'box', cap: 5, cargo: { kind: 'empty' } } }
+    w.seats[0].actor.x = at2.col + 0.5
+    w.seats[0].actor.y = at2.row + 0.5
+    w.enqueue({ act: 'pickup', at: at2 })
+    w.tick(DT_MAX)
+    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'box' && w.seats[0].hand.item.cargo).toEqual({
+      kind: 'stack',
+      goods: 'weed',
+      count: 1,
+    })
+    expect(soil2.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
+    const soil3 = bed()
+    const at3 = { col: 12, row: 12 }
+    w.setCell(at3, { kind: 'weed', soil: soil3, weed: new Weed(0) })
+    w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
+    w.seats[0].actor.x = at3.col + 0.5
+    w.seats[0].actor.y = at3.row + 0.5
+    const drops = w.drops.length
+    w.enqueue({ act: 'shovel', at: at3 })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(w.drops.length).toBe(drops)
+    expect(soil3.weedChance).toBeCloseTo(-0.3, 3)
+    expect(w.cell(at3).kind).toBe('empty')
+  })
+
+  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `contracts`; no `tool-contracts` `machine-contracts` `bulk-buying`. `contracts` max 3. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_FLOOR` `0.10 / 0.20 / 0.30`. `industrial` max 3.", () => {
+    expect(PLAYER_SKILL_IDS.includes('driving-classes')).toBe(true)
+    expect(PLAYER_SKILL_IDS.includes('machinery' as never)).toBe(false)
+    expect(SKILLS['driving-classes'].maxTier).toBe(3)
+    expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
+    expect(HUSBAND_SKILL_IDS.includes('machinery')).toBe(true)
+    expect(HUSBAND_SKILL_IDS.includes('contracts')).toBe(true)
+    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('tool-contracts')).toBe(false)
+    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('machine-contracts')).toBe(false)
+    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('bulk-buying')).toBe(false)
+    expect(SKILLS.contracts.maxTier).toBe(3)
+    expect(SKILLS.bio.maxTier).toBe(3)
+    expect(SKILLS.jam.maxTier).toBe(3)
+    expect(SKILLS.industrial.maxTier).toBe(3)
+    expect([...JAM_FLOOR]).toEqual([0.1, 0.2, 0.3])
+    const w = new World()
+    w.family.husband.owned.set('contracts', 2)
+    expect(w.skuPrice('buy-shovel')).toBe(8)
+    expect(w.skuPrice('buy-hangar')).toBe(78)
+  })
+
+  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
+    expect(CONTAINERS.bucket.capacityLiters).toBe(5)
+    expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
+    expect(FERT_BAG_LITERS).toBe(10)
+    expect(SKUS['buy-fertilizer'].price).toBe(18)
+    expect(SYNTH_BAG_LITERS).toBe(16)
+    expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
+    expect(COMPOST_LITERS).toBe(5)
+    expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
+    expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
   })
 })

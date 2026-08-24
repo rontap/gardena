@@ -8,6 +8,7 @@ import {
   QUAD_FUEL_SECONDS,
   QUAD_PRICE,
   QUAD_REFILL,
+  QUAD_R,
   QUAD_VMAX,
   QUAD_YAW,
   HITCH_BACK,
@@ -18,6 +19,7 @@ import {
   TRACTOR_ACCEL,
   TRACTOR_LEN,
   TRACTOR_PRICE,
+  TRACTOR_R,
   TRACTOR_VMAX,
   TRACTOR_WIDE,
   TRAILER_CAP,
@@ -60,6 +62,7 @@ function digest(w: World) {
       pose: v.pose,
       slots: v.kind === 'quad' ? v.slots : undefined,
       hitch: v.kind === 'tractor' ? v.hitch : undefined,
+      boom: v.kind === 'tractor' ? v.boom : undefined,
     })),
     trailers: w.trailers.map(t => ({
       id: t.id,
@@ -72,7 +75,7 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. No migrate. Dump `vehicles` + hangar cells. Digest includes every vehicle `id` `kind` `fuel` `slots` `pose`.', () => {
+  test('`SAVE_VERSION` 1.6. `PROTOCOL` 1.6. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
     expect(SAVE_VERSION).toBe(1.6)
     expect(PROTOCOL).toBe(1.6)
     const w = farm()
@@ -102,7 +105,7 @@ describe('vehicles I', () => {
     expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
   })
 
-  test('Unlimited quads. `Act.buyVehicle` pays `QUAD_PRICE`, not `skuPrice`. `machine-contracts` does not discount Quad. `buy-hangar` automation `skuPrice` (contracts apply).', () => {
+  test('Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `contracts` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (contracts apply).', () => {
     const w = farm()
     const before = w.money
     w.buyVehicle(AT, 'quad')
@@ -111,9 +114,14 @@ describe('vehicles I', () => {
     expect(w.money).toBe(before - QUAD_PRICE - QUAD_PRICE)
     expect(SKUS['buy-hangar'].price).toBe(80)
     expect(SKUS['buy-hangar'].tab).toBe('automation')
-    w.family.husband.owned.set('machine-contracts', 2)
+    w.family.husband.owned.set('contracts', 2)
     expect(w.skuPrice('buy-hangar')).toBe(78)
     expect(QUAD_PRICE).toBe(150)
+    w.buyVehicle(AT, 'tractor')
+    const t = w.vehicles[2]
+    expect(t.kind).toBe('tractor')
+    if (t.kind !== 'tractor') return
+    expect(t.boom).toBe(5)
   })
 
   test('Guests: hangar cue HUD, `buy-hangar` in `GUEST_BUILD`, buy Quad, refill, `swapVehicle`, embark, disembark, dock, drive, delete empty hangar. Guest `swapChest` still not.', () => {
@@ -125,13 +133,17 @@ describe('vehicles I', () => {
     expect(permit({ a: Act.disembark, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
+    expect(permit({ a: Act.setBoom, t: 0, p: 1, w: 3 })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [0, 0], i: 0 })).toBe(false)
   })
 
   test('Surface mul applies to the cap, not accel. Paved `SURFACE_PAVED`. Tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` `SURFACE_SLOW`. Grass, untilled bare, cobble, brick, fence `SURFACE_NORMAL`. After integrate, `floor(x,y)` not owned → reject the step. No fade driving. Walk speed unchanged.', () => {
+    expect(SURFACE_PAVED).toBe(1.3)
+    expect(SURFACE_SLOW).toBe(0.4)
+    expect(SURFACE_NORMAL).toBe(1.0)
     expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'tile', tile: 'paved' } })).toBe(SURFACE_PAVED)
-    expect(surfaceMul({ kind: 'empty', soil: new Soil(1, 1) })).toBe(SURFACE_SLOW)
+    expect(surfaceMul({ kind: 'empty', soil: new Soil(1, 1, 0.03) })).toBe(SURFACE_SLOW)
     expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'bare' } })).toBe(SURFACE_NORMAL)
     expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'tile', tile: 'cobble' } })).toBe(SURFACE_NORMAL)
     expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'grass', variant: 0 } })).toBe(SURFACE_NORMAL)
@@ -154,7 +166,7 @@ describe('vehicles I', () => {
     expect(w.walkSpeed()).toBe(6)
   })
 
-  test('Empty fuel cap `QUAD_EMPTY_MUL × QUAD_VMAX × surfaceMul × machineryMul`. No auto-dismount. Can still `Act.embark`. Burn `dt / QUAD_FUEL_SECONDS` while driver and (`throttle ≠ 0` || `steer ≠ 0`).', () => {
+  test('Empty fuel cap `QUAD_EMPTY_MUL × vMax × surfaceMul` (`vMax` already includes driving-classes). No auto-dismount. Can still `Act.embark`. Burn `dt / QUAD_FUEL_SECONDS × (1 − 0.05 × driving-classes tier)` while driver and (`throttle ≠ 0` || `steer ≠ 0`). `QUAD_VMAX` 9. `QUAD_R` 3. Tractor `TRACTOR_VMAX = QUAD_VMAX × 0.67`, `TRACTOR_ACCEL = QUAD_ACCEL × 0.5`, `TRACTOR_R` 3, `TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R`.', () => {
     const w = farm()
     w.buyVehicle(AT, 'quad')
     w.deploy(1, AT, 'none')
@@ -203,7 +215,7 @@ describe('vehicles I', () => {
     expect(w.money).toBe(0)
   })
 
-  test('Tank-steer: `Drive` `-1 | 0 | 1`. W forward S reverse A/D yaw. `QUAD_YAW` same at speed 0. Latest `Act.drive` same `t` wins. Machinery `× (1 + 0.05 × tier)` on vMax and accel only. Boots not. Yaw not.', () => {
+  test('Tank-steer: `Drive` `-1 | 0 | 1`. W forward S reverse A/D yaw. Kind yaw same at speed 0. Latest `Act.drive` same `t` wins. Brake: `speed ≠ 0` and `sign(throttle) === −sign(speed)` → seek at `accel × 2`. Coast `throttle === 0` stays `1×`. Reverse-from-stop unchanged. driving-classes: burn `× (1 − 0.05 × tier)`, vMax and accel `× (1 + 0.05 × tier)`. Additive ranks. Yaw not. Boots not. Husband machinery not on vMax/accel.', () => {
     const w = farm()
     w.buyVehicle(AT, 'quad')
     w.deploy(1, AT, 'none')
@@ -220,10 +232,17 @@ describe('vehicles I', () => {
     w.apply({ a: Act.drive, t: w.now, p: 0, throttle: 0, steer: -1 })
     expect(w.seats[0].drive).toEqual({ throttle: 0, steer: -1 })
     expect(w.machineMul()).toBe(1)
-    w.family.player.owned.set('machinery', 2)
+    w.family.husband.owned.set('machinery', 2)
     expect(w.machineMul()).toBe(1.1)
-    expect(QUAD_VMAX).toBe(10)
+    expect(QUAD_VMAX).toBe(9)
+    expect(QUAD_R).toBe(3)
+    expect(TRACTOR_R).toBe(3)
     expect(QUAD_ACCEL).toBe(QUAD_VMAX / 1.5)
+    w.family.player.owned.set('driving-classes', 2)
+    w.drive(1, 0)
+    const fuel0 = v.fuel
+    w.tick(DT_MAX)
+    expect(v.fuel).toBeCloseTo(fuel0 - (DT_MAX / QUAD_FUEL_SECONDS) * (1 - 0.1), 8)
   })
 
   test('Hangar `HANGAR_W × HANGAR_H`, door south, no rotate. Pad `row = base.row + 2`, `col .. col + HANGAR_W - 1`, stay plots. Store is `Act.dock` while driver and `floor(x,y)` is a pad cell; that hangar. Not on tick. Buy from A stores at A. Deploy from B of stored-at-A spawns on B pad, heading `HEADING_SOUTH`, seats immediately. Cannot delete a hangar that stores a vehicle. Field vehicles do not block delete.', () => {
@@ -454,7 +473,7 @@ function aimBoom(w: World, at: { col: number; row: number }) {
   const t = attachedTrailer(w)
   t.pose.heading = Math.PI / 2
   const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
-  const hits = boomHits(p, t.pose.heading, c => w.inWorld(c))
+  const hits = boomHits(p, t.pose.heading, v.boom, c => w.inWorld(c))
   if (!hits.some(h => h.col === at.col && h.row === at.row)) throw new Error('boom cell')
   w.drive(1, 0)
 }
@@ -491,7 +510,7 @@ describe('vehicles II', () => {
     w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
     w.swapTrailer(1, 0)
     const south = { col: 11, row: 16 }
-    w.setCell(south, { kind: 'empty', soil: new Soil(1, 1) })
+    w.setCell(south, { kind: 'empty', soil: new Soil(1, 1, 0.03) })
     w.seats[0].actor.x = fieldTractor(w).pose.x
     w.seats[0].actor.y = fieldTractor(w).pose.y
     w.embark(1)
@@ -524,7 +543,7 @@ describe('vehicles II', () => {
     w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 5, capacityLiters: 5 } }
     w.swapTrailer(1, 0)
     const at = { col: 11, row: 16 }
-    w.setCell(at, { kind: 'empty', soil: new Soil(1, 0) })
+    w.setCell(at, { kind: 'empty', soil: new Soil(1, 0, 0.03) })
     w.seats[0].actor.x = fieldTractor(w).pose.x
     w.seats[0].actor.y = fieldTractor(w).pose.y
     w.embark(1)
@@ -543,7 +562,7 @@ describe('vehicles II', () => {
     if (w.trailers[0].kind !== 'harvest') throw new Error('harvest')
     expect(w.trailers[0].slots.length).toBe(HARVEST_SLOTS)
     w.deploy(1, AT, 1)
-    const soil = () => new Soil(1, 1)
+    const soil = () => new Soil(1, 1, 0.03)
     const ripe = { col: 9, row: 16 }
     const young = { col: 10, row: 16 }
     const mid = { col: 11, row: 16 }
@@ -648,7 +667,7 @@ describe('vehicles II', () => {
     w.buyTrailer(AT, 'seed')
     expect(w.money).toBe(before - TRACTOR_PRICE - TRAILER_SEED_PRICE)
     expect(SKUS['buy-silo-seed'].price).toBe(SILO_SEED_PRICE)
-    w.family.husband.owned.set('machine-contracts', 2)
+    w.family.husband.owned.set('contracts', 2)
     expect(w.skuPrice('buy-silo-seed')).toBe(68)
     expect(TRACTOR_PRICE).toBe(250)
     expect(TRAILER_HARVEST_PRICE).toBe(100)
@@ -685,6 +704,45 @@ describe('vehicles II', () => {
     expect(TRACTOR_VMAX).toBeCloseTo(QUAD_VMAX * 0.67)
     expect(TRACTOR_ACCEL).toBe(QUAD_ACCEL * 0.5)
     expect(FERT_PLOT_MAX).toBe(1)
+  })
+
+  test('`Act.setBoom { w: 3 | 5 }` legal while this seat drives that tractor (hitch optional). Latest same `t` wins. Guest may. `boomHits` takes width. Tractor boom default 5.', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'tractor')
+    w.deploy(1, AT, 'none')
+    const v = w.vehicles[0]
+    expect(v.kind).toBe('tractor')
+    if (v.kind !== 'tractor') return
+    expect(v.boom).toBe(5)
+    w.setBoom(3)
+    expect(v.boom).toBe(3)
+    w.apply({ a: Act.setBoom, t: w.now, p: 0, w: 5 })
+    w.apply({ a: Act.setBoom, t: w.now, p: 0, w: 3 })
+    expect(v.boom).toBe(3)
+    w.disembark()
+    w.setBoom(5)
+    expect(v.boom).toBe(3)
+  })
+
+  test('Enter: if this seat is a driver → `Act.disembark`. Else closest parked field vehicle, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }` instant. Several: min dist, then `World.vehicles` order. Stored / driven: skip. None in range: no-op.', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'quad')
+    w.deploy(1, AT, 'none')
+    const v = w.vehicles[0]
+    expect(v.pose.kind).toBe('field')
+    if (v.pose.kind !== 'field') return
+    expect(v.pose.driver).toBe(0)
+    w.enter()
+    expect(v.pose.driver).toBe('none')
+    w.seats[0].actor.x = v.pose.x + 1
+    w.seats[0].actor.y = v.pose.y
+    w.enter()
+    expect(v.pose.driver).toBe(0)
+    w.disembark()
+    w.seats[0].actor.x = v.pose.x + 3
+    w.seats[0].actor.y = v.pose.y
+    w.enter()
+    expect(v.pose.driver).toBe('none')
   })
 })
 

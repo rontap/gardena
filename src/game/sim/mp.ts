@@ -294,6 +294,7 @@ export function digestHex(world: World): string {
     pose: v.pose,
     slots: v.kind === 'quad' ? v.slots : undefined,
     hitch: v.kind === 'tractor' ? v.hitch : undefined,
+    boom: v.kind === 'tractor' ? v.boom : undefined,
   }))
   const trailers = world.trailers.map(t => ({
     id: t.id,

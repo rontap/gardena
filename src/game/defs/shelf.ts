@@ -50,9 +50,9 @@ export const SHELVES: readonly Shelf[] = [
     panel: 'shop',
     id: 'supplies',
     label: 'Supplies',
-    line: 'Feeds go to the additive store. Sugar to your hands.',
+    line: 'Feeds go to the additive store. Sugar and weed spray to your hands.',
     groups: [
-      { label: 'Feeds', skus: ['buy-fertilizer', 'buy-synth-fertilizer'] },
+      { label: 'Feeds', skus: ['buy-fertilizer', 'buy-synth-fertilizer', 'buy-weed-spray'] },
       { label: 'Pantry', skus: ['buy-sugar'] },
     ],
   },

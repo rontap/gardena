@@ -136,7 +136,7 @@ export type SaveStallGood = {
   worth: { [K in Rarity]: { organic: number; synth: number } }
 }
 
-export type SaveSoil = { water: number; fertilizer: number; bio: boolean }
+export type SaveSoil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
 
 export type SavePlant = {
   crop: AnnualId
@@ -148,7 +148,7 @@ export type SavePlant = {
   tended: boolean
 }
 
-export type SaveWeed = { variant: 0 | 1; maturity: number }
+export type SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean }
 export type SaveTurf = { variant: 0 | 1 | 2; maturity: number }
 
 export type SaveCell =
@@ -219,6 +219,7 @@ export type SaveVehicle =
       id: VehicleId
       fuel: number
       hitch: TrailerId | 'none'
+      boom: 3 | 5
       pose:
         | { kind: 'stored'; hangar: Coord }
         | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
@@ -476,7 +477,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'infertile':
       return { kind: 'infertile' }
     case 'weed':
-      return { kind: 'weed', soil: dumpSoil(c.soil), weed: { variant: c.weed.variant, maturity: c.weed.maturity } }
+      return { kind: 'weed', soil: dumpSoil(c.soil), weed: { variant: c.weed.variant, maturity: c.weed.maturity, spread: c.weed.spread } }
     case 'turf':
       return { kind: 'turf', soil: dumpSoil(c.soil), turf: { variant: c.turf.variant, maturity: c.turf.maturity } }
     case 'growing':
@@ -562,7 +563,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
 }
 
 function dumpSoil(s: Soil): SaveSoil {
-  return { water: s.water, fertilizer: s.fertilizer, bio: s.bio }
+  return { water: s.water, fertilizer: s.fertilizer, bio: s.bio, weedChance: s.weedChance }
 }
 
 function dumpPlant(p: Plant): SavePlant {
@@ -1071,6 +1072,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'weed': {
       const weed = new Weed(sc.weed.variant)
       weed.maturity = sc.weed.maturity
+      weed.spread = sc.weed.spread
       return { kind: 'weed', soil: makeSoil(sc.soil), weed }
     }
     case 'turf': {
@@ -1240,7 +1242,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
 }
 
 function makeSoil(s: SaveSoil): Soil {
-  const soil = new Soil(s.water, s.fertilizer)
+  const soil = new Soil(s.water, s.fertilizer, s.weedChance)
   soil.bio = s.bio
   return soil
 }
@@ -1533,7 +1535,7 @@ function dumpPose(pose: Vehicle['pose']): SaveVehicle['pose'] {
 
 function dumpVehicle(v: Vehicle): SaveVehicle {
   if (v.kind === 'quad') return { kind: 'quad', id: v.id, fuel: v.fuel, slots: v.slots.slice(), pose: dumpPose(v.pose) }
-  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, pose: dumpPose(v.pose) }
+  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, boom: v.boom, pose: dumpPose(v.pose) }
 }
 
 function dumpTrailer(t: Trailer): SaveTrailer {
@@ -1548,7 +1550,7 @@ function dumpTrailer(t: Trailer): SaveTrailer {
 function liveVehicle(v: SaveVehicle): Vehicle {
   const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
   if (v.kind === 'quad') return makeQuad(v.id, v.fuel, v.slots.slice(), pose)
-  return makeTractor(v.id, v.fuel, v.hitch, pose)
+  return makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
 }
 
 function liveTrailer(t: SaveTrailer): Trailer {
@@ -1626,9 +1628,10 @@ function readVehicle(v: unknown): SaveVehicle | undefined {
   }
   if (o.kind === 'tractor') {
     const hitch = o.hitch === 'none' || typeof o.hitch === 'number' ? o.hitch : undefined
-    if (hitch === undefined) return undefined
+    const boom = o.boom === 3 || o.boom === 5 ? o.boom : undefined
+    if (hitch === undefined || boom === undefined) return undefined
     if (pose.kind === 'stored' && hitch !== 'none') return undefined
-    return { kind: 'tractor', id, fuel, hitch, pose }
+    return { kind: 'tractor', id, fuel, hitch, boom, pose }
   }
   return undefined
 }
@@ -1687,8 +1690,9 @@ function readSoil(v: unknown): SaveSoil | undefined {
   const water = num(o.water)
   const fertilizer = num(o.fertilizer)
   const bio = bool(o.bio)
-  if (water === undefined || fertilizer === undefined || bio === undefined) return undefined
-  return { water, fertilizer, bio }
+  const weedChance = num(o.weedChance)
+  if (water === undefined || fertilizer === undefined || bio === undefined || weedChance === undefined) return undefined
+  return { water, fertilizer, bio, weedChance }
 }
 
 function readPlant(v: unknown): SavePlant | undefined {
@@ -1719,8 +1723,9 @@ function readWeed(v: unknown): SaveWeed | undefined {
   if (o === undefined) return undefined
   const variant = o.variant
   const maturity = num(o.maturity)
-  if ((variant !== 0 && variant !== 1) || maturity === undefined) return undefined
-  return { variant, maturity }
+  const spread = bool(o.spread)
+  if ((variant !== 0 && variant !== 1) || maturity === undefined || spread === undefined) return undefined
+  return { variant, maturity, spread }
 }
 
 function readTurf(v: unknown): SaveTurf | undefined {
@@ -2170,6 +2175,11 @@ function readItem(v: unknown): Item | undefined {
       if (count === undefined) return undefined
       return { kind: o.kind, count }
     }
+    case 'weed-spray': {
+      const usesLeft = num(o.usesLeft)
+      if (usesLeft === undefined || usesLeft <= 0) return undefined
+      return { kind: 'weed-spray', usesLeft }
+    }
     default:
       return undefined
   }
@@ -2189,6 +2199,11 @@ function readCargo(v: unknown): Extract<Item, { kind: 'box' }>['cargo'] | undefi
     const stack = readFruitStack(o.stack)
     if (stack === undefined) return undefined
     return { kind: 'stack', goods: 'fruit', stack }
+  }
+  if (o.goods === 'weed') {
+    const count = num(o.count)
+    if (count === undefined) return undefined
+    return { kind: 'stack', goods: 'weed', count }
   }
   return undefined
 }

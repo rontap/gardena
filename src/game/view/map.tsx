@@ -564,9 +564,9 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
               transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
               style={{ ['--hat']: HAT[world.local] } as CSSProperties}
             >
-              {hitch !== undefined && hitch.pose.kind === 'attached' && (
+              {hitch !== undefined && hitch.pose.kind === 'attached' && driven.kind === 'tractor' && (
                 <g ref={el => bindDummyTrailer(el)}>
-                  <TrailerGfx kind={hitch.kind} />
+                  <TrailerGfx kind={hitch.kind} boom={driven.boom} />
                 </g>
               )}
               <g transform={`translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}>
@@ -635,11 +635,12 @@ function Use({ art }: { art: string }) {
   return <use href={symHref(art)} />
 }
 
-function TrailerGfx({ kind }: { kind: 'seed' | 'spray' | 'harvest' }) {
+function TrailerGfx({ kind, boom }: { kind: 'seed' | 'spray' | 'harvest'; boom: 3 | 5 }) {
+  const s = boom / 5
   return (
     <>
       <Use art={kind === 'seed' ? TRAILER_SEED : kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
-      <g transform="translate(0 12) rotate(90) translate(-60 -4)">
+      <g data-rake transform={`translate(0 12) rotate(90) translate(${-60 * s} -4) scale(${s} 1)`}>
         <Use art={TRAILER_RAKE} />
       </g>
     </>
@@ -1053,10 +1054,10 @@ const Marks = memo(function Marks({
         const hat = v.pose.driver === 'none' ? undefined : HAT[v.pose.driver]
         const hitch = v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
         const nodes = []
-        if (hitch !== undefined && hitch.pose.kind === 'attached') {
+        if (hitch !== undefined && hitch.pose.kind === 'attached' && v.kind === 'tractor') {
           nodes.push(
             <g key={`trailer-${hitch.id}`} ref={el => bindTrailer(hitch.id, el)} data-trailer={hitch.id}>
-              <TrailerGfx kind={hitch.kind} />
+              <TrailerGfx kind={hitch.kind} boom={v.boom} />
             </g>,
           )
         }

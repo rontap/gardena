@@ -103,7 +103,7 @@ Net flag. Not a `Cmd`. Not in `Save`. Host stops bundling while paused. Any play
 
 ## Digest
 
-Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch`, plus every trailer `id` `kind` `pose` hopper or `slots`, plus every wire `from`/`to`, every sensor `out`/`inn`, sprinkler unwired vs level, smart-valve held level. Not `savedAt`. Not camera. Not panels. Not hangar select. Not lens.
+Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, plus every trailer `id` `kind` `pose` hopper or `slots`, plus every wire `from`/`to`, every sensor `out`/`inn`, sprinkler unwired vs level, smart-valve held level. Not `savedAt`. Not camera. Not panels. Not hangar select. Not lens.
 
 Guest behind `t`: apply queued bundles. Digest mismatch: pause, `resync`, `ready`, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.
 

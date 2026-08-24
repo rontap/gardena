@@ -15,7 +15,7 @@ function on(step: Tutorial['kind'] extends 'on' ? never : 1 | 2 | 3 | 4 | 5 | 6 
 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
-  return new Soil(water, fertilizer)
+  return new Soil(water, fertilizer, 0.03)
 }
 
 function plots(w: World, n: number, kind: 'empty' | 'growing' | 'ripe'): void {

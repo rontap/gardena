@@ -8,7 +8,7 @@ Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home
 
 Wordmark **1.6.0**.
 
-Assumption: heading version is `id` as written (`1.6`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
+Assumption: heading version is `id` as written (`1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`). This note does not invent `RELEASES` copy.
 
 ## Shell
 
@@ -149,6 +149,79 @@ export const RELEASES: readonly Release[] = [
           'Vehicle detector is a flush plate. High when a field Quad or tractor sits on this tile.',
         ],
         changes: [],
+      },
+    ],
+  },
+  {
+    id: '1.5.2',
+    name: 'Vehicles II patch',
+    summary: 'Boom width, slower machines, weed spray, and skill moves.',
+    changes: [
+      {
+        kind: 'feature',
+        text: 'Tractor boom switches between 3 and 5 while you drive.',
+        notes: ['A dash button shows the current width. Quad has no boom.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Vehicles are slower. Tilled soil and rocks drag more; paving is still faster.',
+        notes: [],
+      },
+      {
+        kind: 'feature',
+        text: 'Enter boards the nearest parked machine, or gets you off if you are driving.',
+        notes: ['Works within a short walk. The dash Disembark button and the parked Embark button stay.'],
+      },
+      {
+        kind: 'feature',
+        text: 'Weed spray and weed outbreaks.',
+        notes: [
+          'Buy spray in Supplies. Click tilled soil to starve weeds there.',
+          'A fully grown weed seeds its four neighbours.',
+        ],
+      },
+      {
+        kind: 'improvement',
+        text: 'Driving classes sit on you. Machinery and contracts sit on your husband. Bulk buying is always on.',
+        notes: ['Ctrl-click seed packs to buy five at a discount. No skill lock.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Fertilizer bags and buckets hold more.',
+        notes: [],
+      },
+    ],
+  },
+  {
+    id: '1.5.1',
+    name: 'Shop split',
+    summary: 'The store and the build menu are two panels, with search across both.',
+    changes: [
+      {
+        kind: 'improvement',
+        text: 'The shop is two panels: General store to buy, Build to place.',
+        notes: [
+          'Categories are filed by what a thing does, not when it shipped. Water holds every pump, pipe, and sprinkler; the chest and the freezer sit together.',
+          'Cards in a grid, three across, with a category rail down the side. Research uses the same shell.',
+        ],
+      },
+      {
+        kind: 'feature',
+        text: 'Search both panels at once.',
+        notes: [
+          'Type in either panel and results come from both. Picking one that lives in the other panel takes you there.',
+          'Escape clears the box before it closes anything.',
+        ],
+      },
+      {
+        kind: 'bugfix',
+        text: 'The build buttons appear for the compost box.',
+        notes: ['Delete and Cancel were missing while a compost box was on the cursor.'],
+      },
+      {
+        kind: 'bugfix',
+        text: 'Opening the settings menu no longer leaves the pipe layer on.',
+        notes: ['Closing the shop through the gear or multiplayer button dropped the ghost but kept the pipe overlay up.'],
       },
     ],
   },

@@ -50,13 +50,13 @@ Legal only when `marketOpen`. Else closed copy.
 
 `stallX`: crop → `CROPS.sale ×` skill `saleMul` 1.04 from player `better-*` (`Modifier.source === 'skill'`). No research `sale-mul`. No `bump-*`. Rarity is the extra `raritySale` factor, not inside `stallX`. Sugar and machine goods skip `stallX` and `raritySale` (already in `unitSale`). Sugar-cane fruit uses crop `stallX`.
 
-`worth` accumulated at consign as `count × freshMul` for fruit. Above 80% freshness, full price; below, scales down. Jam floors `freshMul` to `0.10 / 0.20 / 0.30 / 0.40 / 0.50` by owned tier. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
+`worth` accumulated at consign as `count × freshMul` for fruit. Above 80% freshness, full price; below, scales down. Jam floors `freshMul` to `0.10 / 0.20 / 0.30` by owned tier. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
 
 Then at `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
 - heirloom: `rarity === 'heirloom'` of crop stall goods, spirit, wine × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
-- bio: crop fruit `bio === true` × `(1 + 0.03 × tier)`. Not sugar / machine goods
+- bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar and machine goods do not rot
 
 Sell all pays `marketGain`, clears stock, money += gain. One button. One number.

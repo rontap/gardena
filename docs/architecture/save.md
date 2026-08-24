@@ -10,7 +10,7 @@ Active since first commit. Not 1.1-only. Not a plan.
 
 A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
 
-Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Automation III: 1.6. No migrate. 1.5 file → `'version'`.
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. Automation III: 1.6. No migrate. 1.5 / 1.52 file → `'version'`.
 
 Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
@@ -193,6 +193,7 @@ SaveVehicle =
       id: VehicleId
       fuel: number
       hitch: TrailerId | 'none'
+      boom: 3 | 5
       pose:
         | { kind: 'stored'; hangar: Coord }
         | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
@@ -276,7 +277,7 @@ SaveStallGood = {
   worth: { [K in Rarity]: { organic: number; synth: number } }
 }
 
-SaveSoil = { water: number; fertilizer: number; bio: boolean }
+SaveSoil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
 
 SavePlant = {
   crop: AnnualId
@@ -288,7 +289,7 @@ SavePlant = {
   tended: boolean
 }
 
-SaveWeed = { variant: 0 | 1; maturity: number }
+SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean }
 SaveTurf = { variant: 0 | 1 | 2; maturity: number }
 
 SaveCell =
@@ -336,7 +337,7 @@ SaveCell =
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
 
-`version: 1.6` is a number. JSON `1.6` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.5 file → `'version'`. No migrate.
+`version: 1.6` is a number. JSON `1.6` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.5 / 1.52 file → `'version'`. No migrate.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
@@ -388,8 +389,12 @@ SaveCell =
 - `smartHold` omitted
 - stored + driver
 - quad hitch / tractor slots
+- quad boom / boom other than `3 | 5`
+- tractor `boom` omitted
 - stored tractor hitch ≠ `'none'`
 - trailer attached + stored
+- `Soil.weedChance` omitted
+- `Weed.spread` omitted
 - `sugar.count`
 - chunk grid not `CHUNK` × `CHUNK`
 - UI copy in this note

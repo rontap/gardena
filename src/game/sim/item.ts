@@ -32,6 +32,7 @@ import {
   SUGAR_MILL,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
+  WEED_SPRAY_USES,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
@@ -76,6 +77,7 @@ export type Item =
         | { kind: 'empty' }
         | { kind: 'stack'; goods: 'seeds'; stack: Stack }
         | { kind: 'stack'; goods: 'fruit'; stack: FruitStack }
+        | { kind: 'stack'; goods: 'weed'; count: number }
     }
   | { kind: 'seeds'; crop: AnnualId; rarity: Rarity; count: number }
   | { kind: 'grass-seeds'; count: number }
@@ -92,6 +94,7 @@ export type Item =
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
   | { kind: 'grass'; count: number }
+  | { kind: 'weed-spray'; usesLeft: number }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -146,6 +149,9 @@ export function compostValue(item: Item): number {
   if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
   if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
   if (item.kind === 'grass') return COMPOST_VALUE.grass * item.count
+  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods === 'weed') {
+    return COMPOST_VALUE.weed * item.cargo.count
+  }
   return 0
 }
 
@@ -228,6 +234,7 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return 'Pulled weed'
+  if (it.kind === 'weed-spray') return 'Weed spray'
   return 'Cut grass'
 }
 
@@ -269,6 +276,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'box') {
     const name = boxName(item.cap)
     if (item.cargo.kind === 'empty') return `${name} - empty`
+    if (item.cargo.goods === 'weed') return `${name} - weed ${item.cargo.count}/${item.cap}`
     const n = cropName(item.cargo.stack.crop)
     if (item.cargo.goods === 'seeds') return `${name} - ${n} seed ${item.cargo.stack.count}/${item.cap}`
     return `${name} - ${n} ${item.cargo.stack.count}/${item.cap}`
@@ -292,6 +300,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
+  if (item.kind === 'weed-spray') return `Weed spray - ${item.usesLeft}/${WEED_SPRAY_USES} uses left`
   return `Cut grass - ${item.count}, compost it`
 }
 
@@ -342,6 +351,8 @@ export function skuLabel(id: SkuId): string {
       return 'Fertilizer bag'
     case 'buy-synth-fertilizer':
       return 'Synthetic fertilizer'
+    case 'buy-weed-spray':
+      return 'Weed spray'
     case 'buy-compost-box':
       return 'Compost box'
     case 'buy-pumpjack':
@@ -486,6 +497,8 @@ export function skuDesc(id: SkuId): string {
       return fill('Holds ${n} L and works the same, but the soil and its produce stop being organic.', {
         n: SYNTH_BAG_LITERS,
       })
+    case 'buy-weed-spray':
+      return fill('Hand sprayer. ${n} uses. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_USES })
     case 'buy-compost-box':
       return fill(
         'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s, left on the ground beside the box.',
@@ -627,6 +640,7 @@ export function itemTip(item: Item): string {
   if (item.kind === 'compost') return `compost ${item.liters}/${item.capacityLiters}L`
   if (item.kind === 'box') {
     if (item.cargo.kind === 'empty') return `box ${item.cap}`
+    if (item.cargo.goods === 'weed') return `box weed ${item.cargo.count}/${item.cap}`
     return `box ${item.cargo.goods} ${item.cargo.stack.crop} ${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
@@ -643,6 +657,7 @@ export function itemTip(item: Item): string {
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
   if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
   if (item.kind === 'weed') return `weed ${item.count}`
+  if (item.kind === 'weed-spray') return `weed-spray ${item.usesLeft}`
   return `grass ${item.count}`
 }
 
@@ -722,6 +737,8 @@ export function skuItem(id: SkuId): Face {
       return makeFertilizer()
     case 'buy-synth-fertilizer':
       return makeSynth()
+    case 'buy-weed-spray':
+      return { kind: 'weed-spray', usesLeft: WEED_SPRAY_USES }
     case 'buy-compost-box':
       return { kind: 'compost-box' }
     case 'buy-pumpjack':
@@ -854,6 +871,18 @@ export function boxAddFruit(box: Extract<Item, { kind: 'box' }>, f: FruitStack):
     stack.bio = stack.bio && part.bio
     stack.count += take
   }
+  return take
+}
+
+export function boxAddWeed(box: Extract<Item, { kind: 'box' }>, n: number): number {
+  if (box.cargo.kind === 'empty') {
+    const take = Math.min(box.cap, n)
+    box.cargo = { kind: 'stack', goods: 'weed', count: take }
+    return take
+  }
+  if (box.cargo.kind !== 'stack' || box.cargo.goods !== 'weed') return 0
+  const take = Math.min(n, box.cap - box.cargo.count)
+  box.cargo.count += take
   return take
 }
 

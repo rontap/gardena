@@ -113,7 +113,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.71 as const
+export const SAVE_VERSION = 1.72 as const
 
 const INV = 16
 
@@ -253,7 +253,7 @@ export type SaveTrailer =
 
 export type Save = {
   game: 'gardena'
-  version: 1.71
+  version: 1.72
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }

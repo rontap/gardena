@@ -32,7 +32,7 @@ No price. Fan-out: many wires from one `from`. Fan-in: many wires on one input; 
 
 One direct path between two nodes. Finalize of A→B when that node pair exists: **Remove wire**, drop it, `place none`. Delete-tool bezier **Delete wire** stays.
 
-Start: click an **output port** → `Act.armWire` → `place = { kind: 'wire'; from }`. Pending bezier follows the pointer. Finalize on a valid input → `Act.placeWire`. Cycle → no-op, place stays, **Cannot loop**. Illegal port → no-op, **Cannot wire here**. `cancelPlace` clears.
+Start: click an **output port** → `Act.armWire` → `place = { kind: 'wire'; from }`. Pending bezier follows the pointer. Finalize on a valid input → `Act.placeWire`. Combinational cycle → no-op, place stays, **Cannot loop**. Sequential feedback (lever / pulser / counter `in`) is legal. Illegal port → no-op, **Cannot wire here**. `cancelPlace` clears.
 
 While a sensor SKU is armed, click confirms place, not a wire.
 

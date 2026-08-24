@@ -440,10 +440,23 @@ export function pourEligible(wired: boolean, inn: Signal): boolean {
   return inn === 1
 }
 
-export function wouldCycle(wires: readonly Wire[], from: WireEnd, to: WireEnd): boolean {
+export function isSeqIn(end: WireEnd, cell: Cell | undefined): boolean {
+  if (end.kind !== 'cell' || end.port !== 'in') return false
+  if (cell === undefined) return false
+  return cell.kind === 'lever' || cell.kind === 'pulser' || cell.kind === 'counter'
+}
+
+export function wouldCycle(
+  wires: readonly Wire[],
+  from: WireEnd,
+  to: WireEnd,
+  isSeqIn: (end: WireEnd) => boolean,
+): boolean {
+  if (isSeqIn(to)) return false
   if (nodeKey(from) === nodeKey(to)) return true
   const adj = new Map<string, string[]>()
   wires.forEach(w => {
+    if (isSeqIn(w.to)) return
     const a = nodeKey(w.from)
     const b = nodeKey(w.to)
     const list = adj.get(a)
@@ -540,17 +553,7 @@ export function evalDag(input: EvalIn): void {
   })
   const nodes: string[] = []
   sensors.forEach((s, k) => {
-    if (
-      s.kind === 'not' ||
-      s.kind === 'and' ||
-      s.kind === 'or' ||
-      s.kind === 'lamp' ||
-      s.kind === 'pulser' ||
-      s.kind === 'counter' ||
-      s.kind === 'lever'
-    ) {
-      nodes.push(k)
-    }
+    if (s.kind === 'not' || s.kind === 'and' || s.kind === 'or' || s.kind === 'lamp') nodes.push(k)
   })
   const indeg = new Map<string, number>()
   const adj = new Map<string, string[]>()
@@ -591,26 +594,30 @@ export function evalDag(input: EvalIn): void {
     else if (s.kind === 'not') s.out = as01(1 - innOf(at, 'in'))
     else if (s.kind === 'and') s.out = innOf(at, 'in-l') === 1 && innOf(at, 'in-r') === 1 ? 1 : 0
     else if (s.kind === 'or') s.out = innOf(at, 'in-l') === 1 || innOf(at, 'in-r') === 1 ? 1 : 0
-    else if (s.kind === 'pulser') {
-      s.inn = innOf(at, 'in')
+  })
+  machines.forEach(m => {
+    m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
+  })
+  sensors.forEach(s => {
+    if (s.kind === 'pulser' || s.kind === 'counter' || s.kind === 'lever') {
+      s.inn = innOf({ col: s.base.col, row: s.base.row }, 'in')
+    }
+  })
+  sensors.forEach(s => {
+    if (s.kind === 'pulser') {
       s.out = s.prev === 0 && s.inn === 1 ? 1 : 0
       s.prev = s.inn
     } else if (s.kind === 'counter') {
-      s.inn = innOf(at, 'in')
       if (s.inn === 1) s.count += 1
       if (s.count >= s.n) {
         s.out = 1
         s.count = 0
       } else s.out = 0
     } else if (s.kind === 'lever') {
-      s.inn = innOf(at, 'in')
       if (s.prev === 0 && s.inn === 1) s.on = !s.on
       s.prev = s.inn
       s.out = s.on ? 1 : 0
     }
-  })
-  machines.forEach(m => {
-    m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
   })
   smart.forEach(h => {
     const inn = orTo(endKey({ kind: 'valve', e: h.e, port: 'in' }))

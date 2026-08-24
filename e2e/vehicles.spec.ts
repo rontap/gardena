@@ -7,7 +7,7 @@ type Pose =
 
 test('vehicles smoke', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
-  await armSku(page, /Vehicle hangar/, 'Vehicles')
+  await armSku(page, 'Vehicle hangar', 'Vehicles')
   await tapWorld(page, 20.5, 14.5)
   const placed = await page.evaluate(() => {
     const w = (

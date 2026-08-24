@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. [[architecture/world]] [[architecture/rng]] [[architecture/log]] [[architecture/net]] [[architecture/modules]] [[architecture/family]] [[architecture/tree]] [[plans/early-access-1]] [[plans/early-access-1.1]]
 
-One file shape. Dump writes `game: "gardena"`, `version: 1.71`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.71` on dump. Wordmark **1.7.1**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate.
+One file shape. Dump writes `game: "gardena"`, `version: 1.72`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`. Parse identity: `game === "gardena"`. `version` is the number `1.72` on dump. Wordmark **1.7.2**. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate.
 
 ## RFC — versions (active)
 
@@ -10,7 +10,7 @@ Active since first commit. Not 1.1-only. Not a plan.
 
 A newer game version immediately deprecates every older save. There is no officially supported save migration, conversion, recovery, or compatibility reader. Do not add one. Do not keep `hydrate10` or any other per-version parse path.
 
-Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. 1.71. No migrate. 1.62 file → `'version'`.
+Dump still writes `version`. Display still shows the wordmark. Storage of `version` does not change. 1.72. No migrate. 1.71 file → `'version'`.
 
 Load **compares** file `version` to the dump number. Unequal (missing included) → `LoadFailReason 'version'`. It does not hydrate an old shape. Same number → one hydrate of the live fields. Fail → `unusable`.
 
@@ -18,7 +18,7 @@ Load **compares** file `version` to the dump number. Unequal (missing included) 
 
 | file | owns |
 |---|---|
-| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp`. `SAVE_VERSION` 1.71 |
+| `src/game/sim/save.ts` | `Save`, `LoadResult`, `LoadFailReason`, `SLOT_KEY`, `DOWNLOAD_NAME`, `dump`, `parse`, `readSlot`, `writeSlot`, `slotExists`, `slotStamp`. `SAVE_VERSION` 1.72 |
 | `src/game/sim/world.ts` | live `World`. Does not own `Save`. Constructs live objects for parse. Not a second reader. |
 
 Do not create `src/` here.
@@ -172,7 +172,7 @@ Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Cir
 
 ## Save
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.71`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `version: 1.72`, `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
 
 ```
 SaveSeat = {
@@ -232,7 +232,7 @@ SaveTrailer =
 
 Save = {
   game: 'gardena'
-  version: 1.71
+  version: 1.72
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
@@ -347,7 +347,7 @@ SaveCell =
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
 
-`version: 1.71` is a number. JSON `1.71` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.62 file → `'version'`. No migrate. Still `base.w = 2` `base.h = 1`. Prop `48×24` occupying both cells.
+`version: 1.72` is a number. JSON `1.72` is that number. Dump writes it. Parse compares it to the dump number and stops on mismatch. It does not pick a reader from it. 1.71 file → `'version'`. No migrate. Still `base.w = 2` `base.h = 1`. Prop `48×24` occupying both cells.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 

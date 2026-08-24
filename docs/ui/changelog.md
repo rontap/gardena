@@ -6,13 +6,13 @@ Player-facing release list in the menu. Menu Chrome. Changelog `w-[36rem]`; home
 
 `menu.tsx` owns `MenuPage`, wordmark click, and whether `Changelog` is shown.
 
-Wordmark **1.7.1**. This note does not own `SAVE_VERSION` / dump `version` / `PROTOCOL`.
+Wordmark **1.7.2**. This note does not own `SAVE_VERSION` / dump `version` / `PROTOCOL`.
 
-Assumption: heading version is `id` as written (`1.7.1`, `1.7`, `1.6.2`, `1.6.1`, `1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`).
+Assumption: heading version is `id` as written (`1.7.2`, `1.7.1`, `1.7`, `1.6.2`, `1.6.1`, `1.6`, `1.5.2`, `1.5.1`, `1.5`, `1.4`, `1.3`, `beta-1`).
 
 ## Shell
 
-Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.7.1** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.7.2** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
 
 | mode | dim | backdrop | Esc |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Show ×: play, or joining, or `{ kind: 'changelog' }`.
 
 ## Wordmark
 
-The **1.7.1** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+The **1.7.2** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
 
 Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
 
@@ -43,7 +43,7 @@ Click toggles home ↔ changelog. While boot `joining`: no-op. `joining` true �
 
 `scroll-pane max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto flex flex-col gap-3`. Column already `px-4` — do not pad again.
 
-`RELEASES[0]` is 1.7.1. Array order is render order.
+`RELEASES[0]` is 1.7.2. Array order is render order.
 
 Per release, body face only (not Press Start):
 
@@ -109,6 +109,21 @@ MenuPage = { kind: 'home' } | { kind: 'changelog' }
 
 ```
 export const RELEASES: readonly Release[] = [
+  {
+    id: '1.7.2',
+    name: 'Memory on the wire',
+    summary: 'A lever can listen to itself. Gates still cannot loop.',
+    changes: [
+      {
+        kind: 'feature',
+        text: 'Wires may go back into a lever, pulser, or counter.',
+        notes: [
+          'A gate still cannot loop into another gate. That still says Cannot loop.',
+          'A lever chain waits one moment per step instead of flipping all at once.',
+        ],
+      },
+    ],
+  },
   {
     id: '1.7.1',
     name: 'QoL Patch I',

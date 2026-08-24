@@ -2,7 +2,7 @@
 
 Automation III + 1.7.1 bricks. Types [[architecture/world]]. Shop [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Save [[architecture/save]]. Seats [[mechanics/multiplayer]]. Numbers preference unless marked.
 
-Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprinkler SKU. No 5×5 mask. No save migrate.
+Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprinkler SKU. No 5×5 mask. No save migrate. Combinational loops stay illegal. Sequential feedback is 1.7.2.
 
 ## Files
 
@@ -19,8 +19,8 @@ Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprin
 | `src/game/sim/pipe.ts` | `Gate` += `{ kind: 'smart' }`. `Sprinkler` keeps variant/tune. `flows` for smart uses eval, not a stored open |
 | `src/game/sim/world.ts` | `World.wires` `World.waterSystems`. `Net.waterSystems`. Place / StayArmed / Intent / HudTarget. tick: field → eval → mill/jam/still unless `inn === 1` → water. apply place/delete/tune / load / unload |
 | `src/game/sim/log.ts` | `Act.armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest` `tuneCounter` `resetCounter` `tuneDay`. `Act.delete` += `wire` `smart`. `Act.openHud` += `k` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.71. dump wires + sensor cells + actuator hold + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.71. `GUEST_BUILD` += fourteen sensor-cell SKUs. permit wire / smart valve / sensor HUD / `tuneCounter` `resetCounter` `tuneDay`. digest wires + outputs + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` |
+| `src/game/sim/save.ts` | `SAVE_VERSION` 1.72. dump wires + sensor cells + actuator hold + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate |
+| `src/game/sim/mp.ts` | `PROTOCOL` 1.72. `GUEST_BUILD` += fourteen sensor-cell SKUs. permit wire / smart valve / sensor HUD / `tuneCounter` `resetCounter` `tuneDay`. digest wires + outputs + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` |
 | `src/game/sim/prompt.ts` | sensor place / port hit / delete wire bezier / smart valve edge |
 | `src/game/sim/look.ts` | sensor names |
 | `src/game/sim/item.ts` | `Face` += each sensor SKU + `smart-valve` |
@@ -208,7 +208,7 @@ Wire = { from: WireEnd; to: WireEnd }
 
 `World.wires: Wire[]`. Directed `from` → `to`. Signal `0 | 1`. Fan-out: many wires may share `from`. Fan-in: many wires may share a `to` port. Port level = OR of those wires. Unwired port still 0. Visual cross is paint, no join.
 
-One direct path: unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. A lever cannot occupy both `in-l` and `in-r` of the same AND. Indirect paths legal. Cycle still rejected at finalize (`wouldCycle`).
+One direct path: unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. A lever cannot occupy both `in-l` and `in-r` of the same AND. Indirect paths legal. **Combinational** cycles rejected at finalize (`wouldCycle`). Sequential feedback through lever / pulser / counter `in` is legal.
 
 Toggle-remove: finalize of `from` → `to` when a wire already exists with the same node pair: drop that wire, `place = none`. Same ports or different ports on those two nodes — one path, so it removes. Not a retarget. Prompt **Remove wire** (ui-ux).
 
@@ -216,23 +216,36 @@ Toggle-remove: finalize of `from` → `to` when a wire already exists with the s
 
 No wire SKU. No price. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU or `buy-smart-valve` forces that lens (pipes pattern). Wires are always sim-state. View-gated paint and port hits.
 
-Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire, `place = none`. Cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
+Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire, `place = none`. Combinational cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
 
 Delete: Delete tool, nearest bezier within `VERTEX_HIT`. `Act.delete` `{ k: 'wire'; from; to }`. Building delete, sprinkler delete, smart-valve delete drop incident wires.
 
 ## Graph / eval
 
-`sim/sensor.ts` `wouldCycle(wires, from, to): boolean`. `evalDag` topo-eval. Loops rejected at finalize. Live graph is a DAG; do not runtime-check acyclicity on tick.
+Two graphs. Wiring may contain cycles **through memory**. Combinational wiring may not.
+
+**Sequential (memory) devices:** lever, pulser, counter. Their `in` is sampled from **last tick’s** outputs, then they update. Internally `in` does not combinationally drive `out` this tick. Flip / Press still apply in `apply` (same-tick Flip + eval edge: both, net zero).
+
+**Combinational devices:** not, and, or, lamp, sprinkler `in`, smart valve `in`, mill / jam / still `in`.
+
+**Sources:** button, world-readers, chest / freezer / seed-silo / additive-store.
+
+`wouldCycle(wires, from, to, isSeqIn)`: walk only edges whose `to` is **not** a sequential input. Same-node `from`/`to` is a cycle iff that node is combinational. Lever/pulser/counter out→own in is legal. AND/OR/NOT/lamp out→own in is a cycle.
+
+Combo cycle (NOT→AND→NOT, AND→OR→AND, gate self): finalize no-op, **Cannot loop**. Sequential cut (lever→AND→same lever, pulser→NOT→pulser, Q bits → is9 → Q.in): legal.
+
+`evalDag` still the tick function. Combo subgraph is a DAG; do not runtime-check the full wire graph. Tick:
+
+1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`. Sequential `.out` still last tick.
+2. Topo-eval **combinational** gates from those outs (AND/OR/NOT). Lamp / machine / sprinkler / smart-valve `inn` from this combo + sequential outs.
+3. Sequential `inn` = OR of wires on `in` (sees this tick’s combo, last tick’s other memories).
+4. Sequential update: lever edge, pulser, counter. Button countdown already on `tick()`.
+5. Hold on world-readers + sprinkler input + smart valve.
+6. Actuators use **this** tick’s held inputs for pour / conduction.
+
+Consequence: a lever chain `Q₀ → NOT → Q₁` no longer ripples in one tick. `Q₁` toggles the tick after `Q₀` falls. One tick per stage. Decade wrap `is9 → extra T on Q₃` uses last-tick bits; all four T-FFs update together.
 
 Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser / counter / lever-`in` / sprinkler-input-port / smart-valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators. An input is high iff any incoming wire is high.
-
-Tick, after vehicles and field, before water:
-
-1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`.
-2. Topo-eval sources then gates (pulser, counter, lever edge, AND/OR/NOT).
-3. Hold on world-readers + sprinkler input + smart valve.
-4. Lever / button / pulser / counter / gates: no hold. Outputs may change every tick.
-5. Actuators use **this** tick’s held inputs for pour / conduction.
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
@@ -392,7 +405,7 @@ Assumption: invariant 61; fourteen cells including vehicle detector + pulser + c
 
 ## Save / net
 
-`SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark **1.7.1**. No migrate. 1.62 file → `LoadFailReason` `'version'`. `World.wires[]` already a list. Dump mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`.
+`SAVE_VERSION` 1.72. `PROTOCOL` 1.72. Wordmark **1.7.2**. No migrate. 1.71 file → `LoadFailReason` `'version'`. `World.wires[]` already a list. Dump mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`.
 
 Dump `World.wires`, `Save.smartHold`, sensor origin cells (config + `out` / `inn` / `on` / `left` / `hold` / pulser `prev` / counter `n` `count` / lever `inn` `prev` / day flags), sprinkler `inn`/`hold`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`/`hold`, `World.waterSystems` as those cells, smart-valve segments (`Gate` `'smart'`). Digest: invariant 40 plus every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, every sprinkler unwired vs level, every smart valve held level. Unchanged except fan-in OR. Wired-low still ≠ unwired.
 
@@ -402,7 +415,7 @@ AND / OR / NOT use `Sku.unlock` + `Sku.need` as `ResearchId`. Future germ / weat
 
 ## Illegal
 
-- cycle
+- combinational cycle (gate-to-gate / lamp self). Sequential feedback through lever / pulser / counter `in` is legal
 - two direct paths same `nodeKey(from)` → `nodeKey(to)`
 - wire into an output, or out of an input-only lamp
 - analogue / XOR

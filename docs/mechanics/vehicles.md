@@ -16,8 +16,8 @@ Vehicles I remains. Not collision. Not vehicle-detector. Click-walk speed unchan
 | `src/game/sim/plot.ts` | `Cell` += hangar `silo-seed` `silo-spray` `silo-produce`. `isSolid` += those |
 | `src/game/sim/world.ts` | `World.vehicles` `World.trailers` `World.hangars` `World.seedSilos` `World.spraySilos` `World.produceSilos` `World.nextVehicleId` `World.nextTrailerId`. `Seat.drive`. Cue hangar. Cue vehicle. apply / tick / boom after integrate / `away` |
 | `src/game/sim/log.ts` | `Act.drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.71. dump vehicles + trailers + hangar/silo cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate. `Seat.stride` not in the file |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.71. permit `load` `unload` except guest chest/freezer. permit `stride`. digest += mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` |
+| `src/game/sim/save.ts` | `SAVE_VERSION` 1.72. dump vehicles + trailers + hangar/silo cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. No migrate. `Seat.stride` not in the file |
+| `src/game/sim/mp.ts` | `PROTOCOL` 1.72. permit `load` `unload` except guest chest/freezer. permit `stride`. digest += mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` |
 | `src/game/sim/field.ts` | quad slot + harvest-trailer slot `tickFreshness` |
 | `src/game/sim/intents.ts` | `hangar` `vehicle` `embark` |
 | `src/game/sim/prompt.ts` | hangar / parked vehicle / silo look / delete block. `hangarSiteOk` `siloSiteOk` |
@@ -508,7 +508,7 @@ Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload` `Act.st
 
 ## Save / net
 
-`SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark 1.7.1. No migrate. 1.62 file → `'version'`. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Mill/jam/still `inn`. Chest/freezer/seed-silo/additive-store `out` `hold`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.drive` not in the file — load `{0,0}`. `Seat.stride` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`SAVE_VERSION` 1.72. `PROTOCOL` 1.72. Wordmark 1.7.2. No migrate. 1.71 file → `'version'`. Dump `vehicles` + `nextVehicleId` + `trailers` + `nextTrailerId` + hangar / silo origin cells (`occ` others). Tractor `boom`. Mill/jam/still `inn`. Chest/freezer/seed-silo/additive-store `out` `hold`. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.drive` not in the file — load `{0,0}`. `Seat.stride` not in the file — load `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
 
 ## Guest
 

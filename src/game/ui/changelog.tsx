@@ -24,6 +24,21 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.7.2',
+    name: 'Memory on the wire',
+    summary: 'A lever can listen to itself. Gates still cannot loop.',
+    changes: [
+      {
+        kind: 'feature',
+        text: 'Wires may go back into a lever, pulser, or counter.',
+        notes: [
+          'A gate still cannot loop into another gate. That still says Cannot loop.',
+          'A lever chain waits one moment per step instead of flipping all at once.',
+        ],
+      },
+    ],
+  },
+  {
     id: '1.7.1',
     name: 'QoL Patch I',
     summary: 'Pulser, counter, and day sensor. A wire can throw a lever. The dash shows what you are carrying.',

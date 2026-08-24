@@ -7,7 +7,7 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
 import { lookText } from './look.ts'
-import { counterDial, evalDag, HarvestSensor, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle } from './sensor.ts'
+import { counterDial, evalDag, HarvestSensor, isSeqIn, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle, type WireEnd } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -56,12 +56,12 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.71. PROTOCOL 1.71. Wordmark 1.7.1. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.71)
-    expect(PROTOCOL).toBe(1.71)
+  test('SAVE_VERSION 1.72. PROTOCOL 1.72. Wordmark 1.7.2. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.72)
+    expect(PROTOCOL).toBe(1.72)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.71)
+    expect(s.version).toBe(1.72)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
@@ -73,9 +73,10 @@ describe('1.6 sensors', () => {
   test('New wire that would cycle: no-op.', () => {
     const from = { kind: 'cell' as const, at: A, port: 'out' as const }
     const to = { kind: 'cell' as const, at: B, port: 'in' as const }
-    expect(wouldCycle([], from, to)).toBe(false)
-    expect(wouldCycle([{ from, to }], to, from)).toBe(true)
-    expect(wouldCycle([], from, from)).toBe(true)
+    const combo = () => false
+    expect(wouldCycle([], from, to, combo)).toBe(false)
+    expect(wouldCycle([{ from, to }], to, from, combo)).toBe(true)
+    expect(wouldCycle([], from, from, combo)).toBe(true)
     const w = new World(1)
     ready(w)
     put(w, 'buy-not', A)
@@ -88,6 +89,174 @@ describe('1.6 sensors', () => {
     w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
     expect(w.wires).toHaveLength(1)
     expect(w.seats[0].place).toEqual(place)
+    expect(w.promptHit({ kind: 'port', end: { kind: 'cell', at: A, port: 'in' } })).toEqual({
+      kind: 'blocked',
+      text: 'Cannot loop',
+    })
+  })
+
+  test('Sequential cut through lever / pulser / counter in is legal. Combo cycle Cannot loop. Q0→NOT→Q1 next tick.', () => {
+    const seqSelf = (end: WireEnd) =>
+      isSeqIn(end, new Lever({ shape: 'rect', col: A.col, row: A.row, w: 1, h: 1 }))
+    expect(
+      wouldCycle(
+        [],
+        { kind: 'cell', at: A, port: 'out' },
+        { kind: 'cell', at: A, port: 'in' },
+        seqSelf,
+      ),
+    ).toBe(false)
+    expect(
+      wouldCycle(
+        [],
+        { kind: 'cell', at: A, port: 'out' },
+        { kind: 'cell', at: A, port: 'in' },
+        () => false,
+      ),
+    ).toBe(true)
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    put(w, 'buy-and', B)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
+    w.armWire({ kind: 'cell', at: B, port: 'out' })
+    expect(w.promptHit({ kind: 'port', end: { kind: 'cell', at: A, port: 'in' } })).toEqual({ kind: 'place', text: 'Place' })
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    expect(w.wires).toHaveLength(2)
+    const p = new World(1)
+    ready(p)
+    put(p, 'buy-pulser', A)
+    put(p, 'buy-not', B)
+    p.armWire({ kind: 'cell', at: A, port: 'out' })
+    p.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in' })
+    p.armWire({ kind: 'cell', at: B, port: 'out' })
+    p.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    expect(p.wires).toHaveLength(2)
+    const self = new World(1)
+    ready(self)
+    put(self, 'buy-lever', A)
+    self.armWire({ kind: 'cell', at: A, port: 'out' })
+    self.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    expect(self.wires).toHaveLength(1)
+    const gate = new World(1)
+    ready(gate)
+    put(gate, 'buy-not', A)
+    gate.armWire({ kind: 'cell', at: A, port: 'out' })
+    const gPlace = gate.seats[0].place
+    gate.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    expect(gate.wires).toHaveLength(0)
+    expect(gate.seats[0].place).toEqual(gPlace)
+    expect(gate.promptHit({ kind: 'port', end: { kind: 'cell', at: A, port: 'in' } })).toEqual({
+      kind: 'blocked',
+      text: 'Cannot loop',
+    })
+    const andOr = new World(1)
+    ready(andOr)
+    put(andOr, 'buy-and', A)
+    put(andOr, 'buy-or', B)
+    andOr.armWire({ kind: 'cell', at: A, port: 'out' })
+    andOr.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
+    andOr.armWire({ kind: 'cell', at: B, port: 'out' })
+    const aoPlace = andOr.seats[0].place
+    andOr.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in-l' })
+    expect(andOr.wires).toHaveLength(1)
+    expect(andOr.seats[0].place).toEqual(aoPlace)
+    const q0 = { col: 10, row: 10 }
+    const nAt = { col: 11, row: 10 }
+    const q1 = { col: 12, row: 10 }
+    const clk = { col: 10, row: 11 }
+    const chain = new World(1)
+    ready(chain)
+    put(chain, 'buy-lever', q0)
+    put(chain, 'buy-not', nAt)
+    put(chain, 'buy-lever', q1)
+    put(chain, 'buy-lever', clk)
+    chain.armWire({ kind: 'cell', at: clk, port: 'out' })
+    chain.placeWire({ kind: 'cell', at: clk, port: 'out' }, { kind: 'cell', at: q0, port: 'in' })
+    chain.armWire({ kind: 'cell', at: q0, port: 'out' })
+    chain.placeWire({ kind: 'cell', at: q0, port: 'out' }, { kind: 'cell', at: nAt, port: 'in' })
+    chain.armWire({ kind: 'cell', at: nAt, port: 'out' })
+    chain.placeWire({ kind: 'cell', at: nAt, port: 'out' }, { kind: 'cell', at: q1, port: 'in' })
+    const Q0 = chain.cell(q0)
+    const Q1 = chain.cell(q1)
+    const nt = chain.cell(nAt)
+    if (Q0.kind !== 'lever' || Q1.kind !== 'lever' || nt.kind !== 'not') throw new Error('chain')
+    Q0.on = true
+    Q0.out = 1
+    chain.tick(DT_MAX)
+    expect(nt.out).toBe(0)
+    expect(Q1.on).toBe(false)
+    chain.enqueue({ act: 'toggle', at: clk })
+    chain.seats[0].actor.x = clk.col + 0.5
+    chain.seats[0].actor.y = clk.row + 0.5
+    chain.tick(DT_MAX)
+    expect(Q0.on).toBe(false)
+    expect(Q1.on).toBe(false)
+    chain.tick(DT_MAX)
+    expect(Q1.on).toBe(true)
+  })
+
+  test('One clock from 9 (1001) goes to 0 (0000) through sequential feedback.', () => {
+    const w = new World(1)
+    ready(w)
+    const q0 = { col: 10, row: 10 }
+    const q1 = { col: 11, row: 10 }
+    const q2 = { col: 12, row: 10 }
+    const q3 = { col: 13, row: 10 }
+    const n1 = { col: 11, row: 11 }
+    const n2 = { col: 12, row: 11 }
+    const a01 = { col: 10, row: 12 }
+    const a23 = { col: 11, row: 12 }
+    const is9 = { col: 12, row: 12 }
+    const wrap = { col: 13, row: 12 }
+    const clk = { col: 10, row: 13 }
+    put(w, 'buy-lever', q0)
+    put(w, 'buy-lever', q1)
+    put(w, 'buy-lever', q2)
+    put(w, 'buy-lever', q3)
+    put(w, 'buy-lever', clk)
+    put(w, 'buy-not', n1)
+    put(w, 'buy-not', n2)
+    put(w, 'buy-and', a01)
+    put(w, 'buy-and', a23)
+    put(w, 'buy-and', is9)
+    put(w, 'buy-and', wrap)
+    const wire = (from: { col: number; row: number }, fp: 'out', to: { col: number; row: number }, tp: 'in' | 'in-l' | 'in-r') => {
+      w.armWire({ kind: 'cell', at: from, port: fp })
+      w.placeWire({ kind: 'cell', at: from, port: fp }, { kind: 'cell', at: to, port: tp })
+    }
+    wire(q0, 'out', a01, 'in-l')
+    wire(n1, 'out', a01, 'in-r')
+    wire(n2, 'out', a23, 'in-l')
+    wire(q3, 'out', a23, 'in-r')
+    wire(a01, 'out', is9, 'in-l')
+    wire(a23, 'out', is9, 'in-r')
+    wire(is9, 'out', wrap, 'in-l')
+    wire(clk, 'out', wrap, 'in-r')
+    wire(q1, 'out', n1, 'in')
+    wire(q2, 'out', n2, 'in')
+    wire(clk, 'out', q0, 'in')
+    wire(wrap, 'out', q3, 'in')
+    expect(w.wires).toHaveLength(12)
+    const bits = [q0, q1, q2, q3].map(at => {
+      const c = w.cell(at)
+      if (c.kind !== 'lever') throw new Error('lever')
+      return c
+    })
+    bits[0].on = true
+    bits[0].out = 1
+    bits[0].prev = 0
+    bits[3].on = true
+    bits[3].out = 1
+    bits[3].prev = 0
+    w.tick(DT_MAX)
+    expect(bits.map(b => b.on)).toEqual([true, false, false, true])
+    w.enqueue({ act: 'toggle', at: clk })
+    w.seats[0].actor.x = clk.col + 0.5
+    w.seats[0].actor.y = clk.row + 0.5
+    w.tick(DT_MAX)
+    expect(bits.map(b => b.on)).toEqual([false, false, false, false])
   })
 
   test('Button: high exactly BUTTON_PULSE ticks.', () => {
@@ -116,6 +285,7 @@ describe('1.6 sensors', () => {
   test('evalDag lever to lamp.', () => {
     const lever = new Lever({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
     lever.on = true
+    lever.out = 1
     const lamp = new Lamp({ shape: 'rect', col: 0, row: 1, w: 1, h: 1 })
     const sensors = new Map<string, typeof lever | typeof lamp>([
       ['0,0', lever],

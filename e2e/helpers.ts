@@ -72,18 +72,13 @@ export async function openBuild(page: Page): Promise<void> {
   await expect(title).toBeVisible({ timeout: 10_000 })
 }
 
-export async function armSku(
-  page: Page,
-  sku: string | RegExp,
-  tab: 'Water' | 'Vehicles' = 'Water',
-): Promise<void> {
+export async function armSku(page: Page, sku: string, tab: 'Water' | 'Vehicles' = 'Water'): Promise<void> {
   await openBuild(page)
   await page.getByRole('tab', { name: tab }).click()
-  const name = typeof sku === 'string' ? skuName(sku) : sku
-  await page.getByRole('button', { name }).click()
+  await page.getByRole('button', { name: skuButton(sku) }).click()
 }
 
-function skuName(sku: string): RegExp {
+function skuButton(sku: string): RegExp {
   const m = sku.match(/^(.*) (\d+)$/)
   if (m === null) return new RegExp(sku)
   return new RegExp(`^${m[1]}(?: placing)? ${m[2]}$`)

@@ -288,6 +288,7 @@ import {
   storeRaw,
   vehicleRaw,
   skuKind,
+  isSeqIn,
   wouldCycle,
   type Sensor,
   type SmartHold,
@@ -1660,7 +1661,13 @@ export class World {
       this.ping()
       return
     }
-    if (wouldCycle(this.wires, from, to)) return
+    if (
+      wouldCycle(this.wires, from, to, end =>
+        isSeqIn(end, end.kind === 'cell' && this.inWorld(end.at) ? this.cell(end.at) : undefined),
+      )
+    ) {
+      return
+    }
     this.wires.push({ from, to })
     this.act.place = { kind: 'none' }
     this.ping()

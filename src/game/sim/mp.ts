@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.71
+export const PROTOCOL = 1.72
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }

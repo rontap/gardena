@@ -2,6 +2,13 @@
 
 History. Not current contracts.
 
+## 2026-08-24 — 1.7.2 Memory on the wire
+
+[[mechanics/sensors]] [[ui/changelog]] [[architecture/save]]
+
+- Combinational cycles still **Cannot loop**. Sequential feedback through lever / pulser / counter `in` is legal. Combo this tick from last-tick memories; then sequential update.
+- Wordmark **1.7.2**. `SAVE_VERSION` / `PROTOCOL` **1.72**. No migrate. 1.71 file → `'version'`.
+
 ## 2026-08-24 — 1.7.1 QoL Patch I
 
 [[mechanics/sensors]] [[mechanics/vehicles]] [[mechanics/machines]] [[mechanics/inventory]] [[mechanics/trees]] [[ui/changelog]] [[architecture/save]]

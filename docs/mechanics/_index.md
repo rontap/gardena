@@ -96,7 +96,7 @@ See [[canon]].
 69. `SUGAR_MILL` 5 / L < `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.
 70. Barrel is grapes → wine only. No whisky. No migrate.
 71. Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.
-72. `SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark 1.7.1. No migrate. 1.62 file → `'version'`. Dump `vehicles` + `trailers` + hangar/silo cells + `wires` + sensor cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold` + pulser `prev`/`out` + counter `n`/`count`/`out` + day flags/`out`/`hold` + lever `inn`/`prev`/`on`/`out`. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every wire, every sensor output, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.stride` not in the file.
+72. `SAVE_VERSION` 1.72. `PROTOCOL` 1.72. Wordmark 1.7.2. No migrate. 1.71 file → `'version'`. Dump `vehicles` + `trailers` + hangar/silo cells + `wires` + sensor cells + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold` + pulser `prev`/`out` + counter `n`/`count`/`out` + day flags/`out`/`hold` + lever `inn`/`prev`/`on`/`out`. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every wire, every sensor output, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`. `Seat.stride` not in the file.
 73. `VehicleKind` is `'quad' | 'tractor'`. Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom field. Tractor no slots, `hitch: TrailerId | 'none'`, `boom: 3 | 5` default 5, persist, survives trailer swap. Fuel is `0..1` on the vehicle, not an Item. Trailer is stored or attached, never loose. `TRAILER_CAP` 100 is the only cargo cap.
 74. Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `contracts` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (contracts apply).
 75. Guests: hangar cue HUD, `buy-hangar` + three silo SKUs in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, delete empty hangar, `load`/`unload` mill/jam/still/compost/seed-silo/additive-store. Guest `swapChest` still not. Guest chest/freezer Load/Unload no-op.
@@ -116,16 +116,16 @@ See [[canon]].
 89. `PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `contracts`; no `tool-contracts` `machine-contracts` `bulk-buying`. `contracts` max 3. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_FLOOR` `0.10 / 0.20 / 0.30`. `industrial` max 3.
 90. `CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 91. Same seed + cmds → equal digest including wires and outputs.
-92. New wire that would cycle: no-op.
+92. New wire that would combinational-cycle: no-op. Sequential feedback through lever / pulser / counter `in` is legal.
 93. Button: high exactly `BUTTON_PULSE` ticks. Pulser: `out` 1 exactly 1 tick on `inn` 0→1, else 0; then `prev = inn`.
 94. Water sensor hold: output edge then hold `SENSOR_HOLD` ticks.
 95. Unwired sprinkler still pours after Smart Irrigation.
 96. Unwired smart valve does not conduct.
 97. Fan-out: one lever drives two lamps. Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is. Toggle A→B: wires length 0.
 98. Guest `placeWire` permitted; guest `placePipe` still not.
-99. `SAVE_VERSION` 1.71; 1.62 file → `'version'`.
+99. `SAVE_VERSION` 1.72; 1.71 file → `'version'`.
 100. 3×3 does not read plants outside the square; center building is not a plant.
-101. Signal is `0 | 1`. Graph is a DAG. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`.
+101. Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter `in` is legal. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update.
 102. `PotStill` `RectBase` `w = 2` `h = 1` **and** prop `48×24` occupying both cells, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Origin-only paint + `TILE/24` scale shows the full 48-wide art.
 103. `inn === 1` freezes mill/jam/still ticks (progress + still water pull). Dump and Unload still fill.
 104. Unwired mill/jam/still `inn` 0 ticks (enabled).
@@ -135,7 +135,7 @@ See [[canon]].
 108. Tractor harvest on mill takeup: Load sugar drop.
 109. Guest Unload chest no-op. Guest Load chest no-op.
 110. Digest includes mill/jam/still `inn` and chest/freezer/seed-silo/additive-store `out`.
-111. `SAVE_VERSION` 1.71. `PROTOCOL` 1.71. Wordmark 1.7.1. No migrate. 1.62 file → `'version'`.
+111. `SAVE_VERSION` 1.72. `PROTOCOL` 1.72. Wordmark 1.7.2. No migrate. 1.71 file → `'version'`.
 112. Sprinkler VFX flips on the tick the pour changes. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
 113. Counter: each tick `inn === 1`, `count += 1`; `count >= n` → `out = 1` `count = 0` else `out = 0`. `n` default 1, min 1, max `COUNTER_MAX` 9999. Tune out of range no-op. Changing `n` keeps `count`. Dial from `pct = count / n` vs 0 / 25% / 50% / 75% / 100% (`s0`…`s4`); this tick `out === 1` → `s4`. Not `floor(4 * count / n)`.
 114. Day sensor: four flags, default `day` on others off. Raw 1 iff `clock.phase()` is a true flag. All off → raw 0. `SENSOR_HOLD`. No 3×3.

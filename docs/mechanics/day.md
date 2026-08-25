@@ -27,6 +27,6 @@ On seam, before any field tick:
 2. `money -= tax()` — [[mechanics/expansion]]. May go negative.
 3. `seam = recap`. Play frozen until `dismissRecap()` — [[mechanics/family]].
 
-`Recap`: ended `day`, `money` after tax, `stipend`, `died`, `harvests`, `research` finished that day, `tax`. No `recipient` on `Recap`.
+`Recap`: ended `day`, `money` after tax, `stipend`, `died`, `harvests`, `research` finished that day, `tax`, `contracts: HistoryEntry[]`. No `recipient` on `Recap`. Recap shows contract outcomes and that a new board is up — [[mechanics/contracts]].
 
 Then `tally` resets. `dismissRecap()` is the only recap exit: +1 skill point to each member, then play, `banner = 2` s — preference.

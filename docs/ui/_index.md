@@ -16,6 +16,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/store]]
 - [[ui/cheat]]
 - [[ui/market]]
+- [[ui/contracts]]
 - [[ui/almanac]]
 - [[ui/family]]
 - [[ui/callout-hover]]

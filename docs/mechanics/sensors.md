@@ -56,7 +56,7 @@ Do not create `src/` here.
 | `unlock-smart-irrigation` | automation $32 / 70s, reveal `unlock-sensors` | preference |
 | `VERTEX_HIT` | 0.3 | existing. Delete wire: nearest bezier |
 
-`Sku.tab` `automation`. `machine-contracts` applies. Identifiers only after this table.
+`Sku.tab` `automation`. `haggling` applies. Identifiers only after this table.
 
 Assumption: `unlock-advanced-sensors` $22 / 50s automation, `effect` `feature`.
 

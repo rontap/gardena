@@ -76,9 +76,9 @@ Do not create `src/` here.
 | `SILO_SPRAY_PRICE` | 70 | preference. `skuPrice` `buy-silo-spray` |
 | `SILO_PRODUCE_PRICE` | 70 | preference. `skuPrice` `buy-silo-produce` |
 | `unlock-vehicles` | automation $32 / 70s, reveal `unlock-irrigation` | preference |
-| `buy-hangar` | $80 automation | preference. `contracts` applies |
+| `buy-hangar` | $80 automation | preference. `haggling` applies |
 
-Hangar-buys (`QUAD_PRICE` `TRACTOR_PRICE` three trailer prices) are not `skuPrice`. `contracts` does not discount them. Silo SKUs are `skuPrice` (contracts apply).
+Hangar-buys (`QUAD_PRICE` `TRACTOR_PRICE` three trailer prices) are not `skuPrice`. `haggling` does not discount them. Silo SKUs are `skuPrice` (haggling applies).
 
 Tractor boom width is the tractor field `boom: 3 | 5`, default 5. Not a `BOOM_WIDE` constant.
 
@@ -201,9 +201,9 @@ Stored arm has no `driver`. Field `driver` is `SeatId | 'none'`. At most one `po
 
 `unlock-vehicles` automation, `gate` `{ kind: 'none' }`, `effect` `unlock-sku` `buy-hangar`. Reveals after `unlock-irrigation`. Does not grant a Quad / tractor / trailer SKU. No new research row.
 
-`buy-hangar` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` (contracts). Guest `GUEST_BUILD`.
+`buy-hangar` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` (haggling). Guest `GUEST_BUILD`.
 
-`buy-silo-seed` `buy-silo-spray` `buy-silo-produce` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` `SILO_*_PRICE` (contracts). Guest `GUEST_BUILD`.
+`buy-silo-seed` `buy-silo-spray` `buy-silo-produce` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` `SILO_*_PRICE` (haggling). Guest `GUEST_BUILD`.
 
 Quad / tractor / trailers are hangar-buy only. `Act.buyVehicle` / `Act.buyTrailer`. No `Place` ghost. No shop SKU.
 
@@ -231,7 +231,7 @@ Pad arrows: view-only, only while local driver. Not sim. Not logged. `Act.dock` 
 
 ## Silos
 
-Shop SKUs. 2×3, door south, no rotate, same instance all 6 cells. Origin = clicked NW, extends east `SILO_W` and south `SILO_H`. `siloSiteOk` like hangarSiteOk but 2×3. Do not call hangarSiteOk for silo SKUs. Pad: `siloPad`. Automation, `unlock-vehicles`, `contracts`.
+Shop SKUs. 2×3, door south, no rotate, same instance all 6 cells. Origin = clicked NW, extends east `SILO_W` and south `SILO_H`. `siloSiteOk` like hangarSiteOk but 2×3. Do not call hangarSiteOk for silo SKUs. Pad: `siloPad`. Automation, `unlock-vehicles`, `haggling`.
 
 | class | `kind` | sku | $ | look |
 |---|---|---|---|---|

@@ -34,7 +34,7 @@ export function isTreeId(id: CropId): id is TreeId {
 }
 
 export function isAnnualId(id: CropId): id is AnnualId {
-  return !isTreeId(id)
+  return ANNUAL_IDS.some(a => a === id)
 }
 
 export type TileId = 'paved' | 'brick' | 'cobble'
@@ -85,7 +85,7 @@ export type PlayerSkillId =
 export type HusbandSkillId =
   | 'research-speed'
   | 'machinery'
-  | 'contracts'
+  | 'haggling'
   | 'forecast'
   | 'tax'
   | 'water-study'
@@ -96,6 +96,7 @@ export type DaughterSkillId =
   | 'heirloom'
   | 'bio'
   | 'industrial'
+  | 'broker'
   | 'open-late'
   | 'open-24'
   | 'jam'
@@ -131,6 +132,7 @@ export type ResearchId =
   | 'unlock-sensors'
   | 'unlock-advanced-sensors'
   | 'unlock-smart-irrigation'
+  | 'unlock-contracts'
 
 export type SkuId =
   | 'pack-carrot'

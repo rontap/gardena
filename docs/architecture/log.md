@@ -8,7 +8,7 @@ Internal enabler. No player-visible change. Not save UI. Not replay viewer. Mult
 
 | file | owns |
 |---|---|
-| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` `armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest` `tuneCounter` `tuneDay` |
+| `src/game/sim/log.ts` | `Act`, `Cmd`, `XY`, `LogSink`, `MemorySink`, `WorkerSink`. `Act.drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` `armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest` `tuneCounter` `tuneDay` `acceptContract` `cancelContract` `reorderContract` |
 | `src/game/sim/log.worker.ts` | worker. Holds `Cmd[]`. Does not apply. Does not own `World`. |
 | `src/game/sim/world.ts` | `World.now`, `World.log`, `dispatch`, `apply`. Wrappers. |
 
@@ -62,7 +62,7 @@ Replay calls `apply` only.
 
 Public UI methods wrap `dispatch` so call sites stay:
 
-`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` `armWire` `placeWire` `placeSmartValve` `deleteWire` `tuneWater` `tuneHarvest` `tuneCounter` `tuneDay`
+`click` `clickValve` `buy` `buyPacks` `placePipe` `placeSprinkler` `deletePipe` `deleteSprinkler` `deleteBuilding` `expand` `startResearch` `pickSkill` `sellAll` `nudgeOffered` `swap` `swapChest` `tuneSprinkler` `openHud` `closeHud` `armDelete` `cancelPlace` `rotatePlace` `dismissRecap` `ackCue` `rightClick` `unlockAll` `cheatMoney` `cheatPoints` `toggleCheatResearch` `drive` `stride` `buyVehicle` `buyTrailer` `deploy` `embark` `disembark` `dock` `swapVehicle` `swapTrailer` `refill` `setBoom` `load` `unload` `armWire` `placeWire` `placeSmartValve` `deleteWire` `tuneWater` `tuneHarvest` `tuneCounter` `tuneDay` `acceptContract` `cancelContract` `reorderContract`
 
 `enqueue` is a mutator. Tests call it. `apply` of `click` / `clickValve` / `rightClick` (drop) calls `enqueue`. It does not wrap `dispatch`.
 
@@ -180,9 +180,12 @@ Cmd =
   | { a: typeof Act.stride; t; p; x: -1 | 0 | 1; y: -1 | 0 | 1 }
   | { a: typeof Act.load; t; p }
   | { a: typeof Act.unload; t; p }
+  | { a: typeof Act.acceptContract; t; p; c: ContractId }
+  | { a: typeof Act.cancelContract; t; p; c: ContractId }
+  | { a: typeof Act.reorderContract; t; p; c: ContractId; d: 1 | -1 }
 ```
 
-`Act.drive` `'V'`. `Act.stride` `'K'`. `pickSkill` stays `'k'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. `Act.load` `'L'`. `Act.unload` `'U'`. `Act.armWire` `'R'`. `Act.placeWire` `'N'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`. `Act.tuneCounter` `'M'`. `Act.tuneDay` `'O'`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Load/unload no coord; floor of driven vehicle. [[mechanics/vehicles]]. Cycle `placeWire` no-op. [[mechanics/sensors]].
+`Act.drive` `'V'`. `Act.stride` `'K'`. `pickSkill` stays `'k'`. `Act.buyVehicle` `'Q'`. `Act.buyTrailer` `'T'`. `Act.deploy` `'D'`. `Act.embark` `'B'`. `Act.disembark` `'E'`. `Act.dock` `'P'`. `Act.swapVehicle` `'H'`. `Act.swapTrailer` `'A'`. `Act.refill` `'F'`. `Act.setBoom` `'W'`. `Act.load` `'L'`. `Act.unload` `'U'`. `Act.armWire` `'R'`. `Act.placeWire` `'N'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`. `Act.tuneCounter` `'M'`. `Act.tuneDay` `'O'`. `Act.acceptContract` `'J'`. `Act.cancelContract` `'Y'`. `Act.reorderContract` `'Z'`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Load/unload no coord; floor of driven vehicle. [[mechanics/vehicles]]. Cycle `placeWire` no-op. [[mechanics/sensors]]. Board generation is not a cmd. [[mechanics/contracts]].
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart. Not one mushy target.
 
@@ -207,8 +210,12 @@ Map `placePipe` / `placeSprinkler` / `deletePipe` / `deleteSprinkler` / `clickVa
 - Vitest using a Worker
 - logging sips / rot / weed / ripen / tree drop / grass / mill / jam / still / barrel / vehicle ticks / boom / sensor eval / stride integrate
 - `Act.load` / `Act.unload` with a coord
+- logging board generation
+- `Act.acceptContract` `'K'` / `Act.cancelContract` `'X'` / `Act.reorderContract` `'O'`
 - logging panel / camera / camera follow / hover / lens / hangar select
 - `confirmPlace` as a cmd
 - silent apply (dispatch without log, or a silent flag)
 - `enqueue` wrapping `dispatch`
 - `Math.random` except `World` seed when omitted
+
+Assumption: spec `K`/`X`/`O` collided with `stride` / `resetCounter` / `tuneDay`; `J` `Y` `Z` are the remaining uppercase.

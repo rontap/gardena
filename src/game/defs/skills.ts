@@ -54,7 +54,7 @@ export function extraGrowUp1(crop: CropId, has: (id: SkillId) => boolean): numbe
 export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
     'research-speed',
     'machinery',
-    'contracts',
+    'haggling',
     'forecast',
     'tax',
     'water-study',
@@ -65,6 +65,7 @@ export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'heirloom',
     'bio',
     'industrial',
+    'broker',
     'open-late',
     'open-24',
     'jam',
@@ -85,7 +86,9 @@ export type SkillEffect =
     | { kind: 'tend' }
     | { kind: 'vanilla-tending' }
     | { kind: 'research-speed'; mul: 1.05 }
-    | { kind: 'contracts' }
+    | { kind: 'haggling' }
+    | { kind: 'broker' }
+    | { kind: 'industrial' }
     | { kind: 'tax'; mul: 0.98 }
     | { kind: 'water-study' }
     | { kind: 'land-study' }
@@ -162,13 +165,13 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         3,
         {kind: 'research-speed', mul: 1.05},
     ),
-    contracts: row(
-        'contracts',
+    haggling: row(
+        'haggling',
         'husband',
-        'Contracts',
+        'Haggling',
         'Utility and automation goods in the store cost less. Each rank knocks $1 off the price.',
         3,
-        {kind: 'contracts'},
+        {kind: 'haggling'},
     ),
     forecast: row('forecast', 'husband', 'Weather forecast', "Does nothing yet. Will show the next day's weather.", 1, {
         kind: 'dummy',
@@ -317,9 +320,23 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         3,
         {kind: 'bio', mul: 1.04},
     ),
-    industrial: row('industrial', 'daughter', 'Industrial farmer', 'Does nothing yet.', 3, {
-        kind: 'dummy',
-    }),
+    industrial: row(
+        'industrial',
+        'daughter',
+        'Industrial farmer',
+        'Completed contracts pay more. Each rank adds 3%.',
+        3,
+        {kind: 'industrial'},
+    ),
+    broker: row(
+        'broker',
+        'daughter',
+        'Broker',
+        'The buyer board grows. Rank I adds one offer. Rank II adds one offer and one running contract.',
+        2,
+        {kind: 'broker'},
+        {kind: 'research', id: 'unlock-contracts'},
+    ),
     'open-late': row(
         'open-late',
         'daughter',
@@ -377,8 +394,14 @@ export function skillBlurb(id: SkillId, tier: number): string {
             return `Machine work finishes ${5 * tier}% sooner.`
         case 'research-speed':
             return `Research jobs finish ${5 * tier}% sooner.`
-        case 'contracts':
+        case 'haggling':
             return `Utility and automation goods in the store cost $${tier} less. Never below $1.`
+        case 'industrial':
+            return `Completed contracts pay ${3 * tier}% more.`
+        case 'broker':
+            return tier === 1
+                ? 'The buyer board grows by one offer.'
+                : 'The buyer board grows by one offer and you can run one more contract.'
         case 'tax':
             return `The bill at the end of the day is ${2 * tier}% lighter. You still pay at least $1.`
         case 'saleswoman':

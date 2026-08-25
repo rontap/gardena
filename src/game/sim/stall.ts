@@ -49,10 +49,6 @@ export function goodIx(id: StallGoodId): number {
   return STALL_IDS.indexOf(id)
 }
 
-export function tenths(n: number): number {
-  return Math.floor(n * 10)
-}
-
 function saleMul(id: CropId, mods: readonly Modifier[]): number {
   return mods.filter(m => m.crop === undefined || m.crop === id).reduce((a, m) => a * m.saleMul, 1)
 }
@@ -67,11 +63,6 @@ export function stallRarity(id: StallGoodId, rarity: Rarity): number {
   return raritySale(CROPS[id], rarity)
 }
 
-export function rate(offered: number, market: number): number {
-  if (tenths(offered) >= tenths(1.75 * market)) return 0
-  return Math.min(0.2, (0.1 * market) / offered)
-}
-
 function emptyBins(): { [K in Rarity]: BioBins } {
   return {
     common: { organic: 0, synth: 0 },
@@ -83,19 +74,13 @@ function emptyBins(): { [K in Rarity]: BioBins } {
 
 export class StallGood {
   readonly id: StallGoodId
-  offered: number
-  market: number
-  target: number
-  acc: number
+  sat: number
   readonly stock: { [K in Rarity]: BioBins }
   readonly worth: { [K in Rarity]: BioBins }
 
-  constructor(id: StallGoodId, x: number) {
+  constructor(id: StallGoodId) {
     this.id = id
-    this.offered = x
-    this.market = x
-    this.target = x
-    this.acc = 0
+    this.sat = 0
     this.stock = emptyBins()
     this.worth = emptyBins()
   }
@@ -128,10 +113,8 @@ export function binCount(g: StallGood): number {
 
 export type StallMap = { [K in StallGoodId]: StallGood }
 
-export type StallSale = { good: StallGoodId; rarity: Rarity; money: number }
-
-export function makeStall(id: StallGoodId, mods: readonly Modifier[]): StallGood {
-  return new StallGood(id, stallX(id, mods))
+export function makeStall(id: StallGoodId): StallGood {
+  return new StallGood(id)
 }
 
 export function crateCells(rng: Rng, stall: StallMap): { id: StallGoodId; at: Coord }[] {

@@ -37,6 +37,7 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-better-tools | Better gardening tools | utilities | 16 | 45 | start | Unlocks Better shovel and Large bucket in the general store. |
 | unlock-large-box | Fruit boxes | utilities | 17 | 50 | start | Unlocks Large fruit box in the general store. |
 | unlock-chest | Chest | utilities | 12 | 40 | start | Unlocks Chest in the general store. |
+| unlock-contracts | Contracts | utilities | 8 | 30 | start | The stall can take orders from buyers. |
 | unlock-pickaxe | Pickaxes | utilities | 0 | 40 | start | Unlocks Pickaxe and Hardened pickaxe in the general store. |
 | unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
 | unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge. |
@@ -57,7 +58,7 @@ Blurbs as `RESEARCH[id].blurb`.
 
 `unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
 
-`unlock-sensors` `effect` `feature`. `unlock-advanced-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Assumption: no new `ResearchGate` arm. Assumption: `unlock-advanced-sensors` $22 / 50s.
+`unlock-sensors` `effect` `feature`. `unlock-advanced-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. `unlock-contracts` `effect` `feature`. Board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Assumption: no new `ResearchGate` arm. Assumption: `unlock-advanced-sensors` $22 / 50s.
 
 `unlock-sensors` cell SKUs (lever, button, lamp, pulser, counter, water, fert, harvest, water-system, day): `show` + `unlock` `unlock-sensors`, `need: 'none'`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: unlock-sensors` — visible after Sensors; buy after Advanced sensors. `buy-smart-valve` `buy-vehicle-detector`: `show: unlock-sensors`, `unlock: unlock-smart-irrigation`, `need: unlock-sensors`. `skuShown` Sensors shelf (`logic`) after `unlock-sensors`. Smart Irrigation cards shown after Sensors, buy after both.
 
@@ -83,7 +84,7 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 
 `buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. Assumption: `buy-sugar` tab utility. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 
-`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `contracts` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-irrigation`, buy `unlock-vehicles`, contracts apply. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, contracts do not discount. — [[mechanics/vehicles]]
+`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `haggling` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-irrigation`, buy `unlock-vehicles`, haggling applies. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, haggling does not discount. — [[mechanics/vehicles]]
 
 `pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]].
 

@@ -224,6 +224,17 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Chest in the general store.',
         effect: {kind: 'unlock-sku', sku: 'buy-chest'},
     },
+    'unlock-contracts': {
+        id: 'unlock-contracts',
+        name: 'Contracts',
+        tree: 'utilities',
+        cost: 8,
+        seconds: 30,
+        reveal: 'start',
+        gate: {kind: 'none'},
+        blurb: 'The stall can take orders from buyers.',
+        effect: {kind: 'feature'},
+    },
     'unlock-expand': {
         id: 'unlock-expand',
         name: 'Unlock land',

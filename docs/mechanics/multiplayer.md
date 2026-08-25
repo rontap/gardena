@@ -59,7 +59,7 @@ Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
 
 House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
 
-**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest/freezer `swapChest`, chest/freezer `load`/`unload`, sprinkler tune, stall `nudgeOffered`, recap dismiss, cheat, New/Load/Upload. Guest Unload chest no-op.
+**Guests may not:** Research start, Family pick, expand, pipes, valves, sprinklers, tiles, fences, chest/freezer `swapChest`, chest/freezer `load`/`unload`, sprinkler tune, stall `nudgeOffered`, `acceptContract` `cancelContract` `reorderContract`, recap dismiss, cheat, New/Load/Upload. Guest Unload chest no-op. Guest consign fills contract bins.
 
 Guest never `writeSlot` for a hosted farm.
 

@@ -31,7 +31,7 @@ List **all** `World.trailers`, array order. Each row: icon by kind, status **Sto
 
 ### Buy rows
 
-Not shop SKUs. Not `skuPrice`. `contracts` does not discount. Click hangar XY. Poor / not researched: sim no-op. No toast.
+Not shop SKUs. Not `skuPrice`. `haggling` does not discount. Click hangar XY. Poor / not researched: sim no-op. No toast.
 
 | label | icon | `Coin` |
 |---|---|---|
@@ -184,7 +184,7 @@ Silo: look name only. No prompt act. No dialog. No cue.
 
 ## Shop / place
 
-Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on confirm. `skuPrice` (contracts).
+Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on confirm. `skuPrice` (haggling).
 
 | sku | `skuLabel` | `skuDesc` | place / pulse |
 |---|---|---|---|

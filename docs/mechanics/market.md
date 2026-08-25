@@ -1,6 +1,6 @@
 # Market
 
-Walk fruit, sugar, and machine goods to the truck, open Market. Stall picture, a count per crop, **Sell all** for one number. That number already includes freshness and rarity.
+Walk fruit, sugar, and machine goods to the truck, open Market. Overlay **Stall** | **Contracts**. Stall tab unchanged: picture, a count per crop, **Sell all** for one number. That number already includes freshness and rarity. Board [[mechanics/contracts]] [[ui/contracts]].
 
 ## Hours
 
@@ -38,6 +38,8 @@ Jam / oil / flour / extract: one bin, `worth += count × unitSale`. No rarity, n
 
 Seeds illegal. Empty box: no-op, hand still the box. Wrong tool: speech, hand unchanged.
 
+Consign fills `contracts.active` in array order, then the stall. A full bin passes through. A unit that `Accepts` and `filled < amount` is contract-bound: it does not enter `StallGood.worth` and does not raise `sat`. Freshness-0 fruit skips bins and consigns to the stall. Miss / cancel remainders enter `worth` and raise `sat` — [[mechanics/contracts]].
+
 `StallGoodId` = `CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'`. Illegal: any other id. Illegal: `'berry'`. Illegal: whisky.
 
 Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `fruit.bio`. Sugar / jam / oil / flour / extract: stock + worth only. Spirit / wine: stock + worth per rarity.
@@ -59,6 +61,14 @@ Then at `marketGain`, not crop `Modifier`:
 - bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar and machine goods do not rot
 
-Sell all pays `marketGain`, clears stock, money += gain. One button. One number.
+Saturation last, per good, over that subtotal. [[mechanics/saturation]]. Clearance `$1` exempt. `marketGain()` is the paid total. At `sat = 0` it equals this number.
+
+Consign still accumulates `worth` untouched except contract-bound units, which skip `worth` and `sat`. Saturation is sampled at Sell all, never at consign. Miss / cancel remainders do raise `sat`.
+
+`World.marketQuote(): SellAllQuote`. Panel does no arithmetic.
+
+Sell all pays `marketGain`, bumps `sat` by `V / SAT_DEPTH` clamp 1, clears stock, money += gain. One button. One number.
 
 Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale`.
+
+Deleted: `DYNAMIC_MARKET`, `nudgeOffered`, `World.sales`, `StallGood.offered` / `market` / `target` / `acc`, `rate()`, `DynamicMarketRows`. Dummy save fields stay.

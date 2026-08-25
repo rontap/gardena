@@ -106,7 +106,7 @@ describe('vehicles I', () => {
     expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
   })
 
-  test('Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `contracts` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (contracts apply).', () => {
+  test('Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `haggling` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (haggling applies).', () => {
     const w = farm()
     const before = w.money
     w.buyVehicle(AT, 'quad')
@@ -115,7 +115,7 @@ describe('vehicles I', () => {
     expect(w.money).toBe(before - QUAD_PRICE - QUAD_PRICE)
     expect(SKUS['buy-hangar'].price).toBe(80)
     expect(SKUS['buy-hangar'].tab).toBe('automation')
-    w.family.husband.owned.set('contracts', 2)
+    w.family.husband.owned.set('haggling', 2)
     expect(w.skuPrice('buy-hangar')).toBe(78)
     expect(QUAD_PRICE).toBe(150)
     w.buyVehicle(AT, 'tractor')
@@ -670,7 +670,7 @@ describe('vehicles II', () => {
     w.buyTrailer(AT, 'seed')
     expect(w.money).toBe(before - TRACTOR_PRICE - TRAILER_SEED_PRICE)
     expect(SKUS['buy-silo-seed'].price).toBe(SILO_SEED_PRICE)
-    w.family.husband.owned.set('contracts', 2)
+    w.family.husband.owned.set('haggling', 2)
     expect(w.skuPrice('buy-silo-seed')).toBe(68)
     expect(TRACTOR_PRICE).toBe(250)
     expect(TRAILER_HARVEST_PRICE).toBe(100)

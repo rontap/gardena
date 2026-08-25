@@ -46,7 +46,7 @@ StallGoodId =
 
 ## Buildings
 
-1×1 except still. Place like chest. Still: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells. Pay on confirm. Disarm. Automation tab. `machine-contracts`. Guest may shop + place + `delete` building.
+1×1 except still. Place like chest. Still: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building.
 
 | class | `kind` | sku | $ | unlock |
 |---|---|---|---|---|
@@ -90,7 +90,7 @@ Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
 
 Illegal: `count` on sugar. Merge: weighted `unitSale` by liters; `liters` sums; `capacityLiters` sums.
 
-`SUGAR_BAG` 2 L. Mill output `unitSale` `SUGAR_MILL` 5 / L. Shop `buy-sugar` `SUGAR_SHOP` 8 / L, $16 for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. Tool-contracts. Does not arm.
+`SUGAR_BAG` 2 L. Mill output `unitSale` `SUGAR_MILL` 5 / L. Shop `buy-sugar` `SUGAR_SHOP` 8 / L, $16 for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
 
 Growing + milling cane is cheaper per liter than shop (`SUGAR_MILL < SUGAR_SHOP`). Cane fruit also sells as fruit.
 

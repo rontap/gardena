@@ -20,4 +20,4 @@ Tune prompts: **Tune counter** / **Tune day sensor**.
 
 `PULSER_PRICE` `COUNTER_PRICE` `SENSOR_DAY_PRICE`. AND / OR / NOT: `unlock-advanced-sensors`. Pulser / counter / day: `unlock-sensors`.
 
-`Sku.tab` `automation`. `machine-contracts`. Almanac **Sensors**: Overview, then lever. Tab click lands Overview. Smart valve and sprinklers on Almanac **Water systems**. Copy [[ui/almanac]].
+`Sku.tab` `automation`. `haggling`. Almanac **Sensors**: Overview, then lever. Tab click lands Overview. Smart valve and sprinklers on Almanac **Water systems**. Copy [[ui/almanac]].

@@ -97,13 +97,15 @@ Host input: `dispatch` locally; those cmds are in that bundle. Guest input: `int
 
 Guests are behind by ~1 RTT, not divergent. A stalled guest fast-forwards queued bundles. They do not hold the others. Gap > 5s wall → resync.
 
+Guest `acceptContract` / `cancelContract` / `reorderContract` are dropped by the sequencer and never enter a bundle. Guest consign at the truck still fills contract bins.
+
 ## Pause
 
 Net flag. Not a `Cmd`. Not in `Save`. Host stops bundling while paused. Any player may toggle. Join / resync forces pause until `ready`. Host unpauses on join fail too.
 
 ## Digest
 
-Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, plus every trailer `id` `kind` `pose` hopper or `slots`, plus every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, sprinkler unwired vs level, smart-valve held level. Not `savedAt`. Not camera. Not panels. Not hangar select. Not lens.
+Every 30 ticks host sends `digest`. `hex` hashes invariant-40 shared digest plus every seat `actor.x` / `actor.y`, `hand`, `inventory`, `presence`, `place`, plus every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, plus every trailer `id` `kind` `pose` hopper or `slots`, plus every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, sprinkler unwired vs level, smart-valve held level, every `StallGood.sat`, per active contract `offer.id` `dueDay` each bin `filled`, `takenToday`. Board is derived — not digested. Not `savedAt`. Not camera. Not panels. Not hangar select. Not lens. Live `contracts` / `sat` are not in `Save`.
 
 Guest behind `t`: apply queued bundles. Digest mismatch: pause, `resync`, `ready`, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.
 
@@ -123,3 +125,6 @@ Version mismatch: `reject: version`. Never hydrate.
 - `Cmd` on the wire missing `p`
 - ticking a leftover `dt`
 - hello comparing only `Save.version`
+- guest `acceptContract` / `cancelContract` / `reorderContract` in a bundle
+- board in the digest
+- `PROTOCOL` bump this slice

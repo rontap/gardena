@@ -24,7 +24,7 @@
 | 1×2.5 windmill | `0 0 24 60` |
 | 2×2 generator | `0 0 48 48` |
 
-Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
+Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-contract-stars`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
 
 ## Groups
 
@@ -42,9 +42,10 @@ Stages are sibling `<g id>` in one file. View shows exactly one group. All group
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `item-smart-valve` `pipe-smart-valve` | `closed` `open` |
+| `ui-contract-stars` | `s1` `s2` `s3` `s4` |
 
 Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon uses `common` / `ripe`.
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]], [[art/sensors]], [[art/items]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]], [[art/sensors]], [[art/items]], [[art/contracts]], [[art/companies]].

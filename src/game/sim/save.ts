@@ -251,6 +251,16 @@ export type SaveTrailer =
       slots: Slot[]
     }
 
+export type SaveRecap = {
+  day: number
+  money: number
+  stipend: number
+  died: number
+  harvests: number
+  research: ResearchId[]
+  tax: number
+}
+
 export type Save = {
   game: 'gardena'
   version: 1.72
@@ -275,8 +285,8 @@ export type Save = {
     daughter: SaveMember<DaughterSkillId>
   }
   stall: { [K in StallGoodId]: SaveStallGood }
-  tally: DayTally
-  seam: Seam
+  tally: { died: number; harvests: number; research: ResearchId[] }
+  seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
   ripenN: { col: number; row: number; n: number }[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
@@ -325,7 +335,21 @@ export function dump(world: World): Save {
       harvests: world.tally.harvests,
       research: world.tally.research.slice(),
     },
-    seam: world.seam,
+    seam:
+      world.seam.kind === 'play'
+        ? { kind: 'play' }
+        : {
+            kind: 'recap',
+            recap: {
+              day: world.seam.recap.day,
+              money: world.seam.recap.money,
+              stipend: world.seam.recap.stipend,
+              died: world.seam.recap.died,
+              harvests: world.seam.recap.harvests,
+              research: world.seam.recap.research,
+              tax: world.seam.recap.tax,
+            },
+          },
     ripenN: [...world.ripenN.entries()].flatMap(([k, n]) => {
       if (n <= 0) return []
       const i = k.indexOf(',')
@@ -417,10 +441,10 @@ function dumpMember<Id extends SkillId>(m: { points: number; pickCount: number; 
 
 function dumpStall(g: StallGood): SaveStallGood {
   return {
-    offered: g.offered,
-    market: g.market,
-    target: g.target,
-    acc: g.acc,
+    offered: 0,
+    market: 0,
+    target: 0,
+    acc: 0,
     stock: {
       common: { ...g.stock.common },
       uncommon: { ...g.stock.uncommon },
@@ -926,8 +950,14 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,
-    tally: save.tally,
-    seam: save.seam,
+    tally: { died: save.tally.died, harvests: save.tally.harvests, research: save.tally.research, contracts: [] },
+    seam:
+      save.seam.kind === 'play'
+        ? { kind: 'play' }
+        : {
+            kind: 'recap',
+            recap: { ...save.seam.recap, contracts: [] },
+          },
     ripenN: save.ripenN,
     segments: save.segments,
     wells: save.wells.map(well => {
@@ -963,11 +993,7 @@ function makeStallMap(s: Save['stall']): StallMap {
   const stall = {} as StallMap
   for (const id of STALL_IDS) {
     const src = s[id]
-    const g = new StallGood(id, src.offered)
-    g.offered = src.offered
-    g.market = src.market
-    g.target = src.target
-    g.acc = src.acc
+    const g = new StallGood(id)
     RARITY_RANK.forEach(r => {
       g.stock[r] = { organic: src.stock[r].organic, synth: src.stock[r].synth }
       g.worth[r] = { organic: src.worth[r].organic, synth: src.worth[r].synth }
@@ -2029,7 +2055,7 @@ function readTally(v: Record<string, unknown>): DayTally | undefined {
     if (!isResearchId(id)) return undefined
     research.push(id)
   }
-  return { died, harvests, research }
+  return { died, harvests, research, contracts: [] }
 }
 
 function readSeam(v: unknown): Seam | undefined {
@@ -2070,7 +2096,7 @@ function readRecap(v: unknown): Recap | undefined {
     if (!isResearchId(id)) return undefined
     research.push(id)
   }
-  return { day, money, stipend, died, harvests, research, tax }
+  return { day, money, stipend, died, harvests, research, tax, contracts: [] }
 }
 
 function readSegment(v: unknown): Segment | undefined {

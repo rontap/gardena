@@ -56,12 +56,12 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.72. PROTOCOL 1.72. Wordmark 1.7.2. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.72)
-    expect(PROTOCOL).toBe(1.72)
+  test('SAVE_VERSION 1.73. PROTOCOL 1.73. Wordmark 1.7.3. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.73)
+    expect(PROTOCOL).toBe(1.73)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.72)
+    expect(s.version).toBe(1.73)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))

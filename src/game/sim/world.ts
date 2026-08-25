@@ -180,6 +180,10 @@ import {
   paid,
   recover,
   rollBoard,
+  REP_DONE,
+  REP_IDLE,
+  REP_LOST,
+  REP_MAX,
 } from './market.ts'
 import type {
   Active,
@@ -539,6 +543,8 @@ export type Hydrate = {
   chunks: Map<string, Cell[][]>
   clock: { day: number; t: number }
   money: number
+  rep: number
+  repDay: number
   purchases: number
   digs: number
   mines: number
@@ -796,6 +802,8 @@ export class World {
       this.clock.t = h.clock.t
       this.clock.banner = 0
       this.money = h.money
+      this.contracts.rep = h.rep
+      this.contracts.repDay = h.repDay
       this.purchases = h.purchases
       this.digs = h.digs
       this.mines = h.mines
@@ -3580,7 +3588,9 @@ export class World {
         },
       }
       this.tally = { died: 0, harvests: 0, research: [], contracts: [] }
+      if (this.done.has('unlock-contracts') && this.contracts.takenToday.length === 0) this.addRep(-REP_IDLE)
       this.contracts.takenToday = []
+      this.contracts.repDay = this.contracts.rep
       this.ping()
       return
     }
@@ -4920,7 +4930,7 @@ export class World {
     if (!this.done.has('unlock-contracts')) return
     if (this.contracts.active.length >= this.contractCap()) return
     if (this.contracts.takenToday.includes(c)) return
-    const offer = rollBoard(this.rng, this.clock.day, this.contractSlots()).find(o => o.id === c)
+    const offer = rollBoard(this.rng, this.clock.day, this.contractSlots(), this.contracts.repDay).find(o => o.id === c)
     if (offer === undefined) return
     const bins: Bins =
       offer.lines.length === 1
@@ -4937,6 +4947,7 @@ export class World {
     const sold = this.dumpFilled(a)
     const fee = cancelFee(a, this.nowDay())
     this.money += sold - fee
+    this.addRep(-REP_LOST[a.offer.stars])
     this.dropActive(a)
     this.pushHistory({
       id: a.offer.id,
@@ -4946,6 +4957,11 @@ export class World {
       outcome: { kind: 'cancelled', sold, fee },
     })
     this.ping()
+  }
+
+  private addRep(n: number): void {
+    const next = this.contracts.rep + n
+    this.contracts.rep = next < 0 ? 0 : next > REP_MAX ? REP_MAX : next
   }
 
   private reorderContractBody(c: ContractId, d: 1 | -1): void {
@@ -4963,6 +4979,7 @@ export class World {
     const paidN = a.offer.reward * (1 + 0.03 * this.skillTier('industrial'))
     this.money += paidN
     this.contracts.book[a.offer.company].done += 1
+    this.addRep(REP_DONE[a.offer.stars])
     this.dropActive(a)
     this.pushHistory({
       id: a.offer.id,
@@ -4979,6 +4996,7 @@ export class World {
     const penalty = missPenalty(a)
     this.money += sold - penalty
     this.contracts.book[a.offer.company].missed += 1
+    this.addRep(-REP_LOST[a.offer.stars])
     this.dropActive(a)
     this.pushHistory({
       id: a.offer.id,
@@ -5541,7 +5559,7 @@ function emptyBook(): CompanyBook {
 }
 
 function emptyContracts(): Contracts {
-  return { active: [], takenToday: [], history: [], book: emptyBook() }
+  return { active: [], takenToday: [], history: [], book: emptyBook(), rep: 0, repDay: 0 }
 }
 
 function emptyMember<Id extends SkillId>(): MemberState<Id> {

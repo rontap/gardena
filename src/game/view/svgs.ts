@@ -904,7 +904,6 @@ export function qualityPip(rarity: Rarity): string | undefined {
 
 export function faceRarity(item: Face): Rarity | undefined {
   if (item.kind === 'seeds' || item.kind === 'fruit') return item.rarity
-  if (item.kind === 'spirit' || item.kind === 'wine') return item.rarity
   if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods !== 'weed') return item.cargo.stack.rarity
   return undefined
 }

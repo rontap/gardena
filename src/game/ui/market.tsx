@@ -1,16 +1,16 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
 import { SUGAR_MILL } from '../defs/items.ts'
-import { type JamCrop, type StallGoodId } from '../sim/ids.ts'
+import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
 import { cropName, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import { cancelFee, filledOf, needOf, rollBoard, SAT_FLOOR } from '../sim/market.ts'
-import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote } from '../sim/market.h.ts'
+import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR } from '../sim/market.ts'
+import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Stars } from '../sim/market.h.ts'
 import { binCount, isCropStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, itemInner, qualityPip, UI_CONTRACT_STARS, UI_MARKET_STALL } from '../view/svgs.ts'
+import { COMPANY, qualityPip, UI_MARKET_STALL } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Btn, Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { ItemFace } from './held.tsx'
@@ -31,7 +31,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
   const contracts = world.done.has('unlock-contracts')
   const slots = world.contractSlots()
   const cap = world.contractCap()
-  const board = rollBoard(world.rng, world.clock.day, slots).filter(o => !world.contracts.takenToday.includes(o.id))
+  const board = rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay).filter(o => !world.contracts.takenToday.includes(o.id))
   const nowDay = world.clock.day - 1 + world.clock.t / DAY_SECONDS
   const atCap = world.contracts.active.length >= cap
   return (
@@ -81,7 +81,14 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
           </div>
         </Tabs.Content>
         {contracts && (
-          <Tabs.Content value="contracts" className="grid grid-cols-2 min-h-0 flex-1">
+          <Tabs.Content value="contracts" className="flex min-h-0 flex-1 flex-col">
+            <div className="flex shrink-0 items-center gap-2 px-1 pb-2 pt-1 text-sm">
+              <span className="text-ink/60">Reputation</span>
+              <span className="w-24">
+                <Bar value={world.contracts.rep / REP_MAX} color="bg-tier-2" />
+              </span>
+            </div>
+            <div className="grid min-h-0 flex-1 grid-cols-2">
             <div
               className={`grid grid-cols-2 gap-2 overflow-hidden border-r border-ink/20 ${slots >= 7 ? 'grid-rows-4' : 'grid-rows-3'}`}
             >
@@ -98,6 +105,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
               ))}
             </div>
             <ContractsRight world={world} guest={guest} nowDay={nowDay} />
+            </div>
           </Tabs.Content>
         )}
       </Tabs.Root>
@@ -126,10 +134,11 @@ export function OfferCard({
     <>
       <HeaderRow offer={offer} />
       {offer.lines.map((line, i) => (
-        <AmountRow key={i} demand={line} markup={i === 0 ? offer.markup : undefined} />
+        <AmountRow key={i} demand={line} count={line.amount} />
       ))}
-      <div className="flex items-center justify-between text-sm">
-        <span>{offer.days} days</span>
+      <div className="flex items-center justify-between gap-2 text-sm whitespace-nowrap">
+        <span>{offer.days === 1 ? '1 day' : `${offer.days} days`}</span>
+        <span className="text-ink/60">+{Math.round(offer.markup * 100)}% markup</span>
         <Coin n={offer.reward} />
       </div>
     </>
@@ -156,6 +165,23 @@ export function OfferCard({
   )
 }
 
+const TIER_DOT: { readonly [K in Stars]: string } = {
+  1: 'bg-tier-1',
+  2: 'bg-tier-2',
+  3: 'bg-tier-3',
+  4: 'bg-tier-4',
+}
+
+export function Difficulty({ stars }: { stars: Stars }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1" aria-label={`Difficulty ${stars}`}>
+      {Array.from({ length: stars }, (_, i) => (
+        <span key={i} className={`h-2 w-2 rounded-full ${TIER_DOT[stars]}`} />
+      ))}
+    </span>
+  )
+}
+
 function HeaderRow({ offer }: { offer: { company: ContractOffer['company']; stars: ContractOffer['stars'] } }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -167,72 +193,75 @@ function HeaderRow({ offer }: { offer: { company: ContractOffer['company']; star
         />
         <span className="text-sm font-semibold">{COMPANIES[offer.company].name}</span>
       </div>
-      <svg viewBox="0 0 36 8" className="h-4" dangerouslySetInnerHTML={{ __html: UI_CONTRACT_STARS[offer.stars] }} />
+      <Difficulty stars={offer.stars} />
     </div>
   )
 }
 
-function AmountRow({ demand, markup }: { demand: Demand; markup?: number }) {
+function AmountRow({ demand, count }: { demand: Demand; count: number }) {
   return (
     <div className="flex items-center gap-2 text-base font-semibold">
-      <span>{demand.amount}</span>
-      <span>×</span>
-      {demandFace(demand)}
-      {markup !== undefined && (
-        <span className="ml-auto text-sm font-normal">{Math.round(markup * 100)}%</span>
-      )}
+      {demandFace(demand, count)}
+      <span className="truncate">{demandName(demand)}</span>
     </div>
   )
 }
 
-function demandFace(demand: Demand) {
+function demandName(demand: Demand): string {
+  if (demand.kind === 'group') return demand.group === 'jam' ? 'Any jam' : 'Any spirit'
+  return stallName(demandGood(demand))
+}
+
+function AnyJamFace({ count }: { count: number }) {
+  const [stage, setStage] = useState(0)
+  useEffect(() => {
+    const t = window.setInterval(() => setStage(s => (s + 1) % JAM_CROPS.length), 800)
+    return () => window.clearInterval(t)
+  }, [])
+  return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], count, unitSale: 1 }} />
+}
+
+function demandFace(demand: Demand, count: number) {
   const face =
     demand.kind === 'group' && demand.group === 'jam' ? (
-      <span className="relative flex h-12 w-12 items-center justify-center">
-        <svg
-          viewBox="0 0 24 24"
-          className="h-10 w-10"
-          dangerouslySetInnerHTML={{ __html: itemInner({ kind: 'jam-machine' }) }}
-        />
-      </span>
+      <AnyJamFace count={count} />
     ) : (
-      <ItemFace item={demandItem(demand)} />
+      <ItemFace item={demandItem(demand, count)} />
     )
   if (demand.kind === 'plain' || (demand.kind === 'group' && demand.group === 'jam')) return face
-  if (demand.kind === 'rated' && isCropStall(demand.good)) return face
   const pip = qualityPip(demand.minRarity)
   if (pip === undefined) return face
   return (
     <>
       {face}
-      <svg viewBox="0 0 8 8" className="h-2 w-2 shrink-0" dangerouslySetInnerHTML={{ __html: pip }} />
+      <svg viewBox="0 0 8 8" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: pip }} />
     </>
   )
 }
 
-function demandItem(demand: Demand): Item {
+function demandItem(demand: Demand, count: number): Item {
   if (demand.kind === 'group' && demand.group === 'spirit') {
-    return { kind: 'spirit', spirit: 'vodka', rarity: demand.minRarity, count: 1, unitSale: 1 }
+    return { kind: 'spirit', spirit: 'vodka', rarity: demand.minRarity, count, unitSale: 1 }
   }
   if (demand.kind === 'plain') {
-    if (demand.good === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL }
+    if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL }
     if (demand.good === 'oil' || demand.good === 'flour' || demand.good === 'extract') {
-      return { kind: demand.good, count: 1, unitSale: 1 }
+      return { kind: demand.good, count, unitSale: 1 }
     }
-    return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, count: 1, unitSale: 1 }
+    return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, count, unitSale: 1 }
   }
   if (demand.kind === 'rated' && demand.good === 'wine') {
-    return { kind: 'wine', rarity: demand.minRarity, count: 1, unitSale: 1 }
+    return { kind: 'wine', rarity: demand.minRarity, count, unitSale: 1 }
   }
   if (demand.kind === 'rated' && (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed')) {
-    return { kind: 'spirit', spirit: demand.good, rarity: demand.minRarity, count: 1, unitSale: 1 }
+    return { kind: 'spirit', spirit: demand.good, rarity: demand.minRarity, count, unitSale: 1 }
   }
   if (demand.kind !== 'rated' || !isCropStall(demand.good)) throw new Error('demandItem')
   return {
     kind: 'fruit',
     crop: demand.good,
     rarity: demand.minRarity,
-    count: 1,
+    count,
     unitSale: CROPS[demand.good].sale,
     freshness: 1,
     bio: false,
@@ -282,11 +311,7 @@ function ActiveCard({
         <div className="min-w-0 flex-1 flex flex-col gap-1">
           <HeaderRow offer={active.offer} />
           {active.bins.map((bin, i) => (
-            <div key={i} className="flex items-center gap-2 text-base font-semibold">
-              <span>{bin.demand.amount - bin.filled}</span>
-              <span>×</span>
-              {demandFace(bin.demand)}
-            </div>
+            <AmountRow key={i} demand={bin.demand} count={bin.demand.amount - bin.filled} />
           ))}
         </div>
         {!guest && (
@@ -343,7 +368,7 @@ function HistoryLine({ entry }: { entry: HistoryEntry }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>{COMPANIES[entry.company].name}</span>
-      <svg viewBox="0 0 36 8" className="h-4" dangerouslySetInnerHTML={{ __html: UI_CONTRACT_STARS[entry.stars] }} />
+      <Difficulty stars={entry.stars} />
       <span>{entry.day}</span>
       <span>{outcome}</span>
       <span className="ml-auto">
@@ -401,6 +426,7 @@ function stallName(id: StallGoodId): string {
     const crop = id.slice(4) as JamCrop
     return crop === 'tomato' ? 'Ketchup' : `${cropName(crop)} jam`
   }
+  if (!isCropStall(id)) throw new Error(`stallName: ${id}`)
   return cropName(id)
 }
 

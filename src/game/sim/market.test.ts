@@ -17,8 +17,18 @@ import {
   SAT_DEPTH,
   SAT_FLOOR,
   SAT_RECOVER_PER_DAY,
-  SCALE_DAYS,
-  SCALE_START,
+  BUDGET_OVERDRAFT,
+  CONTRACT_GOODS,
+  DIFFICULTY_CEILING,
+  DIFFICULTY_MAX,
+  GOOD_COST,
+  GOOD_TIER,
+  REP_DONE,
+  REP_IDLE,
+  REP_LOST,
+  REP_MAX,
+  MARKUP_BASE,
+  RARITY_COST,
   Accepts,
   cancelFee,
   cleanUnit,
@@ -36,14 +46,14 @@ import { DT_MAX, World } from './world.ts'
 const AT = { col: 10, row: 12 }
 
 describe('contracts', () => {
-  test('Board slot `i` on day `d` is a pure function of `(seed, d, i)`. Same seed, same day → same offer, regardless of inventory, plantings, research, money, or `clock.t`.', () => {
+  test('Board slot `i` on day `d` is a pure function of `(seed, d, i, repAtDayStart)`. Reputation is the only player input; inventory, plantings, research, money and `clock.t` do not move it.', () => {
     const seed = 7
     const rng = new Rng(seed)
-    const once = rollBoard(rng, 3, CONTRACT_OFFERS)
-    const twice = rollBoard(rng, 3, CONTRACT_OFFERS)
+    const once = rollBoard(rng, 3, CONTRACT_OFFERS, 0)
+    const twice = rollBoard(rng, 3, CONTRACT_OFFERS, 0)
     expect(once).toHaveLength(CONTRACT_OFFERS)
     expect(once).toEqual(twice)
-    expect(rollBoard(new Rng(seed), 3, CONTRACT_OFFERS)).toEqual(once)
+    expect(rollBoard(new Rng(seed), 3, CONTRACT_OFFERS, 0)).toEqual(once)
 
     const a = new World(seed)
     const b = new World(seed)
@@ -56,15 +66,15 @@ describe('contracts', () => {
     }
     b.setCell(AT, { kind: 'growing', soil: new Soil(1, 1, WEED_CHANCE), plant: new Plant('potato', 'common') })
     expect(a.clock.day).toBe(b.clock.day)
-    expect(rollBoard(a.rng, a.clock.day, CONTRACT_OFFERS)).toEqual(rollBoard(b.rng, b.clock.day, CONTRACT_OFFERS))
-    expect(rollBoard(a.rng, a.clock.day, CONTRACT_OFFERS)).toEqual(rollBoard(new Rng(seed), a.clock.day, CONTRACT_OFFERS))
+    expect(rollBoard(a.rng, a.clock.day, CONTRACT_OFFERS, 0)).toEqual(rollBoard(b.rng, b.clock.day, CONTRACT_OFFERS, 0))
+    expect(rollBoard(a.rng, a.clock.day, CONTRACT_OFFERS, 0)).toEqual(rollBoard(new Rng(seed), a.clock.day, CONTRACT_OFFERS, 0))
   })
 
   test('`ContractId = day * CONTRACT_SLOT_MAX + slot`. Growing the board with `broker` adds slots and does not change slots 0..5.', () => {
     const rng = new Rng(7)
     const day = 4
-    const six = rollBoard(rng, day, 6)
-    const eight = rollBoard(rng, day, 8)
+    const six = rollBoard(rng, day, 6, 0)
+    const eight = rollBoard(rng, day, 8, 0)
     expect(six).toHaveLength(6)
     expect(eight).toHaveLength(8)
     expect(six).toEqual(eight.slice(0, 6))
@@ -85,7 +95,7 @@ describe('contracts', () => {
     w.tick(1)
     expect(w.clock.day).toBe(2)
     expect(w.log).toEqual([])
-    const board = rollBoard(w.rng, w.clock.day, CONTRACT_OFFERS)
+    const board = rollBoard(w.rng, w.clock.day, CONTRACT_OFFERS, 0)
     expect(board).toHaveLength(CONTRACT_OFFERS)
     expect(w.log).toEqual([])
   })
@@ -131,7 +141,7 @@ describe('contracts', () => {
     for (const seed of [1, 7, 99, 12345]) {
       const rng = new Rng(seed)
       for (const day of [1, 2, 8, 24, 40]) {
-        rollBoard(rng, day, 7).forEach(offer => {
+        rollBoard(rng, day, 7, 0).forEach(offer => {
           offer.lines.forEach(d => {
             const cap = FEASIBLE_PER_DAY[demandGood(d)] * offer.days * scale(day)
             expect(d.amount).toBeGreaterThanOrEqual(AMOUNT_MIN)
@@ -144,14 +154,14 @@ describe('contracts', () => {
 
   test('`reward = clean * (1 + markup)` baked at generation. Saturation at delivery time does not move it.', () => {
     const rng = new Rng(7)
-    const offer = rollBoard(rng, 1, CONTRACT_OFFERS)[0]
-    expect(offer.reward).toBe(offer.clean * (1 + offer.markup))
+    const offer = rollBoard(rng, 1, CONTRACT_OFFERS, 0)[0]
+    expect(offer.reward).toBe(Math.round(offer.clean * (1 + offer.markup)))
     const w = new World(1)
     w.done.add('unlock-contracts')
     const live: Active = {
       offer,
       dueDay: 10,
-      bins: offer.lines.map(d => ({ demand: d, filled: 0 })) as Active['bins'],
+      bins: offer.lines.map(d => ({ demand: d, filled: 0 })) as unknown as Active['bins'],
     }
     w.contracts.active.push(live)
     live.bins.forEach(b => {
@@ -166,6 +176,172 @@ describe('contracts', () => {
     expect(w.contracts.active).toHaveLength(0)
   })
 
+  test('Every published value is a whole number: amount, clean, reward, penalty. Markup is whole percent.', () => {
+    for (const seed of [1, 7, 99, 12345]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 1, 2, 8, 24, 40, 80]) {
+        rollBoard(rng, day, 8, 0).forEach(offer => {
+          expect(Number.isInteger(offer.clean)).toBe(true)
+          expect(Number.isInteger(offer.reward)).toBe(true)
+          expect(Number.isInteger(offer.penalty)).toBe(true)
+          expect(Math.round(offer.markup * 100)).toBeCloseTo(offer.markup * 100, 9)
+          offer.lines.forEach(d => expect(Number.isInteger(d.amount)).toBe(true))
+        })
+      }
+    }
+  })
+
+  test('Markup rises with difficulty and tops out at the ceiling. A tight deadline pays more than a long one.', () => {
+    for (const seed of [1, 7, 99]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 8, 40, 80]) {
+        rollBoard(rng, day, 8, 0).forEach(offer => {
+          expect(offer.markup).toBeGreaterThanOrEqual(MARKUP_BASE)
+          expect(offer.markup).toBeLessThanOrEqual(0.5)
+        })
+      }
+    }
+  })
+
+  test('A pair never asks twice for the same family. Jam beside jam and spirit beside spirit are unrepresentable.', () => {
+    const jam = (g: string) => g.startsWith('jam-')
+    const spirit = (g: string) => g === 'vodka' || g === 'beer' || g === 'brandy' || g === 'mixed'
+    for (const seed of [1, 7, 99, 12345, 555]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 4, 12, 30, 60, 90]) {
+        rollBoard(rng, day, 8, 0).forEach(offer => {
+          if (offer.lines.length !== 2) return
+          const a = demandGood(offer.lines[0])
+          const b = demandGood(offer.lines[1]!)
+          expect(a).not.toBe(b)
+          expect(jam(a) && jam(b)).toBe(false)
+          expect(spirit(a) && spirit(b)).toBe(false)
+        })
+      }
+    }
+  })
+
+  test('No fallback is reachable: the cheapest good and the cheapest rarity cost nothing, so a candidate set is never empty at any `D`.', () => {
+    const cheapestGood = Math.min(...STALL_IDS.map(g => GOOD_COST[g]))
+    const cheapestRarity = Math.min(...Object.values(RARITY_COST))
+    expect(cheapestGood).toBe(0)
+    expect(cheapestRarity).toBe(0)
+    for (let D = 0; D <= DIFFICULTY_MAX; D++) {
+      expect(BUDGET_OVERDRAFT).toBeGreaterThanOrEqual(0)
+      expect(STALL_IDS.some(g => GOOD_COST[g] <= BUDGET_OVERDRAFT)).toBe(true)
+    }
+  })
+
+  test('One board never offers the same company twice.', () => {
+    for (const seed of [1, 7, 99, 12345]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 3, 11, 40]) {
+        const names = rollBoard(rng, day, 6, 0).map(o => o.company)
+        expect(new Set(names).size).toBe(names.length)
+      }
+    }
+  })
+
+  test('A single day offers a spread of difficulties, not one repeated rating.', () => {
+    for (const seed of [1, 7, 99, 12345]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 5, 20, 60]) {
+        const ds = rollBoard(rng, day, 6, 0).map(o => o.difficulty)
+        expect(new Set(ds).size).toBeGreaterThan(1)
+      }
+    }
+  })
+
+  test('No good is ever demanded below its `GOOD_TIER`. Day 0 is tier 1 only, so no jam, spirit, wine or tree good can appear at all.', () => {
+    for (const seed of [1, 7, 99, 12345, 555]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 1, 2, 4, 8, 16, 32, 64]) {
+        for (const rep of [0, 5, 10, 20]) {
+          rollBoard(rng, day, 6, rep).forEach(offer => {
+            offer.lines.forEach(d => {
+              expect(GOOD_TIER[demandGood(d)]).toBeLessThanOrEqual(offer.stars)
+            })
+          })
+        }
+      }
+      rollBoard(rng, 0, 6, 0).forEach(offer => {
+        offer.lines.forEach(d => expect(GOOD_TIER[demandGood(d)]).toBe(1))
+      })
+    }
+  })
+
+  test('Sugar and extract are stall goods but are never demanded by a contract.', () => {
+    expect(CONTRACT_GOODS).not.toContain('sugar')
+    expect(CONTRACT_GOODS).not.toContain('extract')
+    expect(STALL_IDS).toContain('sugar')
+    expect(STALL_IDS).toContain('extract')
+    for (const seed of [1, 7, 99, 12345]) {
+      const rng = new Rng(seed)
+      for (let day = 0; day < 50; day++) {
+        for (const rep of [0, 10, 20]) {
+          rollBoard(rng, day, 6, rep).forEach(offer => {
+            offer.lines.forEach(d => {
+              expect(demandGood(d)).not.toBe('sugar')
+              expect(demandGood(d)).not.toBe('extract')
+            })
+          })
+        }
+      }
+    }
+  })
+
+  test('Effective difficulty stays inside `[0, DIFFICULTY_CEILING]` once reputation and shape modifiers are added.', () => {
+    for (const seed of [1, 7, 99]) {
+      const rng = new Rng(seed)
+      for (const day of [0, 8, 32, 64, 200]) {
+        for (const rep of [0, 10, REP_MAX]) {
+          rollBoard(rng, day, 8, rep).forEach(offer => {
+            expect(offer.difficulty).toBeGreaterThanOrEqual(0)
+            expect(offer.difficulty).toBeLessThanOrEqual(DIFFICULTY_CEILING)
+          })
+        }
+      }
+    }
+  })
+
+  test('Reputation raises the board. A high-rep board is never easier on average than a zero-rep one.', () => {
+    let low = 0
+    let high = 0
+    for (const seed of [1, 7, 99, 12345]) {
+      for (const day of [4, 12, 24]) {
+        low += rollBoard(new Rng(seed), day, 6, 0).reduce((n, o) => n + o.difficulty, 0)
+        high += rollBoard(new Rng(seed), day, 6, REP_MAX).reduce((n, o) => n + o.difficulty, 0)
+      }
+    }
+    expect(high).toBeGreaterThan(low)
+  })
+
+  test('Reputation moves by the table and clamps to `[0, REP_MAX]`. Completing pays, cancelling and missing cost more, an idle day drips.', () => {
+    expect(REP_DONE).toEqual({ 1: 0.5, 2: 1, 3: 1.5, 4: 2 })
+    expect(REP_LOST).toEqual({ 1: 1, 2: 2, 3: 3, 4: 4 })
+    expect(REP_IDLE).toBe(0.3)
+    const w = new World(1)
+    expect(w.contracts.rep).toBe(0)
+    w.contracts.active.push(carrotActive(0, 2))
+    w.cancelContract(0)
+    expect(w.contracts.rep).toBe(0)
+    w.contracts.rep = REP_MAX
+    const done = new World(1)
+    done.contracts.rep = REP_MAX
+    done.contracts.active.push(carrotActive(0, 1))
+    dropFruit(done, 'carrot', 1)
+    expect(done.contracts.rep).toBeLessThanOrEqual(REP_MAX)
+  })
+
+  test('The board is stable within a day while reputation changes: it reads `repDay`, not live rep.', () => {
+    const w = new World(1)
+    w.done.add('unlock-contracts')
+    const before = rollBoard(w.rng, w.clock.day, CONTRACT_OFFERS, w.contracts.repDay)
+    w.contracts.rep += 5
+    const after = rollBoard(w.rng, w.clock.day, CONTRACT_OFFERS, w.contracts.repDay)
+    expect(after).toEqual(before)
+  })
+
   test('Miss pays market rate for delivered units and `offer.penalty * max(PENALTY_FLOOR, 1 - filled/need)`. `filled = need` is completion, never a miss.', () => {
     const w = new World(1)
     const a = carrotActive(0, 10)
@@ -173,7 +349,7 @@ describe('contracts', () => {
     dropFruit(w, 'carrot', 2)
     const V = 2 * cleanUnit(a.offer.lines[0])
     const penalty = missPenalty(w.contracts.active[0])
-    expect(penalty).toBe(a.offer.penalty * 0.5)
+    expect(penalty).toBe(Math.round(a.offer.penalty * 0.5))
     const sold = paid(0, 'carrot', V)
     const before = w.money
     w.contracts.active[0].dueDay = w.nowDay() + 1e-12
@@ -195,7 +371,7 @@ describe('contracts', () => {
   test('Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.', () => {
     const a = carrotActive(2, 5)
     const start = a.dueDay - a.offer.days
-    expect(cancelFee(a, start)).toBe(CANCEL_MIN * a.offer.clean)
+    expect(cancelFee(a, start)).toBe(Math.round(CANCEL_MIN * a.offer.clean))
     expect(cancelFee(a, a.dueDay)).toBe(missPenalty(a))
   })
 
@@ -216,7 +392,7 @@ describe('contracts', () => {
     w.contracts.active.push(first, second)
     dropFruit(w, 'carrot', 3)
     expect(w.contracts.active[0].bins[0].filled).toBe(1)
-    expect(w.contracts.active[0].bins[1].filled).toBe(0)
+    expect(w.contracts.active[0].bins[1]?.filled).toBe(0)
     expect(w.contracts.active[1].bins[0].filled).toBe(2)
     expect(worthOf(w, 'carrot')).toBe(0)
     expect(Accepts({ kind: 'rated', good: 'carrot', minRarity: 'common', amount: 1 }, 'carrot', 'rare')).toBe(true)

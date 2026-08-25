@@ -40,6 +40,8 @@ export type CompanyBook = { [K in CompanyId]: CompanyRecord }
 
 export type GroupId = 'jam' | 'spirit'
 
+export type ContractGoodId = Exclude<StallGoodId, 'sugar' | 'extract'>
+
 export type RarityGoodId = CropId | SpiritKind | 'wine'
 
 export type PlainGoodId = 'sugar' | JamId | 'oil' | 'flour' | 'extract'
@@ -97,6 +99,8 @@ export type Contracts = {
   takenToday: ContractId[]
   history: HistoryEntry[]
   book: CompanyBook
+  rep: number
+  repDay: number
 }
 
 export declare const DIFFICULTY_MAX: number

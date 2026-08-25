@@ -113,7 +113,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.72 as const
+export const SAVE_VERSION = 1.73 as const
 
 const INV = 16
 
@@ -263,11 +263,13 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.72
+  version: 1.73
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
+  rep: number
+  repDay: number
   purchases: number
   digs: number
   mines: number
@@ -306,6 +308,8 @@ export function dump(world: World): Save {
     rng: { seed: world.rng.seed, shop: world.rng.consumed('shop'), fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },
     money: world.money,
+    rep: world.contracts.rep,
+    repDay: world.contracts.repDay,
     purchases: world.purchases,
     digs: world.digs,
     mines: world.mines,
@@ -695,6 +699,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const day = num(clockIn.day)
   const t = num(clockIn.t)
   const money = num(rec.money)
+  const rep = num(rec.rep)
+  const repDay = num(rec.repDay)
   const purchases = num(rec.purchases)
   const digs = num(rec.digs)
   const mines = num(rec.mines)
@@ -708,6 +714,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     day === undefined ||
     t === undefined ||
     money === undefined ||
+    rep === undefined ||
+    repDay === undefined ||
     purchases === undefined ||
     digs === undefined ||
     mines === undefined ||
@@ -866,6 +874,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     rng: { seed, shop, fruit },
     clock: { day, t },
     money,
+    rep,
+    repDay,
     purchases,
     digs,
     mines,
@@ -944,6 +954,8 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     chunks: live.chunks,
     clock: save.clock,
     money: save.money,
+    rep: save.rep,
+    repDay: save.repDay,
     purchases: save.purchases,
     digs: save.digs,
     mines: save.mines,

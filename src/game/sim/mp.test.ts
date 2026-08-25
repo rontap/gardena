@@ -70,7 +70,7 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(1.72)
+    expect(PROTOCOL).toBe(1.73)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {

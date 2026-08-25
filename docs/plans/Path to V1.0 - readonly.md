@@ -332,3 +332,12 @@ Almanac
 	- Market
 	- Skills
 	- Family
+
+
+
+| Final D \ Company | 1            | 2          | 3             | 4               | 5   | 6   |
+| ----------------- | ------------ | ---------- | ------------- | --------------- | --- | --- |
+| 0-8               | cherry tree  | fertilizer |               |                 | /   | /   |
+| 8-20              | apricot tree | apple tree |               |                 | /   | /   |
+| 20-30             | olive tree   | vanilla    |               |                 | /   | /   |
+| 30-               |              |            | rotary shovel | diamond pickaxe | /   | /   |

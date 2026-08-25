@@ -359,6 +359,8 @@ Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 �
 
 Crop goods: stock and worth per rarity × `bio`. Illegal: fruit consign that drops `fruit.bio`.
 
+`World.contracts: Contracts`. Live only. Load empty. New farm empty. Consign fills `active` in array order, then stall. Miss on the tick `nowDay` crosses `dueDay`. [[mechanics/contracts]]
+
 ## Hand / Item
 
 ```
@@ -393,12 +395,14 @@ Fruit / box fruit / grind input stay `CropId`. Sugar-cane harvests as fruit. Ill
 ## Recap / Seam
 
 ```
-Recap = { day; money; stipend; died; harvests; research: ResearchId[]; tax }
+DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
+
+Recap = { day; money; stipend; died; harvests; research: ResearchId[]; tax; contracts: HistoryEntry[] }
 
 Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
 ```
 
-Illegal: `recipient?: MemberId` on `Recap`. Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants +1 point to each member, then play. [[architecture/family]].
+Illegal: `recipient?: MemberId` on `Recap`. Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants +1 point to each member, then play. Seam copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]].
 
 ## Family
 

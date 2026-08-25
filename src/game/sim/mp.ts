@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.72
+export const PROTOCOL = 1.73
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -231,9 +231,11 @@ export function permit(cmd: Cmd): boolean {
       if (cmd.k === 'building' || cmd.k === 'wire' || cmd.k === 'smart') return true
       return false
     case Act.tuneSprinkler:
-    case Act.nudgeOffered:
     case Act.dismissRecap:
     case Act.cheat:
+    case Act.acceptContract:
+    case Act.cancelContract:
+    case Act.reorderContract:
       return false
     case Act.openHud:
       return cmd.k === 'water' || cmd.k === 'harvest' || cmd.k === 'counter' || cmd.k === 'day'
@@ -337,8 +339,19 @@ export function digestHex(world: World): string {
       daughter: [...world.family.daughter.owned.entries()].sort(),
     },
     stall: Object.fromEntries(
-      (Object.keys(world.stall) as (keyof typeof world.stall)[]).map(id => [id, world.stall[id].stock]),
+      (Object.keys(world.stall) as (keyof typeof world.stall)[]).map(id => [
+        id,
+        { stock: world.stall[id].stock, sat: world.stall[id].sat },
+      ]),
     ),
+    contracts: {
+      takenToday: world.contracts.takenToday,
+      active: world.contracts.active.map(a => ({
+        id: a.offer.id,
+        dueDay: a.dueDay,
+        filled: a.bins.map(b => b.filled),
+      })),
+    },
   })
   let h = 2166136261
   for (let i = 0; i < payload.length; i++) {

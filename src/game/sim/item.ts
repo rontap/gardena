@@ -241,7 +241,7 @@ export function toolName(hand: Hand): string {
   return 'Cut grass'
 }
 
-const SPIRIT_NAME: { readonly [K in SpiritKind]: string } = {
+export const SPIRIT_NAME: { readonly [K in SpiritKind]: string } = {
   vodka: 'Vodka',
   beer: 'Beer',
   brandy: 'Brandy',

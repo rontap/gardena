@@ -81,7 +81,7 @@ parse(text: string, sink?: LogSink): LoadResult
 
 `ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate is total.
 
-After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `pulse` / `hud` absent. `cheatFastResearch` false. `clock.banner` 0. `sales` empty.
+After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `pulse` / `hud` absent. `cheatFastResearch` false. `clock.banner` 0. Every `StallGood.sat` 0. `World.contracts` empty (`active` `takenToday` `history` empty, `book` zeros).
 
 Join / resync: `parse` then stamp `World.now` from the wire. Same `Save`. Not a second snapshot.
 
@@ -353,7 +353,9 @@ SaveCell =
 
 ## Not in the file
 
-`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `sales`. `consignRevision`. `groundRev`. `mktAcc` / `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. `World.contracts`. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+
+Live `sat` is not in the file. Live `Contracts` is not in the file. Dump tally / recap omit `contracts`. Parse hydrates `tally.contracts` / `Recap.contracts` `[]`. `SAVE_VERSION` stays 1.72. Dump still writes dummy `offered` `market` `target` `acc` so parse of 1.72 still hydrates. Parse does not copy them. Load → `sat` 0, `contracts` empty. New farm → `sat` 0, `contracts` empty. Digest includes `sat` and active contracts — [[architecture/net]]. Assumption: dummy dump values are 0.
 
 ## Illegal
 
@@ -406,6 +408,8 @@ SaveCell =
 - tractor `boom` omitted
 - stored tractor hitch ≠ `'none'`
 - trailer attached + stored
+- live `sat` in the file
+- live `Contracts` in the file
 - `Soil.weedChance` omitted
 - `Weed.spread` omitted
 - `sugar.count`

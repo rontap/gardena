@@ -24,11 +24,16 @@ import {
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
+  EXTRACT,
+  FLOUR,
   JAM_BUFFER,
   JAM_IN,
+  JAM_SALE,
   JAM_SECONDS,
   JAM_SUGAR,
   MILL_WORK,
+  OIL,
+  SUGAR_MILL,
   SPEECH_S,
   SPRINKLER_TILE_RATE,
   STILL_CAP,
@@ -62,6 +67,7 @@ import type {
   ResearchId,
   SkillId,
   HarvestSlot,
+  JamCrop,
   SkuId,
   StallGoodId,
   TrailerId,
@@ -160,19 +166,46 @@ import {
   stillCropOf,
 } from './machine.ts'
 import {
+  Accepts,
+  CONTRACT_ACTIVE,
+  CONTRACT_HISTORY_MAX,
+  CONTRACT_OFFERS,
+  SAT_DEPTH,
+  SAT_RECOVER_PER_DAY,
+  cancelFee,
+  cleanUnit,
+  demandGood,
+  missPenalty,
+  mul,
+  paid,
+  recover,
+  rollBoard,
+  REP_DONE,
+  REP_IDLE,
+  REP_LOST,
+  REP_MAX,
+} from './market.ts'
+import type {
+  Active,
+  Bins,
+  CompanyBook,
+  ContractId,
+  Contracts,
+  Demand,
+  HistoryEntry,
+  SellAllQuote,
+} from './market.h.ts'
+import {
   BIO_KEYS,
   binCount,
-  goodIx,
   isBakedStall,
+  isCropStall,
   isSpiritStall,
   makeStall,
-  rate as stallRate,
   stallRarity,
   stallX,
-  tenths,
   STALL_IDS,
   type StallMap,
-  type StallSale,
 } from './stall.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 import { goodness } from './noise.ts'
@@ -447,7 +480,7 @@ export type HudTarget =
   | { kind: 'counter'; at: Coord }
   | { kind: 'day'; at: Coord }
 
-export type DayTally = { died: number; harvests: number; research: ResearchId[] }
+export type DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
 
 export type Recap = {
   day: number
@@ -457,6 +490,7 @@ export type Recap = {
   harvests: number
   research: ResearchId[]
   tax: number
+  contracts: HistoryEntry[]
 }
 
 export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
@@ -509,6 +543,8 @@ export type Hydrate = {
   chunks: Map<string, Cell[][]>
   clock: { day: number; t: number }
   money: number
+  rep: number
+  repDay: number
   purchases: number
   digs: number
   mines: number
@@ -617,7 +653,6 @@ const STARTER_SEEDS: readonly { crop: AnnualId; rarity: Rarity; count: number }[
   { crop: 'potato', rarity: 'heirloom', count: 2 },
 ]
 
-const DYNAMIC_MARKET = false
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
 function groundSig(c: Cell): string {
@@ -686,7 +721,6 @@ export class World {
   readonly additives: AdditiveStore
   readonly stall: StallMap
   readonly family: Family
-  sales: StallSale[] = []
   consignRevision = 0
   readonly seats: Seat[]
   local: SeatId = 0
@@ -701,14 +735,14 @@ export class World {
   speech: Speech = { kind: 'none' }
   pulse: Pulse | undefined = undefined
   hud: HudTarget | undefined = undefined
-  tally: DayTally = { died: 0, harvests: 0, research: [] }
+  tally: DayTally = { died: 0, harvests: 0, research: [], contracts: [] }
+  readonly contracts: Contracts = emptyContracts()
   seam: Seam = { kind: 'play' }
   groundRev = 0
   bigTicks = 0
   digs = 0
   mines = 0
   cheatFastResearch = false
-  private mktAcc = 0
   private bigAcc = 0
   private nets: Net[] | undefined = undefined
   private netAt = new Map<string, Net>()
@@ -768,6 +802,8 @@ export class World {
       this.clock.t = h.clock.t
       this.clock.banner = 0
       this.money = h.money
+      this.contracts.rep = h.rep
+      this.contracts.repDay = h.repDay
       this.purchases = h.purchases
       this.digs = h.digs
       this.mines = h.mines
@@ -812,10 +848,8 @@ export class World {
       this.pulse = undefined
       this.hud = undefined
       this.cheatFastResearch = false
-      this.sales = []
       this.consignRevision = 0
       this.groundRev = 0
-      this.mktAcc = 0
       this.bigAcc = 0
       this.nets = undefined
       this.seats.forEach(s => {
@@ -846,7 +880,7 @@ export class World {
     this.silo = new SeedSilo(SILO_BASE)
     this.additives = new AdditiveStore(ADDITIVE_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
-    this.stall = Object.fromEntries(STALL_IDS.map(id => [id, makeStall(id, this.modifiers)])) as StallMap
+    this.stall = Object.fromEntries(STALL_IDS.map(id => [id, makeStall(id)])) as StallMap
     this.family = {
       player: emptyMember(),
       husband: emptyMember(),
@@ -993,9 +1027,6 @@ export class World {
       case Act.sellAll:
         this.sellAllBody()
         return
-      case Act.nudgeOffered:
-        this.nudgeOfferedBody(cmd.g, cmd.d)
-        return
       case Act.swap:
         this.swapBody(cmd.i)
         return
@@ -1108,6 +1139,15 @@ export class World {
         return
       case Act.unload:
         this.unloadBody()
+        return
+      case Act.acceptContract:
+        this.acceptContractBody(cmd.c)
+        return
+      case Act.cancelContract:
+        this.cancelContractBody(cmd.c)
+        return
+      case Act.reorderContract:
+        this.reorderContractBody(cmd.c, cmd.d)
         return
     }
   }
@@ -1259,7 +1299,7 @@ export class World {
   skuPrice(id: SkuId): number {
     let p = SKUS[id].price
     const tab = SKUS[id].tab
-    if (tab === 'utility' || tab === 'automation') p -= this.skillTier('contracts')
+    if (tab === 'utility' || tab === 'automation') p -= this.skillTier('haggling')
     return p < 1 ? 1 : p
   }
 
@@ -3351,64 +3391,73 @@ export class World {
     return near === undefined ? undefined : { ...near }
   }
 
-  nudgeOffered(id: StallGoodId, dir: 1 | -1): void {
-    this.commit({ a: Act.nudgeOffered, t: this.now, p: this.local, g: id, d: dir })
-  }
-
-  private nudgeOfferedBody(id: StallGoodId, dir: 1 | -1): void {
-    const g = this.stall[id]
-    const cap = tenths(3 * stallX(id, this.modifiers))
-    const next = tenths(g.offered) + dir
-    const t = next < 1 ? 1 : next > cap ? cap : next
-    g.offered = t / 10
-    this.ping()
+  marketQuote(): SellAllQuote {
+    const rows = STALL_IDS.flatMap(id => {
+      if (binCount(this.stall[id]) <= 0) return []
+      const { clean, clearance } = this.stallClean(id)
+      const sat = this.stall[id].sat
+      return [
+        {
+          good: id,
+          sat,
+          mul: mul(sat, id),
+          clean,
+          paid: paid(sat, id, clean) + clearance,
+          recoverDays: sat / SAT_RECOVER_PER_DAY,
+        },
+      ]
+    })
+    return {
+      rows,
+      clean: rows.reduce((n, r) => n + r.clean, 0),
+      paid: rows.reduce((n, r) => n + r.paid, 0),
+    }
   }
 
   marketGain(): number {
     if (!this.marketOpen()) return 0
+    return this.marketQuote().paid
+  }
+
+  private stallClean(id: StallGoodId): { clean: number; clearance: number } {
     const saleX = 1 + 0.02 * this.skillTier('saleswoman')
     const heirX = 1 + 0.05 * this.skillTier('heirloom')
     const bioX = 1 + 0.04 * this.skillTier('bio')
     const jam = this.jamFloor()
-    const clearance = this.hasSkill('clearance')
-    return STALL_IDS.reduce((total, id) => {
-      if (isBakedStall(id)) {
-        const count = this.stall[id].stock.common.organic
-        if (count === 0) return total
-        return total + this.stall[id].worth.common.organic * saleX
+    const clearanceOn = this.hasSkill('clearance')
+    if (isBakedStall(id)) {
+      const count = this.stall[id].stock.common.organic
+      if (count === 0) return { clean: 0, clearance: 0 }
+      return { clean: this.stall[id].worth.common.organic * saleX, clearance: 0 }
+    }
+    if (isSpiritStall(id)) {
+      return {
+        clean: RARITY_RANK.reduce((goodTotal, rarity) => {
+          const count = this.stall[id].stock[rarity].organic
+          if (count === 0) return goodTotal
+          const worth = this.stall[id].worth[rarity].organic
+          return goodTotal + worth * saleX * (rarity === 'heirloom' ? heirX : 1)
+        }, 0),
+        clearance: 0,
       }
-      if (isSpiritStall(id)) {
-        return (
-          total +
-          RARITY_RANK.reduce((goodTotal, rarity) => {
-            const count = this.stall[id].stock[rarity].organic
-            if (count === 0) return goodTotal
-            const worth = this.stall[id].worth[rarity].organic
-            return goodTotal + worth * saleX * (rarity === 'heirloom' ? heirX : 1)
-          }, 0)
-        )
-      }
-      const x = stallX(id, this.modifiers)
-      return (
-        total +
-        RARITY_RANK.reduce((goodTotal, rarity) => {
-          const rareX = stallRarity(id, rarity) * (rarity === 'heirloom' ? heirX : 1)
-          return (
-            goodTotal +
-            BIO_KEYS.reduce((bioTotal, k) => {
-              const count = this.stall[id].stock[rarity][k]
-              if (count === 0) return bioTotal
-              const worth = this.stall[id].worth[rarity][k]
-              if (clearance && worth === 0) return bioTotal + count
-              const avg = worth / count
-              const fresh = avg < jam ? jam : avg
-              const organicMul = k === 'organic' ? bioX : 1
-              return bioTotal + count * fresh * x * rareX * saleX * organicMul
-            }, 0)
-          )
-        }, 0)
-      )
-    }, 0)
+    }
+    const x = stallX(id, this.modifiers)
+    return RARITY_RANK.reduce(
+      (acc, rarity) => {
+        const rareX = stallRarity(id, rarity) * (rarity === 'heirloom' ? heirX : 1)
+        return BIO_KEYS.reduce((bioAcc, k) => {
+          const count = this.stall[id].stock[rarity][k]
+          if (count === 0) return bioAcc
+          const worth = this.stall[id].worth[rarity][k]
+          if (clearanceOn && worth === 0) return { clean: bioAcc.clean, clearance: bioAcc.clearance + count }
+          const avg = worth / count
+          const fresh = avg < jam ? jam : avg
+          const organicMul = k === 'organic' ? bioX : 1
+          return { clean: bioAcc.clean + count * fresh * x * rareX * saleX * organicMul, clearance: bioAcc.clearance }
+        }, acc)
+      },
+      { clean: 0, clearance: 0 },
+    )
   }
 
   private jamFloor(): number {
@@ -3417,33 +3466,49 @@ export class World {
     return JAM_FLOOR[t - 1]
   }
 
+  nowDay(): number {
+    return this.clock.day - 1 + this.clock.t / DAY_SECONDS
+  }
+
+  contractSlots(): number {
+    return CONTRACT_OFFERS + (this.skillTier('broker') >= 1 ? 1 : 0)
+  }
+
+  contractCap(): number {
+    return CONTRACT_ACTIVE + (this.skillTier('broker') >= 2 ? 1 : 0)
+  }
+
+  acceptContract(c: ContractId): void {
+    this.commit({ a: Act.acceptContract, t: this.now, p: this.local, c })
+  }
+
+  cancelContract(c: ContractId): void {
+    this.commit({ a: Act.cancelContract, t: this.now, p: this.local, c })
+  }
+
+  reorderContract(c: ContractId, d: 1 | -1): void {
+    this.commit({ a: Act.reorderContract, t: this.now, p: this.local, c, d })
+  }
+
   sellAll(): void {
     this.commit({ a: Act.sellAll, t: this.now, p: this.local })
   }
 
   private sellAllBody(): void {
     if (!this.marketOpen()) return
-    const gain = this.marketGain()
-    if (gain === 0) return
+    const quote = this.marketQuote()
+    if (quote.paid === 0) return
+    quote.rows.forEach(row => {
+      this.stall[row.good].sat = Math.min(1, row.sat + row.clean / SAT_DEPTH)
+    })
     STALL_IDS.forEach(id => {
       RARITY_RANK.forEach(rarity => {
         this.stall[id].stock[rarity] = { organic: 0, synth: 0 }
         this.stall[id].worth[rarity] = { organic: 0, synth: 0 }
       })
-      this.stall[id].acc = 0
     })
-    this.money += gain
-    this.sales = []
+    this.money += quote.paid
     this.emit('sold')
-  }
-
-  private retarget(slot: 0 | 1): void {
-    STALL_IDS.forEach(id => {
-      const g = this.stall[id]
-      const x = stallX(id, this.modifiers)
-      const u = this.rng.stream('market').at(goodIx(id), this.clock.day, slot)
-      g.target = clamp(g.target * (0.75 + u * 0.5), 0.25 * x, 1.75 * x)
-    })
   }
 
   gateProgress(id: ResearchId): number {
@@ -3496,16 +3561,15 @@ export class World {
     this.now += 1
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
     if (this.seam.kind === 'recap') return
-    this.sales = []
-    const t0 = this.clock.t
+    const beforeDay = this.nowDay()
     const seam = this.clock.advance(dt) === 'seam'
     if (seam) {
-      if (DYNAMIC_MARKET) this.retarget(1)
       this.seats.forEach(s => {
         s.workLeft = 0
         s.workTotal = 0
         s.filling = false
       })
+      this.tickContracts(beforeDay, this.nowDay())
       this.money += DAY_STIPEND
       const tax = this.tax()
       this.money -= tax
@@ -3520,13 +3584,16 @@ export class World {
           harvests: this.tally.harvests,
           research: this.tally.research,
           tax,
+          contracts: this.tally.contracts,
         },
       }
-      this.tally = { died: 0, harvests: 0, research: [] }
+      this.tally = { died: 0, harvests: 0, research: [], contracts: [] }
+      if (this.done.has('unlock-contracts') && this.contracts.takenToday.length === 0) this.addRep(-REP_IDLE)
+      this.contracts.takenToday = []
+      this.contracts.repDay = this.contracts.rep
       this.ping()
       return
     }
-    if (DYNAMIC_MARKET && t0 < 120 && this.clock.t >= 120) this.retarget(0)
     this.tickSpeech(dt)
     this.tickJob(dt)
     this.tickButtons()
@@ -3558,7 +3625,10 @@ export class World {
     this.tickFreshness(dt)
     this.tickCompost(dt)
     this.tickBig(dt)
-    if (this.tickStall(dt) || this.sales.length > 0) this.ping()
+    this.tickContracts(beforeDay, this.nowDay())
+    STALL_IDS.forEach(id => {
+      this.stall[id].sat = recover(this.stall[id].sat, dt)
+    })
   }
 
   private tickSpeech(dt: number): void {
@@ -4747,37 +4817,49 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const item = this.act.hand.item
     if (item.kind === 'fruit') {
-      this.stall[item.crop].take(item.rarity, item.count, freshMul(item.freshness), item.bio)
+      this.splitConsign(item.crop, item.rarity, item.count, item.freshness === 0, rest => {
+        this.stall[item.crop].take(item.rarity, rest, freshMul(item.freshness), item.bio)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'sugar') {
-      this.stall.sugar.takeSugar(item.liters, item.unitSale)
+      this.splitConsign('sugar', 'common', item.liters, false, rest => {
+        this.stall.sugar.takeSugar(rest, item.unitSale)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'spirit') {
-      this.stall[item.spirit].takeSpirit(item.rarity, item.count, item.unitSale)
+      this.splitConsign(item.spirit, item.rarity, item.count, false, rest => {
+        this.stall[item.spirit].takeSpirit(item.rarity, rest, item.unitSale)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'wine') {
-      this.stall.wine.takeSpirit(item.rarity, item.count, item.unitSale)
+      this.splitConsign('wine', item.rarity, item.count, false, rest => {
+        this.stall.wine.takeSpirit(item.rarity, rest, item.unitSale)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'jam') {
-      this.stall[`jam-${item.crop}`].takeBaked(item.count, item.unitSale)
+      this.splitConsign(`jam-${item.crop}`, 'common', item.count, false, rest => {
+        this.stall[`jam-${item.crop}`].takeBaked(rest, item.unitSale)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
-      this.stall[item.kind].takeBaked(item.count, item.unitSale)
+      this.splitConsign(item.kind, 'common', item.count, false, rest => {
+        this.stall[item.kind].takeBaked(rest, item.unitSale)
+      })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
@@ -4785,7 +4867,9 @@ export class World {
     if (item.kind !== 'box') return
     if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
       const cargo = item.cargo.stack
-      this.stall[cargo.crop].take(cargo.rarity, cargo.count, freshMul(cargo.freshness), cargo.bio)
+      this.splitConsign(cargo.crop, cargo.rarity, cargo.count, cargo.freshness === 0, rest => {
+        this.stall[cargo.crop].take(cargo.rarity, rest, freshMul(cargo.freshness), cargo.bio)
+      })
       item.cargo = { kind: 'empty' }
       this.completeConsign()
     }
@@ -4794,49 +4878,178 @@ export class World {
   private completeConsign(): void {
     this.consignRevision += 1
     this.pulse = { text: 'Drop off', at: { ...PAD } }
+    this.finishFull()
   }
 
-  private tickStall(dt: number): boolean {
-    if (!DYNAMIC_MARKET) return false
-    let changed = false
-    this.mktAcc += dt
-    while (this.mktAcc >= 10) {
-      this.mktAcc -= 10
-      STALL_IDS.forEach(id => {
-        const g = this.stall[id]
-        const current = tenths(g.market)
-        const target = tenths(g.target)
-        if (current < target) {
-          g.market = (current + 1) / 10
-          changed = true
-        }
-        if (current > target) {
-          g.market = (current - 1) / 10
-          changed = true
-        }
+  private splitConsign(
+    good: StallGoodId,
+    rarity: Rarity,
+    n: number,
+    skip: boolean,
+    restToStall: (rest: number) => void,
+  ): void {
+    const bound = skip ? 0 : this.fillContracts(good, rarity, n)
+    const rest = n - bound
+    if (rest > 0) restToStall(rest)
+  }
+
+  private fillContracts(good: StallGoodId, rarity: Rarity, n: number): number {
+    let left = n
+    this.contracts.active.forEach(a => {
+      a.bins.forEach(bin => {
+        if (left <= 0) return
+        if (!Accepts(bin.demand, good, rarity)) return
+        const room = bin.demand.amount - bin.filled
+        if (room <= 0) return
+        const take = left < room ? left : room
+        bin.filled += take
+        left -= take
       })
-    }
-    STALL_IDS.forEach(id => {
-      const g = this.stall[id]
-      if (binCount(g) === 0) {
-        g.acc = 0
-        return
-      }
-      g.acc += stallRate(g.offered, g.market) * dt
-      while (g.acc >= 1 && binCount(g) > 0) {
-        const rarity = RARITY_RANK.find(r => g.stock[r].organic + g.stock[r].synth > 0) as Rarity
-        const k = g.stock[rarity].organic > 0 ? 'organic' : 'synth'
-        const fresh = g.worth[rarity][k] / g.stock[rarity][k]
-        g.stock[rarity][k] -= 1
-        g.worth[rarity][k] -= fresh
-        const money = g.offered * RARITY_SALE[rarity] * fresh
-        this.money += money
-        this.sales.push({ good: id, rarity, money })
-        g.acc -= 1
-        changed = true
-      }
     })
-    return changed
+    return n - left
+  }
+
+  private finishFull(): void {
+    this.contracts.active
+      .filter(a => a.bins.every(b => b.filled === b.demand.amount))
+      .slice()
+      .forEach(a => this.resolveDone(a))
+  }
+
+  private tickContracts(before: number, after: number): void {
+    this.contracts.active
+      .filter(a => before < a.dueDay && after >= a.dueDay)
+      .slice()
+      .forEach(a => {
+        if (a.bins.every(b => b.filled === b.demand.amount)) this.resolveDone(a)
+        else this.resolveMiss(a)
+      })
+  }
+
+  private acceptContractBody(c: ContractId): void {
+    if (!this.done.has('unlock-contracts')) return
+    if (this.contracts.active.length >= this.contractCap()) return
+    if (this.contracts.takenToday.includes(c)) return
+    const offer = rollBoard(this.rng, this.clock.day, this.contractSlots(), this.contracts.repDay).find(o => o.id === c)
+    if (offer === undefined) return
+    const bins: Bins =
+      offer.lines.length === 1
+        ? [{ demand: offer.lines[0], filled: 0 }]
+        : [{ demand: offer.lines[0], filled: 0 }, { demand: offer.lines[1], filled: 0 }]
+    this.contracts.active.push({ offer, dueDay: this.nowDay() + offer.days, bins })
+    this.contracts.takenToday.push(c)
+    this.ping()
+  }
+
+  private cancelContractBody(c: ContractId): void {
+    const a = this.contracts.active.find(x => x.offer.id === c)
+    if (a === undefined) return
+    const sold = this.dumpFilled(a)
+    const fee = cancelFee(a, this.nowDay())
+    this.money += sold - fee
+    this.addRep(-REP_LOST[a.offer.stars])
+    this.dropActive(a)
+    this.pushHistory({
+      id: a.offer.id,
+      company: a.offer.company,
+      stars: a.offer.stars,
+      day: this.clock.day,
+      outcome: { kind: 'cancelled', sold, fee },
+    })
+    this.ping()
+  }
+
+  private addRep(n: number): void {
+    const next = this.contracts.rep + n
+    this.contracts.rep = next < 0 ? 0 : next > REP_MAX ? REP_MAX : next
+  }
+
+  private reorderContractBody(c: ContractId, d: 1 | -1): void {
+    const i = this.contracts.active.findIndex(x => x.offer.id === c)
+    if (i < 0) return
+    const j = i + d
+    if (j < 0 || j >= this.contracts.active.length) return
+    const cur = this.contracts.active[i]
+    this.contracts.active[i] = this.contracts.active[j]
+    this.contracts.active[j] = cur
+    this.ping()
+  }
+
+  private resolveDone(a: Active): void {
+    const paidN = a.offer.reward * (1 + 0.03 * this.skillTier('industrial'))
+    this.money += paidN
+    this.contracts.book[a.offer.company].done += 1
+    this.addRep(REP_DONE[a.offer.stars])
+    this.dropActive(a)
+    this.pushHistory({
+      id: a.offer.id,
+      company: a.offer.company,
+      stars: a.offer.stars,
+      day: this.clock.day,
+      outcome: { kind: 'done', paid: paidN },
+    })
+    this.ping()
+  }
+
+  private resolveMiss(a: Active): void {
+    const sold = this.dumpFilled(a)
+    const penalty = missPenalty(a)
+    this.money += sold - penalty
+    this.contracts.book[a.offer.company].missed += 1
+    this.addRep(-REP_LOST[a.offer.stars])
+    this.dropActive(a)
+    this.pushHistory({
+      id: a.offer.id,
+      company: a.offer.company,
+      stars: a.offer.stars,
+      day: this.clock.day,
+      outcome: { kind: 'missed', sold, penalty },
+    })
+    this.ping()
+  }
+
+  private dropActive(a: Active): void {
+    this.contracts.active = this.contracts.active.filter(x => x.offer.id !== a.offer.id)
+  }
+
+  private pushHistory(e: HistoryEntry): void {
+    this.contracts.history.push(e)
+    if (this.contracts.history.length > CONTRACT_HISTORY_MAX) this.contracts.history.shift()
+    this.tally.contracts.push(e)
+  }
+
+  private dumpFilled(a: Active): number {
+    const add = new Map<StallGoodId, number>()
+    a.bins.forEach(bin => {
+      if (bin.filled <= 0) return
+      const good = demandGood(bin.demand)
+      const V = bin.filled * cleanUnit(bin.demand)
+      const cur = add.get(good)
+      add.set(good, cur === undefined ? V : cur + V)
+      this.consignDemand(bin.demand, bin.filled)
+    })
+    let sold = 0
+    add.forEach((V, good) => {
+      sold += paid(this.stall[good].sat, good, V)
+      this.stall[good].sat = Math.min(1, this.stall[good].sat + V / SAT_DEPTH)
+    })
+    return sold
+  }
+
+  private consignDemand(d: Demand, n: number): void {
+    if (d.kind === 'rated') {
+      if (isCropStall(d.good)) this.stall[d.good].take(d.minRarity, n, 1, false)
+      else this.stall[d.good].takeSpirit(d.minRarity, n, cleanUnit(d))
+      return
+    }
+    if (d.kind === 'plain') {
+      if (d.good === 'sugar') this.stall.sugar.takeSugar(n, SUGAR_MILL)
+      else if (d.good === 'oil' || d.good === 'flour' || d.good === 'extract') this.stall[d.good].takeBaked(n, d.good === 'oil' ? OIL : d.good === 'flour' ? FLOUR : EXTRACT)
+      else this.stall[d.good].takeBaked(n, JAM_SALE[d.good.slice(4) as JamCrop])
+      return
+    }
+    if (d.group === 'jam') this.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
+    else this.stall.vodka.takeSpirit(d.minRarity, n, bakeSpiritSale('vodka', d.minRarity))
   }
 
   private padBuildings(): PadCell[] {
@@ -5334,12 +5547,23 @@ function sprinklerSku(s: Sprinkler): SkuId {
   return 'buy-sprinkler-large'
 }
 
-function emptyMember<Id extends SkillId>(): MemberState<Id> {
-  return { points: 0, pickCount: 0, owned: new Map(), offers: [] }
+function emptyBook(): CompanyBook {
+  return {
+    'whole-cart': { done: 0, missed: 0 },
+    'trade-jo': { done: 0, missed: 0 },
+    'halbert-eijn': { done: 0, missed: 0 },
+    'little-lid': { done: 0, missed: 0 },
+    mercanova: { done: 0, missed: 0 },
+    intercrop: { done: 0, missed: 0 },
+  }
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n))
+function emptyContracts(): Contracts {
+  return { active: [], takenToday: [], history: [], book: emptyBook(), rep: 0, repDay: 0 }
+}
+
+function emptyMember<Id extends SkillId>(): MemberState<Id> {
+  return { points: 0, pickCount: 0, owned: new Map(), offers: [] }
 }
 
 function harvestInsert(slots: Slot[], item: Item): boolean {

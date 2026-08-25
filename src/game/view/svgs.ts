@@ -224,6 +224,7 @@ import skillTending from '../../assets/skills/skill-tending.svg?raw'
 import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
 import skillContracts from '../../assets/skills/skill-contracts.svg?raw'
+import skillBroker from '../../assets/skills/skill-broker.svg?raw'
 import skillForecast from '../../assets/skills/skill-forecast.svg?raw'
 import skillTax from '../../assets/skills/skill-tax.svg?raw'
 import skillWaterStudy from '../../assets/skills/skill-water-study.svg?raw'
@@ -242,6 +243,13 @@ import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
 import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
 import portraitDaughter from '../../assets/skills/portrait-daughter.svg?raw'
 import uiMarketStall from '../../assets/ui/ui-market-stall.svg?raw'
+import uiContractStars from '../../assets/ui/ui-contract-stars.svg?raw'
+import companyWholeCart from '../../assets/market/company-whole-cart.svg?raw'
+import companyTradeJo from '../../assets/market/company-trade-jo.svg?raw'
+import companyHalbertEijn from '../../assets/market/company-halbert-eijn.svg?raw'
+import companyLittleLid from '../../assets/market/company-little-lid.svg?raw'
+import companyMercanova from '../../assets/market/company-mercanova.svg?raw'
+import companyIntercrop from '../../assets/market/company-intercrop.svg?raw'
 import uiRecapNight from '../../assets/ui/ui-recap-night.svg?raw'
 import uiCoin from '../../assets/ui/ui-coin.svg?raw'
 import uiCoinSilver from '../../assets/ui/ui-coin-silver.svg?raw'
@@ -267,6 +275,7 @@ import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import { ANNUAL_IDS, TREE_IDS, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face, type Item } from '../sim/item.ts'
+import type { CompanyId } from '../sim/market.h.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
   carrot,
@@ -553,6 +562,8 @@ export function researchInner(id: ResearchId): string {
       return inner(itemAnd)
     case 'unlock-smart-irrigation':
       return stageOnly(itemSmartValve, 'closed')
+    case 'unlock-contracts':
+      return inner(skillContracts)
   }
 }
 
@@ -776,7 +787,8 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'vanilla-tending': inner(skillTending),
   'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
-  contracts: inner(skillContracts),
+  haggling: inner(skillContracts),
+  broker: inner(skillBroker),
   forecast: inner(skillForecast),
   tax: inner(skillTax),
   'water-study': inner(skillWaterStudy),
@@ -844,6 +856,20 @@ export function skillInner(id: SkillId): string {
   return SKILL_ART[id]
 }
 export const UI_MARKET_STALL = uiMarketStall
+export const UI_CONTRACT_STARS = {
+  1: groupInner(uiContractStars, 's1'),
+  2: groupInner(uiContractStars, 's2'),
+  3: groupInner(uiContractStars, 's3'),
+  4: groupInner(uiContractStars, 's4'),
+} as const
+export const COMPANY: { readonly [K in CompanyId]: string } = {
+  'whole-cart': inner(companyWholeCart),
+  'trade-jo': inner(companyTradeJo),
+  'halbert-eijn': inner(companyHalbertEijn),
+  'little-lid': inner(companyLittleLid),
+  mercanova: inner(companyMercanova),
+  intercrop: inner(companyIntercrop),
+}
 export const UI_RECAP_NIGHT = inner(uiRecapNight)
 export const UI_PHASE: { readonly [K in DayPhase]: string } = {
   sunrise: inner(uiPhaseSunrise),

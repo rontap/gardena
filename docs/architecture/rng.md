@@ -9,7 +9,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 | file | owns |
 |---|---|
 | `src/game/sim/rng.ts` | `hash`, `rollRarity`, `Rng`, `Spatial`, `Seq`, `StreamId` |
-| `src/game/sim/world.ts` | `World.rng`, `World.ripenN`. Shop / grow / weed / grass / tree / fruit / skill / grind / still / barrel / market call sites |
+| `src/game/sim/world.ts` | `World.rng`, `World.ripenN`. Shop / grow / weed / grass / tree / fruit / skill / grind / still / barrel call sites |
 | `src/game/sim/gen.ts` | rocks, rock-shape. Uses `gen` |
 | `src/game/sim/noise.ts` | soil-noise, soil-boost. Uses `gen` |
 | `src/game/sim/stall.ts` | crate. Uses `gen` |
@@ -32,7 +32,7 @@ seed omitted → (Math.random() * 0x100000000) >>> 0 once
 ```
 StreamId = SpatialId | SeqId
 
-SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'still' | 'barrel' | 'market'
+SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'still' | 'barrel' | 'contract'
 SeqId = 'shop' | 'fruit'
 
 class Rng {
@@ -125,9 +125,24 @@ memberIx: player = 0, husband = 1, daughter = 2
 
 `n` is the barrel’s batch index. Consume at mature only. Collect does not consume.
 
-### market — `at(goodIx, day, slot)`
+### contract — `at(day, slot, k)`
 
-`slot` is 0 or 1 as `retarget` now. `DYNAMIC_MARKET` stays false. Stream still this identity when that path runs. Not a cmd.
+Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Not in `World.log`. Mix ints are `(day, slot, k)` only. Illegal: inventory, plantings, research, money, `clock.t`.
+
+| k | roll |
+|---|---|
+| 0 | `D` inside `SLOT_BANDS[slot]`, then day cap |
+| 1 | company among eligible at `D` |
+| 2 | line 1 good from that pool |
+| 3 | line 1 group vs specific |
+| 4 | line 1 `minRarity` |
+| 5 | `DeadlineBand` among affordable |
+| 6 | `days` inside `DEADLINE_DAYS[band]` |
+| 7 | line 2 good |
+| 8 | line 2 group vs specific |
+| 9 | line 2 `minRarity` |
+
+Amount is derived. Pair is leftover `Dmix >= PAIR_COST`, not a roll. `rollBoard` [[mechanics/contracts]].
 
 ## Illegal
 

@@ -10,6 +10,7 @@ import {
   SUGAR_SHOP,
 } from '../defs/items.ts'
 import { PROTOCOL } from './mp.ts'
+import { paid } from './market.ts'
 import { SAVE_VERSION } from './save.ts'
 import {
   bakeSpiritSale,
@@ -33,7 +34,9 @@ describe('machines', () => {
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.marketGain()).toBe(60)
+    expect(w.stall.potato.sat).toBe(0)
+    expect(w.marketQuote().clean).toBe(60)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 60), 9)
     expect(spiritKind([{ crop: 'potato', count: 10 }])).toBe('vodka')
     expect(bakeSpiritSale('vodka', 'common')).toBe(72)
   })
@@ -48,7 +51,9 @@ describe('machines', () => {
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.marketGain()).toBe(210)
+    expect(w.stall.potato.sat).toBe(0)
+    expect(w.marketQuote().clean).toBe(210)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 210), 9)
     expect(bakeSpiritSale('vodka', 'heirloom')).toBe(SPIRIT_SALE.vodka * SPIRIT_RARITY.heirloom)
   })
 
@@ -84,8 +89,8 @@ describe('machines', () => {
   })
 
   test('Barrel is grapes → wine only. No whisky. No migrate.', () => {
-    expect(SAVE_VERSION).toBe(1.72)
-    expect(PROTOCOL).toBe(1.72)
+    expect(SAVE_VERSION).toBe(1.73)
+    expect(PROTOCOL).toBe(1.73)
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
     expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')

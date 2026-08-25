@@ -1,18 +1,23 @@
 import * as Dialog from '@radix-ui/react-dialog'
+import { COMPANIES } from '../defs/companies.ts'
 import { RESEARCH } from '../defs/research.ts'
+import type { HistoryEntry } from '../sim/market.h.ts'
 import type { Recap as RecapData } from '../sim/world.ts'
 import { UI_RECAP_NIGHT } from '../view/svgs.ts'
+import { Difficulty } from './market.tsx'
 import { Btn, Chrome, Coin } from './frame.tsx'
 
 export function Recap({
   recap,
   nextDay,
   guest,
+  showContracts,
   onDismiss,
 }: {
   recap: RecapData
   nextDay: number
   guest: boolean
+  showContracts: boolean
   onDismiss: () => void
 }) {
   return (
@@ -47,6 +52,14 @@ export function Recap({
                   value={recap.research.length === 0 ? '—' : recap.research.map(id => RESEARCH[id].name).join(', ')}
                 />
               </div>
+              {showContracts && (
+                <div className="mt-3 flex flex-col gap-1 text-base text-ink">
+                  {recap.contracts.map(e => (
+                    <ContractLine key={`${e.id}-${e.outcome.kind}`} entry={e} />
+                  ))}
+                  <div className="text-sm text-ink">A new board is up.</div>
+                </div>
+              )}
               <div className="mt-3 border-t border-ink/20 pt-2 text-base text-ink">
                 <Line label="Stipend" sign="+" n={recap.stipend} />
                 <Line label="Tax" sign="−" n={recap.tax} />
@@ -65,6 +78,28 @@ export function Recap({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  )
+}
+
+function ContractLine({ entry }: { entry: HistoryEntry }) {
+  const outcome =
+    entry.outcome.kind === 'done' ? 'Completed' : entry.outcome.kind === 'missed' ? 'Missed' : 'Cancelled'
+  const n =
+    entry.outcome.kind === 'done'
+      ? entry.outcome.paid
+      : entry.outcome.kind === 'missed'
+        ? entry.outcome.penalty
+        : entry.outcome.fee
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span>{COMPANIES[entry.company].name}</span>
+      <Difficulty stars={entry.stars} />
+      <span>{entry.day}</span>
+      <span>{outcome}</span>
+      <span className="ml-auto">
+        <Coin n={n} />
+      </span>
+    </div>
   )
 }
 

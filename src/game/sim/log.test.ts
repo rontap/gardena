@@ -21,7 +21,6 @@ describe('0.9 log', () => {
       { a: Act.startResearch, t: 11, p: 0, r: 'unlock-expand' },
       { a: Act.pickSkill, t: 12, p: 0, m: 'husband', s: 2 },
       { a: Act.sellAll, t: 13, p: 0 },
-      { a: Act.nudgeOffered, t: 14, p: 0, g: 'sugar', d: -1 },
       { a: Act.swap, t: 15, p: 0, i: 0 },
       { a: Act.swapChest, t: 16, p: 0, c: [5, 5], i: 1 },
       { a: Act.tuneSprinkler, t: 17, p: 0, c: [6, 6], u: { kind: 'crop', crop: 'carrot' } },
@@ -63,6 +62,9 @@ describe('0.9 log', () => {
       { a: Act.setBoom, t: 38, p: 0, w: 3 },
       { a: Act.load, t: 45, p: 0 },
       { a: Act.unload, t: 46, p: 0 },
+      { a: Act.acceptContract, t: 53, p: 0, c: 4 },
+      { a: Act.cancelContract, t: 54, p: 0, c: 4 },
+      { a: Act.reorderContract, t: 55, p: 0, c: 4, d: -1 },
     ]
     cmds.forEach(cmd => {
       expect(JSON.parse(JSON.stringify(cmd))).toEqual(cmd)

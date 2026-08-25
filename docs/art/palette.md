@@ -17,6 +17,10 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | ink | `#1c1710` | outlines; UI rails |
 | house | `#cfc6b0` | walls; panel fill |
 | roof | `#8b3a2a` | house; UI header / corner |
+| tier-1 | `#3d7ea6` | contract difficulty dot, 1 |
+| tier-2 | `#2a9d8f` | contract difficulty dot, 2 |
+| tier-3 | `#e07b18` | contract difficulty dot, 3 |
+| tier-4 | `#e23b2e` | contract difficulty dot, 4 |
 
 `src/index.css` `@theme` `--color-*` matches these except `fruit-red` (SVG only).
 

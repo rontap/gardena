@@ -22,13 +22,13 @@ Roles and blurbs are the only place the UI says what a member is for. Keep them 
 
 ## Offers
 
-The slot is the button: `h-11`, icon `h-6 w-6`, then `SKILLS[id].name` + roman tier (`I`–`V` = offered `tier` 1–5), truncating. maxTier 3 (`bio` `jam` `industrial` `driving-classes` `contracts` `machinery`) only reach **III**. Labels share one left edge. `bg-dirt` when the member has a point, `bg-ink/8 text-ink/45` when not.
+The slot is the button: `h-11`, icon `h-6 w-6`, then `SKILLS[id].name` + roman tier (`I`–`V` = offered `tier` 1–5), truncating. maxTier 3 (`bio` `jam` `industrial` `driving-classes` `haggling` `machinery`) only reach **III**. Labels share one left edge. `bg-dirt` when the member has a point, `bg-ink/8 text-ink/45` when not.
 
-Icon: `skill-{id}` except `better-{crop}` — `fruitInner(crop)` under `skill-better`. Player `driving-classes` → `skill-driving-classes`.
+Icon: `skill-{id}` except `better-{crop}` — `fruitInner(crop)` under `skill-better`. Player `driving-classes` → `skill-driving-classes`. Husband `haggling` → `skill-contracts`.
 
-Live lists. Not `bulk-buying` `tool-contracts` `machine-contracts`. Player includes `driving-classes`. Husband: `machinery` + `contracts`.
+Live lists. Not `bulk-buying` `tool-contracts` `machine-contracts`. Player includes `driving-classes`. Husband: `machinery` + `haggling`.
 
-Click `pickSkill(member, slot)` iff that member’s `points > 0`. Else disabled. Dummy skills (`forecast`, `industrial`) still show; picking spends the point.
+Click `pickSkill(member, slot)` iff that member’s `points > 0`. Else disabled. Dummy skills (`forecast`) still show; picking spends the point.
 
 Hover (offers and learned): [[ui/callout-hover]] to the right of the Family window. Title `SKILLS[id].name`, description `skillBlurb(id, tier)`.
 
@@ -40,4 +40,4 @@ Chip: `bg-ink/10`, `h-7`, icon `h-5 w-5` + roman tier when `SKILLS[id].maxTier >
 
 `SKILLS[id].blurb` is the player sentence. Catalog voice. `skillBlurb` swaps jam for the rank’s “will not knock more than N% off”, and seed-bank for “there is some chance… (n% uncommon, n% rare, n% heirloom)”. Jam floors `0.10 / 0.20 / 0.30` (max 3) → N = 90 / 80 / 70. Better-{crop} names the 4% sale and “increased chance that a happy plant will produce a superior fruit” — not the 4%.
 
-Assumption: names and blurbs stay in `SKILLS`; this note does not invent them. Live offer pools drop `bulk-buying` `tool-contracts` `machine-contracts`.
+Assumption: names and blurbs stay in `SKILLS`; this note does not invent them. Live offer pools drop `bulk-buying` `tool-contracts` `machine-contracts`. `industrial` is live, not dummy.

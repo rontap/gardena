@@ -113,7 +113,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.72 as const
+export const SAVE_VERSION = 1.73 as const
 
 const INV = 16
 
@@ -251,13 +251,25 @@ export type SaveTrailer =
       slots: Slot[]
     }
 
+export type SaveRecap = {
+  day: number
+  money: number
+  stipend: number
+  died: number
+  harvests: number
+  research: ResearchId[]
+  tax: number
+}
+
 export type Save = {
   game: 'gardena'
-  version: 1.72
+  version: 1.73
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
   money: number
+  rep: number
+  repDay: number
   purchases: number
   digs: number
   mines: number
@@ -275,8 +287,8 @@ export type Save = {
     daughter: SaveMember<DaughterSkillId>
   }
   stall: { [K in StallGoodId]: SaveStallGood }
-  tally: DayTally
-  seam: Seam
+  tally: { died: number; harvests: number; research: ResearchId[] }
+  seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
   ripenN: { col: number; row: number; n: number }[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
@@ -296,6 +308,8 @@ export function dump(world: World): Save {
     rng: { seed: world.rng.seed, shop: world.rng.consumed('shop'), fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },
     money: world.money,
+    rep: world.contracts.rep,
+    repDay: world.contracts.repDay,
     purchases: world.purchases,
     digs: world.digs,
     mines: world.mines,
@@ -325,7 +339,21 @@ export function dump(world: World): Save {
       harvests: world.tally.harvests,
       research: world.tally.research.slice(),
     },
-    seam: world.seam,
+    seam:
+      world.seam.kind === 'play'
+        ? { kind: 'play' }
+        : {
+            kind: 'recap',
+            recap: {
+              day: world.seam.recap.day,
+              money: world.seam.recap.money,
+              stipend: world.seam.recap.stipend,
+              died: world.seam.recap.died,
+              harvests: world.seam.recap.harvests,
+              research: world.seam.recap.research,
+              tax: world.seam.recap.tax,
+            },
+          },
     ripenN: [...world.ripenN.entries()].flatMap(([k, n]) => {
       if (n <= 0) return []
       const i = k.indexOf(',')
@@ -417,10 +445,10 @@ function dumpMember<Id extends SkillId>(m: { points: number; pickCount: number; 
 
 function dumpStall(g: StallGood): SaveStallGood {
   return {
-    offered: g.offered,
-    market: g.market,
-    target: g.target,
-    acc: g.acc,
+    offered: 0,
+    market: 0,
+    target: 0,
+    acc: 0,
     stock: {
       common: { ...g.stock.common },
       uncommon: { ...g.stock.uncommon },
@@ -671,6 +699,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const day = num(clockIn.day)
   const t = num(clockIn.t)
   const money = num(rec.money)
+  const rep = num(rec.rep)
+  const repDay = num(rec.repDay)
   const purchases = num(rec.purchases)
   const digs = num(rec.digs)
   const mines = num(rec.mines)
@@ -684,6 +714,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     day === undefined ||
     t === undefined ||
     money === undefined ||
+    rep === undefined ||
+    repDay === undefined ||
     purchases === undefined ||
     digs === undefined ||
     mines === undefined ||
@@ -842,6 +874,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     rng: { seed, shop, fruit },
     clock: { day, t },
     money,
+    rep,
+    repDay,
     purchases,
     digs,
     mines,
@@ -920,14 +954,22 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     chunks: live.chunks,
     clock: save.clock,
     money: save.money,
+    rep: save.rep,
+    repDay: save.repDay,
     purchases: save.purchases,
     digs: save.digs,
     mines: save.mines,
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,
-    tally: save.tally,
-    seam: save.seam,
+    tally: { died: save.tally.died, harvests: save.tally.harvests, research: save.tally.research, contracts: [] },
+    seam:
+      save.seam.kind === 'play'
+        ? { kind: 'play' }
+        : {
+            kind: 'recap',
+            recap: { ...save.seam.recap, contracts: [] },
+          },
     ripenN: save.ripenN,
     segments: save.segments,
     wells: save.wells.map(well => {
@@ -963,11 +1005,7 @@ function makeStallMap(s: Save['stall']): StallMap {
   const stall = {} as StallMap
   for (const id of STALL_IDS) {
     const src = s[id]
-    const g = new StallGood(id, src.offered)
-    g.offered = src.offered
-    g.market = src.market
-    g.target = src.target
-    g.acc = src.acc
+    const g = new StallGood(id)
     RARITY_RANK.forEach(r => {
       g.stock[r] = { organic: src.stock[r].organic, synth: src.stock[r].synth }
       g.worth[r] = { organic: src.worth[r].organic, synth: src.worth[r].synth }
@@ -2029,7 +2067,7 @@ function readTally(v: Record<string, unknown>): DayTally | undefined {
     if (!isResearchId(id)) return undefined
     research.push(id)
   }
-  return { died, harvests, research }
+  return { died, harvests, research, contracts: [] }
 }
 
 function readSeam(v: unknown): Seam | undefined {
@@ -2070,7 +2108,7 @@ function readRecap(v: unknown): Recap | undefined {
     if (!isResearchId(id)) return undefined
     research.push(id)
   }
-  return { day, money, stipend, died, harvests, research, tax }
+  return { day, money, stipend, died, harvests, research, tax, contracts: [] }
 }
 
 function readSegment(v: unknown): Segment | undefined {

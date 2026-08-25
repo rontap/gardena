@@ -55,6 +55,7 @@ Vault for this game. Agents read this first.
 - [[plans/early-access-1]] — 1.0 Early Access 1 spec
 - [[plans/early-access-1.1]] — 1.1 Early Access multiplayer beta spec
 - [[plans/early-access-2]] — 0.10 Early Access 2 disease design notes, not yet spec
+- [[plans/1.8.0]] — 1.8.0 market pressure + contracts spec. Types are `src/game/sim/market.h.ts`
 - [[reconciliation]] — locked decisions
 
 ## Archive

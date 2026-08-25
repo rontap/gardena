@@ -802,7 +802,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           )}
           {panel.kind === 'research' && <Research world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
-          {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'market' && <Market world={world} guest={guest} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (
@@ -907,6 +907,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               recap={world.seam.recap}
               nextDay={world.clock.day}
               guest={guest}
+              showContracts={world.done.has('unlock-contracts')}
               onDismiss={() => world.dismissRecap()}
             />
           )}

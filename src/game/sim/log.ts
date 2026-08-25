@@ -6,13 +6,13 @@ import type {
   MemberId,
   ResearchId,
   SkuId,
-  StallGoodId,
   TrailerId,
   TrailerKind,
   VehicleId,
   VehicleKind,
   VehicleSlot,
 } from './ids.ts'
+import type { ContractId } from './market.h.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { WireEnd } from './sensor.ts'
 import type { Intent, SeatId } from './world.ts'
@@ -33,7 +33,6 @@ export const Act = {
   startResearch: 'r',
   pickSkill: 'k',
   sellAll: 's',
-  nudgeOffered: 'o',
   swap: 'w',
   swapChest: 'h',
   takeStore: 'S',
@@ -69,6 +68,9 @@ export const Act = {
   tuneDay: 'O',
   load: 'L',
   unload: 'U',
+  acceptContract: 'J',
+  cancelContract: 'Y',
+  reorderContract: 'Z',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -97,7 +99,6 @@ export type Cmd =
   | { a: typeof Act.startResearch; t: number; p: SeatId; r: ResearchId }
   | { a: typeof Act.pickSkill; t: number; p: SeatId; m: MemberId; s: number }
   | { a: typeof Act.sellAll; t: number; p: SeatId }
-  | { a: typeof Act.nudgeOffered; t: number; p: SeatId; g: StallGoodId; d: 1 | -1 }
   | { a: typeof Act.swap; t: number; p: SeatId; i: number }
   | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: Rarity }
@@ -137,6 +138,9 @@ export type Cmd =
   | { a: typeof Act.tuneDay; t: number; p: SeatId; c: XY; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean }
   | { a: typeof Act.load; t: number; p: SeatId }
   | { a: typeof Act.unload; t: number; p: SeatId }
+  | { a: typeof Act.acceptContract; t: number; p: SeatId; c: ContractId }
+  | { a: typeof Act.cancelContract; t: number; p: SeatId; c: ContractId }
+  | { a: typeof Act.reorderContract; t: number; p: SeatId; c: ContractId; d: 1 | -1 }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

@@ -319,6 +319,8 @@ The Market is where you sell fruit, sugar, and machine goods for money. Walk the
 
 Sell all pays one money total; Freshness and Rarity are already in that total. You can drop off while the Market is shut. You cannot Sell all until it opens.
 
+Selling one good at Sell all lowers the money the Market pays for that good until it comes back over days, each good on its own. Contracts are buyer orders on Market. Drop-off fills an accepted order first; that fill does not change what the Market pays. The money a contract pays is set when you take the order. Leftover from a missed or cancelled order goes to the Market and does lower that good's price.
+
 Daughter skills on Family change the money and hours: each rank of Saleswoman raises the money the Market pays for every good by 2%. Each rank of Őstermelő raises the money the Market pays for Heirloom fruit, spirit, and wine by 5%. Each rank of Bio farmer raises the money the Market pays for organic fruit by 4%. Still good for jam keeps 10% of the fruit's Market price as a floor at rank I, 20% at rank II, and 30% at rank III. Clearance sale pays <Coin n={1} /> for each fruit whose freshness has gone to empty. Open late keeps Sell all legal at sunset. Open 24/7 keeps Sell all legal at twilight.
 
 See Skills, Day & Night, Freshness, and Rarity.
@@ -331,12 +333,12 @@ Links: **Freshness** → `concepts:freshness`. **Rarity** / **Heirloom** → `co
 ```
 Skills are the three people's learned work. The farm is three people. You garden, your husband researches, your daughter runs the Market. Each end-of-day summary gives every member one skill point to spend on Family. The three skill choices stay until that person picks. Skill points do not move between people.
 
-Your skills help the garden: happier plants, better rarity. Boots lets you walk across the farm faster than without that skill. Speedy research makes research jobs finish in less time than without that skill. Contracts makes utility and automation goods in the shop cost <Coin n={1} /> less money per rank of Contracts, never below <Coin n={1} />. Hers change the money the Market pays for fruit and goods, and the hours Sell all is allowed.
+Your skills help the garden: happier plants, better rarity. Boots lets you walk across the farm faster than without that skill. Speedy research makes research jobs finish in less time than without that skill. Haggling makes utility and automation goods in the shop cost <Coin n={1} /> less money per rank of Haggling, never below <Coin n={1} />. Hers change the money the Market pays for fruit and goods, and the hours Sell all is allowed.
 
 See Family, Research, Rarity, Freshness, Happiness, Market, and Day & Night.
 ```
 
-Links: **Family** → `concepts:family`. **Research** → `concepts:research`. **Rarity** / **better rarity** → `concepts:rarity`. **Freshness** → `concepts:freshness`. **Happiness** / **happier plants** → `concepts:happiness`. **Market** / **Sell all** → `concepts:market`. **end-of-day summary** / **Day & Night** → `concepts:day`. **Boots**, **Speedy research**, **Contracts** stay on this page — names, not ids.
+Links: **Family** → `concepts:family`. **Research** → `concepts:research`. **Rarity** / **better rarity** → `concepts:rarity`. **Freshness** → `concepts:freshness`. **Happiness** / **happier plants** → `concepts:happiness`. **Market** / **Sell all** → `concepts:market`. **end-of-day summary** / **Day & Night** → `concepts:day`. **Boots**, **Speedy research**, **Haggling** stay on this page — names, not ids.
 
 ### Family
 
@@ -403,4 +405,4 @@ Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `setInterval`
 
 (`pipe-stub` `pipe-i` `pipe-l` `pipe-t` `pipe-x`). Not `pipe-source`. Not `pipe-valve`.
 
-Assumption: Contracts knocks $1 per rank off utility and automation shop goods, min $1 (family.md), not 5%.
+Assumption: Haggling knocks $1 per rank off utility and automation shop goods, min $1 (family.md), not 5%.

@@ -2,15 +2,16 @@ import { useEffect, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
-import { SUGAR_MILL } from '../defs/items.ts'
+import { TREE_NAME } from '../defs/trees.ts'
+import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
-import { cropName, SPIRIT_NAME, type Item } from '../sim/item.ts'
+import { cropName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR } from '../sim/market.ts'
-import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Stars } from '../sim/market.h.ts'
+import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/market.h.ts'
 import { binCount, isCropStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, qualityPip, UI_MARKET_STALL } from '../view/svgs.ts'
+import { COMPANY, EXPAND_LAND, qualityPip, SKILL_POINT, skuInner, UI_MARKET_STALL } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Btn, Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { ItemFace } from './held.tsx'
@@ -138,8 +139,14 @@ export function OfferCard({
       ))}
       <div className="flex items-center justify-between gap-2 text-sm whitespace-nowrap">
         <span>{offer.days === 1 ? '1 day' : `${offer.days} days`}</span>
-        <span className="text-ink/60">+{Math.round(offer.markup * 100)}% markup</span>
-        <Coin n={offer.reward} />
+        {offer.prize.kind === 'cash' ? (
+          <>
+            <span className="text-ink/60">+{Math.round(offer.markup * 100)}% markup</span>
+            <Coin n={offer.reward} />
+          </>
+        ) : (
+          <PrizeChip prize={offer.prize} />
+        )}
       </div>
     </>
   )
@@ -152,7 +159,23 @@ export function OfferCard({
       className={`bg-ink/6 px-3 py-2 flex flex-col gap-1 text-left ${grey ? 'text-ink/35' : 'cursor-pointer'}`}
       aria-disabled={grey || undefined}
       onPointerEnter={() => {
-        if (grey) onTip({ title: COMPANIES[offer.company].name, description: <span className="mt-2 block font-bold text-roof">{why}</span> })
+        if (grey) {
+          onTip({
+            title: COMPANIES[offer.company].name,
+            description: <span className="mt-2 block font-bold text-roof">{why}</span>,
+          })
+          return
+        }
+        if (offer.prize.kind === 'cash') return
+        onTip({
+          title: COMPANIES[offer.company].name,
+          description: (
+            <>
+              <span>Pays {prizeName(offer.prize).toLowerCase()} instead of money. Not sold anywhere.</span>
+              <span className="mt-2 block font-bold text-roof">No cash for this one.</span>
+            </>
+          ),
+        })
       }}
       onPointerLeave={() => onTip(undefined)}
       onClick={() => {
@@ -162,6 +185,61 @@ export function OfferCard({
     >
       {body}
     </button>
+  )
+}
+
+export function prizeName(prize: Prize): string {
+  if (prize.kind === 'cash') return 'Cash'
+  if (prize.kind === 'sapling') return `${TREE_NAME[prize.tree]} sapling`
+  if (prize.kind === 'seeds') return `${cropName(prize.crop)} seeds`
+  if (prize.kind === 'fertilizer') return 'Fertilizer'
+  if (prize.kind === 'freezer') return 'Large freezer'
+  if (prize.kind === 'expansion-slot') return 'Expansion permit'
+  if (prize.kind === 'skill-points') return prize.n === 1 ? '1 skill point' : `${prize.n} skill points`
+  return prize.tool === 'rotary-shovel' ? 'Rotary shovel' : 'Diamond pickaxe'
+}
+
+function prizeItem(prize: Prize): Item | undefined {
+  if (prize.kind === 'sapling') return { kind: 'sapling', tree: prize.tree }
+  if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, rarity: 'common', count: prize.count }
+  if (prize.kind === 'fertilizer') {
+    return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
+  }
+  if (prize.kind === 'tool') {
+    return prize.tool === 'rotary-shovel' ? makeShovel('rotary-shovel') : makePickaxe('diamond-pickaxe')
+  }
+  return undefined
+}
+
+type FlatPrize = 'expansion-slot' | 'skill-points' | 'freezer'
+
+const PRIZE_ART: { readonly [K in FlatPrize]: string } = {
+  'expansion-slot': EXPAND_LAND,
+  'skill-points': SKILL_POINT,
+  freezer: skuInner('buy-freezer-large'),
+}
+
+function flat(prize: Prize): prize is Prize & { kind: FlatPrize } {
+  return prize.kind === 'expansion-slot' || prize.kind === 'skill-points' || prize.kind === 'freezer'
+}
+
+/** Icon + name for a non-cash prize. Falls back to a flat svg where no item exists. */
+export function PrizeChip({ prize }: { prize: Prize }) {
+  if (prize.kind === 'cash') return null
+  const item = prizeItem(prize)
+  return (
+    <span className="flex min-w-0 items-center gap-1 text-ripe">
+      {item !== undefined ? (
+        <ItemFace item={item} />
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5 shrink-0"
+          dangerouslySetInnerHTML={{ __html: flat(prize) ? PRIZE_ART[prize.kind] : '' }}
+        />
+      )}
+      <span className="truncate">{prizeName(prize)}</span>
+    </span>
   )
 }
 
@@ -333,9 +411,9 @@ function ActiveCard({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="tabular-nums">{left.toFixed(1)} days left</span>
-        <Coin n={active.offer.reward} />
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="tabular-nums shrink-0">{left.toFixed(1)} days left</span>
+        {active.offer.prize.kind === 'cash' ? <Coin n={active.offer.reward} /> : <PrizeChip prize={active.offer.prize} />}
       </div>
       <Bar value={filled / need} color="bg-leaf" track="bg-ink/25" />
       {!guest && (
@@ -356,15 +434,23 @@ function ActiveCard({
   )
 }
 
-function HistoryLine({ entry }: { entry: HistoryEntry }) {
-  const outcome =
-    entry.outcome.kind === 'done' ? 'Completed' : entry.outcome.kind === 'missed' ? 'Missed' : 'Cancelled'
+/** What a finished contract paid: a prize chip when it paid goods, else the coin. */
+export function OutcomePay({ entry }: { entry: HistoryEntry }) {
+  if (entry.outcome.kind === 'done' && entry.outcome.prize.kind !== 'cash') {
+    return <PrizeChip prize={entry.outcome.prize} />
+  }
   const n =
     entry.outcome.kind === 'done'
       ? entry.outcome.paid
       : entry.outcome.kind === 'missed'
         ? entry.outcome.penalty
         : entry.outcome.fee
+  return <Coin n={n} />
+}
+
+function HistoryLine({ entry }: { entry: HistoryEntry }) {
+  const outcome =
+    entry.outcome.kind === 'done' ? 'Completed' : entry.outcome.kind === 'missed' ? 'Missed' : 'Cancelled'
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>{COMPANIES[entry.company].name}</span>
@@ -372,7 +458,7 @@ function HistoryLine({ entry }: { entry: HistoryEntry }) {
       <span>{entry.day}</span>
       <span>{outcome}</span>
       <span className="ml-auto">
-        <Coin n={n} />
+        <OutcomePay entry={entry} />
       </span>
     </div>
   )

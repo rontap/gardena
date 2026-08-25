@@ -17,11 +17,12 @@ Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)` — jam nam
 ## State
 
 ```
-MemberState = { points, pickCount, owned: id → tier, offers: { id, tier }[] }
+MemberState = { pickCount, owned: id → tier, offers: { id, tier }[] }
 Family = { player, husband, daughter }
+World.points — one shared bank, not per member
 ```
 
-Start: `points` 0, `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
+Start: `World.points` 0, per member `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
 
 `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER` 2. `industrial` max 3. `jam` max 3. `bio` max 3. `seed-bank` max 5. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max.
 
@@ -29,13 +30,15 @@ Ranked `%` and `$` add per owned tier (`5+5+5`), they do not multiply. Jam uses 
 
 ## Points
 
-Each seam, each member gets +1. Bank per member.
+One shared bank on `World`, not three. Each seam it gets `POINTS_PER_DAY` 3, and any point buys any member's offer. 1.8.0 — before that each member banked its own +1 and could not lend.
 
-`grantPoint(member)`: `points += 1`.
+`grantPoints(n)`: `World.points += n`. `pickSkill(member, slot)` spends 1 from the same bank.
 
-`dismissRecap()` is the only recap exit — [[mechanics/day]]. Grants player, husband, and daughter, then `seam = play`, `banner = 2`. No pick.
+`dismissRecap()` is the only recap exit — [[mechanics/day]]. Grants `POINTS_PER_DAY`, then `seam = play`, `banner = 2`. No pick.
 
-`unlockAll`: every research id done, `money += 999`, job idle, each member `points = 99`. Does not grant skills. Does not reroll.
+Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop — [[mechanics/contracts]].
+
+`unlockAll`: every research id done, `money += 999`, job idle, `points = 99`. Does not grant skills. Does not reroll.
 
 ## Offers
 
@@ -119,10 +122,11 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - tax: expansion formula then `× (1 − 0.02 × tier)` then min $1 — [[mechanics/expansion]]
 - water-study: unlocks water lens. Water lens gated until owned
 - land-study: unlocks land lens
+- inherit-land: `+1` expansion permit per tier, max 2. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
 - `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
-- broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5 — [[mechanics/contracts]]
-- industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not
+- broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5. Broker slots are always cash — the two prize slots are drawn from the base six — [[mechanics/contracts]]
+- industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
 - forecast: dummy
 
 Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` on husband.

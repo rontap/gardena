@@ -23,6 +23,7 @@ import {
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   COMPOST_VALUE,
+  FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   MILL_IN,
   MILL_WORK,
@@ -414,8 +415,11 @@ export function catalogEntries(): CatalogEntry[] {
     {
       id: 'freezer',
       title: 'Freezer',
-      icon: { kind: 'freezer' },
-      blurb: fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS }),
+      icon: { kind: 'freezer', slots: FREEZER_SLOTS },
+      blurb: fill(
+        'Small ${n} slots, large ${m} slots. Fruit in here does not rot. The large one is a contract prize, never sold.',
+        { n: FREEZER_SLOTS, m: FREEZER_LARGE_SLOTS },
+      ),
     },
     {
       id: 'hangar',

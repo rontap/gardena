@@ -745,9 +745,9 @@ function SkillsConcept() {
       <div>
         Skills are the three people's learned work. The farm is three people. You garden, your husband researches, your
         daughter runs the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. Each{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>end-of-day summary</AlmanacLink> gives every member one skill
-        point to spend on <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>. The three skill
-        choices stay until that person picks. Skill points do not move between people.
+        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>end-of-day summary</AlmanacLink> gives three skill points to
+        one shared bank, spent on <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>. The three
+        skill choices stay until that person picks. Any point can go to any person.
       </div>
       <div>
         Your skills help the garden:{' '}

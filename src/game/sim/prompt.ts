@@ -313,6 +313,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-jam' ||
       w.act.place.id === 'buy-barrel' ||
       w.act.place.id === 'buy-freezer' ||
+      w.act.place.id === 'buy-freezer-large' ||
       w.act.place.id === 'buy-hangar' ||
       w.act.place.id === 'buy-silo-seed' ||
       w.act.place.id === 'buy-silo-spray' ||

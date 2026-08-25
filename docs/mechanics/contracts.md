@@ -2,16 +2,19 @@
 
 Daily buyer board, generator, accept / deliver / complete / miss / cancel / reorder. Types `src/game/sim/market.h.ts`. Spec [[plans/1.8.0]] Part 2. Stall [[mechanics/market]]. Sat [[mechanics/saturation]]. Family [[mechanics/family]]. Stream [[architecture/rng]]. Research [[mechanics/research]]. MP [[architecture/net]]. Numbers preference unless marked.
 
-Live `World.contracts` only. Not in the save file. Digest includes active fill, `takenToday`, every `StallGood.sat`. Board is derived, not digested. `SAVE_VERSION` / `PROTOCOL` / wordmark stay 1.72 / 1.7.2.
+`World.contracts` is saved from 1.8.0: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record where they always were. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`. `SAVE_VERSION` / `PROTOCOL` / wordmark are 1.8 / 1.8 / 1.8.0.
 
 ## Files
 
 | file | owns |
 |---|---|
 | `src/game/sim/market.h.ts` | typedef only. `ContractId` `ContractOffer` `Demand` `Lines` `Active` `Bin` `Contracts` `RollBoard` `Accepts` `CancelFee` `MissPenalty` `CleanUnit` `CompanyId` `GoodClass`. Every constant `declare const` |
-| `src/game/defs/companies.ts` | `COMPANIES` book: mix, pool, eligible |
-| `src/game/sim/market.ts` | valued constants + `rollBoard` + `cleanUnit` + `Accepts` + `cancelFee` + `missPenalty`. No `World` |
-| `src/game/sim/world.ts` | `World.contracts`, accept / cancel / reorder, consign fill, miss tick, `DayTally.contracts` |
+| `src/game/defs/companies.ts` | `COMPANIES` book. `COMPANY_PRIZES` + `prizeBandOf` + `PRIZE_BAND_MIN` |
+| `src/game/sim/market.ts` | valued constants + `rollBoard` + `rollBoardAtD` + `load` + `cleanUnit` + `Accepts` + `cancelFee` + `missPenalty`. No `World` |
+| `src/game/sim/world.ts` | `World.contracts`, accept / cancel / reorder, consign fill, miss tick, `payPrize`, `DayTally.contracts` |
+| `src/game/sim/save.ts` | `SaveContracts`, `dumpContracts` / `liveContracts` / `readContracts` and the `Prize` / `Demand` / `Offer` / `Outcome` readers |
+| `src/game/ui/market.tsx` | `OfferCard`, `PrizeChip`, `prizeName`, `OutcomePay` |
+| `src/game/ui/debug-contracts.tsx` | `#debug-contracts` ladder |
 | `src/game/sim/log.ts` | `Act.acceptContract` `cancelContract` `reorderContract` |
 | `src/game/sim/mp.ts` | guest drop those three; digest sat + active + `takenToday` |
 | `src/game/sim/rng.ts` | `SpatialId` `'contract'` |
@@ -38,76 +41,161 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` a
 
 ## rollBoard
 
-`market.ts` owns `rollBoard(rng, day, slots) → readonly ContractOffer[]`. Each slot `i` uses `rng.stream('contract').at(day, i, k)`.
+`market.ts` owns `rollBoard(rng, day, slots, rep) → readonly ContractOffer[]`. Each slot `i` uses `rng.stream('contract').at(day, i, k)`.
+
+`rollBoardAtD(rng, D, slots)` is the debug ladder: it forces `D` on every slot and scales amounts at `LADDER_DAY` 24. `#debug-contracts` only — [[ui/contracts]].
 
 ### `contract` — `at(day, slot, k)`
 
 | k | roll |
 |---|---|
-| 0 | `D` |
-| 1 | company among eligible at `D` |
-| 2 | line 1 good from that pool |
+| 0 | `D` for that slot |
+| 2 | line 1 good |
 | 3 | line 1 group vs specific (jam / spirit only) |
 | 4 | line 1 `minRarity` (rated / spirit-group only) |
-| 5 | `DeadlineBand` among affordable |
-| 6 | `days` inside `DEADLINE_DAYS[band]` |
+| 5 | `DeadlineBand` |
+| 6 | `days` inside `DEADLINE_DAYS[band]` on the `DEADLINE_STEP` grid |
 | 7 | line 2 good (pair only) |
 | 8 | line 2 group vs specific |
 | 9 | line 2 `minRarity` |
+| `20+i` | company shuffle, at `(day, 0, ·)` |
+| 30, 31 | the two prize slots, at `(day, 0, ·)` |
+| 32 | rotary vs diamond, when the prize is a tool |
 
-Amount is derived. Not a roll. Pair is taken iff leftover `Dmix >= PAIR_COST` after steps 1–4 — not a coin flip.
+`k` 1 is unused: company no longer depends on `D`. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST` — not a coin flip.
+
+Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods, rarity or difficulty. It **does** decide the prize, because the prize table is keyed by company.
 
 ### Difficulty
 
-`[lo, hi] = SLOT_BANDS[slot]`. `D` inclusive integer in `[lo, hi]`, then `min` with `DIFFICULTY_START + DIFFICULTY_PER_DAY * day` and `DIFFICULTY_MAX` 40. `stars` is the highest `Stars` with `D >= STAR_MIN[stars]`; else 1.
-
-Company: uniform among `COMPANIES` with `eligible <= D`. Always at least `whole-cart` / `halbert-eijn` / `intercrop` (`eligible` 0).
-
-`Dmix = D * company.mix`. `Dval = D - Dmix`. `mix` is the company's dial, not a roll.
-
-### Spend `Dmix`
-
-Remaining starts at `Dmix`. Each step takes the rolled option only if remaining covers its cost; else the cheapest legal option. That cheaper pick is the rule. Not `??`. Leftover remaining rolls into `Dval`.
-
-1. Good from the company's pool → `GOOD_COST[good]`. Uniform among pool members with cost ≤ remaining. If none, cheapest in that pool.
-2. If the good's class is `'jam'` or `'spirit'`: roll group vs specific. Group costs `GROUP_COST` (−4). Specific costs 0. Both always fit.
-3. `RARITY_COST[minRarity]`, only for a `rated` or spirit-group line. Uniform among rarities with cost ≤ remaining; else `common`.
-4. `DEADLINE_COST[band]`. Uniform among bands with cost ≤ remaining; else `long`.
-5. If remaining ≥ `PAIR_COST`, spend it and repeat steps 1–3 for line 2 (`k` 7–9). Else one line.
-
-`GOOD_COST` carries crop tier. Low-`D` slots cannot afford vanilla. No player-state read.
-
-Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `rated`. Sugar / oil / flour / extract → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit'; minRarity }`. `GoodClass` has no `SpiritKind`; current pools never pick a spirit or wine. `Demand` still allows both.
-
-### Amount
-
 ```
-V      = VALUE_BASE * (1 + Dval / VALUE_SCALE)
-unit   = cleanUnit(demand)
-amount = nice(V / unit)
+cap    = min(DIFFICULTY_START + DIFFICULTY_PER_DAY * day, DIFFICULTY_MAX)   // 8 + 0.8d, cap 40
+f      = cap / DIFFICULTY_MAX
+[l, h] = round(SLOT_BANDS[slot] * f)
+D      = l + floor(u * (h - l + 1)) + rep                                   // clamp DIFFICULTY_CEILING 60
 ```
 
-`nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`. A pair splits `V` equally across its two lines, then `nice` each.
+`rep` is `contracts.repDay`, the reputation snapshot taken at the seam, not live rep. Mid-day rep does not move the board.
+
+Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` −1 for carrot / potato / wheat plus `D_RARITY[minRarity]` (`common` 0, `uncommon` 0, `rare` 1, `heirloom` 3). `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
+
+`eff` is what the prize band reads. Not `D`.
+
+### Grammar budget
+
+Two budgets, spent independently. The **grammar** budget buys shape; the **money** pool buys size.
 
 ```
-amount = min(nice(V / unit), FEASIBLE_PER_DAY[good] * days * scale(day))
+opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]     // 2 + 0.5D - band
+budget = max(opened, -BUDGET_OVERDRAFT)
+pair   = budget >= PAIR_COST                                 // then budget = (budget - PAIR_COST) / 2
+```
+
+Each line then spends `GOOD_COST[good]` and, for a rated or spirit-group line, `RARITY_COST[minRarity]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` (−4) if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
+
+`GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read.
+
+Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `rated`. Sugar / oil / flour / extract → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit'; minRarity }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them).
+
+### Money pool and amount
+
+```
+load(D) = LOAD_MIN + (LOAD_MAX - LOAD_MIN) * ((D + LOAD_D_OFFSET) / (DIFFICULTY_CEILING + LOAD_D_OFFSET)) ** LOAD_CURVE
+solo    = REFERENCE_GOLD_PER_DAY * days * load(D)
+target  = pair ? solo / 2 : solo
+amount  = nice(min(target / cleanUnit(demand), FEASIBLE_PER_DAY[good] * days * scale(day)))
 scale(day) = min(1, SCALE_START + day / SCALE_DAYS)
 ```
 
-Group jam uses `jam-cherry` as the feasible key. Group spirit uses `vodka`.
+`load(D)` is the share of a mature farm-day the contract eats. `REFERENCE_GOLD_PER_DAY` is the median `unitOf(g) * FEASIBLE_PER_DAY[g]` over `CONTRACT_GOODS` — derived, not a preference.
 
-If the clamp drops amount below `AMOUNT_MIN`, discard and generate that slot again with `D` forced to `SLOT_BANDS[slot][0]` (`k` 0 unused). One retry.
+`LOAD_CURVE` 2 and `LOAD_MAX` 1.35 — preference, 1.8.0. The curve is convex on purpose: the pool must climb harder over the top half of the ladder than the bottom, so a four-star board is worth giving up a prize slot for. Roughly `×1.8` from D 8 to D 20, `×2.3` from D 20 to D 40.
+
+Divide by `cleanUnit`, the rarity-scaled unit the reward is later settled at — **not** `unitOf`, the common-rarity base. Sizing against common prices and paying at heirloom ones was a 1.8.0 bugfix; before it, two contracts of the same `D` could differ tenfold.
+
+`nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`, floor `NICE_AMOUNTS[0]` 2. There is no discard-and-retry. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`.
+
+### Deadline
+
+```
+[lo, hi] = DEADLINE_DAYS[band]        // tight [1,2]  normal [2,3]  long [3,4]
+steps    = (hi - lo) / DEADLINE_STEP + 1
+days     = lo + DEADLINE_STEP * floor(u * steps)
+```
+
+`DEADLINE_STEP` 0.5, so each band offers three lengths, halves included. 1.8.0 — `long` used to be 4-5 days with whole-day steps. `nowDay` is fractional already, so a 1.5-day deadline needs nothing special.
+
+Band feeds three things: `days`, the grammar deduction `DEADLINE_COST[band]`, and `MARKUP_BAND[band]`. `DEADLINE_WEIGHT` is `tight` 2, `normal` 5, `long` 2.
 
 ### Reward
 
 ```
-markup  = MARKUP_BASE + MARKUP_PER_DIFFICULTY * D + MARKUP_PER_DAY * days
-clean   = sum over lines of amount * unit
-reward  = clean * (1 + markup)
-penalty = PENALTY_RATE * clean
+markup  = round2(MARKUP_BASE + MARKUP_PER_DIFFICULTY * eff + MARKUP_BAND[band])
+clean   = round(sum over lines of amount * cleanUnit(demand))
+reward  = round(clean * (1 + markup))
+penalty = round(PENALTY_RATE * clean)
 ```
 
 Baked at generation. Saturation at delivery does not move `reward`. `industrial` multiplies at complete, not here.
+
+`reward` is published on every offer, prize or not. A prize offer never pays it — but the fertilizer prize is priced against it, and `penalty` derives from `clean`, so miss and cancel math is identical either way.
+
+## Prizes
+
+1.8.0. Two of the six offers each day pay goods instead of money, and pay **no** money.
+
+The board is the only source of tree saplings past the starting three, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these.
+
+```
+Prize =
+  | { kind: 'cash' }
+  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'seeds'; crop: 'vanilla'; count }
+  | { kind: 'fertilizer' }
+  | { kind: 'freezer' }
+  | { kind: 'expansion-slot' }
+  | { kind: 'skill-points'; n }
+  | { kind: 'tool'; tool: 'rotary-shovel' | 'diamond-pickaxe' }
+```
+
+### Which slots
+
+`prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31 — `b >= a ? b + 1 : b`, the standard distinct-second draw.
+
+Drawn from the base six, **never** from the live slot count. `broker` grows the board and must not reshuffle the offers already on it, so broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two on eight.
+
+### Which prize
+
+`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only *which* slots pay a prize is rolled. Bands `[0,8) [8,20) [20,30) [30,∞)` off `PRIZE_BAND_MIN`, read against final `eff`.
+
+Six firms, three columns:
+
+| band | Whole Cart / Little Lid | Trade Jo / Mercanova | Halbert Eijn / Intercrop |
+|---|---|---|---|
+| 0-8 | cherry sapling | apple sapling | fertilizer |
+| 8-20 | apricot sapling | olive sapling | 1 skill point |
+| 20-30 | vanilla seeds `VANILLA_PRIZE_SEEDS` 5 | large freezer | 2 skill points |
+| 30- | rotary shovel or diamond pickaxe | expansion permit | 3 skill points |
+
+The tool arm in the table is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
+
+Columns preference. Band edges preference.
+
+### Payout
+
+`World.payPrize` in `world.ts`, from `resolveDone`. Only `cash` touches `money`.
+
+| prize | lands as |
+|---|---|
+| `sapling` | drop at `DOOR` |
+| `tool` | drop at `DOOR`, full `SHOVELS` / `PICKAXES` uses |
+| `seeds` | `putSilo('vanilla', 'common', count)` |
+| `fertilizer` | `putAdditive('fertilizer', bags * FERT_BAG_LITERS)`, `bags = max(1, round(reward / SKUS['buy-fertilizer'].price))` — "worth the cash" |
+| `freezer` | `prizeFreezers += 1`; `buy-freezer-large` opens while stock lasts — [[mechanics/research]] |
+| `expansion-slot` | `prizeSlots += 1` — [[mechanics/expansion]] |
+| `skill-points` | `grantPoints(n)` into the shared bank — [[mechanics/family]] |
+
+Drops at the door, the way a shovelled-up sapling drops. Store prizes clamp to free space; overflow is lost, same as any other put.
 
 ## cleanUnit
 
@@ -142,10 +230,10 @@ Rarity is a minimum. Higher qualifies as one unit. No overage bonus. Freshness i
 ## State
 
 ```
-World.contracts: Contracts = { active, takenToday, history, book }
+World.contracts: Contracts = { active, takenToday, history, book, rep, repDay }
 ```
 
-Live only. Load → empty. New farm → empty. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX` 24.
+New farm → empty. Load restores what was saved, including part-filled bins. 1.8.0 — before that a reload dropped every running contract, which stopped mattering the moment the board became the only route to a sapling. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX` 24.
 
 ```
 nowDay = (clock.day - 1) + clock.t / DAY_SECONDS
@@ -173,7 +261,11 @@ No silo filler. No cheapest-qualifying-rarity picker.
 
 ## Complete
 
-Every bin `filled === amount` → immediate on that delivering tick: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier (0 if absent). `book[company].done += 1`. History `{ kind: 'done'; paid }`. Slot freed. Those units never hit the stall.
+Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. History `{ kind: 'done'; paid; prize }`. Slot freed. Those units never hit the stall.
+
+Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier (0 if absent), and `paid` is that number.
+
+Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply.
 
 ## Miss
 
@@ -226,7 +318,7 @@ GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | 'wine'
 
 ## Book
 
-`defs/companies.ts` owns `COMPANIES: { readonly [K in CompanyId]: Company }`. Complete map.
+`defs/companies.ts` owns `COMPANIES: { readonly [K in CompanyId]: Company }` and `COMPANY_PRIZES`. Both complete maps.
 
 ```
 Company = {
@@ -234,26 +326,21 @@ Company = {
   name: string
   riff: string
   region: 'US' | 'NL' | 'DE' | 'ES' | 'HU'
-  mix: number
-  pool: readonly GoodClass[]
-  eligible: number
 }
 ```
 
-`eligible` is min `D`. `mix` is the company's dial. Sector = `region`. No standing drift.
+No `mix`, no `pool`, no `eligible`. Those went with the 994819b generator rewrite: the generator reads no company field at all when picking goods, rarity or difficulty. Sector = `region`. No standing drift.
 
-| id | name | riff | region | mix | pool | eligible at D |
-|---|---|---|---|---|---|---|
-| `whole-cart` | Whole Cart | Walmart | US | 0.15 | all `CropId` | 0 |
-| `trade-jo` | Trade Jo | Trader Joe's | US | 0.70 | fruit annuals + trees + jam | 8 |
-| `halbert-eijn` | Halbert Eijn | Albert Heijn | NL | 0.20 | carrot potato wheat tomato sugar | 0 |
-| `little-lid` | Little Lid | Lidl | DE | 0.25 | all `CropId` + flour + oil | 4 |
-| `mercanova` | Mercanova | Mercadona | ES | 0.45 | fruit annuals + trees + jam | 6 |
-| `intercrop` | Intercrop | Interspar HU | HU | 0.30 | all `CropId` | 0 |
+| id | name | riff | region | prize column |
+|---|---|---|---|---|
+| `whole-cart` | Whole Cart | Walmart | US | saplings, vanilla, late tools |
+| `trade-jo` | Trade Jo | Trader Joe's | US | buildings and land |
+| `halbert-eijn` | Halbert Eijn | Albert Heijn | NL | household |
+| `little-lid` | Little Lid | Lidl | DE | saplings, vanilla, late tools |
+| `mercanova` | Mercanova | Mercadona | ES | buildings and land |
+| `intercrop` | Intercrop | Interspar HU | HU | household |
 
-All `CropId` = `ANNUAL_IDS` then `TREE_IDS`. Fruit annuals in the order named. Trees `TREE_IDS`. Jam `JAM_IDS`. Then `flour` `oil` as the pool lists them.
-
-mix / eligible preference.
+Six firms share three columns; 4-6 duplicate 1-3. Full table under Prizes.
 
 ## Research
 
@@ -282,31 +369,54 @@ Valued in `market.ts`. Header stays `declare const`.
 | `CONTRACT_SLOT_MAX` | 8 | preference |
 | `BROKER_MAX_TIER` | 2 | preference |
 | `CONTRACT_HISTORY_MAX` | 24 | preference |
+| `PRIZE_SLOTS` | 2 | preference |
 | `DIFFICULTY_MAX` | 40 | [[plans/1.8.0]] |
 | `DIFFICULTY_START` | 8 | preference |
-| `DIFFICULTY_PER_DAY` | 0.6 | preference |
-| `SLOT_BANDS` | `[0,8] [4,12] [8,18] [12,24] [18,32] [24,40] [20,36] [28,40]` | preference |
-| `STAR_MIN` | 1→0, 2→10, 3→20, 4→30 | preference |
-| `NICE_AMOUNTS` | 4 5 6 8 10 12 15 20 25 30 40 50 60 80 100 | preference |
-| `MARKUP_BASE` | 0.20 | preference |
-| `MARKUP_PER_DIFFICULTY` | 0.015 | preference |
-| `MARKUP_PER_DAY` | 0.04 | preference |
+| `DIFFICULTY_PER_DAY` | 0.8 | preference |
+| `DIFFICULTY_CEILING` | 60 | preference |
+| `SLOT_BANDS` | `[8,16] [13,21] [18,26] [23,31] [28,36] [32,40] [25,33] [32,40]` | preference |
+| `STAR_MIN` | 1->0, 2->10, 3->20, 4->30 | preference |
+| `PRIZE_BAND_MIN` | 0, 8, 20, 30 | preference |
+| `NICE_AMOUNTS` | 2 3 4 5 6 8 10 12 15 20 25 30 40 50 60 80 100 | preference |
+| `MARKUP_BASE` | 0.15 | preference |
+| `MARKUP_PER_DIFFICULTY` | 0.004 | preference |
+| `MARKUP_BAND` | tight 0.11, normal 0.05, long 0 | preference |
 | `PENALTY_RATE` | 0.20 | preference |
-| `VALUE_BASE` | 40 | preference |
-| `VALUE_SCALE` | 20 | preference |
-| `AMOUNT_MIN` | 4 | preference |
+| `LOAD_MIN` | 0.12 | preference |
+| `LOAD_MAX` | 1.35 | preference |
+| `LOAD_CURVE` | 2 | preference |
+| `LOAD_D_OFFSET` | 6 | preference |
+| `MIX_FLOOR` | 2 | preference |
+| `MIX_SHARE` | 0.5 | preference |
+| `BUDGET_OVERDRAFT` | 3 | preference |
+| `AMOUNT_MIN` | 2 | preference |
 | `SCALE_START` | 0.35 | preference |
 | `SCALE_DAYS` | 24 | preference |
 | `PENALTY_FLOOR` | 0.25 | preference |
 | `CANCEL_MIN` | 0.05 | preference |
-| `PAIR_COST` | 6 | preference |
-| `GROUP_COST` | −4 | preference |
+| `PAIR_COST` | 10 | preference |
+| `GROUP_COST` | -4 | preference |
+| `DEADLINE_STEP` | 0.5 | preference |
+| `REP_MAX` | 20 | preference |
+| `REP_IDLE` | 0.3 | preference |
+| `LADDER_DAY` | 24 | debug only |
+| `VANILLA_PRIZE_SEEDS` | 5 | preference |
 
-`DEADLINE_DAYS` — yours, not preference: tight `[1,2]` normal `[2,3]` long `[4,5]`.
+`REP_DONE` 1*->0.5, 2*->1, 3*->1.5, 4*->2. `REP_LOST` 1*->1, 2*->2, 3*->3, 4*->4. Preference.
 
-`DEADLINE_COST`: tight 8, normal 3, long 0. Preference.
+`D_STARTER` -1. `D_RARITY`: common 0, uncommon 0, rare 1, heirloom 3. Preference.
 
-`RARITY_COST`: common 0, uncommon 3, rare 8, heirloom 16. Preference.
+`DEADLINE_DAYS` - yours, not preference: tight `[1,2]` normal `[2,3]` long `[3,4]`, on the `DEADLINE_STEP` grid.
+
+`DEADLINE_COST`: tight 8, normal 0, long -4. Preference.
+
+`DEADLINE_WEIGHT`: tight 2, normal 5, long 2. Preference.
+
+`RARITY_COST`: common 0, uncommon 2, rare 5, heirloom 9. Preference.
+
+`REFERENCE_GOLD_PER_DAY` is derived at module load, not a constant to tune.
+
+`VALUE_BASE`, `VALUE_SCALE` and `MARKUP_PER_DAY` are gone. They were replaced by `load()` and `MARKUP_BAND`.
 
 `GOOD_COST` complete `{ [K in StallGoodId]: number }` preference:
 
@@ -378,12 +488,14 @@ Spirit: `DAY_SECONDS / STILL_SECONDS` (one still). Jam: `DAY_SECONDS / JAM_SECON
 - `CompanyId` other than the six
 - `COMPANIES` missing an id
 - `STUB_COMPANY` as the generator
-- live `Contracts` / `sat` in the save file
+- live `sat` in the save file
 - guest `acceptContract` / `cancelContract` / `reorderContract` in a bundle
 - standing drift
 - silo filler
-- `??` as Dmix recovery
-- version bump
+- a prize slot drawn from the live slot count rather than `CONTRACT_OFFERS`
+- a prize contract also paying `reward`
+- `COMPANY_PRIZES` missing a company or a band
+- reading `D` rather than final `eff` for the prize band
+- sizing an amount off `unitOf` when the reward settles at `cleanUnit`
 
-Assumption: `FEASIBLE_PLOTS` is 8 so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; jam/spirit group vs specific is a roll; pair iff leftover `Dmix >= PAIR_COST`; group jam unit is `min JAM_SALE`; `rollBoard` takes `Rng`.
-Assumption: wine is in no pool; `WINE_SALE` vs `VALUE_BASE` cannot reach `AMOUNT_MIN`; retry at `SLOT_BANDS[slot][0]` is that company's lowest-unit common long line; retry miss throws.
+Assumption: `FEASIBLE_PLOTS` is 8 so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; jam/spirit group vs specific is a roll; pair iff the grammar budget covers `PAIR_COST`; group jam unit is `min JAM_SALE`; `rollBoard` takes `Rng`.

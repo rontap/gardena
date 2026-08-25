@@ -6,7 +6,6 @@ import tomato from '../../assets/crops/crop-tomato.svg?raw'
 import raspberry from '../../assets/crops/crop-raspberry.svg?raw'
 import watermelon from '../../assets/crops/crop-watermelon.svg?raw'
 import apple from '../../assets/crops/crop-apple.svg?raw'
-import olive from '../../assets/crops/crop-olive.svg?raw'
 import grape from '../../assets/crops/crop-grape.svg?raw'
 import vanilla from '../../assets/crops/crop-vanilla.svg?raw'
 import sugarCane from '../../assets/crops/crop-sugar-cane.svg?raw'
@@ -21,7 +20,6 @@ import fruitOlive from '../../assets/fruits/fruit-olive.svg?raw'
 import fruitGrape from '../../assets/fruits/fruit-grape.svg?raw'
 import fruitVanilla from '../../assets/fruits/fruit-vanilla.svg?raw'
 import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
-import fruitLemon from '../../assets/fruits/fruit-lemon.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
 import itemSugar from '../../assets/items/item-sugar.svg?raw'
@@ -171,7 +169,7 @@ import rock from '../../assets/props/prop-rock.svg?raw'
 import rockLong from '../../assets/props/prop-rock-long.svg?raw'
 import appleTree from '../../assets/props/prop-apple-tree.svg?raw'
 import apricotTree from '../../assets/props/prop-apricot-tree.svg?raw'
-import lemonTree from '../../assets/props/prop-lemon-tree.svg?raw'
+import oliveTree from '../../assets/props/prop-olive-tree.svg?raw'
 import cherryTree from '../../assets/props/prop-cherry-tree.svg?raw'
 import grass0 from '../../assets/tiles/tile-grass-0.svg?raw'
 import grass1 from '../../assets/tiles/tile-grass-1.svg?raw'
@@ -285,12 +283,11 @@ const CROPS: { readonly [K in CropId]: string } = {
   raspberry,
   watermelon,
   apple,
-  olive,
   grape,
   vanilla,
   'sugar-cane': sugarCane,
   apricot: apple,
-  lemon: apple,
+  olive: apple,
   cherry: apple,
 }
 
@@ -302,19 +299,18 @@ const FRUIT: { readonly [K in CropId]: string } = {
   raspberry: fruitRaspberry,
   watermelon: fruitWatermelon,
   apple: fruitApple,
-  olive: fruitOlive,
   grape: fruitGrape,
   vanilla: fruitVanilla,
   'sugar-cane': fruitSugarCane,
   apricot: fruitApricot,
-  lemon: fruitLemon,
+  olive: fruitOlive,
   cherry: fruitCherry,
 }
 
 const TREE_PROP: { readonly [K in TreeId]: string } = {
   apple: appleTree,
   apricot: apricotTree,
-  lemon: lemonTree,
+  olive: oliveTree,
   cherry: cherryTree,
 }
 
@@ -439,7 +435,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
-  if (id === 'buy-freezer') return itemInner({ kind: 'freezer' })
+  if (id === 'buy-freezer' || id === 'buy-freezer-large') return itemInner({ kind: 'freezer', slots: 0 })
   if (id === 'buy-hangar') return itemInner({ kind: 'hangar' })
   if (id === 'buy-silo-seed') return itemInner({ kind: 'silo-seed' })
   if (id === 'buy-silo-spray') return itemInner({ kind: 'silo-spray' })
@@ -510,8 +506,6 @@ export function researchInner(id: ResearchId): string {
   switch (id) {
     case 'unlock-tomato':
       return stageOnly(FRUIT.tomato, 'common')
-    case 'unlock-olive':
-      return stageOnly(FRUIT.olive, 'common')
     case 'unlock-grape':
       return stageOnly(FRUIT.grape, 'common')
     case 'unlock-raspberry':
@@ -547,13 +541,11 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-smart-sprinkler':
       return inner(uiResearchSmart)
     case 'unlock-expand':
+    case 'expand-land':
+    case 'eminent-domain':
       return inner(uiResearchExpand)
     case 'unlock-landscaping':
       return inner(uiResearchLandscape)
-    case 'unlock-rotary-shovel':
-      return inner(rotaryShovel)
-    case 'unlock-diamond-pickaxe':
-      return inner(diamondPickaxe)
     case 'unlock-vehicles':
       return inner(itemHangar)
     case 'unlock-sensors':
@@ -773,6 +765,8 @@ export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
 export const UI_MENU = inner(uiMenu)
 export const SKILL_POINT = inner(skillPoint)
+
+export const EXPAND_LAND = inner(uiResearchExpand)
 export const PORTRAIT: { readonly [K in MemberId]: string } = {
   player: inner(portraitPlayer),
   husband: inner(portraitHusband),
@@ -784,7 +778,6 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'driving-classes': inner(skillDrivingClasses),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
-  'vanilla-tending': inner(skillTending),
   'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
   haggling: inner(skillContracts),
@@ -793,6 +786,7 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   tax: inner(skillTax),
   'water-study': inner(skillWaterStudy),
   'land-study': inner(skillLandStudy),
+  'inherit-land': inner(uiResearchExpand),
   saleswoman: inner(skillSaleswoman),
   heirloom: inner(skillHeirloom),
   'better-carrot': inner(skillBetter),
@@ -801,7 +795,6 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'better-tomato': inner(skillBetter),
   'better-raspberry': inner(skillBetter),
   'better-watermelon': inner(skillBetter),
-  'better-olive': inner(skillBetter),
   'better-grape': inner(skillBetter),
   'better-vanilla': inner(skillBetter),
   'better-sugar-cane': inner(skillBetter),
@@ -818,7 +811,6 @@ export function fruitInner(crop: CropId): string {
 }
 
 export function skillInner(id: SkillId): string {
-  if (id === 'vanilla-tending') return `${fruitInner('vanilla')}${inner(skillTending)}`
   if (
     id === 'better-carrot' ||
     id === 'better-potato' ||
@@ -826,7 +818,6 @@ export function skillInner(id: SkillId): string {
     id === 'better-tomato' ||
     id === 'better-raspberry' ||
     id === 'better-watermelon' ||
-    id === 'better-olive' ||
     id === 'better-grape' ||
     id === 'better-vanilla' ||
     id === 'better-sugar-cane'
@@ -844,13 +835,11 @@ export function skillInner(id: SkillId): string {
                 ? 'raspberry'
                 : id === 'better-watermelon'
                   ? 'watermelon'
-                  : id === 'better-olive'
-                    ? 'olive'
-                    : id === 'better-grape'
-                      ? 'grape'
-                      : id === 'better-vanilla'
-                        ? 'vanilla'
-                        : 'sugar-cane'
+                  : id === 'better-grape'
+                    ? 'grape'
+                    : id === 'better-vanilla'
+                      ? 'vanilla'
+                      : 'sugar-cane'
     return `${fruitInner(crop)}${inner(skillBetter)}`
   }
   return SKILL_ART[id]

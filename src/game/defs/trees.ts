@@ -13,13 +13,13 @@ export type TreeDef = {
 export const TREES: { readonly [K in TreeId]: TreeDef } = {
   apple: { id: 'apple', juvenileSeconds: 480, fruitSeconds: 720 },
   apricot: { id: 'apricot', juvenileSeconds: 480, fruitSeconds: 180 },
-  lemon: { id: 'lemon', juvenileSeconds: 480, fruitSeconds: 200 },
+  olive: { id: 'olive', juvenileSeconds: 480, fruitSeconds: 200 },
   cherry: { id: 'cherry', juvenileSeconds: 480, fruitSeconds: 143 },
 }
 
 export const TREE_NAME: { readonly [K in TreeId]: string } = {
   apple: 'Apple',
   apricot: 'Apricot',
-  lemon: 'Lemon',
+  olive: 'Olive',
   cherry: 'Cherry',
 }

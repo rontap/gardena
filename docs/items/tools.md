@@ -8,15 +8,15 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 |---|---|---|---|---|---|
 | shovel | 80 | 1.2 | buy-shovel | 10 | start |
 | better-shovel | 200 | 0.6 | buy-better-shovel | 30 | unlock-better-tools |
-| rotary-shovel | 1000 | 0.2 | buy-rotary-shovel | 1000 | unlock-rotary-shovel |
+| rotary-shovel | 1000 | 0.2 | — | — | four-star contract prize |
 | pickaxe | 25 | 4 | buy-pickaxe | 18 | unlock-pickaxe |
 | better-pickaxe | 40 | 2 | buy-better-pickaxe | 24 | unlock-pickaxe |
-| diamond-pickaxe | 1000 | 0.4 | buy-diamond-pickaxe | 1000 | unlock-diamond-pickaxe |
+| diamond-pickaxe | 1000 | 0.4 | — | — | four-star contract prize |
 
 Other SKUs: `buy-bucket` `buy-bucket-large` `buy-box` `buy-box-large` `buy-weed-spray`.
 
 `weed-spray` — `{ kind: 'weed-spray'; usesLeft }`, `WEED_SPRAY_USES`. Hand tool. House, not additive store. Not a bag. Not liters. Click tilled: [[mechanics/weeds]].
 
-Rotary and diamond are end-game sinks. They dig and mine exactly what their tier does — no new sites, no new rules, just uses and speed. Their research is stat-gated — [[mechanics/research]].
+Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 
 Hand, house, uses, fill, box weed: [[mechanics/inventory]].

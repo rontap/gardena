@@ -1,5 +1,5 @@
 import { type CropClass } from '../defs/crops.ts'
-import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
+import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_LARGE_SLOTS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
@@ -53,6 +53,7 @@ import {
   type DaughterSkillId,
   type HusbandSkillId,
   JAM_CROPS,
+  JAM_IDS,
   type JamCrop,
   type MillRecipe,
   type PickaxeId,
@@ -69,6 +70,25 @@ import {
   type VehicleId,
 } from './ids.ts'
 import type { FruitStack, Hand, Item, Slot, Stack } from './item.ts'
+import type {
+  Active,
+  CompanyBook,
+  CompanyId,
+  ContractId,
+  ContractOffer,
+  Contracts,
+  DeadlineBand,
+  Demand,
+  HistoryEntry,
+  Lines,
+  Outcome,
+  PlainGoodId,
+  Prize,
+  PrizeTool,
+  RarityGoodId,
+  Stars,
+} from './market.h.ts'
+import { COMPANY_IDS } from '../defs/companies.ts'
 import { MemorySink, type LogSink } from './log.ts'
 import { type Edge, type Gate, type Segment, type Sprinkler, type Tune, Well } from './pipe.ts'
 import {
@@ -113,7 +133,7 @@ import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer,
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.73 as const
+export const SAVE_VERSION = 1.8 as const
 
 const INV = 16
 
@@ -124,7 +144,6 @@ export type LoadResult = { ok: true; world: World } | { ok: false; reason: LoadF
 export type SaveRng = { seed: number; shop: number; fruit: number }
 
 export type SaveMember<Id> = {
-  points: number
   pickCount: number
   owned: { id: Id; tier: number }[]
   offers: { id: Id; tier: number }[]
@@ -263,7 +282,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.73
+  version: 1.8
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -271,8 +290,9 @@ export type Save = {
   rep: number
   repDay: number
   purchases: number
-  digs: number
-  mines: number
+  prizeSlots: number
+  prizeFreezers: number
+  points: number
   bigTicks: number
   seats: SaveSeat[]
   vehicles: SaveVehicle[]
@@ -298,6 +318,19 @@ export type Save = {
   smartHold: { e: Edge; level: 0 | 1; hold: number }[]
   fences: Coord[]
   drops: { at: Coord; item: Item }[]
+  contracts: SaveContracts
+}
+
+/**
+ * Live contract state. `rep` and `repDay` stay on the top-level record where
+ * they have always been; everything else that used to be rebuilt empty on load
+ * lives here.
+ */
+export type SaveContracts = {
+  active: { offer: ContractOffer; dueDay: number; bins: { demand: Demand; filled: number }[] }[]
+  takenToday: ContractId[]
+  history: HistoryEntry[]
+  book: CompanyBook
 }
 
 export function dump(world: World): Save {
@@ -310,9 +343,11 @@ export function dump(world: World): Save {
     money: world.money,
     rep: world.contracts.rep,
     repDay: world.contracts.repDay,
+    contracts: dumpContracts(world.contracts),
     purchases: world.purchases,
-    digs: world.digs,
-    mines: world.mines,
+    prizeSlots: world.prizeSlots,
+    prizeFreezers: world.prizeFreezers,
+    points: world.points,
     bigTicks: world.bigTicks,
     seats: world.seats.map(s => ({
       playerId: s.playerId,
@@ -434,9 +469,8 @@ export function slotStamp(): string | undefined {
   return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-function dumpMember<Id extends SkillId>(m: { points: number; pickCount: number; owned: Map<Id, number>; offers: SkillRef<Id>[] }): SaveMember<Id> {
+function dumpMember<Id extends SkillId>(m: { pickCount: number; owned: Map<Id, number>; offers: SkillRef<Id>[] }): SaveMember<Id> {
   return {
-    points: m.points,
     pickCount: m.pickCount,
     owned: [...m.owned.entries()].map(([id, tier]) => ({ id, tier })),
     offers: m.offers.map(o => ({ id: o.id, tier: o.tier })),
@@ -702,8 +736,9 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const rep = num(rec.rep)
   const repDay = num(rec.repDay)
   const purchases = num(rec.purchases)
-  const digs = num(rec.digs)
-  const mines = num(rec.mines)
+  const prizeSlots = num(rec.prizeSlots)
+  const prizeFreezers = num(rec.prizeFreezers)
+  const points = num(rec.points)
   const bigTicks = num(rec.bigTicks)
   const savedAt = rec.savedAt
   const seats = readSeats(rec)
@@ -717,8 +752,9 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     rep === undefined ||
     repDay === undefined ||
     purchases === undefined ||
-    digs === undefined ||
-    mines === undefined ||
+    prizeSlots === undefined ||
+    prizeFreezers === undefined ||
+    points === undefined ||
     bigTicks === undefined ||
     seats === undefined ||
     typeof savedAt !== 'string'
@@ -867,8 +903,11 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     if (t === undefined) return undefined
     trailers.push(t)
   }
+  const contracts = readContracts(rec.contracts)
+  if (contracts === undefined) return undefined
   return {
     game: 'gardena',
+    contracts,
     version: SAVE_VERSION,
     savedAt,
     rng: { seed, shop, fruit },
@@ -877,8 +916,9 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     rep,
     repDay,
     purchases,
-    digs,
-    mines,
+    prizeSlots,
+    prizeFreezers,
+    points,
     bigTicks,
     seats,
     done,
@@ -956,9 +996,11 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     money: save.money,
     rep: save.rep,
     repDay: save.repDay,
+    contracts: liveContracts(save.contracts, save.rep, save.repDay),
     purchases: save.purchases,
-    digs: save.digs,
-    mines: save.mines,
+    prizeSlots: save.prizeSlots,
+    prizeFreezers: save.prizeFreezers,
+    points: save.points,
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,
@@ -994,7 +1036,6 @@ function makeFamily(f: Save['family']): Family {
 
 function makeMember<Id extends SkillId>(m: SaveMember<Id>): MemberState<Id> {
   return {
-    points: m.points,
     pickCount: m.pickCount,
     owned: new Map(m.owned.map(s => [s.id, s.tier])),
     offers: m.offers.map(o => ({ id: o.id, tier: o.tier })),
@@ -1240,8 +1281,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
       return barrel
     }
     case 'freezer': {
-      const freezer = new Freezer(sc.base)
-      for (let i = 0; i < FREEZER_SLOTS; i++) freezer.slots[i] = sc.slots[i]
+      const freezer = new Freezer(sc.base, sc.slots.length)
+      for (let i = 0; i < sc.slots.length; i++) freezer.slots[i] = sc.slots[i]
       freezer.out = sc.out
       freezer.hold = sc.hold
       return freezer
@@ -1557,7 +1598,8 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const base = readRectBase(o.base)
     const slotsIn = arr(o.slots)
     const hold = num(o.hold)
-    if (base === undefined || slotsIn === undefined || slotsIn.length !== FREEZER_SLOTS || hold === undefined) {
+    const sized = slotsIn !== undefined && (slotsIn.length === FREEZER_SLOTS || slotsIn.length === FREEZER_LARGE_SLOTS)
+    if (base === undefined || slotsIn === undefined || !sized || hold === undefined) {
       return undefined
     }
     if (o.out !== 0 && o.out !== 1) return undefined
@@ -1984,11 +2026,10 @@ function readMember<Id extends string>(
 ): SaveMember<Id> | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
-  const points = num(o.points)
   const pickCount = num(o.pickCount)
   const ownedIn = arr(o.owned)
   const offersIn = arr(o.offers)
-  if (points === undefined || pickCount === undefined || ownedIn === undefined || offersIn === undefined) {
+  if (pickCount === undefined || ownedIn === undefined || offersIn === undefined) {
     return undefined
   }
   const owned: { id: Id; tier: number }[] = []
@@ -2003,7 +2044,7 @@ function readMember<Id extends string>(
     if (ref === undefined) return undefined
     offers.push(ref)
   }
-  return { points, pickCount, owned, offers }
+  return { pickCount, owned, offers }
 }
 
 function readSkillRef<Id extends string>(v: unknown, ids: readonly Id[]): { id: Id; tier: number } | undefined {
@@ -2510,4 +2551,273 @@ function obj(v: unknown): Record<string, unknown> | undefined {
 
 function arr(v: unknown): unknown[] | undefined {
   return Array.isArray(v) ? v : undefined
+}
+
+// ---------------------------------------------------------------------------
+// Contracts
+//
+// Offers, demands and prizes are plain data, so dumping is a structural copy.
+// Reading them back is not: a hand-edited or stale file must be rejected rather
+// than hydrated into a board the sim cannot reason about, so every arm of every
+// union is checked here the way the rest of this file checks its input.
+// ---------------------------------------------------------------------------
+
+const DEADLINE_BAND_VALUES: readonly DeadlineBand[] = ['tight', 'normal', 'long']
+const STARS_VALUES: readonly Stars[] = [1, 2, 3, 4]
+const PLAIN_GOOD_VALUES: readonly PlainGoodId[] = ['sugar', 'oil', 'flour', 'extract', ...JAM_IDS]
+const PRIZE_TOOL_VALUES: readonly PrizeTool[] = ['rotary-shovel', 'diamond-pickaxe']
+
+function dumpContracts(c: Contracts): SaveContracts {
+  return {
+    active: c.active.map(a => ({
+      offer: a.offer,
+      dueDay: a.dueDay,
+      bins: a.bins.map(b => ({ demand: b.demand, filled: b.filled })),
+    })),
+    takenToday: c.takenToday.slice(),
+    history: c.history.slice(),
+    book: { ...c.book },
+  }
+}
+
+function liveContracts(s: SaveContracts, rep: number, repDay: number): Contracts {
+  return {
+    active: s.active.map(a => ({
+      offer: a.offer,
+      dueDay: a.dueDay,
+      bins: (a.bins.length === 1
+        ? [{ demand: a.bins[0].demand, filled: a.bins[0].filled }]
+        : [
+            { demand: a.bins[0].demand, filled: a.bins[0].filled },
+            { demand: a.bins[1].demand, filled: a.bins[1].filled },
+          ]) as Active['bins'],
+    })),
+    takenToday: s.takenToday.slice(),
+    history: s.history.slice(),
+    book: { ...s.book },
+    rep,
+    repDay,
+  }
+}
+
+function readContracts(v: unknown): SaveContracts | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const activeIn = arr(o.active)
+  const takenIn = arr(o.takenToday)
+  const historyIn = arr(o.history)
+  const book = readBook(o.book)
+  if (activeIn === undefined || takenIn === undefined || historyIn === undefined || book === undefined) {
+    return undefined
+  }
+  const active: SaveContracts['active'] = []
+  for (const raw of activeIn) {
+    const a = readActive(raw)
+    if (a === undefined) return undefined
+    active.push(a)
+  }
+  const takenToday: ContractId[] = []
+  for (const raw of takenIn) {
+    const id = num(raw)
+    if (id === undefined) return undefined
+    takenToday.push(id)
+  }
+  const history: HistoryEntry[] = []
+  for (const raw of historyIn) {
+    const e = readHistoryEntry(raw)
+    if (e === undefined) return undefined
+    history.push(e)
+  }
+  return { active, takenToday, history, book }
+}
+
+function readBook(v: unknown): CompanyBook | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const book = {} as CompanyBook
+  for (const id of COMPANY_IDS) {
+    const rec = obj(o[id])
+    if (rec === undefined) return undefined
+    const done = num(rec.done)
+    const missed = num(rec.missed)
+    if (done === undefined || missed === undefined) return undefined
+    book[id] = { done, missed }
+  }
+  return book
+}
+
+function readActive(v: unknown): SaveContracts['active'][number] | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const offer = readOffer(o.offer)
+  const dueDay = num(o.dueDay)
+  const binsIn = arr(o.bins)
+  if (offer === undefined || dueDay === undefined || binsIn === undefined) return undefined
+  if (binsIn.length !== offer.lines.length) return undefined
+  const bins: { demand: Demand; filled: number }[] = []
+  for (const raw of binsIn) {
+    const b = obj(raw)
+    if (b === undefined) return undefined
+    const demand = readDemand(b.demand)
+    const filled = num(b.filled)
+    if (demand === undefined || filled === undefined) return undefined
+    bins.push({ demand, filled })
+  }
+  return { offer, dueDay, bins }
+}
+
+function readOffer(v: unknown): ContractOffer | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const id = num(o.id)
+  const slot = num(o.slot)
+  const difficulty = num(o.difficulty)
+  const days = num(o.days)
+  const clean = num(o.clean)
+  const markup = num(o.markup)
+  const reward = num(o.reward)
+  const penalty = num(o.penalty)
+  const prize = readPrize(o.prize)
+  const linesIn = arr(o.lines)
+  if (
+    id === undefined ||
+    slot === undefined ||
+    difficulty === undefined ||
+    days === undefined ||
+    clean === undefined ||
+    markup === undefined ||
+    reward === undefined ||
+    penalty === undefined ||
+    prize === undefined ||
+    linesIn === undefined ||
+    !isCompanyId(o.company) ||
+    !isStars(o.stars) ||
+    !isDeadlineBand(o.band)
+  ) {
+    return undefined
+  }
+  if (linesIn.length !== 1 && linesIn.length !== 2) return undefined
+  const first = readDemand(linesIn[0])
+  if (first === undefined) return undefined
+  let lines: Lines = [first]
+  if (linesIn.length === 2) {
+    const second = readDemand(linesIn[1])
+    if (second === undefined) return undefined
+    lines = [first, second]
+  }
+  return {
+    id,
+    slot,
+    company: o.company,
+    difficulty,
+    stars: o.stars,
+    band: o.band,
+    days,
+    lines,
+    prize,
+    clean,
+    markup,
+    reward,
+    penalty,
+  }
+}
+
+function readDemand(v: unknown): Demand | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const amount = num(o.amount)
+  if (amount === undefined) return undefined
+  if (o.kind === 'rated') {
+    if (!isRarityGoodId(o.good) || !isRarity(o.minRarity)) return undefined
+    return { kind: 'rated', good: o.good, minRarity: o.minRarity, amount }
+  }
+  if (o.kind === 'plain') {
+    if (!(PLAIN_GOOD_VALUES as readonly unknown[]).includes(o.good)) return undefined
+    return { kind: 'plain', good: o.good as PlainGoodId, amount }
+  }
+  if (o.kind !== 'group') return undefined
+  if (o.group === 'jam') return { kind: 'group', group: 'jam', amount }
+  if (o.group === 'spirit' && isRarity(o.minRarity)) {
+    return { kind: 'group', group: 'spirit', minRarity: o.minRarity, amount }
+  }
+  return undefined
+}
+
+function readPrize(v: unknown): Prize | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'cash') return { kind: 'cash' }
+  if (o.kind === 'fertilizer') return { kind: 'fertilizer' }
+  if (o.kind === 'freezer') return { kind: 'freezer' }
+  if (o.kind === 'expansion-slot') return { kind: 'expansion-slot' }
+  if (o.kind === 'sapling') {
+    return isTreeIdValue(o.tree) ? { kind: 'sapling', tree: o.tree } : undefined
+  }
+  if (o.kind === 'seeds') {
+    const count = num(o.count)
+    if (count === undefined || o.crop !== 'vanilla') return undefined
+    return { kind: 'seeds', crop: 'vanilla', count }
+  }
+  if (o.kind === 'skill-points') {
+    const n = num(o.n)
+    return n === undefined ? undefined : { kind: 'skill-points', n }
+  }
+  if (o.kind === 'tool') {
+    return (PRIZE_TOOL_VALUES as readonly unknown[]).includes(o.tool)
+      ? { kind: 'tool', tool: o.tool as PrizeTool }
+      : undefined
+  }
+  return undefined
+}
+
+function readHistoryEntry(v: unknown): HistoryEntry | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const id = num(o.id)
+  const day = num(o.day)
+  const outcome = readOutcome(o.outcome)
+  if (id === undefined || day === undefined || outcome === undefined) return undefined
+  if (!isCompanyId(o.company) || !isStars(o.stars)) return undefined
+  return { id, company: o.company, stars: o.stars, day, outcome }
+}
+
+function readOutcome(v: unknown): Outcome | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'done') {
+    const paid = num(o.paid)
+    const prize = readPrize(o.prize)
+    return paid === undefined || prize === undefined ? undefined : { kind: 'done', paid, prize }
+  }
+  const sold = num(o.sold)
+  if (sold === undefined) return undefined
+  if (o.kind === 'missed') {
+    const penalty = num(o.penalty)
+    return penalty === undefined ? undefined : { kind: 'missed', sold, penalty }
+  }
+  if (o.kind === 'cancelled') {
+    const fee = num(o.fee)
+    return fee === undefined ? undefined : { kind: 'cancelled', sold, fee }
+  }
+  return undefined
+}
+
+function isCompanyId(v: unknown): v is CompanyId {
+  return (COMPANY_IDS as readonly unknown[]).includes(v)
+}
+
+function isStars(v: unknown): v is Stars {
+  return (STARS_VALUES as readonly unknown[]).includes(v)
+}
+
+function isDeadlineBand(v: unknown): v is DeadlineBand {
+  return (DEADLINE_BAND_VALUES as readonly unknown[]).includes(v)
+}
+
+function isRarity(v: unknown): v is Rarity {
+  return (RARITY_RANK as readonly unknown[]).includes(v)
+}
+
+function isRarityGoodId(v: unknown): v is RarityGoodId {
+  return isCropId(v) || isSpiritKind(v) || v === 'wine'
 }

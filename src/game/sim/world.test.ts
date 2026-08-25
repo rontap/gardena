@@ -6,6 +6,7 @@ import {
   COMPOST_SECONDS,
   CONTAINERS,
   FERT_BAG_LITERS,
+  FREEZER_LARGE_SLOTS,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -28,7 +29,7 @@ import {
 } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_FLOOR, PLAYER_SKILL_IDS, SKILLS } from '../defs/skills.ts'
-import type { AnnualId, ResearchId, SkuId } from './ids.ts'
+import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
   Freezer,
@@ -57,7 +58,7 @@ import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
-import { DT_MAX, World } from './world.ts'
+import { DT_MAX, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 import { qualityPip } from '../view/svgs.ts'
 
@@ -250,12 +251,12 @@ describe('beta-1 invariants', () => {
   test('walking up to the silo stores every seed you carry', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'wheat', rarity: 'rare', count: 3 } }
-    w.seats[0].inventory[5] = { kind: 'hold', item: { kind: 'seeds', crop: 'olive', rarity: 'common', count: 4 } }
+    w.seats[0].inventory[5] = { kind: 'hold', item: { kind: 'seeds', crop: 'grape', rarity: 'common', count: 4 } }
     w.click({ col: SILO_BASE.col, row: SILO_BASE.row })
     for (let n = 0; n < 60 && w.seats[0].queue.length > 0; n++) w.tick(1 / 15)
     expect(w.seats[0].hand.kind).toBe('empty')
     expect(siloCount(w, 'wheat', 'rare')).toBe(3)
-    expect(siloCount(w, 'olive', 'common')).toBe(4)
+    expect(siloCount(w, 'grape', 'common')).toBe(4)
     expect(w.seats[0].cue.kind).toBe('silo')
   })
 
@@ -368,9 +369,7 @@ describe('beta-2 invariants', () => {
     w.cheatMoney()
     expect(w.money).toBe(money + 200)
     w.cheatPoints()
-    expect(w.family.player.points).toBe(10)
-    expect(w.family.husband.points).toBe(10)
-    expect(w.family.daughter.points).toBe(10)
+    expect(w.points).toBe(10)
     w.startResearch('unlock-tomato')
     w.toggleCheatResearch()
     expect(w.cheatFastResearch).toBe(true)
@@ -631,7 +630,7 @@ describe('beta-4 invariants', () => {
   test('starter house has three saplings', () => {
     const w = new World()
     const trees = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'sapling').map(s => (s.kind === 'hold' && s.item.kind === 'sapling' ? s.item.tree : ''))
-    expect(trees.sort()).toEqual(['apricot', 'cherry', 'lemon'])
+    expect(trees.sort()).toEqual(['apricot', 'cherry', 'olive'])
   })
 
   test('buy-chest place 1x1 own slots', () => {
@@ -659,7 +658,7 @@ describe('beta-4 invariants', () => {
     expect(cb.slots).toHaveLength(9)
     expect(ca.slots.every(s => s.kind === 'empty')).toBe(true)
     expect(ca.slots).not.toBe(cb.slots)
-    ca.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+    ca.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
     expect(cb.slots[0].kind).toBe('empty')
   })
 
@@ -685,7 +684,7 @@ describe('beta-4 invariants', () => {
     const n = 3
     const w = grindWorld(11)
     w.seats[0].inventory.forEach((_, i) => {
-      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
     })
     w.seats[0].hand = {
       kind: 'hold',
@@ -1278,7 +1277,7 @@ describe('beta-6 invariants', () => {
     const chest = w.cell(AT)
     expect(chest.kind).toBe('chest')
     if (chest.kind !== 'chest') return
-    chest.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+    chest.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
     chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
     w.armDelete()
     const n = w.drops.length
@@ -1461,20 +1460,17 @@ describe('0.8 plants and trees', () => {
     expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'automation', cost: 14, seconds: 50, reveal: 'start' })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
     expect(RESEARCH['unlock-raspberry'].reveal).toBe('unlock-grape')
-    expect(RESEARCH['unlock-olive'].reveal).toBe('unlock-tomato')
-    expect(SKUS['pack-vanilla'].show).toBe('unlock-raspberry')
-    expect(SKUS['pack-vanilla'].need).toBe('vanilla-tending')
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
+    expect(Object.keys(RESEARCH).includes('unlock-olive')).toBe(false)
   })
 
-  test('vanilla pack shows after raspberry; buy needs vanilla-tending', () => {
-    const w = new World()
-    expect(w.skuShown('pack-vanilla')).toBe(false)
-    w.done.add('unlock-raspberry')
-    expect(w.skuShown('pack-vanilla')).toBe(true)
-    expect(w.skuOpen('pack-vanilla')).toBe(false)
-    w.family.player.owned.set('vanilla-tending', 1)
-    expect(w.skuOpen('pack-vanilla')).toBe(true)
+  test('vanilla, olive and the two late tools have no shop SKU: contract prizes only', () => {
+    expect(Object.keys(SKUS).includes('pack-vanilla')).toBe(false)
+    expect(Object.keys(SKUS).includes('pack-olive')).toBe(false)
+    expect(Object.keys(SKUS).includes('buy-rotary-shovel')).toBe(false)
+    expect(Object.keys(SKUS).includes('buy-diamond-pickaxe')).toBe(false)
+    expect(packSku('vanilla')).toBeUndefined()
+    expect(packSku('grape')).toBe('pack-grape')
   })
 
   test('Ripe cane harvests as fruit. Mill 5 cane → `SUGAR_BAG` 2 L at `SUGAR_MILL` 5 / L. Sugar `{ kind: \'sugar\'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.', () => {
@@ -1497,7 +1493,7 @@ describe('0.8 plants and trees', () => {
   test('tree juvenile then pending; next seam starts yield', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     expect(tree.yield.kind).toBe('pending')
@@ -1510,7 +1506,7 @@ describe('0.8 plants and trees', () => {
   test('juvenile growth does not ping', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0, 0, { kind: 'pending' })
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0, 0, { kind: 'pending' })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     let n = 0
@@ -1605,11 +1601,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.73. `PROTOCOL` 1.73. Wordmark 1.7.3. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.8. `PROTOCOL` 1.8. Wordmark 1.8.0. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.73)
+    expect(s.version).toBe(1.8)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
@@ -1858,7 +1854,7 @@ describe('0.9 log and rng', () => {
   test('Two successful tree drops the same day each consume fruit.next(). Rarities need not match.', () => {
     const w = new World(1)
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
       kind: 'on',
       daysLeft: 2,
     })
@@ -1881,10 +1877,10 @@ describe('0.9 log and rng', () => {
     const fruit = new Rng(1).stream('fruit')
     const a = rollRarity(fruit.next())
     const b = rollRarity(fruit.next())
-    const lemons = w.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'lemon')
-    expect(lemons).toHaveLength(2)
-    expect(lemons[0].item.kind === 'fruit' && lemons[0].item.rarity).toBe(a)
-    expect(lemons[1].item.kind === 'fruit' && lemons[1].item.rarity).toBe(b)
+    const olives = w.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'olive')
+    expect(olives).toHaveLength(2)
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.rarity).toBe(a)
+    expect(olives[1].item.kind === 'fruit' && olives[1].item.rarity).toBe(b)
   })
 
   test('Failed buy / buyPacks (closed, cannot afford, cannot fit) consumes 0 shop.next(). Failed tree drop consumes 0 fruit.next(). Granted pack: one next() each. buyPacks success: 5.', () => {
@@ -1917,7 +1913,7 @@ describe('0.9 log and rng', () => {
     })
     expect(got).toEqual(want)
     const dropFail = new World(seed)
-    const trapped = new Tree('lemon', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
+    const trapped = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
       kind: 'on',
       daysLeft: 2,
     })
@@ -1933,9 +1929,9 @@ describe('0.9 log and rng', () => {
     dropFail.setCell({ col: AT.col - 1, row: AT.row }, { kind: 'empty', soil: bed() })
     trapped.fruit = 1
     dropFail.tick(1 / 15)
-    const lemons = dropFail.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'lemon')
-    expect(lemons).toHaveLength(1)
-    expect(lemons[0].item.kind === 'fruit' && lemons[0].item.rarity).toBe(rollRarity(new Rng(seed).stream('fruit').next()))
+    const olives = dropFail.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'olive')
+    expect(olives).toHaveLength(1)
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.rarity).toBe(rollRarity(new Rng(seed).stream('fruit').next()))
   })
 
   test('existing common carrot stack in the silo: buy and buyPacks merge; shop.next consumed 1 then 5', () => {
@@ -2135,5 +2131,78 @@ describe('1.5.2', () => {
 
   test('Tree juvenile `TREES.juvenileSeconds` (480) then `pending`. Next seam → `TREE_YIELD_MUL` 3.5× for 2 days.', () => {
     expect(TREE_YIELD_MUL).toBe(3.5)
+  })
+})
+
+describe('1.8 permits and points', () => {
+  test('Expansion permits come from three researches, `inherit-land` II and contract prizes. Each expansion spends one.', () => {
+    const w = new World(1)
+    expect(w.expandSlots()).toBe(0)
+    expect(w.expandLeft()).toBe(0)
+    w.done.add('unlock-expand')
+    expect(w.expandSlots()).toBe(1)
+    w.done.add('expand-land')
+    w.done.add('eminent-domain')
+    expect(w.expandSlots()).toBe(3)
+    w.family.husband.owned.set('inherit-land', 2)
+    expect(w.expandSlots()).toBe(5)
+    w.prizeSlots = 2
+    expect(w.expandSlots()).toBe(7)
+    w.purchases = 7
+    expect(w.expandLeft()).toBe(0)
+  })
+
+  test('`expand` is refused once the permits run out, whatever the money says.', () => {
+    const w = new World(1)
+    w.done.add('unlock-expand')
+    w.money = 99999
+    w.expand({ cx: 1, cy: 0 })
+    expect(w.owned).toHaveLength(2)
+    expect(w.expandLeft()).toBe(0)
+    w.expand({ cx: 0, cy: 1 })
+    expect(w.owned).toHaveLength(2)
+    w.done.add('expand-land')
+    w.expand({ cx: 0, cy: 1 })
+    expect(w.owned).toHaveLength(3)
+  })
+
+  test('`inherit-land` II is a husband skill gated on `unlock-expand`.', () => {
+    expect(HUSBAND_SKILL_IDS.includes('inherit-land')).toBe(true)
+    expect(SKILLS['inherit-land'].maxTier).toBe(2)
+    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-expand' })
+  })
+
+  test('Skill points are one shared bank of `POINTS_PER_DAY` a day, spendable on any member.', () => {
+    const w = new World(1)
+    expect(w.points).toBe(0)
+    w.grantPoints(POINTS_PER_DAY)
+    expect(w.points).toBe(3)
+    w.pickSkill('husband', 0)
+    expect(w.points).toBe(2)
+    w.pickSkill('daughter', 0)
+    w.pickSkill('player', 0)
+    expect(w.points).toBe(0)
+    const before = w.family.player.owned.size
+    w.pickSkill('player', 0)
+    expect(w.family.player.owned.size).toBe(before)
+  })
+
+  test('The large freezer is not for sale: it opens only while a contract prize is banked, and placing it spends the stock.', () => {
+    const w = new World(1)
+    expect(SKUS['buy-freezer-large'].need).toBe('prize')
+    expect(w.skuShown('buy-freezer-large')).toBe(false)
+    expect(w.skuOpen('buy-freezer-large')).toBe(false)
+    w.prizeFreezers = 1
+    expect(w.skuShown('buy-freezer-large')).toBe(true)
+    expect(w.skuOpen('buy-freezer-large')).toBe(true)
+    const at = { col: 10, row: 12 }
+    w.buy('buy-freezer-large')
+    w.confirmPlace(at)
+    const cell = w.cell(at)
+    expect(cell.kind).toBe('freezer')
+    if (cell.kind !== 'freezer') return
+    expect(cell.slots).toHaveLength(FREEZER_LARGE_SLOTS)
+    expect(w.prizeFreezers).toBe(0)
+    expect(w.skuShown('buy-freezer-large')).toBe(false)
   })
 })

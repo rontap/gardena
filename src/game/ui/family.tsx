@@ -50,12 +50,31 @@ export function Family({ world, onClose }: { world: World; onClose: () => void }
         ) : undefined
       }
     >
-      <div className="grid grid-cols-3 items-start gap-3">
-        {MEMBERS.map(m => (
-          <MemberCol key={m} member={m} world={world} onTip={setTip} />
-        ))}
+      <div className="flex flex-col gap-3">
+        <PointBank world={world} />
+        <div className="grid grid-cols-3 items-start gap-3">
+          {MEMBERS.map(m => (
+            <MemberCol key={m} member={m} world={world} onTip={setTip} />
+          ))}
+        </div>
       </div>
     </Overlay>
+  )
+}
+
+function PointBank({ world }: { world: World }) {
+  const n = world.points
+  const spendable = n > 0 && world.local === 0
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${
+        spendable ? 'bg-ripe/25 text-ink' : 'bg-ink/6 text-ink/45'
+      }`}
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
+      <span className="tabular-nums">{n}</span>
+      <span>{n === 1 ? 'point to spend, on anyone' : 'points to spend, on anyone'}</span>
+    </div>
   )
 }
 
@@ -71,7 +90,7 @@ function MemberCol({
   const st = world.family[member]
   const owned = [...st.owned.entries()]
   const guest = world.local !== 0
-  const canPick = st.points > 0 && !guest
+  const canPick = world.points > 0 && !guest
   const empty = st.offers.length === 0
   return (
     <div className="flex flex-col bg-ink/6">
@@ -86,16 +105,6 @@ function MemberCol({
           <div className="text-sm leading-none font-semibold text-ink/60">{ROLES[member]}</div>
           <div className="mt-1 text-xs leading-snug text-ink/50">{BLURBS[member]}</div>
         </div>
-      </div>
-
-      <div
-        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${
-          canPick ? 'bg-ripe/25 text-ink' : 'text-ink/45'
-        }`}
-      >
-        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
-        <span className="tabular-nums">{st.points}</span>
-        <span>{st.points === 1 ? 'point to spend' : 'points to spend'}</span>
       </div>
 
       <div className="flex flex-1 flex-col px-3 pb-3">

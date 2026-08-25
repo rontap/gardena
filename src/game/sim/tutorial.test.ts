@@ -49,9 +49,8 @@ describe('tutorial', () => {
     expect(Object.hasOwn(r.world, 'tutorial')).toBe(false)
   })
 
-  test('`tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2. Not `World.digs`.', () => {
+  test('`tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2.', () => {
     const w = new World(1)
-    w.digs = 40
     const t1 = check(w, on(1))
     expect(t1.kind === 'on' && t1.step === 1).toBe(true)
     const spots = [

@@ -2,24 +2,19 @@
 
 Husband is the research role. One job. `startResearch` no-op if a job is running, already done, or `money < cost`. Pay up front. `left` ticks down. Done: `done.add`, tally that day, apply `effect`.
 
-`unlockAll`: every row done, `money += 999`, job idle, each member `points = 99`. Does not grant skills. Does not reroll — [[mechanics/family]]. UI is the Cheat dock, not Research — [[ui/cheat]].
+`unlockAll`: every row done, `money += 999`, job idle, `points = 99`. Does not grant skills. Does not reroll — [[mechanics/family]]. UI is the Cheat dock, not Research — [[ui/cheat]].
 
-`cheatFastResearch`: job drain `× 3` on top of Speedy research. Toggle. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` per member.
+`cheatFastResearch`: job drain `× 3` on top of Speedy research. Toggle. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` to the shared bank.
 
 `RESEARCH[id].name` is the visible label. Trees: plants, utilities, expansion, automation.
 
 `reveal`: `'start'` or a prior id. `skuOpen` / `skuShown` are separate: show vs buy.
 
-`Sku.need` is required: `ResearchId | 'vanilla-tending' | 'none'`. `'none'` is no extra lock. Vanilla stays `'vanilla-tending'`. Dual-lock SKUs set `unlock` to one research and `need` to the other. `skuOpen` is unlock done (or `'start'`) and the need: `'none'` | skill owned | that research done. Assumption: vanilla keeps this field.
+`Sku.need` is required: `ResearchId | 'prize' | 'none'`. `'none'` is no extra lock. `'prize'` means the sku is never for sale: it opens only while `World.prizeStock(id) > 0`, banked from a contract — [[mechanics/contracts]]. `buy-freezer-large` is the only one. Dual-lock SKUs set `unlock` to one research and `need` to the other. `skuOpen` is unlock done (or `'start'`) and the need: `'none'` | prize stock | that research done.
 
 Future germ / weather SKUs use this dual-lock only (`Sku.unlock` + `Sku.need` as `ResearchId`). Do not add those SKUs or research rows in 1.7.1. AND / OR / NOT already dual-lock on `unlock-advanced-sensors`.
 
-`gate` is required on every row. `{ kind: 'none' }` unless the row is earned by play:
-
-- `{ kind: 'digs'; n }` — `World.digs`, bumped once per completed `doShovel`.
-- `{ kind: 'mines'; n }` — `World.mines`, bumped once per completed `doMine` (very-hard soil or a rock, whatever its footprint).
-
-`researchOpen(id)` is `gateProgress(id) >= 1`. `startResearch` no-ops while gated. A gated card is inert, shows a `roof` bar and `{have} / {n} {kind}`. `gateHave` is the raw counter. `GATE_TEXT` holds the callout sentence. Counters never reset and are not spent.
+`gate` is required on every row and is `{ kind: 'none' }` on all of them. 1.8.0 removed the `digs` / `mines` play-gates along with the only two rows that used them; `researchOpen(id)` is now just `gate.kind === 'none'`.
 
 ## Rows
 
@@ -40,7 +35,9 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-contracts | Contracts | utilities | 8 | 30 | start | The stall can take orders from buyers. |
 | unlock-pickaxe | Pickaxes | utilities | 0 | 40 | start | Unlocks Pickaxe and Hardened pickaxe in the general store. |
 | unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
-| unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge. |
+| unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge, and grants the first expansion permit. |
+| expand-land | Expand land | expansion | 30 | 60 | unlock-expand | A second expansion permit. Land still costs money on top of the permit. |
+| eminent-domain | Eminent domain | expansion | 60 | 90 | expand-land | A third expansion permit. Further permits are contract work, not paperwork. |
 | unlock-irrigation | Irrigation | automation | 20 | 50 | start | Unlocks Pumpjack in the general store. |
 | unlock-vehicles | Vehicles | automation | 32 | 70 | unlock-irrigation | Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar. |
 | unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
@@ -53,10 +50,8 @@ Blurbs as `RESEARCH[id].blurb`.
 | unlock-preservatives | Preservatives | automation | 20 | 55 | unlock-grinder | Unlocks Jam machine, Freezer, and Sugar in the general store. |
 | unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar. |
 | unlock-landscaping | Landscape architecture | expansion | 12 | 60 | start | Unlocks Grass seeds, Wooden fence and every paving tile in the general store. |
-| unlock-rotary-shovel | Rotary shovel | utilities | 40 | 120 | unlock-better-tools | Unlocks the Rotary shovel in the general store. Earned by digging, not by reading. |
-| unlock-diamond-pickaxe | Diamond pickaxe | utilities | 40 | 120 | unlock-pickaxe | Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading. |
 
-`unlock-rotary-shovel` gate `digs` `ROTARY_DIGS` 200. `unlock-diamond-pickaxe` gate `mines` `DIAMOND_MINES` 150. Every other row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
+Every row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
 
 `unlock-sensors` `effect` `feature`. `unlock-advanced-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. `unlock-contracts` `effect` `feature`. Board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Assumption: no new `ResearchGate` arm. Assumption: `unlock-advanced-sensors` $22 / 50s.
 
@@ -64,7 +59,7 @@ Blurbs as `RESEARCH[id].blurb`.
 
 Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. `effect` is `unlock-sku` | `expand` | `feature`. `unlock-heirloom` is `feature` — gates Őstermelő. Better crop is player skills — [[mechanics/family]].
 
-`unlock-olive` → `pack-olive`. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla has no research row. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
+`unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer`.
 
 `unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
 
@@ -78,9 +73,9 @@ Carrot / potato / wheat start unlocked. No `bump-*`. No `{ kind: 'sale-mul' }`. 
 
 `buy-compost-box` unlock `unlock-compost`, show `unlock-fertilizer`, $20.
 
-`buy-rotary-shovel` show after `unlock-better-tools`, buy after `unlock-rotary-shovel`, $1000. `buy-diamond-pickaxe` show after `unlock-pickaxe`, buy after `unlock-diamond-pickaxe`, $1000.
+The rotary shovel and the diamond pickaxe have no sku. Both are four-star contract prizes — [[mechanics/contracts]].
 
-`pack-olive` $14 show `unlock-tomato`, buy `unlock-olive`. `pack-grape` $16 show `start`, buy `unlock-grape`. `pack-raspberry` $22 show `unlock-grape`, buy `unlock-raspberry`. `pack-vanilla` $40 show `unlock-raspberry`, buy iff player owns `vanilla-tending`. Locked copy: “You need to earn the Vanilla tending skill.” `pack-sugar-cane` $8 show + buy `unlock-fermentation`.
+`pack-grape` $16 show `start`, buy `unlock-grape`. `pack-raspberry` $22 show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` $8 show + buy `unlock-fermentation`. `buy-freezer-large` $0 `need: 'prize'` — shown and buyable only while one is banked.
 
 `buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. Assumption: `buy-sugar` tab utility. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 

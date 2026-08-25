@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.73
+export const PROTOCOL = 1.8
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -44,6 +44,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-still',
   'buy-barrel',
   'buy-freezer',
+  'buy-freezer-large',
   'buy-hangar',
   'buy-silo-seed',
   'buy-silo-spray',

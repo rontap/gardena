@@ -10,7 +10,9 @@ Fields: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `sal
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals except none for trees. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Olive `reveal: unlock-tomato`. Raspberry `reveal: unlock-grape`. Vanilla pack shows after raspberry; buy requires player skill `vanilla-tending`. Sugar cane `unlock-fermentation` on automation; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
+Packs of 5: `SKUS` `pack-*` for annuals except vanilla, and none for trees. `packSku(crop)` in `sim/ids.ts` is the lookup; it returns `undefined` for vanilla. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-grape`. Sugar cane `unlock-fermentation` on automation; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
+
+Vanilla has no pack and no research. Seeds are a contract prize only — [[mechanics/contracts]]. Tree saplings likewise: the three starting saplings and the one wild apple are the only ones not won from a contract.
 
 New annuals — preference. Drink L/day derived:
 

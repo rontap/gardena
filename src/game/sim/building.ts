@@ -328,9 +328,9 @@ export class Freezer {
   readonly slots: Slot[]
   out: Signal = 0
   hold = 0
-  constructor(base: RectBase) {
+  constructor(base: RectBase, n: number = FREEZER_SLOTS) {
     this.base = base
-    this.slots = Array.from({ length: FREEZER_SLOTS }, (): Slot => ({ kind: 'empty' }))
+    this.slots = Array.from({ length: n }, (): Slot => ({ kind: 'empty' }))
   }
 }
 

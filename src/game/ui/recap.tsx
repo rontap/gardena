@@ -4,7 +4,7 @@ import { RESEARCH } from '../defs/research.ts'
 import type { HistoryEntry } from '../sim/market.h.ts'
 import type { Recap as RecapData } from '../sim/world.ts'
 import { UI_RECAP_NIGHT } from '../view/svgs.ts'
-import { Difficulty } from './market.tsx'
+import { Difficulty, OutcomePay } from './market.tsx'
 import { Btn, Chrome, Coin } from './frame.tsx'
 
 export function Recap({
@@ -84,12 +84,6 @@ export function Recap({
 function ContractLine({ entry }: { entry: HistoryEntry }) {
   const outcome =
     entry.outcome.kind === 'done' ? 'Completed' : entry.outcome.kind === 'missed' ? 'Missed' : 'Cancelled'
-  const n =
-    entry.outcome.kind === 'done'
-      ? entry.outcome.paid
-      : entry.outcome.kind === 'missed'
-        ? entry.outcome.penalty
-        : entry.outcome.fee
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>{COMPANIES[entry.company].name}</span>
@@ -97,7 +91,7 @@ function ContractLine({ entry }: { entry: HistoryEntry }) {
       <span>{entry.day}</span>
       <span>{outcome}</span>
       <span className="ml-auto">
-        <Coin n={n} />
+        <OutcomePay entry={entry} />
       </span>
     </div>
   )

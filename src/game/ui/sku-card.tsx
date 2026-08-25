@@ -21,8 +21,6 @@ const REASON: { readonly [K in RowState]: string } = {
 }
 
 export function rowState(world: World, id: SkuId): RowState {
-  const need = SKUS[id].need
-  if (need === 'vanilla-tending' && !world.hasSkill(need)) return 'need-skill'
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < world.skuPrice(id)) return 'cannot-afford'
   const made = skuItem(id)
@@ -46,8 +44,6 @@ export function rowState(world: World, id: SkuId): RowState {
  * hovers, and cards must not reshuffle under the cursor.
  */
 export function locked(world: World, id: SkuId): boolean {
-  const need = SKUS[id].need
-  if (need === 'vanilla-tending' && !world.hasSkill(need)) return true
   return !world.skuOpen(id)
 }
 

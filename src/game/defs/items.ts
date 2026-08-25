@@ -30,8 +30,6 @@ export const SHRUB_GROW = 360
 export const GRASS_GROW = DAY_SECONDS / 4
 export const GRASS_WATER_PER_SEC = 0.0012
 export const GRASS_PACK = 5
-export const ROTARY_DIGS = 200
-export const DIAMOND_MINES = 150
 export const SPRINKLER_TILE_DAY = 2.5
 export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
 export const FERT_BAG_LITERS = 10
@@ -51,6 +49,8 @@ export const COMPOST_VALUE = {
 } as const
 
 export const FREEZER_SLOTS = 6
+
+export const FREEZER_LARGE_SLOTS = 9
 export const SILO_SEED_CAP = 100
 export const ADDITIVE_CAP_LITERS = 200
 export const SUGAR_BAG = 2

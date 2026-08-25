@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { CROPS } from '../defs/crops.ts'
+import { COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
 import { PAD } from './building.ts'
 import { Act } from './log.ts'
 import { permit } from './mp.ts'
@@ -28,7 +29,11 @@ import {
   REP_LOST,
   REP_MAX,
   MARKUP_BASE,
+  DEADLINE_DAYS,
+  DEADLINE_STEP,
+  PRIZE_SLOTS,
   RARITY_COST,
+  load,
   Accepts,
   cancelFee,
   cleanUnit,
@@ -120,15 +125,46 @@ describe('contracts', () => {
     expect(worthOf(miss, 'carrot')).toBeGreaterThan(0)
     expect(miss.stall.carrot.sat).toBeGreaterThan(0)
     const loaded = dump(miss)
-    expect('contracts' in loaded).toBe(false)
     expect('sat' in loaded.stall.carrot).toBe(false)
     const parsed = parse(JSON.stringify(loaded))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(parsed.world.contracts.active).toEqual([])
-    expect(parsed.world.contracts.takenToday).toEqual([])
-    expect(parsed.world.contracts.history).toEqual([])
+    expect(parsed.world.contracts.history).toEqual(miss.contracts.history)
     expect(parsed.world.stall.carrot.sat).toBe(0)
+  })
+
+  test('A save round-trips the live board: active contracts, their bin fills, `takenToday`, history and the company book.', () => {
+    const w = new World(1)
+    w.contracts.active.push(carrotActive(0, 10))
+    w.contracts.takenToday.push(0, 17)
+    w.contracts.book['trade-jo'] = { done: 3, missed: 1 }
+    dropFruit(w, 'carrot', 2)
+    expect(w.contracts.active[0].bins[0].filled).toBe(2)
+    const parsed = parse(JSON.stringify(dump(w)))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const back = parsed.world.contracts
+    expect(back.active).toHaveLength(1)
+    expect(back.active[0].bins[0].filled).toBe(2)
+    expect(back.active[0].dueDay).toBe(10)
+    expect(back.active[0].offer).toEqual(w.contracts.active[0].offer)
+    expect(back.takenToday).toEqual([0, 17])
+    expect(back.book['trade-jo']).toEqual({ done: 3, missed: 1 })
+  })
+
+  test('A contract whose prize is not cash pays the goods and no money at all.', () => {
+    const w = new World(1)
+    const active = carrotActive(0, 10)
+    const offer = { ...active.offer, prize: { kind: 'sapling', tree: 'cherry' } as const }
+    w.contracts.active.push({ ...active, offer })
+    const money = w.money
+    const drops = w.drops.length
+    dropFruit(w, 'carrot', 4)
+    expect(w.contracts.active).toHaveLength(0)
+    expect(w.money).toBe(money)
+    expect(w.drops.length).toBe(drops + 1)
+    expect(w.drops[w.drops.length - 1].item).toEqual({ kind: 'sapling', tree: 'cherry' })
   })
 
   test('A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.', () => {
@@ -154,7 +190,8 @@ describe('contracts', () => {
 
   test('`reward = clean * (1 + markup)` baked at generation. Saturation at delivery time does not move it.', () => {
     const rng = new Rng(7)
-    const offer = rollBoard(rng, 1, CONTRACT_OFFERS, 0)[0]
+    const offer = rollBoard(rng, 1, CONTRACT_OFFERS, 0).find(o => o.prize.kind === 'cash')
+    if (offer === undefined) throw new Error('no cash offer')
     expect(offer.reward).toBe(Math.round(offer.clean * (1 + offer.markup)))
     const w = new World(1)
     w.done.add('unlock-contracts')
@@ -436,6 +473,7 @@ function carrotOffer(amount = 4): ContractOffer {
     band: 'long',
     days: 4,
     lines: [demand],
+    prize: { kind: 'cash' },
     clean,
     markup: 0.2,
     reward: clean * 1.2,
@@ -569,5 +607,72 @@ describe('saturation', () => {
     expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 60) + 5, 9)
     mixed.sellAll()
     expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 60 / SAT_DEPTH), 9)
+  })
+})
+
+describe('prizes', () => {
+  test('Exactly `PRIZE_SLOTS` offers per board pay goods, and they are drawn from the base six so `broker` slots never reshuffle them.', () => {
+    for (const seed of [1, 7, 99, 12345]) {
+      for (const day of [0, 1, 5, 12, 24, 40]) {
+        const six = rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0)
+        const prized = six.filter(o => o.prize.kind !== 'cash')
+        expect(prized).toHaveLength(PRIZE_SLOTS)
+        expect(new Set(prized.map(o => o.slot)).size).toBe(PRIZE_SLOTS)
+        const eight = rollBoard(new Rng(seed), day, CONTRACT_SLOT_MAX, 0)
+        expect(eight.slice(0, CONTRACT_OFFERS)).toEqual(six)
+        expect(eight.slice(CONTRACT_OFFERS).every(o => o.prize.kind === 'cash')).toBe(true)
+      }
+    }
+  })
+
+  test('The prize is a pure function of seed, day and rep, like the rest of the board.', () => {
+    for (const rep of [0, 5, REP_MAX]) {
+      const a = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)
+      const b = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)
+      expect(a.map(o => o.prize)).toEqual(b.map(o => o.prize))
+    }
+  })
+
+  test("A prized offer carries its company's fixed entry for the band of its final difficulty. Only the rolled tool varies.", () => {
+    for (const seed of [1, 7, 99]) {
+      for (const day of [0, 4, 16, 30, 44]) {
+        rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0).forEach(o => {
+          if (o.prize.kind === 'cash') return
+          const want = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+          if (want.kind === 'tool') {
+            expect(o.prize.kind).toBe('tool')
+            return
+          }
+          expect(o.prize).toEqual(want)
+        })
+      }
+    }
+  })
+
+  test('Bands split on final difficulty at 8 / 20 / 30.', () => {
+    expect([0, 7.9].map(prizeBandOf)).toEqual([0, 0])
+    expect([8, 19].map(prizeBandOf)).toEqual([1, 1])
+    expect([20, 29].map(prizeBandOf)).toEqual([2, 2])
+    expect([30, DIFFICULTY_CEILING].map(prizeBandOf)).toEqual([3, 3])
+  })
+
+  test('Deadlines run 1-2 / 2-3 / 3-4 days on a half-day grid.', () => {
+    const seen = new Set<number>()
+    for (const seed of [1, 7, 99, 12345, 4242]) {
+      for (const day of [0, 3, 11, 27]) {
+        rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0).forEach(o => {
+          const [lo, hi] = DEADLINE_DAYS[o.band]
+          expect(o.days).toBeGreaterThanOrEqual(lo)
+          expect(o.days).toBeLessThanOrEqual(hi)
+          expect(o.days / DEADLINE_STEP).toBe(Math.round(o.days / DEADLINE_STEP))
+          seen.add(o.days)
+        })
+      }
+    }
+    expect([...seen].some(d => d % 1 !== 0)).toBe(true)
+  })
+
+  test('The money pool climbs faster over the top half of the ladder than the bottom.', () => {
+    expect(load(40) / load(20)).toBeGreaterThan(load(20) / load(8))
   })
 })

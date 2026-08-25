@@ -41,10 +41,26 @@ export function DebugContracts() {
   )
 }
 
+/** min / median / max of the cash rewards on one row. Prize offers pay no cash, so they sit out. */
+function Money({ offers }: { offers: readonly ReturnType<typeof rollBoard>[number][] }) {
+  const xs = offers.filter(o => o.prize.kind === 'cash').map(o => o.reward).sort((a, b) => a - b)
+  if (xs.length === 0) return <span className="text-sm text-ink/30">all prizes</span>
+  const mid = xs[Math.floor(xs.length / 2)]
+  return (
+    <span className="text-sm tabular-nums text-ink/45">
+      ${xs[0]} / <span className="font-semibold text-ink/70">${mid}</span> / ${xs[xs.length - 1]}
+      <span className="ml-2 text-ink/30">×{xs.length} cash</span>
+    </span>
+  )
+}
+
 function Row({ label, offers }: { label: string; offers: readonly ReturnType<typeof rollBoard>[number][] }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="text-sm font-semibold text-ink/45">{label}</div>
+      <div className="flex items-baseline gap-3">
+        <div className="text-sm font-semibold text-ink/45">{label}</div>
+        <Money offers={offers} />
+      </div>
       <div className="grid grid-cols-6 gap-2">
         {offers.map(offer => (
           <OfferCard

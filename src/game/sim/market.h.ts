@@ -1,5 +1,5 @@
 import type { Rarity } from '../defs/rarity.ts'
-import type { CropId, JamId, SpiritKind, StallGoodId } from './ids.ts'
+import type { CropId, JamId, PickaxeId, ShovelId, SpiritKind, StallGoodId, TreeId } from './ids.ts'
 
 export declare const SAT_DEPTH: number
 
@@ -56,6 +56,25 @@ export type Lines = readonly [Demand] | readonly [Demand, Demand]
 
 export type Stars = 1 | 2 | 3 | 4
 
+export type PrizeTool = Extract<ShovelId, 'rotary-shovel'> | Extract<PickaxeId, 'diamond-pickaxe'>
+
+/**
+ * What a finished contract hands over. `cash` pays `offer.reward`; every other
+ * arm pays the goods instead and no money at all.
+ */
+export type Prize =
+  | { kind: 'cash' }
+  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'seeds'; crop: 'vanilla'; count: number }
+  | { kind: 'fertilizer' }
+  | { kind: 'freezer' }
+  | { kind: 'expansion-slot' }
+  | { kind: 'skill-points'; n: number }
+  | { kind: 'tool'; tool: PrizeTool }
+
+/** Difficulty band a prize is drawn from. Index into a company's prize column. */
+export type PrizeBand = 0 | 1 | 2 | 3
+
 export type DeadlineBand = 'tight' | 'normal' | 'long'
 
 export type ContractId = number
@@ -69,6 +88,7 @@ export type ContractOffer = {
   band: DeadlineBand
   days: number
   lines: Lines
+  prize: Prize
   clean: number
   markup: number
   reward: number
@@ -82,7 +102,7 @@ export type Bins = readonly [Bin] | readonly [Bin, Bin]
 export type Active = { offer: ContractOffer; dueDay: number; bins: Bins }
 
 export type Outcome =
-  | { kind: 'done'; paid: number }
+  | { kind: 'done'; paid: number; prize: Prize }
   | { kind: 'missed'; sold: number; penalty: number }
   | { kind: 'cancelled'; sold: number; fee: number }
 
@@ -125,6 +145,10 @@ export declare const STAR_MIN: { readonly [K in Stars]: number }
 
 export declare const DEADLINE_DAYS: { readonly [K in DeadlineBand]: readonly [number, number] }
 
+export declare const DEADLINE_STEP: number
+
+export declare const PRIZE_SLOTS: number
+
 export declare const DEADLINE_COST: { readonly [K in DeadlineBand]: number }
 
 export declare const RARITY_COST: { readonly [K in Rarity]: number }
@@ -134,10 +158,6 @@ export declare const GOOD_COST: { readonly [K in StallGoodId]: number }
 export declare const PAIR_COST: number
 
 export declare const GROUP_COST: number
-
-export declare const VALUE_BASE: number
-
-export declare const VALUE_SCALE: number
 
 export declare const AMOUNT_MIN: number
 
@@ -152,8 +172,6 @@ export declare const SCALE_DAYS: number
 export declare const MARKUP_BASE: number
 
 export declare const MARKUP_PER_DIFFICULTY: number
-
-export declare const MARKUP_PER_DAY: number
 
 export declare const PENALTY_RATE: number
 

@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS } from '../defs/crops.ts'
 import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
-import { ANNUAL_IDS, type AnnualId } from '../sim/ids.ts'
+import { ANNUAL_IDS, packSku, type AnnualId } from '../sim/ids.ts'
 import { cropName } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { cropInner, faceGfx, rarityInner, ripeGroup } from '../view/svgs.ts'
@@ -91,7 +91,10 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
   if (cell.kind !== 'seed-silo') return null
   const held = (crop: AnnualId, rarity: Rarity): number =>
     cell.seeds.find(st => st.crop === crop && st.rarity === rarity)?.count ?? 0
-  const crops = ANNUAL_IDS.filter(crop => world.skuShown(`pack-${crop}`) || RARITY_RANK.some(r => held(crop, r) > 0))
+  const crops = ANNUAL_IDS.filter(crop => {
+    const pack = packSku(crop)
+    return (pack !== undefined && world.skuShown(pack)) || RARITY_RANK.some(r => held(crop, r) > 0)
+  })
   const rarities = RARITY_RANK.filter(
     r => r !== 'heirloom' || world.done.has('unlock-heirloom') || crops.some(c => held(c, 'heirloom') > 0),
   )
@@ -188,7 +191,8 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
 
 function SeedTip({ world, crop, rarity }: { world: World; crop: AnnualId; rarity: Rarity }) {
   const d = CROPS[crop]
-  const pack = world.skuShown(`pack-${crop}`) ? world.skuPrice(`pack-${crop}`) : undefined
+  const sku = packSku(crop)
+  const pack = sku !== undefined && world.skuShown(sku) ? world.skuPrice(sku) : undefined
   const sale = d.sale * raritySale(d, rarity)
   return (
     <CalloutHover

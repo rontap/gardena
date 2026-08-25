@@ -26,6 +26,8 @@ import {
   GRIND_WORK,
   EXTRACT,
   FLOUR,
+  FERT_BAG_LITERS,
+  FREEZER_LARGE_SLOTS,
   JAM_BUFFER,
   JAM_IN,
   JAM_SALE,
@@ -134,6 +136,7 @@ import {
   grindN,
   makeCompost,
   makeContainer,
+  makePickaxe,
   makeShovel,
   mergeUnitSale,
   organic,
@@ -193,6 +196,7 @@ import type {
   Contracts,
   Demand,
   HistoryEntry,
+  Prize,
   SellAllQuote,
 } from './market.h.ts'
 import {
@@ -498,7 +502,6 @@ export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
 export type SkillRef<Id extends SkillId = SkillId> = { id: Id; tier: number }
 
 export type MemberState<Id extends SkillId> = {
-  points: number
   pickCount: number
   owned: Map<Id, number>
   offers: SkillRef<Id>[]
@@ -538,6 +541,7 @@ export type Hydrate = {
   nextTrailerId: TrailerId
   stall: StallMap
   family: Family
+  points: number
   seats: Seat[]
   owned: ChunkId[]
   chunks: Map<string, Cell[][]>
@@ -545,9 +549,10 @@ export type Hydrate = {
   money: number
   rep: number
   repDay: number
+  contracts: Contracts
   purchases: number
-  digs: number
-  mines: number
+  prizeSlots: number
+  prizeFreezers: number
   bigTicks: number
   done: ResearchId[]
   job: Job
@@ -560,6 +565,8 @@ export type Hydrate = {
   fences: Coord[]
   drops: Drop[]
 }
+
+export const POINTS_PER_DAY = 3
 
 export const DAY_STIPEND = 10
 export const MP_ID_KEY = 'gardena-mp-id'
@@ -639,7 +646,7 @@ export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
 function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
   inventory[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'apricot' } }
-  inventory[1] = { kind: 'hold', item: { kind: 'sapling', tree: 'lemon' } }
+  inventory[1] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
   inventory[2] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
@@ -694,6 +701,8 @@ export class World {
   readonly ripenN = new Map<string, number>()
   private readonly sink: LogSink
   purchases = 0
+  prizeSlots = 0
+  prizeFreezers = 0
   readonly owned: ChunkId[] = [{ cx: 0, cy: 0 }]
   readonly pumps: Pump[]
   readonly tanks: RainTank[] = []
@@ -721,6 +730,7 @@ export class World {
   readonly additives: AdditiveStore
   readonly stall: StallMap
   readonly family: Family
+  points = 0
   consignRevision = 0
   readonly seats: Seat[]
   local: SeatId = 0
@@ -740,8 +750,6 @@ export class World {
   seam: Seam = { kind: 'play' }
   groundRev = 0
   bigTicks = 0
-  digs = 0
-  mines = 0
   cheatFastResearch = false
   private bigAcc = 0
   private nets: Net[] | undefined = undefined
@@ -792,6 +800,7 @@ export class World {
       this.nextTrailerId = h.nextTrailerId
       this.stall = h.stall
       this.family = h.family
+      this.points = h.points
       this.seats = h.seats
       this.act = this.seats[0]
       this.owned.length = 0
@@ -804,9 +813,13 @@ export class World {
       this.money = h.money
       this.contracts.rep = h.rep
       this.contracts.repDay = h.repDay
+      this.contracts.active = h.contracts.active
+      this.contracts.takenToday = h.contracts.takenToday
+      this.contracts.history = h.contracts.history
+      this.contracts.book = h.contracts.book
       this.purchases = h.purchases
-      this.digs = h.digs
-      this.mines = h.mines
+      this.prizeSlots = h.prizeSlots
+      this.prizeFreezers = h.prizeFreezers
       this.bigTicks = h.bigTicks
       this.done.clear()
       h.done.forEach(id => this.done.add(id))
@@ -1263,6 +1276,23 @@ export class World {
     return 40 + 15 * this.purchases
   }
 
+  /** Expansion permits earned, from research, `inherit-land`, and contract prizes. */
+  expandSlots(): number {
+    return (
+      (this.done.has('unlock-expand') ? 1 : 0) +
+      (this.done.has('expand-land') ? 1 : 0) +
+      (this.done.has('eminent-domain') ? 1 : 0) +
+      this.skillTier('inherit-land') +
+      this.prizeSlots
+    )
+  }
+
+  /** Permits not yet spent. Each expansion consumes one. */
+  expandLeft(): number {
+    const left = this.expandSlots() - this.purchases
+    return left < 0 ? 0 : left
+  }
+
   tax(): number {
     let n = 2 + 6 * (this.owned.length - 1)
     const cut = 0.02 * this.skillTier('tax')
@@ -1310,8 +1340,8 @@ export class World {
     return this.hasSkill('open-24')
   }
 
-  grantPoint(member: MemberId): void {
-    this.family[member].points += 1
+  grantPoints(n: number): void {
+    this.points += n
   }
 
   pickSkill(member: MemberId, slot: number): void {
@@ -1320,10 +1350,10 @@ export class World {
 
   private pickSkillBody(member: MemberId, slot: number): void {
     const st = this.family[member]
-    if (st.points < 1) return
+    if (this.points < 1) return
     const offer = st.offers[slot]
     if (offer === undefined) return
-    st.points -= 1
+    this.points -= 1
     st.owned.set(offer.id as never, offer.tier)
     const effect = SKILLS[offer.id].effect
     if (effect.kind === 'better') {
@@ -1404,6 +1434,7 @@ export class World {
 
   private expandBody(id: ChunkId): void {
     if (!this.done.has('unlock-expand')) return
+    if (this.expandLeft() <= 0) return
     if (this.owned.some(c => c.cx === id.cx && c.cy === id.cy)) return
     if (!this.owned.some(c => Math.abs(c.cx - id.cx) + Math.abs(c.cy - id.cy) === 1)) return
     const price = this.expandPrice()
@@ -1422,14 +1453,20 @@ export class World {
 
   skuOpen(id: SkuId): boolean {
     const s = SKUS[id]
-    if (s.need === 'vanilla-tending' && !this.hasSkill('vanilla-tending')) return false
-    if (s.need !== 'none' && s.need !== 'vanilla-tending' && !this.done.has(s.need)) return false
+    if (s.need === 'prize') return this.prizeStock(id) > 0
+    if (s.need !== 'none' && !this.done.has(s.need)) return false
     return s.unlock === 'start' || this.done.has(s.unlock)
   }
 
   skuShown(id: SkuId): boolean {
+    if (SKUS[id].need === 'prize') return this.prizeStock(id) > 0
     const s = SKUS[id].show
     return s === 'start' || this.done.has(s)
+  }
+
+  /** Unplaced contract-prize stock for a `need: 'prize'` sku. */
+  prizeStock(id: SkuId): number {
+    return id === 'buy-freezer-large' ? this.prizeFreezers : 0
   }
 
   researchShown(id: ResearchId): boolean {
@@ -2501,6 +2538,7 @@ export class World {
       this.act.place.id === 'buy-jam' ||
       this.act.place.id === 'buy-barrel' ||
       this.act.place.id === 'buy-freezer' ||
+      this.act.place.id === 'buy-freezer-large' ||
       this.act.place.id === 'buy-hangar' ||
       this.act.place.id === 'buy-silo-seed' ||
       this.act.place.id === 'buy-silo-spray' ||
@@ -2572,6 +2610,10 @@ export class World {
       else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
       else if (this.act.place.id === 'buy-barrel') this.setCell(at, new WineBarrel(base))
       else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
+      else if (this.act.place.id === 'buy-freezer-large') {
+        this.prizeFreezers -= 1
+        this.setCell(at, new Freezer(base, FREEZER_LARGE_SLOTS))
+      }
       else {
         const tap = new Tap(base)
         this.taps.push(tap)
@@ -3196,9 +3238,7 @@ export class World {
     })
     this.money += 999
     this.job = { kind: 'idle' }
-    this.family.player.points = 99
-    this.family.husband.points = 99
-    this.family.daughter.points = 99
+    this.points = 99
     this.ping()
   }
 
@@ -3216,9 +3256,7 @@ export class World {
   }
 
   private cheatPointsBody(): void {
-    this.family.player.points += 10
-    this.family.husband.points += 10
-    this.family.daughter.points += 10
+    this.points += 10
     this.ping()
   }
 
@@ -3511,20 +3549,8 @@ export class World {
     this.emit('sold')
   }
 
-  gateProgress(id: ResearchId): number {
-    const gate = RESEARCH[id].gate
-    if (gate.kind === 'none') return 1
-    return Math.min(1, (gate.kind === 'digs' ? this.digs : this.mines) / gate.n)
-  }
-
-  gateHave(id: ResearchId): number {
-    const gate = RESEARCH[id].gate
-    if (gate.kind === 'none') return 0
-    return gate.kind === 'digs' ? this.digs : this.mines
-  }
-
   researchOpen(id: ResearchId): boolean {
-    return this.gateProgress(id) >= 1
+    return RESEARCH[id].gate.kind === 'none'
   }
 
   startResearch(id: ResearchId): void {
@@ -3549,9 +3575,7 @@ export class World {
 
   private dismissRecapBody(): void {
     if (this.seam.kind !== 'recap') return
-    this.grantPoint('player')
-    this.grantPoint('husband')
-    this.grantPoint('daughter')
+    this.grantPoints(POINTS_PER_DAY)
     this.seam = { kind: 'play' }
     this.clock.banner = 2
     this.ping()
@@ -4544,7 +4568,6 @@ export class World {
     if (c.kind === 'weed') c.soil.weedChance = -0.3
     this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
-    this.digs += 1
     s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
     this.pulse = { text, at: { ...at } }
@@ -4565,7 +4588,6 @@ export class World {
     const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'pickaxe' }> }
     if (c.kind === 'untilled' && c.ground === 'very-hard') {
       this.setCell(at, { kind: 'infertile' })
-      this.mines += 1
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
       this.pulse = { text: 'Mine', at: { ...at } }
@@ -4576,7 +4598,6 @@ export class World {
     occupiedCells(c.base, this.owned).forEach(p => {
       this.setCell(p, bare('soft'))
     })
-    this.mines += 1
     s.item.usesLeft -= n === 1 ? 1 : 2
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
     this.pulse = { text: 'Mine', at: { ...at } }
@@ -4976,8 +4997,10 @@ export class World {
   }
 
   private resolveDone(a: Active): void {
-    const paidN = a.offer.reward * (1 + 0.03 * this.skillTier('industrial'))
-    this.money += paidN
+    const prize = a.offer.prize
+    const paidN = prize.kind === 'cash' ? a.offer.reward * (1 + 0.03 * this.skillTier('industrial')) : 0
+    if (prize.kind === 'cash') this.money += paidN
+    else this.payPrize(prize, a.offer.reward)
     this.contracts.book[a.offer.company].done += 1
     this.addRep(REP_DONE[a.offer.stars])
     this.dropActive(a)
@@ -4986,9 +5009,46 @@ export class World {
       company: a.offer.company,
       stars: a.offer.stars,
       day: this.clock.day,
-      outcome: { kind: 'done', paid: paidN },
+      outcome: { kind: 'done', paid: paidN, prize },
     })
     this.ping()
+  }
+
+  /**
+   * Hands over a non-cash prize. Goods land at the house door, the way a
+   * shovelled-up sapling does; bulk goes straight to its store. `cash` is the
+   * money reward the contract would otherwise have paid, which is what the
+   * fertilizer prize is priced against.
+   */
+  private payPrize(prize: Exclude<Prize, { kind: 'cash' }>, cash: number): void {
+    if (prize.kind === 'skill-points') {
+      this.grantPoints(prize.n)
+      return
+    }
+    if (prize.kind === 'expansion-slot') {
+      this.prizeSlots += 1
+      return
+    }
+    if (prize.kind === 'freezer') {
+      this.prizeFreezers += 1
+      return
+    }
+    if (prize.kind === 'seeds') {
+      this.putSilo(prize.crop, 'common', prize.count)
+      return
+    }
+    if (prize.kind === 'fertilizer') {
+      const bags = Math.max(1, Math.round(cash / SKUS['buy-fertilizer'].price))
+      this.putAdditive('fertilizer', bags * FERT_BAG_LITERS)
+      return
+    }
+    const item: Item =
+      prize.kind === 'sapling'
+        ? { kind: 'sapling', tree: prize.tree }
+        : prize.tool === 'rotary-shovel'
+          ? makeShovel('rotary-shovel')
+          : makePickaxe('diamond-pickaxe')
+    this.drops.push({ at: { ...DOOR }, item })
   }
 
   private resolveMiss(a: Active): void {
@@ -5563,7 +5623,7 @@ function emptyContracts(): Contracts {
 }
 
 function emptyMember<Id extends SkillId>(): MemberState<Id> {
-  return { points: 0, pickCount: 0, owned: new Map(), offers: [] }
+  return { pickCount: 0, owned: new Map(), offers: [] }
 }
 
 function harvestInsert(slots: Slot[], item: Item): boolean {

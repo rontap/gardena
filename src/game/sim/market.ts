@@ -1,4 +1,4 @@
-import { COMPANY_IDS } from '../defs/companies.ts'
+import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
 import {
   EXTRACT,
@@ -23,6 +23,7 @@ import type {
   GroupId,
   Lines,
   PlainGoodId,
+  Prize,
   RarityGoodId,
   Stars,
 } from './market.h.ts'
@@ -46,7 +47,6 @@ export const SAT_FLOOR: { readonly [K in StallGoodId]: number } = {
   'sugar-cane': 0.4,
   apple: 0.4,
   apricot: 0.4,
-  lemon: 0.4,
   cherry: 0.4,
   sugar: 0.35,
   'jam-apricot': 0.35,
@@ -147,9 +147,9 @@ export const PENALTY_RATE = 0.2
 
 export const LOAD_MIN = 0.12
 
-export const LOAD_MAX = 0.85
+export const LOAD_MAX = 1.35
 
-export const LOAD_CURVE = 1.4
+export const LOAD_CURVE = 2
 
 export const LOAD_D_OFFSET = 6
 
@@ -176,8 +176,11 @@ export const GROUP_COST = -4
 export const DEADLINE_DAYS: { readonly [K in DeadlineBand]: readonly [number, number] } = {
   tight: [1, 2],
   normal: [2, 3],
-  long: [4, 5],
+  long: [3, 4],
 }
+
+/** Deadlines land on half days, so a band offers three lengths, not two. */
+export const DEADLINE_STEP = 0.5
 
 export const DEADLINE_COST: { readonly [K in DeadlineBand]: number } = {
   tight: 8,
@@ -209,7 +212,6 @@ export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   raspberry: 6,
   apple: 5,
   apricot: 5,
-  lemon: 5,
   cherry: 6,
   'sugar-cane': 4,
   vanilla: 14,
@@ -237,13 +239,12 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
   tomato: 1,
   raspberry: 1,
   watermelon: 1,
-  olive: 1,
+  olive: 3,
   grape: 1,
   vanilla: 1,
   'sugar-cane': 1,
   apple: 3,
   apricot: 3,
-  lemon: 3,
   cherry: 3,
   'jam-grape': 2,
   'jam-raspberry': 2,
@@ -271,13 +272,12 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   tomato: 7,
   raspberry: 6,
   watermelon: 7,
-  olive: 5,
+  olive: 4,
   grape: 6,
   vanilla: 4,
   'sugar-cane': 10,
   apple: 3,
   apricot: 4,
-  lemon: 4,
   cherry: 4,
   vodka: 4 / 3,
   beer: 4 / 3,
@@ -404,9 +404,16 @@ function shapeGood(shape: Shape): StallGoodId {
   return demandGood(demandOf(shape, AMOUNT_MIN))
 }
 
+/**
+ * Units to ask for so the line is worth roughly `target`.
+ *
+ * Prices by `cleanUnit`, the same rarity-scaled unit `clean` pays out with — not
+ * the common-rarity `unitOf` — or a rare line would be sized for common prices
+ * and settled at rare ones. The cap is throughput, so it stays on raw counts.
+ */
 function lineAmount(shape: Shape, days: number, day: number, target: number): number {
   const good = shapeGood(shape)
-  const wanted = target / unitOf(good)
+  const wanted = target / cleanUnit(demandOf(shape, AMOUNT_MIN))
   const cap = FEASIBLE_PER_DAY[good] * days * scale(day)
   return nice(wanted < cap ? wanted : cap)
 }
@@ -501,7 +508,8 @@ function offerAt(
   const tier = starsOf(D)
   const band = weighted(DEADLINE_BANDS, stream.at(day, slot, 5))
   const [dLo, dHi] = DEADLINE_DAYS[band]
-  const days = dLo + Math.floor(stream.at(day, slot, 6) * (dHi - dLo + 1))
+  const steps = Math.round((dHi - dLo) / DEADLINE_STEP) + 1
+  const days = dLo + DEADLINE_STEP * Math.floor(stream.at(day, slot, 6) * steps)
   const floor = -BUDGET_OVERDRAFT
   const opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]
   const solo = REFERENCE_GOLD_PER_DAY * days * load(D)
@@ -534,6 +542,7 @@ function offerAt(
     band,
     days,
     lines,
+    prize: { kind: 'cash' },
     clean,
     markup,
     reward: Math.round(clean * (1 + markup)),
@@ -552,12 +561,43 @@ function slotD(stream: Spatial, day: number, slot: number, rep: number): number 
   return rolled > DIFFICULTY_CEILING ? DIFFICULTY_CEILING : rolled
 }
 
+export const PRIZE_SLOTS = 2
+
+/**
+ * The two slots that pay goods instead of money, as a distinct pair. Rolled per
+ * day off the contract stream, so the board stays a pure function of the seed,
+ * the day and reputation.
+ *
+ * Drawn from the base six, never from the live slot count: `broker` grows the
+ * board and must not reshuffle the offers already on it. Broker's extra slots
+ * are always cash.
+ */
+function prizeSlots(stream: Spatial, day: number): readonly number[] {
+  const a = Math.floor(stream.at(day, 0, 30) * CONTRACT_OFFERS)
+  const b = Math.floor(stream.at(day, 0, 31) * (CONTRACT_OFFERS - 1))
+  return [a, b >= a ? b + 1 : b]
+}
+
+/** Resolves a company's fixed table entry, rolling the tool arm per offer. */
+function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
+  const p = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+  if (p.kind !== 'tool') return p
+  const roll = stream.at(day, o.slot, 32)
+  return { kind: 'tool', tool: roll < 0.5 ? 'rotary-shovel' : 'diamond-pickaxe' }
+}
+
+function withPrizes(stream: Spatial, day: number, offers: readonly ContractOffer[]): readonly ContractOffer[] {
+  const picked = prizeSlots(stream, day)
+  return offers.map((o, i) => (picked.includes(i) ? { ...o, prize: prizeFor(stream, day, o) } : o))
+}
+
 export function rollBoard(rng: Rng, day: number, slots: number, rep: number): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, day, slots)
-  return Array.from({ length: slots }, (_, slot) =>
+  const base = Array.from({ length: slots }, (_, slot) =>
     offerAt(stream, day, slot, slotD(stream, day, slot, rep), firms[slot], day),
   )
+  return withPrizes(stream, day, base)
 }
 
 export const LADDER_DAY = 24
@@ -565,7 +605,8 @@ export const LADDER_DAY = 24
 export function rollBoardAtD(rng: Rng, D: number, slots: number): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, D, slots)
-  return Array.from({ length: slots }, (_, slot) => offerAt(stream, D, slot, D, firms[slot], LADDER_DAY))
+  const base = Array.from({ length: slots }, (_, slot) => offerAt(stream, D, slot, D, firms[slot], LADDER_DAY))
+  return withPrizes(stream, D, base)
 }
 
 export function Accepts(d: Demand, good: StallGoodId, rarity: Rarity): boolean {

@@ -9,7 +9,7 @@ import { onCell } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import { Coin } from '../ui/frame.tsx'
-import { SENSOR_CELL_SKUS, type CropId, type SkuId, type VfxId } from '../sim/ids.ts'
+import { SENSOR_CELL_SKUS, type CropId, type SkuId, type TreeId, type VfxId } from '../sim/ids.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { Soil } from '../sim/soil.ts'
 import { aoe, edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
@@ -827,7 +827,7 @@ const Marks = memo(function Marks({
   }[] = []
   const rocks: { col: number; row: number; w: number; h: number }[] = []
   const tufts: { col: number; row: number; v: 0 | 1 | 2 }[] = []
-  const trees: { col: number; row: number; species: 'apple' | 'apricot' | 'lemon' | 'cherry'; stage: 'grow' | 'unripe' | 'ripe' }[] = []
+  const trees: { col: number; row: number; species: TreeId; stage: 'grow' | 'unripe' | 'ripe' }[] = []
   const props: { col: number; row: number; art: string; kind: string }[] = []
   const truck = { col: world.truck.base.col, row: world.truck.base.row }
   const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
@@ -1257,27 +1257,35 @@ const Marks = memo(function Marks({
       {faces.map(face => {
         const s = TILE * 0.85
         const o = (TILE - s) / 2
-        const poor = world.money < face.price
+        const noPermit = world.expandLeft() <= 0
+        const poor = noPermit || world.money < face.price
         return (
           <g
             key={`${face.id.cx},${face.id.cy}`}
-            className="cursor-pointer"
+            className={noPermit ? undefined : 'cursor-pointer'}
             transform={`translate(${face.at.col * TILE},${face.at.row * TILE})`}
             onPointerDown={e => e.stopPropagation()}
             onPointerUp={e => {
               e.stopPropagation()
+              if (noPermit) return
               world.expand(face.id)
             }}
           >
             <rect x={o} y={o} width={s} height={s} className={poor ? 'fill-dirt-dark' : 'fill-house'} />
             <foreignObject x={o} y={o} width={s} height={s} pointerEvents="none">
               <div
-                className={`flex h-full w-full items-center justify-center gap-0.5 text-lg leading-none ${
-                  poor ? 'text-ink/50' : 'text-ink'
+                className={`flex h-full w-full items-center justify-center gap-0.5 leading-none ${
+                  noPermit ? 'text-base text-ink/50' : poor ? 'text-lg text-ink/50' : 'text-lg text-ink'
                 }`}
               >
-                Expand
-                <Coin n={face.price} />
+                {noPermit ? (
+                  'No permit left'
+                ) : (
+                  <>
+                    Expand
+                    <Coin n={face.price} />
+                  </>
+                )}
               </div>
             </foreignObject>
           </g>
@@ -1475,7 +1483,7 @@ const TreeGfx = memo(function TreeGfx({
 }: {
   col: number
   row: number
-  species: 'apple' | 'apricot' | 'lemon' | 'cherry'
+  species: TreeId
   stage: 'grow' | 'unripe' | 'ripe'
 }) {
   return (

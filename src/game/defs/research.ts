@@ -2,13 +2,11 @@ import {
     AND_PRICE,
     BUTTON_PRICE,
     COUNTER_PRICE,
-    DIAMOND_MINES,
     LAMP_PRICE,
     LEVER_PRICE,
     NOT_PRICE,
     OR_PRICE,
     PULSER_PRICE,
-    ROTARY_DIGS,
     SENSOR_DAY_PRICE,
     SENSOR_FERT_PRICE,
     SENSOR_HARVEST_PRICE,
@@ -19,7 +17,7 @@ import {
 } from './items.ts'
 import type {ResearchId, SkuId} from '../sim/ids.ts'
 
-export type ResearchGate = { kind: 'none' } | { kind: 'digs'; n: number } | { kind: 'mines'; n: number }
+export type ResearchGate = { kind: 'none' }
 
 export type ResearchDef = {
     id: ResearchId
@@ -47,17 +45,6 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         gate: {kind: 'none'},
         blurb: 'Unlocks Tomato seeds in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-tomato'},
-    },
-    'unlock-olive': {
-        id: 'unlock-olive',
-        name: 'Olive seeds',
-        tree: 'plants',
-        cost: 11,
-        seconds: 42,
-        reveal: 'unlock-tomato',
-        gate: {kind: 'none'},
-        blurb: 'Unlocks Olive seeds in the general store.',
-        effect: {kind: 'unlock-sku', sku: 'pack-olive'},
     },
     'unlock-grape': {
         id: 'unlock-grape',
@@ -243,7 +230,29 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         seconds: 45,
         reveal: 'start',
         gate: {kind: 'none'},
-        blurb: 'Unlocks land expansion on the map edge.',
+        blurb: 'Unlocks land expansion on the map edge, and grants the first expansion permit.',
+        effect: {kind: 'expand'},
+    },
+    'expand-land': {
+        id: 'expand-land',
+        name: 'Expand land',
+        tree: 'expansion',
+        cost: 30,
+        seconds: 60,
+        reveal: 'unlock-expand',
+        gate: {kind: 'none'},
+        blurb: 'A second expansion permit. Land still costs money on top of the permit.',
+        effect: {kind: 'expand'},
+    },
+    'eminent-domain': {
+        id: 'eminent-domain',
+        name: 'Eminent domain',
+        tree: 'expansion',
+        cost: 60,
+        seconds: 90,
+        reveal: 'expand-land',
+        gate: {kind: 'none'},
+        blurb: 'A third expansion permit. Further permits are contract work, not paperwork.',
         effect: {kind: 'expand'},
     },
     'unlock-pickaxe': {
@@ -323,39 +332,14 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Grass seeds, Wooden fence and every paving tile in the general store.',
         effect: {kind: 'unlock-sku', sku: 'pack-grass'},
     },
-    'unlock-rotary-shovel': {
-        id: 'unlock-rotary-shovel',
-        name: 'Rotary shovel',
-        tree: 'utilities',
-        cost: 40,
-        seconds: 120,
-        reveal: 'unlock-better-tools',
-        gate: {kind: 'digs', n: ROTARY_DIGS},
-        blurb: 'Unlocks the Rotary shovel in the general store. Earned by digging, not by reading.',
-        effect: {kind: 'unlock-sku', sku: 'buy-rotary-shovel'},
-    },
-    'unlock-diamond-pickaxe': {
-        id: 'unlock-diamond-pickaxe',
-        name: 'Diamond pickaxe',
-        tree: 'utilities',
-        cost: 40,
-        seconds: 120,
-        reveal: 'unlock-pickaxe',
-        gate: {kind: 'mines', n: DIAMOND_MINES},
-        blurb: 'Unlocks the Diamond pickaxe in the general store. Earned by mining, not by reading.',
-        effect: {kind: 'unlock-sku', sku: 'buy-diamond-pickaxe'},
-    },
 }
 
-export const GATE_TEXT: { readonly [K in ResearchGate['kind']]: string } = {
-    none: '',
-    digs: 'Dig ${have} / ${n} times to unlock this research.',
-    mines: 'Mine ${have} / ${n} times to unlock this research.',
-}
+
 
 export type SkuTab = 'seeds' | 'utility' | 'automation' | 'building'
 
-export type SkuNeed = ResearchId | 'vanilla-tending' | 'none'
+/** `'prize'`: not for sale. Stock arrives from contract prizes and is spent on placement. */
+export type SkuNeed = ResearchId | 'prize' | 'none'
 
 export type Sku = {
     id: SkuId
@@ -372,17 +356,8 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'pack-wheat': {id: 'pack-wheat', price: 10, tab: 'seeds', unlock: 'start', show: 'start', need: 'none'},
     'pack-tomato': {id: 'pack-tomato', price: 15, tab: 'seeds', unlock: 'unlock-tomato', show: 'start', need: 'none'},
     'pack-watermelon': {id: 'pack-watermelon', price: 18, tab: 'seeds', unlock: 'unlock-watermelon', show: 'start', need: 'none'},
-    'pack-olive': {id: 'pack-olive', price: 14, tab: 'seeds', unlock: 'unlock-olive', show: 'unlock-tomato', need: 'none'},
     'pack-grape': {id: 'pack-grape', price: 16, tab: 'seeds', unlock: 'unlock-grape', show: 'start', need: 'none'},
     'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'unlock-grape', need: 'none'},
-    'pack-vanilla': {
-        id: 'pack-vanilla',
-        price: 40,
-        tab: 'seeds',
-        unlock: 'start',
-        show: 'unlock-raspberry',
-        need: 'vanilla-tending',
-    },
     'pack-sugar-cane': {id: 'pack-sugar-cane', price: 8, tab: 'seeds', unlock: 'unlock-fermentation', show: 'unlock-fermentation', need: 'none'},
     'buy-shovel': {id: 'buy-shovel', price: 10, tab: 'utility', unlock: 'start', show: 'start', need: 'none'},
     'buy-better-shovel': {id: 'buy-better-shovel', price: 30, tab: 'utility', unlock: 'unlock-better-tools', show: 'start', need: 'none'},
@@ -447,27 +422,12 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-tile-paved': {id: 'buy-tile-paved', price: 11, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: 'none'},
     'buy-fence': {id: 'buy-fence', price: 10, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: 'none'},
     'pack-grass': {id: 'pack-grass', price: 1, tab: 'seeds', unlock: 'unlock-landscaping', show: 'start', need: 'none'},
-    'buy-rotary-shovel': {
-        id: 'buy-rotary-shovel',
-        price: 1000,
-        tab: 'utility',
-        unlock: 'unlock-rotary-shovel',
-        show: 'unlock-better-tools',
-        need: 'none',
-    },
-    'buy-diamond-pickaxe': {
-        id: 'buy-diamond-pickaxe',
-        price: 1000,
-        tab: 'utility',
-        unlock: 'unlock-diamond-pickaxe',
-        show: 'unlock-pickaxe',
-        need: 'none',
-    },
     'buy-mill': {id: 'buy-mill', price: 35, tab: 'automation', unlock: 'unlock-grinder', show: 'start', need: 'none'},
     'buy-jam': {id: 'buy-jam', price: 40, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: 'none'},
     'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: 'none'},
     'buy-barrel': {id: 'buy-barrel', price: 28, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: 'none'},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: 'none'},
+    'buy-freezer-large': {id: 'buy-freezer-large', price: 0, tab: 'automation', unlock: 'start', show: 'start', need: 'prize'},
     'buy-sugar': {id: 'buy-sugar', price: 16, tab: 'utility', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: 'none'},
     'buy-hangar': {id: 'buy-hangar', price: 80, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation', need: 'none'},
     'buy-silo-seed': {id: 'buy-silo-seed', price: 70, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation', need: 'none'},

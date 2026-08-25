@@ -335,9 +335,9 @@ Almanac
 
 
 
-| Final D \ Company | 1            | 2          | 3             | 4               | 5   | 6   |
-| ----------------- | ------------ | ---------- | ------------- | --------------- | --- | --- |
-| 0-8               | cherry tree  | fertilizer |               |                 | /   | /   |
-| 8-20              | apricot tree | apple tree |               |                 | /   | /   |
-| 20-30             | olive tree   | vanilla    |               |                 | /   | /   |
-| 30-               |              |            | rotary shovel | diamond pickaxe | /   | /   |
+| Final D \ Company | 1                                         | 2                       | 3                   | 4   | 5   | 6   |
+| ----------------- | ----------------------------------------- | ----------------------- | ------------------- | --- | --- | --- |
+| 0-8               | cherry tree                               | apple tree              | fertilizer eq price | /   | /   | /   |
+| 8-20              | apricot tree                              | olive tree              | gain 1 skill point  | /   | /   | /   |
+| 20-30             | vanilla                                   | large freezer (9 slots) | gain 2 skill points | /   | /   | /   |
+| 30-               | rotary shovel or diamond pickaxe (rolled) | +1 expansion slot       | gain 3 skill points | /   | /   | /   |

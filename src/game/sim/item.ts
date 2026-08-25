@@ -10,6 +10,7 @@ import {
   COMPOST_VALUE,
   CONTAINERS,
   FERT_BAG_LITERS,
+  FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   GRIND_MAX,
   GRIND_MIN,
@@ -117,7 +118,7 @@ export type Face =
   | { kind: 'jam-machine' }
   | { kind: 'still' }
   | { kind: 'barrel' }
-  | { kind: 'freezer' }
+  | { kind: 'freezer'; slots: number }
   | { kind: 'hangar' }
   | { kind: 'silo-seed' }
   | { kind: 'silo-spray' }
@@ -326,12 +327,8 @@ export function skuLabel(id: SkuId): string {
       return 'Raspberry seeds'
     case 'pack-watermelon':
       return 'Watermelon seeds'
-    case 'pack-olive':
-      return 'Olive seeds'
     case 'pack-grape':
       return 'Grape seeds'
-    case 'pack-vanilla':
-      return 'Vanilla seeds'
     case 'pack-sugar-cane':
       return 'Sugar cane seeds'
     case 'buy-shovel':
@@ -390,10 +387,6 @@ export function skuLabel(id: SkuId): string {
       return 'Wooden fence'
     case 'pack-grass':
       return 'Grass seeds'
-    case 'buy-rotary-shovel':
-      return 'Rotary shovel'
-    case 'buy-diamond-pickaxe':
-      return 'Diamond pickaxe'
     case 'buy-mill':
       return 'Mill'
     case 'buy-jam':
@@ -404,6 +397,8 @@ export function skuLabel(id: SkuId): string {
       return 'Wine barrel'
     case 'buy-freezer':
       return 'Freezer'
+    case 'buy-freezer-large':
+      return 'Large freezer'
     case 'buy-sugar':
       return 'Sugar'
     case 'buy-hangar':
@@ -461,12 +456,8 @@ export function skuDesc(id: SkuId): string {
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('raspberry') })
     case 'pack-watermelon':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('watermelon') })
-    case 'pack-olive':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('olive') })
     case 'pack-grape':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('grape') })
-    case 'pack-vanilla':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('vanilla') })
     case 'pack-sugar-cane':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil. Ripe cane is fruit. Mill cane for sugar.', {
         name: cropName('sugar-cane'),
@@ -562,16 +553,6 @@ export function skuDesc(id: SkuId): string {
       return FENCE_T
     case 'pack-grass':
       return fill(GRASS_SEED_T, { n: GRASS_PACK })
-    case 'buy-rotary-shovel':
-      return fill(
-        'Motorised. Digs anything a shovel digs, near enough instantly. ${uses} uses, ${workSeconds}s per dig.',
-        SHOVELS['rotary-shovel'],
-      )
-    case 'buy-diamond-pickaxe':
-      return fill(
-        'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.',
-        PICKAXES['diamond-pickaxe'],
-      )
     case 'buy-mill':
       return fill(
         'Hopper mill. ${in} cane, olive or wheat, or ${grass} grass, crush in ${work}s. Cane makes ${bag} L sugar at ${sale}/L.',
@@ -597,6 +578,10 @@ export function skuDesc(id: SkuId): string {
       })
     case 'buy-freezer':
       return fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS })
+    case 'buy-freezer-large':
+      return fill('${n} slots. Fruit in here does not rot. Earned from a contract, never sold.', {
+        n: FREEZER_LARGE_SLOTS,
+      })
     case 'buy-sugar':
       return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
     case 'buy-hangar':
@@ -724,12 +709,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'seeds', crop: 'raspberry', rarity: 'common', count: 5 }
     case 'pack-watermelon':
       return { kind: 'seeds', crop: 'watermelon', rarity: 'common', count: 5 }
-    case 'pack-olive':
-      return { kind: 'seeds', crop: 'olive', rarity: 'common', count: 5 }
     case 'pack-grape':
       return { kind: 'seeds', crop: 'grape', rarity: 'common', count: 5 }
-    case 'pack-vanilla':
-      return { kind: 'seeds', crop: 'vanilla', rarity: 'common', count: 5 }
     case 'pack-sugar-cane':
       return { kind: 'seeds', crop: 'sugar-cane', rarity: 'common', count: 5 }
     case 'buy-shovel':
@@ -788,10 +769,6 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'fence' }
     case 'pack-grass':
       return { kind: 'grass-seeds', count: GRASS_PACK }
-    case 'buy-rotary-shovel':
-      return makeShovel('rotary-shovel')
-    case 'buy-diamond-pickaxe':
-      return makePickaxe('diamond-pickaxe')
     case 'buy-mill':
       return { kind: 'mill' }
     case 'buy-jam':
@@ -801,7 +778,9 @@ export function skuItem(id: SkuId): Face {
     case 'buy-barrel':
       return { kind: 'barrel' }
     case 'buy-freezer':
-      return { kind: 'freezer' }
+      return { kind: 'freezer', slots: FREEZER_SLOTS }
+    case 'buy-freezer-large':
+      return { kind: 'freezer', slots: FREEZER_LARGE_SLOTS }
     case 'buy-sugar':
       return makeSugar(SUGAR_BAG, SUGAR_BAG, SUGAR_SHOP)
     case 'buy-hangar':

@@ -24,6 +24,85 @@ export const KIND_EMOJI: { readonly [K in ChangeKind]: string } = {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '1.8.0',
+    name: 'What money cannot buy',
+    summary: 'Two contracts a day pay in goods instead of coin. Some of those goods are the only ones of their kind.',
+    changes: [
+      {
+        kind: 'major-feature',
+        text: 'Contracts hand over rare goods, not just money.',
+        notes: [
+          'Two of the six offers each day pay a prize instead of cash. They pay no money at all.',
+          'What a firm offers is fixed. Which two offers pay a prize is rolled fresh every day.',
+          'The harder the contract, the better the prize. Bands split at difficulty 8, 20 and 30.',
+        ],
+        changes: [
+          {
+            kind: 'feature',
+            text: 'Tree saplings, vanilla seeds, the large freezer, expansion permits, skill points, fertilizer, the rotary shovel and the diamond pickaxe are all contract prizes.',
+            notes: ['Whole Cart and Little Lid deal in saplings, vanilla and the late tools.', 'Trade Jo and Mercanova deal in buildings and land.', 'Halbert Eijn and Intercrop deal in fertilizer and skill points.'],
+          },
+          {
+            kind: 'feature',
+            text: 'Large freezer. Nine slots instead of six, and fruit inside still does not rot.',
+            notes: ['Never sold. It shows up in the shop only while you have one banked from a contract.'],
+          },
+          {
+            kind: 'deprecation',
+            text: 'Vanilla seeds, the rotary shovel and the diamond pickaxe have left the shop.',
+            notes: [
+              'Vanilla tending is gone as a skill. Vanilla seeds are a contract prize now.',
+              'The two late tools are no longer $1000 each. Win one from a four-star contract.',
+              'The digging and mining research gates went with them.',
+            ],
+          },
+        ],
+      },
+      {
+        kind: 'feature',
+        text: 'Land needs a permit as well as money.',
+        notes: [
+          'Unlock land grants the first. Expand land and Eminent domain grant one each after that.',
+          'Inherit land, a husband skill, grants one per rank, twice.',
+          'Past that, permits are contract work. An edge with no permit left says so.',
+        ],
+      },
+      {
+        kind: 'feature',
+        text: 'Skill points are one shared bank. Three a day, spent on whoever you like.',
+        notes: ['They used to be three separate banks that could not lend to each other.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Olive is a tree. Lemon has left the garden.',
+        notes: [
+          'Olive seeds are gone from the shop, and the olive research with them.',
+          'Olive saplings come from Trade Jo and Mercanova.',
+        ],
+      },
+      {
+        kind: 'improvement',
+        text: 'Contract money climbs much harder toward the top of the ladder.',
+        notes: ['A four-star board pays roughly two and a half times a two-star board, where it used to pay under twice.'],
+      },
+      {
+        kind: 'bugfix',
+        text: 'A contract asking for rare or heirloom goods no longer pays wildly more than it should.',
+        notes: ['The amount was sized against common prices and then settled at rare ones. Two contracts of the same difficulty could differ tenfold.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Deadlines run 1-2, 2-3 or 3-4 days, and land on half days.',
+        notes: ['The long band used to run 4-5 days.'],
+      },
+      {
+        kind: 'improvement',
+        text: 'Contracts survive a save and load.',
+        notes: ['What you had running, and how full each crate was, used to vanish on reload.'],
+      },
+    ],
+  },
+  {
     id: '1.7.2',
     name: 'Memory on the wire',
     summary: 'A lever can listen to itself. Gates still cannot loop.',

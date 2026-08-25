@@ -138,11 +138,6 @@ export function Hud({
                 {net}
               </span>
             )}
-            <div className="flex items-center gap-2 text-sm text-ink/45">
-              <span>digs {world.digs}</span>
-              <span>·</span>
-              <span>mines {world.mines}</span>
-            </div>
             <IconButton art={UI_BTN_MULTIPLAYER} label="Multiplayer" selected={panel === 'multiplayer'} onClick={onMultiplayer} />
             <PauseBtn selected={paused} onClick={onPause} />
             <GearBtn selected={panel === 'menu'} onClick={onGear} />

@@ -5,12 +5,11 @@ export type AnnualId =
   | 'tomato'
   | 'raspberry'
   | 'watermelon'
-  | 'olive'
   | 'grape'
   | 'vanilla'
   | 'sugar-cane'
 
-export type TreeId = 'apple' | 'apricot' | 'lemon' | 'cherry'
+export type TreeId = 'apple' | 'apricot' | 'olive' | 'cherry'
 
 export type CropId = AnnualId | TreeId
 
@@ -21,20 +20,24 @@ export const ANNUAL_IDS: readonly AnnualId[] = [
   'tomato',
   'raspberry',
   'watermelon',
-  'olive',
   'grape',
   'vanilla',
   'sugar-cane',
 ]
 
-export const TREE_IDS: readonly TreeId[] = ['apple', 'apricot', 'lemon', 'cherry']
+export const TREE_IDS: readonly TreeId[] = ['apple', 'apricot', 'olive', 'cherry']
 
 export function isTreeId(id: CropId): id is TreeId {
-  return id === 'apple' || id === 'apricot' || id === 'lemon' || id === 'cherry'
+  return id === 'apple' || id === 'apricot' || id === 'olive' || id === 'cherry'
 }
 
 export function isAnnualId(id: CropId): id is AnnualId {
   return ANNUAL_IDS.some(a => a === id)
+}
+
+/** Seed pack for an annual, or `undefined` when it has none. Vanilla is contract-only. */
+export function packSku(crop: AnnualId): SkuId | undefined {
+  return crop === 'vanilla' ? undefined : (`pack-${crop}` as SkuId)
 }
 
 export type TileId = 'paved' | 'brick' | 'cobble'
@@ -69,7 +72,6 @@ export type PlayerSkillId =
   | 'boots'
   | 'driving-classes'
   | 'tending'
-  | 'vanilla-tending'
   | 'seed-bank'
   | 'better-carrot'
   | 'better-potato'
@@ -77,7 +79,6 @@ export type PlayerSkillId =
   | 'better-tomato'
   | 'better-raspberry'
   | 'better-watermelon'
-  | 'better-olive'
   | 'better-grape'
   | 'better-vanilla'
   | 'better-sugar-cane'
@@ -90,6 +91,7 @@ export type HusbandSkillId =
   | 'tax'
   | 'water-study'
   | 'land-study'
+  | 'inherit-land'
 
 export type DaughterSkillId =
   | 'saleswoman'
@@ -106,7 +108,6 @@ export type SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
 
 export type ResearchId =
   | 'unlock-tomato'
-  | 'unlock-olive'
   | 'unlock-grape'
   | 'unlock-raspberry'
   | 'unlock-watermelon'
@@ -117,6 +118,8 @@ export type ResearchId =
   | 'unlock-auto-irrigation'
   | 'unlock-adv-irrigation'
   | 'unlock-expand'
+  | 'expand-land'
+  | 'eminent-domain'
   | 'unlock-pickaxe'
   | 'unlock-chest'
   | 'unlock-grinder'
@@ -126,8 +129,6 @@ export type ResearchId =
   | 'unlock-fermentation'
   | 'unlock-preservatives'
   | 'unlock-landscaping'
-  | 'unlock-rotary-shovel'
-  | 'unlock-diamond-pickaxe'
   | 'unlock-vehicles'
   | 'unlock-sensors'
   | 'unlock-advanced-sensors'
@@ -141,9 +142,7 @@ export type SkuId =
   | 'pack-tomato'
   | 'pack-raspberry'
   | 'pack-watermelon'
-  | 'pack-olive'
   | 'pack-grape'
-  | 'pack-vanilla'
   | 'pack-sugar-cane'
   | 'buy-shovel'
   | 'buy-better-shovel'
@@ -173,13 +172,12 @@ export type SkuId =
   | 'buy-tile-cobble'
   | 'buy-fence'
   | 'pack-grass'
-  | 'buy-rotary-shovel'
-  | 'buy-diamond-pickaxe'
   | 'buy-mill'
   | 'buy-jam'
   | 'buy-still'
   | 'buy-barrel'
   | 'buy-freezer'
+  | 'buy-freezer-large'
   | 'buy-sugar'
   | 'buy-hangar'
   | 'buy-silo-seed'

@@ -17,7 +17,6 @@ export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'boots',
     'driving-classes',
     'tending',
-    'vanilla-tending',
     'seed-bank',
     'better-carrot',
     'better-potato',
@@ -25,7 +24,6 @@ export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'better-tomato',
     'better-raspberry',
     'better-watermelon',
-    'better-olive',
     'better-grape',
     'better-vanilla',
     'better-sugar-cane',
@@ -38,7 +36,6 @@ export const BETTER_IDS = {
     tomato: 'better-tomato',
     raspberry: 'better-raspberry',
     watermelon: 'better-watermelon',
-    olive: 'better-olive',
     grape: 'better-grape',
     vanilla: 'better-vanilla',
     'sugar-cane': 'better-sugar-cane',
@@ -59,6 +56,7 @@ export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
     'tax',
     'water-study',
     'land-study',
+    'inherit-land',
 ]
 export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'saleswoman',
@@ -77,14 +75,13 @@ export const JAM_FLOOR = [0.1, 0.2, 0.3] as const
 export type SkillGate =
     | { kind: 'none' }
     | { kind: 'research'; id: ResearchId }
-    | { kind: 'skill'; id: 'open-late' | 'vanilla-tending' }
+    | { kind: 'skill'; id: 'open-late' }
 
 export type SkillEffect =
     | { kind: 'walk'; mul: 1.05 }
     | { kind: 'driving-classes' }
     | { kind: 'machine'; mul: 1.05 }
     | { kind: 'tend' }
-    | { kind: 'vanilla-tending' }
     | { kind: 'research-speed'; mul: 1.05 }
     | { kind: 'haggling' }
     | { kind: 'broker' }
@@ -92,6 +89,7 @@ export type SkillEffect =
     | { kind: 'tax'; mul: 0.98 }
     | { kind: 'water-study' }
     | { kind: 'land-study' }
+    | { kind: 'inherit-land' }
     | { kind: 'saleswoman'; mul: 1.02 }
     | { kind: 'heirloom'; mul: 1.05 }
     | { kind: 'better'; crop: CropId; saleMul: 1.04; up1: 0.04 }
@@ -148,15 +146,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         1,
         {kind: 'tend'},
     ),
-    'vanilla-tending': row(
-        'vanilla-tending',
-        'player',
-        'Vanilla tending',
-        'You have read the definite book on Vanilla tending. You are now comfortable to buy Vanilla from the Shop.',
-        1,
-        {kind: 'vanilla-tending'},
-        {kind: 'research', id: 'unlock-raspberry'},
-    ),
     'research-speed': row(
         'research-speed',
         'husband',
@@ -199,6 +188,15 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'Adds Land quality to the Lens menu. You can see fertilizer in the dirt across the field.',
         1,
         {kind: 'land-study'},
+    ),
+    'inherit-land': row(
+        'inherit-land',
+        'husband',
+        'Inherit land',
+        'A relative signs a plot over to you. Each rank grants one expansion permit. The land still costs money.',
+        2,
+        {kind: 'inherit-land'},
+        {kind: 'research', id: 'unlock-expand'},
     ),
     saleswoman: row(
         'saleswoman',
@@ -276,15 +274,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'better', crop: 'watermelon', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-watermelon'},
     ),
-    'better-olive': row(
-        'better-olive',
-        'player',
-        'Experienced olive harvester',
-        'Olives sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
-        1,
-        {kind: 'better', crop: 'olive', saleMul: 1.04, up1: 0.04},
-        {kind: 'research', id: 'unlock-olive'},
-    ),
     'better-grape': row(
         'better-grape',
         'player',
@@ -301,7 +290,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'Vanilla sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
         1,
         {kind: 'better', crop: 'vanilla', saleMul: 1.04, up1: 0.04},
-        {kind: 'skill', id: 'vanilla-tending'},
+        {kind: 'research', id: 'unlock-raspberry'},
     ),
     'better-sugar-cane': row(
         'better-sugar-cane',

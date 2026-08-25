@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
-import { GATE_TEXT, RESEARCH } from '../defs/research.ts'
-import { fill } from '../defs/catalog.ts'
+import { RESEARCH } from '../defs/research.ts'
 import type { ResearchId } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
 import { researchInner } from '../view/svgs.ts'
@@ -93,9 +92,7 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
     ? 'Already researched.'
     : run
       ? 'Running now.'
-      : gated && d.gate.kind !== 'none'
-        ? fill(GATE_TEXT[d.gate.kind], { have: world.gateHave(id), n: d.gate.n })
-        : busy
+      : busy
           ? 'Another project is running. One at a time.'
           : world.money < d.cost
             ? 'Not enough money.'
@@ -138,14 +135,6 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
           </>
         )}
       </span>
-      {gated && d.gate.kind !== 'none' && (
-        <>
-          <Bar value={world.gateProgress(id)} color="bg-roof" className="h-1.5 w-full" />
-          <span className="text-xs leading-none text-roof">
-            {world.gateHave(id)} / {d.gate.n} {d.gate.kind}
-          </span>
-        </>
-      )}
       {(run || done) && <Bar value={pct / 100} color="bg-leaf" track="bg-ink/25" className="h-1.5 w-full" />}
     </button>
   )

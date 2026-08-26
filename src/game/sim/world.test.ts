@@ -412,11 +412,15 @@ describe('beta-2 invariants', () => {
   test('research costs match table', () => {
     expect(RESEARCH['unlock-tomato']).toMatchObject({ cost: 7, seconds: 30 })
     expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 12, seconds: 45 })
-    expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 20, seconds: 120, tree: 'plants' })
+    expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 120, seconds: 120, tree: 'plants' })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
     expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 17, seconds: 50 })
     expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 20, seconds: 50 })
-    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 15, seconds: 45 })
+    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 20, seconds: 40 })
+    expect(RESEARCH['expand-land']).toMatchObject({ cost: 100, seconds: 90 })
+    expect(RESEARCH['eminent-domain']).toMatchObject({ cost: 400, seconds: 180 })
+    expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({ cost: 20, seconds: 45 })
+    expect(RESEARCH['unlock-fertilizer']).toMatchObject({ cost: 5, seconds: 30 })
     expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 0, seconds: 40 })
   })
 })
@@ -728,6 +732,7 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-tomato'].name).toBe('Tomato seeds')
     expect(RESEARCH['unlock-raspberry'].name).toBe('Raspberry seeds')
     expect(RESEARCH['unlock-heirloom'].name).toBe('Heirloom crops')
+    expect(RESEARCH['unlock-fertilizer'].name).toBe('Synthetic fertilizer')
     expect(RESEARCH['unlock-better-tools'].name).toBe('Better gardening tools')
     expect(RESEARCH['unlock-large-box'].name).toBe('Fruit boxes')
     expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
@@ -950,6 +955,11 @@ describe('beta-5 invariants', () => {
       name: 'Irrigation',
       tree: 'automation',
       reveal: 'start',
+    })
+    expect(RESEARCH['unlock-heirloom']).toMatchObject({
+      name: 'Heirloom crops',
+      tree: 'plants',
+      reveal: 'unlock-fertilizer',
     })
     expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({
       name: 'Automated irrigation',

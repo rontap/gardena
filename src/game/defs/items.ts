@@ -3,8 +3,8 @@ import type { ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../s
 import type { Rarity } from './rarity.ts'
 
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
-  shovel: { uses: 80, workSeconds: 1.2 },
-  'better-shovel': { uses: 200, workSeconds: 0.6 },
+  shovel: { uses: 80, workSeconds: 1.1 },
+  'better-shovel': { uses: 200, workSeconds: 0.7 },
   'rotary-shovel': { uses: 1000, workSeconds: 0.2 },
 }
 

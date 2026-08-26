@@ -1,6 +1,6 @@
 # Market
 
-Centered overlay (`Overlay`, dim `bg-ink/40`), not a dock. Title **Market**. Overlay `className` `max-h-[calc(100%-4rem)] w-[52rem]`. Panel `{ kind: 'market' }`. Not `{ kind: 'contracts' }`.
+Centered overlay (`Overlay`, dim `bg-ink/40`), not a dock. Title **Market**. Overlay `className` `max-h-[calc(100%-4rem)] w-[72rem]`. Panel `{ kind: 'market' }`. Not `{ kind: 'contracts' }`.
 
 HUD **Market** or consign at the truck opens it. [[mechanics/market]].
 

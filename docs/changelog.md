@@ -2,6 +2,18 @@
 
 History. Not current contracts.
 
+## 2026-08-26 — 1.8.1 QoL Patch II
+
+[[ui/contracts]] [[ui/hud]] [[ui/lens]] [[mechanics/research]] [[items/tools]]
+
+- Offer prize/cash own line, no `truncate`. Hover is the full offer. Host cancel is ×; hover **Cancelling this offer will incur a {Coin fee} penalty.**
+- Ribbon chips: `expandLeft()` then `World.points`. Hidden at 0. Expand plate `fill-ink/55`; no-permit **No permit left**.
+- Lens `vehicles`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. Hide until `unlock-vehicles`.
+- `unlock-heirloom` $120 / 120s, reveal `unlock-fertilizer`. `SHOVELS` shovel 1.1 / better-shovel 0.7. Rotary unchanged. 1.8 file keeps baked `workSeconds`.
+- Wordmark **1.8.1**. `SAVE_VERSION` / `PROTOCOL` stay **1.8**. No migrate.
+
+Assumption: SAVE_VERSION 1.8, wordmark 1.8.1, like 1.6.1 on PROTOCOL 1.6.
+
 ## 2026-08-24 — 1.7.2 Memory on the wire
 
 [[mechanics/sensors]] [[ui/changelog]] [[architecture/save]]

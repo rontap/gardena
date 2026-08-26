@@ -7,11 +7,24 @@ import { DebugContracts } from './game/ui/debug-contracts.tsx'
 
 const root = document.getElementById('root')!
 
-if (location.hash === '#debug-contracts') {
+function openScroll(): void {
   document.documentElement.style.overflow = 'auto'
   document.body.style.overflow = 'auto'
   root.style.overflow = 'auto'
   root.style.height = 'auto'
+}
+
+if (location.hash === '#debug-techtree') {
+  openScroll()
+  void import('./game/ui/debug-techtree.tsx').then(m =>
+    createRoot(root).render(
+      <StrictMode>
+        <m.DebugTechTree />
+      </StrictMode>,
+    ),
+  )
+} else if (location.hash === '#debug-contracts') {
+  openScroll()
   createRoot(root).render(
     <StrictMode>
       <DebugContracts />

@@ -212,7 +212,7 @@ Crop stall bins keep `bio` (stock + worth per rarity × bio). Illegal: consign t
 - `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`. `buy(id)` stays one
 - Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. `buy` one roll; `buyPacks` five. Base always common.
 - Tax: `World.tax()` applies smart tax after the expansion formula
-- Water lens: husband owns `water-study`. Land lens (`land`): husband owns `land-study`. View-local `Lens`; architecture names the unlock. Default `off`
+- Water lens: husband owns `water-study`. Land lens (`land`): husband owns `land-study`. Vehicle interactions lens (`vehicles`): `unlock-vehicles` in `done`, not a family-study. View-local `Lens`; architecture names the unlock. Default `off`
 
 ## Research
 

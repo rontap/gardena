@@ -8,7 +8,11 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `RESEARCH[id].name` is the visible label. Trees: plants, utilities, expansion, automation.
 
-`reveal`: `'start'` or a prior id. `skuOpen` / `skuShown` are separate: show vs buy.
+`reveal`: `'start'` or a prior id — visibility only. `skuOpen` / `skuShown` are separate: show vs buy.
+
+`requires`: `ResearchId | 'none'` — hard prerequisite, checked in `startResearchBody`. `'none'` on every row but `unlock-smart-irrigation`, which requires `unlock-adv-irrigation`. A row can reveal on one id and require another.
+
+`grants`: `readonly string[]` — the concepts a row turns on that no table can express, one short noun phrase each. `SKUS` and `SKILLS` already name what they gate; `grants` covers the rest, the `world.done.has(...)` feature sites. Empty on rows whose unlocks are fully covered by those two tables. Read by [[ui/cheat]] `#debug-techtree`, not by the sim.
 
 `Sku.need` is required: `ResearchId | 'prize' | 'none'`. `'none'` is no extra lock. `'prize'` means the sku is never for sale: it opens only while `World.prizeStock(id) > 0`, banked from a contract — [[mechanics/contracts]]. `buy-freezer-large` is the only one. Dual-lock SKUs set `unlock` to one research and `need` to the other. `skuOpen` is unlock done (or `'start'`) and the need: `'none'` | prize stock | that research done.
 
@@ -20,40 +24,39 @@ Future germ / weather SKUs use this dual-lock only (`Sku.unlock` + `Sku.need` as
 
 Blurbs as `RESEARCH[id].blurb`.
 
-| id | name | tree | $ | s | reveal | blurb |
-|---|---|---|---|---|---|---|
-| unlock-tomato | Tomato seeds | plants | 7 | 30 | start | Unlocks Tomato seeds in the general store. |
-| unlock-olive | Olive seeds | plants | 11 | 42 | unlock-tomato | Unlocks Olive seeds in the general store. |
-| unlock-grape | Grape seeds | plants | 10 | 40 | start | Unlocks Grape seeds in the general store. |
-| unlock-raspberry | Raspberry seeds | plants | 12 | 45 | unlock-grape | Unlocks Raspberry seeds in the general store. |
-| unlock-watermelon | Watermelon seeds | plants | 8 | 35 | start | Unlocks Watermelon seeds in the general store. |
-| unlock-heirloom | Heirloom crops | plants | 20 | 120 | start | Unlocks Őstermelő. Heirloom produce can sell for more. |
-| unlock-fertilizer | Fertilizer | plants | 9 | 40 | start | Unlocks Synthetic fertilizer in the general store. |
-| unlock-better-tools | Better gardening tools | utilities | 16 | 45 | start | Unlocks Better shovel and Large bucket in the general store. |
-| unlock-large-box | Fruit boxes | utilities | 17 | 50 | start | Unlocks Large fruit box in the general store. |
-| unlock-chest | Chest | utilities | 12 | 40 | start | Unlocks Chest in the general store. |
-| unlock-contracts | Contracts | utilities | 8 | 30 | start | The stall can take orders from buyers. |
-| unlock-pickaxe | Pickaxes | utilities | 0 | 40 | start | Unlocks Pickaxe and Hardened pickaxe in the general store. |
-| unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
-| unlock-expand | Unlock land | expansion | 15 | 45 | start | Unlocks land expansion on the map edge, and grants the first expansion permit. |
-| expand-land | Expand land | expansion | 30 | 60 | unlock-expand | A second expansion permit. Land still costs money on top of the permit. |
-| eminent-domain | Eminent domain | expansion | 60 | 90 | expand-land | A third expansion permit. Further permits are contract work, not paperwork. |
-| unlock-irrigation | Irrigation | automation | 20 | 50 | start | Unlocks Pumpjack in the general store. |
-| unlock-vehicles | Vehicles | automation | 32 | 70 | unlock-irrigation | Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar. |
-| unlock-auto-irrigation | Automated irrigation | automation | 22 | 55 | unlock-irrigation | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
-| unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
-| unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
-| unlock-sensors | Sensors | automation | 24 | 55 | unlock-auto-irrigation | Unlocks the Sensors shelf: lever, button, lamp, pulser, counter, and field readers. |
-| unlock-advanced-sensors | Advanced sensors | automation | 22 | 50 | unlock-sensors | Unlocks AND, OR, and NOT. |
-| unlock-smart-irrigation | Smart Irrigation | automation | 32 | 70 | unlock-sensors | Sprinklers gain a signal input. Unlocks Smart valve and Vehicle detector. |
-| unlock-grinder | Seed grinder | automation | 18 | 50 | start | Unlocks Seed grinder and Mill in the general store. |
-| unlock-preservatives | Preservatives | automation | 20 | 55 | unlock-grinder | Unlocks Jam machine, Freezer, and Sugar in the general store. |
-| unlock-fermentation | Fermentation | automation | 14 | 50 | start | Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar. |
-| unlock-landscaping | Landscape architecture | expansion | 12 | 60 | start | Unlocks Grass seeds, Wooden fence and every paving tile in the general store. |
+| id | name | tree | $ | s | reveal | requires | grants | blurb |
+|---|---|---|---|---|---|---|---|---|
+| unlock-tomato | Tomato seeds | plants | 7 | 30 | start | none | — | Unlocks Tomato seeds in the general store. |
+| unlock-grape | Grape seeds | plants | 10 | 40 | start | none | — | Unlocks Grape seeds in the general store. |
+| unlock-raspberry | Raspberry seeds | plants | 12 | 45 | unlock-grape | none | — | Unlocks Raspberry seeds in the general store. |
+| unlock-watermelon | Watermelon seeds | plants | 8 | 35 | start | none | — | Unlocks Watermelon seeds in the general store. |
+| unlock-heirloom | Heirloom crops | plants | 120 | 120 | unlock-fertilizer | none | Heirloom rarity column in the store | Unlocks Őstermelő. Heirloom produce can sell for more. |
+| unlock-better-tools | Better gardening tools | utilities | 16 | 45 | start | none | — | Unlocks Better shovel and Large bucket in the general store. |
+| unlock-large-box | Fruit boxes | utilities | 17 | 50 | start | none | — | Unlocks Large fruit box in the general store. |
+| unlock-irrigation | Irrigation | automation | 20 | 50 | start | none | — | Unlocks Pumpjack in the general store. |
+| unlock-vehicles | Vehicles | automation | 32 | 70 | unlock-irrigation | none | Quad, tractor and trailer at the hangar | Unlocks Hangar, tractor, trailers, and field silos. Buy Quads and tractors at a hangar. |
+| unlock-auto-irrigation | Automated irrigation | automation | 20 | 45 | unlock-irrigation | none | — | Unlocks Pipe, Sprinkler, Manual valve, Rainwater tank and Tap in the general store. |
+| unlock-adv-irrigation | Advanced irrigation | automation | 28 | 65 | unlock-auto-irrigation | none | — | Unlocks Well, Vertical sprinkler, and Large sprinkler in the general store. |
+| unlock-smart-sprinkler | Smart sprinklers | automation | 30 | 70 | unlock-adv-irrigation | none | Sprinkler crop dial | Every sprinkler gains a crop dial. Tuned to a crop, it pours exactly what that crop drinks. |
+| unlock-sensors | Sensors | automation | 24 | 55 | unlock-auto-irrigation | none | Sensors lens row | Unlocks the Sensors shelf: lever, button, lamp, pulser, counter, and field readers. |
+| unlock-advanced-sensors | Advanced sensors | automation | 22 | 50 | unlock-sensors | none | — | Unlocks AND, OR, and NOT. AND is on if both inputs are. OR if either is. NOT inverts. |
+| unlock-smart-irrigation | Smart Irrigation | automation | 32 | 70 | unlock-sensors | unlock-adv-irrigation | Sprinkler signal input; Signal wire endpoints on sprinklers | Sprinklers gain a signal input. Unlocks Smart valve and Vehicle detector. |
+| unlock-chest | Chest | utilities | 12 | 40 | start | none | — | Unlocks Chest in the general store. |
+| unlock-contracts | Contracts | utilities | 8 | 30 | start | none | Contracts board at the stall; Reputation decay | The stall can take orders from buyers. |
+| unlock-expand | Unlock land | expansion | 20 | 40 | start | none | Land expansion on the map edge; +1 expansion permit | Unlocks land expansion on the map edge, and grants the first expansion permit. |
+| expand-land | Expand land | expansion | 100 | 90 | unlock-expand | none | +1 expansion permit | A second expansion permit. Land still costs money on top of the permit. |
+| eminent-domain | Eminent domain | expansion | 400 | 180 | expand-land | none | +1 expansion permit | A third expansion permit. Further permits are contract work, not paperwork. |
+| unlock-pickaxe | Pickaxes | utilities | 0 | 40 | start | none | — | Unlocks Pickaxe and Hardened pickaxe in the general store. |
+| unlock-fertilizer | Synthetic fertilizer | plants | 5 | 30 | start | none | — | Unlocks Synthetic fertilizer in the general store. |
+| unlock-compost | Composting | utilities | 14 | 45 | unlock-fertilizer | none | — | Unlocks Compost box in the general store. Turns organic waste back into fertilizer. |
+| unlock-grinder | Seed grinder | automation | 18 | 50 | start | none | — | Unlocks Seed grinder and Mill in the general store. |
+| unlock-preservatives | Preservatives | automation | 20 | 55 | unlock-grinder | none | Jam icon in the almanac | Unlocks Jam machine, Freezer, and Sugar in the general store. |
+| unlock-fermentation | Fermentation | automation | 14 | 50 | start | none | — | Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar. |
+| unlock-landscaping | Landscape architecture | expansion | 12 | 60 | start | none | — | Unlocks Grass seeds, Wooden fence and every paving tile in the general store. |
 
-Every row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`.
+Every row is `{ kind: 'none' }`. `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` unlock on `unlock-vehicles`. Lens `vehicles` unhidden after this row. Not a family-study.
 
-`unlock-sensors` `effect` `feature`. `unlock-advanced-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. `unlock-contracts` `effect` `feature`. Board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Assumption: no new `ResearchGate` arm. Assumption: `unlock-advanced-sensors` $22 / 50s.
+`unlock-sensors` `effect` `feature`. `unlock-advanced-sensors` `effect` `feature`. `unlock-smart-irrigation` `effect` `feature`. `unlock-contracts` `effect` `feature`. Board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done` — that is `requires`, not a special case. Assumption: no new `ResearchGate` arm. Assumption: `unlock-advanced-sensors` $22 / 50s.
 
 `unlock-sensors` cell SKUs (lever, button, lamp, pulser, counter, water, fert, harvest, water-system, day): `show` + `unlock` `unlock-sensors`, `need: 'none'`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: unlock-sensors` — visible after Sensors; buy after Advanced sensors. `buy-smart-valve` `buy-vehicle-detector`: `show: unlock-sensors`, `unlock: unlock-smart-irrigation`, `need: unlock-sensors`. `skuShown` Sensors shelf (`logic`) after `unlock-sensors`. Smart Irrigation cards shown after Sensors, buy after both.
 

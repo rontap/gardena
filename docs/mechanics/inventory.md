@@ -58,14 +58,14 @@ Shop `pack-*` are five seeds. Always common unless the player owns `seed-bank` �
 
 | | uses | work s | $ | unlock |
 |---|---|---|---|---|
-| shovel | 80 | 1.2 | 10 | start |
-| better shovel | 200 | 0.6 | 30 | `unlock-better-tools` |
+| shovel | 80 | 1.1 | 10 | start |
+| better shovel | 200 | 0.7 | 30 | `unlock-better-tools` |
 | pickaxe | 25 | 4 | 18 | `unlock-pickaxe` |
 | hardened pickaxe | 40 | 2 | 24 | `unlock-pickaxe` |
 | bucket | — | 5 L | 8 | start |
 | large bucket | — | 10 L | 22 | `unlock-better-tools` |
 
-`CONTAINERS.bucket` 5. `CONTAINERS['large-bucket']` 10. Uses / work / capacities — preference. 0 uses: hand empty.
+`CONTAINERS.bucket` 5. `CONTAINERS['large-bucket']` 10. Uses / work / capacities — preference. 0 uses: hand empty. `workSeconds` is baked on the Item. Loaded 1.8 saves keep that value. New games / new buys use `SHOVELS.*.workSeconds`. No migrate. Rotary unchanged.
 
 Weed spray: `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` 30. `buy-weed-spray` $12. Illegal: `usesLeft` 0 as held. — [[mechanics/weeds]]
 

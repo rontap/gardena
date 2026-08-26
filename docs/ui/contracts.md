@@ -12,7 +12,7 @@ Host: Accept / Cancel / Reorder. Guest: board and fill progress; those controls 
 
 `Tabs.Content` `contracts`: `grid grid-cols-2 min-h-0 flex-1`. Split down the middle.
 
-Left: today's board. `overflow-hidden`. No `scroll-pane`. No `overflow-y-auto`. Overlay still no-scroll — [[ui/market]] `w-[52rem]` unchanged.
+Left: today's board. `overflow-hidden`. No `scroll-pane`. No `overflow-y-auto`. Overlay still no-scroll — [[ui/market]] `w-[72rem]`. Board stays 2-col × 3/4-row.
 
 | broker | grid | cards |
 |---|---|---|
@@ -27,27 +27,69 @@ Empty iff `active.length === 0` and `history.length === 0`: **No contracts runni
 
 ## Offer card
 
-The card is the Accept control. Not a nested label. `button`. `bg-ink/6 px-3 py-2 flex flex-col gap-1`. Host click `acceptContract { c: offer.id }`.
+The card is the Accept control. Not a nested label. Frame `bg-ink/6 px-3 py-2 flex flex-col gap-1`. Host click `acceptContract { c: offer.id }`.
 
-At cap: grey `text-ink/35`, `aria-disabled`, guarded `onClick`. Not the `disabled` attribute. [[ui/callout-hover]] on Market Overlay `aside`. Title `COMPANIES[offer.company].name`. Why, `mt-2 block font-bold text-roof`:
+| who | fill | click |
+|---|---|---|
+| host, not at cap | `hover:bg-ink/12 active:bg-ink/20` `cursor-pointer` | `acceptContract` |
+| host, at cap | no hover fill. `text-ink/35` `aria-disabled` guarded `onClick` | no-op |
+| guest | no hover fill. Not the Accept control | never |
 
-- cap 3: **Three contracts already running.**
-- broker T2 (cap 4): **Four contracts already running.**
-
-Taken today: card gone, not grey.
+Not the `disabled` attribute. Taken today: card gone, not grey.
 
 ```
-[ face name                            stars ]
-[ {amount} × face  [pips]              {n}%  ]
-[ {amount} × face  [pips]                    ]   ← pair only
-[ {days} days                      Coin      ]
+[ face name                            pips ]
+[ ItemFace (count)  demandName              ]
+[ ItemFace (count)  demandName              ]   ← pair only
+[ 1 day | N days                            ]
+[ Coin | PrizeChip                          ]
 ```
 
-Row 1: `flex items-center justify-between gap-2`. Company `flex items-center gap-2`: face `company-{id}.svg` `h-6 w-6 shrink-0` (24×24, `viewBox="0 0 24 24"`) left of `COMPANIES[offer.company].name` `text-sm font-semibold`. Stars `h-4`.
+Row 1: `flex items-center justify-between gap-2`. Company `flex items-center gap-2`: face `company-{id}.svg` `h-6 w-6 shrink-0` (24×24, `viewBox="0 0 24 24"`) left of `COMPANIES[offer.company].name` `text-sm font-semibold`. `Difficulty` on the right.
 
-Amount rows: `flex items-center gap-2 text-base font-semibold`. `{amount}` `×` face. Markup on the first amount row only, `ml-auto text-sm font-normal`. `{Math.round(offer.markup * 100)}%`. Pair: two amount lines.
+Amount row: `flex items-center gap-2 text-base font-semibold`. `demandFace(demand, count)` then `demandName` `truncate`. Pair: two rows. No markup on the card. Count lives on the `Item`, not a `×` glyph.
 
-Last row: `flex items-center justify-between text-sm`. `{offer.days} days`. `<Coin n={offer.reward} />`.
+Duration row is duration only: `text-sm`. `offer.days === 1` → **1 day**. Else `{offer.days} days`.
+
+Prize / cash **own line**, no truncate. Cash: `<Coin n={offer.reward} />`. Prize: `PrizeChip` always icon + full `prizeName`. Drop `truncate` on the name.
+
+### Hover
+
+[[ui/callout-hover]] on Market Overlay `aside`. Title `COMPANIES[offer.company].name`. Hover on guest and host, including at-cap. Prize-only hover **replaces** the old “Pays … instead of money / No cash” card.
+
+`item` = `demandName`. Rarity clause iff `minRarity` present and not `common`.
+
+```
+RARITY_NAME: { readonly [K in Rarity]: string } = {
+  common: 'Common',
+  uncommon: 'Uncommon',
+  rare: 'Rare',
+  heirloom: 'Heirloom',
+}
+```
+
+Body, `whitespace-pre-line` fragment:
+
+```
+{difficulty}/40 difficulty contract for {company}.
+Deliver {amount} {item}[ at least rarity of {Rarity}].
+[Deliver …]  ← pair only
+Contract duration is {n} day(s), earn {reward} when completed[{monetary}].
+Cancellation cost is {fee}.
+[Click to accept offer]
+```
+
+- `{difficulty}` = `offer.difficulty`. `{company}` = `COMPANIES[offer.company].name`.
+- One **Deliver** line per demand. `{item}` = `demandName(demand)`. Append ` at least rarity of {RARITY_NAME[minRarity]}` iff that demand has `minRarity` and `minRarity !== 'common'`.
+- Duration: `1 day` / `{n} days` (`n === 1` vs else). Same as the card.
+- Cash: `{reward}` is `<Coin n={offer.reward} />`. `{monetary}` is ` ({pct}% more than farmer's market)` with `pct = Math.round(offer.markup * 100)`.
+- Prize: `{reward}` is `prizeName(offer.prize)`. No `{monetary}`.
+- Board `{fee}` = `<Coin n={offer.penalty} />`.
+- **Click to accept offer**: board, host, not at cap.
+- At-cap why, `mt-2 block font-bold text-roof` (existing):
+  - cap 3: **Three contracts already running.**
+  - broker T2 (cap 4): **Four contracts already running.**
+- Guest: no CTA. No at-cap why.
 
 ### Company
 
@@ -55,50 +97,56 @@ Name is `COMPANIES[offer.company].name`. Complete book — all six `CompanyId`: 
 
 ### Line face
 
-Amount is the text, not the badge. Count / liters on the face is 1.
+Count / liters is on the `Item` (`demandItem(demand, count)`). Sugar liters = count.
 
 | demand | face |
 |---|---|
-| rated crop | fruit `ItemFace`, `rarity: minRarity`. Sugar-cane is cane fruit, not the bag. |
-| rated wine | wine `ItemFace`, `rarity: minRarity` |
-| rated spirit | that spirit `ItemFace`, `rarity: minRarity` |
+| rated crop | fruit `ItemFace`, `rarity: minRarity`, `count`. Sugar-cane is cane fruit. |
+| rated wine | wine `ItemFace`, `rarity: minRarity`, `count` |
+| rated spirit | that spirit `ItemFace`, `rarity: minRarity`, `count` |
 | plain sugar / oil / flour / extract | that `ItemFace` |
 | plain jam | jam `ItemFace` (`JamId` crop; tomato ketchup) |
-| group jam | jam-machine Face (`item-jam-machine`, same 24×24 plate as `ItemFace`, no badge) |
-| group spirit | vodka spirit `ItemFace`, `rarity: minRarity` |
+| group jam | `AnyJamFace`: cycles `JAM_CROPS` every 800ms, `ItemFace` jam, `count` |
+| group spirit | vodka spirit `ItemFace`, `rarity: minRarity`, `count` |
 
-`qualityPip(minRarity)` beside the face when the demand carries `minRarity` and `minRarity !== 'common'`. Fruit `ItemFace` already composites that pip — do not draw a second mark on the fruit glyph. Do not use `qualityPip` for stars.
+`qualityPip(minRarity)` beside the face unless `plain` or group jam. `qualityPip` is undefined for common — no extra mark. Fruit `ItemFace` also composites its own pip; live still draws this extra `qualityPip` for rated fruit. Not stars.
+
+`demandName`: group jam **Any jam**, group spirit **Any spirit**, else `stallName`.
 
 ### Stars
 
-`ui-contract-stars` groups `s1` `s2` `s3` `s4`. Show group `s{offer.stars}` only. `Stars` is `1 | 2 | 3 | 4`. Same sibling-`<g id>` rule as other grouped art. Do not draw four loose marks.
+`Difficulty`: `stars` many `h-2 w-2 rounded-full`, all `TIER_DOT[stars]` (`bg-tier-1`…`bg-tier-4`). `aria-label="Difficulty {n}"`. Same on board, active, history, recap.
 
 ## Accepted
 
-`world.contracts.active` array order — that is fill order. Same card frame `bg-ink/6 px-3 py-2 flex flex-col gap-1`. Stacked `flex flex-col gap-2`.
+`world.contracts.active` array order — that is fill order. Same card frame `relative bg-ink/6 px-3 py-2 flex flex-col gap-1`. Stacked `flex flex-col gap-2`.
 
 ```
-[ face name                            stars ] [▲]
-[ {remaining} × face  [pips]                 ] [▼]
-[ {remaining} × face  [pips]                 ]
-[ {x.x} days left              Coin reward   ]
-[ Bar                                        ]
-[ Cancel  Coin(fee)                          ]
+[ face name                            pips ] [▲]
+[ ItemFace (remaining)  demandName          ] [▼]
+[ ItemFace (remaining)  demandName          ]
+[ {x.x} days left                           ]
+[ Coin | PrizeChip                          ]
+[ Bar                                       ]
 ```
 
-Remaining per line: `amount - filled`. Same faces and pips as the offer. `{x.x} days left` — one decimal, `tabular-nums`, `dueDay - nowDay`. `Bar` `value={filled / need}` `color="bg-leaf"` `track="bg-ink/25"`. `need` / `filled` = sums of line amounts / `bin.filled`. Reward `<Coin n={offer.reward} />`.
+Header `pr-6` so ▲▼ clear the ×. Remaining per line: `amount - filled`. Same `AmountRow` as the offer. `{x.x} days left` own line — one decimal, `tabular-nums`, `dueDay - nowDay`. Reward own line: cash `<Coin n={offer.reward} />`, else `PrizeChip`. Then `Bar` `value={filled / need}` `color="bg-leaf"` `track="bg-ink/25"`. `need` / `filled` = sums of line amounts / `bin.filled`.
 
 Reorder host only: ▲ `reorderContract { c, d: -1 }`, ▼ `{ c, d: 1 }`. `d = 1` toward the end. Ends: still shown, sim no-op. No extra disabled face.
 
 ### Cancel
 
-Host `Btn`. Shows the live fee `<Coin n={cancelFee(active, nowDay)} />`. Click → that card armed (confirm). Armed `Btn` `selected`, still the live fee. Second click `cancelContract { c }` (`Y`). Not a new dialog. Not the `disabled` attribute.
+Host ×. Guest: omitted. Drop the full-width Cancel `Btn`.
+
+`absolute top-1 right-1` `text-lg` `text-ink/60 hover:bg-dirt hover:text-house` `aria-label="Cancel"`. Armed: Btn selected face `bg-ink text-house`. Click arms. Armed click `cancelContract { c }` (`Y`). Not a new dialog. Not the `disabled` attribute.
+
+Hover (armed or not): Overlay aside. Title `COMPANIES[offer.company].name`. Body **Cancelling this offer will incur a {Coin fee} penalty.** `{fee}` = `<Coin n={cancelFee(active, nowDay)} />`.
 
 ## History
 
 Below the stack. One line each, `history` array order, at most `CONTRACT_HISTORY_MAX`. No `Label`. No header.
 
-`COMPANIES[e.company].name`, `ui-contract-stars` `s{e.stars}`, `e.day`, outcome, amount `Coin`.
+`COMPANIES[e.company].name`, `Difficulty`, `e.day`, outcome, amount `Coin`.
 
 | `outcome.kind` | outcome | amount |
 |---|---|---|
@@ -110,4 +158,4 @@ Below the stack. One line each, `history` array order, at most `CONTRACT_HISTORY
 
 Seam dialog [[ui/docks]]. When `unlock-contracts` done: that day's `Recap.contracts` as history lines (completed / missed / cancelled) and **A new board is up.** Omit the block when not unlocked.
 
-Assumption: guest sees board and fill progress, Accept/Cancel/Reorder omitted. Group spirit face is vodka at `minRarity`.
+Assumption: guest sees board and fill progress plus offer hover, Accept/Cancel/Reorder omitted. Group spirit face is vodka at `minRarity`. Cancel × hover title is the company name.

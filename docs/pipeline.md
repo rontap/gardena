@@ -36,6 +36,8 @@ There is no handoff block. `.grok/agents/*` must not ask for one. Confirm-only /
 
 Invented scope or a just-in-case fallback is a failed run. Reject. Do not silently repair.
 
+Only the orchestrator may touch wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, or `changelogs-*.md`, unless the user explicitly allows a named child. Quote that allow in the child's prompt. Copy still follows [[standards/update-notes]]. Children never invent player wording.
+
 ## Spawn
 
 - `subagent_type` = agent file name

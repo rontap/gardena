@@ -69,6 +69,12 @@ export const LENS_ROWS: Row[] = [
     blurb: 'Reveals wires and sensor reach.',
     swatches: [],
   },
+  {
+    id: 'vehicles',
+    label: 'Vehicle interactions',
+    blurb: 'Hangar, silo, and machine pads.',
+    swatches: [],
+  },
 ]
 
 export function LensPanel({
@@ -86,6 +92,7 @@ export function LensPanel({
     if (row.id === 'water') return world.hasSkill('water-study')
     if (row.id === 'land') return world.hasSkill('land-study')
     if (row.id === 'sensors') return world.done.has('unlock-sensors')
+    if (row.id === 'vehicles') return world.done.has('unlock-vehicles')
     return true
   })
   const locked = LENS_ROWS.filter(row => row.id === 'water' || row.id === 'land').length - rows.filter(row => row.id === 'water' || row.id === 'land').length

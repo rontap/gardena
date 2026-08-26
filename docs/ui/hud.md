@@ -14,8 +14,26 @@ Left → right, separated by `w-px bg-ink/20` rules:
 2. `Coin` (`world.money`), `text-lg` semibold.
 3. Phase glyph, then **Day {n} · {phase name}** over a `w-28` `bg-ripe` day bar (`clock.t / DAY_SECONDS`).
 4. Research job when `job.kind === 'run'`: *Researching* **{name}** · **{n}s** over a `bg-leaf` bar. Hidden when idle.
-5. Pushed right: **digs {n} · mines {n}**, `text-sm` `text-ink/45`. These are the counters the tool research gates read — [[mechanics/research]].
-6. Far right: **Multiplayer** then **Pause** then **Gear**. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. Recap blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway).
+5. Far right, left of Multiplayer: expand chip then points chip then **Multiplayer** then **Pause** then **Gear**.
+
+### Consumables
+
+`ml-auto` cluster. Expand then points then the three icon buttons. Not a `Panel`. Not logged. Guest sees the same counts. `expandLeft()` and `World.points` — derived, not new state. [[mechanics/expansion]] [[mechanics/family]]
+
+Chip hidden at 0. Group hidden if both 0.
+
+Each chip: `relative` `pointer-events-auto`. 24×24 (`h-6 w-6` `viewBox="0 0 24 24"`) `EXPAND_LAND` / `SKILL_POINT` + count `text-sm font-semibold tabular-nums`.
+
+[[ui/callout-hover]] `placement="below"`:
+
+| chip | show | title | body |
+|---|---|---|---|
+| expand | `expandLeft() > 0` | Expansion | You have {n} farm expansion opportunities. |
+| points | `points > 0` | Skill points | You have {n} unspent skill points. Assign them to a family member! |
+
+`n` is that count.
+
+Then **Multiplayer** **Pause** **Gear**. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. Recap blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway).
 
 The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right.
 
@@ -39,14 +57,26 @@ Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — deri
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
+Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity` / `vehicles`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
 
 ## Lenses
 
 The lens picker is its own dock now — [[ui/lens]]. The rail button shows the active lens id under the label.
+
+## Expand faces
+
+Map-edge plates. After `unlock-expand` only. Size `TILE * 0.85`, centred on `face.at`. Copy **Expand** + `<Coin n={face.price} />` except no-permit. Host `<g className="group">`. Replace `fill-house` / `fill-dirt-dark`. [[mechanics/expansion]]
+
+| state | plate | type | pointer |
+|---|---|---|---|
+| clickable | `fill-ink/55` `group-hover:fill-ink/75` | `text-house` | `cursor-pointer` → `expand(id)` |
+| poor (money) | same fill | `text-house/50` | `cursor-pointer`, click no-op |
+| no permit | `fill-ink/40` | `text-house/50` **No permit left** | no pointer |
 
 ## Bottom-right
 
 `absolute right-4 bottom-4 z-20` `w-80`. Queue (if any) then [[ui/inspect]].
 
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
+
+Assumption: digs/mines HUD counters are gone with the 1.8.0 gates.

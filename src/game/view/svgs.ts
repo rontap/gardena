@@ -241,7 +241,6 @@ import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
 import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
 import portraitDaughter from '../../assets/skills/portrait-daughter.svg?raw'
 import uiMarketStall from '../../assets/ui/ui-market-stall.svg?raw'
-import uiContractStars from '../../assets/ui/ui-contract-stars.svg?raw'
 import companyWholeCart from '../../assets/market/company-whole-cart.svg?raw'
 import companyTradeJo from '../../assets/market/company-trade-jo.svg?raw'
 import companyHalbertEijn from '../../assets/market/company-halbert-eijn.svg?raw'
@@ -845,12 +844,6 @@ export function skillInner(id: SkillId): string {
   return SKILL_ART[id]
 }
 export const UI_MARKET_STALL = uiMarketStall
-export const UI_CONTRACT_STARS = {
-  1: groupInner(uiContractStars, 's1'),
-  2: groupInner(uiContractStars, 's2'),
-  3: groupInner(uiContractStars, 's3'),
-  4: groupInner(uiContractStars, 's4'),
-} as const
 export const COMPANY: { readonly [K in CompanyId]: string } = {
   'whole-cart': inner(companyWholeCart),
   'trade-jo': inner(companyTradeJo),

@@ -19,6 +19,8 @@ Three from research, two from `inherit-land` — [[mechanics/family]] — and on
 
 `expandLeft() <= 0` is a hard no-op in `expandBody`. Faces stay drawn and read `No permit left` instead of `Expand $N`, so the edge says why it is dead rather than vanishing.
 
+HUD remaining-permit count is `expandLeft()`. Derived. Not a World field.
+
 ```
 expandPrice = 40 + 15 * purchases
 tax = 2 + 6 * (owned.length - 1)

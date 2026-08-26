@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
+import type { Rarity } from '../defs/rarity.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
@@ -39,7 +40,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
     <Overlay
       title="Market"
       onClose={onClose}
-      className="max-h-[calc(100%-4rem)] w-[52rem]"
+      className="max-h-[calc(100%-4rem)] w-[72rem]"
       aside={tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} /> : undefined}
     >
       <Tabs.Root defaultValue="stall" className="relative z-20 flex min-h-0 flex-1 flex-col">
@@ -105,13 +106,52 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
                 />
               ))}
             </div>
-            <ContractsRight world={world} guest={guest} nowDay={nowDay} />
+            <ContractsRight world={world} guest={guest} nowDay={nowDay} onTip={setTip} />
             </div>
           </Tabs.Content>
         )}
       </Tabs.Root>
     </Overlay>
   )
+}
+
+const RARITY_NAME: { readonly [K in Rarity]: string } = {
+  common: 'Common',
+  uncommon: 'Uncommon',
+  rare: 'Rare',
+  heirloom: 'Heirloom',
+}
+
+function rarityClause(demand: Demand): string {
+  if (demand.kind === 'plain' || (demand.kind === 'group' && demand.group === 'jam')) return ''
+  if (demand.minRarity === 'common') return ''
+  return ` at least rarity of ${RARITY_NAME[demand.minRarity]}`
+}
+
+function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: number): Tip {
+  const company = COMPANIES[offer.company].name
+  const days = offer.days === 1 ? '1 day' : `${offer.days} days`
+  const deliver = offer.lines
+    .map(line => `Deliver ${line.amount} ${demandName(line)}${rarityClause(line)}.`)
+    .join('\n')
+  const cash = offer.prize.kind === 'cash'
+  const why =
+    !guest && atCap ? (cap === 4 ? 'Four contracts already running.' : 'Three contracts already running.') : undefined
+  return {
+    title: company,
+    description: (
+      <>
+        {`${offer.difficulty}/40 difficulty contract for ${company}.\n${deliver}\nContract duration is ${days}, earn `}
+        {cash ? <Coin n={offer.reward} /> : prizeName(offer.prize)}
+        {cash ? ` when completed (${Math.round(offer.markup * 100)}% more than farmer's market).` : ' when completed.'}
+        {'\nCancellation cost is '}
+        <Coin n={offer.penalty} />
+        {'.'}
+        {!guest && !atCap ? '\nClick to accept offer' : null}
+        {why !== undefined ? <span className="mt-2 block font-bold text-roof">{why}</span> : null}
+      </>
+    ),
+  }
 }
 
 export function OfferCard({
@@ -129,7 +169,6 @@ export function OfferCard({
   onTip: (tip: Tip) => void
   onAccept: () => void
 }) {
-  const why = cap === 4 ? 'Four contracts already running.' : 'Three contracts already running.'
   const grey = atCap && !guest
   const body = (
     <>
@@ -137,47 +176,30 @@ export function OfferCard({
       {offer.lines.map((line, i) => (
         <AmountRow key={i} demand={line} count={line.amount} />
       ))}
-      <div className="flex items-center justify-between gap-2 text-sm whitespace-nowrap">
-        <span>{offer.days === 1 ? '1 day' : `${offer.days} days`}</span>
-        {offer.prize.kind === 'cash' ? (
-          <>
-            <span className="text-ink/60">+{Math.round(offer.markup * 100)}% markup</span>
-            <Coin n={offer.reward} />
-          </>
-        ) : (
-          <PrizeChip prize={offer.prize} />
-        )}
+      <div className="text-sm">{offer.days === 1 ? '1 day' : `${offer.days} days`}</div>
+      <div>
+        {offer.prize.kind === 'cash' ? <Coin n={offer.reward} /> : <PrizeChip prize={offer.prize} />}
       </div>
     </>
   )
+  const enter = () => onTip(offerHover(offer, guest, atCap, cap))
+  const leave = () => onTip(undefined)
   if (guest) {
-    return <div className="bg-ink/6 px-3 py-2 flex flex-col gap-1">{body}</div>
+    return (
+      <div className="bg-ink/6 px-3 py-2 flex flex-col gap-1" onPointerEnter={enter} onPointerLeave={leave}>
+        {body}
+      </div>
+    )
   }
   return (
     <button
       type="button"
-      className={`bg-ink/6 px-3 py-2 flex flex-col gap-1 text-left ${grey ? 'text-ink/35' : 'cursor-pointer'}`}
+      className={`bg-ink/6 px-3 py-2 flex flex-col gap-1 text-left ${
+        grey ? 'text-ink/35' : 'cursor-pointer hover:bg-ink/12 active:bg-ink/20'
+      }`}
       aria-disabled={grey || undefined}
-      onPointerEnter={() => {
-        if (grey) {
-          onTip({
-            title: COMPANIES[offer.company].name,
-            description: <span className="mt-2 block font-bold text-roof">{why}</span>,
-          })
-          return
-        }
-        if (offer.prize.kind === 'cash') return
-        onTip({
-          title: COMPANIES[offer.company].name,
-          description: (
-            <>
-              <span>Pays {prizeName(offer.prize).toLowerCase()} instead of money. Not sold anywhere.</span>
-              <span className="mt-2 block font-bold text-roof">No cash for this one.</span>
-            </>
-          ),
-        })
-      }}
-      onPointerLeave={() => onTip(undefined)}
+      onPointerEnter={enter}
+      onPointerLeave={leave}
       onClick={() => {
         if (grey) return
         onAccept()
@@ -223,12 +245,11 @@ function flat(prize: Prize): prize is Prize & { kind: FlatPrize } {
   return prize.kind === 'expansion-slot' || prize.kind === 'skill-points' || prize.kind === 'freezer'
 }
 
-/** Icon + name for a non-cash prize. Falls back to a flat svg where no item exists. */
 export function PrizeChip({ prize }: { prize: Prize }) {
   if (prize.kind === 'cash') return null
   const item = prizeItem(prize)
   return (
-    <span className="flex min-w-0 items-center gap-1 text-ripe">
+    <span className="flex items-center gap-1 text-ripe">
       {item !== undefined ? (
         <ItemFace item={item} />
       ) : (
@@ -238,7 +259,7 @@ export function PrizeChip({ prize }: { prize: Prize }) {
           dangerouslySetInnerHTML={{ __html: flat(prize) ? PRIZE_ART[prize.kind] : '' }}
         />
       )}
-      <span className="truncate">{prizeName(prize)}</span>
+      <span>{prizeName(prize)}</span>
     </span>
   )
 }
@@ -346,7 +367,17 @@ function demandItem(demand: Demand, count: number): Item {
   }
 }
 
-function ContractsRight({ world, guest, nowDay }: { world: World; guest: boolean; nowDay: number }) {
+function ContractsRight({
+  world,
+  guest,
+  nowDay,
+  onTip,
+}: {
+  world: World
+  guest: boolean
+  nowDay: number
+  onTip: (tip: Tip) => void
+}) {
   const empty = world.contracts.active.length === 0 && world.contracts.history.length === 0
   if (empty) {
     return <div className="flex items-center justify-center text-sm text-ink/50">No contracts running.</div>
@@ -355,7 +386,7 @@ function ContractsRight({ world, guest, nowDay }: { world: World; guest: boolean
     <div className="flex min-h-0 flex-col overflow-y-auto scroll-pane">
       <div className="flex flex-col gap-2">
         {world.contracts.active.map(a => (
-          <ActiveCard key={a.offer.id} active={a} guest={guest} nowDay={nowDay} world={world} />
+          <ActiveCard key={a.offer.id} active={a} guest={guest} nowDay={nowDay} world={world} onTip={onTip} />
         ))}
       </div>
       <div className="mt-2 flex flex-col gap-1">
@@ -372,11 +403,13 @@ function ActiveCard({
   guest,
   nowDay,
   world,
+  onTip,
 }: {
   active: Active
   guest: boolean
   nowDay: number
   world: World
+  onTip: (tip: Tip) => void
 }) {
   const [armed, setArmed] = useState(false)
   const need = needOf(active)
@@ -384,8 +417,37 @@ function ActiveCard({
   const left = active.dueDay - nowDay
   const fee = cancelFee(active, nowDay)
   return (
-    <div className="bg-ink/6 px-3 py-2 flex flex-col gap-1">
-      <div className="flex items-start gap-2">
+    <div className="relative bg-ink/6 px-3 py-2 flex flex-col gap-1">
+      {!guest && (
+        <button
+          type="button"
+          aria-label="Cancel"
+          className={`absolute top-1 right-1 cursor-pointer text-lg ${
+            armed ? 'bg-ink text-house' : 'text-ink/60 hover:bg-dirt hover:text-house'
+          }`}
+          onPointerEnter={() =>
+            onTip({
+              title: COMPANIES[active.offer.company].name,
+              description: (
+                <>
+                  Cancelling this offer will incur a <Coin n={fee} /> penalty.
+                </>
+              ),
+            })
+          }
+          onPointerLeave={() => onTip(undefined)}
+          onClick={() => {
+            if (!armed) {
+              setArmed(true)
+              return
+            }
+            world.cancelContract(active.offer.id)
+          }}
+        >
+          ×
+        </button>
+      )}
+      <div className="flex items-start gap-2 pr-6">
         <div className="min-w-0 flex-1 flex flex-col gap-1">
           <HeaderRow offer={active.offer} />
           {active.bins.map((bin, i) => (
@@ -411,30 +473,15 @@ function ActiveCard({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="tabular-nums shrink-0">{left.toFixed(1)} days left</span>
+      <div className="text-sm tabular-nums">{left.toFixed(1)} days left</div>
+      <div>
         {active.offer.prize.kind === 'cash' ? <Coin n={active.offer.reward} /> : <PrizeChip prize={active.offer.prize} />}
       </div>
       <Bar value={filled / need} color="bg-leaf" track="bg-ink/25" />
-      {!guest && (
-        <Btn
-          selected={armed}
-          onClick={() => {
-            if (!armed) {
-              setArmed(true)
-              return
-            }
-            world.cancelContract(active.offer.id)
-          }}
-        >
-          Cancel <Coin n={fee} />
-        </Btn>
-      )}
     </div>
   )
 }
 
-/** What a finished contract paid: a prize chip when it paid goods, else the coin. */
 export function OutcomePay({ entry }: { entry: HistoryEntry }) {
   if (entry.outcome.kind === 'done' && entry.outcome.prize.kind !== 'cash') {
     return <PrizeChip prize={entry.outcome.prize} />

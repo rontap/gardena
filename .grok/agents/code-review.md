@@ -9,4 +9,4 @@ permission_mode: default
 agents_md: false
 ---
 
-Read `docs/agents/code-review.md` in full, then `docs/canon.md`. If `~/.grok/skills/code-review/SKILL.md` exists, read and apply it. Write findings only to the review path given in the prompt. Do not edit source. When that review file is written, stop. Final message: that path only. No handoff block. No Open questions section.
+Read `docs/agents/code-review.md` in full, then `docs/canon.md`. If `~/.grok/skills/code-review/SKILL.md` exists, read and apply it. Write findings only to the review path given in the prompt. Do not edit source. Do not edit, write, bump, or modify any version number, write release notes, or touch versions text unless the user explicitly allowed it in this task. When that review file is written, stop. Final message: that path only. No handoff block. No Open questions section.

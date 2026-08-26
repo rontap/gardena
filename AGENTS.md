@@ -14,6 +14,8 @@ Blocking gap before any write → ask. After a write, or a gap found only while 
 
 Be terse. Write contracts into `docs/**/*.md` immediately. No handoff prose. No code comments. Ever.
 
+Only the orchestrator may edit, write, bump, or modify any version number, write release notes, or touch versions text (wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, `changelogs-*.md`). A child may do so only when the task explicitly requires it and the user explicitly allowed it; quote that allow in the child's prompt.
+
 ## Dispatch
 
 Spawn: `architect`, `designer`, `ui-ux`, `coder`, `documenter`, `code-review`.

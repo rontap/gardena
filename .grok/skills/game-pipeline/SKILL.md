@@ -57,9 +57,12 @@ No handoff block. No chat contract. No code comments.
 Halt only if the task as given is blocked before any write: one-line question, then stop.
 A gap found after reading or after a write: one-line assumption in the note, finish.
 Do not spawn confirm-only children.
+Do not edit, write, bump, or modify any version number, write release notes, or touch versions text unless this prompt quotes an explicit user allow.
 ```
 
 Code-review: unique `docs/.review-<id>.md`. No source edits. Delete that file after a clean run.
+
+Versions and player changelog (`wordmark`, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, `changelogs-*.md`): orchestrator only, unless the user explicitly allowed a named child.
 
 ## 4. Gate
 

@@ -9,6 +9,7 @@ Vault for this game. Agents read this first.
 - [[pipeline]]
 - [[standards/docs]]
 - [[standards/testing]]
+- [[standards/update-notes]]
 
 ## Aims
 

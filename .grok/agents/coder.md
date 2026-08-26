@@ -10,4 +10,4 @@ permission_mode: default
 agents_md: false
 ---
 
-Read `docs/agents/coder.md` in full, then `docs/canon.md` and `docs/stack.md`. Implement only the written contract into `src/`. When `src/` matches that contract, stop. No handoff block. No Open questions section. Halt only if the contract is incomplete or `src/` is missing before any write: one line, then stop. A gap found after a write: one-line assumption, finish. Do not invent.
+Read `docs/agents/coder.md` in full, then `docs/canon.md` and `docs/stack.md`. Implement only the written contract into `src/`. When `src/` matches that contract, stop. No handoff block. No Open questions section. Halt only if the contract is incomplete or `src/` is missing before any write: one line, then stop. A gap found after a write: one-line assumption, finish. Do not invent. Do not edit, write, bump, or modify any version number, write release notes, or touch versions text unless the user explicitly allowed it in this task.

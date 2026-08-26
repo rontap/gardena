@@ -7,6 +7,8 @@ import type { Lens } from '../view/map.tsx'
 import { bindHud } from '../view/motion.ts'
 import {
   btnFace,
+  EXPAND_LAND,
+  SKILL_POINT,
   symHref,
   UI_BTN_ALMANAC,
   UI_BTN_BUILD,
@@ -26,6 +28,7 @@ import {
   type BtnState,
 } from '../view/svgs.ts'
 import { GHOST_SKUS } from '../defs/shelf.ts'
+import { CalloutHover } from './callout-hover.tsx'
 import { Chrome, Coin } from './frame.tsx'
 import type { PanelKind } from './panel.ts'
 
@@ -64,7 +67,6 @@ export function Hud({
   onGear: () => void
   onPause: () => void
   onMultiplayer: () => void
-  /** Live link state ('Catching up', 'Reconnecting 2 of 3'); absent when the link is healthy. */
   net: string | undefined
 }) {
   const job = world.job
@@ -76,6 +78,8 @@ export function Hud({
     place.kind === 'delete' || (place.kind === 'sku' && (GHOST_SKUS as readonly string[]).includes(place.id))
   const canRotate = place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(place.id)
   const guest = world.local !== 0
+  const expandLeft = world.expandLeft()
+  const points = world.points
   return (
     <>
       <Chrome className="pointer-events-none absolute top-4 left-4 right-4 z-20 h-14">
@@ -138,6 +142,26 @@ export function Hud({
                 {net}
               </span>
             )}
+            {(expandLeft > 0 || points > 0) && (
+              <>
+                {expandLeft > 0 && (
+                  <ConsumableChip
+                    art={EXPAND_LAND}
+                    n={expandLeft}
+                    title="Expansion"
+                    body={`You have ${expandLeft} farm expansion opportunities.`}
+                  />
+                )}
+                {points > 0 && (
+                  <ConsumableChip
+                    art={SKILL_POINT}
+                    n={points}
+                    title="Skill points"
+                    body={`You have ${points} unspent skill points. Assign them to a family member!`}
+                  />
+                )}
+              </>
+            )}
             <IconButton art={UI_BTN_MULTIPLAYER} label="Multiplayer" selected={panel === 'multiplayer'} onClick={onMultiplayer} />
             <PauseBtn selected={paused} onClick={onPause} />
             <GearBtn selected={panel === 'menu'} onClick={onGear} />
@@ -186,7 +210,6 @@ function GearBtn({ selected, onClick }: { selected: boolean; onClick: () => void
 }
 
 function PauseBtn({ selected, onClick }: { selected: boolean; onClick: () => void }) {
-  // Paused shows play: the icon is the action you get, not the state you are in.
   return (
     <IconButton
       art={selected ? UI_BTN_PLAY : UI_BTN_PAUSE}
@@ -231,6 +254,31 @@ const IconButton = memo(function IconButton({
     </button>
   )
 })
+
+function ConsumableChip({
+  art,
+  n,
+  title,
+  body,
+}: {
+  art: string
+  n: number
+  title: string
+  body: string
+}) {
+  const [hot, setHot] = useState(false)
+  return (
+    <div
+      className="relative pointer-events-auto flex items-center gap-1"
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+    >
+      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" dangerouslySetInnerHTML={{ __html: art }} />
+      <span className="text-sm font-semibold tabular-nums">{n}</span>
+      {hot && <CalloutHover placement="below" title={title} description={body} />}
+    </div>
+  )
+}
 
 const FaceBtn = memo(function FaceBtn({
   art,

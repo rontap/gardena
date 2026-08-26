@@ -34,6 +34,8 @@ One shared bank on `World`, not three. Each seam it gets `POINTS_PER_DAY` 3, and
 
 `grantPoints(n)`: `World.points += n`. `pickSkill(member, slot)` spends 1 from the same bank.
 
+HUD remaining-points count is `World.points`. Derived. Not a second field.
+
 `dismissRecap()` is the only recap exit — [[mechanics/day]]. Grants `POINTS_PER_DAY`, then `seam = play`, `banner = 2`. No pick.
 
 Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop — [[mechanics/contracts]].
@@ -122,6 +124,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - tax: expansion formula then `× (1 − 0.02 × tier)` then min $1 — [[mechanics/expansion]]
 - water-study: unlocks water lens. Water lens gated until owned
 - land-study: unlocks land lens
+- Vehicle interactions lens (`vehicles`) is `unlock-vehicles` in `done`, not a family-study row — [[mechanics/vehicles]]
 - inherit-land: `+1` expansion permit per tier, max 2. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
 - `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())`. Base (tier 0): always common. Per rank: `SEED_BANK_CHANCE` 5% uncommon, 1.2% rare, 0.2% heirloom, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]

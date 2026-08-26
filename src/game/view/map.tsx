@@ -110,7 +110,7 @@ import {
 import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
 import { VFX, VFX_REDUCED } from './vfx.ts'
 
-export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors'
+export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors' | 'vehicles'
 
 export type { Edge, Sprinkler, Vertex }
 
@@ -942,7 +942,7 @@ const Marks = memo(function Marks({
       addReaderWash(at)
     }
     if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
-    // 1x2 stores are not in PROP_ART: they must draw once, at their base origin.
+
     if (cell.kind === 'still' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
     }
@@ -1063,7 +1063,7 @@ const Marks = memo(function Marks({
       <g transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}>
         <Use art={HOUSE} />
       </g>
-      {world.driverVehicle(world.local) !== undefined &&
+      {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
         [
           ...world.hangars.flatMap(h => hangarPad(h.base).map(p => ({ kind: h.kind, col: h.base.col, row: h.base.row, p }))),
           ...[...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
@@ -1078,7 +1078,7 @@ const Marks = memo(function Marks({
             <Use art={HANGAR_RETURN} />
           </g>
         ))}
-      {world.driverVehicle(world.local) !== undefined &&
+      {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
         world.machinePads().map(p => (
           <g
             key={`pad-${p.side}-${p.col},${p.row}`}
@@ -1258,24 +1258,31 @@ const Marks = memo(function Marks({
         const s = TILE * 0.85
         const o = (TILE - s) / 2
         const noPermit = world.expandLeft() <= 0
-        const poor = noPermit || world.money < face.price
+        const poor = world.money < face.price
         return (
           <g
             key={`${face.id.cx},${face.id.cy}`}
-            className={noPermit ? undefined : 'cursor-pointer'}
+            className={noPermit ? 'group' : 'group cursor-pointer'}
             transform={`translate(${face.at.col * TILE},${face.at.row * TILE})`}
             onPointerDown={e => e.stopPropagation()}
             onPointerUp={e => {
               e.stopPropagation()
               if (noPermit) return
+              if (poor) return
               world.expand(face.id)
             }}
           >
-            <rect x={o} y={o} width={s} height={s} className={poor ? 'fill-dirt-dark' : 'fill-house'} />
+            <rect
+              x={o}
+              y={o}
+              width={s}
+              height={s}
+              className={noPermit ? 'fill-ink/40' : 'fill-ink/55 group-hover:fill-ink/75'}
+            />
             <foreignObject x={o} y={o} width={s} height={s} pointerEvents="none">
               <div
                 className={`flex h-full w-full items-center justify-center gap-0.5 leading-none ${
-                  noPermit ? 'text-base text-ink/50' : poor ? 'text-lg text-ink/50' : 'text-lg text-ink'
+                  noPermit ? 'text-base text-house/50' : poor ? 'text-lg text-house/50' : 'text-lg text-house'
                 }`}
               >
                 {noPermit ? (
@@ -1333,7 +1340,7 @@ function lensFill(
   aoe: boolean,
   g: number,
 ): { fill: string; op: number; hard: boolean } | undefined {
-  if (lens === 'off') return undefined
+  if (lens === 'off' || lens === 'vehicles') return undefined
   if (lens === 'rarity') {
     if (cell.kind !== 'growing' && cell.kind !== 'ripe' && cell.kind !== 'dead') return undefined
     if (cell.plant.rarity === 'common') return { fill: WASH, op: 0.35, hard: false }

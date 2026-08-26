@@ -12,7 +12,7 @@ Working notes for the game as it runs. Not a version gallery.
 | `docs/architecture/` | Modules, types, who owns what. Not a file-tree dump of a patch. |
 | `docs/ui/` | HUD, docks, inspect, place, copy. |
 | `docs/art/` | Palette, SVG rules, named assets. |
-| `docs/standards/` | How code, tests, and notes are written. |
+| `docs/standards/` | How code, tests, and notes are written. Player changelog authorship: [[standards/update-notes]]. |
 | `docs/infra/` | GitHub Actions, Pages, release. Not game rules. |
 | `docs/agents/` | Who writes where. |
 | `docs/plans/` | Roadmap. Not rules. |
@@ -40,3 +40,4 @@ Decisions and contracts. Not tutorials. Working notes describe the game as it ru
 
 - Version filenames (`beta-6`, `v0.3`) in working folders.
 - Restate code.
+- Player changelog copy in `docs/`. Authorship: [[standards/update-notes]]. File: `src/game/ui/changelog.md`. Developer history stays [[changelog]].

@@ -15,6 +15,7 @@ React + Tailwind sketches only when `src/` exists and the contract is complete.
 - Invent mechanics or copy.
 - Invent visual identity.
 - Lorem, dummy journeys, placeholder screens.
+- Version numbers, wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Always, unless the task requires comparing regressions **and** the user EXPLICITLY allowed it. Do not invent player copy. [[standards/update-notes]]
 
 ## Job
 

@@ -15,6 +15,7 @@ Read [[canon]], [[stack]], every path in the prompt. Write `src/`. No handoff te
 - Scaffold Vite.
 - Comments, JSDoc, `TODO`, `FIXME`, `any`.
 - Put documentation in code. It goes in `docs/**/*.md`.
+- Version numbers, wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Always, unless the task requires comparing regressions **and** the user EXPLICITLY allowed it. Do not invent player copy. [[standards/update-notes]]
 
 ## Job
 

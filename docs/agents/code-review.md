@@ -8,6 +8,7 @@ Read [[canon]]. Apply `~/.grok/skills/code-review/SKILL.md` if present. Write th
 
 - Approve because it runs.
 - Invent issues.
+- Version numbers, wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Always, unless the task requires comparing regressions **and** the user EXPLICITLY allowed it. Do not invent player copy. [[standards/update-notes]]
 
 ## Bugs, not nits
 

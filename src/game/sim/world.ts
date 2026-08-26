@@ -3560,7 +3560,8 @@ export class World {
   private startResearchBody(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
-    if (id === 'unlock-smart-irrigation' && !this.done.has('unlock-adv-irrigation')) return
+    const req = RESEARCH[id].requires
+    if (req !== 'none' && !this.done.has(req)) return
     if (!this.researchOpen(id)) return
     const def = RESEARCH[id]
     if (this.money < def.cost) return

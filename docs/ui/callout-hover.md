@@ -2,14 +2,26 @@
 
 `CalloutHover` in `src/game/ui/callout-hover.tsx`. Chrome card, same rails as a main window. `w-64`. Title in `font-display` `text-xs`, then description `text-sm` `text-ink/75`, `whitespace-pre-line`.
 
-`description` is a `ReactNode`, not a string. Panels pass a fragment: the blurb, then — when the thing is blocked — a `mt-2 block font-bold text-roof` line saying **why**. That reason line is the contract: any disabled control that has a callout must explain itself there rather than just going gray.
+```
+placement: 'right' | 'below'
+```
 
-Sits `absolute top-0 left-full ml-2` of a `relative` host, so it hangs off the **right** of the open panel. `pointer-events-none`. Does not move the panel.
+Default `'right'`. `pointer-events-none`. Does not move the host.
+
+| placement | class |
+|---|---|
+| `right` | `absolute top-0 left-full z-30 ml-2` |
+| `below` | `absolute top-full right-0 z-30 mt-2` — no `left-full` |
+
+`description` is a `ReactNode`, not a string. Panels pass a fragment: the blurb, then — when the thing is blocked — a `mt-2 block font-bold text-roof` line saying **why**. That reason line is the contract: any disabled control that has a callout must explain itself there rather than just going gray.
 
 Host:
 
-- [[ui/family]] — wrap around the Family `Chrome`
-- Shop / Research — `Dock` `aside`
+- [[ui/family]] — wrap around the Family `Chrome`. `right`.
+- Shop / Research — `Dock` `aside`. `right`.
+- Market Overlay `aside` — board offer + active cancel. `right`. [[ui/contracts]] [[ui/market]]
+- `#debug-contracts` Chrome `aside`. `right`. Host OfferCard, not guest-dead. [[ui/cheat]]
+- Top-ribbon expand / points chips. `below`. Host is the chip (`relative`). Not Overlay. Not a `Panel`. [[ui/hud]]
 
 Hover sets the tip, leave clears it. Hosts hold `{ title, description, why? }` and render `why` as the roof line.
 

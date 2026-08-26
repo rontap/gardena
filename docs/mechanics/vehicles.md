@@ -26,10 +26,16 @@ Vehicles I remains. Not collision. Not vehicle-detector. Click-walk speed unchan
 | `src/game/sim/vehicle.test.ts` | named invariants |
 | `src/game/ui/hangar.tsx` | hangar cue: buy Quad / Tractor / three trailers / list / Deploy (stored vehicle; tractor may hitch a stored trailer or none) / Refill. No 6-slot. No cargo. |
 | `src/game/ui/vehicle.tsx` | parked Quad: 6 slots + Embark. parked tractor: trailer cargo if hitched + Embark. Parked dialog unchanged — no dash cargo |
-| `src/game/view/map.tsx` | paint field quad / tractor / attached trailer; hide gardener while seated; hangar + silo + machine pad arrows view-only, local driver only; pad opacity 0.5, 1 iff that pad action legal |
+| `src/game/view/map.tsx` | `Lens` += `vehicles`. Paint field quad / tractor / attached trailer; hide gardener while seated; hangar + silo + machine pad arrows view-only, iff local driver OR `lens === 'vehicles'`; same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`; pad opacity 0.5, 1 iff that pad action legal |
 | `src/game/view/camera.ts` | follow local actor. View-local. Not sim |
 
 Do not create `src/` here.
+
+## Lens
+
+`Lens` += `vehicles` on `src/game/view/map.tsx`. View-local, not `World`. Unhidden after `unlock-vehicles` in `done`. Not a family-study row. leaveShop / Esc still only force pipes / sensors off.
+
+Paint hangar-return + machine pad arrows (`HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`) iff local seat is a driver OR `lens === 'vehicles'`. Driving still paints with this lens off. Pad opacity 0.5; 1 iff that pad action legal. Not sim. Not logged.
 
 ## Defs
 
@@ -227,7 +233,7 @@ House / starter pump / truck still not delete targets.
 
 `isSolid` += hangar.
 
-Pad arrows: view-only, only while local driver. Not sim. Not logged. `Act.dock` reads hangar `hangarPad` only. Silo pad click is not Dock. Only hangar pads store.
+Pad arrows: view-only, iff local driver OR `lens === 'vehicles'`. Same `HANGAR_RETURN`. Not sim. Not logged. Driving still paints with this lens off. `Act.dock` reads hangar `hangarPad` only. Silo pad click is not Dock. Only hangar pads store.
 
 ## Silos
 
@@ -241,7 +247,7 @@ Shop SKUs. 2×3, door south, no rotate, same instance all 6 cells. Origin = clic
 
 Starter 1×2 `seed-silo` / **Seed silo** stays. Not these SKUs.
 
-Inert: walk-up look name only. No dialog. No cue. No merge. `isSolid`. Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows while local driver (view-only): two arrows, `siloPad`. Not Dock. Hangar still `hangarPad` three cells.
+Inert: walk-up look name only. No dialog. No cue. No merge. `isSolid`. Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows iff local driver OR `lens === 'vehicles'` (view-only): two arrows, `siloPad`. Same `HANGAR_RETURN`. Not Dock. Hangar still `hangarPad` three cells.
 
 ## Buy / deploy / store
 
@@ -396,7 +402,7 @@ takeupPad(base)  = { row: base.row + h, col: base.col + i } for i in 0..w-1
 
 Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad (hangar `Act.dock`). Else no-op.
 
-Paint: local driver only. Opacity 0.5; 1 iff that pad’s Load or Unload is legal.
+Paint: iff local driver OR `lens === 'vehicles'`. Same `PAD_DROP` / `PAD_TAKE`. Driving still paints with this lens off. Opacity 0.5; 1 iff that pad’s Load or Unload is legal.
 
 ## Load / Unload
 
@@ -450,7 +456,7 @@ Enter: if this seat is a driver → `Act.disembark`. Else closest parked field v
 
 Seated `Act.click` is not dismount. Click while driving: no-op for field acts (same as today’s place-while-seated no-op). Do not start coast-walk. Click unowned while seated: no-op. Place while seated: no-op.
 
-Pad click is not Return. Pad arrows stay view-only, still only while local driver. Dock reads hangar `hangarPad`. Silo pad click is not Dock.
+Pad click is not Return. Pad arrows stay view-only, iff local driver OR `lens === 'vehicles'`. Dock reads hangar `hangarPad`. Silo pad click is not Dock.
 
 ## Parked
 

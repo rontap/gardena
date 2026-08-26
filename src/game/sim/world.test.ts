@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   ADDITIVE_CAP_LITERS,
+  BULK_UP_CRAFTED_STEP,
+  BULK_UP_STEP,
   COMPOST_LITERS,
   COMPOST_SECONDS,
   CONTAINERS,
@@ -10,7 +12,10 @@ import {
   GRIND_MAX,
   GRIND_MIN,
   SILO_SEED_CAP,
+  SPEECH_S,
   SPRINKLER_TILE_RATE,
+  STACK_MAX,
+  STACK_MAX_CRAFTED,
   STILL_WATER,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_USES,
@@ -414,7 +419,6 @@ describe('beta-2 invariants', () => {
     expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 32, seconds: 45 })
     expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 140, seconds: 140, tree: 'plants' })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
-    expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 15, seconds: 40 })
     expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 12, seconds: 40 })
     expect(RESEARCH['unlock-water-storage']).toMatchObject({ cost: 30, seconds: 70 })
     expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 25, seconds: 50 })
@@ -713,7 +717,7 @@ describe('beta-4 invariants', () => {
     expect(g.crop).toBe('none')
   })
 
-  test('box fruit N rolls work hopper dump box empty overflow drops', () => {
+  test('fruit stack N hopper dump hand empty overflow drops', () => {
     const n = 3
     const w = grindWorld(11)
     w.seats[0].inventory.forEach((_, i) => {
@@ -721,17 +725,13 @@ describe('beta-4 invariants', () => {
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: {
-        kind: 'box',
-        cap: 5,
-        cargo: { kind: 'stack', goods: 'fruit', stack: { crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5, freshness: 1, bio: true } },
-      },
+      item: { kind: 'fruit', crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5, freshness: 1, bio: true },
     }
     w.click(AT)
     w.tick(DT_MAX)
     expect(w.seats[0].workTotal).toBe(0.4)
     for (let i = 0; i < 10; i++) w.tick(DT_MAX)
-    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'box' && w.seats[0].hand.item.cargo.kind).toBe('empty')
+    expect(w.seats[0].hand.kind).toBe('empty')
     const g = w.cell(AT)
     expect(g.kind === 'grinder' && g.units).toBe(n)
     for (let i = 0; i < 120; i++) w.tick(DT_MAX)
@@ -759,7 +759,6 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-heirloom'].name).toBe('Heirloom crops')
     expect(RESEARCH['unlock-fertilizer'].name).toBe('Synthetic fertilizer')
     expect(RESEARCH['unlock-better-tools'].name).toBe('Better gardening tools')
-    expect(RESEARCH['unlock-large-box'].name).toBe('Fruit boxes')
     expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
     expect(RESEARCH['unlock-chest'].name).toBe('Chest')
     expect(RESEARCH['unlock-water-storage'].name).toBe('Water storage')
@@ -800,19 +799,8 @@ describe('beta-4 invariants', () => {
     })
   })
 
-  test('skuLabel buy-box is Fruit box', () => {
-    expect(skuLabel('buy-box')).toBe('Fruit box')
-  })
-
-  test('fruit box gated on Fruit boxes research; better pickaxe shown after pickaxe research', () => {
-    expect(SKUS['buy-box'].unlock).toBe('start')
+  test('better pickaxe shown after pickaxe research', () => {
     const w = new World()
-    expect(w.skuOpen('buy-box')).toBe(true)
-    expect(w.skuShown('buy-box')).toBe(true)
-    expect(SKUS['buy-box-large'].unlock).toBe('unlock-large-box')
-    expect(w.skuOpen('buy-box-large')).toBe(false)
-    w.done.add('unlock-large-box')
-    expect(w.skuOpen('buy-box-large')).toBe(true)
     expect(w.skuShown('buy-pickaxe')).toBe(true)
     expect(w.skuShown('buy-better-pickaxe')).toBe(false)
     w.done.add('unlock-pickaxe')
@@ -1683,7 +1671,7 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.0. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.1. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
@@ -2103,7 +2091,7 @@ describe('1.5.2', () => {
     expect(w.seats[0].hand.kind).toBe('empty')
   })
 
-  test("Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Box in hand: into box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Shovel: no drop, `weedChance = −0.3`. Box cargo `{ kind: 'stack'; goods: 'weed'; count }`. Compost accepts boxed weeds (`COMPOST_VALUE.weed`).", () => {
+  test("Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weeds in hand merge up to the stack cap; full is a no-op that says so. Shovel: no drop, `weedChance = −0.3`.", () => {
     const w = new World()
     const soil = bed()
     w.setCell(AT, { kind: 'weed', soil, weed: new Weed(0) })
@@ -2117,16 +2105,12 @@ describe('1.5.2', () => {
     const soil2 = bed()
     const at2 = { col: 11, row: 12 }
     w.setCell(at2, { kind: 'weed', soil: soil2, weed: new Weed(0) })
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'box', cap: 5, cargo: { kind: 'empty' } } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed', count: 1 } }
     w.seats[0].actor.x = at2.col + 0.5
     w.seats[0].actor.y = at2.row + 0.5
     w.enqueue({ act: 'pickup', at: at2 })
     w.tick(DT_MAX)
-    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'box' && w.seats[0].hand.item.cargo).toEqual({
-      kind: 'stack',
-      goods: 'weed',
-      count: 1,
-    })
+    expect(w.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'weed', count: 2 } })
     expect(soil2.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
     const soil3 = bed()
     const at3 = { col: 12, row: 12 }
@@ -2286,5 +2270,144 @@ describe('1.8 permits and points', () => {
     expect(cell.slots).toHaveLength(FREEZER_LARGE_SLOTS)
     expect(w.prizeFreezers).toBe(0)
     expect(w.skuShown('buy-freezer-large')).toBe(false)
+  })
+})
+
+describe('1.9 stacks', () => {
+  function ripeAt(w: World, at: { col: number; row: number }, crop: AnnualId, rarity: Rarity): void {
+    w.setCell(at, { kind: 'ripe', soil: bed(), plant: new Plant(crop, rarity) })
+  }
+
+  function pickAt(w: World, at: { col: number; row: number }): void {
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 0.5
+    w.enqueue({ act: 'harvest', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+  }
+
+  test('Hand merges same-kind only. Fruit picks onto the held stack up to `STACK_MAX`.', () => {
+    const w = new World(1)
+    w.seats[0].hand = { kind: 'empty' }
+    for (let i = 0; i < STACK_MAX; i++) {
+      const at = { col: 10 + i, row: 12 }
+      ripeAt(w, at, 'carrot', 'common')
+      pickAt(w, at)
+    }
+    const hand = handOf(w)
+    expect(hand.kind === 'hold' && hand.item.kind === 'fruit' && hand.item.count).toBe(STACK_MAX)
+  })
+
+  test('A full hand refuses the merge, keeps the crop on the plant, and says so.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 12 }
+    ripeAt(w, at, 'carrot', 'common')
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+    }
+    expect(w.prompt(at)).toEqual({ kind: 'blocked', text: 'My hand is full!' })
+    pickAt(w, at)
+    expect(w.cell(at).kind).toBe('ripe')
+    const hand = w.seats[0].hand
+    expect(hand.kind === 'hold' && hand.item.kind === 'fruit' && hand.item.count).toBe(STACK_MAX)
+  })
+
+  test('Clicking a ripe plot with a full hand speaks `HAND_FULL`, not the wrong-tool line.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 12 }
+    ripeAt(w, at, 'carrot', 'common')
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+    }
+    w.click(at)
+    expect(w.speech).toEqual({ kind: 'say', text: 'My hand is full!', left: SPEECH_S })
+    expect(w.seats[0].queue).toHaveLength(0)
+  })
+
+  test('A different crop or rarity does not merge; the plant keeps its fruit.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 12 }
+    ripeAt(w, at, 'carrot', 'common')
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+    }
+    pickAt(w, at)
+    expect(w.cell(at).kind).toBe('ripe')
+    ripeAt(w, at, 'carrot', 'common')
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'rare', count: 1, unitSale: 4, freshness: 1, bio: true },
+    }
+    pickAt(w, at)
+    expect(w.cell(at).kind).toBe('ripe')
+  })
+
+  test('Bottled and jarred goods cap at `STACK_MAX_CRAFTED`.', () => {
+    const w = new World(1)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'wine', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 1, freshness: 1, bio: true })).toBe(STACK_MAX)
+    expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
+  })
+
+  test('`bulk-up` adds `BULK_UP_STEP` per rank, `BULK_UP_CRAFTED_STEP` for bottled and jarred goods. Player skill, three ranks, no gate.', () => {
+    const w = new World(1)
+    expect(SKILLS['bulk-up'].member).toBe('player')
+    expect(SKILLS['bulk-up'].maxTier).toBe(3)
+    expect(SKILLS['bulk-up'].gate).toEqual({ kind: 'none' })
+    expect(PLAYER_SKILL_IDS.includes('bulk-up')).toBe(true)
+    w.family.player.owned.set('bulk-up', 2)
+    expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX + 2 * BULK_UP_STEP)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
+  })
+
+  test('Pick up merges what fits and leaves the remainder on the ground.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 12 }
+    w.setCell(at, { kind: 'empty', soil: bed() })
+    w.drops.push({
+      at,
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 8, unitSale: 4, freshness: 1, bio: true },
+    })
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 5, unitSale: 4, freshness: 1, bio: true },
+    }
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 0.5
+    w.enqueue({ act: 'pickup', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const hand = w.seats[0].hand
+    expect(hand.kind === 'hold' && hand.item.kind === 'fruit' && hand.item.count).toBe(STACK_MAX)
+    const left = w.drops.filter(d => d.at.col === at.col && d.at.row === at.row)
+    expect(left).toHaveLength(1)
+    expect(left[0].item.kind === 'fruit' && left[0].item.count).toBe(13 - STACK_MAX)
+  })
+
+  test('Pick up of an item that does not stack still swaps hand and ground.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 12 }
+    w.setCell(at, { kind: 'empty', soil: bed() })
+    w.drops.push({ at, item: { kind: 'sapling', tree: 'apple' } })
+    w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 0.5
+    w.enqueue({ act: 'pickup', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const hand = w.seats[0].hand
+    expect(hand.kind === 'hold' && hand.item.kind).toBe('sapling')
+    const left = w.drops.filter(d => d.at.col === at.col && d.at.row === at.row)
+    expect(left).toHaveLength(1)
+    expect(left[0].item.kind).toBe('shovel')
+  })
+
+  test('Boxes are gone: no `buy-box` SKU, no `unlock-large-box` research, no box in the almanac.', () => {
+    expect(Object.keys(SKUS).includes('buy-box')).toBe(false)
+    expect(Object.keys(SKUS).includes('buy-box-large')).toBe(false)
+    expect(Object.keys(RESEARCH).includes('unlock-large-box')).toBe(false)
+    expect(SHOP_SKUS.includes('buy-box' as SkuId)).toBe(false)
   })
 })

@@ -1,5 +1,5 @@
 import { type CropClass } from '../defs/crops.ts'
-import { BOX_LARGE, BOX_SMALL, CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_LARGE_SLOTS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
+import { CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_LARGE_SLOTS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
@@ -70,7 +70,7 @@ import {
   type RouteId,
   type VehicleId,
 } from './ids.ts'
-import type { FruitStack, Hand, Item, Slot, Stack } from './item.ts'
+import type { FruitStack, Hand, Item, Slot } from './item.ts'
 import type {
   Active,
   CompanyBook,
@@ -2422,12 +2422,6 @@ function readItem(v: unknown): Item | undefined {
       if (liters === undefined || capacityLiters === undefined) return undefined
       return { kind: o.kind, liters, capacityLiters }
     }
-    case 'box': {
-      if (o.cap !== BOX_SMALL && o.cap !== BOX_LARGE) return undefined
-      const cargo = readCargo(o.cargo)
-      if (cargo === undefined) return undefined
-      return { kind: 'box', cap: o.cap, cargo }
-    }
     case 'seeds': {
       if (!isAnnual(o.crop)) return undefined
       const rarity = readRarity(o.rarity)
@@ -2507,39 +2501,6 @@ function readItem(v: unknown): Item | undefined {
     default:
       return undefined
   }
-}
-
-function readCargo(v: unknown): Extract<Item, { kind: 'box' }>['cargo'] | undefined {
-  const o = obj(v)
-  if (o === undefined) return undefined
-  if (o.kind === 'empty') return { kind: 'empty' }
-  if (o.kind !== 'stack') return undefined
-  if (o.goods === 'seeds') {
-    const stack = readStack(o.stack)
-    if (stack === undefined) return undefined
-    return { kind: 'stack', goods: 'seeds', stack }
-  }
-  if (o.goods === 'fruit') {
-    const stack = readFruitStack(o.stack)
-    if (stack === undefined) return undefined
-    return { kind: 'stack', goods: 'fruit', stack }
-  }
-  if (o.goods === 'weed') {
-    const count = num(o.count)
-    if (count === undefined) return undefined
-    return { kind: 'stack', goods: 'weed', count }
-  }
-  return undefined
-}
-
-function readStack(v: unknown): Stack | undefined {
-  const o = obj(v)
-  if (o === undefined) return undefined
-  if (!isAnnual(o.crop)) return undefined
-  const rarity = readRarity(o.rarity)
-  const count = num(o.count)
-  if (rarity === undefined || count === undefined) return undefined
-  return { crop: o.crop, rarity, count }
 }
 
 function readFruitStack(v: unknown): FruitStack | undefined {

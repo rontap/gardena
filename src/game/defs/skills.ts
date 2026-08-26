@@ -9,12 +9,14 @@ import type {
     SkillId,
 } from '../sim/ids.ts'
 import {isTreeId} from '../sim/ids.ts'
+import {BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED} from './items.ts'
 import {SEED_BANK_CHANCE} from './rarity.ts'
 
 export const TEND_WORK = 0.7
 
 export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'boots',
+    'bulk-up',
     'driving-classes',
     'tending',
     'seed-bank',
@@ -79,6 +81,7 @@ export type SkillGate =
 
 export type SkillEffect =
     | { kind: 'walk'; mul: 1.05 }
+    | { kind: 'bulk-up' }
     | { kind: 'driving-classes' }
     | { kind: 'machine'; mul: 1.05 }
     | { kind: 'tend' }
@@ -125,6 +128,14 @@ function row<Id extends SkillId>(
 
 export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     boots: row('boots', 'player', 'Boots', 'You walk faster. Each rank adds 5%.', 5, {kind: 'walk', mul: 1.05}),
+    'bulk-up': row(
+        'bulk-up',
+        'player',
+        'Bulk up',
+        `You carry taller stacks. Each rank adds ${BULK_UP_STEP} to the pile you can hold, ${BULK_UP_CRAFTED_STEP} for bottled and jarred goods.`,
+        3,
+        {kind: 'bulk-up'},
+    ),
     'driving-classes': row(
         'driving-classes',
         'player',
@@ -377,6 +388,8 @@ export function skillBlurb(id: SkillId, tier: number): string {
     switch (id) {
         case 'boots':
             return `You walk ${5 * tier}% faster.`
+        case 'bulk-up':
+            return `You carry up to ${STACK_MAX + BULK_UP_STEP * tier} of a kind in hand, ${STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP * tier} for bottled and jarred goods.`
         case 'driving-classes':
             return `You drive ${5 * tier}% faster and burn ${5 * tier}% less fuel.`
         case 'machinery':

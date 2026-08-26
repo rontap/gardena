@@ -1,11 +1,10 @@
-import { BOX_LARGE, BOX_SMALL } from '../defs/items.ts'
 import type { Item } from './item.ts'
 import { isTilled } from './plot.ts'
 import { STALL_IDS, binCount } from './stall.ts'
 import { waterBand } from './soil.ts'
 import type { World } from './world.ts'
 
-export type TutorialStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+export type TutorialStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 export type Tutorial =
   | { kind: 'off' }
@@ -20,7 +19,7 @@ export function startTutorial(path: 'new' | 'load' | 'upload' | 'start_now', slo
 export function check(world: World, tutorial: Tutorial): Tutorial {
   if (tutorial.kind === 'off') return tutorial
   const d = dones(world, tutorial)
-  let need: TutorialStep = 10
+  let need: TutorialStep = 9
   for (const n of STEPS) {
     if (!d[n]) {
       need = n
@@ -49,15 +48,13 @@ export function ready(step: TutorialStep, world: World, tutorial: Extract<Tutori
     case 7:
       return h.ripe
     case 8:
-      return h.hasBox
-    case 9:
       return h.hasFruit || h.stallStocked
-    case 10:
+    case 9:
       return h.sold
   }
 }
 
-const STEPS: TutorialStep[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const STEPS: TutorialStep[] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 function dones(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>): { [K in TutorialStep]: boolean } {
   const h = helpers(world, tutorial)
@@ -68,10 +65,9 @@ function dones(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>): { [K 
     4: h.planted,
     5: h.researchStarted,
     6: h.poured || h.ripe || h.hasFruit || h.sold,
-    7: h.hasBox,
-    8: h.hasFruit,
-    9: h.sold,
-    10: false,
+    7: h.hasFruit,
+    8: h.sold,
+    9: false,
   }
 }
 
@@ -101,12 +97,7 @@ function helpers(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>) {
     }
   })
   const holdingSeeds = seat.hand.kind === 'hold' && seat.hand.item.kind === 'seeds'
-  const hasBox = found.some(it => it.kind === 'box' && (it.cap === BOX_SMALL || it.cap === BOX_LARGE))
-  const hasFruit = found.some(
-    it =>
-      it.kind === 'fruit' ||
-      (it.kind === 'box' && it.cargo.kind === 'stack' && it.cargo.goods === 'fruit' && it.cargo.stack.count >= 1),
-  )
+  const hasFruit = found.some(it => it.kind === 'fruit')
   const researchStarted = world.job.kind === 'run' || world.done.size > 0
   const stallStocked = STALL_IDS.some(id => binCount(world.stall[id]) > 0)
   return {
@@ -115,7 +106,6 @@ function helpers(world: World, tutorial: Extract<Tutorial, { kind: 'on' }>) {
     planted,
     wilted,
     ripe,
-    hasBox,
     hasFruit,
     researchStarted,
     stallStocked,

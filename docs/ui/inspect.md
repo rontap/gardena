@@ -57,7 +57,7 @@ Sapling in hand (`{ kind: 'sapling'; tree }`), valid owned 1×2 untilled `ground
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
 
-Ripe annual including sugar-cane: **Harvest**. Empty hand or fruit box that accepts. `{ act: 'harvest' }`. Cane is fruit, not sugar liters. Not holding sugar.
+Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop+rarity in hand under the stack cap. `{ act: 'harvest' }`. Same crop at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters. Not holding sugar.
 
 Held `weed-spray`, tilled plot: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Not untilled. [[mechanics/weeds]]
 

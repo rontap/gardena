@@ -10,7 +10,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 |---|---|---|
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot lemon cherry |
-| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket box box-large fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
+| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve smart-valve sprinkler sprinkler-vert sprinkler-large |

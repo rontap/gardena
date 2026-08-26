@@ -2,7 +2,7 @@
 
 `weed` `grass` — [[mechanics/weeds]].
 
-Empty hand gathers `{ kind: 'weed' }` / `{ kind: 'grass' }`. Box in hand: weed cargo if empty or already weed, up to cap; else no-op. Shovel weed: no drop. Compost takes gathered and boxed weeds — [[mechanics/inventory]].
+Empty hand gathers `{ kind: 'weed' }` / `{ kind: 'grass' }`. Same kind in hand merges up to the stack cap; full is a no-op that says so. Shovel weed: no drop. Compost takes gathered weeds — [[mechanics/inventory]].
 
 `weed-spray` — [[items/tools]].
 

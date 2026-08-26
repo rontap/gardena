@@ -49,19 +49,17 @@ Shovel, better shovel, pickaxe, hardened pickaxe, bucket, large bucket. Uses / w
 
 Weed spray: `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES`. Illegal: `usesLeft` 0 as held. — [[mechanics/weeds]]
 
-## Boxes
+## Stacks
 
-`BOX_SMALL`, `BOX_LARGE` — preference. Small in the shop from the start. Large `unlock-large-box` only.
+Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+rarity, spirit by kind+rarity, wine by rarity, jam by crop, rotten / dead by `CropClass`, weed and grass by kind alone.
 
-```
-cargo =
-  | { kind: 'empty' }
-  | { kind: 'stack'; goods: 'seeds'; stack: Stack }
-  | { kind: 'stack'; goods: 'fruit'; stack: FruitStack }
-  | { kind: 'stack'; goods: 'weed'; count: number }
-```
+Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract — preference. `bulk-up` adds `BULK_UP_STEP` per rank, `BULK_UP_CRAFTED_STEP` on the crafted cap — [[mechanics/family]]. `World.stackMax(item)` is derived, not a field.
 
-One kind: fruit or seeds (one crop+rarity) or weeds. Harvest and pickup fill the box if it accepts. Weed pull: into the box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Sugar-cane is fruit. Not sugar liters. Not saplings. Not spirit / wine / jam / oil / flour / extract. Illegal: box weed+fruit mix. Illegal: weed+seeds mix.
+The cap is on growth, not possession. Harvest, pickup, weed pull, and barrel collect stop at it. A stack handed over whole — silo take, house / chest / vehicle swap — may exceed it; those containers keep their own caps and merge freely.
+
+Refused merge: `say(HAND_FULL)`, prompt `blocked` `My hand is full!`. The crop stays on the plant, the remainder stays on the ground, the hand is not emptied. A different kind or identity is not a refusal — pickup still swaps hand and ground.
+
+Liters are not counts. Buckets, fertilizer / synth / compost bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them.
 
 ## Fertilizer / compost
 
@@ -69,11 +67,11 @@ Ordinary bag `FERT_BAG_LITERS`, always in the shop. Synthetic `SYNTH_BAG_LITERS`
 
 Compost box, `unlock-compost`, plants tree, no prerequisite — priced level with `unlock-fertilizer`. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
-`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts boxed weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
+`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
 
 ## Grind
 
-Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. One annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` per fruit tick — preference. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
+Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` per fruit tick — preference. A held fruit stack dumps all of it. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
 
 Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
@@ -87,6 +85,6 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
 `inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. Composting research `unlock-compost`.
 
-`inventory.box` — A box is `Item` `{ kind: 'box' }` in hand, house, chest, or drops. Cap `BOX_SMALL` or `BOX_LARGE`. Cargo empty | seeds | fruit | weed. Not `CompostBox`. Not an unconfirmed SKU. Illegal: box weed+fruit mix. Illegal: weed+seeds mix.
+`inventory.stack` — Countable items merge in hand by kind and identity only. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per rank. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`.
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.

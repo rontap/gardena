@@ -25,7 +25,7 @@ Picture `ui-market-stall`. `svg` `viewBox="0 0 240 120"` `h-24 w-full`. One **Se
 
 Empty: `quote.rows.length === 0` → **No produce.** Else one row per `quote.rows` (stocked `StallGoodId`).
 
-Crop row: box face + count (sum of rarities). Sugar: sugar-bag face, one bin, count only, no rarity tabs. Consign sugar at the truck — [[mechanics/market]]. Count is `binCount(world.stall[row.good])`, not a quote field.
+Crop row: fruit face + count (sum of rarities). Sugar: sugar-bag face, one bin, count only, no rarity tabs. Consign sugar at the truck — [[mechanics/market]]. Count is `binCount(world.stall[row.good])`, not a quote field.
 
 Row: `flex items-center gap-3 bg-ink/8 px-3 py-2 text-base font-semibold`. `ItemFace` + count, then `ml-auto flex items-center gap-3 text-sm tabular-nums`: `{Math.round(row.mul * 100)}%`, direction, `{recoverDays}` as `Nd`.
 

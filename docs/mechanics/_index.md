@@ -89,7 +89,7 @@ See [[canon]].
 | family.skills | [[mechanics/family]] |
 | inventory.slots | [[mechanics/inventory]] |
 | inventory.compost | [[mechanics/inventory]] |
-| inventory.box | [[mechanics/inventory]] |
+| inventory.stack | [[mechanics/inventory]] |
 | inventory.containers | [[mechanics/inventory]] |
 | machines.sugar | [[mechanics/machines]] |
 | machines.barrel | [[mechanics/machines]] |

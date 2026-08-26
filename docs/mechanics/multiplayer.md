@@ -24,7 +24,7 @@ Seat 0 starter kit is the solo kit — [[mechanics/inventory]].
 
 Guest drop → `presence: 'away'`. Seat stays in `seats`. World keeps ticking. That actor vanishes.
 
-`tick` skips that actor's walk/work and that seat's hand/inventory freshness (box cargo included). Field / chest / ground / vehicle-slot rot continues. Freezer slots never tick freshness. Away while driving: that vehicle `driver = 'none'`, field pose kept, speed coasts to 0.
+`tick` skips that actor's walk/work and that seat's hand/inventory freshness. Field / chest / ground / vehicle-slot rot continues. Freezer slots never tick freshness. Away while driving: that vehicle `driver = 'none'`, field pose kept, speed coasts to 0.
 
 Away occupies a slot. `hello` when `seats.length === 4` → `reject: full`. Rejoin is the same `playerId`.
 
@@ -58,7 +58,7 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.guest` — Guest may: shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce, lever, button, lamp, AND, OR, NOT, pulser, counter, water/fert/harvest/water-system/day sensors, vehicle detector, traffic light; dump mill/jam/still/barrel/grinder like compost; `load`/`unload` mill/jam/still/compost/seed-silo/additive-store; `placeSmartValve`, wires (`armWire` `placeWire` delete wire), toggle lever/button, water/harvest/counter/day HUD, stride; hangar cue HUD, `buy-hangar` + three silo SKUs + `buy-traffic-light` in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, `Act.route` (create/assign/add/remove/reorder/rename/delete, Start, hangar Automate), delete empty hangar. Guest consign fills contract bins. Guest `placeWire` permitted. Guest may not: chest/freezer `swapChest`, chest/freezer `load`/`unload`, pipes, `placePipe`, manual valves, sprinklers, tiles, fences, expand, research start, family pick, `acceptContract` `cancelContract` `reorderContract`, cheat. Guest Unload chest no-op. Guest Load chest no-op. Guest contract cmds never enter a bundle. Auto tick chest/freezer load/unload is not a guest cmd.
 
-`mp.away` — `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.
+`mp.away` — `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness. Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.
 
 `mp.hello` — `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 

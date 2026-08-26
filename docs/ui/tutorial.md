@@ -8,7 +8,7 @@ Show iff `kind === 'on'` and `ready(step)`. One step. No counter. No card while 
 
 `Chrome` `relative w-80 px-4 pt-4 pb-3`. Body `relative z-20 text-base leading-relaxed text-ink`.
 
-Card `pointer-events-auto` only on step 10. Steps 1–9: clicks on the card do not skip (they pass through). Step 10: the card is the hit; click → `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss.
+Card `pointer-events-auto` only on step 9. Steps 1–8: clicks on the card do not skip (they pass through). Step 9: the card is the hit; click → `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss.
 
 Assumption: step 6 copy names 5 L (`CONTAINERS.bucket`).
 
@@ -20,7 +20,6 @@ Assumption: step 6 copy names 5 L (`CONTAINERS.bucket`).
 | 4 | You only carry one item. Plant the seeds. |
 | 5 | Open Research and start something. |
 | 6 | A plant is thirsty. Pick up the bucket (5 L), fill it at the pump, water the plant. |
-| 7 | Something is ripe. Buy a fruit box and place it. |
-| 8 | Pick any fruit. |
-| 9 | Drop it at the truck and Sell all. |
-| 10 | That's the tour. You're on your own. |
+| 7 | Something is ripe. Pick it, then pick another — the same fruit stacks in your hand. |
+| 8 | Drop it at the truck and Sell all. |
+| 9 | That's the tour. You're on your own. |

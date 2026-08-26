@@ -111,6 +111,7 @@ import {
   weedInner,
 } from './svgs.ts'
 import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
+import { barrelWorking, jamWorking, millWorking, stillWorking } from '../sim/machine.ts'
 import { VFX, VFX_REDUCED } from './vfx.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors' | 'vehicles'
@@ -246,8 +247,7 @@ export function MapView({ world, cam, rev, lens, editor, hover, onHover, onCam, 
     tipDrop !== undefined &&
     (tipDrop.item.kind === 'shovel' ||
       tipDrop.item.kind === 'pickaxe' ||
-      tipDrop.item.kind === 'container' ||
-      tipDrop.item.kind === 'box')
+      tipDrop.item.kind === 'container')
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
 
@@ -892,6 +892,7 @@ const Marks = memo(function Marks({
     tap: TAP,
   }
   const boxes: { col: number; row: number }[] = []
+  const busy: { id: VfxId; col: number; row: number }[] = []
   world.forEachCell((at, cell) => {
     const key = `${at.col},${at.row}`
     if (isPlot(cell) && cell.kind !== 'untilled' && cell.kind !== 'infertile') {
@@ -949,6 +950,8 @@ const Marks = memo(function Marks({
       addReaderWash(at)
     }
     if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
+    const busyId = busyVfx(cell, at)
+    if (busyId !== undefined) busy.push({ id: busyId, col: at.col, row: at.row })
 
     if (cell.kind === 'still' && cell.base.col === at.col && cell.base.row === at.row) {
       props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
@@ -1058,8 +1061,7 @@ const Marks = memo(function Marks({
         const tool =
           d.item.kind === 'shovel' ||
           d.item.kind === 'pickaxe' ||
-          d.item.kind === 'container' ||
-          d.item.kind === 'box'
+          d.item.kind === 'container'
         return (
           <DropGfx
             key={i}
@@ -1323,6 +1325,9 @@ const Marks = memo(function Marks({
           setBursts(x => x.filter(y => y.seq !== seq))
         }}
       >
+        {busy.map(m => (
+          <VfxLayers key={`${m.id}:${m.col},${m.row}`} id={m.id} col={m.col} row={m.row} />
+        ))}
         {bursts.map(b => (
           <VfxLayers key={b.seq} id={b.id} col={b.at.col} row={b.at.row} burst seq={b.seq} />
         ))}
@@ -1919,6 +1924,15 @@ function vertRot(variant: Sprinkler['variant'], facing: 'ns' | 'ew' | undefined)
   return variant === 'vert' && facing === 'ns' ? 90 : 0
 }
 
+function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefined {
+  if (cell.kind !== 'mill' && cell.kind !== 'jam' && cell.kind !== 'still' && cell.kind !== 'barrel') return undefined
+  if (cell.base.col !== at.col || cell.base.row !== at.row) return undefined
+  if (cell.kind === 'mill') return millWorking(cell) ? 'dust' : undefined
+  if (cell.kind === 'jam') return jamWorking(cell) ? 'dust' : undefined
+  if (cell.kind === 'still') return stillWorking(cell) ? 'steam' : undefined
+  return barrelWorking(cell) ? 'brew' : undefined
+}
+
 function VfxLayers({
   id,
   col,
@@ -1950,7 +1964,7 @@ function VfxLayers({
           key={i}
           className="vfx-frame"
           data-vfx-i={i}
-          style={{ ['--vfx-t']: i / def.frames.length } as CSSProperties}
+          style={{ ['--vfx-t']: i / def.slots } as CSSProperties}
           href={symHref(f)}
         />
       ))}

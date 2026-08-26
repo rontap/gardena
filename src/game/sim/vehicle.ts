@@ -547,16 +547,6 @@ function cargoCouldTake(cargo: Cargo, item: Item): boolean {
 
 function copyItem(item: Item): Item {
   switch (item.kind) {
-    case 'box': {
-      if (item.cargo.kind === 'empty') return { kind: 'box', cap: item.cap, cargo: { kind: 'empty' } }
-      if (item.cargo.goods === 'weed') {
-        return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'weed', count: item.cargo.count } }
-      }
-      if (item.cargo.goods === 'seeds') {
-        return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'seeds', stack: { ...item.cargo.stack } } }
-      }
-      return { kind: 'box', cap: item.cap, cargo: { kind: 'stack', goods: 'fruit', stack: { ...item.cargo.stack } } }
-    }
     case 'shovel':
     case 'pickaxe':
     case 'container':
@@ -691,16 +681,6 @@ function takeItemCount(item: Item, n: number): boolean {
   if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
     item.liters -= n
     return item.liters <= 0
-  }
-  if (item.kind === 'box' && item.cargo.kind === 'stack') {
-    if (item.cargo.goods === 'weed') {
-      item.cargo.count -= n
-      if (item.cargo.count <= 0) item.cargo = { kind: 'empty' }
-      return false
-    }
-    item.cargo.stack.count -= n
-    if (item.cargo.stack.count <= 0) item.cargo = { kind: 'empty' }
-    return false
   }
   return true
 }

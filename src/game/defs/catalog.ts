@@ -1,8 +1,6 @@
 
 import { CROPS } from './crops.ts'
 import {
-  BOX_LARGE,
-  BOX_SMALL,
   GRASS_GROW,
   GRASS_PACK,
   GRASS_WATER_PER_SEC,
@@ -50,7 +48,6 @@ const BETTER_SHOVEL_T = 'Same jobs, faster and longer lasting. ${uses} uses, ${w
 const PICKAXE_T = 'Breaks rocks and very hard soil. ${uses} uses, ${workSeconds}s per mine.'
 const BETTER_PICKAXE_T = 'Same jobs, faster and longer lasting. ${uses} uses, ${workSeconds}s per mine.'
 const BUCKET_T = 'Holds ${n} L. Fill at a pump or well. 1 L fills one plot.'
-const BOX_T = 'Allows you to gather up to ${cap} of the same fruits at the same time. Also holds seeds or berries of one kind.'
 const FERT_T =
   'Holds ${n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing. Empty bags are thrown away.'
 const SYNTH_T =
@@ -189,18 +186,6 @@ export function catalogEntries(): CatalogEntry[] {
         capacityLiters: CONTAINERS['large-bucket'].capacityLiters,
       },
       blurb: fill(BUCKET_T, { n: CONTAINERS['large-bucket'].capacityLiters }),
-    },
-    {
-      id: 'box',
-      title: 'Fruit box',
-      icon: { kind: 'box', cap: BOX_SMALL, cargo: { kind: 'empty' } },
-      blurb: fill(BOX_T, { cap: BOX_SMALL }),
-    },
-    {
-      id: 'box-large',
-      title: 'Large fruit box',
-      icon: { kind: 'box', cap: BOX_LARGE, cargo: { kind: 'empty' } },
-      blurb: fill(BOX_T, { cap: BOX_LARGE }),
     },
     {
       id: 'fertilizer',

@@ -34,11 +34,11 @@ Same `Soil`. Drinks the whole time.
 
 Empty hand on a weed: drop `{ kind: 'weed' }`, plot `empty`, same soil, `weedChance = 0`.
 
-Box in hand: into the box if empty or already weed cargo, up to cap; else no-op (do not empty-hand).
+Weed in hand: merge up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand) — [[mechanics/inventory]].
 
 Shovel: plot `empty`, same soil, **no drop**, `weedChance = −0.3`. 1 use.
 
-Held item cannot gather except box as above. Compost takes gathered weeds and boxed weeds — [[mechanics/inventory]].
+Any other held item cannot gather. Compost takes gathered weeds — [[mechanics/inventory]].
 
 ## Spray
 
@@ -68,4 +68,4 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 
 `weeds.spray` — Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES`. Illegal: `usesLeft` 0 as held (throw away at 0). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.
 
-`weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Box in hand: into box if empty or already weed cargo, up to cap; else no-op (do not empty-hand). Shovel: no drop, `weedChance = −0.3`. Box cargo `{ kind: 'stack'; goods: 'weed'; count }`. Compost accepts boxed weeds (`COMPOST_VALUE.weed`).
+`weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.

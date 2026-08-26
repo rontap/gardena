@@ -1,3 +1,17 @@
+# 1.9.1 Stacks
+
+Fruit, seeds, and weeds stack in your hand. Fruit boxes are gone.
+
+- 🎉 Added mechanic: Stacks. Countable goods of the same kind pile in your hand up to 10, or 6 for bottles and jars.
+  - Harvest, pickup, and weed pull stop at the cap and say your hand is full. A chest or silo can still hand you more than that.
+  - Liters do not stack this way.
+- ✨ Added mechanic: Bulk up. A player skill. Each rank lets you carry 5 more of a kind, 3 more for bottled and jarred goods.
+- ✨ Added ui: Machine work. A mill and jam maker puff dust while they run, a still steams, a barrel bubbles, and digging bursts dirt.
+- 🔧 Changed building: Seed grinder. previously, a fruit box dumped every fruit in it, now a held fruit stack dumps all of it.
+- 🔧 Changed mechanic: Tutorial. previously, it asked you to buy a fruit box, now it teaches stacking by picking a second fruit.
+- 🚫 Removed item: Fruit box. You no longer buy a crate to carry a haul.
+- 🚫 Removed item: Large fruit box. The large crate and its research project are gone.
+
 # 1.9.0 Automated Dispatch I
 
 Quad and tractor can run a shared loop of stops. A traffic light holds a truck only when that light is on the list.

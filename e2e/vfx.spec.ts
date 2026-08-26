@@ -123,6 +123,128 @@ test('burst mounts, then removes itself when its animation ends', async ({ page 
   await expect(burst).toHaveCount(0, { timeout: 5_000 })
 })
 
+test('mill dust mounts while it grinds and unmounts when it stops', async ({ page }) => {
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.buy('buy-mill')
+    w.confirmPlace({ col: 18, row: 6 })
+    const c = w.cell({ col: 18, row: 6 })
+    c.recipe = 'olive'
+    c.units = 5
+    w.ping()
+  })
+  const dust = page.locator('[data-vfx="dust"]')
+  await expect(dust).toHaveCount(1)
+  await expect(dust.locator('.vfx-frame')).toHaveCount(2)
+
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.cell({ col: 18, row: 6 }).units = 0
+    w.ping()
+  })
+  await expect(page.locator('[data-vfx="dust"]')).toHaveCount(0)
+})
+
+test('a wired-off mill shows nothing', async ({ page }) => {
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.buy('buy-mill')
+    w.confirmPlace({ col: 18, row: 6 })
+    const c = w.cell({ col: 18, row: 6 })
+    c.recipe = 'olive'
+    c.units = 5
+    c.inn = 1
+    w.ping()
+  })
+  await expect(page.locator('[data-vfx="dust"]')).toHaveCount(0)
+})
+
+test('a barrel bubbles while it ages and stops when it is done', async ({ page }) => {
+  await page.evaluate(async () => {
+    const w = (window as unknown as { __world: any }).__world
+    const items = await import('/src/game/defs/items.ts')
+    w.buy('buy-barrel')
+    w.confirmPlace({ col: 18, row: 6 })
+    const c = w.cell({ col: 18, row: 6 })
+    c.feed = [{ rarity: 'common', count: items.BARREL_CAP }]
+    c.age = 0
+    w.ping()
+  })
+  const brew = page.locator('[data-vfx="brew"]')
+  await expect(brew).toHaveCount(1)
+  await expect(brew.locator('.vfx-frame')).toHaveCount(4)
+
+  await page.evaluate(async () => {
+    const w = (window as unknown as { __world: any }).__world
+    const items = await import('/src/game/defs/items.ts')
+    w.cell({ col: 18, row: 6 }).age = items.BARREL_AGE
+    w.ping()
+  })
+  await expect(page.locator('[data-vfx="brew"]')).toHaveCount(0)
+})
+
+test('a still with no water shows no steam; steam follows progress', async ({ page }) => {
+  await page.evaluate(async () => {
+    const w = (window as unknown as { __world: any }).__world
+    const items = await import('/src/game/defs/items.ts')
+    w.buy('buy-still')
+    w.confirmPlace({ col: 18, row: 6 })
+    const c = w.cell({ col: 18, row: 6 })
+    c.feed = [{ crop: 'potato', rarity: 'common', count: items.STILL_CAP }]
+    c.progress = 0
+    w.ping()
+  })
+  await expect(page.locator('[data-vfx="steam"]')).toHaveCount(0)
+
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.cell({ col: 18, row: 6 }).progress = 0.1
+    w.ping()
+  })
+  const steam = page.locator('[data-vfx="steam"]')
+  await expect(steam).toHaveCount(1)
+  await expect(steam.locator('.vfx-frame')).toHaveCount(4)
+})
+
+test('rest slots leave a gap: every frame is off for the back half of the cycle', async ({ page }) => {
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.buy('buy-mill')
+    w.confirmPlace({ col: 18, row: 6 })
+    const c = w.cell({ col: 18, row: 6 })
+    c.recipe = 'olive'
+    c.units = 5
+    w.ping()
+  })
+  await expect(page.locator('[data-vfx="dust"]')).toHaveCount(1)
+
+  const seen = await page.evaluate(() => {
+    const frames = [...document.querySelectorAll('[data-vfx="dust"] .vfx-frame')]
+    const anims = frames.map(f => f.getAnimations()[0])
+    const out: string[] = []
+    for (let t = 0; t < 1600; t += 400) {
+      anims.forEach(a => {
+        a.currentTime = t
+      })
+      out.push(frames.map(f => getComputedStyle(f).opacity).join(''))
+    }
+    return out
+  })
+  expect(seen).toEqual(['10', '01', '00', '00'])
+})
+
+test('digging bursts dirt', async ({ page }) => {
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world: any }).__world
+    w.burst('dig', { col: 16, row: 9 })
+    w.ping()
+  })
+  const burst = page.locator('.vfx-burst[data-vfx="dig"]')
+  await expect(burst).toHaveCount(1)
+  await expect(burst.locator('.vfx-frame')).toHaveCount(4)
+  await expect(burst).toHaveCount(0, { timeout: 5_000 })
+})
+
 test.describe('reduced motion', () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })

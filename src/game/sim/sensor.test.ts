@@ -61,7 +61,7 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 1.9.0. No migrate. 1.62 file → version.', () => {
+  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 1.9.1. No migrate. 1.62 file → version.', () => {
     expect(SAVE_VERSION).toBe(1.9)
     expect(PROTOCOL).toBe(1.9)
     const w = new World(1)
@@ -1213,7 +1213,7 @@ describe('1.6 sensors', () => {
     if (light.kind !== 'traffic-light') return
     expect(light.inn).toBe(0)
     expect(light.out).toBe(0)
-    expect(lookText(w, A, false)).toContain('Traffic light')
+    expect(lookText(w, { kind: 'cell', at: A }, false)).toContain('Traffic light')
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-traffic-light' })).toBe(true)
     expect(isSeqIn({ kind: 'cell', at: A, port: 'in' }, light)).toBe(true)
     expect(portXY({ kind: 'cell', at: A, port: 'in' }, 'traffic-light')).toEqual({ x: A.col + 0.5, y: A.row })
@@ -1231,9 +1231,10 @@ describe('1.6 sensors', () => {
     v.running = true
     w.tick(DT_MAX)
     expect(v.cursor).toBe(0)
-    expect(w.cell(A).kind).toBe('traffic-light')
-    if (w.cell(A).kind !== 'traffic-light') return
-    expect(w.cell(A).out).toBe(1)
+    const waiting = w.cell(A)
+    expect(waiting.kind).toBe('traffic-light')
+    if (waiting.kind !== 'traffic-light') return
+    expect(waiting.out).toBe(1)
     put(w, 'buy-lever', B)
     w.armWire({ kind: 'cell', at: B, port: 'out' })
     w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })

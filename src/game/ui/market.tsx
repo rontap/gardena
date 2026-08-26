@@ -575,13 +575,5 @@ function boxFace(id: StallGoodId): Item {
   }
   if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, count: 1, unitSale: 1 }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
-  return {
-    kind: 'box',
-    cap: 5,
-    cargo: {
-      kind: 'stack',
-      goods: 'fruit',
-      stack: { crop: id, rarity: 'common', count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true },
-    },
-  }
+  return { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true }
 }

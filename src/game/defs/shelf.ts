@@ -41,7 +41,7 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       { label: 'Digging', skus: ['buy-shovel', 'buy-better-shovel'] },
       { label: 'Mining', skus: ['buy-pickaxe', 'buy-better-pickaxe'] },
-      { label: 'Carry', skus: ['buy-bucket', 'buy-bucket-large', 'buy-box', 'buy-box-large'] },
+      { label: 'Carry', skus: ['buy-bucket', 'buy-bucket-large'] },
     ],
   },
   {

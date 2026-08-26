@@ -68,8 +68,6 @@ const UTIL_IDS = [
   'better-pickaxe',
   'bucket',
   'large-bucket',
-  'box',
-  'box-large',
   'fertilizer',
   'synth-fertilizer',
   'weed-spray',
@@ -602,8 +600,8 @@ function FreshnessConcept() {
       <div>
         Ripe fruit loses freshness while it sits on the plant. When freshness goes to empty, the plot becomes{' '}
         <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>Rotten produce</AlmanacLink>. Picked fruit keeps losing
-        freshness in your hand, the house, a <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>Chest</AlmanacLink>, on
-        the ground, and in a fruit box until you{' '}
+        freshness in your hand, the house, a <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>Chest</AlmanacLink>, and on
+        the ground until you{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Sell all</AlmanacLink>. A{' '}
         <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> holds freshness still.{' '}
         <AlmanacLink to={{ tab: 'utility', id: 'sugar' }}>Sugar</AlmanacLink> does not lose freshness.
@@ -835,8 +833,7 @@ function AutomationConcept() {
         <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>Chest</AlmanacLink> or{' '}
         <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> holds what you picked; the{' '}
         <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> keeps fruit from{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>losing freshness</AlmanacLink>. A{' '}
-        <AlmanacLink to={{ tab: 'utility', id: 'box' }}>Fruit box</AlmanacLink> carries a haul. The{' '}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>losing freshness</AlmanacLink>. The{' '}
         <AlmanacLink to={{ tab: 'automation', id: 'hangar' }}>Vehicle hangar</AlmanacLink> and field silos sit on the
         Automation list with those machines.
       </div>

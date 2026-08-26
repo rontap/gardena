@@ -78,7 +78,7 @@ The bulk line has its own state, `world.buyPacksFail(id)`. `'Locked'` hides the 
 
 Seeds: crops `pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-watermelon` `pack-olive` `pack-grape` `pack-raspberry` `pack-vanilla` `pack-sugar-cane`, then Ground cover `pack-grass` — [[mechanics/plants]].
 
-Tools: Digging shovel → better → rotary, Mining pickaxe → better → diamond, Carry buckets then boxes. Tiers read along the group — [[items/tools]].
+Tools: Digging shovel → better → rotary, Mining pickaxe → better → diamond, Carry buckets. Tiers read along the group — [[items/tools]].
 
 Supplies: Feeds `buy-fertilizer` `buy-synth-fertilizer` `buy-weed-spray`, Pantry `buy-sugar`, label **Sugar**. None of them arm.
 

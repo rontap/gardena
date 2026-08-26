@@ -72,7 +72,7 @@ Crop goods: stock and worth per rarity × `bio`. Illegal: fruit consign that dro
 
 ## Hand / Item
 
-No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit / box fruit / grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Illegal: `weed-spray.usesLeft` 0 as held. Illegal: box weed+fruit mix. Illegal: weed+seeds mix. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
+No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Illegal: `weed-spray.usesLeft` 0 as held. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
 
 ## Recap / Seam
 

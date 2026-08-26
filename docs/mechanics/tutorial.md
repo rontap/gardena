@@ -21,13 +21,13 @@ Decided when play starts. Not re-checked mid-farm.
 
 On only for first-time New Game with no stored farm.
 
-After step 10 card click: off for this farm this session. A later load is off because the slot exists, or a later New Game is off because the slot exists. Mid-tour load does not resume a step.
+After step 9 card click: off for this farm this session. A later load is off because the slot exists, or a later New Game is off because the slot exists. Mid-tour load does not resume a step.
 
 ## State
 
 Not a `World` field. Not a `Save` field. Sim does not change.
 
-App holds a session value: `{ kind: 'off' }` or `{ kind: 'on'; step: 1..10; poured; sold }`.
+App holds a session value: `{ kind: 'off' }` or `{ kind: 'on'; step: 1..9; poured; sold }`.
 
 `check(world, tutorial)` is read-only on `World`. It returns the next `Tutorial`.
 
@@ -41,13 +41,13 @@ One step at a time. Show `step` iff `kind === 'on'` and `ready(step)`. No card w
 
 No step counter. Do not block HUD. Do not force camera.
 
-Step 10: show until the player clicks the tutorial card. Then `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss. Clicks on the card on steps 1–9 do not skip.
+Step 9: show until the player clicks the tutorial card. Then `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss. Clicks on the card on steps 1–8 do not skip.
 
 ## Skip-ahead
 
 Each check: total recompute of `done`, not +1 from a counter.
 
-`need` = least `n` in 1..10 with `!done(n)`.
+`need` = least `n` in 1..9 with `!done(n)`.
 
 If `need > step`, `step = need`. If `done(step)`, `step = need`. `step` never decreases.
 
@@ -65,9 +65,7 @@ Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not
 
 `items` = hand (if hold) ∪ house `inventory` ∪ every chest `slots` ∪ `drops[].item`.
 
-`hasBox` = some item `{ kind: 'box' }`. Cap `BOX_SMALL` or `BOX_LARGE`. SKU `buy-box` / `buy-box-large` pay on confirm and drop the item. Armed SKU is not a box. `CompostBox` is not a box. — [[mechanics/inventory]] `inventory.box`.
-
-`hasFruit` = some item `{ kind: 'fruit' }`, or a box whose `cargo` is `{ kind: 'stack'; goods: 'fruit' }` with `count >= 1`. Not sugar.
+`hasFruit` = some item `{ kind: 'fruit' }`. Not sugar.
 
 `wilted` = a `growing` cell with `waterBand(soil.water, plant.stats(modifiers).waterTolerance) === 'red'`. Existing water-red band. Drown is water red too. No extra thirst flag.
 
@@ -87,10 +85,9 @@ Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not
 | 4 | `holdingSeeds` | `planted` |
 | 5 | `planted` | `researchStarted` |
 | 6 | `wilted` | `poured` or `ripe` or `hasFruit` or `sold` |
-| 7 | `ripe` | `hasBox` |
-| 8 | `hasBox` | `hasFruit` |
-| 9 | `hasFruit` or `stallStocked` | `sold` |
-| 10 | `sold` | click the tutorial card |
+| 7 | `ripe` | `hasFruit` |
+| 8 | `hasFruit` or `stallStocked` | `sold` |
+| 9 | `sold` | click the tutorial card |
 
 Player tasks (not copy):
 
@@ -100,10 +97,9 @@ Player tasks (not copy):
 4. Plant those seeds on tilled (`empty` → `growing`). Hand is one item.
 5. `startResearch` any id.
 6. Bucket at `DOOR`. Fill at the pump is the existing fill. Pour on the plant. Bucket starts full; fill is not a completion predicate.
-7. Buy a fruit box, confirm place.
-8. Pick any fruit (harvest ripe annual into hand or box, or pick up fruit).
-9. Truck, **Sell all**.
-10. Goodbye. Card click. Off.
+7. Pick any fruit, then a second of the same crop onto the same stack — [[mechanics/inventory]].
+8. Truck, **Sell all**.
+9. Goodbye. Card click. Off.
 
 Starter: shovel in hand, bucket drop at `DOOR`, seeds in the silo. [[mechanics/inventory]].
 
@@ -121,8 +117,8 @@ Crops, buildings, skills, economy stay as they are. Shop prices out of scope. HU
 
 `tutorial.thirst` — Step 6 ready is `waterBand(...) === 'red'` on a `growing` plant. No extra thirst flag.
 
-`tutorial.sell` — Step 9 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
+`tutorial.sell` — Step 8 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
 
-`tutorial.dismiss` — Step 10 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
+`tutorial.dismiss` — Step 9 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
 
 `tutorial.no-force` — Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.

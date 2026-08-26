@@ -1,6 +1,6 @@
 # Tools
 
-`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`. Boxes: `box` `BOX_SMALL`, `box-large` `BOX_LARGE`. Cargo empty | seeds | fruit | weed.
+`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`.
 
 Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
@@ -15,10 +15,10 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 | better-pickaxe | buy-better-pickaxe | unlock-pickaxe |
 | diamond-pickaxe | — | four-star contract prize |
 
-Other SKUs: `buy-bucket` `buy-bucket-large` `buy-box` `buy-box-large` `buy-weed-spray`.
+Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 
 `weed-spray` — `{ kind: 'weed-spray'; usesLeft }`, `WEED_SPRAY_USES`. Hand tool. House, not additive store. Not a bag. Not liters. Click tilled: [[mechanics/weeds]].
 
 Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 
-Hand, house, uses, fill, box weed: [[mechanics/inventory]].
+Hand, house, uses, fill, stacks: [[mechanics/inventory]].

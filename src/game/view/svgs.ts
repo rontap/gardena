@@ -77,8 +77,6 @@ import shovel from '../../assets/items/item-shovel.svg?raw'
 import better from '../../assets/items/item-better-shovel.svg?raw'
 import pickaxe from '../../assets/items/item-pickaxe.svg?raw'
 import betterPickaxe from '../../assets/items/item-better-pickaxe.svg?raw'
-import box from '../../assets/items/item-box.svg?raw'
-import largeBox from '../../assets/items/item-large-box.svg?raw'
 import bucket from '../../assets/items/item-bucket.svg?raw'
 import largeBucket from '../../assets/items/item-large-bucket.svg?raw'
 import itemFertilizer from '../../assets/items/item-fertilizer.svg?raw'
@@ -220,6 +218,7 @@ import uiBtnPlay from '../../assets/ui/ui-btn-play.svg?raw'
 import uiBtnMultiplayer from '../../assets/ui/ui-btn-multiplayer.svg?raw'
 import uiMenu from '../../assets/ui/ui-menu.svg?raw'
 import skillBoots from '../../assets/skills/skill-boots.svg?raw'
+import skillBulkUp from '../../assets/skills/skill-bulk-buying.svg?raw'
 import skillDrivingClasses from '../../assets/skills/skill-driving-classes.svg?raw'
 import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
 import skillTending from '../../assets/skills/skill-tending.svg?raw'
@@ -275,7 +274,7 @@ import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import { ANNUAL_IDS, TREE_IDS, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
-import { skuItem, type Face, type Item } from '../sim/item.ts'
+import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/market.h.ts'
 
 const CROPS: { readonly [K in CropId]: string } = {
@@ -391,7 +390,6 @@ export function itemInner(item: Face): string {
   if (item.kind === 'weed-spray') return inner(itemWeedSpray)
   if (item.kind === 'synth') return inner(itemSynth)
   if (item.kind === 'compost') return inner(itemCompost)
-  if (item.kind === 'box') return boxInner(item)
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.rarity))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
   if (item.kind === 'sugar') return inner(itemSugar)
@@ -522,8 +520,6 @@ export function researchInner(id: ResearchId): string {
       return inner(itemJamMachine)
     case 'unlock-heirloom':
       return inner(skillHeirloom)
-    case 'unlock-large-box':
-      return itemInner({ kind: 'box', cap: 14, cargo: { kind: 'empty' } })
     case 'unlock-irrigation':
       return itemInner({ kind: 'tap' })
     case 'unlock-water-storage':
@@ -605,18 +601,6 @@ export function pipeFit(
   if (s && w) return { html: PIPE_L, rot: 90 }
   if (w && n) return { html: PIPE_L, rot: 180 }
   return { html: PIPE_L, rot: 270 }
-}
-
-function boxInner(item: Extract<Item, { kind: 'box' }>): string {
-  const crate = inner(item.cap === 5 ? box : largeBox)
-  if (item.cargo.kind === 'empty') return crate
-  const cargo =
-    item.cargo.goods === 'weed'
-      ? weedInner(0, 'grow')
-      : item.cargo.goods === 'fruit'
-        ? stageOnly(FRUIT[item.cargo.stack.crop], fruitGroup(item.cargo.stack.rarity))
-        : cropInner(item.cargo.stack.crop, ripeGroup(item.cargo.stack.rarity))
-  return `${crate}<g transform="translate(7,7) scale(${10 / 24})">${cargo}</g>`
 }
 
 export const ACTOR = inner(actor)
@@ -788,6 +772,7 @@ export const PORTRAIT: { readonly [K in MemberId]: string } = {
 
 const SKILL_ART: { readonly [K in SkillId]: string } = {
   boots: inner(skillBoots),
+  'bulk-up': inner(skillBulkUp),
   'driving-classes': inner(skillDrivingClasses),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
@@ -900,7 +885,6 @@ export function qualityPip(rarity: Rarity): string | undefined {
 
 export function faceRarity(item: Face): Rarity | undefined {
   if (item.kind === 'seeds' || item.kind === 'fruit') return item.rarity
-  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods !== 'weed') return item.cargo.stack.rarity
   return undefined
 }
 

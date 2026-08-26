@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest'
-import { BOX_SMALL } from '../defs/items.ts'
 import { Act } from './log.ts'
 import { dump, parse } from './save.ts'
 import { Plant } from './plant.ts'
@@ -147,21 +146,13 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [2, 2], i: 0 })).toBe(false)
   })
 
-  test('presence === \'away\': tick skips that actor walk/work and that seat hand/inventory freshness (box cargo included). Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.', () => {
+  test('presence === \'away\': tick skips that actor walk/work and that seat hand/inventory freshness. Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.', () => {
     const w = new World(1)
     expect(w.join('g')).toBe(1)
     const s1 = w.seats[1]
     s1.hand = {
       kind: 'hold',
-      item: {
-        kind: 'box',
-        cap: BOX_SMALL,
-        cargo: {
-          kind: 'stack',
-          goods: 'fruit',
-          stack: { crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
-        },
-      },
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
     }
     s1.actor.x = 4
     s1.actor.y = 4
@@ -174,25 +165,13 @@ describe('1.1 multiplayer', () => {
     expect(ripe.kind).toBe('ripe')
     const field0 = ripe.kind === 'ripe' ? ripe.plant.freshness : -1
     w.away(1)
-    const box0 =
-      s1.hand.kind === 'hold' &&
-      s1.hand.item.kind === 'box' &&
-      s1.hand.item.cargo.kind === 'stack' &&
-      s1.hand.item.cargo.goods === 'fruit'
-        ? s1.hand.item.cargo.stack.freshness
-        : -1
+    const box0 = s1.hand.kind === 'hold' && s1.hand.item.kind === 'fruit' ? s1.hand.item.freshness : -1
     const x = s1.actor.x
     for (let i = 0; i < 20; i++) w.tick(DT_MAX)
     expect(s1.presence).toBe('away')
     expect(w.seats).toHaveLength(2)
     expect(s1.actor.x).toBe(x)
-    const box1 =
-      s1.hand.kind === 'hold' &&
-      s1.hand.item.kind === 'box' &&
-      s1.hand.item.cargo.kind === 'stack' &&
-      s1.hand.item.cargo.goods === 'fruit'
-        ? s1.hand.item.cargo.stack.freshness
-        : -1
+    const box1 = s1.hand.kind === 'hold' && s1.hand.item.kind === 'fruit' ? s1.hand.item.freshness : -1
     expect(box1).toBe(box0)
     const after = w.cell(AT)
     expect(after.kind === 'ripe' && after.plant.freshness).toBeLessThan(field0)

@@ -19,8 +19,10 @@ export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number
   'large-bucket': { capacityLiters: 10 },
 }
 
-export const BOX_SMALL = 5
-export const BOX_LARGE = 14
+export const STACK_MAX = 10
+export const STACK_MAX_CRAFTED = 6
+export const BULK_UP_STEP = 5
+export const BULK_UP_CRAFTED_STEP = 3
 export const CHEST_SLOTS = 9
 export const GRIND_WORK = 2
 export const GRIND_MIN = 1

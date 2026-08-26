@@ -26,7 +26,7 @@ Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same
 
 ## Dump
 
-Intents `still` `barrel` `jam` `mill` at `Coord`. `dest` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Box fruit. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]].
+Intents `still` `barrel` `jam` `mill` at `Coord`. `dest` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]].
 
 Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, saplings, tools: refuse.
 
@@ -135,7 +135,7 @@ Age baked into `unitSale` at collect: `WINE_SALE × SPIRIT_RARITY[r] × ageMul`.
 
 ## Freezer
 
-`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` skips freezer slots (box cargo included). Chest / house / hand / ground / mill hopper fruit still tick. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
+`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` skips freezer slots. Chest / house / hand / ground / mill hopper fruit still tick. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
 
 `swapChest` on a freezer cell. Guest: not. Host cue reuses chest.
 
@@ -155,7 +155,7 @@ Merge same keys; sugar by liters; else by count; weighted `unitSale`.
 
 Produce: mill, jam, still, compost-box, grinder. East store insert if present; else drop `frontOf`. Barrel collect into hand.
 
-Spirit / wine / jam / oil / flour / extract: not box cargo. Not compost unless named (sugar only).
+Spirit / wine / jam / oil / flour / extract: not compost unless named (sugar only).
 
 ## Pads
 

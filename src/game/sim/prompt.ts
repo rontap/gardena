@@ -1,6 +1,6 @@
 import type { Rarity } from '../defs/rarity.ts'
 import { inWorld, type Coord } from './building.ts'
-import { onCell } from './drop.ts'
+import { onCell, topIndex } from './drop.ts'
 import type { CropId, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
 import {
@@ -16,7 +16,7 @@ import {
   STILL_CAP,
 } from '../defs/items.ts'
 import type { Grinder, JamMachine, Mill, PotStill, WineBarrel } from './building.ts'
-import { boxAccepts, cropName, organic, skuLabel, type Hand, type Item } from './item.ts'
+import { countable, cropName, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
 import {
   feedUnits,
   fruitCrop,
@@ -39,6 +39,7 @@ import { TREE_NAME } from '../defs/trees.ts'
 import { fillable, waterable, type Intent, type World } from './world.ts'
 
 export const NOT_OWNED = "I don't own this land"
+export const HAND_FULL = 'My hand is full!'
 
 export type Prompt =
   | { kind: 'intent'; text: string; intent: Intent }
@@ -353,7 +354,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (canConsign(w.act.hand)) return intent('Drop off', { act: 'consign' })
     return needSeeds(cell)
   }
-  if (onCell(w.drops, at).length > 0) return intent('Pick up', { act: 'pickup', at })
+  if (onCell(w.drops, at).length > 0) {
+    if (handFullFor(w, w.drops[topIndex(w.drops, at)].item)) return { kind: 'blocked', text: HAND_FULL }
+    return intent('Pick up', { act: 'pickup', at })
+  }
   if (cell.kind === 'seed-silo') return intent('Seed silo', { act: 'silo', at })
   if (cell.kind === 'additive-store') return intent('Additives', { act: 'additives', at })
   if (cell.kind === 'chest') return intent('Chest', { act: 'chest', at })
@@ -480,21 +484,17 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell)) {
     return intent('Spray', { act: 'weed-spray', at })
   }
-  if (cell.kind === 'ripe' && canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) {
-    return intent('Harvest', { act: 'harvest', at })
+  if (cell.kind === 'ripe') {
+    if (canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) return intent('Harvest', { act: 'harvest', at })
+    if (sameFruitInHand(w, cell.plant.crop, cell.plant.rarity)) return { kind: 'blocked', text: HAND_FULL }
   }
-  if (cell.kind === 'weed' && w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'box') {
-    const box = w.act.hand.item
-    const room =
-      box.cargo.kind === 'empty'
-        ? box.cap
-        : box.cargo.kind === 'stack' && box.cargo.goods === 'weed'
-          ? box.cap - box.cargo.count
-          : 0
-    if (room > 0) return intent('Pick up', { act: 'pickup', at })
-  }
-  if (w.act.hand.kind === 'empty' && (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass'))) {
-    return intent('Pick up', { act: 'pickup', at })
+  if (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass')) {
+    const kind = cell.kind === 'weed' ? 'weed' : 'grass'
+    if (w.act.hand.kind === 'empty') return intent('Pick up', { act: 'pickup', at })
+    if (w.act.hand.item.kind === kind) {
+      if (handFullFor(w, { kind, count: 1 })) return { kind: 'blocked', text: HAND_FULL }
+      return intent('Pick up', { act: 'pickup', at })
+    }
   }
   if (w.canTend(at)) return intent('Tend', { act: 'tend', at })
   if (w.act.hand.kind === 'empty') return intent('Move here', { act: 'walk', at })
@@ -543,8 +543,21 @@ export function wideSiteOk(w: World, at: Coord): boolean {
 
 function canHarvestHand(w: World, crop: CropId, rarity: Rarity): boolean {
   if (w.act.hand.kind === 'empty') return true
-  if (w.act.hand.item.kind !== 'box') return false
-  return boxAccepts(w.act.hand.item, 'fruit', crop, rarity, 1) > 0
+  const it = w.act.hand.item
+  return it.kind === 'fruit' && it.crop === crop && it.rarity === rarity && it.count < w.stackMax(it)
+}
+
+function sameFruitInHand(w: World, crop: CropId, rarity: Rarity): boolean {
+  if (w.act.hand.kind !== 'hold') return false
+  const it = w.act.hand.item
+  return it.kind === 'fruit' && it.crop === crop && it.rarity === rarity
+}
+
+function handFullFor(w: World, item: Item): boolean {
+  if (w.act.hand.kind !== 'hold') return false
+  const held = w.act.hand.item
+  if (!countable(held) || !countable(item) || !stackable(held, item)) return false
+  return held.count >= w.stackMax(held)
 }
 
 function canConsign(hand: Hand): boolean {
@@ -554,9 +567,6 @@ function canConsign(hand: Hand): boolean {
   if (it.kind === 'sugar') return it.liters > 0
   if (it.kind === 'spirit' || it.kind === 'wine' || it.kind === 'jam' || it.kind === 'oil' || it.kind === 'flour' || it.kind === 'extract') {
     return it.count >= 1
-  }
-  if (it.kind === 'box' && it.cargo.kind === 'stack' && it.cargo.goods === 'fruit') {
-    return it.cargo.stack.count >= 1
   }
   return false
 }

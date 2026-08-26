@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges">
+  <g id="f0">
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="9" y="9" width="2" height="2"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="14" y="10" width="2" height="2"/>
+  </g>
+  <g id="f1">
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="9" y="6" width="3" height="3"/>
+    <rect fill="#cfc6b0" fill-opacity="0.55" x="9" y="6" width="1" height="1"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="14" y="7" width="2" height="2"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="11" y="10" width="1" height="1"/>
+  </g>
+  <g id="f2">
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="8" y="3" width="3" height="3"/>
+    <rect fill="#cfc6b0" fill-opacity="0.55" x="8" y="3" width="1" height="1"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="14" y="4" width="2" height="2"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="11" y="7" width="1" height="1"/>
+  </g>
+  <g id="f3">
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="9" y="1" width="2" height="2"/>
+    <rect fill="#6b1f8c" fill-opacity="0.55" x="15" y="2" width="1" height="1"/>
+  </g>
+</svg>

@@ -127,6 +127,13 @@ body,
   100% { opacity: 0 }
 }
 
+@keyframes vfx-cut-8 {
+  0% { opacity: 1 }
+  12.49% { opacity: 1 }
+  12.5% { opacity: 0 }
+  100% { opacity: 0 }
+}
+
 @keyframes vfx-burst-life {
   0% { opacity: 1 }
   70% { opacity: 1 }

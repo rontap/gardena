@@ -10,10 +10,9 @@ const COPY: { readonly [K in TutorialStep]: string } = {
   4: 'You only carry one item. Plant the seeds.',
   5: 'Open Research and start something.',
   6: 'A plant is thirsty. Pick up the bucket (3 L), fill it at the pump, water the plant.',
-  7: 'Something is ripe. Buy a fruit box and place it.',
-  8: 'Pick any fruit.',
-  9: 'Drop it at the truck and Sell all.',
-  10: "That's the tour. You're on your own.",
+  7: 'Something is ripe. Pick it, then pick another — the same fruit stacks in your hand.',
+  8: 'Drop it at the truck and Sell all.',
+  9: "That's the tour. You're on your own.",
 }
 
 export function TutorialCard({
@@ -31,8 +30,8 @@ export function TutorialCard({
   return (
     <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
       <div
-        className={step === 10 ? 'pointer-events-auto' : undefined}
-        onClick={step === 10 ? onOff : undefined}
+        className={step === 9 ? 'pointer-events-auto' : undefined}
+        onClick={step === 9 ? onOff : undefined}
       >
         <Chrome className="relative w-80 px-4 pt-4 pb-3">
           <div className="relative z-20 text-base leading-relaxed text-ink">{COPY[step]}</div>

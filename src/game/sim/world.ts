@@ -1,9 +1,14 @@
 import {
+  BARREL_AGE,
   BARREL_CAP,
   BARREL_MATURE,
   COMPOST_NEED,
+  BULK_UP_CRAFTED_STEP,
+  BULK_UP_STEP,
   COMPOST_SECONDS,
   COUNTER_MAX,
+  STACK_MAX,
+  STACK_MAX_CRAFTED,
   CONTAINERS,
   HANGAR_H,
   HANGAR_W,
@@ -66,7 +71,6 @@ import {
 import { SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
-  CropId,
   DaughterSkillId,
   HusbandSkillId,
   MemberId,
@@ -134,20 +138,20 @@ import { Clock, DAY_SECONDS } from './clock.ts'
 import { onCell, topIndex, type Drop } from './drop.ts'
 import { generateChunk } from './gen.ts'
 import {
-  boxAdd,
-  boxAccepts,
-  boxAddFruit,
-  boxAddWeed,
   compostValue,
+  countable,
+  crafted,
   fruitStack,
+  mergeInto,
+  stackable,
   makeCompost,
   makeContainer,
   makePickaxe,
   makeShovel,
-  mergeUnitSale,
   organic,
   skuItem,
   toolName,
+  type Countable,
   type FruitStack,
   type Hand,
   type Item,
@@ -176,11 +180,14 @@ import {
   meanRarity,
   millAccept,
   millApply,
+  jamWorking,
   millNeed,
+  millWorking,
   millProduct,
   millProductName,
   mergeSugar,
   spiritKind,
+  stillReady,
   stillCropOf,
   takeCount,
 } from './machine.ts'
@@ -277,6 +284,7 @@ import {
   readPromptHit,
   valvePrompt,
   wellPrompt,
+  HAND_FULL,
   NOT_OWNED,
   type Prompt,
   type PromptHit,
@@ -1309,6 +1317,12 @@ export class World {
     return 40 + 15 * this.purchases
   }
 
+  stackMax(item: Countable): number {
+    return crafted(item)
+      ? STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP * this.skillTier('bulk-up')
+      : STACK_MAX + BULK_UP_STEP * this.skillTier('bulk-up')
+  }
+
   /** Expansion permits earned, from research, `inherit-land`, and contract prizes. */
   expandSlots(): number {
     return (
@@ -2298,7 +2312,7 @@ export class World {
       this.confirmPlace(at)
       return 'placed'
     }
-    if (this.act.place.kind === 'none' && inWorld(at, this.owned)) this.maybeSay(at)
+    if (this.act.place.kind === 'none' && inWorld(at, this.owned)) this.maybeSay(at, p.text)
     return 'blocked'
   }
 
@@ -2711,7 +2725,8 @@ export class World {
       made.kind === 'sensor-day' ||
       made.kind === 'water-system' ||
       made.kind === 'vehicle-detector' ||
-      made.kind === 'smart-valve'
+      made.kind === 'smart-valve' ||
+      made.kind === 'traffic-light'
     ) {
       return
     }
@@ -4302,7 +4317,7 @@ export class World {
   private finishWork(): void {
     const i = this.act.queue[0]
     if (i === undefined) return
-    if (i.act === 'shovel') this.doShovel(i.at)
+    if (i.act === 'shovel' && this.doShovel(i.at)) this.burst('dig', i.at)
     if (i.act === 'mine') this.doMine(i.at)
     if (i.act === 'plant') this.doPlant(i.at)
     if (i.act === 'water' && this.doWater(i.at)) {
@@ -4607,9 +4622,6 @@ export class World {
     const slot = (s: Slot) => {
       if (s.kind !== 'hold') return
       if (s.item.kind === 'fruit') rot(s.item)
-      if (s.item.kind === 'box' && s.item.cargo.kind === 'stack' && s.item.cargo.goods === 'fruit') {
-        rot(s.item.cargo.stack)
-      }
     }
     this.seats.forEach(s => {
       if (s.presence === 'away') return
@@ -4635,41 +4647,40 @@ export class World {
       const c = this.cell(at)
       if (c.kind === 'mill') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.inn === 1) continue
-        if (c.recipe === 'none') continue
+        const mill: Mill = c
+        if (!millWorking(c)) continue
         const need = millNeed(c.recipe)
-        if (c.units < need) continue
         c.progress += (dt * this.machineMul()) / MILL_WORK
         if (c.progress < 1) continue
         if (!this.emitProduct(at, c.base, millProduct(c.recipe))) continue
         c.progress = 0
         c.units -= need
-        if (c.units === 0) c.recipe = 'none'
+        if (c.units === 0) mill.recipe = 'none'
         this.track(at, c)
         dirty = true
         continue
       }
       if (c.kind === 'jam') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.inn === 1) continue
-        if (c.crop === 'none' || c.fruit < JAM_IN || c.sugar < JAM_SUGAR) continue
+        const jam: JamMachine = c
+        if (!jamWorking(c)) continue
         c.progress += (dt * this.machineMul()) / JAM_SECONDS
         if (c.progress < 1) continue
         if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) })) continue
         c.progress = 0
         c.fruit -= JAM_IN
         c.sugar -= JAM_SUGAR
-        if (c.fruit === 0) c.crop = 'none'
+        if (c.fruit === 0) jam.crop = 'none'
         this.track(at, c)
         dirty = true
         continue
       }
       if (c.kind === 'still') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.inn === 1) continue
-        if (feedUnits(c.feed) !== STILL_CAP) continue
+        if (!stillReady(c)) continue
         if (c.progress === 0) {
           if (!this.pullStillWater(c)) continue
+          dirty = true
         }
         c.progress += dt / STILL_SECONDS
         if (c.progress < 1) continue
@@ -4721,6 +4732,7 @@ export class World {
           c.feed = [{ rarity, count: BARREL_CAP }]
           c.n += 1
         }
+        if (was < BARREL_AGE && c.age >= BARREL_AGE) dirty = true
         this.track(at, c)
       }
     }
@@ -4952,8 +4964,8 @@ export class World {
     return true
   }
 
-  private doShovel(at: Coord): void {
-    if (!this.canShovel(at)) return
+  private doShovel(at: Coord): boolean {
+    if (!this.canShovel(at)) return false
     const c = this.cell(at)
     const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
     if (c.kind === 'tree') {
@@ -4962,7 +4974,7 @@ export class World {
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
       this.pulse = { text: 'Dig', at: { ...at } }
-      return
+      return true
     }
     const text =
       c.kind === 'dead'
@@ -4984,6 +4996,7 @@ export class World {
     s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
     this.pulse = { text, at: { ...at } }
+    return true
   }
 
   private canMine(at: Coord): boolean {
@@ -5141,8 +5154,9 @@ export class World {
     const c = this.cell(at)
     if (c.kind !== 'ripe') return false
     if (this.act.hand.kind === 'empty') return true
-    if (this.act.hand.item.kind !== 'box') return false
-    return boxAccepts(this.act.hand.item, 'fruit', c.plant.crop, c.plant.rarity, 1) > 0
+    const it = this.act.hand.item
+    if (it.kind !== 'fruit') return false
+    return it.crop === c.plant.crop && it.rarity === c.plant.rarity && it.count < this.stackMax(it)
   }
 
   private doHarvest(at: Coord): void {
@@ -5158,7 +5172,7 @@ export class World {
       this.act.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
       return
     }
-    if (this.act.hand.item.kind === 'box') boxAddFruit(this.act.hand.item, picked)
+    if (this.act.hand.item.kind === 'fruit') mergeInto(this.act.hand.item, { kind: 'fruit', ...picked }, 1)
   }
 
   private canFill(at: Coord): boolean {
@@ -5170,72 +5184,50 @@ export class World {
     const i = topIndex(this.drops, at)
     if (i < 0) {
       const c = this.cell(at)
+      const cover = c.kind === 'untilled' && c.cover.kind === 'grass'
+      if (c.kind !== 'weed' && !cover) return
+      const kind = c.kind === 'weed' ? 'weed' : 'grass'
+      const held = this.act.hand
+      if (held.kind === 'hold') {
+        if (held.item.kind !== kind) return
+        if (held.item.count >= this.stackMax(held.item)) {
+          this.say(HAND_FULL)
+          return
+        }
+        held.item.count += 1
+      }
       if (c.kind === 'weed') {
-        if (this.act.hand.kind === 'empty') {
-          c.soil.weedChance = 0
-          this.setCell(at, { kind: 'empty', soil: c.soil })
-          this.act.hand = { kind: 'hold', item: { kind: 'weed', count: 1 } }
-        } else if (this.act.hand.item.kind === 'box') {
-          if (boxAddWeed(this.act.hand.item, 1) === 0) return
-          c.soil.weedChance = 0
-          this.setCell(at, { kind: 'empty', soil: c.soil })
-        } else return
-      } else if (this.act.hand.kind === 'empty' && c.kind === 'untilled' && c.cover.kind === 'grass') {
+        c.soil.weedChance = 0
+        this.setCell(at, { kind: 'empty', soil: c.soil })
+      } else if (c.kind === 'untilled') {
         this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
-        this.act.hand = { kind: 'hold', item: { kind: 'grass', count: 1 } }
-      } else return
+      }
+      if (held.kind === 'empty') this.act.hand = { kind: 'hold', item: { kind, count: 1 } }
       this.pulse = { text: 'Pick up', at: { ...at } }
       return
     }
     const taken = this.drops[i].item
-    if (this.act.hand.kind === 'hold' && this.act.hand.item.kind === 'box') {
-      if (taken.kind === 'weed') {
-        const n = boxAddWeed(this.act.hand.item, taken.count)
-        if (n === taken.count) {
-          this.drops.splice(i, 1)
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-        if (n > 0) {
-          taken.count -= n
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
+    const held = this.act.hand
+    if (held.kind === 'hold' && countable(held.item) && countable(taken) && stackable(held.item, taken)) {
+      const room = this.stackMax(held.item) - held.item.count
+      if (room <= 0) {
+        this.say(HAND_FULL)
+        return
       }
-      if (taken.kind === 'seeds') {
-        const n = boxAdd(this.act.hand.item, 'seeds', taken.crop, taken.rarity, taken.count)
-        if (n === taken.count) {
-          this.drops.splice(i, 1)
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-        if (n > 0) {
-          taken.count -= n
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-      }
-      if (taken.kind === 'fruit') {
-        const n = boxAddFruit(this.act.hand.item, taken)
-        if (n === taken.count) {
-          this.drops.splice(i, 1)
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-        if (n > 0) {
-          taken.count -= n
-          this.pulse = { text: 'Pick up', at: { ...at } }
-          return
-        }
-      }
+      const n = taken.count < room ? taken.count : room
+      mergeInto(held.item, taken, n)
+      if (n === taken.count) this.drops.splice(i, 1)
+      else taken.count -= n
+      this.pulse = { text: 'Pick up', at: { ...at } }
+      return
     }
     this.drops.splice(i, 1)
-    if (this.act.hand.kind === 'empty') {
+    if (held.kind === 'empty') {
       this.act.hand = { kind: 'hold', item: taken }
       this.pulse = { text: 'Pick up', at: { ...at } }
       return
     }
-    this.drops.push({ at: { ...at }, item: this.act.hand.item })
+    this.drops.push({ at: { ...at }, item: held.item })
     this.act.hand = { kind: 'hold', item: taken }
     this.pulse = { text: 'Pick up', at: { ...at } }
   }
@@ -5297,15 +5289,6 @@ export class World {
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
-    }
-    if (item.kind !== 'box') return
-    if (item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') {
-      const cargo = item.cargo.stack
-      this.splitConsign(cargo.crop, cargo.rarity, cargo.count, cargo.freshness === 0, rest => {
-        this.stall[cargo.crop].take(cargo.rarity, rest, freshMul(cargo.freshness), cargo.bio)
-      })
-      item.cargo = { kind: 'empty' }
-      this.completeConsign()
     }
   }
 
@@ -5757,8 +5740,11 @@ export class World {
       if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: wine }
       else if (this.act.hand.item.kind === 'wine') {
         const it = this.act.hand.item
-        it.unitSale = mergeUnitSale(it, wine)
-        it.count += 1
+        if (it.count >= this.stackMax(it)) {
+          this.say(HAND_FULL)
+          return
+        }
+        mergeInto(it, wine, 1)
       }
       barrel.feed = []
       barrel.age = 0
@@ -5825,15 +5811,6 @@ export class World {
       it.count -= n
       if (it.count <= 0) this.act.hand = { kind: 'empty' }
       return
-    }
-    if (it.kind === 'box' && it.cargo.kind === 'stack') {
-      if (it.cargo.goods === 'weed') {
-        it.cargo.count -= n
-        if (it.cargo.count <= 0) it.cargo = { kind: 'empty' }
-        return
-      }
-      it.cargo.stack.count -= n
-      if (it.cargo.stack.count <= 0) it.cargo = { kind: 'empty' }
     }
   }
 
@@ -5902,7 +5879,11 @@ export class World {
     this.pulse = { text: 'Grind', at: { ...at } }
   }
 
-  private maybeSay(at: Coord): void {
+  private maybeSay(at: Coord, blocked: string): void {
+    if (blocked === HAND_FULL) {
+      this.say(HAND_FULL)
+      return
+    }
     if (usesLeftBlocked(this, at)) return
     if (emptyBucketBlocked(this, at)) return
     const action = primaryAct(this.cell(at))

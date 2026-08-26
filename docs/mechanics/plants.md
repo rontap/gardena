@@ -91,7 +91,7 @@ Wild weights `RARITY_WEIGHT` — preference. `rollRarity` for tree fruit drops.
 
 On the plant, while ripe: `freshness -= dt / rotSeconds`. `<= 0` → `{ kind: 'rotten', soil, crop }`.
 
-After pick, fruit keeps rotting in hand, house, chest, ground, and box cargo until sold. `tickFreshness`. Freezer slots skip. Hits 0 and stays fruit. Sugar does not tick.
+After pick, fruit keeps rotting in hand, house, chest, and ground until sold. `tickFreshness`. Freezer slots skip. Hits 0 and stays fruit. Sugar does not tick.
 
 `freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale`. Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam floor — [[mechanics/family]].
 
@@ -103,7 +103,7 @@ Merge same crop+rarity: weighted `unitSale` and `freshness`. Different rarity ne
 
 ## Harvest / shovel
 
-Ripe annual including sugar-cane, empty hand: one fruit, current freshness, plot `empty` same soil. Fruit box: into the box if it accepts.
+Ripe annual including sugar-cane, empty hand: one fruit, current freshness, plot `empty` same soil. Same crop+rarity in hand: merged onto that stack up to the cap — [[mechanics/inventory]].
 
 Shovel growing or ripe annual: one seed, same soil. Shovel dead or rotten: empty, no drop. Compost is from what you already carry.
 
@@ -127,9 +127,9 @@ Shovel: `{ kind: 'sapling'; tree: species }`, both cells bare soft.
 
 `plants.ripen` — Ripen: `freshness = 1`, `rarity = rollGrowRarity(rarity, happiness, grow.at(col, row, day, n), extraUp1)`, then `ripenN` at that cell becomes `n + 1`. Absent `n` is 0. `extraUp1` is `BETTER_UP1` if player owns `better-{crop}`, else 0; scaled by `h / HAPPY_MAX`. Ripe `freshness -= dt / rotSeconds`; `<= 0` → `rotten`.
 
-`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground, box cargo) until sold. Freezer slots skip `tickFreshness`. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`, then jam floor if daughter owns `jam`.
+`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground) until sold. Freezer slots skip `tickFreshness`. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`, then jam floor if daughter owns `jam`.
 
-`plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, `unitSale = stats.sale`, plot `empty` same soil. Fruit box: into the box if it accepts. Shovel growing/ripe annual: one seed. Shovel dead, rotten, weed, or grass: no drop.
+`plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, `unitSale = stats.sale`, plot `empty` same soil. Same crop+rarity in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed. Shovel dead, rotten, weed, or grass: no drop.
 
 `plants.packs` — Crop stats are `CROPS`. Shop packs are common unless player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. No tree pack.
 

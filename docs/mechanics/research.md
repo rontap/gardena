@@ -35,7 +35,7 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 | Automation | what runs without me |
 | Trade | how does produce become money |
 
-Contracts is the money pipeline, not a utility: it sits in Trade with the boxes, the chest and the machines. Paving and fences leave Land, which keeps the permit ladder and the tools that break ground. The machines leave Automation, so Automation is one thing — water, logic, vehicles.
+Contracts is the money pipeline, not a utility: it sits in Trade with the chest and the machines. Paving and fences leave Land, which keeps the permit ladder and the tools that break ground. The machines leave Automation, so Automation is one thing — water, logic, vehicles.
 
 ## Rows
 
@@ -67,8 +67,7 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-silos | automation | unlock-vehicles | unlock-vehicles | — |
 | unlock-contracts | trade | — | — | Contracts board at the stall; Reputation decay |
 | unlock-better-tools | trade | — | — | — |
-| unlock-large-box | trade | — | — | — |
-| unlock-chest | trade | unlock-large-box | — | — |
+| unlock-chest | trade | — | — | — |
 | unlock-grinder | trade | — | — | — |
 | unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam icon in the almanac |
 | unlock-fermentation | trade | unlock-grinder | — | — |
@@ -87,13 +86,9 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done.
 
-`unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
-
 `unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop. `buy-weed-spray` gates on `unlock-fertilizer`; the research `effect` stays one SKU.
 
 ## Shop gates
-
-`buy-box` unlock `start`. `buy-box-large` unlock `unlock-large-box`.
 
 `buy-fertilizer` unlock `start`. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`.
 
@@ -153,7 +148,7 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 ## Invariants
 
-`research.job` — One research job. `buy-box` unlock `start`. `buy-box-large` unlock `unlock-large-box`. `buy-fertilizer` unlock `start`. `unlock-fertilizer` unlocks synthetic. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU.
+`research.job` — One research job. `buy-fertilizer` unlock `start`. `unlock-fertilizer` unlocks synthetic. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU.
 
 `research.tiles` — `buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`. Cosmetic. Keep `ground`.
 

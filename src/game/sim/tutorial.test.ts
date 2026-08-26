@@ -1,6 +1,4 @@
 import { describe, expect, test } from 'vitest'
-import { BOX_LARGE, BOX_SMALL } from '../defs/items.ts'
-import { CompostBox } from './building.ts'
 import { Plant } from './plant.ts'
 import { Rng } from './rng.ts'
 import { dump, parse } from './save.ts'
@@ -10,7 +8,7 @@ import { World } from './world.ts'
 
 const AT = { col: 10, row: 12 }
 
-function on(step: Tutorial['kind'] extends 'on' ? never : 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10, extra?: { poured?: boolean; sold?: boolean }): Tutorial {
+function on(step: Tutorial['kind'] extends 'on' ? never : 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9, extra?: { poured?: boolean; sold?: boolean }): Tutorial {
   return { kind: 'on', step, poured: extra?.poured === true, sold: extra?.sold === true }
 }
 
@@ -107,41 +105,11 @@ describe('tutorial', () => {
     expect('thirst' in p).toBe(false)
   })
 
-  test('A box is `Item` `{ kind: \'box\' }` in hand, house, chest, or drops. Cap `BOX_SMALL` or `BOX_LARGE`. Not `CompostBox`. Not an unconfirmed SKU.', () => {
+  test('Step 8 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.', () => {
     const w = new World(1)
     plots(w, 4, 'growing')
     w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
     w.done.add('unlock-tomato')
-    const t = check(w, on(1))
-    expect(t.kind === 'on' && t.step === 7).toBe(true)
-    w.setCell({ col: 16, row: 12 }, new CompostBox({ shape: 'rect', col: 16, row: 12, w: 1, h: 1 }))
-    w.seats[0].place = { kind: 'sku', id: 'buy-box' }
-    const still = check(w, t)
-    expect(still.kind === 'on' && still.step === 7).toBe(true)
-    w.drops.push({
-      at: { col: 10, row: 13 },
-      item: { kind: 'box', cap: BOX_SMALL, cargo: { kind: 'empty' } },
-    })
-    const boxed = check(w, t)
-    expect(boxed.kind === 'on' && boxed.step === 8).toBe(true)
-    const w2 = new World(1)
-    plots(w2, 4, 'growing')
-    w2.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
-    w2.done.add('unlock-tomato')
-    w2.seats[0].hand = { kind: 'hold', item: { kind: 'box', cap: BOX_LARGE, cargo: { kind: 'empty' } } }
-    const handBox = check(w2, on(1))
-    expect(handBox.kind === 'on' && handBox.step === 8).toBe(true)
-  })
-
-  test('Step 9 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.', () => {
-    const w = new World(1)
-    plots(w, 4, 'growing')
-    w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
-    w.done.add('unlock-tomato')
-    w.drops.push({
-      at: AT,
-      item: { kind: 'box', cap: BOX_SMALL, cargo: { kind: 'empty' } },
-    })
     w.drops.push({
       at: AT,
       item: {
@@ -155,32 +123,32 @@ describe('tutorial', () => {
       },
     })
     const t = check(w, on(1))
-    expect(t.kind === 'on' && t.step === 9).toBe(true)
+    expect(t.kind === 'on' && t.step === 8).toBe(true)
     w.clock.t = 220
     expect(w.marketOpen()).toBe(false)
     w.sellAll()
     const closed = check(w, t)
-    expect(closed.kind === 'on' && closed.step === 9).toBe(true)
+    expect(closed.kind === 'on' && closed.step === 8).toBe(true)
     w.clock.t = 10
     w.sellAll()
     expect(w.marketGain()).toBe(0)
     const noop = check(w, t)
-    expect(noop.kind === 'on' && noop.step === 9).toBe(true)
+    expect(noop.kind === 'on' && noop.step === 8).toBe(true)
     w.stall.carrot.take('common', 2, 1, true)
     expect(w.marketOpen() && w.marketGain() > 0).toBe(true)
     const pays = w.marketOpen() && w.marketGain() > 0
     w.sellAll()
     const next = check(w, t.kind === 'on' ? { ...t, sold: pays } : t)
-    expect(next.kind === 'on' && next.step === 10).toBe(true)
+    expect(next.kind === 'on' && next.step === 9).toBe(true)
   })
 
-  test('Step 10 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.', () => {
+  test('Step 9 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.', () => {
     const w = new World(1)
-    const t: Tutorial = { kind: 'on', step: 10, poured: true, sold: true }
+    const t: Tutorial = { kind: 'on', step: 9, poured: true, sold: true }
     expect(check(w, t)).toEqual(t)
     const later = check(w, t)
     expect(later.kind).toBe('on')
-    expect(later.kind === 'on' && later.step === 10).toBe(true)
+    expect(later.kind === 'on' && later.step === 9).toBe(true)
   })
 
   test('Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.', () => {

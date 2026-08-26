@@ -3,7 +3,10 @@ import {
   BARREL_MATURE,
   EXTRACT,
   FLOUR,
+  BARREL_CAP,
   JAM_BUFFER,
+  JAM_IN,
+  JAM_SUGAR,
   JAM_SALE,
   MILL_GRASS,
   MILL_IN,
@@ -20,7 +23,7 @@ import {
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import type { AnnualId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
-import type { CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
+import type { CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase, WineBarrel } from './building.ts'
 import { compostValue, organic, type Item } from './item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder
@@ -59,19 +62,16 @@ export function millProduct(recipe: MillRecipe): Item {
 
 export function fruitCrop(item: Item): CropId | undefined {
   if (item.kind === 'fruit') return item.crop
-  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') return item.cargo.stack.crop
   return undefined
 }
 
 export function fruitCount(item: Item): number {
   if (item.kind === 'fruit') return item.count
-  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') return item.cargo.stack.count
   return 0
 }
 
 export function fruitRarity(item: Item): Rarity | undefined {
   if (item.kind === 'fruit') return item.rarity
-  if (item.kind === 'box' && item.cargo.kind === 'stack' && item.cargo.goods === 'fruit') return item.cargo.stack.rarity
   return undefined
 }
 
@@ -185,30 +185,13 @@ export function feedWhole(cell: IoCell): boolean {
 }
 
 export function takeCount(item: Item, n: number): boolean {
-  if (
-    item.kind === 'fruit' ||
-    item.kind === 'grass' ||
-    item.kind === 'seeds' ||
-    item.kind === 'weed' ||
-    item.kind === 'dead' ||
-    item.kind === 'rotten'
-  ) {
+  if ('count' in item) {
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+  if ('liters' in item) {
     item.liters -= n
     return item.liters <= 0
-  }
-  if (item.kind === 'box' && item.cargo.kind === 'stack') {
-    if (item.cargo.goods === 'weed') {
-      item.cargo.count -= n
-      if (item.cargo.count <= 0) item.cargo = { kind: 'empty' }
-      return false
-    }
-    item.cargo.stack.count -= n
-    if (item.cargo.stack.count <= 0) item.cargo = { kind: 'empty' }
-    return false
   }
   return true
 }
@@ -359,4 +342,24 @@ export function mergeSugar(
     capacityLiters: a.capacityLiters + b.capacityLiters,
     unitSale: (a.unitSale * a.liters + b.unitSale * b.liters) / liters,
   }
+}
+
+export function millWorking(c: Mill): c is Mill & { recipe: MillRecipe } {
+  return c.inn !== 1 && c.recipe !== 'none' && c.units >= millNeed(c.recipe)
+}
+
+export function jamWorking(c: JamMachine): c is JamMachine & { crop: JamCrop } {
+  return c.inn !== 1 && c.crop !== 'none' && c.fruit >= JAM_IN && c.sugar >= JAM_SUGAR
+}
+
+export function stillReady(c: PotStill): boolean {
+  return c.inn !== 1 && feedUnits(c.feed) === STILL_CAP
+}
+
+export function stillWorking(c: PotStill): boolean {
+  return stillReady(c) && c.progress > 0
+}
+
+export function barrelWorking(c: WineBarrel): boolean {
+  return feedUnits(c.feed) === BARREL_CAP && c.age < BARREL_AGE
 }

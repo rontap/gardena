@@ -71,9 +71,6 @@ function badge(item: Item): string | undefined {
   ) {
     return String(item.count)
   }
-  if (item.kind === 'box' && item.cargo.kind === 'stack') {
-    return String(item.cargo.goods === 'weed' ? item.cargo.count : item.cargo.stack.count)
-  }
   return undefined
 }
 
@@ -100,11 +97,6 @@ function heldNumber(item: Item): string {
   if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
     return `${Number(item.liters.toFixed(1))}L`
-  }
-  if (item.kind === 'box') {
-    if (item.cargo.kind === 'empty') return String(item.cap)
-    if (item.cargo.goods === 'weed') return `${item.cargo.count}/${item.cap}`
-    return `${item.cargo.stack.count}/${item.cap}`
   }
   if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'sapling') return ''

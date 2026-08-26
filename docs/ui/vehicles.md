@@ -1,4 +1,4 @@
-# Vehicles II
+# Vehicles
 
 Hangar dialog, parked Quad / tractor, dashboard, follow-cam, WASD, return arrows. Rules [[mechanics/vehicles]]. Types [[architecture/world]]. Chrome [[ui/store]] [[ui/docks]]. Place [[ui/place]]. Look [[ui/inspect]]. Shop [[ui/shop]]. Hats [[ui/multiplayer]]. Type [[ui/type]]. Art [[art/vehicles]].
 
@@ -8,11 +8,11 @@ Hangar dialog, parked Quad / tractor, dashboard, follow-cam, WASD, return arrows
 
 ## Hangar dialog
 
-Walk-up any occupied hangar cell → `Seat.cue = { kind: 'hangar'; at }` → dialog. Same `Shell` (Radix + `Frame`) as [[ui/store]], `Bar`, `Coin`. Title **Vehicle hangar**. `w-[30rem]`. Close acks. Map click closes like chest. Guests: dialog opens.
+Walk-up any occupied hangar cell → `Seat.cue = { kind: 'hangar'; at }` → dialog. Same `Shell` (Radix + `Frame`) as [[ui/store]], `Bar`, `Coin`. Title **Vehicle hangar**. Close acks. Map click closes like chest. Guests: dialog opens.
 
 Not a dock. Not Object HUD. No 6-slot. No cargo. No attachment grid.
 
-List **all** `World.vehicles`, array order. Each row: icon Quad vs Tractor, fuel `Bar` (`value` = `fuel` 0..1, `bg-ripe` `h-1.5 w-20`), status **Stored** / **Deployed** / **Driven**.
+List **all** `World.vehicles`, array order. Each row: icon Quad vs Tractor, fuel `Bar` (`value` = `fuel` 0..1), status **Stored** / **Deployed** / **Driven**.
 
 | pose | label |
 |---|---|
@@ -78,9 +78,7 @@ Quad: `ui-dash-quad`. Tractor: `ui-dash-tractor`.
 
 ### Cargo
 
-Driving overlay only. Not parked cue. Not hangar. Not `HudTarget`. Occupied `ItemFace` only (almanac/shop faces). Empty omitted. Reuse Face SVGs. No new item art. Not clickable. No swap.
-
-Face svg `h-6 w-6` `viewBox="0 0 24 24"` — smaller than shop `skuInner` `h-10`. Wrapper `relative flex h-6 w-6 items-center justify-center`. Badge stays `absolute bottom-0 right-0 bg-ink px-1 text-xs leading-tight font-bold text-house`. Row `flex flex-wrap items-center gap-0.5`. `pointer-events-none` on the strip.
+Driving overlay only. Not parked cue. Not hangar. Not `HudTarget`. Occupied `ItemFace` only (almanac/shop faces). Empty omitted. Reuse Face SVGs. No new item art. Not clickable. No swap. Smaller than shop `skuInner`. `pointer-events-none` on the strip.
 
 | driven | icons |
 |---|---|
@@ -93,7 +91,7 @@ Quad: strip above the SVG, `justify-center` in the host. Tractor: same strip abo
 
 ### Readouts
 
-Non-SVG. `--font-display`, `text-xs`, `tabular-nums`, `text-ink`. `absolute` `flex items-center justify-center` over the house-fill patches [[art/vehicles]]. Not inside the SVG. Not the long **Fuel:** / **Speed:** copy.
+Non-SVG. Display face, tabular nums, over the house-fill patches [[art/vehicles]]. Not inside the SVG. Not the long **Fuel:** / **Speed:** copy.
 
 `%` of the 240×64 viewBox: `left` `x/240`, `top` `y/64`, `width` `w/240`, `height` `h/64`.
 
@@ -109,7 +107,7 @@ Src Dash speed at `88 38 100×14` is wrong. Fuel and speed patches are the same 
 
 ### Controls
 
-Dashboard `Btn`s, not the parked dialog. `pointer-events-auto`. Face `bg-dirt text-house hover:bg-dirt-dark`, `text-base`. Same row `flex justify-center gap-2`.
+Dashboard `Btn`s, not the parked dialog. `pointer-events-auto`. Cottage dirt face.
 
 | control | enabled | click |
 |---|---|---|
@@ -121,9 +119,9 @@ Dashboard `Btn`s, not the parked dialog. `pointer-events-auto`. Face `bg-dirt te
 
 Boom label is the current width: **Boom 3** or **Boom 5**. Cycles `3 ↔ 5`. Persist on the tractor. Guest may.
 
-**Dock** off: shop-row face `bg-ink/6 text-ink/35`, `aria-disabled`, guarded click — not the `disabled` attribute. Hover: **Dock at the hangar arrows.** Boom has no off face.
+**Dock** off: shop-row locked face, `aria-disabled`, guarded click — not the `disabled` attribute. Hover: **Dock at the hangar arrows.** Boom has no off face.
 
-**Load** / **Unload** same row. Shown+inactive: Dock-off face `bg-ink/6 text-ink/35` `aria-disabled` guarded click. Copy **Load** **Unload**.
+**Load** / **Unload** same row. Shown+inactive: Dock-off face, `aria-disabled` guarded click. Copy **Load** **Unload**.
 
 Map click while driving does not dismount. Pad click is not Return. Esc does not dismount. Silo pad is not Dock.
 
@@ -194,32 +192,6 @@ Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on con
 
 Almanac **Automation**: hangar + three silos. Not Sensors. Not Water systems. [[ui/almanac]]
 
-## Copy
+Place **Place Vehicle hangar** / silo labels. Delete empty hangar **Delete vehicle hangar**; stores a vehicle **Cannot delete here (stores a vehicle)**. Dash **Disembark** **Dock** **Load** **Unload** **Boom 3** **Boom 5**. No `$`. `Coin`.
 
-Lock these strings:
-
-| when | text |
-|---|---|
-| place / pulse `buy-hangar` | **Place Vehicle hangar** |
-| place / pulse `buy-silo-seed` | **Place Seeding silo** |
-| place / pulse `buy-silo-spray` | **Place Spraying silo** |
-| place / pulse `buy-silo-produce` | **Place Produce silo** |
-| delete, empty hangar | **Delete vehicle hangar** |
-| delete, hangar that stores a vehicle or trailer | **Cannot delete here (stores a vehicle)** |
-| delete silo | **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** |
-| look hangar | **Vehicle hangar** |
-| prompt walk-up hangar | **Vehicle hangar** |
-| look parked Quad | **Quad** |
-| look parked tractor | **Tractor** |
-| prompt parked Quad | **Quad** |
-| prompt parked tractor | **Tractor** |
-| look silo | **Seeding silo** **Spraying silo** **Produce silo** |
-| hangar | **Deploy** **Embark** **Refill all** **Buy Quad** **Buy Tractor** **Buy seeder** **Buy sprayer** **Buy harvester** |
-| driving dash | **Disembark** **Dock** **Load** **Unload** **Boom 3** **Boom 5** |
-| Dock hover (off pad) | **Dock at the hangar arrows.** |
-| row status | **Stored** **Deployed** **Driven** **Attached** |
-| empty fuel | no toast |
-
-No `$`. `Coin`. Cottage tokens. No new hex.
-
-Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines, patches `13 38 70×14` and `85 38 70×14`. Tractor hitch readout is `{used}/100` over **used-readout**. Dash cargo Face svg is `h-6 w-6`; Quad and tractor strips sit above the SVG (`justify-center` / `justify-end`). `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place. Load/Unload shown+inactive has no extra hover string.
+Assumption: boom face is **Boom {n}** for current tractor `boom` (3 or 5); click writes the other width. Fuel/speed stay the live `F:` / `V:` paintMotion lines. Tractor hitch readout is `{used}/TRAILER_CAP` over **used-readout**. `skuLabel('buy-hangar')` is **Vehicle hangar**. Dock click stores; Disembark dismounts in place. Load/Unload shown+inactive has no extra hover string.

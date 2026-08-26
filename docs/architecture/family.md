@@ -2,142 +2,25 @@
 
 HUD panel + `World` fields. Not XP. No “has family” flag. No `Family` class.
 
-Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Mutation: `World`. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (point). Art: [[art/skills]].
+Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Mutation: `World`. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (point). Art: [[art/skills]]. Rules: [[mechanics/family]].
 
-## Ids
-
-```
-MemberId = 'player' | 'husband' | 'daughter'
-
-PlayerSkillId =
-  | 'boots'
-  | 'driving-classes'
-  | 'tending'
-  | 'vanilla-tending'
-  | 'seed-bank'
-  | 'better-carrot'
-  | 'better-potato'
-  | 'better-wheat'
-  | 'better-tomato'
-  | 'better-raspberry'
-  | 'better-watermelon'
-  | 'better-grape'
-  | 'better-olive'
-  | 'better-vanilla'
-  | 'better-sugar-cane'
-
-HusbandSkillId =
-  | 'research-speed'
-  | 'machinery'
-  | 'haggling'
-  | 'forecast'
-  | 'tax'
-  | 'water-study'
-  | 'land-study'
-
-DaughterSkillId =
-  | 'saleswoman'
-  | 'heirloom'
-  | 'bio'
-  | 'industrial'
-  | 'broker'
-  | 'open-late'
-  | 'open-24'
-  | 'jam'
-  | 'clearance'
-
-SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
-```
-
-Illegal: `better-*` on `TreeId`. No `better-apple`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`.
+Illegal: `better-*` on `TreeId`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`.
 
 ## Defs
 
-`SKILLS` in `defs/skills.ts`. Not on `World`.
+`SKILLS` in `defs/skills.ts`. Not on `World`. `maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. Dummy: `forecast`. `seed-bank` max 5.
 
-```
-SkillRef<Id> = { id: Id; tier: number }
+Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. Crop `better-*` need the matching research. `vanilla-tending` needs `unlock-raspberry`. `better-vanilla` needs `vanilla-tending`. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. Else none.
 
-SkillGate =
-  | { kind: 'none' }
-  | { kind: 'research'; id: ResearchId }
-  | { kind: 'skill'; id: 'open-late' }
+Carrot / potato / wheat better: always eligible until owned.
 
-SkillDef<Id> = { id: Id; maxTier: number; gate: SkillGate; effect: SkillEffect }
-```
-
-`maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER` 2. `industrial` max 3. `jam` max 3. `bio` max 3. Dummy: `forecast`. `seed-bank` max 5.
-
-Gates — only these:
-
-| id | gate |
-|---|---|
-| `open-24` | owned daughter `open-late` |
-| `heirloom` | research `unlock-heirloom` |
-| `better-tomato` | research `unlock-tomato` |
-| `better-raspberry` | research `unlock-raspberry` |
-| `better-watermelon` | research `unlock-watermelon` |
-| `better-grape` | research `unlock-grape` |
-| `better-olive` | research `unlock-olive` |
-| `vanilla-tending` | research `unlock-raspberry` |
-| `better-vanilla` | skill `vanilla-tending` |
-| `better-sugar-cane` | research `unlock-fermentation` |
-| `driving-classes` | research `unlock-vehicles` |
-| `broker` | research `unlock-contracts` |
-| else | `none` |
-
-Carrot / potato / wheat better: always eligible until owned. No extra gates.
-
-`SkillEffect` arms. Amounts live in `SKILLS`. Ranked `%` and `$` add per owned tier, not multiply: Boots I–V walk `WALK × (1 + 0.05 × tier)`. Machinery / driving-classes / research-speed same 5% add. Tax `× (1 − 0.02 × tier)`. Saleswoman `+2%` per tier, Őstermelő `+5%`, bio `+4%`. Haggling `−$1` per tier on utility AND automation, min $1. Was husband `contracts`. Jam: `minFreshMul[tier-1]` is 0.10 / 0.20 / 0.30. Broker T1 `+1` offered; T2 `+1` offered and `+1` active. Industrial complete `× (1 + 0.03 × tier)`.
-
-```
-SkillEffect =
-  | { kind: 'walk'; mul: 1.05 }
-  | { kind: 'driving-classes' }
-  | { kind: 'machine'; mul: 1.05 }
-  | { kind: 'tend' }
-  | { kind: 'vanilla-tending' }
-  | { kind: 'research-speed'; mul: 1.05 }
-  | { kind: 'haggling' }
-  | { kind: 'broker' }
-  | { kind: 'industrial' }
-  | { kind: 'tax'; mul: 0.98 }
-  | { kind: 'water-study' }
-  | { kind: 'land-study' }
-  | { kind: 'saleswoman'; mul: 1.02 }
-  | { kind: 'heirloom'; mul: 1.05 }
-  | { kind: 'better'; crop: AnnualId; saleMul: 1.04; up1: 0.04 }
-  | { kind: 'seed-bank' }
-  | { kind: 'bio'; mul: 1.04 }
-  | { kind: 'open-late' }
-  | { kind: 'open-24' }
-  | { kind: 'jam'; minFreshMul: [0.10, 0.20, 0.30] }
-  | { kind: 'clearance' }
-  | { kind: 'dummy' }
-```
-
-`walk` = boots. `driving-classes` = burn `× (1 − 0.05 × tier)`, Quad/Tractor vMax and accel `× (1 + 0.05 × tier)`; yaw not; boots not. `machine` = husband machinery (`GRIND_WORK`, valve 0.3s, mill tick, jam tick only; not Quad/Tractor vMax/accel; still / barrel not work jobs; pipe place instant). `tend` work `TEND_WORK` 0.7s. `saleswoman` = every `StallGoodId`. `heirloom` = `rarity === 'heirloom'` on crop fruit, spirit, wine. `bio` = `fruit.bio === true`. `tax` after expansion formula, then `× (1 − 0.02 × tier)`, min $1. `haggling`: utility AND automation tab SKU `−$tier`, min $1. Hangar-buys still not `skuPrice`. `broker`: offered / active bonuses — [[mechanics/contracts]]. `industrial`: complete payout `offer.reward * (1 + 0.03 * tier)` at complete time.
+`SkillEffect` arms live in `SKILLS`. Ranked `%` and `$` add per owned tier, not multiply. Hangar-buys still not `skuPrice`. Broker / industrial — [[mechanics/contracts]].
 
 ## World fields
 
-Type `Family` on `world.ts`. Field `World.family`. Always present.
+Type `Family` on `world.ts`. Field `World.family`. Always present. Shared `World.points`. Per member: `pickCount`, `owned`, `offers`.
 
-```
-MemberState<Id> = {
-  points: number
-  pickCount: number
-  owned: Map Id → tier
-  offers: SkillRef<Id>[]
-}
-
-Family = {
-  player: MemberState<PlayerSkillId>
-  husband: MemberState<HusbandSkillId>
-  daughter: MemberState<DaughterSkillId>
-}
-```
-
-Start of run: `points` 0, `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
+Start of run: `World.points` 0, `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
 
 Illegal: tier 0. Illegal: tier > `maxTier`. Illegal: optional `Family`. Illegal: `recipient?: MemberId` on `Recap`.
 
@@ -149,77 +32,46 @@ Roll: `skill.at(memberIx, pickCount, i)` — [[architecture/rng]]. Draw `min(3, 
 
 Offers exist at init. Persist until a pick. Research completing does not reroll.
 
-`pickSkill(member, slot)`: `slot` is an index into that member’s `offers`. Costs 1 of **that** member’s points. Writes `owned[id] = offered.tier`. `pickCount += 1`. Rerolls **only** that member’s three. Others unchanged.
+`pickSkill(member, slot)`: `slot` is an index into that member’s `offers`. Costs 1 of `World.points`. Writes `owned[id] = offered.tier`. `pickCount += 1`. Rerolls **only** that member’s three. Others unchanged.
 
 Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: pick another member’s id.
 
-`offers(member)` reads that member’s current three (or fewer).
-
 ## Points / recap
 
-Each seam, each member +1. Unused bank per member.
+Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared.
 
-`grantPoint(member)`: `points += 1`.
+`grantPoints(n)`: `World.points += n`.
 
-`dismissRecap()` is the only recap exit. Grants +1 to player, husband, and daughter, then `seam = play`, `banner = 2`. No member pick.
+`dismissRecap()` is the only recap exit. Grants `POINTS_PER_DAY`, then `seam = play`, `banner = 2`. No member pick.
 
-`unlockAll`: research rows unchanged (every id done, `money += 999`, job idle) **and** each member’s `points = 99`. Does not pick skills. Does not reroll offers.
+`unlockAll`: research rows unchanged (every id done, `money += 999`, job idle) **and** `World.points = 99`. Does not pick skills. Does not reroll offers.
 
 ## Tend
 
-`Intent` `{ act: 'tend'; at: Coord }`. `dest` = `at`.
-
-Legal: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK` 0.7s. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
+`Intent` `{ act: 'tend'; at: Coord }`. Legal: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
 
 `Plant.tended: boolean` required, starts `false`. Same instance through ripe / dead. Illegal: optional `tended`. Illegal: tend twice. Illegal: tend ripe.
 
 ## Market hours
 
-`marketOpen(phase: DayPhase): boolean`
-
-| phase | open |
-|---|---|
-| sunrise, day | always |
-| sunset | daughter owns `open-late` |
-| twilight | daughter owns `open-24` |
-
-`open-24` implies `open-late` (gate). Consign legal in every phase. Sell all illegal when `marketOpen` is false.
+`marketOpen(phase)` — [[mechanics/market]]. `open-24` implies `open-late` (gate). Consign legal in every phase. Sell all illegal when `marketOpen` is false.
 
 ## Sale
 
-`better-*` → `Modifier` `{ source: 'skill', crop, saleMul: 1.04 }` and ripen `extraUp1` 0.04. No research `sale-mul`. No `bump-*`.
+`better-*` → `Modifier` `{ source: 'skill', crop, saleMul }` and ripen `extraUp1`. `Modifier.source = 'research' | 'fertilizer' | 'skill'`.
 
-`Modifier.source = 'research' | 'fertilizer' | 'skill'`.
-
-Other sale skills at `marketGain`, not crop `Modifier`:
-
-- saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
-- heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`
-- bio: crop fruit with `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
-- jam: `freshMul` floored to that tier’s min. Not the jam machine
-- clearance: freshness-0 item-kind fruit → $1 each, regardless of crop/rarity. Else jam floor. Sugar and machine goods do not rot
-
-Crop stall bins keep `bio` (stock + worth per rarity × bio). Illegal: consign that drops `fruit.bio`.
+Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]]. Crop stall bins keep `bio`. Illegal: consign that drops `fruit.bio`.
 
 ## Other effects
 
-- Boots: walk step `WALK × (1 + 0.05 × tier)`. Not Quad
+- Boots: walk step `WALK × (1 + 0.05 × tier)`
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. — [[mechanics/vehicles]]
 - Machinery (husband): `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
 - Research speed: `job.left -= dt × (1 + 0.05 × tier)`
-- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Hangar-buys still not `skuPrice`. Seeds and building tiles unchanged. Buy / place spend `skuPrice`
-- `Sku.tab` on `defs/research.ts`: `'seeds' | 'utility' | 'automation' | 'building'` — same membership as [[ui/shop]]
-- `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`. `buy(id)` stays one
-- Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. `buy` one roll; `buyPacks` five. Base always common.
+- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Hangar-buys still not `skuPrice`
+- `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`
+- Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. Base always common
 - Tax: `World.tax()` applies smart tax after the expansion formula
-- Water lens: husband owns `water-study`. Land lens (`land`): husband owns `land-study`. Vehicle interactions lens (`vehicles`): `unlock-vehicles` in `done`, not a family-study. View-local `Lens`; architecture names the unlock. Default `off`
-
-## Research
-
-Drop `ResearchId` `bump-carrot` `bump-potato` `bump-wheat`. Drop `ResearchDef.effect` arm `{ kind: 'sale-mul'; … }`.
-
-```
-effect = { kind: 'unlock-sku'; sku: SkuId } | { kind: 'expand' } | { kind: 'feature' }
-```
+- Water lens: husband owns `water-study`. Land lens: husband owns `land-study`. Vehicle interactions lens: `unlock-vehicles` in `done`, not a family-study. View-local `Lens`
 
 Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }`.

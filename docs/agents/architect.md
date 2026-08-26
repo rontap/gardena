@@ -7,7 +7,7 @@ Read [[canon]] and [[stack]]. Write immediately. No handoff text.
 ## Writes
 
 - `docs/architecture/` — module graph, types, who owns what. Link from [[architecture/_index]].
-- `docs/mechanics/` — rules, state machines, class APIs, named invariants. Link from [[mechanics/_index]].
+- `docs/mechanics/` — rules, state machines, class APIs, named invariants on the owning note. Map: [[mechanics/_index]].
 
 ## Does not
 
@@ -15,7 +15,7 @@ Read [[canon]] and [[stack]]. Write immediately. No handoff text.
 - UI, CSS, assets.
 - Invent product, genre, or a loop.
 - Add layers “for later.”
-- Version numbers, wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Always, unless the task requires comparing regressions **and** the user EXPLICITLY allowed it. Do not invent player copy. [[standards/update-notes]]
+- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]
 
 ## Job
 

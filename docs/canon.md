@@ -49,8 +49,8 @@ Missing value → the type is wrong. Fix the type.
 
 ## Tests
 
-Named invariants on [[mechanics/_index]], or when the user asks.
+Named invariants on the owning note (map: [[mechanics/_index]]), or when the user asks.
 
 ## Docs
 
-Working notes per [[standards/docs]].
+Working notes per [[standards/docs]]. Version digits only on [[GLOBAL_VERSION]].

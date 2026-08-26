@@ -1,33 +1,10 @@
 # Place
 
-Types [[architecture/world]]. Chrome [[ui/hud]]. Look [[ui/inspect]].
-
-```
-Place =
-  | { kind: 'none' }
-  | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert'> }
-  | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
-  | { kind: 'wire'; from: WireEnd }
-  | { kind: 'delete' }
-```
+Types [[architecture/world]]. Chrome [[ui/hud]]. Look [[ui/inspect]]. `Place` / `StayArmed` live on `sim/world.ts`.
 
 Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`. Not a shop SKU. `buy` never arms delete. Packs never arm — `buy` merges seeds into inventory.
 
 Truck is not a Place SKU. Unarmed click.
-
-```
-StayArmed =
-  | 'buy-pipe'
-  | 'buy-sprinkler'
-  | 'buy-sprinkler-vert'
-  | 'buy-sprinkler-large'
-  | 'buy-lever' | 'buy-button' | 'buy-lamp' | 'buy-or' | 'buy-and' | 'buy-not'
-  | 'buy-pulser' | 'buy-counter'
-  | 'buy-sensor-water' | 'buy-sensor-fert' | 'buy-sensor-harvest' | 'buy-sensor-day'
-  | 'buy-water-system'
-  | 'buy-smart-valve' | 'buy-vehicle-detector'
-  | 'delete'
-```
 
 Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + `buy-well` + fourteen sensor-cell SKUs + `buy-smart-valve`. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
 
@@ -152,53 +129,4 @@ Delete pipe / sprinkler uses `EdgeStroke` / `VertexStroke`. Cell outline stays `
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Sapling plant is a hand `plant`, not a Place SKU.
 
-## Copy
-
-`placeLabel` = `skuLabel`.
-
-| when | text |
-|---|---|
-| place / pulse item SKU | **Place {skuLabel}** |
-| place / pulse `buy-pumpjack` | **Place Pumpjack** |
-| place / pulse `buy-well` | **Place Well** |
-| place / pulse `buy-rain-tank` | **Place Rainwater tank** |
-| place / pulse `buy-tap` | **Place Tap** |
-| place / pulse `buy-chest` | **Place Chest** |
-| place / pulse `buy-grinder` | **Place Seed grinder** |
-| place / pulse `buy-compost-box` | **Place Compost box** |
-| place / pulse `buy-mill` | **Place Mill** |
-| place / pulse `buy-still` | **Place Pot still** |
-| place / pulse `buy-barrel` | **Place Wine barrel** |
-| place / pulse `buy-jam` | **Place Jam machine** |
-| place / pulse `buy-freezer` | **Place Freezer** |
-| place / pulse `buy-hangar` | **Place Vehicle hangar** |
-| place / pulse `buy-silo-seed` | **Place Seeding silo** |
-| place / pulse `buy-silo-spray` | **Place Spraying silo** |
-| place / pulse `buy-silo-produce` | **Place Produce silo** |
-| place / pulse tiles | **Place Paved tile** / **Place Brick tile** / **Place Cobble tile** |
-| place / pulse `buy-pipe` | **Place Pipe** |
-| place / pulse `buy-valve` | **Place Manual valve** |
-| place / pulse `buy-smart-valve` | **Place Smart valve** |
-| place / pulse sprinklers | **Place Sprinkler** / **Place Vertical sprinkler** / **Place Large sprinkler** |
-| place / pulse sensor cells | **Place Lever** / **Place Button** / **Place Lamp** / **Place OR gate** / **Place AND gate** / **Place NOT gate** / **Place Pulser** / **Place Counter** / **Place Water sensor** / **Place Fertilizer sensor** / **Place Harvest sensor** / **Place Day sensor** / **Place Water-system sensor** / **Place Vehicle detector** |
-| unarmed valve | **Open valve** / **Close valve** |
-| unarmed well edge, container in hand | **Fill** |
-| unarmed well edge, no container | **Need a bucket** |
-| unarmed sprinkler vertex, smart unlocked | **Tune sprinkler** |
-| unarmed lever / button, port hits off | **Flip lever** / **Press button** |
-| unarmed water / harvest / counter / day, port hits off | **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** |
-| pending wire, illegal port | **Cannot wire here** |
-| pending wire, cycle | **Cannot loop** |
-| pending wire, that A→B already exists | **Remove wire** |
-| delete, bezier in `VERTEX_HIT` | **Delete wire** |
-| delete, hover piped owned edge | **Delete pipe** / **Delete valve** |
-| delete, hover smart-valve edge | **Delete smart valve** |
-| delete, hover well edge | **Delete well** |
-| delete, hover sprinkler vertex | **Delete sprinkler** |
-| delete, hover building | **Delete pumpjack** / **Delete rainwater tank** / **Delete tap** / **Delete chest** / **Delete grinder** / **Delete compost box** / **Delete mill** / **Delete pot still** / **Delete wine barrel** / **Delete jam machine** / **Delete freezer** / **Delete vehicle hangar** / **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** / **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete day sensor** / **Delete water-system sensor** / **Delete vehicle detector** |
-| delete, hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** |
-| delete else | **Cannot delete here** |
-| blocked | **Cannot place here** |
-| blocked, `money < price` | **Cannot afford** |
-| valve, no pipe | **Valve needs a pipe** |
-| valve already on edge | **Pipe already has a valve** |
+`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve, no pipe **Valve needs a pipe**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].

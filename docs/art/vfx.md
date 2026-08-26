@@ -1,6 +1,6 @@
 # VFX
 
-1.7. Says whether a machine is working. Readability first, decoration never.
+Says whether a machine is working. Readability first, decoration never.
 
 CSS animation over `<use>` layers. No rAF, no timers, no JS per frame. Sim never owns a frame index.
 

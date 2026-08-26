@@ -1,6 +1,6 @@
 # Sensors
 
-1.6. Industrial sunk 1×1. Dark body, bright identifier. Active status on the prop. Ink mass first, fill inset — [[art/svg]] [[art/palette]]. Item is the same object, larger.
+Industrial sunk 1×1. Dark body, bright identifier. Active status on the prop. Ink mass first, fill inset — [[art/svg]] [[art/palette]]. Item is the same object, larger.
 
 Not electricity. Do not reuse [[art/electricity]] windmill, generator, battery, power-line, power-switch. Not cottage tap. Not `item-valve` / `pipe-valve`.
 

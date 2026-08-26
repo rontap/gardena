@@ -11,14 +11,10 @@
             "id": "8be52ee30d7dde7c",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "docs/architecture/beta-1.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "beta-1"
+              "title": "New tab"
             }
           }
         ]
@@ -55,8 +51,8 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "×",
-                "matchingCase": false,
+                "query": "\"fold \"",
+                "matchingCase": true,
                 "explainSearch": false,
                 "collapseAll": false,
                 "extraContext": false,
@@ -79,7 +75,8 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -188,7 +185,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "06eeedefa5501be2",
+  "active": "f43054b0fe2ef66d",
   "lastOpenFiles": [
     "src/game/sim/pipe.ts",
     "src/assets/crop-watermelon.svg",

@@ -79,4 +79,4 @@ Map-edge plates. After `unlock-expand` only. Size `TILE * 0.85`, centred on `fac
 
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
 
-Assumption: digs/mines HUD counters are gone with the 1.8.0 gates.
+Assumption: digs/mines HUD counters are gone with the research gates.

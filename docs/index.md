@@ -7,6 +7,7 @@ Vault for this game. Agents read this first.
 - [[canon]]
 - [[stack]]
 - [[pipeline]]
+- [[GLOBAL_VERSION]]
 - [[standards/docs]]
 - [[standards/testing]]
 - [[standards/update-notes]]
@@ -44,7 +45,7 @@ Vault for this game. Agents read this first.
 ## UI
 
 - [[ui/_index]]
-- [[ui/changelog]] — menu version history, not [[changelog]]
+- [[ui/changelog]] — menu chrome for the player changelog
 
 ## Art
 
@@ -53,13 +54,7 @@ Vault for this game. Agents read this first.
 ## Plans
 
 - [[Path to V1.0 - readonly]] — roadmap, not rules
-- [[plans/early-access-1]] — 1.0 Early Access 1 spec
-- [[plans/early-access-1.1]] — 1.1 Early Access multiplayer beta spec
-- [[plans/early-access-2]] — 0.10 Early Access 2 disease design notes, not yet spec
-- [[plans/1.8.0]] — 1.8.0 market pressure + contracts spec. Types are `src/game/sim/market.h.ts`
-- [[reconciliation]] — locked decisions
-
-## Archive
-
-- [[archive/_index]]
-- [[changelog]] — history, not contracts
+- [[plans/early-access-1]] — Early Access 1 spec
+- [[plans/early-access-1.1]] — Early Access multiplayer beta spec
+- [[plans/early-access-2]] — Early Access 2 disease design notes, not yet spec
+- [[plans/1.8.0]] — market pressure + contracts spec. Types are `src/game/sim/market.h.ts`

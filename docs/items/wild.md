@@ -6,4 +6,4 @@ Empty hand gathers `{ kind: 'weed' }` / `{ kind: 'grass' }`. Box in hand: weed c
 
 `weed-spray` — [[items/tools]].
 
-`Tree` `rock` — [[mechanics/plants]]. No shrub. No berry.
+`Tree` `rock` — [[mechanics/plants]] [[mechanics/trees]].

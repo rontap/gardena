@@ -1,176 +1,20 @@
 # Sensors
 
-Automation III + 1.7.1 bricks. Types [[architecture/world]]. Shop [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Save [[architecture/save]]. Seats [[mechanics/multiplayer]]. Numbers preference unless marked.
+Types [[architecture/world]]. Shop [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Numbers preference unless marked. Classes `sim/sensor.ts`. Ids `sim/ids.ts`.
 
-Not electricity. Not analogue. No XOR. No germ SKU. No weather SKU. No new sprinkler SKU. No 5×5 mask. No save migrate. Combinational loops stay illegal. Sequential feedback is 1.7.2.
+Combinational loops stay illegal. Sequential feedback through lever / pulser / counter `in` is legal.
 
-## Files
-
-| file | owns |
-|---|---|
-| `src/game/defs/items.ts` | `LEVER_PRICE` `BUTTON_PRICE` `LAMP_PRICE` `OR_PRICE` `AND_PRICE` `NOT_PRICE` `PULSER_PRICE` `COUNTER_PRICE` `SENSOR_WATER_PRICE` `SENSOR_FERT_PRICE` `SENSOR_HARVEST_PRICE` `SENSOR_DAY_PRICE` `WATER_SYSTEM_PRICE` `SMART_VALVE_PRICE` `VEHICLE_DETECTOR_PRICE` `BUTTON_PULSE` `SENSOR_HOLD` `COUNTER_MAX` |
-| `src/game/defs/research.ts` | `unlock-sensors` `unlock-advanced-sensors` `unlock-smart-irrigation`. SKUs. `Sku.need` required |
-| `src/game/defs/shelf.ts` | `BuildShelfId` += `'logic'`. Shelf **Sensors**, id `logic` |
-| `src/game/defs/catalog.ts` | SKU `CatalogEntry` for every sensor SKU + smart valve. Game concepts not CatalogEntry. Overview is not CatalogEntry. Almanac Sensors: Overview, then lever. Copy [[ui/almanac]] |
-| `src/game/sim/ids.ts` | `SensorKind` `ResearchId` += `unlock-sensors` `unlock-advanced-sensors` `unlock-smart-irrigation`. `SkuId` += the fifteen. `SENSOR_CELL_SKUS` += pulser counter day |
-| `src/game/sim/sensor.ts` | `Wire` `WireEnd` `Sensor` classes, ports, `ownsPort` += mill/jam/still/chest/freezer/seed-silo/additive-store, `wouldCycle`, `evalDag`, `area3`, hold, reader raw, `pourEligible`, counter dial group. No `World` |
-| `src/game/sim/building.ts` | mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Not sensor classes |
-| `src/game/sim/plot.ts` | `Cell` += `Sensor`. `isSolid` += every `SensorKind` |
-| `src/game/sim/pipe.ts` | `Gate` += `{ kind: 'smart' }`. `Sprinkler` keeps variant/tune. `flows` for smart uses eval, not a stored open |
-| `src/game/sim/world.ts` | `World.wires` `World.waterSystems`. `Net.waterSystems`. Place / StayArmed / Intent / HudTarget. tick: field → eval → mill/jam/still unless `inn === 1` → water. apply place/delete/tune / load / unload |
-| `src/game/sim/log.ts` | `Act.armWire` `placeWire` `placeSmartValve` `tuneWater` `tuneHarvest` `tuneCounter` `resetCounter` `tuneDay`. `Act.delete` += `wire` `smart`. `Act.openHud` += `k` |
-| `src/game/sim/save.ts` | `SAVE_VERSION` 1.72. dump wires + sensor cells + actuator hold + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`. No migrate |
-| `src/game/sim/mp.ts` | `PROTOCOL` 1.72. `GUEST_BUILD` += fourteen sensor-cell SKUs. permit wire / smart valve / sensor HUD / `tuneCounter` `resetCounter` `tuneDay`. digest wires + outputs + mill/jam/still `inn` + chest/freezer/seed-silo/additive-store `out` |
-| `src/game/sim/prompt.ts` | sensor place / port hit / delete wire bezier / smart valve edge |
-| `src/game/sim/look.ts` | sensor names |
-| `src/game/sim/item.ts` | `Face` += each sensor SKU + `smart-valve` |
-| `src/game/sim/vehicle.ts` | `surfaceMul` unchanged: `isSolid` → `SURFACE_SLOW` |
-| `src/game/sim/sensor.test.ts` | named invariants |
-
-Do not create `src/` here.
-
-## Defs
-
-| id | value | |
-|---|---|---|
-| `LEVER_PRICE` | 4 | preference |
-| `BUTTON_PRICE` | 3 | preference |
-| `LAMP_PRICE` | 3 | preference |
-| `OR_PRICE` | 5 | preference |
-| `AND_PRICE` | 5 | preference |
-| `NOT_PRICE` | 4 | preference |
-| `PULSER_PRICE` | 5 | preference |
-| `COUNTER_PRICE` | 6 | preference |
-| `SENSOR_WATER_PRICE` | 7 | preference |
-| `SENSOR_FERT_PRICE` | 7 | preference |
-| `SENSOR_HARVEST_PRICE` | 8 | preference |
-| `SENSOR_DAY_PRICE` | 7 | preference |
-| `WATER_SYSTEM_PRICE` | 9 | preference |
-| `SMART_VALVE_PRICE` | 6 | preference |
-| `VEHICLE_DETECTOR_PRICE` | 8 | preference |
-| `BUTTON_PULSE` | 4 | preference. Ticks of `tick()`. Button output high exactly this many |
-| `SENSOR_HOLD` | 8 | preference. Ticks after an output **edge** |
-| `COUNTER_MAX` | 9999 | preference. Tune `n` max |
-| `unlock-sensors` | automation $20 / 50s, reveal `[]` — a root | preference |
-| `unlock-advanced-sensors` | automation $140 / 60s, reveal + requires `unlock-sensors` | preference |
-| `unlock-smart-irrigation` | automation $60 / 100s, reveal `unlock-sensors`, requires `unlock-adv-irrigation` + `unlock-sensors` | preference |
-| `VERTEX_HIT` | 0.3 | existing. Delete wire: nearest bezier |
-
-`Sku.tab` `automation`. `haggling` applies. Identifiers only after this table.
-
-Assumption: `unlock-advanced-sensors` $22 / 50s automation, `effect` `feature`.
-
-## Ids
-
-```
-SensorKind =
-  | 'lever'
-  | 'button'
-  | 'lamp'
-  | 'or'
-  | 'and'
-  | 'not'
-  | 'pulser'
-  | 'counter'
-  | 'sensor-water'
-  | 'sensor-fert'
-  | 'sensor-harvest'
-  | 'sensor-day'
-  | 'water-system'
-  | 'vehicle-detector'
-
-SkuId +=
-  | 'buy-lever'
-  | 'buy-button'
-  | 'buy-lamp'
-  | 'buy-or'
-  | 'buy-and'
-  | 'buy-not'
-  | 'buy-pulser'
-  | 'buy-counter'
-  | 'buy-sensor-water'
-  | 'buy-sensor-fert'
-  | 'buy-sensor-harvest'
-  | 'buy-sensor-day'
-  | 'buy-water-system'
-  | 'buy-smart-valve'
-  | 'buy-vehicle-detector'
-
-ResearchId += 'unlock-sensors' | 'unlock-advanced-sensors' | 'unlock-smart-irrigation'
-
-Signal = 0 | 1
-```
-
-No germ SKU. No weather SKU. No `'xor'`. No wire SKU.
-
-`SENSOR_CELL_SKUS` is the fourteen cell SKUs (not `buy-smart-valve`).
+`BUTTON_PULSE`, `SENSOR_HOLD`, `COUNTER_MAX` — preference. `Sku.tab` `automation`. `haggling` applies.
 
 ## Cells
 
-1×1. `RectBase` `w = 1` `h = 1`. `isSolid`. Sunk: art. Vehicles `floor` this cell → `SURFACE_SLOW`. Place like tap. Pay on confirm. StayArmed. Stamp many. Guest `GUEST_BUILD`. Delete building always; drops incident wires.
+1×1. `isSolid`. Sunk: art. Vehicles `floor` this cell → `SURFACE_SLOW`. Place like tap. Pay on confirm. StayArmed. Stamp many. Guest `GUEST_BUILD`. Delete building always; drops incident wires.
 
 Solid center never holds a plant.
 
-```
-Lever = { kind: 'lever'; base: RectBase; on: boolean; inn: Signal; prev: Signal; out: Signal }
-Button = { kind: 'button'; base: RectBase; left: number; out: Signal }
-Lamp = { kind: 'lamp'; base: RectBase; inn: Signal }
-NotGate = { kind: 'not'; base: RectBase; out: Signal }
-AndGate = { kind: 'and'; base: RectBase; out: Signal }
-OrGate = { kind: 'or'; base: RectBase; out: Signal }
-Pulser = { kind: 'pulser'; base: RectBase; inn: Signal; prev: Signal; out: Signal }
-Counter = { kind: 'counter'; base: RectBase; inn: Signal; n: number; count: number; out: Signal }
-WaterSensor = {
-  kind: 'sensor-water'
-  base: RectBase
-  wilt: boolean
-  over: boolean
-  out: Signal
-  hold: number
-}
-FertSensor = { kind: 'sensor-fert'; base: RectBase; out: Signal; hold: number }
-HarvestSensor = {
-  kind: 'sensor-harvest'
-  base: RectBase
-  mode: 'any' | 'all'
-  out: Signal
-  hold: number
-}
-DaySensor = {
-  kind: 'sensor-day'
-  base: RectBase
-  sunrise: boolean
-  day: boolean
-  sunset: boolean
-  twilight: boolean
-  out: Signal
-  hold: number
-}
-WaterSystem = { kind: 'water-system'; base: RectBase; out: Signal; hold: number }
-VehicleSensor = { kind: 'vehicle-detector'; base: RectBase; out: Signal; hold: number }
+Place defaults: `Lever.on = false` `inn = 0` `prev = 0`. `Button.left = 0`. Pulser `prev = 0` `inn = 0` `out = 0`. Counter `n = 1` `count = 0`. Water `wilt = true` `over = true`. Harvest `mode = 'any'`. Day `day = true`, others false. `out` / `inn` / `hold` 0.
 
-Sensor =
-  | Lever
-  | Button
-  | Lamp
-  | NotGate
-  | AndGate
-  | OrGate
-  | Pulser
-  | Counter
-  | WaterSensor
-  | FertSensor
-  | HarvestSensor
-  | DaySensor
-  | WaterSystem
-  | VehicleSensor
-```
-
-Classes in `sim/sensor.ts`. Same instance in the one cell. `World.waterSystems` holds every `WaterSystem` for the water grid — [[mechanics/water]].
-
-Place defaults: `Lever.on = false` `inn = 0` `prev = 0`. `Button.left = 0`. Pulser `prev = 0` `inn = 0` `out = 0`. Counter `n = 1` `count = 0`. Water `wilt = true` `over = true`. Harvest `mode = 'any'`. Day `day = true`, `sunrise` `sunset` `twilight` false. `out` / `inn` / `hold` 0.
-
-Illegal: optional config. Illegal: lamp `out`. Illegal: size HUD. Illegal: analogue field. Illegal: counter `n` not an integer in `1..COUNTER_MAX` as stored (tune out of range is no-op, does not write).
+Tune `n` out of range is no-op, does not write.
 
 ## Ports
 
@@ -185,40 +29,31 @@ Illegal: optional config. Illegal: lamp `out`. Illegal: size HUD. Illegal: analo
 | mill, jam, still | `in` origin top | — |
 | chest, freezer, seed-silo, additive-store | — | `out` origin bottom |
 
-Not `SensorKind`. Compost-box: pads, no port. Barrel, grinder, field silos: no port.
+Compost-box: pads, no port. Barrel, grinder, field silos: no port.
 
-Illegal combos unrepresentable per device: a lamp has no out port; AND/OR have no single `in`; mill/jam/still have no out; chest/freezer/silo/additive have no in. Finalize no-ops a `WireEnd` that the device does not own.
+Illegal combos unrepresentable per device. Finalize no-ops a `WireEnd` that the device does not own.
 
 No prop nubs on mill/jam/still/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port.
 
-Output-only: whole-cell click = bottom `out`. Chest/freezer/seed-silo/additive-store: origin only, same. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT / pulser / counter / lever: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top, same as NOT `in`. Whole-cell click still = `in`. Still east cell: no port. `portXY` lamp/`in` → `{ x: origin.col+0.5, y: origin.row }`. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
+Output-only: whole-cell click = bottom `out`. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT / pulser / counter / lever: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
 
 Sensors lens: lever is not output-only whole-cell. Top half `in`, bottom `out` (NOT). Lens off: Flip / Press still fire.
 
 ## Wire
 
-```
-WireEnd =
-  | { kind: 'cell'; at: Coord; port: 'out' | 'in' | 'in-l' | 'in-r' }
-  | { kind: 'sprinkler'; at: Vertex; port: 'in' }
-  | { kind: 'valve'; e: Edge; port: 'in' }
-
-Wire = { from: WireEnd; to: WireEnd }
-```
-
 `World.wires: Wire[]`. Directed `from` → `to`. Signal `0 | 1`. Fan-out: many wires may share `from`. Fan-in: many wires may share a `to` port. Port level = OR of those wires. Unwired port still 0. Visual cross is paint, no join.
 
 One direct path: unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. A lever cannot occupy both `in-l` and `in-r` of the same AND. Indirect paths legal. **Combinational** cycles rejected at finalize (`wouldCycle`). Sequential feedback through lever / pulser / counter `in` is legal.
 
-Toggle-remove: finalize of `from` → `to` when a wire already exists with the same node pair: drop that wire, `place = none`. Same ports or different ports on those two nodes — one path, so it removes. Not a retarget. Prompt **Remove wire** (ui-ux).
+Toggle-remove: finalize of `from` → `to` when a wire already exists with the same node pair: drop that wire, `place = none`. Prompt **Remove wire**.
 
 `from` is an output port. `to` is an input port. `{ kind: 'valve' }` is a **smart** valve only. Manual valve has no port.
 
-No wire SKU. No price. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU or `buy-smart-valve` forces that lens (pipes pattern). Wires are always sim-state. View-gated paint and port hits.
+No wire SKU. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU or `buy-smart-valve` forces that lens. Wires are always sim-state. View-gated paint and port hits.
 
-Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire, `place = none`. Combinational cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
+Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire. Combinational cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
 
-Delete: Delete tool, nearest bezier within `VERTEX_HIT`. `Act.delete` `{ k: 'wire'; from; to }`. Building delete, sprinkler delete, smart-valve delete drop incident wires.
+Delete: Delete tool, nearest bezier within `VERTEX_HIT`. Building delete, sprinkler delete, smart-valve delete drop incident wires.
 
 ## Graph / eval
 
@@ -232,34 +67,34 @@ Two graphs. Wiring may contain cycles **through memory**. Combinational wiring m
 
 `wouldCycle(wires, from, to, isSeqIn)`: walk only edges whose `to` is **not** a sequential input. Same-node `from`/`to` is a cycle iff that node is combinational. Lever/pulser/counter out→own in is legal. AND/OR/NOT/lamp out→own in is a cycle.
 
-Combo cycle (NOT→AND→NOT, AND→OR→AND, gate self): finalize no-op, **Cannot loop**. Sequential cut (lever→AND→same lever, pulser→NOT→pulser, Q bits → is9 → Q.in): legal.
+Combo cycle: finalize no-op, **Cannot loop**. Sequential cut: legal.
 
-`evalDag` still the tick function. Combo subgraph is a DAG; do not runtime-check the full wire graph. Tick:
+`evalDag` still the tick function. Combo subgraph is a DAG. Tick:
 
 1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`. Sequential `.out` still last tick.
-2. Topo-eval **combinational** gates from those outs (AND/OR/NOT). Lamp / machine / sprinkler / smart-valve `inn` from this combo + sequential outs.
+2. Topo-eval **combinational** gates from those outs. Lamp / machine / sprinkler / smart-valve `inn` from this combo + sequential outs.
 3. Sequential `inn` = OR of wires on `in` (sees this tick’s combo, last tick’s other memories).
 4. Sequential update: lever edge, pulser, counter. Button countdown already on `tick()`.
 5. Hold on world-readers + sprinkler input + smart valve.
 6. Actuators use **this** tick’s held inputs for pour / conduction.
 
-Consequence: a lever chain `Q₀ → NOT → Q₁` no longer ripples in one tick. `Q₁` toggles the tick after `Q₀` falls. One tick per stage. Decade wrap `is9 → extra T on Q₃` uses last-tick bits; all four T-FFs update together.
+Consequence: a lever chain `Q₀ → NOT → Q₁` no longer ripples in one tick. `Q₁` toggles the tick after `Q₀` falls. One tick per stage.
 
 Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser / counter / lever-`in` / sprinkler-input-port / smart-valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators. An input is high iff any incoming wire is high.
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
-World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store. Not lamps. Not gates. Not pulser. Not counter. Not lever. Not button. Not mill/jam/still (`inn` like lamp, no hold).
+World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store. Mill/jam/still `inn` like lamp, no hold. Pulser / counter / lever no hold.
 
 Button: `out` high exactly `BUTTON_PULSE` ticks. `left` counts down on `tick()`. Reach 0 → `out = 0`. Assumption: toggle while high restarts `BUTTON_PULSE`.
 
 Lever: Flip always `on = !on` in apply (`toggle` walk-to). Eval: `inn` = OR of wires on `in`. If `prev === 0 && inn === 1` then `on = !on`. Then `prev = inn`. `out = on ? 1 : 0`. Unwired `inn` 0: no edge, Flip unchanged. Same-tick Flip + rising edge: both apply (two toggles → net zero). Look **on** / **off** still from `on`.
 
-NOT / lamp / sprinkler / smart valve / mill / jam / still / pulser / counter / lever: `inn` = OR of wires on `in`. NOT: `out = 1 - inn`. AND: (OR of wires on `in-l`) AND (OR of wires on `in-r`). OR: (OR of `in-l`) OR (OR of `in-r`). Lamp: `inn` only, display. Mill/jam/still: `inn === 1` skip tick; unwired 0 ticks. No hold.
+NOT: `out = 1 - inn`. AND: (OR of `in-l`) AND (OR of `in-r`). OR: (OR of `in-l`) OR (OR of `in-r`). Lamp: `inn` only. Mill/jam/still: `inn === 1` skip tick; unwired 0 ticks. No hold.
 
-Pulser (after `inn`): if `prev === 0 && inn === 1` then `out = 1` else `out = 0`; then `prev = inn`. Pulse is 1 tick on 0→1, then 0 until input falls.
+Pulser: if `prev === 0 && inn === 1` then `out = 1` else `out = 0`; then `prev = inn`. Pulse is 1 tick on 0→1.
 
-Counter (after `inn`): if `inn === 1` then `count += 1`. If `count >= n` then `out = 1`, `count = 0`; else `out = 0`. Increments each tick `inn === 1`. Pulser 1-tick → `n = 10` is 10 vehicles. Fertilizer 15 s → `n = 225`.
+Counter: if `inn === 1` then `count += 1`. If `count >= n` then `out = 1`, `count = 0`; else `out = 0`. Increments each tick `inn === 1`.
 
 Chest / freezer / seed-silo / additive-store: `out` + `SENSOR_HOLD`. Full: chest/freezer no empty slot; silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`.
 
@@ -293,11 +128,11 @@ Growing annuals unless noted.
 | Vehicle | a field Quad or tractor `floor(x, y)` equals the cell | none |
 | Day | current `clock.phase()` is a checked flag | four checkboxes. Default **Day** on, others off. All off → raw 0 |
 
-Day: 1×1. Output only. No 3×3 wash. Raw 1 iff `DayPhase` matches a true flag. `SENSOR_HOLD`. World-reader. Phases [[mechanics/day]].
+Day: 1×1. Output only. No 3×3. Raw 1 iff `DayPhase` matches a true flag. `SENSOR_HOLD`. Phases [[mechanics/day]].
 
 Vehicle: stored no. Trailer no. `tickVehicles` already ran this `tick()`.
 
-Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Not on/off. Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
+Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
 
 ## Actuators
 
@@ -308,11 +143,11 @@ Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a f
 
 Unwired sprinkler still pours after Smart Irrigation. Wired-low does not. Digest distinguishes unwired vs wired-low (wire present, level 0).
 
-Smart irrigation is a `feature`: every vertex sprinkler gains `in`, and the same row grants the crop dial. No new SKU. No mask HUD. Wiring a sprinkler before `unlock-smart-irrigation` is a no-op.
+Smart irrigation is a `feature`: every vertex sprinkler gains `in`, and the same row grants the crop dial. Wiring a sprinkler before `unlock-smart-irrigation` is a no-op.
 
-`tickWater` pours only `pourEligible` sprinklers, this tick, existing AoE + dial.
+`tickWater` pours only `pourEligible` sprinklers, this tick, existing AoE + dial. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
 
-Smart valve: edge SKU `buy-smart-valve`. `Gate` `{ kind: 'smart' }`. No manual click. One input on the body. Unwired **closed** (`flows` false). High open, low closed. Hold on the input. Affects this tick’s conduction; rebuild nets after eval. No share with pipe / manual valve / well on that edge.
+Smart valve: edge SKU `buy-smart-valve`. `Gate` `{ kind: 'smart' }`. No manual click. One input on the body. Unwired **closed**. High open, low closed. Hold on the input. Affects this tick’s conduction; rebuild nets after eval. No share with pipe / manual valve / well on that edge.
 
 Manual valve unchanged. Guest still cannot place or click it.
 
@@ -324,111 +159,62 @@ Manual valve unchanged. Guest still cannot place or click it.
 | `unlock-advanced-sensors` | `feature` | SKUs: AND, OR, NOT |
 | `unlock-smart-irrigation` | `feature` | feature: sprinkler crop dial + signal inputs. SKU: smart valve |
 
-`unlock-sensors` is a no-prerequisite root carrying only what stands alone: lever, button, lamp, pulser, counter, harvest reader, day reader. `startResearch('unlock-smart-irrigation')` no-ops unless both `unlock-adv-irrigation` and `unlock-sensors` are in `done` — `requires` is AND. The card reveals on `unlock-sensors` alone, so it can be on the shelf and shut — [[mechanics/research]].
+`unlock-sensors` is a no-prerequisite root carrying only what stands alone. `startResearch('unlock-smart-irrigation')` no-ops unless both `unlock-adv-irrigation` and `unlock-sensors` are in `done` — `requires` is AND. The card reveals on `unlock-sensors` alone, so it can be on the shelf and shut — [[mechanics/research]].
 
-`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. `buy-smart-valve`: `unlock: unlock-smart-irrigation`, `need: []`. AND / OR / NOT: `unlock: unlock-advanced-sensors`, `need: []` — `unlock-advanced-sensors` requires `unlock-sensors`, so the old `need` was compensating for a schema that could not say it.
+`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read: water `unlock-irrigation`, fert either soil row, water-system `unlock-adv-irrigation`, vehicle-detector `unlock-vehicles`. AND / OR / NOT unlock `unlock-advanced-sensors`. Smart valve unlock `unlock-smart-irrigation`.
 
-Four readers dual-lock through `need` on the capability they read, not on a research row invented for the intersection: `buy-sensor-water` `need: ['unlock-irrigation']`, `buy-sensor-fert` `need: ['unlock-fertilizer', 'unlock-compost']` (either soil route), `buy-water-system` `need: ['unlock-adv-irrigation']`, `buy-vehicle-detector` `unlock: unlock-sensors` `need: ['unlock-vehicles']`. Standalone cell SKUs: `show` + `unlock` `unlock-sensors`, `need: []`.
-
-Filing: signal → Sensors (`logic`): lever, button, lamp, or, and, not, pulser, counter. Readers: water, fert, harvest, water-system, vehicle-detector, day. Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
+Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-system, vehicle-detector, day. Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
 
 ## Lens
 
-`Lens` += `sensors`. Unhidden after `unlock-sensors`. Wires visible and drawable only there. Armed `buy-lever` … `buy-water-system` / `buy-pulser` / `buy-counter` / `buy-sensor-day` / `buy-vehicle-detector` / `buy-smart-valve` forces this lens. UI chrome [[ui/lens]].
+`Lens` += `sensors`. Unhidden after `unlock-sensors`. Wires visible and drawable only there. Armed sensor SKU or `buy-smart-valve` forces this lens. UI chrome [[ui/lens]].
 
 ## Place / StayArmed
 
-```
-StayArmed +=
-  | 'buy-lever' | 'buy-button' | 'buy-lamp' | 'buy-or' | 'buy-and' | 'buy-not'
-  | 'buy-pulser' | 'buy-counter'
-  | 'buy-sensor-water' | 'buy-sensor-fert' | 'buy-sensor-harvest' | 'buy-sensor-day'
-  | 'buy-water-system'
-  | 'buy-smart-valve' | 'buy-vehicle-detector'
-
-Place +=
-  | { kind: 'wire'; from: WireEnd }
-```
-
-While a sensor SKU is armed, click confirms place, not a wire. `place none` or `{ kind: 'wire' }`: port clicks arm/finalize wires.
+While a sensor SKU is armed, click confirms place, not a wire. `place none` or `{ kind: 'wire' }`: port clicks arm/finalize wires. StayArmed sensor cells (incl. pulser, counter, day).
 
 ## Cmds
 
-Lever / button: walk-to, like valve. `Intent` `{ act: 'toggle'; at: Coord }`. `dest = at`. Work 0 on arrive. `Act.click` enqueues. Not a new click letter. Flip always toggles.
+Lever / button: walk-to, like valve. `Intent` `{ act: 'toggle'; at: Coord }`. Work 0 on arrive. Flip always toggles.
 
-Config HUDs: remote `ObjectHud`, no walk.
+Config HUDs: remote `ObjectHud`, no walk. Water / harvest / counter / day HUD: guest yes. `openHud` `k: 'sprinkler'` stays host-only.
 
-```
-HudTarget +=
-  | { kind: 'water'; at: Coord }
-  | { kind: 'harvest'; at: Coord }
-  | { kind: 'counter'; at: Coord }
-  | { kind: 'day'; at: Coord }
-
-Cmd +=
-  | { a: typeof Act.armWire; t; p; from: WireEnd }
-  | { a: typeof Act.placeWire; t; p; from: WireEnd; to: WireEnd }
-  | { a: typeof Act.placeSmartValve; t; p; e: Edge }
-  | { a: typeof Act.tuneWater; t; p; c: XY; wilt: boolean; over: boolean }
-  | { a: typeof Act.tuneHarvest; t; p; c: XY; mode: 'any' | 'all' }
-  | { a: typeof Act.tuneCounter; t; p; c: XY; n: number }
-  | { a: typeof Act.resetCounter; t; p; c: XY }
-  | { a: typeof Act.tuneDay; t; p; c: XY; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean }
-  | { a: typeof Act.delete; t; p; k: 'wire'; from: WireEnd; to: WireEnd }
-  | { a: typeof Act.delete; t; p; k: 'smart'; e: Edge }
-  | { a: typeof Act.openHud; t; p; k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day'; c: XY }
-```
-
-`Act.armWire` `'R'`. `Act.placeWire` `'N'`. `Act.setBoom` `'W'`. `Act.placeSmartValve` `'I'`. `Act.tuneWater` `'C'`. `Act.tuneHarvest` `'G'`. `Act.tuneCounter` `'M'`. `Act.resetCounter` `'X'`. `Act.tuneDay` `'O'`.
-
-`openHud` `k: 'sprinkler'` stays host-only. Water / harvest / counter / day HUD: guest yes.
-
-Counter HUD: title **Counter**. Live `count`. Label **Count to**. Integer field `n`. **Reset to 0** sets `count = 0`, not `n`. Apply immediately, stays open. `n < 1` or `n > COUNTER_MAX` → no-op. Changing `n` keeps `count`; next eval may fire immediately. `Act.resetCounter` legal on a counter cell; else no-op. Guest yes.
+Counter HUD: title **Counter**. Live `count`. Label **Count to**. Integer field `n`. **Reset to 0** sets `count = 0`, not `n`. Apply immediately, stays open. `n < 1` or `n > COUNTER_MAX` → no-op. Changing `n` keeps `count`; next eval may fire immediately. `Act.resetCounter` legal on a counter cell. Guest yes.
 
 Day HUD: title **Day sensor**. Checkboxes **Sunrise** **Day** **Sunset** **Twilight**. Apply immediately.
 
 Tune prompts: **Tune counter** / **Tune day sensor**.
 
-Wrappers: `armWire` `placeWire` `placeSmartValve` `deleteWire` `tuneWater` `tuneHarvest` `tuneCounter` `resetCounter` `tuneDay`. `toggle` is actor work from the intent. Not a cmd.
-
 Not logged: eval, hold countdown, pourEligible, net rebuild, bezier, lens, counter dial group.
 
-## Guest
+Guest wire / smart valve / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
-May: shop + place + `delete` building for lever, button, lamp, AND, OR, NOT, pulser, counter, water/fert/harvest/water-system/day sensors, vehicle detector. Guest may `placeSmartValve`, wires (`armWire` `placeWire` delete wire), toggle lever/button, water/harvest/counter/day HUD including `resetCounter`.
+## Invariants
 
-May not: `placePipe`, manual valve (`clickValve`), sprinklers, sprinkler HUD / `tuneSprinkler`. Guest `placeWire` permitted; guest `placePipe` still not.
+`sensors.cycle` — New wire that would combinational-cycle: no-op. Sequential feedback through lever / pulser / counter `in` is legal.
 
-Assumption: invariant 61; fourteen cells including vehicle detector + pulser + counter + day.
+`sensors.button` — Button: high exactly `BUTTON_PULSE` ticks. Pulser: `out` 1 exactly 1 tick on `inn` 0→1, else 0; then `prev = inn`.
 
-## Save / net
+`sensors.hold` — Water sensor hold: output edge then hold `SENSOR_HOLD` ticks.
 
-`SAVE_VERSION` 1.72. `PROTOCOL` 1.72. Wordmark **1.7.2**. No migrate. 1.71 file → `LoadFailReason` `'version'`. `World.wires[]` already a list. Dump mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`.
+`sensors.unwired-sprinkler` — Unwired sprinkler still pours after Smart Irrigation.
 
-Dump `World.wires`, `Save.smartHold`, sensor origin cells (config + `out` / `inn` / `on` / `left` / `hold` / pulser `prev` / counter `n` `count` / lever `inn` `prev` / day flags), sprinkler `inn`/`hold`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`/`hold`, `World.waterSystems` as those cells, smart-valve segments (`Gate` `'smart'`). Digest: invariant 40 plus every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, every sprinkler unwired vs level, every smart valve held level. Unchanged except fan-in OR. Wired-low still ≠ unwired.
+`sensors.unwired-valve` — Unwired smart valve does not conduct.
 
-## Dual lock
+`sensors.fan` — Fan-out: one lever drives two lamps. Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is. Toggle A→B: wires length 0.
 
-AND / OR / NOT use `Sku.unlock` + `Sku.need` as `ResearchId`. Future germ / weather SKUs use the same dual-lock. Do not add those SKUs, research rows, or `SensorKind` arms in 1.7.1.
+`sensors.mask` — 3×3 does not read plants outside the square; center building is not a plant.
 
-## Illegal
+`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter `in` is legal. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update.
 
-- combinational cycle (gate-to-gate / lamp self). Sequential feedback through lever / pulser / counter `in` is legal
-- two direct paths same `nodeKey(from)` → `nodeKey(to)`
-- wire into an output, or out of an input-only lamp
-- analogue / XOR
-- germ / weather SKUs
-- new sprinkler SKU / 5×5 mask
-- save migrate
-- unwired sprinkler treated as low
-- unwired smart valve conducting
-- guest `placePipe` / `clickValve` / place sprinkler
-- `Partial<T>` / optional that means unsure
-- electricity / power-line as this system
-- mill / jam / still `inn` hold
-- pulser / counter / lever hold
-- prop nubs on mill/jam/still/chest/freezer/silo/additive
-- `HudTarget` hangar or vehicle
-- counter dial `floor(4 * count / n)`
-- AND / OR / NOT buyable on `unlock-sensors` alone (`unlock-advanced-sensors` requires it)
-- comments in `src/`
+`sensors.chest` — Chest no empty slot (`CHEST_SLOTS`) → `out` 1 after `SENSOR_HOLD`.
+
+`sensors.silo` — Seed silo `used >= SILO_SEED_CAP` → `out` 1 after hold. Additive `used >= ADDITIVE_CAP_LITERS` → `out` 1 after hold.
+
+`sensors.vfx` — Sprinkler VFX flips on the tick the pour changes. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
+
+`sensors.counter` — Counter: each tick `inn === 1`, `count += 1`; `count >= n` → `out = 1` `count = 0` else `out = 0`. `n` default 1, min 1, max `COUNTER_MAX`. Tune out of range no-op. Changing `n` keeps `count`. Dial from `pct = count / n` vs 0 / 25% / 50% / 75% / 100% (`s0`…`s4`); this tick `out === 1` → `s4`. Not `floor(4 * count / n)`.
+
+`sensors.day` — Day sensor: four flags, default `day` on others off. Raw 1 iff `clock.phase()` is a true flag. All off → raw 0. `SENSOR_HOLD`. No 3×3.
+
+`sensors.lever` — Lever Flip always toggles. Wired `in` 0→1 also toggles. Same-tick Flip + rising edge: both apply (net zero). Unwired `inn` 0: no edge.

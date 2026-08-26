@@ -1,6 +1,6 @@
 # Vehicles
 
-Vehicles II. Rects. One concept per file. [[art/svg]] [[art/palette]]
+Rects. One concept per file. [[art/svg]] [[art/palette]]
 
 Hangar is industrial shed, not house-language barn. Item face is the same shed, larger. Quad steel ATV, top-down. Tractor fruit-red, top-down. Trailers hitch-front. Silos industrial towers. Dash is chrome, not a tile. Hat `id="hat"` same contract as [[art/actor]].
 

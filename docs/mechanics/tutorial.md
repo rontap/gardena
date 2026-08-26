@@ -2,8 +2,6 @@
 
 Early Access 1 tour. No new gameplay. Copy: [[ui/tutorial]]. This note is gates, steps, predicates.
 
-[[architecture/save]] [[architecture/world]] [[mechanics/plants]] [[mechanics/inventory]] [[mechanics/research]] [[mechanics/water]] [[mechanics/market]] [[mechanics/day]]
-
 ## On / off
 
 Decided when play starts. Not re-checked mid-farm.
@@ -29,23 +27,13 @@ After step 10 card click: off for this farm this session. A later load is off be
 
 Not a `World` field. Not a `Save` field. Sim does not change.
 
-App holds a session value:
-
-```
-TutorialStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
-
-Tutorial =
-  | { kind: 'off' }
-  | { kind: 'on'; step: TutorialStep; poured: boolean; sold: boolean }
-```
+App holds a session value: `{ kind: 'off' }` or `{ kind: 'on'; step: 1..10; poured; sold }`.
 
 `check(world, tutorial)` is read-only on `World`. It returns the next `Tutorial`.
 
 `poured` becomes true when `{ act: 'water' }` completes on a `growing` or `ripe` plot.
 
 `sold` becomes true when `sellAll` pays: `marketOpen` and `marketGain() > 0`. Dispatch of a no-op `sellAll` does not set it.
-
-Illegal: `World.tutorial`. `Save.tutorial`. Resuming a step from parse.
 
 ## Card
 
@@ -63,13 +51,11 @@ Each check: total recompute of `done`, not +1 from a counter.
 
 If `need > step`, `step = need`. If `done(step)`, `step = need`. `step` never decreases.
 
-Illegal to show 2 when five `isTilled` cells already exist.
-
 ## Helpers
 
 Owned cells only.
 
-`tilledCount` = number of cells where `isTilled`. Kinds: `empty` `weed` `turf` `growing` `ripe` `dead` `rotten`. Distinct cells. Not `untilled`. Not `infertile`. Not `World.digs` (shovel also weeds and plants).
+`tilledCount` = number of cells where `isTilled`. Kinds: `empty` `weed` `turf` `growing` `ripe` `dead` `rotten`. Distinct cells. Not `World.digs` (shovel also weeds and plants).
 
 Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not increment.
 
@@ -79,7 +65,7 @@ Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not
 
 `items` = hand (if hold) ∪ house `inventory` ∪ every chest `slots` ∪ `drops[].item`.
 
-`hasBox` = some item `{ kind: 'box' }`. Cap `BOX_SMALL` or `BOX_LARGE`. SKU `buy-box` / `buy-box-large` pay on confirm and drop the item. Armed SKU is not a box. `CompostBox` is not a box.
+`hasBox` = some item `{ kind: 'box' }`. Cap `BOX_SMALL` or `BOX_LARGE`. SKU `buy-box` / `buy-box-large` pay on confirm and drop the item. Armed SKU is not a box. `CompostBox` is not a box. — [[mechanics/inventory]] `inventory.box`.
 
 `hasFruit` = some item `{ kind: 'fruit' }`, or a box whose `cargo` is `{ kind: 'stack'; goods: 'fruit' }` with `count >= 1`. Not sugar.
 
@@ -113,31 +99,30 @@ Player tasks (not copy):
 3. House door, seeds in hand.
 4. Plant those seeds on tilled (`empty` → `growing`). Hand is one item.
 5. `startResearch` any id.
-6. Bucket at `DOOR` (`CONTAINERS.bucket`). Fill at the pump is the existing fill. Pour on the plant. Bucket starts full; fill is not a completion predicate.
+6. Bucket at `DOOR`. Fill at the pump is the existing fill. Pour on the plant. Bucket starts full; fill is not a completion predicate.
 7. Buy a fruit box, confirm place.
 8. Pick any fruit (harvest ripe annual into hand or box, or pick up fruit).
 9. Truck, **Sell all**.
 10. Goodbye. Card click. Off.
 
-Starter: shovel in hand, bucket drop at `DOOR` with `CONTAINERS.bucket.capacityLiters`, seeds in house. [[mechanics/inventory]].
+Starter: shovel in hand, bucket drop at `DOOR`, seeds in the silo. [[mechanics/inventory]].
 
-## Does not change
+Crops, buildings, skills, economy stay as they are. Shop prices out of scope. HUD, camera, panels stay as they are.
 
-Crops, buildings, skills, economy. Shop prices out of scope. No tutorial field on `Save`. HUD, camera, panels stay as they are.
+## Invariants
 
-## Illegal
+`tutorial.on` — Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall`. `slotExists()` or `#start_now` or `#unlockall` → off, including New Game. Load / Upload → off.
 
-- tutorial on when `slotExists()` or fragment `start_now` or `unlockall`
-- tutorial on after Load / Upload
-- `Save` or `World` carrying a step
-- load resuming a mid-tour step
-- showing 2 when `tilledCount >= 5`
-- counting the same plot five times
-- completing 5 by opening Research
-- a thirst flag besides `waterBand === 'red'`
-- treating `CompostBox` or an unconfirmed box SKU as `hasBox`
-- completing 9 on a no-op `sellAll`
-- step 10 timer, click-anywhere, or auto-dismiss
-- a step counter
-- blocking HUD
-- forcing camera
+`tutorial.session` — No tutorial field on `Save` or `World`. Session only. Parse does not resume a step.
+
+`tutorial.tilled` — `tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2. Not `World.digs`.
+
+`tutorial.research` — Step 5 completes on `startResearch` that sets `job.kind === 'run'`, or `done.size > 0`. Not on opening Research.
+
+`tutorial.thirst` — Step 6 ready is `waterBand(...) === 'red'` on a `growing` plant. No extra thirst flag.
+
+`tutorial.sell` — Step 9 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
+
+`tutorial.dismiss` — Step 10 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
+
+`tutorial.no-force` — Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.

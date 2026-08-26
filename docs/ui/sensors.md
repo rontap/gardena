@@ -2,7 +2,7 @@
 
 Place, wires, ports, object HUDs, copy. Rules [[mechanics/sensors]]. Items [[items/sensors]]. Chrome [[ui/hud]] [[ui/docks]]. Lens [[ui/lens]]. Place [[ui/place]]. Shop [[ui/shop]] [[ui/build]]. Look [[ui/inspect]]. Almanac [[ui/almanac]]. Type [[ui/type]]. Palette [[art/palette]].
 
-No new chrome shell. No 5×5 mask HUD. No germ / weather cards. No new sprinkler pane. No wire SKU. No new `@theme` color.
+No new chrome shell. No wire SKU. No new `@theme` color.
 
 ## Lens
 
@@ -64,7 +64,7 @@ Iff `lens === 'sensors'` or pending wire. Overlay on the map, not baked into pro
 | `out` | small circle | `portXY` `out` |
 | `in` / `in-l` / `in-r` | small square | `portXY` that port |
 
-Also sprinkler `in` after `unlock-smart-irrigation`, smart-valve `in`, mill / jam / still `in`, chest / freezer / seed-silo / additive-store `out`. Lens only. Same circles / squares as 1.6.1. No prop nubs. Not the full hitbox.
+Also sprinkler `in` after `unlock-smart-irrigation`, smart-valve `in`, mill / jam / still `in`, chest / freezer / seed-silo / additive-store `out`. Lens only. Same circles / squares. No prop nubs. Not the full hitbox.
 
 Fill: idle `fruit-red`, high `water`. Stroke `ink`. Size ~2–3 viewBox units on the art 24-tile (~4–6 px). Readable, not a second sprite.
 
@@ -82,7 +82,7 @@ Rotate: no-op. No sensor SKU in `ROTATABLE`. Trio still from Sensors `cluster: '
 
 Lever / button: walk-to like valve. **Flip lever** / **Press button**. Work 0 on arrive. Lens off: Flip / Press still fire. In `sensors`, lever top / bottom is ports, not Flip.
 
-Config HUDs: remote ObjectHud family, same `Chrome` `w-56` as **Sprinkler output**. Not a new chrome. No walk. Sprinkler tune unchanged.
+Config HUDs: remote ObjectHud family, same Chrome as **Sprinkler output**. Not a new chrome. No walk. Sprinkler tune unchanged.
 
 | target | title | rows | default |
 |---|---|---|---|
@@ -95,13 +95,7 @@ Not a crop list. No size HUD. Fertilizer / water-system / vehicle detector / pul
 
 Water / harvest / day: `Btn` `selected` rows, same as today’s water. Independent flags on water and day (toggle one, `tune*` with the rest). Harvest is Any / All. Apply immediately (`tuneWater` / `tuneHarvest` / `tuneDay`) and stays open.
 
-Counter column, same `Chrome` `w-56`, stays open:
-
-1. Title **Counter** + ×
-2. Current value: live `count`, `tabular-nums` `text-lg`. Not an input.
-3. Label **Count to** (`text-sm`)
-4. Integer `Field` (`w-full select-text border-2 border-ink/30 bg-parch px-2 py-2 font-mono text-sm text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink`), `name="n"`, `aria-label="Count to"`, `tabular-nums`. Value is stored `n`. Parse integer on change. Apply immediately (`tuneCounter`). `n < 1` or `n > COUNTER_MAX` → no-op, field stays at last applied `n`. No error face. Text field: WASD ignored.
-5. **Reset to 0** `Btn`, full width. Click `resetCounter` → `count = 0`. Stays open. Does not change `n`.
+Counter column stays open: title **Counter** + ×; live `count`; label **Count to**; integer `Field` `name="n"` `aria-label="Count to"`. Value is stored `n`. Parse integer on change. Apply immediately (`tuneCounter`). `n < 1` or `n > COUNTER_MAX` → no-op, field stays at last applied `n`. Text field: WASD ignored. **Reset to 0** `Btn`. Click `resetCounter` → `count = 0`. Stays open. Does not change `n`.
 
 Live `count` follows sim while the HUD is open. Guest: Field + Reset.
 
@@ -131,25 +125,7 @@ Guest: sensor cells, smart valve, wires, lever / button, water / harvest / count
 
 May append **on** / **off** from signal: lever `on`, lamp `inn`, else `out`; smart valve held input. Not plots. No soil bars. Water-system off-net uses the no-pipes line as written — no **on** / **off** on that line.
 
-## Copy
-
-`skuLabel` = look name. `placeLabel` = `skuLabel`.
-
-| when | text |
-|---|---|
-| place / pulse sensor cell | **Place Lever** / **Place Button** / **Place Lamp** / **Place OR gate** / **Place AND gate** / **Place NOT gate** / **Place Pulser** / **Place Counter** / **Place Water sensor** / **Place Fertilizer sensor** / **Place Harvest sensor** / **Place Day sensor** / **Place Water-system sensor** / **Place Vehicle detector** |
-| place / pulse `buy-smart-valve` | **Place Smart valve** |
-| unarmed lever | **Flip lever** |
-| unarmed button | **Press button** |
-| unarmed water / harvest / counter / day, port hits off | **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** |
-| pending wire, illegal port | **Cannot wire here** |
-| pending wire, cycle | **Cannot loop** |
-| pending wire, that A→B already exists | **Remove wire** |
-| delete, bezier in `VERTEX_HIT` | **Delete wire** |
-| delete sensor cell | **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete day sensor** / **Delete water-system sensor** / **Delete vehicle detector** |
-| delete smart valve edge | **Delete smart valve** |
-| blocked | **Cannot place here** |
-| blocked, `money < price` | **Cannot afford** |
+`skuLabel` = look name. Place **Place {skuLabel}**. Unarmed **Flip lever** / **Press button**. Tune **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor**. Wire **Cannot wire here** / **Cannot loop** / **Remove wire**. Delete **Delete {look}**.
 
 ## Shop / almanac / research
 
@@ -179,6 +155,6 @@ Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: []`. AND / OR
 
 Research card `unlock-advanced-sensors` name **Advanced sensors**. Blurb: **Unlocks AND, OR, and NOT. AND is on if both inputs are. OR if either is. NOT inverts.** Not a `CatalogEntry`.
 
-Almanac **Sensors**: Overview, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector sensor-day. Tab click lands Overview. Generic pane. Smart valve and sprinklers on Almanac **Water systems**. No germ / weather. No new sprinkler pane. [[ui/almanac]]
+Almanac **Sensors**: Overview, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector sensor-day. Tab click lands Overview. Generic pane. Smart valve and sprinklers on Almanac **Water systems**. [[ui/almanac]]
 
 Assumption: Flip / Press / Tune-water / Tune-harvest / Tune-counter / Tune-day fire when `place.kind === 'none'` and port hits are off (`lens !== 'sensors'`); in `sensors`, output-only whole-cell starts a wire; lever / pulser / counter top / bottom are ports. HUD toggles stay open. Sensors tab after Vehicles, before Land. Off-net water-system = tap-join with no incident pipe. Fan-in / A→B toggle copy here wins over the stale replace-rule in [[mechanics/sensors]]. Additive-store south cell is the same no-port as south silo. Counter `Field` is the existing frame control; out of range does not toast.

@@ -14,7 +14,7 @@ Read [[canon]] and [[art/_index]]. Write `docs/art/` and SVGs immediately. No ha
 - Invent a visual language.
 - Change mechanics.
 - Raster / Imagine unless asked.
-- Version numbers, wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Always, unless the task requires comparing regressions **and** the user EXPLICITLY allowed it. Do not invent player copy. [[standards/update-notes]]
+- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]
 
 ## SVG
 

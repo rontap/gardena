@@ -1,6 +1,6 @@
 # Shop
 
-Two left [[ui/docks]] `Dock`s over one catalogue. **General store** is what you buy; **Build** is what you place — [[ui/build]]. Both are the same widget: search, a vertical category rail, a card grid, a [[ui/callout-hover]] in `aside`. Both are `w-[28rem]`. Type scale [[ui/type]].
+Two left [[ui/docks]] `Dock`s over one catalogue. **General store** is what you buy; **Build** is what you place — [[ui/build]]. Both are the same widget: search, a vertical category rail, a card grid, a [[ui/callout-hover]] in `aside`. Type scale [[ui/type]].
 
 Title **General store**. Rail button **Shop**. Categories are a vertical rail, same as [[ui/build]] — one tab shape for the whole system. Single-word labels; nothing wraps.
 
@@ -14,7 +14,7 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 ## Filing
 
-`SHELVES` in `src/game/defs/shelf.ts` is the only source of panel membership, category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. Two invariants on [[mechanics/_index]] hold them together — every sku sits in exactly one shelf group, and no build shelf holds a `seeds`-tab sku.
+`SHELVES` in `src/game/defs/shelf.ts` is the only source of panel membership, category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. Every sku sits in exactly one shelf group, and no build shelf holds a `seeds`-tab sku.
 
 **One axis per level, and file by primary output.** The top level splits by verb: a store you buy from, a build menu you place from. The second splits by what a thing emits — signal → Sensors, water → Water, goods → Processing, ground → Land. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a smart valve is Water (flow); a smart sprinkler is Water.
 
@@ -24,9 +24,9 @@ Groups **order** the grid; they do not draw. No headers, no dividers. The catego
 
 ## Cards
 
-Three per row on `auto-rows-[6.75rem]`, and **the card is one box everywhere**: same height, same width, browsing or searching, one line of label or two. Two rules keep it that way — the row height is a constant rather than `fr`, and the category rail stays mounted while searching so results are laid out in the same column as the shelves. A grid whose cells resize as you type is unreadable. One card per `skuShown` sku. The card **is** the button — no nested `Btn`, no separate hover target.
+Three per row, and **the card is one box everywhere**: same height, same width, browsing or searching, one line of label or two. The row height is a constant rather than `fr`, and the category rail stays mounted while searching so results are laid out in the same column as the shelves. A grid whose cells resize as you type is unreadable. One card per `skuShown` sku. The card **is** the button — no nested `Btn`, no separate hover target.
 
-`skuInner` icon `h-10 w-10` over `skuLabel` `text-sm` semibold `leading-tight`, `min-h-8` so one-line and two-line labels sit the price on the same baseline, two lines at most, then **placing** when armed, then `Coin` price, `tabular-nums`. Card padding is `px-1 py-1.5`: the icon carries the card, the chrome does not. Label before price: the accessible name is *{label} {price}*.
+`skuInner` over `skuLabel`, two lines at most, then **placing** when armed, then `Coin` price. The icon carries the card. Label before price: the accessible name is *{label} {price}*.
 
 | state | face | callout reason |
 |---|---|---|
@@ -76,7 +76,7 @@ The bulk line has its own state, `world.buyPacksFail(id)`. `'Locked'` hides the 
 
 ## Shelves
 
-Seeds: crops `pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-watermelon` `pack-olive` `pack-grape` `pack-raspberry` `pack-vanilla` `pack-sugar-cane`, then Ground cover `pack-grass` — [[mechanics/plants]]. No sapling SKU. No berry.
+Seeds: crops `pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-watermelon` `pack-olive` `pack-grape` `pack-raspberry` `pack-vanilla` `pack-sugar-cane`, then Ground cover `pack-grass` — [[mechanics/plants]].
 
 Tools: Digging shovel → better → rotary, Mining pickaxe → better → diamond, Carry buckets then boxes. Tiers read along the group — [[items/tools]].
 

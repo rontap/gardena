@@ -23,7 +23,7 @@ Picture `ui-market-stall`. `svg` `viewBox="0 0 240 120"` `h-24 w-full`. One **Se
 
 `quote = world.marketQuote()`. Panel reads `quote` fields. No arithmetic. [[mechanics/saturation]].
 
-Empty: `quote.rows.length === 0` → **No produce.** Else one row per `quote.rows` (stocked `StallGoodId`). No berry.
+Empty: `quote.rows.length === 0` → **No produce.** Else one row per `quote.rows` (stocked `StallGoodId`).
 
 Crop row: box face + count (sum of rarities). Sugar: sugar-bag face, one bin, count only, no rarity tabs. Consign sugar at the truck — [[mechanics/market]]. Count is `binCount(world.stall[row.good])`, not a quote field.
 

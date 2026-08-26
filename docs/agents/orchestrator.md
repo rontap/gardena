@@ -10,7 +10,7 @@ Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
 - Minimum slice from [[pipeline]].
 - Spawn specialists. They read `docs/`, not a handoff blob.
 - Present results. Do not commit or push unless asked.
-- Wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `docs/changelog.md`, any `changelogs-*.md`. Or name a child and quote the user allow in that child's prompt. Children still do not invent copy; they follow [[standards/update-notes]].
+- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Or name a child and quote the user allow in that child's prompt. Children never write a version number. Children still do not invent copy; they follow [[standards/update-notes]].
 
 ## Does not
 

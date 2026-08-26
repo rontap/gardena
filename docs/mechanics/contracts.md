@@ -1,33 +1,12 @@
 # Contracts
 
-Daily buyer board, generator, accept / deliver / complete / miss / cancel / reorder. Types `src/game/sim/market.h.ts`. Spec [[plans/1.8.0]] Part 2. Stall [[mechanics/market]]. Sat [[mechanics/saturation]]. Family [[mechanics/family]]. Stream [[architecture/rng]]. Research [[mechanics/research]]. MP [[architecture/net]]. Numbers preference unless marked.
+Daily buyer board, generator, accept / deliver / complete / miss / cancel / reorder. Types `src/game/sim/market.h.ts`. Spec [[plans/1.8.0]] Part 2. Stall [[mechanics/market]]. Sat [[mechanics/saturation]]. Family [[mechanics/family]]. Stream [[architecture/rng]]. Research [[mechanics/research]]. MP [[architecture/net]]. Guest cmds: [[mechanics/multiplayer]] `mp.guest`.
 
-`World.contracts` is saved from 1.8.0: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record where they always were. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`. `SAVE_VERSION` / `PROTOCOL` / wordmark are 1.8 / 1.8 / 1.8.0.
-
-## Files
-
-| file | owns |
-|---|---|
-| `src/game/sim/market.h.ts` | typedef only. `ContractId` `ContractOffer` `Demand` `Lines` `Active` `Bin` `Contracts` `RollBoard` `Accepts` `CancelFee` `MissPenalty` `CleanUnit` `CompanyId` `GoodClass`. Every constant `declare const` |
-| `src/game/defs/companies.ts` | `COMPANIES` book. `COMPANY_PRIZES` + `prizeBandOf` + `PRIZE_BAND_MIN` |
-| `src/game/sim/market.ts` | valued constants + `rollBoard` + `rollBoardAtD` + `load` + `cleanUnit` + `Accepts` + `cancelFee` + `missPenalty`. No `World` |
-| `src/game/sim/world.ts` | `World.contracts`, accept / cancel / reorder, consign fill, miss tick, `payPrize`, `DayTally.contracts` |
-| `src/game/sim/save.ts` | `SaveContracts`, `dumpContracts` / `liveContracts` / `readContracts` and the `Prize` / `Demand` / `Offer` / `Outcome` readers |
-| `src/game/ui/market.tsx` | `OfferCard`, `PrizeChip`, `prizeName`, `OutcomePay` |
-| `src/game/ui/debug-contracts.tsx` | `#debug-contracts` ladder |
-| `src/game/sim/log.ts` | `Act.acceptContract` `cancelContract` `reorderContract` |
-| `src/game/sim/mp.ts` | guest drop those three; digest sat + active + `takenToday` |
-| `src/game/sim/rng.ts` | `SpatialId` `'contract'` |
-| `src/game/sim/ids.ts` | `ResearchId` `unlock-contracts`; `HusbandSkillId` `haggling`; `DaughterSkillId` `broker` |
-| `src/game/defs/research.ts` | `RESEARCH['unlock-contracts']` |
-| `src/game/defs/skills.ts` | `haggling` `broker` `industrial` |
-| `src/game/sim/stall.ts` | `stallX` `stallRarity` — clean crop unit uses crop sale with empty mods |
-
-Do not create `src/` here.
+`World.contracts` is saved: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`.
 
 ## Board
 
-`CONTRACT_OFFERS` 6. `CONTRACT_SLOT_MAX` 8 from day one. `ContractId = day * CONTRACT_SLOT_MAX + slot`. `day` is `clock.day`.
+`CONTRACT_OFFERS`. `CONTRACT_SLOT_MAX`. `ContractId = day * CONTRACT_SLOT_MAX + slot`. `day` is `clock.day`.
 
 Board size = `CONTRACT_OFFERS +` broker offered bonus. Offered bonus is `+1` at `broker` tier ≥ 1. Tier 2 does not add a second card. Published slots `0..size-1`. Slot `7` unused. `SLOT_BANDS` stays length 8.
 
@@ -37,13 +16,13 @@ Visible iff `unlock-contracts` is in `done`. Tab gating is UI. Generation does n
 
 Unaccepted offers vanish at the next seam. Accepting writes `takenToday`; that id is not on today's board. `takenToday` clears at the seam. Active contracts persist across the seam.
 
-At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` at `broker` tier ≥ 2. Cap 3, or 4 at T2.
+At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` at `broker` tier ≥ 2.
 
 ## rollBoard
 
 `market.ts` owns `rollBoard(rng, day, slots, rep) → readonly ContractOffer[]`. Each slot `i` uses `rng.stream('contract').at(day, i, k)`.
 
-`rollBoardAtD(rng, D, slots)` is the debug ladder: it forces `D` on every slot and scales amounts at `LADDER_DAY` 24. `#debug-contracts` only — [[ui/contracts]].
+`rollBoardAtD(rng, D, slots)` is the debug ladder: it forces `D` on every slot and scales amounts at `LADDER_DAY`. `#debug-contracts` only — [[ui/contracts]].
 
 ### `contract` — `at(day, slot, k)`
 
@@ -69,15 +48,15 @@ Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day an
 ### Difficulty
 
 ```
-cap    = min(DIFFICULTY_START + DIFFICULTY_PER_DAY * day, DIFFICULTY_MAX)   // 8 + 0.8d, cap 40
+cap    = min(DIFFICULTY_START + DIFFICULTY_PER_DAY * day, DIFFICULTY_MAX)
 f      = cap / DIFFICULTY_MAX
 [l, h] = round(SLOT_BANDS[slot] * f)
-D      = l + floor(u * (h - l + 1)) + rep                                   // clamp DIFFICULTY_CEILING 60
+D      = l + floor(u * (h - l + 1)) + rep                                   // clamp DIFFICULTY_CEILING
 ```
 
 `rep` is `contracts.repDay`, the reputation snapshot taken at the seam, not live rep. Mid-day rep does not move the board.
 
-Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` −1 for carrot / potato / wheat plus `D_RARITY[minRarity]` (`common` 0, `uncommon` 0, `rare` 1, `heirloom` 3). `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
+Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` for carrot / potato / wheat plus `D_RARITY[minRarity]`. `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
 
 `eff` is what the prize band reads. Not `D`.
 
@@ -86,12 +65,12 @@ Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(li
 Two budgets, spent independently. The **grammar** budget buys shape; the **money** pool buys size.
 
 ```
-opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]     // 2 + 0.5D - band
+opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]
 budget = max(opened, -BUDGET_OVERDRAFT)
 pair   = budget >= PAIR_COST                                 // then budget = (budget - PAIR_COST) / 2
 ```
 
-Each line then spends `GOOD_COST[good]` and, for a rated or spirit-group line, `RARITY_COST[minRarity]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` (−4) if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
+Each line then spends `GOOD_COST[good]` and, for a rated or spirit-group line, `RARITY_COST[minRarity]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
 
 `GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read.
 
@@ -107,25 +86,25 @@ amount  = nice(min(target / cleanUnit(demand), FEASIBLE_PER_DAY[good] * days * s
 scale(day) = min(1, SCALE_START + day / SCALE_DAYS)
 ```
 
-`load(D)` is the share of a mature farm-day the contract eats. `REFERENCE_GOLD_PER_DAY` is the median `unitOf(g) * FEASIBLE_PER_DAY[g]` over `CONTRACT_GOODS` — derived, not a preference.
+`load(D)` is the share of a mature farm-day the contract eats. `REFERENCE_GOLD_PER_DAY` is the median `unitOf(g) * FEASIBLE_PER_DAY[g]` over `CONTRACT_GOODS` — derived.
 
-`LOAD_CURVE` 2 and `LOAD_MAX` 1.35 — preference, 1.8.0. The curve is convex on purpose: the pool must climb harder over the top half of the ladder than the bottom, so a four-star board is worth giving up a prize slot for. Roughly `×1.8` from D 8 to D 20, `×2.3` from D 20 to D 40.
+`LOAD_CURVE` and `LOAD_MAX` — preference. The curve is convex on purpose: the pool must climb harder over the top half of the ladder than the bottom, so a four-star board is worth giving up a prize slot for.
 
-Divide by `cleanUnit`, the rarity-scaled unit the reward is later settled at — **not** `unitOf`, the common-rarity base. Sizing against common prices and paying at heirloom ones was a 1.8.0 bugfix; before it, two contracts of the same `D` could differ tenfold.
+Divide by `cleanUnit`, the rarity-scaled unit the reward is later settled at — **not** `unitOf`, the common-rarity base.
 
-`nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`, floor `NICE_AMOUNTS[0]` 2. There is no discard-and-retry. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`.
+`nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`, floor `NICE_AMOUNTS[0]`. There is no discard-and-retry. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`.
 
 ### Deadline
 
 ```
-[lo, hi] = DEADLINE_DAYS[band]        // tight [1,2]  normal [2,3]  long [3,4]
+[lo, hi] = DEADLINE_DAYS[band]
 steps    = (hi - lo) / DEADLINE_STEP + 1
 days     = lo + DEADLINE_STEP * floor(u * steps)
 ```
 
-`DEADLINE_STEP` 0.5, so each band offers three lengths, halves included. 1.8.0 — `long` used to be 4-5 days with whole-day steps. `nowDay` is fractional already, so a 1.5-day deadline needs nothing special.
+Each band offers three lengths, halves included. `nowDay` is fractional already.
 
-Band feeds three things: `days`, the grammar deduction `DEADLINE_COST[band]`, and `MARKUP_BAND[band]`. `DEADLINE_WEIGHT` is `tight` 2, `normal` 5, `long` 2.
+Band feeds three things: `days`, the grammar deduction `DEADLINE_COST[band]`, and `MARKUP_BAND[band]`. `DEADLINE_WEIGHT` — preference.
 
 ### Reward
 
@@ -142,7 +121,7 @@ Baked at generation. Saturation at delivery does not move `reward`. `industrial`
 
 ## Prizes
 
-1.8.0. Two of the six offers each day pay goods instead of money, and pay **no** money.
+Two of the six offers each day pay goods instead of money, and pay **no** money.
 
 The board is the only source of tree saplings past the starting three, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these.
 
@@ -166,20 +145,9 @@ Drawn from the base six, **never** from the live slot count. `broker` grows the 
 
 ### Which prize
 
-`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only *which* slots pay a prize is rolled. Bands `[0,8) [8,20) [20,30) [30,∞)` off `PRIZE_BAND_MIN`, read against final `eff`.
+`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only *which* slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`.
 
-Six firms, three columns:
-
-| band | Whole Cart / Little Lid | Trade Jo / Mercanova | Halbert Eijn / Intercrop |
-|---|---|---|---|
-| 0-8 | cherry sapling | apple sapling | fertilizer |
-| 8-20 | apricot sapling | olive sapling | 1 skill point |
-| 20-30 | vanilla seeds `VANILLA_PRIZE_SEEDS` 5 | large freezer | 2 skill points |
-| 30- | rotary shovel or diamond pickaxe | expansion permit | 3 skill points |
-
-The tool arm in the table is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
-
-Columns preference. Band edges preference.
+Six firms, three columns: Whole Cart / Little Lid saplings-vanilla-tools; Trade Jo / Mercanova buildings-and-land; Halbert Eijn / Intercrop household. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
 
 ### Payout
 
@@ -229,11 +197,9 @@ Rarity is a minimum. Higher qualifies as one unit. No overage bonus. Freshness i
 
 ## State
 
-```
-World.contracts: Contracts = { active, takenToday, history, book, rep, repDay }
-```
+`World.contracts: Contracts = { active, takenToday, history, book, rep, repDay }`.
 
-New farm → empty. Load restores what was saved, including part-filled bins. 1.8.0 — before that a reload dropped every running contract, which stopped mattering the moment the board became the only route to a sapling. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX` 24.
+New farm → empty. Load restores what was saved, including part-filled bins. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX`.
 
 ```
 nowDay = (clock.day - 1) + clock.t / DAY_SECONDS
@@ -256,8 +222,6 @@ Existing consign at the truck. Logged as `enqueue`. `consignBody` fills `contrac
 `Act.reorderContract` `'Z'` `{ c: ContractId; d: 1 | -1 }` swaps that entry with its neighbour. `d = 1` toward the end. No-op at ends or unknown id. Fill priority **is** array order. No lookahead.
 
 A bin takes a unit iff `Accepts` and `filled < amount`. Freshness-0 fruit does not count; it passes through to the stall. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract fill in count.
-
-No silo filler. No cheapest-qualifying-rarity picker.
 
 ## Complete
 
@@ -297,205 +261,48 @@ At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at
 
 ## CompanyId
 
-```
-CompanyId =
-  | 'whole-cart'
-  | 'trade-jo'
-  | 'halbert-eijn'
-  | 'little-lid'
-  | 'mercanova'
-  | 'intercrop'
-```
+Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. Header `CompanyId` is this union.
 
-Header `CompanyId` is this union. Illegal: any other string.
+`GoodClass` covers every pool member. Fruit annuals are that set, not root/grain, not `sugar-cane`. Trees are `TreeId`. `SpiritKind` is not in any pool.
 
-```
-FruitAnnualId = 'tomato' | 'raspberry' | 'watermelon' | 'olive' | 'grape' | 'vanilla'
-GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | 'wine'
-```
-
-`GoodClass` covers every pool member. Not `CropClass`. Fruit annuals are that set, not root/grain, not `sugar-cane`. Trees are `TreeId`. `JamId` as live. `SpiritKind` is not in any pool.
-
-## Book
-
-`defs/companies.ts` owns `COMPANIES: { readonly [K in CompanyId]: Company }` and `COMPANY_PRIZES`. Both complete maps.
-
-```
-Company = {
-  id: CompanyId
-  name: string
-  riff: string
-  region: 'US' | 'NL' | 'DE' | 'ES' | 'HU'
-}
-```
-
-No `mix`, no `pool`, no `eligible`. Those went with the 994819b generator rewrite: the generator reads no company field at all when picking goods, rarity or difficulty. Sector = `region`. No standing drift.
-
-| id | name | riff | region | prize column |
-|---|---|---|---|---|
-| `whole-cart` | Whole Cart | Walmart | US | saplings, vanilla, late tools |
-| `trade-jo` | Trade Jo | Trader Joe's | US | buildings and land |
-| `halbert-eijn` | Halbert Eijn | Albert Heijn | NL | household |
-| `little-lid` | Little Lid | Lidl | DE | saplings, vanilla, late tools |
-| `mercanova` | Mercanova | Mercadona | ES | buildings and land |
-| `intercrop` | Intercrop | Interspar HU | HU | household |
-
-Six firms share three columns; 4-6 duplicate 1-3. Full table under Prizes.
-
-## Research
-
-`unlock-contracts`. Tree `utilities`. `reveal: 'start'`. `effect: { kind: 'feature' }`. `$8` / `30s`. Name **Contracts**. Blurb **The stall can take orders from buyers.** `gate: { kind: 'none' }`.
+`defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods, rarity or difficulty. Sector = `region`.
 
 ## Skills
 
-Husband `haggling` — was `contracts`. Utility and automation `skuPrice − $tier`, min $1. Hangar-buys still not `skuPrice`. `SkillEffect { kind: 'haggling' }`. Max 3.
+Husband `haggling`. Utility and automation `skuPrice − $tier`, min $1. Hangar-buys still not `skuPrice`. Max 3.
 
-Daughter `broker` max `BROKER_MAX_TIER` 2. Gate research `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. `SkillEffect { kind: 'broker' }`. Mid-day pick grows the board; slots `0..5` unchanged.
+Daughter `broker` max `BROKER_MAX_TIER`. Gate research `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
 
-Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Max 3. `SkillEffect { kind: 'industrial' }`. Miss and cancel do not take it.
+Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Max 3. Miss and cancel do not take it.
 
-## Multiplayer
-
-Host only: `acceptContract` `cancelContract` `reorderContract`. Guest those cmds are dropped by the sequencer, never enter a bundle. Guest consign still fills bins.
-
-## Constants
-
-Valued in `market.ts`. Header stays `declare const`.
-
-| id | value | |
-|---|---|---|
-| `CONTRACT_OFFERS` | 6 | preference |
-| `CONTRACT_ACTIVE` | 3 | preference |
-| `CONTRACT_SLOT_MAX` | 8 | preference |
-| `BROKER_MAX_TIER` | 2 | preference |
-| `CONTRACT_HISTORY_MAX` | 24 | preference |
-| `PRIZE_SLOTS` | 2 | preference |
-| `DIFFICULTY_MAX` | 40 | [[plans/1.8.0]] |
-| `DIFFICULTY_START` | 8 | preference |
-| `DIFFICULTY_PER_DAY` | 0.8 | preference |
-| `DIFFICULTY_CEILING` | 60 | preference |
-| `SLOT_BANDS` | `[8,16] [13,21] [18,26] [23,31] [28,36] [32,40] [25,33] [32,40]` | preference |
-| `STAR_MIN` | 1->0, 2->10, 3->20, 4->30 | preference |
-| `PRIZE_BAND_MIN` | 0, 8, 20, 30 | preference |
-| `NICE_AMOUNTS` | 2 3 4 5 6 8 10 12 15 20 25 30 40 50 60 80 100 | preference |
-| `MARKUP_BASE` | 0.15 | preference |
-| `MARKUP_PER_DIFFICULTY` | 0.004 | preference |
-| `MARKUP_BAND` | tight 0.11, normal 0.05, long 0 | preference |
-| `PENALTY_RATE` | 0.20 | preference |
-| `LOAD_MIN` | 0.12 | preference |
-| `LOAD_MAX` | 1.35 | preference |
-| `LOAD_CURVE` | 2 | preference |
-| `LOAD_D_OFFSET` | 6 | preference |
-| `MIX_FLOOR` | 2 | preference |
-| `MIX_SHARE` | 0.5 | preference |
-| `BUDGET_OVERDRAFT` | 3 | preference |
-| `AMOUNT_MIN` | 2 | preference |
-| `SCALE_START` | 0.35 | preference |
-| `SCALE_DAYS` | 24 | preference |
-| `PENALTY_FLOOR` | 0.25 | preference |
-| `CANCEL_MIN` | 0.05 | preference |
-| `PAIR_COST` | 10 | preference |
-| `GROUP_COST` | -4 | preference |
-| `DEADLINE_STEP` | 0.5 | preference |
-| `REP_MAX` | 20 | preference |
-| `REP_IDLE` | 0.3 | preference |
-| `LADDER_DAY` | 24 | debug only |
-| `VANILLA_PRIZE_SEEDS` | 5 | preference |
-
-`REP_DONE` 1*->0.5, 2*->1, 3*->1.5, 4*->2. `REP_LOST` 1*->1, 2*->2, 3*->3, 4*->4. Preference.
-
-`D_STARTER` -1. `D_RARITY`: common 0, uncommon 0, rare 1, heirloom 3. Preference.
-
-`DEADLINE_DAYS` - yours, not preference: tight `[1,2]` normal `[2,3]` long `[3,4]`, on the `DEADLINE_STEP` grid.
-
-`DEADLINE_COST`: tight 8, normal 0, long -4. Preference.
-
-`DEADLINE_WEIGHT`: tight 2, normal 5, long 2. Preference.
-
-`RARITY_COST`: common 0, uncommon 2, rare 5, heirloom 9. Preference.
-
-`REFERENCE_GOLD_PER_DAY` is derived at module load, not a constant to tune.
-
-`VALUE_BASE`, `VALUE_SCALE` and `MARKUP_PER_DAY` are gone. They were replaced by `load()` and `MARKUP_BAND`.
-
-`GOOD_COST` complete `{ [K in StallGoodId]: number }` preference:
-
-| good | cost |
-|---|---|
-| carrot | 0 |
-| potato | 1 |
-| wheat | 2 |
-| tomato | 3 |
-| watermelon | 4 |
-| grape | 4 |
-| olive | 5 |
-| raspberry | 6 |
-| apple | 5 |
-| apricot | 5 |
-| lemon | 5 |
-| cherry | 6 |
-| sugar-cane | 4 |
-| vanilla | 14 |
-| sugar | 3 |
-| jam-* | 6 |
-| oil | 5 |
-| flour | 4 |
-| extract | 8 |
-| vodka | 8 |
-| beer | 7 |
-| brandy | 10 |
-| mixed | 4 |
-| wine | 12 |
-
-### `FEASIBLE_PER_DAY`
-
-Complete `{ [K in StallGoodId]: number }`. Tuned-to `CROPS.growSeconds` / `BARREL_AGE` / `STILL_SECONDS` / mill and jam batch. `FEASIBLE_PLOTS` 8 preference — mature-farm crop plots; `scale(day)` is the early-farm fraction.
+`FEASIBLE_PER_DAY` complete `{ [K in StallGoodId]: number }`. Tuned-to `CROPS.growSeconds` / `BARREL_AGE` / `STILL_SECONDS` / mill and jam batch. `FEASIBLE_PLOTS` preference — mature-farm crop plots; `scale(day)` is the early-farm fraction.
 
 Crop: `round(FEASIBLE_PLOTS * DAY_SECONDS / CROPS[id].growSeconds)`.
 
 Spirit: `DAY_SECONDS / STILL_SECONDS` (one still). Jam: `DAY_SECONDS / JAM_SECONDS` (one jam). Oil / flour / extract: `DAY_SECONDS / MILL_WORK` (one mill). Sugar: that mill rate × `SUGAR_BAG`. Wine stock-only: 1.
 
-| good | FEASIBLE_PER_DAY |
-|---|---|
-| carrot | 21 |
-| potato | 16 |
-| wheat | 11 |
-| tomato | 7 |
-| raspberry | 6 |
-| watermelon | 7 |
-| olive | 5 |
-| grape | 6 |
-| vanilla | 4 |
-| sugar-cane | 10 |
-| apple | 3 |
-| apricot | 4 |
-| lemon | 4 |
-| cherry | 4 |
-| vodka beer brandy mixed | `4/3` |
-| jam-* | 12 |
-| oil flour extract | 80 |
-| sugar | 160 |
-| wine | 1 |
+Constants valued in `market.ts`. Header stays `declare const`.
 
-## Illegal
+Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; jam/spirit group vs specific is a roll; pair iff the grammar budget covers `PAIR_COST`; group jam unit is `min JAM_SALE`; `rollBoard` takes `Rng`.
 
-- player state or `clock.t` as mix ints
-- board generation as a `Cmd` or a log entry
-- `Seq.next` on `'contract'`
-- `at()` without `(day, slot, k)`
-- `Demand` rarity on a `PlainGoodId`
-- nested `Lines`
-- `CompanyId` other than the six
-- `COMPANIES` missing an id
-- `STUB_COMPANY` as the generator
-- live `sat` in the save file
-- guest `acceptContract` / `cancelContract` / `reorderContract` in a bundle
-- standing drift
-- silo filler
-- a prize slot drawn from the live slot count rather than `CONTRACT_OFFERS`
-- a prize contract also paying `reward`
-- `COMPANY_PRIZES` missing a company or a band
-- reading `D` rather than final `eff` for the prize band
-- sizing an amount off `unitOf` when the reward settles at `cleanUnit`
+## Invariants
 
-Assumption: `FEASIBLE_PLOTS` is 8 so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; jam/spirit group vs specific is a roll; pair iff the grammar budget covers `PAIR_COST`; group jam unit is `min JAM_SALE`; `rollBoard` takes `Rng`.
+`contracts.board` — Board slot `i` on day `d` is a pure function of `(seed, d, i)`. Same seed, same day → same offer, regardless of inventory, plantings, research, money, or `clock.t`.
+
+`contracts.id` — `ContractId = day * CONTRACT_SLOT_MAX + slot`. Growing the board with `broker` adds slots and does not change slots 0..5.
+
+`contracts.not-cmd` — Board generation is not a `Cmd`.
+
+`contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel remainders do both.
+
+`contracts.demand` — A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.
+
+`contracts.amount` — `amount >= AMOUNT_MIN` on every published offer, and `amount <= FEASIBLE_PER_DAY[good] * days * scale(day)`.
+
+`contracts.reward` — `reward = clean * (1 + markup)` baked at generation. Saturation at delivery time does not move it.
+
+`contracts.miss` — Miss pays market rate for delivered units and `offer.penalty * max(PENALTY_FLOOR, 1 - filled/need)`. `filled = need` is completion, never a miss.
+
+`contracts.cancel` — Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.
+
+`contracts.consign` — Consign fills `active` in array order, then the stall. A full bin passes through. Guest cmds: [[mechanics/multiplayer]] `mp.guest`.

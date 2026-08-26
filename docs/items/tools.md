@@ -4,16 +4,16 @@
 
 Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
-`workSeconds` is baked on the Item at mint. Loaded 1.8 saves keep the baked times. New games / new buys use `SHOVELS.*.workSeconds`. No migrate. Rotary unchanged.
+`workSeconds` is baked on the Item at mint. New games / new buys use `SHOVELS.*.workSeconds`. Rotary unchanged.
 
-| id | uses | s per swing | SKU | $ | unlock |
-|---|---|---|---|---|---|
-| shovel | 80 | 1.1 | buy-shovel | 10 | start |
-| better-shovel | 200 | 0.7 | buy-better-shovel | 30 | unlock-better-tools |
-| rotary-shovel | 1000 | 0.2 | — | — | four-star contract prize |
-| pickaxe | 25 | 4 | buy-pickaxe | 18 | unlock-pickaxe |
-| better-pickaxe | 40 | 2 | buy-better-pickaxe | 24 | unlock-pickaxe |
-| diamond-pickaxe | 1000 | 0.4 | — | — | four-star contract prize |
+| id | SKU | unlock |
+|---|---|---|
+| shovel | buy-shovel | start |
+| better-shovel | buy-better-shovel | unlock-better-tools |
+| rotary-shovel | — | four-star contract prize |
+| pickaxe | buy-pickaxe | unlock-pickaxe |
+| better-pickaxe | buy-better-pickaxe | unlock-pickaxe |
+| diamond-pickaxe | — | four-star contract prize |
 
 Other SKUs: `buy-bucket` `buy-bucket-large` `buy-box` `buy-box-large` `buy-weed-spray`.
 

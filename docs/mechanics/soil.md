@@ -6,29 +6,21 @@ Water and fertilizer belong to the dirt. One `Soil` per tilled plot, carried thr
 
 Only tilling fresh ground, or clearing a deleted building, mints a new `Soil`.
 
-```
-Soil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
-```
-
-`weedChance` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Recover / outbreak / spray: [[mechanics/weeds]].
+`Soil = { water; fertilizer; bio; weedChance }`. `weedChance` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Recover / outbreak / spray: [[mechanics/weeds]].
 
 ## Water
 
-| id | | |
-|---|---|---|
-| `SOIL_WATER_MAX` | 2 L | preference |
-| `SOIL_WATER_MID` | 1 L | preference. Plants want this. Drown above it. |
-| `SOIL_TILL_WATER` | 0.75 L | preference. Tilled start. |
+`SOIL_WATER_MAX`, `SOIL_WATER_MID`, `SOIL_TILL_WATER` — preference. Plants want mid. Drown above it. Tilled start is `SOIL_TILL_WATER`.
 
 Clamp `0..SOIL_WATER_MAX`. `drowning` iff `water > SOIL_WATER_MID`.
 
 ## Fertilizer
 
-`FERT_PLOT_MAX = 1` — preference.
+`FERT_PLOT_MAX` — preference.
 
-Growing draw `PLANT_FERT_PER_SEC = (1 / 720) * 0.6 * 0.9` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
+Growing draw `PLANT_FERT_PER_SEC` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
 
-Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one `feed` lands `>= BIO_RESTORE` (0.3 — preference). Produce copies soil `bio` while growing.
+Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one `feed` lands `>= BIO_RESTORE` — preference. Produce copies soil `bio` while growing.
 
 Tops a plot to full, spends only the gap. Empty bag leaves the hand.
 
@@ -40,13 +32,13 @@ Ordinary bag always in shop. Synthetic is [[mechanics/research]] `unlock-fertili
 
 | | |
 |---|---|
-| `goodness < VERY_HARD_MAX` (0.20 preference) | very-hard |
-| `goodness < HARD_MAX` (0.34 preference) | hard |
+| `goodness < VERY_HARD_MAX` | very-hard |
+| `goodness < HARD_MAX` | hard |
 | else | soft |
 
-Hard dirt is poor dirt. That is the difference.
+`VERY_HARD_MAX`, `HARD_MAX` — preference. Hard dirt is poor dirt. That is the difference.
 
-Base boost centred on the door, exponential decay (`BOOST_FALLOFF = 8` — preference), normalised to reach 0 at `r = 16` — preference. No boost edge to read as a ring. `clearBase` forces soft cover inside `r = 8`; it does not rewrite goodness, so start can be soft but mediocre.
+Base boost centred on the door, exponential decay (`BOOST_FALLOFF` — preference), normalised to reach 0 at `r = 16` — preference. `clearBase` forces soft cover inside `r = 8`; it does not rewrite goodness, so start can be soft but mediocre.
 
 ## Till
 
@@ -63,3 +55,11 @@ Water, `d = |water − SOIL_WATER_MID|`: green `d <= tol`; red `d >= (SOIL_WATER
 Fert, `floor = FERT_PLOT_MAX − tol`: green `fertilizer >= floor`; red `fertilizer <= floor / 2`; else orange.
 
 Tiles (`paved` / `brick` / `cobble`) are `untilled` cover. Cosmetic. Keep `ground`. [[mechanics/inventory]].
+
+## Invariants
+
+`soil.till` — Tilling untilled yields `empty` with `water === SOIL_TILL_WATER`, `fertilizer === goodness(rng, col, row)`, and `weedChance === WEED_CHANCE`.
+
+`soil.instance` — Planting, harvest, death, rot, and weeding keep the same `Soil` instance. Water clamp `0..SOIL_WATER_MAX`. `drowning` iff `water > SOIL_WATER_MID`.
+
+`soil.goodness` — `goodness < VERY_HARD_MAX` → very-hard; `< HARD_MAX` → hard; else soft. Hard dirt is poor dirt.

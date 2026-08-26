@@ -1,6 +1,6 @@
 # Machines
 
-1.2 Machine Update I. Rects. One concept per file. [[art/svg]] [[art/palette]]
+Rects. One concept per file. [[art/svg]] [[art/palette]]
 
 1×1 `0 0 24 24` except still `0 0 48 24`. Item face is the same machine as the prop, larger. Cottage machines: copper reads as roof. Cold / condenser / litre marks read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water.
 

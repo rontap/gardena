@@ -10,7 +10,7 @@
 
 Perspective is one per asset. Ground and vehicles are top-down; freestanding props are a flat front elevation. Never both in one file — `prop-pump` had a front-on housing glued to a top-down trough.
 
-## 1.7 redraws
+## Named assets
 
 | file | viewBox | depicts |
 |---|---|---|

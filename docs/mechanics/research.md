@@ -6,7 +6,7 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `cheatFastResearch`: job drain `× 3` on top of Speedy research. Toggle. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` to the shared bank.
 
-`RESEARCH[id].name` is the visible label. Trees: plants, land, automation, trade. 28 rows.
+`RESEARCH[id].name` is the visible label. Trees: plants, land, automation, trade.
 
 ## Three fields, three jobs
 
@@ -22,73 +22,67 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `researchShown(id)`: `reveal.length === 0 || reveal.some(r => done.has(r))`. `researchOpen(id)`: `requires.every(r => done.has(r))` — a row can be on the shelf and still shut. `unlock-smart-irrigation` is the only such row; the Research card grays and the callout names the missing rows — [[ui/docks]].
 
-`gate` and `ResearchGate` are gone. 1.8.0 removed the `digs` / `mines` play-gates along with the only two rows that used them; 1.8.2 removed the empty field they left behind.
-
 `grants`: `readonly string[]` — the concepts a row turns on that no table can express, one short noun phrase each. `SKUS` and `SKILLS` already name what they gate; `grants` covers the rest, the `world.done.has(...)` feature sites. Empty on rows whose unlocks are fully covered by those two tables. Read by [[ui/cheat]] `#debug-techtree`, not by the sim.
 
 `skuOpen` is unlock done (or `'start'`) and the need: `[]` | prize stock | any one of those rows done. `skuShown` is `show` alone, except `'prize'`, which is shown only while stock is banked. `'prize'` means the sku is never for sale — [[mechanics/contracts]]. `buy-freezer-large` is the only one.
 
-1.8.2 removed `unlock-smart-sprinkler`. A file written before it is not loadable and gets the existing cannot-load screen. No retired-id list, no skip, no drop, no migrate — [[architecture/save]].
-
 ## Four shelves
 
-| tab | rows | at start | question |
-|---|---|---|---|
-| Plants | 7 | 4 | what do I grow, and how good is it |
-| Land | 5 | 1 | how much ground, and what state is it in |
-| Automation | 9 | 2 | what runs without me |
-| Trade | 7 | 4 | how does produce become money |
+| tab | question |
+|---|---|
+| Plants | what do I grow, and how good is it |
+| Land | how much ground, and what state is it in |
+| Automation | what runs without me |
+| Trade | how does produce become money |
 
 Contracts is the money pipeline, not a utility: it sits in Trade with the boxes, the chest and the machines. Paving and fences leave Land, which keeps the permit ladder and the tools that break ground. The machines leave Automation, so Automation is one thing — water, logic, vehicles.
 
-$1392 / 1740s over 28 rows. Day-1 shelf $160 against a $50 start.
-
 ## Rows
 
-Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`.
+Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`. Cost / duration live on `RESEARCH`.
 
-| id | name | tree | $ | s | reveal (OR) | requires (AND) | grants |
-|---|---|---|---|---|---|---|---|
-| unlock-fertilizer | Synthetic fertilizer | plants | 10 | 30 | — | — | — |
-| unlock-compost | Composting | plants | 10 | 30 | — | — | — |
-| unlock-tomato | Tomato seeds | plants | 8 | 30 | — | — | — |
-| unlock-watermelon | Watermelon seeds | plants | 14 | 45 | — | — | — |
-| unlock-grape | Grape seeds | plants | 12 | 40 | unlock-tomato, unlock-watermelon | — | — |
-| unlock-raspberry | Raspberry seeds | plants | 32 | 45 | unlock-tomato, unlock-watermelon, unlock-grape | — | — |
-| unlock-heirloom | Heirloom crops | plants | 140 | 140 | expand-land, unlock-vehicles | — | Heirloom rarity column in the store |
-| unlock-expand | Unlock land | land | 25 | 50 | — | — | Land expansion on the map edge; +1 expansion permit |
-| unlock-pickaxe | Pickaxes | land | 12 | 40 | unlock-better-tools, unlock-expand | — | — |
-| expand-land | Expand land | land | 120 | 110 | unlock-expand | unlock-expand | +1 expansion permit |
-| eminent-domain | Eminent domain | land | 420 | 200 | expand-land | expand-land | +1 expansion permit |
-| unlock-landscaping | Landscape architecture | land | 12 | 30 | unlock-expand | — | — |
-| unlock-irrigation | Irrigation | automation | 12 | 40 | — | — | — |
-| unlock-water-storage | Water storage | automation | 30 | 70 | unlock-irrigation | unlock-irrigation | — |
-| unlock-auto-irrigation | Automated irrigation | automation | 20 | 55 | unlock-irrigation | unlock-irrigation | — |
-| unlock-adv-irrigation | Advanced irrigation | automation | 75 | 75 | unlock-auto-irrigation | unlock-auto-irrigation | — |
-| unlock-sensors | Sensors | automation | 20 | 50 | — | — | Sensors lens row |
-| unlock-advanced-sensors | Advanced sensors | automation | 140 | 60 | unlock-sensors | unlock-sensors | — |
-| unlock-smart-irrigation | Smart irrigation | automation | 60 | 100 | unlock-sensors | unlock-adv-irrigation, unlock-sensors | Sprinkler crop dial; Sprinkler signal input; Signal wire endpoints on sprinklers |
-| unlock-vehicles | Vehicles | automation | 40 | 80 | unlock-expand | — | Quad, tractor and trailer at the hangar |
-| unlock-silos | Field silos | automation | 30 | 60 | unlock-vehicles | unlock-vehicles | — |
-| unlock-contracts | Contracts | trade | 10 | 30 | — | — | Contracts board at the stall; Reputation decay |
-| unlock-better-tools | Better gardening tools | trade | 16 | 45 | — | — | — |
-| unlock-large-box | Fruit boxes | trade | 15 | 40 | — | — | — |
-| unlock-chest | Chest | trade | 14 | 40 | unlock-large-box | — | — |
-| unlock-grinder | Seed grinder | trade | 20 | 50 | — | — | — |
-| unlock-preservatives | Preservatives | trade | 30 | 70 | unlock-grinder | unlock-grinder | Jam icon in the almanac |
-| unlock-fermentation | Fermentation | trade | 45 | 85 | unlock-grinder | — | — |
+| id | tree | reveal (OR) | requires (AND) | grants |
+|---|---|---|---|---|
+| unlock-fertilizer | plants | — | — | — |
+| unlock-compost | plants | — | — | — |
+| unlock-tomato | plants | — | — | — |
+| unlock-watermelon | plants | — | — | — |
+| unlock-grape | plants | unlock-tomato, unlock-watermelon | — | — |
+| unlock-raspberry | plants | unlock-tomato, unlock-watermelon, unlock-grape | — | — |
+| unlock-heirloom | plants | expand-land, unlock-vehicles | — | Heirloom rarity column in the store |
+| unlock-expand | land | — | — | Land expansion on the map edge; +1 expansion permit |
+| unlock-pickaxe | land | unlock-better-tools, unlock-expand | — | — |
+| expand-land | land | unlock-expand | unlock-expand | +1 expansion permit |
+| eminent-domain | land | expand-land | expand-land | +1 expansion permit |
+| unlock-landscaping | land | unlock-expand | — | — |
+| unlock-irrigation | automation | — | — | — |
+| unlock-water-storage | automation | unlock-irrigation | unlock-irrigation | — |
+| unlock-auto-irrigation | automation | unlock-irrigation | unlock-irrigation | — |
+| unlock-adv-irrigation | automation | unlock-auto-irrigation | unlock-auto-irrigation | — |
+| unlock-sensors | automation | — | — | Sensors lens row |
+| unlock-advanced-sensors | automation | unlock-sensors | unlock-sensors | — |
+| unlock-smart-irrigation | automation | unlock-sensors | unlock-adv-irrigation, unlock-sensors | Sprinkler crop dial; Sprinkler signal input; Signal wire endpoints on sprinklers |
+| unlock-vehicles | automation | unlock-expand | — | Quad, tractor and trailer at the hangar |
+| unlock-silos | automation | unlock-vehicles | unlock-vehicles | — |
+| unlock-contracts | trade | — | — | Contracts board at the stall; Reputation decay |
+| unlock-better-tools | trade | — | — | — |
+| unlock-large-box | trade | — | — | — |
+| unlock-chest | trade | unlock-large-box | — | — |
+| unlock-grinder | trade | — | — | — |
+| unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam icon in the almanac |
+| unlock-fermentation | trade | unlock-grinder | — | — |
 
-Fertilizer and compost are identical in money and time on purpose: one decision made two ways, so the whole difference lives in what they do. Synthetic is instant, costs $15 a bag forever and sets `bio = false`; compost needs a $20 box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Neither is downstream of the other. `unlock-heirloom` reveals on land or vehicles, not on either soil row.
+Fertilizer and compost are identical in money and time on purpose: one decision made two ways, so the whole difference lives in what they do. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Neither is downstream of the other. `unlock-heirloom` reveals on land or vehicles, not on either soil row.
 
-Advanced sensors and Advanced irrigation carry the money in Automation: both are where the system stops being convenience and starts being expressive, and their own SKUs are pocket change, so the research is the price. Fermentation is priced against [[mechanics/saturation]] — spirits and wine floor at `SAT_FLOOR` 0.25 where crops floor at 0.40–0.55, and they top the contract `GOOD_COST` list.
+Advanced sensors and Advanced irrigation carry the money in Automation: both are where the system stops being convenience and starts being expressive, and their own SKUs are pocket change, so the research is the price. Fermentation is priced against [[mechanics/saturation]] — spirits and wine floor at `SAT_FLOOR` where crops floor higher, and they top the contract `GOOD_COST` list.
 
 `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. Lens `vehicles` unhidden after this row. Not a family-study. `unlock-silos` `effect` `unlock-sku` `buy-silo-seed`.
 
-`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. No `bump-*`. No `{ kind: 'sale-mul' }`. Better crop is player skills — [[mechanics/family]].
+`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
 
-`unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row. `unlock-smart-sprinkler` no longer exists.
+`unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
-Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done. No `unlock-mill` `unlock-jam` `unlock-still` `unlock-barrel` `unlock-freezer` `unlock-pumpjack`.
+Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done.
 
 `unlock-large-box` unlocks **large** only. Small box is in the shop from the start.
 
@@ -96,39 +90,39 @@ Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock
 
 ## Shop gates
 
-`buy-box` unlock `start`, $6. `buy-box-large` unlock `unlock-large-box`, $18.
+`buy-box` unlock `start`. `buy-box-large` unlock `unlock-large-box`.
 
-`buy-fertilizer` unlock `start`, $18. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`, $15. `buy-weed-spray` $12 utility, unlock and show `unlock-fertilizer`.
+`buy-fertilizer` unlock `start`. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`.
 
-`buy-compost-box` unlock `unlock-compost`, show `start`, $20. Shown from the start beside the synthetic route, never behind it.
+`buy-compost-box` unlock `unlock-compost`, show `start`. Shown from the start beside the synthetic route, never behind it.
 
 The rotary shovel and the diamond pickaxe have no sku. Both are four-star contract prizes — [[mechanics/contracts]].
 
-`pack-grape` $16 show `start`, buy `unlock-grape`. `pack-raspberry` $22 show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` $8 show + buy `unlock-fermentation`. `buy-freezer-large` $0 `need: 'prize'` — shown and buyable only while one is banked.
+`pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. `buy-freezer-large` `need: 'prize'` — shown and buyable only while one is banked.
 
-`buy-mill` $35 show `start`, buy `unlock-grinder`. `buy-jam` $40 / `buy-freezer` $36 / `buy-sugar` $16 show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` $45 / `buy-barrel` $28 show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
+`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` / `buy-barrel` show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
 
 ### Water
 
 Three rows, three jobs. Irrigation routes the pump the farm already owns; Water storage sells a second source; Automated and Advanced sell what throws the water — [[mechanics/water]].
 
-| sku | $ | show | unlock |
-|---|---|---|---|
-| buy-pipe | 4 | start | unlock-irrigation |
-| buy-tap | 10 | start | unlock-irrigation |
-| buy-rain-tank | 20 | start | start |
-| buy-pumpjack | 40 | start | unlock-water-storage |
-| buy-well | 75 | unlock-irrigation | unlock-water-storage |
-| buy-sprinkler | 15 | unlock-irrigation | unlock-auto-irrigation |
-| buy-valve | 6 | unlock-auto-irrigation | unlock-auto-irrigation |
-| buy-sprinkler-vert | 30 | unlock-auto-irrigation | unlock-adv-irrigation |
-| buy-sprinkler-large | 33 | unlock-auto-irrigation | unlock-adv-irrigation |
+| sku | show | unlock |
+|---|---|---|
+| buy-pipe | start | unlock-irrigation |
+| buy-tap | start | unlock-irrigation |
+| buy-rain-tank | start | start |
+| buy-pumpjack | start | unlock-water-storage |
+| buy-well | unlock-irrigation | unlock-water-storage |
+| buy-sprinkler | unlock-irrigation | unlock-auto-irrigation |
+| buy-valve | unlock-auto-irrigation | unlock-auto-irrigation |
+| buy-sprinkler-vert | unlock-auto-irrigation | unlock-adv-irrigation |
+| buy-sprinkler-large | unlock-auto-irrigation | unlock-adv-irrigation |
 
 Rainwater tank is not research. It is on the shelf from the start.
 
 ### Vehicles
 
-`buy-hangar` $80 automation, show `unlock-irrigation`, buy `unlock-vehicles`. `haggling` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` $70 automation, show `unlock-vehicles`, buy `unlock-silos`, haggling applies. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, haggling does not discount. — [[mechanics/vehicles]]
+`buy-hangar` automation, show `unlock-irrigation`, buy `unlock-vehicles`. `haggling` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` automation, show `unlock-vehicles`, buy `unlock-silos`, haggling applies. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, haggling does not discount. — [[mechanics/vehicles]]
 
 ### Sensors
 
@@ -145,10 +139,24 @@ Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unloc
 | buy-water-system | unlock-sensors | unlock-adv-irrigation |
 | buy-vehicle-detector | unlock-sensors | unlock-vehicles |
 
-AND / OR / NOT no longer carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`, so the second lock was compensating for a schema that could not say it. `buy-smart-valve` the same through `unlock-smart-irrigation`.
+AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`. `buy-smart-valve` the same through `unlock-smart-irrigation`.
 
-`buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors. Prices [[mechanics/sensors]].
+`buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors.
 
 ### Land
 
-`pack-grass` $1, `buy-fence` $10 and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]]. `buy-better-pickaxe` show after `unlock-pickaxe`. Both pickaxes buy on `unlock-pickaxe` — [[mechanics/expansion]].
+`pack-grass`, `buy-fence` and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]]. `buy-better-pickaxe` show after `unlock-pickaxe`. Both pickaxes buy on `unlock-pickaxe` — [[mechanics/expansion]].
+
+## Invariants
+
+`research.job` — One research job. `buy-box` unlock `start`. `buy-box-large` unlock `unlock-large-box`. `buy-fertilizer` unlock `start`. `unlock-fertilizer` unlocks synthetic. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU.
+
+`research.tiles` — `buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`. Cosmetic. Keep `ground`.
+
+`research.better` — Better crop is player `better-*` `saleMul` and ripen `extraUp1`. Őstermelő gated on `unlock-heirloom`.
+
+`research.unlockAll` — `unlockAll`: every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll.
+
+`research.reveal` — Raspberry research `reveal` is `unlock-grape`. Olive `reveal: unlock-tomato`. `pack-vanilla` shows after raspberry; buy requires `vanilla-tending`. `unlock-fermentation` automation unlocks `pack-sugar-cane` and gates `buy-still` `buy-barrel`. `unlock-grinder` also gates `buy-mill`. `unlock-preservatives` automation, reveal `unlock-grinder`, gates `buy-jam` `buy-freezer` `buy-sugar`.
+
+`research.gates` — `better-olive` `better-grape` `better-sugar-cane` gated on `unlock-olive` / `unlock-grape` / `unlock-fermentation`. `vanilla-tending` gated on `unlock-raspberry`. `better-vanilla` gated on `vanilla-tending`. No `better-*` for `TreeId`.

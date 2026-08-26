@@ -21,4 +21,16 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 
 `n` is `World.ripenN` keyed `col,row`. Absent 0. Not a `Soil` field. Failed buy / bulk / drop consumes 0 `next()`.
 
-Illegal: `clock.t` or `money` as entropy. `Math.random` only when world seed is omitted.
+`clock.t` or `money` as entropy is illegal. `Math.random` only when world seed is omitted.
+
+## Invariants
+
+`rng.shop` — `shop.next()` does not move when `grow` rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.
+
+`rng.ripen-n` — Two growing→ripe on one cell the same day use distinct `n`. Rarities need not match.
+
+`rng.spatial` — `Spatial.at` / `hash`: same args, any call order → same `u`.
+
+`rng.fail` — Failed `buy` / `buyPacks` (closed, cannot afford, cannot fit) consumes 0 `shop.next()`. Failed tree drop consumes 0 `fruit.next()`. Granted pack: one `next()` each. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. Success: 5.
+
+`rng.pack` — Pack rarity is `rollShopRarity(seed-bank tier, shop.next())`. Not `clock.t`. Not `money`.

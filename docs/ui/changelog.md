@@ -16,11 +16,11 @@ Copy is `src/game/ui/changelog.md`. Source of truth. Manual edits only. `changel
 
 `RELEASES[0]` is the first heading in that file. File order = array order = render order. This note does not pin `[0]` to a version.
 
-Wordmark **1.8.1**. This note does not own `SAVE_VERSION` / dump `version` / `PROTOCOL`. Do not bump the wordmark.
+Wordmark **1.8.2**. This note does not own `SAVE_VERSION` / dump `version` / `PROTOCOL`. Do not bump the wordmark.
 
 ## Shell
 
-Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.8.1** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
+Menu Chrome `relative w-[36rem]` on changelog. Home and join stay `relative w-[26rem]`. Illustration, **Gardena**, **1.8.2** stay. `Changelog` replaces the home buttons (and fail line). Join still wins the body while `joining`.
 
 | mode | dim | backdrop | Esc |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Show ×: play, or joining, or `{ kind: 'changelog' }`.
 
 ## Wordmark
 
-The **1.8.1** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
+The **1.8.2** line is a `button`. `cursor-pointer`. `aria-label="Version history"`. `aria-pressed` true while changelog.
 
 Rest: `text-sm text-ink/45 text-center px-2 py-0.5`. Hover: `hover:bg-dirt hover:text-house`. Open: `bg-ink text-house` (Btn selected).
 

@@ -47,12 +47,14 @@ export function locked(world: World, id: SkuId): boolean {
   return !world.skuOpen(id)
 }
 
-export function gateLine(id: SkuId, state: RowState): string {
+export function gateLine(world: World, id: SkuId, state: RowState): string {
   if (state === 'need-skill') return REASON['need-skill']
   if (state !== 'not-researched') return REASON[state]
-  const unlock = SKUS[id].unlock
-  if (unlock === 'start') return REASON[state]
-  return `Needs the ${RESEARCH[unlock].name} research`
+  const sku = SKUS[id]
+  if (sku.need === 'prize') return 'A contract prize. Not for sale.'
+  if (sku.unlock !== 'start' && !world.done.has(sku.unlock)) return `Needs the ${RESEARCH[sku.unlock].name} research`
+  if (sku.need.length > 0) return `Needs ${sku.need.map(r => RESEARCH[r].name).join(' or ')}`
+  return REASON[state]
 }
 
 export function matches(id: SkuId, q: string): boolean {
@@ -79,7 +81,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
         <>
           <span className="mb-2 block text-xs opacity-60">{crumb}</span>
           <span>{skuDesc(id)}</span>
-          {state !== 'ok' && !guestOff && <span className="mt-2 block font-bold text-roof">{gateLine(id, state)}</span>}
+          {state !== 'ok' && !guestOff && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}
           {bulk !== undefined && (
             <span className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}>
               Ctrl-click: 5 packs for <Coin n={bulk} />

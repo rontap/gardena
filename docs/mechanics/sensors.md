@@ -51,9 +51,9 @@ Do not create `src/` here.
 | `BUTTON_PULSE` | 4 | preference. Ticks of `tick()`. Button output high exactly this many |
 | `SENSOR_HOLD` | 8 | preference. Ticks after an output **edge** |
 | `COUNTER_MAX` | 9999 | preference. Tune `n` max |
-| `unlock-sensors` | automation $24 / 55s, reveal `unlock-auto-irrigation` | preference |
-| `unlock-advanced-sensors` | automation $22 / 50s, reveal `unlock-sensors` | preference |
-| `unlock-smart-irrigation` | automation $32 / 70s, reveal `unlock-sensors` | preference |
+| `unlock-sensors` | automation $20 / 50s, reveal `[]` — a root | preference |
+| `unlock-advanced-sensors` | automation $140 / 60s, reveal + requires `unlock-sensors` | preference |
+| `unlock-smart-irrigation` | automation $60 / 100s, reveal `unlock-sensors`, requires `unlock-adv-irrigation` + `unlock-sensors` | preference |
 | `VERTEX_HIT` | 0.3 | existing. Delete wire: nearest bezier |
 
 `Sku.tab` `automation`. `haggling` applies. Identifiers only after this table.
@@ -308,7 +308,7 @@ Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a f
 
 Unwired sprinkler still pours after Smart Irrigation. Wired-low does not. Digest distinguishes unwired vs wired-low (wire present, level 0).
 
-Smart Irrigation is a `feature`: every vertex sprinkler gains `in`. No new SKU. No mask HUD. `unlock-smart-sprinkler` crop dial unchanged. Wiring a sprinkler before `unlock-smart-irrigation` is a no-op.
+Smart irrigation is a `feature`: every vertex sprinkler gains `in`, and the same row grants the crop dial. No new SKU. No mask HUD. Wiring a sprinkler before `unlock-smart-irrigation` is a no-op.
 
 `tickWater` pours only `pourEligible` sprinklers, this tick, existing AoE + dial.
 
@@ -322,15 +322,13 @@ Manual valve unchanged. Guest still cannot place or click it.
 |---|---|---|
 | `unlock-sensors` | `feature` | SKUs: lever, button, lamp, pulser, counter, water, fert, harvest, water-system, day. Lens `sensors` |
 | `unlock-advanced-sensors` | `feature` | SKUs: AND, OR, NOT |
-| `unlock-smart-irrigation` | `feature` | feature: sprinkler inputs. SKUs: smart valve, vehicle detector |
+| `unlock-smart-irrigation` | `feature` | feature: sprinkler crop dial + signal inputs. SKU: smart valve |
 
-`startResearch('unlock-smart-irrigation')` no-ops unless `unlock-adv-irrigation` is in `done`. Card still `reveal: unlock-sensors`. Gate stays `{ kind: 'none' }`. Assumption: no new `ResearchGate` arm.
+`unlock-sensors` is a no-prerequisite root carrying only what stands alone: lever, button, lamp, pulser, counter, harvest reader, day reader. `startResearch('unlock-smart-irrigation')` no-ops unless both `unlock-adv-irrigation` and `unlock-sensors` are in `done` — `requires` is AND. The card reveals on `unlock-sensors` alone, so it can be on the shelf and shut — [[mechanics/research]].
 
-`skuShown` Sensors shelf after `unlock-sensors`. Smart Irrigation cards `show: unlock-sensors`, `unlock: unlock-smart-irrigation`, `need: unlock-sensors` — shown after Sensors, buy after both.
+`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. `buy-smart-valve`: `unlock: unlock-smart-irrigation`, `need: []`. AND / OR / NOT: `unlock: unlock-advanced-sensors`, `need: []` — `unlock-advanced-sensors` requires `unlock-sensors`, so the old `need` was compensating for a schema that could not say it.
 
-AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: unlock-sensors` — visible after Sensors; buy after Advanced sensors.
-
-Other `unlock-sensors` cell SKUs: `show` + `unlock` `unlock-sensors`, `need: 'none'`.
+Four readers dual-lock through `need` on the capability they read, not on a research row invented for the intersection: `buy-sensor-water` `need: ['unlock-irrigation']`, `buy-sensor-fert` `need: ['unlock-fertilizer', 'unlock-compost']` (either soil route), `buy-water-system` `need: ['unlock-adv-irrigation']`, `buy-vehicle-detector` `unlock: unlock-sensors` `need: ['unlock-vehicles']`. Standalone cell SKUs: `show` + `unlock` `unlock-sensors`, `need: []`.
 
 Filing: signal → Sensors (`logic`): lever, button, lamp, or, and, not, pulser, counter. Readers: water, fert, harvest, water-system, vehicle-detector, day. Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
 
@@ -432,5 +430,5 @@ AND / OR / NOT use `Sku.unlock` + `Sku.need` as `ResearchId`. Future germ / weat
 - prop nubs on mill/jam/still/chest/freezer/silo/additive
 - `HudTarget` hangar or vehicle
 - counter dial `floor(4 * count / n)`
-- AND / OR / NOT buyable on `unlock-sensors` alone
+- AND / OR / NOT buyable on `unlock-sensors` alone (`unlock-advanced-sensors` requires it)
 - comments in `src/`

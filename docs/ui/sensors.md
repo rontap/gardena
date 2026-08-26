@@ -175,7 +175,7 @@ Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sens
 | `buy-vehicle-detector` | **Vehicle detector** | Flush plate. Output high when a field Quad or tractor sits on this tile. |
 | `buy-smart-valve` | **Smart valve** | Sits on an edge. Closed unless its input is high. No manual click. |
 
-Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: 'none'`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: unlock-sensors`. Locked callout: Needs the **Advanced sensors** research.
+Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: []`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. Water / fert / water-system / vehicle-detector show on `unlock-sensors` and carry a `need` list; their locked callout names that list — [[mechanics/research]].
 
 Research card `unlock-advanced-sensors` name **Advanced sensors**. Blurb: **Unlocks AND, OR, and NOT. AND is on if both inputs are. OR if either is. NOT inverts.** Not a `CatalogEntry`.
 

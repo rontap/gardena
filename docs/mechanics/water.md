@@ -48,11 +48,11 @@ Pour per covered **growing** tile, not as one lump.
 
 Dry, sourceless, unreachable, or nothing growing in the AoE: rate 0, no VFX. `tickWater` writes `World.vfx` from the sprinklers it actually poured and pings `'vfx'`. Not `BIG_TICK` — [[art/vfx]].
 
-`unlock-smart-irrigation`: every vertex sprinkler gains a signal `in`. No new SKU. No mask HUD. Unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. Crop dial `unlock-smart-sprinkler` unchanged. — [[mechanics/sensors]]
+`unlock-smart-irrigation`: every vertex sprinkler gains a signal `in` and a crop dial — one row, both halves. No new SKU. No mask HUD. Unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. — [[mechanics/sensors]]
 
 ## Smart dial
 
-`unlock-smart-sprinkler`. Feature, not a building. Every placed sprinkler gains a crop dial. Tuned: pours that crop’s `waterUsePerSec` per tile. Flat: `SPRINKLER_TILE_RATE`. Tuning does not rewrite soil already wet or dry.
+`unlock-smart-irrigation`. Feature, not a building. Every placed sprinkler gains a crop dial. Tuned: pours that crop’s `waterUsePerSec` per tile. Flat: `SPRINKLER_TILE_RATE`. Tuning does not rewrite soil already wet or dry. `unlock-smart-sprinkler` was removed in 1.8.2; the dial and the signal input are one row.
 
 ## Hand pour
 

@@ -4,9 +4,9 @@ Player-facing release list in the menu. Menu-local view state. Not World. Not Sa
 
 Assumption: boot `joining` stays App-owned; Menu forces home when `joining`; wordmark click is a no-op while joining.
 
-Wordmark **1.8.1**. Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate. Do not bump the wordmark.
+Wordmark **1.8.2**. Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate. Do not bump the wordmark.
 
-Assumption: wordmark stays **1.8.1** (menu already shows it). This note does not invent a number. `ChangelogParseError` is the named parse error.
+Assumption: wordmark stays **1.8.2** (menu already shows it). This note does not invent a number. `ChangelogParseError` is the named parse error.
 
 `src/game/ui/changelog.md` is the source of truth. Manual edits only. No script, dump, codegen, or agent writes that file from TypeScript, git, or defs. Markdown is never generated from code. `parseChangelog` reads. It does not write. No markdown library.
 
@@ -140,7 +140,7 @@ Add a test that walks shipped `RELEASES` top-level `Change.text`. Assert `topLin
 
 `menu.tsx` owns it. `useState<MenuPage>({ kind: 'home' })`. Not App. Not `World`. Dies when `Menu` unmounts.
 
-Open: click the existing wordmark **1.8.1** (boot and play). Sets `{ kind: 'changelog' }`. Toggle: click again → `{ kind: 'home' }`. While boot `joining`: no-op.
+Open: click the existing wordmark **1.8.2** (boot and play). Sets `{ kind: 'changelog' }`. Toggle: click again → `{ kind: 'home' }`. While boot `joining`: no-op.
 
 Close changelog (Menu):
 

@@ -26,9 +26,11 @@ Cards under it share one anatomy: icon `h-10` centred, `skuLabel` / research nam
 
 [[ui/shop]]. [[ui/build]]. [[ui/lens]]. [[ui/cheat]].
 
-Research: trees **Plants** **Utilities** **Expansion** **Automation** on the rail. 2-col cards on `auto-rows-[8.5rem]` — two columns, not three, because the gate and progress bars need the width. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Gated cards add a `roof` bar and `{have} / {n} {digs|mines}` — [[mechanics/research]]. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the gate sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
+Research: trees **Plants** **Land** **Automation** **Trade** on the rail, in that order. 2-col cards on `auto-rows-[8.5rem]` — two columns, not three, because the progress bar needs the width. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the `why` sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
 
-Plants: `unlock-grape` **Grape seeds** visible at start. `unlock-olive` after tomato. `unlock-raspberry` after grape. No vanilla research card. Automation: **Fermentation** (`unlock-fermentation`) at start.
+A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A shown card is clickable when `researchOpen` — `requires` is AND. Gated is a disabled face, and `why` names what is missing: *Needs {names joined by and} first.* `unlock-smart-irrigation` is the only row that can be shown and shut. `why` order: done, running, gated, another job, cannot afford. [[mechanics/research]]
+
+Eleven rows open at start, 4 / 1 / 2 / 4 across the four tabs. Plants: **Synthetic fertilizer** and **Composting** side by side, neither behind the other; **Tomato seeds** and **Watermelon seeds**; **Grape seeds** after either of those; **Raspberry seeds** after any basic fruit. No vanilla and no olive research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Fruit boxes**, **Seed grinder**; **Fermentation** after the grinder.
 
 **×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace`, pipes or sensors lens `off`, search query cleared. `vehicles` stays. Switching between those two keeps all three — [[ui/build]]. Selecting Build **Sensors** (`logic`) is not a close: `onShelf('logic')` → `setLens('sensors')`, no SKU armed. Switching to another Build category does not force that lens off. Research **×** only closes the dock.
 
@@ -68,7 +70,7 @@ Rule, then ledger **Stipend** `+` coin and **Tax** `−` coin. Rule, then **Bala
 
 Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day sensor config. No new chrome. [[ui/sensors]]
 
-Sprinklers, only after **Tune sprinkler** (`unlock-smart-sprinkler`). Anchored at the vertex. Title **Sprinkler output**.
+Sprinklers, only after **Smart irrigation** (`unlock-smart-irrigation`) — the same row that grants the signal input. Anchored at the vertex. Title **Sprinkler output**.
 
 **Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest / counter / day hit. Guest: no sprinkler HUD.
 

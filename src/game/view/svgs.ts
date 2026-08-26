@@ -520,7 +520,11 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-large-box':
       return itemInner({ kind: 'box', cap: 14, cargo: { kind: 'empty' } })
     case 'unlock-irrigation':
+      return itemInner({ kind: 'tap' })
+    case 'unlock-water-storage':
       return itemInner({ kind: 'pumpjack' })
+    case 'unlock-silos':
+      return itemInner({ kind: 'silo-produce' })
     case 'unlock-chest':
       return itemInner({ kind: 'chest' })
     case 'unlock-grinder':
@@ -537,8 +541,6 @@ export function researchInner(id: ResearchId): string {
       return inner(uiResearchAuto)
     case 'unlock-adv-irrigation':
       return inner(uiResearchAdv)
-    case 'unlock-smart-sprinkler':
-      return inner(uiResearchSmart)
     case 'unlock-expand':
     case 'expand-land':
     case 'eminent-domain':
@@ -552,7 +554,7 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-advanced-sensors':
       return inner(itemAnd)
     case 'unlock-smart-irrigation':
-      return stageOnly(itemSmartValve, 'closed')
+      return inner(uiResearchSmart)
     case 'unlock-contracts':
       return inner(skillContracts)
   }

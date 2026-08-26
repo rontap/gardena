@@ -4,7 +4,7 @@ Startup and in-play gear share one Chrome shell. Type [[ui/type]]. Chrome tokens
 
 `Chrome` `relative w-[26rem]` home and join. Changelog `{ kind: 'changelog' }`: `relative w-[36rem]`. Inner column `relative z-20 px-4 pt-4 pb-3 flex flex-col gap-2`.
 
-Top of the column: `ui-menu.svg` `w-full` (illustration only — no text in the SVG). Then `h1` **Gardena** (`font-display` `text-base` `leading-none` `text-center`). Then wordmark **1.8.1** — [[ui/changelog]]. Then the body. Then fail copy if any (home only).
+Top of the column: `ui-menu.svg` `w-full` (illustration only — no text in the SVG). Then `h1` **Gardena** (`font-display` `text-base` `leading-none` `text-center`). Then wordmark **1.8.2** — [[ui/changelog]]. Then the body. Then fail copy if any (home only).
 
 No `$`. No Window title (the `h1` is the name). Not Overlay. Not Window. Not a `Panel`.
 
@@ -22,7 +22,7 @@ Menu-local `useState<MenuPage>({ kind: 'home' })`. Dies with Menu.
 
 `joining` true → force `{ kind: 'home' }`. JoinFields still wins.
 
-Wordmark **1.8.1** is a `button`, `cursor-pointer`, `aria-label="Version history"`. Rest `text-sm text-ink/45 text-center px-2 py-0.5`. Hover `hover:bg-dirt hover:text-house`. While changelog: `bg-ink text-house`, `aria-pressed`. Click toggles home ↔ changelog. While joining: no-op.
+Wordmark **1.8.2** is a `button`, `cursor-pointer`, `aria-label="Version history"`. Rest `text-sm text-ink/45 text-center px-2 py-0.5`. Hover `hover:bg-dirt hover:text-house`. While changelog: `bg-ink text-house`, `aria-pressed`. Click toggles home ↔ changelog. While joining: no-op.
 
 Chrome × (`text-lg`, aria-label Close, `text-ink/60 hover:bg-dirt hover:text-house`):
 

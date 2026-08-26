@@ -2,6 +2,22 @@
 
 History. Not current contracts.
 
+## 2026-08-26 — 1.8.2 Tech tree rebalance
+
+[[mechanics/research]] [[ui/docks]] [[mechanics/water]] [[mechanics/sensors]] [[mechanics/vehicles]] [[architecture/save]]
+
+- `ResearchDef.reveal` / `.requires` are `readonly ResearchId[]` — OR and AND. `Sku.need` is `readonly ResearchId[] | 'prize'` — OR. `gate` / `ResearchGate` deleted; `researchOpen` is now the `requires` check and `startResearchBody` uses it alone.
+- Trees `utilities` → `trade`, `expansion` → `land`. Rail order **Plants** **Land** **Automation** **Trade**. 4 / 1 / 2 / 4 open at start.
+- 27 rows → 28. `unlock-smart-sprinkler` removed (merged into `unlock-smart-irrigation`, which requires `unlock-adv-irrigation` + `unlock-sensors`). `unlock-water-storage` and `unlock-silos` added. $1016 / 1520s → $1392 / 1740s. Nine rows carry a real `requires`; one hard edge in 1.8.1.
+- `unlock-compost` off `unlock-fertilizer`, both plants, both $10 / 30s. `unlock-sensors` a root. `unlock-vehicles` reveals on `unlock-expand`. `unlock-heirloom` reveals on `expand-land` or `unlock-vehicles`.
+- Gate moves: pipe / tap → `unlock-irrigation`; rain tank → start; pumpjack / well → `unlock-water-storage`; silos → `unlock-silos`; compost box show → start; sensor-water / -fert / water-system / vehicle-detector on `need` lists; AND / OR / NOT and smart valve drop their `need`.
+- Gated Research card names the missing rows. `gateLine` names the lock that is actually unmet, not always `unlock`.
+- Wordmark **1.8.2**. `SAVE_VERSION` / `PROTOCOL` stay **1.8**. No migrate.
+
+A pre-1.8.2 file carrying `unlock-smart-sprinkler` is not loadable. Existing cannot-load path. No retired-id list, no skip, no migrate — [[architecture/save]] RFC.
+
+Assumption: `researchOpen` repurposed as the `requires` check rather than deleted with `gate` — the merged capstone is the one row that can be shown and shut, and the card must say why. Assumption: `buy-well` show `unlock-auto-irrigation` → `unlock-irrigation`, and the silos show `unlock-irrigation` → `unlock-vehicles`, so nothing is buyable while hidden.
+
 ## 2026-08-26 — 1.8.1 QoL Patch II
 
 [[ui/contracts]] [[ui/hud]] [[ui/lens]] [[mechanics/research]] [[items/tools]]

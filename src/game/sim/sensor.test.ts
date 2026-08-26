@@ -16,9 +16,13 @@ const B = { col: 10, row: 13 }
 const C = { col: 11, row: 12 }
 
 function ready(w: World): void {
+  w.done.add('unlock-irrigation')
+  w.done.add('unlock-auto-irrigation')
+  w.done.add('unlock-adv-irrigation')
   w.done.add('unlock-sensors')
   w.done.add('unlock-advanced-sensors')
   w.done.add('unlock-smart-irrigation')
+  w.done.add('unlock-fertilizer')
   w.money = 999
 }
 
@@ -647,6 +651,7 @@ describe('1.6 sensors', () => {
     expect(netTap?.stills).toHaveLength(1)
     const tapOnly = new World(1)
     ready(tapOnly)
+    tapOnly.done.add('unlock-irrigation')
     tapOnly.done.add('unlock-auto-irrigation')
     put(tapOnly, 'buy-water-system', wsAt)
     tapOnly.buy('buy-pipe')
@@ -670,6 +675,7 @@ describe('1.6 sensors', () => {
     expect(heldOff.out).toBe(0)
     const pre = new World(1)
     ready(pre)
+    pre.done.add('unlock-irrigation')
     pre.done.add('unlock-auto-irrigation')
     put(pre, 'buy-water-system', wsAt)
     put(pre, 'buy-lever', A)
@@ -705,6 +711,7 @@ describe('1.6 sensors', () => {
     const v = { col: 19, row: 7 }
     const w = new World(1)
     ready(w)
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     put(w, 'buy-lever', A)
     w.buy('buy-smart-valve')
@@ -753,6 +760,7 @@ describe('1.6 sensors', () => {
     const cropAt = { col: 18, row: 6 }
     const unwired = new World(1)
     ready(unwired)
+    unwired.done.add('unlock-irrigation')
     unwired.done.add('unlock-auto-irrigation')
     unwired.buy('buy-pipe')
     unwired.placePipe({ axis: 'h', col: 18, row: 7 })
@@ -765,6 +773,7 @@ describe('1.6 sensors', () => {
     expect(unwired.rate(v)).toBeCloseTo(SPRINKLER_TILE_RATE, 9)
     const locked = new World(1)
     locked.done.add('unlock-sensors')
+    locked.done.add('unlock-irrigation')
     locked.done.add('unlock-auto-irrigation')
     locked.money = 999
     put(locked, 'buy-lever', A)
@@ -776,7 +785,7 @@ describe('1.6 sensors', () => {
     const wired = new World(1)
     ready(wired)
     wired.done.add('unlock-auto-irrigation')
-    wired.done.add('unlock-smart-sprinkler')
+    wired.done.add('unlock-smart-irrigation')
     put(wired, 'buy-lever', A)
     wired.buy('buy-pipe')
     wired.placePipe({ axis: 'h', col: 18, row: 7 })
@@ -795,6 +804,7 @@ describe('1.6 sensors', () => {
     expect(sprLow.inn).toBe(0)
     const twin = new World(1)
     ready(twin)
+    twin.done.add('unlock-irrigation')
     twin.done.add('unlock-auto-irrigation')
     put(twin, 'buy-lever', A)
     twin.buy('buy-pipe')
@@ -805,6 +815,7 @@ describe('1.6 sensors', () => {
     twin.tick(DT_MAX)
     const clone = new World(1)
     ready(clone)
+    clone.done.add('unlock-irrigation')
     clone.done.add('unlock-auto-irrigation')
     put(clone, 'buy-lever', A)
     clone.buy('buy-pipe')
@@ -931,6 +942,7 @@ describe('1.6 sensors', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const w = new World(1)
     ready(w)
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.buy('buy-smart-valve')
     w.placeSmartValve(e)
@@ -947,6 +959,7 @@ describe('1.6 sensors', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const w = new World(1)
     ready(w)
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.buy('buy-smart-valve')
     w.placeSmartValve(e)

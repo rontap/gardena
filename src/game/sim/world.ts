@@ -1454,7 +1454,7 @@ export class World {
   skuOpen(id: SkuId): boolean {
     const s = SKUS[id]
     if (s.need === 'prize') return this.prizeStock(id) > 0
-    if (s.need !== 'none' && !this.done.has(s.need)) return false
+    if (s.need.length > 0 && !s.need.some(r => this.done.has(r))) return false
     return s.unlock === 'start' || this.done.has(s.unlock)
   }
 
@@ -1471,7 +1471,7 @@ export class World {
 
   researchShown(id: ResearchId): boolean {
     const r = RESEARCH[id].reveal
-    return r === 'start' || this.done.has(r)
+    return r.length === 0 || r.some(p => this.done.has(p))
   }
 
   hasFence(at: Coord): boolean {
@@ -3549,8 +3549,9 @@ export class World {
     this.emit('sold')
   }
 
+  /** Every hard prerequisite done. Reveal is separate: a row can be on the shelf and still shut. */
   researchOpen(id: ResearchId): boolean {
-    return RESEARCH[id].gate.kind === 'none'
+    return RESEARCH[id].requires.every(r => this.done.has(r))
   }
 
   startResearch(id: ResearchId): void {
@@ -3560,8 +3561,6 @@ export class World {
   private startResearchBody(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
-    const req = RESEARCH[id].requires
-    if (req !== 'none' && !this.done.has(req)) return
     if (!this.researchOpen(id)) return
     const def = RESEARCH[id]
     if (this.money < def.cost) return

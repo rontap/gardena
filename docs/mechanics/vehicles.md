@@ -81,7 +81,8 @@ Paint hangar-return + machine pad arrows (`HANGAR_RETURN` / `PAD_DROP` / `PAD_TA
 | `SILO_SEED_PRICE` | 70 | preference. `skuPrice` `buy-silo-seed` |
 | `SILO_SPRAY_PRICE` | 70 | preference. `skuPrice` `buy-silo-spray` |
 | `SILO_PRODUCE_PRICE` | 70 | preference. `skuPrice` `buy-silo-produce` |
-| `unlock-vehicles` | automation $32 / 70s, reveal `unlock-irrigation` | preference |
+| `unlock-vehicles` | automation $40 / 80s, reveal `unlock-expand` | preference |
+| `unlock-silos` | automation $30 / 60s, reveal + requires `unlock-vehicles` | preference |
 | `buy-hangar` | $80 automation | preference. `haggling` applies |
 
 Hangar-buys (`QUAD_PRICE` `TRACTOR_PRICE` three trailer prices) are not `skuPrice`. `haggling` does not discount them. Silo SKUs are `skuPrice` (haggling applies).
@@ -205,11 +206,11 @@ Stored arm has no `driver`. Field `driver` is `SeatId | 'none'`. At most one `po
 
 ## Research / shop
 
-`unlock-vehicles` automation, `gate` `{ kind: 'none' }`, `effect` `unlock-sku` `buy-hangar`. Reveals after `unlock-irrigation`. Does not grant a Quad / tractor / trailer SKU. No new research row.
+`unlock-vehicles` automation, `effect` `unlock-sku` `buy-hangar`. Reveals after `unlock-expand` — ground to cross, not pipework. No `requires`: a tractor does not need a land permit. Does not grant a Quad / tractor / trailer SKU. The three silos are `unlock-silos`, a storage decision after the driving one.
 
 `buy-hangar` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` (haggling). Guest `GUEST_BUILD`.
 
-`buy-silo-seed` `buy-silo-spray` `buy-silo-produce` automation tab, unlock `unlock-vehicles`, show `unlock-irrigation`. Place path. Disarm on confirm. `skuPrice` `SILO_*_PRICE` (haggling). Guest `GUEST_BUILD`.
+`buy-silo-seed` `buy-silo-spray` `buy-silo-produce` automation tab, unlock `unlock-silos`, show `unlock-vehicles`. Place path. Disarm on confirm. `skuPrice` `SILO_*_PRICE` (haggling). Guest `GUEST_BUILD`.
 
 Quad / tractor / trailers are hangar-buy only. `Act.buyVehicle` / `Act.buyTrailer`. No `Place` ghost. No shop SKU.
 
@@ -237,7 +238,7 @@ Pad arrows: view-only, iff local driver OR `lens === 'vehicles'`. Same `HANGAR_R
 
 ## Silos
 
-Shop SKUs. 2×3, door south, no rotate, same instance all 6 cells. Origin = clicked NW, extends east `SILO_W` and south `SILO_H`. `siloSiteOk` like hangarSiteOk but 2×3. Do not call hangarSiteOk for silo SKUs. Pad: `siloPad`. Automation, `unlock-vehicles`, `haggling`.
+Shop SKUs. 2×3, door south, no rotate, same instance all 6 cells. Origin = clicked NW, extends east `SILO_W` and south `SILO_H`. `siloSiteOk` like hangarSiteOk but 2×3. Do not call hangarSiteOk for silo SKUs. Pad: `siloPad`. Automation, `unlock-silos`, `haggling`.
 
 | class | `kind` | sku | $ | look |
 |---|---|---|---|---|

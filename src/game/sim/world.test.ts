@@ -191,6 +191,7 @@ describe('beta-1 invariants', () => {
     expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
     w.money = 50
     w.done.add('unlock-irrigation')
+    w.done.add('unlock-water-storage')
     w.buy('buy-pumpjack')
     expect(w.seats[0].place.kind).toBe('sku')
     expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
@@ -410,18 +411,24 @@ describe('beta-2 invariants', () => {
   })
 
   test('research costs match table', () => {
-    expect(RESEARCH['unlock-tomato']).toMatchObject({ cost: 7, seconds: 30 })
-    expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 12, seconds: 45 })
-    expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 120, seconds: 120, tree: 'plants' })
+    expect(RESEARCH['unlock-tomato']).toMatchObject({ cost: 8, seconds: 30 })
+    expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 32, seconds: 45 })
+    expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 140, seconds: 140, tree: 'plants' })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
-    expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 17, seconds: 50 })
-    expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 20, seconds: 50 })
-    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 20, seconds: 40 })
-    expect(RESEARCH['expand-land']).toMatchObject({ cost: 100, seconds: 90 })
-    expect(RESEARCH['eminent-domain']).toMatchObject({ cost: 400, seconds: 180 })
-    expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({ cost: 20, seconds: 45 })
-    expect(RESEARCH['unlock-fertilizer']).toMatchObject({ cost: 5, seconds: 30 })
-    expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 0, seconds: 40 })
+    expect(RESEARCH['unlock-large-box']).toMatchObject({ cost: 15, seconds: 40 })
+    expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 12, seconds: 40 })
+    expect(RESEARCH['unlock-water-storage']).toMatchObject({ cost: 30, seconds: 70 })
+    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 25, seconds: 50 })
+    expect(RESEARCH['expand-land']).toMatchObject({ cost: 120, seconds: 110 })
+    expect(RESEARCH['eminent-domain']).toMatchObject({ cost: 420, seconds: 200 })
+    expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({ cost: 20, seconds: 55 })
+    expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({ cost: 75, seconds: 75 })
+    expect(RESEARCH['unlock-advanced-sensors']).toMatchObject({ cost: 140, seconds: 60 })
+    expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({ cost: 60, seconds: 100 })
+    expect(RESEARCH['unlock-silos']).toMatchObject({ cost: 30, seconds: 60 })
+    expect(RESEARCH['unlock-fertilizer']).toMatchObject({ cost: 10, seconds: 30 })
+    expect(RESEARCH['unlock-compost']).toMatchObject({ cost: 10, seconds: 30, tree: 'plants' })
+    expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 12, seconds: 40 })
   })
 })
 
@@ -614,7 +621,7 @@ describe('beta-3 invariants', () => {
     expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(RARITY_SALE).toEqual({ common: 1, uncommon: 1.25, rare: 2, heirloom: 3.5 })
     expect(RARITY_WEIGHT).toEqual({ common: 0.55, uncommon: 0.35, rare: 0.09, heirloom: 0.01 })
-    expect(RESEARCH['unlock-raspberry'].reveal).toBe('unlock-grape')
+    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-watermelon', 'unlock-grape'])
   })
 
   test('walk onto rock is legal', () => {
@@ -639,7 +646,7 @@ describe('beta-4 invariants', () => {
 
   test('buy-chest place 1x1 own slots', () => {
     expect(SKUS['buy-chest'].price).toBe(18)
-    expect(RESEARCH['unlock-chest'].cost).toBe(12)
+    expect(RESEARCH['unlock-chest'].cost).toBe(14)
     const w = new World()
     w.done.add('unlock-chest')
     const a = { col: 10, row: 12 }
@@ -722,8 +729,8 @@ describe('beta-4 invariants', () => {
   })
 
   test('unlock-grinder automation buy-grinder 30', () => {
-    expect(RESEARCH['unlock-grinder'].cost).toBe(18)
-    expect(RESEARCH['unlock-grinder'].tree).toBe('automation')
+    expect(RESEARCH['unlock-grinder'].cost).toBe(20)
+    expect(RESEARCH['unlock-grinder'].tree).toBe('trade')
     expect(SKUS['buy-grinder'].price).toBe(30)
     expect(SKUS['buy-grinder'].unlock).toBe('unlock-grinder')
   })
@@ -737,10 +744,12 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-large-box'].name).toBe('Fruit boxes')
     expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
     expect(RESEARCH['unlock-chest'].name).toBe('Chest')
+    expect(RESEARCH['unlock-water-storage'].name).toBe('Water storage')
+    expect(RESEARCH['unlock-silos'].name).toBe('Field silos')
     expect(RESEARCH['unlock-expand'].name).toBe('Unlock land')
     expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
     expect(RESEARCH['unlock-grinder'].name).toBe('Seed grinder')
-    expect(RESEARCH['unlock-expand'].tree).toBe('expansion')
+    expect(RESEARCH['unlock-expand'].tree).toBe('land')
   })
 
   test('itemLine fruit shows freshness; berry has no money clause', () => {
@@ -798,6 +807,7 @@ describe('beta-5 invariants', () => {
   test('buy-pipe 4; two adjacent owned edges join one net', () => {
     expect(SKUS['buy-pipe'].price).toBe(4)
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 50
     w.buy('buy-pipe')
@@ -832,7 +842,10 @@ describe('beta-5 invariants', () => {
     expect(SKUS['buy-pumpjack'].price).toBe(40)
     expect(SKUS['buy-well'].price).toBe(75)
     const w = new World()
+    w.done.add('unlock-irrigation')
+    w.done.add('unlock-auto-irrigation')
     w.done.add('unlock-adv-irrigation')
+    w.done.add('unlock-water-storage')
     w.money = 200
     w.buy('buy-pipe')
     const e1: Edge = { axis: 'h', col: 10, row: 12 }
@@ -859,7 +872,10 @@ describe('beta-5 invariants', () => {
 
   test('well joins its two endpoint vertices into one net', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
+    w.done.add('unlock-auto-irrigation')
     w.done.add('unlock-adv-irrigation')
+    w.done.add('unlock-water-storage')
     w.money = 200
     w.buy('buy-well')
     const e: Edge = { axis: 'v', col: 10, row: 12 }
@@ -874,6 +890,7 @@ describe('beta-5 invariants', () => {
     const w = new World()
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
+    w.done.add('unlock-water-storage')
     w.money = 500
     w.buy('buy-pumpjack')
     const at = { col: 5, row: 20 }
@@ -911,6 +928,7 @@ describe('beta-5 invariants', () => {
     const w = new World()
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
+    w.done.add('unlock-water-storage')
     w.money = 500
     w.buy('buy-pumpjack')
     const at = { col: 5, row: 20 }
@@ -935,6 +953,7 @@ describe('beta-5 invariants', () => {
 
   test('pipes no source rate 0', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 100
     w.buy('buy-pipe')
@@ -949,33 +968,40 @@ describe('beta-5 invariants', () => {
     expect(RESEARCH['unlock-watermelon']).toMatchObject({
       name: 'Watermelon seeds',
       tree: 'plants',
-      reveal: 'start',
+      reveal: [],
     })
     expect(RESEARCH['unlock-irrigation']).toMatchObject({
       name: 'Irrigation',
       tree: 'automation',
-      reveal: 'start',
+      reveal: [],
     })
     expect(RESEARCH['unlock-heirloom']).toMatchObject({
       name: 'Heirloom crops',
       tree: 'plants',
-      reveal: 'unlock-fertilizer',
+      reveal: ['expand-land', 'unlock-vehicles'],
     })
     expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({
       name: 'Automated irrigation',
       tree: 'automation',
-      reveal: 'unlock-irrigation',
+      reveal: ['unlock-irrigation'],
+      requires: ['unlock-irrigation'],
     })
     expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({
       name: 'Advanced irrigation',
       tree: 'automation',
-      reveal: 'unlock-auto-irrigation',
+      reveal: ['unlock-auto-irrigation'],
+      requires: ['unlock-auto-irrigation'],
+    })
+    expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({
+      reveal: ['unlock-sensors'],
+      requires: ['unlock-adv-irrigation', 'unlock-sensors'],
     })
     expect(Object.keys(RESEARCH).includes('unlock-pumpjack')).toBe(false)
     const w = new World()
     w.done.add('unlock-irrigation')
     expect(w.skuShown('buy-sprinkler')).toBe(true)
     expect(w.skuOpen('buy-sprinkler')).toBe(false)
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     expect(w.skuOpen('buy-sprinkler')).toBe(true)
   })
@@ -983,13 +1009,14 @@ describe('beta-5 invariants', () => {
   test('watermelon waterUse pack research', () => {
     expect(CROPS.watermelon.waterUsePerSec).toBe(0.01125)
     expect(SKUS['pack-watermelon'].price).toBe(18)
-    expect(RESEARCH['unlock-watermelon']).toMatchObject({ cost: 8, seconds: 35, tree: 'plants' })
+    expect(RESEARCH['unlock-watermelon']).toMatchObject({ cost: 14, seconds: 45, tree: 'plants' })
   })
 
   test('delete no money change; pumpjack remains', () => {
     const w = new World()
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
+    w.done.add('unlock-water-storage')
     w.done.add('unlock-grinder')
     w.money = 200
     w.buy('buy-pumpjack')
@@ -1052,6 +1079,7 @@ describe('beta-5 invariants', () => {
 
   test('sprinkler waters growing soil only; ripe untouched', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 100
     w.buy('buy-pipe')
@@ -1072,6 +1100,7 @@ describe('beta-5 invariants', () => {
 
   test('place basic, no incident pipe, succeeds, rate 0', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 100
     w.buy('buy-sprinkler')
@@ -1083,6 +1112,7 @@ describe('beta-5 invariants', () => {
 
   test('isolated sprinkler then source-touching pipe at vertex', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 100
     w.buy('buy-sprinkler')
@@ -1099,6 +1129,7 @@ describe('beta-5 invariants', () => {
 
   test('growing in AoE R>0 soil not below dry trajectory', () => {
     const w = new World()
+    w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.money = 100
     w.buy('buy-pipe')
@@ -1257,6 +1288,7 @@ describe('beta-6 invariants', () => {
   test('delete pumpjack money unchanged both empty starter remains', () => {
     const w = new World()
     w.done.add('unlock-irrigation')
+    w.done.add('unlock-water-storage')
     w.money = 200
     w.buy('buy-pumpjack')
     w.setCell(AT, { kind: 'empty', soil: bed() })
@@ -1467,9 +1499,9 @@ describe('0.8 plants and trees', () => {
   })
 
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'automation', cost: 14, seconds: 50, reveal: 'start' })
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 45, seconds: 85, reveal: ['unlock-grinder'] })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
-    expect(RESEARCH['unlock-raspberry'].reveal).toBe('unlock-grape')
+    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-watermelon', 'unlock-grape'])
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-olive')).toBe(false)
   })

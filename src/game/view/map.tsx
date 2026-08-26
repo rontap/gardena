@@ -2370,7 +2370,7 @@ function clickHit(world: World, wx: number, wy: number, lens: Lens): MapClick | 
   if (place.kind === 'none') {
     const v = nearestVertex(wx, wy)
     if (
-      world.done.has('unlock-smart-sprinkler') &&
+      world.done.has('unlock-smart-irrigation') &&
       world.sprinklerAt(v) !== undefined &&
       Math.hypot(wx - v.col, wy - v.row) <= VERTEX_HIT
     ) {

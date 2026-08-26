@@ -7,7 +7,7 @@ import { researchInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Coin, Dock, tabRailClass, tabRailListClass } from './frame.tsx'
 
-const TREES = ['plants', 'utilities', 'expansion', 'automation'] as const
+const TREES = ['plants', 'land', 'automation', 'trade'] as const
 
 type Tree = (typeof TREES)[number]
 
@@ -92,7 +92,9 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
     ? 'Already researched.'
     : run
       ? 'Running now.'
-      : busy
+      : gated
+        ? `Needs ${d.requires.map(r => RESEARCH[r].name).join(' and ')} first.`
+        : busy
           ? 'Another project is running. One at a time.'
           : world.money < d.cost
             ? 'Not enough money.'

@@ -113,7 +113,7 @@ Copy **Place Sprinkler** / **Place Vertical sprinkler** / **Place Large sprinkle
 
 Unowned / occupied / AoE off-map → **Cannot place here**. Poor → **Cannot afford**.
 
-Unarmed, with `unlock-smart-sprinkler` and a sprinkler under the vertex: **Tune sprinkler** → [[ui/docks]] object HUD. Sprinkler `in` after `unlock-smart-irrigation` is a wire port in `sensors` — [[ui/sensors]]. Tune unchanged.
+Unarmed, with `unlock-smart-irrigation` and a sprinkler under the vertex: **Tune sprinkler** → [[ui/docks]] object HUD. Sprinkler `in` after the same row is a wire port in `sensors` — [[ui/sensors]]. Tune unchanged.
 
 ## Delete
 

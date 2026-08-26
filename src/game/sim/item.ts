@@ -137,6 +137,7 @@ export type Face =
   | { kind: 'sensor-day' }
   | { kind: 'water-system' }
   | { kind: 'vehicle-detector' }
+  | { kind: 'traffic-light' }
   | { kind: 'smart-valve' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
@@ -424,6 +425,8 @@ export function skuLabel(id: SkuId): string {
       return 'Smart valve'
     case 'buy-vehicle-detector':
       return 'Vehicle detector'
+    case 'buy-traffic-light':
+      return 'Traffic light'
   }
 }
 
@@ -607,6 +610,8 @@ export function skuDesc(id: SkuId): string {
       return 'Sits on an edge. Closed unless its input is high. No manual click.'
     case 'buy-vehicle-detector':
       return 'Flush plate. Output high when a field Quad or tractor sits on this tile.'
+    case 'buy-traffic-light':
+      return 'Holds a vehicle until the input is green; output is on while a vehicle waits here.'
   }
 }
 
@@ -806,6 +811,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'smart-valve' }
     case 'buy-vehicle-detector':
       return { kind: 'vehicle-detector' }
+    case 'buy-traffic-light':
+      return { kind: 'traffic-light' }
   }
 }
 

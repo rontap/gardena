@@ -93,9 +93,19 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   return null
 }
 
-export function Status({ world, hover }: { world: World; hover: PromptHit | undefined }) {
+export function Status({
+  world,
+  hover,
+  addHint,
+}: {
+  world: World
+  hover: PromptHit | undefined
+  addHint?: string
+}) {
   const seat = world.seats[world.local]
   const hand = seat.hand
+  const look = lookText(world, hover, false)
+  const body = addHint === undefined ? look : look === '' ? addHint : `${addHint}\n${look}`
   return (
     <Chrome className="relative w-full">
       <div className="relative flex items-center gap-3 px-3 py-3">
@@ -117,7 +127,7 @@ export function Status({ world, hover }: { world: World; hover: PromptHit | unde
           seat.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
         }`}
       >
-          {lookText(world, hover, false)}
+          {body}
         </div>
         {hover !== undefined && <PlantStats world={world} hover={hover} />}
     </Chrome>

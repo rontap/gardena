@@ -696,5 +696,6 @@ function lookSensor(k: SensorKind): string {
   if (k === 'sensor-harvest') return 'Harvest sensor'
   if (k === 'sensor-day') return 'Day sensor'
   if (k === 'water-system') return 'Water-system sensor'
+  if (k === 'traffic-light') return 'Traffic light'
   return 'Vehicle detector'
 }

@@ -13,6 +13,7 @@ import {
     SENSOR_WATER_PRICE,
     SMART_VALVE_PRICE,
     VEHICLE_DETECTOR_PRICE,
+    TRAFFIC_LIGHT_PRICE,
     WATER_SYSTEM_PRICE,
 } from './items.ts'
 import type {ResearchId, SkuId} from '../sim/ids.ts'
@@ -276,6 +277,18 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: 'Unlocks Hangar. Buy Quads, tractors and trailers at a hangar.',
         effect: {kind: 'unlock-sku', sku: 'buy-hangar'},
     },
+    'unlock-dispatch': {
+        id: 'unlock-dispatch',
+        name: 'Automated dispatch',
+        tree: 'automation',
+        cost: 35,
+        seconds: 70,
+        reveal: ['unlock-vehicles'],
+        requires: ['unlock-vehicles'],
+        grants: ['Automate chrome'],
+        blurb: 'Vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop.',
+        effect: {kind: 'feature'},
+    },
     'unlock-silos': {
         id: 'unlock-silos',
         name: 'Field silos',
@@ -504,5 +517,13 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
         unlock: 'unlock-sensors',
         show: 'unlock-sensors',
         need: ['unlock-vehicles'],
+    },
+    'buy-traffic-light': {
+        id: 'buy-traffic-light',
+        price: TRAFFIC_LIGHT_PRICE,
+        tab: 'automation',
+        unlock: 'unlock-sensors',
+        show: 'unlock-sensors',
+        need: ['unlock-dispatch'],
     },
 }

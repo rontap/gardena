@@ -67,6 +67,7 @@ import {
   type TileId,
   type TreeId,
   type TrailerId,
+  type RouteId,
   type VehicleId,
 } from './ids.ts'
 import type { FruitStack, Hand, Item, Slot, Stack } from './item.ts'
@@ -103,6 +104,7 @@ import {
   NotGate,
   OrGate,
   Pulser,
+  TrafficLight,
   VehicleSensor,
   WaterSensor,
   WaterSystem,
@@ -129,11 +131,11 @@ import {
   type Seam,
   type SkillRef,
 } from './world.ts'
-import { makeQuad, makeTractor, type SeedHopper, type SprayHopper, type Trailer, type TrailerPose, type Vehicle } from './vehicle.ts'
+import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, type SprayHopper, type Trailer, type TrailerPose, type Vehicle } from './vehicle.ts'
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.8 as const
+export const SAVE_VERSION = 1.9 as const
 
 const INV = 16
 
@@ -218,6 +220,7 @@ export type SaveCell =
   | { kind: 'sensor-day'; base: RectBase; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean; out: 0 | 1; hold: number }
   | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'vehicle-detector'; base: RectBase; out: 0 | 1; hold: number }
+  | { kind: 'traffic-light'; base: RectBase; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'occ'; of: Coord }
 
 export type SaveSeat = {
@@ -238,6 +241,10 @@ export type SaveVehicle =
       pose:
         | { kind: 'stored'; hangar: Coord }
         | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+      route: RouteId | 'none'
+      cursor: number
+      running: boolean
+      dwell: number
     }
   | {
       kind: 'tractor'
@@ -248,6 +255,10 @@ export type SaveVehicle =
       pose:
         | { kind: 'stored'; hangar: Coord }
         | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
+      route: RouteId | 'none'
+      cursor: number
+      running: boolean
+      dwell: number
     }
 
 export type SaveTrailer =
@@ -282,7 +293,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.8
+  version: 1.9
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -299,6 +310,8 @@ export type Save = {
   nextVehicleId: VehicleId
   trailers: SaveTrailer[]
   nextTrailerId: TrailerId
+  routes: Route[]
+  nextRouteId: RouteId
   done: ResearchId[]
   job: { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
   family: {
@@ -361,6 +374,8 @@ export function dump(world: World): Save {
     nextVehicleId: world.nextVehicleId,
     trailers: world.trailers.map(dumpTrailer),
     nextTrailerId: world.nextTrailerId,
+    routes: world.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops.map(s => (s.kind === 'goto' ? { ...s } : { kind: s.kind, at: { col: s.at.col, row: s.at.row } })) })),
+    nextRouteId: world.nextRouteId,
     done: [...world.done],
     job: world.job,
     family: {
@@ -664,6 +679,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'water-system', base: c.base, out: c.out, hold: c.hold }
     case 'vehicle-detector':
       return { kind: 'vehicle-detector', base: c.base, out: c.out, hold: c.hold }
+    case 'traffic-light':
+      return { kind: 'traffic-light', base: c.base, inn: c.inn, out: c.out, hold: c.hold }
   }
 }
 
@@ -911,6 +928,16 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     if (t === undefined) return undefined
     trailers.push(t)
   }
+  const routesIn = arr(rec.routes)
+  const nextRouteId = num(rec.nextRouteId)
+  if (routesIn === undefined || nextRouteId === undefined) return undefined
+  if (!Number.isInteger(nextRouteId) || nextRouteId < 1) return undefined
+  const routes: Route[] = []
+  for (const raw of routesIn) {
+    const r = readRoute(raw)
+    if (r === undefined) return undefined
+    routes.push(r)
+  }
   const contracts = readContracts(rec.contracts)
   if (contracts === undefined) return undefined
   return {
@@ -948,6 +975,8 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     nextVehicleId,
     trailers,
     nextTrailerId,
+    routes,
+    nextRouteId,
   }
 }
 
@@ -998,6 +1027,8 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     nextVehicleId: save.nextVehicleId,
     trailers: save.trailers.map(liveTrailer),
     nextTrailerId: save.nextTrailerId,
+    routes: save.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops.map(s => (s.kind === 'goto' ? { ...s } : { kind: s.kind, at: { col: s.at.col, row: s.at.row } })) })),
+    nextRouteId: save.nextRouteId,
     owned,
     chunks: live.chunks,
     clock: save.clock,
@@ -1404,6 +1435,13 @@ function makeLive(sc: SaveCell): Cell | undefined {
       made.hold = sc.hold
       return made
     }
+    case 'traffic-light': {
+      const made = new TrafficLight(sc.base)
+      made.inn = sc.inn
+      made.out = sc.out
+      made.hold = sc.hold
+      return made
+    }
     case 'occ':
       return undefined
   }
@@ -1713,6 +1751,13 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined || hold === undefined || (o.out !== 0 && o.out !== 1)) return undefined
     return { kind, base, out: o.out, hold }
   }
+  if (kind === 'traffic-light') {
+    const base = readRectBase(o.base)
+    const hold = num(o.hold)
+    if (base === undefined || hold === undefined) return undefined
+    if ((o.inn !== 0 && o.inn !== 1) || (o.out !== 0 && o.out !== 1)) return undefined
+    return { kind: 'traffic-light', base, inn: o.inn, out: o.out, hold }
+  }
   if (kind === 'sensor-harvest') {
     const base = readRectBase(o.base)
     const hold = num(o.hold)
@@ -1755,8 +1800,10 @@ function dumpPose(pose: Vehicle['pose']): SaveVehicle['pose'] {
 }
 
 function dumpVehicle(v: Vehicle): SaveVehicle {
-  if (v.kind === 'quad') return { kind: 'quad', id: v.id, fuel: v.fuel, slots: v.slots.slice(), pose: dumpPose(v.pose) }
-  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, boom: v.boom, pose: dumpPose(v.pose) }
+  if (v.kind === 'quad') {
+    return { kind: 'quad', id: v.id, fuel: v.fuel, slots: v.slots.slice(), pose: dumpPose(v.pose), route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
+  }
+  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, boom: v.boom, pose: dumpPose(v.pose), route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
 }
 
 function dumpTrailer(t: Trailer): SaveTrailer {
@@ -1770,8 +1817,11 @@ function dumpTrailer(t: Trailer): SaveTrailer {
 
 function liveVehicle(v: SaveVehicle): Vehicle {
   const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
-  if (v.kind === 'quad') return makeQuad(v.id, v.fuel, v.slots.slice(), pose)
-  return makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
+  const made = v.kind === 'quad' ? makeQuad(v.id, v.fuel, v.slots.slice(), pose) : makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
+  made.route = v.route
+  made.cursor = v.cursor
+  made.running = v.running
+  return made
 }
 
 function liveTrailer(t: SaveTrailer): Trailer {
@@ -1835,24 +1885,78 @@ function readSlots(v: unknown, n: number): Slot[] | undefined {
   return slots
 }
 
+function readCoordStop(v: unknown): Coord | undefined {
+  return readCoord(v)
+}
+
+function readRouteStop(v: unknown): RouteStop | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  if (o.kind === 'goto') {
+    const x = num(o.x)
+    const y = num(o.y)
+    if (x === undefined || y === undefined) return undefined
+    return { kind: 'goto', x, y }
+  }
+  if (o.kind === 'unload' || o.kind === 'load' || o.kind === 'wait') {
+    const at = readCoordStop(o.at)
+    if (at === undefined) return undefined
+    return { kind: o.kind, at }
+  }
+  return undefined
+}
+
+function readRoute(v: unknown): Route | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const id = num(o.id)
+  if (id === undefined || !Number.isInteger(id) || id < 1) return undefined
+  if (typeof o.name !== 'string') return undefined
+  const stopsIn = arr(o.stops)
+  if (stopsIn === undefined) return undefined
+  const stops: RouteStop[] = []
+  for (const raw of stopsIn) {
+    const s = readRouteStop(raw)
+    if (s === undefined) return undefined
+    stops.push(s)
+  }
+  return { id, name: o.name, stops }
+}
+
+function readRouteId(v: unknown): RouteId | 'none' | undefined {
+  if (v === 'none') return 'none'
+  const n = num(v)
+  if (n === undefined || !Number.isInteger(n) || n < 1) return undefined
+  return n
+}
+
 function readVehicle(v: unknown): SaveVehicle | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
   const id = num(o.id)
   const fuel = num(o.fuel)
   const pose = readVehiclePose(o.pose)
-  if (id === undefined || fuel === undefined || pose === undefined) return undefined
+  const route = readRouteId(o.route)
+  const cursor = num(o.cursor)
+  if (id === undefined || fuel === undefined || pose === undefined || route === undefined || cursor === undefined) return undefined
+  if (!Number.isInteger(cursor) || cursor < 0) return undefined
+  if (typeof o.running !== 'boolean') return undefined
+  const dwell = num(o.dwell)
+  if (dwell === undefined || dwell < 0) return undefined
+  if (pose.kind === 'stored' && o.running) return undefined
+  if (pose.kind === 'field' && pose.driver !== 'none' && o.running) return undefined
+  if (o.running && route === 'none') return undefined
   if (o.kind === 'quad') {
     const slots = readSlots(o.slots, VEHICLE_SLOTS)
     if (slots === undefined) return undefined
-    return { kind: 'quad', id, fuel, slots, pose }
+    return { kind: 'quad', id, fuel, slots, pose, route, cursor, running: o.running, dwell }
   }
   if (o.kind === 'tractor') {
     const hitch = o.hitch === 'none' || typeof o.hitch === 'number' ? o.hitch : undefined
     const boom = o.boom === 3 || o.boom === 5 ? o.boom : undefined
     if (hitch === undefined || boom === undefined) return undefined
     if (pose.kind === 'stored' && hitch !== 'none') return undefined
-    return { kind: 'tractor', id, fuel, hitch, boom, pose }
+    return { kind: 'tractor', id, fuel, hitch, boom, pose, route, cursor, running: o.running, dwell }
   }
   return undefined
 }

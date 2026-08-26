@@ -39,7 +39,7 @@ Pipes wash on the map when `lens === 'pipes'` or place is delete / a `PIPE_PLACE
 
 Sensors: wires + port chrome + 3×3 reader wash when `lens === 'sensors'`. Armed sensor-cell SKU or `buy-smart-valve` forces this lens. Build shelf `logic` sets it and does not arm. Close / `leaveShop` / Esc: pipes or sensors → `off`. Switching Build category does not force it off. Shop ↔ Build keeps it. `vehicles` stays.
 
-Vehicles: paint hangar-return + pad arrows iff `driverVehicle(local)` OR `lens === 'vehicles'`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. No wash. Driving still paints with this lens off. [[ui/vehicles]]
+Vehicles: paint hangar-return + pad arrows iff `driverVehicle(local)` OR `lens === 'vehicles'`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. No wash. Driving still paints with this lens off. Editor on: force this lens; route overlay numbered. This lens and editor off: thin assigned routes, no numbers. [[ui/vehicles]]
 
 `lens === 'sensors'`: no house `WASH` on `isSensor` cells (pipes pattern: relevant tiles stay clear). Other cells may keep the kind-style fade. 3×3 reader wash unchanged. Sensor center is a sensor cell → not faded.
 

@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import {
+  DISPATCH_DWELL,
   HANGAR_H,
   HANGAR_W,
   HARVEST_SLOTS,
+  HEADING_SOUTH,
   QUAD_ACCEL,
   QUAD_EMPTY_MUL,
   QUAD_FUEL_SECONDS,
@@ -76,17 +78,22 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 1.8. `PROTOCOL` 1.8. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
-    expect(SAVE_VERSION).toBe(1.8)
-    expect(PROTOCOL).toBe(1.8)
+  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
+    expect(SAVE_VERSION).toBe(1.9)
+    expect(PROTOCOL).toBe(1.9)
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(1.8)
+    expect(s.version).toBe(1.9)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)
     expect(s.nextTrailerId).toBe(1)
+    expect(s.routes).toEqual([])
+    expect(s.nextRouteId).toBe(1)
+    expect(s.vehicles[0].route).toBe('none')
+    expect(s.vehicles[0].cursor).toBe(0)
+    expect(s.vehicles[0].running).toBe(false)
     expect(s.chunks[0].cells[AT.row][AT.col].kind).toBe('hangar')
     const loaded = parse(JSON.stringify(s))
     expect(loaded.ok).toBe(true)
@@ -198,6 +205,19 @@ describe('vehicles I', () => {
     w.drive(1, 0)
     w.tick(DT_MAX)
     expect(v.fuel).toBeCloseTo(fuel - DT_MAX / QUAD_FUEL_SECONDS, 8)
+    w.disembark()
+    w.createRoute()
+    w.addStop(1, { kind: 'goto', x: 14.5, y: 14.5 })
+    w.assignRoute(1, 1)
+    v.running = true
+    v.fuel = 0
+    const cur = v.cursor
+    const x0 = v.pose.kind === 'field' ? v.pose.x : 0
+    w.tick(DT_MAX)
+    expect(v.running).toBe(true)
+    expect(v.cursor).toBe(cur)
+    if (v.pose.kind !== 'field') return
+    expect(Math.abs(v.pose.x - x0)).toBeLessThan(0.02)
   })
 
   test('Refill all: cost `sum((1 - fuel) × QUAD_REFILL)` over `World.vehicles`. Poor no-op. Success: every tank `1`. Shared `World.money`.', () => {
@@ -803,6 +823,144 @@ describe('vehicles II', () => {
     if (t.kind !== 'harvest') return
     expect(t.slots.some(s => s.kind === 'hold' && s.item.kind === 'sugar')).toBe(true)
     expect(w.drops.some(d => d.item.kind === 'sugar')).toBe(false)
+  })
+
+  test('Route is a World object. Vehicle holds `RouteId | \'none\'`, cursor `i`, `running`. Loop `i = (i + 1) % n`. Zero stops: Start / hangar Automate no-op. Create names `Route {n}`. Delete route no-op while assigned. Goto arrive dist ≤ `ROUTE_ARRIVE`. Load/unload/wait arrive `floor` is that pad/cell and `speed === 0`. Load/unload then `DISPATCH_DWELL` then one transfer then next. Wait holds while light `inn === 0`; on `1`, next. Seated Load/Unload no-op unless `speed === 0`. Start: this seat drives, route assigned, `n ≥ 1` → disembark, `running` true, cursor kept. Hangar Automate: spawn pad, driver `\'none\'`, `i = 0`, `running` true. Dock: keep route, `running` false. Embark / Enter on running: pause, board, speed 0, cursor stays. Two-phase: motion in `tickVehicles`; after `evalDag`, `tickDispatch` wait / load / unload. No dock-stop. Guest Start / hangar Automate / route edit. `Act.route` `\'o\'`. Latest same-`t` assign/start wins.', () => {
+    expect(Act.route).toBe('o')
+    expect(permit({ a: Act.route, t: 0, p: 1, k: 'create' })).toBe(true)
+    expect(permit({ a: Act.route, t: 0, p: 1, k: 'start' })).toBe(true)
+    expect(permit({ a: Act.route, t: 0, p: 1, k: 'automate', v: 1, c: [10, 12] })).toBe(true)
+    const locked = new World(1)
+    locked.buy('buy-hangar')
+    locked.confirmPlace(AT)
+    locked.createRoute()
+    expect(locked.routes).toHaveLength(0)
+    const w = farm()
+    w.createRoute()
+    expect(w.routes).toHaveLength(1)
+    expect(w.routes[0]).toMatchObject({ id: 1, name: 'Route 1', stops: [] })
+    expect(w.nextRouteId).toBe(2)
+    w.buyVehicle(AT, 'quad')
+    w.assignRoute(1, 1)
+    w.automate(1, AT)
+    expect(w.vehicles[0].pose.kind).toBe('stored')
+    expect(w.vehicles[0].running).toBe(false)
+    w.addStop(1, { kind: 'goto', x: 11.5, y: 16.5 })
+    w.addStop(1, { kind: 'goto', x: 11.5, y: 20.5 })
+    w.automate(1, AT)
+    const auto = w.vehicles[0]
+    expect(auto.pose.kind).toBe('field')
+    if (auto.pose.kind !== 'field') return
+    expect(auto.pose.driver).toBe('none')
+    expect(auto.cursor).toBe(0)
+    expect(auto.running).toBe(true)
+    expect(auto.pose.heading).toBe(HEADING_SOUTH)
+    w.seats[0].actor.x = auto.pose.x
+    w.seats[0].actor.y = auto.pose.y
+    w.embark(1)
+    expect(auto.running).toBe(false)
+    expect(auto.pose.kind).toBe('field')
+    if (auto.pose.kind !== 'field') return
+    expect(auto.pose.driver).toBe(0)
+    expect(auto.pose.speed).toBe(0)
+    expect(auto.cursor).toBe(0)
+    w.startRoute()
+    expect(auto.pose.driver).toBe('none')
+    expect(auto.running).toBe(true)
+    expect(auto.cursor).toBe(0)
+    w.apply({ a: Act.route, t: w.now, p: 0, k: 'assign', v: 1, r: 'none' })
+    w.apply({ a: Act.route, t: w.now, p: 0, k: 'assign', v: 1, r: 1 })
+    expect(auto.route).toBe(1)
+    expect(auto.cursor).toBe(0)
+    auto.running = true
+    if (auto.pose.kind === 'field') auto.pose.driver = 'none'
+    for (let i = 0; i < 80; i++) w.tick(DT_MAX)
+    expect(auto.cursor).toBeGreaterThanOrEqual(1)
+    auto.pose.x = 11.5
+    auto.pose.y = 14.5
+    w.seats[0].actor.x = 11.5
+    w.seats[0].actor.y = 14.5
+    w.embark(1)
+    w.dock()
+    expect(auto.pose.kind).toBe('stored')
+    expect(auto.running).toBe(false)
+    expect(auto.route).toBe(1)
+  })
+
+  test('Auto running synthesizes Drive inside `tickVehicles` (not `Act.drive`, not `Seat.drive`). Always forward. Yaw in place until `|Δ| ≤ ROUTE_ALIGN`, then throttle 1. No auto reverse. vMax `× AUTO_VMAX_MUL`. Decel only `× AUTO_DECEL_MUL` (throttle 0). Burn when synthesized throttle or steer, same seated formula. Empty fuel: Drive `{0,0}`, seek 0, no crawl, no advance, `running` true. Hitch follows. Boom: seated or auto running, hitch, steer 0, speed > 0.', () => {
+    const w = farm()
+    w.createRoute()
+    w.addStop(1, { kind: 'goto', x: 14.5, y: 14.5 })
+    w.buyVehicle(AT, 'quad')
+    w.assignRoute(1, 1)
+    w.automate(1, AT)
+    const v = w.vehicles[0]
+    expect(v.pose.kind).toBe('field')
+    if (v.pose.kind !== 'field') return
+    expect(v.pose.driver).toBe('none')
+    expect(w.seats[0].drive).toEqual({ throttle: 0, steer: 0 })
+    const fuel0 = v.fuel
+    w.tick(DT_MAX)
+    expect(v.fuel).toBeLessThan(fuel0)
+    expect(v.running).toBe(true)
+    v.fuel = 0
+    v.pose.speed = 2
+    const cur = v.cursor
+    const y0 = v.pose.y
+    w.tick(DT_MAX)
+    expect(v.running).toBe(true)
+    expect(v.cursor).toBe(cur)
+    expect(v.pose.kind).toBe('field')
+    if (v.pose.kind !== 'field') return
+    expect(Math.abs(v.pose.speed)).toBeLessThan(2)
+    expect(Math.abs(v.pose.y - y0)).toBeLessThan(Math.abs(2 * DT_MAX))
+  })
+
+  test('`World.routes` `World.nextRouteId`. Add appends. Cursor follows the current stop on remove/reorder. `n === 0` → cursor 0, `running` false. Assign `\'none\'` or a different id: cursor 0; `running` false if none or empty. Quad load/unload uses quad slots; tractor needs hitch (`vehicleCargo()`). Auto tick chest/freezer legal.', () => {
+    const w = farm()
+    expect(w.nextRouteId).toBe(1)
+    expect(w.routes).toEqual([])
+    w.createRoute()
+    w.addStop(1, { kind: 'goto', x: 11.5, y: 16.5 })
+    w.addStop(1, { kind: 'goto', x: 12.5, y: 16.5 })
+    expect(w.routes[0].stops).toHaveLength(2)
+    w.buyVehicle(AT, 'quad')
+    w.assignRoute(1, 1)
+    w.automate(1, AT)
+    const v = w.vehicles[0]
+    v.cursor = 1
+    w.reorderStop(1, 0, 1)
+    expect(v.cursor).toBe(0)
+    v.running = true
+    w.removeStop(1, 0)
+    w.removeStop(1, 0)
+    expect(w.routes[0].stops).toHaveLength(0)
+    expect(v.cursor).toBe(0)
+    expect(v.running).toBe(false)
+    w.assignRoute(1, 'none')
+    expect(v.route).toBe('none')
+    expect(v.running).toBe(false)
+    const millAt = { col: 16, row: 12 }
+    w.buy('buy-chest')
+    w.confirmPlace(millAt)
+    w.createRoute()
+    w.addStop(2, { kind: 'unload', at: { col: 16, row: 11 } })
+    w.assignRoute(1, 2)
+    if (v.kind !== 'quad') return
+    v.slots[0] = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+    }
+    v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 'none' }
+    v.running = true
+    w.tick(DT_MAX)
+    expect(v.dwell).toBe(DISPATCH_DWELL)
+    for (let i = 0; i < DISPATCH_DWELL / DT_MAX; i++) w.tick(DT_MAX)
+    const chest = w.cell(millAt)
+    expect(chest.kind).toBe('chest')
+    if (chest.kind !== 'chest') return
+    expect(chest.slots.some(s => s.kind === 'hold')).toBe(true)
+    expect(v.cursor).toBe(0)
   })
 })
 

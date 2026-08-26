@@ -107,7 +107,7 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       {
         label: 'Signal',
-        skus: ['buy-lever', 'buy-button', 'buy-lamp', 'buy-or', 'buy-and', 'buy-not', 'buy-pulser', 'buy-counter'],
+        skus: ['buy-lever', 'buy-button', 'buy-lamp', 'buy-or', 'buy-and', 'buy-not', 'buy-pulser', 'buy-counter', 'buy-traffic-light'],
       },
       {
         label: 'Readers',

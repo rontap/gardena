@@ -53,9 +53,9 @@ Public UI methods wrap `dispatch` so call sites stay. `enqueue` is a mutator. Te
 
 Log = player commands only.
 
-Not logged (follow from seed + cmds + time): sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel / grinder ticks, west-store pull, east-store push, vehicle integrate / burn / follow hitch / boom, sensor eval / hold / pourEligible, actor walk, stride integrate, pad paint.
+Not logged (follow from seed + cmds + time): sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel / grinder ticks, west-store pull, east-store push, vehicle integrate / burn / follow hitch / boom, synthesized auto drive, wait / load / unload resolve, sensor eval / hold / pourEligible, actor walk, stride integrate, pad paint.
 
-Not logged (view-local): panel open/close, camera, camera follow, hover, lens, hangar select, hide gardener.
+Not logged (view-local): panel open/close, camera, camera follow, hover, lens, hangar select, hide gardener, Dash Automate, editor open.
 
 Logged via the mutators that set them: `Seat.place`, `World.hud`, `World.cue`.
 
@@ -79,14 +79,16 @@ Letters for `a` live only in `Act`. Call sites use `Act.click`, never the letter
 
 Every arm has required `t: number` and `p: SeatId`. Solo and tests: `p = 0`.
 
-Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Load/unload no coord; floor of driven vehicle. Cycle `placeWire` no-op. Board generation is not a cmd.
+Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Latest `Act.route` `assign` / `start` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Auto load/unload/wait/motion are tick, not cmds. Load/unload no coord; floor of driven vehicle. Cycle `placeWire` no-op. Board generation is not a cmd.
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart.
 
 `Act.cheat` inner `k` is a closed union.
 
+`Act.route` `'o'`. Inner `k` closed union: `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Guest may. All no-op unless `unlock-dispatch` in `done`.
+
 Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm uses `seats[cmd.p]`: if that `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and that hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 
 `confirmPlace` is inside `click`. No `confirmPlace` cmd.
 
-Assumption: spec `K`/`X`/`O` collided with `stride` / `resetCounter` / `tuneDay`; `J` `Y` `Z` are the remaining uppercase.
+Assumption: lowercase `o` was the remaining free letter; `Act.route` bundles inner `k`.

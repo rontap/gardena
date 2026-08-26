@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. Type: `sim/save.ts`. Live world: [[architecture/world]]. Log: [[architecture/log]]. Net: [[architecture/net]].
 
-Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; grinder hopper `crop`/`rarity`/`units`/`progress`/`n`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`.
+Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; grinder hopper `crop`/`rarity`/`units`/`progress`/`n`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`; traffic-light `inn`/`out`/`hold`. `World.routes` `World.nextRouteId`; per vehicle `route`/`cursor`/`running`/`dwell`.
 
 ## RFC — versions (active)
 
@@ -96,19 +96,19 @@ Seq streams: cursor in the file. `SaveRng = { seed; shop; fruit }`. `shop` / `fr
 
 No classes in the file. `dump` copies fields. `parse` constructs live objects. Shape: `sim/save.ts`.
 
-Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` / `silo` / `additives` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`. `World.wires` from `Save.wires`.
+Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` / `silo` / `additives` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`. `World.routes` from `Save.routes`. `World.nextRouteId` from `Save.nextRouteId`. `World.wires` from `Save.wires`.
 
 `modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`: rebuild. `purchases` is in the file.
 
-Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `seats`, `vehicles`, `trailers`, `wires`, `smartHold`.
+Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `seats`, `vehicles`, `trailers`, `routes`, `wires`, `smartHold`.
 
-`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint.
+`seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. `vehicles` is every live `Vehicle` including `route` / `cursor` / `running`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint. `routes` is every live `Route`. `nextRouteId` is the next id to mint.
 
 `savedAt` is ISO-8601 from `dump` (`Date.toISOString()`). Wall clock when the snapshot was written. Not farm time. Not in `World`.
 
 ## Not in the file
 
-`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver.
+`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select, Dash Automate, editor open. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver. Restore `route` / `cursor` / `running`.
 
 Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Dump stall writes dummy `offered` `market` `target` `acc`; parse does not copy them. `World.contracts` is in the file — [[mechanics/contracts]]. Digest includes `sat` and active contracts — [[architecture/net]].
 
@@ -118,6 +118,6 @@ Working notes never write version digits; they [[GLOBAL_VERSION]].
 
 `save.parse` — `parse(text)`: `JSON.parse` throw or non-object → `{ ok: false, reason: 'unusable' }`. `game !== "gardena"` → `reason: 'not-gardena'`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. Else one hydrate of live fields including `seats`. Reconstruct → `{ ok: true, world }`. Hydrate fail → `reason: 'unusable'`. No migrate. `LoadFailReason` is `'not-gardena' | 'version' | 'unusable'`.
 
-`save.nomigrate` — Parse identity: `game === "gardena"`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. No migrate. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, hangar/silo cells, `wires`, sensor cells, mill/jam/still `inn`, grinder `crop`/`rarity`/`units`/`progress`/`n`, chest/freezer/seed-silo/additive-store `out` `hold`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file.
+`save.nomigrate` — Parse identity: `game === "gardena"`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. No migrate. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, `routes`, `nextRouteId`, hangar/silo cells, `wires`, sensor cells, mill/jam/still `inn`, grinder `crop`/`rarity`/`units`/`progress`/`n`, chest/freezer/seed-silo/additive-store `out` `hold`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, traffic-light `inn`/`out`/`hold`, per vehicle `route`/`cursor`/`running`/`dwell`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file.
 
-Assumption: a [[GLOBAL_VERSION]] farm whose grinder dump lacks hopper fields fails hydrate (`unusable`). No migrate.
+Assumption: a [[GLOBAL_VERSION]] farm whose dump lacks `routes` / vehicle `route` / traffic-light fields fails hydrate (`unusable`). No migrate.

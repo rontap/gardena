@@ -4,7 +4,7 @@ import { SOIL_WATER_MAX } from '../sim/soil.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
 import type { VehicleId } from '../sim/ids.ts'
-import { hitchP, kindVMax, trailerCenter, trailerUsed, wrapHeading } from '../sim/vehicle.ts'
+import { hitchP, kindVMax, stopXY, trailerCenter, trailerUsed, wrapHeading } from '../sim/vehicle.ts'
 import type { SeatId, World } from '../sim/world.ts'
 import { TILE } from './camera.ts'
 import { symHref, UI_PHASE } from './svgs.ts'
@@ -271,6 +271,14 @@ export function paintMotion(root: HTMLElement, world: World): void {
       dashUsedReadout.textContent = usedText
     }
   }
+  root.querySelectorAll('[data-route-leg]').forEach(el => {
+    const v = world.driverVehicle(world.local)
+    if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
+    const route = world.routeById(v.route)
+    if (route === undefined || route.stops.length === 0) return
+    const t = stopXY(route.stops[v.cursor])
+    el.setAttribute('d', `M ${v.pose.x * TILE} ${v.pose.y * TILE} L ${t.x * TILE} ${t.y * TILE}`)
+  })
   const phase = world.clock.phase()
   const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
   const clock = hud.get('clock')

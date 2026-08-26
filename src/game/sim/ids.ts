@@ -130,6 +130,7 @@ export type ResearchId =
   | 'unlock-preservatives'
   | 'unlock-landscaping'
   | 'unlock-vehicles'
+  | 'unlock-dispatch'
   | 'unlock-silos'
   | 'unlock-sensors'
   | 'unlock-advanced-sensors'
@@ -199,6 +200,7 @@ export type SkuId =
   | 'buy-water-system'
   | 'buy-smart-valve'
   | 'buy-vehicle-detector'
+  | 'buy-traffic-light'
 
 export type SensorKind =
   | 'lever'
@@ -215,6 +217,7 @@ export type SensorKind =
   | 'sensor-day'
   | 'water-system'
   | 'vehicle-detector'
+  | 'traffic-light'
 
 export type Signal = 0 | 1
 
@@ -233,6 +236,7 @@ export const SENSOR_KINDS: readonly SensorKind[] = [
   'sensor-day',
   'water-system',
   'vehicle-detector',
+  'traffic-light',
 ]
 
 export const SENSOR_CELL_SKUS: readonly SkuId[] = [
@@ -250,12 +254,14 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-sensor-day',
   'buy-water-system',
   'buy-vehicle-detector',
+  'buy-traffic-light',
 ]
 
 export const SENSOR_LENS_SKUS: readonly SkuId[] = [...SENSOR_CELL_SKUS, 'buy-smart-valve']
 
 export type VehicleKind = 'quad' | 'tractor'
 export type VehicleId = number
+export type RouteId = number
 export type VehicleSlot = 0 | 1 | 2 | 3 | 4 | 5
 export type TrailerKind = 'seed' | 'spray' | 'harvest'
 export type TrailerId = number

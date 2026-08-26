@@ -57,7 +57,7 @@ Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — deri
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity` / `vehicles`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
+Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity` / `vehicles`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
 
 ## Lenses
 
@@ -72,6 +72,10 @@ Map-edge plates. After `unlock-expand` only. Size `TILE * 0.85`, centred on `fac
 | clickable | `fill-ink/55` `group-hover:fill-ink/75` | `text-house` | `cursor-pointer` → `expand(id)` |
 | poor (money) | same fill | `text-house/50` | `cursor-pointer`, click no-op |
 | no permit | `fill-ink/40` | `text-house/50` **No permit left** | no pointer |
+
+## Right column
+
+Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears inspect. Same width. [[ui/vehicles]]
 
 ## Bottom-right
 

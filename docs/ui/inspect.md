@@ -69,7 +69,7 @@ Held sugar: **Sugar - {n}L**.
 
 ## Vehicles
 
-Hangar, parked Quad, parked tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
+Hangar, parked or automated Quad, parked or automated tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
 
 ## Sensors
 
@@ -77,4 +77,4 @@ Sensor cells and smart valve: look names [[ui/sensors]]. Not plots. No Growth / 
 
 Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**.
 
-Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day HUD: **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / vehicle detector / pulser / gates / lamp: look only. Pulser **Pulser**. Counter **Counter**. Day **Day sensor**. [[ui/sensors]]
+Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day HUD: **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / vehicle detector / pulser / gates / lamp / traffic light: look only. Pulser **Pulser**. Counter **Counter**. Day **Day sensor**. Traffic light **Traffic light**. [[ui/sensors]]

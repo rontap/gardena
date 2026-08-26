@@ -65,9 +65,34 @@ describe('0.9 log', () => {
       { a: Act.acceptContract, t: 53, p: 0, c: 4 },
       { a: Act.cancelContract, t: 54, p: 0, c: 4 },
       { a: Act.reorderContract, t: 55, p: 0, c: 4, d: -1 },
+      { a: Act.route, t: 56, p: 0, k: 'create' },
+      { a: Act.route, t: 56, p: 0, k: 'delete', r: 1 },
+      { a: Act.route, t: 56, p: 0, k: 'assign', v: 1, r: 1 },
+      { a: Act.route, t: 56, p: 0, k: 'assign', v: 1, r: 'none' },
+      { a: Act.route, t: 57, p: 0, k: 'add', r: 1, s: { kind: 'goto', x: 1.5, y: 2.5 } },
+      { a: Act.route, t: 57, p: 0, k: 'add', r: 1, s: { kind: 'wait', at: { col: 3, row: 4 } } },
+      { a: Act.route, t: 58, p: 0, k: 'remove', r: 1, i: 0 },
+      { a: Act.route, t: 58, p: 0, k: 'reorder', r: 1, i: 0, d: 1 },
+      { a: Act.route, t: 59, p: 0, k: 'rename', r: 1, n: 'Loop' },
+      { a: Act.route, t: 60, p: 0, k: 'start' },
+      { a: Act.route, t: 61, p: 0, k: 'automate', v: 1, c: [10, 12] },
     ]
     cmds.forEach(cmd => {
       expect(JSON.parse(JSON.stringify(cmd))).toEqual(cmd)
     })
+  })
+
+  test('`Act.setBoom` `\'W\'`; `Act.placeWire` `\'N\'`; `Act.load` `\'L\'`; `Act.unload` `\'U\'`; `Act.stride` `\'K\'`; `Act.tuneCounter` `\'M\'`; `Act.tuneDay` `\'O\'`; `Act.acceptContract` `\'J\'`; `Act.cancelContract` `\'Y\'`; `Act.reorderContract` `\'Z\'`; `Act.route` `\'o\'`; inner `k` closed union `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Latest same-`t` `assign` / `start` wins like drive. Spray click is `Intent` `{ act: \'weed-spray\'; at }`.', () => {
+    expect(Act.setBoom).toBe('W')
+    expect(Act.placeWire).toBe('N')
+    expect(Act.load).toBe('L')
+    expect(Act.unload).toBe('U')
+    expect(Act.stride).toBe('K')
+    expect(Act.tuneCounter).toBe('M')
+    expect(Act.tuneDay).toBe('O')
+    expect(Act.acceptContract).toBe('J')
+    expect(Act.cancelContract).toBe('Y')
+    expect(Act.reorderContract).toBe('Z')
+    expect(Act.route).toBe('o')
   })
 })

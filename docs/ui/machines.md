@@ -6,7 +6,7 @@ No ObjectHud. Progress is look text. No extra bars.
 
 Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`.
 
-West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on. `pointer-events-none`. Not lens. Not a cell hit.
+West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. `pointer-events-none`. Not lens. Not a cell hit.
 
 Still 2×1. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer: dropoff north Unload, takeup south Load. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still `in` origin top; freezer `out` origin bottom. Lens [[ui/sensors]].
 

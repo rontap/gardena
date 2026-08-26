@@ -134,7 +134,12 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       if (!around) lines.push('Water-system sensor - no pipes around sensor!')
       else lines.push(`Water-system sensor - ${cell.out === 1 ? 'on' : 'off'}`)
     } else {
-      const on = cell.kind === 'lever' ? cell.on : cell.kind === 'lamp' ? cell.inn === 1 : cell.out === 1
+      const on =
+        cell.kind === 'lever'
+          ? cell.on
+          : cell.kind === 'lamp' || cell.kind === 'traffic-light'
+            ? cell.inn === 1
+            : cell.out === 1
       const name =
         cell.kind === 'lever'
           ? 'Lever'
@@ -160,7 +165,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
                               ? 'Harvest sensor'
                               : cell.kind === 'sensor-day'
                                 ? 'Day sensor'
-                                : 'Vehicle detector'
+                                : cell.kind === 'traffic-light'
+                                  ? 'Traffic light'
+                                  : 'Vehicle detector'
       lines.push(`${name} - ${on ? 'on' : 'off'}`)
     }
   } else {

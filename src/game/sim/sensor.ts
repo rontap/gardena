@@ -201,6 +201,20 @@ export class VehicleSensor {
   }
 }
 
+export class TrafficLight {
+  readonly kind = 'traffic-light' as const
+  readonly base: RectBase
+  inn: Signal
+  out: Signal
+  hold: number
+  constructor(base: RectBase) {
+    this.base = base
+    this.inn = 0
+    this.out = 0
+    this.hold = 0
+  }
+}
+
 export type Sensor =
   | Lever
   | Button
@@ -216,6 +230,7 @@ export type Sensor =
   | DaySensor
   | WaterSystem
   | VehicleSensor
+  | TrafficLight
 
 export type SmartHold = { e: Edge; level: Signal; hold: number }
 
@@ -233,6 +248,7 @@ const OUT_KINDS: ReadonlySet<SensorKind> = new Set([
   'sensor-day',
   'water-system',
   'vehicle-detector',
+  'traffic-light',
 ])
 
 export function isSensorKind(k: string): k is SensorKind {
@@ -252,7 +268,7 @@ export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
   }
   if (!isSensor(c)) return false
   if (c.kind === 'lamp') return port === 'in'
-  if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever') {
+  if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever' || c.kind === 'traffic-light') {
     return port === 'in' || port === 'out'
   }
   if (c.kind === 'and' || c.kind === 'or') return port === 'in-l' || port === 'in-r' || port === 'out'
@@ -443,7 +459,7 @@ export function pourEligible(wired: boolean, inn: Signal): boolean {
 export function isSeqIn(end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind !== 'cell' || end.port !== 'in') return false
   if (cell === undefined) return false
-  return cell.kind === 'lever' || cell.kind === 'pulser' || cell.kind === 'counter'
+  return cell.kind === 'lever' || cell.kind === 'pulser' || cell.kind === 'counter' || cell.kind === 'traffic-light'
 }
 
 export function wouldCycle(
@@ -599,6 +615,9 @@ export function evalDag(input: EvalIn): void {
     m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
   })
   sensors.forEach(s => {
+    if (s.kind === 'traffic-light') s.inn = innOf({ col: s.base.col, row: s.base.row }, 'in')
+  })
+  sensors.forEach(s => {
     if (s.kind === 'pulser' || s.kind === 'counter' || s.kind === 'lever') {
       s.inn = innOf({ col: s.base.col, row: s.base.row }, 'in')
     }
@@ -667,7 +686,8 @@ export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number 
     kind === 'still' ||
     kind === 'pulser' ||
     kind === 'counter' ||
-    kind === 'lever'
+    kind === 'lever' ||
+    kind === 'traffic-light'
   ) {
     return { x: col + 0.5, y: row }
   }
@@ -751,6 +771,8 @@ export function makeSensor(id: SensorKind, base: RectBase): Sensor {
       return new WaterSystem(base)
     case 'vehicle-detector':
       return new VehicleSensor(base)
+    case 'traffic-light':
+      return new TrafficLight(base)
   }
 }
 
@@ -769,5 +791,6 @@ export function skuKind(id: string): SensorKind | undefined {
   if (id === 'buy-sensor-day') return 'sensor-day'
   if (id === 'buy-water-system') return 'water-system'
   if (id === 'buy-vehicle-detector') return 'vehicle-detector'
+  if (id === 'buy-traffic-light') return 'traffic-light'
   return undefined
 }

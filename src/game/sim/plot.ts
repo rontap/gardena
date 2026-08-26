@@ -140,6 +140,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'sensor-harvest' ||
     c.kind === 'sensor-day' ||
     c.kind === 'water-system' ||
-    c.kind === 'vehicle-detector'
+    c.kind === 'vehicle-detector' ||
+    c.kind === 'traffic-light'
   )
 }

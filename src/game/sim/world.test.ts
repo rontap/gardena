@@ -425,6 +425,7 @@ describe('beta-2 invariants', () => {
     expect(RESEARCH['unlock-advanced-sensors']).toMatchObject({ cost: 140, seconds: 60 })
     expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({ cost: 60, seconds: 100 })
     expect(RESEARCH['unlock-silos']).toMatchObject({ cost: 30, seconds: 60 })
+    expect(RESEARCH['unlock-dispatch']).toMatchObject({ cost: 35, seconds: 70, tree: 'automation' })
     expect(RESEARCH['unlock-fertilizer']).toMatchObject({ cost: 10, seconds: 30 })
     expect(RESEARCH['unlock-compost']).toMatchObject({ cost: 10, seconds: 30, tree: 'plants' })
     expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 12, seconds: 40 })
@@ -1013,6 +1014,14 @@ describe('beta-5 invariants', () => {
       reveal: ['unlock-sensors'],
       requires: ['unlock-adv-irrigation', 'unlock-sensors'],
     })
+    expect(RESEARCH['unlock-dispatch']).toMatchObject({
+      name: 'Automated dispatch',
+      tree: 'automation',
+      reveal: ['unlock-vehicles'],
+      requires: ['unlock-vehicles'],
+      grants: ['Automate chrome'],
+      effect: { kind: 'feature' },
+    })
     expect(Object.keys(RESEARCH).includes('unlock-pumpjack')).toBe(false)
     const w = new World()
     w.done.add('unlock-irrigation')
@@ -1021,6 +1030,30 @@ describe('beta-5 invariants', () => {
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     expect(w.skuOpen('buy-sprinkler')).toBe(true)
+  })
+
+  test('`unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 35, seconds 70 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+    expect(RESEARCH['unlock-dispatch']).toMatchObject({
+      tree: 'automation',
+      reveal: ['unlock-vehicles'],
+      requires: ['unlock-vehicles'],
+      effect: { kind: 'feature' },
+      grants: ['Automate chrome'],
+      name: 'Automated dispatch',
+      cost: 35,
+      seconds: 70,
+    })
+    expect(SKUS['buy-traffic-light']).toMatchObject({
+      show: 'unlock-sensors',
+      need: ['unlock-dispatch'],
+      tab: 'automation',
+    })
+    const w = new World(1)
+    w.createRoute()
+    expect(w.routes).toHaveLength(0)
+    w.done.add('unlock-dispatch')
+    w.createRoute()
+    expect(w.routes).toHaveLength(1)
   })
 
   test('watermelon waterUse pack research', () => {
@@ -1650,11 +1683,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.8. `PROTOCOL` 1.8. Wordmark 1.8.0. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.0. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.8)
+    expect(s.version).toBe(1.9)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return

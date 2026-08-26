@@ -2,7 +2,7 @@
 
 Types as they run. Illegal states are unrepresentable. Coders do not runtime-check these.
 
-Owners: [[architecture/modules]]. Ids: `sim/ids.ts`. Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`.
+Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `SensorKind`). Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`. Routes: `sim/vehicle.ts`. Light: `sim/sensor.ts`.
 
 ## Unrepresentable
 
@@ -20,7 +20,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar `HANGAR_W × HANGAR_H`. Vehicle silos `SILO_W × SILO_H`. Still 2×1, prop `48×24` occupying both cells. House seed silo / additive-store 1×2.
 
-`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / field silos / `World.vehicles` / `World.trailers` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
+`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
 
 Mill/jam/still `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/sensors]] [[mechanics/inventory]].
 
@@ -50,7 +50,7 @@ Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `r
 
 Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `buy` merges seeds into inventory.
 
-Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day). Pipe, valve, smart valve, sprinkler, tile, sensor cells, and delete do not.
+Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light). Pipe, valve, smart valve, sprinkler, tile, sensor cells, and delete do not.
 
 ## Intent
 
@@ -107,13 +107,15 @@ No silent flag. Replay calls `apply` only.
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
-`Seat.place` / `World.hud` / `Seat.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens / hangar select / camera follow are not. Camera follow is view-local, not `World`, not sim.
+`Seat.place` / `World.hud` / `Seat.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens / hangar select / camera follow / Dash Automate / editor open are not. Camera follow is view-local, not `World`, not sim.
 
 Cheats are cmds.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Vehicles unrepresentable: two drivers on one vehicle, seated + walk/work queue, stored + driver, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still `inn` hold. Pad as a `Cell`. AND/OR/NOT buyable on `unlock-sensors` alone.
+Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still `inn` hold. Pad as a `Cell`. AND/OR/NOT buyable on `unlock-sensors` alone. Traffic-light `inn` combinationally driving `out`.
+
+`World.routes: Route[]`. `World.nextRouteId` starts 1. Vehicle holds `route: RouteId | 'none'`, `cursor`, `running`. `RouteStop` is a closed union. Rules: [[mechanics/vehicles]] `vehicles.dispatch`.
 
 ## Rng
 

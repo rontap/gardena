@@ -63,6 +63,7 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-advanced-sensors | automation | unlock-sensors | unlock-sensors | — |
 | unlock-smart-irrigation | automation | unlock-sensors | unlock-adv-irrigation, unlock-sensors | Sprinkler crop dial; Sprinkler signal input; Signal wire endpoints on sprinklers |
 | unlock-vehicles | automation | unlock-expand | — | Quad, tractor and trailer at the hangar |
+| unlock-dispatch | automation | unlock-vehicles | unlock-vehicles | Automate chrome |
 | unlock-silos | automation | unlock-vehicles | unlock-vehicles | — |
 | unlock-contracts | trade | — | — | Contracts board at the stall; Reputation decay |
 | unlock-better-tools | trade | — | — | — |
@@ -78,7 +79,9 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. Lens `vehicles` unhidden after this row. Not a family-study. `unlock-silos` `effect` `unlock-sku` `buy-silo-seed`.
 
-`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
+`unlock-dispatch` `effect` `feature`. Automate chrome iff `unlock-dispatch` in `done`. Card **Automated dispatch**. Blurb: vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop. Cost 35, seconds 70 — preference, vehicles/silos band. `Act.route` no-op unless this row is in `done`.
+
+`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
@@ -122,11 +125,11 @@ Rainwater tank is not research. It is on the shelf from the start.
 
 ### Vehicles
 
-`buy-hangar` automation, show `unlock-irrigation`, buy `unlock-vehicles`. `haggling` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` automation, show `unlock-vehicles`, buy `unlock-silos`, haggling applies. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, haggling does not discount. — [[mechanics/vehicles]]
+`buy-hangar` automation, show `unlock-irrigation`, buy `unlock-vehicles`. `haggling` applies. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` automation, show `unlock-vehicles`, buy `unlock-silos`, haggling applies. Quad / tractor / trailer hangar-buys `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`, not shop place SKUs, haggling does not discount. Automate chrome after `unlock-dispatch`. — [[mechanics/vehicles]]
 
 ### Sensors
 
-Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Nine stand alone; four dual-lock through `need` on the capability they read — [[mechanics/sensors]].
+Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read — [[mechanics/sensors]].
 
 | sku | unlock | need |
 |---|---|---|
@@ -138,10 +141,11 @@ Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unloc
 | buy-sensor-fert | unlock-sensors | unlock-fertilizer, unlock-compost |
 | buy-water-system | unlock-sensors | unlock-adv-irrigation |
 | buy-vehicle-detector | unlock-sensors | unlock-vehicles |
+| buy-traffic-light | unlock-sensors | unlock-dispatch |
 
 AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`. `buy-smart-valve` the same through `unlock-smart-irrigation`.
 
-`buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors.
+`buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors. `buy-traffic-light` Sensors.
 
 ### Land
 
@@ -160,3 +164,5 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 `research.reveal` — Raspberry research `reveal` is `unlock-grape`. Olive `reveal: unlock-tomato`. `pack-vanilla` shows after raspberry; buy requires `vanilla-tending`. `unlock-fermentation` automation unlocks `pack-sugar-cane` and gates `buy-still` `buy-barrel`. `unlock-grinder` also gates `buy-mill`. `unlock-preservatives` automation, reveal `unlock-grinder`, gates `buy-jam` `buy-freezer` `buy-sugar`.
 
 `research.gates` — `better-olive` `better-grape` `better-sugar-cane` gated on `unlock-olive` / `unlock-grape` / `unlock-fermentation`. `vanilla-tending` gated on `unlock-raspberry`. `better-vanilla` gated on `vanilla-tending`. No `better-*` for `TreeId`.
+
+`research.dispatch` — `unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 35, seconds 70 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.

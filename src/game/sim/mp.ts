@@ -4,7 +4,7 @@ import { Act, type Cmd } from './log.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.8
+export const PROTOCOL = 1.9
 
 export type MpMsg =
   | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
@@ -63,6 +63,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-sensor-day',
   'buy-water-system',
   'buy-vehicle-detector',
+  'buy-traffic-light',
   'buy-smart-valve',
 ])
 
@@ -269,6 +270,7 @@ export function digestHex(world: World): string {
     }
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
+    else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`
     else if (
       c.kind === 'button' ||
       c.kind === 'or' ||
@@ -303,6 +305,10 @@ export function digestHex(world: World): string {
     kind: v.kind,
     fuel: v.fuel,
     pose: v.pose,
+    route: v.route,
+    cursor: v.cursor,
+    running: v.running,
+    dwell: v.dwell,
     slots: v.kind === 'quad' ? v.slots : undefined,
     hitch: v.kind === 'tractor' ? v.hitch : undefined,
     boom: v.kind === 'tractor' ? v.boom : undefined,
@@ -321,6 +327,8 @@ export function digestHex(world: World): string {
     seats,
     vehicles,
     trailers,
+    routes: world.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops })),
+    nextRouteId: world.nextRouteId,
     cells,
     wires: world.wires,
     smart: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),

@@ -50,7 +50,7 @@ A chest between two machines is A's output and B's input.
 
 Machines: mill, jam, still, compost-box, grinder. Not barrel.
 
-Blue chute west, green chute east. Always painted. Not lens. `pointer-events-none`.
+Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`.
 
 ## Sugar
 

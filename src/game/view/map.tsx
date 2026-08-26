@@ -4,7 +4,7 @@ import { fertBand, waterBand, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
 import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
 import { HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../defs/items.ts'
 import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base } from '../sim/building.ts'
-import { hangarPad, siloPad } from '../sim/vehicle.ts'
+import { hangarPad, siloPad, stopXY } from '../sim/vehicle.ts'
 import { onCell } from '../sim/drop.ts'
 import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -107,6 +107,7 @@ import {
   daySensorArt,
   waterSystemArt,
   vehicleDetectorArt,
+  trafficLightArt,
   weedInner,
 } from './svgs.ts'
 import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
@@ -121,6 +122,8 @@ export type MapClick = PromptHit
 const ROOF = '#8b3a2a'
 const LEAF = '#6bc04a'
 const WATER = '#3d7ea6'
+const GRAPE = '#6b1f8c'
+const RIPE = '#d4a017'
 const INK = '#1c1710'
 const WASH = '#cfc6b0'
 const LENS_BAD = '#e23b2e'
@@ -179,13 +182,14 @@ type Props = {
   cam: Camera
   rev: number
   lens: Lens
+  editor: boolean
   hover: PromptHit | undefined
   onHover: (c: PromptHit | undefined) => void
   onCam: (c: Camera) => void
-  onClick: (hit: MapClick) => void
+  onClick: (hit: MapClick, xy: { x: number; y: number }) => void
 }
 
-export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick }: Props) {
+export function MapView({ world, cam, rev, lens, editor, hover, onHover, onCam, onClick }: Props) {
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
@@ -382,7 +386,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
           if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
           const w = worldAt(e.clientX, e.clientY)
           const hit = clickHit(world, w.x, w.y, lens)
-          if (hit !== undefined) onClick(hit)
+          if (hit !== undefined) onClick(hit, { x: w.x, y: w.y })
         }}
         onPointerLeave={() => {
           pendingMove.current = undefined
@@ -396,6 +400,7 @@ export function MapView({ world, cam, rev, lens, hover, onHover, onCam, onClick 
         >
           <Ground world={world} owned={world.owned.length} groundRev={world.groundRev} />
           <Marks world={world} rev={rev} lens={lens} hideVerts={ghostVerts} />
+          <RoutesGfx world={world} lens={lens} editor={editor} />
           {strokeCell !== undefined && (
             <g pointerEvents="none">
               <rect
@@ -1036,6 +1041,15 @@ const Marks = memo(function Marks({
           {showPipes && <SourceGfx world={world} base={t.base} />}
         </g>
       ))}
+      {world.machineLinks().map(l => (
+        <g
+          key={`link-${l.side}-${l.x},${l.y}`}
+          pointerEvents="none"
+          transform={`translate(${l.x * TILE},${l.y * TILE}) scale(${TILE / 24})`}
+        >
+          <Use art={l.side === 'in' ? LINK_IN : LINK_OUT} />
+        </g>
+      ))}
       {props.map(p => (
         <PropGfx key={`${p.kind}-${p.col},${p.row}`} art={p.art} col={p.col} row={p.row} />
       ))}
@@ -1080,15 +1094,6 @@ const Marks = memo(function Marks({
             <Use art={HANGAR_RETURN} />
           </g>
         ))}
-      {world.machineLinks().map(l => (
-        <g
-          key={`link-${l.side}-${l.x},${l.y}`}
-          pointerEvents="none"
-          transform={`translate(${l.x * TILE},${l.y * TILE}) scale(${TILE / 24})`}
-        >
-          <Use art={l.side === 'in' ? LINK_IN : LINK_OUT} />
-        </g>
-      ))}
       {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
         world.machinePads().map(p => (
           <g
@@ -2041,6 +2046,7 @@ function sensorProp(cell: Sensor): string {
   if (cell.kind === 'sensor-harvest') return harvestSensorArt(cell.out === 1)
   if (cell.kind === 'sensor-day') return daySensorArt(cell.out === 1)
   if (cell.kind === 'water-system') return waterSystemArt(cell.out === 1)
+  if (cell.kind === 'traffic-light') return trafficLightArt(cell.inn === 1)
   return vehicleDetectorArt(cell.out === 1)
 }
 
@@ -2060,7 +2066,7 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
         if (fy > 0.65) return { kind: 'cell', at, port: 'out' }
         return { kind: 'cell', at, port: fx < 0.5 ? 'in-l' : 'in-r' }
       }
-      if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever') {
+      if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever' || c.kind === 'traffic-light') {
         return { kind: 'cell', at, port: fy < 0.5 ? 'in' : 'out' }
       }
       if (c.kind === 'lamp') return { kind: 'cell', at, port: 'in' }
@@ -2108,6 +2114,80 @@ function WireStroke({ d, color }: { d: string; color: string }) {
     <g pointerEvents="none">
       <path d={d} fill="none" stroke="#1c1710" strokeWidth={4.5} strokeLinecap="round" />
       <path d={d} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    </g>
+  )
+}
+
+function linePathD(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  return `M ${from.x * TILE} ${from.y * TILE} L ${to.x * TILE} ${to.y * TILE}`
+}
+
+function RoutesGfx({ world, lens, editor }: { world: World; lens: Lens; editor: boolean }) {
+  const driven = world.driverVehicle(world.local)
+  const assigned = new Set(world.vehicles.filter(v => v.route !== 'none').map(v => v.route))
+  const routes = editor
+    ? driven !== undefined && driven.route !== 'none'
+      ? world.routes.filter(r => r.id === driven.route)
+      : []
+    : lens === 'vehicles'
+      ? world.routes.filter(r => assigned.has(r.id))
+      : []
+  if (routes.length === 0) return null
+  const current = driven !== undefined && driven.route !== 'none' ? driven : undefined
+  const mover = world.vehicles.find(v => v.running && v.route !== 'none' && v.pose.kind === 'field')
+  return (
+    <g pointerEvents="none">
+      {routes.map(route => {
+        if (route.stops.length === 0) return null
+        const pts = route.stops.map(stopXY)
+        const n = pts.length
+        const legs = pts.map((p, i) => ({ from: p, to: pts[n === 1 ? i : (i + 1) % n] }))
+        const follow =
+          mover !== undefined && mover.route === route.id && mover.pose.kind === 'field' && n > 0
+            ? { from: { x: mover.pose.x, y: mover.pose.y }, to: stopXY(route.stops[mover.cursor]) }
+            : current !== undefined && current.route === route.id && current.pose.kind === 'field' && n > 0
+              ? { from: { x: current.pose.x, y: current.pose.y }, to: stopXY(route.stops[current.cursor]) }
+              : undefined
+        return (
+          <g key={`route-${route.id}`}>
+            {n > 1 &&
+              legs.map((leg, i) => (
+                <WireStroke key={`leg-${route.id}-${i}`} d={linePathD(leg.from, leg.to)} color={GRAPE} />
+              ))}
+            {follow !== undefined && (
+              <g data-route-leg={route.id}>
+                <WireStroke d={linePathD(follow.from, follow.to)} color="#c43c3c" />
+              </g>
+            )}
+            {editor &&
+              route.stops.map((s, i) => {
+                const p = stopXY(s)
+                const cur = current !== undefined && current.route === route.id && current.cursor === i
+                const cx = p.x * TILE
+                const cy = p.y * TILE
+                const r = cur ? 12 : 10
+                return (
+                  <g key={`n-${route.id}-${i}`} data-route-stop={`${route.id}:${i}`}>
+                    <circle cx={cx} cy={cy} r={r} fill={cur ? RIPE : WASH} stroke={INK} strokeWidth={2} />
+                    <text
+                      x={cx}
+                      y={cy}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill={INK}
+                      fontFamily="Nunito, sans-serif"
+                      fontSize={cur ? 16 : 14}
+                      fontWeight={700}
+                      className="tabular-nums"
+                    >
+                      {i + 1}
+                    </text>
+                  </g>
+                )
+              })}
+          </g>
+        )
+      })}
     </g>
   )
 }

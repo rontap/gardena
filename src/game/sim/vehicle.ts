@@ -21,7 +21,7 @@ import {
   VEHICLE_SLOTS,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { AnnualId, HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
+import type { AnnualId, HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
 import { compostValue, mergeFreshness, mergeUnitSale, organic, type Item, type Slot } from './item.ts'
 import {
   ADDITIVE_BAG,
@@ -53,6 +53,15 @@ import { isSolid, isTilled, type Cell } from './plot.ts'
 import type { SeatId } from './world.ts'
 
 export type Drive = { throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
+
+export type RouteStop =
+  | { kind: 'goto'; x: number; y: number }
+  | { kind: 'unload'; at: Coord }
+  | { kind: 'load'; at: Coord }
+  | { kind: 'wait'; at: Coord }
+
+export type Route = { id: RouteId; name: string; stops: RouteStop[] }
+
 export type VehiclePose =
   | { kind: 'stored'; hangar: Coord }
   | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
@@ -73,6 +82,10 @@ export type Vehicle =
       fuel: number
       slots: Slot[]
       pose: VehiclePose
+      route: RouteId | 'none'
+      cursor: number
+      running: boolean
+      dwell: number
     }
   | {
       kind: 'tractor'
@@ -81,6 +94,10 @@ export type Vehicle =
       hitch: TrailerId | 'none'
       boom: 3 | 5
       pose: VehiclePose
+      route: RouteId | 'none'
+      cursor: number
+      running: boolean
+      dwell: number
     }
 
 export type Trailer =
@@ -88,7 +105,7 @@ export type Trailer =
   | { kind: 'spray'; id: TrailerId; pose: TrailerPose; hopper: SprayHopper }
   | { kind: 'harvest'; id: TrailerId; pose: TrailerPose; slots: Slot[] }
 
-export type { HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot }
+export type { HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot }
 
 export function emptyVehicleSlots(): Slot[] {
   return Array.from({ length: VEHICLE_SLOTS }, (): Slot => ({ kind: 'empty' }))
@@ -99,7 +116,7 @@ export function emptyHarvestSlots(): Slot[] {
 }
 
 export function makeQuad(id: VehicleId, fuel: number, slots: Slot[], pose: VehiclePose): Extract<Vehicle, { kind: 'quad' }> {
-  return { kind: 'quad', id, fuel, slots, pose }
+  return { kind: 'quad', id, fuel, slots, pose, route: 'none', cursor: 0, running: false, dwell: 0 }
 }
 
 export function makeTractor(
@@ -109,7 +126,7 @@ export function makeTractor(
   boom: 3 | 5,
   pose: VehiclePose,
 ): Extract<Vehicle, { kind: 'tractor' }> {
-  return { kind: 'tractor', id, fuel, hitch, boom, pose }
+  return { kind: 'tractor', id, fuel, hitch, boom, pose, route: 'none', cursor: 0, running: false, dwell: 0 }
 }
 
 export function hangarPad(base: RectBase): Coord[] {
@@ -156,6 +173,16 @@ export function wrapHeading(h: number): number {
   const t = TWO_PI
   const n = h % t
   return n < 0 ? n + t : n
+}
+
+export function headingDelta(from: number, to: number): number {
+  const d = wrapHeading(to - from)
+  return d > Math.PI ? d - TWO_PI : d
+}
+
+export function stopXY(s: RouteStop): { x: number; y: number } {
+  if (s.kind === 'goto') return { x: s.x, y: s.y }
+  return { x: s.at.col + 0.5, y: s.at.row + 0.5 }
 }
 
 const TWO_PI = Math.PI * 2

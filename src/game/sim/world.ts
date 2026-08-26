@@ -14,6 +14,11 @@ import {
   QUAD_FUEL_SECONDS,
   QUAD_PRICE,
   QUAD_REFILL,
+  AUTO_DECEL_MUL,
+  AUTO_VMAX_MUL,
+  DISPATCH_DWELL,
+  ROUTE_ALIGN,
+  ROUTE_ARRIVE,
   TRACTOR_PRICE,
   TRAILER_CAP,
   TRAILER_HARVEST_PRICE,
@@ -70,6 +75,7 @@ import type {
   SkillId,
   HarvestSlot,
   JamCrop,
+  RouteId,
   SkuId,
   StallGoodId,
   TrailerId,
@@ -289,6 +295,7 @@ import {
   emptyVehicleSlots,
   followHitch,
   hangarPad,
+  headingDelta,
   hitchP,
   insertSlots,
   integrateVehicle,
@@ -301,12 +308,15 @@ import {
   padCenter,
   pullFrom,
   seekSpeed,
+  stopXY,
   surfaceMul,
   takeupPad,
   trailerUsed,
   vehicleCargo,
   type Drive,
   type PadCell,
+  type Route,
+  type RouteStop,
   type Trailer,
   type TrailerPose,
   type Vehicle,
@@ -336,6 +346,7 @@ import {
   vehicleRaw,
   skuKind,
   isSeqIn,
+  stepHold,
   wouldCycle,
   type Sensor,
   type SmartHold,
@@ -446,6 +457,7 @@ export type StayArmed =
   | 'buy-water-system'
   | 'buy-smart-valve'
   | 'buy-vehicle-detector'
+  | 'buy-traffic-light'
   | 'delete'
 
 export type SeatId = 0 | 1 | 2 | 3
@@ -549,6 +561,8 @@ export type Hydrate = {
   nextVehicleId: VehicleId
   trailers: Trailer[]
   nextTrailerId: TrailerId
+  routes: Route[]
+  nextRouteId: RouteId
   stall: StallMap
   family: Family
   points: number
@@ -729,6 +743,8 @@ export class World {
   nextVehicleId: VehicleId = 1
   readonly trailers: Trailer[] = []
   nextTrailerId: TrailerId = 1
+  readonly routes: Route[] = []
+  nextRouteId: RouteId = 1
   readonly segments = new Map<string, Segment>()
   readonly wells = new Map<string, Well>()
   readonly fences = new Set<string>()
@@ -808,6 +824,9 @@ export class World {
       this.trailers.length = 0
       h.trailers.forEach(x => this.trailers.push(x))
       this.nextTrailerId = h.nextTrailerId
+      this.routes.length = 0
+      h.routes.forEach(x => this.routes.push(x))
+      this.nextRouteId = h.nextRouteId
       this.stall = h.stall
       this.family = h.family
       this.points = h.points
@@ -1171,6 +1190,9 @@ export class World {
         return
       case Act.reorderContract:
         this.reorderContractBody(cmd.c, cmd.d)
+        return
+      case Act.route:
+        this.routeBody(cmd)
         return
     }
   }
@@ -1971,6 +1993,7 @@ export class World {
       return
     }
     if (c.kind === 'chest') {
+      this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       c.slots.forEach(s => {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
@@ -1981,12 +2004,14 @@ export class World {
       return
     }
     if (c.kind === 'compost-box') {
+      this.stripPadStops(c)
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete compost box', at: { ...at } }
       this.ping()
       return
     }
     if (c.kind === 'mill') {
+      this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete mill', at: { ...at } }
@@ -1994,6 +2019,7 @@ export class World {
       return
     }
     if (c.kind === 'jam') {
+      this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.pulse = { text: 'Delete jam machine', at: { ...at } }
@@ -2001,6 +2027,7 @@ export class World {
       return
     }
     if (c.kind === 'still') {
+      this.stripPadStops(c)
       const origin = { col: c.base.col, row: c.base.row }
       occupiedCells(c.base, this.owned).forEach(p => {
         this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
@@ -2019,6 +2046,7 @@ export class World {
       return
     }
     if (c.kind === 'freezer') {
+      this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       c.slots.forEach(s => {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
@@ -2052,6 +2080,9 @@ export class World {
       return
     }
     if (isSensor(c)) {
+      if (c.kind === 'traffic-light') {
+        this.stripStops(s => s.kind === 'wait' && s.at.col === at.col && s.at.row === at.row)
+      }
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       if (c.kind === 'water-system') this.waterSystems.splice(this.waterSystems.indexOf(c), 1)
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
@@ -2861,6 +2892,10 @@ export class World {
     const v = this.vehicles.find(x => x.id === id)
     if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
     if (this.driverVehicle(this.act.id) !== undefined) return
+    if (v.running) {
+      v.running = false
+      v.pose.speed = 0
+    }
     const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
     if (this.act.actor.inside(floor)) {
       this.board(v)
@@ -2904,6 +2939,7 @@ export class World {
       v.hitch = 'none'
     }
     v.pose = { kind: 'stored', hangar: origin }
+    v.running = false
     this.act.actor.x = x
     this.act.actor.y = y
     this.act.drive = { throttle: 0, steer: 0 }
@@ -2917,7 +2953,7 @@ export class World {
 
   private swapVehicleBody(id: VehicleId, i: VehicleSlot): void {
     const v = this.vehicles.find(x => x.id === id)
-    if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
     const held = this.act.hand
     this.act.hand = v.slots[i]
     v.slots[i] = held
@@ -2934,7 +2970,7 @@ export class World {
     if (t === undefined || t.pose.kind !== 'attached') return
     const hitch = t.pose.vehicle
     const v = this.vehicles.find(x => x.id === hitch)
-    if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
     if (t.kind === 'seed') {
       if (i !== 0) return
       const hand = this.act.hand
@@ -3005,6 +3041,217 @@ export class World {
 
   unload(): void {
     this.commit({ a: Act.unload, t: this.now, p: this.local })
+  }
+
+  createRoute(): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'create' })
+  }
+
+  deleteRoute(r: RouteId): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'delete', r })
+  }
+
+  assignRoute(v: VehicleId, r: RouteId | 'none'): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'assign', v, r })
+  }
+
+  addStop(r: RouteId, s: RouteStop): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'add', r, s })
+  }
+
+  removeStop(r: RouteId, i: number): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'remove', r, i })
+  }
+
+  reorderStop(r: RouteId, i: number, d: 1 | -1): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'reorder', r, i, d })
+  }
+
+  renameRoute(r: RouteId, n: string): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'rename', r, n })
+  }
+
+  startRoute(): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'start' })
+  }
+
+  automate(v: VehicleId, at: Coord): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'automate', v, c: [at.col, at.row] })
+  }
+
+  routeById(id: RouteId): Route | undefined {
+    return this.routes.find(r => r.id === id)
+  }
+
+  stopAt(at: Coord, xy: { x: number; y: number }): RouteStop | undefined {
+    const hit = this.padHit(at)
+    if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row } }
+    if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row } }
+    if (this.inWorld(at) && this.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
+    if (this.inWorld(at)) return { kind: 'goto', x: xy.x, y: xy.y }
+    return undefined
+  }
+
+  private routeBody(cmd: Extract<Cmd, { a: typeof Act.route }>): void {
+    if (!this.done.has('unlock-dispatch')) return
+    if (cmd.k === 'create') {
+      const id = this.nextRouteId
+      this.nextRouteId += 1
+      this.routes.push({ id, name: `Route ${id}`, stops: [] })
+      this.ping()
+      return
+    }
+    if (cmd.k === 'delete') {
+      if (this.vehicles.some(v => v.route === cmd.r)) return
+      const i = this.routes.findIndex(r => r.id === cmd.r)
+      if (i < 0) return
+      this.routes.splice(i, 1)
+      this.ping()
+      return
+    }
+    if (cmd.k === 'assign') {
+      const v = this.vehicles.find(x => x.id === cmd.v)
+      if (v === undefined) return
+      if (cmd.r === 'none') {
+        v.route = 'none'
+        v.cursor = 0
+        v.running = false
+        this.ping()
+        return
+      }
+      const route = this.routeById(cmd.r)
+      if (route === undefined) return
+      if (v.route !== cmd.r) v.cursor = 0
+      v.route = cmd.r
+      if (route.stops.length === 0) v.running = false
+      this.ping()
+      return
+    }
+    if (cmd.k === 'add') {
+      const route = this.routeById(cmd.r)
+      if (route === undefined) return
+      if (!this.stopLegal(cmd.s)) return
+      route.stops.push(cmd.s)
+      this.ping()
+      return
+    }
+    if (cmd.k === 'remove') {
+      const route = this.routeById(cmd.r)
+      if (route === undefined) return
+      if (cmd.i < 0 || cmd.i >= route.stops.length) return
+      this.stripRouteStops(route, (_s, i) => i === cmd.i)
+      this.ping()
+      return
+    }
+    if (cmd.k === 'reorder') {
+      const route = this.routeById(cmd.r)
+      if (route === undefined) return
+      const j = cmd.i + cmd.d
+      if (cmd.i < 0 || cmd.i >= route.stops.length || j < 0 || j >= route.stops.length) return
+      const a = route.stops[cmd.i]
+      route.stops[cmd.i] = route.stops[j]
+      route.stops[j] = a
+      this.vehicles.forEach(v => {
+        if (v.route !== route.id) return
+        if (v.cursor === cmd.i) v.cursor = j
+        else if (v.cursor === j) v.cursor = cmd.i
+      })
+      this.ping()
+      return
+    }
+    if (cmd.k === 'rename') {
+      if (cmd.n === '') return
+      const route = this.routeById(cmd.r)
+      if (route === undefined) return
+      route.name = cmd.n
+      this.ping()
+      return
+    }
+    if (cmd.k === 'start') {
+      const v = this.driverVehicle(this.act.id)
+      if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
+      const route = this.routeById(v.route)
+      if (route === undefined || route.stops.length === 0) return
+      this.disembarkBody()
+      v.running = true
+      v.dwell = 0
+      this.ping()
+      return
+    }
+    if (cmd.k === 'automate') {
+      const v = this.vehicles.find(x => x.id === cmd.v)
+      if (v === undefined || v.pose.kind !== 'stored' || v.route === 'none') return
+      const route = this.routeById(v.route)
+      if (route === undefined || route.stops.length === 0) return
+      const origin = this.hangarOrigin({ col: cmd.c[0], row: cmd.c[1] })
+      if (origin === undefined) return
+      const hangar = this.cell(origin)
+      if (hangar.kind !== 'hangar') return
+      const pad = padCenter(hangar.base)
+      if (!this.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
+      v.pose = {
+        kind: 'field',
+        x: pad.x,
+        y: pad.y,
+        heading: HEADING_SOUTH,
+        speed: 0,
+        driver: 'none',
+      }
+      v.cursor = 0
+      v.running = true
+      v.dwell = 0
+      this.ping()
+    }
+  }
+
+  private stopLegal(s: RouteStop): boolean {
+    if (s.kind === 'goto') return this.inWorld({ col: Math.floor(s.x), row: Math.floor(s.y) })
+    if (!this.inWorld(s.at)) return false
+    if (s.kind === 'wait') return this.cell(s.at).kind === 'traffic-light'
+    const hit = this.padHit(s.at)
+    if (hit === undefined) return false
+    if (s.kind === 'unload') return hit.side === 'dropoff'
+    return hit.side === 'takeup'
+  }
+
+  private stripRouteStops(route: Route, drop: (s: RouteStop, i: number) => boolean): void {
+    const map: number[] = []
+    const kept: RouteStop[] = []
+    route.stops.forEach((s, i) => {
+      if (drop(s, i)) map[i] = -1
+      else {
+        map[i] = kept.length
+        kept.push(s)
+      }
+    })
+    route.stops = kept
+    this.vehicles.forEach(v => {
+      if (v.route !== route.id) return
+      if (kept.length === 0) {
+        v.cursor = 0
+        v.running = false
+        return
+      }
+      if (map[v.cursor] >= 0) {
+        v.cursor = map[v.cursor]
+        return
+      }
+      let j = v.cursor + 1
+      while (j < map.length && map[j] < 0) j += 1
+      v.cursor = j < map.length ? map[j] : 0
+    })
+  }
+
+  private stripStops(drop: (s: RouteStop) => boolean): void {
+    this.routes.forEach(r => this.stripRouteStops(r, s => drop(s)))
+  }
+
+  private stripPadStops(cell: PadCell): void {
+    const pads = [...dropoffPad(cell.base), ...takeupPad(cell.base)]
+    this.stripStops(
+      s =>
+        (s.kind === 'load' || s.kind === 'unload') && pads.some(p => p.col === s.at.col && p.row === s.at.row),
+    )
   }
 
   private setBoomBody(w: 3 | 5): void {
@@ -3155,7 +3402,33 @@ export class World {
       const before = { x: pose.x, y: pose.y, heading: pose.heading }
       const driver = pose.driver === 'none' ? undefined : this.seats[pose.driver]
       const accel = kindAccel(v.kind)
-      if (driver === undefined) {
+      const auto = driver === undefined && v.running
+      let steer = 0
+      if (auto) {
+        const drive = this.autoDrive(v, pose)
+        steer = drive.steer
+        const driving = this.skillTier('driving-classes')
+        if (drive.throttle !== 0 || drive.steer !== 0) {
+          const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
+          v.fuel = next < 0 ? 0 : next
+        }
+        const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
+        const surface = surfaceMul(this.cell(at))
+        const drivingMul = 1 + 0.05 * driving
+        const braking = drive.throttle === 0 && pose.speed !== 0
+        integrateVehicle(
+          pose,
+          drive,
+          dt,
+          v.fuel,
+          surface,
+          p => this.inWorld(p),
+          kindVMax(v.kind) * drivingMul * AUTO_VMAX_MUL,
+          accel * drivingMul * (braking ? AUTO_DECEL_MUL : 1),
+          kindYaw(v.kind),
+        )
+        if (v.fuel > 0) this.arriveGoto(v, pose)
+      } else if (driver === undefined) {
         pose.speed = seekSpeed(pose.speed, 0, accel, dt)
         const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
         const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
@@ -3164,6 +3437,7 @@ export class World {
           pose.y = ny
         }
       } else {
+        steer = driver.drive.steer
         const driving = this.skillTier('driving-classes')
         if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
           const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
@@ -3190,16 +3464,66 @@ export class World {
         const t = this.trailers.find(x => x.id === v.hitch)
         if (t !== undefined && t.pose.kind === 'attached') {
           followHitch(t.pose, before, pose)
-          this.boom(v, t, driver, t.pose.heading)
+          this.boom(v, t, driver !== undefined || auto, steer, t.pose.heading)
         }
       }
     })
   }
 
-  private boom(v: Extract<Vehicle, { kind: 'tractor' }>, t: Trailer, driver: Seat | undefined, heading: number): void {
+  private autoDrive(v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): Drive {
+    const zero: Drive = { throttle: 0, steer: 0 }
+    if (v.fuel === 0) return zero
+    if (v.dwell > 0) return zero
+    if (v.route === 'none') return zero
+    const route = this.routeById(v.route)
+    if (route === undefined || route.stops.length === 0) return zero
+    const stop = route.stops[v.cursor]
+    if (this.stopArrived(pose, stop)) return zero
+    if (stop.kind !== 'goto' && Math.floor(pose.x) === stop.at.col && Math.floor(pose.y) === stop.at.row) return zero
+    const target = stopXY(stop)
+    const want = Math.atan2(target.y - pose.y, target.x - pose.x)
+    const d = headingDelta(pose.heading, want)
+    if (Math.abs(d) > ROUTE_ALIGN) return { throttle: 0, steer: d > 0 ? 1 : -1 }
+    if (stop.kind !== 'goto') {
+      const dist = Math.hypot(target.x - pose.x, target.y - pose.y)
+      const decel = kindAccel(v.kind) * AUTO_DECEL_MUL
+      const stopDist = (pose.speed * pose.speed) / (2 * decel) + 0.2
+      if (dist <= stopDist) return zero
+    }
+    return { throttle: 1, steer: 0 }
+  }
+
+  private stopArrived(pose: Extract<VehiclePose, { kind: 'field' }>, stop: RouteStop): boolean {
+    if (stop.kind === 'goto') return Math.hypot(pose.x - stop.x, pose.y - stop.y) <= ROUTE_ARRIVE
+    if (Math.floor(pose.x) !== stop.at.col || Math.floor(pose.y) !== stop.at.row) return false
+    return pose.speed === 0
+  }
+
+  private arriveGoto(v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): void {
+    if (v.route === 'none') return
+    const route = this.routeById(v.route)
+    if (route === undefined || route.stops.length === 0) return
+    const stop = route.stops[v.cursor]
+    if (stop.kind !== 'goto') return
+    if (Math.hypot(pose.x - stop.x, pose.y - stop.y) > ROUTE_ARRIVE) return
+    this.advanceRoute(v, route)
+  }
+
+  private advanceRoute(v: Vehicle, route: Route): void {
+    v.cursor = (v.cursor + 1) % route.stops.length
+    v.dwell = 0
+  }
+
+  private boom(
+    v: Extract<Vehicle, { kind: 'tractor' }>,
+    t: Trailer,
+    active: boolean,
+    steer: number,
+    heading: number,
+  ): void {
     if (v.pose.kind !== 'field') return
-    if (driver === undefined) return
-    if (driver.drive.steer !== 0) return
+    if (!active) return
+    if (steer !== 0) return
     if (v.pose.speed <= 0) return
     const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
     boomHits(p, heading, v.boom, at => this.inWorld(at)).forEach(at => this.boomCell(t, at))
@@ -3676,6 +4000,7 @@ export class World {
     this.tickField(dt)
     this.gatherWater(dt)
     this.evalSensors(dt)
+    this.tickDispatch(dt)
     if (this.hud !== undefined && this.hud.kind === 'counter') this.ping()
     this.tickMachines(dt)
     this.tickWater(dt)
@@ -5242,6 +5567,22 @@ export class World {
     return vehicleCargo(v, this.trailers)
   }
 
+  private transferLoad(v: Vehicle): void {
+    if (v.pose.kind !== 'field') return
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    const cargo = vehicleCargo(v, this.trailers)
+    if (hit === undefined || hit.side !== 'takeup' || cargo === undefined) return
+    pullFrom(hit.cell, cargo, this.drops)
+  }
+
+  private transferUnload(v: Vehicle): void {
+    if (v.pose.kind !== 'field') return
+    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    const cargo = vehicleCargo(v, this.trailers)
+    if (hit === undefined || hit.side !== 'dropoff' || cargo === undefined) return
+    dumpCargo(cargo, hit.cell)
+  }
+
   private loadBody(): void {
     const v = this.driverVehicle(this.act.id)
     if (v === undefined || v.pose.kind !== 'field') return
@@ -5249,7 +5590,7 @@ export class World {
     const cargo = this.cargo()
     if (hit === undefined || hit.side !== 'takeup' || cargo === undefined) return
     if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
-    pullFrom(hit.cell, cargo, this.drops)
+    this.transferLoad(v)
     this.ping()
   }
 
@@ -5260,8 +5601,58 @@ export class World {
     const cargo = this.cargo()
     if (hit === undefined || hit.side !== 'dropoff' || cargo === undefined) return
     if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
-    dumpCargo(cargo, hit.cell)
+    this.transferUnload(v)
     this.ping()
+  }
+
+  private tickDispatch(dt: number): void {
+    this.vehicles.forEach(v => {
+      if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return
+      const route = this.routeById(v.route)
+      if (route === undefined || route.stops.length === 0) return
+      const stop = route.stops[v.cursor]
+      if (stop.kind === 'goto') return
+      if (!this.stopArrived(v.pose, stop)) return
+      if (v.fuel === 0) return
+      if (stop.kind === 'wait') {
+        if (!this.inWorld(stop.at)) return
+        const light = this.cell(stop.at)
+        if (light.kind !== 'traffic-light') return
+        if (light.inn === 1) this.advanceRoute(v, route)
+        return
+      }
+      if (v.dwell <= 0) {
+        v.dwell = DISPATCH_DWELL
+        return
+      }
+      v.dwell -= dt
+      if (v.dwell > 0) return
+      v.dwell = 0
+      if (stop.kind === 'load') this.transferLoad(v)
+      else this.transferUnload(v)
+      this.advanceRoute(v, route)
+    })
+    this.forEachCell((_at, c) => {
+      if (c.kind !== 'traffic-light') return
+      const raw: 0 | 1 = this.lightWaiter(c) ? 1 : 0
+      const next = stepHold(c.out, c.hold, raw)
+      c.out = next.out
+      c.hold = next.hold
+    })
+  }
+
+  private lightWaiter(light: Extract<Sensor, { kind: 'traffic-light' }>): boolean {
+    const at = { col: light.base.col, row: light.base.row }
+    return this.vehicles.some(v => {
+      if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return false
+      const route = this.routeById(v.route)
+      if (route === undefined || route.stops.length === 0) return false
+      const stop = route.stops[v.cursor]
+      if (stop.kind !== 'wait') return false
+      if (stop.at.col !== at.col || stop.at.row !== at.row) return false
+      if (Math.floor(v.pose.x) !== at.col || Math.floor(v.pose.y) !== at.row) return false
+      return light.inn === 0
+    })
   }
 
   private loadWould(): boolean {
@@ -5269,6 +5660,7 @@ export class World {
     if (cargo === undefined) return false
     const v = this.driverVehicle(this.act.id)
     if (v === undefined || v.pose.kind !== 'field') return false
+    if (v.pose.speed !== 0) return false
     const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
     if (hit === undefined || hit.side !== 'takeup') return false
     if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
@@ -5280,6 +5672,7 @@ export class World {
     if (cargo === undefined) return false
     const v = this.driverVehicle(this.act.id)
     if (v === undefined || v.pose.kind !== 'field') return false
+    if (v.pose.speed !== 0) return false
     const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
     if (hit === undefined || hit.side !== 'dropoff') return false
     if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
@@ -5648,6 +6041,8 @@ function sensorDeleteName(k: Sensor['kind']): string {
       return 'water-system sensor'
     case 'vehicle-detector':
       return 'vehicle detector'
+    case 'traffic-light':
+      return 'traffic light'
   }
 }
 

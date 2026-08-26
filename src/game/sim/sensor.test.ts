@@ -42,7 +42,8 @@ function put(
     | 'buy-sensor-harvest'
     | 'buy-sensor-day'
     | 'buy-water-system'
-    | 'buy-vehicle-detector',
+    | 'buy-vehicle-detector'
+    | 'buy-traffic-light',
   at: { col: number; row: number },
 ): void {
   w.buy(id)
@@ -60,12 +61,12 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.8. PROTOCOL 1.8. Wordmark 1.8.0. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.8)
-    expect(PROTOCOL).toBe(1.8)
+  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 1.9.0. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(1.9)
+    expect(PROTOCOL).toBe(1.9)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.8)
+    expect(s.version).toBe(1.9)
     expect(s.wires).toEqual([])
     expect(s.smartHold).toEqual([])
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
@@ -1196,5 +1197,51 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'counter', c: [B.col, B.row] })).toBe(true)
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'day', c: [C.col, C.row] })).toBe(true)
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(false)
+  })
+
+  test('Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Guest `GUEST_BUILD`. Wait resolve after `evalDag` using this tick’s `inn`.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-vehicles')
+    expect(w.skuShown('buy-traffic-light')).toBe(true)
+    expect(w.skuOpen('buy-traffic-light')).toBe(false)
+    w.done.add('unlock-dispatch')
+    expect(w.skuOpen('buy-traffic-light')).toBe(true)
+    put(w, 'buy-traffic-light', A)
+    const light = w.cell(A)
+    expect(light.kind).toBe('traffic-light')
+    if (light.kind !== 'traffic-light') return
+    expect(light.inn).toBe(0)
+    expect(light.out).toBe(0)
+    expect(lookText(w, A, false)).toContain('Traffic light')
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-traffic-light' })).toBe(true)
+    expect(isSeqIn({ kind: 'cell', at: A, port: 'in' }, light)).toBe(true)
+    expect(portXY({ kind: 'cell', at: A, port: 'in' }, 'traffic-light')).toEqual({ x: A.col + 0.5, y: A.row })
+    expect(portXY({ kind: 'cell', at: A, port: 'out' }, 'traffic-light')).toEqual({ x: A.col + 0.5, y: A.row + 1 })
+    const hangar = { col: 16, row: 16 }
+    w.buy('buy-hangar')
+    w.confirmPlace(hangar)
+    w.createRoute()
+    w.addStop(1, { kind: 'wait', at: A })
+    w.addStop(1, { kind: 'goto', x: 20.5, y: 20.5 })
+    w.buyVehicle(hangar, 'quad')
+    w.assignRoute(1, 1)
+    const v = w.vehicles[0]
+    v.pose = { kind: 'field', x: A.col + 0.5, y: A.row + 0.5, heading: 0, speed: 0, driver: 'none' }
+    v.running = true
+    w.tick(DT_MAX)
+    expect(v.cursor).toBe(0)
+    expect(w.cell(A).kind).toBe('traffic-light')
+    if (w.cell(A).kind !== 'traffic-light') return
+    expect(w.cell(A).out).toBe(1)
+    put(w, 'buy-lever', B)
+    w.armWire({ kind: 'cell', at: B, port: 'out' })
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in' })
+    const lev = w.cell(B)
+    if (lev.kind !== 'lever') return
+    lev.on = true
+    lev.out = 1
+    w.tick(DT_MAX)
+    expect(v.cursor).toBe(1)
   })
 })

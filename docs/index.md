@@ -58,3 +58,4 @@ Vault for this game. Agents read this first.
 - [[plans/early-access-1.1]] — Early Access multiplayer beta spec
 - [[plans/early-access-2]] — Early Access 2 disease design notes, not yet spec
 - [[plans/1.8.0]] — market pressure + contracts spec. Types are `src/game/sim/market.h.ts`
+- [[plans/1.9.0]] — Automated Dispatch I spec. Routes + traffic light.

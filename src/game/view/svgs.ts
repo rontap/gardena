@@ -118,6 +118,7 @@ import itemSensorHarvest from '../../assets/items/item-sensor-harvest.svg?raw'
 import itemSensorDay from '../../assets/items/item-sensor-day.svg?raw'
 import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
 import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
+import itemTrafficLight from '../../assets/items/item-traffic-light.svg?raw'
 import itemSmartValve from '../../assets/items/item-smart-valve.svg?raw'
 import propLever from '../../assets/props/prop-lever.svg?raw'
 import propButton from '../../assets/props/prop-button.svg?raw'
@@ -133,6 +134,7 @@ import propSensorHarvest from '../../assets/props/prop-sensor-harvest.svg?raw'
 import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
+import propTrafficLight from '../../assets/props/prop-traffic-light.svg?raw'
 import pipeSmartValve from '../../assets/joints/pipe-smart-valve.svg?raw'
 
 import itemChest from '../../assets/items/item-chest.svg?raw'
@@ -371,6 +373,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'sensor-day') return stageOnly(itemSensorDay, 'off')
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
+  if (item.kind === 'traffic-light') return stageOnly(itemTrafficLight, 'off')
   if (item.kind === 'smart-valve') return stageOnly(itemSmartValve, 'closed')
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
@@ -551,6 +554,8 @@ export function researchInner(id: ResearchId): string {
       return inner(uiResearchLandscape)
     case 'unlock-vehicles':
       return inner(itemHangar)
+    case 'unlock-dispatch':
+      return stageOnly(itemTrafficLight, 'off')
     case 'unlock-sensors':
       return stageOnly(itemLever, 'off')
     case 'unlock-advanced-sensors':
@@ -705,6 +710,9 @@ export function waterSystemArt(on: boolean): string {
 }
 export function vehicleDetectorArt(on: boolean): string {
   return stageOnly(propVehicleDetector, on ? 'on' : 'off')
+}
+export function trafficLightArt(on: boolean): string {
+  return stageOnly(propTrafficLight, on ? 'on' : 'off')
 }
 export const OVERLAY_WATER = inner(overlayWater)
 export const ITEM_CHEST = inner(itemChest)

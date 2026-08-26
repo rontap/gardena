@@ -2,7 +2,7 @@
 
 Types [[architecture/world]]. Shop [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Numbers preference unless marked. Classes `sim/sensor.ts`. Ids `sim/ids.ts`.
 
-Combinational loops stay illegal. Sequential feedback through lever / pulser / counter `in` is legal.
+Combinational loops stay illegal. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal.
 
 `BUTTON_PULSE`, `SENSOR_HOLD`, `COUNTER_MAX` — preference. `Sku.tab` `automation`. `haggling` applies.
 
@@ -12,7 +12,7 @@ Combinational loops stay illegal. Sequential feedback through lever / pulser / c
 
 Solid center never holds a plant.
 
-Place defaults: `Lever.on = false` `inn = 0` `prev = 0`. `Button.left = 0`. Pulser `prev = 0` `inn = 0` `out = 0`. Counter `n = 1` `count = 0`. Water `wilt = true` `over = true`. Harvest `mode = 'any'`. Day `day = true`, others false. `out` / `inn` / `hold` 0.
+Place defaults: `Lever.on = false` `inn = 0` `prev = 0`. `Button.left = 0`. Pulser `prev = 0` `inn = 0` `out = 0`. Counter `n = 1` `count = 0`. Water `wilt = true` `over = true`. Harvest `mode = 'any'`. Day `day = true`, others false. Traffic-light `inn = 0` `out = 0` `hold = 0`. `out` / `inn` / `hold` 0.
 
 Tune `n` out of range is no-op, does not write.
 
@@ -22,7 +22,7 @@ Tune `n` out of range is no-op, does not write.
 |---|---|---|
 | button, sensor-water, sensor-fert, sensor-harvest, sensor-day, water-system, vehicle-detector | — | `out` bottom |
 | lamp | `in` top | — |
-| not, pulser, counter, lever | `in` top | `out` bottom |
+| not, pulser, counter, lever, traffic-light | `in` top | `out` bottom |
 | and, or | `in-l` left, `in-r` right | `out` bottom |
 | sprinkler (after `unlock-smart-irrigation`) | `in` | — |
 | smart valve | `in` on the body | — |
@@ -35,9 +35,9 @@ Illegal combos unrepresentable per device. Finalize no-ops a `WireEnd` that the 
 
 No prop nubs on mill/jam/still/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port.
 
-Output-only: whole-cell click = bottom `out`. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT / pulser / counter / lever: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
+Output-only: whole-cell click = bottom `out`. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT / pulser / counter / lever / traffic-light: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
 
-Sensors lens: lever is not output-only whole-cell. Top half `in`, bottom `out` (NOT). Lens off: Flip / Press still fire.
+Sensors lens: lever / traffic-light are not output-only whole-cell. Top half `in`, bottom `out` (NOT). Lens off: Flip / Press still fire.
 
 ## Wire
 
@@ -59,24 +59,25 @@ Delete: Delete tool, nearest bezier within `VERTEX_HIT`. Building delete, sprink
 
 Two graphs. Wiring may contain cycles **through memory**. Combinational wiring may not.
 
-**Sequential (memory) devices:** lever, pulser, counter. Their `in` is sampled from **last tick’s** outputs, then they update. Internally `in` does not combinationally drive `out` this tick. Flip / Press still apply in `apply` (same-tick Flip + eval edge: both, net zero).
+**Sequential (memory) devices:** lever, pulser, counter. Their `in` is sampled from **last tick’s** outputs, then they update. Internally `in` does not combinationally drive `out` this tick. Flip / Press still apply in `apply` (same-tick Flip + eval edge: both, net zero). Traffic-light `in` is a sequential cut for `wouldCycle` (`isSeqIn`); `inn` is sampled **this** tick (mill-like), then wait resolve after `evalDag`. `inn` does not combinationally drive `out`.
 
-**Combinational devices:** not, and, or, lamp, sprinkler `in`, smart valve `in`, mill / jam / still `in`.
+**Combinational devices:** not, and, or, lamp, sprinkler `in`, smart valve `in`, mill / jam / still `in`. Traffic-light `inn` set in `evalDag` like mill.
 
-**Sources:** button, world-readers, chest / freezer / seed-silo / additive-store.
+**Sources:** button, world-readers, chest / freezer / seed-silo / additive-store. Traffic-light `out` after `tickDispatch` (this tick’s waiters).
 
-`wouldCycle(wires, from, to, isSeqIn)`: walk only edges whose `to` is **not** a sequential input. Same-node `from`/`to` is a cycle iff that node is combinational. Lever/pulser/counter out→own in is legal. AND/OR/NOT/lamp out→own in is a cycle.
+`wouldCycle(wires, from, to, isSeqIn)`: walk only edges whose `to` is **not** a sequential input. Same-node `from`/`to` is a cycle iff that node is combinational. Lever/pulser/counter/traffic-light out→own in is legal. AND/OR/NOT/lamp out→own in is a cycle.
 
 Combo cycle: finalize no-op, **Cannot loop**. Sequential cut: legal.
 
 `evalDag` still the tick function. Combo subgraph is a DAG. Tick:
 
-1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`. Sequential `.out` still last tick.
-2. Topo-eval **combinational** gates from those outs. Lamp / machine / sprinkler / smart-valve `inn` from this combo + sequential outs.
+1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`. Sequential `.out` still last tick. Traffic-light `.out` still last tick.
+2. Topo-eval **combinational** gates from those outs. Lamp / machine / sprinkler / smart-valve / traffic-light `inn` from this combo + sequential outs.
 3. Sequential `inn` = OR of wires on `in` (sees this tick’s combo, last tick’s other memories).
 4. Sequential update: lever edge, pulser, counter. Button countdown already on `tick()`.
-5. Hold on world-readers + sprinkler input + smart valve.
+5. Hold on world-readers + sprinkler input + smart valve. Traffic-light `out` hold is after `tickDispatch`, not here.
 6. Actuators use **this** tick’s held inputs for pour / conduction.
+7. `tickDispatch`: wait / load / unload using this tick’s light `inn`. Then traffic-light `out` + `SENSOR_HOLD` from this tick’s waiters.
 
 Consequence: a lever chain `Q₀ → NOT → Q₁` no longer ripples in one tick. `Q₁` toggles the tick after `Q₀` falls. One tick per stage.
 
@@ -84,7 +85,7 @@ Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser /
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
-World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store. Mill/jam/still `inn` like lamp, no hold. Pulser / counter / lever no hold.
+World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store, traffic-light `out`. Mill/jam/still `inn` like lamp, no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold.
 
 Button: `out` high exactly `BUTTON_PULSE` ticks. `left` counts down on `tick()`. Reach 0 → `out = 0`. Assumption: toggle while high restarts `BUTTON_PULSE`.
 
@@ -130,7 +131,15 @@ Growing annuals unless noted.
 
 Day: 1×1. Output only. No 3×3. Raw 1 iff `DayPhase` matches a true flag. `SENSOR_HOLD`. Phases [[mechanics/day]].
 
-Vehicle: stored no. Trailer no. `tickVehicles` already ran this `tick()`.
+Vehicle: stored no. Trailer no. `tickVehicles` already ran this `tick()`. Path-cross is not a traffic-light wait.
+
+## Traffic light
+
+1×1 sunk. `SensorKind` `traffic-light`. Look **Traffic light**. Groups **off** / **on** from `inn` (0 red, 1 green). StayArmed. Guest `GUEST_BUILD`. Delete always; strips wait stops targeting this cell. Drops incident wires.
+
+Unwired `inn` 0 = red = hold. Output 1 iff a vehicle’s current stop is this cell **and** it is waiting on it: `running`, wait stop, `floor` is that cell, this tick `inn === 0`. Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision.
+
+SKU `buy-traffic-light`. Sensors shelf. `show` `unlock-sensors`, `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `TRAFFIC_LIGHT_PRICE`. Blurb: holds a vehicle until the input is green; output is on while a vehicle waits here.
 
 Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
 
@@ -161,9 +170,9 @@ Manual valve unchanged. Guest still cannot place or click it.
 
 `unlock-sensors` is a no-prerequisite root carrying only what stands alone. `startResearch('unlock-smart-irrigation')` no-ops unless both `unlock-adv-irrigation` and `unlock-sensors` are in `done` — `requires` is AND. The card reveals on `unlock-sensors` alone, so it can be on the shelf and shut — [[mechanics/research]].
 
-`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read: water `unlock-irrigation`, fert either soil row, water-system `unlock-adv-irrigation`, vehicle-detector `unlock-vehicles`. AND / OR / NOT unlock `unlock-advanced-sensors`. Smart valve unlock `unlock-smart-irrigation`.
+`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read: water `unlock-irrigation`, fert either soil row, water-system `unlock-adv-irrigation`, vehicle-detector `unlock-vehicles`, traffic-light `unlock-dispatch`. AND / OR / NOT unlock `unlock-advanced-sensors`. Smart valve unlock `unlock-smart-irrigation`.
 
-Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-system, vehicle-detector, day. Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
+Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-system, vehicle-detector, day. Traffic light → Sensors (ports like NOT). Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
 
 ## Lens
 
@@ -171,7 +180,7 @@ Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-syste
 
 ## Place / StayArmed
 
-While a sensor SKU is armed, click confirms place, not a wire. `place none` or `{ kind: 'wire' }`: port clicks arm/finalize wires. StayArmed sensor cells (incl. pulser, counter, day).
+While a sensor SKU is armed, click confirms place, not a wire. `place none` or `{ kind: 'wire' }`: port clicks arm/finalize wires. StayArmed sensor cells (incl. pulser, counter, day, traffic-light).
 
 ## Cmds
 
@@ -185,7 +194,7 @@ Day HUD: title **Day sensor**. Checkboxes **Sunrise** **Day** **Sunset** **Twili
 
 Tune prompts: **Tune counter** / **Tune day sensor**.
 
-Not logged: eval, hold countdown, pourEligible, net rebuild, bezier, lens, counter dial group.
+Not logged: eval, hold countdown, pourEligible, net rebuild, bezier, lens, counter dial group, traffic-light `out` / wait resolve.
 
 Guest wire / smart valve / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
@@ -205,7 +214,9 @@ Guest wire / smart valve / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
 `sensors.mask` — 3×3 does not read plants outside the square; center building is not a plant.
 
-`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter `in` is legal. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update.
+`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold; `out` + `SENSOR_HOLD` after `tickDispatch`. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day` `traffic-light`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update. Traffic-light `inn` this tick; combo reads last tick’s `out`.
+
+`sensors.light` — Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Guest `GUEST_BUILD`. Wait resolve after `evalDag` using this tick’s `inn`.
 
 `sensors.chest` — Chest no empty slot (`CHEST_SLOTS`) → `out` 1 after `SENSOR_HOLD`.
 

@@ -83,6 +83,7 @@ See [[canon]].
 | research.unlockAll | [[mechanics/research]] |
 | research.reveal | [[mechanics/research]] |
 | research.gates | [[mechanics/research]] |
+| research.dispatch | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
 | family.lens | [[mechanics/family]] |
 | family.skills | [[mechanics/family]] |
@@ -114,6 +115,9 @@ See [[canon]].
 | vehicles.away | [[mechanics/vehicles]] |
 | vehicles.unrep | [[mechanics/vehicles]] |
 | vehicles.dash | [[mechanics/vehicles]] |
+| vehicles.dispatch | [[mechanics/vehicles]] |
+| vehicles.auto | [[mechanics/vehicles]] |
+| vehicles.route | [[mechanics/vehicles]] |
 | sensors.cycle | [[mechanics/sensors]] |
 | sensors.button | [[mechanics/sensors]] |
 | sensors.hold | [[mechanics/sensors]] |
@@ -128,6 +132,7 @@ See [[canon]].
 | sensors.counter | [[mechanics/sensors]] |
 | sensors.day | [[mechanics/sensors]] |
 | sensors.lever | [[mechanics/sensors]] |
+| sensors.light | [[mechanics/sensors]] |
 | log.now | [[mechanics/log]] |
 | log.dispatch | [[mechanics/log]] |
 | log.cmds | [[mechanics/log]] |

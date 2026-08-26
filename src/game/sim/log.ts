@@ -8,6 +8,7 @@ import type {
   SkuId,
   TrailerId,
   TrailerKind,
+  RouteId,
   VehicleId,
   VehicleKind,
   VehicleSlot,
@@ -15,6 +16,7 @@ import type {
 import type { ContractId } from './market.h.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { WireEnd } from './sensor.ts'
+import type { RouteStop } from './vehicle.ts'
 import type { Intent, SeatId } from './world.ts'
 
 export type XY = [col: number, row: number]
@@ -71,6 +73,7 @@ export const Act = {
   acceptContract: 'J',
   cancelContract: 'Y',
   reorderContract: 'Z',
+  route: 'o',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -141,6 +144,15 @@ export type Cmd =
   | { a: typeof Act.acceptContract; t: number; p: SeatId; c: ContractId }
   | { a: typeof Act.cancelContract; t: number; p: SeatId; c: ContractId }
   | { a: typeof Act.reorderContract; t: number; p: SeatId; c: ContractId; d: 1 | -1 }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'create' }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'delete'; r: RouteId }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'assign'; v: VehicleId; r: RouteId | 'none' }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'add'; r: RouteId; s: RouteStop }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'remove'; r: RouteId; i: number }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'reorder'; r: RouteId; i: number; d: 1 | -1 }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'rename'; r: RouteId; n: string }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'start' }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'automate'; v: VehicleId; c: XY }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

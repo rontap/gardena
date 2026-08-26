@@ -535,5 +535,11 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'vehicle-detector' },
       blurb: 'Flush plate. Output high when a field Quad or tractor sits on this tile.',
     },
+    {
+      id: 'traffic-light',
+      title: 'Traffic light',
+      icon: { kind: 'traffic-light' },
+      blurb: 'Holds a vehicle until the input is green; output is on while a vehicle waits here.',
+    },
   ]
 }

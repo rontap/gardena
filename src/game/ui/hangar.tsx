@@ -16,8 +16,9 @@ import { Shell } from './store.tsx'
 
 function status(v: Vehicle): string {
   if (v.pose.kind === 'stored') return 'Stored'
-  if (v.pose.driver === 'none') return 'Deployed'
-  return 'Driven'
+  if (v.pose.driver !== 'none') return 'Driven'
+  if (v.running) return 'Automated'
+  return 'Deployed'
 }
 
 function trailerStatus(t: Trailer): string {
@@ -55,6 +56,13 @@ export function HangarUi({
   const hitchOk =
     pickedTrailer === undefined || (pickedTrailer.pose.kind === 'stored' && tractorStored)
   const canDeploy = picked !== undefined && picked.pose.kind === 'stored' && hitchOk
+  const route = picked !== undefined && picked.route !== 'none' ? world.routeById(picked.route) : undefined
+  const canAuto =
+    world.done.has('unlock-dispatch') &&
+    picked !== undefined &&
+    picked.pose.kind === 'stored' &&
+    route !== undefined &&
+    route.stops.length >= 1
   const cost = world.refillCost()
   return (
     <Shell title="Vehicle hangar" onClose={onClose} className="w-[30rem]">
@@ -167,6 +175,19 @@ export function HangarUi({
           }`}
         >
           Deploy
+        </button>
+        <button
+          type="button"
+          aria-disabled={!canAuto}
+          className={`px-3 py-2 text-base font-semibold ${
+            canAuto ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark' : 'cursor-default bg-ink/6 text-ink/35'
+          }`}
+          onClick={() => {
+            if (!canAuto || picked === undefined) return
+            world.automate(picked.id, at)
+          }}
+        >
+          Automate
         </button>
         <button
           type="button"

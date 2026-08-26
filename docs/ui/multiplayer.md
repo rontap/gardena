@@ -78,16 +78,16 @@ Away actor is not drawn.
 
 `App.local !== 0`. Sequencer still drops illegal cmds.
 
-| surface | guest |
-|---|---|
-| Cheat | hidden on the left ribbon. Hidden ≠ disabled. |
-| Research | dock opens. Cards read-only. No start. Hover stays. |
-| Family | overlay opens. Offers not clickable. |
-| Shop Seeds / Utility | unchanged |
+| surface                    | guest                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cheat                      | hidden on the left ribbon. Hidden ≠ disabled.                                                                                                                                                                                                                                                                                                                                                             |
+| Research                   | dock opens. Cards read-only. No start. Hover stays.                                                                                                                                                                                                                                                                                                                                                       |
+| Family                     | overlay opens. Offers not clickable.                                                                                                                                                                                                                                                                                                                                                                      |
+| Shop Seeds / Utility       | unchanged                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Shop Automation + Building | **allowed** (arm + place + delete building): `buy-pumpjack` `buy-well` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box`. **disabled** (do not arm): `buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-tile-paved` `buy-tile-brick` `buy-tile-cobble` `buy-fence`. Blocked face `bg-ink/6 text-ink/35`, `aria-disabled`. Callout `skuDesc` only. |
-| Recap | no dismiss. Esc does not dismiss. [[ui/docks]] |
-| Inventory | this seat's 16. [[ui/docks]] |
-| Chest | no open, no `swapChest`. [[ui/docks]] |
+| Recap                      | no dismiss. Esc does not dismiss. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                            |
+| Inventory                  | this seat's 16. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                                              |
+| Chest                      | no open, no `swapChest`. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                                     |
 
 Pause face stays. Guests may toggle.
 

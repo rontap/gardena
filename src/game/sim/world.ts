@@ -58,7 +58,7 @@ import {
   rollShopRarity,
   type Rarity,
 } from '../defs/rarity.ts'
-import { isAnnualId, SENSOR_CELL_SKUS } from './ids.ts'
+import { SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -122,6 +122,7 @@ import {
   type Base,
   type ChunkId,
   type Coord,
+  type RectBase,
 } from './building.ts'
 import { Clock, DAY_SECONDS } from './clock.ts'
 import { onCell, topIndex, type Drop } from './drop.ts'
@@ -133,7 +134,6 @@ import {
   boxAddWeed,
   compostValue,
   fruitStack,
-  grindN,
   makeCompost,
   makeContainer,
   makePickaxe,
@@ -152,12 +152,21 @@ import {
   addStillFeed,
   bakeSpiritSale,
   bakeWineSale,
+  feedAccept,
+  feedApply,
   feedUnits,
+  feedWhole,
   fruitCount,
   fruitCrop,
   fruitRarity,
+  grindAccept,
+  grindApply,
+  grindProduct,
+  isIoCell,
   jamCropOf,
   jamSale,
+  machineEast,
+  machineWest,
   meanRarity,
   millAccept,
   millApply,
@@ -167,6 +176,7 @@ import {
   mergeSugar,
   spiritKind,
   stillCropOf,
+  takeCount,
 } from './machine.ts'
 import {
   Accepts,
@@ -1226,6 +1236,7 @@ export class World {
       cell.kind === 'turf' ||
       cell.kind === 'chest' ||
       cell.kind === 'compost-box' ||
+      cell.kind === 'grinder' ||
       cell.kind === 'mill' ||
       cell.kind === 'jam' ||
       cell.kind === 'still' ||
@@ -3102,6 +3113,28 @@ export class World {
     return out
   }
 
+  machineLinks(): { x: number; y: number; side: 'in' | 'out' }[] {
+    const out: { x: number; y: number; side: 'in' | 'out' }[] = []
+    for (const at of this.live.values()) {
+      const c = this.cell(at)
+      if (!isIoCell(c)) continue
+      if (c.base.col !== at.col || c.base.row !== at.row) continue
+      const west = machineWest(c.base)
+      if (this.inWorld(west)) {
+        const s = this.cell(west)
+        if (s.kind === 'chest' || s.kind === 'freezer') out.push({ x: c.base.col - 0.5, y: c.base.row, side: 'in' })
+      }
+      const east = machineEast(c.base)
+      if (this.inWorld(east)) {
+        const s = this.cell(east)
+        if (s.kind === 'chest' || s.kind === 'freezer') {
+          out.push({ x: c.base.col + c.base.w - 0.5, y: c.base.row, side: 'out' })
+        }
+      }
+    }
+    return out
+  }
+
   private board(v: Vehicle): void {
     if (v.pose.kind !== 'field') return
     v.pose.driver = this.act.id
@@ -3820,7 +3853,7 @@ export class World {
           this.shiftHead()
           return
         }
-        this.arm((GRIND_WORK * grindN(this.act.hand)) / this.machineMul())
+        this.arm(0.4)
         return
       case 'mill':
         if (!this.canMill(i.at)) {
@@ -4232,12 +4265,10 @@ export class World {
       if (c.units < COMPOST_NEED) continue
       c.progress += dt / COMPOST_SECONDS
       if (c.progress < 1) continue
-      const spot = frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
-      if (spot === undefined) continue
+      if (!this.emitProduct(at, c.base, makeCompost())) continue
       c.progress = 0
       c.units -= COMPOST_NEED
       this.track(at, c)
-      this.drops.push({ at: spot, item: makeCompost() })
       dirty = true
     }
     if (dirty) this.pingFor('field')
@@ -4285,11 +4316,9 @@ export class World {
         if (c.units < need) continue
         c.progress += (dt * this.machineMul()) / MILL_WORK
         if (c.progress < 1) continue
-        const spot = this.dropSpot(at)
-        if (spot === undefined) continue
+        if (!this.emitProduct(at, c.base, millProduct(c.recipe))) continue
         c.progress = 0
         c.units -= need
-        this.drops.push({ at: spot, item: millProduct(c.recipe) })
         if (c.units === 0) c.recipe = 'none'
         this.track(at, c)
         dirty = true
@@ -4301,12 +4330,10 @@ export class World {
         if (c.crop === 'none' || c.fruit < JAM_IN || c.sugar < JAM_SUGAR) continue
         c.progress += (dt * this.machineMul()) / JAM_SECONDS
         if (c.progress < 1) continue
-        const spot = this.dropSpot(at)
-        if (spot === undefined) continue
+        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) })) continue
         c.progress = 0
         c.fruit -= JAM_IN
         c.sugar -= JAM_SUGAR
-        this.drops.push({ at: spot, item: { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) } })
         if (c.fruit === 0) c.crop = 'none'
         this.track(at, c)
         dirty = true
@@ -4321,18 +4348,39 @@ export class World {
         }
         c.progress += dt / STILL_SECONDS
         if (c.progress < 1) continue
-        const spot = this.dropSpot(at)
-        if (spot === undefined) continue
         const kind = spiritKind(c.feed)
         const u = this.rng.stream('still').at(at.col, at.row, this.clock.day, c.n)
         const rarity = meanRarity(c.feed, u)
-        this.drops.push({
-          at: spot,
-          item: { kind: 'spirit', spirit: kind, rarity, count: 1, unitSale: bakeSpiritSale(kind, rarity) },
-        })
+        if (
+          !this.emitProduct(at, c.base, {
+            kind: 'spirit',
+            spirit: kind,
+            rarity,
+            count: 1,
+            unitSale: bakeSpiritSale(kind, rarity),
+          })
+        ) {
+          continue
+        }
         c.feed = []
         c.progress = 0
         c.n += 1
+        this.track(at, c)
+        dirty = true
+        continue
+      }
+      if (c.kind === 'grinder') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.crop === 'none' || c.units < 1) continue
+        c.progress += (dt * this.machineMul()) / GRIND_WORK
+        if (c.progress < 1) continue
+        const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, c.n)
+        const count = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
+        if (!this.emitProduct(at, c.base, grindProduct(c, count))) continue
+        c.progress = 0
+        c.units -= 1
+        c.n += 1
+        if (c.units === 0) c.crop = 'none'
         this.track(at, c)
         dirty = true
         continue
@@ -4358,6 +4406,45 @@ export class World {
     return frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
   }
 
+  private emitProduct(at: Coord, base: RectBase, item: Item): boolean {
+    const east = machineEast(base)
+    if (this.inWorld(east)) {
+      const store = this.cell(east)
+      if (store.kind === 'chest' || store.kind === 'freezer') {
+        return insertSlots(store.slots, item, store.slots.length, undefined)
+      }
+    }
+    const spot = this.dropSpot(at)
+    if (spot === undefined) return false
+    this.drops.push({ at: spot, item })
+    return true
+  }
+
+  private pullMachineStores(): void {
+    let dirty = false
+    for (const at of this.live.values()) {
+      const c = this.cell(at)
+      if (!isIoCell(c)) continue
+      if (c.base.col !== at.col || c.base.row !== at.row) continue
+      const west = machineWest(c.base)
+      if (!this.inWorld(west)) continue
+      const store = this.cell(west)
+      if (store.kind !== 'chest' && store.kind !== 'freezer') continue
+      store.slots.forEach((s, i) => {
+        if (s.kind !== 'hold') return
+        const n = feedAccept(c, s.item)
+        if (n <= 0) return
+        feedApply(c, s.item, n)
+        if (feedWhole(c) || takeCount(s.item, n)) store.slots[i] = { kind: 'empty' }
+        dirty = true
+      })
+      compactSlots(store.slots)
+      this.track(at, c)
+      this.track(west, store)
+    }
+    if (dirty) this.pingFor('field')
+  }
+
   private pullStillWater(still: PotStill): boolean {
     const net = this.netOfCell(still.base)
     if (net === undefined) return false
@@ -4372,6 +4459,7 @@ export class World {
     if (this.bigAcc < BIG_TICK) return
     this.bigAcc -= BIG_TICK
     this.bigTicks += 1
+    this.pullMachineStores()
     const weeds = this.sproutWeeds()
     const grass = this.sproutGrass()
     if (weeds || grass) this.pingFor('big')
@@ -5403,60 +5491,22 @@ export class World {
   }
 
   private canGrind(at: Coord): boolean {
-    return this.cell(at).kind === 'grinder' && grindN(this.act.hand) > 0
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'grinder') return false
+    return grindAccept(c, this.act.hand.item) !== undefined
   }
 
   private doGrind(at: Coord): void {
     if (!this.canGrind(at)) return
     if (this.act.hand.kind !== 'hold') return
-    const n = grindN(this.act.hand)
-    let crop
-    let rarity
-    if (this.act.hand.item.kind === 'fruit') {
-      crop = this.act.hand.item.crop
-      rarity = this.act.hand.item.rarity
-      this.act.hand.item.count -= 1
-      if (this.act.hand.item.count <= 0) this.act.hand = { kind: 'empty' }
-    } else if (
-      this.act.hand.item.kind === 'box' &&
-      this.act.hand.item.cargo.kind === 'stack' &&
-      this.act.hand.item.cargo.goods === 'fruit'
-    ) {
-      crop = this.act.hand.item.cargo.stack.crop
-      rarity = this.act.hand.item.cargo.stack.rarity
-      this.act.hand.item.cargo = { kind: 'empty' }
-    } else return
-    let total = 0
-    for (let i = 0; i < n; i++) {
-      const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, i)
-      total += GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
-    }
-    this.mergeSeeds(crop, rarity, total, at)
+    const grinder = this.cell(at) as Grinder
+    const take = grindAccept(grinder, this.act.hand.item)
+    if (take === undefined) return
+    grindApply(grinder, take)
+    this.takeHandCount(take.n)
+    this.track(at, grinder)
     this.pulse = { text: 'Grind', at: { ...at } }
-  }
-
-  private mergeSeeds(crop: CropId, rarity: Rarity, count: number, at: Coord): void {
-    if (!isAnnualId(crop)) return
-    const merge = this.act.inventory.findIndex(
-      s =>
-        s.kind === 'hold' &&
-        s.item.kind === 'seeds' &&
-        s.item.crop === crop &&
-        s.item.rarity === rarity,
-    )
-    if (merge >= 0) {
-      const slot = this.act.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'seeds') slot.item.count += count
-      this.compactInventory()
-      return
-    }
-    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
-    if (empty >= 0) {
-      this.act.inventory[empty] = { kind: 'hold', item: { kind: 'seeds', crop, rarity, count } }
-      this.compactInventory()
-      return
-    }
-    this.drops.push({ at: { ...at }, item: { kind: 'seeds', crop, rarity, count } })
   }
 
   private maybeSay(at: Coord): void {

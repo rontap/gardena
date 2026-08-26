@@ -15,6 +15,8 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `prop-barrel.svg` | wine barrel, dirt staves, grape bung |
 | `item-barrel.svg` | same, shop/hand |
 | `prop-jam.svg` | jam cooker, fruit-red pot on house stove |
+| `prop-link-in.svg` | blue west chute, mouth on the chest |
+| `prop-link-out.svg` | green east chute, mouth on the chest |
 | `item-jam-machine.svg` | same, shop/hand |
 | `prop-freezer.svg` | chest-like freezer, house body, water lid and latch |
 | `item-freezer.svg` | same, shop/hand |

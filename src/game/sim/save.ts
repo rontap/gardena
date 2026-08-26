@@ -190,7 +190,7 @@ export type SaveCell =
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
-  | { kind: 'grinder'; base: RectBase }
+  | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; rarity: Rarity; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
@@ -596,7 +596,15 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         hold: c.hold,
       }
     case 'grinder':
-      return { kind: 'grinder', base: c.base }
+      return {
+        kind: 'grinder',
+        base: c.base,
+        crop: c.crop,
+        rarity: c.rarity,
+        units: c.units,
+        progress: c.progress,
+        n: c.n,
+      }
     case 'compost-box':
       return { kind: 'compost-box', base: c.base, units: c.units, progress: c.progress }
     case 'mill':
@@ -1240,8 +1248,15 @@ function makeLive(sc: SaveCell): Cell | undefined {
       store.hold = sc.hold
       return store
     }
-    case 'grinder':
-      return new Grinder(sc.base)
+    case 'grinder': {
+      const g = new Grinder(sc.base)
+      g.crop = sc.crop
+      g.rarity = sc.rarity
+      g.units = sc.units
+      g.progress = sc.progress
+      g.n = sc.n
+      return g
+    }
     case 'compost-box': {
       const box = new CompostBox(sc.base)
       box.units = sc.units
@@ -1533,8 +1548,15 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   }
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
-    if (base === undefined) return undefined
-    return { kind: 'grinder', base }
+    const crop = o.crop === 'none' ? 'none' : readAnnualId(o.crop)
+    const rarity = readRarity(o.rarity)
+    const units = num(o.units)
+    const progress = num(o.progress)
+    const n = num(o.n)
+    if (base === undefined || crop === undefined || rarity === undefined || units === undefined || progress === undefined || n === undefined) {
+      return undefined
+    }
+    return { kind: 'grinder', base, crop, rarity, units, progress, n }
   }
   if (kind === 'compost-box') {
     const base = readRectBase(o.base)
@@ -2485,6 +2507,10 @@ function isStillCrop(v: unknown): v is StillCrop {
 function readMillRecipe(v: unknown): MillRecipe | 'none' | undefined {
   if (v === 'none' || v === 'sugar-cane' || v === 'olive' || v === 'wheat' || v === 'grass') return v
   return undefined
+}
+
+function readAnnualId(v: unknown): AnnualId | undefined {
+  return typeof v === 'string' && (ANNUAL_IDS as readonly string[]).includes(v) ? (v as AnnualId) : undefined
 }
 
 function readJamCropOrNone(v: unknown): JamCrop | 'none' | undefined {

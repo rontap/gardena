@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. Type: `sim/save.ts`. Live world: [[architecture/world]]. Log: [[architecture/log]]. Net: [[architecture/net]].
 
-Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`.
+Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; grinder hopper `crop`/`rarity`/`units`/`progress`/`n`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`.
 
 ## RFC — versions (active)
 
@@ -118,4 +118,6 @@ Working notes never write version digits; they [[GLOBAL_VERSION]].
 
 `save.parse` — `parse(text)`: `JSON.parse` throw or non-object → `{ ok: false, reason: 'unusable' }`. `game !== "gardena"` → `reason: 'not-gardena'`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. Else one hydrate of live fields including `seats`. Reconstruct → `{ ok: true, world }`. Hydrate fail → `reason: 'unusable'`. No migrate. `LoadFailReason` is `'not-gardena' | 'version' | 'unusable'`.
 
-`save.nomigrate` — Parse identity: `game === "gardena"`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. No migrate. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, hangar/silo cells, `wires`, sensor cells, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out` `hold`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`. `Seat.stride` not in the file. Board not in the file.
+`save.nomigrate` — Parse identity: `game === "gardena"`. File `version` ≠ dump `version` (absent included) → `reason: 'version'`. No migrate. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, hangar/silo cells, `wires`, sensor cells, mill/jam/still `inn`, grinder `crop`/`rarity`/`units`/`progress`/`n`, chest/freezer/seed-silo/additive-store `out` `hold`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, box cargo weed, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file.
+
+Assumption: a [[GLOBAL_VERSION]] farm whose grinder dump lacks hopper fields fails hydrate (`unusable`). No migrate.

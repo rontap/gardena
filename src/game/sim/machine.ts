@@ -18,9 +18,24 @@ import {
   WINE_SALE,
 } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
-import type { CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
-import type { JamMachine, Mill, PotStill } from './building.ts'
-import type { Item } from './item.ts'
+import type { AnnualId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
+import { isAnnualId } from './ids.ts'
+import type { CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
+import { compostValue, organic, type Item } from './item.ts'
+
+export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder
+
+export function isIoCell(c: { kind: string }): c is IoCell {
+  return c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box' || c.kind === 'grinder'
+}
+
+export function machineWest(base: RectBase): Coord {
+  return { col: base.col - 1, row: base.row }
+}
+
+export function machineEast(base: RectBase): Coord {
+  return { col: base.col + base.w, row: base.row }
+}
 
 export function millNeed(recipe: MillRecipe): number {
   return recipe === 'grass' ? MILL_GRASS : MILL_IN
@@ -94,6 +109,111 @@ export function millApply(mill: Mill, item: Item, n: number): void {
   if (mill.recipe === 'none') mill.recipe = recipe
   mill.units += n
 }
+
+export type GrindTake = { crop: AnnualId; rarity: Rarity; n: number }
+
+export function grindAccept(g: Grinder, item: Item): GrindTake | undefined {
+  const crop = fruitCrop(item)
+  const rarity = fruitRarity(item)
+  if (crop === undefined || rarity === undefined) return undefined
+  if (!isAnnualId(crop)) return undefined
+  if (g.crop !== 'none' && (g.crop !== crop || g.rarity !== rarity)) return undefined
+  const n = fruitCount(item)
+  if (n <= 0) return undefined
+  return { crop, rarity, n }
+}
+
+export function grindApply(g: Grinder, take: GrindTake): void {
+  if (g.crop === 'none') {
+    g.crop = take.crop
+    g.rarity = take.rarity
+  }
+  g.units += take.n
+}
+
+export function grindProduct(g: Grinder, count: number): Extract<Item, { kind: 'seeds' }> {
+  if (g.crop === 'none') throw new Error('grind')
+  return { kind: 'seeds', crop: g.crop, rarity: g.rarity, count }
+}
+
+export function feedAccept(cell: IoCell, item: Item): number {
+  if (cell.kind === 'mill') {
+    const take = millAccept(cell, item)
+    if (take === undefined) return 0
+    return take.n
+  }
+  if (cell.kind === 'jam') {
+    const sugar = jamSugarAccept(cell, item)
+    if (sugar > 0) return sugar
+    return jamFruitAccept(cell, item)
+  }
+  if (cell.kind === 'still') return stillAccept(cell, item)
+  if (cell.kind === 'compost-box') return organic(item) ? 1 : 0
+  const take = grindAccept(cell, item)
+  if (take === undefined) return 0
+  return take.n
+}
+
+export function feedApply(cell: IoCell, item: Item, n: number): void {
+  if (cell.kind === 'mill') {
+    millApply(cell, item, n)
+    return
+  }
+  if (cell.kind === 'jam') {
+    if (item.kind === 'sugar') {
+      jamSugarApply(cell, n)
+      return
+    }
+    jamFruitApply(cell, item, n)
+    return
+  }
+  if (cell.kind === 'still') {
+    stillApply(cell, item, n)
+    return
+  }
+  if (cell.kind === 'compost-box') {
+    cell.units += compostValue(item)
+    return
+  }
+  const take = grindAccept(cell, item)
+  if (take === undefined) return
+  grindApply(cell, { crop: take.crop, rarity: take.rarity, n })
+}
+
+export function feedWhole(cell: IoCell): boolean {
+  return cell.kind === 'compost-box'
+}
+
+export function takeCount(item: Item, n: number): boolean {
+  if (
+    item.kind === 'fruit' ||
+    item.kind === 'grass' ||
+    item.kind === 'seeds' ||
+    item.kind === 'weed' ||
+    item.kind === 'dead' ||
+    item.kind === 'rotten'
+  ) {
+    item.count -= n
+    return item.count <= 0
+  }
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+    item.liters -= n
+    return item.liters <= 0
+  }
+  if (item.kind === 'box' && item.cargo.kind === 'stack') {
+    if (item.cargo.goods === 'weed') {
+      item.cargo.count -= n
+      if (item.cargo.count <= 0) item.cargo = { kind: 'empty' }
+      return false
+    }
+    item.cargo.stack.count -= n
+    if (item.cargo.stack.count <= 0) item.cargo = { kind: 'empty' }
+    return false
+  }
+  return true
+}
+
+
 
 export function jamFruitAccept(jam: JamMachine, item: Item): number {
   const crop = jamCropOf(item)

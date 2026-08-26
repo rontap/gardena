@@ -64,6 +64,8 @@ import {
   GRASS,
   GRASS_TUFT,
   GRINDER,
+  LINK_IN,
+  LINK_OUT,
   HARD,
   HOUSE,
   PIPE_SOURCE,
@@ -1078,6 +1080,15 @@ const Marks = memo(function Marks({
             <Use art={HANGAR_RETURN} />
           </g>
         ))}
+      {world.machineLinks().map(l => (
+        <g
+          key={`link-${l.side}-${l.x},${l.y}`}
+          pointerEvents="none"
+          transform={`translate(${l.x * TILE},${l.y * TILE}) scale(${TILE / 24})`}
+        >
+          <Use art={l.side === 'in' ? LINK_IN : LINK_OUT} />
+        </g>
+      ))}
       {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
         world.machinePads().map(p => (
           <g

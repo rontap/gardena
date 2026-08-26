@@ -251,6 +251,11 @@ export class Chest {
 export class Grinder {
   readonly kind = 'grinder' as const
   readonly base: RectBase
+  crop: AnnualId | 'none' = 'none'
+  rarity: Rarity = 'common'
+  units = 0
+  progress = 0
+  n = 0
   constructor(base: RectBase) {
     this.base = base
   }

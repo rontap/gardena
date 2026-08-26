@@ -9,7 +9,6 @@ import {
   FREEZER_LARGE_SLOTS,
   GRIND_MAX,
   GRIND_MIN,
-  GRIND_WORK,
   SILO_SEED_CAP,
   SPRINKLER_TILE_RATE,
   STILL_WATER,
@@ -673,25 +672,47 @@ describe('beta-4 invariants', () => {
     expect(cb.slots[0].kind).toBe('empty')
   })
 
-  test('hand fruit grinds 1-3 same crop rarity; same seed day at', () => {
-    const countA = grindHandOnce(7)
-    const countB = grindHandOnce(7)
-    expect(countA).toBe(countB)
-    expect(countA).toBeGreaterThanOrEqual(GRIND_MIN)
-    expect(countA).toBeLessThanOrEqual(GRIND_MAX)
-    const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
-    expect(countA).toBe(GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1)))
+  test('Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.', () => {
     const w = grindWorld(7)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true } }
+    w.seats[0].inventory.forEach((_, i) => {
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+    })
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true },
+    }
     w.click(AT)
-    for (let i = 0; i < 50; i++) w.tick(1 / 15)
-    const slot = w.seats[0].inventory.find(
-      s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === 'wheat' && s.item.rarity === 'rare',
-    )
-    expect(slot?.kind === 'hold' && slot.item.kind === 'seeds' && slot.item.count).toBe(countA)
+    w.tick(DT_MAX)
+    expect(w.seats[0].workTotal).toBe(0.4)
+    for (let i = 0; i < 10; i++) w.tick(DT_MAX)
+    const g = w.cell(AT)
+    expect(g.kind).toBe('grinder')
+    if (g.kind !== 'grinder') return
+    expect(g.crop).toBe('wheat')
+    expect(g.rarity).toBe('rare')
+    expect(g.units).toBe(1)
+    const loaded = parse(JSON.stringify(dump(w)))
+    expect(loaded.ok).toBe(true)
+    if (loaded.ok) {
+      const lg = loaded.world.cell(AT)
+      expect(lg.kind === 'grinder' && lg.crop).toBe('wheat')
+      expect(lg.kind === 'grinder' && lg.units).toBe(1)
+    }
+    expect(w.seats[0].hand.kind).toBe('empty')
+    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
+    for (let i = 0; i < 40; i++) w.tick(DT_MAX)
+    const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
+    const expectCount = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
+    const dropped = w.drops.filter(d => d.item.kind === 'seeds')
+    expect(dropped).toHaveLength(1)
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.crop).toBe('wheat')
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.rarity).toBe('rare')
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
+    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
+    expect(g.crop).toBe('none')
   })
 
-  test('box fruit N rolls work 2N box empty overflow drops', () => {
+  test('box fruit N rolls work hopper dump box empty overflow drops', () => {
     const n = 3
     const w = grindWorld(11)
     w.seats[0].inventory.forEach((_, i) => {
@@ -706,25 +727,21 @@ describe('beta-4 invariants', () => {
       },
     }
     w.click(AT)
-    w.tick(1 / 15)
-    expect(w.seats[0].workTotal).toBe(GRIND_WORK * n)
-    for (let i = 0; i < 200; i++) w.tick(1 / 15)
+    w.tick(DT_MAX)
+    expect(w.seats[0].workTotal).toBe(0.4)
+    for (let i = 0; i < 10; i++) w.tick(DT_MAX)
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'box' && w.seats[0].hand.item.cargo.kind).toBe('empty')
+    const g = w.cell(AT)
+    expect(g.kind === 'grinder' && g.units).toBe(n)
+    for (let i = 0; i < 120; i++) w.tick(DT_MAX)
     let expectCount = 0
     for (let i = 0; i < n; i++) {
       const u = new Rng(11).stream('grind').at(AT.col, AT.row, 1, i)
       expectCount += GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
     }
-    const dropped = w.drops.filter(
-      d =>
-        d.at.col === AT.col &&
-        d.at.row === AT.row &&
-        d.item.kind === 'seeds' &&
-        d.item.crop === 'tomato' &&
-        d.item.rarity === 'uncommon',
-    )
-    expect(dropped).toHaveLength(1)
-    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
+    const dropped = w.drops.filter(d => d.item.kind === 'seeds' && d.item.crop === 'tomato' && d.item.rarity === 'uncommon')
+    const got = dropped.reduce((s, d) => s + (d.item.kind === 'seeds' ? d.item.count : 0), 0)
+    expect(got).toBe(expectCount)
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
   })
 
@@ -1469,17 +1486,7 @@ function grindWorld(seed: number): World {
   return w
 }
 
-function grindHandOnce(seed: number): number {
-  const w = grindWorld(seed)
-  w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true } }
-  w.click(AT)
-  for (let i = 0; i < 50; i++) w.tick(1 / 15)
-  const slot = w.seats[0].inventory.find(
-    s => s.kind === 'hold' && s.item.kind === 'seeds' && s.item.crop === 'wheat' && s.item.rarity === 'rare',
-  )
-  if (slot === undefined || slot.kind !== 'hold' || slot.item.kind !== 'seeds') return 0
-  return slot.item.count
-}
+
 
 function sameEdge(a: Edge, b: Edge): boolean {
   return a.axis === b.axis && a.col === b.col && a.row === b.row

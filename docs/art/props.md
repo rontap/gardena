@@ -19,6 +19,8 @@ Perspective is one per asset. Ground and vehicles are top-down; freestanding pro
 | `prop-freezer.svg` `item-freezer.svg` | `0 0 24 24` | low steel cabinet, lid overhanging the front, full-width handle, `house` frost pips |
 | `prop-mill.svg` | `0 0 24 24` | cottage housing, stepped millstone with an ink spindle, top-left feed chute, flour sack |
 | `prop-grinder.svg` | `0 0 24 24` | iron drum on its side with bands, shallow hopper, left chute, steel crank spurring right |
+| `prop-link-in.svg` | `0 0 24 24` | west chute, wide mouth left, narrow right; `water` trough |
+| `prop-link-out.svg` | `0 0 24 24` | east chute, narrow left, wide mouth right; `leaf` trough |
 
 Mill is tall, cottage, round, centred. Grinder is low, iron, asymmetric, cranked. They were one plinth with different hats.
 

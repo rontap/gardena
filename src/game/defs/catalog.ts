@@ -56,7 +56,7 @@ const FERT_T =
 const SYNTH_T =
   'Holds ${n} L and tops a plot to full like the ordinary bag, but the soil turns non-organic and so does everything grown in it. Ordinary fertilizer or compost brings it back once ${restore} L land at once.'
 const COMPOST_BOX_T =
-  'Drop any organic waste in. ${need} units become ${liters} L of compost in ${seconds}s, left on the ground beside the box. Seeds ${seeds}, fruit ${fruit}, heirloom fruit ${heirloom}, rotten fruit ${rotten}, dead plants and weeds ${dead}.'
+  'Drop any organic waste in. ${need} units become ${liters} L of compost in ${seconds}s. A chest on the right takes the bag, else it drops beside the box. Seeds ${seeds}, fruit ${fruit}, heirloom fruit ${heirloom}, rotten fruit ${rotten}, dead plants and weeds ${dead}.'
 const COMPOST_T = 'Holds ${liters} L. Feeds soil exactly like fertilizer, and it is organic.'
 const WEED_T =
   'Takes over tilled soil left without seed. Full grown in ${seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.'
@@ -76,7 +76,7 @@ const PAVING_T = 'Laid on untilled ground. Keeps the garden walkable and tidy. D
 const PUMP_T =
   'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
 const CHEST_T = '9 slots. Walk up and store any item.'
-const GRIND_T = 'One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.'
+const GRIND_T = 'Hopper. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.'
 const PIPE_T = 'Pipe. 4 per edge. Hidden unless the Pipes lens or a pipe tool is out.'
 const SPRINKLER_T =
   'Waters a 2×2 around a corner, ${day} L a day per tile. Smart sprinklers research lets you dial it down to the exact thirst of one crop.'

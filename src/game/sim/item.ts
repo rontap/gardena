@@ -199,21 +199,6 @@ export function mergeFreshness(
   return (a.freshness * a.count + b.freshness * b.count) / (a.count + b.count)
 }
 
-export function grindN(hand: Hand): number {
-  if (hand.kind !== 'hold') return 0
-  if (hand.item.kind === 'fruit' && hand.item.count >= 1 && !isTreeId(hand.item.crop)) return 1
-  if (
-    hand.item.kind === 'box' &&
-    hand.item.cargo.kind === 'stack' &&
-    hand.item.cargo.goods === 'fruit' &&
-    hand.item.cargo.stack.count >= 1 &&
-    !isTreeId(hand.item.cargo.stack.crop)
-  ) {
-    return hand.item.cargo.stack.count
-  }
-  return 0
-}
-
 export function toolName(hand: Hand): string {
   if (hand.kind === 'empty') return 'hand'
   const it = hand.item
@@ -501,7 +486,7 @@ export function skuDesc(id: SkuId): string {
       return fill('Hand sprayer. ${n} uses. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_USES })
     case 'buy-compost-box':
       return fill(
-        'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s, left on the ground beside the box.',
+        'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s. A chest on the right takes the bag, else it drops beside the box.',
         { need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS },
       )
     case 'buy-pumpjack':
@@ -512,7 +497,7 @@ export function skuDesc(id: SkuId): string {
     case 'buy-chest':
       return '9 slots. Walk up and store any item.'
     case 'buy-grinder':
-      return fill('One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.', {
+      return fill('Hopper. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.', {
         min: GRIND_MIN,
         max: GRIND_MAX,
         workSeconds: GRIND_WORK,

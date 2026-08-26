@@ -20,7 +20,7 @@ Ids: `SpiritKind` `JamCrop` `StillCrop` `MillRecipe` `JamId` `StallGoodId` — `
 
 Tick origin cell only (`base` matches `at`), like compost. After eval. Not cmds. Not actor work except dump.
 
-`inn: Signal` on mill / jam / still. Port `in` origin top, lamp. Unwired 0. `inn === 1` skip tick (`progress`; still water `pull`). No hold. Dump + `Act.unload` still fill. Unwired = enabled.
+`inn: Signal` on mill / jam / still. Port `in` origin top, lamp. Unwired 0. `inn === 1` skip tick (`progress`; still water `pull`). No hold. Dump + `Act.unload` + west-store pull still fill. Unwired = enabled.
 
 Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same tick.
 
@@ -30,7 +30,27 @@ Intents `still` `barrel` `jam` `mill` at `Coord`. `dest` = `at`. Instant dump li
 
 Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, saplings, tools: refuse.
 
+Grinder dump is mill-style: `{ act: 'grind' }`, `arm(0.4)`, into hopper. Not actor `GRIND_WORK`. Guest may dump.
+
 Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
+
+## Chest I/O
+
+West of the machine = input. East = output. Orthogonal, same row. Not N/S. Not diagonal.
+
+Still: west of origin, east of the east cell (`base.col + base.w`).
+
+Targets: chest, freezer (any slot count). Machine is the actor. Link is view-derived from adjacency. Not a `Cell`. Not saved. Not a cmd.
+
+A chest between two machines is A's output and B's input.
+
+**Pull** — each `BIG_TICK`, origin only: if west neighbor is chest/freezer, dump-all legal from its slots into the machine. Same accept as walk dump. Slot order `0..n-1`. Until hopper/cap full. Compost consumes the whole slot. Empty box cargo stays in the box. Then compact. `inn === 1` still fills.
+
+**Push** — on produce, not on big tick. If east neighbor is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `frontOf` / `dropSpot` (no plot → wait).
+
+Machines: mill, jam, still, compost-box, grinder. Not barrel.
+
+Blue chute west, green chute east. Always painted. Not lens. `pointer-events-none`.
 
 ## Sugar
 
@@ -60,6 +80,14 @@ At `units >= need`: tick `progress += dt × machineMul / MILL_WORK`. At 1: consu
 Extract: mill recipe, no research gate, sellable, no plant effect.
 
 Mill ignores freshness and rarity for output sale.
+
+## Grinder
+
+1×1 hopper. First accepted dump locks `crop` + `rarity`. Later dumps must match both. `units === 0` → `crop: 'none'`. Need 1 annual fruit including sugar-cane. Not `TreeId`. Not sugar liters.
+
+At `units >= 1`: tick `progress += dt × machineMul / GRIND_WORK`. At 1: consume 1, `grind.at(col, row, day, n)`, `n += 1`, emit `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. No plot / east store full → wait. Seeds do not merge into house.
+
+No pads. No `inn`. Box dump fills hopper (cargo emptied, box stays).
 
 ## Jam
 
@@ -113,7 +141,7 @@ Age baked into `unitSale` at collect: `WINE_SALE × SPIRIT_RARITY[r] × ageMul`.
 
 ## Machinery
 
-Player `machinery`: `GRIND_WORK`, valve 0.3 s, mill tick, jam tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0.
+Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0.
 
 ## Sale bake
 
@@ -125,7 +153,7 @@ Merge same keys; sugar by liters; else by count; weighted `unitSale`.
 
 ## Output
 
-Drop `frontOf` like compost: mill, jam, still. Barrel collect into hand. Seeds from grinder unchanged.
+Produce: mill, jam, still, compost-box, grinder. East store insert if present; else drop `frontOf`. Barrel collect into hand.
 
 Spirit / wine / jam / oil / flour / extract: not box cargo. Not compost unless named (sugar only).
 
@@ -150,3 +178,11 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 `machines.tractor-mill` — Tractor harvest on mill takeup: Load sugar drop.
 
 `machines.water` — `STILL_WATER`. Start still requires full pull.
+
+`machines.io-side` — West chest/freezer is input. East is output. Still: west of origin, east of east cell.
+
+`machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
+
+`machines.io-push` — Produce inserts into the east store if present; else `frontOf`. East store full → wait.
+
+`machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.

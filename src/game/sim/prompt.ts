@@ -15,11 +15,12 @@ import {
   JAM_SUGAR,
   STILL_CAP,
 } from '../defs/items.ts'
-import type { JamMachine, Mill, PotStill, WineBarrel } from './building.ts'
-import { boxAccepts, grindN, organic, skuLabel, type Hand, type Item } from './item.ts'
+import type { Grinder, JamMachine, Mill, PotStill, WineBarrel } from './building.ts'
+import { boxAccepts, cropName, organic, skuLabel, type Hand, type Item } from './item.ts'
 import {
   feedUnits,
   fruitCrop,
+  grindAccept,
   jamCropName,
   jamCropOf,
   millDumpUnits,
@@ -358,8 +359,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'chest') return intent('Chest', { act: 'chest', at })
   if (cell.kind === 'freezer') return intent('Freezer', { act: 'chest', at })
   if (cell.kind === 'grinder') {
-    if (grindN(w.act.hand) > 0) return intent('Grind', { act: 'grind', at })
-    return { kind: 'blocked', text: 'Seed grinder' }
+    const look = grindLook(cell, w.act.hand)
+    if (w.act.hand.kind === 'hold' && grindAccept(cell, w.act.hand.item) !== undefined) {
+      return intent('Grind', { act: 'grind', at })
+    }
+    return { kind: 'blocked', text: look }
   }
   if (cell.kind === 'mill') {
     const look = millLook(cell, w.act.hand)
@@ -574,6 +578,16 @@ function millDumpOk(mill: Mill, hand: Hand): boolean {
   if (recipe === undefined) return false
   if (mill.recipe !== 'none' && mill.recipe !== recipe) return false
   return millDumpUnits(hand.item, recipe) > 0
+}
+
+export function grindLook(g: Grinder, hand: Hand): string {
+  if (g.crop !== 'none' && hand.kind === 'hold') {
+    const take = grindAccept(g, hand.item)
+    if (fruitCrop(hand.item) !== undefined && take === undefined) return `Seed grinder - ${cropName(g.crop)} only`
+  }
+  if (g.crop === 'none') return 'Seed grinder'
+  if (g.units >= 1) return `Seed grinder - working ${Math.floor(g.progress * 100)}%`
+  return `${g.units} → seeds`
 }
 
 export function stillLook(still: PotStill, hand: Hand): string {

@@ -1,10 +1,12 @@
 # Machines
 
-Look and prompt for mill, jam, still, barrel, freezer. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
+Look and prompt for mill, jam, still, barrel, freezer, grinder. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
 
 No ObjectHud. Progress is look text. No extra bars.
 
-Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. Grinder: **Grind** / **Seed grinder**. `pct` = `floor(progress * 100)`.
+Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`.
+
+West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on. `pointer-events-none`. Not lens. Not a cell hit.
 
 Still 2×1. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer: dropoff north Unload, takeup south Load. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still `in` origin top; freezer `out` origin bottom. Lens [[ui/sensors]].
 
@@ -20,6 +22,19 @@ Still 2×1. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer:
 `need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15. `{product}`: sugar, olive oil, flour, extract.
 
 Prompt dump legal: **Crush into sugar** | **Crush into olive oil** | **Crush into flour** | **Crush into extract**. `{ act: 'mill'; at }`.
+
+## Seed grinder
+
+| when | text |
+|---|---|
+| empty (`crop` `'none'`) | **Seed grinder** |
+| filling | **{have} → seeds** |
+| wrong locked | **Seed grinder - {crop} only** |
+| working (`units >= 1`) | **Seed grinder - working {pct}%** |
+
+`{have}` hopper units. Need 1. `{crop}` locked annual.
+
+Prompt dump legal: **Grind**. `{ act: 'grind'; at }`.
 
 ## Pot still
 

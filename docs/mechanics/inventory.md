@@ -67,13 +67,13 @@ One kind: fruit or seeds (one crop+rarity) or weeds. Harvest and pickup fill the
 
 Ordinary bag `FERT_BAG_LITERS`, always in the shop. Synthetic `SYNTH_BAG_LITERS`, research. Compost `COMPOST_LITERS`, organic feed.
 
-Compost box, `unlock-compost`, plants tree, no prerequisite — priced level with `unlock-fertilizer`. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output drop on a plot in front. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Keep `frontOf`.
+Compost box, `unlock-compost`, plants tree, no prerequisite — priced level with `unlock-fertilizer`. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
 `COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts boxed weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
 
 ## Grind
 
-Seed grinder 1×1, `unlock-grinder`. One annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` per fruit — preference. Box dumps all accepted fruit in it. Seeds merge into house or drop if full. Tree fruit and sugar: refuse.
+Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. One annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` per fruit tick — preference. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
 
 Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 

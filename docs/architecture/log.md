@@ -53,7 +53,7 @@ Public UI methods wrap `dispatch` so call sites stay. `enqueue` is a mutator. Te
 
 Log = player commands only.
 
-Not logged (follow from seed + cmds + time): sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, sensor eval / hold / pourEligible, actor walk, stride integrate, pad paint.
+Not logged (follow from seed + cmds + time): sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel / grinder ticks, west-store pull, east-store push, vehicle integrate / burn / follow hitch / boom, sensor eval / hold / pourEligible, actor walk, stride integrate, pad paint.
 
 Not logged (view-local): panel open/close, camera, camera follow, hover, lens, hangar select, hide gardener.
 

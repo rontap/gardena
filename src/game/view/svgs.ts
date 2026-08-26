@@ -150,6 +150,8 @@ import house from '../../assets/props/prop-house.svg?raw'
 import pump from '../../assets/props/prop-pump.svg?raw'
 import chest from '../../assets/props/prop-chest.svg?raw'
 import grinder from '../../assets/props/prop-grinder.svg?raw'
+import propLinkIn from '../../assets/props/prop-link-in.svg?raw'
+import propLinkOut from '../../assets/props/prop-link-out.svg?raw'
 import propWell from '../../assets/props/prop-well.svg?raw'
 import propTruck from '../../assets/props/prop-truck.svg?raw'
 import propRainTank from '../../assets/props/prop-rain-tank.svg?raw'
@@ -619,6 +621,8 @@ export const WELL = inner(propWell)
 export const TRUCK = inner(propTruck)
 export const CHEST = inner(chest)
 export const GRINDER = inner(grinder)
+export const LINK_IN = inner(propLinkIn)
+export const LINK_OUT = inner(propLinkOut)
 export const MILL = inner(propMill)
 export const STILL = inner(propStill)
 export const BARREL = inner(propBarrel)
@@ -1009,6 +1013,8 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   TAP,
   CHEST,
   GRINDER,
+  LINK_IN,
+  LINK_OUT,
   MILL,
   STILL,
   BARREL,

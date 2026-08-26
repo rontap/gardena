@@ -63,7 +63,7 @@ Held `weed-spray`, tilled plot: **Spray**. `{ act: 'weed-spray'; at }`. Instant.
 
 ## Machines
 
-Mill, jam, still, barrel, freezer: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.
+Mill, jam, still, barrel, freezer, grinder: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.
 
 Held sugar: **Sugar - {n}L**.
 

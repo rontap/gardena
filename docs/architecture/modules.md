@@ -47,7 +47,7 @@
 | `noise.ts` | `goodness` |
 | `modifiers.ts` | `Modifier`, `statsOf` |
 | `rng.ts` | `Rng`, streams |
-| `machine.ts` | mill recipes, sale bake |
+| `machine.ts` | mill recipes, sale bake, grind hopper accept, machine west/east |
 | `vehicle.ts` | `Vehicle`, `Trailer`, integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag` |
 

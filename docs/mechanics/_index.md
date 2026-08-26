@@ -98,6 +98,10 @@ See [[canon]].
 | machines.quad-mill | [[mechanics/machines]] |
 | machines.tractor-mill | [[mechanics/machines]] |
 | machines.water | [[mechanics/machines]] |
+| machines.io-side | [[mechanics/machines]] |
+| machines.io-pull | [[mechanics/machines]] |
+| machines.io-push | [[mechanics/machines]] |
+| machines.grind-hopper | [[mechanics/machines]] |
 | vehicles.kind | [[mechanics/vehicles]] |
 | vehicles.buy | [[mechanics/vehicles]] |
 | vehicles.surface | [[mechanics/vehicles]] |

@@ -1341,7 +1341,7 @@ function StopsWindow({ world, onClose }: { world: World; onClose: () => void }) 
                     className="cursor-pointer px-1 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
                     onClick={() => world.removeStop(assigned.id, i)}
                   >
-                    ×
+                    x
                   </button>
                 </div>
               )

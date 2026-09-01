@@ -603,7 +603,7 @@ export const POINTS_PER_DAY = 3
 export const DAY_STIPEND = 10
 export const MP_ID_KEY = 'gardena-mp-id'
 
-const QUEUE_CAP = 8
+export const QUEUE_CAP = 8
 export const DT_MAX = 1 / 15
 const INV = 16
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Peer } from 'peerjs'
+import { installPlay } from './game/sim/play.ts'
 import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
@@ -91,6 +92,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
+  const aiHoldRef = useRef(false)
   pausedRef.current = paused
   const catchingRef = useRef(false)
   catchingRef.current = catching
@@ -131,6 +133,11 @@ export default function App({ sink }: { sink: WorkerSink }) {
     return () => {
       delete (window as unknown as { __world?: World }).__world
     }
+  }, [world])
+
+  useEffect(() => {
+    if (world === undefined) return
+    return installPlay(world, aiHoldRef)
   }, [world])
 
   useEffect(() => {
@@ -219,7 +226,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
         accRef.current += dt
         let n = 0
         while (accRef.current >= DT_MAX && n < 2) {
-          if (!pausedRef.current) world.tick(DT_MAX)
+          if (!pausedRef.current && !aiHoldRef.current) world.tick(DT_MAX)
           accRef.current -= DT_MAX
           n += 1
         }

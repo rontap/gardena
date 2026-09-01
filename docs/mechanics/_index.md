@@ -165,4 +165,9 @@ See [[canon]].
 | net.bundle | [[architecture/net]] |
 | net.full | [[architecture/net]] |
 | net.kick | [[architecture/net]] |
+| play.hold | [[architecture/ai-gameplay-api]] |
+| play.drain | [[architecture/ai-gameplay-api]] |
+| play.seam | [[architecture/ai-gameplay-api]] |
+| play.logged | [[architecture/ai-gameplay-api]] |
+| play.witness | [[architecture/ai-gameplay-api]] |
 | docs.version | [[standards/docs]] |

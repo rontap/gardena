@@ -1,13 +1,19 @@
 import { SKUS } from '../defs/research.ts'
 import type { SkuId } from './ids.ts'
 import { Act, type Cmd } from './log.ts'
+import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
 export const PROTOCOL = 1.9
 
+/** Ticks between digest checks. */
+export const DIGEST_EVERY = 30
+
 export type MpMsg =
-  | { a: 'hello'; protocol: number; playerId: PlayerId; name: string }
+  // `desyncT` marks a hello sent because a digest mismatched, and names the digest `t` it failed
+  // on. Absent means an ordinary join or a stall retry. Keyed on `t` so it survives any RTT.
+  | { a: 'hello'; protocol: number; playerId: PlayerId; name: string; desyncT?: number }
   | { a: 'welcome'; protocol: number; seat: SeatId; save: Save; now: number; paused: boolean }
   | { a: 'reject'; reason: 'version' | 'full' | 'busy' }
   | { a: 'ready' }
@@ -94,7 +100,8 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
     case 'hello': {
       if (typeof data.protocol !== 'number' || typeof data.playerId !== 'string') return undefined
       const name = typeof data.name === 'string' ? cleanName(data.name) : ''
-      return { a: 'hello', protocol: data.protocol, playerId: data.playerId, name }
+      const desyncT = typeof data.desyncT === 'number' ? data.desyncT : undefined
+      return { a: 'hello', protocol: data.protocol, playerId: data.playerId, name, desyncT }
     }
     case 'welcome': {
       const seat = seatId(data.seat)
@@ -207,6 +214,78 @@ export function loopback(): [MpWire, MpWire] {
   return [a, b]
 }
 
+export type Jitter = {
+  pending(): number
+  /** Deliver the queued batch. `order` is indices into that batch, so a test can reorder it. */
+  deliver(order?: number[]): void
+  /** Deliver everything, in order, until nothing is left. */
+  flush(): void
+  /** Deliver the batch with adjacent pairs swapped: the cheapest realistic reordering. */
+  swap(): void
+}
+
+/**
+ * `loopback` delivers synchronously and in order, which is exactly what a WebRTC data channel
+ * does not guarantee. This pair holds messages so a test can deliver them out of order.
+ */
+export function jitterLoopback(): [MpWire, MpWire, Jitter] {
+  let aFn: ((msg: MpMsg) => void) | undefined
+  let bFn: ((msg: MpMsg) => void) | undefined
+  let queue: { to: 'a' | 'b'; msg: MpMsg }[] = []
+  const shut = () => {
+    aFn = undefined
+    bFn = undefined
+    queue = []
+  }
+  const a: MpWire = {
+    send(msg) {
+      queue.push({ to: 'b', msg })
+    },
+    onRecv(fn) {
+      aFn = fn
+    },
+    close: shut,
+  }
+  const b: MpWire = {
+    send(msg) {
+      queue.push({ to: 'a', msg })
+    },
+    onRecv(fn) {
+      bFn = fn
+    },
+    close: shut,
+  }
+  const hand = (e: { to: 'a' | 'b'; msg: MpMsg } | undefined) => {
+    if (e === undefined) return
+    const fn = e.to === 'a' ? aFn : bFn
+    if (fn !== undefined) fn(e.msg)
+  }
+  // A handler may send while being delivered, so take the batch first: those land in the next one.
+  const take = () => {
+    const batch = queue
+    queue = []
+    return batch
+  }
+  const jitter: Jitter = {
+    pending: () => queue.length,
+    deliver(order) {
+      const batch = take()
+      const ix = order ?? batch.map((_, i) => i)
+      ix.forEach(i => hand(batch[i]))
+    },
+    flush() {
+      for (let guard = 0; queue.length > 0 && guard < 1000; guard++) jitter.deliver()
+    },
+    swap() {
+      const batch = take()
+      const ix = batch.map((_, i) => i)
+      for (let i = 0; i + 1 < ix.length; i += 2) [ix[i], ix[i + 1]] = [ix[i + 1], ix[i]]
+      ix.forEach(i => hand(batch[i]))
+    },
+  }
+  return [a, b, jitter]
+}
+
 export function permit(cmd: Cmd): boolean {
   if (cmd.p === 0) return true
   switch (cmd.a) {
@@ -261,12 +340,38 @@ export function applyBundle(world: World, cmds: Cmd[]): void {
   world.tick(DT_MAX)
 }
 
-export function digestHex(world: World): string {
+/**
+ * `Math.sin/cos/atan2/hypot/exp` are implementation-approximated: two engines can differ by an
+ * ULP, and vehicle poses and actor positions are integrated through them every tick. Hashing raw
+ * floats turns that into a resync storm between a host and a guest on different machines. Four
+ * decimals is far finer than anything a player can see and far coarser than that drift.
+ *
+ * This bounds false positives; it does not make the sim bit-identical across engines. Real
+ * cross-engine determinism means fixed-point integration, which is a separate decision.
+ */
+const PLACES = 1e4
+function q(n: number): number {
+  return Math.round(n * PLACES) / PLACES
+}
+
+function qVehiclePose(pose: VehiclePose): unknown {
+  if (pose.kind === 'stored') return pose
+  return { ...pose, x: q(pose.x), y: q(pose.y), heading: q(pose.heading), speed: q(pose.speed) }
+}
+
+function qTrailerPose(pose: TrailerPose): unknown {
+  if (pose.kind === 'stored') return pose
+  return { ...pose, heading: q(pose.heading) }
+}
+
+/** The digest, section by section. `digestHex` hashes the lot; `digestSections` is for telling a
+ * human *which* part drifted, which one 32-bit number never can. */
+export function digestParts(world: World): Record<string, unknown> {
   const cells: string[] = []
   world.forEachCell((at, c) => {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
-      s += `:${c.plant.crop}:${c.plant.rarity}:${c.plant.maturity}`
+      s += `:${c.plant.crop}:${c.plant.rarity}:${q(c.plant.maturity)}`
     }
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
@@ -293,8 +398,8 @@ export function digestHex(world: World): string {
   })
   const seats = world.seats.map(s => ({
     id: s.id,
-    x: s.actor.x,
-    y: s.actor.y,
+    x: q(s.actor.x),
+    y: q(s.actor.y),
     hand: s.hand,
     inventory: s.inventory,
     presence: s.presence,
@@ -304,11 +409,11 @@ export function digestHex(world: World): string {
     id: v.id,
     kind: v.kind,
     fuel: v.fuel,
-    pose: v.pose,
+    pose: qVehiclePose(v.pose),
     route: v.route,
     cursor: v.cursor,
     running: v.running,
-    dwell: v.dwell,
+    dwell: q(v.dwell),
     slots: v.kind === 'quad' ? v.slots : undefined,
     hitch: v.kind === 'tractor' ? v.hitch : undefined,
     boom: v.kind === 'tractor' ? v.boom : undefined,
@@ -316,14 +421,14 @@ export function digestHex(world: World): string {
   const trailers = world.trailers.map(t => ({
     id: t.id,
     kind: t.kind,
-    pose: t.pose,
+    pose: qTrailerPose(t.pose),
     hopper: t.kind === 'harvest' ? undefined : t.hopper,
     slots: t.kind === 'harvest' ? t.slots : undefined,
   }))
-  const payload = JSON.stringify({
+  return {
     money: world.money,
     day: world.clock.day,
-    t: world.clock.t,
+    t: q(world.clock.t),
     seats,
     vehicles,
     trailers,
@@ -331,7 +436,7 @@ export function digestHex(world: World): string {
     nextRouteId: world.nextRouteId,
     cells,
     wires: world.wires,
-    smart: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
+    smart: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: q(h.hold) })),
     sprinklers: [...world.sprinklers.values()].map(s => ({
       at: s.at,
       sig: world.wires.some(
@@ -350,7 +455,7 @@ export function digestHex(world: World): string {
     stall: Object.fromEntries(
       (Object.keys(world.stall) as (keyof typeof world.stall)[]).map(id => [
         id,
-        { stock: world.stall[id].stock, sat: world.stall[id].sat },
+        { stock: world.stall[id].stock, sat: q(world.stall[id].sat) },
       ]),
     ),
     contracts: {
@@ -361,13 +466,34 @@ export function digestHex(world: World): string {
         filled: a.bins.map(b => b.filled),
       })),
     },
-  })
+  }
+}
+
+function fnv(payload: string): string {
   let h = 2166136261
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i)
     h = Math.imul(h, 16777619)
   }
   return (h >>> 0).toString(16).padStart(8, '0')
+}
+
+export function digestHex(world: World): string {
+  return fnv(JSON.stringify(digestParts(world)))
+}
+
+/** One hash per section, so a mismatch can name what drifted instead of just that something did. */
+export function digestSections(world: World): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(digestParts(world))) out[k] = fnv(JSON.stringify(v))
+  return out
+}
+
+/** The sections that differ between two worlds, most useful first. Empty means they agree. */
+export function digestDiff(a: World, b: World): string[] {
+  const x = digestSections(a)
+  const y = digestSections(b)
+  return Object.keys(x).filter(k => x[k] !== y[k])
 }
 
 type Link = {
@@ -377,8 +503,8 @@ type Link = {
   lastHeard: number
   fails: number
   ready: boolean
-  digestWait: boolean
-  digestHold: number
+  /** `t` of the last digest this link reported a mismatch on. 0 = none yet. */
+  desyncT: number
   n: number
 }
 
@@ -401,8 +527,7 @@ export class MpHost {
       lastHeard: this.wall(),
       fails: 0,
       ready: false,
-      digestWait: false,
-      digestHold: 0,
+      desyncT: 0,
       n: 0,
     }
     this.guests.push(link)
@@ -461,21 +586,24 @@ export class MpHost {
     if (this.paused) return
     this.world.tick(DT_MAX)
     const t = this.world.now
-    const sendDigest = t > 0 && t % 30 === 0
+    const sendDigest = t > 0 && t % DIGEST_EVERY === 0
     const hex = sendDigest ? digestHex(this.world) : ''
     this.guests.forEach(g => {
       if (g.seat === undefined) return
       const cmds = this.world.logSince(g.n)
+      // Underflow means the ring buffer ate commands this link never saw; a bundle built from
+      // what is left would replay already-applied commands. Only a fresh snapshot is correct.
+      if (cmds === undefined) {
+        // Pause before snapshotting: the guest's `ready` can come straight back.
+        this.joining = true
+        this.setPaused(true)
+        this.world.rebase()
+        this.snapshot(g)
+        return
+      }
       g.n = this.world.logEnd
       g.wire.send({ a: 'bundle', t, cmds })
-      if (sendDigest) {
-        g.digestWait = true
-        g.digestHold = 8
-        g.wire.send({ a: 'digest', t, hex })
-      } else if (g.digestHold > 0) {
-        g.digestHold -= 1
-        if (g.digestHold === 0) g.digestWait = false
-      }
+      if (sendDigest) g.wire.send({ a: 'digest', t, hex })
     })
   }
   pushRoster(): void {
@@ -512,10 +640,10 @@ export class MpHost {
       return
     }
     if (msg.a === 'ready') {
-      this.joining = false
       link.ready = true
-      link.digestWait = false
-      link.digestHold = 0
+      // One guest's ready must not unpause the world under another still rebuilding its copy.
+      if (this.guests.some(g => g.seat !== undefined && !g.ready)) return
+      this.joining = false
       this.setPaused(false)
       if (this.onCatching !== undefined) this.onCatching(false)
       return
@@ -531,28 +659,40 @@ export class MpHost {
       this.setPaused(msg.on)
     }
   }
+  /**
+   * Two mismatches inside this many ticks is a link that resync cannot repair.
+   * Measured in world ticks, not wall time, so it does not depend on RTT.
+   */
+  private consecutive(link: Link, desyncT: number): boolean {
+    const near = link.desyncT !== 0 && desyncT - link.desyncT <= DIGEST_EVERY * 2
+    link.fails = near ? link.fails + 1 : 1
+    link.desyncT = desyncT
+    return link.fails >= 2
+  }
+  /** Snapshot for one link. `rebase` first, or the guest is born diverged. */
+  private snapshot(link: Link): void {
+    link.ready = false
+    link.n = this.world.logEnd
+    link.wire.send({ a: 'resync', save: dump(this.world), now: this.world.now })
+  }
   private onHello(link: Link, msg: Extract<MpMsg, { a: 'hello' }>): void {
     if (msg.protocol !== PROTOCOL) {
       link.wire.send({ a: 'reject', reason: 'version' })
       return
     }
     if (link.seat !== undefined) {
-      if (link.digestWait) {
-        link.digestWait = false
-        link.fails += 1
-        if (link.fails >= 2) {
-          link.wire.send({ a: 'bye', why: 'kicked' })
-          this.drop(link.wire)
-          return
-        }
+      // A hello carrying the digest t it failed on is a desync report; a bare one is a stall.
+      if (msg.desyncT !== undefined && this.consecutive(link, msg.desyncT)) {
+        link.wire.send({ a: 'bye', why: 'kicked' })
+        this.drop(link.wire)
+        return
       }
-      link.ready = false
       this.joining = true
       this.setPaused(true)
       if (this.onCatching !== undefined) this.onCatching(true)
-      link.n = this.world.logEnd
       this.world.join(msg.playerId, msg.name)
-      link.wire.send({ a: 'resync', save: dump(this.world), now: this.world.now })
+      this.world.rebase()
+      this.snapshot(link)
       this.pushRoster()
       return
     }
@@ -560,6 +700,7 @@ export class MpHost {
       link.wire.send({ a: 'reject', reason: 'busy' })
       return
     }
+    const before = this.world.seats.length
     const seat = this.world.join(msg.playerId, msg.name)
     if (seat === 'full') {
       link.wire.send({ a: 'reject', reason: 'full' })
@@ -571,6 +712,7 @@ export class MpHost {
     this.joining = true
     this.setPaused(true)
     if (this.onCatching !== undefined) this.onCatching(true)
+    this.world.rebase()
     link.n = this.world.logEnd
     link.wire.send({
       a: 'welcome',
@@ -580,6 +722,14 @@ export class MpHost {
       now: this.world.now,
       paused: true,
     })
+    // A new seat never rides the command log, and `roster` cannot create one, so every guest
+    // already connected would keep the old, shorter `seats` forever. Re-snapshot them.
+    if (this.world.seats.length > before) {
+      this.guests.forEach(g => {
+        if (g === link || g.seat === undefined) return
+        this.snapshot(g)
+      })
+    }
     this.pushRoster()
   }
 }
@@ -613,6 +763,8 @@ export class MpGuest {
   private readonly queued: Extract<MpMsg, { a: 'bundle' }>[] = []
   private lastWall = 0
   private lastPing = 0
+  /** One snapshot request per gap, not one per bundle that lands in it. */
+  private gapAsked = false
   onWorld: ((world: World, seat: SeatId) => void) | undefined
   onCatching: ((on: boolean) => void) | undefined
   onRetry: ((n: number) => void) | undefined
@@ -625,8 +777,10 @@ export class MpGuest {
     this.name = name
     wire.onRecv(msg => this.recv(msg))
   }
-  hello(): void {
-    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name })
+  /** `desyncT` names the digest `t` that mismatched, so the host can count consecutive failures
+   * without guessing from wall time. Omit it for an ordinary join or a stall retry. */
+  hello(desyncT?: number): void {
+    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name, desyncT })
   }
   intent(cmd: Cmd): void {
     // TODO 1.1 multiplayer client prediction
@@ -704,6 +858,7 @@ export class MpGuest {
       r.world.local = msg.seat
       r.world.remote = cmd => this.intent(cmd)
       this.world = r.world
+      this.gapAsked = false
       this.seat = msg.seat
       this.paused = msg.paused
       this.catchUp(true)
@@ -723,20 +878,20 @@ export class MpGuest {
         this.flush()
         return
       }
-      applyBundle(this.world, msg.cmds)
+      this.take(msg)
       return
     }
     if (msg.a === 'digest') {
       this.flush()
       if (this.world === undefined) return
-      if (this.world.now < msg.t) {
+      // Behind the host is not a desync, it is latency: the bundles for those ticks are still
+      // in flight. Only judge a digest for a tick we have actually reached.
+      if (this.world.now !== msg.t) {
         this.catchUp(true)
-        this.flush()
-        if (this.world !== undefined && this.world.now < msg.t) this.catchUp(true)
         return
       }
       if (digestHex(this.world) !== msg.hex) {
-        this.hello()
+        this.hello(msg.t)
         this.catchUp(true)
       }
       return
@@ -752,6 +907,7 @@ export class MpGuest {
       if (this.seat !== undefined) r.world.local = this.seat
       r.world.remote = cmd => this.intent(cmd)
       this.world = r.world
+      this.gapAsked = false
       this.queued.length = 0
       if (this.onWorld !== undefined && this.seat !== undefined) this.onWorld(r.world, this.seat)
       this.wire.send({ a: 'ready' })
@@ -769,12 +925,30 @@ export class MpGuest {
       this.world = undefined
     }
   }
+  /**
+   * Bundles are a tick sequence, not independent messages: `bundle.t` must be exactly the next
+   * tick. A repeat is stale. A gap means one was missed or the transport reordered them, and
+   * applying it anyway diverges silently -- ask for a snapshot instead.
+   */
+  private take(msg: Extract<MpMsg, { a: 'bundle' }>): void {
+    if (this.world === undefined) return
+    if (msg.t <= this.world.now) return
+    if (msg.t > this.world.now + 1) {
+      if (!this.gapAsked) {
+        this.gapAsked = true
+        this.hello()
+      }
+      this.catchUp(true)
+      return
+    }
+    applyBundle(this.world, msg.cmds)
+  }
   private flush(): void {
     if (this.world === undefined) return
     while (this.queued.length > 0) {
       const b = this.queued.shift()
       if (b === undefined) return
-      applyBundle(this.world, b.cmds)
+      this.take(b)
     }
     if (this.catching) this.catchUp(false)
   }

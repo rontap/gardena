@@ -54,7 +54,9 @@ export function listen(peer: Peer, onGuest: (wire: MpWire, conn: DataConnection)
 
 export function dial(peer: Peer, hostId: string): Promise<MpWire> {
   return new Promise((resolve, reject) => {
-    const conn = peer.connect(hostId)
+    // PeerJS defaults `reliable` to false, which builds the DataChannel with `ordered: false`.
+    // Bundles must arrive in send order or every peer diverges; loopback hides this, the internet does not.
+    const conn = peer.connect(hostId, { reliable: true })
     conn.on('open', () => resolve(wrapConn(conn)))
     conn.on('error', err => reject(err))
     peer.on('error', err => reject(err))

@@ -897,29 +897,10 @@ export class World {
       this.speech = { kind: 'none' }
       this.pulse = undefined
       this.hud = undefined
-      this.cheatFastResearch = false
       this.consignRevision = 0
       this.groundRev = 0
-      this.bigAcc = 0
-      this.nets = undefined
-      this.seats.forEach(s => {
-        s.queue.length = 0
-        s.cue = { kind: 'none' }
-        s.actor.work = 0
-        s.workLeft = 0
-        s.workTotal = 0
-        s.filling = false
-        s.place = { kind: 'none' }
-        s.drive = { throttle: 0, steer: 0 }
-        const driven = this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === s.id)
-        if (driven !== undefined && driven.pose.kind === 'field') {
-          s.actor.x = driven.pose.x
-          s.actor.y = driven.pose.y
-        }
-        s.legStart = { x: s.actor.x, y: s.actor.y }
-      })
       this.sink.reset(this.rng.seed)
-      this.indexAll()
+      this.rebase()
       return
     }
     this.rng = new Rng(seedOrH)
@@ -966,12 +947,46 @@ export class World {
     return this.logBase + this.cmds.length
   }
 
-  logSince(n: number): Cmd[] {
-    return this.cmds.slice(Math.max(0, n - this.logBase))
+  /** `undefined` when `n` fell off the back of the ring buffer: those commands are gone, and
+   * clamping to 0 would silently re-send up to `LOG_CAP` already-applied ones. */
+  logSince(n: number): Cmd[] | undefined {
+    if (n < this.logBase) return undefined
+    return this.cmds.slice(n - this.logBase)
   }
 
   get pump(): Pump {
     return this.pumps[0]
+  }
+
+  /**
+   * Reduce the live world to exactly what a `dump` -> `parse` round trip produces.
+   * `hydrate` normalises this state; a host that snapshots without it hands the guest a world
+   * that differs the moment it is born -- in state the digest checks (seat `place`, `actor`)
+   * and in state it does not (`bigAcc` phase, `live` iteration order). `resync` ships the same
+   * dump, so without this the repair is diverged too and the link burns its retry budget.
+   */
+  rebase(): void {
+    this.bigAcc = 0
+    this.cheatFastResearch = false
+    this.nets = undefined
+    this.seats.forEach(s => {
+      s.queue.length = 0
+      s.cue = { kind: 'none' }
+      s.actor.work = 0
+      s.workLeft = 0
+      s.workTotal = 0
+      s.filling = false
+      s.place = { kind: 'none' }
+      s.drive = { throttle: 0, steer: 0 }
+      s.stride = { x: 0, y: 0 }
+      const driven = this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === s.id)
+      if (driven !== undefined && driven.pose.kind === 'field') {
+        s.actor.x = driven.pose.x
+        s.actor.y = driven.pose.y
+      }
+      s.legStart = { x: s.actor.x, y: s.actor.y }
+    })
+    this.indexAll()
   }
 
   join(playerId: PlayerId, name = ''): SeatId | 'full' {
@@ -1033,7 +1048,11 @@ export class World {
   apply(cmd: Extract<Cmd, { a: typeof Act.buy }>): BuyFail | undefined
   apply(cmd: Cmd): void
   apply(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | BuyFail | undefined | void {
-    this.act = this.seats[cmd.p]
+    // A peer that has not yet been snapshotted with a newly joined seat can be handed a command
+    // for it. No-op rather than throw inside the transport's data handler.
+    const seat = this.seats[cmd.p]
+    if (seat === undefined) return
+    this.act = seat
     switch (cmd.a) {
       case Act.click:
         return this.clickBody({ col: cmd.c[0], row: cmd.c[1] })
@@ -4010,7 +4029,9 @@ export class World {
       }
       this.tickQueue(dt)
     })
-    this.act = this.seats[this.local]
+    // Never `this.local` here: it is 0 on the host and 1..3 on a guest, so anything downstream
+    // that reads `act` would diverge. Seat 0 always exists and is the same seat on every peer.
+    this.act = this.seats[0]
     this.tickVehicles(dt)
     this.tickField(dt)
     this.gatherWater(dt)

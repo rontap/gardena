@@ -28,6 +28,8 @@ Guest drop → `presence: 'away'`. Seat stays in `seats`. World keeps ticking. T
 
 Away occupies a slot. `hello` when `seats.length === 4` → `reject: full`. Rejoin is the same `playerId`.
 
+A new seat resyncs every guest already connected: `join` never rides the log and `roster` cannot create a seat.
+
 ## Permissions
 
 Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter a bundle. Dropped cmds no-op. Guest cmds: `mp.guest`.
@@ -41,6 +43,8 @@ Guest never `writeSlot` for a hosted farm.
 ## Pause / leave
 
 Pause is a net flag. Host stops bundling. Any player may toggle. Join/resync forces pause until `ready`.
+
+A join or resync cancels the host's own in-flight walk, work and placement ghost -- that is `rebase`, and it is what makes the snapshot match. Unpause waits for every seated guest to be Ready, not just the first.
 
 Host leave: `writeSlot(dump(world))`. Peers `bye: 'host-left'`. Back to startup. Guest slot not written. No migration.
 
@@ -62,6 +66,6 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.hello` — `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 
-`mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues.
+`mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. Two mismatches within two digest periods → that guest `bye: kicked`. Host continues. Host `rebase()`s before every snapshot, so the resync converges — [[architecture/net]] `net.snapshot`.
 
 `mp.stride` — `Seat.stride`. Not driver, `presence === 'in'`, not recap: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.

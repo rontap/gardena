@@ -42,7 +42,15 @@ Host input: `dispatch` locally; those cmds are in that bundle. Guest input: `int
 
 Guests are behind by ~1 RTT, not divergent. A stalled guest fast-forwards queued bundles. They do not hold the others. Gap > 5s wall → resync.
 
+`bundle.t` is a sequence, not a label. Guest applies only `t === now + 1`. `t <= now` is stale, dropped. `t > now + 1` is a gap: `hello`, resync. One `hello` per gap. The wire is ordered (`reliable: true`) — the check is the backstop, not the mechanism.
+
 Guest contract cmds are dropped by the sequencer and never enter a bundle. Guest consign at the truck still fills contract bins. — [[mechanics/multiplayer]] `mp.guest`.
+
+## Snapshot
+
+`dump` → `parse` normalises. The host does not. So host `rebase()` before every `dump` for `welcome` / `resync`: clear each seat `queue` `cue` `workLeft` `workTotal` `filling` `place` `drive` `stride`, snap a driving seat's actor to its vehicle, zero `bigAcc`, `indexAll()`. Same body as hydrate. Without it the guest is born diverged in `place` / `actor` (digested) and in `bigAcc` phase / `live` order (not digested), and `resync` ships the same dump so it never converges.
+
+A new seat never rides the log and `roster` cannot create one. New seat → resync every other seated guest.
 
 ## Pause
 
@@ -50,10 +58,14 @@ Net flag. Not a `Cmd`. Not in `Save`. Host stops bundling while paused. Any play
 
 ## Invariants
 
+Floats in the digest are rounded to 4 decimals: `Math.cos`/`sin`/`atan2`/`hypot` are implementation-approximated, so two engines differ by an ULP on vehicle and actor integration. Bounds false positives; does not make the sim bit-identical across engines. `digestSections` / `digestDiff` name which section drifted.
+
 `net.digest` — Same seed + same `Cmd[]` applied at those `t` with `dt = DT_MAX` → equal digest: `money`, `clock.day`, `clock.t`, each seat `hand`/`inventory`, cell kinds, plant crop/rarity/maturity, drop count, `done`, family `owned`, stall stock, every `StallGood.sat`, per active contract `offer.id` `dueDay` each bin `filled`, `takenToday`, every wire `from`/`to`, every sensor `out`/`inn`, mill/jam/still `inn`, chest/freezer/seed-silo/additive-store `out`, sprinkler unwired vs wired level, smart-valve held level, every vehicle `id` `kind` `fuel` `pose` `route` `cursor` `running` `dwell` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`, every route `id` `name` `stops`, `nextRouteId`, traffic-light `inn`/`out`/`hold`. Board not digested. Two Worlds, same seed, no cmds, N ticks of `DT_MAX` → equal digest.
 
 `net.bundle` — Per host `bundle`: apply `cmds` in log order, then `tick(DT_MAX)`. Empty `cmds` still tick. `bundle.t` is `now` after that tick.
 
 `net.full` — `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 
-`net.kick` — Digest mismatch: pause, `resync`, Ready, unpause. One retry. Second mismatch → that guest `bye: kicked`. Host continues. Guest behind `t`: apply queued bundles. Version mismatch: `reject: version`. Never hydrate.
+`net.kick` — Digest mismatch: guest `hello` carrying `desyncT` = the digest `t` it failed on. Host: pause, `resync`, Ready, unpause. Two mismatches within `DIGEST_EVERY * 2` ticks → that guest `bye: kicked`. Keyed on `t`, not wall time, so it holds at any RTT. A `hello` without `desyncT` is a join or a stall retry and never counts. Host continues. Guest behind `t`: apply queued bundles. Version mismatch: `reject: version`. Never hydrate.
+
+`net.seq` — Guest applies a bundle only when `bundle.t === now + 1`. Stale dropped, gap → resync. `net.snapshot` — Host `rebase()` before every `dump` on the wire. New seat → resync every other seated guest. `logSince` below `logBase` → `undefined` → resync, never a clamped replay.

@@ -5,7 +5,9 @@ import { Plant } from './plant.ts'
 import { Soil, SOIL_WATER_MID } from './soil.ts'
 import {
   applyBundle,
+  digestDiff,
   digestHex,
+  jitterLoopback,
   loopback,
   permit,
   readMpMsg,
@@ -656,6 +658,95 @@ describe('1.1 multiplayer', () => {
     expect(digestHex(a)).not.toBe(digestHex(b))
   })
 
+  test('a guest joining a host mid-play stays in step: the snapshot is what a dump/parse produces, not the live world', () => {
+    const w = new World(3)
+    const host = new MpHost(w)
+    // Play first. The guest must arrive while the host is mid-walk, mid-work and mid-big-tick --
+    // a host standing idle at join time hides every divergence this test is for.
+    w.dispatch({ a: Act.stride, t: 0, p: 0, x: 1, y: 0 })
+    for (let i = 0; i < 37; i++) host.pump()
+    expect(w.seats[0].stride.x).toBe(1)
+    expect(w.seats[0].actor.x).not.toBe(dump(w).seats[0].actor.x - 1)
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1')
+    guest.hello()
+    expect(guest.world).not.toBe(undefined)
+    expect(digestDiff(guest.world as World, w)).toEqual([])
+    for (let i = 0; i < 400; i++) host.pump()
+    expect(guest.world?.now).toBe(w.now)
+    expect(digestDiff(guest.world as World, w)).toEqual([])
+  })
+
+  test('reordered delivery never applies a bundle out of sequence', () => {
+    const w = new World(5)
+    const host = new MpHost(w)
+    const [a, b, jit] = jitterLoopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1')
+    guest.hello()
+    jit.flush()
+    expect(guest.world).not.toBe(undefined)
+    // One idle tick, then a tick that starts the actor walking. Delivered back to front, blind
+    // application walks the actor on both ticks instead of one -- a divergence the digest sees.
+    // The guest must refuse the gap and rebuild rather than end up quietly wrong.
+    host.pump()
+    w.dispatch({ a: Act.stride, t: 0, p: 0, x: 1, y: 0 })
+    host.pump()
+    expect(jit.pending()).toBe(2)
+    jit.swap()
+    jit.flush()
+    expect(guest.world?.now).toBe(w.now)
+    expect(guest.world?.seats[0].actor.x).toBe(w.seats[0].actor.x)
+    expect(digestDiff(guest.world as World, w)).toEqual([])
+  })
+
+  test('a third player joining re-snapshots the guests already connected', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const [a1, b1] = loopback()
+    host.attach(a1)
+    const guestA = new MpGuest(b1, 'a')
+    guestA.hello()
+    expect(guestA.world?.seats).toHaveLength(2)
+    const [a2, b2] = loopback()
+    host.attach(a2)
+    const guestB = new MpGuest(b2, 'b')
+    guestB.hello()
+    expect(w.seats).toHaveLength(3)
+    // Without a re-snapshot guest A keeps two seats forever: `roster` cannot create one, and the
+    // first bundled command for seat 2 would then throw inside the transport's data handler.
+    expect(guestA.world?.seats).toHaveLength(3)
+    expect(digestDiff(guestA.world as World, w)).toEqual([])
+    expect(digestDiff(guestB.world as World, w)).toEqual([])
+    host.pump()
+    expect(digestDiff(guestA.world as World, w)).toEqual([])
+  })
+
+  test('a command for a seat this peer has not been told about no-ops instead of throwing', () => {
+    const w = new World(1)
+    expect(() => applyBundle(w, [{ a: Act.stride, t: 0, p: 2, x: 1, y: 0 }])).not.toThrow()
+  })
+
+  test('a command cursor that fell off the log ring gets a snapshot, not a replay', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1')
+    guest.hello()
+    host.pump()
+    const money = w.money
+    // Overrun LOG_CAP while the host is paused, so the guest's cursor drops below logBase.
+    host.setPaused(true)
+    for (let i = 0; i < 600; i++) w.dispatch({ a: Act.closeHud, t: 0, p: 0 })
+    expect(w.logSince(0)).toBe(undefined)
+    host.setPaused(false)
+    host.pump()
+    // A clamped slice would re-apply hundreds of already-applied commands.
+    expect(digestDiff(guest.world as World, w)).toEqual([])
+    expect(guest.world?.money).toBe(money)
+  })
 })
 
 function delayToHost(): { hostW: MpWire; guestW: MpWire; flush: () => void } {

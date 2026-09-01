@@ -10,7 +10,7 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `grow` | annual ripen rarity | `at(col, row, day, n)` |
 | `shop` | pack rarity | `next()` per granted pack |
 | `weed` | sprout, kind | `at(col, row, bigTicks[, 1])` |
-| `grass` | roll, pick, variant | `at(bigTicks[, i, …])` |
+| `grass` | world roll, owned-cell pick, variant | `at(bigTicks[, i, …])` |
 | `tree` | yield on/off | `at(base.col, base.row, day)` |
 | `fruit` | tree drop rarity | `next()` per successful drop |
 | `skill` | offer draw | `at(memberIx, pickCount, i)` |

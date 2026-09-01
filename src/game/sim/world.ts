@@ -71,6 +71,7 @@ import {
 import { SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
+  CropId,
   DaughterSkillId,
   HusbandSkillId,
   MemberId,
@@ -758,6 +759,8 @@ export class World {
   readonly fences = new Set<string>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
+  private readonly sprinklerTargetCache = new Map<string, Coord[]>()
+  private readonly wiredVerts = new Set<string>()
   readonly house: House
   readonly truck: Truck
   readonly silo: SeedSilo
@@ -773,6 +776,9 @@ export class World {
   readonly clock = new Clock()
   readonly drops: Drop[] = []
   readonly modifiers: Modifier[] = []
+  modGen = 0
+  private statsCacheGen = -1
+  private readonly statsCache = new Map<string, Stats>()
   readonly done = new Set<ResearchId>()
   money = 50
   job: Job = { kind: 'idle' }
@@ -789,7 +795,16 @@ export class World {
   private nets: Net[] | undefined = undefined
   private netAt = new Map<string, Net>()
   private readonly chunks = new Map<string, Cell[][]>()
-  private readonly live = new Map<string, Coord>()
+  readonly grow = new Map<string, Coord>()
+  readonly machines = new Map<string, Coord>()
+  readonly stores = new Map<string, Coord>()
+  readonly sensors = new Map<string, Coord>()
+  readonly buttons = new Map<string, Coord>()
+  readonly recover = new Map<string, Coord>()
+  readonly empty = new Map<string, Coord>()
+  readonly tufts = new Map<string, Coord>()
+  readonly rocks = new Map<string, Coord>()
+  private readonly dirtEdgeCache = new Map<string, string>()
   readonly vfx = new Map<string, boolean>()
   readonly bursts: Burst[] = []
   private burstSeq = 0
@@ -889,6 +904,7 @@ export class World {
           })
         }
       }
+      this.modGen += 1
       this.netVerts.clear()
       h.segments.forEach(s => vertsOf(s.at).forEach(v => this.netVerts.add(vertexKey(v))))
       h.wells.forEach(well => vertsOf(well.at).forEach(v => this.netVerts.add(vertexKey(v))))
@@ -1271,34 +1287,104 @@ export class World {
     const loc = local(at)
     const grid = this.gridOf(chunkOf(at))
     const prev = grid[loc.row][loc.col]
+    const prevTilled = isTilled(prev)
     grid[loc.row][loc.col] = cell
     if (groundSig(prev) !== groundSig(cell)) this.groundRev += 1
     this.track(at, cell)
+    if ((prev.kind === 'growing') !== (cell.kind === 'growing')) this.dropTargetCachesAt(at)
+    if (prevTilled !== isTilled(cell)) this.invalidateDirtEdges(at)
   }
 
   private track(at: Coord, cell: Cell): void {
     const k = `${at.col},${at.row}`
-    const on =
+    const here = { col: at.col, row: at.row }
+    const origin = !('base' in cell) || (cell.base.col === at.col && cell.base.row === at.row)
+    if (
       cell.kind === 'growing' ||
       cell.kind === 'ripe' ||
       cell.kind === 'weed' ||
       cell.kind === 'turf' ||
-      cell.kind === 'chest' ||
-      cell.kind === 'compost-box' ||
-      cell.kind === 'grinder' ||
-      cell.kind === 'mill' ||
-      cell.kind === 'jam' ||
-      cell.kind === 'still' ||
-      cell.kind === 'barrel' ||
-      cell.kind === 'freezer' ||
-      (cell.kind === 'tree' && cell.base.col === at.col && cell.base.row === at.row)
-    if (on) this.live.set(k, { col: at.col, row: at.row })
-    else this.live.delete(k)
+      cell.kind === 'dead' ||
+      cell.kind === 'rotten' ||
+      (cell.kind === 'tree' && origin)
+    ) {
+      this.grow.set(k, here)
+    } else this.grow.delete(k)
+    if (
+      origin &&
+      (cell.kind === 'mill' ||
+        cell.kind === 'jam' ||
+        cell.kind === 'still' ||
+        cell.kind === 'barrel' ||
+        cell.kind === 'grinder' ||
+        cell.kind === 'compost-box')
+    ) {
+      this.machines.set(k, here)
+    } else this.machines.delete(k)
+    if (cell.kind === 'chest' || cell.kind === 'freezer') this.stores.set(k, here)
+    else this.stores.delete(k)
+    if (isSensor(cell)) this.sensors.set(k, here)
+    else this.sensors.delete(k)
+    if (cell.kind === 'button') this.buttons.set(k, here)
+    else this.buttons.delete(k)
+    if (isTilled(cell) && cell.soil.weedChance < WEED_CHANCE) this.recover.set(k, here)
+    else this.recover.delete(k)
+    if (cell.kind === 'empty') this.empty.set(k, here)
+    else this.empty.delete(k)
+    if (cell.kind === 'untilled' && cell.cover.kind === 'grass') this.tufts.set(k, here)
+    else this.tufts.delete(k)
+    if (cell.kind === 'rock' && origin) this.rocks.set(k, here)
+    else this.rocks.delete(k)
+  }
+
+  private invalidateDirtEdges(at: Coord): void {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        this.dirtEdgeCache.delete(`${at.col + dc},${at.row + dr}`)
+      }
+    }
+  }
+
+  plotEdges(col: number, row: number): string {
+    const k = `${col},${row}`
+    const hit = this.dirtEdgeCache.get(k)
+    if (hit !== undefined) return hit
+    const t = (c: number, r: number) => this.inWorld({ col: c, row: r }) && isTilled(this.cell({ col: c, row: r }))
+    const top = !t(col, row - 1)
+    const right = !t(col + 1, row)
+    const bottom = !t(col, row + 1)
+    const left = !t(col - 1, row)
+    const sig = `${top ? 1 : 0}${right ? 1 : 0}${bottom ? 1 : 0}${left ? 1 : 0}${t(col - 1, row) && t(col, row - 1) && !t(col - 1, row - 1) ? 1 : 0}${t(col + 1, row) && t(col, row - 1) && !t(col + 1, row - 1) ? 1 : 0}${t(col + 1, row) && t(col, row + 1) && !t(col + 1, row + 1) ? 1 : 0}${t(col - 1, row) && t(col, row + 1) && !t(col - 1, row + 1) ? 1 : 0}`
+    this.dirtEdgeCache.set(k, sig)
+    return sig
   }
 
   private indexAll(): void {
-    this.live.clear()
+    this.grow.clear()
+    this.machines.clear()
+    this.stores.clear()
+    this.sensors.clear()
+    this.buttons.clear()
+    this.recover.clear()
+    this.empty.clear()
+    this.tufts.clear()
+    this.rocks.clear()
+    this.dirtEdgeCache.clear()
     this.forEachCell((at, c) => this.track(at, c))
+    this.rebuildWired()
+  }
+
+  private statsCached(crop: CropId, rarity: Rarity): Stats {
+    if (this.statsCacheGen !== this.modGen) {
+      this.statsCache.clear()
+      this.statsCacheGen = this.modGen
+    }
+    const k = `${crop}:${rarity}`
+    const hit = this.statsCache.get(k)
+    if (hit !== undefined) return hit
+    const st = statsOf(crop, rarity, this.modifiers)
+    this.statsCache.set(k, st)
+    return st
   }
 
   forEachCell(fn: (at: Coord, cell: Cell) => void): void {
@@ -1431,6 +1517,7 @@ export class World {
         growSpeed: 1,
         waterUseMul: 1,
       })
+      this.modGen += 1
     }
     st.pickCount += 1
     this.rerollOffers(member)
@@ -1509,6 +1596,7 @@ export class World {
     this.owned.push(id)
     this.purchases += 1
     this.dirtyNets()
+    this.sprinklerTargetCache.clear()
     this.chunks.set(
       chunkKey(id),
       generateChunk(this.rng, id, this.house, this.pumps[0], this.truck, this.silo, this.additives),
@@ -1743,6 +1831,7 @@ export class World {
     if (!aoe(placed).every(c => this.inWorld(c))) return
     this.money -= this.skuPrice(id)
     this.sprinklers.set(vertexKey(placed.at), placed)
+    this.sprinklerTargetCache.delete(vertexKey(placed.at))
     this.netVerts.add(vertexKey(placed.at))
     this.dirtyNets()
     const text =
@@ -1763,6 +1852,7 @@ export class World {
     if (this.act.place.kind !== 'delete') return
     if (this.sprinklerAt(v) === undefined) return
     this.sprinklers.delete(vertexKey(v))
+    this.sprinklerTargetCache.delete(vertexKey(v))
     this.dropWires(w => hitsVertex(w.from, v) || hitsVertex(w.to, v))
     this.pruneVert(v)
     this.dirtyNets()
@@ -1800,6 +1890,7 @@ export class World {
     if (next.length !== this.wires.length) {
       this.wires.length = 0
       next.forEach(w => this.wires.push(w))
+      this.rebuildWired()
       this.act.place = { kind: 'none' }
       this.ping()
       return
@@ -1812,6 +1903,7 @@ export class World {
       return
     }
     this.wires.push({ from, to })
+    this.rebuildWired()
     this.act.place = { kind: 'none' }
     this.ping()
   }
@@ -1826,6 +1918,7 @@ export class World {
     if (next.length === this.wires.length) return
     this.wires.length = 0
     next.forEach(w => this.wires.push(w))
+    this.rebuildWired()
     this.pulse = { text: 'Delete wire', at: { col: 0, row: 0 } }
     if (from.kind === 'cell') this.pulse.at = { ...from.at }
     else if (from.kind === 'sprinkler') this.pulse.at = { col: from.at.col, row: from.at.row }
@@ -1940,6 +2033,7 @@ export class World {
     const next = dropIncident(this.wires, gone)
     this.wires.length = 0
     next.forEach(w => this.wires.push(w))
+    this.rebuildWired()
   }
 
   private portLegal(end: WireEnd, side: 'from' | 'to'): boolean {
@@ -2262,7 +2356,26 @@ export class World {
   }
 
   sprinklerTargets(s: Sprinkler): Coord[] {
-    return aoe(s).filter(at => this.inWorld(at) && this.cell(at).kind === 'growing')
+    const k = vertexKey(s.at)
+    const hit = this.sprinklerTargetCache.get(k)
+    if (hit !== undefined) return hit
+    const made = aoe(s).filter(at => this.inWorld(at) && this.cell(at).kind === 'growing')
+    this.sprinklerTargetCache.set(k, made)
+    return made
+  }
+
+  private dropTargetCachesAt(at: Coord): void {
+    this.sprinklers.forEach(s => {
+      if (aoe(s).some(c => c.col === at.col && c.row === at.row)) this.sprinklerTargetCache.delete(vertexKey(s.at))
+    })
+  }
+
+  private rebuildWired(): void {
+    this.wiredVerts.clear()
+    if (!this.done.has('unlock-smart-irrigation')) return
+    this.wires.forEach(w => {
+      if (w.to.kind === 'sprinkler') this.wiredVerts.add(vertexKey(w.to.at))
+    })
   }
 
   tileRate(s: Sprinkler): number {
@@ -2275,8 +2388,7 @@ export class World {
   }
 
   private sprinklerWired(at: Vertex): boolean {
-    if (!this.done.has('unlock-smart-irrigation')) return false
-    return this.wires.some(w => hitsVertex(w.to, at))
+    return this.wiredVerts.has(vertexKey(at))
   }
 
   private mayPour(s: Sprinkler): boolean {
@@ -3396,7 +3508,7 @@ export class World {
 
   machineLinks(): { x: number; y: number; side: 'in' | 'out' }[] {
     const out: { x: number; y: number; side: 'in' | 'out' }[] = []
-    for (const at of this.live.values()) {
+    for (const at of this.machines.values()) {
       const c = this.cell(at)
       if (!isIoCell(c)) continue
       if (c.base.col !== at.col || c.base.row !== at.row) continue
@@ -4037,7 +4149,6 @@ export class World {
     this.gatherWater(dt)
     this.evalSensors(dt)
     this.tickDispatch(dt)
-    if (this.hud !== undefined && this.hud.kind === 'counter') this.ping()
     this.tickMachines(dt)
     this.tickWater(dt)
     this.tickFreshness(dt)
@@ -4062,9 +4173,11 @@ export class World {
     const cheat = this.cheatFastResearch ? 3 : 1
     this.job.left -= dt * (1 + 0.05 * this.skillTier('research-speed')) * cheat
     if (this.job.left > 0) return
-    this.done.add(this.job.id)
-    this.tally.research.push(this.job.id)
+    const id = this.job.id
+    this.done.add(id)
+    this.tally.research.push(id)
     this.job = { kind: 'idle' }
+    if (id === 'unlock-smart-irrigation') this.rebuildWired()
     this.ping()
   }
 
@@ -4426,32 +4539,30 @@ export class World {
   }
 
   private tickButtons(): void {
-    this.forEachCell((_at, c) => {
+    for (const at of this.buttons.values()) {
+      const c = this.cell(at)
       if (c.kind === 'button') tickButton(c)
-    })
+    }
   }
 
   private evalSensors(dt: number): void {
     const sensors = new Map<string, Sensor>()
     const machines = new Map<string, Mill | JamMachine | PotStill>()
     const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore>()
-    this.forEachCell((at, c) => {
+    for (const at of this.sensors.values()) {
+      const c = this.cell(at)
       if (isSensor(c)) sensors.set(cellKey(at), c)
-      if (
-        (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') &&
-        c.base.col === at.col &&
-        c.base.row === at.row
-      ) {
-        machines.set(cellKey(at), c)
-      }
-      if (
-        (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') &&
-        c.base.col === at.col &&
-        c.base.row === at.row
-      ) {
-        stores.set(cellKey(at), c)
-      }
-    })
+    }
+    for (const at of this.machines.values()) {
+      const c = this.cell(at)
+      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') machines.set(cellKey(at), c)
+    }
+    for (const at of this.stores.values()) {
+      const c = this.cell(at)
+      if (c.kind === 'chest' || c.kind === 'freezer') stores.set(cellKey(at), c)
+    }
+    stores.set(cellKey({ col: this.silo.base.col, row: this.silo.base.row }), this.silo)
+    stores.set(cellKey({ col: this.additives.base.col, row: this.additives.base.row }), this.additives)
     const raw = new Map<string, 0 | 1>()
     sensors.forEach((s, k) => {
       if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
@@ -4459,7 +4570,11 @@ export class World {
       } else if (s.kind === 'sensor-day') {
         raw.set(k, dayRaw(s, this.clock.phase()))
       } else if (s.kind === 'water-system') {
-        const net = this.grid().find(n => n.waterSystems.includes(s))
+        this.grid()
+        const hit = corners(occupiedCells(s.base, this.owned)).find(
+          v => this.netAt.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
+        )
+        const net = hit === undefined ? undefined : this.netAt.get(vertexKey(hit))
         if (net === undefined) {
           raw.set(k, 0)
           return
@@ -4474,8 +4589,14 @@ export class World {
     stores.forEach((s, k) => {
       raw.set(k, storeRaw(s))
     })
+    const prevLevels = new Map<string, 0 | 1>()
+    this.smartHold.forEach((h, k) => prevLevels.set(k, h.level))
     evalDag({ sensors, wires: this.wires, smart: this.smartHold, sprinklers: this.sprinklers, raw: rawMap(raw), machines, stores })
-    if (this.smartHold.size > 0) this.dirtyNets()
+    let flipped = false
+    this.smartHold.forEach((h, k) => {
+      if (prevLevels.get(k) !== h.level) flipped = true
+    })
+    if (flipped) this.dirtyNets()
   }
 
   private doToggle(at: Coord): void {
@@ -4495,14 +4616,17 @@ export class World {
 
   private tickField(dt: number): void {
     let dirty = false
-    this.forEachCell((_at, c) => {
-      if (!isTilled(c) || c.soil.weedChance >= WEED_CHANCE) return
+    for (const [k, at] of this.recover) {
+      const c = this.cell(at)
+      if (!isTilled(c) || c.soil.weedChance >= WEED_CHANCE) {
+        this.recover.delete(k)
+        continue
+      }
       const next = c.soil.weedChance + (0.15 * dt) / DAY_SECONDS
       c.soil.weedChance = next > WEED_CHANCE ? WEED_CHANCE : next
-    })
-    const live = [...this.live.values()]
-    for (let i = 0; i < live.length; i++) {
-      const at = live[i]
+      if (c.soil.weedChance >= WEED_CHANCE) this.recover.delete(k)
+    }
+    for (const at of this.grow.values()) {
       const c = this.cell(at)
       if (c.kind === 'tree') {
         if (this.tickTree(c, dt)) dirty = true
@@ -4535,7 +4659,7 @@ export class World {
       }
       if (c.kind !== 'growing' && c.kind !== 'ripe') continue
       const stage0 = c.plant.stage(c.kind)
-      const st = c.plant.stats(this.modifiers)
+      const st = this.statsCached(c.plant.crop, c.plant.rarity)
       const mood0 = mood(c.soil, st)
       if (c.kind === 'growing') {
         c.soil.drink(st.waterUsePerSec * dt)
@@ -4597,13 +4721,14 @@ export class World {
     const pouring = new Set<string>()
     this.grid().forEach(net => {
       const active = net.sprinklers.filter(s => this.mayPour(s))
-      const want = active.map(s => this.demand(s) * dt)
+      const lists = active.map(s => this.sprinklerTargets(s))
+      const want = active.map((s, i) => lists[i].length * this.tileRate(s) * dt)
       const total = want.reduce((a, b) => a + b, 0)
       if (total === 0) return
       const got = pull(net.sources, total)
       if (got === 0) return
       active.forEach((s, i) => {
-        const targets = this.sprinklerTargets(s)
+        const targets = lists[i]
         if (targets.length === 0) return
         pouring.add(vertexKey(s.at))
         const add = ((want[i] / total) * got) / targets.length
@@ -4619,7 +4744,7 @@ export class World {
 
   private tickCompost(dt: number): void {
     let dirty = false
-    for (const at of this.live.values()) {
+    for (const at of this.machines.values()) {
       const c = this.cell(at)
       if (c.kind !== 'compost-box') continue
       if (c.base.col !== at.col || c.base.row !== at.row) continue
@@ -4650,10 +4775,10 @@ export class World {
       s.inventory.forEach(slot)
     })
     this.drops.forEach(d => slot({ kind: 'hold', item: d.item }))
-    this.live.forEach(at => {
+    for (const at of this.stores.values()) {
       const c = this.cell(at)
       if (c.kind === 'chest') c.slots.forEach(slot)
-    })
+    }
     this.vehicles.forEach(v => {
       if (v.kind === 'quad') v.slots.forEach(slot)
     })
@@ -4664,7 +4789,7 @@ export class World {
 
   private tickMachines(dt: number): void {
     let dirty = false
-    for (const at of this.live.values()) {
+    for (const at of this.machines.values()) {
       const c = this.cell(at)
       if (c.kind === 'mill') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
@@ -4780,7 +4905,7 @@ export class World {
 
   private pullMachineStores(): void {
     let dirty = false
-    for (const at of this.live.values()) {
+    for (const at of this.machines.values()) {
       const c = this.cell(at)
       if (!isIoCell(c)) continue
       if (c.base.col !== at.col || c.base.row !== at.row) continue
@@ -4842,19 +4967,15 @@ export class World {
   }
 
   private sproutWeeds(): boolean {
-    const fallow: Coord[] = []
-    this.forEachCell((at, c) => {
-      if (c.kind === 'empty') fallow.push(at)
-    })
     let grew = false
-    fallow.forEach(at => {
+    for (const at of this.empty.values()) {
       const c = this.cell(at)
-      if (c.kind !== 'empty') return
-      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks)) return
+      if (c.kind !== 'empty') continue
+      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks)) continue
       const variant = this.rng.stream('weed').at(at.col, at.row, this.bigTicks, 1) < 0.5 ? 0 : 1
       this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
       grew = true
-    })
+    }
     return grew
   }
 
@@ -4869,21 +4990,29 @@ export class World {
       const c = this.cell(n)
       if (c.kind !== 'empty') return
       c.soil.weedChance += 0.05
+      this.track(n, c)
     })
   }
 
   private sproutGrass(): boolean {
-    if (this.rng.stream('grass').at(this.bigTicks) >= ramped(GRASS_CHANCE, this.bigTicks)) return false
-    const b = this.bounds()
+    const grass = this.rng.stream('grass')
+    const ownedCellCount = this.owned.length * CHUNK * CHUNK
+    if (!(Math.min(1, ramped(GRASS_CHANCE, this.bigTicks) * ownedCellCount) > grass.at(this.bigTicks))) return false
+    const per = CHUNK * CHUNK
     for (let i = 0; i < 24; i++) {
-      const col = b.col0 + Math.floor(this.rng.stream('grass').at(this.bigTicks, i, 0) * (b.col1 - b.col0))
-      const row = b.row0 + Math.floor(this.rng.stream('grass').at(this.bigTicks, i, 1) * (b.row1 - b.row0))
+      const u = grass.at(this.bigTicks, i, 0)
+      let index = Math.floor(u * ownedCellCount)
+      if (index >= ownedCellCount) index = ownedCellCount - 1
+      const id = this.owned[Math.floor(index / per)]
+      const localIx = index % per
+      const { col0, row0 } = chunkRect(id)
+      const col = col0 + (localIx % CHUNK)
+      const row = row0 + Math.floor(localIx / CHUNK)
       const at = { col, row }
-      if (!this.inWorld(at)) continue
       const c = this.cell(at)
       if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
       if (onCell(this.drops, at).length > 0) continue
-      const variant = Math.floor(this.rng.stream('grass').at(col, row, this.bigTicks) * 3) as 0 | 1 | 2
+      const variant = Math.floor(grass.at(col, row, this.bigTicks) * 3) as 0 | 1 | 2
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'grass', variant } })
       return true
     }
@@ -4895,12 +5024,12 @@ export class World {
   }
 
   private tickTreesSeam(): void {
-    this.forEachCell((at, c) => {
-      if (c.kind !== 'tree') return
-      if (c.base.col !== at.col || c.base.row !== at.row) return
-      if (c.juvenile < 1) return
+    for (const at of this.grow.values()) {
+      const c = this.cell(at)
+      if (c.kind !== 'tree') continue
+      if (c.juvenile < 1) continue
       this.advanceYield(c)
-    })
+    }
   }
 
   private advanceYield(t: Tree): void {
@@ -5531,22 +5660,15 @@ export class World {
 
   private padBuildings(): PadCell[] {
     const out: PadCell[] = []
-    this.forEachCell((at, c) => {
-      if (
-        c.kind !== 'mill' &&
-        c.kind !== 'jam' &&
-        c.kind !== 'still' &&
-        c.kind !== 'compost-box' &&
-        c.kind !== 'chest' &&
-        c.kind !== 'freezer' &&
-        c.kind !== 'seed-silo' &&
-        c.kind !== 'additive-store'
-      ) {
-        return
-      }
-      if (c.base.col !== at.col || c.base.row !== at.row) return
-      out.push(c)
-    })
+    for (const at of this.machines.values()) {
+      const c = this.cell(at)
+      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box') out.push(c)
+    }
+    for (const at of this.stores.values()) {
+      const c = this.cell(at)
+      if (c.kind === 'chest' || c.kind === 'freezer') out.push(c)
+    }
+    out.push(this.silo, this.additives)
     return out
   }
 
@@ -5636,13 +5758,14 @@ export class World {
       else this.transferUnload(v)
       this.advanceRoute(v, route)
     })
-    this.forEachCell((_at, c) => {
-      if (c.kind !== 'traffic-light') return
+    for (const at of this.sensors.values()) {
+      const c = this.cell(at)
+      if (c.kind !== 'traffic-light') continue
       const raw: 0 | 1 = this.lightWaiter(c) ? 1 : 0
       const next = stepHold(c.out, c.hold, raw)
       c.out = next.out
       c.hold = next.hold
-    })
+    }
   }
 
   private lightWaiter(light: Extract<Sensor, { kind: 'traffic-light' }>): boolean {
@@ -5860,6 +5983,7 @@ export class World {
     const c = this.cell(at)
     if (!isTilled(c)) return
     c.soil.weedChance = -1
+    this.track(at, c)
     this.act.hand.item.usesLeft -= 1
     if (this.act.hand.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
     this.pulse = { text: 'Spray', at: { ...at } }

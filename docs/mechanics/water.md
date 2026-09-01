@@ -34,6 +34,14 @@ Pour per covered **growing** tile, not as one lump.
 
 Dry, sourceless, unreachable, or nothing growing in the AoE: rate 0, no VFX. `tickWater` writes `World.vfx` from the sprinklers it actually poured and pings `'vfx'`. Not `BIG_TICK` — [[art/vfx]].
 
+Cache each sprinkler's growing targets. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, expand. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Pour liters unchanged.
+
+Wired vertices: `Set` rebuilt on wire change, not `wires.some` per head per tick.
+
+Water-system sensors: `netOfCell` + cached demand, not `grid().find`. — [[mechanics/sensors]]
+
+`dirtyNets()` only when `conducts(e)` actually flips or topology changes (place/delete pipe/valve/well/smart). Not every tick because `smartHold.size > 0`. — [[architecture/tick]]
+
 `unlock-smart-irrigation`: every vertex sprinkler gains a signal `in` and a crop dial — one row, both halves. Unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. — [[mechanics/sensors]]
 
 ## Smart dial
@@ -51,3 +59,5 @@ A drowning empty plot (`water >= mid`) takes nothing. A wilting growing plot can
 ## Invariants
 
 `water.pour` — Untuned sprinkler: `SPRINKLER_TILE_DAY` per covered growing tile. Smart crop dial: that crop’s `waterUsePerSec` per tile. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`.
+
+`water.targets` — Each sprinkler caches growing targets. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, or expand. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Wired vertices: `Set` rebuilt on wire change. Water-system: `netOfCell` + cached demand, not `grid().find`. Pour amounts unchanged.

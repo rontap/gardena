@@ -7,6 +7,7 @@ import { statsOf } from '../sim/modifiers.ts'
 import type { Vertex } from '../sim/pipe.ts'
 import type { HudTarget, World } from '../sim/world.ts'
 import { TILE, type Camera } from '../view/camera.ts'
+import { bindHud } from '../view/motion.ts'
 import { cropInner, itemInner, ripeGroup } from '../view/svgs.ts'
 import { Btn, Chrome, Field } from './frame.tsx'
 
@@ -203,7 +204,9 @@ function CounterHud({
             </button>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="tabular-nums text-lg">{c.count}</div>
+            <div ref={el => bindHud('counter', el)} data-counter className="tabular-nums text-lg">
+              {c.count}
+            </div>
             <div className="text-sm">Count to</div>
             <Field
               name="n"

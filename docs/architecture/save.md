@@ -98,7 +98,7 @@ No classes in the file. `dump` copies fields. `parse` constructs live objects. S
 
 Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. Circle starter pump: its occupied cell. Origin cell holds the object. Every other occupied cell `{ kind: 'occ'; of: Coord }` with world origin. Hydrate stamps that same instance. `World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / `seedSilos` / `spraySilos` / `produceSilos` / `silo` / `additives` are those instances. `World.vehicles` from `Save.vehicles`. `World.nextVehicleId` from `Save.nextVehicleId`. `World.trailers` from `Save.trailers`. `World.nextTrailerId` from `Save.nextTrailerId`. `World.routes` from `Save.routes`. `World.nextRouteId` from `Save.nextRouteId`. `World.wires` from `Save.wires`.
 
-`modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`: rebuild. `purchases` is in the file.
+`modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`, indexes: rebuild (`indexAll`). `purchases` is in the file.
 
 Closed. No `Partial`. No optional that means unsure. `game` and `version` required. Dump always writes this type. Dump writes `seats`, `vehicles`, `trailers`, `routes`, `wires`, `smartHold`.
 
@@ -108,7 +108,7 @@ Closed. No `Partial`. No optional that means unsure. `game` and `version` requir
 
 ## Not in the file
 
-`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select, Dash Automate, editor open. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver. Restore `route` / `cursor` / `running`.
+`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. Indexes (`grow` `machines` `stores` `sensors` `buttons` `recover` `empty`) — `indexAll`. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select, Dash Automate, editor open. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver. Restore `route` / `cursor` / `running`.
 
 Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Dump stall writes dummy `offered` `market` `target` `acc`; parse does not copy them. `World.contracts` is in the file — [[mechanics/contracts]]. Digest includes `sat` and active contracts — [[architecture/net]].
 

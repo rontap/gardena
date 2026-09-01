@@ -38,7 +38,7 @@ Dirty iff a visual stage change:
 
 Not dirty: `juvenile += dt` while still `< 1`. Repeat blocked drop while `fruit === 1`.
 
-Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.
+Dirty reasons: `'act' | 'field' | 'big' | 'speech' | 'vfx'`. `'field'` means Marks/plots need React.
 
 Stage from `Tree`: `juvenile < 1` → `grow`; else `yield.kind === 'on' || fruit >= 1` → `ripe`; else `unripe`.
 
@@ -52,4 +52,4 @@ Stage from `Tree`: `juvenile < 1` → `grow`; else `yield.kind === 'on' || fruit
 
 `trees.rng` — Two successful tree drops the same day each consume `fruit.next()`. Rarities need not match.
 
-`trees.ping` — Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons stay `'act' | 'field' | 'big' | 'speech'`. `'field'` means Marks/plots need React.
+`trees.ping` — Juvenile growth does not ping. `tickTree` pings `'field'` only on visual stage change: juvenile crosses 1, fruit drop succeeds, fruit first hits 1 on a blocked drop then silent until a drop succeeds. Juvenile increment while `< 1` does not ping. Repeat blocked drop at `fruit === 1` does not ping. Dirty reasons: `'act' | 'field' | 'big' | 'speech' | 'vfx'`. `'field'` means Marks/plots need React.

@@ -36,6 +36,7 @@ import { HUSBAND_SKILL_IDS, JAM_FLOOR, PLAYER_SKILL_IDS, SKILLS } from '../defs/
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
+  CHUNK,
   Freezer,
   Grinder,
   HOUSE_BASE,
@@ -44,6 +45,7 @@ import {
   PotStill,
   PUMP_BASE,
   SILO_BASE,
+  chunkRect,
   occupiedCells,
 } from './building.ts'
 import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
@@ -1671,7 +1673,7 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.1. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.1-e. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
@@ -1777,6 +1779,57 @@ function play(seed: number, cmds: Cmd[], dt = 1 / 15): World {
     w.apply(cmd)
   }
   return w
+}
+
+function stepBig(w: World): void {
+  const n = w.bigTicks
+  while (w.bigTicks === n) {
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    w.tick(DT_MAX)
+  }
+}
+
+function grassCount(w: World): number {
+  let n = 0
+  w.forEachCell((_at, c) => {
+    if (c.kind === 'untilled' && c.cover.kind === 'grass') n += 1
+  })
+  return n
+}
+
+function ownedGrassPick(w: World, bigTicks: number, i: number): { col: number; row: number } {
+  const n = w.owned.length * CHUNK * CHUNK
+  const u = new Rng(w.seed).stream('grass').at(bigTicks, i, 0)
+  let index = Math.floor(u * n)
+  if (index >= n) index = n - 1
+  const per = CHUNK * CHUNK
+  const id = w.owned[Math.floor(index / per)]
+  const localIx = index % per
+  const { col0, row0 } = chunkRect(id)
+  return { col: col0 + (localIx % CHUNK), row: row0 + Math.floor(localIx / CHUNK) }
+}
+
+function aabbGrassPick(w: World, bigTicks: number, i: number): { col: number; row: number } {
+  const b = w.bounds()
+  const grass = new Rng(w.seed).stream('grass')
+  return {
+    col: b.col0 + Math.floor(grass.at(bigTicks, i, 0) * (b.col1 - b.col0)),
+    row: b.row0 + Math.floor(grass.at(bigTicks, i, 1) * (b.row1 - b.row0)),
+  }
+}
+
+function expectedGrassAt(w: World, bigTicks: number): { col: number; row: number } | undefined {
+  const n = w.owned.length * CHUNK * CHUNK
+  const grass = new Rng(w.seed).stream('grass')
+  if (!(Math.min(1, ramped(GRASS_CHANCE, bigTicks) * n) > grass.at(bigTicks))) return undefined
+  for (let i = 0; i < 24; i++) {
+    const at = ownedGrassPick(w, bigTicks, i)
+    const c = w.cell(at)
+    if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
+    if (w.drops.some(d => d.at.col === at.col && d.at.row === at.row)) continue
+    return at
+  }
+  return undefined
 }
 
 function digest(w: World) {
@@ -2038,13 +2091,13 @@ describe('0.9 log and rng', () => {
 })
 
 describe('1.5.2', () => {
-  test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on every `Soil` that exists (tilled cells).', () => {
+  test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.', () => {
     expect(WEED_CHANCE).toBe(0.03)
     const w = new World()
     const soil = bed()
     expect(soil.weedChance).toBe(WEED_CHANCE)
-    w.setCell(AT, { kind: 'empty', soil })
     soil.weedChance = 0
+    w.setCell(AT, { kind: 'empty', soil })
     w.tick(DT_MAX)
     expect(soil.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
     soil.weedChance = 0.08
@@ -2124,6 +2177,86 @@ describe('1.5.2', () => {
     expect(w.drops.length).toBe(drops)
     expect(soil3.weedChance).toBeCloseTo(-0.3, 3)
     expect(w.cell(at3).kind).toBe('empty')
+  })
+
+  test('Each `BIG_TICK`, world roll: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.', () => {
+    expect(ramped(GRASS_CHANCE, 0)).toBeLessThan(0)
+    expect(ramped(GRASS_CHANCE, 1)).toBeLessThan(0)
+    const fresh = new World(1)
+    expect(grassCount(fresh)).toBe(0)
+    stepBig(fresh)
+    expect(fresh.bigTicks).toBe(1)
+    expect(grassCount(fresh)).toBe(0)
+
+    const seed = 1
+    const n = CHUNK * CHUNK
+    let tFire = 0
+    const grass = new Rng(seed).stream('grass')
+    for (let t = 1; t <= 24; t++) {
+      const u = grass.at(t)
+      const r = ramped(GRASS_CHANCE, t)
+      if (r <= u && Math.min(1, r * n) > u) {
+        tFire = t
+        break
+      }
+    }
+    expect(tFire).toBeGreaterThan(0)
+    const w = new World(seed)
+    w.bigTicks = tFire - 1
+    const want = expectedGrassAt(w, tFire)
+    expect(want).toBeDefined()
+    stepBig(w)
+    expect(w.bigTicks).toBe(tFire)
+    expect(grassCount(w)).toBe(1)
+    if (want === undefined) return
+    expect(w.inWorld(want)).toBe(true)
+    const grew = w.cell(want)
+    expect(grew.kind === 'untilled' && grew.cover.kind === 'grass').toBe(true)
+    if (grew.kind === 'untilled' && grew.cover.kind === 'grass') {
+      expect(grew.cover.variant).toBe(Math.floor(new Rng(seed).stream('grass').at(want.col, want.row, tFire) * 3))
+    }
+
+    const hole = new World(seed)
+    hole.done.add('unlock-expand')
+    hole.done.add('expand-land')
+    hole.money = 999
+    hole.expand({ cx: 1, cy: 0 })
+    hole.expand({ cx: 0, cy: 1 })
+    expect(hole.owned).toHaveLength(3)
+    const b = hole.bounds()
+    expect(b).toEqual({ col0: 0, row0: 0, col1: 64, row1: 64 })
+    expect(hole.inWorld({ col: 40, row: 40 })).toBe(false)
+    const ownedN = hole.owned.length * CHUNK * CHUNK
+    let holeTick = 0
+    let aabbOutside = false
+    for (let t = 5; t <= 24; t++) {
+      const u = new Rng(seed).stream('grass').at(t)
+      if (!(Math.min(1, ramped(GRASS_CHANCE, t) * ownedN) > u)) continue
+      for (let i = 0; i < 24; i++) {
+        const aabb = aabbGrassPick(hole, t, i)
+        const owned = ownedGrassPick(hole, t, i)
+        expect(hole.inWorld(owned)).toBe(true)
+        if (!hole.inWorld(aabb) && aabb.col >= b.col0 && aabb.col < b.col1 && aabb.row >= b.row0 && aabb.row < b.row1) {
+          aabbOutside = true
+          holeTick = t
+        }
+      }
+      if (aabbOutside) break
+    }
+    expect(aabbOutside).toBe(true)
+    hole.bigTicks = holeTick - 1
+    const at = expectedGrassAt(hole, holeTick)
+    const before = grassCount(hole)
+    stepBig(hole)
+    expect(hole.bigTicks).toBe(holeTick)
+    const after = grassCount(hole)
+    expect(after - before).toBeLessThanOrEqual(1)
+    expect(after - before).toBe(at === undefined ? 0 : 1)
+    if (at !== undefined) {
+      expect(hole.inWorld(at)).toBe(true)
+      const c = hole.cell(at)
+      expect(c.kind === 'untilled' && c.cover.kind === 'grass').toBe(true)
+    }
   })
 
   test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`; no `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. `haggling` max 3. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_FLOOR` `0.10 / 0.20 / 0.30`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {

@@ -52,12 +52,12 @@ One `next()` per pack actually put in inventory. `buyPacks` always legal: five s
 
 | ints | event |
 |---|---|
-| bigTicks | sprout roll |
-| bigTicks, i, 0 | col pick |
-| bigTicks, i, 1 | row pick |
+| bigTicks | world sprout roll |
+| bigTicks, i, 0 | owned-cell pick |
+| bigTicks, i, 1 | owned-cell pick |
 | col, row, bigTicks | variant |
 
-`i` is the try index (0..23).
+`i` is the try index (0..23). Pick maps `u` onto owned cells (`owned.length * CHUNK * CHUNK`), not `bounds()` AABB. World-roll threshold: [[mechanics/weeds]] `weeds.grass`.
 
 ### tree — `at(col, row, day)`
 

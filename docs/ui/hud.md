@@ -37,6 +37,12 @@ Then **Multiplayer** **Pause** **Gear**. All `ui-btn-*.svg` faces `idle` / `hove
 
 The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right.
 
+## FPS
+
+Top-right, play only. `pointer-events-none` `text-xs` `tabular-nums` Nunito. Host and guest both show it.
+
+Readout `60 4.2ms` then optional ` 32MB` if `performance.memory`. Paint from rAF / `paintMotion`, not React state every frame. FPS is an EMA of `1 / rAF dt`. Tick ms wraps `world.tick` / `host.pump` only. Not logged, not Save, not a Panel, not a `DirtyReason`. — [[architecture/tick]]
+
 ## Left ribbon
 
 `Chrome` `absolute top-20 left-4 z-20` `w-24`. Icon `h-11 w-11` above, `text-sm` semibold label below.

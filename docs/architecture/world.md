@@ -86,11 +86,31 @@ Illegal: `recipient?: MemberId` on `Recap`. Play frozen while `kind === 'recap'`
 
 ## Time
 
+Tick law: [[architecture/tick]].
+
 `World.now: number` — integer count of `tick()` entries. Starts 0. Increments by 1 at every `tick()` entry, including recap return.
 
 `Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
 
-Live: App accumulator fires `tick(DT_MAX)` only. Never a leftover. View paints every rAF. No sim interpolation. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]]
+Live: App accumulator fires `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. View paints every rAF. No sim interpolation. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]]
+
+### Indexes
+
+Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `track()` from `setCell`. `indexAll` on hydrate / rebase. No `sim/index.ts`. `live` is not a tick walk.
+
+| name | members |
+|---|---|
+| grow | growing, ripe, weed, turf, tree origin |
+| machines | mill, jam, still, barrel, grinder, compost origin |
+| stores | chest, freezer |
+| sensors | sunk sensor cells |
+| buttons | button cells |
+| recover | tilled with `weedChance < WEED_CHANCE` |
+| empty | empty plots |
+
+`tickField` grow+recover. `tickMachines` / `tickCompost` machines. `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
+
+`forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. Marks walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`.
 
 ## Log
 
@@ -103,7 +123,9 @@ apply(cmd): mutate seats[cmd.p] and shared farm. No log.
 
 No silent flag. Replay calls `apply` only.
 
-`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech'`) and flushes subscribers once per microtask with the reason set. `'field'` means Marks/plots need React. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush.
+`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech' | 'vfx'`) and flushes subscribers once per microtask with the reason set. From tick only on discrete change. Continuous chrome is `paintMotion` or CSS. No every-tick counter HUD `this.ping()`. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush. FPS readout: [[ui/hud]]. Not a `DirtyReason`.
+
+Ping consumption: `speech` off React; `vfx` not Hud; `field` / `big` Marks not whole chrome; `act` Hud+Marks. A new `DirtyReason` must have a view that filters it. Unused reason is a defect. [[architecture/tick]]
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
@@ -128,3 +150,5 @@ Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` wit
 ## Modifier
 
 `Modifier.source = 'research' | 'fertilizer' | 'skill'`. Skill crop sale (`better-*`) is `source: 'skill'`.
+
+`World.modGen` increments when `modifiers` change. Cache `statsOf(crop, rarity)` for that generation. Plants do not re-filter modifiers every tick.

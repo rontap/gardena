@@ -24,7 +24,7 @@ Item `{ kind: 'grass-seeds'; count }`. `pack-grass` unlock `unlock-landscaping`.
 
 Sow on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. `Turf` holds `maturity` and a `variant` 0–2 picked by `gen.at(3, col, row)` — [[mechanics/rng]]. Prompt **Sow grass**.
 
-Ticks in `tickField` off `live`: drinks `GRASS_WATER_PER_SEC`, matures over `GRASS_GROW = DAY_SECONDS / 4`. No happiness, no fertilizer draw, no water band, no death.
+Ticks in `tickField` off grow: drinks `GRASS_WATER_PER_SEC`, matures over `GRASS_GROW = DAY_SECONDS / 4`. No happiness, no fertilizer draw, no water band, no death. — [[architecture/tick]]
 
 At `maturity >= 1` the plot becomes `{ kind: 'untilled'; ground: 'soft'; cover: { kind: 'grass', variant } }` — the tilled bed and its `Soil` are gone. That is the point of the item: it un-tills land.
 

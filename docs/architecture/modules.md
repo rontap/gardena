@@ -22,7 +22,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | `World`, `Seat`, tick, dispatch / apply |
+| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `save.ts` | `Save`, dump / parse — [[architecture/save]] |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
@@ -91,7 +91,7 @@ Camera and `Lens` are view-local, not `World` fields. Camera follow is view-loca
 |---|---|
 | `camera.ts` | `Camera`, `TILE` |
 | `map.tsx` | `MapView`, `Lens`, paints `Cell` |
-| `motion.ts` | rAF paint of actor / meters |
+| `motion.ts` | rAF paint of actor / meters / FPS |
 | `vfx.ts` | `VfxDef` table |
 | `svgs.ts` | inner SVG fragments |
 

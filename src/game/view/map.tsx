@@ -181,7 +181,6 @@ export const HAT: { readonly [K in SeatId]: string } = {
 type Props = {
   world: World
   cam: Camera
-  rev: number
   lens: Lens
   editor: boolean
   hover: PromptHit | undefined
@@ -190,7 +189,8 @@ type Props = {
   onClick: (hit: MapClick, xy: { x: number; y: number }) => void
 }
 
-export function MapView({ world, cam, rev, lens, editor, hover, onHover, onCam, onClick }: Props) {
+export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick }: Props) {
+  const [rev, setRev] = useState(0)
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
@@ -262,6 +262,13 @@ export function MapView({ world, cam, rev, lens, editor, hover, onHover, onCam, 
       }),
     )
   }
+
+  useEffect(() => {
+    return world.on((kind, reasons) => {
+      if (kind !== 'dirty') return
+      if (reasons.has('act') || reasons.has('field') || reasons.has('big') || reasons.has('vfx')) setRev(x => x + 1)
+    })
+  }, [world])
 
   useEffect(() => {
     const el = svgRef.current
@@ -810,11 +817,29 @@ const Marks = memo(function Marks({
 }) {
   void rev
   const [bursts, setBursts] = useState<Burst[]>([])
+  const burstGen = useRef(0)
+  const burstsWorld = useRef(world)
+  if (burstsWorld.current !== world) {
+    burstsWorld.current = world
+    setBursts(b => (b.length === 0 ? b : []))
+  }
+  useEffect(() => {
+    return () => {
+      burstGen.current += 1
+    }
+  }, [world])
   useEffect(() => {
     const got = world.drainBursts()
     if (got.length === 0) return
     if (VFX_REDUCED) return
+    const gen = burstGen.current
     setBursts(b => [...b, ...got])
+    got.forEach(b => {
+      window.setTimeout(() => {
+        if (burstGen.current !== gen) return
+        setBursts(x => x.filter(y => y.seq !== b.seq))
+      }, VFX[b.id].dur * 1000)
+    })
   }, [world, rev])
   const plots: {
     col: number
@@ -889,99 +914,162 @@ const Marks = memo(function Marks({
     barrel: BARREL,
     jam: JAM,
     freezer: FREEZER,
-    tap: TAP,
   }
   const boxes: { col: number; row: number }[] = []
   const busy: { id: VfxId; col: number; row: number }[] = []
-  world.forEachCell((at, cell) => {
+  const tinted = new Set<string>()
+  const tintAt = (at: { col: number; row: number }) => {
+    if (lens === 'off' || lens === 'vehicles') return
     const key = `${at.col},${at.row}`
-    if (isPlot(cell) && cell.kind !== 'untilled' && cell.kind !== 'infertile') {
-      const stage =
-        cell.kind === 'ripe'
-          ? ripeGroup(cell.plant.rarity)
-          : cell.kind === 'growing' || cell.kind === 'dead'
-            ? cell.plant.stage(cell.kind)
-            : ''
-      const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
-      const rarity =
-        cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' ? cell.plant.rarity : undefined
-      const pip = rarity !== undefined ? qualityPip(rarity) : undefined
-      plots.push({
-        col: at.col,
-        row: at.row,
-        kind: cell.kind,
-        dv: tileVariant(at.col, at.row, 2),
-        e: edgeSig(dirtEdges(world, at.col, at.row)),
-        turfStage: cell.kind === 'turf' ? cell.turf.stage() : '',
-        weedV: cell.kind === 'weed' ? cell.weed.variant : -1,
-        weedStage: cell.kind === 'weed' ? cell.weed.stage() : '',
-        crop:
-          cell.kind === 'rotten'
-            ? cell.crop
-            : cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead'
-              ? cell.plant.crop
-              : '',
-        stage,
-        pip: pip ?? '',
-        water: bands !== undefined && bands.water !== 'green' ? bands.water : '',
-        fert: bands !== undefined && bands.fert !== 'green' ? bands.fert : '',
-        fresh: cell.kind === 'ripe' && cell.plant.freshness < 0.8,
-      })
-    }
-    if (cell.kind === 'untilled' && cell.cover.kind === 'grass') {
-      tufts.push({ col: at.col, row: at.row, v: cell.cover.variant })
-    }
-    if (cell.kind === 'rock' && cell.base.col === at.col && cell.base.row === at.row) {
-      rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
-    }
-    if (cell.kind === 'tree' && cell.base.col === at.col && cell.base.row === at.row) {
+    if (tinted.has(key)) return
+    tinted.add(key)
+    const cell = world.cell(at)
+    const g = lens === 'land' ? goodness(world.rng, at.col, at.row) : 0
+    const tint = lensFill(lens, cell, aoeWash.has(key), g)
+    if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
+  }
+  const tintBase = (base: Parameters<typeof occupiedCells>[0]) => {
+    occupiedCells(base, world.owned).forEach(tintAt)
+  }
+  const pushPlot = (at: { col: number; row: number }, cell: Cell) => {
+    if (!isPlot(cell) || cell.kind === 'untilled' || cell.kind === 'infertile') return
+    const stage =
+      cell.kind === 'ripe'
+        ? ripeGroup(cell.plant.rarity)
+        : cell.kind === 'growing' || cell.kind === 'dead'
+          ? cell.plant.stage(cell.kind)
+          : ''
+    const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
+    const rarity =
+      cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' ? cell.plant.rarity : undefined
+    const pip = rarity !== undefined ? qualityPip(rarity) : undefined
+    plots.push({
+      col: at.col,
+      row: at.row,
+      kind: cell.kind,
+      dv: tileVariant(at.col, at.row, 2),
+      e: world.plotEdges(at.col, at.row),
+      turfStage: cell.kind === 'turf' ? cell.turf.stage() : '',
+      weedV: cell.kind === 'weed' ? cell.weed.variant : -1,
+      weedStage: cell.kind === 'weed' ? cell.weed.stage() : '',
+      crop:
+        cell.kind === 'rotten'
+          ? cell.crop
+          : cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead'
+            ? cell.plant.crop
+            : '',
+      stage,
+      pip: pip ?? '',
+      water: bands !== undefined && bands.water !== 'green' ? bands.water : '',
+      fert: bands !== undefined && bands.fert !== 'green' ? bands.fert : '',
+      fresh: cell.kind === 'ripe' && cell.plant.freshness < 0.8,
+    })
+    tintAt(at)
+  }
+  for (const at of world.empty.values()) pushPlot(at, world.cell(at))
+  for (const at of world.grow.values()) {
+    const cell = world.cell(at)
+    if (cell.kind === 'tree') {
       const stage = cell.juvenile < 1 ? 'grow' : cell.yield.kind === 'on' || cell.fruit >= 1 ? 'ripe' : 'unripe'
       trees.push({ col: at.col, row: at.row, species: cell.species, stage })
+      tintBase(cell.base)
+      continue
     }
-    const propArt = PROP_ART[cell.kind]
-    if (propArt !== undefined) props.push({ col: at.col, row: at.row, art: propArt, kind: cell.kind })
-    if (isSensor(cell)) {
-      props.push({ col: at.col, row: at.row, art: sensorProp(cell), kind: cell.kind })
+    pushPlot(at, cell)
+  }
+  for (const at of world.tufts.values()) {
+    const cell = world.cell(at)
+    if (cell.kind === 'untilled' && cell.cover.kind === 'grass') {
+      tufts.push({ col: at.col, row: at.row, v: cell.cover.variant })
+      tintAt(at)
     }
+  }
+  for (const at of world.rocks.values()) {
+    const cell = world.cell(at)
+    if (cell.kind === 'rock') {
+      rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
+      tintBase(cell.base)
+    }
+  }
+  for (const at of world.machines.values()) {
+    const cell = world.cell(at)
+    if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
+    else if (cell.kind === 'still') props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
+    else {
+      const art = PROP_ART[cell.kind]
+      if (art !== undefined) props.push({ col: at.col, row: at.row, art, kind: cell.kind })
+    }
+    const busyId = busyVfx(cell, at)
+    if (busyId !== undefined) busy.push({ id: busyId, col: at.col, row: at.row })
+    if ('base' in cell) tintBase(cell.base)
+    else tintAt(at)
+  }
+  for (const at of world.stores.values()) {
+    const cell = world.cell(at)
+    const art = PROP_ART[cell.kind]
+    if (art !== undefined) props.push({ col: at.col, row: at.row, art, kind: cell.kind })
+    if ('base' in cell) tintBase(cell.base)
+    else tintAt(at)
+  }
+  for (const at of world.sensors.values()) {
+    const cell = world.cell(at)
+    if (!isSensor(cell) || cell.kind === 'button') continue
+    props.push({ col: at.col, row: at.row, art: sensorProp(cell), kind: cell.kind })
     if (
       lens === 'sensors' &&
       (cell.kind === 'sensor-water' || cell.kind === 'sensor-fert' || cell.kind === 'sensor-harvest')
     ) {
       addReaderWash(at)
     }
-    if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
-    const busyId = busyVfx(cell, at)
-    if (busyId !== undefined) busy.push({ id: busyId, col: at.col, row: at.row })
-
-    if (cell.kind === 'still' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
-    }
-    if (cell.kind === 'hangar' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: HANGAR, kind: cell.kind })
-    }
-    if (cell.kind === 'silo-seed' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: SILO_SEED, kind: cell.kind })
-    }
-    if (cell.kind === 'silo-spray' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: SILO_SPRAY, kind: cell.kind })
-    }
-    if (cell.kind === 'silo-produce' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: SILO_PRODUCE, kind: cell.kind })
-    }
-    if (cell.kind === 'seed-silo' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: SEED_SILO, kind: cell.kind })
-    }
-    if (cell.kind === 'additive-store' && cell.base.col === at.col && cell.base.row === at.row) {
-      props.push({ col: at.col, row: at.row, art: ADDITIVE_STORE, kind: cell.kind })
-    }
-    if (world.hasFence(at)) {
-      const a = world.fenceArms(at)
-      const fit = fenceFit(a.n, a.e, a.s, a.w)
-      fences.push({ col: at.col, row: at.row, art: fit.html, rot: fit.rot })
-    }
-    const g = lens === 'land' ? goodness(world.rng, at.col, at.row) : 0
-    const tint = lensFill(lens, cell, aoeWash.has(key), g)
-    if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
+    tintAt(at)
+  }
+  for (const at of world.buttons.values()) {
+    const cell = world.cell(at)
+    if (cell.kind !== 'button') continue
+    props.push({ col: at.col, row: at.row, art: sensorProp(cell), kind: cell.kind })
+    tintAt(at)
+  }
+  world.taps.forEach(t => {
+    props.push({ col: t.base.col, row: t.base.row, art: TAP, kind: 'tap' })
+    tintBase(t.base)
+  })
+  world.hangars.forEach(h => {
+    props.push({ col: h.base.col, row: h.base.row, art: HANGAR, kind: 'hangar' })
+    tintBase(h.base)
+  })
+  world.seedSilos.forEach(h => {
+    props.push({ col: h.base.col, row: h.base.row, art: SILO_SEED, kind: 'silo-seed' })
+    tintBase(h.base)
+  })
+  world.spraySilos.forEach(h => {
+    props.push({ col: h.base.col, row: h.base.row, art: SILO_SPRAY, kind: 'silo-spray' })
+    tintBase(h.base)
+  })
+  world.produceSilos.forEach(h => {
+    props.push({ col: h.base.col, row: h.base.row, art: SILO_PRODUCE, kind: 'silo-produce' })
+    tintBase(h.base)
+  })
+  props.push({ col: world.silo.base.col, row: world.silo.base.row, art: SEED_SILO, kind: 'seed-silo' })
+  tintBase(world.silo.base)
+  props.push({
+    col: world.additives.base.col,
+    row: world.additives.base.row,
+    art: ADDITIVE_STORE,
+    kind: 'additive-store',
+  })
+  tintBase(world.additives.base)
+  world.pumps.forEach(p => tintBase(p.base))
+  world.tanks.forEach(t => tintBase(t.base))
+  tintBase(world.house.base)
+  tintBase(world.truck.base)
+  world.fences.forEach(k => {
+    const comma = k.indexOf(',')
+    const col = Number(k.slice(0, comma))
+    const row = Number(k.slice(comma + 1))
+    const at = { col, row }
+    const a = world.fenceArms(at)
+    const fit = fenceFit(a.n, a.e, a.s, a.w)
+    fences.push({ col, row, art: fit.html, rot: fit.rot })
   })
   visitVerts(world, v => {
     if (showPipes && !hide.has(`${v.col},${v.row}`)) {
@@ -1467,10 +1555,6 @@ function mix(a: string, b: string, t: number): string {
   return `#${hex(Math.round(pa[0] + (pb[0] - pa[0]) * t))}${hex(Math.round(pa[1] + (pb[1] - pa[1]) * t))}${hex(Math.round(pa[2] + (pb[2] - pa[2]) * t))}`
 }
 
-function edgeSig(e: DirtEdges): string {
-  return `${e.top ? 1 : 0}${e.right ? 1 : 0}${e.bottom ? 1 : 0}${e.left ? 1 : 0}${e.topLeftInset ? 1 : 0}${e.topRightInset ? 1 : 0}${e.bottomRightInset ? 1 : 0}${e.bottomLeftInset ? 1 : 0}`
-}
-
 const TuftGfx = memo(function TuftGfx({ col, row, v }: { col: number; row: number; v: 0 | 1 | 2 }) {
   return (
     <g
@@ -1574,35 +1658,6 @@ const RockGfx = memo(function RockGfx({ col, row, w, h }: { col: number; row: nu
     </g>
   )
 })
-
-type DirtEdges = {
-  top: boolean
-  right: boolean
-  bottom: boolean
-  left: boolean
-  topLeftInset: boolean
-  topRightInset: boolean
-  bottomRightInset: boolean
-  bottomLeftInset: boolean
-}
-
-function dirtEdges(world: World, col: number, row: number): DirtEdges {
-  const tilled = (c: number, r: number) => world.inWorld({ col: c, row: r }) && isTilled(world.cell({ col: c, row: r }))
-  const top = !tilled(col, row - 1)
-  const right = !tilled(col + 1, row)
-  const bottom = !tilled(col, row + 1)
-  const left = !tilled(col - 1, row)
-  return {
-    top,
-    right,
-    bottom,
-    left,
-    topLeftInset: tilled(col - 1, row) && tilled(col, row - 1) && !tilled(col - 1, row - 1),
-    topRightInset: tilled(col + 1, row) && tilled(col, row - 1) && !tilled(col + 1, row - 1),
-    bottomRightInset: tilled(col + 1, row) && tilled(col, row + 1) && !tilled(col + 1, row + 1),
-    bottomLeftInset: tilled(col - 1, row) && tilled(col, row + 1) && !tilled(col - 1, row + 1),
-  }
-}
 
 function DirtInsetG({ x, y, angle }: { x: number; y: number; angle: number }) {
   return (
@@ -2258,14 +2313,19 @@ function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
 
 function PortChrome({ world }: { world: World }) {
   const marks: { key: string; x: number; y: number; out: boolean; high: boolean }[] = []
-  world.forEachCell((at, c) => {
+  const pushCell = (at: { col: number; row: number }, c: Cell) => {
     PORTS.forEach(port => {
       if (!ownsPort(c, at, port)) return
       const end: WireEnd = { kind: 'cell', at, port }
       const p = portXY(end, portDevice(c))
       marks.push({ key: endKey(end), x: p.x, y: p.y, out: port === 'out', high: portHigh(world, end, c) })
     })
-  })
+  }
+  for (const at of world.sensors.values()) pushCell(at, world.cell(at))
+  for (const at of world.machines.values()) pushCell(at, world.cell(at))
+  for (const at of world.stores.values()) pushCell(at, world.cell(at))
+  pushCell({ col: world.silo.base.col, row: world.silo.base.row }, world.silo)
+  pushCell({ col: world.additives.base.col, row: world.additives.base.row }, world.additives)
   if (world.done.has('unlock-smart-irrigation')) {
     world.sprinklers.forEach(s => {
       const end: WireEnd = { kind: 'sprinkler', at: s.at, port: 'in' }

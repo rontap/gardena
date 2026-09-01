@@ -199,6 +199,11 @@ export function Hud({
           )}
         </div>
       </Chrome>
+      <span
+        ref={el => bindHud('fps', el)}
+        data-fps
+        className="pointer-events-none absolute top-1 right-4 z-20 text-xs tabular-nums text-ink"
+      />
     </>
   )
 }

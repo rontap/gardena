@@ -48,7 +48,7 @@ let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
 const lastDash = { fuel: '', speed: '', used: '' }
 
-type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech'
+type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech' | 'fps' | 'counter'
 
 const hud = new Map<HudKind, Element>()
 let phaseUse: SVGUseElement | undefined
@@ -58,28 +58,57 @@ function barKey(kind: BarKind, at: Coord): string {
   return `${kind}:${at.col},${at.row}`
 }
 
-export function bindBar(kind: BarKind, at: Coord, el: SVGRectElement | null): void {
+export function bindBar(kind: BarKind, at: Coord, el: SVGRectElement | null): (() => void) | undefined {
   const key = barKey(kind, at)
   if (el === null) {
     bars.delete(key)
     return
   }
   bars.set(key, { kind, el, col: at.col, row: at.row, last: '' })
+  return () => {
+    const cur = bars.get(key)
+    if (cur !== undefined && cur.el === el) bars.delete(key)
+  }
 }
 
-export function bindActor(id: SeatId, el: SVGGElement | null): void {
-  if (el === null) actors.delete(id)
-  else actors.set(id, { el, transform: '', visibility: '' })
+export function bindActor(id: SeatId, el: SVGGElement | null): (() => void) | undefined {
+  if (el === null) {
+    actors.delete(id)
+    return
+  }
+  actors.set(id, { el, transform: '', visibility: '' })
+  return () => {
+    const cur = actors.get(id)
+    if (cur !== undefined && cur.el === el) actors.delete(id)
+  }
 }
 
-export function bindQuad(id: VehicleId, el: SVGGElement | null, kind: 'quad' | 'tractor' = 'quad'): void {
-  if (el === null) quads.delete(id)
-  else quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true, kind })
+export function bindQuad(
+  id: VehicleId,
+  el: SVGGElement | null,
+  kind: 'quad' | 'tractor' = 'quad',
+): (() => void) | undefined {
+  if (el === null) {
+    quads.delete(id)
+    return
+  }
+  quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true, kind })
+  return () => {
+    const cur = quads.get(id)
+    if (cur !== undefined && cur.el === el) quads.delete(id)
+  }
 }
 
-export function bindTrailer(id: number, el: SVGGElement | null): void {
-  if (el === null) trailers.delete(id)
-  else trailers.set(id, { el, transform: '' })
+export function bindTrailer(id: number, el: SVGGElement | null): (() => void) | undefined {
+  if (el === null) {
+    trailers.delete(id)
+    return
+  }
+  trailers.set(id, { el, transform: '' })
+  return () => {
+    const cur = trailers.get(id)
+    if (cur !== undefined && cur.el === el) trailers.delete(id)
+  }
 }
 
 let dummyRot: SVGGElement | undefined
@@ -87,17 +116,29 @@ let dummyDeg = ''
 let dummyTrailer: SVGGElement | undefined
 let dummyTrailerT = ''
 
-export function bindDummyQuad(el: SVGGElement | null): void {
+export function bindDummyQuad(el: SVGGElement | null): (() => void) | undefined {
   dummyRot = el === null ? undefined : el
   dummyDeg = ''
+  if (el === null) return
+  return () => {
+    if (dummyRot !== el) return
+    dummyRot = undefined
+    dummyDeg = ''
+  }
 }
 
-export function bindDummyTrailer(el: SVGGElement | null): void {
+export function bindDummyTrailer(el: SVGGElement | null): (() => void) | undefined {
   dummyTrailer = el === null ? undefined : el
   dummyTrailerT = ''
+  if (el === null) return
+  return () => {
+    if (dummyTrailer !== el) return
+    dummyTrailer = undefined
+    dummyTrailerT = ''
+  }
 }
 
-export function bindDash(el: Element | null): void {
+export function bindDash(el: Element | null): (() => void) | undefined {
   dashHost = el === null ? undefined : el
   dashFuel = undefined
   dashSpeed = undefined
@@ -124,9 +165,12 @@ export function bindDash(el: Element | null): void {
   dashFuelReadout = fuelReadout === null ? undefined : fuelReadout
   dashSpeedReadout = speedReadout === null ? undefined : speedReadout
   dashUsedReadout = usedReadout === null ? undefined : usedReadout
+  return () => {
+    if (dashHost === el) bindDash(null)
+  }
 }
 
-export function bindHud(kind: HudKind, el: Element | null): void {
+export function bindHud(kind: HudKind, el: Element | null): (() => void) | undefined {
   if (el === null) {
     hud.delete(kind)
     if (kind === 'phase') phaseUse = undefined
@@ -143,6 +187,9 @@ export function bindHud(kind: HudKind, el: Element | null): void {
     const line = el.querySelector('[data-speech-text]')
     speechText = line === null ? undefined : line
   }
+  return () => {
+    if (hud.get(kind) === el) bindHud(kind, null)
+  }
 }
 
 function paintBar(entry: BarEntry, width: number): void {
@@ -152,9 +199,9 @@ function paintBar(entry: BarEntry, width: number): void {
   entry.el.setAttribute('width', next)
 }
 
-const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '' }
+const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '' }
 
-export function paintMotion(root: HTMLElement, world: World): void {
+export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs: number): void {
   void root
   world.seats.forEach(s => {
     const entry = actors.get(s.id)
@@ -335,6 +382,30 @@ export function paintMotion(root: HTMLElement, world: World): void {
     if (last.queue !== w) {
       last.queue = w
       qbar.style.width = w
+    }
+  }
+  const counterEl = hud.get('counter')
+  if (counterEl !== undefined) {
+    const target = world.hud
+    if (target !== undefined && target.kind === 'counter') {
+      const cell = world.cell(target.at)
+      if (cell.kind === 'counter') {
+        const text = String(cell.count)
+        if (last.counter !== text) {
+          last.counter = text
+          counterEl.textContent = text
+        }
+      }
+    }
+  }
+  const fpsEl = hud.get('fps')
+  if (fpsEl !== undefined) {
+    const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
+    const heap = memory === undefined ? '' : ` ${Math.round(memory.usedJSHeapSize / 1e6)}MB`
+    const text = `${Math.round(fps)} ${tickMs.toFixed(1)}ms${heap}`
+    if (last.fps !== text) {
+      last.fps = text
+      fpsEl.textContent = text
     }
   }
   const banner = hud.get('banner')

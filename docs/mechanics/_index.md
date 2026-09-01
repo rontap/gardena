@@ -53,11 +53,13 @@ See [[canon]].
 | trees.rng | [[mechanics/trees]] |
 | trees.ping | [[mechanics/trees]] |
 | water.pour | [[mechanics/water]] |
+| water.targets | [[mechanics/water]] |
 | weeds.sprout | [[mechanics/weeds]] |
 | weeds.chance | [[mechanics/weeds]] |
 | weeds.outbreak | [[mechanics/weeds]] |
 | weeds.spray | [[mechanics/weeds]] |
 | weeds.pull | [[mechanics/weeds]] |
+| weeds.grass | [[mechanics/weeds]] |
 | market.sell | [[mechanics/market]] |
 | market.rarity | [[mechanics/market]] |
 | market.vodka-common | [[mechanics/market]] |
@@ -159,6 +161,9 @@ See [[canon]].
 | mp.hello | [[mechanics/multiplayer]] |
 | mp.mismatch | [[mechanics/multiplayer]] |
 | mp.stride | [[mechanics/multiplayer]] |
+| tick.scan | [[architecture/tick]] |
+| tick.nets | [[architecture/tick]] |
+| tick.ping | [[architecture/tick]] |
 | save.parse | [[architecture/save]] |
 | save.nomigrate | [[architecture/save]] |
 | net.digest | [[architecture/net]] |

@@ -16,7 +16,7 @@ Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
 ## Recover
 
-Iff `weedChance < WEED_CHANCE`, `weedChance = min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on every `Soil` that exists (tilled cells).
+Iff `weedChance < WEED_CHANCE`, `weedChance = min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.
 
 ## Outbreak
 
@@ -54,7 +54,11 @@ Assumption: spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, 
 
 Cosmetic `untilled` cover. Three variants. Not a plant.
 
-One roll per big tick for the world: `ramped(GRASS_CHANCE, bigTicks)`, `GRASS_CHANCE` — preference. Then up to 24 samples. Eligible: untilled, not very-hard, cover bare, no drop. Appears grown.
+World roll each `BIG_TICK`: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp.
+
+If it fires, pick eligible untilled from the grass stream: untilled, not very-hard, cover bare, no drop. Do not sample `bounds()` AABB (unowned holes). At most one tuft. Variant unchanged: `grass.at(col, row, bigTicks)`. Appears grown.
+
+Assumption: keep try-index `i` on the pick rolls; world roll is `at(bigTicks)`.
 
 Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with **no grass drop**; tilling removes the cover into `empty` soil. Grass un-tills when sown as turf — [[mechanics/plants]].
 
@@ -62,10 +66,12 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 
 `weeds.sprout` — Empty hand gathers weed/grass as items. Each `BIG_TICK`, each `empty` plot sprouts iff `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1.
 
-`weeds.chance` — `Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on every `Soil` that exists (tilled cells).
+`weeds.chance` — `Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.
 
 `weeds.outbreak` — Outbreak: when a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.
 
 `weeds.spray` — Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES`. Illegal: `usesLeft` 0 as held (throw away at 0). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.
 
 `weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.
+
+`weeds.grass` — Each `BIG_TICK`, world roll: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.

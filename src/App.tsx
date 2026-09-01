@@ -62,7 +62,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
   const consignRevision = useRef(0)
   const prevSeam = useRef<'play' | 'recap'>('play')
-  const [n, setN] = useState(0)
+  const [hudN, setHudN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
   const [world, setWorld] = useState<World | undefined>(() => {
     if (!START_NOW) return undefined
@@ -118,7 +118,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setEditor(false)
       setLens(editorLens.current)
     }
-  }, [n, world, editor])
+  }, [hudN, world, editor])
 
   useEffect(() => {
     if (world === undefined) return
@@ -126,7 +126,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
     const p = world.seats[world.local].place
     if (p.kind === 'sku' && (SENSOR_LENS_SKUS as readonly string[]).includes(p.id)) setLens('sensors')
-  }, [n, lens, world])
+  }, [hudN, lens, world])
 
   useEffect(() => {
     ;(window as unknown as { __world?: World }).__world = world
@@ -152,7 +152,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
           sold: t.sold || kind === 'sold',
         })
       })
-      if (kind !== 'dirty' || reasons.size > 1 || !reasons.has('speech')) setN(x => x + 1)
+      if (kind === 'sold') {
+        setHudN(x => x + 1)
+        return
+      }
+      if (kind !== 'dirty') return
+      if (reasons.has('act')) setHudN(x => x + 1)
     })
   }, [world])
 
@@ -162,14 +167,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seats[world.local].cue.kind !== 'inventory') return
     setPanel({ kind: 'inventory' })
     world.ackCue()
-  }, [n, world])
+  }, [hudN, world])
 
   useEffect(() => {
     if (world === undefined) return
     if (world.consignRevision === consignRevision.current) return
     consignRevision.current = world.consignRevision
     if (world.seam.kind !== 'recap') setPanel({ kind: 'market' })
-  }, [n, world])
+  }, [hudN, world])
 
   useEffect(() => {
     if (world === undefined) return
@@ -190,7 +195,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives') return
     const at = cue.at
     setPanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
-  }, [n, world])
+  }, [hudN, world])
 
   useEffect(() => {
     if (world === undefined) return
@@ -200,44 +205,60 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setPanel({ kind: 'none' })
     }
     prevSeam.current = kind
-  }, [n, world])
+  }, [hudN, world])
 
   useEffect(() => {
     if (world === undefined) return
     let last = performance.now()
+    let fpsEma = 0
+    let tickMs = 0
     accRef.current = 0
     let id = 0
     const loop = (now: number) => {
-      const dt = ((now - last) / 1000) * SPEED
+      const frameDt = (now - last) / 1000
+      const dt = frameDt * SPEED
       last = now
+      const inst = 1 / frameDt
+      fpsEma = fpsEma === 0 ? inst : fpsEma * 0.9 + inst * 0.1
       const host = hostRef.current
       const g = guestRef.current
+      let spent = 0
+      let ran = 0
       if (g !== undefined) {
         g.pumpGap(now)
       } else if (host !== undefined) {
         accRef.current += dt
         let n = 0
         while (accRef.current >= DT_MAX && n < 2) {
+          const t0 = performance.now()
           host.pump()
+          spent += performance.now() - t0
           accRef.current -= DT_MAX
           n += 1
         }
+        ran = n
       } else {
         accRef.current += dt
         let n = 0
         while (accRef.current >= DT_MAX && n < 2) {
-          if (!pausedRef.current && !aiHoldRef.current) world.tick(DT_MAX)
+          if (!pausedRef.current && !aiHoldRef.current) {
+            const t0 = performance.now()
+            world.tick(DT_MAX)
+            spent += performance.now() - t0
+            ran += 1
+          }
           accRef.current -= DT_MAX
           n += 1
         }
       }
+      if (ran > 0) tickMs = spent
       const driven = world.driverVehicle(world.local)
       if (driven !== undefined && driven.pose.kind === 'field') {
         const x = driven.pose.x
         const y = driven.pose.y
         setCam(c => (c.x === x && c.y === y ? c : { x, y, scale: c.scale }))
       }
-      if (root.current !== null) paintMotion(root.current, world)
+      if (root.current !== null) paintMotion(root.current, world, fpsEma, tickMs)
       id = requestAnimationFrame(loop)
     }
     id = requestAnimationFrame(loop)
@@ -411,7 +432,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     w.seats[w.local].name = localPlayerName()
     const host = hostRef.current
     if (host !== undefined) host.pushRoster()
-    setN(x => x + 1)
+    setHudN(x => x + 1)
   }
 
   function playNew(): void {
@@ -512,7 +533,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
         hostRef.current = host
         host.onPause = on => setPaused(on)
         host.onCatching = on => setCatching(on)
-        host.onRoster = () => setN(x => x + 1)
+        host.onRoster = () => setHudN(x => x + 1)
         // startHost resolves after the lobby opened, so re-apply the hold the panel asked for.
         if (mpOpenRef.current) host.setPaused(true)
         const endHost = () => {
@@ -703,7 +724,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
               <MapView
                 world={backdrop}
                 cam={BOOT_CAM}
-                rev={0}
                 lens="off"
                 editor={false}
                 hover={undefined}
@@ -743,7 +763,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
           <MapView
             world={world}
             cam={cam}
-            rev={n}
             lens={lens}
             editor={editor}
             hover={hover}

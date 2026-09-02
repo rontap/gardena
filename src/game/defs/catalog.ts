@@ -387,9 +387,9 @@ export function catalogEntries(): CatalogEntry[] {
     },
     {
       id: 'barrel',
-      title: 'Wine barrel',
+      title: 'Barrel',
       icon: { kind: 'barrel' },
-      blurb: 'Grapes only. Five fill a barrel. Wine, not whisky.',
+      blurb: 'Grapes or apples, never mixed. Five fill a barrel. Wine or cider, not whisky.',
     },
     {
       id: 'jam',

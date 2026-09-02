@@ -3,6 +3,7 @@ import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { YARD, type Coord } from './building.ts'
 import {
   ANNUAL_IDS,
+  CASK_IDS,
   JAM_IDS,
   SPIRIT_KINDS,
   TREE_IDS,
@@ -17,7 +18,7 @@ export const STALL_IDS: StallGoodId[] = [
   ...TREE_IDS,
   'sugar',
   ...SPIRIT_KINDS,
-  'wine',
+  ...CASK_IDS,
   ...JAM_IDS,
   'oil',
   'flour',
@@ -33,7 +34,7 @@ export function isBakedStall(id: StallGoodId): boolean {
 }
 
 export function isSpiritStall(id: StallGoodId): boolean {
-  return (SPIRIT_KINDS as readonly string[]).includes(id) || id === 'wine'
+  return (SPIRIT_KINDS as readonly string[]).includes(id) || (CASK_IDS as readonly string[]).includes(id)
 }
 
 export const BIO_KEYS = ['organic', 'synth'] as const

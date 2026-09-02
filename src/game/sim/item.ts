@@ -39,6 +39,7 @@ import { TREE_NAME } from '../defs/trees.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import type {
   AnnualId,
+  CaskId,
   ContainerId,
   CropId,
   JamCrop,
@@ -70,10 +71,10 @@ export type Item =
   | { kind: 'seeds'; crop: AnnualId; rarity: Rarity; count: number }
   | { kind: 'grass-seeds'; count: number }
   | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
-  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'tree-seed'; tree: TreeId }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number }
   | { kind: 'spirit'; spirit: SpiritKind; rarity: Rarity; count: number; unitSale: number }
-  | { kind: 'wine'; rarity: Rarity; count: number; unitSale: number }
+  | { kind: 'cask'; cask: CaskId; rarity: Rarity; count: number; unitSale: number }
   | { kind: 'jam'; crop: JamCrop; count: number; unitSale: number }
   | { kind: 'oil'; count: number; unitSale: number }
   | { kind: 'flour'; count: number; unitSale: number }
@@ -193,17 +194,22 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
   if (it.kind === 'sugar') return 'Sugar'
   if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]
-  if (it.kind === 'wine') return 'Wine'
+  if (it.kind === 'cask') return CASK_NAME[it.cask]
   if (it.kind === 'jam') return it.crop === 'tomato' ? 'Ketchup' : `${cropName(it.crop)} jam`
   if (it.kind === 'oil') return 'Olive oil'
   if (it.kind === 'flour') return 'Flour'
   if (it.kind === 'extract') return 'Extract'
-  if (it.kind === 'sapling') return `${TREE_NAME[it.tree]} sapling`
+  if (it.kind === 'tree-seed') return `${TREE_NAME[it.tree]} seed`
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return 'Pulled weed'
   if (it.kind === 'weed-spray') return 'Weed spray'
   return 'Cut grass'
+}
+
+export const CASK_NAME: { readonly [K in CaskId]: string } = {
+  wine: 'Wine',
+  cider: 'Cider',
 }
 
 export const SPIRIT_NAME: { readonly [K in SpiritKind]: string } = {
@@ -248,7 +254,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   }
   if (item.kind === 'sugar') return `Sugar - ${item.liters}L`
   if (item.kind === 'spirit') return `${SPIRIT_NAME[item.spirit]} - ${item.count}`
-  if (item.kind === 'wine') return `Wine - ${item.count}`
+  if (item.kind === 'cask') return `${CASK_NAME[item.cask]} - ${item.count}`
   if (item.kind === 'jam') {
     const name = item.crop === 'tomato' ? 'Ketchup' : `${cropName(item.crop)} jam`
     return `${name} - ${item.count}`
@@ -256,7 +262,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'oil') return `Olive oil - ${item.count}`
   if (item.kind === 'flour') return `Flour - ${item.count}`
   if (item.kind === 'extract') return `Extract - ${item.count}`
-  if (item.kind === 'sapling') return `${TREE_NAME[item.tree]} sapling - plant on soft ground`
+  if (item.kind === 'tree-seed') return `${TREE_NAME[item.tree]} seed - plant it on soft ground`
   if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
@@ -346,7 +352,7 @@ export function skuLabel(id: SkuId): string {
     case 'buy-still':
       return 'Pot still'
     case 'buy-barrel':
-      return 'Wine barrel'
+      return 'Barrel'
     case 'buy-freezer':
       return 'Freezer'
     case 'buy-freezer-large':
@@ -591,12 +597,12 @@ export function itemTip(item: Item): string {
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
   if (item.kind === 'sugar') return `sugar ${item.liters}L`
   if (item.kind === 'spirit') return `spirit ${item.spirit} ${item.count}`
-  if (item.kind === 'wine') return `wine ${item.count}`
+  if (item.kind === 'cask') return `${item.cask} ${item.count}`
   if (item.kind === 'jam') return `jam ${item.crop} ${item.count}`
   if (item.kind === 'oil') return `oil ${item.count}`
   if (item.kind === 'flour') return `flour ${item.count}`
   if (item.kind === 'extract') return `extract ${item.count}`
-  if (item.kind === 'sapling') return `sapling ${item.tree}`
+  if (item.kind === 'tree-seed') return `tree-seed ${item.tree}`
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
   if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
   if (item.kind === 'weed') return `weed ${item.count}`
@@ -779,7 +785,7 @@ export function countable(item: Item): item is Countable {
 export function crafted(item: Countable): boolean {
   return (
     item.kind === 'spirit' ||
-    item.kind === 'wine' ||
+    item.kind === 'cask' ||
     item.kind === 'jam' ||
     item.kind === 'oil' ||
     item.kind === 'flour' ||
@@ -794,7 +800,7 @@ export function stackable(a: Countable, b: Countable): boolean {
     return a.crop === o.crop && a.rarity === o.rarity
   }
   if (a.kind === 'spirit') return a.spirit === (b as typeof a).spirit && a.rarity === (b as typeof a).rarity
-  if (a.kind === 'wine') return a.rarity === (b as typeof a).rarity
+  if (a.kind === 'cask') return a.cask === (b as typeof a).cask && a.rarity === (b as typeof a).rarity
   if (a.kind === 'jam') return a.crop === (b as typeof a).crop
   if (a.kind === 'rotten' || a.kind === 'dead') return a.cls === (b as typeof a).cls
   return true

@@ -28,7 +28,7 @@ import {
   Tap,
   Tree,
   Truck,
-  WineBarrel,
+  Barrel,
   chunkKey,
   chunkRect,
   occupiedCells,
@@ -57,6 +57,9 @@ import {
   type JamCrop,
   type MillRecipe,
   type PickaxeId,
+  CASK_IDS,
+  type BarrelCrop,
+  type CaskId,
   type PlayerSkillId,
   type ResearchId,
   type ShovelId,
@@ -135,7 +138,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.02 as const
+export const SAVE_VERSION = 2.03 as const
 
 const INV = 16
 
@@ -197,7 +200,7 @@ export type SaveCell =
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: 0 | 1 }
-  | { kind: 'barrel'; base: RectBase; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
+  | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
   | { kind: 'silo-seed'; base: RectBase }
@@ -293,7 +296,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 2.02
+  version: 2.03
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -629,7 +632,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'still':
       return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
     case 'barrel':
-      return { kind: 'barrel', base: c.base, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
+      return { kind: 'barrel', base: c.base, crop: c.crop, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
     case 'freezer':
       return { kind: 'freezer', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
     case 'hangar':
@@ -1320,7 +1323,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
       return still
     }
     case 'barrel': {
-      const barrel = new WineBarrel(sc.base)
+      const barrel = new Barrel(sc.base)
+      barrel.crop = sc.crop
       barrel.feed = sc.feed.map(f => ({ ...f }))
       barrel.age = sc.age
       barrel.n = sc.n
@@ -1642,17 +1646,20 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   }
   if (kind === 'barrel') {
     const base = readRectBase(o.base)
+    const crop = readBarrelCropOrNone(o.crop)
     const feedIn = arr(o.feed)
     const age = num(o.age)
     const n = num(o.n)
-    if (base === undefined || feedIn === undefined || age === undefined || n === undefined) return undefined
+    if (base === undefined || crop === undefined || feedIn === undefined || age === undefined || n === undefined) {
+      return undefined
+    }
     const feed: { rarity: Rarity; count: number }[] = []
     for (const f of feedIn) {
       const e = readBarrelFeed(f)
       if (e === undefined) return undefined
       feed.push(e)
     }
-    return { kind: 'barrel', base, feed, age, n }
+    return { kind: 'barrel', base, crop, feed, age, n }
   }
   if (kind === 'freezer') {
     const base = readRectBase(o.base)
@@ -2438,9 +2445,9 @@ function readItem(v: unknown): Item | undefined {
       if (stack === undefined) return undefined
       return { kind: 'fruit', ...stack }
     }
-    case 'sapling': {
+    case 'tree-seed': {
       if (!isTreeIdValue(o.tree)) return undefined
-      return { kind: 'sapling', tree: o.tree }
+      return { kind: 'tree-seed', tree: o.tree }
     }
     case 'sugar': {
       const liters = num(o.liters)
@@ -2457,12 +2464,13 @@ function readItem(v: unknown): Item | undefined {
       if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
       return { kind: 'spirit', spirit: o.spirit, rarity, count, unitSale }
     }
-    case 'wine': {
+    case 'cask': {
+      if (!isCaskId(o.cask)) return undefined
       const rarity = readRarity(o.rarity)
       const count = num(o.count)
       const unitSale = num(o.unitSale)
       if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
-      return { kind: 'wine', rarity, count, unitSale }
+      return { kind: 'cask', cask: o.cask, rarity, count, unitSale }
     }
     case 'jam': {
       if (!isJamCrop(o.crop)) return undefined
@@ -2566,6 +2574,11 @@ function isJamCrop(v: unknown): v is JamCrop {
 
 function isStillCrop(v: unknown): v is StillCrop {
   return v === 'potato' || v === 'wheat' || v === 'apricot'
+}
+
+function readBarrelCropOrNone(v: unknown): BarrelCrop | 'none' | undefined {
+  if (v === 'none' || v === 'grape' || v === 'apple') return v
+  return undefined
 }
 
 function readMillRecipe(v: unknown): MillRecipe | 'none' | undefined {
@@ -2840,8 +2853,8 @@ function readPrize(v: unknown): Prize | undefined {
   if (o.kind === 'fertilizer') return { kind: 'fertilizer' }
   if (o.kind === 'freezer') return { kind: 'freezer' }
   if (o.kind === 'expansion-slot') return { kind: 'expansion-slot' }
-  if (o.kind === 'sapling') {
-    return isTreeIdValue(o.tree) ? { kind: 'sapling', tree: o.tree } : undefined
+  if (o.kind === 'tree-seed') {
+    return isTreeIdValue(o.tree) ? { kind: 'tree-seed', tree: o.tree } : undefined
   }
   if (o.kind === 'seeds') {
     const count = num(o.count)
@@ -2904,10 +2917,14 @@ function isDeadlineBand(v: unknown): v is DeadlineBand {
   return (DEADLINE_BAND_VALUES as readonly unknown[]).includes(v)
 }
 
+function isCaskId(v: unknown): v is CaskId {
+  return (CASK_IDS as readonly unknown[]).includes(v)
+}
+
 function isRarity(v: unknown): v is Rarity {
   return (RARITY_RANK as readonly unknown[]).includes(v)
 }
 
 function isRarityGoodId(v: unknown): v is RarityGoodId {
-  return isCropId(v) || isSpiritKind(v) || v === 'wine'
+  return isCropId(v) || isSpiritKind(v) || isCaskId(v)
 }

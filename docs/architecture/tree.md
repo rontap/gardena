@@ -27,4 +27,4 @@ Owner: `sim/building.ts`. Cell only — no `World.trees`. `World.tickTree` in `s
 
 ## Item
 
-`{ kind: 'sapling'; tree: TreeId }`. Plant sapling uses existing `Intent` `{ act: 'plant'; at: Coord }`.
+`{ kind: 'tree-seed'; tree: TreeId }`. Plant uses existing `Intent` `{ act: 'plant'; at: Coord }`. `at` is the **foot**: `base` is `{ col: at.col, row: at.row - 1 }`.

@@ -8,7 +8,7 @@ import {
   SYNTH_BAG_LITERS,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import type { AnnualId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, BarrelCrop, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -316,9 +316,10 @@ export class PotStill {
   }
 }
 
-export class WineBarrel {
+export class Barrel {
   readonly kind = 'barrel' as const
   readonly base: RectBase
+  crop: BarrelCrop | 'none' = 'none'
   feed: { rarity: Rarity; count: number }[] = []
   age = 0
   n = 0

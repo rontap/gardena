@@ -50,19 +50,21 @@ Prompt dump legal: **Grind**. `{ act: 'grind'; at }`.
 
 Prompt dump legal: **Distill**. `{ act: 'still'; at }`.
 
-## Wine barrel
+## Barrel
 
 | when | text |
 |---|---|
-| filling | **Wine barrel - {n}/5** |
-| maturing (`age < BARREL_MATURE`) | **Wine barrel - maturing {pct}%** |
-| aging | **Wine barrel - aging {n}d** |
-| refuse | **Wine barrel - grapes** |
-| full | **Wine barrel - full** |
+| empty | **Barrel - {n}/5** |
+| crop locked, filling | **Barrel - {n}/5 {crop}** |
+| maturing (`age < BARREL_MATURE`) | **Barrel - maturing {pct}%** |
+| aging | **Barrel - aging {n}d** |
+| refuse not a barrel crop | **Barrel - grapes or apples** |
+| refuse wrong crop | **Barrel - {crop}s only** |
+| full | **Barrel - full** |
 
 Filling `{n}` feed count. Cap `BARREL_CAP` 5. Maturing `{pct}` = `floor((age / BARREL_MATURE) * 100)`. Aging `{n}` = `floor(age / DAY_SECONDS)`.
 
-Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge wine): **Collect wine**. Same `{ act: 'barrel'; at }`.
+Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge the matching cask): **Collect wine** / **Collect cider** off `CASK_OF[crop]`. Same `{ act: 'barrel'; at }`.
 
 ## Jam machine
 

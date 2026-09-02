@@ -68,7 +68,7 @@ import {
   rollShopRarity,
   type Rarity,
 } from '../defs/rarity.ts'
-import { SENSOR_CELL_SKUS } from './ids.ts'
+import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -120,7 +120,7 @@ import {
   Tree,
   TRUCK_BASE,
   Truck,
-  WineBarrel,
+  Barrel,
   chunkKey,
   chunkOf,
   chunkRect,
@@ -162,13 +162,12 @@ import {
   addBarrelFeed,
   addStillFeed,
   bakeSpiritSale,
-  bakeWineSale,
+  bakeCaskSale,
   feedAccept,
   feedApply,
   feedUnits,
   feedWhole,
   fruitCount,
-  fruitCrop,
   fruitRarity,
   grindAccept,
   grindApply,
@@ -275,6 +274,7 @@ import {
 } from './pipe.ts'
 import { pull, Reservoir, TAP_RATE } from './water.ts'
 import {
+  barrelCropOf,
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
@@ -673,9 +673,9 @@ export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
 
 function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
-  inventory[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'apricot' } }
-  inventory[1] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
-  inventory[2] = { kind: 'hold', item: { kind: 'sapling', tree: 'cherry' } }
+  inventory[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apricot' } }
+  inventory[1] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
+  inventory[2] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry' } }
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
   return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
@@ -2754,7 +2754,7 @@ export class World {
       else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
       else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
       else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
-      else if (this.act.place.id === 'buy-barrel') this.setCell(at, new WineBarrel(base))
+      else if (this.act.place.id === 'buy-barrel') this.setCell(at, new Barrel(base))
       else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
       else if (this.act.place.id === 'buy-freezer-large') {
         this.prizeFreezers -= 1
@@ -4822,7 +4822,7 @@ export class World {
       }
       if (c.kind === 'barrel') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (feedUnits(c.feed) !== BARREL_CAP) continue
+        if (c.crop === 'none' || feedUnits(c.feed) !== BARREL_CAP) continue
         const was = c.age
         c.age += dt
         if (was < BARREL_MATURE && c.age >= BARREL_MATURE) {
@@ -5045,15 +5045,15 @@ export class World {
     return true
   }
 
-  private saplingPair(at: Coord): Coord | undefined {
-    const below = { col: at.col, row: at.row + 1 }
-    if (!this.inWorld(below)) return undefined
+  private seedPair(at: Coord): Coord | undefined {
+    const above = { col: at.col, row: at.row - 1 }
+    if (!this.inWorld(above)) return undefined
     const a = this.cell(at)
-    const b = this.cell(below)
+    const b = this.cell(above)
     if (a.kind !== 'untilled' || b.kind !== 'untilled') return undefined
     if (a.ground !== 'soft' || b.ground !== 'soft') return undefined
     if (a.cover.kind === 'tile' || b.cover.kind === 'tile') return undefined
-    return below
+    return above
   }
 
   private canShovel(at: Coord): boolean {
@@ -5073,7 +5073,7 @@ export class World {
     const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
     if (c.kind === 'tree') {
       occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
-      this.drops.push({ at: { ...at }, item: { kind: 'sapling', tree: c.species } })
+      this.drops.push({ at: { ...at }, item: { kind: 'tree-seed', tree: c.species } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
 
@@ -5124,7 +5124,7 @@ export class World {
 
   private canPlant(at: Coord): boolean {
     if (this.act.hand.kind !== 'hold') return false
-    if (this.act.hand.item.kind === 'sapling') return this.saplingPair(at) !== undefined
+    if (this.act.hand.item.kind === 'tree-seed') return this.seedPair(at) !== undefined
     if (this.act.hand.item.kind !== 'seeds' && this.act.hand.item.kind !== 'grass-seeds') return false
     return this.cell(at).kind === 'empty'
   }
@@ -5132,12 +5132,12 @@ export class World {
   private doPlant(at: Coord): void {
     if (!this.canPlant(at)) return
     if (this.act.hand.kind !== 'hold') return
-    if (this.act.hand.item.kind === 'sapling') {
-      const below = this.saplingPair(at)
-      if (below === undefined) return
-      const tree = new Tree(this.act.hand.item.tree, { shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+    if (this.act.hand.item.kind === 'tree-seed') {
+      const above = this.seedPair(at)
+      if (above === undefined) return
+      const tree = new Tree(this.act.hand.item.tree, { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 })
+      this.setCell(above, tree)
       this.setCell(at, tree)
-      this.setCell(below, tree)
       this.act.hand = { kind: 'empty' }
 
       return
@@ -5354,9 +5354,9 @@ export class World {
       this.completeConsign()
       return
     }
-    if (item.kind === 'wine') {
-      this.splitConsign('wine', item.rarity, item.count, false, rest => {
-        this.stall.wine.takeSpirit(item.rarity, rest, item.unitSale)
+    if (item.kind === 'cask') {
+      this.splitConsign(item.cask, item.rarity, item.count, false, rest => {
+        this.stall[item.cask].takeSpirit(item.rarity, rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
@@ -5500,7 +5500,7 @@ export class World {
 
   /**
    * Hands over a non-cash prize. Goods land at the house door, the way a
-   * shovelled-up sapling does; bulk goes straight to its store. `cash` is the
+   * shovelled-up tree seed does; bulk goes straight to its store. `cash` is the
    * money reward the contract would otherwise have paid, which is what the
    * fertilizer prize is priced against.
    */
@@ -5527,8 +5527,8 @@ export class World {
       return
     }
     const item: Item =
-      prize.kind === 'sapling'
-        ? { kind: 'sapling', tree: prize.tree }
+      prize.kind === 'tree-seed'
+        ? { kind: 'tree-seed', tree: prize.tree }
         : prize.tool === 'rotary-shovel'
           ? makeShovel('rotary-shovel')
           : makePickaxe('diamond-pickaxe')
@@ -5791,9 +5791,10 @@ export class World {
   private canBarrelCollect(at: Coord): boolean {
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
-    if (feedUnits(c.feed) !== BARREL_CAP || c.age < BARREL_MATURE) return false
+    if (c.crop === 'none' || feedUnits(c.feed) !== BARREL_CAP || c.age < BARREL_MATURE) return false
     if (this.act.hand.kind === 'empty') return true
-    if (this.act.hand.item.kind !== 'wine') return false
+    if (this.act.hand.item.kind !== 'cask') return false
+    if (this.act.hand.item.cask !== CASK_OF[c.crop]) return false
     return this.act.hand.item.rarity === c.feed[0].rarity
   }
 
@@ -5802,44 +5803,51 @@ export class World {
     if (this.act.hand.kind !== 'hold') return false
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
-    if (fruitCrop(this.act.hand.item) !== 'grape') return false
+    const crop = barrelCropOf(this.act.hand.item)
+    if (crop === undefined) return false
+    if (c.crop !== 'none' && crop !== c.crop) return false
     const room = BARREL_CAP - feedUnits(c.feed)
     return room > 0 && fruitCount(this.act.hand.item) > 0
   }
 
   private doBarrel(at: Coord): void {
     if (this.canBarrelCollect(at)) {
-      const barrel = this.cell(at) as WineBarrel
+      const barrel = this.cell(at) as Barrel
+      if (barrel.crop === 'none') return
       const rarity = barrel.feed[0].rarity
-      const wine: Item = {
-        kind: 'wine',
+      const cask: Item = {
+        kind: 'cask',
+        cask: CASK_OF[barrel.crop],
         rarity,
         count: 1,
-        unitSale: bakeWineSale(rarity, barrel.age),
+        unitSale: bakeCaskSale(CASK_OF[barrel.crop], rarity, barrel.age),
       }
-      if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: wine }
-      else if (this.act.hand.item.kind === 'wine') {
+      if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: cask }
+      else if (this.act.hand.item.kind === 'cask') {
         const it = this.act.hand.item
         if (it.count >= this.stackMax(it)) {
           this.say(HAND_FULL)
           return
         }
-        mergeInto(it, wine, 1)
+        mergeInto(it, cask, 1)
       }
       barrel.feed = []
       barrel.age = 0
+      barrel.crop = 'none'
       this.track(at, barrel)
 
       return
     }
     if (!this.canBarrel(at)) return
     if (this.act.hand.kind !== 'hold') return
-    const barrel = this.cell(at) as WineBarrel
+    const barrel = this.cell(at) as Barrel
+    const crop = barrelCropOf(this.act.hand.item)
     const rarity = fruitRarity(this.act.hand.item)
-    if (rarity === undefined) return
+    if (crop === undefined || rarity === undefined) return
     const room = BARREL_CAP - feedUnits(barrel.feed)
     const n = Math.min(room, fruitCount(this.act.hand.item))
     if (n <= 0) return
+    barrel.crop = crop
     addBarrelFeed(barrel.feed, rarity, n)
     this.takeHandCount(n)
     this.track(at, barrel)

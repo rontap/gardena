@@ -167,6 +167,7 @@ test('a barrel bubbles while it ages and stops when it is done', async ({ page }
     w.buy('buy-barrel')
     w.confirmPlace({ col: 18, row: 6 })
     const c = w.cell({ col: 18, row: 6 })
+    c.crop = 'grape'
     c.feed = [{ rarity: 'common', count: items.BARREL_CAP }]
     c.age = 0
     w.ping()

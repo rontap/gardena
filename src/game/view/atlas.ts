@@ -2,6 +2,7 @@ import { Texture } from 'pixi.js'
 import type {
   ContainerId,
   CropId,
+  CaskId,
   JamCrop,
   PickaxeId,
   ShovelId,
@@ -69,6 +70,10 @@ import fruitVanilla from '../../assets/fruits/fruit-vanilla.svg?raw'
 import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
+import itemSeedApple from '../../assets/items/item-seed-apple.svg?raw'
+import itemSeedApricot from '../../assets/items/item-seed-apricot.svg?raw'
+import itemSeedOlive from '../../assets/items/item-seed-olive.svg?raw'
+import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
 import appleTree from '../../assets/props/prop-apple-tree.svg?raw'
 import apricotTree from '../../assets/props/prop-apricot-tree.svg?raw'
 import oliveTree from '../../assets/props/prop-olive-tree.svg?raw'
@@ -162,6 +167,7 @@ import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
 import itemSpiritBrandy from '../../assets/items/item-spirit-brandy.svg?raw'
 import itemSpiritMixed from '../../assets/items/item-spirit-mixed.svg?raw'
+import itemCider from '../../assets/items/item-cider.svg?raw'
 import itemWine from '../../assets/items/item-wine.svg?raw'
 import itemJamApricot from '../../assets/items/item-jam-apricot.svg?raw'
 import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
@@ -282,6 +288,7 @@ export type AtlasKey =
   | `crop-${CropId}:${CropStage}`
   | `fruit-${CropId}:${'common' | 'rare' | 'heirloom'}`
   | `tree-${TreeId}:${'grow' | 'unripe' | 'ripe'}`
+  | `tree-seed-${TreeId}`
   | 'actor-hat'
   | 'actor-body'
   | ShovelId
@@ -296,7 +303,7 @@ export type AtlasKey =
   | 'item-grass'
   | 'sugar'
   | `spirit-${SpiritKind}`
-  | `wine-${'common' | 'rare' | 'heirloom'}`
+  | `cask-${CaskId}-${'common' | 'rare' | 'heirloom'}`
   | `jam-${Exclude<JamCrop, 'tomato'>}`
   | 'ketchup'
   | 'oil'
@@ -423,6 +430,13 @@ const FRUIT: { readonly [K in CropId]: string } = {
   apricot: fruitApricot,
   olive: fruitOlive,
   cherry: fruitCherry,
+}
+
+const TREE_SEED: { readonly [K in TreeId]: string } = {
+  apple: itemSeedApple,
+  apricot: itemSeedApricot,
+  olive: itemSeedOlive,
+  cherry: itemSeedCherry,
 }
 
 const TREE: { readonly [K in TreeId]: string } = {
@@ -565,6 +579,7 @@ async function load(): Promise<void> {
   })
   ;(TREE_IDS as TreeId[]).forEach(id => {
     ;(['grow', 'unripe', 'ripe'] as const).forEach(st => put(`tree-${id}:${st}`, TREE[id], st))
+    put(`tree-seed-${id}`, TREE_SEED[id])
   })
   const hat = groupOf(actor, 'hat').replace(/var\(--hat, #d4a017\)/g, '#ffffff')
   const body = innerOf(actor).replace(/<g id="hat"[^>]*>[\s\S]*?<\/g>/, '')
@@ -594,9 +609,12 @@ async function load(): Promise<void> {
   put('spirit-beer', itemSpiritBeer)
   put('spirit-brandy', itemSpiritBrandy)
   put('spirit-mixed', itemSpiritMixed)
-  put('wine-common', itemWine, 'common')
-  put('wine-rare', itemWine, 'rare')
-  put('wine-heirloom', itemWine, 'heirloom')
+  put('cask-wine-common', itemWine, 'common')
+  put('cask-wine-rare', itemWine, 'rare')
+  put('cask-wine-heirloom', itemWine, 'heirloom')
+  put('cask-cider-common', itemCider, 'common')
+  put('cask-cider-rare', itemCider, 'rare')
+  put('cask-cider-heirloom', itemCider, 'heirloom')
   put('jam-apricot', itemJamApricot)
   put('jam-grape', itemJamGrape)
   put('jam-raspberry', itemJamRaspberry)
@@ -742,7 +760,7 @@ export const HAT: { readonly [K in SeatId]: number } = {
 export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'seeds') return cropKey(item.crop, ripeGroup(item.rarity))
   if (item.kind === 'fruit') return `fruit-${item.crop}:${fruitGroup(item.rarity)}`
-  if (item.kind === 'sapling') return `tree-${item.tree}:grow`
+  if (item.kind === 'tree-seed') return `tree-seed-${item.tree}`
   if (item.kind === 'shovel') return item.id
   if (item.kind === 'pickaxe') return item.id
   if (item.kind === 'container') return item.id
@@ -757,7 +775,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'dead') return `item-dead-${item.cls}`
   if (item.kind === 'sugar') return 'sugar'
   if (item.kind === 'spirit') return `spirit-${item.spirit}`
-  if (item.kind === 'wine') return `wine-${fruitGroup(item.rarity)}`
+  if (item.kind === 'cask') return `cask-${item.cask}-${fruitGroup(item.rarity)}`
   if (item.kind === 'jam') {
     if (item.crop === 'tomato') return 'ketchup'
     return `jam-${item.crop}`

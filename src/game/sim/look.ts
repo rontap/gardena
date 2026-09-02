@@ -90,7 +90,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'compost-box') lines.push('Compost box')
   else if (cell.kind === 'mill') lines.push('Mill')
   else if (cell.kind === 'still') lines.push('Pot still')
-  else if (cell.kind === 'barrel') lines.push('Wine barrel')
+  else if (cell.kind === 'barrel') lines.push('Barrel')
   else if (cell.kind === 'jam') lines.push('Jam machine')
   else if (cell.kind === 'tree') {
     const name = `${TREE_NAME[cell.species]} tree`

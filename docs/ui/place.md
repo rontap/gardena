@@ -164,7 +164,7 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 
 Delete pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline stays `stroke-ink`.
 
-Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Sapling plant is a hand `plant`, not a Place SKU.
+Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU.
 
 `placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve, no pipe **Valve needs a pipe**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].
 

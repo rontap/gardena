@@ -1,3 +1,15 @@
+# 2.0.3 Orchard
+
+Trees are redrawn end to end, and the barrel takes a second fruit.
+
+- ✨ Added item: Cider. The barrel presses and ages it from apples.
+- 🔧 Changed building: Barrel. previously, it took grapes and nothing else, now the first fruit you drop in sets what it makes, and apples make cider instead of wine.
+- 🔧 Changed item: previously, a tree came as a sapling that looked like the shrub it would grow into, now it comes as a seed drawn as its own fruit cut open, so the four species read apart in a full pack.
+- 🔧 Changed mechanic: Tree planting. previously, the tile you clicked became the crown and the tree grew downward over the tile below, now the tile you click is where the trunk stands and the tree grows up from it.
+- 🔧 Changed ui: previously, a planted tree jumped from a shrub straight to a full canopy, now it spends its youth as a young tree on a mound of fresh soil before it fills out.
+- 🔧 Changed ui: previously, the four trees shared one blocky canopy and told apart only by fruit colour, now each has its own silhouette - a round apple, a broad apricot, a gnarled silver olive, and a twin-crowned cherry.
+- 🔧 Changed ui: previously, the apple was a red block with a bite of shading, now it has shoulders, a stem well, and a leaf, and Pink Lady is striped pink.
+
 # 2.0.2 Legible Build
 
 Pipes, valves, wires, and the lens say what they are doing. Water and signal move on the field.

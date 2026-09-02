@@ -36,8 +36,8 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 |---|---|
 | `crop-*.svg` | `sprout` `grow` `ripe` `ripe-rare` `ripe-heirloom` `dead` |
 | `fruit-*.svg` | `common` `rare` `heirloom` |
-| `item-wine.svg` | `common` `rare` `heirloom` |
-| `prop-*-tree.svg` | `grow` `unripe` `ripe` |
+| `item-wine.svg` `item-cider.svg` | `common` `rare` `heirloom` |
+| `prop-*-tree.svg` | `grow` `unripe` `ripe` — `grow` is the sapling, [[art/tree]] |
 | `crop-weed-*.svg` | `sprout` `grow` |
 | `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` | `off` `on` |
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |

@@ -22,6 +22,10 @@ import fruitVanilla from '../../assets/fruits/fruit-vanilla.svg?raw'
 import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
+import itemSeedApple from '../../assets/items/item-seed-apple.svg?raw'
+import itemSeedApricot from '../../assets/items/item-seed-apricot.svg?raw'
+import itemSeedOlive from '../../assets/items/item-seed-olive.svg?raw'
+import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
 import itemSugar from '../../assets/items/item-sugar.svg?raw'
 import itemMill from '../../assets/items/item-mill.svg?raw'
 import itemStill from '../../assets/items/item-still.svg?raw'
@@ -32,6 +36,7 @@ import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
 import itemSpiritBrandy from '../../assets/items/item-spirit-brandy.svg?raw'
 import itemSpiritMixed from '../../assets/items/item-spirit-mixed.svg?raw'
+import itemCider from '../../assets/items/item-cider.svg?raw'
 import itemWine from '../../assets/items/item-wine.svg?raw'
 import itemJamApricot from '../../assets/items/item-jam-apricot.svg?raw'
 import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
@@ -271,7 +276,7 @@ import uiCornerBl from '../../assets/ui/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
-import { ANNUAL_IDS, TREE_IDS, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
+import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/market.h.ts'
 
@@ -391,12 +396,12 @@ export function itemInner(item: Face): string {
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
   if (item.kind === 'sugar') return inner(itemSugar)
   if (item.kind === 'spirit') return SPIRIT_ART[item.spirit]
-  if (item.kind === 'wine') return stageOnly(itemWine, fruitGroup(item.rarity))
+  if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], fruitGroup(item.rarity))
   if (item.kind === 'jam') return item.crop === 'tomato' ? inner(itemKetchup) : inner(JAM_ART[item.crop])
   if (item.kind === 'oil') return inner(itemOil)
   if (item.kind === 'flour') return inner(itemFlour)
   if (item.kind === 'extract') return inner(itemExtract)
-  if (item.kind === 'sapling') return treeStage(item.tree, 'grow')
+  if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
   const _x: never = item
   return _x
 }
@@ -697,6 +702,18 @@ export const ITEM_CHEST = inner(itemChest)
 export const ITEM_GRINDER = inner(itemGrinder)
 export const ROCK = inner(rock)
 export const ROCK_LONG = inner(rockLong)
+const CASK_ART: { readonly [K in CaskId]: string } = {
+  wine: itemWine,
+  cider: itemCider,
+}
+
+export const TREE_SEED_ART: { readonly [K in TreeId]: string } = {
+  apple: inner(itemSeedApple),
+  apricot: inner(itemSeedApricot),
+  olive: inner(itemSeedOlive),
+  cherry: inner(itemSeedCherry),
+}
+
 export const APPLE_TREE = inner(appleTree)
 export function treeStage(id: TreeId, stage: 'grow' | 'unripe' | 'ripe'): string {
   return stageOnly(TREE_PROP[id], stage)
@@ -1062,6 +1079,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   weedInner(1, 'sprout'),
   weedInner(1, 'grow'),
   ...(TREE_IDS as TreeId[]).flatMap(t => TREE_STAGES.map(s => treeStage(t, s))),
+  ...Object.values(TREE_SEED_ART),
   ...([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c =>
     CROP_STAGES.map(s => cropInner(c, s)),
   ),

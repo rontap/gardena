@@ -123,12 +123,12 @@ Baked at generation. Saturation at delivery does not move `reward`. `industrial`
 
 Two of the six offers each day pay goods instead of money, and pay **no** money.
 
-The board is the only source of tree saplings past the starting three, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these.
+The board is the only source of tree seeds past the starting three, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these.
 
 ```
 Prize =
   | { kind: 'cash' }
-  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'tree-seed'; tree: TreeId }
   | { kind: 'seeds'; crop: 'vanilla'; count }
   | { kind: 'fertilizer' }
   | { kind: 'freezer' }
@@ -147,7 +147,7 @@ Drawn from the base six, **never** from the live slot count. `broker` grows the 
 
 `COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only *which* slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`.
 
-Six firms, three columns: Whole Cart / Little Lid saplings-vanilla-tools; Trade Jo / Mercanova buildings-and-land; Halbert Eijn / Intercrop household. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
+Six firms, three columns: Whole Cart / Little Lid tree-seeds-vanilla-tools; Trade Jo / Mercanova buildings-and-land; Halbert Eijn / Intercrop household. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
 
 ### Payout
 
@@ -155,7 +155,7 @@ Six firms, three columns: Whole Cart / Little Lid saplings-vanilla-tools; Trade 
 
 | prize | lands as |
 |---|---|
-| `sapling` | drop at `DOOR` |
+| `tree-seed` | drop at `DOOR` |
 | `tool` | drop at `DOOR`, full `SHOVELS` / `PICKAXES` uses |
 | `seeds` | `putSilo('vanilla', 'common', count)` |
 | `fertilizer` | `putAdditive('fertilizer', bags * FERT_BAG_LITERS)`, `bags = max(1, round(reward / SKUS['buy-fertilizer'].price))` — "worth the cash" |
@@ -163,7 +163,7 @@ Six firms, three columns: Whole Cart / Little Lid saplings-vanilla-tools; Trade 
 | `expansion-slot` | `prizeSlots += 1` — [[mechanics/expansion]] |
 | `skill-points` | `grantPoints(n)` into the shared bank — [[mechanics/family]] |
 
-Drops at the door, the way a shovelled-up sapling drops. Store prizes clamp to free space; overflow is lost, same as any other put.
+Drops at the door, the way a shovelled-up tree seed drops. Store prizes clamp to free space; overflow is lost, same as any other put.
 
 ## cleanUnit
 

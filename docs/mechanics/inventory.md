@@ -39,7 +39,7 @@ Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` → additiv
 
 Shovel in hand. Bucket on the doorstep (full `CONTAINERS.bucket`). Money `MONEY_START` — preference.
 
-Seed silo: starter carrot / tomato / potato stacks. House: three saplings (apricot, lemon, cherry).
+Seed silo: starter carrot / tomato / potato stacks. House: three tree seeds (apricot, olive, cherry).
 
 Shop `pack-*` are five seeds. Always common unless the player owns `seed-bank` — [[mechanics/family]].
 
@@ -81,7 +81,7 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
 ## Invariants
 
-`inventory.slots` — Hand is one item. House 16 slots. Chest `CHEST_SLOTS`. Starter: shovel in hand, bucket on door (`CONTAINERS.bucket`), seed silo starter stacks, three saplings, money `MONEY_START`.
+`inventory.slots` — Hand is one item. House 16 slots. Chest `CHEST_SLOTS`. Starter: shovel in hand, bucket on door (`CONTAINERS.bucket`), seed silo starter stacks, three tree seeds, money `MONEY_START`.
 
 `inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. Composting research `unlock-compost`.
 

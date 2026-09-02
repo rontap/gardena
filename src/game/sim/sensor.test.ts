@@ -61,12 +61,12 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 2.02. PROTOCOL 2.02. Wordmark 2.0.2. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(2.02)
-    expect(PROTOCOL).toBe(2.02)
+  test('SAVE_VERSION 2.03. PROTOCOL 2.03. Wordmark 2.0.3. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(2.03)
+    expect(PROTOCOL).toBe(2.03)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(2.02)
+    expect(s.version).toBe(2.03)
     expect(s.wires).toEqual([])
     expect(s.valveHold).toEqual([])
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
@@ -1017,7 +1017,7 @@ describe('1.6 sensors', () => {
     if (chest.kind !== 'chest') return
     expect(chest.out).toBe(0)
     for (let i = 0; i < 9; i++) {
-      chest.slots[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'apple' } }
+      chest.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apple' } }
     }
     w.tick(DT_MAX)
     expect(chest.out).toBe(1)

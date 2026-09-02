@@ -4,7 +4,7 @@ Yield, plant, drop: [[mechanics/plants]]. Types: [[architecture/tree]]. Art: [[a
 
 `TREE_YIELD_MUL`, `TREE_OFF_MUL` — preference. Juvenile unchanged.
 
-Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. Species-only.
+Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Planted from `{ kind: 'tree-seed'; tree }` on the clicked cell as the foot. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. Species-only.
 
 `TREES` in `defs/trees.ts`. `TREE_YIELD_DAYS` — preference.
 
@@ -22,7 +22,7 @@ Seam, with stipend/tax, before field tick, per tree with `juvenile >= 1`:
 
 Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: drop fruit `freshness` 1 on the first in-world `frontOf` cell that is a `Plot` and is not in the footprint. Walk `frontOf(base)` then `frontOf({ col, row: row+1 })`. Existing drops on a plot are allowed. Spot found: `rarity = rollRarity(fruit.next())`, `fruit = 0`, `tally.harvests += 1`. No plot → clamp `fruit = 1`, show ripe, no `next()`. Cells stay `tree`.
 
-Shovel: sapling, cells bare soft.
+Shovel: tree seed, cells bare soft.
 
 Start chunk `(0,0)`: one wild apple, first valid 1×2 soft pair, `juvenile = 0`.
 
@@ -48,7 +48,9 @@ Stage from `Tree`: `juvenile < 1` → `grow`; else `yield.kind === 'on' || fruit
 
 `trees.yield` — Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.
 
-`trees.drop` — Tree auto-drop freshness 1, cells stay `tree`. Shovel → sapling, cells bare soft.
+`trees.drop` — Tree auto-drop freshness 1, cells stay `tree`. Shovel → tree seed, cells bare soft.
+
+`trees.foot` — Planting anchors on the clicked cell as the lower half: `base` is the cell above it — [[mechanics/plants]].
 
 `trees.rng` — Two successful tree drops the same day each consume `fruit.next()`. Rarities need not match.
 

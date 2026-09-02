@@ -44,32 +44,32 @@ export function prizeBandOf(difficulty: number): PrizeBand {
 /**
  * What each firm hands over, by band. Fixed per company, never rolled — only
  * *which* two slots pay a prize is rolled. Six firms share three columns:
- * saplings-and-rarities, buildings-and-land, and the household column.
+ * tree-seeds-and-rarities, buildings-and-land, and the household column.
  *
  * The `tool` arm here is a template; `market.ts` rolls the actual tool per offer.
  */
 export const COMPANY_PRIZES: { readonly [K in CompanyId]: readonly [Prize, Prize, Prize, Prize] } = {
   'whole-cart': [
-    { kind: 'sapling', tree: 'cherry' },
-    { kind: 'sapling', tree: 'apricot' },
+    { kind: 'tree-seed', tree: 'cherry' },
+    { kind: 'tree-seed', tree: 'apricot' },
     { kind: 'seeds', crop: 'vanilla', count: VANILLA_PRIZE_SEEDS },
     { kind: 'tool', tool: 'rotary-shovel' },
   ],
   'little-lid': [
-    { kind: 'sapling', tree: 'cherry' },
-    { kind: 'sapling', tree: 'apricot' },
+    { kind: 'tree-seed', tree: 'cherry' },
+    { kind: 'tree-seed', tree: 'apricot' },
     { kind: 'seeds', crop: 'vanilla', count: VANILLA_PRIZE_SEEDS },
     { kind: 'tool', tool: 'rotary-shovel' },
   ],
   'trade-jo': [
-    { kind: 'sapling', tree: 'apple' },
-    { kind: 'sapling', tree: 'olive' },
+    { kind: 'tree-seed', tree: 'apple' },
+    { kind: 'tree-seed', tree: 'olive' },
     { kind: 'freezer' },
     { kind: 'expansion-slot' },
   ],
   mercanova: [
-    { kind: 'sapling', tree: 'apple' },
-    { kind: 'sapling', tree: 'olive' },
+    { kind: 'tree-seed', tree: 'apple' },
+    { kind: 'tree-seed', tree: 'olive' },
     { kind: 'freezer' },
     { kind: 'expansion-slot' },
   ],

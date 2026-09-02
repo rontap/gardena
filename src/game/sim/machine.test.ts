@@ -4,6 +4,9 @@ import {
   MILL_GRASS,
   MILL_IN,
   MILL_WORK,
+  BARREL_CAP,
+  BARREL_MATURE,
+  CASK_SALE,
   MIXED_MUL,
   SPIRIT_RARITY,
   SPIRIT_SALE,
@@ -16,6 +19,7 @@ import { PROTOCOL } from './mp.ts'
 import { paid } from './market.ts'
 import { SAVE_VERSION } from './save.ts'
 import {
+  bakeCaskSale,
   bakeSpiritSale,
   meanRarity,
   millNeed,
@@ -23,7 +27,7 @@ import {
   millRecipeOf,
   spiritKind,
 } from './machine.ts'
-import { Chest, CompostBox, Freezer, JamMachine, Mill, PAD, PotStill } from './building.ts'
+import { Barrel, Chest, CompostBox, Freezer, JamMachine, Mill, PAD, PotStill } from './building.ts'
 import { BIG_TICK } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -103,13 +107,53 @@ describe('machines', () => {
     )
   })
 
-  test('Barrel is grapes → wine only. No whisky. No migrate.', () => {
-    expect(SAVE_VERSION).toBe(2.02)
-    expect(PROTOCOL).toBe(2.02)
+  test('Barrel locks one crop: grape → wine, apple → cider. No mix. No whisky. No migrate.', () => {
+    expect(SAVE_VERSION).toBe(2.03)
+    expect(PROTOCOL).toBe(2.03)
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
     expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')
     expect(meanRarity([{ rarity: 'common', count: 1 }], 0.99)).toBe('common')
+    expect(bakeCaskSale('cider', 'common', BARREL_MATURE)).toBe(CASK_SALE.cider)
+    const w = new World(1)
+    const at = { col: AT.col, row: AT.row + 6 }
+    w.setCell(at, new Barrel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 }))
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 1.5
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 20, freshness: 1, bio: true },
+    }
+    w.enqueue({ act: 'barrel', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const barrel = w.cell(at) as Barrel
+    expect(barrel.crop).toBe('apple')
+    expect(barrel.feed[0].count).toBe(2)
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'grape', rarity: 'common', count: 3, unitSale: 18, freshness: 1, bio: true },
+    }
+    w.enqueue({ act: 'barrel', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(barrel.feed[0].count).toBe(2)
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 3, unitSale: 20, freshness: 1, bio: true },
+    }
+    w.enqueue({ act: 'barrel', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(barrel.feed[0].count).toBe(BARREL_CAP)
+    barrel.age = BARREL_MATURE
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'cask', cask: 'cider', rarity: 'common', count: 1, unitSale: CASK_SALE.cider },
+    }
+    w.enqueue({ act: 'barrel', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const hand = w.seats[0].hand
+    expect(hand.kind === 'hold' && hand.item.kind === 'cask' && hand.item.cask).toBe('cider')
+    expect(hand.kind === 'hold' && hand.item.kind === 'cask' && hand.item.count).toBe(2)
+    expect(barrel.crop).toBe('none')
   })
 
   test('West chest/freezer is input. East is output. Still: west of origin, east of east cell.', () => {
@@ -214,7 +258,7 @@ describe('machines', () => {
     w.setCell(mill2At, mill2)
     const full = new Chest({ shape: 'rect', col: e2.col, row: e2.row, w: 1, h: 1 })
     full.slots.forEach((_, i) => {
-      full.slots[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+      full.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
     })
     w.setCell(e2, full)
     const flour0 = w.drops.filter(d => d.item.kind === 'flour').length

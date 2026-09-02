@@ -63,8 +63,20 @@ function StatRow({ label, value, text, segments }: { label: string; value: numbe
 
 function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
-  if (!isPlot(world.cell(hover.at))) return null
   const cell = world.cell(hover.at)
+  if (cell.kind === 'tree') {
+    const value = cell.juvenile < 1 ? cell.juvenile : cell.fruit
+    return (
+      <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-20 shrink-0 font-semibold text-ink/70">Growth</span>
+          <FillBar value={value} />
+          <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(value * 100)}%</span>
+        </div>
+      </div>
+    )
+  }
+  if (!isPlot(cell)) return null
   if (cell.kind === 'growing') {
     const stats = cell.plant.stats(world.modifiers)
     const fertFloor = FERT_PLOT_MAX - stats.fertTolerance
@@ -91,6 +103,34 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     return (
       <div className="bg-dirt/25 px-3 py-2.5">
         <StatRow label="Freshness" value={cell.plant.freshness} text={`${Math.floor(cell.plant.freshness * 100)}%`} segments={[{ from: 0, to: 0.8, color: 'red' }, { from: 0.8, to: 1, color: 'green' }]} />
+      </div>
+    )
+  }
+  if (cell.kind === 'empty') {
+    const resist = Math.min(1, Math.max(0, (1 - cell.soil.weedChance) / 2))
+    return (
+      <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-32 shrink-0 font-semibold text-ink/70">Fertilizer</span>
+          <FillBar value={cell.soil.fertilizer / FERT_PLOT_MAX} />
+          <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(cell.soil.fertilizer * 100)}%</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-32 shrink-0 font-semibold text-ink/70">Water</span>
+          <FillBar value={cell.soil.water / SOIL_WATER_MAX} />
+          <span className="w-12 shrink-0 text-right tabular-nums">{Number(cell.soil.water.toFixed(2))}L</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-32 shrink-0 font-semibold text-ink/70">Weed resistance</span>
+          <SegmentBar
+            value={resist}
+            segments={[
+              { from: 0, to: 0.5, color: 'red' },
+              { from: 0.5, to: 1, color: 'green' },
+            ]}
+          />
+          <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(resist * 100)}%</span>
+        </div>
       </div>
     )
   }

@@ -1,10 +1,10 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import {
   JAM_BUFFER,
   MILL_GRASS,
   MILL_IN,
   MILL_WORK,
-  BARREL_CAP,
   BARREL_MATURE,
   CASK_SALE,
   MIXED_MUL,
@@ -15,12 +15,11 @@ import {
   SUGAR_MILL,
   SUGAR_SHOP,
 } from '../defs/items.ts'
-import { PROTOCOL } from './mp.ts'
 import { paid } from './market.ts'
-import { SAVE_VERSION } from './save.ts'
 import {
   bakeCaskSale,
   bakeSpiritSale,
+  barrelNeed,
   meanRarity,
   millNeed,
   millProduct,
@@ -107,9 +106,9 @@ describe('machines', () => {
     )
   })
 
-  test('Barrel locks one crop: grape → wine, apple → cider. No mix. No whisky. No migrate.', () => {
-    expect(SAVE_VERSION).toBe(2.08)
-    expect(PROTOCOL).toBe(2.08)
+  test('Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed(\'apple\')` 4, `barrelNeed(\'grape\')` 5. `recipesOf(\'barrel\')` lists `BARREL_CROPS`. Rows: 2. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged.', () => {
+    expect(barrelNeed('apple')).toBe(4)
+    expect(barrelNeed('grape')).toBe(5)
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
     expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')
@@ -122,7 +121,7 @@ describe('machines', () => {
     w.seats[0].actor.y = at.row + 1.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 20, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 15.4, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -138,11 +137,11 @@ describe('machines', () => {
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 3, unitSale: 20, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 15.4, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
-    expect(barrel.feed[0].count).toBe(BARREL_CAP)
+    expect(barrel.feed[0].count).toBe(barrelNeed('apple'))
     barrel.age = BARREL_MATURE
     w.seats[0].hand = {
       kind: 'hold',

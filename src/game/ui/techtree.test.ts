@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, it } from 'vitest'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { SKILLS } from '../defs/skills.ts'

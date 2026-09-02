@@ -63,6 +63,7 @@ export function Recap({
               <div className="mt-3 border-t border-ink/20 pt-2 text-base text-ink">
                 <Line label="Stipend" sign="+" n={recap.stipend} />
                 <Line label="Tax" sign="−" n={recap.tax} />
+                <Line label="Water" sign="−" n={recap.water} />
               </div>
               <div className="mt-2 flex items-center justify-between border-t border-ink/20 pt-2">
                 <span className="text-base text-ink">Balance</span>

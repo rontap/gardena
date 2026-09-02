@@ -50,4 +50,4 @@ Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon u
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 
-Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]], [[art/sensors]], [[art/items]], [[art/companies]].
+Named assets: [[art/actor]], [[art/tree]], [[art/recap-night]], [[art/menu]], [[art/weather]], [[art/tilled-edges]], [[art/skills]], [[art/vehicles]], [[art/electricity]], [[art/sensors]], [[art/items]], [[art/companies]].

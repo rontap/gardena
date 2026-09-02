@@ -17,7 +17,7 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
 Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 
-`weed-spray` — `{ kind: 'weed-spray'; usesLeft }`, `WEED_SPRAY_USES`. Hand tool. House, not additive store. Not a bag. Not liters. Click tilled: [[mechanics/weeds]].
+`weed-spray` — `{ kind: 'weed-spray'; liters; capacityLiters }`, `WEED_SPRAY_BAG` 30 L. Bag. Additive store, like fertilizer. Not `usesLeft`. Click tilled: [[mechanics/weeds]] [[items/fertilizer]].
 
 Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 

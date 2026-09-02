@@ -12,6 +12,7 @@ export class Reservoir {
   readonly kind: SourceKind
   stored: number
   drawn = 0
+  mul = 1
 
   constructor(kind: SourceKind) {
     this.kind = kind
@@ -19,7 +20,7 @@ export class Reservoir {
   }
 
   get rate(): number {
-    return SOURCE[this.kind].rate
+    return SOURCE[this.kind].rate * this.mul
   }
 
   get capacity(): number {

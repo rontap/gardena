@@ -31,7 +31,7 @@ import {
   SUGAR_MILL,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
-  WEED_SPRAY_USES,
+  WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
@@ -83,7 +83,7 @@ export type Item =
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
   | { kind: 'grass'; count: number }
-  | { kind: 'weed-spray'; usesLeft: number }
+  | { kind: 'weed-spray'; liters: number; capacityLiters: number }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -315,7 +315,9 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
   if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
-  if (item.kind === 'weed-spray') return `Weed spray - ${item.usesLeft}/${WEED_SPRAY_USES} uses left`
+  if (item.kind === 'weed-spray') {
+    return `Weed spray - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+  }
   return `Cut grass - ${item.count}, compost it`
 }
 
@@ -497,7 +499,7 @@ export function skuDesc(id: SkuId): string {
         n: SYNTH_BAG_LITERS,
       })
     case 'buy-weed-spray':
-      return fill('Hand sprayer. ${n} uses. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_USES })
+      return fill('Holds ${n} L. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_BAG })
     case 'buy-compost-box':
       return fill(
         'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s. A chest on the right takes the bag, else it drops beside the box.',
@@ -571,7 +573,7 @@ export function skuDesc(id: SkuId): string {
         seconds: STILL_SECONDS,
       })
     case 'buy-barrel':
-      return fill('Five grapes. Matures in ${mature}s, ages to ${age}s.', {
+      return fill('Five grapes or four apples. Matures in ${mature}s, ages to ${age}s.', {
         mature: BARREL_MATURE,
         age: BARREL_AGE,
       })
@@ -651,7 +653,7 @@ export function itemTip(item: Item): string {
   if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
   if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
   if (item.kind === 'weed') return `weed ${item.count}`
-  if (item.kind === 'weed-spray') return `weed-spray ${item.usesLeft}`
+  if (item.kind === 'weed-spray') return `weed-spray ${item.liters}/${item.capacityLiters}L`
   return `grass ${item.count}`
 }
 
@@ -718,7 +720,7 @@ export function skuItem(id: SkuId): Face {
     case 'buy-synth-fertilizer':
       return makeSynth()
     case 'buy-weed-spray':
-      return { kind: 'weed-spray', usesLeft: WEED_SPRAY_USES }
+      return { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG }
     case 'buy-compost-box':
       return { kind: 'compost-box' }
     case 'buy-pumpjack':

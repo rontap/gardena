@@ -10,7 +10,7 @@ Freezer: `FREEZER_SLOTS` — preference. 1×1, `unlock-preservatives`. Reuses ch
 
 Quad: `VEHICLE_SLOTS` — preference. Any `Item`, chest swap + compact. Freshness ticks (not freezer). `Act.swapVehicle` legal iff parked (`field` && `driver === 'none'`). Stored: no-op. Driven: no-op. Guests may swap. Hangar HUD has no 6-slot. Tractor has no 6-slot. Fuel is not an item.
 
-Trailer cargo: `TRAILER_CAP`. Seed hopper one seeds stack. Spray hopper one fertilizer|synth|compost bag. Harvest `HARVEST_SLOTS`, mixed produce, chest merge+compact. `Act.swapTrailer` legal iff trailer attached to a tractor that is field && `driver === 'none'`. Hangar / driving / stored unattached: no-op. Seeder/sprayer refuse wrong kind. — [[mechanics/vehicles]]
+Trailer cargo: `TRAILER_CAP`. Seed hopper one seeds stack. Spray hopper one fertilizer|synth|compost bag. `weed-spray` in that hopper unrepresentable. Harvest `HARVEST_SLOTS`, mixed produce, chest merge+compact. `Act.swapTrailer` legal iff trailer attached to a tractor that is field && `driver === 'none'`. Hangar / driving / stored unattached: no-op. Seeder/sprayer refuse wrong kind. — [[mechanics/vehicles]]
 
 ## Stores
 
@@ -21,7 +21,7 @@ Seeds and additives do not live in the house. Each has a store building, placed 
 | store | holds |
 |---|---|
 | `seed-silo` | `{ crop, rarity, count }[]` cap `SILO_SEED_CAP` |
-| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost`, cap `ADDITIVE_CAP_LITERS` |
+| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost · weed-spray`, cap `ADDITIVE_CAP_LITERS` |
 
 Both caps are cumulative across every stack / kind in that store.
 
@@ -31,7 +31,7 @@ Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO
 
 Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. If the hand already holds something the store would not take back, that item is set down on the nearest plot first — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
-Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds, sugar, and weed-spray are not seeds or additives; they still go to the house.
+Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds and sugar are not seeds or additives; they still go to the house.
 
 `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. — [[mechanics/family]]
 
@@ -47,7 +47,7 @@ Shop `pack-*` are five seeds. Always common unless the player owns `seed-bank` �
 
 Shovel, better shovel, pickaxe, hardened pickaxe, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds`. Rotary unchanged.
 
-Weed spray: `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES`. Illegal: `usesLeft` 0 as held. — [[mechanics/weeds]]
+Weed spray: `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L — preference (old 30 uses). `ADDITIVE_BAG.weed-spray = WEED_SPRAY_BAG`. Shared `ADDITIVE_CAP_LITERS`. Buy / walk-up / take like fertilizer. Illegal: `liters` 0 as held (empty bag leaves the hand). No `usesLeft` field. — [[mechanics/weeds]]
 
 ## Stacks
 
@@ -59,7 +59,7 @@ The cap is on growth, not possession. Harvest, pickup, weed pull, and barrel col
 
 Refused merge: `say(HAND_FULL)`, prompt `blocked` `My hand is full!`. The crop stays on the plant, the remainder stays on the ground, the hand is not emptied. A different kind or identity is not a refusal — pickup still swaps hand and ground.
 
-Liters are not counts. Buckets, fertilizer / synth / compost bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them.
+Liters are not counts. Buckets, fertilizer / synth / compost / weed-spray bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them.
 
 ## Fertilizer / compost
 
@@ -71,7 +71,7 @@ Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` �
 
 ## Grind
 
-Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` per fruit tick — preference. A held fruit stack dumps all of it. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
+Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` 12 per fruit tick — preference. A held fruit stack dumps all of it. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
 
 Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
@@ -87,4 +87,4 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
 `inventory.stack` — Countable items merge in hand by kind and identity only. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per rank. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`.
 
-`inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
+`inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.

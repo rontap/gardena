@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
@@ -18,7 +19,8 @@ import {
   STACK_MAX_CRAFTED,
   STILL_WATER,
   SYNTH_BAG_LITERS,
-  WEED_SPRAY_USES,
+  WEED_SPRAY_BAG,
+  GRIND_WORK,
 } from '../defs/items.ts'
 import {
   HAPPY_MAX,
@@ -32,7 +34,7 @@ import {
   type Rarity,
 } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS } from '../defs/skills.ts'
+import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
@@ -50,8 +52,8 @@ import {
   occupiedCells,
 } from './building.ts'
 import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
-import { TREE_YIELD_MUL } from '../defs/trees.ts'
-import { dump, parse, SAVE_VERSION } from './save.ts'
+import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
+import { dump, parse } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type FruitStack, type Hand } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
@@ -314,6 +316,7 @@ describe('beta-2 invariants', () => {
     if (w.seam.kind === 'recap') {
       expect(w.seam.recap.money).toBe(58)
       expect(w.seam.recap.tax).toBe(2)
+      expect(w.seam.recap.water).toBe(0)
     }
   })
 
@@ -699,7 +702,8 @@ describe('beta-4 invariants', () => {
     expect(cb.slots[0].kind).toBe('empty')
   })
 
-  test('Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.', () => {
+  test('Grinder is a hopper. `GRIND_WORK` 12 — preference. Mill-like tick. Not actor work. Seeds do not merge into house.', () => {
+    expect(GRIND_WORK).toBe(12)
     const w = grindWorld(7)
     w.seats[0].inventory.forEach((_, i) => {
       w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
@@ -727,7 +731,7 @@ describe('beta-4 invariants', () => {
     }
     expect(w.seats[0].hand.kind).toBe('empty')
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
-    for (let i = 0; i < 90; i++) w.tick(DT_MAX)
+    for (let i = 0; i < Math.ceil(GRIND_WORK / DT_MAX) + 20; i++) w.tick(DT_MAX)
     const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
     const expectCount = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
     const dropped = w.drops.filter(d => d.item.kind === 'seeds')
@@ -756,7 +760,7 @@ describe('beta-4 invariants', () => {
     expect(w.seats[0].hand.kind).toBe('empty')
     const g = w.cell(AT)
     expect(g.kind === 'grinder' && g.units).toBe(n)
-    for (let i = 0; i < 300; i++) w.tick(DT_MAX)
+    for (let i = 0; i < Math.ceil((n * GRIND_WORK) / DT_MAX) + 20; i++) w.tick(DT_MAX)
     let expectCount = 0
     for (let i = 0; i < n; i++) {
       const u = new Rng(11).stream('grind').at(AT.col, AT.row, 1, i)
@@ -1667,6 +1671,31 @@ describe('1.2 machines', () => {
     expect(stored.kind === 'hold' && stored.item.kind === 'fruit' && stored.item.freshness).toBeLessThan(1)
   })
 
+  test('Picked fruit keeps ticking freshness (hand, house, chest, ground, quad, harvest trailer) until sold. Freezer slots skip `tickFreshness`. Mill hopper is units, no freshness. `<= 0` replaces that slot with `{ kind: \'rotten\'; cls: CROPS[crop].cls; count }` in place, no auto-merge. Illegal: fruit with `freshness <= 0` after tick.', () => {
+    const w = new World()
+    const fruit = {
+      kind: 'fruit' as const,
+      crop: 'carrot' as const,
+      rarity: 'common' as const,
+      count: 3,
+      unitSale: 3,
+      freshness: 0.0001,
+      bio: true,
+    }
+    w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
+    w.seats[0].inventory[0] = { kind: 'hold', item: { ...fruit } }
+    const chest = new Chest({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    w.setCell(AT, chest)
+    chest.slots[0] = { kind: 'hold', item: { ...fruit } }
+    w.drops.push({ at: { col: AT.col + 1, row: AT.row }, item: { ...fruit } })
+    w.tick(1)
+    const rotten = { kind: 'rotten' as const, cls: CROPS.carrot.cls, count: 3 }
+    expect(w.seats[0].hand).toEqual({ kind: 'hold', item: rotten })
+    expect(w.seats[0].inventory[0]).toEqual({ kind: 'hold', item: rotten })
+    expect(chest.slots[0]).toEqual({ kind: 'hold', item: rotten })
+    expect(w.drops.find(d => d.item.kind === 'rotten')).toEqual({ at: { col: AT.col + 1, row: AT.row }, item: rotten })
+  })
+
   test('consign processed', () => {
     const w = new World()
     w.seats[0].actor.x = PAD.col + 0.5
@@ -1681,15 +1710,15 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 2.08. `PROTOCOL` 2.08. Wordmark 2.0.8. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('Broken dump missing seats → unusable. No migrate.', () => {
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(2.08)
-    const old = parse(JSON.stringify({ ...s, version: 1.62 }))
-    expect(old.ok).toBe(false)
-    if (old.ok) return
-    expect(old.reason).toBe('version')
+    const noSeats = { ...s }
+    delete (noSeats as { seats?: unknown }).seats
+    const bad = parse(JSON.stringify(noSeats))
+    expect(bad.ok).toBe(false)
+    if (bad.ok) return
+    expect(bad.reason).toBe('unusable')
   })
 
   test('`PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner.', () => {
@@ -2103,7 +2132,7 @@ describe('0.9 log and rng', () => {
 })
 
 describe('1.5.2', () => {
-  test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.', () => {
+  test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `mul` 0 → skip; else `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks) * mul`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.', () => {
     expect(WEED_CHANCE).toBe(0.03)
     const w = new World()
     const soil = bed()
@@ -2135,25 +2164,39 @@ describe('1.5.2', () => {
     expect(adj.weedChance).toBe(again)
   })
 
-  test("Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` 30. Illegal: `usesLeft` 0 as held (throw away at 0). `buy-weed-spray` $12 utility, unlock and show `unlock-fertilizer`. Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.", () => {
-    expect(WEED_SPRAY_USES).toBe(30)
+  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.", () => {
+    expect(WEED_SPRAY_BAG).toBe(30)
     expect(SKUS['buy-weed-spray'].price).toBe(12)
     const w = new World()
     w.done.add('unlock-fertilizer')
     w.money = 50
     expect(w.buy('buy-weed-spray')).toBeUndefined()
     expect(w.seats[0].place.kind).toBe('none')
-    const slot = w.seats[0].inventory.find(s => s.kind === 'hold' && s.item.kind === 'weed-spray')
-    expect(slot?.kind === 'hold' && slot.item.kind === 'weed-spray' && slot.item.usesLeft).toBe(30)
+    expect(w.additives.litersOf('weed-spray')).toBe(WEED_SPRAY_BAG)
+    expect(w.seats[0].inventory.some(s => s.kind === 'hold' && s.item.kind === 'weed-spray')).toBe(false)
+    w.takeAdditive('weed-spray')
+    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'weed-spray' && w.seats[0].hand.item.liters).toBe(WEED_SPRAY_BAG)
     const soil = bed()
     w.setCell(AT, { kind: 'empty', soil })
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', usesLeft: 1 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', liters: 1, capacityLiters: WEED_SPRAY_BAG } }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'weed-spray', at: AT })
     w.tick(DT_MAX)
     expect(soil.weedChance).toBeCloseTo(-1 + (0.15 * DT_MAX) / 240, 8)
     expect(w.seats[0].hand.kind).toBe('empty')
+    const dumped = dump(w)
+    dumped.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', liters: 12, capacityLiters: WEED_SPRAY_BAG } }
+    const ok = parse(JSON.stringify(dumped))
+    expect(ok.ok).toBe(true)
+    if (ok.ok) {
+      const h = ok.world.seats[0].hand
+      expect(h.kind === 'hold' && h.item.kind === 'weed-spray' && h.item.liters).toBe(12)
+    }
+    const bad = JSON.parse(JSON.stringify(dumped)) as { seats: { hand: { item: unknown } }[] }
+    bad.seats[0].hand.item = { kind: 'weed-spray', usesLeft: 30 }
+    const failed = parse(JSON.stringify(bad))
+    expect(failed.ok).toBe(false)
   })
 
   test("Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weeds in hand merge up to the stack cap; full is a no-op that says so. Shovel: no drop, `weedChance = −0.3`.", () => {
@@ -2191,7 +2234,7 @@ describe('1.5.2', () => {
     expect(w.cell(at3).kind).toBe('empty')
   })
 
-  test('Each `BIG_TICK`, world roll: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.', () => {
+  test('Each `BIG_TICK`, world roll: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. `mul` from current weather. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.', () => {
     expect(ramped(GRASS_CHANCE, 0)).toBeLessThan(0)
     expect(ramped(GRASS_CHANCE, 1)).toBeLessThan(0)
     const fresh = new World(1)
@@ -2271,13 +2314,16 @@ describe('1.5.2', () => {
     }
   })
 
-  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`; no `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
+  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
     expect(PLAYER_SKILL_IDS.includes('driving-classes')).toBe(true)
     expect(PLAYER_SKILL_IDS.includes('machinery' as never)).toBe(false)
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
     expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
     expect(HUSBAND_SKILL_IDS.includes('machinery')).toBe(true)
     expect(HUSBAND_SKILL_IDS.includes('haggling')).toBe(true)
+    expect(HUSBAND_SKILL_IDS.includes('forecast')).toBe(true)
+    expect(SKILLS.forecast.maxTier).toBe(1)
+    expect(SKILLS.forecast.effect).toEqual({ kind: 'forecast' })
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('contracts')).toBe(false)
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('tool-contracts')).toBe(false)
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('machine-contracts')).toBe(false)
@@ -2362,7 +2408,7 @@ describe('1.5.2', () => {
     expect(w.skuPrice('buy-shovel')).toBe(7)
   })
 
-  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
+  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
     expect(CONTAINERS.bucket.capacityLiters).toBe(5)
     expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
     expect(FERT_BAG_LITERS).toBe(10)
@@ -2370,6 +2416,8 @@ describe('1.5.2', () => {
     expect(SYNTH_BAG_LITERS).toBe(16)
     expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
     expect(COMPOST_LITERS).toBe(5)
+    expect(WEED_SPRAY_BAG).toBe(30)
+    expect(SKUS['buy-weed-spray'].price).toBe(12)
     expect(COMPOST_SECONDS).toBe(60)
     expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
@@ -2399,8 +2447,81 @@ describe('1.5.2', () => {
     expect(STILL_WATER).toBe(1)
   })
 
-  test('Tree juvenile `TREES.juvenileSeconds` (480) then `pending`. Next seam → `TREE_YIELD_MUL` 3.5× for 2 days.', () => {
+  test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {
+    expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 180 })
+    expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 302.4 })
+    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 124.8 })
+    expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 240 })
+    expect(CROPS.apricot.sale).toBe(6.1)
+    expect(CROPS.apple.sale).toBe(15.4)
+    expect(CROPS.cherry.sale).toBe(8.45)
+    expect(CROPS.olive.sale).toBe(24.4)
     expect(TREE_YIELD_MUL).toBe(3.5)
+    expect(TREE_OFF_MUL).toBe(0.75)
+    expect(TREE_YIELD_DAYS).toBe(2)
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    w.clock.t = 239.9
+    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(DT_MAX)
+    expect(tree.yield).toEqual({ kind: 'on', daysLeft: TREE_YIELD_DAYS })
+    expect(tree.juvenile).toBe(1)
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    tree.fruit = 0
+    w.tick(DT_MAX)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_YIELD_MUL), 8)
+    tree.yield = { kind: 'on', daysLeft: 1 }
+    tree.tended = true
+    w.clock.t = 239.9
+    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(DT_MAX)
+    expect(tree.tended).toBe(false)
+    expect(tree.yield).toEqual({ kind: 'off', chance: -0.2 })
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    tree.fruit = 0
+    w.tick(DT_MAX)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_OFF_MUL), 8)
+    expect(tree.juvenile).toBe(1)
+  })
+
+  test('Tend once per off-season: player owns `tending`, empty hand, `cell.kind === \'tree\'`, `juvenile >= 1`, `yield.kind === \'off\'`, `Tree.tended === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Seam `on` → `off`: `tended = false`, then `chance = -0.2`. Not pending. Not `{ on }`. Not juvenile. Prompt **Tend**. Witness `Tree.tended`.', () => {
+    const w = new World()
+    w.family.player.owned.set('tending', 1)
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'off', chance: 0 })
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    expect(tree.tended).toBe(false)
+    w.seats[0].hand = { kind: 'empty' }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    expect(w.canTend(AT)).toBe(true)
+    expect(w.canTend(below)).toBe(true)
+    w.enqueue({ act: 'tend', at: AT })
+    for (let i = 0; i < Math.ceil(TEND_WORK / DT_MAX) + 2; i++) w.tick(DT_MAX)
+    expect(tree.tended).toBe(true)
+    expect(tree.yield).toEqual({ kind: 'off', chance: 0.15 })
+    expect(w.canTend(AT)).toBe(false)
+    tree.yield = { kind: 'pending' }
+    expect(w.canTend(AT)).toBe(false)
+    tree.yield = { kind: 'on', daysLeft: 2 }
+    expect(w.canTend(AT)).toBe(false)
+    tree.juvenile = 0.5
+    tree.yield = { kind: 'off', chance: 0 }
+    tree.tended = false
+    expect(w.canTend(AT)).toBe(false)
+    const saved = dump(w)
+    const cell = saved.chunks[0].cells[AT.row][AT.col]
+    expect(cell.kind === 'tree' && cell.tended).toBe(false)
+    tree.juvenile = 1
+    tree.tended = true
+    const round = parse(JSON.stringify(dump(w)))
+    expect(round.ok).toBe(true)
+    if (round.ok) {
+      const loaded = round.world.cell(AT)
+      expect(loaded.kind === 'tree' && loaded.tended).toBe(true)
+    }
   })
 })
 

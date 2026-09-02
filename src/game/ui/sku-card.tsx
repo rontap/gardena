@@ -29,11 +29,11 @@ export function rowState(world: World, id: SkuId): RowState {
   if (made.kind === 'seeds') {
     return world.silo.free < made.count ? 'silo-full' : 'ok'
   }
-  if (made.kind === 'fertilizer' || made.kind === 'synth') {
+  if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
     return world.additives.free < made.liters ? 'store-full' : 'ok'
   }
   const inv = world.seats[world.local].inventory
-  if (made.kind === 'grass-seeds' || made.kind === 'sugar' || made.kind === 'weed-spray') {
+  if (made.kind === 'grass-seeds' || made.kind === 'sugar') {
     const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === made.kind)
     const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'

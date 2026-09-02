@@ -35,7 +35,7 @@ Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same
 
 Intents `still` `barrel` `jam` `mill` at `Coord`. `dest(still)` = origin. `dest(barrel | jam | mill)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
 
-Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, tree seeds, tools: refuse.
+Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit is not an item after tick. Seeds, tree seeds, tools: refuse.
 
 Grinder dump is mill-style: `{ act: 'grind' }`, `arm(0.4)`, into hopper. Not actor `GRIND_WORK`. Guest may dump.
 
@@ -139,7 +139,7 @@ One batch → `count` 1.
 
 `BarrelCrop = 'grape' | 'apple'`. `CaskId = 'wine' | 'cider'`. `CASK_OF` maps crop → cask. `Barrel.crop` starts `'none'`.
 
-First accepted dump locks `crop`, mill-style. Later dumps must match. Collect clears it back to `'none'`. No mix. `BARREL_CAP`. No overload. Age ticks after `crop !== 'none'` and feed count `=== BARREL_CAP`. `BARREL_MATURE = DAY_SECONDS` — derived. `BARREL_AGE = 3 × DAY_SECONDS` — derived.
+First accepted dump locks `crop`, mill-style. Later dumps must match. Collect clears it back to `'none'`. No mix. `barrelNeed('apple')` = 4, `barrelNeed('grape')` = 5. Catalog/recipe rows use `barrelNeed`. Wine still 5. `BARREL_CAP` as a single 5 is wrong for cider — grape stays 5. No overload. Age ticks after `crop !== 'none'` and feed count `=== barrelNeed(crop)`. `BARREL_MATURE = DAY_SECONDS` — derived. `BARREL_AGE = 3 × DAY_SECONDS` — derived. `CASK_SALE.cider` unchanged.
 
 At `age === BARREL_MATURE`: consume `barrel.at(col, row, day, n)`, bake rarity (same mean/clamp as still; ignore freshness), `n += 1`. Age continues.
 
@@ -151,7 +151,7 @@ Cask item `{ kind: 'cask'; cask: CaskId; rarity; count; unitSale }`. Age baked i
 
 ## Freezer
 
-`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` skips freezer slots. Chest / house / hand / ground / mill hopper fruit still tick. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
+`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` skips freezer slots. Chest / house / hand / ground / quad / harvest trailer fruit still tick. Mill hopper is units, no freshness. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
 
 `swapChest` on a freezer cell. Guest: not. Host cue reuses chest.
 
@@ -165,9 +165,9 @@ Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05
 
 `MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box`. Freezer and chest are storage, not machines.
 
-`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`.
+`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (5).
 
-`Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder (any `AnnualId`), compost fruit (any `CropId`), compost green (weed, grass).
+`Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder (any `AnnualId`), compost fruit (any `CropId`), compost green (weed, grass), compost rotten (`CropClass` faces).
 
 `Yield` — `exact` | `range`. `range` is the grinder's `GRIND_MIN`..`GRIND_MAX` with `faces` in `ANNUAL_IDS` order, lockstep with the input faces.
 
@@ -175,11 +175,11 @@ Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05
 
 `clockText(seconds)` is `{n} sec`. `n` is `Math.round(seconds)`.
 
-Rows: mill `MILL_RECIPES` 5, jam `JAM_CROPS` 5, still `STILL_CROPS` 3 + mixed, barrel `BARREL_CROPS` 2, grinder 1, compost 2 (fruit, then weed/grass). Both compost rows yield `COMPOST_LITERS`. `recipesOf('barrel')` lists `BARREL_CROPS` (grape → wine, apple → cider). Live barrel craft pins to the locked crop.
+Rows: mill `MILL_RECIPES` 5, jam `JAM_CROPS` 5, still `STILL_CROPS` 3 + mixed, barrel `BARREL_CROPS` 2 (`barrelNeed`), grinder 1, compost 3 (fruit, then weed/grass, then rotten). All compost rows yield `COMPOST_LITERS`. `recipesOf('compost-box')` 3. `recipesOf('barrel')` lists `BARREL_CROPS` (grape → wine, apple → cider). Live barrel craft pins to the locked crop.
 
 Still water is an input of `STILL_WATER` liters drawn with the `water` face — [[art/items]]. Water is not an `Item`. Not `tap`.
 
-Empty compost (`units === 0`) is `idle` so the live row cycles the two recipes. Filling / working / ready pin the fruit row; `have` / `need` stay waste.
+Empty compost (`units === 0`) is `idle` so the live row cycles all list rows. Filling / working / ready pin the fruit row; `have` / `need` stay waste. Sim already accepts rotten.
 
 `craftState(cell, mul)` derives the live `Craft`: `idle` `filling` `paused` `thirsty` `working` `ready`. `thirsty` is `stillReady && progress === 0` — `tickMachines` only leaves `progress` at 0 after `pullStillWater` succeeds, so no net read is needed. `ready` is `progress >= 1`, held there while the output has nowhere to go, and the collectable barrel.
 
@@ -189,7 +189,7 @@ Assumption: the barrel counts down to `BARREL_MATURE`, not `BARREL_AGE`.
 
 `sim/machine.ts`. No `World`.
 
-Crop fruit stall path unchanged. Machine goods: baked `unitSale`, no `stallX`, no `raritySale`. Saleswoman every `StallGoodId`. Őstermelő iff `rarity === 'heirloom'` (spirit, wine, crop fruit). Bio: crop fruit only. Jam / oil / flour / extract / sugar: no rarity, no bio. Clearance: fruit only.
+Crop fruit stall path unchanged. Machine goods: baked `unitSale`, no `stallX`, no `raritySale`. Saleswoman every `StallGoodId`. Őstermelő iff `rarity === 'heirloom'` (spirit, wine, crop fruit). Bio: crop fruit only. Jam / oil / flour / extract / sugar: no rarity, no bio. Clearance: `{ kind: 'rotten' }` only.
 
 Merge same keys; sugar by liters; else by count; weighted `unitSale`.
 
@@ -209,7 +209,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla.
 
-`machines.barrel` — Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `recipesOf('barrel')` lists `BARREL_CROPS`. Rows: 2.
+`machines.barrel` — Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS`. Rows: 2. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged.
 
 `machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1` **and** prop `48×24` occupying both cells, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Origin-only paint + `TILE/24` scale shows the full 48-wide art.
 
@@ -229,12 +229,12 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.io-push` — Produce inserts into the east store if present; else `frontOf`. East store full → wait.
 
-`machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.
+`machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` 12 — preference. Mill-like tick. Not actor work. Seeds do not merge into house.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists two recipes; the box counts `COMPOST_NEED` waste. Barrel `BARREL_CROPS` 2, `age` not `work`.
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists three recipes; the box counts `COMPOST_NEED` waste. Barrel `BARREL_CROPS` 2, inputs equal `barrelNeed`, `age` not `work`.
 
 `machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` on the `water` face and `STILL_CAP` fruit.
 
-`machines.recipe-compost` — Compost lists two recipes. Fruit: any `CropId`. Green: weed, grass. Sim still counts `COMPOST_NEED` waste.
+`machines.recipe-compost` — Compost lists three recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
 
 `machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not.

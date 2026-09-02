@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import {
   DISPATCH_DWELL,
@@ -32,8 +33,7 @@ import {
   VEHICLE_SLOTS,
 } from '../defs/items.ts'
 import { SKUS } from '../defs/research.ts'
-import { PROTOCOL } from './mp.ts'
-import { dump, parse, SAVE_VERSION } from './save.ts'
+import { dump, parse } from './save.ts'
 import { permit } from './mp.ts'
 import { Act } from './log.ts'
 import { lookText } from './look.ts'
@@ -78,13 +78,10 @@ function digest(w: World) {
 }
 
 describe('vehicles I', () => {
-  test('`SAVE_VERSION` 2.08. `PROTOCOL` 2.08. No migrate. Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
-    expect(SAVE_VERSION).toBe(2.08)
-    expect(PROTOCOL).toBe(2.08)
+  test('Dump `vehicles` + `trailers` + hangar/silo cells. Save `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Item` `weed-spray`, wires, sensors. Digest includes every vehicle `id` `kind` `fuel` `pose` and quad `slots` / tractor `hitch` `boom`, every trailer `id` `kind` `pose` hopper or `slots`.', () => {
     const w = farm()
     w.buyVehicle(AT, 'quad')
     const s = dump(w)
-    expect(s.version).toBe(2.08)
     expect(s.vehicles).toHaveLength(1)
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)
@@ -99,7 +96,6 @@ describe('vehicles I', () => {
     expect(loaded.ok).toBe(true)
     if (!loaded.ok) return
     expect(digest(loaded.world)).toEqual(digest(w))
-    expect(parse(JSON.stringify({ ...s, version: 1.4 })).ok).toBe(false)
   })
 
   test("`VehicleKind` is `'quad' | 'tractor'`. Quad `slots.length === VEHICLE_SLOTS`. Fuel is `0..1` on the vehicle, not an Item.", () => {

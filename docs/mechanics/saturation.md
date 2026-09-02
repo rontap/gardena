@@ -43,7 +43,7 @@ Ten sales of `V/10` pay the same total as one sale of `V`.
 
 `marketGain` computes each good's clean subtotal — freshness, `stallX`, `raritySale`, saleswoman, heirloom, bio — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
 
-Clearance's freshness-0 `$1` floor is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`.
+Clearance's `{ kind: 'rotten' }` `$1` is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`.
 
 Consign still accumulates `worth` untouched. Saturation is sampled at Sell all only.
 
@@ -73,7 +73,7 @@ The panel reads the quote. It does no arithmetic.
 
 Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Digest includes `sat` — [[architecture/net]]. Dummy dump fields `offered` `market` `target` `acc` — [[architecture/save]].
 
-Assumption: clearance `$1` is excluded from `V`. Dummy dump values are 0.
+Assumption: clearance `$1` is excluded from `V`. Dummy dump values are 0. Subject is rotten, not 0% fruit.
 
 ## Invariants
 
@@ -81,4 +81,4 @@ Assumption: clearance `$1` is excluded from `V`. Dummy dump values are 0.
 
 `sat.trapezoid` — Sell all of clean value `V` at `sat` pays the trapezoid, clamped piecewise at `SAT_FLOOR[good]`. Ten sales of `V/10` pay the same total as one sale of `V`.
 
-`sat.last` — Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance's `$1` floor is exempt.
+`sat.last` — Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance `{ kind: 'rotten' }` `$1` is exempt.

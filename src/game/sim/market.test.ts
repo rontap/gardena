@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { CROPS } from '../defs/crops.ts'
 import { COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
@@ -584,7 +585,7 @@ describe('saturation', () => {
     expect(one.stall.potato.sat).toBeCloseTo(Math.min(1, start + V / SAT_DEPTH), 9)
   })
 
-  test("Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance's `$1` floor is exempt.", () => {
+  test("Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance `{ kind: 'rotten' }` `$1` each, sat exempt. Without the skill: consign refused.", () => {
     const w = new World(1)
     w.stall.potato.take('common', 10, 1, false)
     w.stall.carrot.take('common', 5, 1, false)
@@ -592,20 +593,35 @@ describe('saturation', () => {
     expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 60) + paid(0, 'carrot', 15), 9)
     w.stall.potato.sat = 0.4
     expect(w.marketGain()).toBeCloseTo(paid(0.4, 'potato', 60) + paid(0, 'carrot', 15), 9)
+    const refused = new World(1)
+    refused.seats[0].actor.x = PAD.col + 0.5
+    refused.seats[0].actor.y = PAD.row + 0.5
+    refused.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 4 } }
+    refused.enqueue({ act: 'consign' })
+    refused.tick(DT_MAX)
+    expect(refused.clearance).toBe(0)
+    expect(refused.seats[0].hand.kind).toBe('hold')
     const c = new World(1)
     c.family.daughter.owned.set('clearance', 1)
-    c.stall.potato.take('common', 10, 0, false)
+    c.seats[0].actor.x = PAD.col + 0.5
+    c.seats[0].actor.y = PAD.row + 0.5
+    c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10 } }
+    c.enqueue({ act: 'consign' })
+    c.tick(DT_MAX)
+    expect(c.clearance).toBe(10)
+    expect(c.seats[0].hand.kind).toBe('empty')
     expect(c.marketGain()).toBe(10)
     c.sellAll()
-    expect(c.stall.potato.sat).toBe(0)
+    expect(c.clearance).toBe(0)
     expect(c.money).toBe(60)
     const mixed = new World(1)
     mixed.family.daughter.owned.set('clearance', 1)
+    mixed.clearance = 5
     mixed.stall.potato.take('common', 10, 1, false)
-    mixed.stall.potato.take('common', 5, 0, true)
     mixed.stall.potato.sat = 0.3
     expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 60) + 5, 9)
     mixed.sellAll()
+    expect(mixed.clearance).toBe(0)
     expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 60 / SAT_DEPTH), 9)
   })
 })

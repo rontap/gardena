@@ -75,13 +75,19 @@ Carrot / potato / wheat Experienced growers: gated on Crop variants.
 
 `Intent` `{ act: 'tend'; at: Coord }`. `dest` = `at`.
 
-Legal: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
+Legal plants: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`. Plants unchanged.
 
-`Plant.tended` required, starts `false`, same instance through ripe / dead — [[mechanics/plants]]. Illegal: optional `tended`. Illegal: tend twice. Illegal: tend ripe.
+Legal trees: player owns `tending`, empty hand, `cell.kind === 'tree'`, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Not pending. Not `{ on }`. Not juvenile. Prompt **Tend**. Witness `Tree.tended`. — [[mechanics/trees]] `trees.tend`
+
+`Plant.tended` required, starts `false`, same instance through ripe / dead — [[mechanics/plants]]. `Tree.tended` required, starts `false`. Illegal: optional `tended`. Illegal: tend twice. Illegal: tend ripe. Illegal: tend pending / `{ on }` / juvenile tree.
+
+`SKILLS.tending` blurb names plants and off-season trees.
 
 ## Market hours
 
-`marketOpen(phase)` — [[mechanics/market]].
+`marketOpen(phase)` — [[mechanics/market]] [[mechanics/weather]].
+
+Weather block: `(flood ∧ sunrise) ∨ (drought ∧ day)` unless daughter owns `open-24`. Then:
 
 | phase | open |
 |---|---|
@@ -89,9 +95,9 @@ Legal: player owns `tending`, empty hand, plot `growing`, `plant.tended === fals
 | sunset | daughter owns `open-late` |
 | twilight | daughter owns `open-24` |
 
-Consign always. Sell all illegal when closed.
+`open-late` does not reopen a weather block. Consign always. Sell all illegal when closed.
 
-Closed copy: “Stall closed until morning.” / “Stall closed at twilight.”
+Closed copy: flood “Stall closed this morning.” drought “Stall closed at midday.” Else “Stall closed until morning.” / “Stall closed at twilight.”
 
 ## Sale
 
@@ -105,7 +111,8 @@ At `marketGain`, not crop `Modifier`:
 - heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
 - bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - jam: fruit freshness `< JAM_ROT_FRESH` uses `rotSeconds × (1 + JAM_ROT × tier)` on ripe plants and `tickFreshness`. Not a sale floor. Not the jam machine
-- clearance: freshness-0 fruit `$1` each. Sugar and machine goods do not rot
+- clearance: `{ kind: 'rotten' }` `$1` apiece. Sat exempt. Saleswoman / heirloom / bio / weather do not apply. Sugar and machine goods do not rot. Without the skill: compost only, consign refused. `SKILLS.clearance` blurb: rotten produce sells for $1 apiece.
+- flood or drought: fruit stall goods only (annual including sugar-cane, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract — [[mechanics/weather]]
 
 Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `fruit.bio`.
 
@@ -117,6 +124,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - machinery: valve 0.3s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`
 - haggling: utility AND automation tab `skuPrice` `− $tier` then min $1. Hangar-buys still not `skuPrice`
+- drought `skuPrice`: `tab === 'seeds' | 'utility'`, after haggling min $1, then ×2. Automation / building / hangar-buys untouched — [[mechanics/weather]]
 - tax: expansion formula then `× (1 − 0.02 × tier)` then min $1 — [[mechanics/expansion]]
 - water-study: unlocks water lens. Water lens gated until owned
 - land-study: unlocks land lens
@@ -126,9 +134,9 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())` iff `unlock-crop-variants` in `done`, else `common`. Stream still consumes `next()`. Per rank: `SEED_BANK_CHANCE`, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
 - broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5. Broker slots are always cash — the two prize slots are drawn from the base six — [[mechanics/contracts]]
 - industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
-- forecast: dummy
+- forecast: `{ kind: 'forecast' }`. HUD tomorrow iff owned. Blurb locked on [[mechanics/weather]]
 
-Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` on husband. `vanilla-tending` is not a skill.
+Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` on husband. No `{ kind: 'dummy' }`. `vanilla-tending` is not a skill.
 
 ## Invariants
 
@@ -136,7 +144,7 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 
 `family.lens` — Water lens only if husband owns `water-study`. Land lens if husband owns `land-study`. Vehicle interactions lens if `unlock-vehicles` done.
 
-`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per rank on `World.stackMax`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-vanilla` gate `unlock-raspberry`. No `better-*` on `TreeId`. `HusbandSkillId`: `machinery`, `haggling`. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.
+`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per rank on `World.stackMax`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-vanilla` gate `unlock-raspberry`. No `better-*` on `TreeId`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.
 
 `family.jam-rot` — `jam` rank N: fruit with freshness `< 0.5` rots `15% × N` slower. Ripe plant and picked fruit. Freezer skips.
 

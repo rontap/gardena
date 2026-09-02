@@ -65,6 +65,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const prevSeam = useRef<'play' | 'recap'>('play')
   const [hudN, setHudN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
+  const [menuCanvasIn, setMenuCanvasIn] = useState(false)
   const [world, setWorld] = useState<World | undefined>(() => {
     if (!START_NOW) return undefined
     const w = new World(undefined, sink)
@@ -764,17 +765,20 @@ export default function App({ sink }: { sink: WorkerSink }) {
       <Tooltip.Provider delayDuration={200}>
         <div className="relative h-full min-h-0 overflow-hidden">
           {backdrop !== undefined && (
-            <div className="pointer-events-none absolute inset-0">
-              <MapView
-                world={backdrop}
-                cam={BOOT_CAM}
-                lens="off"
-                editor={false}
-                hover={undefined}
-                onHover={ignoreHover}
-                onCam={ignoreCam}
-                onClick={ignoreClick}
-              />
+            <div className="pointer-events-none absolute inset-0 bg-grass">
+              <div className={`${menuCanvasIn ? 'menu-canvas-in' : 'menu-canvas-wait'} absolute inset-0`}>
+                <MapView
+                  world={backdrop}
+                  cam={BOOT_CAM}
+                  lens="off"
+                  editor={false}
+                  hover={undefined}
+                  onHover={ignoreHover}
+                  onCam={ignoreCam}
+                  onClick={ignoreClick}
+                  onReady={() => setMenuCanvasIn(true)}
+                />
+              </div>
             </div>
           )}
           <Menu

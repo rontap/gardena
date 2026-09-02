@@ -8,7 +8,7 @@ Title **General store**. Rail button **Shop**. Categories are a vertical rail, s
 |---|---|
 | Seeds | Sow on tilled soil. |
 | Tools | Tools and carry. |
-| Supplies | Feeds go to the additive store. Sugar and weed spray to your hands. |
+| Supplies | Feeds go to the additive store. Sugar to your hands. |
 
 A tab with no `skuShown` sku is not rendered at all — the shelf appears when research opens it, and never reorders. With no tab left, the pane reads *Nothing here yet. Research opens this shelf.*
 
@@ -26,7 +26,7 @@ Groups **order** the grid; they do not draw. No headers, no dividers. The catego
 
 Three per row, and **the card is one box everywhere**: same height, same width, browsing or searching, one line of label or two. The row height is a constant rather than `fr`, and the category rail stays mounted while searching so results are laid out in the same column as the shelves. A grid whose cells resize as you type is unreadable. One card per `skuShown` sku. The card **is** the button — no nested `Btn`, no separate hover target.
 
-`skuInner` over `skuLabel`, two lines at most, then **placing** when armed, then `Coin` price. The icon carries the card. Label before price: the accessible name is *{label} {price}*.
+`skuInner` over `skuLabel`, two lines at most, then **placing** when armed, then `Coin` price. The icon carries the card. Label before price: the accessible name is *{label} {price}*. Drought `skuPrice` ×2 on `seeds` | `utility` is already that Coin. No extra why. No new face. Automation / building / hangar-buys untouched. [[mechanics/weather]]
 
 | state | face | callout reason |
 |---|---|---|
@@ -39,7 +39,7 @@ Three per row, and **the card is one box everywhere**: same height, same width, 
 
 The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Never say "not researched" and leave the player guessing which one.
 
-`inventory-full` is `grass-seeds`, `sugar`, and `buy-weed-spray` only, when there is no merge slot and no empty house slot. Seed packs answer to the silo cap and fertilizer to the additive-store cap instead — [[mechanics/inventory]]. The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently.
+`inventory-full` is `grass-seeds` and `sugar` only, when there is no merge slot and no empty house slot. Seed packs answer to the silo cap and fertilizer / synth / weed-spray to the additive-store cap instead — [[mechanics/inventory]]. `buy-weed-spray` is `store-full`, not `inventory-full`. The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently.
 
 **Locked cards sort to the end of their own group.** The `locked` predicate is research gating alone — never money or capacity, which flip while the player hovers and would reshuffle cards under the cursor.
 
@@ -69,7 +69,7 @@ Escape in the field clears the query and goes no further. Escape with the field 
 
 ## Buying
 
-Packs never arm. `buy-fertilizer` and `buy-synth-fertilizer` do not arm either: they are delivered to the additive store. `buy-weed-spray` does not arm `Seat.place`: it is a hand tool, delivered to the house like sugar — [[mechanics/inventory]]. Everything on the Build shelves arms `Seat.place` — [[ui/place]].
+Packs never arm. `buy-fertilizer` and `buy-synth-fertilizer` and `buy-weed-spray` do not arm: they are delivered to the additive store. Everything on the Build shelves arms `Seat.place` — [[ui/place]].
 
 Bulk buying is on. No skill. Ctrl+click on a seed SKU always calls `buyPacks(id)`. The callout still shows the discounted `Coin` from `packsPrice(id)`. Ctrl on anything that cannot bulk-buy is a plain `buy(id)`.
 
@@ -85,4 +85,4 @@ Supplies: Feeds `buy-fertilizer` `buy-synth-fertilizer` `buy-weed-spray`, Pantry
 
 Gates: `skuShown` / `skuOpen` from [[mechanics/research]] Shop gates. `pack-tomato` show `start`, buy `unlock-tomato`. `pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. Vanilla and olive have no pack. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-hangar` shows `unlock-irrigation`, buys `unlock-vehicles`. The three silo SKUs show `unlock-vehicles`, buy `unlock-silos`. `buy-weed-spray` show + buy `unlock-fertilizer`. Lever, button, lamp, pulser, counter, water, fert, harvest, water-system, day: show + buy `unlock-sensors`. AND / OR / NOT: show `unlock-sensors`, buy `unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. `buy-smart-valve` shows `unlock-sensors`, buys `unlock-smart-irrigation`. `buy-vehicle-detector` shows and buys `unlock-sensors`, `need: ['unlock-vehicles']`. `buy-traffic-light` shows `unlock-sensors`, `need: ['unlock-dispatch']`. Locked callout names **Automated dispatch**. `buy-pipe` `buy-tap` show `start`, buy `unlock-irrigation`. `buy-rain-tank` show + buy `start`. `buy-pumpjack` show `start`, `buy-well` show `unlock-irrigation`, both buy `unlock-water-storage`. `buy-compost-box` shows `start`, buys `start`. `skuDesc` [[ui/sensors]].
 
-Assumption: `rowState` never returns `need-skill`. `buy-weed-spray` files under Feeds and goes to house/hand; it does not arm a place ghost. `buyPacksFail` still returns `'Locked'` for non-seed / closed skus (hides the bulk line).
+Assumption: `rowState` never returns `need-skill`. `buy-weed-spray` files under Feeds and goes to the additive store; `store-full`, not `inventory-full`; it does not arm a place ghost. `buyPacksFail` still returns `'Locked'` for non-seed / closed skus (hides the bulk line).

@@ -10,6 +10,8 @@ One `src/game/sim/world.test.ts` (or split by the same topic names as `docs/mech
 
 ## What not to test
 
+Never test specifically for versions, ever. `expect(SAVE_VERSION)` or `PROTOCOL` `.toBe` is disallowed.
+
 Copy wording, layout, SVG, Tailwind. Playwright covers HUD smoke only.
 
 Changelog *line-shape* is tested (dialect fixtures, not player sentences). Copy exemption does not cover the parser. [[architecture/changelog]] [[standards/update-notes]]

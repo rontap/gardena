@@ -94,11 +94,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'jam') lines.push('Jam machine')
   else if (cell.kind === 'tree') {
     const name = `${TREE_NAME[cell.species]} tree`
-    if (cell.juvenile < 1) lines.push(`${name} - growing ${Math.floor(cell.juvenile * 100)}%`)
-    else if (cell.yield.kind === 'on') lines.push(`${name} - yielding`)
-    else if (cell.yield.kind === 'pending') lines.push(`${name} - resting`)
-    else lines.push(`${name} - resting`)
-    if (cell.juvenile >= 1) lines.push(`fruit ${Math.floor(cell.fruit * 100)}%`)
+    if (cell.juvenile < 1) lines.push(`${name} - growing`)
+    else if (cell.yield.kind === 'on') lines.push(`${name} - on-season`)
+    else lines.push(`${name} - off-season`)
   }
   else if (cell.kind === 'untilled') {
     if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))

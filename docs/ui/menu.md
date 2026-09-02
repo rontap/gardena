@@ -36,7 +36,7 @@ Show ×: play, or joining, or changelog. Boot home: no ×.
 
 ## Startup
 
-First paint. A `new World` (random seed, MemorySink) is the backdrop: map full-bleed, **no HUD**, **no tick**. Camera default. Map `pointer-events-none`. Not the play farm — New Game constructs a different `World`.
+First paint. A `new World` (random seed, MemorySink) is the backdrop: map full-bleed, **no HUD**, **no tick**. Camera default. Map `pointer-events-none`. Not the play farm — New Game constructs a different `World`. Outer `absolute inset-0 bg-grass`. Inner starts `menu-canvas-wait` (opacity 0). After `WorldView.mount` (atlas + Pixi `app.init`) and first `layout`, `MapView.onReady` swaps to `menu-canvas-in`: 0.6s ease-out, `transform-origin` center, opacity 0 / scale 0.7 → opacity 1 / scale 1, `both`. No wall-clock delay. `prefers-reduced-motion: reduce` skips the motion.
 
 Menu shell `absolute inset-0 z-20 flex items-center justify-center`. No `bg-dirt`. No dim. Backdrop does not dismiss. Esc is App join-close only — not changelog-to-home. Boot home: no ×. Changelog × → home.
 
@@ -85,8 +85,9 @@ Join dialog showing → MP reasons, not `LoadFailReason`. [[ui/multiplayer]]
 
 | `LoadFailReason` | copy |
 |---|---|
-| `not-gardena` | This file is not a Gardena save. |
-| `version` | This save could not be loaded because of a version difference. |
-| `unusable` | This file could not be used. |
+| `unknown-format` | The file is in an unknown format. |
+| `not-gardena` | The file is not a gardena format |
+| `version` | This savefile is from an older Gardena version and could not be loaded |
+| `unusable` | The savefile could not be loaded |
 
 Missing slot is not a reason — Load is greyed.

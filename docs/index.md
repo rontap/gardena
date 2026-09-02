@@ -29,6 +29,7 @@ Vault for this game. Agents read this first.
 ## Mechanics
 
 - [[mechanics/_index]]
+- [[mechanics/weather]]
 
 ## Items
 

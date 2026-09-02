@@ -51,9 +51,9 @@ Counts from `sim/recipe.ts`. Do not retype.
 | mill | `MILL_RECIPES` 5 — sugar-cane olive wheat grass vanilla. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. Grass name unchanged. |
 | jam | `JAM_CROPS` 5. No apple. |
 | still | `STILL_CROPS` 3 + mixed. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
-| barrel | `BARREL_CROPS` 2 — grape → wine, apple → cider. |
+| barrel | `BARREL_CROPS` 2 — grape → wine `barrelNeed('grape')` 5, apple → cider `barrelNeed('apple')` 4. |
 | grinder | 1 |
-| compost-box | 2: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS` |
+| compost-box | 3: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5) |
 
 ## Live row
 
@@ -100,4 +100,4 @@ The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePa
 
 Assumption: `useCycle` ignores `prefers-reduced-motion`, as the four call sites it replaced always did.
 
-Assumption: live compost filling pins the fruit row; empty compost is idle and cycles both list rows.
+Assumption: live compost filling pins the fruit row; empty compost is idle and cycles all list rows.

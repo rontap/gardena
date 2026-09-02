@@ -107,7 +107,7 @@ export type SkillEffect =
     | { kind: 'open-24' }
     | { kind: 'jam' }
     | { kind: 'clearance' }
-    | { kind: 'dummy' }
+    | { kind: 'forecast' }
 
 export type SkillDef<Id extends SkillId = SkillId> = {
     id: Id
@@ -158,7 +158,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'tending',
         'player',
         'Careful tending',
-        'Empty-handed, tend a growing plant once, which makes the plants slightly happier. Ripe plants cannot be tended.',
+        'Empty-handed, tend a growing plant or an off-season tree once. Plants become slightly happier. Ripe plants cannot be tended.',
         1,
         {kind: 'tend'},
     ),
@@ -179,9 +179,14 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'haggling'},
         {kind: 'hidden'},
     ),
-    forecast: row('forecast', 'husband', 'Weather forecast', "Does nothing yet. Will show the next day's weather.", 1, {
-        kind: 'dummy',
-    }),
+    forecast: row(
+        'forecast',
+        'husband',
+        'Weather forecast',
+        "Tomorrow's weather appears next to today on the top bar, so you can plan irrigation, the stall, and pump spend before morning.",
+        1,
+        {kind: 'forecast'},
+    ),
     tax: row(
         'tax',
         'husband',
@@ -367,7 +372,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'clearance',
         'daughter',
         'Clearance sale',
-        'Fruit that has gone completely off still sells for $1 apiece, no matter the crop.',
+        'Rotten produce sells for $1 apiece.',
         1,
         {kind: 'clearance'},
     ),

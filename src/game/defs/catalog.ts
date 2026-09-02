@@ -9,7 +9,7 @@ import {
   COMPOST_SECONDS,
   CONTAINERS,
   FERT_BAG_LITERS,
-  WEED_SPRAY_USES,
+  WEED_SPRAY_BAG,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -203,8 +203,8 @@ export function catalogEntries(): CatalogEntry[] {
     {
       id: 'weed-spray',
       title: 'Weed spray',
-      icon: { kind: 'weed-spray', usesLeft: WEED_SPRAY_USES },
-      blurb: fill('Hand sprayer. ${n} uses. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_USES }),
+      icon: { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG },
+      blurb: fill('Holds ${n} L. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_BAG }),
     },
     {
       id: 'compost',
@@ -394,7 +394,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'barrel',
       title: 'Barrel',
       icon: { kind: 'barrel' },
-      blurb: 'Grapes or apples, never mixed. Five fill a barrel. Wine or cider, not whisky.',
+      blurb: 'Grapes or apples, never mixed. Five grapes or four apples fill a barrel. Wine or cider, not whisky.',
     },
     {
       id: 'jam',

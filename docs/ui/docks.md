@@ -64,7 +64,7 @@ Seam dialog, `w-[26rem]`. `ui-recap-night` strip on top ([[art/recap-night]]). T
 
 Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). When `unlock-contracts` done: that day's `Recap.contracts` as one-line history (company, stars, day, completed / missed / cancelled, `Coin` paid / penalty / fee) then **A new board is up.** Omit the block when not unlocked. [[ui/contracts]] [[mechanics/contracts]]
 
-Rule, then ledger **Stipend** `+` coin and **Tax** `−` coin. Rule, then **Balance** coin — money after tax.
+Rule, then ledger **Stipend** `+` coin, **Tax** `−` coin, **Water** `−` `recap.water` coin. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]]
 
 **Day {next}**. Backdrop / Esc also `dismissRecap()`. Play frozen until that call. Each dismiss grants +1 skill point to every member — not shown on this screen. Guest: no dismiss. **Day {next}**, backdrop, and Esc do not `dismissRecap()`. [[mechanics/day]] [[mechanics/family]] [[ui/multiplayer]]
 

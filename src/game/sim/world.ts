@@ -1,6 +1,5 @@
 import {
   BARREL_AGE,
-  BARREL_CAP,
   BARREL_MATURE,
   COMPOST_NEED,
   BULK_UP_CRAFTED_STEP,
@@ -52,9 +51,10 @@ import {
   STILL_SECONDS,
   STILL_WATER,
 } from '../defs/items.ts'
-import { TREES, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
+import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { extraGrowUp1, jamRotMul, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
+import { PUMP_COST_PER_L, WEATHER_FRUIT_SALE, WEATHER_THROUGH_DAY } from '../defs/weather.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   HAPPY_DROWN_SECONDS,
@@ -163,6 +163,7 @@ import {
   addStillFeed,
   bakeSpiritSale,
   bakeCaskSale,
+  barrelNeed,
   feedAccept,
   feedApply,
   feedUnits,
@@ -273,6 +274,7 @@ import {
   type Vertex,
 } from './pipe.ts'
 import { pull, Reservoir, TAP_RATE } from './water.ts'
+import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, weedMul, type WeatherKind } from './weather.ts'
 import {
   barrelCropOf,
   hangarSiteOk,
@@ -520,6 +522,7 @@ export type Recap = {
   harvests: number
   research: ResearchId[]
   tax: number
+  water: number
   contracts: HistoryEntry[]
 }
 
@@ -592,6 +595,7 @@ export type Hydrate = {
   sprinklers: Sprinkler[]
   fences: Coord[]
   drops: Drop[]
+  clearance: number
 }
 
 export const POINTS_PER_DAY = 3
@@ -772,6 +776,7 @@ export class World {
   readonly stall: StallMap
   readonly family: Family
   points = 0
+  clearance = 0
   consignRevision = 0
   readonly seats: Seat[]
   local: SeatId = 0
@@ -805,6 +810,10 @@ export class World {
   readonly buttons = new Map<string, Coord>()
   readonly recover = new Map<string, Coord>()
   readonly empty = new Map<string, Coord>()
+  readonly tilled = new Map<string, Coord>()
+  pumpLiters = 0
+  private weatherTable: WeatherKind[] = []
+  private readonly weatherPins = new Map<number, WeatherKind>()
   readonly tufts = new Map<string, Coord>()
   readonly rocks = new Map<string, Coord>()
   private readonly dirtEdgeCache = new Map<string, string>()
@@ -856,6 +865,7 @@ export class World {
       this.stall = h.stall
       this.family = h.family
       this.points = h.points
+      this.clearance = h.clearance
       this.seats = h.seats
       this.act = this.seats[0]
       this.owned.length = 0
@@ -919,6 +929,9 @@ export class World {
       this.groundRev = 0
       this.sink.reset(this.rng.seed)
       this.rebase()
+      this.pumpLiters = 0
+      this.rebuildWeather()
+      this.applyWeatherRates()
       return
     }
     this.rng = new Rng(seedOrH)
@@ -947,6 +960,8 @@ export class World {
     STARTER_SEEDS.forEach(st => this.putSilo(st.crop, st.rarity, st.count))
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
     this.indexAll()
+    this.rebuildWeather()
+    this.applyWeatherRates()
   }
 
   static hydrate(h: Hydrate): World {
@@ -1333,6 +1348,8 @@ export class World {
     else this.recover.delete(k)
     if (cell.kind === 'empty') this.empty.set(k, here)
     else this.empty.delete(k)
+    if (isTilled(cell)) this.tilled.set(k, here)
+    else this.tilled.delete(k)
     if (cell.kind === 'untilled' && cell.cover.kind === 'grass') this.tufts.set(k, here)
     else this.tufts.delete(k)
     if (cell.kind === 'rock' && origin) this.rocks.set(k, here)
@@ -1369,6 +1386,7 @@ export class World {
     this.buttons.clear()
     this.recover.clear()
     this.empty.clear()
+    this.tilled.clear()
     this.tufts.clear()
     this.rocks.clear()
     this.dirtEdgeCache.clear()
@@ -1484,14 +1502,57 @@ export class World {
     let p = SKUS[id].price
     const tab = SKUS[id].tab
     if (tab === 'utility' || tab === 'automation') p -= this.skillTier('haggling')
-    return p < 1 ? 1 : p
+    if (p < 1) p = 1
+    if (this.weather(this.clock.day) === 'drought' && (tab === 'seeds' || tab === 'utility')) p *= 2
+    return p
   }
 
   marketOpen(): boolean {
     const p = this.clock.phase()
+    const w = this.weather(this.clock.day)
+    if (!this.hasSkill('open-24') && ((w === 'flood' && p === 'sunrise') || (w === 'drought' && p === 'day'))) return false
     if (p === 'sunrise' || p === 'day') return true
     if (p === 'sunset') return this.hasSkill('open-late')
     return this.hasSkill('open-24')
+  }
+
+  weather(day: number): WeatherKind {
+    return this.weatherTable[day - 1]
+  }
+
+  pinnedTomorrow(): WeatherKind | undefined {
+    return this.weatherPins.get(this.clock.day + 1)
+  }
+
+  pinTomorrow(kind: WeatherKind): void {
+    this.weatherPins.set(this.clock.day + 1, kind)
+    this.rebuildWeather()
+    this.ping()
+  }
+
+  private rebuildWeather(): void {
+    this.weatherTable = forecastWeather(this.rng.seed, WEATHER_THROUGH_DAY, this.weatherPins)
+  }
+
+  private applyWeatherRates(): void {
+    const w = this.weather(this.clock.day)
+    this.pumps.forEach(p => {
+      p.water.mul = sourceRateMul(p.water.kind, w)
+    })
+    this.tanks.forEach(t => {
+      t.water.mul = sourceRateMul(t.water.kind, w)
+    })
+    this.wells.forEach(well => {
+      well.water.mul = sourceRateMul(well.water.kind, w)
+    })
+  }
+
+  private pullWater(sources: readonly Reservoir[], want: number): number {
+    const before = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
+    const got = pull(sources, want)
+    const after = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
+    this.pumpLiters += after - before
+    return got
   }
 
   grantPoints(n: number): void {
@@ -2575,16 +2636,6 @@ export class World {
       this.ping()
       return undefined
     }
-    if (made.kind === 'weed-spray') {
-      const price = this.skuPrice(id)
-      if (this.money < price) return 'Cannot afford'
-      if (!this.canFitWeedSpray()) return 'Inventory full'
-      this.money -= price
-      this.putWeedSpray(made)
-      this.compactInventory()
-      this.ping()
-      return undefined
-    }
     if (made.kind === 'seeds') {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
@@ -2595,7 +2646,7 @@ export class World {
       this.ping()
       return undefined
     }
-    if (made.kind === 'fertilizer' || made.kind === 'synth') {
+    if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
       if (this.additives.free < made.liters) return 'Additive store full'
@@ -3858,7 +3909,7 @@ export class World {
 
   private depositAdditives(): void {
     const take = (it: Item): boolean => {
-      if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost') return false
+      if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
       const n = this.putAdditive(it.kind, it.liters)
       it.liters -= n
       return it.liters <= 0
@@ -3893,7 +3944,7 @@ export class World {
   marketQuote(): SellAllQuote {
     const rows = STALL_IDS.flatMap(id => {
       if (binCount(this.stall[id]) <= 0) return []
-      const { clean, clearance } = this.stallClean(id)
+      const { clean } = this.stallClean(id)
       const sat = this.stall[id].sat
       return [
         {
@@ -3901,7 +3952,7 @@ export class World {
           sat,
           mul: mul(sat, id),
           clean,
-          paid: paid(sat, id, clean) + clearance,
+          paid: paid(sat, id, clean),
           recoverDays: sat / SAT_RECOVER_PER_DAY,
         },
       ]
@@ -3909,7 +3960,7 @@ export class World {
     return {
       rows,
       clean: rows.reduce((n, r) => n + r.clean, 0),
-      paid: rows.reduce((n, r) => n + r.paid, 0),
+      paid: rows.reduce((n, r) => n + r.paid, 0) + this.clearance,
     }
   }
 
@@ -3922,7 +3973,6 @@ export class World {
     const saleX = 1 + 0.02 * this.skillTier('saleswoman')
     const heirX = 1 + 0.05 * this.skillTier('heirloom')
     const bioX = 1 + 0.04 * this.skillTier('bio')
-    const clearanceOn = this.hasSkill('clearance')
     if (isBakedStall(id)) {
       const count = this.stall[id].stock.common.organic
       if (count === 0) return { clean: 0, clearance: 0 }
@@ -3940,6 +3990,8 @@ export class World {
       }
     }
     const x = stallX(id, this.modifiers)
+    const w = this.weather(this.clock.day)
+    const wx = w === 'flood' || w === 'drought' ? WEATHER_FRUIT_SALE : 1
     return RARITY_RANK.reduce(
       (acc, rarity) => {
         const rareX = stallRarity(id, rarity) * (rarity === 'heirloom' ? heirX : 1)
@@ -3947,10 +3999,9 @@ export class World {
           const count = this.stall[id].stock[rarity][k]
           if (count === 0) return bioAcc
           const worth = this.stall[id].worth[rarity][k]
-          if (clearanceOn && worth === 0) return { clean: bioAcc.clean, clearance: bioAcc.clearance + count }
           const avg = worth / count
           const organicMul = k === 'organic' ? bioX : 1
-          return { clean: bioAcc.clean + count * avg * x * rareX * saleX * organicMul, clearance: bioAcc.clearance }
+          return { clean: bioAcc.clean + count * avg * x * rareX * saleX * organicMul * wx, clearance: bioAcc.clearance }
         }, acc)
       },
       { clean: 0, clearance: 0 },
@@ -4004,6 +4055,7 @@ export class World {
       })
     })
     this.money += quote.paid
+    this.clearance = 0
     this.emit('sold')
   }
 
@@ -4043,6 +4095,7 @@ export class World {
     this.now += 1
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
     if (this.seam.kind === 'recap') return
+    this.applyWeatherRates()
     const beforeDay = this.nowDay()
     const seam = this.clock.advance(dt) === 'seam'
     if (seam) {
@@ -4055,6 +4108,9 @@ export class World {
       this.money += DAY_STIPEND
       const tax = this.tax()
       this.money -= tax
+      const bill = this.pumpLiters * PUMP_COST_PER_L * pumpCostMul(this.weather(this.clock.day - 1))
+      this.money -= bill
+      this.pumpLiters = 0
       this.tickTreesSeam()
       this.seam = {
         kind: 'recap',
@@ -4066,6 +4122,7 @@ export class World {
           harvests: this.tally.harvests,
           research: this.tally.research,
           tax,
+          water: bill,
           contracts: this.tally.contracts,
         },
       }
@@ -4483,11 +4540,13 @@ export class World {
     if (source.kind === 'tap') {
       const net = this.netOfCell(source.base)
       if (net === undefined) return 0
-      const got = pull(net.sources, TAP_RATE * dt)
+      const got = this.pullWater(net.sources, TAP_RATE * dt)
       source.drawn += got
       return got
     }
-    return source.water.take(source.water.rate * dt)
+    const got = source.water.take(source.water.rate * dt)
+    if (source.kind === 'pump') this.pumpLiters += got
+    return got
   }
 
   private tickButtons(): void {
@@ -4679,7 +4738,7 @@ export class World {
       const want = active.map((s, i) => lists[i].length * this.tileRate(s) * dt)
       const total = want.reduce((a, b) => a + b, 0)
       if (total === 0) return
-      const got = pull(net.sources, total)
+      const got = this.pullWater(net.sources, total)
       if (got === 0) return
       active.forEach((s, i) => {
         const targets = lists[i]
@@ -4720,16 +4779,24 @@ export class World {
         f.freshness - dt / (statsOf(f.crop, f.rarity, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
       f.freshness = next < 0 ? 0 : next
     }
+    const spoil = (item: Item): Item => {
+      if (item.kind !== 'fruit') return item
+      rot(item)
+      if (item.freshness > 0) return item
+      return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count }
+    }
     const slot = (s: Slot) => {
       if (s.kind !== 'hold') return
-      if (s.item.kind === 'fruit') rot(s.item)
+      s.item = spoil(s.item)
     }
     this.seats.forEach(s => {
       if (s.presence === 'away') return
       slot(s.hand)
       s.inventory.forEach(slot)
     })
-    this.drops.forEach(d => slot({ kind: 'hold', item: d.item }))
+    this.drops.forEach(d => {
+      d.item = spoil(d.item)
+    })
     for (const at of this.stores.values()) {
       const c = this.cell(at)
       if (c.kind === 'chest') c.slots.forEach(slot)
@@ -4824,13 +4891,13 @@ export class World {
       }
       if (c.kind === 'barrel') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.crop === 'none' || feedUnits(c.feed) !== BARREL_CAP) continue
+        if (c.crop === 'none' || feedUnits(c.feed) !== barrelNeed(c.crop)) continue
         const was = c.age
         c.age += dt
         if (was < BARREL_MATURE && c.age >= BARREL_MATURE) {
           const u = this.rng.stream('barrel').at(at.col, at.row, this.clock.day, c.n)
           const rarity = meanRarity(c.feed, u)
-          c.feed = [{ rarity, count: BARREL_CAP }]
+          c.feed = [{ rarity, count: barrelNeed(c.crop) }]
           c.n += 1
         }
         if (was < BARREL_AGE && c.age >= BARREL_AGE) dirty = true
@@ -4888,7 +4955,7 @@ export class World {
     if (net === undefined) return false
     const held = net.sources.reduce((n, s) => n + s.stored, 0)
     if (held < STILL_WATER) return false
-    pull(net.sources, STILL_WATER)
+    this.pullWater(net.sources, STILL_WATER)
     return true
   }
 
@@ -4898,9 +4965,18 @@ export class World {
     this.bigAcc -= BIG_TICK
     this.bigTicks += 1
     this.pullMachineStores()
+    const d = soakDelta(this.weather(this.clock.day))
+    if (d !== 0) {
+      for (const at of this.tilled.values()) {
+        const c = this.cell(at)
+        if (!isTilled(c)) continue
+        if (d > 0) c.soil.soak(d)
+        else c.soil.drink(-d)
+      }
+    }
     const weeds = this.sproutWeeds()
     const grass = this.sproutGrass()
-    if (weeds || grass) this.pingFor('big')
+    if (weeds || grass || d !== 0) this.pingFor('big')
   }
 
   private tickVfx(pouring: ReadonlySet<string>): boolean {
@@ -4922,11 +4998,13 @@ export class World {
   }
 
   private sproutWeeds(): boolean {
+    const mul = weedMul(this.weather(this.clock.day))
+    if (mul === 0) return false
     let grew = false
     for (const at of this.empty.values()) {
       const c = this.cell(at)
       if (c.kind !== 'empty') continue
-      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks)) continue
+      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks) * mul) continue
       const variant = this.rng.stream('weed').at(at.col, at.row, this.bigTicks, 1) < 0.5 ? 0 : 1
       this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
       grew = true
@@ -4950,9 +5028,11 @@ export class World {
   }
 
   private sproutGrass(): boolean {
+    const mul = weedMul(this.weather(this.clock.day))
+    if (mul === 0) return false
     const grass = this.rng.stream('grass')
     const ownedCellCount = this.owned.length * CHUNK * CHUNK
-    if (!(Math.min(1, ramped(GRASS_CHANCE, this.bigTicks) * ownedCellCount) > grass.at(this.bigTicks))) return false
+    if (!(Math.min(1, ramped(GRASS_CHANCE, this.bigTicks) * ownedCellCount) * mul > grass.at(this.bigTicks))) return false
     const per = CHUNK * CHUNK
     for (let i = 0; i < 24; i++) {
       const u = grass.at(this.bigTicks, i, 0)
@@ -4989,17 +5069,22 @@ export class World {
 
   private advanceYield(t: Tree): void {
     if (t.yield.kind === 'pending') {
-      t.yield = { kind: 'on', daysLeft: 2 }
+      t.yield = { kind: 'on', daysLeft: TREE_YIELD_DAYS }
       return
     }
     if (t.yield.kind === 'on') {
       const left = (t.yield.daysLeft - 1) as 0 | 1
-      t.yield = left === 0 ? { kind: 'off', chance: -0.2 } : { kind: 'on', daysLeft: left }
+      if (left === 0) {
+        t.tended = false
+        t.yield = { kind: 'off', chance: -0.2 }
+      } else {
+        t.yield = { kind: 'on', daysLeft: left }
+      }
       return
     }
     const chance = t.yield.chance + 0.2
     const u = this.rng.stream('tree').at(t.base.col, t.base.row, this.clock.day)
-    t.yield = u < chance ? { kind: 'on', daysLeft: 2 } : { kind: 'off', chance }
+    t.yield = u < chance ? { kind: 'on', daysLeft: TREE_YIELD_DAYS } : { kind: 'off', chance }
   }
 
   private tickTree(t: Tree, dt: number): boolean {
@@ -5231,17 +5316,24 @@ export class World {
     if (!this.hasSkill('tending')) return false
     if (this.act.hand.kind !== 'empty') return false
     const c = this.cell(at)
-    return c.kind === 'growing' && !c.plant.tended
+    if (c.kind === 'growing') return !c.plant.tended
+    if (c.kind === 'tree') return c.juvenile >= 1 && c.yield.kind === 'off' && !c.tended
+    return false
   }
 
   private doTend(at: Coord): void {
     if (!this.canTend(at)) return
     const c = this.cell(at)
-    if (c.kind !== 'growing') return
-    c.plant.happiness += 0.1
-    if (c.plant.happiness > HAPPY_MAX) c.plant.happiness = HAPPY_MAX
-    c.plant.tended = true
-
+    if (c.kind === 'growing') {
+      c.plant.happiness += 0.1
+      if (c.plant.happiness > HAPPY_MAX) c.plant.happiness = HAPPY_MAX
+      c.plant.tended = true
+      return
+    }
+    if (c.kind === 'tree' && c.yield.kind === 'off') {
+      c.yield.chance += 0.15
+      c.tended = true
+    }
   }
 
   private canHarvest(at: Coord): boolean {
@@ -5379,6 +5471,12 @@ export class World {
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
+    }
+    if (item.kind === 'rotten') {
+      if (!this.hasSkill('clearance')) return
+      this.clearance += item.count
+      this.act.hand = { kind: 'empty' }
+      this.completeConsign()
     }
   }
 
@@ -5793,7 +5891,7 @@ export class World {
   private canBarrelCollect(at: Coord): boolean {
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
-    if (c.crop === 'none' || feedUnits(c.feed) !== BARREL_CAP || c.age < BARREL_MATURE) return false
+    if (c.crop === 'none' || feedUnits(c.feed) !== barrelNeed(c.crop) || c.age < BARREL_MATURE) return false
     if (this.act.hand.kind === 'empty') return true
     if (this.act.hand.item.kind !== 'cask') return false
     if (this.act.hand.item.cask !== CASK_OF[c.crop]) return false
@@ -5808,7 +5906,7 @@ export class World {
     const crop = barrelCropOf(this.act.hand.item)
     if (crop === undefined) return false
     if (c.crop !== 'none' && crop !== c.crop) return false
-    const room = BARREL_CAP - feedUnits(c.feed)
+    const room = barrelNeed(c.crop === 'none' ? crop : c.crop) - feedUnits(c.feed)
     return room > 0 && fruitCount(this.act.hand.item) > 0
   }
 
@@ -5846,7 +5944,7 @@ export class World {
     const crop = barrelCropOf(this.act.hand.item)
     const rarity = fruitRarity(this.act.hand.item)
     if (crop === undefined || rarity === undefined) return
-    const room = BARREL_CAP - feedUnits(barrel.feed)
+    const room = barrelNeed(barrel.crop === 'none' ? crop : barrel.crop) - feedUnits(barrel.feed)
     const n = Math.min(room, fruitCount(this.act.hand.item))
     if (n <= 0) return
     barrel.crop = crop
@@ -5908,31 +6006,16 @@ export class World {
     return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'sugar'))
   }
 
-  private canFitWeedSpray(): boolean {
-    return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'weed-spray'))
-  }
-
-  private putWeedSpray(item: Extract<Item, { kind: 'weed-spray' }>): void {
-    const merge = this.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'weed-spray')
-    if (merge >= 0) {
-      const slot = this.act.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'weed-spray') slot.item.usesLeft += item.usesLeft
-      return
-    }
-    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
-    this.act.inventory[empty] = { kind: 'hold', item }
-  }
-
   private doWeedSpray(at: Coord): void {
     if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'weed-spray') return
+    if (this.act.hand.item.liters < 1) return
     if (!this.inWorld(at)) return
     const c = this.cell(at)
     if (!isTilled(c)) return
     c.soil.weedChance = -1
     this.track(at, c)
-    this.act.hand.item.usesLeft -= 1
-    if (this.act.hand.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-
+    this.act.hand.item.liters -= 1
+    if (this.act.hand.item.liters < 1) this.act.hand = { kind: 'empty' }
   }
 
   private putSugar(item: Extract<Item, { kind: 'sugar' }>): void {

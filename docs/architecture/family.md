@@ -8,13 +8,13 @@ Illegal: `better-*` on `TreeId`. Illegal: player owns `saleswoman` — owned map
 
 ## Defs
 
-`SKILLS` in `defs/skills.ts`. Not on `World`. `maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. Dummy: `forecast`. `seed-bank` max 5.
+`SKILLS` in `defs/skills.ts`. Not on `World`. `maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. `seed-bank` max 5. `forecast` is live — [[mechanics/weather]].
 
 Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. `better-carrot` `better-potato` `better-wheat` `seed-bank` need `unlock-crop-variants`. Crop `better-*` for researched crops need the matching research. `better-grape` needs `unlock-grape`. `better-vanilla` needs `unlock-raspberry`. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. `haggling` is `hidden`. Else none. No `better-*` on `TreeId`.
 
 Carrot / potato / wheat better: always eligible until owned.
 
-`SkillEffect` arms live in `SKILLS`. Ranked `%` and `$` add per owned tier, not multiply. Hangar-buys still not `skuPrice`. Broker / industrial — [[mechanics/contracts]].
+`SkillEffect` arms live in `SKILLS`. `{ kind: 'forecast' }`. No `{ kind: 'dummy' }`. Ranked `%` and `$` add per owned tier, not multiply. Hangar-buys still not `skuPrice`. Broker / industrial — [[mechanics/contracts]]. Forecast — [[mechanics/weather]].
 
 ## World fields
 
@@ -48,19 +48,23 @@ Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared.
 
 ## Tend
 
-`Intent` `{ act: 'tend'; at: Coord }`. Legal: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
+`Intent` `{ act: 'tend'; at: Coord }`. Plants unchanged: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
 
-`Plant.tended: boolean` required, starts `false`. Same instance through ripe / dead. Illegal: optional `tended`. Illegal: tend twice. Illegal: tend ripe.
+Trees added: player owns `tending`, empty hand, `cell.kind === 'tree'`, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Not pending. Not `{ on }`. Not juvenile. Prompt **Tend**. Witness `Tree.tended`. — [[mechanics/trees]] `trees.tend`
+
+`Plant.tended: boolean` required, starts `false`. Same instance through ripe / dead. `Tree.tended: boolean` required, starts `false`. Illegal: optional `tended`. Illegal: tend twice. Illegal: tend ripe. Illegal: tend pending / `{ on }` / juvenile tree.
+
+`SKILLS.tending` blurb names plants and off-season trees. `SKILLS.clearance` blurb: rotten produce sells for $1 apiece.
 
 ## Market hours
 
-`marketOpen(phase)` — [[mechanics/market]]. `open-24` implies `open-late` (gate). Consign legal in every phase. Sell all illegal when `marketOpen` is false.
+`marketOpen(phase)` — [[mechanics/market]] [[mechanics/weather]]. Weather block: `(flood ∧ sunrise) ∨ (drought ∧ day)` unless `open-24`. `open-late` does not reopen. `open-24` implies `open-late` (gate). Consign legal in every phase. Sell all illegal when `marketOpen` is false.
 
 ## Sale
 
 `better-*` → `Modifier` `{ source: 'skill', crop, saleMul }` and ripen `extraUp1`. `Modifier.source = 'research' | 'fertilizer' | 'skill'`.
 
-Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]]. Crop stall bins keep `bio`. Illegal: consign that drops `fruit.bio`.
+Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]]. Crop stall bins keep `bio`. Illegal: consign that drops `fruit.bio`. Clearance subject is `{ kind: 'rotten' }`, not 0% fruit.
 
 ## Other effects
 
@@ -68,10 +72,11 @@ Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]].
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. — [[mechanics/vehicles]]
 - Machinery (husband): `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
 - Research speed: `job.left -= dt × (1 + 0.05 × tier)`
-- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Hangar-buys still not `skuPrice`
+- `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Drought then ×2 if `tab === 'seeds' | 'utility'`. Hangar-buys still not `skuPrice`. — [[mechanics/weather]]
 - `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`
 - Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. Base always common
 - Tax: `World.tax()` applies smart tax after the expansion formula
 - Water lens: husband owns `water-study`. Land lens: husband owns `land-study`. Vehicle interactions lens: `unlock-vehicles` in `done`, not a family-study. View-local `Lens`
+- forecast: `{ kind: 'forecast' }`. HUD tomorrow iff husband owns it. Blurb locked on [[mechanics/weather]]
 
-Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }`.
+Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'forecast' }`. No `{ kind: 'dummy' }`.

@@ -509,10 +509,14 @@ const SOIL_ACTS = ['water', 'fertilize', 'compost']
 function witnessOf(world: World, act: string, at: Coord): number | string | undefined {
   const c = world.cell(at)
   if (KIND_ACTS.includes(act)) return c.kind
-  if (!isTilled(c)) return SOIL_ACTS.includes(act) || act === 'tend' ? 'no soil' : undefined
+  if (act === 'tend') {
+    if (c.kind === 'tree') return String(c.tended)
+    if (!isTilled(c)) return 'no soil'
+    return c.kind === 'growing' || c.kind === 'ripe' ? String(c.plant.tended) : 'no plant'
+  }
+  if (!isTilled(c)) return SOIL_ACTS.includes(act) ? 'no soil' : undefined
   if (act === 'water') return c.soil.water
   if (SOIL_ACTS.includes(act)) return c.soil.fertilizer
-  if (act === 'tend') return c.kind === 'growing' || c.kind === 'ripe' ? String(c.plant.tended) : 'no plant'
   return undefined
 }
 

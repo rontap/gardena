@@ -7,9 +7,10 @@ import { Btn, Chrome } from './frame.tsx'
 import { JoinFields, Notice, type MpFail } from './multiplayer.tsx'
 
 const FAIL: { readonly [K in LoadFailReason]: string } = {
-  'not-gardena': 'This file is not a Gardena save.',
-  version: 'This save could not be loaded because of a version difference.',
-  unusable: 'This file could not be used.',
+  'unknown-format': 'The file is in an unknown format.',
+  'not-gardena': 'The file is not a gardena format',
+  version: 'This savefile is from an older Gardena version and could not be loaded',
+  unusable: 'The savefile could not be loaded',
 }
 
 type MenuPage = { kind: 'home' } | { kind: 'changelog' }
@@ -107,7 +108,7 @@ export function Menu(props: MenuProps) {
               setPage(page.kind === 'changelog' ? { kind: 'home' } : { kind: 'changelog' })
             }}
           >
-            2.0.8
+            2.1.1
           </button>
           {joining ? (
             <JoinFields

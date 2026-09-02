@@ -262,6 +262,11 @@ import uiPhaseSunrise from '../../assets/ui/ui-phase-sunrise.svg?raw'
 import uiPhaseDay from '../../assets/ui/ui-phase-day.svg?raw'
 import uiPhaseSunset from '../../assets/ui/ui-phase-sunset.svg?raw'
 import uiPhaseTwilight from '../../assets/ui/ui-phase-twilight.svg?raw'
+import uiWeatherClear from '../../assets/ui/ui-weather-clear.svg?raw'
+import uiWeatherRain from '../../assets/ui/ui-weather-rain.svg?raw'
+import uiWeatherDry from '../../assets/ui/ui-weather-dry.svg?raw'
+import uiWeatherFlood from '../../assets/ui/ui-weather-flood.svg?raw'
+import uiWeatherDrought from '../../assets/ui/ui-weather-drought.svg?raw'
 import uiResearchTools from '../../assets/ui/ui-research-tools.svg?raw'
 import uiResearchAuto from '../../assets/ui/ui-research-auto.svg?raw'
 import uiResearchAdv from '../../assets/ui/ui-research-adv.svg?raw'
@@ -276,6 +281,7 @@ import uiCornerBl from '../../assets/ui/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { DayPhase } from '../sim/clock.ts'
+import type { WeatherKind } from '../sim/weather.ts'
 import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/market.h.ts'
@@ -863,6 +869,13 @@ export const UI_PHASE: { readonly [K in DayPhase]: string } = {
   sunset: inner(uiPhaseSunset),
   twilight: inner(uiPhaseTwilight),
 }
+export const UI_WEATHER: { readonly [K in WeatherKind]: string } = {
+  clear: inner(uiWeatherClear),
+  rain: inner(uiWeatherRain),
+  dry: inner(uiWeatherDry),
+  flood: inner(uiWeatherFlood),
+  drought: inner(uiWeatherDrought),
+}
 
 export type BtnState = 'idle' | 'hover' | 'selected' | 'disabled'
 
@@ -1081,6 +1094,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   UI_COIN,
   UI_COIN_SILVER,
   ...Object.values(UI_PHASE),
+  ...Object.values(UI_WEATHER),
   ...[
     UI_BTN_SHOP,
     UI_BTN_BUILD,

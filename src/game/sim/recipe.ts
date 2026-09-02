@@ -1,5 +1,4 @@
 import {
-  BARREL_CAP,
   BARREL_MATURE,
   COMPOST_LITERS,
   COMPOST_NEED,
@@ -16,11 +15,13 @@ import {
   STILL_SECONDS,
   STILL_WATER,
 } from '../defs/items.ts'
+import type { CropClass } from '../defs/crops.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
 import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS } from './ids.ts'
 import type { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import type { Face, Item } from './item.ts'
 import {
+  barrelNeed,
   barrelWorking,
   feedUnits,
   jamSale,
@@ -153,7 +154,7 @@ const MIXED_STILL: Recipe = {
 function barrelRecipe(crop: BarrelCrop): Recipe {
   return {
     machine: 'barrel',
-    inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(BARREL_CAP) }],
+    inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(barrelNeed(crop)) }],
     out: {
       kind: 'exact',
       face: { kind: 'cask', cask: CASK_OF[crop], rarity: 'common', count: 1, unitSale: 0 },
@@ -210,6 +211,21 @@ const COMPOST_GREEN: Recipe = {
   duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
 }
 
+const CROP_CLASSES: readonly CropClass[] = ['root', 'grain', 'fruit']
+
+const COMPOST_ROTTEN: Recipe = {
+  machine: 'compost-box',
+  inputs: [
+    {
+      kind: 'any',
+      faces: CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
+      amount: units(COMPOST_NEED / COMPOST_VALUE.rotten),
+    },
+  ],
+  out: COMPOST_OUT,
+  duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
+}
+
 const MILL_ROWS: readonly Recipe[] = MILL_RECIPES.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_CROPS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_CROPS.map(stillRecipe), MIXED_STILL]
@@ -221,7 +237,7 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'still') return STILL_ROWS
   if (m === 'barrel') return BARREL_ROWS
   if (m === 'grinder') return [GRINDER]
-  return [COMPOST_FRUIT, COMPOST_GREEN]
+  return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN]
 }
 
 export function clockText(seconds: number): string {
@@ -269,7 +285,8 @@ function barrelCraft(c: Barrel): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'barrel' }
   const recipe = BARREL_ROWS[BARREL_CROPS.indexOf(c.crop)]
   const n = feedUnits(c.feed)
-  if (n < BARREL_CAP) return { kind: 'filling', recipe, at: 0, have: n, need: BARREL_CAP }
+  const need = barrelNeed(c.crop)
+  if (n < need) return { kind: 'filling', recipe, at: 0, have: n, need }
   if (!barrelWorking(c) || c.age >= BARREL_MATURE) return { kind: 'ready', recipe }
   return { kind: 'working', recipe, progress: c.age / BARREL_MATURE, left: BARREL_MATURE - c.age }
 }

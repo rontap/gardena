@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import {
   BARREL_CAP,
@@ -19,7 +20,7 @@ import {
   SUGAR_BAG,
 } from '../defs/items.ts'
 import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS } from './ids.ts'
-import { millNeed } from './machine.ts'
+import { barrelNeed, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import { MACHINE_IDS, clockText, craftState, recipesOf } from './recipe.ts'
 import type { Ingredient, Recipe } from './recipe.ts'
@@ -45,7 +46,7 @@ describe('recipes.table', () => {
     expect(recipesOf('still').length).toBe(STILL_CROPS.length + 1)
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length)
     expect(recipesOf('grinder').length).toBe(1)
-    expect(recipesOf('compost-box').length).toBe(2)
+    expect(recipesOf('compost-box').length).toBe(3)
   })
 
   test('mill inputs equal millNeed for every recipe', () => {
@@ -103,17 +104,23 @@ describe('recipes.table', () => {
     expect(row.out.faces.map(f => (f.kind === 'seeds' ? f.crop : ''))).toEqual([...ANNUAL_IDS])
   })
 
-  test('compost lists fruit then weed and grass', () => {
-    const [fruit, green] = recipesOf('compost-box')
+  test('Compost lists three recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
+    const [fruit, green, rotten] = recipesOf('compost-box')
+    expect(recipesOf('compost-box').length).toBe(3)
     expect(fruit.inputs[0].kind).toBe('any')
     expect(green.inputs[0].kind).toBe('any')
-    if (fruit.inputs[0].kind !== 'any' || green.inputs[0].kind !== 'any') return
+    expect(rotten.inputs[0].kind).toBe('any')
+    if (fruit.inputs[0].kind !== 'any' || green.inputs[0].kind !== 'any' || rotten.inputs[0].kind !== 'any') return
     expect(fruit.inputs[0].faces.map(f => (f.kind === 'fruit' ? f.crop : ''))).toEqual([...ANNUAL_IDS, ...TREE_IDS])
     expect(green.inputs[0].faces.map(f => f.kind)).toEqual(['weed', 'grass'])
+    expect(rotten.inputs[0].faces.map(f => (f.kind === 'rotten' ? f.cls : ''))).toEqual(['root', 'grain', 'fruit'])
     expect(unitsOf(fruit.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.fruit)
     expect(unitsOf(green.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.weed)
+    expect(unitsOf(rotten.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.rotten)
+    expect(unitsOf(rotten.inputs[0])).toBe(5)
     expect(fruit.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
     expect(green.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
+    expect(rotten.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
   })
 
   test('clockText is seconds', () => {
@@ -124,6 +131,9 @@ describe('recipes.table', () => {
 
   test('barrel ages rather than works', () => {
     expect(recipesOf('barrel')[0].duration).toEqual({ kind: 'age', seconds: BARREL_MATURE })
+    expect(recipesOf('barrel').map(r => unitsOf(r.inputs[0]))).toEqual(BARREL_CROPS.map(barrelNeed))
+    expect(barrelNeed('apple')).toBe(4)
+    expect(barrelNeed('grape')).toBe(5)
   })
 })
 

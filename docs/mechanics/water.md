@@ -4,6 +4,8 @@ Sources own a tank. They gather every second up to capacity. Consumers spend sto
 
 `SOURCE` — preference. Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1. Well is edge-based. Rainwater tank gathers with no pipe run to another source.
 
+`Reservoir.rate` is `SOURCE[kind].rate` × weather mul for `weather(clock.day)`. Gather uses `rate`. Pump-kind `take()` adds litres to `World.pumpLiters`. Soak/evap is not pour — [[mechanics/weather]].
+
 `pull(sources, want)` draws in proportion to `stored`.
 
 ## Grid

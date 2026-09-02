@@ -28,9 +28,9 @@ The slot is the button: `h-11`, icon `h-6 w-6`, then `SKILLS[id].name` + roman t
 
 Icon: `skill-{id}` except `better-{crop}` — `fruitInner(crop)` under `skill-better`. Player `driving-classes` → `skill-driving-classes`. Husband `haggling` → `skill-contracts`.
 
-Live lists. Not `bulk-buying` `tool-contracts` `machine-contracts`. Player includes `driving-classes`. Husband: `machinery`. `haggling` is `hidden` — not offered, still in `SKILLS`.
+Live lists. Not `bulk-buying` `tool-contracts` `machine-contracts`. Player includes `driving-classes`. Husband: `machinery` `forecast`. `haggling` is `hidden` — not offered, still in `SKILLS`. `forecast` is live — HUD tomorrow iff owned. [[mechanics/weather]]
 
-Click `pickSkill(member, slot)` iff that member’s `points > 0`. Else disabled. Dummy skills (`forecast`) still show; picking spends the point.
+Click `pickSkill(member, slot)` iff that member’s `points > 0`. Else disabled. `forecast` picking still spends the point. Blurb: Tomorrow's weather appears next to today on the top bar, so you can plan irrigation, the stall, and pump spend before morning.
 
 Hover (offers and learned): [[ui/callout-hover]] to the right of the Family window. Title `SKILLS[id].name`, description `skillBlurb(id, tier)`.
 
@@ -42,4 +42,6 @@ Chip: `bg-ink/10`, `h-7`, icon `h-5 w-5` + roman tier when `SKILLS[id].maxTier >
 
 `SKILLS[id].blurb` is the player sentence. Catalog voice. `skillBlurb` swaps jam for the rank’s slower rot, and seed-bank for “there is some chance… (n% uncommon, n% rare, n% heirloom)”. Jam `JAM_ROT` 15% per rank below half freshness. Better-{crop} names the 4% sale and “increased chance that a happy plant will produce a superior fruit” — not the 4%. Carrot / potato / wheat: **Experienced {crop} grower**.
 
-Assumption: names and blurbs stay in `SKILLS`; this note does not invent them. Live offer pools drop `bulk-buying` `tool-contracts` `machine-contracts`. `industrial` is live, not dummy.
+`SKILLS.tending` blurb names plants and off-season trees. `SKILLS.clearance` blurb: rotten produce sells for $1 apiece.
+
+Assumption: names and blurbs stay in `SKILLS`; this note does not invent them. Live offer pools drop `bulk-buying` `tool-contracts` `machine-contracts`. `industrial` and `forecast` are live, not dummy. Forecast blurb locked on [[mechanics/weather]].

@@ -1,3 +1,4 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { Act } from './log.ts'
 import { dump, parse } from './save.ts'
@@ -71,7 +72,6 @@ describe('1.1 multiplayer', () => {
     for (let i = 0; i < 8; i++) host.pump()
     expect(guest.world?.now).toBe(w.now)
     expect(digestHex(guest.world as World)).toBe(digestHex(w))
-    expect(PROTOCOL).toBe(2.08)
   })
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
@@ -179,35 +179,37 @@ describe('1.1 multiplayer', () => {
     expect(after.kind === 'ripe' && after.plant.freshness).toBeLessThan(field0)
   })
 
-  test('parse(text): JSON.parse throw or non-object → { ok: false, reason: \'unusable\' }. game !== "gardena" → reason: \'not-gardena\'. File version ≠ dump version (absent included) → reason: \'version\'. Else one hydrate of live fields including seats. Reconstruct → { ok: true, world }. Hydrate fail → reason: \'unusable\'. No migrate. LoadFailReason is \'not-gardena\' | \'version\' | \'unusable\'.', () => {
+  test('parse(text): JSON.parse throw → unknown-format. Non-object or game !== "gardena" → not-gardena. Always hydrate. Reconstruct → ok even if version differs. Hydrate fail: version ≠ dump → version; else unusable. No migrate. No version gate.', () => {
     const notJson = parse('not-json')
     expect(notJson.ok).toBe(false)
     if (notJson.ok) return
-    expect(notJson.reason).toBe('unusable')
+    expect(notJson.reason).toBe('unknown-format')
     const notGardena = parse(JSON.stringify({ game: 'nope' }))
     expect(notGardena.ok).toBe(false)
     if (notGardena.ok) return
     expect(notGardena.reason).toBe('not-gardena')
+    expect(parse('null').ok).toBe(false)
     const w = new World(1)
     const s = dump(w)
     const ok = parse(JSON.stringify(s))
     expect(ok.ok).toBe(true)
     const old = parse(JSON.stringify({ ...s, version: 1.0 }))
-    expect(old.ok).toBe(false)
-    if (old.ok) return
-    expect(old.reason).toBe('version')
+    expect(old.ok).toBe(true)
     const noVer = { ...s }
     delete (noVer as { version?: unknown }).version
     const missing = parse(JSON.stringify(noVer))
-    expect(missing.ok).toBe(false)
-    if (missing.ok) return
-    expect(missing.reason).toBe('version')
+    expect(missing.ok).toBe(true)
     const noSeats = { ...s }
     delete (noSeats as { seats?: unknown }).seats
     const bad = parse(JSON.stringify(noSeats))
     expect(bad.ok).toBe(false)
     if (bad.ok) return
     expect(bad.reason).toBe('unusable')
+    const oldBad = { ...noSeats, version: 1.0 }
+    const oldFail = parse(JSON.stringify(oldBad))
+    expect(oldFail.ok).toBe(false)
+    if (oldFail.ok) return
+    expect(oldFail.reason).toBe('version')
   })
 
   test('hello when seats.length === 4 → reject: full. Away occupies a slot. Rejoin is the same playerId.', () => {

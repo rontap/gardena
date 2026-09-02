@@ -1,3 +1,32 @@
+# 2.1.1 Balance
+
+Trees grow faster, fruit prices move, and off-season care pays off.
+
+- 🔧 Changed mechanic: Trees. previously, every sapling took two days and fruit sold at the old prices, now each species has its own grow time and stall price.
+- 🔧 Changed mechanic: Careful tending. previously, it only made a growing plant happier once, now you can also tend an off-season tree once, which raises the next on-season chance by 15%.
+- 🔧 Changed building: Barrel. previously, cider needed five apples, now it needs four. The cider price is the same.
+- 🔧 Changed building: Seed grinder. previously, a fruit took 5 seconds, now it takes 12 seconds.
+- 🔧 Changed mechanic: Freshness. previously, picked fruit that hit 0% stayed fruit, now it becomes rotten produce.
+- 🔧 Changed mechanic: Clearance sale. previously, it paid $1 for fruit that had gone completely off, now it pays $1 for rotten produce.
+- 🔧 Changed item: Weed spray. previously, it was a 30-use can delivered to the house, now it is a 30 L bag in the additive store.
+- 🔧 Changed ui: Tree inspect. previously, it printed a growth percent and said yielding or resting, now it uses the plant Growth bar and says on-season or off-season.
+- 🔧 Changed ui: Empty plot. previously, a tilled empty bed showed no bars, now it shows fertilizer, water, and weed resistance.
+- 🔧 Changed mechanic: Save load. previously, a different version was refused unread, now any Gardena file is read, and a version line is shown only if that read fails.
+
+# 2.1.0 Weather
+
+Days can turn rainy or dry, and water from a pump now costs money at sundown.
+
+- 🎉 Added mechanic: Weather. Clear, rain, dry, flood, and drought roll from the farm seed and change soil, weeds, tanks, wells, the stall, and the shop.
+  - Rain wets every tilled plot a little, grows more weeds, and fills rain tanks six times faster.
+  - Dry evaporates a little, stops weeds and grass, shuts rain tanks, and raises the pump bill.
+  - Flood can drown plants, surges rain tanks, closes the stall at sunrise, and pays more for fruit.
+  - Drought dries plots harder, halves wells, doubles shop goods, triples the pump bill, closes the stall at midday, and pays more for fruit.
+- 🎉 Added mechanic: Pump water. Water taken from a pump is billed at sundown, about $20 if a pump runs all day.
+- 🔧 Changed mechanic: Weather forecast. previously, it did nothing, now tomorrow's weather sits next to today on the top bar.
+- 🎉 Added ui: Weather. After the day on the top bar, a glyph shows today's weather.
+- 🎉 Added ui: Boot map. The farm behind the menu fades and scales in once the canvas is ready.
+
 # 2.0.8 Almanac
 
 Almanac matches the farm, and the day waits while you read it.

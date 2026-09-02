@@ -91,7 +91,7 @@ Wild weights `RARITY_WEIGHT` — preference. `rollRarity` for tree fruit drops.
 
 On the plant, while ripe: `freshness -= dt / (rotSeconds × jamRotMul)`. `<= 0` → `{ kind: 'rotten', soil, crop }`. `jamRotMul` 1 unless daughter owns `jam` and freshness `< 0.5` — [[mechanics/family]].
 
-After pick, fruit keeps rotting in hand, house, chest, and ground until sold. `tickFreshness`. Freezer slots skip. Hits 0 and stays fruit. Sugar does not tick.
+After pick, fruit keeps rotting in hand, house, chest, ground, quad, and harvest trailer until sold. `tickFreshness`. Freezer slots skip. `<= 0` replaces that slot with `{ kind: 'rotten'; cls: CROPS[crop].cls; count }`. Convert in place, no auto-merge. Sugar does not tick. Mill hopper is units, no freshness. Freshness-0 fruit no longer exists as an item after tick. On-plant ripe already becomes plot rotten.
 
 `freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale`. Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam rot — [[mechanics/family]].
 
@@ -99,7 +99,7 @@ Merge same crop+rarity: weighted `unitSale` and `freshness`. Different rarity ne
 
 ## Tend
 
-`Intent` `{ act: 'tend'; at: Coord }`. Legal: player owns `tending`, empty hand, growing, `tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`. Not ripe. Not twice — [[mechanics/family]].
+`Intent` `{ act: 'tend'; at: Coord }`. Legal: player owns `tending`, empty hand, growing, `tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`. Not ripe. Not twice. Plants unchanged. Trees: [[mechanics/trees]] `trees.tend` — [[mechanics/family]].
 
 ## Harvest / shovel
 
@@ -127,7 +127,7 @@ Shovel: `{ kind: 'tree-seed'; tree: species }`, both cells bare soft.
 
 `plants.ripen` — Ripen: `freshness = 1`. With `unlock-crop-variants`: `rarity = rollGrowRarity(...)`. Without: planted rarity. `ripenN` at that cell becomes `n + 1`. Absent `n` is 0. `extraUp1` is `BETTER_UP1` if player owns `better-{crop}`, else 0; scaled by `h / HAPPY_MAX`. Ripe `freshness -= dt / (rotSeconds × jamRotMul)`; `<= 0` → `rotten`.
 
-`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground) until sold. Freezer slots skip `tickFreshness`. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`. Jam is rot, not a sale floor.
+`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground, quad, harvest trailer) until sold. Freezer slots skip `tickFreshness`. Mill hopper is units, no freshness. `<= 0` replaces that slot with `{ kind: 'rotten'; cls: CROPS[crop].cls; count }` in place, no auto-merge. Illegal: fruit with `freshness <= 0` after tick. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`. Jam is rot, not a sale floor.
 
 `plants.rarity-lock` — Without `unlock-crop-variants`: ripen identity, shop packs common. Tree drops still `RARITY_WEIGHT`.
 
@@ -135,7 +135,7 @@ Shovel: `{ kind: 'tree-seed'; tree: species }`, both cells bare soft.
 
 `plants.packs` — Crop stats are `CROPS`. Shop packs are common unless `unlock-crop-variants` done and player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). No tree pack. No olive pack.
 
-`plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`.
+`plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`. Trees: [[mechanics/trees]] `trees.tend`.
 
 `plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, not `RARITY_SALE`. Common vanilla sale < raspberry.
 

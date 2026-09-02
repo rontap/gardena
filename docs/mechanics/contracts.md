@@ -193,7 +193,7 @@ Accepts(demand, good, rarity) → boolean
 | group jam | `good` is `JamId` |
 | group spirit | `good` is `SpiritKind` and rarity ≥ `minRarity` |
 
-Rarity is a minimum. Higher qualifies as one unit. No overage bonus. Freshness is not in `Accepts` — consign skips freshness-0 fruit before this test.
+Rarity is a minimum. Higher qualifies as one unit. No overage bonus. Freshness is not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick.
 
 ## State
 
@@ -221,7 +221,7 @@ Existing consign at the truck. Logged as `enqueue`. `consignBody` fills `contrac
 
 `Act.reorderContract` `'Z'` `{ c: ContractId; d: 1 | -1 }` swaps that entry with its neighbour. `d = 1` toward the end. No-op at ends or unknown id. Fill priority **is** array order. No lookahead.
 
-A bin takes a unit iff `Accepts` and `filled < amount`. Freshness-0 fruit does not count; it passes through to the stall. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract fill in count.
+A bin takes a unit iff `Accepts` and `filled < amount`. `{ kind: 'rotten' }` never counts. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract fill in count.
 
 ## Complete
 

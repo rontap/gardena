@@ -4,11 +4,11 @@
 
 ## Weed spray
 
-`item-weed-spray.svg` — viewBox `0 0 24 24`. Hand sprayer can, 30-use. Not a bag. Not liters.
+`item-weed-spray.svg` — viewBox `0 0 24 24`. Cottage bag in the language of `item-fertilizer.svg`, with the spray glyph. Not a 30-use can. Liters bag.
 
-Steel/iron can, cottage leaf mark (same glyph language as `item-fertilizer`). Ink silhouette, inner fill, bands, center glyph. Pump T on top, wand right. No ripe volume bars.
+Ink silhouette, inner fill, bands, center spray glyph. No pump T. No wand. No ripe volume bars. Coder draws it.
 
-`ui-research-fertilizer.svg` — viewBox `0 0 24 24`. Small synth bag + small spray can. Unlock-fertilizer research face. Coder wires it.
+`ui-research-fertilizer.svg` — viewBox `0 0 24 24`. Small synth bag + small spray bag (not a small can). Unlock-fertilizer research face. Coder draws it.
 
 `ui-research-crop-variants.svg` — viewBox `0 0 24 24`. Two quality marks: uncommon `leaf` left, rare `water` right. Crop variants research face. Not heirloom gold.
 

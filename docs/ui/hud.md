@@ -15,8 +15,29 @@ Left → right, separated by `w-px bg-ink/20` rules:
 1. **Gardena** — `font-display`, `text-base`. The wordmark. Always there.
 2. `Coin` (`world.money`), `text-lg` semibold.
 3. Phase glyph, then **Day {n} · {phase name}** over a `w-28` `bg-ripe` day bar (`clock.t / DAY_SECONDS`).
-4. Research job when `job.kind === 'run'`: *Researching* **{name}** · **{n}s** over a `bg-leaf` bar. Hidden when idle.
-5. Far right, left of Multiplayer: expand chip then points chip then **Multiplayer** then **Pause** then **Gear**.
+4. Weather. After the day block: `w-px bg-ink/20` divider, current glyph, then tomorrow glyph iff husband owns `forecast`. No kind names in the row.
+5. Research job when `job.kind === 'run'`: *Researching* **{name}** · **{n}s** over a `bg-leaf` bar. Hidden when idle.
+6. Far right, left of Multiplayer: expand chip then points chip then **Multiplayer** then **Pause** then **Gear**.
+
+### Weather
+
+After item 3. Divider `w-px bg-ink/20`, then glyphs. Same chrome as the phase glyph: `h-5 w-5`, `viewBox="0 0 16 16"`. Files `ui-weather-{kind}.svg` for `clear` `rain` `dry` `flood` `drought`. Art [[art/weather]]. Current = `world.weather(clock.day)`. Tomorrow = `world.weather(clock.day + 1)` iff husband owns `forecast`. No extra label in the row. Guest sees the same glyphs; forecast still requires husband owned (world skill).
+
+Each glyph `relative` `pointer-events-auto`. [[ui/callout-hover]] `placement="below"`. Copy locked on [[mechanics/weather]]:
+
+| kind | title | body |
+|---|---|---|
+| clear | Clear | Fair weather. Crops, weeds, and water behave as usual. |
+| rain | Rain | A little extra water on every tilled plot. Weeds and grass come faster. Rain tanks fill six times faster. Shut off irrigation or picky plants will drown. |
+| dry | Dry | Plots lose a little water to the air. Weeds and grass stay down. Rain tanks sit empty. Pump water costs more at sundown. |
+| flood | Flood | Heavy water on every tilled plot — plants may drown. Rain tanks surge. The stall is closed this morning unless you keep it open around the clock. Fruit sells for more. |
+| drought | Drought | Plots dry out. Wells yield half. Pump water is costly. Shop goods cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more. |
+
+Tomorrow title **Tomorrow · {name}**, body of that kind. `{name}` is Clear / Rain / Dry / Flood / Drought.
+
+Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump — the bill is recap **Water**. [[ui/docks]] [[mechanics/weather]]
+
+`#debug-weather` — forecast table, not the HUD. [[ui/cheat]]
 
 ### Consumables
 
@@ -47,7 +68,7 @@ Host or guest: these three overlays do not auto-pause. Pause button still toggle
 
 Shop / Research / Build / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate.
 
-The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right.
+The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump.
 
 The hovered machine's recipe arrow and its countdown are on the same contract: `[data-craft-fill]` `[data-craft-time]`, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
 
@@ -107,4 +128,4 @@ Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears in
 
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
 
-Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`.
+Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]].

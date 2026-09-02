@@ -42,9 +42,9 @@ Empty cells hover too. What a crop sells for is worth knowing before you own any
 
 ## Additive store
 
-Title **Additive store**. `w-[30rem]` — three fixed rows, nothing to grow into. Capacity line reads **Click to fill a bag.** and `{used} / {cap} L`.
+Title **Additive store**. `w-[30rem]` — four rows, nothing to grow into. Capacity line reads **Click to fill a bag.** and `{used} / {cap} L`.
 
-One row per `ADDITIVE_IDS` — **Fertilizer**, **Synthetic fertilizer**, **Compost** — always all three, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, one bag to hand.
+One row per `ADDITIVE_IDS` — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray** — always all four, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, one bag to hand.
 
 Footer names the delivery rule while the store is empty, then *Walking up empties any bag you were carrying back into the tanks.*
 

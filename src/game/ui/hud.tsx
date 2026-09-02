@@ -1,7 +1,9 @@
 import { memo, useState } from 'react'
 import * as Progress from '@radix-ui/react-progress'
 import { RESEARCH } from '../defs/research.ts'
+import { WEATHER_NAME } from '../defs/weather.ts'
 import { PHASE_NAME } from '../sim/clock.ts'
+import type { WeatherKind } from '../sim/weather.ts'
 import type { World } from '../sim/world.ts'
 import type { Lens } from '../view/map.tsx'
 import { bindHud } from '../view/motion.ts'
@@ -25,6 +27,7 @@ import {
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
   UI_BTN_SHOP,
+  UI_WEATHER,
   type BtnState,
 } from '../view/svgs.ts'
 import { GHOST_SKUS } from '../defs/shelf.ts'
@@ -115,6 +118,16 @@ export function Hud({
                 <div ref={el => bindHud('day-bar', el)} data-day-bar className="h-full bg-ripe" style={{ width: '0%' }} />
               </div>
             </div>
+          </div>
+          <div className="h-7 w-px shrink-0 bg-ink/20" />
+          <div className="flex shrink-0 items-center gap-2">
+            <WeatherGlyph kind={world.weather(world.clock.day)} />
+            {world.hasSkill('forecast') && (
+              <WeatherGlyph
+                kind={world.weather(world.clock.day + 1)}
+                title={`Tomorrow · ${WEATHER_NAME[world.weather(world.clock.day + 1)]}`}
+              />
+            )}
           </div>
           <div className="h-7 w-px shrink-0 bg-ink/20" />
           <div
@@ -275,6 +288,43 @@ const IconButton = memo(function IconButton({
     </button>
   )
 })
+
+const WEATHER_CALLOUT: { readonly [K in WeatherKind]: { title: string; body: string } } = {
+  clear: { title: 'Clear', body: 'Fair weather. Crops, weeds, and water behave as usual.' },
+  rain: {
+    title: 'Rain',
+    body: 'A little extra water on every tilled plot. Weeds and grass come faster. Rain tanks fill six times faster. Shut off irrigation or picky plants will drown.',
+  },
+  dry: {
+    title: 'Dry',
+    body: 'Plots lose a little water to the air. Weeds and grass stay down. Rain tanks sit empty. Pump water costs more at sundown.',
+  },
+  flood: {
+    title: 'Flood',
+    body: 'Heavy water on every tilled plot — plants may drown. Rain tanks surge. The stall is closed this morning unless you keep it open around the clock. Fruit sells for more.',
+  },
+  drought: {
+    title: 'Drought',
+    body: 'Plots dry out. Wells yield half. Pump water is costly. Shop goods cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more.',
+  },
+}
+
+function WeatherGlyph({ kind, title }: { kind: WeatherKind; title?: string }) {
+  const [hot, setHot] = useState(false)
+  const callout = WEATHER_CALLOUT[kind]
+  return (
+    <div
+      className="relative pointer-events-auto"
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+    >
+      <svg viewBox="0 0 16 16" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: UI_WEATHER[kind] }} />
+      {hot && (
+        <CalloutHover placement="below" title={title !== undefined ? title : callout.title} description={callout.body} />
+      )}
+    </div>
+  )
+}
 
 function ConsumableChip({
   art,

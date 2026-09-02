@@ -4,7 +4,6 @@ import { onCell, topIndex } from './drop.ts'
 import type { BarrelCrop, CropId, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
 import {
-  BARREL_CAP,
   BARREL_MATURE,
   HANGAR_H,
   HANGAR_W,
@@ -18,6 +17,7 @@ import {
 import type { Barrel, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import { CASK_NAME, countable, cropName, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
 import {
+  barrelNeed,
   feedUnits,
   fruitCrop,
   grindAccept,
@@ -473,7 +473,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.soil.fertilizer >= FERT_PLOT_MAX) return { kind: 'blocked', text: 'Soil is fertile' }
     return intent('Fertilize', { act: 'fertilize', at })
   }
-  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell)) {
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell) && w.act.hand.item.liters >= 1) {
     return intent('Spray', { act: 'weed-spray', at })
   }
   if (cell.kind === 'ripe') {
@@ -616,16 +616,17 @@ export function barrelCropOf(item: Item): BarrelCrop | undefined {
 
 export function barrelLook(barrel: Barrel, hand: Hand): string {
   const n = feedUnits(barrel.feed)
-  if (n === BARREL_CAP && barrel.age >= BARREL_MATURE) return `Barrel - aging ${Math.floor(barrel.age / DAY_SECONDS)}d`
-  if (n === BARREL_CAP) return `Barrel - maturing ${Math.floor((barrel.age / BARREL_MATURE) * 100)}%`
+  const need = barrel.crop === 'none' ? 5 : barrelNeed(barrel.crop)
+  if (n === need && barrel.age >= BARREL_MATURE) return `Barrel - aging ${Math.floor(barrel.age / DAY_SECONDS)}d`
+  if (n === need) return `Barrel - maturing ${Math.floor((barrel.age / BARREL_MATURE) * 100)}%`
   if (hand.kind === 'hold' && fruitCrop(hand.item) !== undefined) {
     const crop = barrelCropOf(hand.item)
     if (crop === undefined) return 'Barrel - grapes or apples'
     if (barrel.crop !== 'none' && crop !== barrel.crop) return `Barrel - ${barrel.crop}s only`
-    if (n === BARREL_CAP) return 'Barrel - full'
+    if (n === need) return 'Barrel - full'
   }
   if (barrel.crop === 'none') return `Barrel - ${n}/5`
-  return `Barrel - ${n}/5 ${barrel.crop}`
+  return `Barrel - ${n}/${need} ${barrel.crop}`
 }
 
 function barrelDumpOk(barrel: Barrel, hand: Hand): boolean {
@@ -633,11 +634,12 @@ function barrelDumpOk(barrel: Barrel, hand: Hand): boolean {
   const crop = barrelCropOf(hand.item)
   if (crop === undefined) return false
   if (barrel.crop !== 'none' && crop !== barrel.crop) return false
-  return feedUnits(barrel.feed) < BARREL_CAP
+  const need = barrelNeed(barrel.crop === 'none' ? crop : barrel.crop)
+  return feedUnits(barrel.feed) < need
 }
 
 function barrelCollectOk(barrel: Barrel, hand: Hand): boolean {
-  if (barrel.crop === 'none' || feedUnits(barrel.feed) !== BARREL_CAP || barrel.age < BARREL_MATURE) return false
+  if (barrel.crop === 'none' || feedUnits(barrel.feed) !== barrelNeed(barrel.crop) || barrel.age < BARREL_MATURE) return false
   if (hand.kind === 'empty') return true
   return (
     hand.item.kind === 'cask' &&

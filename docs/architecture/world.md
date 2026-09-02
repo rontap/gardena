@@ -21,7 +21,7 @@ FruitAnnualId = tomato | raspberry | grape | vanilla
 
 `ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `PlayerSkillId` has no `better-watermelon`. `BETTER_IDS` is a complete `{ [K in AnnualId]: PlayerSkillId }`.
 
-Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: `better-*` on `TreeId`. Illegal: `World.pause`.
+Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: `better-*` on `TreeId`. Illegal: `World.pause`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
 
 `isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
@@ -29,7 +29,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `House`, starter pump (`form: 'starter'`), `Truck` are not delete targets.
 
-`Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`.
+`Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
 
 ## Same instance
 
@@ -57,7 +57,7 @@ Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`
 
 Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `rotten` — `crop: CropId` only. Illegal: grass as a nullable index; it is a `Cover` arm. Illegal: `untilled` without `ground` and `cover`.
 
-`Plant.tended: boolean` required, starts `false`, same instance through ripe / dead. [[architecture/family]].
+`Plant.tended: boolean` required, starts `false`, same instance through ripe / dead. `Tree.tended: boolean` required, starts `false`. [[architecture/family]] [[architecture/tree]].
 
 ## Place
 
@@ -79,7 +79,7 @@ Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 
 ## Stall
 
-`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky. `JamId` is `jam-${JamCrop}`. One `extract`. Olive fruit is a stall good (`TreeId`).
+`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky. `JamId` is `jam-${JamCrop}`. One `extract`. Olive fruit is a stall good (`TreeId`). `{ kind: 'rotten' }` is not a `StallGoodId`. Assumption: consigned rotten is `World.clearance: number`.
 
 Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on `rarity === 'heirloom'` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract. [[architecture/family]].
 
@@ -89,11 +89,11 @@ Crop goods: stock and worth per rarity × `bio`. Illegal: fruit consign that dro
 
 ## Hand / Item
 
-No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. Illegal: `weed-spray.usesLeft` 0 as held. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
+No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Jam has no rarity. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract.
 
 ## Recap / Seam
 
-Illegal: `recipient?: MemberId` on `Recap`. Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants `POINTS_PER_DAY` to `World.points`, then play. Seam copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]].
+Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants `POINTS_PER_DAY` to `World.points`, then play. Seam bills pump then copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]] [[mechanics/weather]].
 
 ## Family
 
@@ -124,8 +124,9 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 | buttons | button cells |
 | recover | tilled with `weedChance < WEED_CHANCE` |
 | empty | empty plots |
+| tilled | `isTilled` |
 
-`tickField` grow+recover. `tickMachines` / `tickCompost` machines. `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
+`tickField` grow+recover. `tickMachines` / `tickCompost` machines. `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
 
 `forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. View dirty walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`. [[architecture/view]] `view.scan`.
 
@@ -162,7 +163,11 @@ Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the s
 
 `World.ripenN: Map<string, number>` keyed `col,row` — per-cell ripen count `n` for grow rarity. Not a `Soil` field. Absent = 0. [[architecture/rng]]
 
-Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` without `n`. `clock.t` or `money` as entropy.
+Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` without `n`. Weather identity `at(day, k)` only. `clock.t` or `money` as entropy.
+
+## Weather
+
+`WeatherKind` on `sim/weather.ts`. Table from `forecastWeather(seed, throughDay, pins?)`. `World.weather(day)` indexes it. Current = `weather(clock.day)`. `World.pumpLiters` 0 at init, load, and after the seam bill. Pins: `Map<day, WeatherKind>`, not Save, not `Cmd`, host only. [[mechanics/weather]]
 
 ## Modifier
 

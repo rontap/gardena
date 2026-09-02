@@ -91,7 +91,7 @@ Research skills (research focused)
 - Speedy research (I-III) 5% research _speed_ increase.
 - Tool contracts (I-III) utilities become 1$ cheaper. Min price is 1$
 - Machine contracts (I-III) automation tools become 1$ cheaper. Min price is 1$
-- Weather forecast [dummy]
+- Weather forecast — [[mechanics/weather]]
 - Smart tax returns (I-III) lowers taxes by 2%. Min tax is 1$
 - {water,land quality} study, allows water level and land quality (fertilizer status) lenses.
 - bulk buying. when buying seeds, press control to buy 5× as much (5->25) with 5% discount
@@ -211,6 +211,7 @@ Freezer:
 Sugar is also unlocked as a buyable item when jam is unlocked, it should be priced in a way such that sugar cane is overall a cheaper way to produce it. 
 
 # 0.13 Early Access 5 Weather patterns.
+Shipped. Running spec: [[mechanics/weather]]. Below is original intent, not rules.
 Weather is added to the game. A weather indicator is shown, and if the appropriate skill is shown, next day's weather is shown. The current "no weather" is still gonna be the default weather state in the game. Two new main weathers are introduced, rainy days and dry days. They have bunch of overarching effects that slightly modify the gameplay.
 water use now costs money. Water use of the PUMP only costs money. Not very significant, but enough to balance out some of the fecund but cheap stuff. For example, running watermelons from pump is less efficient.
 Rainy days:

@@ -7,6 +7,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/plants]]
 - [[mechanics/trees]]
 - [[mechanics/water]]
+- [[mechanics/weather]]
 - [[mechanics/sensors]]
 - [[mechanics/weeds]]
 - [[mechanics/market]]
@@ -54,10 +55,20 @@ See [[canon]].
 | trees.drop | [[mechanics/trees]] |
 | trees.rng | [[mechanics/trees]] |
 | trees.ping | [[mechanics/trees]] |
+| trees.tend | [[mechanics/trees]] |
 | water.pour | [[mechanics/water]] |
 | water.targets | [[mechanics/water]] |
 | water.valve | [[mechanics/water]] |
 | water.autolay | [[mechanics/water]] |
+| weather.chain | [[mechanics/weather]] |
+| weather.spatial | [[mechanics/weather]] |
+| weather.continue-neg | [[mechanics/weather]] |
+| weather.severe-first | [[mechanics/weather]] |
+| weather.pump | [[mechanics/weather]] |
+| weather.soak | [[mechanics/weather]] |
+| weather.market | [[mechanics/weather]] |
+| weather.shop | [[mechanics/weather]] |
+| weather.forecast | [[mechanics/weather]] |
 | weeds.sprout | [[mechanics/weeds]] |
 | weeds.chance | [[mechanics/weeds]] |
 | weeds.outbreak | [[mechanics/weeds]] |

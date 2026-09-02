@@ -15,15 +15,17 @@ TreeYield =
   | { kind: 'off'; chance: number }
 ```
 
-`base` always 1×2. `juvenile` 0..1, then stays 1. `fruit` 0..1 toward next drop, only while mature and not pending.
+`base` always 1×2. `juvenile` 0..1, then stays 1. `fruit` 0..1 toward next drop, only while mature and not pending. `tended: boolean` required, starts `false`. Illegal: optional `tended`.
 
 Owner: `sim/building.ts`. Cell only — no `World.trees`. `World.tickTree` in `sim/world.ts` pings `'field'` only on visual stage change. Juvenile increment does not ping.
 
+Tend: [[mechanics/trees]] `trees.tend`. Play witness `Tree.tended` — [[architecture/ai-gameplay-api]].
+
 ## Defs
 
-`defs/trees.ts` owns `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`, and `TREES[TreeId] = { juvenileSeconds, fruitSeconds }`.
+`defs/trees.ts` owns `TREE_YIELD_DAYS`, `TREE_YIELD_MUL`, `TREE_OFF_MUL`, and `TREES[TreeId] = { juvenileSeconds, fruitSeconds }`. Income `$/min` derived, not a field. No tree shop pack.
 
-`CROPS` still owns sale / rot / desc / class / seed / tols / `waterUsePerSec` for every `CropId`. Trees: `waterUsePerSec = 0`.
+`CROPS` still owns sale / rot / desc / class / seed / tols / `waterUsePerSec` for every `CropId`. Trees: `waterUsePerSec = 0`. Numbers: [[mechanics/trees]].
 
 ## Item
 

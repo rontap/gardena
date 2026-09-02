@@ -5,7 +5,7 @@ import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.08
+export const PROTOCOL = 2.11
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -428,6 +428,7 @@ export function digestParts(world: World): Record<string, unknown> {
     money: world.money,
     day: world.clock.day,
     t: q(world.clock.t),
+    weather: world.weather(world.clock.day),
     seats,
     vehicles,
     trailers,

@@ -15,7 +15,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/shop]]
 - [[ui/build]]
 - [[ui/store]]
-- [[ui/cheat]]
+- [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather`
 - [[ui/market]]
 - [[ui/contracts]]
 - [[ui/almanac]]

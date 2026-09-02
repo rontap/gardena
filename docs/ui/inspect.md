@@ -2,7 +2,7 @@
 
 Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. Then `lookText` (cell name, soil, prompt). Armed place tints the look block roof (`bg-roof/20`, larger type).
 
-Plant bars only on hover of a growing or ripe plot. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
+Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
 
 ## Growing
 
@@ -31,25 +31,42 @@ Bands: green `#4f9d69`, amber `#d69a3a`, red `#c9574b`.
 
 Freshness only. Red `0 .. 0.8`, green `0.8 .. 1`. No amber. Notch at current. Number `floor(freshness * 100)%`.
 
-Empty / weed / dead / rotten / untilled: no bars.
+Weed / dead / rotten / turf / untilled: no bars.
+
+## Empty
+
+`kind: 'empty'` only.
+
+| row | style | value | number |
+|---|---|---|---|
+| Fertilizer | blue FillBar `#4b91c2` / `#8b887d` | `fertilizer / FERT_PLOT_MAX` | `floor(fertilizer * 100)%` |
+| Water | blue FillBar | `water / SOIL_WATER_MAX` | `{water}L` two decimals |
+| Weed resistance | banded, no amber | `clamp((1 - weedChance) / 2, 0, 1)` | `floor(* 100)%` |
+
+Weed resistance: 1 at `weedChance === -1`. Green `weedChance < 0` (bar 0.5..1). Red `weedChance >= 0` (bar 0..0.5). Outbreak above +1 clamps to 0. Notch at current. Label **Weed resistance**.
 
 ## Tend
 
-Empty hand, growing plot, player owns `tending`, `plant.tended === false`: prompt **Tend**. Click queues `{ act: 'tend'; at }`. Work `TEND_WORK` 0.7s. Else empty-hand growing stays **Move here**. Not ripe. Not twice. Not a tree. [[mechanics/family]].
+Empty hand, player owns `tending`, work `TEND_WORK` 0.7s. Click queues `{ act: 'tend'; at }`. Prompt **Tend**.
+
+- growing plot, `plant.tended === false`: plants unchanged. Not ripe. Not twice.
+- tree, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`: either cell of the 1×2. Not pending. Not `{ on }`. Not juvenile. Not twice.
+
+`pending` look is off-season; prompt is not Tend. Else empty-hand growing / tree stays **Move here**. [[mechanics/family]] [[mechanics/trees]] `trees.tend`.
 
 ## Tree
 
-Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars.
+Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars. No soil bars.
 
-`lookText` uses `TREE_NAME[species]`:
+`lookText` uses `TREE_NAME[species]`. No `%` in the line. Player copy: resting → off-season, yielding → on-season.
 
 | state | line |
 |---|---|
-| `juvenile < 1` | **{Name} tree - growing {n}%** — `n = floor(juvenile * 100)` |
-| `yield` `{ on }` | **{Name} tree - yielding {n}%** — `n = floor(fruit * 100)` |
-| `pending` or `{ off }` | **{Name} tree - resting {n}%** — `n = floor(fruit * 100)` |
+| `juvenile < 1` | **{Name} tree - growing** |
+| `yield` `{ on }` | **{Name} tree - on-season** |
+| `pending` or `{ off }` | **{Name} tree - off-season** |
 
-Juvenile fill while `juvenile < 1`: same Growth fill as a plant, label **Juvenile**, `floor(juvenile * 100)%`. No fill once mature.
+Blue plant FillBar (`#4b91c2` / `#8b887d`), label **Growth**: `juvenile` 0..1 while `juvenile < 1`; `fruit` 0..1 once mature. Number `floor(* 100)%`.
 
 ## Prompts
 
@@ -59,7 +76,7 @@ Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
 
 Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop+rarity in hand under the stack cap. `{ act: 'harvest' }`. Same crop at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters. Not holding sugar.
 
-Held `weed-spray`, tilled plot: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Not untilled. [[mechanics/weeds]]
+Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Spend 1 L. Not untilled. Not spray-trailer. [[mechanics/weeds]]
 
 ## Machines
 

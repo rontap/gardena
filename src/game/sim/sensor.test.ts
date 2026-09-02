@@ -1,11 +1,12 @@
+// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { BUTTON_PULSE, COUNTER_MAX, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
 import { Tree } from './building.ts'
 import { Act } from './log.ts'
-import { digestHex, permit, PROTOCOL } from './mp.ts'
+import { digestHex, permit } from './mp.ts'
 import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
-import { dump, parse, SAVE_VERSION } from './save.ts'
+import { dump, parse } from './save.ts'
 import { lookText } from './look.ts'
 import { counterDial, evalDag, HarvestSensor, isSeqIn, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle, type WireEnd } from './sensor.ts'
 import { Soil, WEED_CHANCE } from './soil.ts'
@@ -61,18 +62,12 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 2.08. PROTOCOL 2.08. Wordmark 2.0.8. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(2.08)
-    expect(PROTOCOL).toBe(2.08)
+  test('Dump wires and valveHold. Empty farm hydrates.', () => {
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(2.08)
     expect(s.wires).toEqual([])
     expect(s.valveHold).toEqual([])
-    const old = parse(JSON.stringify({ ...s, version: 1.62 }))
-    expect(old.ok).toBe(false)
-    if (old.ok) return
-    expect(old.reason).toBe('version')
+    expect(parse(JSON.stringify(s)).ok).toBe(true)
   })
 
   test('New wire that would cycle: no-op.', () => {

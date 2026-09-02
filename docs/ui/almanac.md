@@ -127,9 +127,9 @@ Rarity is the grade of fruit and seed: Common / Uncommon / Rare / Heirloom. Four
 
 Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Extra plates: Product plates.
 
-Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.**
+Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.** Does not say yielding / resting. Look / inspect words are on-season / off-season — [[ui/inspect]].
 
-Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale`), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price.
+Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale`), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price. Numbers: [[mechanics/trees]].
 
 ## Pipe
 

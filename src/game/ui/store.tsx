@@ -21,6 +21,7 @@ const ADDITIVE_LABEL: { readonly [K in AdditiveId]: string } = {
   fertilizer: 'Fertilizer',
   synth: 'Synthetic fertilizer',
   compost: 'Compost',
+  'weed-spray': 'Weed spray',
 }
 
 /**

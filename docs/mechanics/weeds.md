@@ -6,7 +6,7 @@ Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
 ## Spawn
 
-`BIG_TICK` — preference. Each tick, each `empty` plot: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. — [[mechanics/rng]]
+`BIG_TICK` — preference. Each tick, each `empty` plot: `mul` 0 → skip; else `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks) * mul`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. `mul` from current weather — [[mechanics/weather]] [[mechanics/rng]]
 
 `WEED_CHANCE` — preference.
 
@@ -42,19 +42,19 @@ Any other held item cannot gather. Compost takes gathered weeds — [[mechanics/
 
 ## Spray
 
-Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES` — preference. Illegal: `usesLeft` 0 as held (throw away at 0).
+Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L — preference (old 30 uses). Illegal: `liters` 0 as held (empty bag leaves the hand). No `usesLeft` field. If a constant remains it is the bag liters.
 
-`buy-weed-spray` utility, unlock and show `unlock-fertilizer`. `unlock-fertilizer` effect stays one SKU; spray gates on the research id. — [[mechanics/research]]
+`buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store, not house. `unlock-fertilizer` effect stays one SKU; spray gates on the research id. — [[mechanics/research]] [[mechanics/inventory]]
 
-Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.
+Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.
 
-Assumption: spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work 0.
+Assumption: bag `WEED_SPRAY_BAG` = 30 L (old 30 uses). Spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work 0.
 
 ## Grass
 
 Cosmetic `untilled` cover. Three variants. Not a plant.
 
-World roll each `BIG_TICK`: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp.
+World roll each `BIG_TICK`: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp. `mul` from current weather — [[mechanics/weather]]
 
 If it fires, pick eligible untilled from the grass stream: untilled, not very-hard, cover bare, no drop. Do not sample `bounds()` AABB (unowned holes). At most one tuft. Variant unchanged: `grass.at(col, row, bigTicks)`. Appears grown.
 
@@ -64,14 +64,14 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 
 ## Invariants
 
-`weeds.sprout` — Empty hand gathers weed/grass as items. Each `BIG_TICK`, each `empty` plot sprouts iff `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1.
+`weeds.sprout` — Empty hand gathers weed/grass as items. Each `BIG_TICK`, each `empty` plot: `mul` 0 → skip; else sprouts iff `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks) * mul`. Kind: `weed.at(col, row, bigTicks, 1) < 0.5` → 0 else 1. `mul` from current weather.
 
-`weeds.chance` — `Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks)`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.
+`weeds.chance` — `Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `mul` 0 → skip; else `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks) * mul`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.
 
 `weeds.outbreak` — Outbreak: when a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.
 
-`weeds.spray` — Item `{ kind: 'weed-spray'; usesLeft }`. `WEED_SPRAY_USES`. Illegal: `usesLeft` 0 as held (throw away at 0). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Click any tilled plot: `weedChance = −1`, spend 1 use. Instant. Not untilled. Not spray-trailer.
+`weeds.spray` — Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.
 
 `weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.
 
-`weeds.grass` — Each `BIG_TICK`, world roll: `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.
+`weeds.grass` — Each `BIG_TICK`, world roll: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. `mul` from current weather. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.

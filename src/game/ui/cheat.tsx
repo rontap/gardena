@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
 import type { World } from '../sim/world.ts'
 import { SKILL_POINT, skillInner } from '../view/svgs.ts'
 import { Coin, Dock } from './frame.tsx'
@@ -23,6 +24,14 @@ export function Cheat({ world, onClose }: { world: World; onClose: () => void })
           onClick={() => world.cheatMoney()}
         />
         <Row icon={SKILL_POINT} label="Gain 10 skill points" onClick={() => world.cheatPoints()} />
+        {WEATHER_KINDS.map(kind => (
+          <Row
+            key={kind}
+            label={`Tomorrow: ${WEATHER_NAME[kind]}`}
+            selected={world.pinnedTomorrow() === kind}
+            onClick={() => world.pinTomorrow(kind)}
+          />
+        ))}
       </div>
     </Dock>
   )

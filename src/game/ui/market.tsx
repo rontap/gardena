@@ -25,12 +25,18 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
   const quote = world.marketQuote()
   const open = world.marketOpen()
   const phase = world.clock.phase()
+  const weather = world.weather(world.clock.day)
+  const allDay = world.hasSkill('open-24')
   const closed =
     open
       ? undefined
-      : phase === 'sunset'
-        ? 'Stall closed until morning.'
-        : 'Stall closed at twilight.'
+      : weather === 'flood' && phase === 'sunrise' && !allDay
+        ? 'Stall closed this morning.'
+        : weather === 'drought' && phase === 'day' && !allDay
+          ? 'Stall closed at midday.'
+          : phase === 'sunset'
+            ? 'Stall closed until morning.'
+            : 'Stall closed at twilight.'
   const contracts = world.done.has('unlock-contracts')
   const slots = world.contractSlots()
   const cap = world.contractCap()

@@ -17,6 +17,7 @@
 | `catalog.ts` | almanac SKU `CatalogEntry` |
 | `shelf.ts` | `BuildShelfId` |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
+| `weather.ts` | weather numbers — [[mechanics/weather]] |
 
 ## sim
 
@@ -35,11 +36,11 @@
 | `stall.ts` | `StallGood` |
 | `market.h.ts` | sat / contract typedefs |
 | `market.ts` | sat helpers, `rollBoard` |
-| `building.ts` | buildings, `Tree`, `Hangar`, stores |
+| `building.ts` | buildings, `Tree` (`tended`), `Hangar`, stores, `AdditiveId` (includes `weed-spray`) |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
-| `item.ts` | `Item`, `Hand`, `Face` |
+| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters` |
 | `prompt.ts` | `Prompt` |
 | `look.ts` | `lookText` |
 | `drop.ts` | `Drop` |
@@ -47,8 +48,9 @@
 | `noise.ts` | `goodness` |
 | `modifiers.ts` | `Modifier`, `statsOf` |
 | `rng.ts` | `Rng`, streams |
+| `weather.ts` | `WeatherKind`, `forecastWeather` |
 | `machine.ts` | mill recipes, sale bake, grind hopper accept, machine west/east |
-| `recipe.ts` | `recipesOf`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2, still water face |
+| `recipe.ts` | `recipesOf`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2 `barrelNeed`, compost 3, still water face |
 | `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light |
 
@@ -127,7 +129,8 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 | `Soil` | `sim/soil.ts`. Required on every `Tilled` plot |
 | `Plant` | `sim/plant.ts`. `crop: AnnualId` |
 | `Tree` | `sim/building.ts`. Same instance in both 1×2 cells |
-| `Reservoir` | `sim/water.ts`. `Pump.water`, `RainTank.water` |
+| `Reservoir` | `sim/water.ts`. `Pump.water`, `RainTank.water`. `rate` × weather mul |
+| `WeatherKind` | `sim/weather.ts`. `World.weather(day)` |
 | `Stall` | `sim/stall.ts`. `World.stall` complete `StallGoodId` map |
 | `Place` | `Seat.place`. Always a `Place` |
 | `MpWire` | `sim/mp.ts` type. PeerJS in `net/peer.ts` only |

@@ -366,7 +366,7 @@ export function dumpAccept(dest: PadCell, item: Item): number {
     return n > 0 ? n : 0
   }
   if (dest.kind === 'additive-store') {
-    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return 0
+    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
     const n = dest.free < item.liters ? dest.free : item.liters
     return n > 0 ? n : 0
   }
@@ -409,7 +409,7 @@ function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => vo
     if (got > 0) take(got)
     return
   }
-  if (dest.kind === 'additive-store' && (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost')) {
+  if (dest.kind === 'additive-store' && (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray')) {
     const got = putAdditiveInto(dest, item.kind, n)
     if (got > 0) take(got)
   }
@@ -638,7 +638,7 @@ function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number 
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     const piece = { ...item }
     if (!insertSlots(slots, piece, maxSlots, undefined)) return false
     item.liters = 0
@@ -678,7 +678,7 @@ function takeItemCount(item: Item, n: number): boolean {
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost') {
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     item.liters -= n
     return item.liters <= 0
   }

@@ -3,7 +3,6 @@ import {
   BARREL_MATURE,
   EXTRACT,
   FLOUR,
-  BARREL_CAP,
   JAM_BUFFER,
   JAM_IN,
   JAM_SUGAR,
@@ -23,7 +22,7 @@ import {
   CASK_SALE,
 } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
-import type { AnnualId, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
+import type { AnnualId, BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
 import type { Barrel, CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
 import { compostValue, organic, type Item } from './item.ts'
@@ -46,6 +45,10 @@ export function millNeed(recipe: MillRecipe): number {
   if (recipe === 'grass') return MILL_GRASS
   if (recipe === 'vanilla') return MILL_VANILLA_IN
   return MILL_IN
+}
+
+export function barrelNeed(crop: BarrelCrop): number {
+  return crop === 'apple' ? 4 : 5
 }
 
 export function millProductName(recipe: MillRecipe): string {
@@ -361,5 +364,5 @@ export function stillWorking(c: PotStill): boolean {
 }
 
 export function barrelWorking(c: Barrel): boolean {
-  return c.crop !== 'none' && feedUnits(c.feed) === BARREL_CAP && c.age < BARREL_AGE
+  return c.crop !== 'none' && feedUnits(c.feed) === barrelNeed(c.crop) && c.age < BARREL_AGE
 }

@@ -57,6 +57,7 @@ type Props = {
   onHover: (c: PromptHit | undefined) => void
   onCam: (c: Camera) => void
   onClick: (hit: MapClick, xy: { x: number; y: number }) => void
+  onReady?: () => void
 }
 
 function Use({ art }: { art: string }) {
@@ -74,7 +75,7 @@ function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: nu
   }
 }
 
-export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick }: Props) {
+export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick, onReady }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<WorldView | undefined>(undefined)
   const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; wireFrom?: WireEnd } | undefined>(undefined)
@@ -88,8 +89,10 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
   const anchorRef = useRef<Vertex | undefined>(undefined)
   const pendingRef = useRef<Edge[]>([])
+  const onReadyRef = useRef(onReady)
   camRef.current = cam
   pendingRef.current = pendingPipe
+  onReadyRef.current = onReady
   const place = world.seats[world.local].place
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
@@ -171,6 +174,8 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       v.onPipeLoc = () => paintPipeLocators(pipeHost, world)
       v.onPipeLoc()
       v.layout()
+      const ready = onReadyRef.current
+      if (ready !== undefined) ready()
       const hook: ViewHooks = {
         get cam() {
           return v.cam

@@ -6,6 +6,7 @@ import {
   FREEZER_SLOTS,
   SILO_SEED_CAP,
   SYNTH_BAG_LITERS,
+  WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import type { AnnualId, BarrelCrop, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
@@ -227,6 +228,7 @@ export class Tree {
   juvenile: number
   fruit: number
   yield: TreeYield
+  tended = false
   constructor(species: TreeId, base: RectBase, juvenile = 0, fruit = 0, y: TreeYield = { kind: 'pending' }) {
     this.species = species
     this.base = base
@@ -408,14 +410,14 @@ export class SeedSilo extends Store {
   }
 }
 
-/** Additive kinds the store accepts. New consumable feeds append here. */
-export const ADDITIVE_IDS = ['fertilizer', 'synth', 'compost'] as const
+export const ADDITIVE_IDS = ['fertilizer', 'synth', 'compost', 'weed-spray'] as const
 export type AdditiveId = (typeof ADDITIVE_IDS)[number]
 
 export const ADDITIVE_BAG: { readonly [K in AdditiveId]: number } = {
   fertilizer: FERT_BAG_LITERS,
   synth: SYNTH_BAG_LITERS,
   compost: COMPOST_LITERS,
+  'weed-spray': WEED_SPRAY_BAG,
 }
 
 export type AdditiveHold = { id: AdditiveId; liters: number }

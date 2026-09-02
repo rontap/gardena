@@ -18,6 +18,7 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `still` | still rarity clamp | `at(col, row, day, n)` on finish only |
 | `barrel` | barrel rarity clamp | `at(col, row, day, n)` at mature only |
 | `contract` | board slot | `at(day, slot, k)` |
+| `weather` | day kind | `at(day, k)` |
 
 `n` is `World.ripenN` keyed `col,row`. Absent 0. Not a `Soil` field. Failed buy / bulk / drop consumes 0 `next()`.
 

@@ -139,11 +139,11 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.08 as const
+export const SAVE_VERSION = 2.11 as const
 
 const INV = 16
 
-export type LoadFailReason = 'not-gardena' | 'version' | 'unusable'
+export type LoadFailReason = 'unknown-format' | 'not-gardena' | 'version' | 'unusable'
 
 export type LoadResult = { ok: true; world: World } | { ok: false; reason: LoadFailReason }
 
@@ -194,7 +194,7 @@ export type SaveCell =
   | { kind: 'rain-tank'; base: RectBase; stored: number }
   | { kind: 'tap'; base: RectBase }
   | { kind: 'rock'; base: RectBase }
-  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield }
+  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; rarity: Rarity; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
@@ -293,11 +293,12 @@ export type SaveRecap = {
   harvests: number
   research: ResearchId[]
   tax: number
+  water: number
 }
 
 export type Save = {
   game: 'gardena'
-  version: 2.08
+  version: 2.1
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -308,6 +309,7 @@ export type Save = {
   prizeSlots: number
   prizeFreezers: number
   points: number
+  clearance: number
   bigTicks: number
   seats: SaveSeat[]
   vehicles: SaveVehicle[]
@@ -365,6 +367,7 @@ export function dump(world: World): Save {
     prizeSlots: world.prizeSlots,
     prizeFreezers: world.prizeFreezers,
     points: world.points,
+    clearance: world.clearance,
     bigTicks: world.bigTicks,
     seats: world.seats.map(s => ({
       playerId: s.playerId,
@@ -406,6 +409,7 @@ export function dump(world: World): Save {
               harvests: world.seam.recap.harvests,
               research: world.seam.recap.research,
               tax: world.seam.recap.tax,
+              water: world.seam.recap.water,
             },
           },
     ripenN: [...world.ripenN.entries()].flatMap(([k, n]) => {
@@ -443,17 +447,27 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
   try {
     raw = JSON.parse(text)
   } catch {
-    return { ok: false, reason: 'unusable' }
+    // COMMANDMENT: not JSON → unknown format. Do not peek. Do not migrate.
+    return { ok: false, reason: 'unknown-format' }
   }
-  if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'unusable' }
+  if (typeof raw !== 'object' || raw === null) {
+    // JSON without .game === "gardena".
+    return { ok: false, reason: 'not-gardena' }
+  }
   const rec = raw as Record<string, unknown>
   if (rec.game !== 'gardena') return { ok: false, reason: 'not-gardena' }
-  if (num(rec.version) !== SAVE_VERSION) return { ok: false, reason: 'version' }
+  // COMMANDMENT: always attempt hydrate. Version is not a gate. No migrate.
+  // COMMANDMENT: peek version only after hydrate fails. Different version that hydrates is not a refusal.
   const save = readSave(rec)
-  if (save === undefined) return { ok: false, reason: 'unusable' }
+  if (save === undefined) return failAfterHydrate(rec)
   const world = worldFromSave(save, sink)
-  if (world === undefined) return { ok: false, reason: 'unusable' }
+  if (world === undefined) return failAfterHydrate(rec)
   return { ok: true, world }
+}
+
+function failAfterHydrate(rec: Record<string, unknown>): LoadResult {
+  // COMMANDMENT: version is only for the fail copy. Never a refusal of a file that hydrates.
+  return { ok: false, reason: num(rec.version) !== SAVE_VERSION ? 'version' : 'unusable' }
 }
 
 export function readSlot(): string | undefined {
@@ -593,6 +607,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         juvenile: c.juvenile,
         fruit: c.fruit,
         yield: c.yield,
+        tended: c.tended,
       }
     case 'chest':
       return { kind: 'chest', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
@@ -768,6 +783,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const prizeSlots = num(rec.prizeSlots)
   const prizeFreezers = num(rec.prizeFreezers)
   const points = num(rec.points)
+  const clearance = num(rec.clearance)
   const bigTicks = num(rec.bigTicks)
   const savedAt = rec.savedAt
   const seats = readSeats(rec)
@@ -784,6 +800,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     prizeSlots === undefined ||
     prizeFreezers === undefined ||
     points === undefined ||
+    clearance === undefined ||
     bigTicks === undefined ||
     seats === undefined ||
     typeof savedAt !== 'string'
@@ -958,6 +975,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     prizeSlots,
     prizeFreezers,
     points,
+    clearance,
     bigTicks,
     seats,
     done,
@@ -1044,6 +1062,7 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     prizeSlots: save.prizeSlots,
     prizeFreezers: save.prizeFreezers,
     points: save.points,
+    clearance: save.clearance,
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,
@@ -1260,8 +1279,11 @@ function makeLive(sc: SaveCell): Cell | undefined {
       return new Tap(sc.base)
     case 'rock':
       return new Rock(sc.base)
-    case 'tree':
-      return new Tree(sc.species, sc.base, sc.juvenile, sc.fruit, sc.yield)
+    case 'tree': {
+      const tree = new Tree(sc.species, sc.base, sc.juvenile, sc.fruit, sc.yield)
+      tree.tended = sc.tended
+      return tree
+    }
     case 'chest': {
       const chest = new Chest(sc.base)
       for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = sc.slots[i]
@@ -1542,8 +1564,9 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const juvenile = num(o.juvenile)
     const fruit = num(o.fruit)
     const y = readTreeYield(o.yield)
-    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined) return undefined
-    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y }
+    const tended = bool(o.tended)
+    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined || tended === undefined) return undefined
+    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y, tended }
   }
   if (kind === 'chest') {
     const base = readRectBase(o.base)
@@ -2266,6 +2289,7 @@ function readRecap(v: unknown): Recap | undefined {
   const died = num(o.died)
   const harvests = num(o.harvests)
   const tax = num(o.tax)
+  const water = num(o.water)
   const researchIn = arr(o.research)
   if (
     day === undefined ||
@@ -2274,6 +2298,7 @@ function readRecap(v: unknown): Recap | undefined {
     died === undefined ||
     harvests === undefined ||
     tax === undefined ||
+    water === undefined ||
     researchIn === undefined
   ) {
     return undefined
@@ -2283,7 +2308,7 @@ function readRecap(v: unknown): Recap | undefined {
     if (!isResearchId(id)) return undefined
     research.push(id)
   }
-  return { day, money, stipend, died, harvests, research, tax, contracts: [] }
+  return { day, money, stipend, died, harvests, research, tax, water, contracts: [] }
 }
 
 function readSegment(v: unknown): Segment | undefined {
@@ -2502,9 +2527,10 @@ function readItem(v: unknown): Item | undefined {
       return { kind: o.kind, count }
     }
     case 'weed-spray': {
-      const usesLeft = num(o.usesLeft)
-      if (usesLeft === undefined || usesLeft <= 0) return undefined
-      return { kind: 'weed-spray', usesLeft }
+      const liters = num(o.liters)
+      const capacityLiters = num(o.capacityLiters)
+      if (liters === undefined || capacityLiters === undefined || liters < 1) return undefined
+      return { kind: 'weed-spray', liters, capacityLiters }
     }
     default:
       return undefined

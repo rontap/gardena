@@ -10,7 +10,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 
 ## Types
 
-`StreamId = SpatialId | SeqId`. Spatial: `gen` `grow` `weed` `grass` `tree` `skill` `grind` `still` `barrel` `contract`. Seq: `shop` `fruit`. Shape: `sim/rng.ts`.
+`StreamId = SpatialId | SeqId`. Spatial: `gen` `grow` `weed` `grass` `tree` `skill` `grind` `still` `barrel` `contract` `weather`. Seq: `shop` `fruit`. Shape: `sim/rng.ts`.
 
 `streamSeed` = mixer u32 of `world.seed` and `StreamId`. `at(...ints)` mixes those ints onto `streamSeed` and returns `[0,1)`. `next()` mixes a per-stream monotonic seq starting at 0.
 
@@ -86,3 +86,7 @@ Consume only when a drop spot is found and fruit is spawned. Failed drop does no
 ### contract — `at(day, slot, k)`
 
 Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, slot, k)` only. Amount is derived. Pair is leftover budget, not a roll. `rollBoard` [[mechanics/contracts]].
+
+### weather — `at(day, k)`
+
+Day kind walk. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, k)` only. `k` is 0 (special / severe) or 1 (rain vs dry; continue). Illegal: `next()`. `forecastWeather` [[mechanics/weather]].

@@ -8,6 +8,7 @@
 - [[art/tree]]
 - [[art/recap-night]]
 - [[art/menu]]
+- [[art/weather]]
 - [[art/skills]]
 - [[art/tilled-edges]]
 - [[art/ground-variants]]

@@ -143,6 +143,28 @@ Age baked into `unitSale` at collect: `WINE_SALE × SPIRIT_RARITY[r] × ageMul`.
 
 Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0.
 
+## Recipes
+
+`sim/recipe.ts`. No `World`. The one enumeration of what each machine makes; every number derived from `defs/items.ts` and `sim/machine.ts`, none retyped. Shown by [[ui/recipe]].
+
+`MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box`. Freezer and chest are storage, not machines.
+
+`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. Compost is `waste`: `COMPOST_NEED` counts `COMPOST_VALUE`, not items, so 10 is two fruit, not ten.
+
+`Ingredient` — `one` | `any`. `any` is the three set-input machines only: mixed still, grinder (any `AnnualId`), compost box (any organic).
+
+`Yield` — `exact` | `range`. `range` is the grinder's `GRIND_MIN`..`GRIND_MAX`.
+
+`Duration` — `work` divided by `machineMul` (mill, jam, grinder); `fixed` not divided (still, compost); `age` for the barrel, which has no `progress`. The one place that rule is written.
+
+Rows: mill `MILL_RECIPES` 4, jam `JAM_CROPS` 6, still `STILL_CROPS` 3 + mixed, barrel 1, grinder 1, compost 1.
+
+Still water is an input of `STILL_WATER` liters drawn with the `tap` face. Water is not an `Item` and has no `Face` of its own.
+
+`craftState(cell, mul)` derives the live `Craft`: `idle` `filling` `paused` `thirsty` `working` `ready`. `thirsty` is `stillReady && progress === 0` — `tickMachines` only leaves `progress` at 0 after `pullStillWater` succeeds, so no net read is needed. `ready` is `progress >= 1`, held there while the output has nowhere to go, and the collectable barrel.
+
+Assumption: the barrel counts down to `BARREL_MATURE`, not `BARREL_AGE`.
+
 ## Sale bake
 
 `sim/machine.ts`. No `World`.
@@ -186,3 +208,9 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 `machines.io-push` — Produce inserts into the east store if present; else `frontOf`. East store full → wait.
 
 `machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.
+
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill inputs equal `millNeed`. Jam carries `JAM_IN` fruit and `JAM_SUGAR` liters. Grinder yields `GRIND_MIN`..`GRIND_MAX`. Compost counts `COMPOST_NEED` as `waste`. Barrel is `age`, not `work`.
+
+`machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` and `STILL_CAP` fruit.
+
+`machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not.

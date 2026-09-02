@@ -5,7 +5,9 @@ import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import { guestBlockedSku } from '../sim/mp.ts'
 import type { World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
+import { machineOfSku } from '../sim/recipe.ts'
 import { CalloutHover } from './callout-hover.tsx'
+import { Recipes } from './recipe.tsx'
 import { Coin } from './frame.tsx'
 
 export type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'silo-full' | 'store-full' | 'ok'
@@ -74,6 +76,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
   const bulkFail = world.buyPacksFail(id)
   const bulk = bulkFail === 'Locked' ? undefined : world.packsPrice(id)
   const guestOff = world.local !== 0 && guestBlockedSku(id)
+  const machine = machineOfSku(id)
   return (
     <CalloutHover
       title={skuLabel(id)}
@@ -81,6 +84,11 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
         <>
           <span className="mb-2 block text-xs opacity-60">{crumb}</span>
           <span>{skuDesc(id)}</span>
+          {machine !== undefined && (
+            <span className="mt-2 block border-t border-ink/15 pt-1">
+              <Recipes view={{ kind: 'list', machine }} size="sm" />
+            </span>
+          )}
           {state !== 'ok' && !guestOff && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}
           {bulk !== undefined && (
             <span className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}>

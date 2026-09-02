@@ -58,6 +58,10 @@ export const JAM_CROPS: readonly JamCrop[] = ['apricot', 'grape', 'raspberry', '
 
 export const JAM_IDS: readonly JamId[] = JAM_CROPS.map(c => `jam-${c}` as JamId)
 
+export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
+
+export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass']
+
 export type StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'

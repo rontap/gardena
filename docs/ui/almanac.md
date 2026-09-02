@@ -65,6 +65,8 @@ Every value is qualified: subject + amount + unit/noun + where it applies. “Un
 
 Undefined words are illegal unless a natural farming word, or this page (or a linked page) has already defined them.
 
+**Recipe** is defined by [[ui/recipe]] and heads the Automation recipe block.
+
 Ban in player strings unless defined in-page: gem, pip, grade (except Rarity, first sentence: grade = Common / Uncommon / Rare / Heirloom), overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say daily pay). **Build** is ok as “the Build menu.”
 
 **“gem” is banned.** The colored `rarityInner` mark may still draw on the Rarity page. First use: “Uncommon, Rare, and Heirloom fruit show a small colored mark: green, blue, or gold. Common fruit has none.” After that, “the mark.”
@@ -113,6 +115,10 @@ Water systems list row `pipe` only. Valve and the sprinklers stay their own stat
 
 Same generic pane chrome as other non-crop entries: title, one plate, blurb. The plate is not `itemInner({ kind: 'pipe' })`.
 
-Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `setInterval` 800ms, `(s + 1) % 5`. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`.
+Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `useCycle(PIPE_JOINS.length)`, `CYCLE_MS` 800 — [[ui/recipe]]. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`.
+
+Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `setInterval`.
+
+The six machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]].
 
 Assumption: Haggling knocks $1 per rank off utility and automation shop goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.

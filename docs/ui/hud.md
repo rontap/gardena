@@ -39,6 +39,8 @@ Then **Multiplayer** **Pause** **Gear**. All `ui-btn-*.svg` faces `idle` / `hove
 
 The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right.
 
+The hovered machine's recipe arrow and its countdown are on the same contract: `[data-craft-fill]` `[data-craft-time]`, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
+
 ## FPS
 
 Top-right, play only. `pointer-events-none` `text-xs` `tabular-nums` Nunito. Host and guest both show it.

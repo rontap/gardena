@@ -48,6 +48,8 @@ The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Neve
 
 [[ui/callout-hover]] to the right of the dock — the same place research and family put theirs. Title `skuLabel`, body `skuDesc`, then the blocking reason in bold `roof` when the card is not `ok`.
 
+Machine SKUs (`machineOfSku`) add every recipe under `skuDesc`, above the blocking reason — [[ui/recipe]]. Locked machines still show them: knowing what a still makes is the reason to research it. No reverse lookup — a seed pack does not list the machines that eat it.
+
 **Locked cards must hover.** A disabled `<button>` dispatches no pointer events, so blocked cards carry `aria-disabled` and a guarded `onClick` instead of the `disabled` attribute. The whole point of graying a card is telling the player what to do about it. Research cards and family offers do the same.
 
 Footer is the tab's one-line description, or the search tally, and nothing else.

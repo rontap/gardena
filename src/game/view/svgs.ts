@@ -71,6 +71,7 @@ import uiHangarReturn from '../../assets/ui/ui-hangar-return.svg?raw'
 import uiPadDrop from '../../assets/ui/ui-pad-drop.svg?raw'
 import uiPadTake from '../../assets/ui/ui-pad-take.svg?raw'
 import uiSlotDown from '../../assets/ui/ui-slot-down.svg?raw'
+import uiArrowRight from '../../assets/ui/ui-arrow-right.svg?raw'
 import propSeedSilo from '../../assets/props/prop-seed-silo.svg?raw'
 import propAdditiveStore from '../../assets/props/prop-additive-store.svg?raw'
 import shovel from '../../assets/items/item-shovel.svg?raw'
@@ -634,6 +635,8 @@ export const PAD_TAKE = inner(uiPadTake)
 export const UI_DASH_QUAD = uiDashQuad
 export const UI_DASH_TRACTOR = uiDashTractor
 export const UI_SLOT_DOWN = inner(uiSlotDown)
+export const UI_ARROW_INK = groupInner(uiArrowRight, 'ink')
+export const UI_ARROW_FILL = groupInner(uiArrowRight, 'fill')
 export const SEED_SILO = inner(propSeedSilo)
 export const ADDITIVE_STORE = inner(propAdditiveStore)
 export const SPRINKLER = inner(propSprinkler)

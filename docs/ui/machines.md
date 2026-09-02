@@ -2,7 +2,7 @@
 
 Look and prompt for mill, jam, still, barrel, freezer, grinder. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
 
-No ObjectHud. Progress is look text. No extra bars.
+No ObjectHud. No pop-up GUI. Nothing attaches to the machine. Progress is look text here; the bottom-right `Status` also draws one recipe row — [[ui/recipe]].
 
 Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`.
 

@@ -41,6 +41,7 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `crop-weed-*.svg` | `sprout` `grow` |
 | `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` | `off` `on` |
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |
+| `ui-arrow-right.svg` | `ink` `fill` |
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `pipe-valve-jack` | `jack` |

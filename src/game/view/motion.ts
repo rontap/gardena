@@ -2,10 +2,22 @@ import { RESEARCH } from '../defs/research.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import { kindVMax, trailerUsed } from '../sim/vehicle.ts'
+import type { CraftCell } from '../sim/recipe.ts'
+import { clockText, craftState } from '../sim/recipe.ts'
 import type { World } from '../sim/world.ts'
 import { symHref, UI_PHASE } from './svgs.ts'
 
-type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'fps' | 'counter'
+type HudKind =
+  | 'clock'
+  | 'day-bar'
+  | 'phase'
+  | 'research'
+  | 'queue-bar'
+  | 'banner'
+  | 'fps'
+  | 'counter'
+  | 'craft-fill'
+  | 'craft-time'
 
 const hud = new Map<HudKind, Element>()
 let phaseUse: SVGUseElement | undefined
@@ -19,7 +31,15 @@ let dashSpeedReadout: Element | undefined
 let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
 const lastDash = { fuel: '', speed: '', used: '' }
-const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '' }
+const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '', craftFill: '', craftTime: '' }
+
+let craftCell: CraftCell | undefined
+
+export function bindCraft(cell: CraftCell | undefined): void {
+  craftCell = cell
+  last.craftFill = ''
+  last.craftTime = ''
+}
 
 export function bindDash(el: Element | null): (() => void) | undefined {
   dashHost = el === null ? undefined : el
@@ -166,6 +186,22 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
     if (last.queue !== w) {
       last.queue = w
       qbar.style.width = w
+    }
+  }
+  const craft = craftCell === undefined ? undefined : craftState(craftCell, world.machineMul())
+  if (craft !== undefined && craft.kind !== 'idle') {
+    const fill = craft.kind === 'working' ? craft.progress : craft.kind === 'ready' ? 1 : 0
+    const w = `${(fill <= 0 ? 0 : fill >= 1 ? 1 : fill) * 100}%`
+    const fillEl = hud.get('craft-fill')
+    if (fillEl instanceof HTMLElement && last.craftFill !== w) {
+      last.craftFill = w
+      fillEl.style.width = w
+    }
+    const t = craft.kind === 'working' ? clockText(craft.left) : clockText(craft.recipe.duration.seconds)
+    const timeEl = hud.get('craft-time')
+    if (timeEl !== undefined && last.craftTime !== t) {
+      last.craftTime = t
+      timeEl.textContent = t
     }
   }
   const counterEl = hud.get('counter')

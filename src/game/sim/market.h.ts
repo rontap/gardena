@@ -1,5 +1,5 @@
 import type { Rarity } from '../defs/rarity.ts'
-import type { CropId, JamId, PickaxeId, ShovelId, SpiritKind, StallGoodId, TreeId } from './ids.ts'
+import type { CaskId, CropId, JamId, PickaxeId, ShovelId, SpiritKind, StallGoodId, TreeId } from './ids.ts'
 
 export declare const SAT_DEPTH: number
 
@@ -32,7 +32,7 @@ export type CompanyId =
 
 export type FruitAnnualId = 'tomato' | 'raspberry' | 'watermelon' | 'olive' | 'grape' | 'vanilla'
 
-export type GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | 'wine'
+export type GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | CaskId
 
 export type CompanyRecord = { done: number; missed: number }
 
@@ -42,7 +42,7 @@ export type GroupId = 'jam' | 'spirit'
 
 export type ContractGoodId = Exclude<StallGoodId, 'sugar' | 'extract'>
 
-export type RarityGoodId = CropId | SpiritKind | 'wine'
+export type RarityGoodId = CropId | SpiritKind | CaskId
 
 export type PlainGoodId = 'sugar' | JamId | 'oil' | 'flour' | 'extract'
 
@@ -64,7 +64,7 @@ export type PrizeTool = Extract<ShovelId, 'rotary-shovel'> | Extract<PickaxeId, 
  */
 export type Prize =
   | { kind: 'cash' }
-  | { kind: 'sapling'; tree: TreeId }
+  | { kind: 'tree-seed'; tree: TreeId }
   | { kind: 'seeds'; crop: 'vanilla'; count: number }
   | { kind: 'fertilizer' }
   | { kind: 'freezer' }

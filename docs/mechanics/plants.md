@@ -12,7 +12,7 @@ Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `w
 
 Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
 
-Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree saplings likewise: the three starting saplings and the one wild apple are the only ones not won from a contract.
+Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the three starting seeds and the one wild apple are the only ones not won from a contract.
 
 Heirloom names `cropVariety`.
 
@@ -115,9 +115,9 @@ Grinder: annual fruit including sugar-cane. Tree fruit and sugar: refuse. Cane f
 
 Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. Species-only. Yield, drop, ping: [[mechanics/trees]].
 
-Plant sapling: hold sapling, `{ act: 'plant' }`. Both cells untilled, `ground === 'soft'`, owned. Cover bare or grass — grass clears to bare. Consumes the sapling. New tree `juvenile = 0`.
+Plant tree seed: hold a tree seed, `{ act: 'plant' }`. The clicked cell is the **foot**; the pair is it and the cell **above**. Both untilled, `ground === 'soft'`, owned. Cover bare or grass — grass clears to bare. Consumes the seed. New tree `juvenile = 0`, `base` at the upper cell.
 
-Shovel: `{ kind: 'sapling'; tree: species }`, both cells bare soft.
+Shovel: `{ kind: 'tree-seed'; tree: species }`, both cells bare soft.
 
 ## Invariants
 
@@ -137,6 +137,8 @@ Shovel: `{ kind: 'sapling'; tree: species }`, both cells bare soft.
 
 `plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, not `RARITY_SALE`. Common vanilla sale < raspberry.
 
-`plants.annual` — `Plant.crop` is `AnnualId`. Sapling on a tilled plot is a no-op.
+`plants.annual` — `Plant.crop` is `AnnualId`. Tree seed on a tilled plot is a no-op.
+
+`plants.tree-foot` — Planting a tree seed at `at` puts the tree's foot on `at` and its `base` on `{ col: at.col, row: at.row - 1 }`. `at.row + 1` is untouched.
 
 `plants.kinds` — No `'berry'` stall key. No `Shrub`. No `{ kind: 'berry' }` `{ kind: 'shrub' }`.

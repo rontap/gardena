@@ -12,7 +12,7 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `item-mill.svg` | same, shop/hand |
 | `prop-still.svg` | 2×1 `0 0 48 24`, fills both tiles, steel onion + iron lyne, water condenser, litre marks |
 | `item-still.svg` | same, shop/hand |
-| `prop-barrel.svg` | wine barrel, dirt staves, grape bung |
+| `prop-barrel.svg` | barrel, dirt staves, grape bung |
 | `item-barrel.svg` | same, shop/hand |
 | `prop-jam.svg` | jam cooker, fruit-red pot on house stove |
 | `prop-link-in.svg` | blue west chute, mouth on the chest |

@@ -6,7 +6,7 @@ import type { Rarity } from '../defs/rarity.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
-import { cropName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
+import { CASK_NAME, cropName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR } from '../sim/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/market.h.ts'
@@ -213,7 +213,7 @@ export function OfferCard({
 
 export function prizeName(prize: Prize): string {
   if (prize.kind === 'cash') return 'Cash'
-  if (prize.kind === 'sapling') return `${TREE_NAME[prize.tree]} sapling`
+  if (prize.kind === 'tree-seed') return `${TREE_NAME[prize.tree]} seed`
   if (prize.kind === 'seeds') return `${cropName(prize.crop)} seeds`
   if (prize.kind === 'fertilizer') return 'Fertilizer'
   if (prize.kind === 'freezer') return 'Large freezer'
@@ -223,7 +223,7 @@ export function prizeName(prize: Prize): string {
 }
 
 function prizeItem(prize: Prize): Item | undefined {
-  if (prize.kind === 'sapling') return { kind: 'sapling', tree: prize.tree }
+  if (prize.kind === 'tree-seed') return { kind: 'tree-seed', tree: prize.tree }
   if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, rarity: 'common', count: prize.count }
   if (prize.kind === 'fertilizer') {
     return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
@@ -346,8 +346,8 @@ function demandItem(demand: Demand, count: number): Item {
     }
     return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, count, unitSale: 1 }
   }
-  if (demand.kind === 'rated' && demand.good === 'wine') {
-    return { kind: 'wine', rarity: demand.minRarity, count, unitSale: 1 }
+  if (demand.kind === 'rated' && (demand.good === 'wine' || demand.good === 'cider')) {
+    return { kind: 'cask', cask: demand.good, rarity: demand.minRarity, count, unitSale: 1 }
   }
   if (demand.kind === 'rated' && (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed')) {
     return { kind: 'spirit', spirit: demand.good, rarity: demand.minRarity, count, unitSale: 1 }
@@ -547,7 +547,7 @@ function nd(days: number): string {
 
 function stallName(id: StallGoodId): string {
   if (id === 'sugar') return 'Sugar'
-  if (id === 'wine') return 'Wine'
+  if (id === 'wine' || id === 'cider') return CASK_NAME[id]
   if (id === 'oil') return 'Olive oil'
   if (id === 'flour') return 'Flour'
   if (id === 'extract') return 'Extract'
@@ -565,7 +565,7 @@ function boxFace(id: StallGoodId): Item {
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') {
     return { kind: 'spirit', spirit: id, rarity: 'common', count: 1, unitSale: 1 }
   }
-  if (id === 'wine') return { kind: 'wine', rarity: 'common', count: 1, unitSale: 1 }
+  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, rarity: 'common', count: 1, unitSale: 1 }
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
     return { kind: 'jam', crop, count: 1, unitSale: 1 }

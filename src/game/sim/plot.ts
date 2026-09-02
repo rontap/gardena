@@ -19,7 +19,7 @@ import type {
   Tap,
   Tree,
   Truck,
-  WineBarrel,
+  Barrel,
 } from './building.ts'
 import type { CropId, TileId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
@@ -58,7 +58,7 @@ export type Cell =
   | Mill
   | JamMachine
   | PotStill
-  | WineBarrel
+  | Barrel
   | Freezer
   | Hangar
   | SiloSeed

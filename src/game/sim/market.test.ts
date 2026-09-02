@@ -156,7 +156,7 @@ describe('contracts', () => {
   test('A contract whose prize is not cash pays the goods and no money at all.', () => {
     const w = new World(1)
     const active = carrotActive(0, 10)
-    const offer = { ...active.offer, prize: { kind: 'sapling', tree: 'cherry' } as const }
+    const offer = { ...active.offer, prize: { kind: 'tree-seed', tree: 'cherry' } as const }
     w.contracts.active.push({ ...active, offer })
     const money = w.money
     const drops = w.drops.length
@@ -164,7 +164,7 @@ describe('contracts', () => {
     expect(w.contracts.active).toHaveLength(0)
     expect(w.money).toBe(money)
     expect(w.drops.length).toBe(drops + 1)
-    expect(w.drops[w.drops.length - 1].item).toEqual({ kind: 'sapling', tree: 'cherry' })
+    expect(w.drops[w.drops.length - 1].item).toEqual({ kind: 'tree-seed', tree: 'cherry' })
   })
 
   test('A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.', () => {

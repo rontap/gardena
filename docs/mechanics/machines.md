@@ -13,7 +13,7 @@ Ids: `SpiritKind` `JamCrop` `StillCrop` `MillRecipe` `JamId` `StallGoodId` — `
 | `Mill` | `mill` | `buy-mill` | `unlock-grinder` |
 | `JamMachine` | `jam` | `buy-jam` | `unlock-preservatives` |
 | `PotStill` | `still` | `buy-still` | `unlock-fermentation` |
-| `WineBarrel` | `barrel` | `buy-barrel` | `unlock-fermentation` |
+| `Barrel` | `barrel` | `buy-barrel` | `unlock-fermentation` |
 | `Freezer` | `freezer` | `buy-freezer` | `unlock-preservatives` |
 
 `World.stills` holds the same `PotStill` instances as their cells. Join a water net like `Tap` — [[mechanics/water]].
@@ -28,7 +28,7 @@ Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same
 
 Intents `still` `barrel` `jam` `mill` at `Coord`. `dest(still)` = origin. `dest(barrel | jam | mill)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
 
-Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, saplings, tools: refuse.
+Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, tree seeds, tools: refuse.
 
 Grinder dump is mill-style: `{ act: 'grind' }`, `arm(0.4)`, into hopper. Not actor `GRIND_WORK`. Guest may dump.
 
@@ -123,15 +123,17 @@ One batch → `count` 1.
 
 ## Barrel
 
-Grapes only. `BARREL_CAP`. No overload. Age ticks after feed count `=== BARREL_CAP`. `BARREL_MATURE = DAY_SECONDS` — derived. `BARREL_AGE = 3 × DAY_SECONDS` — derived.
+`BarrelCrop = 'grape' | 'apple'`. `CaskId = 'wine' | 'cider'`. `CASK_OF` maps crop → cask. `Barrel.crop` starts `'none'`.
+
+First accepted dump locks `crop`, mill-style. Later dumps must match. Collect clears it back to `'none'`. No mix. `BARREL_CAP`. No overload. Age ticks after `crop !== 'none'` and feed count `=== BARREL_CAP`. `BARREL_MATURE = DAY_SECONDS` — derived. `BARREL_AGE = 3 × DAY_SECONDS` — derived.
 
 At `age === BARREL_MATURE`: consume `barrel.at(col, row, day, n)`, bake rarity (same mean/clamp as still; ignore freshness), `n += 1`. Age continues.
 
-Collect after mature only. Same `act: 'barrel'`: empty hand or mergeable wine. Not a drop. Age stays on the barrel until collect.
+Collect after mature only. Same `act: 'barrel'`: empty hand or a mergeable cask of the same `cask` and rarity. Not a drop. Age stays on the barrel until collect.
 
-Age mul: linear `1 → WINE_AGE[r]` over `BARREL_AGE` after mature. Clamp at `WINE_AGE`.
+Age mul: linear `1 → CASK_AGE[r]` over `BARREL_AGE` after mature. Clamp at `CASK_AGE`.
 
-Age baked into `unitSale` at collect: `WINE_SALE × SPIRIT_RARITY[r] × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
+Cask item `{ kind: 'cask'; cask: CaskId; rarity; count; unitSale }`. Age baked into `unitSale` at collect: `CASK_SALE[cask] × SPIRIT_RARITY[r] × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
 
 ## Freezer
 
@@ -187,7 +189,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.sugar` — Ripe cane harvests as fruit. Mill `MILL_IN` cane → `SUGAR_BAG` at `SUGAR_MILL`. Sugar `{ kind: 'sugar'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.
 
-`machines.barrel` — Barrel is grapes → wine only. No whisky.
+`machines.barrel` — Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky.
 
 `machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1` **and** prop `48×24` occupying both cells, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Origin-only paint + `TILE/24` scale shows the full 48-wide art.
 

@@ -54,7 +54,7 @@ Confirm: cell buildings and item drops set `none` except StayArmed sensor cells 
 
 ## Intent
 
-`plant` is seeds (`AnnualId`) or sapling (`TreeId`). Same act. [[architecture/tree]].
+`plant` is seeds (`AnnualId`) or tree seed (`TreeId`). Same act. Tree seed anchors on the clicked cell as the lower half. [[architecture/tree]].
 
 `dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; circle starter pump: its occupied cell), not the interior cell clicked. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
 

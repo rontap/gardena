@@ -369,7 +369,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         reveal: ['unlock-grinder'],
         requires: [],
         grants: [],
-        blurb: 'Unlocks Sugar cane seeds, Pot still, and Wine barrel. Ripe cane is fruit. Mill cane for sugar.',
+        blurb: 'Unlocks Sugar cane seeds, Pot still, and Barrel. Ripe cane is fruit. Mill cane for sugar.',
         effect: {kind: 'unlock-sku', sku: 'pack-sugar-cane'},
     },
 }

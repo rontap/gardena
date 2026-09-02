@@ -8,7 +8,7 @@ Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migr
 
 `src/game/ui/changelog.md` is the source of truth. Manual edits only. No script, dump, codegen, or agent writes that file from TypeScript, git, or defs. Markdown is never generated from code. `parseChangelog` reads. It does not write. No markdown library.
 
-Assumption: plant, tool, tile, seed, sapling → type `item`. Placed machine / store / pipe building → `building`. Overlay / panel / button / lens → `ui`. Multiplayer host / join → `multiplayer`. Contracts, stall pressure, family, wires-as-system → `mechanic`.
+Assumption: plant, tool, tile, seed, tree seed → type `item`. Placed machine / store / pipe building → `building`. Overlay / panel / button / lens → `ui`. Multiplayer host / join → `multiplayer`. Contracts, stall pressure, family, wires-as-system → `mechanic`.
 
 `changelog.ts` owns `ChangeKind` `Change` `Release` `KIND_EMOJI` `parseChangelog` `ChangelogParseError` `RELEASES` `topLineShape`. `changelog.tsx` renders only. `menu.tsx` owns `MenuPage` and open/close. Drafts `changelogs-*.md` are not `RELEASES` sources.
 

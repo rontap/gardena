@@ -59,7 +59,7 @@ function badge(item: Item): string | undefined {
     item.kind === 'seeds' ||
     item.kind === 'fruit' ||
     item.kind === 'spirit' ||
-    item.kind === 'wine' ||
+    item.kind === 'cask' ||
     item.kind === 'jam' ||
     item.kind === 'oil' ||
     item.kind === 'flour' ||
@@ -99,7 +99,7 @@ function heldNumber(item: Item): string {
     return `${Number(item.liters.toFixed(1))}L`
   }
   if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
-  if (item.kind === 'sapling') return ''
+  if (item.kind === 'tree-seed') return ''
   if (item.kind === 'weed-spray') return String(item.usesLeft)
   return String(item.count)
 }

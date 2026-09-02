@@ -556,10 +556,10 @@ function copyItem(item: Item): Item {
     case 'seeds':
     case 'grass-seeds':
     case 'fruit':
-    case 'sapling':
+    case 'tree-seed':
     case 'sugar':
     case 'spirit':
-    case 'wine':
+    case 'cask':
     case 'jam':
     case 'oil':
     case 'flour':
@@ -740,7 +740,7 @@ export function compactSlots(slots: Slot[]): void {
     }
     if (
       slot.item.kind === 'spirit' ||
-      slot.item.kind === 'wine' ||
+      slot.item.kind === 'cask' ||
       slot.item.kind === 'jam' ||
       slot.item.kind === 'oil' ||
       slot.item.kind === 'flour' ||
@@ -752,7 +752,7 @@ export function compactSlots(slots: Slot[]): void {
           s.kind === 'hold' &&
           s.item.kind === it.kind &&
           (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.rarity === it.rarity)) &&
-          (it.kind !== 'wine' || (s.item.kind === 'wine' && s.item.rarity === it.rarity)) &&
+          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.rarity === it.rarity)) &&
           (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop)),
       )
       if (hit !== undefined && hit.kind === 'hold' && 'count' in hit.item && 'unitSale' in hit.item && 'count' in it) {

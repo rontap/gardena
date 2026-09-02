@@ -53,7 +53,7 @@ Juvenile fill while `juvenile < 1`: same Growth fill as a plant, label **Juvenil
 
 ## Prompts
 
-Sapling in hand (`{ kind: 'sapling'; tree }`), valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Lemon|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op — [[mechanics/plants]].
+Tree seed in hand (`{ kind: 'tree-seed'; tree }`), hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op — [[mechanics/plants]].
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
 

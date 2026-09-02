@@ -7,11 +7,11 @@ import {
   OIL,
   SPIRIT_RARITY,
   SUGAR_MILL,
-  WINE_SALE,
+  CASK_SALE,
 } from '../defs/items.ts'
 import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { DAY_SECONDS } from './clock.ts'
-import { JAM_IDS, SPIRIT_KINDS, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from './ids.ts'
+import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from './ids.ts'
 import { bakeSpiritSale } from './machine.ts'
 import type {
   Active,
@@ -63,6 +63,7 @@ export const SAT_FLOOR: { readonly [K in StallGoodId]: number } = {
   brandy: 0.25,
   mixed: 0.25,
   wine: 0.25,
+  cider: 0.25,
 }
 
 export function mul(sat: number, good: StallGoodId): number {
@@ -230,6 +231,7 @@ export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   brandy: 10,
   mixed: 4,
   wine: 12,
+  cider: 13,
 }
 
 export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
@@ -255,6 +257,7 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
   oil: 2,
   flour: 2,
   wine: 2,
+  cider: 3,
   vodka: 2,
   beer: 2,
   brandy: 2,
@@ -294,6 +297,7 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   extract: 80,
   sugar: 160,
   wine: 1,
+  cider: 0.6,
 }
 
 const DEADLINE_BANDS: readonly DeadlineBand[] = ['tight', 'normal', 'long']
@@ -312,6 +316,10 @@ function isJamClass(g: StallGoodId): g is JamId {
 
 function isSpiritClass(g: StallGoodId): g is SpiritKind {
   return (SPIRIT_KINDS as readonly string[]).includes(g)
+}
+
+function isCaskClass(g: StallGoodId): g is CaskId {
+  return (CASK_IDS as readonly string[]).includes(g)
 }
 
 function jamCrop(id: JamId): JamCrop {
@@ -359,7 +367,7 @@ export function cleanUnit(d: Demand): number {
     if (d.good === 'extract') return EXTRACT
     return JAM_SALE[jamCrop(d.good)]
   }
-  if (d.good === 'wine') return WINE_SALE * SPIRIT_RARITY[d.minRarity]
+  if (isCaskClass(d.good)) return CASK_SALE[d.good] * SPIRIT_RARITY[d.minRarity]
   if (d.good === 'vodka' || d.good === 'beer' || d.good === 'brandy' || d.good === 'mixed') {
     return bakeSpiritSale(d.good, d.minRarity)
   }
@@ -379,7 +387,7 @@ function unitOf(good: StallGoodId): number {
   if (good === 'oil') return OIL
   if (good === 'flour') return FLOUR
   if (good === 'extract') return EXTRACT
-  if (good === 'wine') return WINE_SALE
+  if (isCaskClass(good)) return CASK_SALE[good]
   if (isSpiritClass(good)) return bakeSpiritSale(good, 'common')
   return CROPS[good].sale
 }

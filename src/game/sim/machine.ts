@@ -17,13 +17,13 @@ import {
   STILL_CAP,
   SUGAR_BAG,
   SUGAR_MILL,
-  WINE_AGE,
-  WINE_SALE,
+  CASK_AGE,
+  CASK_SALE,
 } from '../defs/items.ts'
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
-import type { AnnualId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
+import type { AnnualId, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
-import type { CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase, WineBarrel } from './building.ts'
+import type { Barrel, CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
 import { compostValue, organic, type Item } from './item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder
@@ -316,15 +316,15 @@ export function bakeSpiritSale(kind: SpiritKind, rarity: Rarity): number {
   return kind === 'mixed' ? s * MIXED_MUL : s
 }
 
-export function wineAgeMul(rarity: Rarity, age: number): number {
+export function caskAgeMul(rarity: Rarity, age: number): number {
   const t = (age - BARREL_MATURE) / BARREL_AGE
   const u = t < 0 ? 0 : t > 1 ? 1 : t
-  const cap = WINE_AGE[rarity]
+  const cap = CASK_AGE[rarity]
   return 1 + (cap - 1) * u
 }
 
-export function bakeWineSale(rarity: Rarity, age: number): number {
-  return WINE_SALE * SPIRIT_RARITY[rarity] * wineAgeMul(rarity, age)
+export function bakeCaskSale(cask: CaskId, rarity: Rarity, age: number): number {
+  return CASK_SALE[cask] * SPIRIT_RARITY[rarity] * caskAgeMul(rarity, age)
 }
 
 export function jamSale(crop: JamCrop): number {
@@ -360,6 +360,6 @@ export function stillWorking(c: PotStill): boolean {
   return stillReady(c) && c.progress > 0
 }
 
-export function barrelWorking(c: WineBarrel): boolean {
-  return feedUnits(c.feed) === BARREL_CAP && c.age < BARREL_AGE
+export function barrelWorking(c: Barrel): boolean {
+  return c.crop !== 'none' && feedUnits(c.feed) === BARREL_CAP && c.age < BARREL_AGE
 }

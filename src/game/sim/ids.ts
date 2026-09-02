@@ -48,6 +48,16 @@ export type JamCrop = 'apricot' | 'grape' | 'raspberry' | 'apple' | 'cherry' | '
 
 export type StillCrop = 'potato' | 'wheat' | 'apricot'
 
+export type BarrelCrop = 'grape' | 'apple'
+
+export type CaskId = 'wine' | 'cider'
+
+export const BARREL_CROPS: readonly BarrelCrop[] = ['grape', 'apple']
+
+export const CASK_IDS: readonly CaskId[] = ['wine', 'cider']
+
+export const CASK_OF: { readonly [K in BarrelCrop]: CaskId } = { grape: 'wine', apple: 'cider' }
+
 export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass'
 
 export type JamId = `jam-${JamCrop}`
@@ -62,7 +72,7 @@ export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
 
 export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass']
 
-export type StallGoodId = CropId | 'sugar' | SpiritKind | 'wine' | JamId | 'oil' | 'flour' | 'extract'
+export type StallGoodId = CropId | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 

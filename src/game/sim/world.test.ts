@@ -606,7 +606,7 @@ describe('beta-3 invariants', () => {
     })
   })
 
-  test('shovel tree drops sapling; cells stay tree until dug', () => {
+  test('shovel tree drops tree-seed; cells stay tree until dug', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
     const tree = new Tree('apricot', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'on', daysLeft: 2 })
@@ -619,7 +619,26 @@ describe('beta-3 invariants', () => {
     w.tick(0.05)
     expect(w.cell(AT)).toEqual(bare('soft'))
     expect(w.cell(below)).toEqual(bare('soft'))
-    expect(w.drops.some(d => d.item.kind === 'sapling' && d.item.kind === 'sapling' && d.item.tree === 'apricot')).toBe(true)
+    expect(w.drops.some(d => d.item.kind === 'tree-seed' && d.item.kind === 'tree-seed' && d.item.tree === 'apricot')).toBe(true)
+  })
+
+  test('planting a tree seed puts the clicked cell at the foot of the tree', () => {
+    const w = new World()
+    const above = { col: AT.col, row: AT.row - 1 }
+    w.setCell(AT, bare('soft'))
+    w.setCell(above, bare('soft'))
+    w.setCell({ col: AT.col, row: AT.row + 1 }, bare('soft'))
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry' } }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 2.5
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const foot = w.cell(AT)
+    const head = w.cell(above)
+    expect(foot.kind).toBe('tree')
+    expect(head).toBe(foot)
+    expect(foot.kind === 'tree' && foot.base.row).toBe(above.row)
+    expect(w.cell({ col: AT.col, row: AT.row + 1 })).toEqual(bare('soft'))
   })
 
   test('pickaxe sku 20 gated on unlock-pickaxe; rarity table', () => {
@@ -645,9 +664,9 @@ describe('beta-3 invariants', () => {
 })
 
 describe('beta-4 invariants', () => {
-  test('starter house has three saplings', () => {
+  test('starter house has three tree-seeds', () => {
     const w = new World()
-    const trees = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'sapling').map(s => (s.kind === 'hold' && s.item.kind === 'sapling' ? s.item.tree : ''))
+    const trees = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'tree-seed').map(s => (s.kind === 'hold' && s.item.kind === 'tree-seed' ? s.item.tree : ''))
     expect(trees.sort()).toEqual(['apricot', 'cherry', 'olive'])
   })
 
@@ -676,14 +695,14 @@ describe('beta-4 invariants', () => {
     expect(cb.slots).toHaveLength(9)
     expect(ca.slots.every(s => s.kind === 'empty')).toBe(true)
     expect(ca.slots).not.toBe(cb.slots)
-    ca.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+    ca.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
     expect(cb.slots[0].kind).toBe('empty')
   })
 
   test('Grinder is a hopper. `GRIND_WORK` is a mill-like tick. Not actor work. Seeds do not merge into house.', () => {
     const w = grindWorld(7)
     w.seats[0].inventory.forEach((_, i) => {
-      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
     })
     w.seats[0].hand = {
       kind: 'hold',
@@ -707,7 +726,7 @@ describe('beta-4 invariants', () => {
       expect(lg.kind === 'grinder' && lg.units).toBe(1)
     }
     expect(w.seats[0].hand.kind).toBe('empty')
-    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
+    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
     for (let i = 0; i < 40; i++) w.tick(DT_MAX)
     const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
     const expectCount = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
@@ -716,7 +735,7 @@ describe('beta-4 invariants', () => {
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.crop).toBe('wheat')
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.rarity).toBe('rare')
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
-    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
+    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
     expect(g.crop).toBe('none')
   })
 
@@ -724,7 +743,7 @@ describe('beta-4 invariants', () => {
     const n = 3
     const w = grindWorld(11)
     w.seats[0].inventory.forEach((_, i) => {
-      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
     })
     w.seats[0].hand = {
       kind: 'hold',
@@ -746,7 +765,7 @@ describe('beta-4 invariants', () => {
     const dropped = w.drops.filter(d => d.item.kind === 'seeds' && d.item.crop === 'tomato' && d.item.rarity === 'uncommon')
     const got = dropped.reduce((s, d) => s + (d.item.kind === 'seeds' ? d.item.count : 0), 0)
     expect(got).toBe(expectCount)
-    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'sapling')).toBe(true)
+    expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
   })
 
   test('unlock-grinder automation buy-grinder 30', () => {
@@ -1360,14 +1379,14 @@ describe('beta-6 invariants', () => {
     const chest = w.cell(AT)
     expect(chest.kind).toBe('chest')
     if (chest.kind !== 'chest') return
-    chest.slots[0] = { kind: 'hold', item: { kind: 'sapling', tree: 'olive' } }
+    chest.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
     chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
     w.armDelete()
     const n = w.drops.length
     w.deleteBuilding(AT)
     expect(w.cell(AT).kind).toBe('empty')
     expect(w.drops).toHaveLength(n + 2)
-    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'sapling')).toBe(true)
+    expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'tree-seed')).toBe(true)
     const house = { col: 14, row: 6 }
     expect(w.cell(house).kind).toBe('house')
     w.deleteBuilding(house)
@@ -1674,11 +1693,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 2.02. `PROTOCOL` 2.02. Wordmark 2.0.2. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 2.03. `PROTOCOL` 2.03. Wordmark 2.0.3. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(2.02)
+    expect(s.version).toBe(2.03)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
@@ -2481,7 +2500,7 @@ describe('1.9 stacks', () => {
   test('Bottled and jarred goods cap at `STACK_MAX_CRAFTED`.', () => {
     const w = new World(1)
     expect(w.stackMax({ kind: 'jam', crop: 'apricot', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'wine', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'cask', cask: 'wine', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 1, freshness: 1, bio: true })).toBe(STACK_MAX)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
@@ -2525,14 +2544,14 @@ describe('1.9 stacks', () => {
     const w = new World(1)
     const at = { col: 10, row: 12 }
     w.setCell(at, { kind: 'empty', soil: bed() })
-    w.drops.push({ at, item: { kind: 'sapling', tree: 'apple' } })
+    w.drops.push({ at, item: { kind: 'tree-seed', tree: 'apple' } })
     w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 0.5
     w.enqueue({ act: 'pickup', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     const hand = w.seats[0].hand
-    expect(hand.kind === 'hold' && hand.item.kind).toBe('sapling')
+    expect(hand.kind === 'hold' && hand.item.kind).toBe('tree-seed')
     const left = w.drops.filter(d => d.at.col === at.col && d.at.row === at.row)
     expect(left).toHaveLength(1)
     expect(left[0].item.kind).toBe('shovel')

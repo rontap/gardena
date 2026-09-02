@@ -23,6 +23,7 @@ import {
   COMPOST_VALUE,
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
+  FREEZER_ROT_MUL,
   MILL_IN,
   MILL_VANILLA_IN,
   MILL_WORK,
@@ -407,8 +408,8 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Freezer',
       icon: { kind: 'freezer', slots: FREEZER_SLOTS },
       blurb: fill(
-        'Small ${n} slots, large ${m} slots. Fruit in here does not rot. The large one is a contract prize, never sold.',
-        { n: FREEZER_SLOTS, m: FREEZER_LARGE_SLOTS },
+        'Small ${n} slots, large ${m} slots. Fruit in here rots ${pct}% slower. The large one is a contract prize, never sold.',
+        { n: FREEZER_SLOTS, m: FREEZER_LARGE_SLOTS, pct: (1 - FREEZER_ROT_MUL) * 100 },
       ),
     },
     {

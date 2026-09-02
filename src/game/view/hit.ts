@@ -52,7 +52,6 @@ export const STAY_ARMED: readonly SkuId[] = [
   'buy-sprinkler',
   'buy-sprinkler-vert',
   'buy-sprinkler-large',
-  'buy-well',
   ...SENSOR_CELL_SKUS,
 ]
 
@@ -60,7 +59,6 @@ export const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-
 
 export type DeleteTarget =
   | { kind: 'pipe'; edge: Edge }
-  | { kind: 'well'; edge: Edge }
   | { kind: 'sprinkler'; at: Vertex }
   | { kind: 'wire'; from: WireEnd; to: WireEnd }
 
@@ -278,19 +276,6 @@ function valveHit(world: World, wx: number, wy: number): Edge | undefined {
   return (best as { edge: Edge; d: number }).edge
 }
 
-function wellHit(world: World, wx: number, wy: number): Edge | undefined {
-  let best: { edge: Edge; d: number } | undefined = undefined
-  world.wells.forEach(well => {
-    const mx = well.at.axis === 'h' ? well.at.col + 0.5 : well.at.col
-    const my = well.at.axis === 'h' ? well.at.row : well.at.row + 0.5
-    const d = Math.hypot(wx - mx, wy - my)
-    if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: well.at, d }
-  })
-  if (best === undefined) return undefined
-  return (best as { edge: Edge; d: number }).edge
-}
-
 export function deleteHit(
   world: World,
   edge: Edge | undefined,
@@ -301,7 +286,6 @@ export function deleteHit(
   const wire = nearestWire(world.wires, wx, wy, end => wireEndXY(world, end), VERTEX_HIT)
   if (wire !== undefined) return { kind: 'wire', from: wire.from, to: wire.to }
   if (edge !== undefined) {
-    if (world.hasWell(edge)) return { kind: 'well', edge }
     if (world.hasPipe(edge) && world.edgeOwned(edge)) return { kind: 'pipe', edge }
   }
   if (v !== undefined && world.sprinklerAt(v) !== undefined) return { kind: 'sprinkler', at: v }
@@ -325,16 +309,13 @@ export function stayOk(
   if (placeId === 'buy-pipe' || placeId === 'buy-valve') {
     return edge !== undefined && pipeOk(world, placeId, edge)
   }
-  if (placeId === 'buy-well') {
-    return edge !== undefined && world.edgeOwned(edge) && !world.hasPipe(edge) && !world.hasWell(edge)
-  }
   if (s === undefined) return false
   return sprinklerOk(world, s)
 }
 
 export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapClick | undefined {
   const place = world.seats[world.local].place
-  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well')) {
+  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve')) {
     const edge = nearestEdge(wx, wy)
     if (edge === undefined) return undefined
     return { kind: 'edge', edge }
@@ -350,7 +331,6 @@ export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapC
     const del = deleteHit(world, edge, at, wx, wy)
     if (del?.kind === 'wire') return { kind: 'delete-wire', from: del.from, to: del.to }
     if (del?.kind === 'pipe') return { kind: 'delete-pipe', edge: del.edge }
-    if (del?.kind === 'well') return { kind: 'delete-well', edge: del.edge }
     if (del?.kind === 'sprinkler') return { kind: 'delete-sprinkler', at: del.at }
     return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
   }
@@ -366,8 +346,6 @@ export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapC
     }
     const valve = valveHit(world, wx, wy)
     if (valve !== undefined) return { kind: 'valve', edge: valve }
-    const well = wellHit(world, wx, wy)
-    if (well !== undefined) return { kind: 'well', edge: well }
     const cellAt = { col: Math.floor(wx), row: Math.floor(wy) }
     if (world.inWorld(cellAt)) {
       const c = world.cell(cellAt)

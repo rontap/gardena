@@ -16,7 +16,7 @@ Pixi ticker cuts over atlas frames. No CSS `<use>`. No rAF outside the Pixi tick
 
 `flow` is not frames. The Pixi ticker drives a transform, a tint, or a dash offset: no atlas frames, no per-instance sim state, no frame index anywhere. Rigid-body transform of a sub-sprite is legal; interpolating a raster frame is still banned. A marching dash and a turning part are transforms; a smeared bitmap is not.
 
-Today `flow` paints water along conducting pipe (dashes marching away from the sources, stopping dead at a closed valve), beads along a high wire from `from` to `to`, and the gardener walk bob. `FLOW_DASH` is the cycle — preference. Direction on pipe is a view-local BFS from pump / tank / well vertices over conducting edges, not a sim field.
+Today `flow` paints water along conducting pipe (dashes marching away from the sources, stopping dead at a closed valve), beads along a high wire from `from` to `to`, and the gardener walk bob. `FLOW_DASH` is the cycle — preference. Direction on pipe is a view-local BFS from the corners of every `World.sources()` cell over conducting edges, not a sim field.
 
 State VFX mounts only while true. An idle machine is zero sprites — there is no `is-working` attribute to match.
 

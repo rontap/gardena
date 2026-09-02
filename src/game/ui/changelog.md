@@ -1,3 +1,22 @@
+# 2.1.2 QoL Patch IV
+
+Wells become buildings, barrels show their age, and a run of small fixes across the farm.
+
+- 🔧 Changed building: Well. previously, it sat on a pipe edge like a valve, now it stands on a tile like the pumpjack and feeds the grid from any of its four corners.
+- 🔧 Changed building: Freezer. previously, fruit inside never rotted, now it rots 80% slower.
+- 🔧 Changed building: Pot still. previously, a batch drank 1 L, now it drinks 2 L.
+- 🔧 Changed building: Barrel. previously, a matured barrel only read as ready, now it shows how many days it has aged and what that multiplies the cask price by.
+- 🔧 Changed item: Cask. previously, an aged wine looked the same as a fresh one, now its name carries the age multiplier baked into its price.
+- 🔧 Changed mechanic: Pump water. previously, a pump running all day billed about $20 at sundown, now it bills about $40.
+- 🔧 Changed mechanic: Money. previously, prices split into gold and silver coins, now every price shows as a single rounded coin.
+- 🔧 Changed mechanic: Grass. previously, tufts kept appearing forever, now the farm stops growing new grass once it holds 32 tufts per chunk of land you own.
+- 🔧 Changed mechanic: Tree fruit. previously, a tree dropped every fruit onto the same tile, now each fruit lands on a random tile around the trunk.
+- 🎉 Added ui: Chest contents. Hovering a chest or freezer lists what is inside as small icons in the bottom-right panel.
+- 🎉 Added ui: Queue markers. A small white triangle marks every tile your gardener is on the way to.
+- 🎉 Added ui: Additive buying. A buy button on each row of the additive store stocks fertilizer without a trip to the shop.
+- 🔧 Changed ui: Performance readout. previously, frames, tick time, and memory sat loose in the corner, now they sit muted on the top bar and the frame rate turns orange when it drops.
+- 🐛 Fixed bug ui: An item's quantity sat on top of its rarity gem in the bottom-right of the icon; the quantity now sits on the left.
+
 # 2.1.1 Balance
 
 Trees grow faster, fruit prices move, and off-season care pays off.

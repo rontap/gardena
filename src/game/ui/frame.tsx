@@ -3,7 +3,6 @@ import * as Progress from '@radix-ui/react-progress'
 import {
   symHref,
   UI_COIN,
-  UI_COIN_SILVER,
   UI_CORNER_BL,
   UI_CORNER_BR,
   UI_CORNER_TL,
@@ -11,11 +10,6 @@ import {
   UI_HEADER,
   UI_RAIL,
 } from '../view/svgs.ts'
-
-export function moneyParts(n: number): { gold: number; silver: number } {
-  const tenths = Math.floor(n * 10)
-  return { gold: Math.floor(tenths / 10), silver: tenths % 10 }
-}
 
 function Glyph({ html }: { html: string }) {
   return (
@@ -26,29 +20,10 @@ function Glyph({ html }: { html: string }) {
 }
 
 export function Coin({ n }: { n: number }) {
-  const { gold, silver } = moneyParts(n)
-  if (gold === 0) {
-    return (
-      <span className="inline-flex items-center gap-0.5 tabular-nums">
-        <Glyph html={UI_COIN_SILVER} />
-        <span>{silver}</span>
-      </span>
-    )
-  }
-  if (silver === 0) {
-    return (
-      <span className="inline-flex items-center gap-0.5 tabular-nums">
-        <Glyph html={UI_COIN} />
-        <span>{gold}</span>
-      </span>
-    )
-  }
   return (
     <span className="inline-flex items-center gap-0.5 tabular-nums">
       <Glyph html={UI_COIN} />
-      <span>{gold}</span>
-      <Glyph html={UI_COIN_SILVER} />
-      <span>{silver}</span>
+      <span>{Math.round(n)}</span>
     </span>
   )
 }

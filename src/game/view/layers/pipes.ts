@@ -33,22 +33,13 @@ export class PipesLayer {
       s.alpha = alpha
     })
     if (overlay) {
-      world.pumps.forEach(p => {
-        occupiedCells(p.base, world.owned).forEach(at => {
-          const s = this.pool.take(atlasTex('pipe-source'))
-          s.position.set(at.col * TILE, at.row * TILE)
-        })
-      })
-      world.tanks.forEach(t => {
-        occupiedCells(t.base, world.owned).forEach(at => {
+      world.sources().forEach(src => {
+        occupiedCells(src.base, world.owned).forEach(at => {
           const s = this.pool.take(atlasTex('pipe-source'))
           s.position.set(at.col * TILE, at.row * TILE)
         })
       })
     }
-    world.wells.forEach(w => {
-      this.mid(w.at, 'well', alpha)
-    })
     world.segments.forEach(seg => {
       if (seg.gate.kind !== 'valve') return
       const open = world.valveWired(seg.at) ? world.conducts(seg.at) : seg.gate.open

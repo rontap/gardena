@@ -54,7 +54,7 @@ Assumption: bag `WEED_SPRAY_BAG` = 30 L (old 30 uses). Spray click is `Intent` `
 
 Cosmetic `untilled` cover. Three variants. Not a plant.
 
-World roll each `BIG_TICK`: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp. `mul` from current weather — [[mechanics/weather]]
+World roll each `BIG_TICK`: `mul` 0 → skip; `grassCount() >= CHUNK * owned.length` → skip, before the roll and before any `grass` draw; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp. `mul` from current weather — [[mechanics/weather]]
 
 If it fires, pick eligible untilled from the grass stream: untilled, not very-hard, cover bare, no drop. Do not sample `bounds()` AABB (unowned holes). At most one tuft. Variant unchanged: `grass.at(col, row, bigTicks)`. Appears grown.
 
@@ -74,4 +74,4 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 
 `weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.
 
-`weeds.grass` — Each `BIG_TICK`, world roll: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. `mul` from current weather. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.
+`weeds.grass` — Each `BIG_TICK`, world roll: `mul` 0 → skip; total cover-grass at or over `CHUNK * owned.length` → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. `mul` from current weather. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.

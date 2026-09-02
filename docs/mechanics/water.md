@@ -2,7 +2,7 @@
 
 Sources own a tank. They gather every second up to capacity. Consumers spend stored water. A net can burst above production while tanks hold, then falls back to production.
 
-`SOURCE` — preference. Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1. Well is edge-based. Rainwater tank gathers with no pipe run to another source.
+`SOURCE` — preference. Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1. Well is the same table, 1×1. Rainwater tank gathers with no pipe run to another source.
 
 `Reservoir.rate` is `SOURCE[kind].rate` × weather mul for `weather(clock.day)`. Gather uses `rate`. Pump-kind `take()` adds litres to `World.pumpLiters`. Soak/evap is not pour — [[mechanics/weather]].
 
@@ -10,15 +10,15 @@ Sources own a tank. They gather every second up to capacity. Consumers spend sto
 
 ## Grid
 
-Pipes on **edges**. Sprinklers on **vertices**. Valves and wells on edges. None of these are a `Cell`.
+Pipes on **edges**. Sprinklers on **vertices**. Valves on edges. None of these are a `Cell`. A well is a `Cell`.
 
-A well sits on one owned edge. Its two endpoint vertices are joined (it conducts like a bare pipe) and its reservoir feeds that net from either vertex. No pipe or valve may share the well's edge; pipes attach at its endpoints as usual. Place: `Place Well`, stays armed. Click with a container: gardener walks to an adjacent cell and fills at `SOURCE.well.rate`. Delete tool on the edge: **Delete well**, whole edge goes.
+A well is a 1×1 source cell, sited and deleted exactly like a `Tap`, joining a net through the corners of its cell like every other member of `World.sources()`. `World.wells` is a list of cells, not an edge map. Place: `Place Well` on an `untilled` or `empty` owned cell, disarms on confirm. Click with a container: gardener walks up and fills at `SOURCE.well.rate`, through the same `fill` intent as a pump. Delete tool on the cell: **Delete well**.
 
 Any corner of any tile a source covers connects. A pipe that meets a source at a point is fed. Two pipe runs that both touch the same source are one net and share that output.
 
 A closed valve blocks **its own edge only**. Water still reaches a sprinkler by any other open route. Click: gardener walks over and toggles.
 
-One valve. `buy-valve` on an owned edge with no pipe and no well lays the pipe **and** the valve, charging both, or neither. **Valve needs a pipe** is gone. On a bare piped edge it is the gate alone, as before. Delete valve: gate off, pipe stays, incident wires drop.
+One valve. `buy-valve` on an owned edge with no pipe lays the pipe **and** the valve, charging both, or neither. **Valve needs a pipe** is gone. On a bare piped edge it is the gate alone, as before. Delete valve: gate off, pipe stays, incident wires drop.
 
 After `unlock-smart-irrigation` every valve owns a signal `in`. Unwired: `open` rules and the click still walks the gardener over. Wired: the held input rules and the click is a no-op, look **Valve - wired**. `open` is kept underneath and rules again the moment the last wire on that `in` goes. Unwired is **not** closed. `valveHold` carries `level` / `hold` for wired valves only, rebuilt with the wire set. — [[mechanics/sensors]]
 
@@ -28,9 +28,9 @@ After `unlock-smart-irrigation` every valve owns a signal `in`. Unwired: `open` 
 
 Still 2×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. Not a fill target. Start still only if `pull(sources, STILL_WATER)` returns `STILL_WATER` — once at start. Stored short → pull 0, retry each tick. — [[mechanics/machines]]
 
-Water-system sensor 1×1 joins a net like a tap. `Net.waterSystems`. Not a producer. Not a fill target. No incident pipe / well edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. High iff this net’s sprinkler want this tick > stored. Taps / stills not in demand. — [[mechanics/sensors]]
+Water-system sensor 1×1 joins a net like a tap. `Net.waterSystems`. Not a producer. Not a fill target. No incident pipe edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. High iff this net’s sprinkler want this tick > stored. Taps / stills not in demand. — [[mechanics/sensors]]
 
-Fill at pump / rain-tank: that tank at its `rate`. `dest(fill)` = origin of that pump / tank / tap, not the interior cell clicked. Fill at a well edge: the well's tank at its `rate`; `dest(fillWell)` = `stand`. [[architecture/world]] `world.dest`.
+Fill at pump / rain-tank / well: that tank at its `rate`. `dest(fill)` = origin of that pump / tank / tap / well, not the interior cell clicked. [[architecture/world]] `world.dest`.
 
 ## Sprinklers
 
@@ -46,7 +46,7 @@ Wired vertices: `Set` rebuilt on wire change, not `wires.some` per head per tick
 
 Water-system sensors: `netOfCell` + cached demand, not `grid().find`. — [[mechanics/sensors]]
 
-`dirtyNets()` only when `conducts(e)` actually flips or topology changes (place/delete pipe/valve/well/smart). Not every tick because `smartHold.size > 0`. — [[architecture/tick]]
+`dirtyNets()` only when `conducts(e)` actually flips or topology changes (place/delete pipe/valve/smart, or a source cell). Not every tick because `smartHold.size > 0`. — [[architecture/tick]]
 
 `unlock-smart-irrigation`: every vertex sprinkler gains a signal `in` and a crop dial, and every valve gains a signal `in` — one row, all of it. Sprinkler unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. — [[mechanics/sensors]]
 
@@ -66,7 +66,7 @@ A drowning empty plot (`water >= mid`) takes nothing. A wilting growing plot can
 
 `water.valve` — One `Gate` union: `bare` or `valve`. Unwired valve conducts on `open` and takes the click. Wired valve conducts on the held input and refuses the click, keeping `open` underneath; unwiring restores it. Unwired is not closed.
 
-`water.autolay` — `buy-valve` on an owned edge with no pipe and no well places pipe and valve together and charges both, or places neither. On a bare piped edge it charges the valve alone. On a valved edge: **Pipe already has a valve**.
+`water.autolay` — `buy-valve` on an owned edge with no pipe places pipe and valve together and charges both, or places neither. On a bare piped edge it charges the valve alone. On a valved edge: **Pipe already has a valve**.
 
 `water.pour` — Untuned sprinkler: `SPRINKLER_TILE_DAY` per covered growing tile. Smart crop dial: that crop’s `waterUsePerSec` per tile. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`.
 

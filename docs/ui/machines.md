@@ -57,12 +57,12 @@ Prompt dump legal: **Distill**. `{ act: 'still'; at }`.
 | empty | **Barrel - {n}/5** |
 | crop locked, filling | **Barrel - {n}/5 {crop}** |
 | maturing (`age < BARREL_MATURE`) | **Barrel - maturing {pct}%** |
-| aging | **Barrel - aging {n}d** |
+| aging | **Barrel - aging {n}d, sells at ×{mul}** |
 | refuse not a barrel crop | **Barrel - grapes or apples** |
 | refuse wrong crop | **Barrel - {crop}s only** |
 | full | **Barrel - full** |
 
-Filling `{n}` feed count. Cap `BARREL_CAP` 5. Maturing `{pct}` = `floor((age / BARREL_MATURE) * 100)`. Aging `{n}` = `floor(age / DAY_SECONDS)`.
+Filling `{n}` feed count. Cap `BARREL_CAP` 5. Maturing `{pct}` = `floor((age / BARREL_MATURE) * 100)`. Aging `{n}` = `floor(age / DAY_SECONDS)`, `{mul}` = `caskAgeMul(feed[0].rarity, age)` to two decimals. The Aging fill row is [[ui/inspect]].
 
 Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge the matching cask): **Collect wine** / **Collect cider** off `CASK_OF[crop]`. Same `{ act: 'barrel'; at }`.
 

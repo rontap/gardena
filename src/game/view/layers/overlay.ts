@@ -105,6 +105,7 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
   }
   if (
     cell.kind === 'pump' ||
+    cell.kind === 'well' ||
     cell.kind === 'chest' ||
     cell.kind === 'grinder' ||
     cell.kind === 'compost-box' ||
@@ -142,7 +143,7 @@ function lensFill(
     return { fill: LENS_MID, op: 0.45, hard: false }
   }
   if (lens === 'pipes') {
-    if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap') {
+    if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap' || cell.kind === 'well') {
       return { fill: WATER, op: 0.72, hard: true }
     }
     if (aoeOn) return undefined
@@ -213,9 +214,7 @@ export class OverlayLayer {
       this.dist.set(k, 0)
       q.push(v)
     }
-    world.pumps.forEach(p => corners(occupiedCells(p.base, world.owned)).forEach(seed))
-    world.tanks.forEach(t => corners(occupiedCells(t.base, world.owned)).forEach(seed))
-    world.wells.forEach(w => vertsOf(w.at).forEach(seed))
+    world.sources().forEach(src => corners(occupiedCells(src.base, world.owned)).forEach(seed))
     for (let i = 0; i < q.length; i++) {
       const v = q[i]
       const d = this.dist.get(vertexKey(v)) as number
@@ -363,7 +362,7 @@ export class OverlayLayer {
       const col = Number(k.slice(0, comma))
       const row = Number(k.slice(comma + 1))
       const under = world.cell({ col, row }).kind
-      if (under === 'pump' || under === 'rain-tank' || under === 'tap') return
+      if (under === 'pump' || under === 'rain-tank' || under === 'tap' || under === 'well') return
       this.gfx.rect(col * TILE, row * TILE, TILE, TILE)
       this.gfx.fill({ color: WATER, alpha: hoverFill })
     })
@@ -476,7 +475,7 @@ export class OverlayLayer {
     const b = world.bounds()
     let any = false
     const line = (e: Edge): void => {
-      if (!world.edgeOwned(e) || world.hasPipe(e) || world.hasWell(e)) return
+      if (!world.edgeOwned(e) || world.hasPipe(e)) return
       const [a, c] = vertsOf(e)
       this.gfx.moveTo(a.col * TILE, a.row * TILE)
       this.gfx.lineTo(c.col * TILE, c.row * TILE)

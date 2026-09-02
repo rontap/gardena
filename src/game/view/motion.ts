@@ -15,9 +15,16 @@ type HudKind =
   | 'queue-bar'
   | 'banner'
   | 'fps'
+  | 'render'
+  | 'mem'
   | 'counter'
   | 'craft-fill'
   | 'craft-time'
+
+const FPS_LOW = 60
+const FPS_BAD = 25
+const FPS_ORANGE = '#d69a3a'
+const FPS_RED = '#c9574b'
 
 const hud = new Map<HudKind, Element>()
 let phaseUse: SVGUseElement | undefined
@@ -31,7 +38,7 @@ let dashSpeedReadout: Element | undefined
 let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
 const lastDash = { fuel: '', speed: '', used: '' }
-const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '', craftFill: '', craftTime: '' }
+const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', render: '', mem: '', counter: '', craftFill: '', craftTime: '' }
 
 let craftCell: CraftCell | undefined
 
@@ -219,13 +226,29 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
     }
   }
   const fpsEl = hud.get('fps')
-  if (fpsEl !== undefined) {
-    const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
-    const heap = memory === undefined ? '' : ` ${Math.round(memory.usedJSHeapSize / 1e6)}MB`
-    const text = `${Math.round(fps)} ${tickMs.toFixed(1)}ms${heap}`
+  if (fpsEl instanceof HTMLElement) {
+    const text = `${Math.round(fps)} FPS`
     if (last.fps !== text) {
       last.fps = text
       fpsEl.textContent = text
+      fpsEl.style.color = fps < FPS_BAD ? FPS_RED : fps < FPS_LOW ? FPS_ORANGE : ''
+    }
+  }
+  const renderEl = hud.get('render')
+  if (renderEl !== undefined) {
+    const text = `${tickMs.toFixed(1)}ms`
+    if (last.render !== text) {
+      last.render = text
+      renderEl.textContent = text
+    }
+  }
+  const memEl = hud.get('mem')
+  if (memEl !== undefined) {
+    const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
+    const text = memory === undefined ? '' : `${Math.round(memory.usedJSHeapSize / 1e6)}MB`
+    if (last.mem !== text) {
+      last.mem = text
+      memEl.textContent = text
     }
   }
   const banner = hud.get('banner')

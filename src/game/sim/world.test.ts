@@ -51,10 +51,10 @@ import {
   chunkRect,
   occupiedCells,
 } from './building.ts'
-import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
+import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse } from './save.ts'
-import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type FruitStack, type Hand } from './item.ts'
+import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
@@ -67,7 +67,7 @@ import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
-import { dest, DT_MAX, POINTS_PER_DAY, World } from './world.ts'
+import { dest, DT_MAX, fillable, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 import { qualityPip } from '../view/svgs.ts'
 
@@ -882,40 +882,47 @@ describe('beta-5 invariants', () => {
     w.buy('buy-pipe')
     const e1: Edge = { axis: 'h', col: 10, row: 12 }
     w.placePipe(e1)
+    const wellAt = { col: 20, row: 12 }
+    w.setCell(wellAt, bare('soft'))
     w.buy('buy-well')
-    const e2: Edge = { axis: 'h', col: 20, row: 12 }
-    w.placePipe(e2)
-    const well = w.wellAt(e2)
-    expect(well).toBeDefined()
-    if (well === undefined) return
+    w.confirmPlace(wellAt)
+    const well = w.cell(wellAt)
+    expect(well.kind).toBe('well')
+    if (well.kind !== 'well') return
     expect(well.water.rate).toBe(SOURCE.well.rate)
     expect(well.water.capacity).toBe(SOURCE.well.capacity)
     expect(well.water.stored).toBe(SOURCE.well.start)
-    expect(w.hasPipe(e2)).toBe(false)
-    expect(w.hasWell(e2)).toBe(true)
+    expect(w.wells).toHaveLength(1)
     const net = w.netOfVertex({ col: 18, row: 7 })
     expect(net).toBeDefined()
     expect(net?.sources).toHaveLength(1)
-    const wellNet = w.netOfVertex({ col: 20, row: 12 })
+    const wellNet = w.netOfVertex(wellAt)
     expect(wellNet).toBeDefined()
     expect(wellNet?.sources).toHaveLength(1)
     expect(wellNet).not.toBe(net)
   })
 
-  test('well joins its two endpoint vertices into one net', () => {
+  test('well is a 1x1 source cell: joins its four corners into one net, fills a bucket, deletes like a building', () => {
     const w = new World()
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
     w.done.add('unlock-adv-irrigation')
     w.done.add('unlock-water-storage')
     w.money = 200
+    const at = { col: 10, row: 12 }
+    w.setCell(at, bare('soft'))
     w.buy('buy-well')
-    const e: Edge = { axis: 'v', col: 10, row: 12 }
-    w.placePipe(e)
+    w.confirmPlace(at)
+    expect(w.cell(at).kind).toBe('well')
     const a = w.netOfVertex({ col: 10, row: 12 })
-    const b = w.netOfVertex({ col: 10, row: 13 })
+    const b = w.netOfVertex({ col: 11, row: 13 })
     expect(a).toBeDefined()
     expect(a).toBe(b)
+    expect(fillable(w, at)).toBe(true)
+    w.armDelete()
+    w.deleteBuilding(at)
+    expect(w.cell(at).kind).toBe('empty')
+    expect(w.wells).toHaveLength(0)
   })
 
   test('one jack + five sprinklers share the source and water growing tiles', () => {
@@ -1654,7 +1661,7 @@ describe('1.2 machines', () => {
     expect(w.drops.some(d => d.item.kind === 'spirit')).toBe(false)
   })
 
-  test('freezer skip rot', () => {
+  test('freezer slows rot to `FREEZER_ROT_MUL` of the open rate, it does not stop it', () => {
     const w = new World()
     const fz = new Freezer({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
     w.setCell(AT, fz)
@@ -1667,11 +1674,14 @@ describe('1.2 machines', () => {
     w.tick(1)
     const frozen = fz.slots[0]
     const stored = chest.slots[0]
-    expect(frozen.kind === 'hold' && frozen.item.kind === 'fruit' && frozen.item.freshness).toBe(1)
-    expect(stored.kind === 'hold' && stored.item.kind === 'fruit' && stored.item.freshness).toBeLessThan(1)
+    const frozenLoss = frozen.kind === 'hold' && frozen.item.kind === 'fruit' ? 1 - frozen.item.freshness : 0
+    const storedLoss = stored.kind === 'hold' && stored.item.kind === 'fruit' ? 1 - stored.item.freshness : 0
+    expect(storedLoss).toBeGreaterThan(0)
+    expect(frozenLoss).toBeGreaterThan(0)
+    expect(frozenLoss / storedLoss).toBeCloseTo(FREEZER_ROT_MUL, 6)
   })
 
-  test('Picked fruit keeps ticking freshness (hand, house, chest, ground, quad, harvest trailer) until sold. Freezer slots skip `tickFreshness`. Mill hopper is units, no freshness. `<= 0` replaces that slot with `{ kind: \'rotten\'; cls: CROPS[crop].cls; count }` in place, no auto-merge. Illegal: fruit with `freshness <= 0` after tick.', () => {
+  test('Picked fruit keeps ticking freshness (hand, house, chest, ground, quad, harvest trailer) until sold. Freezer slots rot at `FREEZER_ROT_MUL`. Mill hopper is units, no freshness. `<= 0` replaces that slot with `{ kind: \'rotten\'; cls: CROPS[crop].cls; count }` in place, no auto-merge. Illegal: fruit with `freshness <= 0` after tick.', () => {
     const w = new World()
     const fruit = {
       kind: 'fruit' as const,
@@ -2014,7 +2024,7 @@ describe('0.9 log and rng', () => {
     expect(r1).toBe(rollGrowRarity('common', second.happiness, new Rng(1).stream('grow').at(AT.col, AT.row, 1, 1)))
   })
 
-  test('Two successful tree drops the same day each consume fruit.next(). Rarities need not match.', () => {
+  test('Two successful tree drops the same day each consume two fruit.next(): drop spot then rarity. Rarities need not match.', () => {
     const w = new World(1)
     const below = { col: AT.col, row: AT.row + 1 }
     const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
@@ -2038,7 +2048,9 @@ describe('0.9 log and rng', () => {
     w.tick(1 / 15)
     expect(w.drops.length).toBe(n0 + 2)
     const fruit = new Rng(1).stream('fruit')
+    fruit.next()
     const a = rollRarity(fruit.next())
+    fruit.next()
     const b = rollRarity(fruit.next())
     const olives = w.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'olive')
     expect(olives).toHaveLength(2)
@@ -2386,7 +2398,7 @@ describe('1.5.2', () => {
   test('jam rank N: fruit with freshness < 0.5 rots 15% × N slower. Ripe plant and picked fruit. Freezer skips.', () => {
     const w = new World(1)
     w.family.daughter.owned.set('jam', 2)
-    const fruit: FruitStack = {
+    const fruit: Extract<Item, { kind: 'fruit' }> = {
       kind: 'fruit',
       crop: 'carrot',
       rarity: 'common',
@@ -2443,8 +2455,8 @@ describe('1.5.2', () => {
     expect(w.seats[0].actor.y).toBeCloseTo(y1 + step, 8)
   })
 
-  test('`STILL_WATER` 1. Start still requires full pull.', () => {
-    expect(STILL_WATER).toBe(1)
+  test('`STILL_WATER` 2. Start still requires full pull.', () => {
+    expect(STILL_WATER).toBe(2)
   })
 
   test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {

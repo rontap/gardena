@@ -81,7 +81,7 @@ test('two sources join one network', async ({ page }) => {
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
   await armSku(page, 'Well 75')
-  await confirmWellEdge(page, 20, 7)
+  await confirmWellCell(page, 20, 7)
   await page.keyboard.press('Escape')
   await worldTrue(
     page,
@@ -174,7 +174,7 @@ async function cellKind(page: Page, at: At): Promise<string> {
 
 async function placeEdge(page: Page, axis: 'h' | 'v', col: number, row: number): Promise<void> {
   const key = `${axis}:${col},${row}`
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   const wx = axis === 'h' ? col + 0.5 : col
   const wy = axis === 'h' ? row : row + 0.5
   await expect
@@ -188,7 +188,7 @@ async function placeEdge(page: Page, axis: 'h' | 'v', col: number, row: number):
 
 async function convertToValve(page: Page, col: number, row: number): Promise<void> {
   const key = `h:${col},${row}`
-  await armSku(page, 'Manual valve 6')
+  await armSku(page, 'Valve 5')
   await expect
     .poll(
       async () => {
@@ -205,12 +205,11 @@ async function convertToValve(page: Page, col: number, row: number): Promise<voi
     .toBe('valve')
 }
 
-async function confirmWellEdge(page: Page, col: number, row: number): Promise<void> {
-  const key = `h:${col},${row}`
+async function confirmWellCell(page: Page, col: number, row: number): Promise<void> {
   await expect
     .poll(async () => {
-      const has = await readWorld<boolean>(page, key, 'w.wells.has(at)')
-      if (!has) await tapWorld(page, col + 0.5, row)
+      const has = await readWorld<boolean>(page, { col, row }, "w.cell(at).kind === 'well'")
+      if (!has) await tapWorld(page, col + 0.5, row + 0.5)
       return has
     }, { timeout: 20_000 })
     .toBe(true)

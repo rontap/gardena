@@ -1,6 +1,6 @@
 # HUD
 
-Map full-bleed **PixiJS canvas** under the React HUD. Ribbons and docks sit on top. Controls `pointer-events-auto`. Map under stays live. Chrome tokens [[art/_index]]. No `$`. Coin is gold integer + silver tenths (`moneyParts`).
+Map full-bleed **PixiJS canvas** under the React HUD. Ribbons and docks sit on top. Controls `pointer-events-auto`. Map under stays live. Chrome tokens [[art/_index]]. No `$`. `Coin` is one gold glyph and `Math.round(n)`. Display only — `World.money` and every `unitSale` stay floats. No silver coin; `ui-coin-silver.svg` is unused.
 
 Canvas host: pan / zoom / `clickHit` as now. Farm sprites have no DOM. `data-cell-stroke` and ghost hooks: HTML overlays over the canvas — [[ui/place]]. No Pixi HUD. No `@pixi/react`. `paintMotion` HUD binds stay.
 
@@ -74,9 +74,9 @@ The hovered machine's recipe arrow and its countdown are on the same contract: `
 
 ## FPS
 
-Top-right, play only. `pointer-events-none` `text-xs` `tabular-nums` Nunito. Host and guest both show it.
+Three spans at the right end of the top ribbon, before the net chip. Play only, host and guest. `pointer-events-auto` (the `Chrome` wrapper is `pointer-events-none`, so a native tooltip is inert without it) `text-xs` `tabular-nums` `text-ink/40` `hover:text-ink/80`. Each carries its own `title`: frames per second / simulation time per frame / JS heap in use.
 
-Readout `60 4.2ms` then optional ` 32MB` if `performance.memory`. Paint from rAF / `paintMotion`, not React state every frame. FPS is an EMA of `1 / rAF dt`. Tick ms wraps `world.tick` / `host.pump` only. Not logged, not Save, not a Panel, not a `DirtyReason`. — [[architecture/tick]]
+`{n} FPS` off `Math.round`, `{n}ms` tick time to one decimal, `{n}MB` only if `performance.memory` — three separately diffed writes bound as `fps` / `render` / `mem`. FPS colour is an inline style set only when warning: `#d69a3a` under 60, `#c9574b` under 25, cleared otherwise, so the muted and hover classes govern the normal case. Paint from rAF / `paintMotion`, not React state every frame. FPS is an EMA of `1 / rAF dt`. Tick ms wraps `world.tick` / `host.pump` only. Not logged, not Save, not a Panel, not a `DirtyReason`. — [[architecture/tick]]
 
 ## Left ribbon
 

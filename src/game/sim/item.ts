@@ -2,6 +2,8 @@ import { fill } from '../defs/catalog.ts'
 import {
   BARREL_AGE,
   BARREL_MATURE,
+  CASK_SALE,
+  SPIRIT_RARITY,
   COMPOST_LITERS,
   COMPOST_NEED,
   COMPOST_SECONDS,
@@ -10,6 +12,7 @@ import {
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
+  FREEZER_ROT_MUL,
   GRIND_MAX,
   GRIND_MIN,
   GRASS_PACK,
@@ -256,6 +259,10 @@ export function faceName(face: Face): string {
   return toolName({ kind: 'hold', item: face })
 }
 
+export function caskAgeOf(item: { cask: CaskId; rarity: Rarity; unitSale: number }): number {
+  return item.unitSale / (CASK_SALE[item.cask] * SPIRIT_RARITY[item.rarity])
+}
+
 export const CASK_NAME: { readonly [K in CaskId]: string } = {
   wine: 'Wine',
   cider: 'Cider',
@@ -303,7 +310,10 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   }
   if (item.kind === 'sugar') return `Sugar - ${item.liters}L`
   if (item.kind === 'spirit') return `${SPIRIT_NAME[item.spirit]} - ${item.count}`
-  if (item.kind === 'cask') return `${CASK_NAME[item.cask]} - ${item.count}`
+  if (item.kind === 'cask') {
+    const mul = Number(caskAgeOf(item).toFixed(2))
+    return `${CASK_NAME[item.cask]}${mul > 1 ? ` ×${mul}` : ''} - ${item.count}`
+  }
   if (item.kind === 'jam') {
     const name = item.crop === 'tomato' ? 'Ketchup' : `${cropName(item.crop)} jam`
     return `${name} - ${item.count}`
@@ -578,10 +588,11 @@ export function skuDesc(id: SkuId): string {
         age: BARREL_AGE,
       })
     case 'buy-freezer':
-      return fill('${n} slots. Fruit in here does not rot.', { n: FREEZER_SLOTS })
+      return fill('${n} slots. Fruit in here rots ${pct}% slower.', { n: FREEZER_SLOTS, pct: (1 - FREEZER_ROT_MUL) * 100 })
     case 'buy-freezer-large':
-      return fill('${n} slots. Fruit in here does not rot. Earned from a contract, never sold.', {
+      return fill('${n} slots. Fruit in here rots ${pct}% slower. Earned from a contract, never sold.', {
         n: FREEZER_LARGE_SLOTS,
+        pct: (1 - FREEZER_ROT_MUL) * 100,
       })
     case 'buy-sugar':
       return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
@@ -644,7 +655,7 @@ export function itemTip(item: Item): string {
   if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
   if (item.kind === 'sugar') return `sugar ${item.liters}L`
   if (item.kind === 'spirit') return `spirit ${item.spirit} ${item.count}`
-  if (item.kind === 'cask') return `${item.cask} ${item.count}`
+  if (item.kind === 'cask') return `${item.cask} ${item.count} ×${Number(caskAgeOf(item).toFixed(2))}`
   if (item.kind === 'jam') return `jam ${item.crop} ${item.count}`
   if (item.kind === 'oil') return `oil ${item.count}`
   if (item.kind === 'flour') return `flour ${item.count}`

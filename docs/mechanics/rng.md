@@ -12,7 +12,7 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `weed` | sprout, kind | `at(col, row, bigTicks[, 1])` |
 | `grass` | world roll, owned-cell pick, variant | `at(bigTicks[, i, …])` |
 | `tree` | yield on/off | `at(base.col, base.row, day)` |
-| `fruit` | tree drop rarity | `next()` per successful drop |
+| `fruit` | tree drop spot then rarity | two `next()` per successful drop, spot first |
 | `skill` | offer draw | `at(memberIx, pickCount, i)` |
 | `grind` | grind units | `at(col, row, day, i)` |
 | `still` | still rarity clamp | `at(col, row, day, n)` on finish only |
@@ -32,6 +32,6 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 
 `rng.spatial` — `Spatial.at` / `hash`: same args, any call order → same `u`.
 
-`rng.fail` — Failed `buy` / `buyPacks` (closed, cannot afford, cannot fit) consumes 0 `shop.next()`. Failed tree drop consumes 0 `fruit.next()`. Granted pack: one `next()` each. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. Success: 5.
+`rng.fail` — Failed `buy` / `buyPacks` (closed, cannot afford, cannot fit) consumes 0 `shop.next()`. Failed tree drop consumes 0 `fruit.next()`; a successful one consumes 2. Granted pack: one `next()` each. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. Success: 5.
 
 `rng.pack` — Pack rarity is `rollShopRarity(seed-bank tier, shop.next())`. Not `clock.t`. Not `money`.

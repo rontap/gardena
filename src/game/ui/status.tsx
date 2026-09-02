@@ -4,12 +4,14 @@ import { lookText } from '../sim/look.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import type { World } from '../sim/world.ts'
 import { Chrome } from './frame.tsx'
-import { ItemLineView } from './held.tsx'
+import { DashFace, ItemLineView } from './held.tsx'
 import { faceGfx } from '../view/svgs.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { isPlot } from '../sim/plot.ts'
 import { HAPPY_START } from '../defs/rarity.ts'
 import { craftState, isCraftCell } from '../sim/recipe.ts'
+import { caskAgeMul } from '../sim/machine.ts'
+import { BARREL_AGE, BARREL_MATURE } from '../defs/items.ts'
 import { bindCraft } from '../view/motion.ts'
 import { Recipes } from './recipe.tsx'
 
@@ -137,6 +139,34 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   return null
 }
 
+function StoreContents({ world, hover }: { world: World; hover: PromptHit }) {
+  if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
+  const cell = world.cell(hover.at)
+  if (cell.kind !== 'chest' && cell.kind !== 'freezer') return null
+  if (!cell.slots.some(s => s.kind === 'hold')) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 bg-dirt/25 px-3 py-2.5">
+      {cell.slots.map((s, i) => (s.kind === 'hold' ? <DashFace key={i} item={s.item} /> : null))}
+    </div>
+  )
+}
+
+function BarrelAge({ world, hover }: { world: World; hover: PromptHit }) {
+  if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
+  const cell = world.cell(hover.at)
+  if (cell.kind !== 'barrel' || cell.crop === 'none' || cell.age < BARREL_MATURE) return null
+  const mul = caskAgeMul(cell.feed[0].rarity, cell.age)
+  return (
+    <div className="bg-dirt/25 px-3 py-2.5">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="w-20 shrink-0 font-semibold text-ink/70">Aging</span>
+        <FillBar value={Math.min(1, (cell.age - BARREL_MATURE) / BARREL_AGE)} />
+        <span className="w-12 shrink-0 text-right tabular-nums">×{Number(mul.toFixed(2))}</span>
+      </div>
+    </div>
+  )
+}
+
 function MachineCraft({ world, hover }: { world: World; hover: PromptHit }) {
   const cell = hover.kind === 'cell' && world.inWorld(hover.at) ? world.cell(hover.at) : undefined
   const machine = cell !== undefined && isCraftCell(cell) ? cell : undefined
@@ -189,7 +219,9 @@ export function Status({
           {body}
         </div>
         {hover !== undefined && <PlantStats world={world} hover={hover} />}
+        {hover !== undefined && <StoreContents world={world} hover={hover} />}
         {hover !== undefined && <MachineCraft world={world} hover={hover} />}
+        {hover !== undefined && <BarrelAge world={world} hover={hover} />}
     </Chrome>
   )
 }

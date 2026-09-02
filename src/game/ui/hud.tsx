@@ -152,7 +152,27 @@ export function Hud({
               </>
             )}
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
+            <span
+              ref={el => bindHud('fps', el)}
+              data-fps
+              title="Frames per second"
+              className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
+            />
+            <span
+              ref={el => bindHud('render', el)}
+              data-render
+              title="Simulation time per frame"
+              className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
+            />
+            <span
+              ref={el => bindHud('mem', el)}
+              data-mem
+              title="JavaScript heap in use"
+              className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             {net !== undefined && (
               <span className="flex items-center gap-1.5 border border-ink/20 bg-parch px-2 py-1 text-sm text-ink/70">
                 <span aria-hidden className="size-2 shrink-0 animate-pulse bg-ripe" />
@@ -228,11 +248,6 @@ export function Hud({
           )}
         </div>
       </Chrome>
-      <span
-        ref={el => bindHud('fps', el)}
-        data-fps
-        className="pointer-events-none absolute top-1 right-4 z-20 text-xs tabular-nums text-ink"
-      />
     </>
   )
 }

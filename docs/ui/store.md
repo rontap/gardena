@@ -46,6 +46,8 @@ Title **Additive store**. `w-[30rem]` — four rows, nothing to grow into. Capac
 
 One row per `ADDITIVE_IDS` — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray** — always all four, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, one bag to hand.
 
+Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buy(sku)`, which delivers straight to these tanks. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/shop]].
+
 Footer names the delivery rule while the store is empty, then *Walking up empties any bag you were carrying back into the tanks.*
 
 ## Cue

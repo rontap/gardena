@@ -143,7 +143,7 @@ Unwired `inn` 0 = red = hold. Output 1 iff a vehicle’s current stop is this ce
 
 SKU `buy-traffic-light`. Sensors shelf. `show` `unlock-sensors`, `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `TRAFFIC_LIGHT_PRICE`. Blurb: holds a vehicle until the input is green; output is on while a vehicle waits here.
 
-Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
+Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
 
 ## Actuators
 

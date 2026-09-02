@@ -27,6 +27,14 @@ Bands: green `#4f9d69`, amber `#d69a3a`, red `#c9574b`.
 
 `floor = FERT_PLOT_MAX - fertTolerance`. Water is 0–`SOIL_WATER_MAX` (2 L). Happy band centered on `SOIL_WATER_MID` (1 L). Red at both ends.
 
+## Store contents
+
+Hovering a `chest` or `freezer` that holds anything adds one block under the look text: the filled slots as a wrapped row of `DashFace` (`h-6 w-6` face plus its count badge), same `bg-dirt/25 px-3 py-2.5` chrome as the plant bars. Empty store draws nothing — the look line already names it.
+
+## Barrel aging
+
+Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskAgeMul(feed[0].rarity, age)` as the right-hand readout. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]].
+
 ## Ripe
 
 Freshness only. Red `0 .. 0.8`, green `0.8 .. 1`. No amber. Notch at current. Number `floor(freshness * 100)%`.

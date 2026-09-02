@@ -21,11 +21,11 @@ test('hover outline', async ({ page }) => {
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
-  await armSku(page, 'Sprinkler 15')
+  await armSku(page, 'Sprinkler 16')
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
@@ -38,7 +38,7 @@ test('hover outline', async ({ page }) => {
 })
 
 test('shop close exits pipe layer', async ({ page }) => {
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   await tapWorld(page, 18.5, 7)
   await hoverWorld(page, 12.5, 10.5)
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
@@ -59,14 +59,14 @@ test('shop close exits pipe layer', async ({ page }) => {
 
 test('sprinkler place without pipes', async ({ page }) => {
   const before = moneyValue(await hudMoney(page).textContent())
-  await armSku(page, 'Sprinkler 15')
+  await armSku(page, 'Sprinkler 16')
   await tapWorld(page, 19, 7)
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
-  await expect.poll(async () => moneyValue(await hudMoney(page).textContent())).toBe(before - 15)
+  await expect.poll(async () => moneyValue(await hudMoney(page).textContent())).toBe(before - 16)
 })
 
 test('pipe ghost is pipe art', async ({ page }) => {
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   await hoverWorld(page, 18.5, 7)
   const ghost = page.locator('[data-pipe-ghost]').first()
   await expect(ghost).toBeVisible()
@@ -76,7 +76,7 @@ test('pipe ghost is pipe art', async ({ page }) => {
 })
 
 test('dry pipes', async ({ page }) => {
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   await tapWorld(page, 10.5, 20)
   await hoverWorld(page, 10.5, 20.5)
   const dry = page.locator('[data-pipe][data-wet="0"]').first()
@@ -87,9 +87,9 @@ test('dry pipes', async ({ page }) => {
 
 test('connected sprinkler waters', async ({ page }) => {
   test.setTimeout(90_000)
-  await armSku(page, 'Pipe 4')
+  await armSku(page, 'Pipe 3')
   await tapWorld(page, 18.5, 7)
-  await armSku(page, 'Sprinkler 15')
+  await armSku(page, 'Sprinkler 16')
   await tapWorld(page, 19, 7)
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
   await page.keyboard.press('Escape')

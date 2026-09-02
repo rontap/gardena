@@ -27,7 +27,7 @@ Seam, with stipend/tax, before field tick, per tree with `juvenile >= 1`:
 2. `on` → `daysLeft -= 1`; if 0 → `tended = false`, then `{ off, chance: -0.2 }` (no roll)
 3. `off` → `chance += 0.2`; `u = tree.at(base.col, base.row, day)`; if `u < chance` → `{ on, daysLeft: TREE_YIELD_DAYS }` — [[mechanics/rng]]
 
-Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: drop fruit `freshness` 1 on the first in-world `frontOf` cell that is a `Plot` and is not in the footprint. Walk `frontOf(base)` then `frontOf({ col, row: row+1 })`. Existing drops on a plot are allowed. Spot found: `rarity = rollRarity(fruit.next())`, `fruit = 0`, `tally.harvests += 1`. No plot → clamp `fruit = 1`, show ripe, no `next()`. Cells stay `tree`.
+Field tick, mature, not pending: `fruit += dt / (fruitSeconds / mul)`. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. At `>= 1`: drop fruit `freshness` 1 on a random in-world `Plot` cell in the 3 wide × 4 tall block around the trunk (`TREE_DROP_COLS` -1..1 × `TREE_DROP_ROWS` -1..2, offsets from `base`), minus the two footprint cells. Existing drops on a plot are allowed. Candidates exist: `hit = open[floor(fruit.next() * open.length)]` **then** `rarity = rollRarity(fruit.next())` — two draws, spot before rarity — then `fruit = 0`, `tally.harvests += 1`. No plot → clamp `fruit = 1`, show ripe, no `next()`. Cells stay `tree`.
 
 Shovel: tree seed, cells bare soft.
 

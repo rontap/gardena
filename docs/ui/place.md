@@ -6,9 +6,9 @@ Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`.
 
 Truck is not a Place SKU. Unarmed click.
 
-Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + `buy-well` + fifteen sensor-cell SKUs. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
+Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + fifteen sensor-cell SKUs. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
 
-Confirm does **not** set `none` for StayArmed, **valve**, **well**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
+Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
 Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-barrel` `buy-freezer` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
@@ -41,7 +41,7 @@ Canvas host. Pan / zoom / `clickHit` as now, except armed `buy-pipe` left-drag i
 | Esc / shop **×** / Shop close / leave shop | `cancelPlace` | ghost off. Pending run and anchor dropped. Lens untouched |
 | left-ribbon Cancel | `cancelPlace` | ghost off. Pending run dropped. Lens untouched |
 
-Valve / well stay click-per-edge. Pan while those are armed.
+Valve stays click-per-edge. Pan while it is armed.
 
 Armed shop row (`place.kind === 'sku' && place.id === id`): selected. Label `skuLabel` + coin + price.
 
@@ -69,29 +69,27 @@ HTML overlays over the canvas. Tokens [[art/palette]] / `@theme`. No unnamed hex
 
 Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-barrel` `buy-freezer` and the fifteen sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Screen-fixed, `ptr + 16,16`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. `pointer-events-none`. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
 
-`buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 well+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
+`buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 jack+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
 `buy-still`: 2-tile ghost like pumpjack (48×24). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
 `buy-hangar`: 3×2 ghost (`HANGAR_W` × `HANGAR_H`). `buy-silo-seed` `buy-silo-spray` `buy-silo-produce`: 2×3 ghost (`SILO_W` × `SILO_H`). Origin = hovered NW cell, extends east and south. Confirm occupies the six cells. Disarm. Hover valid: all six `stroke-ink`. Blocked: all six `stroke-roof`. Copy **Place Vehicle hangar** / **Place Seeding silo** / **Place Spraying silo** / **Place Produce silo**. Pad cells are not in the ghost. Place does not require pad free. Tractor / trailers are hangar-buys, not Place SKUs. [[ui/vehicles]]
 
-## Pipe / valve / well
+## Pipe / valve
 
-`buy-pipe` `buy-valve` `buy-well`. Nearest edge of the hovered cell, only if the pointer is within **0.35** tile of that edge. Corner → one nearest edge, never two.
+`buy-pipe` `buy-valve`. Nearest edge of the hovered cell, only if the pointer is within **0.35** tile of that edge. Corner → one nearest edge, never two.
 
 Ghost is not a black bar. Not `item-pipe.svg`. Not a 64px item.
 
-While any `PIPE_PLACE` sku is armed, the overlay paints the **lattice**: every owned edge carrying no segment and no well, `ink` at `LATTICE_ALPHA` — preference. Pipes go on the lines, and the player sees that before the first click.
+While any `PIPE_PLACE` sku is armed, the overlay paints the **lattice**: every owned edge carrying no segment, `ink` at `LATTICE_ALPHA` — preference. Pipes go on the lines, and the player sees that before the first click.
 
 While there is an `edgeHit` (or a `pendingPipe` run), each pending edge’s two endpoint vertices draw the **post-confirm** junction: `pipeFit` from the incident arm set **including every pending edge**. Those vertices show the ghost (`data-pipe-ghost`, HTML overlay `<use>`). Ghost wetness = C of the component after confirm. Isolated pending run, no source touch: dry.
 
 Valve: the edge midpoint also draws the open-valve art at 0.7 (`data-valve-ghost`) — the body preview of what is being placed.
 
-Well: no junction ghosts (the well edge gains no pipe). The edge midpoint draws the well art at 0.7 (`data-well-ghost`). Valid iff owned edge with no pipe and no well.
+Cell outline stays `stroke-ink`. Copy **Place Pipe** / **Place Valve**. Stay armed.
 
-Cell outline stays `stroke-ink`. Copy **Place Pipe** / **Place Valve** / **Place Well**. Stay armed.
-
-Already piped / not an edge / unowned → **Cannot place here**. Valve on a valved edge → **Pipe already has a valve**. Pipe or well on a well edge → **Cannot place here**. Poor → **Cannot afford**. A valve on a bare owned edge is legal and lays the pipe with it, priced as both — [[mechanics/water]].
+Already piped / not an edge / unowned → **Cannot place here**. Valve on a valved edge → **Pipe already has a valve**. Poor → **Cannot afford**. A valve on a bare owned edge is legal and lays the pipe with it, priced as both — [[mechanics/water]].
 
 ## Pipe run
 
@@ -110,7 +108,7 @@ Anchor is the vertex nearest the press.
 
 Chip while a run is pending: segment count and total. Total over `money` → the whole run is blocked, **Cannot afford**, no partial commit. Mid-run truncation is gone.
 
-Pipes always drawn (joints, valves, wells, sprinklers, fences). Faint (`opacity` 0.35, preference) when the effective lens is not `pipes` and place is not delete / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Placed wells always draw their art on the edge midpoint (`data-well`). Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
+Pipes always drawn (joints, valves, sprinklers, fences). Faint (`opacity` 0.35, preference) when the effective lens is not `pipes` and place is not delete / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
 
 `PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-rain-tank` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
 
@@ -141,11 +139,11 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 | bezier within `VERTEX_HIT` | **Delete wire** | remove wire |
 | owned piped edge, no valve | **Delete pipe** | remove pipe |
 | owned valved edge | **Delete valve** | valve off, pipe stays, incident wires drop |
-| well edge | **Delete well** | well off, edge goes |
 | owned sprinkler vertex | **Delete sprinkler** | remove sprinkler; incident wires drop |
 | pumpjack | **Delete pumpjack** | both cells → empty |
 | rain-tank | **Delete rainwater tank** | both cells → empty |
 | tap | **Delete tap** | cell → empty |
+| well | **Delete well** | cell → empty |
 | chest | **Delete chest** | slots become drops on at, cell → empty |
 | grinder | **Delete grinder** | cell → empty |
 | compost-box | **Delete compost box** | cell → empty |
@@ -160,15 +158,19 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 | lever / button / lamp / or / and / not / pulser / counter / sensor-water / sensor-fert / sensor-harvest / water-system / vehicle-detector / sensor-day / traffic-light | **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete water-system sensor** / **Delete vehicle detector** / **Delete day sensor** / **Delete traffic light** | cell → empty; incident wires drop. Traffic-light delete also strips wait stops targeting that cell |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
-`deletePipe` / `deleteWell` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
+`deletePipe` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
 
 Delete pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline stays `stroke-ink`.
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU.
 
-`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve, no pipe **Valve needs a pipe**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].
+`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve, no pipe **Valve needs a pipe**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].
 
 Pipe / delete follow copy: HTML chip under the pointer, same `bg-house` `px-2` `py-0.5` `text-base` `text-ink`, no `skuInner`.
+
+## Queue markers
+
+Every cell the local seat's queue resolves to through `dest(i, world)` gets one small triangle in the world-transformed HTML overlay (`data-queued="{col},{row}"`), deduped by cell, `bg-house/85` clipped to a downward triangle, `QUEUE_MARK` 5 — preference. Local seat only. Derived from `Seat.queue` on render; not in Save, not in the digest, not a `DirtyReason`. `enqueueOn` already pings.
 
 ## Drop tip / pickup
 
@@ -178,9 +180,9 @@ Drop tip: shovel / pickaxe / container on that face — `itemLine`, `bg-ink` `px
 
 ## e2e
 
-Keep by name: `data-cell-stroke` `data-pipe` `data-pipe-ghost` `data-sprinkler` `data-vfx` `data-valve-ghost` `data-well-ghost`.
+Keep by name: `data-cell-stroke` `data-pipe` `data-pipe-ghost` `data-sprinkler` `data-vfx` `data-valve-ghost` `data-queued`.
 
-Farm sprites have no DOM. Those hooks live on HTML overlays over the canvas (`pointer-events-none`). `data-cell-stroke` keeps `stroke-ink` / `stroke-roof` and is one element per hover, never one per cell. `data-pipe-ghost` keeps pipe-junction `<use>` (not a black bar). Overlay `<use>` the same pipe-fit / valve / well / sprinkler groups as today. Not `svgs.ts`. Placed `data-pipe` carries `data-wet` `0`|`1` and stays while the joint exists (lens off is faint, not absent). `data-vfx={id}` present while that VFX is mounted; count `__view.vfxN`; frame cuts are Pixi, not CSS `.vfx-frame` — [[art/vfx]].
+Farm sprites have no DOM. Those hooks live on HTML overlays over the canvas (`pointer-events-none`). `data-cell-stroke` keeps `stroke-ink` / `stroke-roof` and is one element per hover, never one per cell. `data-pipe-ghost` keeps pipe-junction `<use>` (not a black bar). Overlay `<use>` the same pipe-fit / valve / sprinkler groups as today. Not `svgs.ts`. Placed `data-pipe` carries `data-wet` `0`|`1` and stays while the joint exists (lens off is faint, not absent). `data-vfx={id}` present while that VFX is mounted; count `__view.vfxN`; frame cuts are Pixi, not CSS `.vfx-frame` — [[art/vfx]].
 
 `window.__view` (`map.tsx`, beside `__world`): `cam`, `pendingPipe`, `hit(wx, wy)`, `vfxN`. Playwright. Not Save.
 

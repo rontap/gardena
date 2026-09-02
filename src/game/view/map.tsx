@@ -7,7 +7,7 @@ import type { SkuId } from '../sim/ids.ts'
 import { aoe, edgeKey, vertsOf, type Edge, type Vertex } from '../sim/pipe.ts'
 import type { WireEnd } from '../sim/sensor.ts'
 import type { PromptHit } from '../sim/prompt.ts'
-import type { Place, World } from '../sim/world.ts'
+import { dest, type Place, type World } from '../sim/world.ts'
 import { Coin } from '../ui/frame.tsx'
 import { TILE, clampCam, type Camera } from './camera.ts'
 import {
@@ -40,6 +40,8 @@ import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
 export type { Lens, MapClick }
+
+const QUEUE_MARK = 5
 
 export const HAT: { readonly [K in 0 | 1 | 2 | 3]: string } = {
   0: '#d4a017',
@@ -99,7 +101,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank' || placeId === 'buy-still'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
-  const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
+  const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
@@ -113,7 +115,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const ghostEdges =
     placeId === 'buy-pipe' && pendingPipe.length > 0
       ? pendingPipe
-      : edgeTool && placeId !== 'buy-well' && edgeHit !== undefined
+      : edgeTool && edgeHit !== undefined
         ? [edgeHit]
         : []
   const ghostWet = ghostEdges.length > 0 && ghostEdges.some(e => world.pendingWet(e))
@@ -305,13 +307,11 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       ? { kind: 'sprinkler', sprinkler: ghostSprinkler }
       : deleteTarget?.kind === 'pipe'
         ? { kind: 'delete-pipe', edge: deleteTarget.edge }
-        : deleteTarget?.kind === 'well'
-          ? { kind: 'delete-well', edge: deleteTarget.edge }
-          : deleteTarget?.kind === 'sprinkler'
-            ? { kind: 'delete-sprinkler', at: deleteTarget.at }
-            : deleteTarget?.kind === 'wire'
-              ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
-              : undefined
+        : deleteTarget?.kind === 'sprinkler'
+          ? { kind: 'delete-sprinkler', at: deleteTarget.at }
+          : deleteTarget?.kind === 'wire'
+            ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
+            : undefined
   const runCost = pendingPipe.length * world.skuPrice('buy-pipe')
   const followText =
     pendingPipe.length > 0
@@ -326,7 +326,14 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const worldT = `translate(${view.w / 2}px, ${view.h / 2}px) scale(${cam.scale}) translate(${-cam.x * TILE}px, ${-cam.y * TILE}px)`
   const faces = world.faces()
   const sprinklers = [...world.sprinklers.values()]
-  const wells = [...world.wells.values()]
+  const queued = [
+    ...new Map(
+      world.seats[world.local].queue
+        .map(i => dest(i, world))
+        .filter(at => Number.isFinite(at.col) && Number.isFinite(at.row))
+        .map(at => [`${at.col},${at.row}`, at] as const),
+    ).entries(),
+  ]
 
   return (
     <div
@@ -480,37 +487,12 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             <use href="#valve-open" />
           </svg>
         )}
-        {placeId === 'buy-well' && edgeHit !== undefined && (
-          <svg
-            data-well-ghost
-            className="absolute overflow-visible"
-            width={TILE}
-            height={TILE}
-            viewBox="0 0 24 24"
-            style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
-          >
-            <use href="#well" />
-          </svg>
-        )}
         {sprinklers.map(s => (
           <div
             key={`sp-${s.at.col},${s.at.row}`}
             data-sprinkler=""
             className="absolute"
             style={{ left: s.at.col * TILE - 2, top: s.at.row * TILE - 2, width: 4, height: 4 }}
-          />
-        ))}
-        {wells.map(w => (
-          <div
-            key={`well-${edgeKey(w.at)}`}
-            data-well={edgeKey(w.at)}
-            className="absolute"
-            style={{
-              left: (w.at.axis === 'h' ? w.at.col + 0.5 : w.at.col) * TILE - 2,
-              top: (w.at.axis === 'h' ? w.at.row : w.at.row + 0.5) * TILE - 2,
-              width: 4,
-              height: 4,
-            }}
           />
         ))}
         {(hangarPlace || siloPlace) && placeId !== undefined && strokeCell !== undefined && (
@@ -545,6 +527,20 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
           </svg>
         )}
+        {queued.map(([k, at]) => (
+          <div
+            key={`queued-${k}`}
+            data-queued={k}
+            className="absolute bg-house/85"
+            style={{
+              left: at.col * TILE + TILE / 2 - QUEUE_MARK,
+              top: at.row * TILE + 3,
+              width: QUEUE_MARK * 2,
+              height: QUEUE_MARK * 1.6,
+              clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
+            }}
+          />
+        ))}
         {faces.map(face => {
           const s = TILE * 0.85
           const o = (TILE - s) / 2
@@ -799,7 +795,6 @@ function GhostDefs() {
     'pipe-x-dry',
     'valve-open',
     'valve-jack',
-    'well',
     'sprinkler',
     'sprinkler-vert',
     'sprinkler-large',

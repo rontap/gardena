@@ -26,6 +26,7 @@ import {
   Rock,
   SeedSilo,
   Tap,
+  Well,
   Tree,
   Truck,
   Barrel,
@@ -95,7 +96,7 @@ import type {
 } from './market.h.ts'
 import { COMPANY_IDS } from '../defs/companies.ts'
 import { MemorySink, type LogSink } from './log.ts'
-import { type Edge, type Gate, type Segment, type Sprinkler, type Tune, Well } from './pipe.ts'
+import { type Edge, type Gate, type Segment, type Sprinkler, type Tune } from './pipe.ts'
 import {
   AndGate,
   Button,
@@ -139,7 +140,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.11 as const
+export const SAVE_VERSION = 2.12 as const
 
 const INV = 16
 
@@ -193,6 +194,7 @@ export type SaveCell =
   | { kind: 'pump'; form: 'starter' | 'jack'; base: Base; stored: number }
   | { kind: 'rain-tank'; base: RectBase; stored: number }
   | { kind: 'tap'; base: RectBase }
+  | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
@@ -298,7 +300,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 2.1
+  version: 2.12
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -331,7 +333,6 @@ export type Save = {
   ripenN: { col: number; row: number; n: number }[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
-  wells: { at: Edge; stored: number }[]
   sprinklers: Sprinkler[]
   wires: Wire[]
   valveHold: { e: Edge; level: 0 | 1; hold: number }[]
@@ -430,7 +431,6 @@ export function dump(world: World): Save {
       return { id: { cx: id.cx, cy: id.cy }, cells }
     }),
     segments: [...world.segments.values()],
-    wells: [...world.wells.values()].map(well => ({ at: well.at, stored: well.water.stored })),
     sprinklers: [...world.sprinklers.values()],
     wires: world.wires.map(w => ({ from: w.from, to: w.to })),
     valveHold: [...world.valveHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
@@ -542,6 +542,7 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'pump' ||
     c.kind === 'rain-tank' ||
     c.kind === 'tap' ||
+    c.kind === 'well' ||
     c.kind === 'rock' ||
     c.kind === 'tree' ||
     c.kind === 'chest' ||
@@ -597,6 +598,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'rain-tank', base: c.base, stored: c.water.stored }
     case 'tap':
       return { kind: 'tap', base: c.base }
+    case 'well':
+      return { kind: 'well', base: c.base, stored: c.water.stored }
     case 'rock':
       return { kind: 'rock', base: c.base }
     case 'tree':
@@ -866,7 +869,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     chunks.push({ id: { cx, cy }, cells })
   }
   const segmentsIn = arr(rec.segments)
-  const wellsIn = arr(rec.wells)
   const sprinklersIn = arr(rec.sprinklers)
   const wiresIn = arr(rec.wires)
   const valveHoldIn = arr(rec.valveHold)
@@ -874,7 +876,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const dropsIn = arr(rec.drops)
   if (
     segmentsIn === undefined ||
-    wellsIn === undefined ||
     sprinklersIn === undefined ||
     wiresIn === undefined ||
     valveHoldIn === undefined ||
@@ -888,15 +889,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     const seg = readSegment(s)
     if (seg === undefined) return undefined
     segments.push(seg)
-  }
-  const wells: { at: Edge; stored: number }[] = []
-  for (const s of wellsIn) {
-    const o = obj(s)
-    if (o === undefined) return undefined
-    const at = readEdge(o.at)
-    const stored = num(o.stored)
-    if (at === undefined || stored === undefined) return undefined
-    wells.push({ at, stored })
   }
   const sprinklers: Sprinkler[] = []
   for (const s of sprinklersIn) {
@@ -987,7 +979,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     ripenN,
     chunks,
     segments,
-    wells,
     sprinklers,
     wires,
     valveHold,
@@ -1076,11 +1067,7 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
           },
     ripenN: save.ripenN,
     segments: save.segments,
-    wells: save.wells.map(well => {
-      const made = new Well(well.at)
-      made.water.stored = well.stored
-      return made
-    }),
+    wells: live.wells,
     sprinklers: save.sprinklers,
     fences: save.fences,
     drops: save.drops,
@@ -1131,6 +1118,7 @@ function stampChunks(
       pumps: Pump[]
       tanks: RainTank[]
       taps: Tap[]
+      wells: Well[]
       stills: PotStill[]
       waterSystems: WaterSystem[]
       hangars: Hangar[]
@@ -1143,6 +1131,7 @@ function stampChunks(
   const pumps: Pump[] = []
   const tanks: RainTank[] = []
   const taps: Tap[] = []
+  const wells: Well[] = []
   const stills: PotStill[] = []
   const waterSystems: WaterSystem[] = []
   const hangars: Hangar[] = []
@@ -1173,6 +1162,7 @@ function stampChunks(
         }
         if (made.kind === 'rain-tank') tanks.push(made)
         if (made.kind === 'tap') taps.push(made)
+        if (made.kind === 'well') wells.push(made)
         if (made.kind === 'still') stills.push(made)
         if (made.kind === 'water-system') waterSystems.push(made)
         if (made.kind === 'hangar') hangars.push(made)
@@ -1202,6 +1192,7 @@ function stampChunks(
               inst.kind === 'pump' ||
               inst.kind === 'rain-tank' ||
               inst.kind === 'tap' ||
+              inst.kind === 'well' ||
               inst.kind === 'rock' ||
               inst.kind === 'tree' ||
               inst.kind === 'chest' ||
@@ -1235,7 +1226,7 @@ function stampChunks(
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, tanks, taps, stills, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
+  return { chunks, house, truck, silo, additives, pumps, tanks, taps, wells, stills, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(sc: SaveCell): Cell | undefined {
@@ -1277,6 +1268,11 @@ function makeLive(sc: SaveCell): Cell | undefined {
     }
     case 'tap':
       return new Tap(sc.base)
+    case 'well': {
+      const well = new Well(sc.base)
+      well.water.stored = sc.stored
+      return well
+    }
     case 'rock':
       return new Rock(sc.base)
     case 'tree': {
@@ -1552,6 +1548,12 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const base = readRectBase(o.base)
     if (base === undefined) return undefined
     return { kind: 'tap', base }
+  }
+  if (kind === 'well') {
+    const base = readRectBase(o.base)
+    const stored = num(o.stored)
+    if (base === undefined || stored === undefined) return undefined
+    return { kind: 'well', base, stored }
   }
   if (kind === 'rock') {
     const base = readRectBase(o.base)

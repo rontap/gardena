@@ -121,7 +121,7 @@ Almanac jam third icon on `JamCrop` panes iff `unlock-preservatives` done. Tomat
 
 `base.w = 2` `base.h = 1` **and** prop `48×24` occupying both cells. Tick origin. Water join any corner. `World.stills` same instances. Origin-only paint + `TILE/24` scale shows the full 48-wide art. [[art/machines]]
 
-`STILL_CAP`. No overload: dump takes only remaining units. Production starts iff feed count `=== STILL_CAP` and `pull` `STILL_WATER` succeeds (full amount; short → pull 0, retry each tick). `STILL_WATER` 1 — preference. Water once at start, not per tick. `inn === 1` skips that pull and `progress`. Still recipes already carry `STILL_WATER` liters on the water face.
+`STILL_CAP`. No overload: dump takes only remaining units. Production starts iff feed count `=== STILL_CAP` and `pull` `STILL_WATER` succeeds (full amount; short → pull 0, retry each tick). `STILL_WATER` 2 — preference. Water once at start, not per tick. `inn === 1` skips that pull and `progress`. Still recipes already carry `STILL_WATER` liters on the water face.
 
 `STILL_SECONDS`. Not a machinery job. `progress += dt / STILL_SECONDS`. Consume feed and `still.at(col, row, day, n)` on finish only — [[mechanics/rng]]. Then `n += 1`. Drop one spirit `frontOf` (wait if no plot).
 
@@ -149,9 +149,11 @@ Age mul: linear `1 → CASK_AGE[r]` over `BARREL_AGE` after mature. Clamp at `CA
 
 Cask item `{ kind: 'cask'; cask: CaskId; rarity; count; unitSale }`. Age baked into `unitSale` at collect: `CASK_SALE[cask] × SPIRIT_RARITY[r] × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
 
+`caskAgeOf(item)` reads that multiplier back out of `unitSale` — no age field on the item. `itemLine` and `itemTip` show it when it rounds above 1. Stacking is unchanged: `stackable` matches on `cask` + `rarity`, and `mergeInto` averages `unitSale` weighted by count, so merging a fresh cask into an aged one keeps the total worth intact.
+
 ## Freezer
 
-`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` skips freezer slots. Chest / house / hand / ground / quad / harvest trailer fruit still tick. Mill hopper is units, no freshness. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
+`FREEZER_SLOTS`. Any item, like chest. `tickFreshness` runs freezer slots at `FREEZER_ROT_MUL` 0.2 — preference — of the open rate: cold slows rot, it does not stop it and it never restores freshness. Chest / house / hand / ground / quad / harvest trailer fruit tick at 1. Mill hopper is units, no freshness. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. [[mechanics/sensors]].
 
 `swapChest` on a freezer cell. Guest: not. Host cue reuses chest.
 
@@ -221,7 +223,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.tractor-mill` — Tractor harvest on mill takeup: Load sugar drop.
 
-`machines.water` — `STILL_WATER` 1 preference. Start still requires full pull. Every still recipe carries that many liters on the water face.
+`machines.water` — `STILL_WATER` 2 preference. Start still requires full pull. Every still recipe carries that many liters on the water face.
 
 `machines.io-side` — West chest/freezer is input. East is output. Still: west of origin, east of east cell.
 

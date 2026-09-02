@@ -19,6 +19,7 @@ import type {
   Tap,
   Tree,
   Truck,
+  Well,
   Barrel,
 } from './building.ts'
 import type { CropId, TileId } from './ids.ts'
@@ -49,6 +50,7 @@ export type Cell =
   | Pump
   | RainTank
   | Tap
+  | Well
   | Rock
   | Tree
   | Chest
@@ -112,6 +114,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'pump' ||
     c.kind === 'rain-tank' ||
     c.kind === 'tap' ||
+    c.kind === 'well' ||
     c.kind === 'rock' ||
     c.kind === 'tree' ||
     c.kind === 'chest' ||

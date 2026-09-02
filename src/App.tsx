@@ -1290,20 +1290,12 @@ function dispatchClick(world: World, hit: MapClick): void {
     world.deletePipe(hit.edge)
     return
   }
-  if (hit.kind === 'delete-well') {
-    world.deleteWell(hit.edge)
-    return
-  }
   if (hit.kind === 'delete-sprinkler') {
     world.deleteSprinkler(hit.at)
     return
   }
   if (hit.kind === 'valve') {
     world.clickValve(hit.edge)
-    return
-  }
-  if (hit.kind === 'well') {
-    world.clickWell(hit.edge)
     return
   }
   if (hit.kind === 'sprinkler-hud') {

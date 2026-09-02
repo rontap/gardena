@@ -47,7 +47,7 @@ function Badge({ item }: { item: Item }) {
   const t = badge(item)
   if (t === undefined) return null
   return (
-    <span className="absolute bottom-0 right-0 bg-ink px-1 text-xs leading-tight font-bold text-house">{t}</span>
+    <span className="absolute bottom-0 left-0 bg-ink px-1 text-xs leading-tight font-bold text-house">{t}</span>
   )
 }
 

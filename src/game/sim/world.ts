@@ -37,6 +37,7 @@ import {
   FLOUR,
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
+  FREEZER_ROT_MUL,
   JAM_BUFFER,
   JAM_IN,
   JAM_SALE,
@@ -117,6 +118,7 @@ import {
   SILO_BASE,
   SeedSilo,
   Tap,
+  Well,
   Tree,
   TRUCK_BASE,
   Truck,
@@ -266,7 +268,6 @@ import {
   vertexKey,
   vertexOwned as pipeVertexOwned,
   vertsOf,
-  Well,
   type Edge,
   type Segment,
   type Sprinkler,
@@ -284,7 +285,6 @@ import {
   readPrompt,
   readPromptHit,
   valvePrompt,
-  wellPrompt,
   HAND_FULL,
   NOT_OWNED,
   type Prompt,
@@ -374,7 +374,6 @@ export type Intent =
   | { act: 'compost'; at: Coord }
   | { act: 'harvest'; at: Coord }
   | { act: 'fill'; at: Coord }
-  | { act: 'fillWell'; stand: Coord; edge: Edge }
   | { act: 'consign' }
   | { act: 'pickup'; at: Coord }
   | { act: 'drop'; at: Coord }
@@ -604,6 +603,9 @@ export const DAY_STIPEND = 10
 export const MP_ID_KEY = 'gardena-mp-id'
 
 export const QUEUE_CAP = 8
+
+const TREE_DROP_ROWS = [-1, 0, 1, 2]
+const TREE_DROP_COLS = [-1, 0, 1]
 export const DT_MAX = 1 / 15
 const INV = 16
 
@@ -712,7 +714,6 @@ export function dest(i: Intent, w: World): Coord {
     if ('base' in c) return destOrigin(c, w.owned)
     return { ...i.at }
   }
-  if (i.act === 'fillWell') return i.stand
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
   if (i.act === 'toggle') return i.at
@@ -763,7 +764,7 @@ export class World {
   readonly routes: Route[] = []
   nextRouteId: RouteId = 1
   readonly segments = new Map<string, Segment>()
-  readonly wells = new Map<string, Well>()
+  readonly wells: Well[] = []
   readonly fences = new Set<string>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
@@ -895,8 +896,7 @@ export class World {
       h.ripenN.forEach(e => this.ripenN.set(`${e.col},${e.row}`, e.n))
       this.segments.clear()
       h.segments.forEach(s => this.segments.set(edgeKey(s.at), s))
-      this.wells.clear()
-      h.wells.forEach(well => this.wells.set(edgeKey(well.at), well))
+      this.wells = h.wells
       this.sprinklers.clear()
       h.sprinklers.forEach(s => this.sprinklers.set(vertexKey(s.at), s))
       this.fences.clear()
@@ -920,7 +920,6 @@ export class World {
       this.modGen += 1
       this.netVerts.clear()
       h.segments.forEach(s => vertsOf(s.at).forEach(v => this.netVerts.add(vertexKey(v))))
-      h.wells.forEach(well => vertsOf(well.at).forEach(v => this.netVerts.add(vertexKey(v))))
       h.sprinklers.forEach(s => this.netVerts.add(vertexKey(s.at)))
       this.now = 0
       this.speech = { kind: 'none' }
@@ -1092,9 +1091,6 @@ export class World {
       case Act.clickValve:
         this.clickValveBody(cmd.e)
         return
-      case Act.clickWell:
-        this.clickWellBody(cmd.e)
-        return
       case Act.enqueue:
         this.enqueueOn(this.act, cmd.i)
         return
@@ -1111,7 +1107,6 @@ export class World {
         return
       case Act.delete:
         if (cmd.k === 'pipe') this.deletePipeBody(cmd.e)
-        else if (cmd.k === 'well') this.deleteWellBody(cmd.e)
         else if (cmd.k === 'sprinkler') this.deleteSprinklerBody({ col: cmd.c[0], row: cmd.c[1] })
         else if (cmd.k === 'wire') this.deleteWireBody(cmd.from, cmd.to)
         else this.deleteBuildingBody({ col: cmd.c[0], row: cmd.c[1] })
@@ -1536,14 +1531,8 @@ export class World {
 
   private applyWeatherRates(): void {
     const w = this.weather(this.clock.day)
-    this.pumps.forEach(p => {
-      p.water.mul = sourceRateMul(p.water.kind, w)
-    })
-    this.tanks.forEach(t => {
-      t.water.mul = sourceRateMul(t.water.kind, w)
-    })
-    this.wells.forEach(well => {
-      well.water.mul = sourceRateMul(well.water.kind, w)
+    this.sources().forEach(s => {
+      s.water.mul = sourceRateMul(s.water.kind, w)
     })
   }
 
@@ -1730,14 +1719,6 @@ export class World {
     return this.valveHold.has(edgeKey(e))
   }
 
-  wellAt(e: Edge): Well | undefined {
-    return this.wells.get(edgeKey(e))
-  }
-
-  hasWell(e: Edge): boolean {
-    return this.wells.has(edgeKey(e))
-  }
-
   sprinklerAt(v: Vertex): Sprinkler | undefined {
     return this.sprinklers.get(vertexKey(v))
   }
@@ -1773,17 +1754,16 @@ export class World {
   private placePipeBody(e: Edge): void {
     if (this.act.place.kind !== 'sku') return
     const id = this.act.place.id
-    if (id !== 'buy-pipe' && id !== 'buy-valve' && id !== 'buy-well') return
+    if (id !== 'buy-pipe' && id !== 'buy-valve') return
     if (this.money < this.skuPrice(id)) return
     if (!this.edgeOwned(e)) return
     if (id === 'buy-pipe') {
-      if (this.hasPipe(e) || this.hasWell(e)) return
+      if (this.hasPipe(e)) return
       this.segments.set(edgeKey(e), { at: e, gate: { kind: 'bare' } })
       vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     } else if (id === 'buy-valve') {
       const seg = this.segmentAt(e)
       if (seg === undefined) {
-        if (this.hasWell(e)) return
         const total = this.skuPrice('buy-pipe') + this.skuPrice('buy-valve')
         if (this.money < total) return
         this.segments.set(edgeKey(e), { at: e, gate: { kind: 'valve', open: true } })
@@ -1795,10 +1775,6 @@ export class World {
       }
       if (seg.gate.kind !== 'bare') return
       seg.gate = { kind: 'valve', open: true }
-    } else {
-      if (this.hasPipe(e) || this.hasWell(e)) return
-      this.wells.set(edgeKey(e), new Well(e))
-      vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     }
     this.money -= this.skuPrice(id)
     this.dirtyNets()
@@ -1820,19 +1796,6 @@ export class World {
       this.segments.delete(edgeKey(e))
       this.pruneVert(e)
     }
-    this.dirtyNets()
-    this.ping()
-  }
-
-  deleteWell(e: Edge): void {
-    this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'well', e })
-  }
-
-  private deleteWellBody(e: Edge): void {
-    if (this.act.place.kind !== 'delete') return
-    if (this.wellAt(e) === undefined) return
-    this.wells.delete(edgeKey(e))
-    this.pruneVert(e)
     this.dirtyNets()
     this.ping()
   }
@@ -2138,6 +2101,14 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'well') {
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      this.wells.splice(this.wells.indexOf(c), 1)
+      this.dirtyNets()
+
+      this.ping()
+      return
+    }
     if (c.kind === 'chest') {
       this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
@@ -2241,7 +2212,7 @@ export class World {
   }
 
   sources(): { base: Base; water: Reservoir }[] {
-    return [...this.pumps, ...this.tanks]
+    return [...this.pumps, ...this.tanks, ...this.wells]
   }
 
   private dirtyNets(): void {
@@ -2269,10 +2240,6 @@ export class World {
       const [a, b] = vertsOf(seg.at)
       join(vertexKey(a), vertexKey(b))
     })
-    this.wells.forEach(well => {
-      const [a, b] = vertsOf(well.at)
-      join(vertexKey(a), vertexKey(b))
-    })
     const sources = this.sources()
     const sourceCorners = sources.map(s => corners(occupiedCells(s.base, this.owned)).map(vertexKey))
     sourceCorners.forEach(ks => {
@@ -2290,10 +2257,6 @@ export class World {
     }
     sources.forEach((s, i) => {
       netOf(sourceCorners[i][0]).sources.push(s.water)
-    })
-    this.wells.forEach(well => {
-      const [a] = vertsOf(well.at)
-      netOf(vertexKey(a)).sources.push(well.water)
     })
     this.sprinklers.forEach(s => {
       const k = vertexKey(s.at)
@@ -2364,9 +2327,6 @@ export class World {
     return (
       this.sources().some(p =>
         corners(occupiedCells(p.base, this.owned)).some(v => verts.has(vertexKey(v))),
-      ) ||
-      [...this.wells.values()].some(well =>
-        vertsOf(well.at).some(v => verts.has(vertexKey(v))),
       )
     )
   }
@@ -2483,16 +2443,6 @@ export class World {
     this.enqueueOn(this.act, p.intent)
   }
 
-  clickWell(e: Edge): void {
-    this.commit({ a: Act.clickWell, t: this.now, p: this.local, e })
-  }
-
-  private clickWellBody(e: Edge): void {
-    const p = wellPrompt(this, e)
-    if (p.kind !== 'intent') return
-    this.enqueueOn(this.act, p.intent)
-  }
-
   ackCue(): void {
     this.commit({ a: Act.ackCue, t: this.now, p: this.local })
   }
@@ -2542,7 +2492,6 @@ export class World {
       case 'harvest':
         return 'Harvest'
       case 'fill':
-      case 'fillWell':
         return 'Fill'
       case 'consign':
         return 'Drop off'
@@ -2670,7 +2619,6 @@ export class World {
     if (
       this.act.place.id === 'buy-pipe' ||
       this.act.place.id === 'buy-valve' ||
-      this.act.place.id === 'buy-well' ||
       this.act.place.id === 'buy-sprinkler' ||
       this.act.place.id === 'buy-sprinkler-vert' ||
       this.act.place.id === 'buy-sprinkler-large'
@@ -2733,6 +2681,7 @@ export class World {
       this.act.place.id === 'buy-grinder' ||
       this.act.place.id === 'buy-compost-box' ||
       this.act.place.id === 'buy-tap' ||
+      this.act.place.id === 'buy-well' ||
       this.act.place.id === 'buy-mill' ||
       this.act.place.id === 'buy-jam' ||
       this.act.place.id === 'buy-barrel' ||
@@ -2811,6 +2760,12 @@ export class World {
       else if (this.act.place.id === 'buy-freezer-large') {
         this.prizeFreezers -= 1
         this.setCell(at, new Freezer(base, FREEZER_LARGE_SLOTS))
+      }
+      else if (this.act.place.id === 'buy-well') {
+        const well = new Well(base)
+        this.wells.push(well)
+        this.setCell(at, well)
+        this.dirtyNets()
       }
       else {
         const tap = new Tap(base)
@@ -4284,8 +4239,7 @@ export class World {
         this.shiftHead()
         return
       case 'fill':
-      case 'fillWell':
-        if (i.act === 'fill' ? !this.canFill(i.at) : !this.canFillWell(i.edge)) {
+        if (!this.canFill(i.at)) {
           this.shiftHead()
           return
         }
@@ -4490,7 +4444,7 @@ export class World {
 
   private tickFill(dt: number): void {
     const head = this.act.queue[0]
-    if (head === undefined || (head.act !== 'fill' && head.act !== 'fillWell')) {
+    if (head === undefined || head.act !== 'fill') {
       this.act.filling = false
       this.shiftHead()
       return
@@ -4500,13 +4454,10 @@ export class World {
       this.shiftHead()
       return
     }
-    let source: Pump | RainTank | Tap | undefined
-    if (head.act === 'fill') {
-      const c = this.cell(head.at)
-      if (c.kind === 'pump' || c.kind === 'rain-tank' || c.kind === 'tap') source = c
-    }
-    const well = head.act === 'fillWell' ? this.wellAt(head.edge) : undefined
-    if (source === undefined && well === undefined) {
+    const c0 = this.cell(head.at)
+    const source: Pump | RainTank | Tap | Well | undefined =
+      c0.kind === 'pump' || c0.kind === 'rain-tank' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
+    if (source === undefined) {
       this.act.filling = false
       this.shiftHead()
       return
@@ -4518,12 +4469,7 @@ export class World {
         this.shiftHead()
       return
     }
-    const add =
-      source !== undefined
-        ? this.fillDraw(source, dt)
-        : well !== undefined
-          ? well.water.take(well.water.rate * dt)
-          : 0
+    const add = this.fillDraw(source, dt)
     c.liters = add >= miss ? c.capacityLiters : c.liters + add
     if (c.liters === c.capacityLiters) {
       this.act.filling = false
@@ -4531,12 +4477,7 @@ export class World {
     }
   }
 
-  private canFillWell(e: Edge): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'container') return false
-    return this.wellAt(e) !== undefined
-  }
-
-  private fillDraw(source: Pump | RainTank | Tap, dt: number): number {
+  private fillDraw(source: Pump | RainTank | Tap | Well, dt: number): number {
     if (source.kind === 'tap') {
       const net = this.netOfCell(source.base)
       if (net === undefined) return 0
@@ -4727,7 +4668,6 @@ export class World {
 
   private gatherWater(dt: number): void {
     this.sources().forEach(s => s.water.gather(dt))
-    this.wells.forEach(w => w.water.gather(dt))
   }
 
   private tickWater(dt: number): void {
@@ -4774,38 +4714,42 @@ export class World {
   }
 
   private tickFreshness(dt: number): void {
-    const rot = (f: FruitStack) => {
+    const rot = (f: FruitStack, mul: number) => {
       const next =
-        f.freshness - dt / (statsOf(f.crop, f.rarity, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
+        f.freshness -
+        (dt * mul) / (statsOf(f.crop, f.rarity, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
       f.freshness = next < 0 ? 0 : next
     }
-    const spoil = (item: Item): Item => {
+    const spoil = (item: Item, mul: number): Item => {
       if (item.kind !== 'fruit') return item
-      rot(item)
+      rot(item, mul)
       if (item.freshness > 0) return item
       return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count }
     }
-    const slot = (s: Slot) => {
+    const slots = (mul: number) => (s: Slot) => {
       if (s.kind !== 'hold') return
-      s.item = spoil(s.item)
+      s.item = spoil(s.item, mul)
     }
+    const open = slots(1)
+    const chilled = slots(FREEZER_ROT_MUL)
     this.seats.forEach(s => {
       if (s.presence === 'away') return
-      slot(s.hand)
-      s.inventory.forEach(slot)
+      open(s.hand)
+      s.inventory.forEach(open)
     })
     this.drops.forEach(d => {
-      d.item = spoil(d.item)
+      d.item = spoil(d.item, 1)
     })
     for (const at of this.stores.values()) {
       const c = this.cell(at)
-      if (c.kind === 'chest') c.slots.forEach(slot)
+      if (c.kind === 'chest') c.slots.forEach(open)
+      if (c.kind === 'freezer') c.slots.forEach(chilled)
     }
     this.vehicles.forEach(v => {
-      if (v.kind === 'quad') v.slots.forEach(slot)
+      if (v.kind === 'quad') v.slots.forEach(open)
     })
     this.trailers.forEach(t => {
-      if (t.kind === 'harvest') t.slots.forEach(slot)
+      if (t.kind === 'harvest') t.slots.forEach(open)
     })
   }
 
@@ -5027,9 +4971,24 @@ export class World {
     })
   }
 
+  grassCount(): number {
+    return this.owned.reduce((n, id) => {
+      const { col0, row0, col1, row1 } = chunkRect(id)
+      let hit = 0
+      for (let row = row0; row < row1; row++) {
+        for (let col = col0; col < col1; col++) {
+          const c = this.cell({ col, row })
+          if (c.kind === 'untilled' && c.cover.kind === 'grass') hit += 1
+        }
+      }
+      return n + hit
+    }, 0)
+  }
+
   private sproutGrass(): boolean {
     const mul = weedMul(this.weather(this.clock.day))
     if (mul === 0) return false
+    if (this.grassCount() >= CHUNK * this.owned.length) return false
     const grass = this.rng.stream('grass')
     const ownedCellCount = this.owned.length * CHUNK * CHUNK
     if (!(Math.min(1, ramped(GRASS_CHANCE, this.bigTicks) * ownedCellCount) * mul > grass.at(this.bigTicks))) return false
@@ -5111,19 +5070,17 @@ export class World {
   }
 
   private dropTreeFruit(t: Tree): boolean {
-    const below = { col: t.base.col, row: t.base.row + 1 }
-    const seen = new Set<string>()
-    const spots = [...frontOf({ col: t.base.col, row: t.base.row }), ...frontOf(below)]
-    const hit = spots.find(p => {
-      const k = `${p.col},${p.row}`
-      if (seen.has(k)) return false
-      seen.add(k)
+    const open = TREE_DROP_ROWS.flatMap(dr =>
+      TREE_DROP_COLS.map(dc => ({ col: t.base.col + dc, row: t.base.row + dr })),
+    ).filter(p => {
       if (p.col === t.base.col && (p.row === t.base.row || p.row === t.base.row + 1)) return false
       if (!this.inWorld(p)) return false
       return isPlot(this.cell(p))
     })
-    if (hit === undefined) return false
-    const rarity = rollRarity(this.rng.stream('fruit').next())
+    if (open.length === 0) return false
+    const fruit = this.rng.stream('fruit')
+    const hit = open[Math.floor(fruit.next() * open.length)]
+    const rarity = rollRarity(fruit.next())
     const sale = CROPS[t.species].sale * RARITY_SALE[rarity]
     this.drops.push({
       at: { ...hit },
@@ -6086,7 +6043,7 @@ function emptyBucketBlocked(w: World, at: Coord): boolean {
 
 export function fillable(w: World, at: Coord): boolean {
   const c = w.cell(at)
-  if (c.kind === 'pump' || c.kind === 'rain-tank') return true
+  if (c.kind === 'pump' || c.kind === 'rain-tank' || c.kind === 'well') return true
   if (c.kind !== 'tap') return false
   const net = w.netOfCell(c.base)
   return net !== undefined && net.sources.length > 0

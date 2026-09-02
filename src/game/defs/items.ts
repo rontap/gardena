@@ -51,6 +51,7 @@ export const COMPOST_VALUE = {
 } as const
 
 export const FREEZER_SLOTS = 6
+export const FREEZER_ROT_MUL = 0.2
 
 export const FREEZER_LARGE_SLOTS = 9
 export const SILO_SEED_CAP = 100
@@ -68,7 +69,7 @@ export const JAM_SUGAR = 0.4
 export const JAM_SECONDS = 40
 export const JAM_BUFFER = 4
 export const STILL_CAP = 10
-export const STILL_WATER = 1
+export const STILL_WATER = 2
 export const STILL_SECONDS = 160
 export const BARREL_CAP = 5
 export const BARREL_MATURE = DAY_SECONDS

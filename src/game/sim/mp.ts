@@ -5,7 +5,7 @@ import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.11
+export const PROTOCOL = 2.12
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -300,7 +300,6 @@ export function permit(cmd: Cmd): boolean {
     case Act.placePipe:
     case Act.placeSprinkler:
     case Act.clickValve:
-    case Act.clickWell:
     case Act.rotatePlace:
       // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
       return false

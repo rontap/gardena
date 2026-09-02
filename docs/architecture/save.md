@@ -2,7 +2,7 @@
 
 Farm snapshot. Not `Cmd[]`. Not a replay. Join / resync uses this `Save`. Type: `sim/save.ts`. Live world: [[architecture/world]]. Log: [[architecture/log]]. Net: [[architecture/net]].
 
-Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; grinder hopper `crop`/`rarity`/`units`/`progress`/`n`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`; traffic-light `inn`/`out`/`hold`. `World.routes` `World.nextRouteId`; per vehicle `route`/`cursor`/`running`/`dwell`. `Tree.tended`. `weed-spray` `liters`+`capacityLiters`. `World.clearance`.
+Parse identity: `game === "gardena"`. File `version` is the dump number. Dump identity is [[GLOBAL_VERSION]]. `World.wires[]` already a list. Mill/jam/still `inn`; grinder hopper `crop`/`rarity`/`units`/`progress`/`n`; chest/freezer/seed-silo/additive-store `out` `hold`. Pulser `prev`/`out`; counter `n`/`count`/`out`; day flags + `out`/`hold`; lever `inn`/`prev`/`on`/`out`; traffic-light `inn`/`out`/`hold`. `World.routes` `World.nextRouteId`; per vehicle `route`/`cursor`/`running`/`dwell`. `Tree.tended`. `weed-spray` `liters`+`capacityLiters`. `World.clearance`. Well is a `SaveCell` like pump / rain-tank, carrying `base` + `stored`; there is no `wells` table.
 
 ## RFC — versions (active)
 

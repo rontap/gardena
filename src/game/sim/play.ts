@@ -35,7 +35,7 @@ export type TurnAction =
   | { task: 'build'; sku: SkuId; at: Coord }
   | { task: 'build'; sku: SkuId; edge: Edge }
   | { task: 'buy'; sku: SkuId; packs?: boolean }
-  | { task: 'delete'; what: 'pipe' | 'well' | 'smart'; edge: Edge }
+  | { task: 'delete'; what: 'pipe' | 'smart'; edge: Edge }
   | { task: 'delete'; what: 'sprinkler' | 'building'; at: Coord }
   | { task: 'valve'; edge: Edge }
   | { task: 'research'; id: ResearchId }
@@ -111,7 +111,7 @@ export type TurnReport = Snapshot & {
   days: Recap[]
 }
 
-const EDGE_SKUS: readonly SkuId[] = ['buy-pipe', 'buy-valve', 'buy-well']
+const EDGE_SKUS: readonly SkuId[] = ['buy-pipe', 'buy-valve']
 
 const SPRINKLER_SKUS: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
 
@@ -324,9 +324,9 @@ function place(world: World, sku: SkuId, at: Coord | undefined, edge: Edge | und
   if (fail !== undefined) return fail
   if (EDGE_SKUS.includes(sku)) {
     if (edge === undefined) return 'Needs an edge'
-    const before = world.hasPipe(edge) || world.hasWell(edge)
+    const before = world.hasPipe(edge)
     world.placePipe(edge)
-    const after = world.hasPipe(edge) || world.hasWell(edge)
+    const after = world.hasPipe(edge)
     world.cancelPlace()
     return sku === 'buy-valve' ? (world.hasValve(edge) ? '' : 'no effect') : before === after ? 'no effect' : ''
   }
@@ -347,9 +347,6 @@ function remove(world: World, a: Extract<TurnAction, { task: 'delete' }>): strin
   switch (a.what) {
     case 'pipe':
       world.deletePipe(a.edge)
-      break
-    case 'well':
-      world.deleteWell(a.edge)
       break
     case 'sprinkler':
       world.deleteSprinkler(a.at)
@@ -618,9 +615,9 @@ play.turn([...TurnAction]) runs the list, then plays out queued work until idle.
                                                toggle tend weed-spray consign inventory
   { task:'click', at }                         whatever the tile affords - see play.look(at)
   { task:'build', sku, at }                    buildings, sensors, sprinklers
-  { task:'build', sku, edge }                  buy-pipe buy-valve buy-well
+  { task:'build', sku, edge }                  buy-pipe buy-valve
   { task:'buy', sku, packs? }
-  { task:'delete', what, at|edge }             pipe well smart sprinkler building
+  { task:'delete', what, at|edge }             pipe smart sprinkler building
   { task:'valve', edge }
   { task:'research', id }
   { task:'market', op:'sellAll' }

@@ -208,6 +208,15 @@ export class Tap {
   }
 }
 
+export class Well {
+  readonly kind = 'well' as const
+  readonly base: RectBase
+  readonly water = new Reservoir('well')
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
 export class Rock {
   readonly kind = 'rock' as const
   readonly base: RectBase
@@ -374,11 +383,7 @@ export class SiloProduce {
   }
 }
 
-/**
- * Shared contract for storage buildings: a capacity and the flag that marks which
- * instance a shop purchase flows into. Only one default exists per store kind today
- * and none are buyable, but `useDefault` is the seam multiple stores will hang off.
- */
+
 export abstract class Store {
   readonly base: RectBase
   readonly cap: number

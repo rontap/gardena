@@ -3,11 +3,12 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS } from '../defs/crops.ts'
 import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
-import { ANNUAL_IDS, packSku, type AnnualId } from '../sim/ids.ts'
-import { cropName } from '../sim/item.ts'
+import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
+import { cropName, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { cropInner, faceGfx, rarityInner, ripeGroup } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
+import { gateLine, rowState } from './sku-card.tsx'
 import { Bar, Coin, Frame } from './frame.tsx'
 
 const RARITY_LABEL: { readonly [K in Rarity]: string } = {
@@ -214,44 +215,106 @@ function SeedTip({ world, crop, rarity }: { world: World; crop: AnnualId; rarity
   )
 }
 
+const ADDITIVE_SKU: { readonly [K in AdditiveId]: SkuId | 'none' } = {
+  fertilizer: 'buy-fertilizer',
+  synth: 'buy-synth-fertilizer',
+  compost: 'none',
+  'weed-spray': 'buy-weed-spray',
+}
+
+function AdditiveTip({ world, id }: { world: World; id: AdditiveId }) {
+  const sku = ADDITIVE_SKU[id]
+  if (sku === 'none') return null
+  const state = rowState(world, sku)
+  return (
+    <CalloutHover
+      title={ADDITIVE_LABEL[id]}
+      description={
+        <>
+          <span className="flex items-center gap-1">
+            <Coin n={world.skuPrice(sku)} /> for {ADDITIVE_BAG[id]} L, delivered straight here
+          </span>
+          {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(world, sku, state)}</span>}
+        </>
+      }
+    />
+  )
+}
+
+function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: boolean) => void }) {
+  const off = rowState(world, sku) !== 'ok'
+  return (
+    <button
+      type="button"
+      aria-label={`Buy ${skuLabel(sku)}`}
+      aria-disabled={off}
+      onPointerEnter={() => onHot(true)}
+      onPointerLeave={() => onHot(false)}
+      onFocus={() => onHot(true)}
+      onBlur={() => onHot(false)}
+      onClick={() => {
+        if (off) return
+        world.buy(sku)
+      }}
+      className={`flex w-20 shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2 ${
+        off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+      }`}
+    >
+      <span className="text-xs font-semibold">Buy</span>
+      <span className="text-sm leading-none">
+        <Coin n={world.skuPrice(sku)} />
+      </span>
+    </button>
+  )
+}
+
 export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
+  const [hot, setHot] = useState<AdditiveId | undefined>(undefined)
   const cell = world.cell(at)
   if (cell.kind !== 'additive-store') return null
   return (
-    <Shell title="Additive store" onClose={onClose} className="w-[30rem]">
+    <Shell
+      title="Additive store"
+      onClose={onClose}
+      className="w-[30rem]"
+      aside={hot === undefined ? undefined : <AdditiveTip world={world} id={hot} />}
+    >
       <Capacity hint="Click to fill a bag." used={round(cell.used)} cap={cell.cap} unit="L" />
       <div className="flex flex-col gap-1.5">
         {ADDITIVE_IDS.map(id => {
           const liters = cell.litersOf(id)
           const off = liters <= 0
+          const sku = ADDITIVE_SKU[id]
           return (
-            <button
-              key={id}
-              type="button"
-              aria-disabled={off}
-              onClick={() => {
-                if (off) return
-                world.takeAdditive(id)
-              }}
-              className={`flex w-full items-center gap-3 px-3 py-2 text-left ${
-                off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className={`h-10 w-10 shrink-0 ${off ? 'opacity-40' : ''}`}
-                dangerouslySetInnerHTML={{
-                  __html: faceGfx({ kind: id, liters: ADDITIVE_BAG[id], capacityLiters: ADDITIVE_BAG[id] }),
+            <div key={id} className="flex items-stretch gap-1.5">
+              <button
+                type="button"
+                aria-disabled={off}
+                onClick={() => {
+                  if (off) return
+                  world.takeAdditive(id)
                 }}
-              />
-              <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]}</span>
-              <span className="shrink-0 text-base tabular-nums">{round(liters)} L</span>
-            </button>
+                className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left ${
+                  off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                }`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-10 w-10 shrink-0 ${off ? 'opacity-40' : ''}`}
+                  dangerouslySetInnerHTML={{
+                    __html: faceGfx({ kind: id, liters: ADDITIVE_BAG[id], capacityLiters: ADDITIVE_BAG[id] }),
+                  }}
+                />
+                <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]}</span>
+                <span className="shrink-0 text-base tabular-nums">{round(liters)} L</span>
+              </button>
+              {sku !== 'none' && <BuyAdditive world={world} sku={sku} onHot={on => setHot(on ? id : undefined)} />}
+            </div>
           )
         })}
       </div>
       <div className="mt-2 text-sm text-ink/55">
-        {cell.used > 0 ? '' : 'Nothing stocked yet — buy fertilizer and it is delivered here. '}
+        {cell.used > 0 ? '' : 'Nothing stocked yet — buy a bag here or at the shop and it is delivered to these tanks. '}
         Walking up empties any bag you were carrying back into the tanks.
       </div>
     </Shell>

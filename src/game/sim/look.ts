@@ -6,6 +6,10 @@ import { TREE_NAME } from '../defs/trees.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
 import { corners, incident } from './pipe.ts'
+import type { Barrel } from './building.ts'
+import { barrelNeed, caskAgeMul, feedUnits } from './machine.ts'
+import { BARREL_MATURE } from '../defs/items.ts'
+import { DAY_SECONDS } from './clock.ts'
 import { isSensor } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
 import type { TileId } from './ids.ts'
@@ -23,7 +27,6 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   if (
     hit !== undefined &&
     (hit.kind === 'valve' ||
-      hit.kind === 'well' ||
       hit.kind === 'sprinkler-hud' ||
       hit.kind === 'port' ||
       hit.kind === 'delete-wire' ||
@@ -39,7 +42,6 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     place.kind === 'sku' &&
     (place.id === 'buy-pipe' ||
       place.id === 'buy-valve' ||
-      place.id === 'buy-well' ||
       place.id === 'buy-sprinkler' ||
       place.id === 'buy-sprinkler-vert' ||
       place.id === 'buy-sprinkler-large')
@@ -81,6 +83,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'pump') lines.push(`Pump - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'rain-tank') lines.push(`Rainwater tank - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'tap') lines.push('Tap')
+  else if (cell.kind === 'well') lines.push(`Well - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
   else if (cell.kind === 'rock') lines.push('Rock')
   else if (cell.kind === 'seed-silo') lines.push(`Seed silo - ${cell.used} of ${cell.cap} seeds`)
   else if (cell.kind === 'additive-store') lines.push(`Additive store - ${liters(cell.used)} of ${liters(cell.cap)}`)
@@ -90,7 +93,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'compost-box') lines.push('Compost box')
   else if (cell.kind === 'mill') lines.push('Mill')
   else if (cell.kind === 'still') lines.push('Pot still')
-  else if (cell.kind === 'barrel') lines.push('Barrel')
+  else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
   else if (cell.kind === 'jam') lines.push('Jam machine')
   else if (cell.kind === 'tree') {
     const name = `${TREE_NAME[cell.species]} tree`
@@ -122,7 +125,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   } else if (isSensor(cell)) {
     if (cell.kind === 'water-system') {
       const around = corners(occupiedCells(cell.base, world.owned)).some(v =>
-        incident(v).some(e => world.hasPipe(e) || world.hasWell(e)),
+        incident(v).some(e => world.hasPipe(e)),
       )
       if (!around) lines.push('Water-system sensor - no pipes around sensor!')
       else lines.push(`Water-system sensor - ${cell.out === 1 ? 'on' : 'off'}`)
@@ -176,6 +179,16 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     lines.push(world.prompt(at).text)
   }
   return lines.join('\n')
+}
+
+function barrelLine(c: Barrel): string {
+  if (c.crop === 'none') return 'Barrel - empty'
+  const need = barrelNeed(c.crop)
+  const n = feedUnits(c.feed)
+  if (n < need) return `Barrel - ${n}/${need} ${cropName(c.crop)}`
+  if (c.age < BARREL_MATURE) return `Barrel - maturing ${Math.floor((c.age / BARREL_MATURE) * 100)}%`
+  const mul = caskAgeMul(c.feed[0].rarity, c.age)
+  return `Barrel - aging ${Math.floor(c.age / DAY_SECONDS)}d, sells at ×${Number(mul.toFixed(2))}`
 }
 
 const TILE_NAME: { readonly [K in TileId]: string } = {

@@ -24,7 +24,6 @@ export type XY = [col: number, row: number]
 export const Act = {
   click: 'c',
   clickValve: 'v',
-  clickWell: 'e',
   enqueue: 'q',
   buy: 'b',
   buyPacks: 'p',
@@ -85,14 +84,12 @@ export type WorkerIn =
 export type Cmd =
   | { a: typeof Act.click; t: number; p: SeatId; c: XY }
   | { a: typeof Act.clickValve; t: number; p: SeatId; e: Edge }
-  | { a: typeof Act.clickWell; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.enqueue; t: number; p: SeatId; i: Intent }
   | { a: typeof Act.buy; t: number; p: SeatId; s: SkuId }
   | { a: typeof Act.buyPacks; t: number; p: SeatId; s: SkuId }
   | { a: typeof Act.placePipe; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.placeSprinkler; t: number; p: SeatId; s: Sprinkler }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'pipe'; e: Edge }
-  | { a: typeof Act.delete; t: number; p: SeatId; k: 'well'; e: Edge }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'sprinkler'; c: XY }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'building'; c: XY }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'wire'; from: WireEnd; to: WireEnd }

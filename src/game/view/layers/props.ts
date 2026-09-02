@@ -39,6 +39,7 @@ export class PropsLayer {
     })
     world.tanks.forEach(t => put('rain-tank', t.base.col, t.base.row))
     world.taps.forEach(t => put('tap', t.base.col, t.base.row))
+    world.wells.forEach(w => put('well', w.base.col, w.base.row))
     world.hangars.forEach(h => put('hangar', h.base.col, h.base.row))
     world.seedSilos.forEach(h => put('silo-seed', h.base.col, h.base.row))
     world.spraySilos.forEach(h => put('silo-spray', h.base.col, h.base.row))

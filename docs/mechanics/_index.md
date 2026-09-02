@@ -47,6 +47,7 @@ See [[canon]].
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
 | plants.annual | [[mechanics/plants]] |
+| plants.tree-foot | [[mechanics/plants]] |
 | plants.kinds | [[mechanics/plants]] |
 | trees.wild | [[mechanics/trees]] |
 | trees.yield | [[mechanics/trees]] |
@@ -90,6 +91,7 @@ See [[canon]].
 | research.gates | [[mechanics/research]] |
 | research.dispatch | [[mechanics/research]] |
 | research.variants | [[mechanics/research]] |
+| research.start | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
 | family.lens | [[mechanics/family]] |
 | family.skills | [[mechanics/family]] |
@@ -111,6 +113,11 @@ See [[canon]].
 | machines.io-pull | [[mechanics/machines]] |
 | machines.io-push | [[mechanics/machines]] |
 | machines.grind-hopper | [[mechanics/machines]] |
+| machines.recipe-source | [[mechanics/machines]] |
+| machines.recipe-water | [[mechanics/machines]] |
+| machines.recipe-compost | [[mechanics/machines]] |
+| machines.recipe-haste | [[mechanics/machines]] |
+| machines.mill-vanilla | [[mechanics/machines]] |
 | vehicles.kind | [[mechanics/vehicles]] |
 | vehicles.buy | [[mechanics/vehicles]] |
 | vehicles.surface | [[mechanics/vehicles]] |
@@ -181,6 +188,7 @@ See [[canon]].
 | view.vfx.drain | [[architecture/view]] |
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
+| world.pause | [[architecture/world]] |
 | save.parse | [[architecture/save]] |
 | save.nomigrate | [[architecture/save]] |
 | net.digest | [[architecture/net]] |

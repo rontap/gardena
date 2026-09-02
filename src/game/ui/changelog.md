@@ -1,3 +1,17 @@
+# 2.0.8 Almanac
+
+Almanac matches the farm, and the day waits while you read it.
+
+- 🔧 Changed ui: Almanac. previously olive sat with the annuals, now it sits with the trees.
+- 🔧 Changed ui: Almanac. previously a fruit page showed jam as its third picture, now it shows the jam, spirit, wine, cider, or oil that fruit makes.
+- 🔧 Changed mechanic: Pause. previously Family, Market, and Almanac left the day running, now they pause the farm unless you are in multiplayer.
+- 🚫 Removed item: Watermelon. Seeds and fruit are gone from the shop, the field, and the stall.
+- 🔧 Changed mechanic: Grape seeds. previously you had to finish Tomato or Watermelon seeds first, now Grape seeds sits on the research shelf from the first day.
+- 🚫 Removed item: Apple jam. Apples go to cider in the barrel.
+- 🔧 Changed building: Barrel. previously its recipe list showed grapes to wine only, now it also shows apples to cider.
+- 🔧 Changed building: Pot still. previously a batch drank 0.5 L, now it drinks 1 L.
+- 🔧 Changed building: Mill. previously extract came from grass only, now two vanilla fruits mill into three extract.
+
 # 2.0.4 Balance
 
 Rarity waits on Crop variants. Shop prices and machine times move.

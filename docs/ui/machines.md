@@ -19,9 +19,9 @@ Still 2×1. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer:
 | wrong locked | **Mill - {product} only** |
 | full (`units >= need`) | **Mill - full** |
 
-`need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15. `{product}`: sugar, olive oil, flour, extract.
+`need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15; vanilla `MILL_VANILLA_IN`. `{product}`: sugar, olive oil, flour, extract, vanilla extract. `millProductName('vanilla')` is **vanilla extract**. Grass name unchanged.
 
-Prompt dump legal: **Crush into sugar** | **Crush into olive oil** | **Crush into flour** | **Crush into extract**. `{ act: 'mill'; at }`.
+Prompt dump legal: **Crush into sugar** | **Crush into olive oil** | **Crush into flour** | **Crush into extract** | **Crush into vanilla extract**. `{ act: 'mill'; at }`.
 
 ## Seed grinder
 
@@ -78,7 +78,7 @@ Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge 
 
 `{fruit}` vs `JAM_IN` 5. Buffer vs `JAM_BUFFER` 4 L. `{crop}` / `{name}`: crop name; tomato **ketchup**. Buffer line while filling (with the fruit line). Working line alone.
 
-Prompt fruit dump: **Make jam** / **Make ketchup**. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`.
+Prompt fruit dump: **Make jam** / **Make ketchup**. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`. Apple fruit is refuse. Dump illegal. Prompt stays the look line. Not **Make jam**.
 
 ## Freezer
 

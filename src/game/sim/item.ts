@@ -102,6 +102,7 @@ export type Face =
   | { kind: 'valve' }
   | { kind: 'rain-tank' }
   | { kind: 'tap' }
+  | { kind: 'water' }
   | { kind: 'mill' }
   | { kind: 'jam-machine' }
   | { kind: 'still' }
@@ -207,6 +208,54 @@ export function toolName(hand: Hand): string {
   return 'Cut grass'
 }
 
+export function faceName(face: Face): string {
+  if (face.kind === 'water') return 'Water'
+  if (face.kind === 'pumpjack') return 'Pumpjack'
+  if (face.kind === 'chest') return 'Chest'
+  if (face.kind === 'grinder') return 'Seed grinder'
+  if (face.kind === 'compost-box') return 'Compost box'
+  if (face.kind === 'well') return 'Well'
+  if (face.kind === 'pipe') return 'Pipe'
+  if (face.kind === 'sprinkler') return 'Sprinkler'
+  if (face.kind === 'sprinkler-vert') return 'Vertical sprinkler'
+  if (face.kind === 'sprinkler-large') return 'Large sprinkler'
+  if (face.kind === 'valve') return 'Valve'
+  if (face.kind === 'rain-tank') return 'Rainwater tank'
+  if (face.kind === 'tap') return 'Tap'
+  if (face.kind === 'mill') return 'Mill'
+  if (face.kind === 'jam-machine') return 'Jam machine'
+  if (face.kind === 'still') return 'Pot still'
+  if (face.kind === 'barrel') return 'Barrel'
+  if (face.kind === 'freezer') return 'Freezer'
+  if (face.kind === 'hangar') return 'Vehicle hangar'
+  if (face.kind === 'silo-seed') return 'Seeding silo'
+  if (face.kind === 'silo-spray') return 'Spraying silo'
+  if (face.kind === 'silo-produce') return 'Produce silo'
+  if (face.kind === 'lever') return 'Lever'
+  if (face.kind === 'button') return 'Button'
+  if (face.kind === 'lamp') return 'Lamp'
+  if (face.kind === 'or') return 'OR gate'
+  if (face.kind === 'and') return 'AND gate'
+  if (face.kind === 'not') return 'NOT gate'
+  if (face.kind === 'pulser') return 'Pulser'
+  if (face.kind === 'counter') return 'Counter'
+  if (face.kind === 'sensor-water') return 'Water sensor'
+  if (face.kind === 'sensor-fert') return 'Fertilizer sensor'
+  if (face.kind === 'sensor-harvest') return 'Harvest sensor'
+  if (face.kind === 'sensor-day') return 'Day sensor'
+  if (face.kind === 'water-system') return 'Water-system sensor'
+  if (face.kind === 'vehicle-detector') return 'Vehicle detector'
+  if (face.kind === 'traffic-light') return 'Traffic light'
+  if (face.kind === 'delete') return 'Delete'
+  if (face.kind === 'fence') return 'Wooden fence'
+  if (face.kind === 'tile') {
+    if (face.tile === 'paved') return 'Paving slab'
+    if (face.tile === 'brick') return 'Brickwork'
+    return 'Cobblestone'
+  }
+  return toolName({ kind: 'hold', item: face })
+}
+
 export const CASK_NAME: { readonly [K in CaskId]: string } = {
   wine: 'Wine',
   cider: 'Cider',
@@ -287,8 +336,6 @@ export function skuLabel(id: SkuId): string {
       return 'Tomato seeds'
     case 'pack-raspberry':
       return 'Raspberry seeds'
-    case 'pack-watermelon':
-      return 'Watermelon seeds'
     case 'pack-grape':
       return 'Grape seeds'
     case 'pack-sugar-cane':
@@ -412,8 +459,6 @@ export function skuDesc(id: SkuId): string {
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('tomato') })
     case 'pack-raspberry':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('raspberry') })
-    case 'pack-watermelon':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('watermelon') })
     case 'pack-grape':
       return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('grape') })
     case 'pack-sugar-cane':
@@ -652,8 +697,6 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'seeds', crop: 'tomato', rarity: 'common', count: 5 }
     case 'pack-raspberry':
       return { kind: 'seeds', crop: 'raspberry', rarity: 'common', count: 5 }
-    case 'pack-watermelon':
-      return { kind: 'seeds', crop: 'watermelon', rarity: 'common', count: 5 }
     case 'pack-grape':
       return { kind: 'seeds', crop: 'grape', rarity: 'common', count: 5 }
     case 'pack-sugar-cane':

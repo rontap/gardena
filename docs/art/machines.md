@@ -53,7 +53,6 @@ Jar = skill-jam language. Ketchup is a bottle.
 | `item-jam-apricot.svg` | jar, ripe fill, apricot mark |
 | `item-jam-grape.svg` | jar, grape fill, cluster mark |
 | `item-jam-raspberry.svg` | jar, fruit-red fill, berry dots |
-| `item-jam-apple.svg` | jar, fruit-red fill, apple + leaf |
 | `item-jam-cherry.svg` | jar, roof fill, two cherries |
 | `item-ketchup.svg` | squeeze bottle, fruit-red |
 

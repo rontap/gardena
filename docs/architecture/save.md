@@ -74,7 +74,7 @@ After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `
 
 Join / resync: `parse` then stamp `World.now` from the wire. Same `Save`. Not a second snapshot.
 
-Camera, panels, hover, `Lens`: not in the file. New session.
+Camera, panels, hover, `Lens`, App overlay pause: not in the file. New session. Pause net flag not in the file.
 
 ## Now
 

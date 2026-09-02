@@ -4,7 +4,7 @@ import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
 import { CROPS, cropVariety } from '../defs/crops.ts'
 import { RARITY_SALE, raritySale, type Rarity } from '../defs/rarity.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
-import { ANNUAL_IDS, TREE_IDS, type TreeId } from '../sim/ids.ts'
+import { ANNUAL_IDS, TREE_IDS, type CaskId, type SpiritKind, type TreeId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
@@ -51,8 +51,6 @@ const SEED_IDS = [
   'wheat',
   'tomato',
   'raspberry',
-  'watermelon',
-  'olive',
   'grape',
   'vanilla',
   'sugar-cane',
@@ -323,7 +321,16 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
               })}
             </div>
             <div className="scroll-pane min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
-              <RowPane row={row} byId={byId} jam={world.done.has('unlock-preservatives')} tab={tab} />
+              <RowPane
+                row={row}
+                byId={byId}
+                done={{
+                  fermentation: world.done.has('unlock-fermentation'),
+                  grinder: world.done.has('unlock-grinder'),
+                  preservatives: world.done.has('unlock-preservatives'),
+                }}
+                tab={tab}
+              />
             </div>
           </div>
         </Tabs.Root>
@@ -332,15 +339,17 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
   )
 }
 
+type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boolean }
+
 function RowPane({
   row,
   byId,
-  jam,
+  done,
   tab,
 }: {
   row: ListRow
   byId: Map<string, CatalogEntry>
-  jam: boolean
+  done: AlmanacDone
   tab: AlmanacTab
 }) {
   switch (row.kind) {
@@ -349,7 +358,7 @@ function RowPane({
     case 'concept':
       return <ConceptPane id={row.id} />
     case 'sku':
-      return <Pane entry={skuEntry(byId, row.id)} jam={jam} />
+      return <Pane entry={skuEntry(byId, row.id)} done={done} />
   }
 }
 
@@ -856,11 +865,11 @@ function AutomationConcept() {
 
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
-function Pane({ entry, jam }: { entry: CatalogEntry; jam: boolean }) {
+function Pane({ entry, done }: { entry: CatalogEntry; done: AlmanacDone }) {
   const tree = TREE_IDS.find(id => id === entry.id)
-  if (tree !== undefined) return <TreePane id={tree} jam={jam} />
+  if (tree !== undefined) return <TreePane id={tree} done={done} />
   const crop = CROP_IDS.find(id => id === entry.id)
-  if (crop !== undefined) return <CropPane id={crop} jam={jam} />
+  if (crop !== undefined) return <CropPane id={crop} done={done} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
   const machine = MACHINE_IDS.find(m => m === entry.id)
   return (
@@ -925,7 +934,7 @@ function RarityTabs({ preview, onPreview }: { preview: Rarity; onPreview: (p: Ra
   )
 }
 
-function CropPane({ id, jam }: { id: CropId; jam: boolean }) {
+function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
   const d = CROPS[id]
   const [preview, setPreview] = useState<Rarity>('common')
   const stage = useCycle(3)
@@ -949,7 +958,7 @@ function CropPane({ id, jam }: { id: CropId; jam: boolean }) {
         <div className="mb-3 text-base leading-relaxed text-ink/70">Mill 5 cane into 2 L sugar.</div>
       ) : null}
       <RarityTabs preview={preview} onPreview={setPreview} />
-      <div className="mb-3 flex gap-3">
+      <div className="mb-3 flex flex-wrap gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
           <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: product }} />
         </div>
@@ -960,7 +969,10 @@ function CropPane({ id, jam }: { id: CropId; jam: boolean }) {
             dangerouslySetInnerHTML={{ __html: cropInner(id, STAGES[stage] === 'ripe' ? ripe : STAGES[stage]) }}
           />
         </div>
-        {jam && jamCrop !== undefined ? <JamPlate crop={jamCrop} /> : null}
+        {id === 'potato' && done.fermentation ? <SpiritPlate spirit="vodka" /> : null}
+        {id === 'wheat' && done.fermentation ? <SpiritPlate spirit="beer" /> : null}
+        {jamCrop !== undefined && done.preservatives ? <JamPlate crop={jamCrop} /> : null}
+        {id === 'grape' && done.fermentation ? <CaskPlate cask="wine" /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -1023,7 +1035,7 @@ function treeRotMax(): number {
   return Math.max(...TREE_IDS.map(id => CROPS[id].rotSeconds))
 }
 
-function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
+function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
   const d = CROPS[id]
   const def = TREES[id]
   const [preview, setPreview] = useState<Rarity>('common')
@@ -1041,7 +1053,7 @@ function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
         Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.
       </div>
       <RarityTabs preview={preview} onPreview={setPreview} />
-      <div className="mb-3 flex gap-3">
+      <div className="mb-3 flex flex-wrap gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
           <svg
             className="h-16 w-16"
@@ -1062,7 +1074,9 @@ function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
         <div className="flex h-20 w-10 items-center justify-center bg-grass">
           <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage]) }} />
         </div>
-        {jam && (id === 'apple' || id === 'apricot' || id === 'cherry') ? <JamPlate crop={id} /> : null}
+        {id === 'apple' && done.fermentation ? <CaskPlate cask="cider" /> : null}
+        {(id === 'apricot' || id === 'cherry') && done.preservatives ? <JamPlate crop={id} /> : null}
+        {id === 'olive' && done.grinder ? <OilPlate /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -1090,18 +1104,28 @@ function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
   )
 }
 
-function JamPlate({ crop }: { crop: JamCrop }) {
+function FacePlate({ html }: { html: string }) {
   return (
     <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-      <svg
-        className="h-16 w-16"
-        viewBox="0 0 24 24"
-        dangerouslySetInnerHTML={{
-          __html: faceGfx({ kind: 'jam', crop, count: 1, unitSale: JAM_SALE[crop] }),
-        }}
-      />
+      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   )
+}
+
+function JamPlate({ crop }: { crop: JamCrop }) {
+  return <FacePlate html={faceGfx({ kind: 'jam', crop, count: 1, unitSale: JAM_SALE[crop] })} />
+}
+
+function SpiritPlate({ spirit }: { spirit: SpiritKind }) {
+  return <FacePlate html={faceGfx({ kind: 'spirit', spirit, rarity: 'common', count: 1, unitSale: 0 })} />
+}
+
+function CaskPlate({ cask }: { cask: CaskId }) {
+  return <FacePlate html={faceGfx({ kind: 'cask', cask, rarity: 'common', count: 1, unitSale: 0 })} />
+}
+
+function OilPlate() {
+  return <FacePlate html={faceGfx({ kind: 'oil', count: 1, unitSale: 0 })} />
 }
 
 function Stat({

@@ -48,7 +48,6 @@ import potato from '../../assets/crops/crop-potato.svg?raw'
 import wheat from '../../assets/crops/crop-wheat.svg?raw'
 import tomato from '../../assets/crops/crop-tomato.svg?raw'
 import raspberry from '../../assets/crops/crop-raspberry.svg?raw'
-import watermelon from '../../assets/crops/crop-watermelon.svg?raw'
 import apple from '../../assets/crops/crop-apple.svg?raw'
 import grape from '../../assets/crops/crop-grape.svg?raw'
 import vanilla from '../../assets/crops/crop-vanilla.svg?raw'
@@ -62,7 +61,6 @@ import fruitPotato from '../../assets/fruits/fruit-potato.svg?raw'
 import fruitWheat from '../../assets/fruits/fruit-wheat.svg?raw'
 import fruitTomato from '../../assets/fruits/fruit-tomato.svg?raw'
 import fruitRaspberry from '../../assets/fruits/fruit-raspberry.svg?raw'
-import fruitWatermelon from '../../assets/fruits/fruit-watermelon.svg?raw'
 import fruitApple from '../../assets/fruits/fruit-apple.svg?raw'
 import fruitOlive from '../../assets/fruits/fruit-olive.svg?raw'
 import fruitGrape from '../../assets/fruits/fruit-grape.svg?raw'
@@ -172,7 +170,6 @@ import itemWine from '../../assets/items/item-wine.svg?raw'
 import itemJamApricot from '../../assets/items/item-jam-apricot.svg?raw'
 import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
 import itemJamRaspberry from '../../assets/items/item-jam-raspberry.svg?raw'
-import itemJamApple from '../../assets/items/item-jam-apple.svg?raw'
 import itemJamCherry from '../../assets/items/item-jam-cherry.svg?raw'
 import itemKetchup from '../../assets/items/item-ketchup.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
@@ -406,7 +403,6 @@ const CROP: { readonly [K in CropId]: string } = {
   wheat,
   tomato,
   raspberry,
-  watermelon,
   apple,
   grape,
   vanilla,
@@ -422,7 +418,6 @@ const FRUIT: { readonly [K in CropId]: string } = {
   wheat: fruitWheat,
   tomato: fruitTomato,
   raspberry: fruitRaspberry,
-  watermelon: fruitWatermelon,
   apple: fruitApple,
   grape: fruitGrape,
   vanilla: fruitVanilla,
@@ -618,7 +613,6 @@ async function load(): Promise<void> {
   put('jam-apricot', itemJamApricot)
   put('jam-grape', itemJamGrape)
   put('jam-raspberry', itemJamRaspberry)
-  put('jam-apple', itemJamApple)
   put('jam-cherry', itemJamCherry)
   put('ketchup', itemKetchup)
   put('oil', itemOil)

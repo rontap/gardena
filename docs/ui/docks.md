@@ -30,13 +30,15 @@ Research: trees **Plants** **Land** **Automation** **Trade** on the rail, in tha
 
 A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A shown card is clickable when `researchOpen` — `requires` is AND. Gated is a disabled face, and `why` names what is missing: *Needs {names joined by and} first.* `unlock-smart-irrigation` and `unlock-heirloom` can be shown and shut. `why` order: done, running, gated, another job, cannot afford. [[mechanics/research]]
 
-Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants: **Synthetic fertilizer**, **Tomato seeds**, **Watermelon seeds**; **Crop variants** after tomato, watermelon, or irrigation; **Grape seeds** after either tomato or watermelon; **Raspberry seeds** after any basic fruit; **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla and no olive research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Chest**, **Machinery**; **Fermentation** after the grinder.
+Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants start shelf: **Synthetic fertilizer**, **Tomato seeds**, **Grape seeds**. Grape seeds on the shelf from the first day. **Crop variants** after tomato, grape, or irrigation. **Raspberry seeds** after tomato or grape. **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla, no olive, no watermelon research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Chest**, **Machinery**; **Fermentation** after the grinder.
 
 **×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace` and search query cleared. It does not touch the lens: a tool lens ends with the arming, and a picked lens is the Lens dock’s business — [[ui/lens]]. Selecting Build **Sensors** (`logic`) is not a close: `onShelf('logic')` → sets and locks `sensors`, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
 
 ## Overlays
 
 [[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
+
+Solo (`role === 'off'`): these three pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Shop / Research / Build / Cheat / Lens do not auto-pause. [[ui/hud]]
 
 Every dialog and overlay closes on backdrop, except recap until a member is picked, and except guest recap (no dismiss). Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 

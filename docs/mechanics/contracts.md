@@ -263,7 +263,7 @@ At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at
 
 Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. Header `CompanyId` is this union.
 
-`GoodClass` covers every pool member. Fruit annuals are that set, not root/grain, not `sugar-cane`. Trees are `TreeId`. `SpiritKind` is not in any pool.
+`GoodClass` covers every pool member. `FruitAnnualId` = tomato | raspberry | grape | vanilla. Not root/grain, not `sugar-cane`. Olive is `TreeId`. Trees are `TreeId`. `SpiritKind` is not in any pool. `JamId` from `JAM_CROPS` 5. No apple jam.
 
 `defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods, rarity or difficulty. Sector = `region`.
 

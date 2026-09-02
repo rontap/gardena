@@ -4,7 +4,6 @@ export type AnnualId =
   | 'wheat'
   | 'tomato'
   | 'raspberry'
-  | 'watermelon'
   | 'grape'
   | 'vanilla'
   | 'sugar-cane'
@@ -19,7 +18,6 @@ export const ANNUAL_IDS: readonly AnnualId[] = [
   'wheat',
   'tomato',
   'raspberry',
-  'watermelon',
   'grape',
   'vanilla',
   'sugar-cane',
@@ -44,7 +42,7 @@ export type TileId = 'paved' | 'brick' | 'cobble'
 
 export type SpiritKind = 'vodka' | 'beer' | 'brandy' | 'mixed'
 
-export type JamCrop = 'apricot' | 'grape' | 'raspberry' | 'apple' | 'cherry' | 'tomato'
+export type JamCrop = 'apricot' | 'grape' | 'raspberry' | 'cherry' | 'tomato'
 
 export type StillCrop = 'potato' | 'wheat' | 'apricot'
 
@@ -58,19 +56,19 @@ export const CASK_IDS: readonly CaskId[] = ['wine', 'cider']
 
 export const CASK_OF: { readonly [K in BarrelCrop]: CaskId } = { grape: 'wine', apple: 'cider' }
 
-export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass'
+export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla'
 
 export type JamId = `jam-${JamCrop}`
 
 export const SPIRIT_KINDS: readonly SpiritKind[] = ['vodka', 'beer', 'brandy', 'mixed']
 
-export const JAM_CROPS: readonly JamCrop[] = ['apricot', 'grape', 'raspberry', 'apple', 'cherry', 'tomato']
+export const JAM_CROPS: readonly JamCrop[] = ['apricot', 'grape', 'raspberry', 'cherry', 'tomato']
 
 export const JAM_IDS: readonly JamId[] = JAM_CROPS.map(c => `jam-${c}` as JamId)
 
 export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
 
-export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass']
+export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla']
 
 export type StallGoodId = CropId | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract'
 
@@ -93,7 +91,6 @@ export type PlayerSkillId =
   | 'better-wheat'
   | 'better-tomato'
   | 'better-raspberry'
-  | 'better-watermelon'
   | 'better-grape'
   | 'better-vanilla'
   | 'better-sugar-cane'
@@ -125,7 +122,6 @@ export type ResearchId =
   | 'unlock-tomato'
   | 'unlock-grape'
   | 'unlock-raspberry'
-  | 'unlock-watermelon'
   | 'unlock-heirloom'
   | 'unlock-better-tools'
   | 'unlock-irrigation'
@@ -157,7 +153,6 @@ export type SkuId =
   | 'pack-wheat'
   | 'pack-tomato'
   | 'pack-raspberry'
-  | 'pack-watermelon'
   | 'pack-grape'
   | 'pack-sugar-cane'
   | 'buy-shovel'

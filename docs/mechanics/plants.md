@@ -10,7 +10,7 @@ Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertToler
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack rarity is `common` unless `unlock-crop-variants` is done and the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
+Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack rarity is `common` unless `unlock-crop-variants` is done and the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Olive is `TreeId`. Trees have no pack.
 
 Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the three starting seeds and the one wild apple are the only ones not won from a contract.
 
@@ -133,13 +133,13 @@ Shovel: `{ kind: 'tree-seed'; tree: species }`, both cells bare soft.
 
 `plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, `unitSale = stats.sale`, plot `empty` same soil. Same crop+rarity in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed. Shovel dead, rotten, weed, or grass: no drop.
 
-`plants.packs` — Crop stats are `CROPS`. Shop packs are common unless `unlock-crop-variants` done and player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. No tree pack.
+`plants.packs` — Crop stats are `CROPS`. Shop packs are common unless `unlock-crop-variants` done and player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). No tree pack. No olive pack.
 
 `plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`.
 
 `plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, not `RARITY_SALE`. Common vanilla sale < raspberry.
 
-`plants.annual` — `Plant.crop` is `AnnualId`. Tree seed on a tilled plot is a no-op.
+`plants.annual` — `Plant.crop` is `AnnualId`. `AnnualId` is carrot potato wheat tomato raspberry grape vanilla sugar-cane. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.
 
 `plants.tree-foot` — Planting a tree seed at `at` puts the tree's foot on `at` and its `base` on `{ col: at.col, row: at.row - 1 }`. `at.row + 1` is untouched.
 

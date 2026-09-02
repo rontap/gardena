@@ -12,7 +12,7 @@ function run(w: World, seconds: number): void {
 const at = { col: 20, row: 20 }
 const box = { col: 22, row: 20 }
 
-function drownTest(crop: 'carrot' | 'tomato' | 'watermelon'): string {
+function drownTest(crop: 'carrot' | 'tomato'): string {
   const w = new World(7)
   const soil = new Soil(SOIL_WATER_MAX, 1)
   w.setCell(at, { kind: 'growing', soil, plant: new Plant(crop, 'common') })
@@ -138,7 +138,6 @@ function compostDropTest(): string {
 void makeCompost
 console.log(drownTest('carrot'))
 console.log(drownTest('tomato'))
-console.log(drownTest('watermelon'))
 console.log(wiltTest())
 console.log(happyTest())
 console.log(starveTest())

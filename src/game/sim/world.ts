@@ -2815,7 +2815,8 @@ export class World {
       made.kind === 'sensor-day' ||
       made.kind === 'water-system' ||
       made.kind === 'vehicle-detector' ||
-      made.kind === 'traffic-light'
+      made.kind === 'traffic-light' ||
+      made.kind === 'water'
     ) {
       return
     }

@@ -6,6 +6,8 @@ Three **cards**, not three loose columns — `grid-cols-3 gap-3`, each card `bg-
 
 HUD **Family** toggles it. × closes. Esc closes. Backdrop pointer-down on the dim closes. Selected on the ribbon while open.
 
+Solo (`role === 'off'`): open pauses the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. [[ui/hud]]
+
 Guest: overlay opens. Offers not clickable. [[ui/multiplayer]]
 
 ## Cards

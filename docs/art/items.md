@@ -13,3 +13,9 @@ Steel/iron can, cottage leaf mark (same glyph language as `item-fertilizer`). In
 `ui-research-crop-variants.svg` — viewBox `0 0 24 24`. Two quality marks: uncommon `leaf` left, rare `water` right. Crop variants research face. Not heirloom gold.
 
 Assumption: unnamed synth dark is water on the research face.
+
+## Water
+
+`ui-water.svg` — viewBox `0 0 24 24`. Waterdroplet. Recipe still input. Not the tap. Not `overlay-water`.
+
+Ink silhouette, water fill, house highlight. Same droplet language as `overlay-water`, item-slot size. Face `{ kind: 'water' }`. Chrome only.

@@ -10,7 +10,7 @@ Illegal: `better-*` on `TreeId`. Illegal: player owns `saleswoman` — owned map
 
 `SKILLS` in `defs/skills.ts`. Not on `World`. `maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. Dummy: `forecast`. `seed-bank` max 5.
 
-Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. `better-carrot` `better-potato` `better-wheat` `seed-bank` need `unlock-crop-variants`. Crop `better-*` for researched crops need the matching research. `vanilla-tending` needs `unlock-raspberry`. `better-vanilla` needs `vanilla-tending`. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. `haggling` is `hidden`. Else none.
+Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. `better-carrot` `better-potato` `better-wheat` `seed-bank` need `unlock-crop-variants`. Crop `better-*` for researched crops need the matching research. `better-grape` needs `unlock-grape`. `better-vanilla` needs `unlock-raspberry`. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. `haggling` is `hidden`. Else none. No `better-*` on `TreeId`.
 
 Carrot / potato / wheat better: always eligible until owned.
 

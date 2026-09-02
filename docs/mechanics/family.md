@@ -61,11 +61,8 @@ Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: another 
 | `haggling` | hidden — never offered |
 | `better-tomato` | research `unlock-tomato` done |
 | `better-raspberry` | research `unlock-raspberry` done |
-| `better-watermelon` | research `unlock-watermelon` done |
-| `vanilla-tending` | research `unlock-raspberry` done |
-| `better-olive` | research `unlock-olive` done |
 | `better-grape` | research `unlock-grape` done |
-| `better-vanilla` | player owns `vanilla-tending` |
+| `better-vanilla` | research `unlock-raspberry` done |
 | `better-sugar-cane` | research `unlock-fermentation` done |
 | `bulk-up` | none |
 | `driving-classes` | research `unlock-vehicles` done |
@@ -131,7 +128,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
 - forecast: dummy
 
-Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` on husband.
+Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` on husband. `vanilla-tending` is not a skill.
 
 ## Invariants
 
@@ -139,7 +136,7 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 
 `family.lens` — Water lens only if husband owns `water-study`. Land lens if husband owns `land-study`. Vehicle interactions lens if `unlock-vehicles` done.
 
-`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per rank on `World.stackMax`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.
+`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per rank on `World.stackMax`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-vanilla` gate `unlock-raspberry`. No `better-*` on `TreeId`. `HusbandSkillId`: `machinery`, `haggling`. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.
 
 `family.jam-rot` — `jam` rank N: fruit with freshness `< 0.5` rots `15% × N` slower. Ripe plant and picked fruit. Freezer skips.
 

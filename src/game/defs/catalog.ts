@@ -24,6 +24,7 @@ import {
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   MILL_IN,
+  MILL_VANILLA_IN,
   MILL_WORK,
   JAM_IN,
   JAM_SECONDS,
@@ -377,7 +378,11 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'mill',
       title: 'Mill',
       icon: { kind: 'mill' },
-      blurb: fill('Hopper mill. ${in} cane, olive or wheat crush in ${work}s.', { in: MILL_IN, work: MILL_WORK }),
+      blurb: fill('Hopper mill. ${in} cane, olive or wheat, or ${vanilla} vanilla crush in ${work}s.', {
+        in: MILL_IN,
+        vanilla: MILL_VANILLA_IN,
+        work: MILL_WORK,
+      }),
     },
     {
       id: 'still',

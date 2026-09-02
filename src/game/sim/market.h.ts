@@ -30,7 +30,7 @@ export type CompanyId =
   | 'mercanova'
   | 'intercrop'
 
-export type FruitAnnualId = 'tomato' | 'raspberry' | 'watermelon' | 'olive' | 'grape' | 'vanilla'
+export type FruitAnnualId = 'tomato' | 'raspberry' | 'olive' | 'grape' | 'vanilla'
 
 export type GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | CaskId
 

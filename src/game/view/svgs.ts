@@ -4,7 +4,6 @@ import potato from '../../assets/crops/crop-potato.svg?raw'
 import wheat from '../../assets/crops/crop-wheat.svg?raw'
 import tomato from '../../assets/crops/crop-tomato.svg?raw'
 import raspberry from '../../assets/crops/crop-raspberry.svg?raw'
-import watermelon from '../../assets/crops/crop-watermelon.svg?raw'
 import apple from '../../assets/crops/crop-apple.svg?raw'
 import grape from '../../assets/crops/crop-grape.svg?raw'
 import vanilla from '../../assets/crops/crop-vanilla.svg?raw'
@@ -14,7 +13,6 @@ import fruitPotato from '../../assets/fruits/fruit-potato.svg?raw'
 import fruitWheat from '../../assets/fruits/fruit-wheat.svg?raw'
 import fruitTomato from '../../assets/fruits/fruit-tomato.svg?raw'
 import fruitRaspberry from '../../assets/fruits/fruit-raspberry.svg?raw'
-import fruitWatermelon from '../../assets/fruits/fruit-watermelon.svg?raw'
 import fruitApple from '../../assets/fruits/fruit-apple.svg?raw'
 import fruitOlive from '../../assets/fruits/fruit-olive.svg?raw'
 import fruitGrape from '../../assets/fruits/fruit-grape.svg?raw'
@@ -41,7 +39,6 @@ import itemWine from '../../assets/items/item-wine.svg?raw'
 import itemJamApricot from '../../assets/items/item-jam-apricot.svg?raw'
 import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
 import itemJamRaspberry from '../../assets/items/item-jam-raspberry.svg?raw'
-import itemJamApple from '../../assets/items/item-jam-apple.svg?raw'
 import itemJamCherry from '../../assets/items/item-jam-cherry.svg?raw'
 import itemKetchup from '../../assets/items/item-ketchup.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
@@ -150,6 +147,7 @@ import itemSprinklerLarge from '../../assets/items/item-sprinkler-large.svg?raw'
 import itemValve from '../../assets/items/item-valve.svg?raw'
 import itemRainTank from '../../assets/items/item-rain-tank.svg?raw'
 import itemTap from '../../assets/items/item-tap.svg?raw'
+import uiWater from '../../assets/ui/ui-water.svg?raw'
 import itemDelete from '../../assets/items/item-delete.svg?raw'
 import house from '../../assets/props/prop-house.svg?raw'
 import pump from '../../assets/props/prop-pump.svg?raw'
@@ -288,7 +286,6 @@ const CROPS: { readonly [K in CropId]: string } = {
   wheat,
   tomato,
   raspberry,
-  watermelon,
   apple,
   grape,
   vanilla,
@@ -304,7 +301,6 @@ const FRUIT: { readonly [K in CropId]: string } = {
   wheat: fruitWheat,
   tomato: fruitTomato,
   raspberry: fruitRaspberry,
-  watermelon: fruitWatermelon,
   apple: fruitApple,
   grape: fruitGrape,
   vanilla: fruitVanilla,
@@ -354,6 +350,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'valve') return inner(itemValve)
   if (item.kind === 'rain-tank') return inner(itemRainTank)
   if (item.kind === 'tap') return inner(itemTap)
+  if (item.kind === 'water') return inner(uiWater)
   if (item.kind === 'mill') return inner(itemMill)
   if (item.kind === 'jam-machine') return inner(itemJamMachine)
   if (item.kind === 'still') return inner(itemStill)
@@ -419,7 +416,6 @@ const JAM_ART = {
   apricot: itemJamApricot,
   grape: itemJamGrape,
   raspberry: itemJamRaspberry,
-  apple: itemJamApple,
   cherry: itemJamCherry,
   tomato: itemKetchup,
 } as const
@@ -516,8 +512,6 @@ export function researchInner(id: ResearchId): string {
       return stageOnly(FRUIT.grape, 'common')
     case 'unlock-raspberry':
       return stageOnly(FRUIT.raspberry, 'common')
-    case 'unlock-watermelon':
-      return stageOnly(FRUIT.watermelon, 'common')
     case 'unlock-fermentation':
       return inner(itemStill)
     case 'unlock-preservatives':
@@ -807,7 +801,6 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'better-wheat': inner(skillBetter),
   'better-tomato': inner(skillBetter),
   'better-raspberry': inner(skillBetter),
-  'better-watermelon': inner(skillBetter),
   'better-grape': inner(skillBetter),
   'better-vanilla': inner(skillBetter),
   'better-sugar-cane': inner(skillBetter),
@@ -830,7 +823,6 @@ export function skillInner(id: SkillId): string {
     id === 'better-wheat' ||
     id === 'better-tomato' ||
     id === 'better-raspberry' ||
-    id === 'better-watermelon' ||
     id === 'better-grape' ||
     id === 'better-vanilla' ||
     id === 'better-sugar-cane'
@@ -846,13 +838,11 @@ export function skillInner(id: SkillId): string {
               ? 'tomato'
               : id === 'better-raspberry'
                 ? 'raspberry'
-                : id === 'better-watermelon'
-                  ? 'watermelon'
-                  : id === 'better-grape'
-                    ? 'grape'
-                    : id === 'better-vanilla'
-                      ? 'vanilla'
-                      : 'sugar-cane'
+                : id === 'better-grape'
+                  ? 'grape'
+                  : id === 'better-vanilla'
+                    ? 'vanilla'
+                    : 'sugar-cane'
     return `${fruitInner(crop)}${inner(skillBetter)}`
   }
   return SKILL_ART[id]

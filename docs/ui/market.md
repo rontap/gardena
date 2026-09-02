@@ -4,6 +4,8 @@ Centered overlay (`Overlay`, dim `bg-ink/40`), not a dock. Title **Market**. Ove
 
 HUD **Market** or consign at the truck opens it. [[mechanics/market]].
 
+Solo (`role === 'off'`): open pauses the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. [[ui/hud]]
+
 Underline tabs, same chrome as [[ui/almanac]]:
 
 - `Tabs.Root` `relative z-20 flex min-h-0 flex-1 flex-col`. Default `stall`.

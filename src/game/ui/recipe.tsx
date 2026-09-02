@@ -1,6 +1,7 @@
 import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/recipe.ts'
 import { clockText, craftMachine, recipesOf } from '../sim/recipe.ts'
 import type { Face } from '../sim/item.ts'
+import { faceName } from '../sim/item.ts'
 import { bindHud } from '../view/motion.ts'
 import { faceGfx, UI_ARROW_FILL, UI_ARROW_INK } from '../view/svgs.ts'
 import { useCycle } from './cycle.ts'
@@ -11,6 +12,7 @@ type Size = 'sm' | 'md'
 
 const FACE: { readonly [K in Size]: string } = { sm: 'h-6 w-6', md: 'h-8 w-8' }
 const ARROW: { readonly [K in Size]: string } = { sm: 'h-5 w-10', md: 'h-6 w-12' }
+const TYPE: { readonly [K in Size]: string } = { sm: 'text-sm', md: 'text-base' }
 
 function num(n: number): string {
   return String(Number(n.toFixed(2)))
@@ -22,24 +24,45 @@ function amountText(a: Amount): string {
   return String(a.n)
 }
 
+function cycleLen(recipe: Recipe): number {
+  const ins = recipe.inputs.flatMap(i => (i.kind === 'any' ? [i.faces.length] : []))
+  const out = recipe.out.kind === 'range' ? recipe.out.faces.length : 1
+  return Math.max(1, out, ...ins)
+}
+
 function Slot({ face, text, size, warn }: { face: Face; text: string; size: Size; warn: boolean }) {
   return (
-    <span className="flex items-center gap-1">
+    <span className="flex min-w-0 items-center gap-1.5">
       <svg viewBox="0 0 24 24" className={`shrink-0 ${FACE[size]}`} dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
-      <span className={`text-xs leading-none tabular-nums ${warn ? 'font-bold text-roof' : 'text-ink/70'}`}>{text}</span>
+      <span className={`flex min-w-0 flex-col ${warn ? 'font-bold text-roof' : 'text-ink/80'}`}>
+        <span className={`${TYPE[size]} leading-tight`}>{faceName(face)}</span>
+        <span className={`${TYPE[size]} leading-none tabular-nums`}>{text}</span>
+      </span>
     </span>
   )
 }
 
-function InputSlot({ input, size, text, warn }: { input: Ingredient; size: Size; text: string; warn: boolean }) {
-  const i = useCycle(input.kind === 'any' ? input.faces.length : 1)
-  const face = input.kind === 'one' ? input.face : input.faces[i]
+function InputSlot({
+  input,
+  size,
+  text,
+  warn,
+  stage,
+}: {
+  input: Ingredient
+  size: Size
+  text: string
+  warn: boolean
+  stage: number
+}) {
+  const face = input.kind === 'one' ? input.face : input.faces[stage % input.faces.length]
   return <Slot face={face} text={text} size={size} warn={warn} />
 }
 
-function OutputSlot({ out, size }: { out: Yield; size: Size }) {
+function OutputSlot({ out, size, stage }: { out: Yield; size: Size; stage: number }) {
   const text = out.kind === 'range' ? `${out.min}-${out.max}` : amountText(out.amount)
-  return <Slot face={out.face} text={text} size={size} warn={false} />
+  const face = out.kind === 'range' ? out.faces[stage % out.faces.length] : out.face
+  return <Slot face={face} text={text} size={size} warn={false} />
 }
 
 function Arrow({ fill, size, live }: { fill: number; size: Size; live: boolean }) {
@@ -90,6 +113,7 @@ function Row({
   short: { at: number; text: string }
   live: boolean
 }) {
+  const stage = useCycle(cycleLen(recipe))
   return (
     <div className="flex items-center gap-2 py-1.5">
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -100,6 +124,7 @@ function Row({
             size={size}
             text={i === short.at ? short.text : amountText(input.amount)}
             warn={i === short.at}
+            stage={stage}
           />
         ))}
       </div>
@@ -108,13 +133,13 @@ function Row({
         <span
           ref={live ? el => bindHud('craft-time', el) : undefined}
           data-craft-time
-          className="text-xs leading-none tabular-nums text-ink/70"
+          className={`${TYPE[size]} leading-none tabular-nums text-ink/70`}
         >
           {time}
         </span>
       </div>
       <div className="flex min-w-0 flex-1 justify-end">
-        <OutputSlot out={recipe.out} size={size} />
+        <OutputSlot out={recipe.out} size={size} stage={stage} />
       </div>
     </div>
   )
@@ -142,7 +167,7 @@ function LiveRow({ craft, size }: { craft: Craft; size: Size }) {
   return (
     <div className="flex flex-col">
       <Row recipe={recipe} size={size} fill={fill} time={time} short={short} live={true} />
-      {line !== '' && <span className="text-xs leading-tight font-semibold text-roof">{line}</span>}
+      {line !== '' && <span className={`${TYPE[size]} leading-tight font-semibold text-roof`}>{line}</span>}
     </div>
   )
 }

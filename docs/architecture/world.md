@@ -6,7 +6,22 @@ Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `Se
 
 ## Unrepresentable
 
-`Plant.crop` is `AnnualId`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`.
+`Plant.crop` is `AnnualId`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`.
+
+```
+AnnualId     = carrot | potato | wheat | tomato | raspberry | grape | vanilla | sugar-cane
+TreeId       = apple | apricot | olive | cherry
+CropId       = AnnualId | TreeId
+MillRecipe   = sugar-cane | olive | wheat | grass | vanilla
+JamCrop      = apricot | grape | raspberry | cherry | tomato
+BarrelCrop   = grape | apple
+CaskId       = wine | cider
+FruitAnnualId = tomato | raspberry | grape | vanilla
+```
+
+`ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `PlayerSkillId` has no `better-watermelon`. `BETTER_IDS` is a complete `{ [K in AnnualId]: PlayerSkillId }`.
+
+Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: `better-*` on `TreeId`. Illegal: `World.pause`.
 
 `isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
@@ -64,7 +79,7 @@ Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 
 ## Stall
 
-`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky.
+`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky. `JamId` is `jam-${JamCrop}`. One `extract`. Olive fruit is a stall good (`TreeId`).
 
 Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on `rarity === 'heirloom'` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract. [[architecture/family]].
 
@@ -160,5 +175,7 @@ Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` wit
 `world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
+
+`world.pause` — World has no `pause` field. Solo family / market / almanac overlay pause is App-local. MP pause is the net flag on `MpHost` / `MpGuest`. Not Save. Not a `Cmd`.
 
 Assumption: `dest(additives)` stays `at`.

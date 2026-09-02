@@ -82,7 +82,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [retry, setRetry] = useState(0)
   const [catching, setCatching] = useState(false)
   const [roomKey, setRoomKey] = useState('')
-  const [panel, setPanel] = useState<Panel>({ kind: 'none' })
+  const [panel, setPanelState] = useState<Panel>({ kind: 'none' })
+  const panelRef = useRef(panel)
+  panelRef.current = panel
   const [query, setQuery] = useState('')
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
@@ -562,18 +564,49 @@ export default function App({ sink }: { sink: WorkerSink }) {
       })
   }
 
-  /** The multiplayer panel is a lobby: hold the world still while it is open, then hand time back. */
+  function overlayHold(kind: Panel['kind']): boolean {
+    return kind === 'family' || kind === 'market' || kind === 'almanac'
+  }
+
+  function overlayPause(from: Panel['kind'], to: Panel['kind']): void {
+    if (role !== 'off') return
+    const a = overlayHold(from)
+    const b = overlayHold(to)
+    if (!a && b) {
+      resumeRef.current = !pausedRef.current
+      pausedRef.current = true
+      setPaused(true)
+      return
+    }
+    if (a && !b) {
+      if (!resumeRef.current) return
+      resumeRef.current = false
+      pausedRef.current = false
+      setPaused(false)
+    }
+  }
+
+  function setPanel(next: Panel | ((p: Panel) => Panel)): void {
+    const from = panelRef.current.kind
+    const n = typeof next === 'function' ? next(panelRef.current) : next
+    panelRef.current = n
+    setPanelState(n)
+    overlayPause(from, n.kind)
+  }
+
   function setMpPanel(open: boolean): void {
     mpOpenRef.current = open
     const host = hostRef.current
     if (open) {
-      resumeRef.current = !paused
+      resumeRef.current = !pausedRef.current
+      pausedRef.current = true
       if (host !== undefined) host.setPaused(true)
       else setPaused(true)
       return
     }
     if (!resumeRef.current) return
     resumeRef.current = false
+    pausedRef.current = false
     if (host !== undefined) host.setPaused(false)
     else setPaused(false)
   }
@@ -582,13 +615,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
     if (role === 'off') startHost()
+    let open = false
     setPanel(p => {
       if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
-      const open = p.kind !== 'multiplayer'
-      setMpPanel(open)
+      open = p.kind !== 'multiplayer'
       return open ? { kind: 'multiplayer' } : { kind: 'none' }
     })
+    setMpPanel(open)
   }
 
   /** Wires one MpGuest. Used for the first join and for every reconnect after a dropped link. */

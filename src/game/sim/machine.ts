@@ -10,6 +10,8 @@ import {
   JAM_SALE,
   MILL_GRASS,
   MILL_IN,
+  MILL_VANILLA_IN,
+  MILL_VANILLA_OUT,
   MIXED_MUL,
   OIL,
   SPIRIT_RARITY,
@@ -41,13 +43,16 @@ export function machineEast(base: RectBase): Coord {
 }
 
 export function millNeed(recipe: MillRecipe): number {
-  return recipe === 'grass' ? MILL_GRASS : MILL_IN
+  if (recipe === 'grass') return MILL_GRASS
+  if (recipe === 'vanilla') return MILL_VANILLA_IN
+  return MILL_IN
 }
 
 export function millProductName(recipe: MillRecipe): string {
   if (recipe === 'sugar-cane') return 'sugar'
   if (recipe === 'olive') return 'olive oil'
   if (recipe === 'wheat') return 'flour'
+  if (recipe === 'vanilla') return 'vanilla extract'
   return 'extract'
 }
 
@@ -57,6 +62,7 @@ export function millProduct(recipe: MillRecipe): Item {
   }
   if (recipe === 'olive') return { kind: 'oil', count: 1, unitSale: OIL }
   if (recipe === 'wheat') return { kind: 'flour', count: 1, unitSale: FLOUR }
+  if (recipe === 'vanilla') return { kind: 'extract', count: MILL_VANILLA_OUT, unitSale: EXTRACT }
   return { kind: 'extract', count: 1, unitSale: EXTRACT }
 }
 
@@ -78,7 +84,7 @@ export function fruitRarity(item: Item): Rarity | undefined {
 export function millRecipeOf(item: Item): MillRecipe | undefined {
   if (item.kind === 'grass') return 'grass'
   const crop = fruitCrop(item)
-  if (crop === 'sugar-cane' || crop === 'olive' || crop === 'wheat') return crop
+  if (crop === 'sugar-cane' || crop === 'olive' || crop === 'wheat' || crop === 'vanilla') return crop
   return undefined
 }
 
@@ -89,6 +95,7 @@ export function millDumpUnits(item: Item, recipe: MillRecipe): number {
   if (recipe === 'sugar-cane' && crop === 'sugar-cane') return fruitCount(item)
   if (recipe === 'olive' && crop === 'olive') return fruitCount(item)
   if (recipe === 'wheat' && crop === 'wheat') return fruitCount(item)
+  if (recipe === 'vanilla' && crop === 'vanilla') return fruitCount(item)
   return 0
 }
 
@@ -246,14 +253,7 @@ export function stillCropOf(item: Item): StillCrop | undefined {
 
 export function jamCropOf(item: Item): JamCrop | undefined {
   const crop = fruitCrop(item)
-  if (
-    crop === 'apricot' ||
-    crop === 'grape' ||
-    crop === 'raspberry' ||
-    crop === 'apple' ||
-    crop === 'cherry' ||
-    crop === 'tomato'
-  ) {
+  if (crop === 'apricot' || crop === 'grape' || crop === 'raspberry' || crop === 'cherry' || crop === 'tomato') {
     return crop
   }
   return undefined

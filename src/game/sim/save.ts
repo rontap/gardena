@@ -55,6 +55,7 @@ import {
   JAM_CROPS,
   JAM_IDS,
   type JamCrop,
+  MILL_RECIPES,
   type MillRecipe,
   type PickaxeId,
   CASK_IDS,
@@ -138,7 +139,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.04 as const
+export const SAVE_VERSION = 2.08 as const
 
 const INV = 16
 
@@ -296,7 +297,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 2.04
+  version: 2.08
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -2582,7 +2583,7 @@ function readBarrelCropOrNone(v: unknown): BarrelCrop | 'none' | undefined {
 }
 
 function readMillRecipe(v: unknown): MillRecipe | 'none' | undefined {
-  if (v === 'none' || v === 'sugar-cane' || v === 'olive' || v === 'wheat' || v === 'grass') return v
+  if (v === 'none' || (typeof v === 'string' && (MILL_RECIPES as readonly string[]).includes(v))) return v as MillRecipe | 'none'
   return undefined
 }
 

@@ -22,7 +22,9 @@ RecipeView = { kind: 'list'; machine: MachineId } | { kind: 'live'; craft: Craft
 | 2 | arrow, duration under it |
 | 3 | the yield, face + amount |
 
-Amount text: `units` bare digits, `liters` `{n}L` two decimals trimmed, `waste` `{n} waste`, `range` `{min}-{max}`.
+Each slot is face + **name** + amount. Name is `faceName` — the same words as the held line, not an id. Amount: `units` bare digits, `liters` `{n}L` two decimals trimmed, `waste` `{n} waste`, `range` `{min}-{max}`.
+
+Type: `sm` `text-sm`, `md` `text-base`. Time caption matches. Not `text-xs`.
 
 Both mounts are `pointer-events-none`. No tooltip, no `title`, no hover state, no focusable node. Ever.
 
@@ -38,13 +40,26 @@ Shop shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, abov
 
 ## List rows
 
-Static. Arrow painted full. Duration is the recipe's nominal seconds — base, not divided by `machineMul`, matching the catalog blurbs.
+Static. Arrow painted full. Duration is `{n} sec` — `clockText`, the recipe's nominal seconds, base, not divided by `machineMul`, matching the catalog blurbs. Not `m:ss`. Not `Xs`. Not `Xd`.
 
-`any` inputs cycle their faces at `CYCLE_MS`.
+`any` inputs cycle their faces at `CYCLE_MS`. A `range` yield with `faces` shares that index: grinder fruit `i` shows seed `i`. One `useCycle` per row.
+
+Counts from `sim/recipe.ts`. Do not retype.
+
+| machine | rows |
+|---|---|
+| mill | `MILL_RECIPES` 5 — sugar-cane olive wheat grass vanilla. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. Grass name unchanged. |
+| jam | `JAM_CROPS` 5. No apple. |
+| still | `STILL_CROPS` 3 + mixed. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
+| barrel | `BARREL_CROPS` 2 — grape → wine, apple → cider. |
+| grinder | 1 |
+| compost-box | 2: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS` |
 
 ## Live row
 
 One row. Machine empty → cycle every recipe at `CYCLE_MS`. Machine has a recipe → pin to it.
+
+Live barrel pins the locked crop’s row (`BARREL_CROPS`: grape wine / apple cider). Empty barrel (`crop === 'none'`) cycles both.
 
 | `Craft` | row | line under |
 |---|---|---|
@@ -84,3 +99,5 @@ The still holds one instance in two cells, so hovering either half binds the sam
 The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePane` / `CropPane` / `TreePane` [[ui/almanac]].
 
 Assumption: `useCycle` ignores `prefers-reduced-motion`, as the four call sites it replaced always did.
+
+Assumption: live compost filling pins the fruit row; empty compost is idle and cycles both list rows.

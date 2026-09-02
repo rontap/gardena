@@ -4,6 +4,7 @@ import {
   COMPOST_LITERS,
   COMPOST_NEED,
   COMPOST_SECONDS,
+  COMPOST_VALUE,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -15,10 +16,9 @@ import {
   STILL_SECONDS,
   STILL_WATER,
 } from '../defs/items.ts'
-import { DAY_SECONDS } from './clock.ts'
-import type { CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
-import { ANNUAL_IDS, JAM_CROPS, MILL_RECIPES, STILL_CROPS } from './ids.ts'
-import type { CompostBox, Grinder, JamMachine, Mill, PotStill, WineBarrel } from './building.ts'
+import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
+import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS } from './ids.ts'
+import type { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import type { Face, Item } from './item.ts'
 import {
   barrelWorking,
@@ -45,7 +45,7 @@ export type Ingredient =
 
 export type Yield =
   | { kind: 'exact'; face: Face; amount: Amount }
-  | { kind: 'range'; face: Face; min: number; max: number }
+  | { kind: 'range'; faces: readonly Face[]; min: number; max: number }
 
 export type Duration =
   | { kind: 'work'; seconds: number }
@@ -67,7 +67,7 @@ export type Craft =
   | { kind: 'working'; recipe: Recipe; progress: number; left: number }
   | { kind: 'ready'; recipe: Recipe }
 
-export type CraftCell = Mill | JamMachine | PotStill | WineBarrel | Grinder | CompostBox
+export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
   return MACHINE_IDS.some(m => m === c.kind)
@@ -93,11 +93,15 @@ function fruitFace(crop: CropId): Face {
   return { kind: 'fruit', crop, rarity: 'common', count: 1, unitSale: 0, freshness: 1, bio: false }
 }
 
+function seedFace(crop: AnnualId): Face {
+  return { kind: 'seeds', crop, rarity: 'common', count: 1 }
+}
+
 function units(n: number): Amount {
   return { kind: 'units', n }
 }
 
-const WATER: Ingredient = { kind: 'one', face: { kind: 'tap' }, amount: { kind: 'liters', l: STILL_WATER } }
+const WATER: Ingredient = { kind: 'one', face: { kind: 'water' }, amount: { kind: 'liters', l: STILL_WATER } }
 
 function millRecipe(r: MillRecipe): Recipe {
   const face: Face = r === 'grass' ? { kind: 'grass', count: 1 } : fruitFace(r)
@@ -146,11 +150,17 @@ const MIXED_STILL: Recipe = {
   duration: { kind: 'fixed', seconds: STILL_SECONDS },
 }
 
-const BARREL: Recipe = {
-  machine: 'barrel',
-  inputs: [{ kind: 'one', face: fruitFace('grape'), amount: units(BARREL_CAP) }],
-  out: { kind: 'exact', face: { kind: 'wine', rarity: 'common', count: 1, unitSale: 0 }, amount: units(1) },
-  duration: { kind: 'age', seconds: BARREL_MATURE },
+function barrelRecipe(crop: BarrelCrop): Recipe {
+  return {
+    machine: 'barrel',
+    inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(BARREL_CAP) }],
+    out: {
+      kind: 'exact',
+      face: { kind: 'cask', cask: CASK_OF[crop], rarity: 'common', count: 1, unitSale: 0 },
+      amount: units(1),
+    },
+    duration: { kind: 'age', seconds: BARREL_MATURE },
+  }
 }
 
 const GRINDER: Recipe = {
@@ -158,49 +168,64 @@ const GRINDER: Recipe = {
   inputs: [{ kind: 'any', faces: ANNUAL_IDS.map(fruitFace), amount: units(1) }],
   out: {
     kind: 'range',
-    face: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 1 },
+    faces: ANNUAL_IDS.map(seedFace),
     min: GRIND_MIN,
     max: GRIND_MAX,
   },
   duration: { kind: 'work', seconds: GRIND_WORK },
 }
 
-const COMPOST_FACES: readonly Face[] = [
-  ...ANNUAL_IDS.map(fruitFace),
-  { kind: 'grass', count: 1 },
-  { kind: 'weed', count: 1 },
-]
+const COMPOST_OUT: Yield = {
+  kind: 'exact',
+  face: { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS },
+  amount: { kind: 'liters', l: COMPOST_LITERS },
+}
 
-const COMPOST: Recipe = {
+const COMPOST_FRUIT: Recipe = {
   machine: 'compost-box',
-  inputs: [{ kind: 'any', faces: COMPOST_FACES, amount: { kind: 'waste', n: COMPOST_NEED } }],
-  out: {
-    kind: 'exact',
-    face: { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS },
-    amount: { kind: 'liters', l: COMPOST_LITERS },
-  },
+  inputs: [
+    {
+      kind: 'any',
+      faces: [...ANNUAL_IDS, ...TREE_IDS].map(fruitFace),
+      amount: units(COMPOST_NEED / COMPOST_VALUE.fruit),
+    },
+  ],
+  out: COMPOST_OUT,
+  duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
+}
+
+const COMPOST_GREEN: Recipe = {
+  machine: 'compost-box',
+  inputs: [
+    {
+      kind: 'any',
+      faces: [
+        { kind: 'weed', count: 1 },
+        { kind: 'grass', count: 1 },
+      ],
+      amount: units(COMPOST_NEED / COMPOST_VALUE.weed),
+    },
+  ],
+  out: COMPOST_OUT,
   duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
 }
 
 const MILL_ROWS: readonly Recipe[] = MILL_RECIPES.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_CROPS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_CROPS.map(stillRecipe), MIXED_STILL]
+const BARREL_ROWS: readonly Recipe[] = BARREL_CROPS.map(barrelRecipe)
 
 export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'mill') return MILL_ROWS
   if (m === 'jam') return JAM_ROWS
   if (m === 'still') return STILL_ROWS
-  if (m === 'barrel') return [BARREL]
+  if (m === 'barrel') return BARREL_ROWS
   if (m === 'grinder') return [GRINDER]
-  return [COMPOST]
+  return [COMPOST_FRUIT, COMPOST_GREEN]
 }
 
 export function clockText(seconds: number): string {
-  if (seconds >= DAY_SECONDS) return `${Math.round(seconds / DAY_SECONDS)}d`
-  if (seconds < 60) return `${Math.round(seconds)}s`
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds - m * 60)
-  return `${m}:${String(s).padStart(2, '0')}`
+  return `${Math.round(seconds)} sec`
 }
 
 function recipeSeconds(d: Duration, mul: number): number {
@@ -240,12 +265,13 @@ function stillCraft(c: PotStill, mul: number): Craft {
   return { kind: 'filling', recipe, at: 0, have: n, need: STILL_CAP }
 }
 
-function barrelCraft(c: WineBarrel): Craft {
+function barrelCraft(c: Barrel): Craft {
+  if (c.crop === 'none') return { kind: 'idle', machine: 'barrel' }
+  const recipe = BARREL_ROWS[BARREL_CROPS.indexOf(c.crop)]
   const n = feedUnits(c.feed)
-  if (n === 0) return { kind: 'idle', machine: 'barrel' }
-  if (n < BARREL_CAP) return { kind: 'filling', recipe: BARREL, at: 0, have: n, need: BARREL_CAP }
-  if (!barrelWorking(c) || c.age >= BARREL_MATURE) return { kind: 'ready', recipe: BARREL }
-  return { kind: 'working', recipe: BARREL, progress: c.age / BARREL_MATURE, left: BARREL_MATURE - c.age }
+  if (n < BARREL_CAP) return { kind: 'filling', recipe, at: 0, have: n, need: BARREL_CAP }
+  if (!barrelWorking(c) || c.age >= BARREL_MATURE) return { kind: 'ready', recipe }
+  return { kind: 'working', recipe, progress: c.age / BARREL_MATURE, left: BARREL_MATURE - c.age }
 }
 
 function grinderCraft(c: Grinder, mul: number): Craft {
@@ -253,15 +279,21 @@ function grinderCraft(c: Grinder, mul: number): Craft {
   const recipe: Recipe = {
     ...GRINDER,
     inputs: [{ kind: 'one', face: fruitFace(c.crop), amount: units(1) }],
-    out: { ...GRINDER.out, face: { kind: 'seeds', crop: c.crop, rarity: c.rarity, count: 1 } },
+    out: {
+      kind: 'range',
+      faces: [{ kind: 'seeds', crop: c.crop, rarity: c.rarity, count: 1 }],
+      min: GRIND_MIN,
+      max: GRIND_MAX,
+    },
   }
   if (c.units < 1) return { kind: 'filling', recipe, at: 0, have: c.units, need: 1 }
   return stage(recipe, c.progress, mul)
 }
 
 function compostCraft(c: CompostBox, mul: number): Craft {
-  if (c.units < COMPOST_NEED) return { kind: 'filling', recipe: COMPOST, at: 0, have: c.units, need: COMPOST_NEED }
-  return stage(COMPOST, c.progress, mul)
+  if (c.units === 0) return { kind: 'idle', machine: 'compost-box' }
+  if (c.units < COMPOST_NEED) return { kind: 'filling', recipe: COMPOST_FRUIT, at: 0, have: c.units, need: COMPOST_NEED }
+  return stage(COMPOST_FRUIT, c.progress, mul)
 }
 
 export function craftState(cell: CraftCell, mul: number): Craft {

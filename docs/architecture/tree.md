@@ -2,9 +2,9 @@
 
 1×2 `Tree` on `Cell`. Same instance in both cells. Not a `Plant`. Not a plot. [[architecture/world]] [[architecture/modules]] [[mechanics/trees]]
 
-Ids: `sim/ids.ts`. `TreeId`. `CropId = AnnualId | TreeId`.
+Ids: `sim/ids.ts`. `TreeId` = apple | apricot | olive | cherry. `CropId = AnnualId | TreeId`. Olive is `TreeId`. Not an annual. Not a seed pack.
 
-Illegal: `Tree.species` not `TreeId`. Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'shrub' }` `{ kind: 'berry' }`.
+Illegal: `Tree.species` not `TreeId`. Illegal: `Plant` with `TreeId`. Illegal: `Tree` with `AnnualId`. Illegal: `seeds.crop` not `AnnualId`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'shrub' }` `{ kind: 'berry' }`. Illegal: olive pack. Illegal: `better-olive`.
 
 ## Yield
 

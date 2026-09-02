@@ -647,7 +647,7 @@ describe('beta-3 invariants', () => {
     expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(RARITY_SALE).toEqual({ common: 1, uncommon: 1.25, rare: 2, heirloom: 3.5 })
     expect(RARITY_WEIGHT).toEqual({ common: 0.55, uncommon: 0.35, rare: 0.09, heirloom: 0.01 })
-    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-watermelon', 'unlock-grape'])
+    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
   })
 
   test('walk onto rock is legal', () => {
@@ -993,8 +993,8 @@ describe('beta-5 invariants', () => {
   })
 
   test('research names trees reveal', () => {
-    expect(RESEARCH['unlock-watermelon']).toMatchObject({
-      name: 'Watermelon seeds',
+    expect(RESEARCH['unlock-grape']).toMatchObject({
+      name: 'Grape seeds',
       tree: 'plants',
       reveal: [],
     })
@@ -1065,12 +1065,6 @@ describe('beta-5 invariants', () => {
     w.done.add('unlock-dispatch')
     w.createRoute()
     expect(w.routes).toHaveLength(1)
-  })
-
-  test('watermelon waterUse pack research', () => {
-    expect(CROPS.watermelon.waterUsePerSec).toBe(0.01125)
-    expect(SKUS['pack-watermelon'].price).toBe(18)
-    expect(RESEARCH['unlock-watermelon']).toMatchObject({ cost: 14, seconds: 45, tree: 'plants' })
   })
 
   test('delete no money change; pumpjack remains', () => {
@@ -1241,13 +1235,6 @@ describe('beta-6 invariants', () => {
       seed: 3,
       rotSeconds: 300,
     })
-    expect(CROPS.watermelon).toMatchObject({
-      growSeconds: 260,
-      waterUsePerSec: 0.01125,
-      sale: 20,
-      seed: 4,
-      rotSeconds: 360,
-    })
     expect(CROPS.raspberry).toMatchObject({
       growSeconds: 340,
       waterUsePerSec: 0.0045833,
@@ -1259,7 +1246,6 @@ describe('beta-6 invariants', () => {
     expect(SKUS['pack-potato'].price).toBe(6)
     expect(SKUS['pack-wheat'].price).toBe(10)
     expect(SKUS['pack-tomato'].price).toBe(15)
-    expect(SKUS['pack-watermelon'].price).toBe(18)
     expect(SKUS['pack-raspberry'].price).toBe(22)
   })
 
@@ -1553,7 +1539,7 @@ describe('0.8 plants and trees', () => {
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
     expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 45, seconds: 85, reveal: ['unlock-grinder'] })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
-    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-watermelon', 'unlock-grape'])
+    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-olive')).toBe(false)
   })
@@ -1695,11 +1681,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 2.04. `PROTOCOL` 2.04. Wordmark 2.0.4. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 2.08. `PROTOCOL` 2.08. Wordmark 2.0.8. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(2.04)
+    expect(s.version).toBe(2.08)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
@@ -2319,12 +2305,12 @@ describe('1.5.2', () => {
     expect(w.contractCap()).toBe(4)
   })
 
-  test('`unlock-crop-variants` plants, cost 5, 40s, reveal tomato | watermelon | irrigation, effect feature. Without it: ripen identity, shop packs common, silo hides uncommon/rare unless stock. unlock-heirloom requires it.', () => {
+  test('`unlock-crop-variants` plants, cost 5, 40s, reveal tomato | grape | irrigation, effect feature. Without it: ripen identity, shop packs common, silo hides uncommon/rare unless stock. unlock-heirloom requires it.', () => {
     expect(RESEARCH['unlock-crop-variants']).toMatchObject({
       tree: 'plants',
       cost: 5,
       seconds: 40,
-      reveal: ['unlock-tomato', 'unlock-watermelon', 'unlock-irrigation'],
+      reveal: ['unlock-tomato', 'unlock-grape', 'unlock-irrigation'],
       requires: [],
       effect: { kind: 'feature' },
     })
@@ -2409,8 +2395,8 @@ describe('1.5.2', () => {
     expect(w.seats[0].actor.y).toBeCloseTo(y1 + step, 8)
   })
 
-  test('`STILL_WATER` 0.5. Start still requires full pull.', () => {
-    expect(STILL_WATER).toBe(0.5)
+  test('`STILL_WATER` 1. Start still requires full pull.', () => {
+    expect(STILL_WATER).toBe(1)
   })
 
   test('Tree juvenile `TREES.juvenileSeconds` (480) then `pending`. Next seam → `TREE_YIELD_MUL` 3.5× for 2 days.', () => {

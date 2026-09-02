@@ -60,13 +60,15 @@ export const SUGAR_MILL = 5
 export const SUGAR_SHOP = 8
 export const MILL_IN = 5
 export const MILL_GRASS = 15
+export const MILL_VANILLA_IN = 2
+export const MILL_VANILLA_OUT = 3
 export const MILL_WORK = 10
 export const JAM_IN = 5
 export const JAM_SUGAR = 0.4
 export const JAM_SECONDS = 40
 export const JAM_BUFFER = 4
 export const STILL_CAP = 10
-export const STILL_WATER = 0.5
+export const STILL_WATER = 1
 export const STILL_SECONDS = 160
 export const BARREL_CAP = 5
 export const BARREL_MATURE = DAY_SECONDS
@@ -100,7 +102,6 @@ export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   apricot: 36,
   grape: 72,
   raspberry: 104,
-  apple: 80,
   cherry: 20,
   tomato: 80,
 }

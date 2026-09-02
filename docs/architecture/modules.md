@@ -48,6 +48,7 @@
 | `modifiers.ts` | `Modifier`, `statsOf` |
 | `rng.ts` | `Rng`, streams |
 | `machine.ts` | mill recipes, sale bake, grind hopper accept, machine west/east |
+| `recipe.ts` | `recipesOf`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2, still water face |
 | `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light |
 
@@ -81,7 +82,7 @@
 | `recap.tsx` | end-of-day |
 | `family.tsx` | family overlay |
 
-Panel open/close is App-local. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, or parked vehicle. Silo cells are look name only.
+Panel open/close is App-local. Solo family / market / almanac overlay pause is App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, or parked vehicle. Silo cells are look name only.
 
 ## view
 

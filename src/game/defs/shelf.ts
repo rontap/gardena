@@ -24,7 +24,6 @@ export const SHELVES: readonly Shelf[] = [
           'pack-potato',
           'pack-wheat',
           'pack-tomato',
-          'pack-watermelon',
           'pack-grape',
           'pack-raspberry',
           'pack-sugar-cane',

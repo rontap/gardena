@@ -2,14 +2,16 @@
 
 Centered overlay. Title **Almanac**. Left list, right pane. Window is a definite height so inner `flex-1 overflow-y-auto` scrolls. Chrome is a column; body is `scroll-pane`.
 
+Solo overlay pause: [[ui/hud]].
+
 Scroll chain: Tabs.Root fills; Tabs.List shrinks; list+pane row fills; left list scrolls; right pane scrolls. `scroll-pane` — [[ui/type]].
 
 Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink type.
 
 | tab id | label | list |
 |---|---|---|
-| `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry watermelon olive grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
-| `trees` | Trees | apple apricot lemon cherry |
+| `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
+| `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-produce silo-spray |
@@ -21,19 +23,39 @@ Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, la
 
 Trees, Utility, Water systems, Building, Game concepts: **no** Overview row. Hangar + silos stay on Automation. Game concepts: no SKU rows.
 
-Building stays fence + tiles. Apple is not on Seeds.
+Building stays fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No watermelon row.
 
 Crop and Tree panes carry `CROPS.desc` under the name. Crop panes: rarity tabs **Common** **Uncommon** **Rare** **Heirloom**. Preview swaps fruit face, plant art, and numbers.
 
 Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink.
 
-Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.**
+Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla mill is the mill recipe list only — no CropPane mill line, no extract plate. [[ui/recipe]]
 
-`unlock-preservatives` done: third plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
+Olive is `TreeId`: TreePane only.
 
 Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light panes. Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
 
 SKU panes stay generic / crop / tree / pipe.
+
+## Product plates
+
+Reuse existing faces. No new SVG. `Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives')`. Not a `jam` boolean.
+
+Fruit face + plant/tree prop always. Extra plates after that row is in `done`. Same `flex gap-3` row, `flex-wrap`. Grape four plates (fruit, plant, jam, wine) wrap in that row. No new chrome. Plate is the existing `h-20 w-20` `bg-dirt-dark` face, no caption.
+
+| pane | extra | face | gate |
+|---|---|---|---|
+| potato CropPane | vodka | `{ kind: 'spirit'; spirit: 'vodka' }` | `fermentation` |
+| wheat CropPane | beer | `{ kind: 'spirit'; spirit: 'beer' }` | `fermentation` |
+| grape CropPane | jam, then wine | jam grape; `{ kind: 'cask'; cask: 'wine' }` | `preservatives` / `fermentation` |
+| raspberry CropPane | jam | jam raspberry | `preservatives` |
+| tomato CropPane | jam **Ketchup** | jam tomato | `preservatives` |
+| apple TreePane | cider | `{ kind: 'cask'; cask: 'cider' }` | `fermentation` |
+| apricot TreePane | jam | jam apricot | `preservatives` |
+| cherry TreePane | jam | jam cherry | `preservatives` |
+| olive TreePane | oil | `{ kind: 'oil' }` | `grinder` |
+
+Grape: jam and wine may both show. Wheat: beer, not flour. Apple: cider, not jam. Apricot / cherry: jam, no brandy plate. Illegal: vanilla CropPane product plate. Illegal: flour plate. Illegal: olive on Seeds.
 
 ## Shape
 
@@ -103,7 +125,7 @@ Rarity is the grade of fruit and seed: Common / Uncommon / Rare / Heirloom. Four
 
 ## TreePane
 
-Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`.
+Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Extra plates: Product plates.
 
 Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.**
 

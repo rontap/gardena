@@ -10,14 +10,14 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 
 | tab | order | idle footer |
 |---|---|---|
-| Water | Source pumpjack, well, rain-tank · Flow tap, pipe, valve, smart-valve · Output sprinkler, vertical, large | Source, flow, output. |
+| Water | Source pumpjack, well, rain-tank · Flow tap, pipe, valve · Output sprinkler, vertical, large | Source, flow, output. |
 | Processing | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Compost compost-box | Machines that make goods. |
 | Storage | chest, freezer | Keep what you picked. |
 | Vehicles | Hangar `buy-hangar` · Silos seed, spray, produce | Hangar and the field silos that load trailers. |
 | Sensors | lever, button, lamp, OR, AND, NOT, pulser, counter, traffic-light, water, fert, harvest, water-system, vehicle-detector, day | Signal, gates, readers. |
 | Land | Paving cobble → brick → paved · Fencing fence | Paving and fencing. Click as many tiles as you like, Escape when done. |
 
-Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer** **Vehicle hangar** **Seeding silo** **Spraying silo** **Produce silo** **Lever** **Button** **Lamp** **OR gate** **AND gate** **NOT gate** **Pulser** **Counter** **Water sensor** **Fertilizer sensor** **Harvest sensor** **Day sensor** **Water-system sensor** **Vehicle detector** **Traffic light** **Smart valve** — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shop SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Smart valve is Water (flow), after manual valve. Vehicle detector is Sensors. Traffic light is Sensors, Signal group, not readers. Pulser / counter / day: Sensors. Shelf id `logic`. [[ui/sensors]]
+Labels **Mill** **Pot still** **Wine barrel** **Jam machine** **Freezer** **Vehicle hangar** **Seeding silo** **Spraying silo** **Produce silo** **Lever** **Button** **Lamp** **OR gate** **AND gate** **NOT gate** **Pulser** **Counter** **Water sensor** **Fertilizer sensor** **Harvest sensor** **Day sensor** **Water-system sensor** **Vehicle detector** **Traffic light** — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shop SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Vehicle detector is Sensors. Traffic light is Sensors, Signal group, not readers. Pulser / counter / day: Sensors. Shelf id `logic`. [[ui/sensors]]
 
 ## Cluster
 

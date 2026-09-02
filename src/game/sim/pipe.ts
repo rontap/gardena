@@ -10,7 +10,7 @@ export type Vertex = { col: number; row: number }
 
 export type Junction = 'stub' | 'I' | 'L' | 'T' | 'X'
 
-export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean } | { kind: 'smart' }
+export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }
 
 export type Segment = { at: Edge; gate: Gate }
 
@@ -32,9 +32,7 @@ export class Well {
 }
 
 export function flows(s: Segment): boolean {
-  if (s.gate.kind === 'bare') return true
-  if (s.gate.kind === 'valve') return s.gate.open
-  return false
+  return s.gate.kind === 'bare' || s.gate.open
 }
 
 export function vertsOf(e: Edge): [Vertex, Vertex] {

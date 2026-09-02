@@ -1,3 +1,26 @@
+# 2.0.2 Legible Build
+
+Pipes, valves, wires, and the lens say what they are doing. Water and signal move on the field.
+
+- 🎉 Added mechanic: Smart irrigation on every valve. The separate smart valve is gone; the valve you already own grows a signal input once you research Smart irrigation.
+  - An unwired valve is still a hand valve: click it and the gardener walks over and turns it.
+  - A wired valve follows its wire instead, and ignores the click. Pull the wire and the hand takes it back.
+- ✨ Added ui: Edge lattice. Arming a water tool draws every tile edge a pipe could sit on, so the grid is visible before the first click.
+- ✨ Added ui: Pipe runs. Press on an edge and drag, and the run follows an L-shaped path to the pointer; hold Shift to turn the corner the other way. The chip counts the segments and their price.
+- ✨ Added ui: Wire dragging. Press an output port and release on an input to lay a wire, or keep clicking one then the other.
+- ✨ Added ui: Water flow. While the pipe overlay is up, water marches along the pipes it is moving through, and stops dead at a closed valve.
+- ✨ Added ui: Signal flow. A live wire carries beads from its output to its input.
+- ✨ Added ui: Lock view. A lens now turns off when you close the Lens panel, unless you lock it. Locked lenses say so on the rail and clear in one click.
+- 🔧 Changed building: Valve. previously, a valve needed a pipe on the edge first, now placing one on a bare edge lays the pipe with it and charges for both.
+- 🔧 Changed ui: previously, digging burst dirt once the hole was already dug, now the spade throws dirt for the whole dig and the soil opens as it goes.
+- 🔧 Changed ui: previously, hovering a building outlined every tile it covers as its own box, now one outline runs around the whole building.
+- 🔧 Changed ui: Sprinkler placement. previously, the corner snap was as tight as the delete and inspect snap, now an armed sprinkler reaches the nearest corner from anywhere in the tile.
+- 🔧 Changed ui: previously, a sensor's ports took half its tile and only in the sensors lens, now a port is the dot you can see and the tile itself always flips, presses, or tunes the device.
+- 🔧 Changed ui: previously, the field kept the pipes or sensors lens when you closed the shop, now a tool shows its own overlay while it is armed and hands the lens back when you put it away.
+- 🔧 Changed ui: previously, watered soil looked like dry soil, now a plot darkens as it drinks and pales as it dries.
+- 🔧 Changed ui: previously, the gardener slid across the farm in one pose, now they bob as they walk.
+- 🚫 Removed building: Smart valve. The shelf entry is gone; research Smart irrigation and wire an ordinary valve instead.
+
 # 2.0 Open Early Access
 
 The field is redrawn. Menus, docks, and the day stay as they were.

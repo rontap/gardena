@@ -62,7 +62,6 @@ export const Act = {
   setBoom: 'W',
   armWire: 'R',
   placeWire: 'N',
-  placeSmartValve: 'I',
   tuneWater: 'C',
   tuneHarvest: 'G',
   tuneCounter: 'M',
@@ -97,7 +96,6 @@ export type Cmd =
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'sprinkler'; c: XY }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'building'; c: XY }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'wire'; from: WireEnd; to: WireEnd }
-  | { a: typeof Act.delete; t: number; p: SeatId; k: 'smart'; e: Edge }
   | { a: typeof Act.expand; t: number; p: SeatId; k: ChunkId }
   | { a: typeof Act.startResearch; t: number; p: SeatId; r: ResearchId }
   | { a: typeof Act.pickSkill; t: number; p: SeatId; m: MemberId; s: number }
@@ -133,7 +131,6 @@ export type Cmd =
   | { a: typeof Act.setBoom; t: number; p: SeatId; w: 3 | 5 }
   | { a: typeof Act.armWire; t: number; p: SeatId; from: WireEnd }
   | { a: typeof Act.placeWire; t: number; p: SeatId; from: WireEnd; to: WireEnd }
-  | { a: typeof Act.placeSmartValve; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.tuneWater; t: number; p: SeatId; c: XY; wilt: boolean; over: boolean }
   | { a: typeof Act.tuneHarvest; t: number; p: SeatId; c: XY; mode: 'any' | 'all' }
   | { a: typeof Act.tuneCounter; t: number; p: SeatId; c: XY; n: number }

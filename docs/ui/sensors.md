@@ -8,11 +8,11 @@ No new chrome shell. No wire SKU. No new `@theme` color.
 
 `Lens` += `sensors`. Unhidden after `unlock-sensors`. Dock row [[ui/lens]].
 
-Wires are sim-state always. Paint and port hits iff `lens === 'sensors'`. Armed sensor-cell SKU or `buy-smart-valve` forces this lens (pipes pattern).
+Wires are sim-state always. Paint and port hits iff the effective lens is `sensors`. An armed sensor-cell SKU forces it through `toolLens`, and confirming a place locks it — [[ui/lens]].
 
-Selecting Build shelf `logic` (**Sensors**) sets `lens = 'sensors'`. Does not arm a SKU. Switching to another Build category does **not** force this lens off. [[ui/build]]
+Selecting Build shelf `logic` (**Sensors**) sets and locks `lens = 'sensors'`. Does not arm a SKU. [[ui/build]]
 
-Esc / Shop **×** / Build close / leaving the shop system: `cancelPlace`; `pipes` or `sensors` → `off`. `leaveShop` matches Esc. Right-click: `cancelPlace` only. Other lenses stay. Shop ↔ Build keeps the ghost and this lens.
+Esc / Shop **×** / Build close / leaving the shop system: `cancelPlace` only. The lens is untouched — a locked `sensors` survives, and an unlocked one dies with the Lens dock, not the shop.
 
 ## Fade
 
@@ -26,13 +26,13 @@ Paint that wash when `lens === 'sensors'` (every such reader) or while that wate
 
 ## Wires
 
-Overlay Graphics bezier. Idle stroke palette `fruit-red`. Active (signal `1`) stroke `water`. No new `@theme` color. Visual cross is paint, no join.
+Overlay Graphics bezier. Idle stroke palette `fruit-red`. Active (signal `1`) stroke `water`, with beads marching `from` → `to` on the flow channel — [[art/vfx]]. No new `@theme` color. Visual cross is paint, no join.
 
 No price. Fan-out: many wires from one `from`. Fan-in: many wires on one input; second finalize does **not** replace. Inputs OR.
 
 One direct path between two nodes. Finalize of A→B when that node pair exists: **Remove wire**, drop it, `place none`. Delete-tool bezier **Delete wire** stays.
 
-Start: click an **output port** → `Act.armWire` → `place = { kind: 'wire'; from }`. Pending bezier follows the pointer. Finalize on a valid input → `Act.placeWire`. Combinational cycle → no-op, place stays, **Cannot loop**. Sequential feedback (lever / pulser / counter / traffic-light `in`) is legal. Illegal port → no-op, **Cannot wire here**. `cancelPlace` clears.
+Start: click an **output port** → `Act.armWire` → `place = { kind: 'wire'; from }`. Pending bezier follows the pointer. Finalize on a valid input → `Act.placeWire`. Press-and-release does the same in one gesture: press an `out` disc, release on an `in` disc. Release anywhere else keeps the arm, so click-click is unchanged. Combinational cycle → no-op, place stays, **Cannot loop**. Sequential feedback (lever / pulser / counter / traffic-light `in`) is legal. Illegal port → no-op, **Cannot wire here**. `cancelPlace` clears.
 
 While a sensor SKU is armed, click confirms place, not a wire.
 
@@ -40,7 +40,7 @@ Delete tool: nearest bezier within `VERTEX_HIT` → **Delete wire**. `Act.delete
 
 ## Ports
 
-Hits only in `sensors`. `from` is an output. `to` is an input.
+Hits only in `sensors`, and a hit is a disc of `PORT_HIT` at `portXY` — preference. The painted mark is that disc, so paint is the hitbox. `from` is an output. `to` is an input.
 
 | kind | in | out | hit |
 |---|---|---|---|
@@ -48,12 +48,16 @@ Hits only in `sensors`. `from` is an output. `to` is an input.
 | lamp | `in` top | — | whole-cell = `in` |
 | not, pulser, counter, lever, traffic-light | `in` top | `out` bottom | top / bottom |
 | and, or | `in-l` left, `in-r` right | `out` bottom | left / right half, bottom |
-| sprinkler (`unlock-smart-irrigation`) | `in` | — | vertex |
-| smart valve | `in` on the body | — | edge body |
+| sprinkler (`unlock-smart-irrigation`) | `in` | — | vertex disc |
+| valve (`unlock-smart-irrigation`) | `in` on the body | — | edge-midpoint disc |
 | mill, jam, still | `in` origin top | — | origin whole-cell = `in`. East still cell: no port |
 | chest, freezer, seed-silo, additive-store | — | `out` origin bottom | origin whole-cell = bottom. South silo / additive cell: no port |
 
-Lever is not output-only. Same hit as NOT: top half `in`, bottom `out`. Pulser / counter / traffic-light same. Wiring a sprinkler before `unlock-smart-irrigation` is a no-op → **Cannot wire here**. Manual valve has no port. East still cell / south silo cell: **Cannot wire here**. Compost-box: pads, no port. Barrel, grinder, field silos: no port.
+The cell body is the device action in **every** lens: Flip, Press, Tune. No half-cell port, no lens-dependent hitbox. AND / OR get three discs, not left and right halves.
+
+Whole-cell fallback, `sensors` only, for the devices with no body action: lamp (`in`), sensor-fert / water-system / vehicle-detector / chest / freezer / seed-silo / additive-store (`out`).
+
+Wiring a sprinkler or a valve before `unlock-smart-irrigation` is a no-op → **Cannot wire here**. East still cell / south silo cell: **Cannot wire here**. Compost-box: pads, no port. Barrel, grinder, field silos: no port.
 
 ## Port chrome
 
@@ -66,15 +70,13 @@ Iff `lens === 'sensors'` or pending wire. Overlay on the map, not baked into pro
 
 Also sprinkler `in` after `unlock-smart-irrigation`, smart-valve `in`, mill / jam / still `in`, chest / freezer / seed-silo / additive-store `out`. Lens only. Same circles / squares. No prop nubs. Not the full hitbox.
 
-Fill: idle `fruit-red`, high `water`. Stroke `ink`. Size ~2–3 viewBox units on the art 24-tile (~4–6 px). Readable, not a second sprite.
+Fill: idle `fruit-red`, high `water`. Stroke `ink`. A solid 3 px mark inside a `PORT_HIT` halo of the same colour at 0.3 alpha — the halo is the hit area, drawn so the player can aim at it.
 
 ## Place
 
-StayArmed: fifteen cell SKUs + `buy-smart-valve`. Stamp many. Pay on confirm. Guest `GUEST_BUILD` for the fifteen cells + `placeSmartValve`.
+StayArmed: fifteen cell SKUs. Stamp many. Pay on confirm. Guest `GUEST_BUILD` for the fifteen cells.
 
 Sensor cells: 1×1, `skuInner` like chest. `placeSolidOk`. Copy **Place {skuLabel}**. Hover valid `stroke-ink`, blocked `stroke-roof`.
-
-Smart valve: edge ghost like manual valve, distinct copy **Place Smart valve**. Nearest edge, 0.35 tile. Occupied / not an edge / unowned → **Cannot place here**. Poor → **Cannot afford**. Forces `sensors`, not `pipes`.
 
 Rotate: no-op. No sensor SKU in `ROTATABLE`. Trio still from Sensors `cluster: 'build'`.
 
@@ -101,7 +103,7 @@ Live `count` follows sim while the HUD is open. Guest: Field + Reset.
 
 **×** / map click elsewhere / Esc → `closeHud`. Map click another water / harvest / counter / day / sprinkler-hud hit retargets.
 
-Guest: sensor cells, smart valve, wires, lever / button, water / harvest / counter / day HUD. Still no pipes / manual valves / sprinklers / sprinkler HUD.
+Guest: sensor cells, wires, lever / button, water / harvest / counter / day HUD. Still no pipes / valves / sprinklers / sprinkler HUD.
 
 ## Look
 
@@ -122,15 +124,15 @@ Guest: sensor cells, smart valve, wires, lever / button, water / harvest / count
 | water-system | **Water-system sensor - no pipes around sensor!** when not on a net. Else **Water-system sensor - on/off** |
 | vehicle-detector | **Vehicle detector** |
 | traffic-light | **Traffic light** |
-| smart valve | **Smart valve** |
+| valve | **Valve** — **Valve - wired** while a wire drives it |
 
-May append **on** / **off** from signal: lever `on`, lamp `inn`, traffic-light `inn`, else `out`; smart valve held input. Traffic light groups **off** / **on** from `inn`. Not plots. No soil bars. Water-system off-net uses the no-pipes line as written — no **on** / **off** on that line.
+May append **on** / **off** from signal: lever `on`, lamp `inn`, traffic-light `inn`, else `out`. Traffic light groups **off** / **on** from `inn`. Not plots. No soil bars. Water-system off-net uses the no-pipes line as written — no **on** / **off** on that line.
 
 `skuLabel` = look name. Place **Place {skuLabel}**. Unarmed **Flip lever** / **Press button**. Tune **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor**. Wire **Cannot wire here** / **Cannot loop** / **Remove wire**. Delete **Delete {look}**. Place **Place Traffic light**. Delete **Delete traffic light**.
 
 ## Shop / almanac / research
 
-Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sensors: lever, button, lamp, or, and, not, pulser, counter, traffic-light. Readers: water, fert, harvest, water-system, vehicle-detector, day. Traffic light with lever / button, not readers. Smart valve → Water (flow), after manual valve.
+Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sensors: lever, button, lamp, or, and, not, pulser, counter, traffic-light. Readers: water, fert, harvest, water-system, vehicle-detector, day. Traffic light with lever / button, not readers.
 
 `skuDesc` = catalog `blurb`. Paste. No tick / DAG / HUD / SKU in these strings.
 
@@ -151,12 +153,11 @@ Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sens
 | `buy-water-system` | **Water-system sensor** | Joins a water net. Output high when sprinklers on that net want more than the tanks hold. |
 | `buy-vehicle-detector` | **Vehicle detector** | Flush plate. Output high when a field Quad or tractor sits on this tile. |
 | `buy-traffic-light` | **Traffic light** | Holds a vehicle until the input is green; output is on while a vehicle waits here. |
-| `buy-smart-valve` | **Smart valve** | Sits on an edge. Closed unless its input is high. No manual click. |
 
-Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: []`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. Water / fert / water-system / vehicle-detector show on `unlock-sensors` and carry a `need` list; their locked callout names that list. Traffic light: `show` `unlock-sensors`, `need` `unlock-dispatch`. Locked callout names **Automated dispatch** — [[mechanics/research]].
+Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: []`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. Water / fert / water-system / vehicle-detector show on `unlock-sensors` and carry a `need` list; their locked callout names that list. Traffic light: `show` `unlock-sensors`, `need` `unlock-dispatch`. There is no valve SKU on this shelf: `unlock-smart-irrigation` gives the valve its port in place. Locked callout names **Automated dispatch** — [[mechanics/research]].
 
 Research card `unlock-advanced-sensors` name **Advanced sensors**. Blurb: **Unlocks AND, OR, and NOT. AND is on if both inputs are. OR if either is. NOT inverts.** Not a `CatalogEntry`.
 
-Almanac **Sensors**: Overview, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day. Tab click lands Overview. Generic pane. Smart valve and sprinklers on Almanac **Water systems**. [[ui/almanac]]
+Almanac **Sensors**: Overview, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day. Tab click lands Overview. Generic pane. Valves and sprinklers on Almanac **Water systems**. [[ui/almanac]]
 
 Assumption: Flip / Press / Tune-water / Tune-harvest / Tune-counter / Tune-day fire when `place.kind === 'none'` and port hits are off (`lens !== 'sensors'`); in `sensors`, output-only whole-cell starts a wire; lever / pulser / counter / traffic-light top / bottom are ports. HUD toggles stay open. Sensors tab after Vehicles, before Land. Off-net water-system = tap-join with no incident pipe. Fan-in / A→B toggle copy here wins over the stale replace-rule in [[mechanics/sensors]]. Additive-store south cell is the same no-port as south silo. Counter `Field` is the existing frame control; out of range does not toast. Traffic-light `skuDesc` is the items blurb.

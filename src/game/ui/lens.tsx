@@ -80,12 +80,16 @@ export const LENS_ROWS: Row[] = [
 export function LensPanel({
   world,
   lens,
+  lock,
   onPick,
+  onLock,
   onClose,
 }: {
   world: World
   lens: Lens
+  lock: boolean
   onPick: (lens: Lens) => void
+  onLock: (lock: boolean) => void
   onClose: () => void
 }) {
   const rows = LENS_ROWS.filter(row => {
@@ -107,6 +111,23 @@ export function LensPanel({
       >
         <span>No lens</span>
         {lens === 'off' && <span className="text-xs">active</span>}
+      </button>
+      <button
+        type="button"
+        disabled={lens === 'off'}
+        onClick={() => onLock(!lock)}
+        className={`mb-3 flex w-full items-center justify-between px-3 py-2 text-sm font-semibold ${
+          lens === 'off'
+            ? 'cursor-default bg-ink/5 text-ink/30'
+            : lock
+              ? 'cursor-pointer bg-dirt-dark text-house'
+              : 'cursor-pointer bg-ink/8 text-ink/70 hover:bg-ink/15'
+        }`}
+      >
+        <span>Lock view</span>
+        <span className="text-xs">
+          {lens === 'off' ? 'pick a lens first' : lock ? 'stays on when this closes' : 'off when this closes'}
+        </span>
       </button>
       <Label>Overlays</Label>
       <div className="flex flex-col gap-1.5">

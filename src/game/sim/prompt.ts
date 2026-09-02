@@ -29,10 +29,10 @@ import {
   millRecipeOf,
   stillCropOf,
 } from './machine.ts'
-import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
+import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite } from './plot.ts'
-import { isSensor, isSeqIn, sameNode, wouldCycle, type SmartHold, type WireEnd } from './sensor.ts'
+import { isSensor, isSeqIn, sameNode, wouldCycle, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { TREE_NAME } from '../defs/trees.ts'
@@ -58,7 +58,6 @@ export type PromptHit =
   | { kind: 'sprinkler-hud'; at: Vertex }
   | { kind: 'port'; end: WireEnd }
   | { kind: 'delete-wire'; from: WireEnd; to: WireEnd }
-  | { kind: 'smart-valve'; edge: Edge }
   | { kind: 'water-hud'; at: Coord }
   | { kind: 'harvest-hud'; at: Coord }
   | { kind: 'counter-hud'; at: Coord }
@@ -71,27 +70,24 @@ export function placeLabel(id: SkuId): string {
 export function pipePrompt(w: World, e: Edge): Prompt {
   if (w.act.place.kind !== 'sku') return { kind: 'blocked', text: 'Cannot place here' }
   const id = w.act.place.id
-  if (id !== 'buy-pipe' && id !== 'buy-valve' && id !== 'buy-well' && id !== 'buy-smart-valve') {
+  if (id !== 'buy-pipe' && id !== 'buy-valve' && id !== 'buy-well') {
     return { kind: 'blocked', text: 'Cannot place here' }
   }
-  if (w.money < w.skuPrice(id)) return { kind: 'blocked', text: 'Cannot afford' }
+  if (id !== 'buy-valve' && w.money < w.skuPrice(id)) return { kind: 'blocked', text: 'Cannot afford' }
   if (!w.edgeOwned(e)) return { kind: 'blocked', text: 'Cannot place here' }
   if (id === 'buy-pipe') {
-    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
+    if (w.hasPipe(e) || w.hasWell(e)) return { kind: 'blocked', text: 'Cannot place here' }
     return { kind: 'place', text: 'Place Pipe' }
   }
   if (id === 'buy-well') {
-    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
+    if (w.hasPipe(e) || w.hasWell(e)) return { kind: 'blocked', text: 'Cannot place here' }
     return { kind: 'place', text: 'Place Well' }
   }
-  if (id === 'buy-smart-valve') {
-    if (w.hasPipe(e) || w.hasWell(e) || w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
-    return { kind: 'place', text: 'Place Smart valve' }
-  }
-  if (w.hasSmart(e)) return { kind: 'blocked', text: 'Cannot place here' }
-  if (!w.hasPipe(e)) return { kind: 'blocked', text: 'Valve needs a pipe' }
+  if (w.hasWell(e)) return { kind: 'blocked', text: 'Cannot place here' }
   if (w.hasValve(e)) return { kind: 'blocked', text: 'Pipe already has a valve' }
-  return { kind: 'place', text: 'Place Manual valve' }
+  const cost = w.hasPipe(e) ? w.skuPrice('buy-valve') : w.skuPrice('buy-valve') + w.skuPrice('buy-pipe')
+  if (w.money < cost) return { kind: 'blocked', text: 'Cannot afford' }
+  return { kind: 'place', text: 'Place Valve' }
 }
 
 export function valveStand(w: World, e: Edge): Coord {
@@ -103,6 +99,7 @@ export function valveStand(w: World, e: Edge): Coord {
 export function valvePrompt(w: World, e: Edge): Prompt {
   const seg = w.segmentAt(e)
   if (seg === undefined || seg.gate.kind !== 'valve') return { kind: 'blocked', text: 'Cannot reach here' }
+  if (w.valveWired(e)) return { kind: 'blocked', text: 'Valve - wired' }
   return intent(seg.gate.open ? 'Close valve' : 'Open valve', { act: 'valve', at: valveStand(w, e), edge: e })
 }
 
@@ -207,7 +204,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     }
     return { kind: 'place', text: 'Place' }
   }
-  if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well' || w.act.place.id === 'buy-smart-valve')) {
+  if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve' || w.act.place.id === 'buy-well')) {
     if (hit === undefined || hit.kind !== 'edge') {
       if (w.money < w.skuPrice(w.act.place.id)) return { kind: 'blocked', text: 'Cannot afford' }
       return { kind: 'blocked', text: 'Cannot place here' }
@@ -215,10 +212,6 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     return pipePrompt(w, hit.edge)
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'valve') return valvePrompt(w, hit.edge)
-  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'smart-valve') {
-    const h = w.smartHold.get(edgeKey(hit.edge)) as SmartHold
-    return { kind: 'blocked', text: `Smart valve - ${h.level === 1 ? 'on' : 'off'}` }
-  }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'well') return wellPrompt(w, hit.edge)
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'sprinkler-hud') {
     return { kind: 'place', text: 'Tune sprinkler' }
@@ -240,9 +233,6 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   }
   if (w.act.place.kind === 'delete' && hit !== undefined && hit.kind === 'delete-wire') {
     return { kind: 'place', text: 'Delete wire' }
-  }
-  if (w.act.place.kind === 'delete' && hit !== undefined && hit.kind === 'smart-valve') {
-    return { kind: 'place', text: 'Delete smart valve' }
   }
   if (
     w.act.place.kind === 'sku' &&

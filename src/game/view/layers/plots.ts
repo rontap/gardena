@@ -3,7 +3,7 @@ import { isPlot } from '../../sim/plot.ts'
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MAX } from '../../sim/soil.ts'
 import type { World } from '../../sim/world.ts'
-import { TILE, tileVariant } from '../camera.ts'
+import { EDGE_PAD, TILE, tileVariant } from '../camera.ts'
 import { atlasTex, cropKey, ripeStage } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 
@@ -11,6 +11,15 @@ const WHITE = Texture.WHITE
 const BAD = 0xe23b2e
 const MID = 0xd4a017
 const INK = 0x1c1710
+const WET_TINT_MAX = 0.24
+
+function wetTint(water: number): number {
+  const w = Math.min(1, water / SOIL_WATER_MAX)
+  const r = Math.round(255 * (1 - WET_TINT_MAX * w))
+  const g = Math.round(255 * (1 - WET_TINT_MAX * 0.85 * w))
+  const b = Math.round(255 * (1 - WET_TINT_MAX * 0.4 * w))
+  return (r << 16) | (g << 8) | b
+}
 
 export class PlotsLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
@@ -56,6 +65,7 @@ export class PlotsLayer {
     if (!isPlot(cell) || cell.kind === 'untilled' || cell.kind === 'infertile') return
     const dirt = this.pool.take(atlasTex(tileVariant(col, row, 2) === 0 ? 'dirt-0' : 'dirt-1'))
     dirt.position.set(col * TILE, row * TILE)
+    dirt.tint = wetTint(cell.soil.water)
     const e = world.plotEdges(col, row)
     this.edge(col, row, e[0] === '1', 180)
     this.edge(col, row, e[1] === '1', -90)
@@ -107,6 +117,8 @@ export class PlotsLayer {
 
   private inset(x: number, y: number, rot: number): void {
     const s = this.pool.take(atlasTex('dirt-inset'))
+    const a = EDGE_PAD / (24 + EDGE_PAD * 2)
+    s.anchor.set(a, a)
     s.position.set(x, y)
     s.rotation = (rot * Math.PI) / 180
   }

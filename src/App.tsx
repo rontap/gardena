@@ -27,6 +27,7 @@ import { arming, cued, type Panel } from './game/ui/panel.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
+import { PIPE_PLACE } from './game/view/hit.ts'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
 import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
@@ -88,6 +89,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [hangarTrailer, setHangarTrailer] = useState<TrailerId | undefined>(undefined)
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
+  const [lensLock, setLensLock] = useState(false)
+  const toolLens = world === undefined ? undefined : toolLensOf(world)
   const [editor, setEditor] = useState(false)
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
@@ -124,8 +127,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (lens === 'water' && !world.hasSkill('water-study')) setLens('off')
     if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
-    const p = world.seats[world.local].place
-    if (p.kind === 'sku' && (SENSOR_LENS_SKUS as readonly string[]).includes(p.id)) setLens('sensors')
   }, [hudN, lens, world])
 
   useEffect(() => {
@@ -273,7 +274,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
       }
       world.cancelPlace()
       world.closeHud()
-      setLens(l => (l === 'pipes' || l === 'sensors' ? 'off' : l))
       setQuery('')
       if (world.seam.kind === 'recap') {
         if (world.local === 0) world.dismissRecap()
@@ -378,6 +378,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setCam(BOOT_CAM)
     setHover(undefined)
     setLens('off')
+    setLensLock(false)
     setPaused(false)
   }
 
@@ -476,8 +477,22 @@ export default function App({ sink }: { sink: WorkerSink }) {
   function leaveShop(): void {
     if (world === undefined) return
     world.cancelPlace()
-    setLens(l => (l === 'pipes' || l === 'sensors' ? 'off' : l))
     setQuery('')
+  }
+
+  function closeLens(): void {
+    if (!lensLock) setLens('off')
+    setPanel({ kind: 'none' })
+  }
+
+  function pickLens(next: Lens): void {
+    setLens(next)
+    if (next === 'off') setLensLock(false)
+  }
+
+  function clearLens(): void {
+    setLensLock(false)
+    setLens('off')
   }
 
   function open(next: Panel): void {
@@ -485,6 +500,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seam.kind === 'recap') return
     setPanel(p => {
       const to = p.kind === next.kind ? { kind: 'none' as const } : next
+      if (p.kind === 'lens' && to.kind !== 'lens' && !lensLock) setLens('off')
       if (arming(p.kind) && !arming(to.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
@@ -757,13 +773,17 @@ export default function App({ sink }: { sink: WorkerSink }) {
           <MapView
             world={world}
             cam={cam}
-            lens={lens}
+            lens={toolLens ?? lens}
             editor={editor}
             hover={hover}
             onHover={setHover}
             onCam={setCam}
             onClick={(hit, xy) => {
               if (world.seam.kind === 'recap') return
+              if (hit.kind === 'cell' && sensorArmed(world)) {
+                setLens('sensors')
+                setLensLock(true)
+              }
               if (
                 hit.kind !== 'sprinkler-hud' &&
                 hit.kind !== 'water-hud' &&
@@ -802,6 +822,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onMarket={() => open({ kind: 'market' })}
             onAlmanac={() => open({ kind: 'almanac' })}
             onLens={() => open({ kind: 'lens' })}
+            onLensClear={clearLens}
+            lensLock={lensLock}
             onCheat={() => open({ kind: 'cheat' })}
             onGear={toggleMenu}
             onMultiplayer={toggleMp}
@@ -819,7 +841,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           </div>
           {panel.kind === 'family' && <Family world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'lens' && (
-            <LensPanel world={world} lens={lens} onPick={setLens} onClose={() => setPanel({ kind: 'none' })} />
+            <LensPanel world={world} lens={lens} lock={lensLock} onPick={pickLens} onLock={setLensLock} onClose={closeLens} />
           )}
           {panel.kind === 'shop' && (
             <Shop
@@ -828,7 +850,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
               onShelf={id => {
-                if (id === 'logic') setLens('sensors')
+                if (id === 'logic') {
+                  setLens('sensors')
+                  setLensLock(true)
+                }
               }}
               onClose={() => {
                 leaveShop()
@@ -843,7 +868,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
               onShelf={id => {
-                if (id === 'logic') setLens('sensors')
+                if (id === 'logic') {
+                  setLens('sensors')
+                  setLensLock(true)
+                }
               }}
               onClose={() => {
                 leaveShop()
@@ -1169,13 +1197,21 @@ function Dash({
   )
 }
 
+function sensorArmed(world: World): boolean {
+  const p = world.seats[world.local].place
+  return p.kind === 'sku' && (SENSOR_LENS_SKUS as readonly string[]).includes(p.id)
+}
+
+function toolLensOf(world: World): Lens | undefined {
+  const p = world.seats[world.local].place
+  if (sensorArmed(world)) return 'sensors'
+  if (p.kind === 'delete') return 'pipes'
+  if (p.kind === 'sku' && (PIPE_PLACE as readonly string[]).includes(p.id)) return 'pipes'
+  return undefined
+}
+
 function dispatchClick(world: World, hit: MapClick): void {
   if (hit.kind === 'edge') {
-    const place = world.seats[world.local].place
-    if (place.kind === 'sku' && place.id === 'buy-smart-valve') {
-      world.placeSmartValve(hit.edge)
-      return
-    }
     world.placePipe(hit.edge)
     return
   }
@@ -1190,10 +1226,6 @@ function dispatchClick(world: World, hit: MapClick): void {
   }
   if (hit.kind === 'delete-wire') {
     world.deleteWire(hit.from, hit.to)
-    return
-  }
-  if (hit.kind === 'smart-valve') {
-    world.deleteSmart(hit.edge)
     return
   }
   if (hit.kind === 'water-hud') {

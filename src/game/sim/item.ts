@@ -125,7 +125,6 @@ export type Face =
   | { kind: 'water-system' }
   | { kind: 'vehicle-detector' }
   | { kind: 'traffic-light' }
-  | { kind: 'smart-valve' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -325,7 +324,7 @@ export function skuLabel(id: SkuId): string {
     case 'buy-well':
       return 'Well'
     case 'buy-valve':
-      return 'Manual valve'
+      return 'Valve'
     case 'buy-rain-tank':
       return 'Rainwater tank'
     case 'buy-tap':
@@ -388,8 +387,6 @@ export function skuLabel(id: SkuId): string {
       return 'Day sensor'
     case 'buy-water-system':
       return 'Water-system sensor'
-    case 'buy-smart-valve':
-      return 'Smart valve'
     case 'buy-vehicle-detector':
       return 'Vehicle detector'
     case 'buy-traffic-light':
@@ -484,7 +481,7 @@ export function skuDesc(id: SkuId): string {
         { rate: SOURCE.well.rate, cap: SOURCE.well.capacity },
       )
     case 'buy-valve':
-      return 'Sits on an edge like pipe. Click it to send the gardener over and turn the flow off or on.'
+      return 'Sits on an edge like pipe, laying one if the edge is bare. Click it to send the gardener over and turn the flow off or on.'
     case 'buy-rain-tank':
       return fill('Two tiles. Gathers ${rate} L/s into a ${cap} L tank, no pump needed.', {
         rate: SOURCE['rain-tank'].rate,
@@ -569,8 +566,6 @@ export function skuDesc(id: SkuId): string {
       return 'Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it.'
     case 'buy-water-system':
       return 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.'
-    case 'buy-smart-valve':
-      return 'Sits on an edge. Closed unless its input is high. No manual click.'
     case 'buy-vehicle-detector':
       return 'Flush plate. Output high when a field Quad or tractor sits on this tile.'
     case 'buy-traffic-light':
@@ -757,8 +752,6 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'sensor-day' }
     case 'buy-water-system':
       return { kind: 'water-system' }
-    case 'buy-smart-valve':
-      return { kind: 'smart-valve' }
     case 'buy-vehicle-detector':
       return { kind: 'vehicle-detector' }
     case 'buy-traffic-light':

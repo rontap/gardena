@@ -196,7 +196,6 @@ export type SkuId =
   | 'buy-sensor-harvest'
   | 'buy-sensor-day'
   | 'buy-water-system'
-  | 'buy-smart-valve'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
 
@@ -255,7 +254,7 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-traffic-light',
 ]
 
-export const SENSOR_LENS_SKUS: readonly SkuId[] = [...SENSOR_CELL_SKUS, 'buy-smart-valve']
+export const SENSOR_LENS_SKUS: readonly SkuId[] = SENSOR_CELL_SKUS
 
 export type VehicleKind = 'quad' | 'tractor'
 export type VehicleId = number

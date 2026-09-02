@@ -73,7 +73,7 @@ Hangar, parked or automated Quad, parked or automated tractor: look and prompt [
 
 ## Sensors
 
-Sensor cells and smart valve: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**.
+Sensor cells and valves: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**.
 
 Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**.
 

@@ -132,6 +132,6 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 | `MpWire` | `sim/mp.ts` type. PeerJS in `net/peer.ts` only |
 | `MpHost` / `MpGuest` | `sim/mp.ts`. App holds the session |
 
-`World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments`, `World.wells`, `World.sprinklers` are the pipe graph. Wells sit on edges. Smart valve is a `Gate` on a segment. `World.fences` is the fence set.
+`World.house` / `truck` / `pumps` / `tanks` / `taps` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments`, `World.wells`, `World.sprinklers` are the pipe graph. Wells sit on edges. A valve is a `Gate` on a segment. `World.fences` is the fence set.
 
 Tutorial is App session state. Save I/O is `sim/save.ts`. App does not own `Save`.

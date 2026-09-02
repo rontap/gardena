@@ -1,6 +1,10 @@
 export type Camera = { x: number; y: number; scale: number }
 
 export const TILE = 48
+export const EDGE_PAD = 4
+export const DROP_FACE = 33
+export const DROP_INSET = 4
+export const DROP_STEP = 6
 
 export function tileVariant(col: number, row: number, n: number, salt = 0): number {
   let h = (Math.imul(col, 374761393) + Math.imul(row, 668265263) + Math.imul(salt, 951274213)) >>> 0

@@ -5,7 +5,7 @@ import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 1.9
+export const PROTOCOL = 2.02
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -70,7 +70,6 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-water-system',
   'buy-vehicle-detector',
   'buy-traffic-light',
-  'buy-smart-valve',
 ])
 
 const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
@@ -309,7 +308,7 @@ export function permit(cmd: Cmd): boolean {
       // TODO 1.1 multiplayer guest chest swap
       return false
     case Act.delete:
-      if (cmd.k === 'building' || cmd.k === 'wire' || cmd.k === 'smart') return true
+      if (cmd.k === 'building' || cmd.k === 'wire') return true
       return false
     case Act.tuneSprinkler:
     case Act.dismissRecap:
@@ -436,7 +435,7 @@ export function digestParts(world: World): Record<string, unknown> {
     nextRouteId: world.nextRouteId,
     cells,
     wires: world.wires,
-    smart: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: q(h.hold) })),
+    valves: [...world.valveHold.values()].map(h => ({ e: h.e, level: h.level, hold: q(h.hold) })),
     sprinklers: [...world.sprinklers.values()].map(s => ({
       at: s.at,
       sig: world.wires.some(

@@ -135,7 +135,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 1.9 as const
+export const SAVE_VERSION = 2.02 as const
 
 const INV = 16
 
@@ -293,7 +293,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 1.9
+  version: 2.02
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -328,7 +328,7 @@ export type Save = {
   wells: { at: Edge; stored: number }[]
   sprinklers: Sprinkler[]
   wires: Wire[]
-  smartHold: { e: Edge; level: 0 | 1; hold: number }[]
+  valveHold: { e: Edge; level: 0 | 1; hold: number }[]
   fences: Coord[]
   drops: { at: Coord; item: Item }[]
   contracts: SaveContracts
@@ -425,7 +425,7 @@ export function dump(world: World): Save {
     wells: [...world.wells.values()].map(well => ({ at: well.at, stored: well.water.stored })),
     sprinklers: [...world.sprinklers.values()],
     wires: world.wires.map(w => ({ from: w.from, to: w.to })),
-    smartHold: [...world.smartHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
+    valveHold: [...world.valveHold.values()].map(h => ({ e: h.e, level: h.level, hold: h.hold })),
     fences: [...world.fences].map(k => {
       const i = k.indexOf(',')
       return { col: Number(k.slice(0, i)), row: Number(k.slice(i + 1)) }
@@ -848,7 +848,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const wellsIn = arr(rec.wells)
   const sprinklersIn = arr(rec.sprinklers)
   const wiresIn = arr(rec.wires)
-  const smartHoldIn = arr(rec.smartHold)
+  const valveHoldIn = arr(rec.valveHold)
   const fencesIn = arr(rec.fences)
   const dropsIn = arr(rec.drops)
   if (
@@ -856,7 +856,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     wellsIn === undefined ||
     sprinklersIn === undefined ||
     wiresIn === undefined ||
-    smartHoldIn === undefined ||
+    valveHoldIn === undefined ||
     fencesIn === undefined ||
     dropsIn === undefined
   ) {
@@ -889,11 +889,11 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     if (w === undefined) return undefined
     wires.push(w)
   }
-  const smartHold: Save['smartHold'] = []
-  for (const raw of smartHoldIn) {
-    const h = readSmartHold(raw)
+  const valveHold: Save['valveHold'] = []
+  for (const raw of valveHoldIn) {
+    const h = readValveHold(raw)
     if (h === undefined) return undefined
-    smartHold.push(h)
+    valveHold.push(h)
   }
   const fences: Coord[] = []
   for (const f of fencesIn) {
@@ -968,7 +968,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     wells,
     sprinklers,
     wires,
-    smartHold,
+    valveHold,
     fences,
     drops,
     vehicles,
@@ -997,7 +997,7 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
     stills: live.stills,
     waterSystems: live.waterSystems,
     wires: save.wires,
-    smartHold: save.smartHold,
+    valveHold: save.valveHold,
     stall: makeStallMap(save.stall),
     family: makeFamily(save.family),
     seats: save.seats.map((s, i): Seat => ({
@@ -2306,7 +2306,6 @@ function readGate(v: unknown): Gate | undefined {
     if (open === undefined) return undefined
     return { kind: 'valve', open }
   }
-  if (o.kind === 'smart') return { kind: 'smart' }
   return undefined
 }
 
@@ -2341,7 +2340,7 @@ function readWireEnd(v: unknown): WireEnd | undefined {
   return undefined
 }
 
-function readSmartHold(v: unknown): Save['smartHold'][number] | undefined {
+function readValveHold(v: unknown): Save['valveHold'][number] | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
   const e = readEdge(o.e)

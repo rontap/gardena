@@ -20,6 +20,7 @@ export type ViewHooks = {
   cam: Camera
   pendingPipe: Edge[]
   hit: (wx: number, wy: number) => ReturnType<typeof clickHit>
+  vfxN: number
 }
 
 export class WorldView {
@@ -65,14 +66,22 @@ export class WorldView {
     this.editor = editor
     this.onCam = onCam
     this.farm.eventMode = 'none'
-    this.farm.addChild(this.ground.root, this.plots.root, this.pipes.root, this.props.root, this.actors.root, this.overlay.root, this.vfx.root)
+    this.farm.addChild(
+      this.ground.root,
+      this.plots.root,
+      this.vfx.ground,
+      this.pipes.root,
+      this.props.root,
+      this.actors.root,
+      this.overlay.root,
+      this.vfx.root,
+    )
     this.app.stage.addChild(this.farm)
     this.actors.bind(world)
     this.vfx.bind(world)
     this.patch('all')
     this.unsub = world.on((kind, reasons) => {
       if (kind !== 'dirty') return
-      if (reasons.has('vfx')) this.vfx.ingest(world, performance.now())
       if (reasons.has('speech')) this.onSpeech?.()
       if (reasons.has('field') || reasons.has('big') || reasons.has('act')) this.patch('field')
     })
@@ -122,6 +131,10 @@ export class WorldView {
     return this.vfx.mounts
   }
 
+  get vfxN(): number {
+    return this.vfx.vfxN
+  }
+
   destroy(): void {
     if (this.unsub !== undefined) this.unsub()
     destroyApp(this.app)
@@ -131,6 +144,7 @@ export class WorldView {
     const world = this.world
     this.actors.tick(world)
     this.vfx.tick(world, performance.now())
+    this.overlay.flowTick(world, performance.now())
     const driven = world.driverVehicle(world.local)
     if (driven !== undefined && driven.pose.kind === 'field') {
       const q = this.actors.pose(driven.id)

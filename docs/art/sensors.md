@@ -29,14 +29,13 @@ Traffic light: two stacked ovals, visor as a hood on the housing, not a street p
 | `item-water-system.svg` `prop-water-system.svg` | `0 0 24 24` | `off` `on` | cistern + house pipe waist, not a tap, bottom out |
 | `item-vehicle-detector.svg` `prop-vehicle-detector.svg` | `0 0 24 24` | `off` `on` | flush floor plate, sunk grout, bottom out |
 | `item-traffic-light.svg` `prop-traffic-light.svg` | `0 0 24 24` | `off` `on` | two stacked ovals, top in, bottom out |
-| `item-smart-valve.svg` | `0 0 24 24` | `closed` `open` | shop/hand, industrial slab on a pipe, jack on the body |
-| `pipe-smart-valve.svg` | `0 0 24 24` | `closed` `open` | edge. Same object. Not `power-switch.svg`. Not `pipe-valve.svg` |
+| `pipe-valve-jack.svg` | `0 0 24 24` | `jack` | edge. Steel socket bolted to the valve body, drawn over `pipe-valve.svg` when that valve owns a port |
 
-Items `src/assets/items/`. Props `src/assets/props/`. Edge `src/assets/joints/pipe-smart-valve.svg`.
+Items `src/assets/items/`. Props `src/assets/props/`. Edge `src/assets/joints/pipe-valve-jack.svg`.
 
 ## Ports
 
-Steel nubs, readable at 24×24. AND/OR `in-l` left + `in-r` right + `out` bottom. NOT / pulser / counter / lever / traffic-light `in` top + `out` bottom. Lamp `in` top of housing, no out. Output-only `out` bottom. Smart valve jack on the body.
+Steel nubs, readable at 24×24. AND/OR `in-l` left + `in-r` right + `out` bottom. NOT / pulser / counter / lever / traffic-light `in` top + `out` bottom. Lamp `in` top of housing, no out. Output-only `out` bottom. Valve jack on the body, `pipe-valve-jack.svg`, only after `unlock-smart-irrigation`.
 
 Port chrome (circle on out, square on in) is a view overlay. Not baked into these SVGs.
 

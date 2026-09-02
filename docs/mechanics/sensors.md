@@ -25,7 +25,7 @@ Tune `n` out of range is no-op, does not write.
 | not, pulser, counter, lever, traffic-light | `in` top | `out` bottom |
 | and, or | `in-l` left, `in-r` right | `out` bottom |
 | sprinkler (after `unlock-smart-irrigation`) | `in` | — |
-| smart valve | `in` on the body | — |
+| valve, after `unlock-smart-irrigation` | `in` on the body | — |
 | mill, jam, still | `in` origin top | — |
 | chest, freezer, seed-silo, additive-store | — | `out` origin bottom |
 
@@ -35,7 +35,9 @@ Illegal combos unrepresentable per device. Finalize no-ops a `WireEnd` that the 
 
 No prop nubs on mill/jam/still/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port.
 
-Output-only: whole-cell click = bottom `out`. AND/OR: left/right half of the cell for `in-l` / `in-r`; bottom for `out`. NOT / pulser / counter / lever / traffic-light: top `in`, bottom `out`. Lamp / mill / jam / still: `in` on origin top. Sprinkler vertex: `in`. Smart valve edge: `in` on the body.
+A port is a disc of `PORT_HIT` at `portXY`, live only in the `sensors` lens. Paint is the hitbox — [[ui/sensors]]. The cell body is the device action in every lens: Flip, Press, Tune. No half-cell port, no lens-dependent hitbox.
+
+Whole-cell fallback, `sensors` only, for the devices with no body action: lamp (`in`), sensor-fert / water-system / vehicle-detector / chest / freezer / seed-silo / additive-store (`out`).
 
 Sensors lens: lever / traffic-light are not output-only whole-cell. Top half `in`, bottom `out` (NOT). Lens off: Flip / Press still fire.
 
@@ -47,13 +49,13 @@ One direct path: unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. A le
 
 Toggle-remove: finalize of `from` → `to` when a wire already exists with the same node pair: drop that wire, `place = none`. Prompt **Remove wire**.
 
-`from` is an output port. `to` is an input port. `{ kind: 'valve' }` is a **smart** valve only. Manual valve has no port.
+`from` is an output port. `to` is an input port. `{ kind: 'valve' }` is any valve, once `unlock-smart-irrigation` is done.
 
-No wire SKU. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU or `buy-smart-valve` forces that lens. Wires are always sim-state. View-gated paint and port hits.
+No wire SKU. Drawable in view when `Lens` is `sensors`. Armed sensor-cell SKU forces that lens. Wires are always sim-state. View-gated paint and port hits.
 
 Start: `Act.armWire` sets `Seat.place = { kind: 'wire'; from }`. Finalize: `Act.placeWire`. Same node pair already present → drop that wire. Combinational cycle → no-op, place stays. Illegal ports → no-op. `Act.cancelPlace` clears.
 
-Delete: Delete tool, nearest bezier within `VERTEX_HIT`. Building delete, sprinkler delete, smart-valve delete drop incident wires.
+Delete: Delete tool, nearest bezier within `VERTEX_HIT`. Building delete, sprinkler delete, valve delete drop incident wires.
 
 ## Graph / eval
 
@@ -61,7 +63,7 @@ Two graphs. Wiring may contain cycles **through memory**. Combinational wiring m
 
 **Sequential (memory) devices:** lever, pulser, counter. Their `in` is sampled from **last tick’s** outputs, then they update. Internally `in` does not combinationally drive `out` this tick. Flip / Press still apply in `apply` (same-tick Flip + eval edge: both, net zero). Traffic-light `in` is a sequential cut for `wouldCycle` (`isSeqIn`); `inn` is sampled **this** tick (mill-like), then wait resolve after `evalDag`. `inn` does not combinationally drive `out`.
 
-**Combinational devices:** not, and, or, lamp, sprinkler `in`, smart valve `in`, mill / jam / still `in`. Traffic-light `inn` set in `evalDag` like mill.
+**Combinational devices:** not, and, or, lamp, sprinkler `in`, valve `in`, mill / jam / still `in`. Traffic-light `inn` set in `evalDag` like mill.
 
 **Sources:** button, world-readers, chest / freezer / seed-silo / additive-store. Traffic-light `out` after `tickDispatch` (this tick’s waiters).
 
@@ -72,16 +74,16 @@ Combo cycle: finalize no-op, **Cannot loop**. Sequential cut: legal.
 `evalDag` still the tick function. Combo subgraph is a DAG. Tick:
 
 1. Readers sample the just-ticked field / nets / vehicles / `clock.phase()`. Raw `Signal`. Sequential `.out` still last tick. Traffic-light `.out` still last tick.
-2. Topo-eval **combinational** gates from those outs. Lamp / machine / sprinkler / smart-valve / traffic-light `inn` from this combo + sequential outs.
+2. Topo-eval **combinational** gates from those outs. Lamp / machine / sprinkler / valve / traffic-light `inn` from this combo + sequential outs.
 3. Sequential `inn` = OR of wires on `in` (sees this tick’s combo, last tick’s other memories).
 4. Sequential update: lever edge, pulser, counter. Button countdown already on `tick()`.
-5. Hold on world-readers + sprinkler input + smart valve. Traffic-light `out` hold is after `tickDispatch`, not here.
+5. Hold on world-readers + sprinkler input + wired valve. Traffic-light `out` hold is after `tickDispatch`, not here.
 6. Actuators use **this** tick’s held inputs for pour / conduction.
 7. `tickDispatch`: wait / load / unload using this tick’s light `inn`. Then traffic-light `out` + `SENSOR_HOLD` from this tick’s waiters.
 
 Consequence: a lever chain `Q₀ → NOT → Q₁` no longer ripples in one tick. `Q₁` toggles the tick after `Q₀` falls. One tick per stage.
 
-Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser / counter / lever-`in` / sprinkler-input-port / smart-valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators. An input is high iff any incoming wire is high.
+Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser / counter / lever-`in` / sprinkler-input-port / valve-input reads 0. Unwired **sprinkler pour** is the opposite — see actuators. An input is high iff any incoming wire is high.
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
@@ -141,7 +143,7 @@ Unwired `inn` 0 = red = hold. Output 1 iff a vehicle’s current stop is this ce
 
 SKU `buy-traffic-light`. Sensors shelf. `show` `unlock-sensors`, `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `TRAFFIC_LIGHT_PRICE`. Blurb: holds a vehicle until the input is green; output is on while a vehicle waits here.
 
-Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
+Water-system: 1×1, joins a net like `Tap` (any corner). Not a producer. Not a fill target. No incident pipe / well edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. Taps / stills not in demand. Want = sum of `demand(s)` × `dt` for sprinklers on that net that are **pre-eval** `pourEligible`. `stored` = sum of that net’s reservoirs after gather. High iff want > stored. Assumption: gather then eval then pour, so stored includes this tick’s production; water-system uses pre-eval eligibility so a wire from this sensor can still gate pour **this** tick.
 
 ## Actuators
 
@@ -156,9 +158,9 @@ Smart irrigation is a `feature`: every vertex sprinkler gains `in`, and the same
 
 `tickWater` pours only `pourEligible` sprinklers, this tick, existing AoE + dial. `tickWater` writes `World.vfx`; `tickBig` does not. View reads that map, never `rate()`.
 
-Smart valve: edge SKU `buy-smart-valve`. `Gate` `{ kind: 'smart' }`. No manual click. One input on the body. Unwired **closed**. High open, low closed. Hold on the input. Affects this tick’s conduction; rebuild nets after eval. No share with pipe / manual valve / well on that edge.
+Valve `in`: `unlock-smart-irrigation` gives every valve one input on the body. There is no smart gate and no smart SKU. Unwired the valve is the hand valve; wired, high opens and low closes, and the click is a no-op. Hold on the input. Affects this tick’s conduction; rebuild nets after eval. `valveHold` holds `level` / `hold` for wired valves only and is rebuilt with the wire set.
 
-Manual valve unchanged. Guest still cannot place or click it.
+Guest may wire a valve. Guest still cannot place or click one.
 
 ## Research / shop
 
@@ -166,17 +168,17 @@ Manual valve unchanged. Guest still cannot place or click it.
 |---|---|---|
 | `unlock-sensors` | `feature` | SKUs: lever, button, lamp, pulser, counter, water, fert, harvest, water-system, day. Lens `sensors` |
 | `unlock-advanced-sensors` | `feature` | SKUs: AND, OR, NOT |
-| `unlock-smart-irrigation` | `feature` | feature: sprinkler crop dial + signal inputs. SKU: smart valve |
+| `unlock-smart-irrigation` | `feature` | feature: sprinkler crop dial + sprinkler and valve signal inputs. No SKU |
 
 `unlock-sensors` is a no-prerequisite root carrying only what stands alone. `startResearch('unlock-smart-irrigation')` no-ops unless both `unlock-adv-irrigation` and `unlock-sensors` are in `done` — `requires` is AND. The card reveals on `unlock-sensors` alone, so it can be on the shelf and shut — [[mechanics/research]].
 
-`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read: water `unlock-irrigation`, fert either soil row, water-system `unlock-adv-irrigation`, vehicle-detector `unlock-vehicles`, traffic-light `unlock-dispatch`. AND / OR / NOT unlock `unlock-advanced-sensors`. Smart valve unlock `unlock-smart-irrigation`.
+`skuShown` Sensors shelf after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read: water `unlock-irrigation`, fert either soil row, water-system `unlock-adv-irrigation`, vehicle-detector `unlock-vehicles`, traffic-light `unlock-dispatch`. AND / OR / NOT unlock `unlock-advanced-sensors`.
 
-Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-system, vehicle-detector, day. Traffic light → Sensors (ports like NOT). Smart valve → Water (flow), after manual valve. Vehicle detector → Sensors.
+Filing: signal → Sensors (`logic`). Readers: water, fert, harvest, water-system, vehicle-detector, day. Traffic light → Sensors (ports like NOT). Vehicle detector → Sensors.
 
 ## Lens
 
-`Lens` += `sensors`. Unhidden after `unlock-sensors`. Wires visible and drawable only there. Armed sensor SKU or `buy-smart-valve` forces this lens. UI chrome [[ui/lens]].
+`Lens` += `sensors`. Unhidden after `unlock-sensors`. Wires visible and drawable only there. Armed sensor SKU forces this lens. UI chrome [[ui/lens]].
 
 ## Place / StayArmed
 
@@ -196,7 +198,7 @@ Tune prompts: **Tune counter** / **Tune day sensor**.
 
 Not logged: eval, hold countdown, pourEligible, net rebuild, bezier, lens, counter dial group, traffic-light `out` / wait resolve.
 
-Guest wire / smart valve / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
+Guest wire / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
 ## Invariants
 
@@ -208,13 +210,15 @@ Guest wire / smart valve / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
 `sensors.unwired-sprinkler` — Unwired sprinkler still pours after Smart Irrigation.
 
-`sensors.unwired-valve` — Unwired smart valve does not conduct.
+`sensors.valve` — Unwired valve conducts on `open` and takes the click. Wired valve conducts on the held input, refuses the click, and keeps `open` for when the wire goes. Valve delete drops incident wires.
+
+`sensors.port` — A port is a `PORT_HIT` disc at `portXY`, `sensors` lens only. The cell body fires the device action in every lens. Whole-cell fallback only where the device has no body action.
 
 `sensors.fan` — Fan-out: one lever drives two lamps. Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is. Toggle A→B: wires length 0.
 
 `sensors.mask` — 3×3 does not read plants outside the square; center building is not a plant.
 
-`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal. Hold on world-readers + sprinkler input + smart valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold; `out` + `SENSOR_HOLD` after `tickDispatch`. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day` `traffic-light`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update. Traffic-light `inn` this tick; combo reads last tick’s `out`.
+`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal. Hold on world-readers + sprinkler input + wired valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold; `out` + `SENSOR_HOLD` after `tickDispatch`. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day` `traffic-light`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update. Traffic-light `inn` this tick; combo reads last tick’s `out`.
 
 `sensors.light` — Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Guest `GUEST_BUILD`. Wait resolve after `evalDag` using this tick’s `inn`.
 

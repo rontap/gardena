@@ -8,7 +8,7 @@ Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `Se
 
 `Plant.crop` is `AnnualId`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`.
 
-`isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or smart valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
+`isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
 Illegal: `Shrub`. Illegal: `AppleTree`.
 
@@ -50,7 +50,7 @@ Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `r
 
 Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `buy` merges seeds into inventory.
 
-Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light). Pipe, valve, smart valve, sprinkler, tile, sensor cells, and delete do not.
+Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light). Pipe, valve, sprinkler, tile, sensor cells, and delete do not.
 
 ## Intent
 

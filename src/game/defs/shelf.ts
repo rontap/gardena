@@ -62,7 +62,7 @@ export const SHELVES: readonly Shelf[] = [
     cluster: 'build',
     groups: [
       { label: 'Source', skus: ['buy-pumpjack', 'buy-well', 'buy-rain-tank'] },
-      { label: 'Flow', skus: ['buy-tap', 'buy-pipe', 'buy-valve', 'buy-smart-valve'] },
+      { label: 'Flow', skus: ['buy-tap', 'buy-pipe', 'buy-valve'] },
       { label: 'Output', skus: ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large'] },
     ],
   },

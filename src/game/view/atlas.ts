@@ -15,6 +15,7 @@ import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
 import { ANNUAL_IDS, TREE_IDS } from '../sim/ids.ts'
 import { ripeGroup, fruitGroup } from './svgs.ts'
+import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
 import type { CropClass } from '../defs/crops.ts'
 import type { Rarity } from '../defs/rarity.ts'
@@ -115,7 +116,7 @@ import pipeT from '../../assets/joints/pipe-t.svg?raw'
 import pipeX from '../../assets/joints/pipe-x.svg?raw'
 import pipeSource from '../../assets/joints/pipe-source.svg?raw'
 import pipeValve from '../../assets/joints/pipe-valve.svg?raw'
-import pipeSmartValve from '../../assets/joints/pipe-smart-valve.svg?raw'
+import pipeValveJack from '../../assets/joints/pipe-valve-jack.svg?raw'
 import fencePost from '../../assets/joints/fence-post.svg?raw'
 import fenceStub from '../../assets/joints/fence-stub.svg?raw'
 import fenceI from '../../assets/joints/fence-i.svg?raw'
@@ -245,8 +246,7 @@ export type AtlasKey =
   | 'pipe-x-dry'
   | 'valve-open'
   | 'valve-closed'
-  | 'smart-open'
-  | 'smart-closed'
+  | 'valve-jack'
   | 'fence-post'
   | 'fence-stub'
   | 'fence-i'
@@ -346,9 +346,8 @@ function groupOf(raw: string, id: string): string {
   throw new Error(id)
 }
 
-function wrap(raw: string, inner: string, w: number, h: number): string {
-  const size = vb(raw)
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${size.w} ${size.h}" fill="none" shape-rendering="crispEdges">${inner}</svg>`
+function wrap(inner: string, w: number, h: number, box: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${box}" fill="none" shape-rendering="crispEdges">${inner}</svg>`
 }
 
 function dryOf(body: string): string {
@@ -374,14 +373,21 @@ async function raster(svg: string, w: number, h: number): Promise<Texture> {
   return t
 }
 
+export function atlasVb(key: 'dirt-edge' | 'dirt-inset' | 'dirt-0'): { w: number; h: number } {
+  if (key === 'dirt-edge' || key === 'dirt-inset') return { w: 24 + EDGE_PAD * 2, h: 24 + EDGE_PAD * 2 }
+  return { w: 24, h: 24 }
+}
+
 async function add(key: AtlasKey, raw: string, group?: string, mutate?: (s: string) => string): Promise<void> {
   const sliced = group === undefined ? innerOf(raw) : groupOf(raw, group)
   const body = mutate === undefined ? sliced : mutate(sliced)
-  const size = vb(raw)
+  const pad = key === 'dirt-edge' || key === 'dirt-inset'
+  const size = key === 'dirt-edge' || key === 'dirt-inset' || key === 'dirt-0' ? atlasVb(key) : vb(raw)
+  const box = pad ? `${-EDGE_PAD} ${-EDGE_PAD} ${size.w} ${size.h}` : `0 0 ${size.w} ${size.h}`
   html.set(key, body)
   dim.set(key, size)
   try {
-    tex.set(key, await raster(wrap(raw, body, size.w, size.h), size.w, size.h))
+    tex.set(key, await raster(wrap(body, size.w, size.h, box), size.w, size.h))
   } catch {
     throw new Error(key)
   }
@@ -513,8 +519,7 @@ async function load(): Promise<void> {
   })
   put('valve-open', pipeValve, 'open')
   put('valve-closed', pipeValve, 'closed')
-  put('smart-open', pipeSmartValve, 'open')
-  put('smart-closed', pipeSmartValve, 'closed')
+  put('valve-jack', pipeValveJack, 'jack')
   put('fence-post', fencePost)
   put('fence-stub', fenceStub)
   put('fence-i', fenceI)

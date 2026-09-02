@@ -4,7 +4,8 @@ import { FADE, occupiedCells } from '../sim/building.ts'
 import { onCell } from '../sim/drop.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import type { SkuId } from '../sim/ids.ts'
-import { aoe, edgeKey, vertsOf, type Edge } from '../sim/pipe.ts'
+import { aoe, edgeKey, vertsOf, type Edge, type Vertex } from '../sim/pipe.ts'
+import type { WireEnd } from '../sim/sensor.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import type { Place, World } from '../sim/world.ts'
 import { Coin } from '../ui/frame.tsx'
@@ -22,13 +23,18 @@ import {
   makeSprinkler,
   nearestEdge,
   nearestVertex,
+  SPRINKLER_HIT,
+  VERTEX_HIT,
+  onEdgeBand,
   pipeOk,
+  roundVertex,
+  routeEdges,
   stayOk,
   arms,
   type Lens,
   type MapClick,
 } from './hit.ts'
-import { WorldView } from './world-view.ts'
+import { WorldView, type ViewHooks } from './world-view.ts'
 import { HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
@@ -53,12 +59,6 @@ type Props = {
   onClick: (hit: MapClick, xy: { x: number; y: number }) => void
 }
 
-type ViewHook = {
-  cam: Camera
-  pendingPipe: Edge[]
-  hit: (wx: number, wy: number) => MapClick | undefined
-}
-
 function Use({ art }: { art: string }) {
   return <use href={symHref(art)} />
 }
@@ -77,15 +77,16 @@ function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: nu
 export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<WorldView | undefined>(undefined)
-  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean } | undefined>(undefined)
+  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; wireFrom?: WireEnd } | undefined>(undefined)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
-  const pendingMove = useRef<{ x: number; y: number; buttons: number } | undefined>(undefined)
+  const pendingMove = useRef<{ x: number; y: number; buttons: number; shift: boolean } | undefined>(undefined)
   const camRef = useRef(cam)
   const lastHoverKey = useRef('')
   const [view, setView] = useState({ w: 800, h: 600 })
   const [ptr, setPtr] = useState({ x: 0, y: 0 })
   const [worldPtr, setWorldPtr] = useState<{ x: number; y: number } | undefined>(undefined)
   const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
+  const anchorRef = useRef<Vertex | undefined>(undefined)
   const pendingRef = useRef<Edge[]>([])
   camRef.current = cam
   pendingRef.current = pendingPipe
@@ -95,13 +96,15 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank' || placeId === 'buy-still'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
-  const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well' || placeId === 'buy-smart-valve'
+  const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
   const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
-  const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y) : undefined
+  const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y, VERTEX_HIT) : undefined
+  const snapVertex =
+    worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y, SPRINKLER_HIT) : undefined
   const strokeCell =
     worldPtr !== undefined ? { col: Math.floor(worldPtr.x), row: Math.floor(worldPtr.y) } : undefined
   const ghostEdges =
@@ -112,7 +115,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         : []
   const ghostWet = ghostEdges.length > 0 && ghostEdges.some(e => world.pendingWet(e))
   const ghostSprinkler =
-    sprinklerTool && place.kind === 'sku' && vertexHit !== undefined ? makeSprinkler(place, vertexHit) : undefined
+    sprinklerTool && place.kind === 'sku' && snapVertex !== undefined ? makeSprinkler(place, snapVertex) : undefined
   const deleteTarget =
     deleteTool && worldPtr !== undefined ? deleteHit(world, edgeHit, vertexHit, worldPtr.x, worldPtr.y) : undefined
   const hoverCell = hover !== undefined && hover.kind === 'cell' ? hover.at : undefined
@@ -129,6 +132,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
   const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, hangarPlace, siloPlace)
+  const hoverOutline = footOutline(hoverFoot)
 
   function pushCam(next: Camera): void {
     const b = world.bounds()
@@ -167,7 +171,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       v.onPipeLoc = () => paintPipeLocators(pipeHost, world)
       v.onPipeLoc()
       v.layout()
-      const hook: ViewHook = {
+      const hook: ViewHooks = {
         get cam() {
           return v.cam
         },
@@ -175,15 +179,18 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           return pendingRef.current
         },
         hit: (wx, wy) => v.hit(wx, wy),
+        get vfxN() {
+          return v.vfxN
+        },
       }
-      ;(window as unknown as { __view?: ViewHook }).__view = hook
+      ;(window as unknown as { __view?: ViewHooks }).__view = hook
     })
     return () => {
       dead = true
       viewRef.current = undefined
       mounted?.htmlLayer?.remove()
       mounted?.destroy()
-      delete (window as unknown as { __view?: ViewHook }).__view
+      delete (window as unknown as { __view?: ViewHooks }).__view
     }
   }, [world])
 
@@ -198,6 +205,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
 
   useEffect(() => {
     if (place.kind !== 'sku' || place.id !== 'buy-pipe') {
+      anchorRef.current = undefined
       if (pendingPipe.length > 0) {
         pendingRef.current = []
         setPendingPipe([])
@@ -240,20 +248,18 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       setPtr(prev => (prev.x === p.x && prev.y === p.y ? prev : { x: p.x, y: p.y }))
       setWorldPtr(prev => (prev !== undefined && prev.x === w.x && prev.y === w.y ? prev : w))
       const d = drag.current
+      const anchor = anchorRef.current
       const pipeDrag = d !== undefined && d.pipe && (p.buttons & 1) === 1
-      if (pipeDrag) {
-        const e = nearestEdge(w.x, w.y)
-        if (e !== undefined && pipeOk(world, 'buy-pipe', e)) {
-          const k = edgeKey(e)
-          if (!pendingRef.current.some(x => edgeKey(x) === k)) {
-            const next = [...pendingRef.current, e]
-            pendingRef.current = next
-            setPendingPipe(next)
-            viewRef.current?.setPending(next)
-          }
+      if (anchor !== undefined && (pipeDrag || d === undefined)) {
+        const next: Edge[] = routeEdges(anchor, roundVertex(w.x, w.y), p.shift).filter(e => pipeOk(world, 'buy-pipe', e))
+        if (next.length !== pendingRef.current.length || next.some((e, i) => edgeKey(e) !== edgeKey(pendingRef.current[i]))) {
+          pendingRef.current = next
+          setPendingPipe(next)
+          viewRef.current?.setPending(next)
         }
         return
       }
+      if (pipeDrag) return
       if (d !== undefined && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
         if (Math.hypot(p.x - d.x, p.y - d.y) > 3) {
           pushCam({
@@ -298,17 +304,20 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           ? { kind: 'delete-well', edge: deleteTarget.edge }
           : deleteTarget?.kind === 'sprinkler'
             ? { kind: 'delete-sprinkler', at: deleteTarget.at }
-            : deleteTarget?.kind === 'smart'
-              ? { kind: 'smart-valve', edge: deleteTarget.edge }
-              : deleteTarget?.kind === 'wire'
-                ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
-                : undefined
+            : deleteTarget?.kind === 'wire'
+              ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
+              : undefined
+  const runCost = pendingPipe.length * world.skuPrice('buy-pipe')
   const followText =
-    edgeTool || sprinklerTool || deleteTool
-      ? world.promptHit(stayHit).text
-      : placeId !== undefined
-        ? placeLine(placeId)
-        : undefined
+    pendingPipe.length > 0
+      ? world.money < runCost
+        ? 'Cannot afford'
+        : `${pendingPipe.length} pipe · ${runCost}`
+      : edgeTool || sprinklerTool || deleteTool
+        ? world.promptHit(stayHit).text
+        : placeId !== undefined
+          ? placeLine(placeId)
+          : undefined
   const worldT = `translate(${view.w / 2}px, ${view.h / 2}px) scale(${cam.scale}) translate(${-cam.x * TILE}px, ${-cam.y * TILE}px)`
   const faces = world.faces()
   const sprinklers = [...world.sprinklers.values()]
@@ -322,6 +331,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       onContextMenu={e => {
         e.preventDefault()
         const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+        anchorRef.current = undefined
         pendingRef.current = []
         setPendingPipe([])
         viewRef.current?.setPending([])
@@ -329,36 +339,49 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       }}
       onPointerDown={e => {
         if (e.button === 2) return
-        const pipe = place.kind === 'sku' && place.id === 'buy-pipe'
-        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe }
+        const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+        const pipe = place.kind === 'sku' && place.id === 'buy-pipe' && onEdgeBand(wpt.x, wpt.y)
+        const down = pipe ? undefined : clickHit(world, wpt.x, wpt.y, lens)
+        const wireFrom = down !== undefined && down.kind === 'port' && place.kind === 'none' ? down.end : undefined
+        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe, wireFrom }
         e.currentTarget.setPointerCapture(e.pointerId)
-        if (pipe) {
-          const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
-          const ed = nearestEdge(wpt.x, wpt.y)
-          const start = ed !== undefined && pipeOk(world, 'buy-pipe', ed) ? [ed] : []
-          pendingRef.current = start
-          setPendingPipe(start)
-          viewRef.current?.setPending(start)
-        }
+        if (pipe && anchorRef.current === undefined) anchorRef.current = roundVertex(wpt.x, wpt.y)
       }}
       onPointerMove={e => {
-        pendingMove.current = { x: e.clientX, y: e.clientY, buttons: e.buttons }
+        pendingMove.current = { x: e.clientX, y: e.clientY, buttons: e.buttons, shift: e.shiftKey }
       }}
       onPointerUp={e => {
         const d = drag.current
         drag.current = undefined
         if (d === undefined) return
         if (e.button === 2) return
+        const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
         if (d.pipe) {
           const run = pendingRef.current
-          run.forEach(ed => world.placePipe(ed))
-          pendingRef.current = []
-          setPendingPipe([])
-          viewRef.current?.setPending([])
+          if (run.length > 0) {
+            if (world.money >= run.length * world.skuPrice('buy-pipe')) run.forEach(ed => world.placePipe(ed))
+            anchorRef.current = undefined
+            pendingRef.current = []
+            setPendingPipe([])
+            viewRef.current?.setPending([])
+            return
+          }
+          const one = nearestEdge(wpt.x, wpt.y)
+          if (one === undefined || !pipeOk(world, 'buy-pipe', one)) return
+          world.placePipe(one)
+          const [va, vb] = vertsOf(one)
+          const far = Math.hypot(va.col - wpt.x, va.row - wpt.y) > Math.hypot(vb.col - wpt.x, vb.row - wpt.y) ? va : vb
+          anchorRef.current = far
           return
         }
-        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
-        const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) {
+          if (d.wireFrom === undefined) return
+          const drop = clickHit(world, wpt.x, wpt.y, lens)
+          if (drop?.kind !== 'port') return
+          onClick({ kind: 'port', end: d.wireFrom }, { x: wpt.x, y: wpt.y })
+          onClick(drop, { x: wpt.x, y: wpt.y })
+          return
+        }
         const hit = clickHit(world, wpt.x, wpt.y, lens)
         if (hit !== undefined) onClick(hit, { x: wpt.x, y: wpt.y })
       }}
@@ -371,25 +394,22 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     >
       <GhostDefs />
       <div className="pointer-events-none absolute inset-0 origin-top-left" style={{ transform: worldT }}>
-        {strokeCell !== undefined &&
-          hoverFoot.map(at => (
-            <svg
-              key={`${at.col},${at.row}`}
-              className="absolute overflow-visible"
-              width={TILE}
-              height={TILE}
-              style={{ left: at.col * TILE, top: at.row * TILE }}
-            >
-              <rect
-                data-cell-stroke={at.col === strokeCell.col && at.row === strokeCell.row ? '' : undefined}
-                width={TILE}
-                height={TILE}
-                fill="none"
-                className={skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'}
-                strokeWidth={2}
-              />
-            </svg>
-          ))}
+        {strokeCell !== undefined && hoverOutline !== undefined && (
+          <svg
+            className="absolute overflow-visible"
+            width={hoverOutline.w}
+            height={hoverOutline.h}
+            style={{ left: hoverOutline.x, top: hoverOutline.y }}
+          >
+            <path
+              data-cell-stroke=""
+              d={hoverOutline.d}
+              fill="none"
+              className={skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'}
+              strokeWidth={2}
+            />
+          </svg>
+        )}
         {ghostEdges.flatMap(e =>
           vertsOf(e).map(v => {
             const a = arms(world, v, ghostEdges)
@@ -453,18 +473,6 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
           >
             <use href="#valve-open" />
-          </svg>
-        )}
-        {placeId === 'buy-smart-valve' && edgeHit !== undefined && (
-          <svg
-            data-smart-valve-ghost
-            className="absolute overflow-visible"
-            width={TILE}
-            height={TILE}
-            viewBox="0 0 24 24"
-            style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
-          >
-            <use href="#smart-closed" />
           </svg>
         )}
         {placeId === 'buy-well' && edgeHit !== undefined && (
@@ -684,6 +692,56 @@ function paintSpeech(host: HTMLElement, world: World): void {
   if (text !== null && text.textContent !== world.speech.text) text.textContent = world.speech.text
 }
 
+type Outline = { d: string; x: number; y: number; w: number; h: number }
+
+function footOutline(cells: readonly { col: number; row: number }[]): Outline | undefined {
+  if (cells.length === 0) return undefined
+  const cols = cells.map(c => c.col)
+  const rows = cells.map(c => c.row)
+  const minCol = Math.min(...cols)
+  const minRow = Math.min(...rows)
+  const links = new Map<string, string>()
+  cells.forEach(c => {
+    const x = c.col - minCol
+    const y = c.row - minRow
+    ;[
+      [`${x},${y}`, `${x + 1},${y}`],
+      [`${x + 1},${y}`, `${x + 1},${y + 1}`],
+      [`${x + 1},${y + 1}`, `${x},${y + 1}`],
+      [`${x},${y + 1}`, `${x},${y}`],
+    ].forEach(([a, b]) => {
+      if (links.get(b) === a) links.delete(b)
+      else links.set(a, b)
+    })
+  })
+  const px = (k: string): string => {
+    const i = k.indexOf(',')
+    return `${Number(k.slice(0, i)) * TILE} ${Number(k.slice(i + 1)) * TILE}`
+  }
+  const parts: string[] = []
+  while (links.size > 0) {
+    const start = [...links.keys()][0]
+    const loop = [start]
+    let at = start
+    for (;;) {
+      const next = links.get(at)
+      if (next === undefined) break
+      links.delete(at)
+      if (next === start) break
+      loop.push(next)
+      at = next
+    }
+    parts.push(`M ${loop.map(px).join(' L ')} Z`)
+  }
+  return {
+    d: parts.join(' '),
+    x: minCol * TILE,
+    y: minRow * TILE,
+    w: (Math.max(...cols) + 1 - minCol) * TILE,
+    h: (Math.max(...rows) + 1 - minRow) * TILE,
+  }
+}
+
 function strokeFoot(
   world: World,
   stroke: { col: number; row: number } | undefined,
@@ -735,7 +793,7 @@ function GhostDefs() {
     'pipe-x',
     'pipe-x-dry',
     'valve-open',
-    'smart-closed',
+    'valve-jack',
     'well',
     'sprinkler',
     'sprinkler-vert',

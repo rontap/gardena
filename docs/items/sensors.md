@@ -1,14 +1,13 @@
 # Sensors
 
-Lever, button, lamp, OR, AND, NOT, pulser, counter, water / fertilizer / harvest / water-system / day sensors, vehicle detector, traffic light. Smart valve is Water (flow), not this shelf — [[items/irrigation]].
+Lever, button, lamp, OR, AND, NOT, pulser, counter, water / fertilizer / harvest / water-system / day sensors, vehicle detector, traffic light. The valve signal input is Water (flow), not this shelf — [[items/irrigation]].
 
 Rules: [[mechanics/sensors]]. Research: [[mechanics/research]].
 
 SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-pulser` `buy-counter` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-sensor-day` `buy-water-system` `buy-vehicle-detector` `buy-traffic-light`.
 
-`buy-smart-valve` is irrigation.
 
-Build shelf **Sensors**, id `logic`. Filing: signal → Sensors (lever, button, lamp, or, and, not, pulser, counter, traffic-light). Readers: water, fert, harvest, water-system, vehicle-detector, day. Smart valve → Water (flow).
+Build shelf **Sensors**, id `logic`. Filing: signal → Sensors (lever, button, lamp, or, and, not, pulser, counter, traffic-light). Readers: water, fert, harvest, water-system, vehicle-detector, day.
 
 | sku | label | place | delete |
 |---|---|---|---|
@@ -23,4 +22,4 @@ Tune prompts: **Tune counter** / **Tune day sensor**.
 
 `buy-traffic-light` blurb: holds a vehicle until the input is green; output is on while a vehicle waits here. Look **Traffic light**.
 
-`Sku.tab` `automation`. `haggling`. Almanac **Sensors**: Overview, then lever. Tab click lands Overview. Smart valve and sprinklers on Almanac **Water systems**. Copy [[ui/almanac]].
+`Sku.tab` `automation`. `haggling`. Almanac **Sensors**: Overview, then lever. Tab click lands Overview. Valves and sprinklers on Almanac **Water systems**. Copy [[ui/almanac]].

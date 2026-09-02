@@ -1674,11 +1674,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 2.0. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 2.02. `PROTOCOL` 2.02. Wordmark 2.0.2. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(1.9)
+    expect(s.version).toBe(2.02)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return

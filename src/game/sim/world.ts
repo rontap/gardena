@@ -356,7 +356,7 @@ import {
   stepHold,
   wouldCycle,
   type Sensor,
-  type SmartHold,
+  type ValveHold,
   type WaterSystem,
   type Wire,
   type WireEnd,
@@ -462,7 +462,6 @@ export type StayArmed =
   | 'buy-sensor-harvest'
   | 'buy-sensor-day'
   | 'buy-water-system'
-  | 'buy-smart-valve'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
   | 'delete'
@@ -557,7 +556,7 @@ export type Hydrate = {
   stills: PotStill[]
   waterSystems: WaterSystem[]
   wires: Wire[]
-  smartHold: SmartHold[]
+  valveHold: ValveHold[]
   hangars: Hangar[]
   seedSilos: SiloSeed[]
   spraySilos: SiloSpray[]
@@ -748,7 +747,7 @@ export class World {
   readonly stills: PotStill[] = []
   readonly waterSystems: WaterSystem[] = []
   readonly wires: Wire[] = []
-  readonly smartHold = new Map<string, SmartHold>()
+  readonly valveHold = new Map<string, ValveHold>()
   readonly hangars: Hangar[] = []
   readonly seedSilos: SiloSeed[] = []
   readonly spraySilos: SiloSpray[] = []
@@ -835,8 +834,8 @@ export class World {
       h.waterSystems.forEach(x => this.waterSystems.push(x))
       this.wires.length = 0
       h.wires.forEach(x => this.wires.push(x))
-      this.smartHold.clear()
-      h.smartHold.forEach(x => this.smartHold.set(edgeKey(x.e), x))
+      this.valveHold.clear()
+      h.valveHold.forEach(x => this.valveHold.set(edgeKey(x.e), x))
       this.hangars.length = 0
       h.hangars.forEach(x => this.hangars.push(x))
       this.seedSilos.length = 0
@@ -1100,7 +1099,6 @@ export class World {
         else if (cmd.k === 'well') this.deleteWellBody(cmd.e)
         else if (cmd.k === 'sprinkler') this.deleteSprinklerBody({ col: cmd.c[0], row: cmd.c[1] })
         else if (cmd.k === 'wire') this.deleteWireBody(cmd.from, cmd.to)
-        else if (cmd.k === 'smart') this.deleteSmartBody(cmd.e)
         else this.deleteBuildingBody({ col: cmd.c[0], row: cmd.c[1] })
         return
       case Act.expand:
@@ -1203,9 +1201,6 @@ export class World {
         return
       case Act.placeWire:
         this.placeWireBody(cmd.from, cmd.to)
-        return
-      case Act.placeSmartValve:
-        this.placeSmartValveBody(cmd.e)
         return
       case Act.tuneWater:
         this.tuneWaterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.wilt, cmd.over)
@@ -1659,10 +1654,8 @@ export class World {
   conducts(e: Edge): boolean {
     const seg = this.segments.get(edgeKey(e))
     if (seg === undefined) return false
-    if (seg.gate.kind === 'smart') {
-      const h = this.smartHold.get(edgeKey(e))
-      return h !== undefined && h.level === 1
-    }
+    const h = this.valveHold.get(edgeKey(e))
+    if (h !== undefined) return h.level === 1
     return flows(seg)
   }
 
@@ -1671,9 +1664,8 @@ export class World {
     return seg !== undefined && seg.gate.kind === 'valve'
   }
 
-  hasSmart(e: Edge): boolean {
-    const seg = this.segments.get(edgeKey(e))
-    return seg !== undefined && seg.gate.kind === 'smart'
+  valveWired(e: Edge): boolean {
+    return this.valveHold.has(edgeKey(e))
   }
 
   wellAt(e: Edge): Well | undefined {
@@ -1723,15 +1715,26 @@ export class World {
     if (this.money < this.skuPrice(id)) return
     if (!this.edgeOwned(e)) return
     if (id === 'buy-pipe') {
-      if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
+      if (this.hasPipe(e) || this.hasWell(e)) return
       this.segments.set(edgeKey(e), { at: e, gate: { kind: 'bare' } })
       vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     } else if (id === 'buy-valve') {
       const seg = this.segmentAt(e)
-      if (seg === undefined || seg.gate.kind !== 'bare') return
+      if (seg === undefined) {
+        if (this.hasWell(e)) return
+        const total = this.skuPrice('buy-pipe') + this.skuPrice('buy-valve')
+        if (this.money < total) return
+        this.segments.set(edgeKey(e), { at: e, gate: { kind: 'valve', open: true } })
+        vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
+        this.money -= total
+        this.dirtyNets()
+        this.ping()
+        return
+      }
+      if (seg.gate.kind !== 'bare') return
       seg.gate = { kind: 'valve', open: true }
     } else {
-      if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
+      if (this.hasPipe(e) || this.hasWell(e)) return
       this.wells.set(edgeKey(e), new Well(e))
       vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     }
@@ -1748,9 +1751,9 @@ export class World {
     if (this.act.place.kind !== 'delete') return
     const seg = this.segmentAt(e)
     if (!this.edgeOwned(e) || seg === undefined) return
-    if (seg.gate.kind === 'smart') return
     if (seg.gate.kind === 'valve') {
       seg.gate = { kind: 'bare' }
+      this.dropWires(w => hitsEdge(w.from, e) || hitsEdge(w.to, e))
     } else {
       this.segments.delete(edgeKey(e))
       this.pruneVert(e)
@@ -1916,38 +1919,6 @@ export class World {
     this.ping()
   }
 
-  placeSmartValve(e: Edge): void {
-    this.commit({ a: Act.placeSmartValve, t: this.now, p: this.local, e })
-  }
-
-  private placeSmartValveBody(e: Edge): void {
-    if (this.act.place.kind !== 'sku' || this.act.place.id !== 'buy-smart-valve') return
-    if (this.money < this.skuPrice('buy-smart-valve')) return
-    if (!this.edgeOwned(e)) return
-    if (this.hasPipe(e) || this.hasWell(e) || this.hasSmart(e)) return
-    this.money -= this.skuPrice('buy-smart-valve')
-    this.segments.set(edgeKey(e), { at: e, gate: { kind: 'smart' } })
-    this.smartHold.set(edgeKey(e), { e, level: 0, hold: 0 })
-    vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
-    this.dirtyNets()
-    this.ping()
-  }
-
-  deleteSmart(e: Edge): void {
-    this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'smart', e })
-  }
-
-  private deleteSmartBody(e: Edge): void {
-    if (this.act.place.kind !== 'delete') return
-    if (!this.hasSmart(e)) return
-    this.segments.delete(edgeKey(e))
-    this.smartHold.delete(edgeKey(e))
-    this.dropWires(w => hitsEdge(w.from, e) || hitsEdge(w.to, e))
-    this.pruneVert(e)
-    this.dirtyNets()
-    this.ping()
-  }
-
   tuneWater(at: Coord, wilt: boolean, over: boolean): void {
     this.commit({ a: Act.tuneWater, t: this.now, p: this.local, c: [at.col, at.row], wilt, over })
   }
@@ -2027,10 +1998,10 @@ export class World {
   private portLegal(end: WireEnd, side: 'from' | 'to'): boolean {
     const c = end.kind === 'cell' && this.inWorld(end.at) ? this.cell(end.at) : undefined
     if (side === 'from') return isOutEnd(end, c)
-    const smart = end.kind === 'valve' && this.hasSmart(end.e)
-    const sprinkler =
-      end.kind === 'sprinkler' && this.done.has('unlock-smart-irrigation') && this.sprinklerAt(end.at) !== undefined
-    return isInEnd(end, c, smart, sprinkler)
+    const on = this.done.has('unlock-smart-irrigation')
+    const valve = on && end.kind === 'valve' && this.hasValve(end.e)
+    const sprinkler = on && end.kind === 'sprinkler' && this.sprinklerAt(end.at) !== undefined
+    return isInEnd(end, c, valve, sprinkler)
   }
 
   sensorAt(at: Coord): Sensor | undefined {
@@ -2355,10 +2326,20 @@ export class World {
 
   private rebuildWired(): void {
     this.wiredVerts.clear()
-    if (!this.done.has('unlock-smart-irrigation')) return
-    this.wires.forEach(w => {
-      if (w.to.kind === 'sprinkler') this.wiredVerts.add(vertexKey(w.to.at))
+    const keep = new Map<string, Edge>()
+    if (this.done.has('unlock-smart-irrigation')) {
+      this.wires.forEach(w => {
+        if (w.to.kind === 'sprinkler') this.wiredVerts.add(vertexKey(w.to.at))
+        if (w.to.kind === 'valve' && this.hasValve(w.to.e)) keep.set(edgeKey(w.to.e), w.to.e)
+      })
+    }
+    ;[...this.valveHold.keys()].forEach(k => {
+      if (!keep.has(k)) this.valveHold.delete(k)
     })
+    keep.forEach((e, k) => {
+      if (!this.valveHold.has(k)) this.valveHold.set(k, { e, level: 0, hold: 0 })
+    })
+    this.dirtyNets()
   }
 
   tileRate(s: Sprinkler): number {
@@ -2638,7 +2619,6 @@ export class World {
       this.act.place.id === 'buy-pipe' ||
       this.act.place.id === 'buy-valve' ||
       this.act.place.id === 'buy-well' ||
-      this.act.place.id === 'buy-smart-valve' ||
       this.act.place.id === 'buy-sprinkler' ||
       this.act.place.id === 'buy-sprinkler-vert' ||
       this.act.place.id === 'buy-sprinkler-large'
@@ -2834,7 +2814,6 @@ export class World {
       made.kind === 'sensor-day' ||
       made.kind === 'water-system' ||
       made.kind === 'vehicle-detector' ||
-      made.kind === 'smart-valve' ||
       made.kind === 'traffic-light'
     ) {
       return
@@ -4428,7 +4407,7 @@ export class World {
   private finishWork(): void {
     const i = this.act.queue[0]
     if (i === undefined) return
-    if (i.act === 'shovel' && this.doShovel(i.at)) this.burst('dig', i.at)
+    if (i.act === 'shovel') this.doShovel(i.at)
     if (i.act === 'mine') this.doMine(i.at)
     if (i.act === 'plant') this.doPlant(i.at)
     if (i.act === 'water' && this.doWater(i.at)) {
@@ -4564,10 +4543,10 @@ export class World {
       raw.set(k, storeRaw(s))
     })
     const prevLevels = new Map<string, 0 | 1>()
-    this.smartHold.forEach((h, k) => prevLevels.set(k, h.level))
-    evalDag({ sensors, wires: this.wires, smart: this.smartHold, sprinklers: this.sprinklers, raw: rawMap(raw), machines, stores })
+    this.valveHold.forEach((h, k) => prevLevels.set(k, h.level))
+    evalDag({ sensors, wires: this.wires, valves: this.valveHold, sprinklers: this.sprinklers, raw: rawMap(raw), machines, stores })
     let flipped = false
-    this.smartHold.forEach((h, k) => {
+    this.valveHold.forEach((h, k) => {
       if (prevLevels.get(k) !== h.level) flipped = true
     })
     if (flipped) this.dirtyNets()

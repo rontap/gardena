@@ -5,7 +5,7 @@ Things the player can hold, buy, plant, or place. Identifiers here. Numbers stay
 - [[items/crops]]
 - [[items/tools]]
 - [[items/irrigation]]
-- [[items/sensors]] — lever, button, lamp, gates, pulser, counter, readers, day, vehicle detector, traffic light. Smart valve is Water.
+- [[items/sensors]] — lever, button, lamp, gates, pulser, counter, readers, day, vehicle detector, traffic light. The valve signal input is Water.
 - [[items/buildings]] — hangar, three field silos (Seeding / Spraying / Produce). Starter Seed silo is not those SKUs.
 - [[items/fertilizer]]
 - [[items/wild]]

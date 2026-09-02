@@ -114,7 +114,6 @@ const WATER_IDS = [
   'tap',
   'pipe',
   'valve',
-  'smart-valve',
   'sprinkler',
   'sprinkler-vert',
   'sprinkler-large',
@@ -840,7 +839,7 @@ function AutomationConcept() {
       <div>
         Wires and sensors send on or off. Open{' '}
         <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>Sensors at Overview</AlmanacLink>. A wire can pause a mill,
-        stop a sprinkler, or open a <AlmanacLink to={{ tab: 'water', id: 'smart-valve' }}>Smart valve</AlmanacLink>.
+        stop a sprinkler, or open a <AlmanacLink to={{ tab: 'water', id: 'valve' }}>Valve</AlmanacLink>.
       </div>
       <div>
         See <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>,{' '}

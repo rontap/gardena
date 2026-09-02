@@ -43,7 +43,7 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
-| `item-smart-valve` `pipe-smart-valve` | `closed` `open` |
+| `pipe-valve-jack` | `jack` |
 
 Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon uses `common` / `ripe`.
 

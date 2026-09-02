@@ -111,7 +111,7 @@ export type TurnReport = Snapshot & {
   days: Recap[]
 }
 
-const EDGE_SKUS: readonly SkuId[] = ['buy-pipe', 'buy-valve', 'buy-well', 'buy-smart-valve']
+const EDGE_SKUS: readonly SkuId[] = ['buy-pipe', 'buy-valve', 'buy-well']
 
 const SPRINKLER_SKUS: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
 
@@ -324,10 +324,9 @@ function place(world: World, sku: SkuId, at: Coord | undefined, edge: Edge | und
   if (fail !== undefined) return fail
   if (EDGE_SKUS.includes(sku)) {
     if (edge === undefined) return 'Needs an edge'
-    const before = world.hasPipe(edge) || world.hasWell(edge) || world.hasSmart(edge)
-    if (sku === 'buy-smart-valve') world.placeSmartValve(edge)
-    else world.placePipe(edge)
-    const after = world.hasPipe(edge) || world.hasWell(edge) || world.hasSmart(edge)
+    const before = world.hasPipe(edge) || world.hasWell(edge)
+    world.placePipe(edge)
+    const after = world.hasPipe(edge) || world.hasWell(edge)
     world.cancelPlace()
     return sku === 'buy-valve' ? (world.hasValve(edge) ? '' : 'no effect') : before === after ? 'no effect' : ''
   }
@@ -351,9 +350,6 @@ function remove(world: World, a: Extract<TurnAction, { task: 'delete' }>): strin
       break
     case 'well':
       world.deleteWell(a.edge)
-      break
-    case 'smart':
-      world.deleteSmart(a.edge)
       break
     case 'sprinkler':
       world.deleteSprinkler(a.at)
@@ -618,7 +614,7 @@ play.turn([...TurnAction]) runs the list, then plays out queued work until idle.
                                                toggle tend weed-spray consign inventory
   { task:'click', at }                         whatever the tile affords - see play.look(at)
   { task:'build', sku, at }                    buildings, sensors, sprinklers
-  { task:'build', sku, edge }                  buy-pipe buy-valve buy-well buy-smart-valve
+  { task:'build', sku, edge }                  buy-pipe buy-valve buy-well
   { task:'buy', sku, packs? }
   { task:'delete', what, at|edge }             pipe well smart sprinkler building
   { task:'valve', edge }

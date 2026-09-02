@@ -46,6 +46,8 @@ export function Hud({
   onMarket,
   onAlmanac,
   onLens,
+  onLensClear,
+  lensLock,
   onCheat,
   onGear,
   onPause,
@@ -63,6 +65,8 @@ export function Hud({
   onMarket: () => void
   onAlmanac: () => void
   onLens: () => void
+  onLensClear: () => void
+  lensLock: boolean
   onCheat: () => void
   onGear: () => void
   onPause: () => void
@@ -174,13 +178,25 @@ export function Hud({
           <FaceBtn art={UI_BTN_BUILD} label="Build" selected={panel === 'build'} onClick={onBuild} />
           <FaceBtn art={UI_BTN_RESEARCH} label="Research" selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label="Market" selected={panel === 'market'} onClick={onMarket} />
-          <FaceBtn
-            art={UI_BTN_LENS}
-            label="Lens"
-            note={lens === 'off' ? undefined : lens}
-            selected={panel === 'lens'}
-            onClick={onLens}
-          />
+          <div className="relative">
+            <FaceBtn
+              art={UI_BTN_LENS}
+              label="Lens"
+              note={lens === 'off' ? undefined : lensLock ? `${lens} locked` : lens}
+              selected={panel === 'lens'}
+              onClick={onLens}
+            />
+            {lensLock && (
+              <button
+                type="button"
+                aria-label="Clear lens"
+                className="pointer-events-auto absolute top-1 right-1 cursor-pointer bg-ink/10 px-1 text-xs leading-none text-ink/70 hover:bg-ink/25"
+                onClick={onLensClear}
+              >
+                ×
+              </button>
+            )}
+          </div>
           <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
           <FaceBtn art={UI_BTN_ALMANAC} label="Almanac" selected={panel === 'almanac'} onClick={onAlmanac} />
           {!guest && <FaceBtn art={UI_BTN_CHEAT} label="Cheat" selected={panel === 'cheat'} onClick={onCheat} />}

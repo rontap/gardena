@@ -11,7 +11,6 @@ import {
     SENSOR_FERT_PRICE,
     SENSOR_HARVEST_PRICE,
     SENSOR_WATER_PRICE,
-    SMART_VALVE_PRICE,
     VEHICLE_DETECTOR_PRICE,
     TRAFFIC_LIGHT_PRICE,
     WATER_SYSTEM_PRICE,
@@ -488,14 +487,6 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-sensor-harvest': {id: 'buy-sensor-harvest', price: SENSOR_HARVEST_PRICE, tab: 'automation', unlock: 'unlock-sensors', show: 'unlock-sensors', need: []},
     'buy-sensor-day': {id: 'buy-sensor-day', price: SENSOR_DAY_PRICE, tab: 'automation', unlock: 'unlock-sensors', show: 'unlock-sensors', need: []},
     'buy-water-system': {id: 'buy-water-system', price: WATER_SYSTEM_PRICE, tab: 'automation', unlock: 'unlock-sensors', show: 'unlock-sensors', need: ['unlock-adv-irrigation']},
-    'buy-smart-valve': {
-        id: 'buy-smart-valve',
-        price: SMART_VALVE_PRICE,
-        tab: 'automation',
-        unlock: 'unlock-smart-irrigation',
-        show: 'unlock-sensors',
-        need: [],
-    },
     'buy-vehicle-detector': {
         id: 'buy-vehicle-detector',
         price: VEHICLE_DETECTOR_PRICE,

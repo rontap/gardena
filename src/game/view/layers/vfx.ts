@@ -1,10 +1,10 @@
-import { Container } from 'pixi.js'
+import { Container, Graphics, Sprite } from 'pixi.js'
 import { vertexKey } from '../../sim/pipe.ts'
 import { millWorking, jamWorking, stillWorking, barrelWorking } from '../../sim/machine.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'
 import type { VfxId } from '../../sim/ids.ts'
-import { TILE } from '../camera.ts'
+import { TILE, tileVariant } from '../camera.ts'
 import { atlasTex, vfxKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 import { VFX, VFX_REDUCED } from '../vfx.ts'
@@ -30,10 +30,42 @@ function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefine
 
 export class VfxLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
+  readonly ground = new Container({ eventMode: 'none' })
   private readonly pool = new SpritePool(this.root)
+  private readonly digs: { sprite: Sprite; mask: Graphics }[] = []
   private bursts: LiveBurst[] = []
   private world: World | undefined
   mounts: VfxMount[] = []
+
+  private digPatch(world: World, now: number): void {
+    let n = 0
+    world.seats.forEach(seat => {
+      const head = seat.queue[0]
+      if (head?.act !== 'shovel') return
+      if (seat.workLeft <= 0 || seat.workTotal <= 0) return
+      const p = 1 - seat.workLeft / seat.workTotal
+      const at = head.at
+      this.draw('dig', at.col, at.row, 0, false, now, undefined)
+      if (this.digs[n] === undefined) {
+        const sprite = new Sprite()
+        const mask = new Graphics()
+        sprite.mask = mask
+        this.ground.addChild(sprite, mask)
+        this.digs[n] = { sprite, mask }
+      }
+      const d = this.digs[n]
+      d.sprite.texture = atlasTex(tileVariant(at.col, at.row, 2) === 0 ? 'dirt-0' : 'dirt-1')
+      d.sprite.position.set(at.col * TILE, at.row * TILE)
+      d.sprite.visible = true
+      const side = TILE * p
+      d.mask.clear()
+      d.mask
+        .rect(at.col * TILE + (TILE - side) / 2, at.row * TILE + (TILE - side) / 2, side, side)
+        .fill(0xffffff)
+      n += 1
+    })
+    for (let i = n; i < this.digs.length; i++) this.digs[i].sprite.visible = false
+  }
 
   bind(world: World): void {
     if (this.world !== world) {
@@ -49,7 +81,19 @@ export class VfxLayer {
     this.bursts.push(...got.map(b => ({ ...b, t0: now })))
   }
 
+  get vfxN(): number {
+    let n = 0
+    this.root.children.forEach(c => {
+      if (c.visible) n += 1
+    })
+    this.digs.forEach(d => {
+      if (d.sprite.visible) n += 1
+    })
+    return n
+  }
+
   tick(world: World, now: number): void {
+    this.ingest(world, now)
     this.bursts = this.bursts.filter(b => now - b.t0 < VFX[b.id].dur * 1000)
     this.mounts = []
     this.pool.begin()
@@ -67,6 +111,7 @@ export class VfxLayer {
     this.bursts.forEach(b => {
       this.draw(b.id, b.at.col, b.at.row, 0, true, now, b.t0, b.seq)
     })
+    this.digPatch(world, now)
     this.pool.end()
   }
 
@@ -84,12 +129,11 @@ export class VfxLayer {
     this.mounts.push({ id, col, row, rot, burst, seq })
     const x = col * TILE
     const y = row * TILE
-    const offx = def.anchor === 'vertex' ? -(def.span * TILE) / 24 / 2 : 0
-    const offy = def.anchor === 'vertex' ? -(def.tall * TILE) / 24 / 2 : 0
     const rad = (rot * Math.PI) / 180
     if (VFX_REDUCED && !burst) {
       const s = this.pool.take(atlasTex(vfxKey(id, 0)))
-      s.position.set(x + offx, y + offy)
+      if (def.anchor === 'vertex') s.anchor.set(0.5)
+      s.position.set(x, y)
       s.rotation = rad
       return
     }
@@ -110,7 +154,8 @@ export class VfxLayer {
       const on = burst ? local >= 0 && local < 1 / def.slots && p < 1 : local < 1 / def.slots
       if (!on) continue
       const s = this.pool.take(atlasTex(vfxKey(id, i)))
-      s.position.set(x + offx, y + offy)
+      if (def.anchor === 'vertex') s.anchor.set(0.5)
+      s.position.set(x, y)
       s.rotation = rad
       s.alpha = wrap
     }

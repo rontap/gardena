@@ -131,16 +131,15 @@ Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unloc
 | buy-lever, buy-button, buy-lamp, buy-pulser, buy-counter | unlock-sensors | — |
 | buy-sensor-harvest, buy-sensor-day | unlock-sensors | — |
 | buy-and, buy-or, buy-not | unlock-advanced-sensors | — |
-| buy-smart-valve | unlock-smart-irrigation | — |
 | buy-sensor-water | unlock-sensors | unlock-irrigation |
 | buy-sensor-fert | unlock-sensors | unlock-fertilizer, unlock-compost |
 | buy-water-system | unlock-sensors | unlock-adv-irrigation |
 | buy-vehicle-detector | unlock-sensors | unlock-vehicles |
 | buy-traffic-light | unlock-sensors | unlock-dispatch |
 
-AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`. `buy-smart-valve` the same through `unlock-smart-irrigation`.
+AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`.
 
-`buy-smart-valve` Water (flow). `buy-vehicle-detector` Sensors. `buy-traffic-light` Sensors.
+`buy-vehicle-detector` Sensors. `buy-traffic-light` Sensors.
 
 ### Land
 

@@ -82,7 +82,7 @@ const SPRINKLER_LARGE_T = 'Waters a 4×4 around a corner, ${day} L a day per til
 const WELL_T =
   'One tile. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
 const VALVE_T =
-  'Sits on an edge like pipe. Click it to send the gardener over and turn the flow off or on. Water still reaches a sprinkler by any other open route.'
+  'Sits on an edge like pipe, laying one if the edge is bare. Click it to send the gardener over and turn the flow off or on. Water still reaches a sprinkler by any other open route. Smart irrigation gives every valve a signal input; a wired valve follows the wire instead of the hand.'
 const RAIN_TANK_T = 'Two tiles. Gathers ${rate} L/s into a ${cap} L tank with no pump and no pipe run to a source.'
 const TAP_T =
   'One tile on the grid. Fills a bucket at ${rate} L/s while the tanks hold water, and only as fast as the sources make it once they run dry.'
@@ -351,7 +351,7 @@ export function catalogEntries(): CatalogEntry[] {
     },
     {
       id: 'valve',
-      title: 'Manual valve',
+      title: 'Valve',
       icon: { kind: 'valve' },
       blurb: VALVE_T,
     },
@@ -429,12 +429,6 @@ export function catalogEntries(): CatalogEntry[] {
       title: 'Produce silo',
       icon: { kind: 'silo-produce' },
       blurb: '2×3 field tank. Look only.',
-    },
-    {
-      id: 'smart-valve',
-      title: 'Smart valve',
-      icon: { kind: 'smart-valve' },
-      blurb: 'Sits on an edge. Closed unless its input is high. No manual click.',
     },
     {
       id: 'lever',

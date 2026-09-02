@@ -13,7 +13,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-produce silo-spray |
-| `water` | Water systems | pumpjack well rain-tank tap pipe valve smart-valve sprinkler sprinkler-vert sprinkler-large |
+| `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
 | `concepts` | Game concepts | Rarity, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation |
 
@@ -31,7 +31,7 @@ Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not t
 
 `unlock-preservatives` done: third plate on grape raspberry tomato CropPanes and apple apricot cherry TreePanes. Jam jar; tomato **Ketchup**. Hidden until that research is done.
 
-Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor / smart-valve panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light panes. Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
+Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light panes. Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
 
 SKU panes stay generic / crop / tree / pipe.
 
@@ -109,7 +109,7 @@ Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CRO
 
 ## Pipe
 
-Water systems list row `pipe` only. Valve, smart valve, and the sprinklers stay their own static rows.
+Water systems list row `pipe` only. Valve and the sprinklers stay their own static rows.
 
 Same generic pane chrome as other non-crop entries: title, one plate, blurb. The plate is not `itemInner({ kind: 'pipe' })`.
 

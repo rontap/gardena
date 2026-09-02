@@ -5,10 +5,13 @@ import {
   nearestWire,
   portDevice,
   portXY,
+  type PortId,
   type WireEnd,
 } from '../sim/sensor.ts'
+import type { Cell } from '../sim/plot.ts'
 import type { Place, World } from '../sim/world.ts'
 import type { PromptHit } from '../sim/prompt.ts'
+import { DROP_FACE, DROP_INSET, DROP_STEP, TILE } from './camera.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors' | 'vehicles'
 
@@ -16,6 +19,8 @@ export type MapClick = PromptHit
 
 export const EDGE_HIT = 0.35
 export const VERTEX_HIT = 0.3
+export const SPRINKLER_HIT = 0.45
+export const PORT_HIT = 0.18
 
 export const PIPE_PLACE: readonly SkuId[] = [
   'buy-pipe',
@@ -28,6 +33,10 @@ export const PIPE_PLACE: readonly SkuId[] = [
   'buy-well',
   'buy-pumpjack',
 ]
+
+export function pipesOverlay(lens: Lens, place: Place): boolean {
+  return lens === 'pipes' || place.kind === 'delete' || (place.kind === 'sku' && PIPE_PLACE.includes(place.id))
+}
 
 export const AOE_WASH: readonly SkuId[] = [
   'buy-pipe',
@@ -45,7 +54,6 @@ export const STAY_ARMED: readonly SkuId[] = [
   'buy-sprinkler-large',
   'buy-well',
   ...SENSOR_CELL_SKUS,
-  'buy-smart-valve',
 ]
 
 export const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
@@ -54,7 +62,6 @@ export type DeleteTarget =
   | { kind: 'pipe'; edge: Edge }
   | { kind: 'well'; edge: Edge }
   | { kind: 'sprinkler'; at: Vertex }
-  | { kind: 'smart'; edge: Edge }
   | { kind: 'wire'; from: WireEnd; to: WireEnd }
 
 export function nearestEdge(wx: number, wy: number): Edge | undefined {
@@ -76,10 +83,10 @@ export function nearestEdge(wx: number, wy: number): Edge | undefined {
   return best.edge
 }
 
-export function nearestVertex(wx: number, wy: number): Vertex | undefined {
+export function nearestVertex(wx: number, wy: number, r: number): Vertex | undefined {
   const col = Math.round(wx)
   const row = Math.round(wy)
-  if (Math.hypot(wx - col, wy - row) > VERTEX_HIT) return undefined
+  if (Math.hypot(wx - col, wy - row) > r) return undefined
   return { col, row }
 }
 
@@ -105,6 +112,43 @@ export function arms(
   }
 }
 
+export function roundVertex(wx: number, wy: number): Vertex {
+  return { col: Math.round(wx), row: Math.round(wy) }
+}
+
+export function onEdgeBand(wx: number, wy: number): boolean {
+  const col = Math.floor(wx)
+  const row = Math.floor(wy)
+  const fx = wx - col
+  const fy = wy - row
+  return Math.min(fx, 1 - fx) <= EDGE_HIT || Math.min(fy, 1 - fy) <= EDGE_HIT
+}
+
+export function routeEdges(a: Vertex, b: Vertex, flip: boolean): Edge[] {
+  const dx = b.col - a.col
+  const dy = b.row - a.row
+  const horizFirst = flip ? Math.abs(dx) < Math.abs(dy) : Math.abs(dx) >= Math.abs(dy)
+  const out: Edge[] = []
+  const run = (from: Vertex, to: Vertex): Vertex => {
+    if (from.col !== to.col) {
+      const step = to.col > from.col ? 1 : -1
+      for (let c = from.col; c !== to.col; c += step) {
+        out.push({ axis: 'h', col: step === 1 ? c : c - 1, row: from.row })
+      }
+      return { col: to.col, row: from.row }
+    }
+    const step = to.row > from.row ? 1 : -1
+    for (let r = from.row; r !== to.row; r += step) {
+      out.push({ axis: 'v', col: from.col, row: step === 1 ? r : r - 1 })
+    }
+    return { col: from.col, row: to.row }
+  }
+  const corner = horizFirst ? { col: b.col, row: a.row } : { col: a.col, row: b.row }
+  const mid = run(a, corner)
+  run(mid, b)
+  return out
+}
+
 export function pipeOk(world: World, id: SkuId, e: Edge): boolean {
   if (!world.edgeOwned(e)) return false
   if (id === 'buy-valve') return world.hasPipe(e) && !world.hasValve(e)
@@ -128,39 +172,86 @@ export function wireEndXY(world: World, end: WireEnd): { x: number; y: number } 
   return portXY(end)
 }
 
+const WHOLE_CELL_PORT: Record<string, PortId> = {
+  lamp: 'in',
+  'sensor-fert': 'out',
+  'water-system': 'out',
+  'vehicle-detector': 'out',
+  chest: 'out',
+  freezer: 'out',
+  'seed-silo': 'out',
+  'additive-store': 'out',
+}
+
+function originOk(c: Cell, at: { col: number; row: number }): boolean {
+  if (!('base' in c)) return true
+  if (c.base.shape !== 'rect') return false
+  return c.base.col === at.col && c.base.row === at.row
+}
+
+function cellPorts(c: Cell): PortId[] {
+  if (isSensor(c)) {
+    if (c.kind === 'and' || c.kind === 'or') return ['in-l', 'in-r', 'out']
+    if (
+      c.kind === 'not' ||
+      c.kind === 'pulser' ||
+      c.kind === 'counter' ||
+      c.kind === 'lever' ||
+      c.kind === 'traffic-light'
+    ) {
+      return ['in', 'out']
+    }
+    if (c.kind === 'lamp') return ['in']
+    return ['out']
+  }
+  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') return ['in']
+  if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
+    return ['out']
+  }
+  return []
+}
+
 function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
-  const at = { col: Math.floor(wx), row: Math.floor(wy) }
-  if (world.inWorld(at)) {
-    const c = world.cell(at)
-    if (isSensor(c)) {
-      const fx = wx - at.col
-      const fy = wy - at.row
-      if (c.kind === 'and' || c.kind === 'or') {
-        if (fy > 0.65) return { kind: 'cell', at, port: 'out' }
-        return { kind: 'cell', at, port: fx < 0.5 ? 'in-l' : 'in-r' }
-      }
-      if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever' || c.kind === 'traffic-light') {
-        return { kind: 'cell', at, port: fy < 0.5 ? 'in' : 'out' }
-      }
-      if (c.kind === 'lamp') return { kind: 'cell', at, port: 'in' }
-      return { kind: 'cell', at, port: 'out' }
-    }
-    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
-      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'in' }
-      return undefined
-    }
-    if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
-      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'out' }
-      return undefined
+  const col = Math.floor(wx)
+  const row = Math.floor(wy)
+  let bestD = PORT_HIT
+  let best: WireEnd | undefined = undefined
+  const take = (end: WireEnd, x: number, y: number): void => {
+    const d = Math.hypot(wx - x, wy - y)
+    if (d > bestD) return
+    bestD = d
+    best = end
+  }
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const at = { col: col + dc, row: row + dr }
+      if (!world.inWorld(at)) continue
+      const c = world.cell(at)
+      if (!originOk(c, at)) continue
+      cellPorts(c).forEach(port => {
+        const end: WireEnd = { kind: 'cell', at, port }
+        const p = portXY(end, portDevice(c))
+        take(end, p.x, p.y)
+      })
     }
   }
-  const v = nearestVertex(wx, wy)
-  if (v !== undefined && world.done.has('unlock-smart-irrigation') && world.sprinklerAt(v) !== undefined) {
-    return { kind: 'sprinkler', at: v, port: 'in' }
+  if (world.done.has('unlock-smart-irrigation')) {
+    const v = { col: Math.round(wx), row: Math.round(wy) }
+    if (world.sprinklerAt(v) !== undefined) take({ kind: 'sprinkler', at: v, port: 'in' }, v.col, v.row)
+    const edge = nearestEdge(wx, wy)
+    if (edge !== undefined && world.hasValve(edge)) {
+      const p = portXY({ kind: 'valve', e: edge, port: 'in' })
+      take({ kind: 'valve', e: edge, port: 'in' }, p.x, p.y)
+    }
   }
-  const edge = nearestEdge(wx, wy)
-  if (edge !== undefined && world.hasSmart(edge)) return { kind: 'valve', e: edge, port: 'in' }
-  return undefined
+  if (best !== undefined) return best as WireEnd
+  const at = { col, row }
+  if (!world.inWorld(at)) return undefined
+  const c = world.cell(at)
+  if (!originOk(c, at)) return undefined
+  const port = WHOLE_CELL_PORT[c.kind]
+  if (port === undefined) return undefined
+  return { kind: 'cell', at, port }
 }
 
 export function wireSignal(world: World, from: WireEnd): boolean {
@@ -177,20 +268,6 @@ function valveHit(world: World, wx: number, wy: number): Edge | undefined {
   let best: { edge: Edge; d: number } | undefined = undefined
   world.segments.forEach(seg => {
     if (seg.gate.kind !== 'valve') return
-    const mx = seg.at.axis === 'h' ? seg.at.col + 0.5 : seg.at.col
-    const my = seg.at.axis === 'h' ? seg.at.row : seg.at.row + 0.5
-    const d = Math.hypot(wx - mx, wy - my)
-    if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: seg.at, d }
-  })
-  if (best === undefined) return undefined
-  return (best as { edge: Edge; d: number }).edge
-}
-
-function smartHit(world: World, wx: number, wy: number): Edge | undefined {
-  let best: { edge: Edge; d: number } | undefined = undefined
-  world.segments.forEach(seg => {
-    if (seg.gate.kind !== 'smart') return
     const mx = seg.at.axis === 'h' ? seg.at.col + 0.5 : seg.at.col
     const my = seg.at.axis === 'h' ? seg.at.row : seg.at.row + 0.5
     const d = Math.hypot(wx - mx, wy - my)
@@ -225,7 +302,6 @@ export function deleteHit(
   if (wire !== undefined) return { kind: 'wire', from: wire.from, to: wire.to }
   if (edge !== undefined) {
     if (world.hasWell(edge)) return { kind: 'well', edge }
-    if (world.hasSmart(edge)) return { kind: 'smart', edge }
     if (world.hasPipe(edge) && world.edgeOwned(edge)) return { kind: 'pipe', edge }
   }
   if (v !== undefined && world.sprinklerAt(v) !== undefined) return { kind: 'sprinkler', at: v }
@@ -249,14 +325,8 @@ export function stayOk(
   if (placeId === 'buy-pipe' || placeId === 'buy-valve') {
     return edge !== undefined && pipeOk(world, placeId, edge)
   }
-  if (placeId === 'buy-well' || placeId === 'buy-smart-valve') {
-    return (
-      edge !== undefined &&
-      world.edgeOwned(edge) &&
-      !world.hasPipe(edge) &&
-      !world.hasWell(edge) &&
-      !world.hasSmart(edge)
-    )
+  if (placeId === 'buy-well') {
+    return edge !== undefined && world.edgeOwned(edge) && !world.hasPipe(edge) && !world.hasWell(edge)
   }
   if (s === undefined) return false
   return sprinklerOk(world, s)
@@ -264,24 +334,23 @@ export function stayOk(
 
 export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapClick | undefined {
   const place = world.seats[world.local].place
-  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well' || place.id === 'buy-smart-valve')) {
+  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well')) {
     const edge = nearestEdge(wx, wy)
     if (edge === undefined) return undefined
     return { kind: 'edge', edge }
   }
   if (place.kind === 'sku' && SPRINKLER_SKU.includes(place.id)) {
-    const at = nearestVertex(wx, wy)
+    const at = nearestVertex(wx, wy, SPRINKLER_HIT)
     if (at === undefined) return undefined
     return { kind: 'sprinkler', sprinkler: makeSprinkler(place, at) }
   }
   if (place.kind === 'delete') {
     const edge = nearestEdge(wx, wy)
-    const at = nearestVertex(wx, wy)
+    const at = nearestVertex(wx, wy, VERTEX_HIT)
     const del = deleteHit(world, edge, at, wx, wy)
     if (del?.kind === 'wire') return { kind: 'delete-wire', from: del.from, to: del.to }
     if (del?.kind === 'pipe') return { kind: 'delete-pipe', edge: del.edge }
     if (del?.kind === 'well') return { kind: 'delete-well', edge: del.edge }
-    if (del?.kind === 'smart') return { kind: 'smart-valve', edge: del.edge }
     if (del?.kind === 'sprinkler') return { kind: 'delete-sprinkler', at: del.at }
     return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
   }
@@ -291,30 +360,55 @@ export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapC
     if (port !== undefined) return { kind: 'port', end: port }
   }
   if (place.kind === 'none') {
-    const v = nearestVertex(wx, wy)
+    const v = nearestVertex(wx, wy, VERTEX_HIT)
     if (v !== undefined && world.done.has('unlock-smart-irrigation') && world.sprinklerAt(v) !== undefined) {
       return { kind: 'sprinkler-hud', at: v }
     }
     const valve = valveHit(world, wx, wy)
     if (valve !== undefined) return { kind: 'valve', edge: valve }
-    const smart = smartHit(world, wx, wy)
-    if (smart !== undefined) return { kind: 'smart-valve', edge: smart }
     const well = wellHit(world, wx, wy)
     if (well !== undefined) return { kind: 'well', edge: well }
     const cellAt = { col: Math.floor(wx), row: Math.floor(wy) }
     if (world.inWorld(cellAt)) {
       const c = world.cell(cellAt)
-      if (c.kind === 'sensor-water' && lens !== 'sensors') return { kind: 'water-hud', at: cellAt }
-      if (c.kind === 'sensor-harvest' && lens !== 'sensors') return { kind: 'harvest-hud', at: cellAt }
-      if (c.kind === 'counter' && lens !== 'sensors') return { kind: 'counter-hud', at: cellAt }
-      if (c.kind === 'sensor-day' && lens !== 'sensors') return { kind: 'day-hud', at: cellAt }
+      if (c.kind === 'sensor-water') return { kind: 'water-hud', at: cellAt }
+      if (c.kind === 'sensor-harvest') return { kind: 'harvest-hud', at: cellAt }
+      if (c.kind === 'counter') return { kind: 'counter-hud', at: cellAt }
+      if (c.kind === 'sensor-day') return { kind: 'day-hud', at: cellAt }
     }
   }
+  const drop = dropHit(world, wx, wy)
+  if (drop !== undefined) return { kind: 'cell', at: drop }
   return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
 }
 
+export function dropRect(at: { col: number; row: number }, i: number): { x: number; y: number; w: number; h: number } {
+  const n = i % 4
+  const s = DROP_FACE / TILE
+  return {
+    x: at.col + (DROP_INSET + (n % 2) * DROP_STEP) / TILE,
+    y: at.row + (DROP_INSET + Math.floor(n / 2) * DROP_STEP) / TILE,
+    w: s,
+    h: s,
+  }
+}
+
+export function dropHit(world: World, wx: number, wy: number): { col: number; row: number } | undefined {
+  for (let i = world.drops.length - 1; i >= 0; i--) {
+    const d = world.drops[i]
+    let pack = 0
+    for (let j = 0; j < i; j++) {
+      const e = world.drops[j]
+      if (e.at.col === d.at.col && e.at.row === d.at.row) pack += 1
+    }
+    const r = dropRect(d.at, pack)
+    if (wx >= r.x && wy >= r.y && wx < r.x + r.w && wy < r.y + r.h) return d.at
+  }
+  return undefined
+}
+
 export function hoverSprinkler(world: World, wx: number, wy: number): Sprinkler | undefined {
-  const v = nearestVertex(wx, wy)
+  const v = nearestVertex(wx, wy, VERTEX_HIT)
   if (v === undefined) return undefined
   return world.sprinklerAt(v)
 }

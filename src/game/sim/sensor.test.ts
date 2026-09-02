@@ -61,14 +61,14 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 2.0. No migrate. 1.62 file → version.', () => {
-    expect(SAVE_VERSION).toBe(1.9)
-    expect(PROTOCOL).toBe(1.9)
+  test('SAVE_VERSION 2.02. PROTOCOL 2.02. Wordmark 2.0.2. No migrate. 1.62 file → version.', () => {
+    expect(SAVE_VERSION).toBe(2.02)
+    expect(PROTOCOL).toBe(2.02)
     const w = new World(1)
     const s = dump(w)
-    expect(s.version).toBe(1.9)
+    expect(s.version).toBe(2.02)
     expect(s.wires).toEqual([])
-    expect(s.smartHold).toEqual([])
+    expect(s.valveHold).toEqual([])
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
@@ -304,7 +304,7 @@ describe('1.6 sensors', () => {
           to: { kind: 'cell', at: { col: 0, row: 1 }, port: 'in' },
         },
       ],
-      smart: new Map(),
+      valves: new Map(),
       sprinklers: new Map(),
       raw: rawMap(new Map()),
       machines: new Map(),
@@ -344,7 +344,6 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-lever' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe' })).toBe(false)
-    expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
   })
 
   test('Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is.', () => {
@@ -707,33 +706,26 @@ describe('1.6 sensors', () => {
     expect(p2.out).toBe(1)
   })
 
-  test('Smart valve: unwired closed; high open, low closed; hold; no manual click; guest place yes, pipe/valve no.', () => {
+  test('Valve: unwired manual; wired follows the held input; hold; wire drops on delete; guest wires but does not place or click.', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const v = { col: 19, row: 7 }
     const w = new World(1)
     ready(w)
-    w.done.add('unlock-irrigation')
-    w.done.add('unlock-auto-irrigation')
     put(w, 'buy-lever', A)
-    w.buy('buy-smart-valve')
-    w.placeSmartValve(e)
-    expect(w.hasSmart(e)).toBe(true)
-    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
-    expect(w.conducts(e)).toBe(false)
+    w.buy('buy-valve')
+    w.placePipe(e)
+    expect(w.hasValve(e)).toBe(true)
+    expect(w.valveWired(e)).toBe(false)
+    expect(w.conducts(e)).toBe(true)
     w.buy('buy-sprinkler')
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     grow(w, { col: 18, row: 6 }, 'growing', 0.5)
-    w.tick(DT_MAX)
-    expect(w.conducts(e)).toBe(false)
-    expect(w.rate(v)).toBe(0)
-    w.buy('buy-pipe')
-    w.placePipe(e)
-    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
-    w.clickValve(e)
-    expect(w.seats[0].queue).toEqual([])
-    expect(w.segmentAt(e)?.gate).toEqual({ kind: 'smart' })
     w.armWire({ kind: 'cell', at: A, port: 'out' })
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
+    expect(w.valveWired(e)).toBe(true)
+    expect(w.conducts(e)).toBe(false)
+    w.clickValve(e)
+    expect(w.seats[0].queue).toEqual([])
     w.enqueue({ act: 'toggle', at: A })
     w.seats[0].actor.x = A.col + 0.5
     w.seats[0].actor.y = A.row + 0.5
@@ -742,18 +734,36 @@ describe('1.6 sensors', () => {
     expect(w.rate(v)).toBeGreaterThan(0)
     w.armDelete()
     w.deleteWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
-    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
-      w.tick(DT_MAX)
-      expect(w.conducts(e)).toBe(true)
-    }
-    w.tick(DT_MAX)
-    expect(w.conducts(e)).toBe(false)
-    expect(permit({ a: Act.placeSmartValve, t: 0, p: 1, e })).toBe(true)
+    expect(w.valveWired(e)).toBe(false)
+    expect(w.conducts(e)).toBe(true)
     expect(permit({ a: Act.placePipe, t: 0, p: 1, e })).toBe(false)
     expect(permit({ a: Act.clickValve, t: 0, p: 1, e })).toBe(false)
     const s = dump(w)
-    expect(s.smartHold).toHaveLength(1)
-    expect(s.segments.some(seg => seg.gate.kind === 'smart')).toBe(true)
+    expect(s.valveHold).toHaveLength(0)
+    expect(s.segments.some(seg => seg.gate.kind === 'valve')).toBe(true)
+  })
+
+  test('Wired valve holds after its wire goes high then low.', () => {
+    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-lever', A)
+    w.buy('buy-valve')
+    w.placePipe(e)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
+    w.enqueue({ act: 'toggle', at: A })
+    w.seats[0].actor.x = A.col + 0.5
+    w.seats[0].actor.y = A.row + 0.5
+    w.tick(DT_MAX)
+    expect(w.conducts(e)).toBe(true)
+    w.enqueue({ act: 'toggle', at: A })
+    w.tick(DT_MAX)
+    for (let i = 0; i < SENSOR_HOLD - 1; i++) {
+      expect(w.conducts(e)).toBe(true)
+      w.tick(DT_MAX)
+    }
+    expect(w.conducts(e)).toBe(false)
   })
 
   test('Smart irrigation: unwired on; wired held in; digest distinguishes; wire before unlock is a no-op; dial unchanged; pour this tick.', () => {
@@ -939,41 +949,44 @@ describe('1.6 sensors', () => {
     expect(heldOff.out).toBe(0)
   })
 
-  test('buy-valve on a smart edge is Cannot place here.', () => {
+  test('buy-valve on a bare edge lays the pipe too and charges both.', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const w = new World(1)
     ready(w)
-    w.done.add('unlock-irrigation')
-    w.done.add('unlock-auto-irrigation')
-    w.buy('buy-smart-valve')
-    w.placeSmartValve(e)
     w.buy('buy-valve')
-    expect(w.promptHit({ kind: 'edge', edge: e })).toEqual({ kind: 'blocked', text: 'Cannot place here' })
+    expect(w.promptHit({ kind: 'edge', edge: e })).toEqual({ kind: 'place', text: 'Place Valve' })
     const money = w.money
     w.placePipe(e)
-    expect(w.hasSmart(e)).toBe(true)
-    expect(w.hasValve(e)).toBe(false)
+    expect(w.hasPipe(e)).toBe(true)
+    expect(w.hasValve(e)).toBe(true)
+    expect(w.money).toBe(money - w.skuPrice('buy-valve') - w.skuPrice('buy-pipe'))
+  })
+
+  test('buy-valve on a valved edge is Pipe already has a valve.', () => {
+    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const w = new World(1)
+    ready(w)
+    w.buy('buy-valve')
+    w.placePipe(e)
+    const money = w.money
+    expect(w.promptHit({ kind: 'edge', edge: e })).toEqual({ kind: 'blocked', text: 'Pipe already has a valve' })
+    w.placePipe(e)
     expect(w.money).toBe(money)
   })
 
-  test('Unarmed smart-valve hover is Smart valve - on/off.', () => {
+  test('Unarmed wired-valve hover is Valve - wired.', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const w = new World(1)
     ready(w)
-    w.done.add('unlock-irrigation')
-    w.done.add('unlock-auto-irrigation')
-    w.buy('buy-smart-valve')
-    w.placeSmartValve(e)
+    w.buy('buy-valve')
+    w.placePipe(e)
     w.cancelPlace()
-    expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - off')
+    expect(lookText(w, { kind: 'valve', edge: e }, false)).toBe('Close valve')
     put(w, 'buy-lever', A)
     w.armWire({ kind: 'cell', at: A, port: 'out' })
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
-    w.enqueue({ act: 'toggle', at: A })
-    w.seats[0].actor.x = A.col + 0.5
-    w.seats[0].actor.y = A.row + 0.5
-    w.tick(DT_MAX)
-    expect(lookText(w, { kind: 'smart-valve', edge: e }, false)).toBe('Smart valve - on')
+    w.cancelPlace()
+    expect(lookText(w, { kind: 'valve', edge: e }, false)).toBe('Valve - wired')
   })
 
   test('Unwired mill/jam/still `inn` 0 ticks (enabled).', () => {

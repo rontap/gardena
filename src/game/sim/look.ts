@@ -5,8 +5,8 @@ import type { Rarity } from '../defs/rarity.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { cropName, heldText, skuLabel, type Hand } from './item.ts'
 import type { PromptHit } from './prompt.ts'
-import { corners, edgeKey, incident } from './pipe.ts'
-import { isSensor, type SmartHold } from './sensor.ts'
+import { corners, incident } from './pipe.ts'
+import { isSensor } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
 import type { TileId } from './ids.ts'
 import type { World } from './world.ts'
@@ -20,10 +20,6 @@ const FERT_WORD: { readonly [K in Band]: string } = {
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
   const place = world.seats[world.local].place
   if (place.kind === 'delete') return world.promptHit(hit).text
-  if (hit !== undefined && hit.kind === 'smart-valve') {
-    const h = world.smartHold.get(edgeKey(hit.edge)) as SmartHold
-    return `Smart valve - ${h.level === 1 ? 'on' : 'off'}`
-  }
   if (
     hit !== undefined &&
     (hit.kind === 'valve' ||
@@ -44,7 +40,6 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     (place.id === 'buy-pipe' ||
       place.id === 'buy-valve' ||
       place.id === 'buy-well' ||
-      place.id === 'buy-smart-valve' ||
       place.id === 'buy-sprinkler' ||
       place.id === 'buy-sprinkler-vert' ||
       place.id === 'buy-sprinkler-large')
@@ -129,7 +124,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   } else if (isSensor(cell)) {
     if (cell.kind === 'water-system') {
       const around = corners(occupiedCells(cell.base, world.owned)).some(v =>
-        incident(v).some(e => world.hasPipe(e) || world.hasWell(e) || world.hasSmart(e)),
+        incident(v).some(e => world.hasPipe(e) || world.hasWell(e)),
       )
       if (!around) lines.push('Water-system sensor - no pipes around sensor!')
       else lines.push(`Water-system sensor - ${cell.out === 1 ? 'on' : 'off'}`)

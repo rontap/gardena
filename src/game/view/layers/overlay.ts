@@ -2,7 +2,8 @@ import { Container, Graphics, Text } from 'pixi.js'
 import { FADE, chunkKey, chunkOf } from '../../sim/building.ts'
 import { hangarPad, siloPad, stopXY } from '../../sim/vehicle.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
-import { aoe, edgeKey } from '../../sim/pipe.ts'
+import { occupiedCells } from '../../sim/building.ts'
+import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'
 import { area3, isSensor, ownsPort, portDevice, portXY, sameEnd, wireControls, type PortId, type WireEnd } from '../../sim/sensor.ts'
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
@@ -13,7 +14,7 @@ import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
-import { AOE_WASH, wireEndXY, wireSignal, type Lens } from '../hit.ts'
+import { AOE_WASH, PIPE_PLACE, PORT_HIT, pipesOverlay, wireEndXY, wireSignal, type Lens } from '../hit.ts'
 import type { Sprinkler } from '../../sim/pipe.ts'
 
 const ROOF = 0x8b3a2a
@@ -22,6 +23,9 @@ const WATER = 0x3d7ea6
 const GRAPE = 0x6b1f8c
 const RIPE = 0xd4a017
 const INK = 0x1c1710
+const LATTICE_ALPHA = 0.16
+const FLOW_DASH = 1.1
+const DASH = 7
 const WASH = 0xcfc6b0
 const LENS_BAD = 0xe23b2e
 const LENS_MID = 0xd4a017
@@ -156,7 +160,7 @@ function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
     return s !== undefined && s.inn === 1
   }
   if (end.kind === 'valve') {
-    const h = world.smartHold.get(edgeKey(end.e))
+    const h = world.valveHold.get(edgeKey(end.e))
     return h !== undefined && h.level === 1
   }
   if (end.port === 'out') {
@@ -170,15 +174,115 @@ function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
   return world.wires.some(w => sameEnd(w.to, end) && wireSignal(world, w.from))
 }
 
+function cubicAt(a: number, b: number, c: number, d: number, t: number): number {
+  const u = 1 - t
+  return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d
+}
+
+function cubicXY(
+  a: { x: number; y: number },
+  c1: { x: number; y: number },
+  c2: { x: number; y: number },
+  b: { x: number; y: number },
+  t: number,
+): { x: number; y: number } {
+  return { x: cubicAt(a.x, c1.x, c2.x, b.x, t), y: cubicAt(a.y, c1.y, c2.y, b.y, t) }
+}
+
 export class OverlayLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
   private readonly gfx = new Graphics({ eventMode: 'none' })
+  private readonly flow = new Graphics({ eventMode: 'none' })
+  private dist = new Map<string, number>()
+  private flowLens: Lens = 'off'
+  private flowPipes = false
   private readonly sprites = new SpritePool(this.root)
   private readonly labels: Text[] = []
   private nLabel = 0
 
   constructor() {
-    this.root.addChild(this.gfx)
+    this.root.addChild(this.gfx, this.flow)
+  }
+
+  private sourceDist(world: World): void {
+    this.dist = new Map<string, number>()
+    const q: Vertex[] = []
+    const seed = (v: Vertex): void => {
+      const k = vertexKey(v)
+      if (this.dist.has(k)) return
+      this.dist.set(k, 0)
+      q.push(v)
+    }
+    world.pumps.forEach(p => corners(occupiedCells(p.base, world.owned)).forEach(seed))
+    world.tanks.forEach(t => corners(occupiedCells(t.base, world.owned)).forEach(seed))
+    world.wells.forEach(w => vertsOf(w.at).forEach(seed))
+    for (let i = 0; i < q.length; i++) {
+      const v = q[i]
+      const d = this.dist.get(vertexKey(v)) as number
+      incident(v).forEach(e => {
+        if (!world.conducts(e)) return
+        vertsOf(e).forEach(n => {
+          const k = vertexKey(n)
+          if (this.dist.has(k)) return
+          this.dist.set(k, d + 1)
+          q.push(n)
+        })
+      })
+    }
+  }
+
+  private pipeDashes(world: World, now: number): void {
+    if (!this.flowPipes) return
+    const t = ((now / 1000 / FLOW_DASH) % 1) * DASH * 2
+    let wet = false
+    world.segments.forEach(seg => {
+      if (!world.conducts(seg.at)) return
+      const [a, b] = vertsOf(seg.at)
+      const da = this.dist.get(vertexKey(a))
+      const db = this.dist.get(vertexKey(b))
+      if (da === undefined || db === undefined) return
+      const from = da <= db ? a : b
+      const to = da <= db ? b : a
+      const dx = (to.col - from.col) * TILE
+      const dy = (to.row - from.row) * TILE
+      const len = Math.hypot(dx, dy)
+      const ux = dx / len
+      const uy = dy / len
+      for (let o = t - DASH * 2; o < len; o += DASH * 2) {
+        const s0 = Math.max(0, o)
+        const s1 = Math.min(len, o + DASH)
+        if (s1 <= s0) continue
+        this.flow.moveTo(from.col * TILE + ux * s0, from.row * TILE + uy * s0)
+        this.flow.lineTo(from.col * TILE + ux * s1, from.row * TILE + uy * s1)
+        wet = true
+      }
+    })
+    if (wet) this.flow.stroke({ color: WATER, width: 2, cap: 'round' })
+  }
+
+  private wireBeads(world: World, now: number): void {
+    if (this.flowLens !== 'sensors') return
+    let beads = false
+    world.wires.forEach(w => {
+      if (!wireSignal(world, w.from)) return
+      const a = wireEndXY(world, w.from)
+      const b = wireEndXY(world, w.to)
+      const { c1, c2 } = wireControls(a, b)
+      const base = (now / 1000 / FLOW_DASH) % 1
+      for (let i = 0; i < 3; i++) {
+        const u = (base + i / 3) % 1
+        const p = cubicXY(a, c1, c2, b, u)
+        this.flow.circle(p.x * TILE, p.y * TILE, 2)
+        beads = true
+      }
+    })
+    if (beads) this.flow.fill({ color: WATER })
+  }
+
+  flowTick(world: World, now: number): void {
+    this.flow.clear()
+    this.pipeDashes(world, now)
+    this.wireBeads(world, now)
   }
 
   patch(
@@ -190,6 +294,9 @@ export class OverlayLayer {
     ptr?: { x: number; y: number },
   ): void {
     this.gfx.clear()
+    this.flowLens = lens
+    this.flowPipes = pipesOverlay(lens, place)
+    this.sourceDist(world)
     this.sprites.begin()
     this.nLabel = 0
     const washAoe =
@@ -225,6 +332,7 @@ export class OverlayLayer {
         }
       }
     }
+    if (place.kind === 'sku' && PIPE_PLACE.includes(place.id)) this.lattice(world)
     const keys = new Set(world.owned.map(chunkKey))
     const b = world.bounds()
     const cyEnd = Math.floor((b.row1 + FADE - 1) / GROUND_CHUNK)
@@ -335,23 +443,52 @@ export class OverlayLayer {
         marks.push({ x: p.x, y: p.y, out: false, high: s.inn === 1 })
       })
     }
-    world.smartHold.forEach(h => {
-      const end: WireEnd = { kind: 'valve', e: h.e, port: 'in' }
-      const p = portXY(end)
-      marks.push({ x: p.x, y: p.y, out: false, high: h.level === 1 })
-    })
+    if (world.done.has('unlock-smart-irrigation')) {
+      world.segments.forEach(seg => {
+        if (seg.gate.kind !== 'valve') return
+        const end: WireEnd = { kind: 'valve', e: seg.at, port: 'in' }
+        const p = portXY(end)
+        marks.push({ x: p.x, y: p.y, out: false, high: world.conducts(seg.at) })
+      })
+    }
+    const r = PORT_HIT * TILE
     marks.forEach(m => {
       const col = m.high ? WATER : FRUIT_RED
+      const x = m.x * TILE
+      const y = m.y * TILE
       if (m.out) {
-        this.gfx.circle(m.x * TILE, m.y * TILE, 2.5)
+        this.gfx.circle(x, y, r)
+        this.gfx.fill({ color: col, alpha: 0.3 })
+        this.gfx.circle(x, y, 3)
         this.gfx.fill({ color: col })
         this.gfx.stroke({ color: INK, width: 1 })
       } else {
-        this.gfx.rect(m.x * TILE - 2.5, m.y * TILE - 2.5, 5, 5)
+        this.gfx.rect(x - r, y - r, r * 2, r * 2)
+        this.gfx.fill({ color: col, alpha: 0.3 })
+        this.gfx.rect(x - 3, y - 3, 6, 6)
         this.gfx.fill({ color: col })
         this.gfx.stroke({ color: INK, width: 1 })
       }
     })
+  }
+
+  private lattice(world: World): void {
+    const b = world.bounds()
+    let any = false
+    const line = (e: Edge): void => {
+      if (!world.edgeOwned(e) || world.hasPipe(e) || world.hasWell(e)) return
+      const [a, c] = vertsOf(e)
+      this.gfx.moveTo(a.col * TILE, a.row * TILE)
+      this.gfx.lineTo(c.col * TILE, c.row * TILE)
+      any = true
+    }
+    for (let row = b.row0; row <= b.row1 + 1; row++) {
+      for (let col = b.col0; col <= b.col1 + 1; col++) {
+        line({ axis: 'h', col, row })
+        line({ axis: 'v', col, row })
+      }
+    }
+    if (any) this.gfx.stroke({ color: INK, width: 1, alpha: LATTICE_ALPHA })
   }
 
   pendingWire(world: World, from: WireEnd, x: number, y: number): void {

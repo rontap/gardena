@@ -1,12 +1,12 @@
 import { Container } from 'pixi.js'
 import { occupiedCells } from '../../sim/building.ts'
-import { edgeKey, type Edge } from '../../sim/pipe.ts'
+import type { Edge } from '../../sim/pipe.ts'
 import type { CropId } from '../../sim/ids.ts'
 import type { World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex, fenceFit, pipeFit, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
-import { PIPE_PLACE, arms } from '../hit.ts'
+import { pipesOverlay, arms } from '../hit.ts'
 import type { Lens } from '../hit.ts'
 import type { Place } from '../../sim/world.ts'
 
@@ -16,11 +16,9 @@ export class PipesLayer {
 
   patch(world: World, lens: Lens, place: Place, hide: readonly { col: number; row: number }[]): void {
     const hideSet = new Set(hide.map(v => `${v.col},${v.row}`))
-    const faint =
-      lens !== 'pipes' &&
-      place.kind !== 'delete' &&
-      !(place.kind === 'sku' && PIPE_PLACE.includes(place.id))
-    const alpha = faint ? 0.35 : 1
+    const overlay = pipesOverlay(lens, place)
+    const alpha = overlay ? 1 : 0.35
+    const port = world.done.has('unlock-smart-irrigation')
     this.pool.begin()
     world.fences.forEach(k => {
       const comma = k.indexOf(',')
@@ -34,29 +32,28 @@ export class PipesLayer {
       s.rotation = (fit.rot * Math.PI) / 180
       s.alpha = alpha
     })
-    world.pumps.forEach(p => {
-      occupiedCells(p.base, world.owned).forEach(at => {
-        const s = this.pool.take(atlasTex('pipe-source'))
-        s.position.set(at.col * TILE, at.row * TILE)
-        s.alpha = alpha
+    if (overlay) {
+      world.pumps.forEach(p => {
+        occupiedCells(p.base, world.owned).forEach(at => {
+          const s = this.pool.take(atlasTex('pipe-source'))
+          s.position.set(at.col * TILE, at.row * TILE)
+        })
       })
-    })
-    world.tanks.forEach(t => {
-      occupiedCells(t.base, world.owned).forEach(at => {
-        const s = this.pool.take(atlasTex('pipe-source'))
-        s.position.set(at.col * TILE, at.row * TILE)
-        s.alpha = alpha
+      world.tanks.forEach(t => {
+        occupiedCells(t.base, world.owned).forEach(at => {
+          const s = this.pool.take(atlasTex('pipe-source'))
+          s.position.set(at.col * TILE, at.row * TILE)
+        })
       })
-    })
+    }
     world.wells.forEach(w => {
       this.mid(w.at, 'well', alpha)
     })
     world.segments.forEach(seg => {
-      if (seg.gate.kind === 'valve') this.mid(seg.at, seg.gate.open ? 'valve-open' : 'valve-closed', alpha)
-      if (seg.gate.kind === 'smart') {
-        const h = world.smartHold.get(edgeKey(seg.at))
-        this.mid(seg.at, h !== undefined && h.level === 1 ? 'smart-open' : 'smart-closed', alpha)
-      }
+      if (seg.gate.kind !== 'valve') return
+      const open = world.valveWired(seg.at) ? world.conducts(seg.at) : seg.gate.open
+      this.mid(seg.at, open ? 'valve-open' : 'valve-closed', alpha)
+      if (port) this.mid(seg.at, 'valve-jack', alpha)
     })
     world.eachNetVert(v => {
       if (hideSet.has(`${v.col},${v.row}`)) return

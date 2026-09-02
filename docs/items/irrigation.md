@@ -1,13 +1,13 @@
 # Irrigation
 
-`pipe` `valve` `sprinkler` `sprinkler-vert` `sprinkler-large` `pumpjack` `well` `rain-tank` `tap` `smart-valve`.
+`pipe` `valve` `sprinkler` `sprinkler-vert` `sprinkler-large` `pumpjack` `well` `rain-tank` `tap`.
 
-SKUs: `buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-pumpjack` `buy-well` `buy-rain-tank` `buy-tap` `buy-smart-valve`.
+SKUs: `buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-pumpjack` `buy-well` `buy-rain-tank` `buy-tap`.
 
 Starter pump is `SOURCE.pump`. Well is edge-based like a valve — [[mechanics/water]]. Grid, tanks, pour: [[mechanics/water]].
 
-`buy-smart-valve` — edge, Water (flow), after manual valve. No manual click. Signal input. Unwired closed. `unlock-smart-irrigation`. Guest may place/delete. — [[mechanics/sensors]]
+There is one valve. `buy-valve` on a bare owned edge lays the pipe with it and charges both — [[mechanics/water]].
 
-Smart irrigation adds a signal `in` and the crop dial to every vertex sprinkler. No new sprinkler SKU. Unwired sprinkler still pours.
+Smart irrigation adds a signal `in` to every vertex sprinkler **and** every valve, plus the crop dial. No new SKU on either side. Unwired sprinkler still pours; unwired valve is still the hand valve. — [[mechanics/sensors]]
 
 Almanac **Water systems**. [[ui/almanac]]

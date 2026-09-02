@@ -3,11 +3,14 @@ import { TRAILER_LEN } from '../../defs/items.ts'
 import { hitchP, trailerCenter, wrapHeading } from '../../sim/vehicle.ts'
 import type { SeatId, World } from '../../sim/world.ts'
 import type { VehicleId } from '../../sim/ids.ts'
-import { TILE } from '../camera.ts'
+import { DROP_FACE, TILE } from '../camera.ts'
 import { atlasTex, faceKey, HAT, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
+import { dropRect } from '../hit.ts'
 
 export const QUAD_FOLLOW = 0.35
+const WALK_STRIDE = 0.55
+const WALK_BOB = 2
 
 type Quad = { x: number; y: number; heading: number; snap: boolean }
 
@@ -15,13 +18,32 @@ export class ActorsLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
   private readonly pool = new SpritePool(this.root)
   private readonly quads = new Map<VehicleId, Quad>()
+  private readonly walk = new Map<SeatId, { phase: number; x: number; y: number }>()
   private world: World | undefined
 
   bind(world: World): void {
     if (this.world !== world) {
       this.quads.clear()
+      this.walk.clear()
       this.world = world
     }
+  }
+
+  private bob(id: SeatId, x: number, y: number): number {
+    const w = this.walk.get(id)
+    if (w === undefined) {
+      this.walk.set(id, { phase: 0, x, y })
+      return 0
+    }
+    const d = Math.hypot(x - w.x, y - w.y)
+    w.x = x
+    w.y = y
+    if (d < 0.0005) {
+      w.phase = 0
+      return 0
+    }
+    w.phase = (w.phase + d / WALK_STRIDE) % 1
+    return w.phase < 0.25 || w.phase >= 0.75 ? 0 : -WALK_BOB
   }
 
   pose(id: VehicleId): Quad | undefined {
@@ -65,11 +87,16 @@ export class ActorsLayer {
 
   private paint(world: World): void {
     this.pool.begin()
-    world.drops.forEach((d, i) => {
-      const n = i % 4
+    const pack = new Map<string, number>()
+    world.drops.forEach(d => {
+      const k = `${d.at.col},${d.at.row}`
+      const i = pack.get(k)
+      const n = i === undefined ? 0 : i
+      pack.set(k, n + 1)
+      const r = dropRect(d.at, n)
       const s = this.pool.take(atlasTex(faceKey(d.item)))
-      s.position.set(d.at.col * TILE + 4 + (n % 2) * 6, d.at.row * TILE + 4 + Math.floor(n / 2) * 6)
-      s.scale.set(33 / 24)
+      s.position.set(r.x * TILE, r.y * TILE)
+      s.scale.set(DROP_FACE / TILE)
     })
     world.vehicles.forEach(v => {
       if (v.pose.kind !== 'field') return
@@ -118,7 +145,7 @@ export class ActorsLayer {
 
   private actor(id: SeatId, x: number, y: number, napping: boolean, item: AtlasKey | undefined): void {
     const ox = (x - 0.5) * TILE
-    const oy = (y - 0.5) * TILE
+    const oy = (y - 0.5) * TILE + (napping ? 0 : this.bob(id, x, y))
     const body = this.pool.take(atlasTex('actor-body'))
     body.position.set(ox, oy)
     body.alpha = 1

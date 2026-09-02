@@ -54,6 +54,8 @@ See [[canon]].
 | trees.ping | [[mechanics/trees]] |
 | water.pour | [[mechanics/water]] |
 | water.targets | [[mechanics/water]] |
+| water.valve | [[mechanics/water]] |
+| water.autolay | [[mechanics/water]] |
 | weeds.sprout | [[mechanics/weeds]] |
 | weeds.chance | [[mechanics/weeds]] |
 | weeds.outbreak | [[mechanics/weeds]] |
@@ -124,7 +126,8 @@ See [[canon]].
 | sensors.button | [[mechanics/sensors]] |
 | sensors.hold | [[mechanics/sensors]] |
 | sensors.unwired-sprinkler | [[mechanics/sensors]] |
-| sensors.unwired-valve | [[mechanics/sensors]] |
+| sensors.valve | [[mechanics/sensors]] |
+| sensors.port | [[mechanics/sensors]] |
 | sensors.fan | [[mechanics/sensors]] |
 | sensors.mask | [[mechanics/sensors]] |
 | sensors.signal | [[mechanics/sensors]] |
@@ -168,6 +171,10 @@ See [[canon]].
 | view.hit | [[architecture/view]] |
 | view.hud | [[architecture/view]] |
 | view.ticker | [[architecture/view]] |
+| view.edge | [[architecture/view]] |
+| view.source | [[architecture/view]] |
+| view.drop | [[architecture/view]] |
+| view.vfx.drain | [[architecture/view]] |
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
 | save.parse | [[architecture/save]] |

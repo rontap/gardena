@@ -117,7 +117,6 @@ import itemSensorDay from '../../assets/items/item-sensor-day.svg?raw'
 import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
 import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
 import itemTrafficLight from '../../assets/items/item-traffic-light.svg?raw'
-import itemSmartValve from '../../assets/items/item-smart-valve.svg?raw'
 import propLever from '../../assets/props/prop-lever.svg?raw'
 import propButton from '../../assets/props/prop-button.svg?raw'
 import propLamp from '../../assets/props/prop-lamp.svg?raw'
@@ -133,7 +132,6 @@ import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
 import propTrafficLight from '../../assets/props/prop-traffic-light.svg?raw'
-import pipeSmartValve from '../../assets/joints/pipe-smart-valve.svg?raw'
 
 import itemChest from '../../assets/items/item-chest.svg?raw'
 import itemGrinder from '../../assets/items/item-grinder.svg?raw'
@@ -373,7 +371,6 @@ export function itemInner(item: Face): string {
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
   if (item.kind === 'traffic-light') return stageOnly(itemTrafficLight, 'off')
-  if (item.kind === 'smart-valve') return stageOnly(itemSmartValve, 'closed')
   if (item.kind === 'delete') return inner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return inner(itemGrass)
@@ -652,9 +649,6 @@ export const RAIN_TANK = inner(propRainTank)
 export const TAP = inner(propTap)
 export function valveArt(open: boolean): string {
   return stageOnly(pipeValve, open ? 'open' : 'closed')
-}
-export function smartValveArt(open: boolean): string {
-  return stageOnly(pipeSmartValve, open ? 'open' : 'closed')
 }
 export const PROP_LEVER = propLever
 export const PROP_BUTTON = propButton
@@ -1043,8 +1037,6 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   CROP_ROTTEN,
   valveArt(true),
   valveArt(false),
-  smartValveArt(true),
-  smartValveArt(false),
   leverArt(true),
   leverArt(false),
   buttonArt(true),

@@ -232,7 +232,7 @@ export type Sensor =
   | VehicleSensor
   | TrafficLight
 
-export type SmartHold = { e: Edge; level: Signal; hold: number }
+export type ValveHold = { e: Edge; level: Signal; hold: number }
 
 const OUT_KINDS: ReadonlySet<SensorKind> = new Set([
   'lever',
@@ -281,9 +281,9 @@ export function isOutEnd(end: WireEnd, cell: Cell | undefined): boolean {
   return ownsPort(cell, end.at, end.port) && end.port === 'out'
 }
 
-export function isInEnd(end: WireEnd, cell: Cell | undefined, smart: boolean, sprinklerOk: boolean): boolean {
+export function isInEnd(end: WireEnd, cell: Cell | undefined, valveOk: boolean, sprinklerOk: boolean): boolean {
   if (end.kind === 'sprinkler') return sprinklerOk && end.port === 'in'
-  if (end.kind === 'valve') return smart && end.port === 'in'
+  if (end.kind === 'valve') return valveOk && end.port === 'in'
   if (cell === undefined) return false
   return ownsPort(cell, end.at, end.port) && end.port !== 'out'
 }
@@ -504,7 +504,7 @@ function as01(n: number): Signal {
 export type EvalIn = {
   sensors: ReadonlyMap<string, Sensor>
   wires: readonly Wire[]
-  smart: Map<string, SmartHold>
+  valves: Map<string, ValveHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
   raw: Raw
   machines: ReadonlyMap<string, Mill | JamMachine | PotStill>
@@ -512,7 +512,7 @@ export type EvalIn = {
 }
 
 export function evalDag(input: EvalIn): void {
-  const { sensors, wires, smart, sprinklers, raw, machines, stores } = input
+  const { sensors, wires, valves, sprinklers, raw, machines, stores } = input
   const byTo = new Map<string, Wire[]>()
   wires.forEach(w => {
     const k = endKey(w.to)
@@ -542,7 +542,7 @@ export function evalDag(input: EvalIn): void {
       if (s === undefined) throw new Error('out')
       return s.inn
     }
-    const h = smart.get(edgeKey(from.e))
+    const h = valves.get(edgeKey(from.e))
     if (h === undefined) throw new Error('out')
     return h.level
   }
@@ -638,7 +638,7 @@ export function evalDag(input: EvalIn): void {
       s.out = s.on ? 1 : 0
     }
   })
-  smart.forEach(h => {
+  valves.forEach(h => {
     const inn = orTo(endKey({ kind: 'valve', e: h.e, port: 'in' }))
     const next = stepHold(h.level, h.hold, inn)
     h.level = next.out

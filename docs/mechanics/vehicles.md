@@ -44,7 +44,7 @@ Pad: `row = base.row + 2`, `col .. col + HANGAR_W - 1`. Stay plots. Pad is geome
 
 `siloPad(base)` two coords south of the drum. Stay plots. Not Dock.
 
-Walk-up any occupied cell. `Intent` `{ act: 'hangar'; at: Coord }`. Arrival: `Seat.cue = { kind: 'hangar'; at }`.
+Click any occupied cell (same instance). `Intent` `{ act: 'hangar'; at: Coord }` still carries the clicked cell. `dest` = origin, not the interior cell. Arrival dest origin: `Seat.cue = { kind: 'hangar'; at }`. `hangarOrigin` resolves. [[architecture/world]] `world.dest`.
 
 Hangar HUD is that cue. Select is App-local (not logged, not `World`): a stored/field vehicle, and if the selected vehicle is a tractor, a stored trailer or none. Panel: buy Quad / Tractor / Seeder / Sprayer / Harvester / list all owned / Deploy (stored vehicle only; hitch optional) / Hangar Automate (stored, route assigned, `n ≥ 1`, `unlock-dispatch`) / Refill all. Hangar row **Automated** when field, no driver, `running`. Hangar HUD has no cargo. Dash Automate / editor open: App-local, not logged. Automate chrome iff `unlock-dispatch` in `done`.
 

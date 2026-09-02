@@ -175,7 +175,7 @@ Editor on, inspect look prepends **Add stop here** / **Add load here** / **Add u
 
 ## Route paint
 
-SVG in the world group. `pointer-events-none`. No new `@theme` color. Each drive leg is a straight `WireStroke` (ink understroke + grape `#6b1f8c`). Geometry is stop-to-stop cell/XY the auto seeks, plus the live pose→current stop (fruit-red). No wire sag.
+Overlay Graphics. `eventMode` `'none'`. No new `@theme` color. Each drive leg is a straight stroke (ink understroke + grape `#6b1f8c`). Geometry is stop-to-stop cell/XY the auto seeks, plus the live pose→current stop (fruit-red). No wire sag.
 
 Editor on: paint the selected/assigned route only. Numbered markers: ink-stroke house (current: ripe) circle, Nunito `tabular-nums` ink. 1-based. `n === 0`: no path.
 
@@ -183,15 +183,15 @@ Editor on: paint the selected/assigned route only. Numbered markers: ink-stroke 
 
 Else: no route paint. Driving without the editor does not paint routes.
 
-React paints path `d` and editor markers when routes / stops change (cmds). `paintMotion` may restroke current-leg and current-stop. React does not subscribe to per-tick pose.
+Patch on dirty / lens / editor. Ticker restrokes live pose→current stop. Not React path `d`. Not HUD `paintMotion`.
 
 ## Follow-cam
 
 View-local. Not `World`. Not sim. Not logged.
 
-While local seat is a driver: `camera.x/y` = vehicle `x/y`. Zoom stays. Pan locked. The local driver's field vehicle is not painted in the world. A dummy sits at screen center, outside the camera group, rotated by heading (quad or tractor). Hitched trailer dummy: front on `hitchP`, rotated by trailer heading. Other seats still see the field vehicle.
+While local seat is a driver: `camera.x/y` = vehicle `x/y` (smoothed pose). Zoom stays. Pan locked. Vehicle stays in actors. Hitch follows. No dummy. No SVG camera group. Other seats still see the field vehicle.
 
-On store or dismount complete: freeze at that pose. Pan unlocks. Dummy off.
+On store or dismount complete: freeze at that pose. Pan unlocks.
 
 ## WASD
 
@@ -221,7 +221,7 @@ Enter, same text-field ignore. If driving → `Act.disembark`. Else closest fiel
 
 Hide gardener while that seat is a driver. Sim actor still tracks the vehicle.
 
-Quad / tractor `--hat` from the driving seat. Same `--hat` table as [[ui/multiplayer]]. Parked / stored: no driver hat.
+Quad / tractor driver hat: atlas `actor-hat` tint from the seat table — [[ui/multiplayer]]. Parked / stored: no driver hat sprite.
 
 Tractor paint 1×1 at center, rotate heading. Attached trailer 1×1, front on hitchP, rotate trailer heading. Rake at trailer rear, view-only. Quad unchanged.
 

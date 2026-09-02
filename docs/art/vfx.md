@@ -2,9 +2,9 @@
 
 Says whether a machine is working. Readability first, decoration never.
 
-CSS animation over `<use>` layers. No rAF, no timers, no JS per frame. Sim never owns a frame index.
+Pixi ticker cuts over atlas frames. No CSS `<use>`. No rAF outside the Pixi ticker. Sim never owns a frame index.
 
-`src/assets/vfx/*.svg`. Rules from [[art/svg]] and [[art/palette]] hold. Registry `src/game/view/vfx.ts`. Paint `VfxLayers` in `src/game/view/map.tsx`.
+`src/assets/vfx/*.svg`. Rules from [[art/svg]] and [[art/palette]] hold. Registry `src/game/view/vfx.ts`. Paint `layers/vfx.ts`. Atlas rasterizes `f0`…`fN` at 2×, nearest — [[architecture/view]].
 
 ## Two channels
 
@@ -13,33 +13,27 @@ CSS animation over `<use>` layers. No rAF, no timers, no JS per frame. Sim never
 | state | working now | mounted while true | `World.vfx` |
 | burst | happened just now | one cycle, then unmounts | `World.bursts`, view-drained |
 
-State VFX mounts only while true. An idle machine is zero DOM and zero running animations — there is no `is-working` attribute to match.
+State VFX mounts only while true. An idle machine is zero sprites — there is no `is-working` attribute to match.
 
 ## Frames
 
-Frames are sibling `<g id="f0" … "fN">` in one file, same convention as [[art/sensors]] `off` / `on`. `groupInner` slices each; each frame is its own symbol; the view renders N `<use>` siblings.
+Frames are sibling `<g id="f0" … "fN">` in one file, same convention as [[art/sensors]] `off` / `on`. Atlas: one `Texture` per `(file, group id)`.
 
-CSS cannot select into a `<use>` shadow tree. Only inherited properties and custom properties cross — the `--hat` seam in [[art/actor]]. So the animated element is the `<use>` in the light DOM, never a rect inside the asset.
+Quick cuts, not tweens. `crispEdges` pixel art smears under interpolation. Exactly one frame paints at a time; sprite `alpha` is the only animated property.
 
-Quick cuts, not tweens. `crispEdges` pixel art smears under interpolation. Exactly one frame paints at a time; `opacity` is the only animated property, so the work stays on the compositor.
-
-Supported frame counts are **2** and **4**, one keyframe set each (`vfx-cut-2`, `vfx-cut-4`). `VfxDef.cut` names it and fixes `frames.length`. A third count means a third keyframe set; do not fake it.
+Supported frame counts are **2** and **4**. `VfxDef.frames.length` is that count. `VfxDef.slots` may include rest (empty) so the cycle matches today’s brew / dust / steam hold. A third painted count means a third cut; do not fake it.
 
 ## Contract
 
-Wrapper `<g class="vfx" data-vfx={id}>`, `--vfx-cut` and `--vfx-dur` on it. Each layer `<use class="vfx-frame" data-vfx-i={i}>`, `--vfx-t` = `i / n`.
+Pixi sprites from those textures. `VfxDef.dur` is the cycle. State: all instances share phase; delay `(i / slots − 1) × dur` so nothing pops on mount. Burst: delay `i / slots × dur`, frames run once, then unmount. Burst wrapper fades out over `dur` (hold opaque to 70%, then out).
 
-Delay `(--vfx-t − 1) × --vfx-dur` for state, `--vfx-t × --vfx-dur` for burst. Negative for state so nothing pops on mount; all instances share phase.
-
-Burst adds `vfx-burst` on the wrapper: `vfx-burst-life` fades it out over `--vfx-dur`, frames run once, and the view unmounts on that wrapper's `animationend`.
-
-`.vfx` is `pointer-events: none`. VFX never eats a click.
+Farm sprites have no DOM. Locator: HTML overlay `data-vfx={id}` while mounted, `pointer-events-none`. Frame cuts are Pixi, not CSS `.vfx-frame`. VFX never eats a click. Overlay Graphics `eventMode` `'none'`.
 
 ## Off
 
 `prefers-reduced-motion: reduce`. No setting, no toggle, no `Save` field.
 
-State VFX keeps frame 0 painted and stops animating — the readability signal survives, the motion does not. Bursts do not mount at all: they end on `animationend`, and a killed animation never fires one. `VFX_REDUCED` is read once at module load.
+State VFX keeps frame 0 painted and stops animating — the readability signal survives, the motion does not. Bursts do not mount at all. `VFX_REDUCED` is read once at module load. Overlay `data-vfx` still present for state frame 0; bursts: no overlay.
 
 ## Assets
 

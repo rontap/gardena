@@ -26,7 +26,7 @@ Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same
 
 ## Dump
 
-Intents `still` `barrel` `jam` `mill` at `Coord`. `dest` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]].
+Intents `still` `barrel` `jam` `mill` at `Coord`. `dest(still)` = origin. `dest(barrel | jam | mill)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
 
 Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit accepted. Seeds, saplings, tools: refuse.
 

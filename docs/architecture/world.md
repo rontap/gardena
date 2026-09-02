@@ -56,7 +56,9 @@ Confirm: cell buildings and item drops set `none` except StayArmed sensor cells 
 
 `plant` is seeds (`AnnualId`) or sapling (`TreeId`). Same act. [[architecture/tree]].
 
-`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. Else `at`.
+`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; circle starter pump: its occupied cell), not the interior cell clicked. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
+
+No `World.pulse`. No `Pulse` type. Last-action highlight gone. Not a cmd. Not Save. `say` / `grantPoint` stay.
 
 Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 
@@ -92,7 +94,7 @@ Tick law: [[architecture/tick]].
 
 `Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
 
-Live: App accumulator fires `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. View paints every rAF. No sim interpolation. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]]
+Live: App accumulator fires `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. View paints via the Pixi ticker. No sim interpolation. View vehicles keep `QUAD_FOLLOW`. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]] [[architecture/view]]
 
 ### Indexes
 
@@ -110,7 +112,7 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 
 `tickField` grow+recover. `tickMachines` / `tickCompost` machines. `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
 
-`forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. Marks walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`.
+`forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. View dirty walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`. [[architecture/view]] `view.scan`.
 
 ## Log
 
@@ -123,9 +125,9 @@ apply(cmd): mutate seats[cmd.p] and shared farm. No log.
 
 No silent flag. Replay calls `apply` only.
 
-`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech' | 'vfx'`) and flushes subscribers once per microtask with the reason set. From tick only on discrete change. Continuous chrome is `paintMotion` or CSS. No every-tick counter HUD `this.ping()`. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush. FPS readout: [[ui/hud]]. Not a `DirtyReason`.
+`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech' | 'vfx'`) and flushes subscribers once per microtask with the reason set. From tick only on discrete change. Continuous world chrome is the Pixi ticker. Continuous HUD chrome is `paintMotion`. No every-tick counter HUD `this.ping()`. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush. FPS readout: [[ui/hud]]. Not a `DirtyReason`.
 
-Ping consumption: `speech` off React; `vfx` not Hud; `field` / `big` Marks not whole chrome; `act` Hud+Marks. A new `DirtyReason` must have a view that filters it. Unused reason is a defect. [[architecture/tick]]
+Ping consumption: `speech` HTML bind + ticker pose; `vfx` not Hud; `field` / `big` world-view patch not whole chrome; `act` Hud + patch. A new `DirtyReason` must have a view that filters it. Unused reason is a defect. [[architecture/tick]] [[architecture/view]]
 
 Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
 
@@ -152,3 +154,11 @@ Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` wit
 `Modifier.source = 'research' | 'fertilizer' | 'skill'`. Skill crop sale (`better-*`) is `source: 'skill'`.
 
 `World.modGen` increments when `modifiers` change. Cache `statsOf(crop, rarity)` for that generation. Plants do not re-filter modifiers every tick.
+
+## Invariants
+
+`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`.
+
+`world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
+
+Assumption: `dest(additives)` stays `at`.

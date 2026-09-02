@@ -70,7 +70,7 @@ parse(text: string, sink?: LogSink): LoadResult
 
 `ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate is total.
 
-After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `pulse` / `hud` absent. `cheatFastResearch` false. `clock.banner` 0. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally / recap `contracts` arrays hydrate empty.
+After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `hud` absent. No `World.pulse`. `cheatFastResearch` false. `clock.banner` 0. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally / recap `contracts` arrays hydrate empty.
 
 Join / resync: `parse` then stamp `World.now` from the wire. Same `Save`. Not a second snapshot.
 
@@ -108,7 +108,7 @@ Closed. No `Partial`. No optional that means unsure. `game` and `version` requir
 
 ## Not in the file
 
-`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `pulse` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. Indexes (`grow` `machines` `stores` `sensors` `buttons` `recover` `empty`) — `indexAll`. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select, Dash Automate, editor open. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver. Restore `route` / `cursor` / `running`.
+`Cmd[]`. `Cmd.p`. `World.now`. `queue`. `workLeft` / `workTotal` / `filling` / `legStart`. `place` `cue` `speech` `hud`. `Seat.drive`. `Seat.stride`. `clock.banner`. `cheatFastResearch`. `StallGood.sat`. Board. `consignRevision`. `groundRev`. `bigAcc`. `modifiers`. `netVerts` / nets. Indexes (`grow` `machines` `stores` `sensors` `buttons` `recover` `empty`) — `indexAll`. `Reservoir.drawn` / `Tap.drawn`. Camera, camera follow, panels, hover, lens, hangar select, Dash Automate, editor open. Pause net flag. Load Drive `{0,0}`. Restore `pose.driver`; actor at vehicle if driver. Restore `route` / `cursor` / `running`. No `World.pulse`.
 
 Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Dump stall writes dummy `offered` `market` `target` `acc`; parse does not copy them. `World.contracts` is in the file — [[mechanics/contracts]]. Digest includes `sat` and active contracts — [[architecture/net]].
 

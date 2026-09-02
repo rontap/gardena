@@ -25,7 +25,7 @@ Seeds and additives do not live in the house. Each has a store building, placed 
 
 Both caps are cumulative across every stack / kind in that store.
 
-Walk up → the store takes back everything it keeps, from hand and from the 16 house slots, then the panel opens ([[ui/store]]). Overflow past the cap stays on you.
+Walk up → the store takes back everything it keeps, from hand and from the 16 house slots, then the panel opens ([[ui/store]]). Overflow past the cap stays on you. `dest(silo)` = origin of the 1×2, not the south cell. `dest(inventory)` = `DOOR`. [[architecture/world]] `world.dest`.
 
 Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`. Port `out` origin bottom. Load: silo seeds until cargo full; additive bags `min(ADDITIVE_BAG, stored)`. Unload until that cap.
 

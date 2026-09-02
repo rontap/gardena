@@ -2,7 +2,7 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the SVG camera. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`.
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`.
 
 ## defs
 
@@ -85,17 +85,31 @@ Panel open/close is App-local. Changelog open/close is Menu-local, not a `Panel`
 
 ## view
 
+PixiJS v8 canvas world. No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Atlas rasterizes named SVG groups at 2×, nearest. Farm sprites `eventMode` `'none'`. `CullerPlugin` on chunks. `Application.destroy` `releaseGlobalResources`. Contract: [[architecture/view]].
+
 Camera and `Lens` are view-local, not `World` fields. Camera follow is view-local. Water lens requires husband `water-study`; `land` requires `land-study`. `sensors` unhidden after `unlock-sensors`. `vehicles` unhidden after `unlock-vehicles`. Wires sim-state always; paint and port hit view-gated on `sensors`.
+
+Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / almanac / shop fragments only.
 
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE` |
-| `map.tsx` | `MapView`, `Lens`, paints `Cell` |
-| `motion.ts` | rAF paint of actor / meters / FPS |
-| `vfx.ts` | `VfxDef` table |
-| `svgs.ts` | inner SVG fragments |
+| `atlas.ts` | SVG group → `Texture` |
+| `app.ts` | `Application` lifecycle |
+| `world-view.ts` | scene graph, dirty patch, ticker motion |
+| `hit.ts` | `clickHit` / `nearestEdge` / ghosts |
+| `layers/ground.ts` | terrain chunks |
+| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts |
+| `layers/pipes.ts` | pipes, valves, wells, sprinklers, fences |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos |
+| `layers/actors.ts` | seats, vehicles, trailers, drops |
+| `layers/overlay.ts` | lens wash, routes, wires, ports, AoE |
+| `layers/vfx.ts` | `VfxDef`, state / burst |
+| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens` |
+| `svgs.ts` | chrome-only (HUD, almanac, shop) |
+| `motion.ts` | HUD-only binds |
 
-Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately.
+Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes always drawn (faint when lens off). Wetness + AoE still lens / tool. Sprinkler AoE on hover is view. Pipe drag-to-draw is view-local pending run; commit existing `placePipe` per edge; no new cmd.
 
 ## net
 

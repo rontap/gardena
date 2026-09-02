@@ -2,6 +2,8 @@
 
 `src/assets/*.svg`. Clean paths. One concept per file. Hex from [[art/palette]] (cottage, or industrial metal on vehicle/machine assets).
 
+Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac / shop: React chrome SVG (`svgs.ts`). Not an SVG camera. Not a DOM world. Mermaid stays the `#debug-techtree` exception — [[stack]].
+
 ## Root
 
 - `viewBox` set. Integer coordinates.
@@ -28,7 +30,7 @@ Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-
 
 ## Groups
 
-Stages are sibling `<g id>` in one file. View shows exactly one group. All groups paint if the whole file is mounted.
+Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per texture. Chrome (`svgs.ts`) selects by id. Whole-file mount paints every group — don't.
 
 | files | ids |
 |---|---|

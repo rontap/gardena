@@ -45,7 +45,7 @@ Public UI methods wrap `dispatch` so call sites stay. `enqueue` is a mutator. Te
 
 `toggleValve` is actor work from a valve intent. Not a cmd.
 
-`say` / `pulse` / `grantPoint` are not cmds.
+`say` / `grantPoint` are not cmds. No `World.pulse`. Last-action highlight gone. Not a cmd. Not Save.
 
 `apply(click)` must not call the wrapping `enqueue` / `deleteBuilding` / `confirmPlace` in a way that `dispatch`es again. Body only.
 
@@ -67,7 +67,7 @@ Cheats are cmds.
 
 `Cmd.t` is `now` after last completed tick, before apply.
 
-Live tick is `DT_MAX` only. App accumulator. Never tick a leftover. View paints every rAF. Solo and MP. Tests replay with `dt = DT_MAX`. Same-`t` cmds apply in log order. First wins, second no-op. `t` is non-decreasing. Ticks are not cmds. MP: one `tick(DT_MAX)` per host `bundle`. [[architecture/net]]
+Live tick is `DT_MAX` only. App accumulator. Never tick a leftover. View paints via the Pixi ticker. Solo and MP. Tests replay with `dt = DT_MAX`. Same-`t` cmds apply in log order. First wins, second no-op. `t` is non-decreasing. Ticks are not cmds. MP: one `tick(DT_MAX)` per host `bundle`. [[architecture/net]] [[architecture/view]]
 
 ## JSON
 

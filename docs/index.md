@@ -38,6 +38,7 @@ Vault for this game. Agents read this first.
 
 - [[architecture/_index]]
 - [[architecture/tick]]
+- [[architecture/view]]
 
 ## Infra
 

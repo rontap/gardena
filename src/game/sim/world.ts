@@ -52,7 +52,7 @@ import {
   STILL_SECONDS,
   STILL_WATER,
 } from '../defs/items.ts'
-import { TREES, TREE_NAME, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
+import { TREES, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { extraGrowUp1, JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
@@ -185,7 +185,6 @@ import {
   millNeed,
   millWorking,
   millProduct,
-  millProductName,
   mergeSugar,
   spiritKind,
   stillReady,
@@ -276,7 +275,6 @@ import {
 } from './pipe.ts'
 import { pull, Reservoir, TAP_RATE } from './water.ts'
 import {
-  placeLabel,
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
@@ -494,8 +492,6 @@ export type Seat = {
   legStart: { x: number; y: number }
 }
 
-export type Pulse = { text: string; at: Coord }
-
 export type Burst = { id: VfxId; at: Coord; seq: number }
 
 export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
@@ -702,8 +698,17 @@ function groundSig(c: Cell): string {
   return 'g'
 }
 
+function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
+  if (c.base.shape === 'circle') return occupiedCells(c.base, owned)[0]
+  return { col: c.base.col, row: c.base.row }
+}
+
 export function dest(i: Intent, w: World): Coord {
-  if (i.act === 'fill') return i.at
+  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still') {
+    const c = w.cell(i.at)
+    if ('base' in c) return destOrigin(c, w.owned)
+    return { ...i.at }
+  }
   if (i.act === 'fillWell') return i.stand
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
@@ -783,7 +788,6 @@ export class World {
   money = 50
   job: Job = { kind: 'idle' }
   speech: Speech = { kind: 'none' }
-  pulse: Pulse | undefined = undefined
   hud: HudTarget | undefined = undefined
   tally: DayTally = { died: 0, harvests: 0, research: [], contracts: [] }
   readonly contracts: Contracts = emptyContracts()
@@ -911,7 +915,6 @@ export class World {
       h.sprinklers.forEach(s => this.netVerts.add(vertexKey(s.at)))
       this.now = 0
       this.speech = { kind: 'none' }
-      this.pulse = undefined
       this.hud = undefined
       this.consignRevision = 0
       this.groundRev = 0
@@ -1298,7 +1301,11 @@ export class World {
   private track(at: Coord, cell: Cell): void {
     const k = `${at.col},${at.row}`
     const here = { col: at.col, row: at.row }
-    const origin = !('base' in cell) || (cell.base.col === at.col && cell.base.row === at.row)
+    const origin =
+      !('base' in cell) ||
+      (cell.base.shape === 'rect'
+        ? cell.base.col === at.col && cell.base.row === at.row
+        : Math.floor(cell.base.cx - cell.base.r) === at.col && Math.floor(cell.base.cy - cell.base.r) === at.row)
     if (
       cell.kind === 'growing' ||
       cell.kind === 'ripe' ||
@@ -1730,7 +1737,6 @@ export class World {
     }
     this.money -= this.skuPrice(id)
     this.dirtyNets()
-    this.pulse = { text: `Place ${placeLabel(id)}`, at: { col: e.col, row: e.row } }
     this.ping()
   }
 
@@ -1745,11 +1751,9 @@ export class World {
     if (seg.gate.kind === 'smart') return
     if (seg.gate.kind === 'valve') {
       seg.gate = { kind: 'bare' }
-      this.pulse = { text: 'Delete valve', at: { col: e.col, row: e.row } }
     } else {
       this.segments.delete(edgeKey(e))
       this.pruneVert(e)
-      this.pulse = { text: 'Delete pipe', at: { col: e.col, row: e.row } }
     }
     this.dirtyNets()
     this.ping()
@@ -1765,7 +1769,6 @@ export class World {
     this.wells.delete(edgeKey(e))
     this.pruneVert(e)
     this.dirtyNets()
-    this.pulse = { text: 'Delete well', at: { col: e.col, row: e.row } }
     this.ping()
   }
 
@@ -1774,7 +1777,6 @@ export class World {
     if (seg === undefined || seg.gate.kind !== 'valve') return
     seg.gate = { kind: 'valve', open: !seg.gate.open }
     this.dirtyNets()
-    this.pulse = { text: seg.gate.open ? 'Open valve' : 'Close valve', at: { col: e.col, row: e.row } }
     this.ping()
   }
 
@@ -1834,13 +1836,6 @@ export class World {
     this.sprinklerTargetCache.delete(vertexKey(placed.at))
     this.netVerts.add(vertexKey(placed.at))
     this.dirtyNets()
-    const text =
-      placed.variant === 'basic'
-        ? 'Place Sprinkler'
-        : placed.variant === 'vert'
-          ? 'Place Vertical sprinkler'
-          : 'Place Large sprinkler'
-    this.pulse = { text, at: { col: placed.at.col, row: placed.at.row } }
     this.ping()
   }
 
@@ -1856,7 +1851,6 @@ export class World {
     this.dropWires(w => hitsVertex(w.from, v) || hitsVertex(w.to, v))
     this.pruneVert(v)
     this.dirtyNets()
-    this.pulse = { text: 'Delete sprinkler', at: { col: v.col, row: v.row } }
     this.ping()
   }
 
@@ -1919,10 +1913,6 @@ export class World {
     this.wires.length = 0
     next.forEach(w => this.wires.push(w))
     this.rebuildWired()
-    this.pulse = { text: 'Delete wire', at: { col: 0, row: 0 } }
-    if (from.kind === 'cell') this.pulse.at = { ...from.at }
-    else if (from.kind === 'sprinkler') this.pulse.at = { col: from.at.col, row: from.at.row }
-    else this.pulse.at = { col: from.e.col, row: from.e.row }
     this.ping()
   }
 
@@ -1940,7 +1930,6 @@ export class World {
     this.smartHold.set(edgeKey(e), { e, level: 0, hold: 0 })
     vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
     this.dirtyNets()
-    this.pulse = { text: 'Place Smart valve', at: { col: e.col, row: e.row } }
     this.ping()
   }
 
@@ -1956,7 +1945,6 @@ export class World {
     this.dropWires(w => hitsEdge(w.from, e) || hitsEdge(w.to, e))
     this.pruneVert(e)
     this.dirtyNets()
-    this.pulse = { text: 'Delete smart valve', at: { col: e.col, row: e.row } }
     this.ping()
   }
 
@@ -2078,7 +2066,6 @@ export class World {
       // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
       if (this.act.id !== 0) return
       this.fences.delete(`${at.col},${at.row}`)
-      this.pulse = { text: 'Delete wooden fence', at: { ...at } }
       this.ping()
       return
     }
@@ -2086,7 +2073,6 @@ export class World {
       // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
       if (this.act.id !== 0) return
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
-      this.pulse = { text: 'Delete paving', at: { ...at } }
       this.ping()
       return
     }
@@ -2097,7 +2083,7 @@ export class World {
       })
       this.pumps.splice(this.pumps.indexOf(c), 1)
       this.dirtyNets()
-      this.pulse = { text: 'Delete pumpjack', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2107,7 +2093,7 @@ export class World {
       })
       this.tanks.splice(this.tanks.indexOf(c), 1)
       this.dirtyNets()
-      this.pulse = { text: 'Delete rainwater tank', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2115,7 +2101,7 @@ export class World {
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       this.taps.splice(this.taps.indexOf(c), 1)
       this.dirtyNets()
-      this.pulse = { text: 'Delete tap', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2126,14 +2112,14 @@ export class World {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
       })
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete chest', at: { ...at } }
+
       this.ping()
       return
     }
     if (c.kind === 'compost-box') {
       this.stripPadStops(c)
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete compost box', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2141,7 +2127,7 @@ export class World {
       this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete mill', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2149,26 +2135,25 @@ export class World {
       this.stripPadStops(c)
       this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete jam machine', at: { ...at } }
+
       this.ping()
       return
     }
     if (c.kind === 'still') {
       this.stripPadStops(c)
-      const origin = { col: c.base.col, row: c.base.row }
       occupiedCells(c.base, this.owned).forEach(p => {
         this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
         this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
       })
       this.stills.splice(this.stills.indexOf(c), 1)
       this.dirtyNets()
-      this.pulse = { text: 'Delete pot still', at: { ...origin } }
+
       this.ping()
       return
     }
     if (c.kind === 'barrel') {
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete wine barrel', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2179,7 +2164,7 @@ export class World {
         if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
       })
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.pulse = { text: 'Delete freezer', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2190,7 +2175,7 @@ export class World {
         this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
       })
       this.hangars.splice(this.hangars.indexOf(c), 1)
-      this.pulse = { text: 'Delete vehicle hangar', at: { ...at } }
+
       this.ping()
       return
     }
@@ -2201,8 +2186,6 @@ export class World {
       if (c.kind === 'silo-seed') this.seedSilos.splice(this.seedSilos.indexOf(c), 1)
       else if (c.kind === 'silo-spray') this.spraySilos.splice(this.spraySilos.indexOf(c), 1)
       else this.produceSilos.splice(this.produceSilos.indexOf(c), 1)
-      const name = c.kind === 'silo-seed' ? 'seeding silo' : c.kind === 'silo-spray' ? 'spraying silo' : 'produce silo'
-      this.pulse = { text: `Delete ${name}`, at: { ...at } }
       this.ping()
       return
     }
@@ -2214,13 +2197,13 @@ export class World {
       if (c.kind === 'water-system') this.waterSystems.splice(this.waterSystems.indexOf(c), 1)
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
       if (c.kind === 'water-system') this.dirtyNets()
-      this.pulse = { text: `Delete ${sensorDeleteName(c.kind)}`, at: { ...at } }
+
       this.ping()
       return
     }
     if (c.kind !== 'grinder') return
     this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-    this.pulse = { text: 'Delete grinder', at: { ...at } }
+
     this.ping()
   }
 
@@ -2677,8 +2660,7 @@ export class World {
       const tile = this.act.place.id === 'buy-tile-paved' ? 'paved' : this.act.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
       this.money -= price
       this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
-      this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
-      this.ping()
+        this.ping()
       return
     }
     if (this.act.place.id === 'buy-fence') {
@@ -2689,8 +2671,7 @@ export class World {
       if (this.hasFence(at)) return
       this.money -= price
       this.fences.add(`${at.col},${at.row}`)
-      this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
-      this.ping()
+        this.ping()
       return
     }
     if (this.act.place.id === 'buy-pumpjack' || this.act.place.id === 'buy-rain-tank' || this.act.place.id === 'buy-still') {
@@ -2711,8 +2692,7 @@ export class World {
         this.setCell({ col: at.col + 1, row: at.row }, made)
         this.dirtyNets()
       }
-      this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
-      this.act.place = { kind: 'none' }
+        this.act.place = { kind: 'none' }
       this.ping()
       return
     }
@@ -2743,7 +2723,7 @@ export class World {
             this.setCell({ col: at.col + col, row: at.row + row }, made)
           }
         }
-        this.pulse = { text: `Place ${placeLabel('buy-hangar')}`, at: { ...at } }
+
         this.act.place = { kind: 'none' }
         this.ping()
         return
@@ -2767,7 +2747,7 @@ export class World {
             this.setCell({ col: at.col + col, row: at.row + row }, made)
           }
         }
-        this.pulse = { text: `Place ${placeLabel(sku)}`, at: { ...at } }
+
         this.act.place = { kind: 'none' }
         this.ping()
         return
@@ -2783,8 +2763,7 @@ export class World {
           this.waterSystems.push(made)
           this.dirtyNets()
         }
-        this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
-        this.ping()
+            this.ping()
         return
       }
       if (!placeSolidOk(this, at)) return
@@ -2807,8 +2786,7 @@ export class World {
         this.setCell(at, tap)
         this.dirtyNets()
       }
-      this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
-      this.act.place = { kind: 'none' }
+        this.act.place = { kind: 'none' }
       this.ping()
       return
     }
@@ -2863,7 +2841,6 @@ export class World {
     }
     this.money -= price
     this.drops.push({ at: { ...at }, item: made })
-    this.pulse = { text: `Place ${placeLabel(this.act.place.id)}`, at: { ...at } }
     this.act.place = { kind: 'none' }
     this.ping()
   }
@@ -4488,7 +4465,6 @@ export class World {
       this.shiftHead()
       return
     }
-    const at = head.act === 'fill' ? head.at : head.stand
     let source: Pump | RainTank | Tap | undefined
     if (head.act === 'fill') {
       const c = this.cell(head.at)
@@ -4504,8 +4480,7 @@ export class World {
     const miss = c.capacityLiters - c.liters
     if (miss <= 0) {
       this.act.filling = false
-      this.pulse = { text: 'Fill', at: { ...at } }
-      this.shiftHead()
+        this.shiftHead()
       return
     }
     const add =
@@ -4517,8 +4492,7 @@ export class World {
     c.liters = add >= miss ? c.capacityLiters : c.liters + add
     if (c.liters === c.capacityLiters) {
       this.act.filling = false
-      this.pulse = { text: 'Fill', at: { ...at } }
-      this.shiftHead()
+        this.shiftHead()
     }
   }
 
@@ -4603,13 +4577,13 @@ export class World {
     const c = this.cell(at)
     if (c.kind === 'lever') {
       flipLever(c)
-      this.pulse = { text: 'Flip lever', at: { ...at } }
+
       this.ping()
       return
     }
     if (c.kind === 'button') {
       pressButton(c)
-      this.pulse = { text: 'Press button', at: { ...at } }
+
       this.ping()
     }
   }
@@ -5123,17 +5097,9 @@ export class World {
       this.drops.push({ at: { ...at }, item: { kind: 'sapling', tree: c.species } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-      this.pulse = { text: 'Dig', at: { ...at } }
+
       return true
     }
-    const text =
-      c.kind === 'dead'
-        ? 'Dig out dead plant'
-        : c.kind === 'weed'
-          ? 'Pull weed'
-          : c.kind === 'growing' || c.kind === 'ripe'
-            ? 'Dig up plant'
-            : 'Dig'
     if (c.kind === 'growing' || c.kind === 'ripe') {
       this.drops.push({
         at: { ...at },
@@ -5145,7 +5111,7 @@ export class World {
     const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
     s.item.usesLeft -= cost
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-    this.pulse = { text, at: { ...at } }
+
     return true
   }
 
@@ -5166,8 +5132,7 @@ export class World {
       this.setCell(at, { kind: 'infertile' })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-      this.pulse = { text: 'Mine', at: { ...at } }
-      return
+        return
     }
     if (c.kind !== 'rock') return
     const n = occupiedCells(c.base, this.owned).length
@@ -5176,7 +5141,6 @@ export class World {
     })
     s.item.usesLeft -= n === 1 ? 1 : 2
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-    this.pulse = { text: 'Mine', at: { ...at } }
   }
 
   private canPlant(at: Coord): boolean {
@@ -5196,7 +5160,7 @@ export class World {
       this.setCell(at, tree)
       this.setCell(below, tree)
       this.act.hand = { kind: 'empty' }
-      this.pulse = { text: `Plant ${TREE_NAME[tree.species]}`, at: { ...at } }
+
       return
     }
     const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
@@ -5206,7 +5170,7 @@ export class World {
       this.setCell(at, { kind: 'turf', soil: bed.soil, turf: new Turf(variant) })
       g.item.count -= 1
       if (g.item.count <= 0) this.act.hand = { kind: 'empty' }
-      this.pulse = { text: 'Sow grass', at: { ...at } }
+
       this.compactInventory()
       this.ping()
       return
@@ -5217,10 +5181,9 @@ export class World {
       soil: bed.soil,
       plant: new Plant(s.item.crop, s.item.rarity),
     })
-    const crop = s.item.crop
     s.item.count -= 1
     if (s.item.count <= 0) this.act.hand = { kind: 'empty' }
-    this.pulse = { text: `Plant ${crop}`, at: { ...at } }
+
   }
 
   private canWater(at: Coord): boolean {
@@ -5237,7 +5200,7 @@ export class World {
     const use = need > bucket.item.liters ? bucket.item.liters : need
     c.soil.soak(use)
     bucket.item.liters -= use
-    this.pulse = { text: 'Water', at: { ...at } }
+
     return c.kind === 'growing' || c.kind === 'ripe'
   }
 
@@ -5264,7 +5227,7 @@ export class World {
     else c.soil.feed(use)
     bag.item.liters -= use
     if (bag.item.liters <= 0) this.act.hand = { kind: 'empty' }
-    this.pulse = { text: 'Fertilize', at: { ...at } }
+
   }
 
   private canCompost(at: Coord): boolean {
@@ -5280,7 +5243,7 @@ export class World {
     box.units += compostValue(held.item)
     this.track(at, box)
     this.act.hand = { kind: 'empty' }
-    this.pulse = { text: 'Compost', at: { ...at } }
+
   }
 
   canTend(at: Coord): boolean {
@@ -5297,7 +5260,7 @@ export class World {
     c.plant.happiness += 0.1
     if (c.plant.happiness > HAPPY_MAX) c.plant.happiness = HAPPY_MAX
     c.plant.tended = true
-    this.pulse = { text: 'Tend', at: { ...at } }
+
   }
 
   private canHarvest(at: Coord): boolean {
@@ -5317,7 +5280,7 @@ export class World {
     const picked = fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
     this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
-    this.pulse = { text: 'Harvest', at: { ...at } }
+
     if (this.act.hand.kind === 'empty') {
       this.act.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
       return
@@ -5353,8 +5316,7 @@ export class World {
         this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
       }
       if (held.kind === 'empty') this.act.hand = { kind: 'hold', item: { kind, count: 1 } }
-      this.pulse = { text: 'Pick up', at: { ...at } }
-      return
+        return
     }
     const taken = this.drops[i].item
     const held = this.act.hand
@@ -5368,18 +5330,15 @@ export class World {
       mergeInto(held.item, taken, n)
       if (n === taken.count) this.drops.splice(i, 1)
       else taken.count -= n
-      this.pulse = { text: 'Pick up', at: { ...at } }
-      return
+        return
     }
     this.drops.splice(i, 1)
     if (held.kind === 'empty') {
       this.act.hand = { kind: 'hold', item: taken }
-      this.pulse = { text: 'Pick up', at: { ...at } }
-      return
+        return
     }
     this.drops.push({ at: { ...at }, item: held.item })
     this.act.hand = { kind: 'hold', item: taken }
-    this.pulse = { text: 'Pick up', at: { ...at } }
   }
 
   private doDrop(at: Coord): void {
@@ -5444,7 +5403,7 @@ export class World {
 
   private completeConsign(): void {
     this.consignRevision += 1
-    this.pulse = { text: 'Drop off', at: { ...PAD } }
+
     this.finishFull()
   }
 
@@ -5822,8 +5781,6 @@ export class World {
     millApply(mill, this.act.hand.item, take.n)
     this.takeHandCount(take.n)
     this.track(at, mill)
-    const name = millProductName(take.recipe)
-    this.pulse = { text: name === 'sugar' ? 'Crush into sugar' : `Crush into ${name}`, at: { ...at } }
   }
 
   private canStill(at: Coord): boolean {
@@ -5849,7 +5806,7 @@ export class World {
     addStillFeed(still.feed, crop, rarity, n)
     this.takeHandCount(n)
     this.track(at, still)
-    this.pulse = { text: 'Distill', at: { ...at } }
+
   }
 
   private canBarrelCollect(at: Coord): boolean {
@@ -5893,7 +5850,7 @@ export class World {
       barrel.feed = []
       barrel.age = 0
       this.track(at, barrel)
-      this.pulse = { text: 'Collect wine', at: { ...at } }
+
       return
     }
     if (!this.canBarrel(at)) return
@@ -5907,7 +5864,7 @@ export class World {
     addBarrelFeed(barrel.feed, rarity, n)
     this.takeHandCount(n)
     this.track(at, barrel)
-    this.pulse = { text: 'Fill barrel', at: { ...at } }
+
   }
 
   private canJam(at: Coord): boolean {
@@ -5935,7 +5892,7 @@ export class World {
       it.liters -= take
       if (it.liters <= 0) this.act.hand = { kind: 'empty' }
       this.track(at, jam)
-      this.pulse = { text: 'Fill sugar', at: { ...at } }
+
       return
     }
     const crop = jamCropOf(it)
@@ -5945,7 +5902,7 @@ export class World {
     jam.fruit += n
     this.takeHandCount(n)
     this.track(at, jam)
-    this.pulse = { text: crop === 'tomato' ? 'Make ketchup' : 'Make jam', at: { ...at } }
+
   }
 
   private takeHandCount(n: number): void {
@@ -5986,7 +5943,7 @@ export class World {
     this.track(at, c)
     this.act.hand.item.usesLeft -= 1
     if (this.act.hand.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-    this.pulse = { text: 'Spray', at: { ...at } }
+
   }
 
   private putSugar(item: Extract<Item, { kind: 'sugar' }>): void {
@@ -6021,7 +5978,7 @@ export class World {
     grindApply(grinder, take)
     this.takeHandCount(take.n)
     this.track(at, grinder)
-    this.pulse = { text: 'Grind', at: { ...at } }
+
   }
 
   private maybeSay(at: Coord, blocked: string): void {
@@ -6135,41 +6092,6 @@ function mineTime(w: World, at: Coord): number {
   if (c.kind !== 'rock') return p.workSeconds
   const n = occupiedCells(c.base, w.owned).length
   return n === 1 ? p.workSeconds : p.workSeconds * 2
-}
-
-function sensorDeleteName(k: Sensor['kind']): string {
-  switch (k) {
-    case 'lever':
-      return 'lever'
-    case 'button':
-      return 'button'
-    case 'lamp':
-      return 'lamp'
-    case 'or':
-      return 'OR gate'
-    case 'and':
-      return 'AND gate'
-    case 'not':
-      return 'NOT gate'
-    case 'pulser':
-      return 'pulser'
-    case 'counter':
-      return 'counter'
-    case 'sensor-water':
-      return 'water sensor'
-    case 'sensor-fert':
-      return 'fertilizer sensor'
-    case 'sensor-harvest':
-      return 'harvest sensor'
-    case 'sensor-day':
-      return 'day sensor'
-    case 'water-system':
-      return 'water-system sensor'
-    case 'vehicle-detector':
-      return 'vehicle detector'
-    case 'traffic-light':
-      return 'traffic light'
-  }
 }
 
 function sprinklerSku(s: Sprinkler): SkuId {

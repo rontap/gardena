@@ -164,6 +164,12 @@ See [[canon]].
 | tick.scan | [[architecture/tick]] |
 | tick.nets | [[architecture/tick]] |
 | tick.ping | [[architecture/tick]] |
+| view.scan | [[architecture/view]] |
+| view.hit | [[architecture/view]] |
+| view.hud | [[architecture/view]] |
+| view.ticker | [[architecture/view]] |
+| world.dest | [[architecture/world]] |
+| world.pulse | [[architecture/world]] |
 | save.parse | [[architecture/save]] |
 | save.nomigrate | [[architecture/save]] |
 | net.digest | [[architecture/net]] |

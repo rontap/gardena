@@ -13,9 +13,9 @@
 
 Silhouette is 1 px ink all round; arms break out to `x = 2` and `x = 21` so the shape reads against grass at tile size.
 
-Hat group `id="hat"` wraps the straw-gold CROWN rects (`#d4a017` crown + brim). Band and underside stay `#6b4423` outside the group. Default fill is straw gold. One pose still. Seat crown is CSS `--hat` only — not in the SVG.
+Hat group `id="hat"` wraps the straw-gold CROWN rects (`#d4a017` crown + brim). Band and underside stay `#6b4423` outside the group. Default fill is straw gold. One pose still. Farm: atlas `actor-body` + `actor-hat`; tint is the seat table. Not CSS `--hat` on the world.
 
-| seat | `--hat` |
+| seat | hex |
 |---|---|
 | 0 | `#d4a017` |
 | 1 | `#ff3d8e` |

@@ -8,7 +8,7 @@ export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: nu
   const q = opts?.speed !== undefined ? `?speed=${opts.speed}` : ''
   const hash = opts?.unlock === true ? '#unlockall' : '#start_now'
   await page.goto(`/${q}${hash}`)
-  await expect(page.locator('svg.bg-grass')).toBeVisible()
+  await expect(page.locator('.bg-grass').first()).toBeVisible()
 }
 
 export function hudMoney(page: Page) {
@@ -29,16 +29,21 @@ export async function unlockWorld(page: Page): Promise<void> {
 }
 
 async function svgBox(page: Page) {
-  const box = await page.locator('svg.bg-grass').boundingBox()
-  if (box === null) throw new Error('map svg')
+  const box = await page.locator('.bg-grass').first().boundingBox()
+  if (box === null) throw new Error('map host')
   return box
 }
 
 export async function screenOf(page: Page, wx: number, wy: number) {
   const b = await svgBox(page)
+  const cam = await page.evaluate(() => {
+    const v = (window as unknown as { __view?: { cam: { x: number; y: number; scale: number } } }).__view
+    if (v === undefined) throw new Error('no __view')
+    return v.cam
+  })
   return {
-    x: b.x + b.width / 2 + (wx - CAM_X) * TILE,
-    y: b.y + b.height / 2 + (wy - CAM_Y) * TILE,
+    x: b.x + b.width / 2 + (wx - cam.x) * TILE * cam.scale,
+    y: b.y + b.height / 2 + (wy - cam.y) * TILE * cam.scale,
   }
 }
 

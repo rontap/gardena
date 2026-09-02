@@ -46,16 +46,11 @@ Lamp overlay attach: top edge, same as NOT `in` (`col+0.5`, `row`).
 
 ## Wires
 
-No wire SKU file. Cubic bezier in view (`WiresGfx` / `PendingWire`). `wireControls` / `wirePoint` must match paint. No new `@theme` color.
+No wire SKU file. Cubic bezier in overlay Graphics. `wireControls` / `wirePoint` must match paint. No new `@theme` color.
 
 Idle `fruit-red` `#c43c3c`. Active `water` `#3d7ea6`.
 
-Stroke pass (coder, `map.tsx` + hit-test):
-
-- `stroke-linecap="round"`
-- color stroke `2.5`
-- optional ink understroke `#1c1710` `4.5` (1px per side), same cap, under the color path
-- stronger sag so crossings separate. Preference:
+Stroke: cap round, color `2.5`, ink understroke `#1c1710` `4.5` (1px per side), same cap, under the color path. Stronger sag so crossings separate. Preference:
 
 ```
 c1.x = from.x + dx * 0.35

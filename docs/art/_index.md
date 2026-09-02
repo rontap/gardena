@@ -18,6 +18,6 @@
 - [[art/items]]
 - [[art/companies]]
 
-SVGs live in `src/assets/`.
+SVGs live in `src/assets/`. Farm tiles: atlas. HUD chrome: React. [[art/svg]]
 
 See [[canon]].

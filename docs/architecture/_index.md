@@ -5,6 +5,7 @@ Module map and types for the game as it runs.
 - [[architecture/modules]]
 - [[architecture/world]]
 - [[architecture/tick]]
+- [[architecture/view]]
 - [[architecture/log]]
 - [[architecture/net]]
 - [[architecture/rng]]

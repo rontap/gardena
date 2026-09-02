@@ -1,42 +1,14 @@
 import { RESEARCH } from '../defs/research.ts'
-import { COMPOST_NEED, QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
-import { SOIL_WATER_MAX } from '../sim/soil.ts'
+import { QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
-import type { Coord } from '../sim/building.ts'
-import type { VehicleId } from '../sim/ids.ts'
-import { hitchP, kindVMax, stopXY, trailerCenter, trailerUsed, wrapHeading } from '../sim/vehicle.ts'
-import type { SeatId, World } from '../sim/world.ts'
-import { TILE } from './camera.ts'
+import { kindVMax, trailerUsed } from '../sim/vehicle.ts'
+import type { World } from '../sim/world.ts'
 import { symHref, UI_PHASE } from './svgs.ts'
 
-const WASH = '#cfc6b0'
-const GOOD = '#2fd15a'
+type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'fps' | 'counter'
 
-type BarKind = 'thirst' | 'fert' | 'fresh' | 'compost'
-
-type BarEntry = {
-  kind: BarKind
-  el: SVGRectElement
-  col: number
-  row: number
-  last: string
-}
-
-const bars = new Map<string, BarEntry>()
-
-type ActorEntry = { el: SVGGElement; transform: string; visibility: string }
-
-const actors = new Map<SeatId, ActorEntry>()
-
-type QuadEntry = { el: SVGGElement; transform: string; x: number; y: number; heading: number; snap: boolean; kind: 'quad' | 'tractor' }
-
-const quads = new Map<VehicleId, QuadEntry>
-
-type TrailerEntry = { el: SVGGElement; transform: string }
-
-const trailers = new Map<number, TrailerEntry>()
-
-const QUAD_FOLLOW = 0.35
+const hud = new Map<HudKind, Element>()
+let phaseUse: SVGUseElement | undefined
 
 let dashHost: Element | undefined
 let dashFuel: SVGGElement | undefined
@@ -47,96 +19,7 @@ let dashSpeedReadout: Element | undefined
 let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
 const lastDash = { fuel: '', speed: '', used: '' }
-
-type HudKind = 'clock' | 'day-bar' | 'phase' | 'research' | 'queue-bar' | 'banner' | 'speech' | 'fps' | 'counter'
-
-const hud = new Map<HudKind, Element>()
-let phaseUse: SVGUseElement | undefined
-let speechText: Element | undefined
-
-function barKey(kind: BarKind, at: Coord): string {
-  return `${kind}:${at.col},${at.row}`
-}
-
-export function bindBar(kind: BarKind, at: Coord, el: SVGRectElement | null): (() => void) | undefined {
-  const key = barKey(kind, at)
-  if (el === null) {
-    bars.delete(key)
-    return
-  }
-  bars.set(key, { kind, el, col: at.col, row: at.row, last: '' })
-  return () => {
-    const cur = bars.get(key)
-    if (cur !== undefined && cur.el === el) bars.delete(key)
-  }
-}
-
-export function bindActor(id: SeatId, el: SVGGElement | null): (() => void) | undefined {
-  if (el === null) {
-    actors.delete(id)
-    return
-  }
-  actors.set(id, { el, transform: '', visibility: '' })
-  return () => {
-    const cur = actors.get(id)
-    if (cur !== undefined && cur.el === el) actors.delete(id)
-  }
-}
-
-export function bindQuad(
-  id: VehicleId,
-  el: SVGGElement | null,
-  kind: 'quad' | 'tractor' = 'quad',
-): (() => void) | undefined {
-  if (el === null) {
-    quads.delete(id)
-    return
-  }
-  quads.set(id, { el, transform: '', x: 0, y: 0, heading: 0, snap: true, kind })
-  return () => {
-    const cur = quads.get(id)
-    if (cur !== undefined && cur.el === el) quads.delete(id)
-  }
-}
-
-export function bindTrailer(id: number, el: SVGGElement | null): (() => void) | undefined {
-  if (el === null) {
-    trailers.delete(id)
-    return
-  }
-  trailers.set(id, { el, transform: '' })
-  return () => {
-    const cur = trailers.get(id)
-    if (cur !== undefined && cur.el === el) trailers.delete(id)
-  }
-}
-
-let dummyRot: SVGGElement | undefined
-let dummyDeg = ''
-let dummyTrailer: SVGGElement | undefined
-let dummyTrailerT = ''
-
-export function bindDummyQuad(el: SVGGElement | null): (() => void) | undefined {
-  dummyRot = el === null ? undefined : el
-  dummyDeg = ''
-  if (el === null) return
-  return () => {
-    if (dummyRot !== el) return
-    dummyRot = undefined
-    dummyDeg = ''
-  }
-}
-
-export function bindDummyTrailer(el: SVGGElement | null): (() => void) | undefined {
-  dummyTrailer = el === null ? undefined : el
-  dummyTrailerT = ''
-  if (el === null) return
-  return () => {
-    if (dummyTrailer !== el) return
-    dummyTrailer = undefined
-    dummyTrailerT = ''
-  }
-}
+const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '' }
 
 export function bindDash(el: Element | null): (() => void) | undefined {
   dashHost = el === null ? undefined : el
@@ -174,7 +57,6 @@ export function bindHud(kind: HudKind, el: Element | null): (() => void) | undef
   if (el === null) {
     hud.delete(kind)
     if (kind === 'phase') phaseUse = undefined
-    if (kind === 'speech') speechText = undefined
     return
   }
   hud.set(kind, el)
@@ -183,104 +65,14 @@ export function bindHud(kind: HudKind, el: Element | null): (() => void) | undef
     phaseUse = u instanceof SVGUseElement ? u : undefined
     last.phase = ''
   }
-  if (kind === 'speech') {
-    const line = el.querySelector('[data-speech-text]')
-    speechText = line === null ? undefined : line
-  }
   return () => {
     if (hud.get(kind) === el) bindHud(kind, null)
   }
 }
 
-function paintBar(entry: BarEntry, width: number): void {
-  const next = String(width)
-  if (entry.last === next) return
-  entry.last = next
-  entry.el.setAttribute('width', next)
-}
-
-const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', counter: '' }
-
 export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs: number): void {
   void root
-  world.seats.forEach(s => {
-    const entry = actors.get(s.id)
-    if (entry === undefined || s.napping) return
-    const seated = world.driverVehicle(s.id) !== undefined
-    if (s.presence !== 'in' || seated) {
-      if (entry.visibility !== 'hidden') {
-        entry.visibility = 'hidden'
-        entry.el.setAttribute('visibility', 'hidden')
-      }
-      return
-    }
-    if (entry.visibility !== 'visible') {
-      entry.visibility = 'visible'
-      entry.el.setAttribute('visibility', 'visible')
-    }
-    const transform = `translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`
-    if (entry.transform === transform) return
-    entry.transform = transform
-    entry.el.setAttribute('transform', transform)
-  })
-  world.vehicles.forEach(v => {
-    if (v.pose.kind !== 'field') return
-    const entry = quads.get(v.id)
-    if (entry === undefined) return
-    if (entry.snap) {
-      entry.x = v.pose.x
-      entry.y = v.pose.y
-      entry.heading = v.pose.heading
-      entry.snap = false
-    } else {
-      entry.x += (v.pose.x - entry.x) * QUAD_FOLLOW
-      entry.y += (v.pose.y - entry.y) * QUAD_FOLLOW
-      const turn = wrapHeading(v.pose.heading - entry.heading + Math.PI) - Math.PI
-      entry.heading = wrapHeading(entry.heading + turn * QUAD_FOLLOW)
-    }
-    const deg = (entry.heading * 180) / Math.PI
-    const transform = `translate(${(entry.x - 0.5) * TILE},${(entry.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${deg} 12 12)`
-    if (entry.transform !== transform) {
-      entry.transform = transform
-      entry.el.setAttribute('transform', transform)
-    }
-    if (v.kind === 'tractor' && v.hitch !== 'none') {
-      const t = world.trailers.find(x => x.id === v.hitch)
-      const te = trailers.get(v.hitch)
-      if (t !== undefined && t.pose.kind === 'attached' && te !== undefined) {
-        const p = hitchP(entry.x, entry.y, entry.heading)
-        const c = trailerCenter(p, t.pose.heading)
-        const td = (t.pose.heading * 180) / Math.PI
-        const tt = `translate(${(c.x - 0.5) * TILE},${(c.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${td} 12 12)`
-        if (te.transform !== tt) {
-          te.transform = tt
-          te.el.setAttribute('transform', tt)
-        }
-      }
-    }
-  })
   const driven = world.driverVehicle(world.local)
-  if (driven !== undefined && driven.pose.kind === 'field' && dummyRot !== undefined) {
-    const deg = (driven.pose.heading * 180) / Math.PI
-    const rot = `rotate(${deg} 12 12)`
-    if (dummyDeg !== rot) {
-      dummyDeg = rot
-      dummyRot.setAttribute('transform', rot)
-    }
-  }
-  if (driven !== undefined && driven.pose.kind === 'field' && driven.kind === 'tractor' && driven.hitch !== 'none' && dummyTrailer !== undefined) {
-    const t = world.trailers.find(x => x.id === driven.hitch)
-    if (t !== undefined && t.pose.kind === 'attached') {
-      const p = hitchP(driven.pose.x, driven.pose.y, driven.pose.heading)
-      const c = trailerCenter(p, t.pose.heading)
-      const td = (t.pose.heading * 180) / Math.PI
-      const tt = `translate(${(c.x - driven.pose.x - 0.5) * TILE},${(c.y - driven.pose.y - 0.5) * TILE}) scale(${TILE / 24}) rotate(${td} 12 12)`
-      if (dummyTrailerT !== tt) {
-        dummyTrailerT = tt
-        dummyTrailer.setAttribute('transform', tt)
-      }
-    }
-  }
   if (driven !== undefined && driven.pose.kind === 'field' && dashHost !== undefined) {
     const fuelDeg = -45 + driven.fuel * 90
     const vMax = kindVMax(driven.kind)
@@ -318,14 +110,6 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
       dashUsedReadout.textContent = usedText
     }
   }
-  root.querySelectorAll('[data-route-leg]').forEach(el => {
-    const v = world.driverVehicle(world.local)
-    if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
-    const route = world.routeById(v.route)
-    if (route === undefined || route.stops.length === 0) return
-    const t = stopXY(route.stops[v.cursor])
-    el.setAttribute('d', `M ${v.pose.x * TILE} ${v.pose.y * TILE} L ${t.x * TILE} ${t.y * TILE}`)
-  })
   const phase = world.clock.phase()
   const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
   const clock = hud.get('clock')
@@ -415,39 +199,4 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
     if (banner.hidden !== !on) banner.hidden = !on
     if (on && banner.textContent !== text) banner.textContent = text
   }
-  const speech = hud.get('speech')
-  if (speech instanceof SVGForeignObjectElement) {
-    if (world.speech.kind === 'none') {
-      speech.setAttribute('visibility', 'hidden')
-    } else {
-      speech.setAttribute('visibility', 'visible')
-      const speaker = world.seats[world.local]
-      speech.setAttribute('x', String(speaker.actor.x * TILE - 100))
-      speech.setAttribute('y', String((speaker.actor.y - 0.5) * TILE - 24))
-      if (speechText !== undefined) speechText.textContent = world.speech.text
-    }
-  }
-  bars.forEach(entry => {
-    const cell = world.cell({ col: entry.col, row: entry.row })
-    if (entry.kind === 'thirst') {
-      if (cell.kind !== 'growing') return
-      paintBar(entry, ((TILE - 6) * cell.soil.water) / SOIL_WATER_MAX)
-      return
-    }
-    if (entry.kind === 'fert') {
-      if (cell.kind !== 'growing') return
-      paintBar(entry, (TILE - 6) * cell.soil.fertilizer)
-      return
-    }
-    if (entry.kind === 'fresh') {
-      if (cell.kind !== 'ripe') return
-      paintBar(entry, (TILE - 6) * cell.plant.freshness)
-      return
-    }
-    if (cell.kind !== 'compost-box') return
-    const t = cell.units < COMPOST_NEED ? cell.units / COMPOST_NEED : cell.progress
-    paintBar(entry, (TILE - 6) * t)
-    const fill = cell.units < COMPOST_NEED ? WASH : GOOD
-    if (entry.el.getAttribute('fill') !== fill) entry.el.setAttribute('fill', fill)
-  })
 }

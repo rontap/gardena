@@ -1,177 +1,41 @@
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
-import { CROPS, tolerance } from '../defs/crops.ts'
-import { fertBand, waterBand, SOIL_WATER_MID, type Band } from '../sim/soil.ts'
-import { goodness, HARD_MAX, VERY_HARD_MAX } from '../sim/noise.ts'
+import { useEffect, useRef, useState, type WheelEvent as ReactWheelEvent } from 'react'
 import { HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../defs/items.ts'
-import { DOOR, FADE, HOUSE_BASE, chunkKey, chunkOf, occupiedCells, type Base } from '../sim/building.ts'
-import { hangarPad, siloPad, stopXY } from '../sim/vehicle.ts'
+import { FADE, occupiedCells } from '../sim/building.ts'
 import { onCell } from '../sim/drop.ts'
-import { isPlot, isTilled, type Cell } from '../sim/plot.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
-import { Coin } from '../ui/frame.tsx'
-import { SENSOR_CELL_SKUS, type CropId, type SkuId, type TreeId, type VfxId } from '../sim/ids.ts'
-import type { Rarity } from '../defs/rarity.ts'
-import type { Soil } from '../sim/soil.ts'
-import { aoe, edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
+import type { SkuId } from '../sim/ids.ts'
+import { aoe, edgeKey, vertsOf, type Edge } from '../sim/pipe.ts'
 import type { PromptHit } from '../sim/prompt.ts'
+import type { Place, World } from '../sim/world.ts'
+import { Coin } from '../ui/frame.tsx'
+import { TILE, clampCam, type Camera } from './camera.ts'
 import {
-  area3,
-  endKey,
-  counterDial,
-  isSensor,
-  nearestWire,
-  ownsPort,
-  portDevice,
-  portXY,
-  sameEnd,
-  type PortId,
-  type Sensor,
-  type WireEnd,
-  wireControls,
-} from '../sim/sensor.ts'
-import type { Burst, Place, SeatId, World } from '../sim/world.ts'
-import { TILE, clampCam, tileVariant, type Camera } from './camera.ts'
-import {
-  ACTOR,
-  treeStage,
-  BUILDING_TILES,
-  BARREL,
-  CHEST,
-  COMPOST_BOX,
-  ADDITIVE_STORE,
-  FREEZER,
-  HANGAR,
-  HANGAR_RETURN,
-  PAD_DROP,
-  PAD_TAKE,
-  QUAD,
-  TRACTOR,
-  TRAILER_HARVEST,
-  TRAILER_RAKE,
-  TRAILER_SEED,
-  TRAILER_SPRAY,
-  SILO_PRODUCE,
-  SILO_SEED,
-  SILO_SPRAY,
-  SEED_SILO,
-  JAM,
-  MILL,
-  STILL,
-  CROP_ROTTEN,
-  DIRT,
-  DIRT_EDGE,
-  DIRT_INSET,
-  GRASS,
-  GRASS_TUFT,
-  GRINDER,
-  LINK_IN,
-  LINK_OUT,
-  HARD,
-  HOUSE,
-  PIPE_SOURCE,
-  PUMP,
-  RAIN_TANK,
-  TAP,
-  ROCK,
-  ROCK_LONG,
-
-  TRUCK,
-  SPRINKLER,
-  SPRINKLER_LARGE,
-  SPRINKLER_VERT,
-  VERY_HARD,
-  WELL,
-  cropInner,
-  faceGfx,
-  fenceFit,
+  atlasHtml,
+  atlasReady,
   pipeFit,
-  turfInner,
-  qualityPip,
-  ripeGroup,
-  skuInner,
-  dryOf,
-  symHref,
-  valveArt,
-  smartValveArt,
-  leverArt,
-  buttonArt,
-  lampArt,
-  pulserArt,
-  counterArt,
-  PROP_OR,
-  PROP_AND,
-  PROP_NOT,
-  waterSensorArt,
-  fertSensorArt,
-  harvestSensorArt,
-  daySensorArt,
-  waterSystemArt,
-  vehicleDetectorArt,
-  trafficLightArt,
-  weedInner,
-} from './svgs.ts'
-import { bindActor, bindBar, bindDummyQuad, bindDummyTrailer, bindHud, bindQuad, bindTrailer } from './motion.ts'
-import { barrelWorking, jamWorking, millWorking, stillWorking } from '../sim/machine.ts'
-import { VFX, VFX_REDUCED } from './vfx.ts'
+  type AtlasKey,
+} from './atlas.ts'
+import {
+  SPRINKLER_SKU,
+  clickHit,
+  deleteHit,
+  makeSprinkler,
+  nearestEdge,
+  nearestVertex,
+  pipeOk,
+  stayOk,
+  arms,
+  type Lens,
+  type MapClick,
+} from './hit.ts'
+import { WorldView } from './world-view.ts'
+import { HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
+import type { VfxMount } from './layers/vfx.ts'
+import { VFX } from './vfx.ts'
 
-export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors' | 'vehicles'
+export type { Lens, MapClick }
 
-export type { Edge, Sprinkler, Vertex }
-
-export type MapClick = PromptHit
-
-const ROOF = '#8b3a2a'
-const LEAF = '#6bc04a'
-const WATER = '#3d7ea6'
-const GRAPE = '#6b1f8c'
-const RIPE = '#d4a017'
-const INK = '#1c1710'
-const WASH = '#cfc6b0'
-const LENS_BAD = '#e23b2e'
-const LENS_MID = '#d4a017'
-const LENS_GOOD = '#2fd15a'
-const LENS_DONE = '#1e9be6'
-
-const EDGE_HIT = 0.35
-const VERTEX_HIT = 0.3
-
-const PIPE_PLACE: readonly SkuId[] = [
-  'buy-pipe',
-  'buy-valve',
-  'buy-rain-tank',
-  'buy-tap',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-  'buy-well',
-  'buy-pumpjack',
-]
-
-const AOE_WASH: readonly SkuId[] = [
-  'buy-pipe',
-  'buy-valve',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-]
-
-const STAY_ARMED: readonly SkuId[] = [
-  'buy-pipe',
-  'buy-valve',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-  'buy-tile-paved',
-  'buy-tile-brick',
-  'buy-tile-cobble',
-  'buy-fence',
-  ...SENSOR_CELL_SKUS,
-  'buy-smart-valve',
-]
-
-const SPRINKLER_SKU: readonly SkuId[] = ['buy-sprinkler', 'buy-sprinkler-vert', 'buy-sprinkler-large']
-
-export const HAT: { readonly [K in SeatId]: string } = {
+export const HAT: { readonly [K in 0 | 1 | 2 | 3]: string } = {
   0: '#d4a017',
   1: '#ff3d8e',
   2: '#2de8ff',
@@ -189,10 +53,31 @@ type Props = {
   onClick: (hit: MapClick, xy: { x: number; y: number }) => void
 }
 
+type ViewHook = {
+  cam: Camera
+  pendingPipe: Edge[]
+  hit: (wx: number, wy: number) => MapClick | undefined
+}
+
+function Use({ art }: { art: string }) {
+  return <use href={symHref(art)} />
+}
+
+function placeLine(id: SkuId): string {
+  return `Place ${skuLabel(id)}`
+}
+
+function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: number }, clientX: number, clientY: number) {
+  return {
+    x: cam.x + (clientX - box.left - box.w / 2) / (TILE * cam.scale),
+    y: cam.y + (clientY - box.top - box.h / 2) / (TILE * cam.scale),
+  }
+}
+
 export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick }: Props) {
-  const [rev, setRev] = useState(0)
-  const drag = useRef<{ x: number; y: number; cx: number; cy: number } | undefined>(undefined)
-  const svgRef = useRef<SVGSVGElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null)
+  const viewRef = useRef<WorldView | undefined>(undefined)
+  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean } | undefined>(undefined)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
   const pendingMove = useRef<{ x: number; y: number; buttons: number } | undefined>(undefined)
   const camRef = useRef(cam)
@@ -200,7 +85,10 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const [view, setView] = useState({ w: 800, h: 600 })
   const [ptr, setPtr] = useState({ x: 0, y: 0 })
   const [worldPtr, setWorldPtr] = useState<{ x: number; y: number } | undefined>(undefined)
+  const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
+  const pendingRef = useRef<Edge[]>([])
   camRef.current = cam
+  pendingRef.current = pendingPipe
   const place = world.seats[world.local].place
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
@@ -210,46 +98,37 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve' || placeId === 'buy-well' || placeId === 'buy-smart-valve'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
-  const stay = deleteTool || (placeId !== undefined && STAY_ARMED.includes(placeId))
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
   const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y) : undefined
   const strokeCell =
     worldPtr !== undefined ? { col: Math.floor(worldPtr.x), row: Math.floor(worldPtr.y) } : undefined
-  const ghostVerts = useMemo(
-    () =>
-      edgeTool && placeId !== 'buy-well' && edgeHit !== undefined
-        ? vertsOf(edgeHit)
-        : undefined,
-    [edgeTool, placeId, edgeHit?.axis, edgeHit?.col, edgeHit?.row],
-  )
-  const ghostWet = edgeHit !== undefined && world.pendingWet(edgeHit)
+  const ghostEdges =
+    placeId === 'buy-pipe' && pendingPipe.length > 0
+      ? pendingPipe
+      : edgeTool && placeId !== 'buy-well' && edgeHit !== undefined
+        ? [edgeHit]
+        : []
+  const ghostWet = ghostEdges.length > 0 && ghostEdges.some(e => world.pendingWet(e))
   const ghostSprinkler =
-    sprinklerTool && place.kind === 'sku' && vertexHit !== undefined
-      ? makeSprinkler(place, vertexHit)
-      : undefined
+    sprinklerTool && place.kind === 'sku' && vertexHit !== undefined ? makeSprinkler(place, vertexHit) : undefined
   const deleteTarget =
     deleteTool && worldPtr !== undefined ? deleteHit(world, edgeHit, vertexHit, worldPtr.x, worldPtr.y) : undefined
   const hoverCell = hover !== undefined && hover.kind === 'cell' ? hover.at : undefined
   const prompt = hoverCell !== undefined ? world.prompt(hoverCell) : world.promptHit(hover)
   const hitOk =
-    stay && !deleteTool
+    edgeTool || sprinklerTool
       ? stayOk(world, placeId, edgeHit, ghostSprinkler, deleteTarget)
       : prompt?.kind === 'place'
   const canPlace = placing && hitOk
-  const tipDrop =
-    hoverCell !== undefined
-      ? onCell(world.drops, hoverCell)
-          .at(-1)
-      : undefined
+  const tipDrop = hoverCell !== undefined ? onCell(world.drops, hoverCell).at(-1) : undefined
   const tip =
     tipDrop !== undefined &&
-    (tipDrop.item.kind === 'shovel' ||
-      tipDrop.item.kind === 'pickaxe' ||
-      tipDrop.item.kind === 'container')
+    (tipDrop.item.kind === 'shovel' || tipDrop.item.kind === 'pickaxe' || tipDrop.item.kind === 'container')
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
+  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, hangarPlace, siloPlace)
 
   function pushCam(next: Camera): void {
     const b = world.bounds()
@@ -264,14 +143,71 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   }
 
   useEffect(() => {
-    return world.on((kind, reasons) => {
-      if (kind !== 'dirty') return
-      if (reasons.has('act') || reasons.has('field') || reasons.has('big') || reasons.has('vfx')) setRev(x => x + 1)
+    const el = hostRef.current
+    if (el === null) return
+    let dead = false
+    let mounted: WorldView | undefined
+    void WorldView.mount(el, world, camRef.current, lens, editor, onCam).then(v => {
+      if (dead) {
+        v.destroy()
+        return
+      }
+      mounted = v
+      viewRef.current = v
+      const loc = document.createElement('div')
+      loc.className = 'pointer-events-none absolute inset-0 origin-top-left'
+      el.appendChild(loc)
+      const pipeHost = document.createElement('div')
+      const vfxHost = document.createElement('div')
+      const speechHost = document.createElement('div')
+      loc.append(pipeHost, vfxHost, speechHost)
+      v.htmlLayer = loc
+      v.onVfx = m => paintVfxLocators(vfxHost, m)
+      v.onSpeech = () => paintSpeech(speechHost, world)
+      v.onPipeLoc = () => paintPipeLocators(pipeHost, world)
+      v.onPipeLoc()
+      v.layout()
+      const hook: ViewHook = {
+        get cam() {
+          return v.cam
+        },
+        get pendingPipe() {
+          return pendingRef.current
+        },
+        hit: (wx, wy) => v.hit(wx, wy),
+      }
+      ;(window as unknown as { __view?: ViewHook }).__view = hook
     })
+    return () => {
+      dead = true
+      viewRef.current = undefined
+      mounted?.htmlLayer?.remove()
+      mounted?.destroy()
+      delete (window as unknown as { __view?: ViewHook }).__view
+    }
   }, [world])
 
   useEffect(() => {
-    const el = svgRef.current
+    viewRef.current?.setCam(cam)
+    viewRef.current?.layout()
+  }, [cam])
+
+  useEffect(() => {
+    viewRef.current?.setLens(lens, editor)
+  }, [lens, editor, world])
+
+  useEffect(() => {
+    if (place.kind !== 'sku' || place.id !== 'buy-pipe') {
+      if (pendingPipe.length > 0) {
+        pendingRef.current = []
+        setPendingPipe([])
+        viewRef.current?.setPending([])
+      }
+    }
+  }, [place.kind, place.kind === 'sku' ? place.id : '', pendingPipe.length])
+
+  useEffect(() => {
+    const el = hostRef.current
     if (el === null) return
     const read = () => {
       const r = el.getBoundingClientRect()
@@ -304,6 +240,20 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       setPtr(prev => (prev.x === p.x && prev.y === p.y ? prev : { x: p.x, y: p.y }))
       setWorldPtr(prev => (prev !== undefined && prev.x === w.x && prev.y === w.y ? prev : w))
       const d = drag.current
+      const pipeDrag = d !== undefined && d.pipe && (p.buttons & 1) === 1
+      if (pipeDrag) {
+        const e = nearestEdge(w.x, w.y)
+        if (e !== undefined && pipeOk(world, 'buy-pipe', e)) {
+          const k = edgeKey(e)
+          if (!pendingRef.current.some(x => edgeKey(x) === k)) {
+            const next = [...pendingRef.current, e]
+            pendingRef.current = next
+            setPendingPipe(next)
+            viewRef.current?.setPending(next)
+          }
+        }
+        return
+      }
       if (d !== undefined && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
         if (Math.hypot(p.x - d.x, p.y - d.y) > 3) {
           pushCam({
@@ -318,21 +268,14 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       if (key !== lastHoverKey.current) {
         lastHoverKey.current = key
         onHover(clickHit(world, w.x, w.y, lens))
+        viewRef.current?.setHover(w.x, w.y, place)
       }
     }
     id = requestAnimationFrame(flush)
     return () => cancelAnimationFrame(id)
-  }, [world, onHover, lens])
+  }, [world, onHover, lens, place])
 
-  function worldAt(clientX: number, clientY: number): { x: number; y: number } {
-    const r = boxRef.current
-    return {
-      x: cam.x + (clientX - r.left - r.w / 2) / (TILE * cam.scale),
-      y: cam.y + (clientY - r.top - r.h / 2) / (TILE * cam.scale),
-    }
-  }
-
-  function onWheel(e: WheelEvent<SVGSVGElement>): void {
+  function onWheel(e: ReactWheelEvent<HTMLDivElement>): void {
     e.preventDefault()
     const next = cam.scale * (e.deltaY < 0 ? 1.1 : 1 / 1.1)
     const scale = Math.min(3, Math.max(0.5, next))
@@ -360,259 +303,267 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
               : deleteTarget?.kind === 'wire'
                 ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
                 : undefined
-  const followText = stay
-    ? world.promptHit(stayHit).text
-    : placeId !== undefined
-      ? placeLine(placeId)
-      : undefined
+  const followText =
+    edgeTool || sprinklerTool || deleteTool
+      ? world.promptHit(stayHit).text
+      : placeId !== undefined
+        ? placeLine(placeId)
+        : undefined
+  const worldT = `translate(${view.w / 2}px, ${view.h / 2}px) scale(${cam.scale}) translate(${-cam.x * TILE}px, ${-cam.y * TILE}px)`
+  const faces = world.faces()
+  const sprinklers = [...world.sprinklers.values()]
+  const wells = [...world.wells.values()]
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      <svg
-        ref={svgRef}
-        className={`h-full w-full overflow-hidden bg-grass ${canPlace ? 'cursor-pointer' : 'cursor-crosshair'}`}
-        onWheel={onWheel}
-        onContextMenu={e => {
-          e.preventDefault()
-          const w = worldAt(e.clientX, e.clientY)
-          world.rightClick({ col: Math.floor(w.x), row: Math.floor(w.y) })
-        }}
-        onPointerDown={e => {
-          if (e.button === 2) return
-          drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }
-          e.currentTarget.setPointerCapture(e.pointerId)
-        }}
-        onPointerMove={e => {
-          pendingMove.current = { x: e.clientX, y: e.clientY, buttons: e.buttons }
-        }}
-        onPointerUp={e => {
-          const d = drag.current
-          drag.current = undefined
-          if (d === undefined) return
-          if (e.button === 2) return
-          if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
-          const w = worldAt(e.clientX, e.clientY)
-          const hit = clickHit(world, w.x, w.y, lens)
-          if (hit !== undefined) onClick(hit, { x: w.x, y: w.y })
-        }}
-        onPointerLeave={() => {
-          pendingMove.current = undefined
-          lastHoverKey.current = ''
-          onHover(undefined)
-          setWorldPtr(undefined)
-        }}
-      >
-        <g
-          transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale}) translate(${-cam.x * TILE}, ${-cam.y * TILE})`}
-        >
-          <Ground world={world} owned={world.owned.length} groundRev={world.groundRev} />
-          <Marks world={world} rev={rev} lens={lens} hideVerts={ghostVerts} />
-          <RoutesGfx world={world} lens={lens} editor={editor} />
-          {strokeCell !== undefined && (
-            <g pointerEvents="none">
+    <div
+      ref={hostRef}
+      className={`absolute inset-0 overflow-hidden bg-grass ${canPlace ? 'cursor-pointer' : 'cursor-crosshair'}`}
+      onWheel={onWheel}
+      onContextMenu={e => {
+        e.preventDefault()
+        const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+        pendingRef.current = []
+        setPendingPipe([])
+        viewRef.current?.setPending([])
+        world.rightClick({ col: Math.floor(wpt.x), row: Math.floor(wpt.y) })
+      }}
+      onPointerDown={e => {
+        if (e.button === 2) return
+        const pipe = place.kind === 'sku' && place.id === 'buy-pipe'
+        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe }
+        e.currentTarget.setPointerCapture(e.pointerId)
+        if (pipe) {
+          const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+          const ed = nearestEdge(wpt.x, wpt.y)
+          const start = ed !== undefined && pipeOk(world, 'buy-pipe', ed) ? [ed] : []
+          pendingRef.current = start
+          setPendingPipe(start)
+          viewRef.current?.setPending(start)
+        }
+      }}
+      onPointerMove={e => {
+        pendingMove.current = { x: e.clientX, y: e.clientY, buttons: e.buttons }
+      }}
+      onPointerUp={e => {
+        const d = drag.current
+        drag.current = undefined
+        if (d === undefined) return
+        if (e.button === 2) return
+        if (d.pipe) {
+          const run = pendingRef.current
+          run.forEach(ed => world.placePipe(ed))
+          pendingRef.current = []
+          setPendingPipe([])
+          viewRef.current?.setPending([])
+          return
+        }
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) return
+        const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
+        const hit = clickHit(world, wpt.x, wpt.y, lens)
+        if (hit !== undefined) onClick(hit, { x: wpt.x, y: wpt.y })
+      }}
+      onPointerLeave={() => {
+        pendingMove.current = undefined
+        lastHoverKey.current = ''
+        onHover(undefined)
+        setWorldPtr(undefined)
+      }}
+    >
+      <GhostDefs />
+      <div className="pointer-events-none absolute inset-0 origin-top-left" style={{ transform: worldT }}>
+        {strokeCell !== undefined &&
+          hoverFoot.map(at => (
+            <svg
+              key={`${at.col},${at.row}`}
+              className="absolute overflow-visible"
+              width={TILE}
+              height={TILE}
+              style={{ left: at.col * TILE, top: at.row * TILE }}
+            >
               <rect
-                data-cell-stroke
-                x={strokeCell.col * TILE}
-                y={strokeCell.row * TILE}
+                data-cell-stroke={at.col === strokeCell.col && at.row === strokeCell.row ? '' : undefined}
                 width={TILE}
                 height={TILE}
                 fill="none"
-                className={
-                  skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
-                }
+                className={skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'}
                 strokeWidth={2}
               />
-              {pumpjack && (
-                <rect
-                  x={(strokeCell.col + 1) * TILE}
-                  y={strokeCell.row * TILE}
-                  width={TILE}
-                  height={TILE}
-                  fill="none"
-                  className={
-                    skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
-                  }
-                  strokeWidth={2}
-                />
-              )}
-              {hangarPlace &&
-                Array.from({ length: HANGAR_H }, (_, row) =>
-                  Array.from({ length: HANGAR_W }, (_, col) => {
-                    if (row === 0 && col === 0) return undefined
-                    return (
-                      <rect
-                        key={`${col},${row}`}
-                        x={(strokeCell.col + col) * TILE}
-                        y={(strokeCell.row + row) * TILE}
-                        width={TILE}
-                        height={TILE}
-                        fill="none"
-                        className={
-                          skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
-                        }
-                        strokeWidth={2}
-                      />
-                    )
-                  }),
-                )}
-              {siloPlace &&
-                Array.from({ length: SILO_H }, (_, row) =>
-                  Array.from({ length: SILO_W }, (_, col) => {
-                    if (row === 0 && col === 0) return undefined
-                    return (
-                      <rect
-                        key={`silo-${col},${row}`}
-                        x={(strokeCell.col + col) * TILE}
-                        y={(strokeCell.row + row) * TILE}
-                        width={TILE}
-                        height={TILE}
-                        fill="none"
-                        className={
-                          skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'
-                        }
-                        strokeWidth={2}
-                      />
-                    )
-                  }),
-                )}
-            </g>
-          )}
-          {ghostVerts !== undefined &&
-            edgeHit !== undefined &&
-            ghostVerts.map(v => {
-              const a = arms(world, v, edgeHit)
-              const fit = pipeFit(a.n, a.e, a.s, a.w)
-              if (fit === undefined) return undefined
-              return (
-                <g
-                  key={`ghost-${v.col},${v.row}`}
-                  data-pipe-ghost
-                  pointerEvents="none"
-                  transform={`translate(${v.col * TILE},${v.row * TILE}) rotate(${fit.rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-                >
-                  <Use art={ghostWet ? fit.html : dryOf(fit.html)} />
-                </g>
-              )
-            })}
-          {ghostSprinkler !== undefined && (
-            <g pointerEvents="none">
-              {aoe(ghostSprinkler).map(at => (
-                <rect
-                  key={`aoe-${at.col},${at.row}`}
-                  x={at.col * TILE}
-                  y={at.row * TILE}
-                  width={TILE}
-                  height={TILE}
-                  className="fill-water"
-                  fillOpacity={0.35}
-                />
-              ))}
-              <SprinklerGfx s={ghostSprinkler} opacity={0.7} placed={false} />
-            </g>
-          )}
-          {placeId === 'buy-valve' && edgeHit !== undefined && (
-            <g data-valve-ghost pointerEvents="none" opacity={0.7} transform={edgeTransform(edgeHit)}>
-              <Use art={valveArt(true)} />
-            </g>
-          )}
-          {placeId === 'buy-smart-valve' && edgeHit !== undefined && (
-            <g data-smart-valve-ghost pointerEvents="none" opacity={0.7} transform={edgeTransform(edgeHit)}>
-              <Use art={smartValveArt(false)} />
-            </g>
-          )}
-          {lens === 'sensors' && <WiresGfx world={world} />}
-          {place.kind === 'wire' && worldPtr !== undefined && (
-            <PendingWire from={place.from} x={worldPtr.x} y={worldPtr.y} world={world} />
-          )}
-          {(lens === 'sensors' || place.kind === 'wire') && <PortChrome world={world} />}
-          {placeId === 'buy-well' && edgeHit !== undefined && (
-            <g data-well-ghost pointerEvents="none" opacity={0.7}>
-              <WellGfx col={edgeHit.col} row={edgeHit.row} axis={edgeHit.axis} />
-            </g>
-          )}
-          {deleteTool && deleteTarget?.kind === 'pipe' && (
-            <EdgeStroke edge={deleteTarget.edge} ok />
-          )}
-          {deleteTool && deleteTarget?.kind === 'well' && (
-            <EdgeStroke edge={deleteTarget.edge} ok />
-          )}
-          {deleteTool && deleteTarget?.kind === 'sprinkler' && (
-            <VertexStroke v={deleteTarget.at} ok />
-          )}
-          {deleteTool && deleteTarget === undefined && edgeHit !== undefined && (
-            <EdgeStroke edge={edgeHit} ok={false} />
-          )}
-          {deleteTool && deleteTarget === undefined && edgeHit === undefined && vertexHit !== undefined && (
-            <VertexStroke v={vertexHit} ok={false} />
-          )}
-          {pumpjack && hoverCell !== undefined && (
-            <g
-              pointerEvents="none"
-              opacity={0.7}
-              transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
-            >
-              <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
-            </g>
-          )}
-          {(hangarPlace || siloPlace) && hoverCell !== undefined && (
-            <g
-              pointerEvents="none"
-              opacity={0.7}
-              transform={`translate(${hoverCell.col * TILE},${hoverCell.row * TILE}) scale(${TILE / 24})`}
-            >
-              <Use
-                art={
-                  placeId === 'buy-silo-seed'
+            </svg>
+          ))}
+        {ghostEdges.flatMap(e =>
+          vertsOf(e).map(v => {
+            const a = arms(world, v, ghostEdges)
+            const fit = pipeFit(a.n, a.e, a.s, a.w)
+            if (fit === undefined) return undefined
+            return (
+              <svg
+                key={`ghost-${v.col},${v.row}-${edgeKey(e)}`}
+                data-pipe-ghost
+                className="absolute overflow-visible"
+                width={TILE}
+                height={TILE}
+                viewBox="0 0 24 24"
+                style={{
+                  left: v.col * TILE,
+                  top: v.row * TILE,
+                  transform: `rotate(${fit.rot}deg) translate(-50%, -50%)`,
+                  transformOrigin: '0 0',
+                }}
+              >
+                <use href={`#${ghostWet ? fit.key : `${fit.key}-dry`}`} />
+              </svg>
+            )
+          }),
+        )}
+        {ghostSprinkler !== undefined &&
+          aoe(ghostSprinkler).map(at => (
+            <div
+              key={`aoe-${at.col},${at.row}`}
+              className="absolute bg-water"
+              style={{ left: at.col * TILE, top: at.row * TILE, width: TILE, height: TILE, opacity: 0.35 }}
+            />
+          ))}
+        {ghostSprinkler !== undefined && (
+          <svg
+            data-sprinkler={undefined}
+            className="absolute overflow-visible"
+            width={TILE}
+            height={TILE}
+            viewBox="0 0 24 24"
+            style={{
+              left: ghostSprinkler.at.col * TILE,
+              top: ghostSprinkler.at.row * TILE,
+              opacity: 0.7,
+              transform: `rotate(${ghostSprinkler.variant === 'vert' && ghostSprinkler.facing === 'ns' ? 90 : 0}deg) translate(-50%, -50%)`,
+              transformOrigin: '0 0',
+            }}
+          >
+            <use
+              href={`#${ghostSprinkler.variant === 'basic' ? 'sprinkler' : ghostSprinkler.variant === 'large' ? 'sprinkler-large' : 'sprinkler-vert'}`}
+            />
+          </svg>
+        )}
+        {placeId === 'buy-valve' && edgeHit !== undefined && (
+          <svg
+            data-valve-ghost
+            className="absolute overflow-visible"
+            width={TILE}
+            height={TILE}
+            viewBox="0 0 24 24"
+            style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
+          >
+            <use href="#valve-open" />
+          </svg>
+        )}
+        {placeId === 'buy-smart-valve' && edgeHit !== undefined && (
+          <svg
+            data-smart-valve-ghost
+            className="absolute overflow-visible"
+            width={TILE}
+            height={TILE}
+            viewBox="0 0 24 24"
+            style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
+          >
+            <use href="#smart-closed" />
+          </svg>
+        )}
+        {placeId === 'buy-well' && edgeHit !== undefined && (
+          <svg
+            data-well-ghost
+            className="absolute overflow-visible"
+            width={TILE}
+            height={TILE}
+            viewBox="0 0 24 24"
+            style={{ ...edgeStyle(edgeHit), opacity: 0.7 }}
+          >
+            <use href="#well" />
+          </svg>
+        )}
+        {sprinklers.map(s => (
+          <div
+            key={`sp-${s.at.col},${s.at.row}`}
+            data-sprinkler=""
+            className="absolute"
+            style={{ left: s.at.col * TILE - 2, top: s.at.row * TILE - 2, width: 4, height: 4 }}
+          />
+        ))}
+        {wells.map(w => (
+          <div
+            key={`well-${edgeKey(w.at)}`}
+            data-well={edgeKey(w.at)}
+            className="absolute"
+            style={{
+              left: (w.at.axis === 'h' ? w.at.col + 0.5 : w.at.col) * TILE - 2,
+              top: (w.at.axis === 'h' ? w.at.row : w.at.row + 0.5) * TILE - 2,
+              width: 4,
+              height: 4,
+            }}
+          />
+        ))}
+        {(hangarPlace || siloPlace) && placeId !== undefined && strokeCell !== undefined && (
+          <svg
+            className="absolute overflow-visible"
+            width={(hangarPlace ? HANGAR_W : SILO_W) * TILE}
+            height={(hangarPlace ? HANGAR_H : SILO_H) * TILE}
+            viewBox={hangarPlace ? '0 0 72 48' : '0 0 48 72'}
+            style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
+          >
+            <Use
+              art={
+                placeId === 'buy-hangar'
+                  ? HANGAR
+                  : placeId === 'buy-silo-seed'
                     ? SILO_SEED
                     : placeId === 'buy-silo-spray'
                       ? SILO_SPRAY
-                      : placeId === 'buy-silo-produce'
-                        ? SILO_PRODUCE
-                        : HANGAR
-                }
-              />
-            </g>
-          )}
-          <foreignObject
-            ref={el => bindHud('speech', el)}
-            data-speech
-            pointerEvents="none"
-            x={0}
-            y={0}
-            width={200}
-            height={40}
-            visibility="hidden"
+                      : SILO_PRODUCE
+              }
+            />
+          </svg>
+        )}
+        {pumpjack && placeId !== undefined && strokeCell !== undefined && (
+          <svg
+            className="absolute overflow-visible"
+            width={2 * TILE}
+            height={TILE}
+            viewBox="0 0 48 24"
+            style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
           >
-            <div className="flex justify-center">
-              <div data-speech-text className="bg-house px-2 py-0.5 text-base text-ink" />
-            </div>
-          </foreignObject>
-        </g>
-        {(() => {
-          const driven = world.driverVehicle(world.local)
-          if (driven === undefined || driven.pose.kind !== 'field') return undefined
-          const hitch =
-            driven.kind === 'tractor' && driven.hitch !== 'none' ? world.trailers.find(t => t.id === driven.hitch) : undefined
+            <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
+          </svg>
+        )}
+        {faces.map(face => {
+          const s = TILE * 0.85
+          const o = (TILE - s) / 2
+          const noPermit = world.expandLeft() <= 0
+          const poor = world.money < face.price
           return (
-            <g
-              pointerEvents="none"
-              transform={`translate(${view.w / 2},${view.h / 2}) scale(${cam.scale})`}
-              style={{ ['--hat']: HAT[world.local] } as CSSProperties}
+            <button
+              key={`${face.id.cx},${face.id.cy}`}
+              type="button"
+              className={`absolute flex items-center justify-center gap-0.5 leading-none ${
+                noPermit ? 'bg-ink/40 text-house/50' : poor ? 'cursor-pointer bg-ink/55 text-house/50 hover:bg-ink/75' : 'group cursor-pointer bg-ink/55 text-house hover:bg-ink/75'
+              }`}
+              style={{ left: face.at.col * TILE + o, top: face.at.row * TILE + o, width: s, height: s, pointerEvents: noPermit ? 'none' : 'auto' }}
+              onPointerDown={e => e.stopPropagation()}
+              onPointerUp={e => {
+                e.stopPropagation()
+                if (noPermit || poor) return
+                world.expand(face.id)
+              }}
             >
-              {hitch !== undefined && hitch.pose.kind === 'attached' && driven.kind === 'tractor' && (
-                <g ref={el => bindDummyTrailer(el)}>
-                  <TrailerGfx kind={hitch.kind} boom={driven.boom} />
-                </g>
+              {noPermit ? (
+                <span className="text-base">No permit left</span>
+              ) : (
+                <>
+                  <span className="text-lg">Expand</span>
+                  <Coin n={face.price} />
+                </>
               )}
-              <g transform={`translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}>
-                <g ref={el => bindDummyQuad(el)}>
-                  <Use art={driven.kind === 'tractor' ? TRACTOR : QUAD} />
-                </g>
-              </g>
-            </g>
+            </button>
           )
-        })()}
-      </svg>
+        })}
+      </div>
       {followSku && placeId !== undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-16 w-16" viewBox="0 0 24 24">
@@ -642,9 +593,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             </svg>
           ) : (
             <svg className="h-24 w-16" viewBox="0 0 48 72">
-              <Use
-                art={placeId === 'buy-silo-seed' ? SILO_SEED : placeId === 'buy-silo-spray' ? SILO_SPRAY : SILO_PRODUCE}
-              />
+              <Use art={placeId === 'buy-silo-seed' ? SILO_SEED : placeId === 'buy-silo-spray' ? SILO_SPRAY : SILO_PRODUCE} />
             </svg>
           )}
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
@@ -662,1899 +611,144 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   )
 }
 
-function placeLine(id: SkuId): string {
-  return `Place ${skuLabel(id)}`
-}
-
-function Use({ art }: { art: string }) {
-  return <use href={symHref(art)} />
-}
-
-function TrailerGfx({ kind, boom }: { kind: 'seed' | 'spray' | 'harvest'; boom: 3 | 5 }) {
-  const s = boom / 5
-  return (
-    <>
-      <Use art={kind === 'seed' ? TRAILER_SEED : kind === 'spray' ? TRAILER_SPRAY : TRAILER_HARVEST} />
-      <g data-rake transform={`translate(0 12) rotate(90) translate(${-60 * s} -4) scale(${s} 1)`}>
-        <Use art={TRAILER_RAKE} />
-      </g>
-    </>
-  )
-}
-
-const GROUND_CHUNK = 16
-
-type BakedChunk = { sig: string; html: string }
-
-const bakedChunks = new Map<string, BakedChunk>()
-let bakedWorld: World | undefined
-
-type Bounds = ReturnType<World['bounds']>
-
-function groundToken(col: number, row: number, cell: Cell, g: number): string {
-  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return `t:${cell.cover.tile}`
-  if (cell.kind === 'untilled' && cell.ground === 'hard') return `h${hBand(g)}`
-  if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') {
-    return `v${vhBand(g)}`
-  }
-  return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`
-}
-
-function fadeToken(col: number, row: number, g: number): string {
-  if (g < VERY_HARD_MAX) return `v${vhBand(g)}`
-  if (g < HARD_MAX) return `h${hBand(g)}`
-  return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`
-}
-
-function groundTile(col: number, row: number, cell: Cell, g: number): string {
-  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return BUILDING_TILES[cell.cover.tile]
-  if (cell.kind === 'untilled' && cell.ground === 'hard') return HARD[hBand(g)]
-  if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') {
-    return VERY_HARD[vhBand(g)]
-  }
-  return GRASS[tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)]
-}
-
-function chunkSig(world: World, cx: number, cy: number, keys: Set<string>, b: Bounds): string {
-  const c0 = cx * GROUND_CHUNK
-  const r0 = cy * GROUND_CHUNK
-  let sig = ''
-  for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
-    for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
-      if (!keys.has(chunkKey(chunkOf({ col, row })))) {
-        const d = Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0)
-        if (d > FADE) continue
-        sig += `${fadeToken(col, row, goodness(world.rng, col, row))}:${d <= 1 ? 0.65 : 0.35};`
-        continue
-      }
-      sig += `${groundToken(col, row, world.cell({ col, row }), goodness(world.rng, col, row))};`
-    }
-  }
-  return sig
-}
-
-function chunkHtml(world: World, cx: number, cy: number, keys: Set<string>, b: Bounds): string {
-  const c0 = cx * GROUND_CHUNK
-  const r0 = cy * GROUND_CHUNK
-  let html = ''
-  for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
-    for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
-      const at = { col, row }
-      const g = goodness(world.rng, col, row)
-      const ownedCell = keys.has(chunkKey(chunkOf(at)))
-      if (!ownedCell) {
-        const d = Math.max(b.col0 - col, col - (b.col1 - 1), b.row0 - row, row - (b.row1 - 1), 0)
-        if (d > FADE) continue
-        const op = ` opacity="${d <= 1 ? 0.65 : 0.35}"`
-        html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"${op}><use href="${symHref(groundArt(col, row, g))}"/></g>`
-        continue
-      }
-      html += `<g transform="translate(${col * TILE},${row * TILE}) scale(${TILE / 24})"><use href="${symHref(groundTile(col, row, world.cell(at), g))}"/></g>`
-    }
-  }
-  return html
-}
-
-const Ground = memo(function Ground({
-  world,
-  owned,
-  groundRev,
-}: {
-  world: World
-  owned: number
-  groundRev: number
-}) {
-  void owned
-  void groundRev
-  if (bakedWorld !== world) {
-    bakedChunks.clear()
-    bakedWorld = world
-  }
-  const b = world.bounds()
-  const keys = new Set(world.owned.map(chunkKey))
-  const chunks: { key: string; html: string }[] = []
-  const cyEnd = Math.floor((b.row1 + FADE - 1) / GROUND_CHUNK)
-  const cxBnd = Math.floor((b.col1 + FADE - 1) / GROUND_CHUNK)
-  for (let cy = Math.floor((b.row0 - FADE) / GROUND_CHUNK); cy <= cyEnd; cy++) {
-    for (let cx = Math.floor((b.col0 - FADE) / GROUND_CHUNK); cx <= cxBnd; cx++) {
-      const key = `${cx},${cy}`
-      const prev = bakedChunks.get(key)
-      if (prev !== undefined) {
-        const sig = chunkSig(world, cx, cy, keys, b)
-        if (prev.sig === sig) {
-          chunks.push({ key, html: prev.html })
-          continue
-        }
-        const made = { sig, html: chunkHtml(world, cx, cy, keys, b) }
-        bakedChunks.set(key, made)
-        chunks.push({ key, html: made.html })
-        continue
-      }
-      const made = { sig: chunkSig(world, cx, cy, keys, b), html: chunkHtml(world, cx, cy, keys, b) }
-      bakedChunks.set(key, made)
-      chunks.push({ key, html: made.html })
-    }
-  }
-  return (
-    <g>
-      {chunks.map(c => (
-        <g key={c.key} dangerouslySetInnerHTML={{ __html: c.html }} />
-      ))}
-    </g>
-  )
-})
-
-const Marks = memo(function Marks({
-  world,
-  rev,
-  lens,
-  hideVerts,
-}: {
-  world: World
-  rev: number
-  lens: Lens
-  hideVerts: readonly Vertex[] | undefined
-}) {
-  void rev
-  const [bursts, setBursts] = useState<Burst[]>([])
-  const burstGen = useRef(0)
-  const burstsWorld = useRef(world)
-  if (burstsWorld.current !== world) {
-    burstsWorld.current = world
-    setBursts(b => (b.length === 0 ? b : []))
-  }
-  useEffect(() => {
-    return () => {
-      burstGen.current += 1
-    }
-  }, [world])
-  useEffect(() => {
-    const got = world.drainBursts()
-    if (got.length === 0) return
-    if (VFX_REDUCED) return
-    const gen = burstGen.current
-    setBursts(b => [...b, ...got])
-    got.forEach(b => {
-      window.setTimeout(() => {
-        if (burstGen.current !== gen) return
-        setBursts(x => x.filter(y => y.seq !== b.seq))
-      }, VFX[b.id].dur * 1000)
-    })
-  }, [world, rev])
-  const plots: {
-    col: number
-    row: number
-    kind: Cell['kind']
-    dv: number
-    e: string
-    turfStage: string
-    weedV: number
-    weedStage: string
-    crop: string
-    stage: string
-    pip: string
-    water: Band | ''
-    fert: Band | ''
-    fresh: boolean
-  }[] = []
-  const rocks: { col: number; row: number; w: number; h: number }[] = []
-  const tufts: { col: number; row: number; v: 0 | 1 | 2 }[] = []
-  const trees: { col: number; row: number; species: TreeId; stage: 'grow' | 'unripe' | 'ripe' }[] = []
-  const props: { col: number; row: number; art: string; kind: string }[] = []
-  const truck = { col: world.truck.base.col, row: world.truck.base.row }
-  const tints: { col: number; row: number; fill: string; op: number; hard: boolean }[] = []
-  const pipes: { col: number; row: number; art: string; rot: number; wet: boolean }[] = []
-  const sprinklers: Sprinkler[] = []
-  const fences: { col: number; row: number; art: string; rot: number }[] = []
-  const valves: { at: Edge; open: boolean }[] = []
-  const wellEdges: Edge[] = []
-  world.wells.forEach(w => wellEdges.push(w.at))
-  const smartValves: { at: Edge; open: boolean }[] = []
-  world.segments.forEach(seg => {
-    if (seg.gate.kind === 'valve') valves.push({ at: seg.at, open: seg.gate.open })
-    if (seg.gate.kind === 'smart') {
-      const h = world.smartHold.get(edgeKey(seg.at))
-      smartValves.push({ at: seg.at, open: h !== undefined && h.level === 1 })
-    }
-  })
-  const place = world.seats[world.local].place
-  const showPipes =
-    lens === 'pipes' ||
-    place.kind === 'delete' ||
-    (place.kind === 'sku' && PIPE_PLACE.includes(place.id))
-  const washAoe =
-    lens === 'pipes' ||
-    place.kind === 'delete' ||
-    (place.kind === 'sku' && AOE_WASH.includes(place.id))
-  const aoeWash = new Set<string>()
-  if (washAoe) {
-    world.sprinklers.forEach(s => {
-      aoe(s).forEach(at => {
-        if (world.inWorld(at)) aoeWash.add(`${at.col},${at.row}`)
-      })
-    })
-  }
-  const sensorWash = new Set<string>()
-  const addReaderWash = (at: { col: number; row: number }) => {
-    area3(at).forEach(c => {
-      if (world.inWorld(c)) sensorWash.add(`${c.col},${c.row}`)
-    })
-  }
-  const hud = world.hud
-  if (hud !== undefined && (hud.kind === 'water' || hud.kind === 'harvest')) addReaderWash(hud.at)
-  const hide = new Set<string>()
-  if (hideVerts !== undefined) hideVerts.forEach(v => hide.add(`${v.col},${v.row}`))
-  const expandUnlocked = world.done.has('unlock-expand')
-  const purchases = world.purchases
-  const faces = useMemo(() => world.faces(), [world, expandUnlocked, purchases])
-  const PROP_ART: Record<string, string> = {
-    chest: CHEST,
-    grinder: GRINDER,
-    mill: MILL,
-    barrel: BARREL,
-    jam: JAM,
-    freezer: FREEZER,
-  }
-  const boxes: { col: number; row: number }[] = []
-  const busy: { id: VfxId; col: number; row: number }[] = []
-  const tinted = new Set<string>()
-  const tintAt = (at: { col: number; row: number }) => {
-    if (lens === 'off' || lens === 'vehicles') return
-    const key = `${at.col},${at.row}`
-    if (tinted.has(key)) return
-    tinted.add(key)
-    const cell = world.cell(at)
-    const g = lens === 'land' ? goodness(world.rng, at.col, at.row) : 0
-    const tint = lensFill(lens, cell, aoeWash.has(key), g)
-    if (tint !== undefined) tints.push({ col: at.col, row: at.row, ...tint })
-  }
-  const tintBase = (base: Parameters<typeof occupiedCells>[0]) => {
-    occupiedCells(base, world.owned).forEach(tintAt)
-  }
-  const pushPlot = (at: { col: number; row: number }, cell: Cell) => {
-    if (!isPlot(cell) || cell.kind === 'untilled' || cell.kind === 'infertile') return
-    const stage =
-      cell.kind === 'ripe'
-        ? ripeGroup(cell.plant.rarity)
-        : cell.kind === 'growing' || cell.kind === 'dead'
-          ? cell.plant.stage(cell.kind)
-          : ''
-    const bands = cell.kind === 'growing' ? plantBands(cell.plant.crop, cell.plant.rarity, cell.soil) : undefined
-    const rarity =
-      cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead' ? cell.plant.rarity : undefined
-    const pip = rarity !== undefined ? qualityPip(rarity) : undefined
-    plots.push({
-      col: at.col,
-      row: at.row,
-      kind: cell.kind,
-      dv: tileVariant(at.col, at.row, 2),
-      e: world.plotEdges(at.col, at.row),
-      turfStage: cell.kind === 'turf' ? cell.turf.stage() : '',
-      weedV: cell.kind === 'weed' ? cell.weed.variant : -1,
-      weedStage: cell.kind === 'weed' ? cell.weed.stage() : '',
-      crop:
-        cell.kind === 'rotten'
-          ? cell.crop
-          : cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead'
-            ? cell.plant.crop
-            : '',
-      stage,
-      pip: pip ?? '',
-      water: bands !== undefined && bands.water !== 'green' ? bands.water : '',
-      fert: bands !== undefined && bands.fert !== 'green' ? bands.fert : '',
-      fresh: cell.kind === 'ripe' && cell.plant.freshness < 0.8,
-    })
-    tintAt(at)
-  }
-  for (const at of world.empty.values()) pushPlot(at, world.cell(at))
-  for (const at of world.grow.values()) {
-    const cell = world.cell(at)
-    if (cell.kind === 'tree') {
-      const stage = cell.juvenile < 1 ? 'grow' : cell.yield.kind === 'on' || cell.fruit >= 1 ? 'ripe' : 'unripe'
-      trees.push({ col: at.col, row: at.row, species: cell.species, stage })
-      tintBase(cell.base)
-      continue
-    }
-    pushPlot(at, cell)
-  }
-  for (const at of world.tufts.values()) {
-    const cell = world.cell(at)
-    if (cell.kind === 'untilled' && cell.cover.kind === 'grass') {
-      tufts.push({ col: at.col, row: at.row, v: cell.cover.variant })
-      tintAt(at)
-    }
-  }
-  for (const at of world.rocks.values()) {
-    const cell = world.cell(at)
-    if (cell.kind === 'rock') {
-      rocks.push({ col: at.col, row: at.row, w: cell.base.w, h: cell.base.h })
-      tintBase(cell.base)
-    }
-  }
-  for (const at of world.machines.values()) {
-    const cell = world.cell(at)
-    if (cell.kind === 'compost-box') boxes.push({ col: at.col, row: at.row })
-    else if (cell.kind === 'still') props.push({ col: at.col, row: at.row, art: STILL, kind: cell.kind })
-    else {
-      const art = PROP_ART[cell.kind]
-      if (art !== undefined) props.push({ col: at.col, row: at.row, art, kind: cell.kind })
-    }
-    const busyId = busyVfx(cell, at)
-    if (busyId !== undefined) busy.push({ id: busyId, col: at.col, row: at.row })
-    if ('base' in cell) tintBase(cell.base)
-    else tintAt(at)
-  }
-  for (const at of world.stores.values()) {
-    const cell = world.cell(at)
-    const art = PROP_ART[cell.kind]
-    if (art !== undefined) props.push({ col: at.col, row: at.row, art, kind: cell.kind })
-    if ('base' in cell) tintBase(cell.base)
-    else tintAt(at)
-  }
-  for (const at of world.sensors.values()) {
-    const cell = world.cell(at)
-    if (!isSensor(cell) || cell.kind === 'button') continue
-    props.push({ col: at.col, row: at.row, art: sensorProp(cell), kind: cell.kind })
-    if (
-      lens === 'sensors' &&
-      (cell.kind === 'sensor-water' || cell.kind === 'sensor-fert' || cell.kind === 'sensor-harvest')
-    ) {
-      addReaderWash(at)
-    }
-    tintAt(at)
-  }
-  for (const at of world.buttons.values()) {
-    const cell = world.cell(at)
-    if (cell.kind !== 'button') continue
-    props.push({ col: at.col, row: at.row, art: sensorProp(cell), kind: cell.kind })
-    tintAt(at)
-  }
-  world.taps.forEach(t => {
-    props.push({ col: t.base.col, row: t.base.row, art: TAP, kind: 'tap' })
-    tintBase(t.base)
-  })
-  world.hangars.forEach(h => {
-    props.push({ col: h.base.col, row: h.base.row, art: HANGAR, kind: 'hangar' })
-    tintBase(h.base)
-  })
-  world.seedSilos.forEach(h => {
-    props.push({ col: h.base.col, row: h.base.row, art: SILO_SEED, kind: 'silo-seed' })
-    tintBase(h.base)
-  })
-  world.spraySilos.forEach(h => {
-    props.push({ col: h.base.col, row: h.base.row, art: SILO_SPRAY, kind: 'silo-spray' })
-    tintBase(h.base)
-  })
-  world.produceSilos.forEach(h => {
-    props.push({ col: h.base.col, row: h.base.row, art: SILO_PRODUCE, kind: 'silo-produce' })
-    tintBase(h.base)
-  })
-  props.push({ col: world.silo.base.col, row: world.silo.base.row, art: SEED_SILO, kind: 'seed-silo' })
-  tintBase(world.silo.base)
-  props.push({
-    col: world.additives.base.col,
-    row: world.additives.base.row,
-    art: ADDITIVE_STORE,
-    kind: 'additive-store',
-  })
-  tintBase(world.additives.base)
-  world.pumps.forEach(p => tintBase(p.base))
-  world.tanks.forEach(t => tintBase(t.base))
-  tintBase(world.house.base)
-  tintBase(world.truck.base)
-  world.fences.forEach(k => {
-    const comma = k.indexOf(',')
-    const col = Number(k.slice(0, comma))
-    const row = Number(k.slice(comma + 1))
-    const at = { col, row }
-    const a = world.fenceArms(at)
-    const fit = fenceFit(a.n, a.e, a.s, a.w)
-    fences.push({ col, row, art: fit.html, rot: fit.rot })
-  })
-  visitVerts(world, v => {
-    if (showPipes && !hide.has(`${v.col},${v.row}`)) {
-      const a = arms(world, v, undefined)
-      const fit = pipeFit(a.n, a.e, a.s, a.w)
-      if (fit !== undefined) {
-        const wet = world.vertexWet(v)
-        pipes.push({ col: v.col, row: v.row, art: wet ? fit.html : dryOf(fit.html), rot: fit.rot, wet })
-      }
-    }
-    const s = world.sprinklerAt(v)
-    if (s !== undefined) sprinklers.push(s)
-  })
-  return (
-    <g>
-      {tufts.map(t => (
-        <TuftGfx key={`tuft-${t.col},${t.row}`} col={t.col} row={t.row} v={t.v} />
-      ))}
-      {plots.map(t => (
-        <PlotGfx
-          key={`${t.col},${t.row}`}
-          col={t.col}
-          row={t.row}
-          kind={t.kind}
-          dv={t.dv}
-          e={t.e}
-          turfStage={t.turfStage}
-          weedV={t.weedV}
-          weedStage={t.weedStage}
-          crop={t.crop}
-          stage={t.stage}
-          pip={t.pip}
-          water={t.water}
-          fert={t.fert}
-          fresh={t.fresh}
-        />
-      ))}
-      {fences.map(f => (
-        <FenceGfx key={`fence-${f.col},${f.row}`} col={f.col} row={f.row} art={f.art} rot={f.rot} />
-      ))}
-      {rocks.map(r => (
-        <RockGfx key={`${r.col},${r.row}`} col={r.col} row={r.row} w={r.w} h={r.h} />
-      ))}
-      {trees.map(t => (
-        <TreeGfx key={`tree-${t.col},${t.row}`} col={t.col} row={t.row} species={t.species} stage={t.stage} />
-      ))}
-      {world.pumps.map((p, i) => {
-        const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
-        const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
-        return (
-          <g key={`pump-${i}`}>
-            <PropGfx art={PUMP} col={col} row={row} />
-            {showPipes && <SourceGfx world={world} base={p.base} />}
-          </g>
-        )
-      })}
-      {world.tanks.map((t, i) => (
-        <g key={`tank-${i}`}>
-          <PropGfx art={RAIN_TANK} col={t.base.col} row={t.base.row} />
-          {showPipes && <SourceGfx world={world} base={t.base} />}
-        </g>
-      ))}
-      {world.machineLinks().map(l => (
-        <g
-          key={`link-${l.side}-${l.x},${l.y}`}
-          pointerEvents="none"
-          transform={`translate(${l.x * TILE},${l.y * TILE}) scale(${TILE / 24})`}
-        >
-          <Use art={l.side === 'in' ? LINK_IN : LINK_OUT} />
-        </g>
-      ))}
-      {props.map(p => (
-        <PropGfx key={`${p.kind}-${p.col},${p.row}`} art={p.art} col={p.col} row={p.row} />
-      ))}
-      {world.drops.map((d, i) => {
-        const n = i % 4
-        const tool =
-          d.item.kind === 'shovel' ||
-          d.item.kind === 'pickaxe' ||
-          d.item.kind === 'container'
-        return (
-          <DropGfx
-            key={i}
-            x={d.at.col * TILE + 4 + (n % 2) * 6}
-            y={d.at.row * TILE + 4 + Math.floor(n / 2) * 6}
-            art={faceGfx(d.item)}
-            title={tool ? itemLine(d.item, world.modifiers) : undefined}
-          />
-        )
-      })}
-      <g
-        data-truck
-        transform={`translate(${truck.col * TILE},${truck.row * TILE}) scale(${TILE / 24})`}
-      >
-        <Use art={TRUCK} />
-      </g>
-      <g transform={`translate(${HOUSE_BASE.col * TILE},${HOUSE_BASE.row * TILE}) scale(${TILE / 24})`}>
-        <Use art={HOUSE} />
-      </g>
-      {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
-        [
-          ...world.hangars.flatMap(h => hangarPad(h.base).map(p => ({ kind: h.kind, col: h.base.col, row: h.base.row, p }))),
-          ...[...world.seedSilos, ...world.spraySilos, ...world.produceSilos].flatMap(h =>
-            siloPad(h.base).map(p => ({ kind: h.kind, col: h.base.col, row: h.base.row, p })),
-          ),
-        ].map(h => (
-          <g
-            key={`return-${h.kind}-${h.col},${h.row}-${h.p.col},${h.p.row}`}
-            pointerEvents="none"
-            transform={`translate(${h.p.col * TILE},${h.p.row * TILE}) scale(${TILE / 24})`}
-          >
-            <Use art={HANGAR_RETURN} />
-          </g>
-        ))}
-      {(world.driverVehicle(world.local) !== undefined || lens === 'vehicles') &&
-        world.machinePads().map(p => (
-          <g
-            key={`pad-${p.side}-${p.col},${p.row}`}
-            pointerEvents="none"
-            opacity={p.legal ? 1 : 0.5}
-            transform={`translate(${p.col * TILE},${p.row * TILE}) scale(${TILE / 24})`}
-          >
-            <Use art={p.side === 'dropoff' ? PAD_DROP : PAD_TAKE} />
-          </g>
-        ))}
-      {world.vehicles.flatMap(v => {
-        if (v.pose.kind !== 'field') return []
-        if (v.pose.driver === world.local) return []
-        const hat = v.pose.driver === 'none' ? undefined : HAT[v.pose.driver]
-        const hitch = v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
-        const nodes = []
-        if (hitch !== undefined && hitch.pose.kind === 'attached' && v.kind === 'tractor') {
-          nodes.push(
-            <g key={`trailer-${hitch.id}`} ref={el => bindTrailer(hitch.id, el)} data-trailer={hitch.id}>
-              <TrailerGfx kind={hitch.kind} boom={v.boom} />
-            </g>,
-          )
-        }
-        nodes.push(
-          <g
-            key={`veh-${v.id}`}
-            ref={el => bindQuad(v.id, el, v.kind)}
-            data-quad={v.id}
-            style={hat === undefined ? undefined : ({ ['--hat']: hat } as CSSProperties)}
-          >
-            <Use art={v.kind === 'tractor' ? TRACTOR : QUAD} />
-          </g>,
-        )
-        return nodes
-      })}
-      {tints.map(t => (
-        <rect
-          key={`tint-${t.col},${t.row}`}
-          x={t.col * TILE}
-          y={t.row * TILE}
-          width={TILE}
-          height={TILE}
-          fill={t.fill}
-          fillOpacity={t.op}
-          style={t.hard ? { mixBlendMode: 'multiply' } : undefined}
-          pointerEvents="none"
-        />
-      ))}
-      {[...aoeWash].map(k => {
-        const comma = k.indexOf(',')
-        const col = Number(k.slice(0, comma))
-        const row = Number(k.slice(comma + 1))
-        const under = world.cell({ col, row }).kind
-        if (under === 'pump' || under === 'rain-tank' || under === 'tap') return undefined
-        return (
-          <rect
-            key={`aoe-${k}`}
-            x={col * TILE}
-            y={row * TILE}
-            width={TILE}
-            height={TILE}
-            className="fill-water"
-            fillOpacity={0.2}
-            pointerEvents="none"
-          />
-        )
-      })}
-      {[...sensorWash].map(k => {
-        const comma = k.indexOf(',')
-        const col = Number(k.slice(0, comma))
-        const row = Number(k.slice(comma + 1))
-        return (
-          <rect
-            key={`sensor-aoe-${k}`}
-            x={col * TILE}
-            y={row * TILE}
-            width={TILE}
-            height={TILE}
-            className="fill-water"
-            fillOpacity={0.35}
-            pointerEvents="none"
-          />
-        )
-      })}
-      {wellEdges.map(e => (
-        <WellGfx key={`well-${edgeKey(e)}`} col={e.col} row={e.row} axis={e.axis} />
-      ))}
-      {valves.map(v => (
-        <ValveGfx key={`valve-${edgeKey(v.at)}`} col={v.at.col} row={v.at.row} axis={v.at.axis} open={v.open} />
-      ))}
-      {smartValves.map(v => (
-        <g
-          key={`smart-${edgeKey(v.at)}`}
-          data-smart-valve={edgeKey(v.at)}
-          pointerEvents="none"
-          transform={edgeTransform(v.at)}
-        >
-          <Use art={smartValveArt(v.open)} />
-        </g>
-      ))}
-      {pipes.map(p => (
-        <PipeGfx
-          key={`pipe-${p.col},${p.row}`}
-          col={p.col}
-          row={p.row}
-          art={p.art}
-          rot={p.rot}
-          wet={p.wet}
-        />
-      ))}
-      {sprinklers.map(s => (
-        <SprinklerMark
-          key={`sp-${s.at.col},${s.at.row}`}
-          col={s.at.col}
-          row={s.at.row}
-          variant={s.variant}
-          facing={'facing' in s ? s.facing : undefined}
-          lensKind={lens === 'kind'}
-          working={world.vfx.get(vertexKey(s.at)) === true}
-          tuneCrop={s.tune.kind === 'crop' ? s.tune.crop : undefined}
-        />
-      ))}
-      {boxes.map(b => (
-        <CompostGfx key={`compost-${b.col},${b.row}`} col={b.col} row={b.row} />
-      ))}
-      {world.pulse !== undefined && (
-        <g pointerEvents="none">
-          <rect
-            x={world.pulse.at.col * TILE}
-            y={world.pulse.at.row * TILE}
-            width={TILE}
-            height={TILE}
-            fill="#d4a017"
-            opacity={0.28}
-          />
-          <text
-            x={(world.pulse.at.col + 0.5) * TILE}
-            y={world.pulse.at.row * TILE + TILE - 3}
-            textAnchor="middle"
-            fill="#1c1710"
-            fontSize={10}
-          >
-            {world.pulse.text}
-          </text>
-        </g>
-      )}
-      <circle cx={(DOOR.col + 0.5) * TILE} cy={(DOOR.row + 0.5) * TILE} r={3} className="fill-roof" />
-      {world.seats.map(s => {
-        const gone = s.presence === 'away'
-        const napping = gone && s.napping
-        return (
-          <g
-            key={s.id}
-            ref={el => bindActor(s.id, el)}
-            data-actor={napping ? undefined : s.id}
-            style={{ ['--hat']: HAT[s.id] } as CSSProperties}
-            opacity={gone ? 0.65 : 1}
-            transform={`translate(${(s.actor.x - 0.5) * TILE},${(s.actor.y - 0.5) * TILE}) scale(${TILE / 24})`}
-          >
-            <g transform={napping ? 'rotate(90 12 12)' : undefined}>
-              <use href={symHref(ACTOR)} />
-              {!napping && s.hand.kind === 'hold' && (
-                <g transform={`translate(15,13) scale(${8 / 24})`}>
-                  <Use art={faceGfx(s.hand.item)} />
-                </g>
-              )}
-            </g>
-            {napping && (
-              <text x={20} y={6} fontSize={7} fill="#1c1710" fontFamily="monospace">
-                zZZ
-              </text>
-            )}
-          </g>
-        )
-      })}
-      {faces.map(face => {
-        const s = TILE * 0.85
-        const o = (TILE - s) / 2
-        const noPermit = world.expandLeft() <= 0
-        const poor = world.money < face.price
-        return (
-          <g
-            key={`${face.id.cx},${face.id.cy}`}
-            className={noPermit ? 'group' : 'group cursor-pointer'}
-            transform={`translate(${face.at.col * TILE},${face.at.row * TILE})`}
-            onPointerDown={e => e.stopPropagation()}
-            onPointerUp={e => {
-              e.stopPropagation()
-              if (noPermit) return
-              if (poor) return
-              world.expand(face.id)
-            }}
-          >
-            <rect
-              x={o}
-              y={o}
-              width={s}
-              height={s}
-              className={noPermit ? 'fill-ink/40' : 'fill-ink/55 group-hover:fill-ink/75'}
-            />
-            <foreignObject x={o} y={o} width={s} height={s} pointerEvents="none">
-              <div
-                className={`flex h-full w-full items-center justify-center gap-0.5 leading-none ${
-                  noPermit ? 'text-base text-house/50' : poor ? 'text-lg text-house/50' : 'text-lg text-house'
-                }`}
-              >
-                {noPermit ? (
-                  'No permit left'
-                ) : (
-                  <>
-                    Expand
-                    <Coin n={face.price} />
-                  </>
-                )}
-              </div>
-            </foreignObject>
-          </g>
-        )
-      })}
-      <g
-        className="vfx-layer"
-        pointerEvents="none"
-        onAnimationEnd={e => {
-          if (e.animationName !== 'vfx-burst-life') return
-          const seq = Number((e.target as SVGElement).getAttribute('data-burst'))
-          setBursts(x => x.filter(y => y.seq !== seq))
-        }}
-      >
-        {busy.map(m => (
-          <VfxLayers key={`${m.id}:${m.col},${m.row}`} id={m.id} col={m.col} row={m.row} />
-        ))}
-        {bursts.map(b => (
-          <VfxLayers key={b.seq} id={b.id} col={b.at.col} row={b.at.row} burst seq={b.seq} />
-        ))}
-      </g>
-    </g>
-  )
-})
-
-const VH_BAND = VERY_HARD_MAX / 3
-const HARD_BAND = (HARD_MAX - VERY_HARD_MAX) / 3
-
-function vhBand(g: number): number {
-  return Math.min(2, Math.floor(g / VH_BAND))
-}
-
-function hBand(g: number): number {
-  return Math.min(2, Math.floor((g - VERY_HARD_MAX) / HARD_BAND))
-}
-
-function groundArt(col: number, row: number, g: number): string {
-  return g < VERY_HARD_MAX
-    ? VERY_HARD[vhBand(g)]
-    : g < HARD_MAX
-      ? HARD[hBand(g)]
-      : GRASS[tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)]
-}
-
-function lensFill(
-  lens: Lens,
-  cell: Cell,
-  aoe: boolean,
-  g: number,
-): { fill: string; op: number; hard: boolean } | undefined {
-  if (lens === 'off' || lens === 'vehicles') return undefined
-  if (lens === 'rarity') {
-    if (cell.kind !== 'growing' && cell.kind !== 'ripe' && cell.kind !== 'dead') return undefined
-    if (cell.plant.rarity === 'common') return { fill: WASH, op: 0.35, hard: false }
-    if (cell.plant.rarity === 'uncommon') return { fill: LEAF, op: 0.45, hard: false }
-    if (cell.plant.rarity === 'rare') return { fill: WATER, op: 0.45, hard: false }
-    return { fill: LENS_MID, op: 0.45, hard: false }
-  }
-  if (lens === 'pipes') {
-    if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap') {
-      return { fill: WATER, op: 0.72, hard: true }
-    }
-    if (aoe) return undefined
-    return { fill: WASH, op: 0.35, hard: false }
-  }
-  if (lens === 'sensors' && isSensor(cell)) return undefined
-  const hit = lensHit(lens, cell, g)
-  if (hit === undefined) return { fill: WASH, op: 0.35, hard: false }
-  return { fill: hit, op: 0.72, hard: true }
-}
-
-const BAND_TINT: { readonly [K in Band]: string } = {
-  green: LENS_GOOD,
-  orange: LENS_MID,
-  red: LENS_BAD,
-}
-
-function plantBands(crop: CropId, rarity: Rarity, soil: Soil): { water: Band; fert: Band } {
-  return {
-    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, rarity)),
-    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, rarity)),
-  }
-}
-
-function lensHit(lens: Lens, cell: Cell, g: number): string | undefined {
-  if (lens === 'water') {
-    if (!isTilled(cell)) return undefined
-    if (cell.kind === 'growing' || cell.kind === 'ripe') {
-      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).water]
-    }
-    if (cell.soil.water >= SOIL_WATER_MID) return LENS_DONE
-    return scaleTint(cell.soil.water / SOIL_WATER_MID)
-  }
-  if (lens === 'land') {
-    if (!isTilled(cell)) {
-      if (cell.kind === 'infertile') return LENS_BAD
-      if (cell.kind === 'untilled') return scaleTint(g)
-      return undefined
-    }
-    if (cell.kind === 'growing' || cell.kind === 'ripe') {
-      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).fert]
-    }
-    if (cell.soil.fertilizer >= 1) return LENS_DONE
-    return scaleTint(cell.soil.fertilizer)
-  }
-  if (lens === 'ripe') {
-    if (cell.kind === 'growing') return scaleTint(cell.plant.maturity)
-    if (cell.kind === 'ripe') return LENS_DONE
-    if (cell.kind === 'dead') return LENS_BAD
-    return undefined
-  }
-  if (
-    cell.kind === 'growing' ||
-    cell.kind === 'ripe' ||
-    cell.kind === 'dead' ||
-    cell.kind === 'weed' ||
-    cell.kind === 'tree'
-  ) {
-    return LEAF
-  }
-  if (
-    cell.kind === 'pump' ||
-    cell.kind === 'chest' ||
-    cell.kind === 'grinder' ||
-    cell.kind === 'compost-box' ||
-    cell.kind === 'mill' ||
-    cell.kind === 'jam' ||
-    cell.kind === 'still' ||
-    cell.kind === 'barrel' ||
-    cell.kind === 'freezer' ||
-    cell.kind === 'hangar' ||
-    cell.kind === 'silo-seed' ||
-    cell.kind === 'silo-spray' ||
-    cell.kind === 'silo-produce' ||
-    cell.kind === 'seed-silo' ||
-    cell.kind === 'additive-store'
-  ) {
-    return WATER
-  }
-  if (cell.kind === 'rock') return INK
-  if (cell.kind === 'house') return ROOF
-  return undefined
-}
-
-function scaleTint(t: number): string {
-  if (t < 0.5) return mix(LENS_BAD, LENS_MID, t * 2)
-  return mix(LENS_MID, LENS_GOOD, (t - 0.5) * 2)
-}
-
-function mix(a: string, b: string, t: number): string {
-  const pa = [Number.parseInt(a.slice(1, 3), 16), Number.parseInt(a.slice(3, 5), 16), Number.parseInt(a.slice(5, 7), 16)]
-  const pb = [Number.parseInt(b.slice(1, 3), 16), Number.parseInt(b.slice(3, 5), 16), Number.parseInt(b.slice(5, 7), 16)]
-  const hex = (n: number) => n.toString(16).padStart(2, '0')
-  return `#${hex(Math.round(pa[0] + (pb[0] - pa[0]) * t))}${hex(Math.round(pa[1] + (pb[1] - pa[1]) * t))}${hex(Math.round(pa[2] + (pb[2] - pa[2]) * t))}`
-}
-
-const TuftGfx = memo(function TuftGfx({ col, row, v }: { col: number; row: number; v: 0 | 1 | 2 }) {
-  return (
-    <g
-      data-tuft={`${col},${row}`}
-      transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}
-    >
-      <Use art={GRASS_TUFT[v]} />
-    </g>
-  )
-})
-
-const FenceGfx = memo(function FenceGfx({
-  col,
-  row,
-  art,
-  rot,
-}: {
-  col: number
-  row: number
-  art: string
-  rot: number
-}) {
-  return (
-    <g
-      data-fence={`${col},${row}`}
-      transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24}) rotate(${rot} 12 12)`}
-    >
-      <Use art={art} />
-    </g>
-  )
-})
-
-const TreeGfx = memo(function TreeGfx({
-  col,
-  row,
-  species,
-  stage,
-}: {
-  col: number
-  row: number
-  species: TreeId
-  stage: 'grow' | 'unripe' | 'ripe'
-}) {
-  return (
-    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
-      <Use art={treeStage(species, stage)} />
-    </g>
-  )
-})
-
-const PropGfx = memo(function PropGfx({ art, col, row }: { art: string; col: number; row: number }) {
-  return (
-    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
-      <Use art={art} />
-    </g>
-  )
-})
-
-const PipeGfx = memo(function PipeGfx({
-  col,
-  row,
-  art,
-  rot,
-  wet,
-}: {
-  col: number
-  row: number
-  art: string
-  rot: number
-  wet: boolean
-}) {
-  return (
-    <g
-      data-pipe
-      data-wet={wet ? '1' : '0'}
-      transform={`translate(${col * TILE},${row * TILE}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-    >
-      <Use art={art} />
-    </g>
-  )
-})
-
-const RockGfx = memo(function RockGfx({ col, row, w, h }: { col: number; row: number; w: number; h: number }) {
-  if (w === 1 && h === 2) {
-    return (
-      <g transform={`translate(${col * TILE + TILE},${row * TILE}) rotate(90) scale(${TILE / 24})`}>
-        <Use art={ROCK_LONG} />
-      </g>
-    )
-  }
-  if (w === 2 && h === 1) {
-    return (
-      <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
-        <Use art={ROCK_LONG} />
-      </g>
-    )
-  }
-  return (
-    <g transform={`translate(${col * TILE},${row * TILE}) scale(${TILE / 24})`}>
-      <Use art={ROCK} />
-    </g>
-  )
-})
-
-function DirtInsetG({ x, y, angle }: { x: number; y: number; angle: number }) {
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <g transform={`rotate(${angle}) scale(${TILE / 24})`}>
-        <Use art={DIRT_INSET} />
-      </g>
-    </g>
-  )
-}
-
-const PlotGfx = memo(function PlotGfx({
-  col,
-  row,
-  kind,
-  dv,
-  e,
-  turfStage,
-  weedV,
-  weedStage,
-  crop,
-  stage,
-  pip,
-  water,
-  fert,
-  fresh,
-}: {
-  col: number
-  row: number
-  kind: Cell['kind']
-  dv: number
-  e: string
-  turfStage: string
-  weedV: number
-  weedStage: string
-  crop: string
-  stage: string
-  pip: string
-  water: Band | ''
-  fert: Band | ''
-  fresh: boolean
-}) {
-  const x = col * TILE
-  const y = row * TILE
-  const edge = {
-    top: e[0] === '1',
-    right: e[1] === '1',
-    bottom: e[2] === '1',
-    left: e[3] === '1',
-    topLeftInset: e[4] === '1',
-    topRightInset: e[5] === '1',
-    bottomRightInset: e[6] === '1',
-    bottomLeftInset: e[7] === '1',
-  }
-  const at = { col, row }
-  return (
-    <g className={pip !== '' ? 'plant-rarity' : undefined}>
-      <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-        <Use art={DIRT[dv]} />
-      </g>
-      {edge.bottom && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-          <Use art={DIRT_EDGE} />
-        </g>
-      )}
-      {edge.top && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(180 12 12)`}>
-          <Use art={DIRT_EDGE} />
-        </g>
-      )}
-      {edge.right && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(-90 12 12)`}>
-          <Use art={DIRT_EDGE} />
-        </g>
-      )}
-      {edge.left && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24}) rotate(90 12 12)`}>
-          <Use art={DIRT_EDGE} />
-        </g>
-      )}
-      {edge.topLeftInset && <DirtInsetG x={x} y={y} angle={0} />}
-      {edge.topRightInset && <DirtInsetG x={x + TILE} y={y} angle={90} />}
-      {edge.bottomRightInset && <DirtInsetG x={x + TILE} y={y + TILE} angle={180} />}
-      {edge.bottomLeftInset && <DirtInsetG x={x} y={y + TILE} angle={-90} />}
-      {kind === 'rotten' && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-          <Use art={CROP_ROTTEN} />
-        </g>
-      )}
-      {turfStage !== '' && (
-        <g data-turf={`${col},${row}`} transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-          <Use art={turfInner(turfStage as 'sprout' | 'grow')} />
-        </g>
-      )}
-      {weedV >= 0 && (
-        <g data-weed={`${col},${row}`} transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-          <Use art={weedInner(weedV as 0 | 1, weedStage as 'sprout' | 'grow')} />
-        </g>
-      )}
-      {stage !== '' && crop !== '' && (
-        <g transform={`translate(${x},${y}) scale(${TILE / 24})`}>
-          <Use art={cropInner(crop as CropId, stage)} />
-        </g>
-      )}
-      {pip !== '' && (
-        <g
-          className="plant-quality-pip"
-          transform={`translate(${x},${y}) scale(${TILE / 24}) translate(16,16)`}
-        >
-          <Use art={pip} />
-        </g>
-      )}
-      {water !== '' && (
-        <g className={water === 'red' ? 'animate-pulse' : undefined}>
-          <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
-          <rect
-            ref={el => bindBar('thirst', at, el)}
-            data-thirst={`${col},${row}`}
-            x={x + 3}
-            y={y + TILE - 5}
-            height={2}
-            fill={BAND_TINT[water]}
-          />
-          <rect x={x + 2 + (TILE - 4) / 2} y={y + TILE - 7} width={1} height={6} fill="#1c1710" />
-        </g>
-      )}
-      {fert !== '' && (
-        <g className={fert === 'red' ? 'animate-pulse' : undefined}>
-          <rect x={x + 2} y={y + TILE - 11} width={TILE - 4} height={4} fill="#1c1710" />
-          <rect
-            ref={el => bindBar('fert', at, el)}
-            data-fert={`${col},${row}`}
-            x={x + 3}
-            y={y + TILE - 10}
-            height={2}
-            fill={BAND_TINT[fert]}
-          />
-        </g>
-      )}
-      {fresh && kind === 'ripe' && (
-        <g>
-          <rect x={x + 2} y={y + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
-          <rect
-            ref={el => bindBar('fresh', at, el)}
-            data-fresh={`${col},${row}`}
-            x={x + 3}
-            y={y + TILE - 5}
-            height={2}
-            className="fill-lens-bad"
-          />
-        </g>
-      )}
-    </g>
-  )
-})
-
-const CompostGfx = memo(function CompostGfx({ col, row }: { col: number; row: number }) {
-  return (
-    <g data-compost={`${col},${row}`}>
-      <PropGfx art={COMPOST_BOX} col={col} row={row} />
-      <rect x={col * TILE + 2} y={row * TILE + TILE - 6} width={TILE - 4} height={4} fill="#1c1710" />
-      <rect
-        ref={el => bindBar('compost', { col, row }, el)}
-        data-compost-bar
-        x={col * TILE + 3}
-        y={row * TILE + TILE - 5}
-        height={2}
-        fill={WASH}
-      />
-    </g>
-  )
-})
-
-const DropGfx = memo(function DropGfx({
-  x,
-  y,
-  art,
-  title,
-}: {
-  x: number
-  y: number
-  art: string
-  title: string | undefined
-}) {
-  return (
-    <g transform={`translate(${x},${y}) scale(${33 / 24})`}>
-      <Use art={art} />
-      {title !== undefined && <title>{title}</title>}
-    </g>
-  )
-})
-
-function SourceGfx({ world, base }: { world: World; base: Base }) {
-  return (
-    <g pointerEvents="none">
-      {occupiedCells(base, world.owned).map(at => (
-        <PropGfx key={`src-${at.col},${at.row}`} art={PIPE_SOURCE} col={at.col} row={at.row} />
-      ))}
-    </g>
-  )
-}
-
-function edgeTransform(e: Edge): string {
+function edgeStyle(e: Edge): { left: number; top: number; transform: string; transformOrigin: string } {
   const x = e.axis === 'h' ? (e.col + 0.5) * TILE : e.col * TILE
   const y = e.axis === 'h' ? e.row * TILE : (e.row + 0.5) * TILE
   const rot = e.axis === 'h' ? 0 : 90
-  return `translate(${x},${y}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`
+  return { left: x, top: y, transform: `rotate(${rot}deg) translate(-50%, -50%)`, transformOrigin: '0 0' }
 }
 
-const ValveGfx = memo(function ValveGfx({
-  col,
-  row,
-  axis,
-  open,
-}: {
-  col: number
-  row: number
-  axis: 'h' | 'v'
-  open: boolean
-}) {
-  return (
-    <g
-      data-valve={edgeKey({ axis, col, row })}
-      data-open={open ? '1' : '0'}
-      pointerEvents="none"
-      transform={edgeTransform({ axis, col, row })}
-    >
-      <Use art={valveArt(open)} />
-    </g>
-  )
-})
-
-const WellGfx = memo(function WellGfx({
-  col,
-  row,
-  axis,
-}: {
-  col: number
-  row: number
-  axis: 'h' | 'v'
-}) {
-  return (
-    <g data-well={edgeKey({ axis, col, row })} pointerEvents="none" transform={edgeTransform({ axis, col, row })}>
-      <Use art={WELL} />
-    </g>
-  )
-})
-
-const SprinklerMark = memo(function SprinklerMark({
-  col,
-  row,
-  variant,
-  facing,
-  lensKind,
-  working,
-  tuneCrop,
-}: {
-  col: number
-  row: number
-  variant: Sprinkler['variant']
-  facing: 'ns' | 'ew' | undefined
-  lensKind: boolean
-  working: boolean
-  tuneCrop: CropId | undefined
-}) {
-  const s: Sprinkler =
-    variant === 'vert'
-      ? { variant, at: { col, row }, facing: facing ?? 'ns', tune: { kind: 'flat' }, inn: 0, hold: 0 }
-      : { variant, at: { col, row }, tune: { kind: 'flat' }, inn: 0, hold: 0 }
-  return (
-    <g>
-      {lensKind && (
-        <circle
-          cx={col * TILE}
-          cy={row * TILE}
-          r={TILE * 0.22}
-          fill={WATER}
-          fillOpacity={0.72}
-          style={{ mixBlendMode: 'multiply' }}
-          pointerEvents="none"
-        />
-      )}
-      <SprinklerGfx s={s} placed />
-      {working && <VfxLayers id={sprayId(variant)} col={col} row={row} rot={vertRot(variant, facing)} />}
-      {tuneCrop !== undefined && (
-        <g
-          pointerEvents="none"
-          transform={`translate(${col * TILE - TILE * 0.22},${row * TILE - TILE * 0.62}) scale(${TILE * 0.44 / 24})`}
-        >
-          <Use art={cropInner(tuneCrop, ripeGroup('common'))} />
-        </g>
-      )}
-    </g>
-  )
-})
-
-function SprinklerGfx({ s, opacity, placed }: { s: Sprinkler; opacity?: number; placed: boolean }) {
-  const rot = s.variant === 'vert' && s.facing === 'ns' ? 90 : 0
-  const art = s.variant === 'basic' ? SPRINKLER : s.variant === 'large' ? SPRINKLER_LARGE : SPRINKLER_VERT
-  return (
-    <g
-      data-sprinkler={placed ? '' : undefined}
-      pointerEvents="none"
-      opacity={opacity}
-      transform={`translate(${s.at.col * TILE},${s.at.row * TILE}) rotate(${rot}) translate(${-TILE / 2},${-TILE / 2}) scale(${TILE / 24})`}
-    >
-      <Use art={art} />
-    </g>
-  )
-}
-
-function sprayId(variant: Sprinkler['variant']): VfxId {
-  if (variant === 'basic') return 'sprinkler-spray'
-  if (variant === 'large') return 'sprinkler-spray-large'
-  return 'sprinkler-spray-vert'
-}
-
-function vertRot(variant: Sprinkler['variant'], facing: 'ns' | 'ew' | undefined): number {
-  return variant === 'vert' && facing === 'ns' ? 90 : 0
-}
-
-function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefined {
-  if (cell.kind !== 'mill' && cell.kind !== 'jam' && cell.kind !== 'still' && cell.kind !== 'barrel') return undefined
-  if (cell.base.col !== at.col || cell.base.row !== at.row) return undefined
-  if (cell.kind === 'mill') return millWorking(cell) ? 'dust' : undefined
-  if (cell.kind === 'jam') return jamWorking(cell) ? 'dust' : undefined
-  if (cell.kind === 'still') return stillWorking(cell) ? 'steam' : undefined
-  return barrelWorking(cell) ? 'brew' : undefined
-}
-
-function VfxLayers({
-  id,
-  col,
-  row,
-  rot,
-  burst,
-  seq,
-}: {
-  id: VfxId
-  col: number
-  row: number
-  rot?: number
-  burst?: boolean
-  seq?: number
-}) {
-  const def = VFX[id]
-  const off = def.anchor === 'vertex' ? ` translate(${-def.span / 2},${-def.tall / 2})` : ''
-  return (
-    <g
-      className={burst === true ? 'vfx vfx-burst' : 'vfx'}
-      data-vfx={id}
-      data-burst={seq}
-      pointerEvents="none"
-      transform={`translate(${col * TILE},${row * TILE}) rotate(${rot ?? 0}) scale(${TILE / 24})${off}`}
-      style={{ ['--vfx-cut']: def.cut, ['--vfx-dur']: `${def.dur}s` } as CSSProperties}
-    >
-      {def.frames.map((f, i) => (
-        <use
-          key={i}
-          className="vfx-frame"
-          data-vfx-i={i}
-          style={{ ['--vfx-t']: i / def.slots } as CSSProperties}
-          href={symHref(f)}
-        />
-      ))}
-    </g>
-  )
-}
-
-function EdgeStroke({ edge, ok }: { edge: Edge; ok: boolean }) {
-  const cls = ok ? 'stroke-ink' : 'stroke-roof'
-  if (edge.axis === 'h') {
-    return (
-      <line
-        x1={edge.col * TILE}
-        y1={edge.row * TILE}
-        x2={(edge.col + 1) * TILE}
-        y2={edge.row * TILE}
-        className={cls}
-        strokeWidth={3}
-        pointerEvents="none"
-      />
-    )
-  }
-  return (
-    <line
-      x1={edge.col * TILE}
-      y1={edge.row * TILE}
-      x2={edge.col * TILE}
-      y2={(edge.row + 1) * TILE}
-      className={cls}
-      strokeWidth={3}
-      pointerEvents="none"
-    />
-  )
-}
-
-function VertexStroke({ v, ok }: { v: Vertex; ok: boolean }) {
-  const s = 10
-  return (
-    <rect
-      x={v.col * TILE - s / 2}
-      y={v.row * TILE - s / 2}
-      width={s}
-      height={s}
-      fill="none"
-      className={ok ? 'stroke-ink' : 'stroke-roof'}
-      strokeWidth={2}
-      pointerEvents="none"
-    />
-  )
-}
-
-type DeleteTarget =
-  | { kind: 'pipe'; edge: Edge }
-  | { kind: 'well'; edge: Edge }
-  | { kind: 'sprinkler'; at: Vertex }
-  | { kind: 'smart'; edge: Edge }
-  | { kind: 'wire'; from: WireEnd; to: WireEnd }
-
-function nearestEdge(wx: number, wy: number): Edge | undefined {
-  const col = Math.floor(wx)
-  const row = Math.floor(wy)
-  const fx = wx - col
-  const fy = wy - row
-  const hits: { edge: Edge; d: number }[] = [
-    { edge: { axis: 'h', col, row }, d: fy },
-    { edge: { axis: 'h', col, row: row + 1 }, d: 1 - fy },
-    { edge: { axis: 'v', col, row }, d: fx },
-    { edge: { axis: 'v', col: col + 1, row }, d: 1 - fx },
-  ]
-  let best = hits[0]
-  for (const h of hits) {
-    if (h.d < best.d) best = h
-  }
-  if (best.d > EDGE_HIT) return undefined
-  return best.edge
-}
-
-function nearestVertex(wx: number, wy: number): Vertex {
-  return { col: Math.round(wx), row: Math.round(wy) }
-}
-
-function sensorProp(cell: Sensor): string {
-  if (cell.kind === 'lever') return leverArt(cell.on)
-  if (cell.kind === 'button') return buttonArt(cell.out === 1)
-  if (cell.kind === 'lamp') return lampArt(cell.inn === 1)
-  if (cell.kind === 'or') return PROP_OR
-  if (cell.kind === 'and') return PROP_AND
-  if (cell.kind === 'not') return PROP_NOT
-  if (cell.kind === 'pulser') return pulserArt(cell.out === 1)
-  if (cell.kind === 'counter') return counterArt(counterDial(cell))
-  if (cell.kind === 'sensor-water') return waterSensorArt(cell.out === 1)
-  if (cell.kind === 'sensor-fert') return fertSensorArt(cell.out === 0)
-  if (cell.kind === 'sensor-harvest') return harvestSensorArt(cell.out === 1)
-  if (cell.kind === 'sensor-day') return daySensorArt(cell.out === 1)
-  if (cell.kind === 'water-system') return waterSystemArt(cell.out === 1)
-  if (cell.kind === 'traffic-light') return trafficLightArt(cell.inn === 1)
-  return vehicleDetectorArt(cell.out === 1)
-}
-
-function wireEndXY(world: World, end: WireEnd): { x: number; y: number } {
-  if (end.kind === 'cell') return portXY(end, portDevice(world.cell(end.at)))
-  return portXY(end)
-}
-
-function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
-  const at = { col: Math.floor(wx), row: Math.floor(wy) }
-  if (world.inWorld(at)) {
-    const c = world.cell(at)
-    if (isSensor(c)) {
-      const fx = wx - at.col
-      const fy = wy - at.row
-      if (c.kind === 'and' || c.kind === 'or') {
-        if (fy > 0.65) return { kind: 'cell', at, port: 'out' }
-        return { kind: 'cell', at, port: fx < 0.5 ? 'in-l' : 'in-r' }
-      }
-      if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever' || c.kind === 'traffic-light') {
-        return { kind: 'cell', at, port: fy < 0.5 ? 'in' : 'out' }
-      }
-      if (c.kind === 'lamp') return { kind: 'cell', at, port: 'in' }
-      return { kind: 'cell', at, port: 'out' }
-    }
-    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
-      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'in' }
-      return undefined
-    }
-    if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
-      if (c.base.col === at.col && c.base.row === at.row) return { kind: 'cell', at, port: 'out' }
-      return undefined
-    }
-  }
-  const v = nearestVertex(wx, wy)
-  if (
-    world.done.has('unlock-smart-irrigation') &&
-    world.sprinklerAt(v) !== undefined &&
-    Math.hypot(wx - v.col, wy - v.row) <= VERTEX_HIT
-  ) {
-    return { kind: 'sprinkler', at: v, port: 'in' }
-  }
-  const edge = nearestEdge(wx, wy)
-  if (edge !== undefined && world.hasSmart(edge)) return { kind: 'valve', e: edge, port: 'in' }
-  return undefined
-}
-
-function wireSignal(world: World, from: WireEnd): boolean {
-  if (from.kind !== 'cell') return false
-  const c = world.cell(from.at)
-  if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') return false
-  if (isSensor(c) || c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
-    return c.out === 1
-  }
-  return false
-}
-
-function wirePathD(from: { x: number; y: number }, to: { x: number; y: number }): string {
-  const { c1, c2 } = wireControls(from, to)
-  return `M ${from.x * TILE} ${from.y * TILE} C ${c1.x * TILE} ${c1.y * TILE}, ${c2.x * TILE} ${c2.y * TILE}, ${to.x * TILE} ${to.y * TILE}`
-}
-
-function WireStroke({ d, color }: { d: string; color: string }) {
-  return (
-    <g pointerEvents="none">
-      <path d={d} fill="none" stroke="#1c1710" strokeWidth={4.5} strokeLinecap="round" />
-      <path d={d} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-    </g>
-  )
-}
-
-function linePathD(from: { x: number; y: number }, to: { x: number; y: number }): string {
-  return `M ${from.x * TILE} ${from.y * TILE} L ${to.x * TILE} ${to.y * TILE}`
-}
-
-function RoutesGfx({ world, lens, editor }: { world: World; lens: Lens; editor: boolean }) {
-  const driven = world.driverVehicle(world.local)
-  const assigned = new Set(world.vehicles.filter(v => v.route !== 'none').map(v => v.route))
-  const routes = editor
-    ? driven !== undefined && driven.route !== 'none'
-      ? world.routes.filter(r => r.id === driven.route)
-      : []
-    : lens === 'vehicles'
-      ? world.routes.filter(r => assigned.has(r.id))
-      : []
-  if (routes.length === 0) return null
-  const current = driven !== undefined && driven.route !== 'none' ? driven : undefined
-  const mover = world.vehicles.find(v => v.running && v.route !== 'none' && v.pose.kind === 'field')
-  return (
-    <g pointerEvents="none">
-      {routes.map(route => {
-        if (route.stops.length === 0) return null
-        const pts = route.stops.map(stopXY)
-        const n = pts.length
-        const legs = pts.map((p, i) => ({ from: p, to: pts[n === 1 ? i : (i + 1) % n] }))
-        const follow =
-          mover !== undefined && mover.route === route.id && mover.pose.kind === 'field' && n > 0
-            ? { from: { x: mover.pose.x, y: mover.pose.y }, to: stopXY(route.stops[mover.cursor]) }
-            : current !== undefined && current.route === route.id && current.pose.kind === 'field' && n > 0
-              ? { from: { x: current.pose.x, y: current.pose.y }, to: stopXY(route.stops[current.cursor]) }
-              : undefined
-        return (
-          <g key={`route-${route.id}`}>
-            {n > 1 &&
-              legs.map((leg, i) => (
-                <WireStroke key={`leg-${route.id}-${i}`} d={linePathD(leg.from, leg.to)} color={GRAPE} />
-              ))}
-            {follow !== undefined && (
-              <g data-route-leg={route.id}>
-                <WireStroke d={linePathD(follow.from, follow.to)} color="#c43c3c" />
-              </g>
-            )}
-            {editor &&
-              route.stops.map((s, i) => {
-                const p = stopXY(s)
-                const cur = current !== undefined && current.route === route.id && current.cursor === i
-                const cx = p.x * TILE
-                const cy = p.y * TILE
-                const r = cur ? 12 : 10
-                return (
-                  <g key={`n-${route.id}-${i}`} data-route-stop={`${route.id}:${i}`}>
-                    <circle cx={cx} cy={cy} r={r} fill={cur ? RIPE : WASH} stroke={INK} strokeWidth={2} />
-                    <text
-                      x={cx}
-                      y={cy}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill={INK}
-                      fontFamily="Nunito, sans-serif"
-                      fontSize={cur ? 16 : 14}
-                      fontWeight={700}
-                      className="tabular-nums"
-                    >
-                      {i + 1}
-                    </text>
-                  </g>
-                )
-              })}
-          </g>
-        )
-      })}
-    </g>
-  )
-}
-
-function WiresGfx({ world }: { world: World }) {
-  return (
-    <g pointerEvents="none">
-      {world.wires.map((w, i) => {
-        const a = wireEndXY(world, w.from)
-        const b = wireEndXY(world, w.to)
-        const on = wireSignal(world, w.from)
-        return <WireStroke key={`wire-${i}`} d={wirePathD(a, b)} color={on ? WATER : '#c43c3c'} />
-      })}
-    </g>
-  )
-}
-
-function PendingWire({
-  from,
-  x,
-  y,
-  world,
-}: {
-  from: WireEnd
-  x: number
-  y: number
-  world: World
-}) {
-  const a = wireEndXY(world, from)
-  return <WireStroke d={wirePathD(a, { x, y })} color="#c43c3c" />
-}
-
-const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
-
-function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
-  if (end.kind === 'sprinkler') {
-    const s = world.sprinklerAt(end.at)
-    return s !== undefined && s.inn === 1
-  }
-  if (end.kind === 'valve') {
-    const h = world.smartHold.get(edgeKey(end.e))
-    return h !== undefined && h.level === 1
-  }
-  if (end.port === 'out') {
-    if (cell === undefined) return false
-    if (cell.kind === 'lamp' || cell.kind === 'mill' || cell.kind === 'jam' || cell.kind === 'still') return false
-    if (isSensor(cell) || cell.kind === 'chest' || cell.kind === 'freezer' || cell.kind === 'seed-silo' || cell.kind === 'additive-store') {
-      return cell.out === 1
-    }
-    return false
-  }
-  return world.wires.some(w => sameEnd(w.to, end) && wireSignal(world, w.from))
-}
-
-function PortChrome({ world }: { world: World }) {
-  const marks: { key: string; x: number; y: number; out: boolean; high: boolean }[] = []
-  const pushCell = (at: { col: number; row: number }, c: Cell) => {
-    PORTS.forEach(port => {
-      if (!ownsPort(c, at, port)) return
-      const end: WireEnd = { kind: 'cell', at, port }
-      const p = portXY(end, portDevice(c))
-      marks.push({ key: endKey(end), x: p.x, y: p.y, out: port === 'out', high: portHigh(world, end, c) })
-    })
-  }
-  for (const at of world.sensors.values()) pushCell(at, world.cell(at))
-  for (const at of world.machines.values()) pushCell(at, world.cell(at))
-  for (const at of world.stores.values()) pushCell(at, world.cell(at))
-  pushCell({ col: world.silo.base.col, row: world.silo.base.row }, world.silo)
-  pushCell({ col: world.additives.base.col, row: world.additives.base.row }, world.additives)
-  if (world.done.has('unlock-smart-irrigation')) {
-    world.sprinklers.forEach(s => {
-      const end: WireEnd = { kind: 'sprinkler', at: s.at, port: 'in' }
-      const p = portXY(end)
-      marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: s.inn === 1 })
-    })
-  }
-  world.smartHold.forEach(h => {
-    const end: WireEnd = { kind: 'valve', e: h.e, port: 'in' }
-    const p = portXY(end)
-    marks.push({ key: endKey(end), x: p.x, y: p.y, out: false, high: h.level === 1 })
+function paintPipeLocators(host: HTMLElement, world: World): void {
+  host.replaceChildren()
+  world.eachNetVert(v => {
+    const a = arms(world, v, [])
+    if (!a.n && !a.e && !a.s && !a.w) return
+    const el = document.createElement('div')
+    el.setAttribute('data-pipe', '')
+    el.setAttribute('data-wet', world.vertexWet(v) ? '1' : '0')
+    el.className = 'absolute'
+    el.style.left = `${v.col * TILE - 2}px`
+    el.style.top = `${v.row * TILE - 2}px`
+    el.style.width = '4px'
+    el.style.height = '4px'
+    host.appendChild(el)
   })
-  return (
-    <g pointerEvents="none">
-      {marks.map(m =>
-        m.out ? (
-          <circle
-            key={m.key}
-            cx={m.x * TILE}
-            cy={m.y * TILE}
-            r={2.5}
-            fill={m.high ? WATER : '#c43c3c'}
-            stroke={INK}
-            strokeWidth={1}
-          />
-        ) : (
-          <rect
-            key={m.key}
-            x={m.x * TILE - 2.5}
-            y={m.y * TILE - 2.5}
-            width={5}
-            height={5}
-            fill={m.high ? WATER : '#c43c3c'}
-            stroke={INK}
-            strokeWidth={1}
-          />
-        ),
-      )}
-    </g>
-  )
 }
 
-function makeSprinkler(place: Extract<Place, { kind: 'sku' }>, at: Vertex): Sprinkler {
-  const tune = { kind: 'flat' } as const
-  if (place.id === 'buy-sprinkler-large') return { variant: 'large', at, tune, inn: 0, hold: 0 }
-  if (place.id === 'buy-sprinkler-vert') return { variant: 'vert', at, facing: place.facing, tune, inn: 0, hold: 0 }
-  return { variant: 'basic', at, tune, inn: 0, hold: 0 }
+function paintVfxLocators(host: HTMLElement, mounts: VfxMount[]): void {
+  host.replaceChildren()
+  for (const m of mounts) {
+    const def = VFX[m.id]
+    const w = (def.span * TILE) / 24
+    const h = (def.tall * TILE) / 24
+    const el = document.createElement('div')
+    el.setAttribute('data-vfx', m.id)
+    if (m.burst) el.className = 'vfx-burst'
+    el.style.position = 'absolute'
+    el.style.left = `${m.col * TILE + (def.anchor === 'vertex' ? -w / 2 : 0)}px`
+    el.style.top = `${m.row * TILE + (def.anchor === 'vertex' ? -h / 2 : 0)}px`
+    el.style.width = `${w}px`
+    el.style.height = `${h}px`
+    el.style.transform = `rotate(${m.rot}deg)`
+    el.style.pointerEvents = 'none'
+    host.appendChild(el)
+  }
 }
 
-function arms(
+function paintSpeech(host: HTMLElement, world: World): void {
+  if (world.speech.kind === 'none') {
+    if (host.childElementCount === 0) return
+    host.replaceChildren()
+    return
+  }
+  const speaker = world.seats[world.local]
+  const x = speaker.actor.x * TILE
+  const y = (speaker.actor.y - 0.5) * TILE - 24
+  let root = host.firstElementChild as HTMLElement | null
+  if (root === null) {
+    root = document.createElement('div')
+    root.setAttribute('data-speech', '')
+    root.className = 'absolute flex justify-center'
+    root.style.width = '200px'
+    const text = document.createElement('div')
+    text.setAttribute('data-speech-text', '')
+    text.className = 'bg-house px-2 py-0.5 text-base text-ink'
+    root.appendChild(text)
+    host.appendChild(root)
+  }
+  const left = `${x - 100}px`
+  const top = `${y}px`
+  if (root.style.left !== left) root.style.left = left
+  if (root.style.top !== top) root.style.top = top
+  const text = root.querySelector('[data-speech-text]')
+  if (text !== null && text.textContent !== world.speech.text) text.textContent = world.speech.text
+}
+
+function strokeFoot(
   world: World,
-  v: Vertex,
-  extra: Edge | undefined,
-): { n: boolean; e: boolean; s: boolean; w: boolean } {
-  const has = (e: Edge) => world.hasPipe(e) || (extra !== undefined && edgeKey(e) === edgeKey(extra))
-  return {
-    n: has({ axis: 'v', col: v.col, row: v.row - 1 }),
-    e: has({ axis: 'h', col: v.col, row: v.row }),
-    s: has({ axis: 'v', col: v.col, row: v.row }),
-    w: has({ axis: 'h', col: v.col - 1, row: v.row }),
-  }
-}
-
-function visitVerts(world: World, fn: (v: Vertex) => void): void {
-  world.eachNetVert(fn)
-}
-
-function pipeOk(world: World, id: SkuId, e: Edge): boolean {
-  if (!world.edgeOwned(e)) return false
-  if (id === 'buy-valve') return world.hasPipe(e) && !world.hasValve(e)
-  return !world.hasPipe(e)
-}
-
-function sprinklerOk(world: World, s: Sprinkler): boolean {
-  if (world.sprinklerAt(s.at) !== undefined) return false
-  if (!aoe(s).every(at => world.inWorld(at))) return false
-  const { col, row } = s.at
-  return (
-    world.inWorld({ col: col - 1, row: row - 1 }) ||
-    world.inWorld({ col, row: row - 1 }) ||
-    world.inWorld({ col: col - 1, row }) ||
-    world.inWorld({ col, row })
-  )
-}
-
-function vertsOf(e: Edge): [Vertex, Vertex] {
-  if (e.axis === 'h') return [{ col: e.col, row: e.row }, { col: e.col + 1, row: e.row }]
-  return [{ col: e.col, row: e.row }, { col: e.col, row: e.row + 1 }]
-}
-
-function valveHit(world: World, wx: number, wy: number): Edge | undefined {
-  let best: { edge: Edge; d: number } | undefined = undefined
-  world.segments.forEach(seg => {
-    if (seg.gate.kind !== 'valve') return
-    const mx = seg.at.axis === 'h' ? seg.at.col + 0.5 : seg.at.col
-    const my = seg.at.axis === 'h' ? seg.at.row : seg.at.row + 0.5
-    const d = Math.hypot(wx - mx, wy - my)
-    if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: seg.at, d }
-  })
-  if (best === undefined) return undefined
-  return (best as { edge: Edge; d: number }).edge
-}
-
-function smartHit(world: World, wx: number, wy: number): Edge | undefined {
-  let best: { edge: Edge; d: number } | undefined = undefined
-  world.segments.forEach(seg => {
-    if (seg.gate.kind !== 'smart') return
-    const mx = seg.at.axis === 'h' ? seg.at.col + 0.5 : seg.at.col
-    const my = seg.at.axis === 'h' ? seg.at.row : seg.at.row + 0.5
-    const d = Math.hypot(wx - mx, wy - my)
-    if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: seg.at, d }
-  })
-  if (best === undefined) return undefined
-  return (best as { edge: Edge; d: number }).edge
-}
-
-function wellHit(world: World, wx: number, wy: number): Edge | undefined {
-  let best: { edge: Edge; d: number } | undefined = undefined
-  world.wells.forEach(well => {
-    const mx = well.at.axis === 'h' ? well.at.col + 0.5 : well.at.col
-    const my = well.at.axis === 'h' ? well.at.row : well.at.row + 0.5
-    const d = Math.hypot(wx - mx, wy - my)
-    if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: well.at, d }
-  })
-  if (best === undefined) return undefined
-  return (best as { edge: Edge; d: number }).edge
-}
-
-function deleteHit(
-  world: World,
-  edge: Edge | undefined,
-  v: Vertex | undefined,
-  wx: number,
-  wy: number,
-): DeleteTarget | undefined {
-  const wire = nearestWire(world.wires, wx, wy, end => wireEndXY(world, end), VERTEX_HIT)
-  if (wire !== undefined) return { kind: 'wire', from: wire.from, to: wire.to }
-  if (edge !== undefined) {
-    if (world.hasWell(edge)) return { kind: 'well', edge }
-    if (world.hasSmart(edge)) return { kind: 'smart', edge }
-    if (world.hasPipe(edge) && world.edgeOwned(edge)) return { kind: 'pipe', edge }
-  }
-  if (v !== undefined && world.sprinklerAt(v) !== undefined) return { kind: 'sprinkler', at: v }
-  return undefined
-}
-
-function stayOk(
-  world: World,
-  placeId: SkuId | undefined,
-  edge: Edge | undefined,
-  s: Sprinkler | undefined,
-  del: DeleteTarget | undefined,
-): boolean {
-  if (world.seats[world.local].place.kind === 'delete') {
-    if (del !== undefined) return true
-    if (edge === undefined && s === undefined) return false
-    return del !== undefined
-  }
-  if (placeId === undefined) return false
-  if (world.money < world.skuPrice(placeId)) return false
-  if (placeId === 'buy-pipe' || placeId === 'buy-valve') {
-    return edge !== undefined && pipeOk(world, placeId, edge)
-  }
-  if (placeId === 'buy-well' || placeId === 'buy-smart-valve') {
-    return (
-      edge !== undefined &&
-      world.edgeOwned(edge) &&
-      !world.hasPipe(edge) &&
-      !world.hasWell(edge) &&
-      !world.hasSmart(edge)
-    )
-  }
-  if (s === undefined) return false
-  return sprinklerOk(world, s)
-}
-
-function clickHit(world: World, wx: number, wy: number, lens: Lens): MapClick | undefined {
-  const place = world.seats[world.local].place
-  if (place.kind === 'sku' && (place.id === 'buy-pipe' || place.id === 'buy-valve' || place.id === 'buy-well' || place.id === 'buy-smart-valve')) {
-    const edge = nearestEdge(wx, wy)
-    if (edge === undefined) return undefined
-    return { kind: 'edge', edge }
-  }
-  if (place.kind === 'sku' && SPRINKLER_SKU.includes(place.id)) {
-    const at = nearestVertex(wx, wy)
-    return { kind: 'sprinkler', sprinkler: makeSprinkler(place, at) }
-  }
-  if (place.kind === 'delete') {
-    const edge = nearestEdge(wx, wy)
-    const at = nearestVertex(wx, wy)
-    const del = deleteHit(world, edge, at, wx, wy)
-    if (del?.kind === 'wire') return { kind: 'delete-wire', from: del.from, to: del.to }
-    if (del?.kind === 'pipe') return { kind: 'delete-pipe', edge: del.edge }
-    if (del?.kind === 'well') return { kind: 'delete-well', edge: del.edge }
-    if (del?.kind === 'smart') return { kind: 'smart-valve', edge: del.edge }
-    if (del?.kind === 'sprinkler') return { kind: 'delete-sprinkler', at: del.at }
-    return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
-  }
-  const skuArmed = place.kind === 'sku' && (SENSOR_CELL_SKUS as readonly string[]).includes(place.id)
-  if ((lens === 'sensors' || place.kind === 'wire') && !skuArmed) {
-    const port = portHit(world, wx, wy)
-    if (port !== undefined) return { kind: 'port', end: port }
-  }
+  stroke: { col: number; row: number } | undefined,
+  place: Place,
+  pumpjack: boolean,
+  hangarPlace: boolean,
+  siloPlace: boolean,
+): { col: number; row: number }[] {
+  if (stroke === undefined) return []
   if (place.kind === 'none') {
-    const v = nearestVertex(wx, wy)
-    if (
-      world.done.has('unlock-smart-irrigation') &&
-      world.sprinklerAt(v) !== undefined &&
-      Math.hypot(wx - v.col, wy - v.row) <= VERTEX_HIT
-    ) {
-      return { kind: 'sprinkler-hud', at: v }
-    }
-    const valve = valveHit(world, wx, wy)
-    if (valve !== undefined) return { kind: 'valve', edge: valve }
-    const smart = smartHit(world, wx, wy)
-    if (smart !== undefined) return { kind: 'smart-valve', edge: smart }
-    const well = wellHit(world, wx, wy)
-    if (well !== undefined) return { kind: 'well', edge: well }
-    const cellAt = { col: Math.floor(wx), row: Math.floor(wy) }
-    if (world.inWorld(cellAt)) {
-      const c = world.cell(cellAt)
-      if (c.kind === 'sensor-water' && lens !== 'sensors') return { kind: 'water-hud', at: cellAt }
-      if (c.kind === 'sensor-harvest' && lens !== 'sensors') return { kind: 'harvest-hud', at: cellAt }
-      if (c.kind === 'counter' && lens !== 'sensors') return { kind: 'counter-hud', at: cellAt }
-      if (c.kind === 'sensor-day' && lens !== 'sensors') return { kind: 'day-hud', at: cellAt }
-    }
+    if (!world.inWorld(stroke)) return [stroke]
+    const cell = world.cell(stroke)
+    if ('base' in cell) return occupiedCells(cell.base, world.owned)
+    return [stroke]
   }
-  return { kind: 'cell', at: { col: Math.floor(wx), row: Math.floor(wy) } }
+  if (pumpjack) return [stroke, { col: stroke.col + 1, row: stroke.row }]
+  if (hangarPlace) {
+    const cells: { col: number; row: number }[] = []
+    for (let row = 0; row < HANGAR_H; row++) {
+      for (let col = 0; col < HANGAR_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
+    }
+    return cells
+  }
+  if (siloPlace) {
+    const cells: { col: number; row: number }[] = []
+    for (let row = 0; row < SILO_H; row++) {
+      for (let col = 0; col < SILO_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
+    }
+    return cells
+  }
+  return [stroke]
 }
+
+function GhostDefs() {
+  const [on, setOn] = useState(false)
+  useEffect(() => {
+    void atlasReady().then(() => setOn(true))
+  }, [])
+  if (!on) return null
+  const keys: AtlasKey[] = [
+    'pipe-stub',
+    'pipe-stub-dry',
+    'pipe-i',
+    'pipe-i-dry',
+    'pipe-l',
+    'pipe-l-dry',
+    'pipe-t',
+    'pipe-t-dry',
+    'pipe-x',
+    'pipe-x-dry',
+    'valve-open',
+    'smart-closed',
+    'well',
+    'sprinkler',
+    'sprinkler-vert',
+    'sprinkler-large',
+  ]
+  return (
+    <svg aria-hidden className="absolute h-0 w-0 overflow-hidden">
+      <defs>
+        {keys.map(k => (
+          <g key={k} id={k} dangerouslySetInnerHTML={{ __html: atlasHtml(k) }} />
+        ))}
+      </defs>
+    </svg>
+  )
+}
+

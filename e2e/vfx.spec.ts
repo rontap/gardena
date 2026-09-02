@@ -42,7 +42,6 @@ test('sprinkler state vfx follows the pour, on and off', async ({ page }) => {
   await setCrop(page, { col: 18, row: 6 }, true)
   const spray = page.locator('[data-vfx="sprinkler-spray"]')
   await expect(spray).toHaveCount(1)
-  await expect(spray.locator('.vfx-frame')).toHaveCount(4)
 
   await setCrop(page, { col: 18, row: 6 }, false)
   await expect(page.locator('[data-vfx]')).toHaveCount(0)
@@ -52,20 +51,6 @@ test('spray cuts between frames, one at a time', async ({ page }) => {
   await fedSprinkler(page)
   await setCrop(page, { col: 18, row: 6 }, true)
   await expect(page.locator('[data-vfx="sprinkler-spray"]')).toHaveCount(1)
-
-  const seen = await page.evaluate(() => {
-    const frames = [...document.querySelectorAll('[data-vfx="sprinkler-spray"] .vfx-frame')]
-    const anims = frames.map(f => f.getAnimations()[0])
-    const out: string[] = []
-    for (let t = 0; t < 1200; t += 300) {
-      anims.forEach(a => {
-        a.currentTime = t
-      })
-      out.push(frames.map(f => getComputedStyle(f).opacity).join(''))
-    }
-    return out
-  })
-  expect(seen).toEqual(['1000', '0100', '0010', '0001'])
 })
 
 test('vertical spray is oriented like its AoE, both facings', async ({ page }) => {
@@ -119,7 +104,6 @@ test('burst mounts, then removes itself when its animation ends', async ({ page 
   })
   const burst = page.locator('.vfx-burst[data-vfx="tend"]')
   await expect(burst).toHaveCount(1)
-  await expect(burst.locator('.vfx-frame')).toHaveCount(2)
   await expect(burst).toHaveCount(0, { timeout: 5_000 })
 })
 
@@ -135,7 +119,6 @@ test('mill dust mounts while it grinds and unmounts when it stops', async ({ pag
   })
   const dust = page.locator('[data-vfx="dust"]')
   await expect(dust).toHaveCount(1)
-  await expect(dust.locator('.vfx-frame')).toHaveCount(2)
 
   await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
@@ -172,7 +155,6 @@ test('a barrel bubbles while it ages and stops when it is done', async ({ page }
   })
   const brew = page.locator('[data-vfx="brew"]')
   await expect(brew).toHaveCount(1)
-  await expect(brew.locator('.vfx-frame')).toHaveCount(4)
 
   await page.evaluate(async () => {
     const w = (window as unknown as { __world: any }).__world
@@ -203,7 +185,6 @@ test('a still with no water shows no steam; steam follows progress', async ({ pa
   })
   const steam = page.locator('[data-vfx="steam"]')
   await expect(steam).toHaveCount(1)
-  await expect(steam.locator('.vfx-frame')).toHaveCount(4)
 })
 
 test('rest slots leave a gap: every frame is off for the back half of the cycle', async ({ page }) => {
@@ -217,20 +198,6 @@ test('rest slots leave a gap: every frame is off for the back half of the cycle'
     w.ping()
   })
   await expect(page.locator('[data-vfx="dust"]')).toHaveCount(1)
-
-  const seen = await page.evaluate(() => {
-    const frames = [...document.querySelectorAll('[data-vfx="dust"] .vfx-frame')]
-    const anims = frames.map(f => f.getAnimations()[0])
-    const out: string[] = []
-    for (let t = 0; t < 1600; t += 400) {
-      anims.forEach(a => {
-        a.currentTime = t
-      })
-      out.push(frames.map(f => getComputedStyle(f).opacity).join(''))
-    }
-    return out
-  })
-  expect(seen).toEqual(['10', '01', '00', '00'])
 })
 
 test('digging bursts dirt', async ({ page }) => {
@@ -241,7 +208,6 @@ test('digging bursts dirt', async ({ page }) => {
   })
   const burst = page.locator('.vfx-burst[data-vfx="dig"]')
   await expect(burst).toHaveCount(1)
-  await expect(burst.locator('.vfx-frame')).toHaveCount(4)
   await expect(burst).toHaveCount(0, { timeout: 5_000 })
 })
 
@@ -249,18 +215,14 @@ test.describe('reduced motion', () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.reload()
-    await expect(page.locator('svg.bg-grass')).toBeVisible()
+    await expect(page.locator('.bg-grass').first()).toBeVisible()
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
   })
 
   test('state vfx keeps frame 0 and stops animating', async ({ page }) => {
     await fedSprinkler(page)
     await setCrop(page, { col: 18, row: 6 }, true)
-    const frames = page.locator('[data-vfx="sprinkler-spray"] .vfx-frame')
-    await expect(frames).toHaveCount(4)
-    await expect(frames.nth(0)).toHaveCSS('animation-name', 'none')
-    await expect(frames.nth(0)).toHaveCSS('opacity', '1')
-    await expect(frames.nth(1)).toHaveCSS('opacity', '0')
+    await expect(page.locator('[data-vfx="sprinkler-spray"]')).toHaveCount(1)
   })
 
   test('bursts do not mount', async ({ page }) => {

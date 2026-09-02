@@ -1,6 +1,6 @@
 # Ground variants
 
-Tile selection per ground cell in `bakeGround` (`src/game/view/map.tsx`). Hardness from `goodness(seed, col, row)` (`src/game/sim/noise.ts`): very-hard `g < 0.2`, hard `g < 0.34`, else soft.
+Tile selection per ground cell in `layers/ground.ts`. Hardness from `goodness(seed, col, row)` (`src/game/sim/noise.ts`): very-hard `g < 0.2`, hard `g < 0.34`, else soft.
 
 ## Bands
 

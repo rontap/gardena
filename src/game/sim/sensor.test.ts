@@ -61,7 +61,7 @@ function grow(
 }
 
 describe('1.6 sensors', () => {
-  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 1.9.1-e. No migrate. 1.62 file → version.', () => {
+  test('SAVE_VERSION 1.9. PROTOCOL 1.9. Wordmark 2.0. No migrate. 1.62 file → version.', () => {
     expect(SAVE_VERSION).toBe(1.9)
     expect(PROTOCOL).toBe(1.9)
     const w = new World(1)

@@ -35,7 +35,9 @@ Hide **Vehicle interactions** until `unlock-vehicles`. Not a family-study row. N
 
 Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e9be6`, `leaf` `#6bc04a`, `water` `#3d7ea6`, `ink` `#1c1710`, `roof` `#8b3a2a`, `house` `#cfc6b0`, `ripe` `#d4a017`.
 
-Pipes wash on the map when `lens === 'pipes'` or place is delete / a `PIPE_PLACE` sku.
+Pipes (joints, valves, wells, sprinklers, fences) always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku — [[ui/place]]. Lens **Pipes** is the wetness tint + sprinkler AoE wash, not the only way to see joints.
+
+Wetness + AoE wash when `lens === 'pipes'` or place is delete / an `AOE_WASH` sku (`buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large`). Unarmed hover of a placed sprinkler also paints that head’s `aoe()` — [[ui/place]].
 
 Sensors: wires + port chrome + 3×3 reader wash when `lens === 'sensors'`. Armed sensor-cell SKU or `buy-smart-valve` forces this lens. Build shelf `logic` sets it and does not arm. Close / `leaveShop` / Esc: pipes or sensors → `off`. Switching Build category does not force it off. Shop ↔ Build keeps it. `vehicles` stays.
 

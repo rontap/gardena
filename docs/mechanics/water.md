@@ -24,7 +24,7 @@ Still 2×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. No
 
 Water-system sensor 1×1 joins a net like a tap. `Net.waterSystems`. Not a producer. Not a fill target. No incident pipe / well / smart-valve edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. High iff this net’s sprinkler want this tick > stored. Taps / stills not in demand. — [[mechanics/sensors]]
 
-Fill at pump / rain-tank: that tank at its `rate`. Fill at a well edge: the well's tank at its `rate`.
+Fill at pump / rain-tank: that tank at its `rate`. `dest(fill)` = origin of that pump / tank / tap, not the interior cell clicked. Fill at a well edge: the well's tank at its `rate`; `dest(fillWell)` = `stand`. [[architecture/world]] `world.dest`.
 
 ## Sprinklers
 

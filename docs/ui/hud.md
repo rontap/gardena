@@ -1,6 +1,8 @@
 # HUD
 
-Map full-bleed. Ribbons and docks sit on top. Controls `pointer-events-auto`. Map under stays live. Chrome tokens [[art/_index]]. No `$`. Coin is gold integer + silver tenths (`moneyParts`).
+Map full-bleed **PixiJS canvas** under the React HUD. Ribbons and docks sit on top. Controls `pointer-events-auto`. Map under stays live. Chrome tokens [[art/_index]]. No `$`. Coin is gold integer + silver tenths (`moneyParts`).
+
+Canvas host: pan / zoom / `clickHit` as now. Farm sprites have no DOM. `data-cell-stroke` and ghost hooks: HTML overlays over the canvas — [[ui/place]]. No Pixi HUD. No `@pixi/react`. `paintMotion` HUD binds stay.
 
 Type scale: [[ui/type]].
 
@@ -71,13 +73,17 @@ The lens picker is its own dock now — [[ui/lens]]. The rail button shows the a
 
 ## Expand faces
 
-Map-edge plates. After `unlock-expand` only. Size `TILE * 0.85`, centred on `face.at`. Copy **Expand** + `<Coin n={face.price} />` except no-permit. Host `<g className="group">`. Replace `fill-house` / `fill-dirt-dark`. [[mechanics/expansion]]
+Map-edge plates. HTML overlays over the canvas, not farm sprites. After `unlock-expand` only. Size `TILE * 0.85`, centred on `face.at`. Copy **Expand** + `<Coin n={face.price} />` except no-permit. Host `group`. Tokens `bg-ink/55` `group-hover:bg-ink/75` (clickable / poor), `bg-ink/40` (no permit). Type `text-house` / `text-house/50`. Plates take pointer. [[mechanics/expansion]]
 
 | state | plate | type | pointer |
 |---|---|---|---|
-| clickable | `fill-ink/55` `group-hover:fill-ink/75` | `text-house` | `cursor-pointer` → `expand(id)` |
+| clickable | `bg-ink/55` `group-hover:bg-ink/75` | `text-house` | `cursor-pointer` → `expand(id)` |
 | poor (money) | same fill | `text-house/50` | `cursor-pointer`, click no-op |
-| no permit | `fill-ink/40` | `text-house/50` **No permit left** | no pointer |
+| no permit | `bg-ink/40` | `text-house/50` **No permit left** | no pointer |
+
+## Speech
+
+HTML overlay, `data-speech`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. Ticker pose follows the speaker. `pointer-events-none`. `'speech'` dirty binds the chip; ticker follows. Not React state. [[architecture/view]]
 
 ## Right column
 

@@ -1,3 +1,13 @@
+# 2.0 Open Early Access
+
+The field is redrawn. Menus, docks, and the day stay as they were.
+
+- 🎉 Added ui: Smooth field. A large or busy farm no longer crawls when you pan.
+- ✨ Added ui: Pipe drag. With Pipe armed, drag along tile edges and release to place each segment.
+- 🔧 Changed ui: previously, hovering a house, hangar, or tank outlined one tile, now it outlines every tile that building occupies.
+- 🔧 Changed ui: previously, pipes hid unless the pipes lens or a water tool was out, now joints stay on the field and the lens still shows wetness.
+- 🚫 Removed ui: Last-action flash. The gold cell and label after a place or delete are gone.
+
 # 1.9.1 Stacks
 
 Fruit, seeds, and weeds stack in your hand. Fruit boxes are gone.

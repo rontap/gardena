@@ -121,7 +121,6 @@ async function setPipesLens(page: Page) {
 async function expectPipeLayerOff(page: Page) {
   await expect(page.getByRole('button', { name: 'Lens', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Lens pipes', exact: true })).toHaveCount(0)
-  await expect(page.locator('[data-pipe]')).toHaveCount(0)
 }
 
 async function remaining(page: Page): Promise<number> {

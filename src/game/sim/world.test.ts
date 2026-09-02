@@ -37,6 +37,7 @@ import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
+  DOOR,
   Freezer,
   Grinder,
   HOUSE_BASE,
@@ -64,7 +65,7 @@ import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
-import { DT_MAX, POINTS_PER_DAY, World } from './world.ts'
+import { dest, DT_MAX, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 import { qualityPip } from '../view/svgs.ts'
 
@@ -1673,7 +1674,7 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 1.9.1-e. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 1.9. `PROTOCOL` 1.9. Wordmark 2.0. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
@@ -2542,5 +2543,42 @@ describe('1.9 stacks', () => {
     expect(Object.keys(SKUS).includes('buy-box-large')).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-large-box')).toBe(false)
     expect(SHOP_SKUS.includes('buy-box' as SkuId)).toBe(false)
+  })
+})
+
+describe('world.dest', () => {
+  test('dest(hangar | silo | still | fill) is the origin of that instance, not the interior cell clicked. dest(inventory) is DOOR. dest(consign) is PAD.', () => {
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 999
+    w.buy('buy-hangar')
+    w.confirmPlace(AT)
+    expect(dest({ act: 'hangar', at: { col: AT.col + 1, row: AT.row + 1 } }, w)).toEqual(AT)
+    expect(dest({ act: 'silo', at: { col: SILO_BASE.col, row: SILO_BASE.row + 1 } }, w)).toEqual({
+      col: SILO_BASE.col,
+      row: SILO_BASE.row,
+    })
+    const stillAt = { col: 10, row: 16 }
+    w.buy('buy-still')
+    w.confirmPlace(stillAt)
+    expect(dest({ act: 'still', at: { col: stillAt.col + 1, row: stillAt.row } }, w)).toEqual(stillAt)
+    expect(dest({ act: 'fill', at: { col: 18, row: 7 } }, w)).toEqual({ col: 18, row: 7 })
+    w.buy('buy-pumpjack')
+    const jack = { col: 8, row: 16 }
+    w.confirmPlace(jack)
+    expect(dest({ act: 'fill', at: { col: jack.col + 1, row: jack.row } }, w)).toEqual(jack)
+    expect(dest({ act: 'inventory' }, w)).toEqual(DOOR)
+    expect(dest({ act: 'consign' }, w)).toEqual(PAD)
+    expect(dest({ act: 'additives', at: { col: 18, row: 10 } }, w)).toEqual({ col: 18, row: 10 })
+  })
+})
+
+describe('world.pulse', () => {
+  test('World has no pulse field. Last-action highlight gone. Not a cmd. Not Save.', () => {
+    const w = new World(1)
+    expect('pulse' in w).toBe(false)
+    w.buy('buy-pipe')
+    w.placePipe({ axis: 'h', col: 18, row: 7 })
+    expect('pulse' in w).toBe(false)
   })
 })

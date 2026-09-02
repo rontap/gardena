@@ -61,11 +61,11 @@ Host and every connected guest during join / resync. Covers HUD. `absolute inset
 
 ## Hat
 
-Same `actor.svg`. Crown group `id="hat"`. CSS `--hat` on that group, `fill: var(--hat)`. Not a filter. Band stays dirt-dark `#6b4423`, not `--hat`.
+Seat identity hex. Farm gardener: atlas `actor-hat` tint. Seat-row chips: that fill. Not CSS `--hat` on a world SVG. Band stays dirt-dark `#6b4423`.
 
 Off-palette. Not cottage.
 
-| seat | `--hat` |
+| seat | hex |
 |---|---|
 | 0 | `#d4a017` |
 | 1 | `#ff3d8e` |

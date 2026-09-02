@@ -54,7 +54,7 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 ## Invariants
 
-`mp.tick` — Live App accumulator calls `tick(DT_MAX)` only. Leftover rAF never ticks a non-`DT_MAX` slice. View paints every rAF. Solo and MP.
+`mp.tick` — Live App accumulator calls `tick(DT_MAX)` only. Leftover rAF never ticks a non-`DT_MAX` slice. View paints via the Pixi ticker. Solo and MP.
 
 `mp.bundle` — Per host `bundle`: apply `cmds` in log order, then `tick(DT_MAX)`. Empty `cmds` still tick. `bundle.t` is `now` after that tick. Same seed + same bundles → equal digest: [[architecture/net]] `net.digest` plus every seat `actor.x`/`actor.y`, `hand`, `inventory`, `presence`, `place`.
 

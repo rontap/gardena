@@ -26,7 +26,7 @@ Paint that wash when `lens === 'sensors'` (every such reader) or while that wate
 
 ## Wires
 
-SVG bezier. Idle stroke palette `fruit-red`. Active (signal `1`) stroke `water`. No new `@theme` color. Visual cross is paint, no join.
+Overlay Graphics bezier. Idle stroke palette `fruit-red`. Active (signal `1`) stroke `water`. No new `@theme` color. Visual cross is paint, no join.
 
 No price. Fan-out: many wires from one `from`. Fan-in: many wires on one input; second finalize does **not** replace. Inputs OR.
 

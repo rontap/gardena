@@ -23,7 +23,7 @@ Flat corrugated steel roof, iron ribs, oil eave. Iron vent stack east, no window
 
 Steel body, iron fenders / racks, oil engine. Ink tires, steel hubs. Not dirt-wood, not roof fenders.
 
-`id="hat"` wraps seat + helmet fill `var(--hat, #d4a017)`. Band `#6b4423`, outline `#1c1710` outside the group. `--hat` per driving seat — [[art/actor]]. Parked default straw gold.
+`id="hat"` wraps seat + helmet. Band `#6b4423`, outline `#1c1710` outside the group. Farm driver hat is atlas `actor-hat` tint — [[art/actor]]. Parked default straw gold.
 
 ## Tractor
 
@@ -34,7 +34,7 @@ Steel body, iron fenders / racks, oil engine. Ink tires, steel hubs. Not dirt-wo
 
 Red body `#c43c3c`. Iron/steel wheels. Oil engine at +x. Hitch tongue at −x. Ink outlines.
 
-`id="hat"` wraps seat fill `var(--hat, #d4a017)` same contract as quad. Band `#6b4423`, outline `#1c1710` outside the group.
+`id="hat"` wraps seat fill, same contract as quad. Band `#6b4423`, outline `#1c1710` outside the group.
 
 ## Trailers
 
@@ -104,11 +104,11 @@ Speed arc ends at `+vMax`, not paved/machinery cap. Reverse is the same arc nega
 
 ## Paint
 
-Tractor 1×1 at center, rotate heading. Pivot `(12, 12)` in the 24×24 viewBox. Same as Quad: `translate((x-0.5)*TILE,(y-0.5)*TILE) scale(TILE/24) rotate(deg 12 12)`. Dummy follow-cam tractor/trailer same.
+Tractor 1×1 at center, rotate heading. Pivot tile center. Same as Quad. Atlas sprite. Follow-cam is farm pivot, not a dummy, not an SVG transform.
 
-Attached trailer 1×1, front on `hitchP`, rotate trailer heading. Pivot `(12, 12)`.
+Attached trailer 1×1, front on `hitchP`, rotate trailer heading. Pivot tile center.
 
-Rake is view-only at trailer rear (opposite hitch): `trailerCenter − (TRAILER_LEN/2)·heading`. `prop-trailer-rake.svg` stays the 5-wide source (`0 0 120 8`). Do not add a 3-wide file. View scales width by `boom / 5`. Paint width = boom tiles × 24. Long axis perp heading. Same rake all three trailer kinds. Dummy too. Not a Cell. Not logged. Boom OBB follows tractor.boom `3 | 5`.
+Rake is view-only at trailer rear (opposite hitch): `trailerCenter − (TRAILER_LEN/2)·heading`. `prop-trailer-rake.svg` stays the 5-wide source (`0 0 120 8`). Do not add a 3-wide file. View scales width by `boom / 5`. Paint width = boom tiles × 24. Long axis perp heading. Same rake all three trailer kinds. Not a Cell. Not logged. Boom OBB follows tractor.boom `3 | 5`.
 
 Quad unchanged.
 

@@ -252,12 +252,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
         }
       }
       if (ran > 0) tickMs = spent
-      const driven = world.driverVehicle(world.local)
-      if (driven !== undefined && driven.pose.kind === 'field') {
-        const x = driven.pose.x
-        const y = driven.pose.y
-        setCam(c => (c.x === x && c.y === y ? c : { x, y, scale: c.scale }))
-      }
       if (root.current !== null) paintMotion(root.current, world, fpsEma, tickMs)
       id = requestAnimationFrame(loop)
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
@@ -16,6 +16,7 @@ import { COMPANY, EXPAND_LAND, qualityPip, SKILL_POINT, skuInner, UI_MARKET_STAL
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Btn, Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { ItemFace } from './held.tsx'
+import { useCycle } from './cycle.ts'
 
 type Tip = { title: string; description: ReactNode } | undefined
 
@@ -312,11 +313,7 @@ function demandName(demand: Demand): string {
 }
 
 function AnyJamFace({ count }: { count: number }) {
-  const [stage, setStage] = useState(0)
-  useEffect(() => {
-    const t = window.setInterval(() => setStage(s => (s + 1) % JAM_CROPS.length), 800)
-    return () => window.clearInterval(t)
-  }, [])
+  const stage = useCycle(JAM_CROPS.length)
   return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], count, unitSale: 1 }} />
 }
 

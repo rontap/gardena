@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
 import { CROPS, cropVariety } from '../defs/crops.ts'
@@ -13,6 +13,9 @@ import type { World } from '../sim/world.ts'
 import { JAM_SALE } from '../defs/items.ts'
 import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, rarityInner, treeStage } from '../view/svgs.ts'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
+import { useCycle } from './cycle.ts'
+import { MACHINE_IDS, type MachineId } from '../sim/recipe.ts'
+import { Recipes } from './recipe.tsx'
 
 type AlmanacTab =
   | 'seeds'
@@ -859,6 +862,7 @@ function Pane({ entry, jam }: { entry: CatalogEntry; jam: boolean }) {
   const crop = CROP_IDS.find(id => id === entry.id)
   if (crop !== undefined) return <CropPane id={crop} jam={jam} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
+  const machine = MACHINE_IDS.find(m => m === entry.id)
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
@@ -870,16 +874,22 @@ function Pane({ entry, jam }: { entry: CatalogEntry; jam: boolean }) {
         />
       </div>
       <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
+      {machine !== undefined && <MachineRecipes machine={machine} />}
     </>
   )
 }
 
+function MachineRecipes({ machine }: { machine: MachineId }) {
+  return (
+    <div className="mt-4">
+      <div className="mb-1 font-display text-xs leading-none text-ink">Recipes</div>
+      <Recipes view={{ kind: 'list', machine }} size="md" />
+    </div>
+  )
+}
+
 function PipePane({ title, blurb }: { title: string; blurb: string }) {
-  const [stage, setStage] = useState(0)
-  useEffect(() => {
-    const t = window.setInterval(() => setStage(s => (s + 1) % 5), 800)
-    return () => window.clearInterval(t)
-  }, [])
+  const stage = useCycle(PIPE_JOINS.length)
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
@@ -918,11 +928,7 @@ function RarityTabs({ preview, onPreview }: { preview: Rarity; onPreview: (p: Ra
 function CropPane({ id, jam }: { id: CropId; jam: boolean }) {
   const d = CROPS[id]
   const [preview, setPreview] = useState<Rarity>('common')
-  const [stage, setStage] = useState(0)
-  useEffect(() => {
-    const t = window.setInterval(() => setStage(s => (s + 1) % 3), 800)
-    return () => window.clearInterval(t)
-  }, [])
+  const stage = useCycle(3)
   const ripe = ripeStage(preview)
   const st = statsOf(id, preview, [])
   const product = faceGfx({
@@ -1021,11 +1027,7 @@ function TreePane({ id, jam }: { id: TreeId; jam: boolean }) {
   const d = CROPS[id]
   const def = TREES[id]
   const [preview, setPreview] = useState<Rarity>('common')
-  const [stage, setStage] = useState(0)
-  useEffect(() => {
-    const t = window.setInterval(() => setStage(s => (s + 1) % 3), 800)
-    return () => window.clearInterval(t)
-  }, [])
+  const stage = useCycle(3)
   const stages = ['grow', 'unripe', 'ripe'] as const
   const st = statsOf(id, preview, [])
   const every = 1 / def.fruitSeconds

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { heldText } from '../sim/item.ts'
 import { lookText } from '../sim/look.ts'
 import type { PromptHit } from '../sim/prompt.ts'
@@ -8,6 +9,9 @@ import { faceGfx } from '../view/svgs.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { isPlot } from '../sim/plot.ts'
 import { HAPPY_START } from '../defs/rarity.ts'
+import { craftState, isCraftCell } from '../sim/recipe.ts'
+import { bindCraft } from '../view/motion.ts'
+import { Recipes } from './recipe.tsx'
 
 type Segment = { from: number; to: number; color: 'green' | 'orange' | 'red' }
 
@@ -93,6 +97,21 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   return null
 }
 
+function MachineCraft({ world, hover }: { world: World; hover: PromptHit }) {
+  const cell = hover.kind === 'cell' && world.inWorld(hover.at) ? world.cell(hover.at) : undefined
+  const machine = cell !== undefined && isCraftCell(cell) ? cell : undefined
+  useEffect(() => {
+    bindCraft(machine)
+    return () => bindCraft(undefined)
+  }, [machine])
+  if (machine === undefined) return null
+  return (
+    <div className="bg-dirt/25 px-3 py-2.5">
+      <Recipes view={{ kind: 'live', craft: craftState(machine, world.machineMul()) }} size="md" />
+    </div>
+  )
+}
+
 export function Status({
   world,
   hover,
@@ -130,6 +149,7 @@ export function Status({
           {body}
         </div>
         {hover !== undefined && <PlantStats world={world} hover={hover} />}
+        {hover !== undefined && <MachineCraft world={world} hover={hover} />}
     </Chrome>
   )
 }

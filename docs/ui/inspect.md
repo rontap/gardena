@@ -63,7 +63,9 @@ Held `weed-spray`, tilled plot: **Spray**. `{ act: 'weed-spray'; at }`. Instant.
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No extra progress bars. No ObjectHud.
+Mill, jam, still, barrel, freezer, grinder: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
+
+Mill, jam, still, barrel, grinder, compost-box hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Still: either cell, one row.
 
 Held sugar: **Sugar - {n}L**.
 

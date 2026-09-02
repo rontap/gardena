@@ -22,7 +22,7 @@ Table. Columns are crops, rows are rarities. Column head is the crop icon over i
 
 Cells are `4.25rem` square with an `h-8` icon and the count under it — big enough to hit and to read a crop at a glance.
 
-Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any rarity of that crop. Shown rows: every rarity except `heirloom`, which needs `unlock-heirloom` done **or** heirloom stock present. Stock is never hidden by a gate — the starter kit carries heirloom potato before the research exists, and a row the player cannot reach is worse than an early row.
+Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any rarity of that crop. Shown rows: `common` always. `uncommon` / `rare` need `unlock-crop-variants` done **or** stock of that rarity. `heirloom` needs `unlock-heirloom` done **or** heirloom stock. Stock is never hidden by a gate.
 
 `bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, rarity)`, whole stack to hand.
 

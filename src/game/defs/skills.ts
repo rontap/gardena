@@ -72,12 +72,19 @@ export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'clearance',
 ]
 
-export const JAM_FLOOR = [0.1, 0.2, 0.3] as const
+export const JAM_ROT = 0.15
+export const JAM_ROT_FRESH = 0.5
+
+export function jamRotMul(tier: number, freshness: number): number {
+    if (tier <= 0 || freshness >= JAM_ROT_FRESH) return 1
+    return 1 + JAM_ROT * tier
+}
 
 export type SkillGate =
     | { kind: 'none' }
     | { kind: 'research'; id: ResearchId }
     | { kind: 'skill'; id: 'open-late' }
+    | { kind: 'hidden' }
 
 export type SkillEffect =
     | { kind: 'walk'; mul: 1.05 }
@@ -100,7 +107,7 @@ export type SkillEffect =
     | { kind: 'bio'; mul: 1.04 }
     | { kind: 'open-late' }
     | { kind: 'open-24' }
-    | { kind: 'jam'; minFreshMul: typeof JAM_FLOOR }
+    | { kind: 'jam' }
     | { kind: 'clearance' }
     | { kind: 'dummy' }
 
@@ -172,6 +179,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'Utility and automation goods in the store cost less. Each rank knocks $1 off the price.',
         3,
         {kind: 'haggling'},
+        {kind: 'hidden'},
     ),
     forecast: row('forecast', 'husband', 'Weather forecast', "Does nothing yet. Will show the next day's weather.", 1, {
         kind: 'dummy',
@@ -233,30 +241,34 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'There is some chance that seeds bought from the shops have increased rarity.',
         5,
         {kind: 'seed-bank'},
+        {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-carrot': row(
         'better-carrot',
         'player',
-        'Better carrots',
+        'Experienced carrot grower',
         'Carrots sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
         1,
         {kind: 'better', crop: 'carrot', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-potato': row(
         'better-potato',
         'player',
-        'Better potatoes',
+        'Experienced potato grower',
         'Potatoes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
         1,
         {kind: 'better', crop: 'potato', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-wheat': row(
         'better-wheat',
         'player',
-        'Better wheat',
+        'Experienced wheat grower',
         'Wheat sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
         1,
         {kind: 'better', crop: 'wheat', saleMul: 1.04, up1: 0.04},
+        {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-tomato': row(
         'better-tomato',
@@ -358,9 +370,9 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'jam',
         'daughter',
         'Still good for jam',
-        'Fruit that has started to go is still worth something. How much the stall knocks off for being past its prime depends on the rank.',
+        'Fruit below half freshness rots slower. Each rank adds 15%.',
         3,
-        {kind: 'jam', minFreshMul: JAM_FLOOR},
+        {kind: 'jam'},
     ),
     clearance: row(
         'clearance',
@@ -413,8 +425,8 @@ export function skillBlurb(id: SkillId, tier: number): string {
         case 'bio':
             return `Organic fruit sells for ${4 * tier}% more.`
         case 'jam': {
-            const cut = Math.round((1 - JAM_FLOOR[tier - 1]) * 100)
-            return `Fruit that has started to go is still worth something. The stall will not knock more than ${cut}% off for being past its prime.`
+            const pct = Math.round(JAM_ROT * tier * 100)
+            return `Fruit below half freshness rots ${pct}% slower.`
         }
         case 'seed-bank': {
             const n = (rate: number) => `${+(rate * 100 * tier).toFixed(2)}`

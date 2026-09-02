@@ -87,6 +87,7 @@ import largeBucket from '../../assets/items/item-large-bucket.svg?raw'
 import itemFertilizer from '../../assets/items/item-fertilizer.svg?raw'
 import itemWeedSpray from '../../assets/items/item-weed-spray.svg?raw'
 import uiResearchFertilizer from '../../assets/ui/ui-research-fertilizer.svg?raw'
+import uiResearchCropVariants from '../../assets/ui/ui-research-crop-variants.svg?raw'
 import itemSynth from '../../assets/items/item-synth.svg?raw'
 import itemCompost from '../../assets/items/item-compost.svg?raw'
 import itemRotten from '../../assets/items/item-rotten.svg?raw'
@@ -536,8 +537,8 @@ export function researchInner(id: ResearchId): string {
       return inner(pickaxe)
     case 'unlock-fertilizer':
       return inner(uiResearchFertilizer)
-    case 'unlock-compost':
-      return COMPOST_BOX
+    case 'unlock-crop-variants':
+      return inner(uiResearchCropVariants)
     case 'unlock-better-tools':
       return inner(uiResearchTools)
     case 'unlock-auto-irrigation':

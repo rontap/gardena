@@ -1,3 +1,31 @@
+# 2.0.4 Balance
+
+Rarity waits on Crop variants. Shop prices and machine times move.
+
+- 🎉 Added mechanic: Crop variants. After this project, a happy plant can ripen as a better grade, shop packs can come Uncommon or Rare if you learned Trusted seed bank, and the seed silo shows those grades.
+- 🔧 Changed mechanic: Rarity. previously, a happy plant could ripen a better grade from the first day, now a plant keeps the grade of its seed until you research Crop variants, and shop packs stay Common.
+- 🔧 Changed mechanic: Experienced growers. previously, Better carrots, Better potatoes, and Better wheat were offered from the first day, now they are named Experienced carrot grower, Experienced potato grower, and Experienced wheat grower, and they wait on Crop variants.
+- 🔧 Changed mechanic: Trusted seed bank. previously, it was offered from the first day, now it waits on Crop variants.
+- 🔧 Changed mechanic: Still good for jam. previously, it kept a floor on what the Market paid for fruit that had started to go, now fruit below half freshness rots 15% slower per rank.
+- 🔧 Changed mechanic: Haggling. previously, the husband could learn it on Family, now it does not appear as a skill choice.
+- 🚫 Removed mechanic: Composting. The Compost box is in the store from the first day.
+- 🔧 Changed mechanic: Machinery. previously, the research project was named Seed grinder, now it is named Machinery. The building is still the Seed grinder.
+- 🔧 Changed mechanic: Research. previously, Unlock land took 50s, Expand land 110s, Eminent domain 200s, Vehicles cost $40, Automated dispatch cost $35 and took 70s, Irrigation cost $12, Chest $14, and Seed grinder $20, now Unlock land takes 45s, Expand land 90s, Eminent domain 180s, Vehicles cost $50, Automated dispatch costs $100 and takes 80s, Irrigation costs $10, Chest $10, and Machinery $10.
+- 🔧 Changed building: Sprinkler. previously, it cost $15, now it costs $16.
+- 🔧 Changed building: Large sprinkler. previously, it cost $33, now it costs $48.
+- 🔧 Changed building: Pipe. previously, it cost $4, now it costs $3.
+- 🔧 Changed building: Manual valve. previously, it cost $6, now it costs $5.
+- 🔧 Changed building: Pumpjack. previously, it cost $40, now it costs $50.
+- 🔧 Changed building: Rainwater tank. previously, it cost $20, now it costs $25.
+- 🔧 Changed building: Wine barrel. previously, it cost $28, now it costs $18.
+- 🔧 Changed building: Mill. previously, a batch took 3s and it cost $35, now a batch takes 10s and it costs $45.
+- 🔧 Changed building: Jam machine. previously, a batch took 20s and it cost $40, now a batch takes 40s and it costs $45.
+- 🔧 Changed building: Pot still. previously, a batch took 180s, now a batch takes 160s.
+- 🔧 Changed building: Seed grinder. previously, a fruit took 2s, now a fruit takes 5s.
+- 🔧 Changed building: Compost box. previously, a bag took 90s and it cost $20, now a bag takes 60s, it costs $8, and it is in the store from the first day.
+- 🔧 Changed building: Wooden fence. previously, it cost $10, now it costs $8.
+- 🔧 Changed item: Sensors. previously, lever, button, lamp, gates, pulser, counter, readers, and the traffic light sat at the old prices, now lever, button, and lamp cost $3, AND, OR, and NOT cost $8, pulser, counter, traffic light, and vehicle detector cost $10, water, fertilizer, and harvest sensors cost $6, and water-system and day sensors cost $12.
+
 # 2.0.3 Orchard
 
 Trees are redrawn end to end, and the barrel takes a second fruit.

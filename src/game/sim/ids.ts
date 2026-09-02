@@ -135,7 +135,7 @@ export type ResearchId =
   | 'unlock-chest'
   | 'unlock-grinder'
   | 'unlock-fertilizer'
-  | 'unlock-compost'
+  | 'unlock-crop-variants'
   | 'unlock-fermentation'
   | 'unlock-preservatives'
   | 'unlock-landscaping'

@@ -5,7 +5,7 @@ import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.03
+export const PROTOCOL = 2.04
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30

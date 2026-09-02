@@ -32,7 +32,7 @@ import {
   type Rarity,
 } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_FLOOR, PLAYER_SKILL_IDS, SKILLS } from '../defs/skills.ts'
+import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS } from '../defs/skills.ts'
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
@@ -52,7 +52,7 @@ import {
 import { SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse, SAVE_VERSION } from './save.ts'
-import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand } from './item.ts'
+import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type FruitStack, type Hand } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
@@ -422,19 +422,19 @@ describe('beta-2 invariants', () => {
     expect(RESEARCH['unlock-raspberry']).toMatchObject({ cost: 32, seconds: 45 })
     expect(RESEARCH['unlock-heirloom']).toMatchObject({ cost: 140, seconds: 140, tree: 'plants' })
     expect(RESEARCH['unlock-better-tools']).toMatchObject({ cost: 16, seconds: 45 })
-    expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 12, seconds: 40 })
+    expect(RESEARCH['unlock-irrigation']).toMatchObject({ cost: 10, seconds: 40 })
     expect(RESEARCH['unlock-water-storage']).toMatchObject({ cost: 30, seconds: 70 })
-    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 25, seconds: 50 })
-    expect(RESEARCH['expand-land']).toMatchObject({ cost: 120, seconds: 110 })
-    expect(RESEARCH['eminent-domain']).toMatchObject({ cost: 420, seconds: 200 })
+    expect(RESEARCH['unlock-expand']).toMatchObject({ cost: 25, seconds: 45 })
+    expect(RESEARCH['expand-land']).toMatchObject({ cost: 120, seconds: 90 })
+    expect(RESEARCH['eminent-domain']).toMatchObject({ cost: 420, seconds: 180 })
     expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({ cost: 20, seconds: 55 })
     expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({ cost: 75, seconds: 75 })
     expect(RESEARCH['unlock-advanced-sensors']).toMatchObject({ cost: 140, seconds: 60 })
     expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({ cost: 60, seconds: 100 })
     expect(RESEARCH['unlock-silos']).toMatchObject({ cost: 30, seconds: 60 })
-    expect(RESEARCH['unlock-dispatch']).toMatchObject({ cost: 35, seconds: 70, tree: 'automation' })
+    expect(RESEARCH['unlock-dispatch']).toMatchObject({ cost: 100, seconds: 80, tree: 'automation' })
     expect(RESEARCH['unlock-fertilizer']).toMatchObject({ cost: 10, seconds: 30 })
-    expect(RESEARCH['unlock-compost']).toMatchObject({ cost: 10, seconds: 30, tree: 'plants' })
+    expect(RESEARCH['unlock-crop-variants']).toMatchObject({ cost: 5, seconds: 40, tree: 'plants' })
     expect(RESEARCH['unlock-pickaxe']).toMatchObject({ cost: 12, seconds: 40 })
   })
 })
@@ -672,7 +672,7 @@ describe('beta-4 invariants', () => {
 
   test('buy-chest place 1x1 own slots', () => {
     expect(SKUS['buy-chest'].price).toBe(18)
-    expect(RESEARCH['unlock-chest'].cost).toBe(14)
+    expect(RESEARCH['unlock-chest'].cost).toBe(10)
     const w = new World()
     w.done.add('unlock-chest')
     const a = { col: 10, row: 12 }
@@ -727,7 +727,7 @@ describe('beta-4 invariants', () => {
     }
     expect(w.seats[0].hand.kind).toBe('empty')
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
-    for (let i = 0; i < 40; i++) w.tick(DT_MAX)
+    for (let i = 0; i < 90; i++) w.tick(DT_MAX)
     const u = new Rng(7).stream('grind').at(AT.col, AT.row, 1, 0)
     const expectCount = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
     const dropped = w.drops.filter(d => d.item.kind === 'seeds')
@@ -756,7 +756,7 @@ describe('beta-4 invariants', () => {
     expect(w.seats[0].hand.kind).toBe('empty')
     const g = w.cell(AT)
     expect(g.kind === 'grinder' && g.units).toBe(n)
-    for (let i = 0; i < 120; i++) w.tick(DT_MAX)
+    for (let i = 0; i < 300; i++) w.tick(DT_MAX)
     let expectCount = 0
     for (let i = 0; i < n; i++) {
       const u = new Rng(11).stream('grind').at(AT.col, AT.row, 1, i)
@@ -769,7 +769,7 @@ describe('beta-4 invariants', () => {
   })
 
   test('unlock-grinder automation buy-grinder 30', () => {
-    expect(RESEARCH['unlock-grinder'].cost).toBe(20)
+    expect(RESEARCH['unlock-grinder'].cost).toBe(10)
     expect(RESEARCH['unlock-grinder'].tree).toBe('trade')
     expect(SKUS['buy-grinder'].price).toBe(30)
     expect(SKUS['buy-grinder'].unlock).toBe('unlock-grinder')
@@ -787,7 +787,7 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-silos'].name).toBe('Field silos')
     expect(RESEARCH['unlock-expand'].name).toBe('Unlock land')
     expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
-    expect(RESEARCH['unlock-grinder'].name).toBe('Seed grinder')
+    expect(RESEARCH['unlock-grinder'].name).toBe('Machinery')
     expect(RESEARCH['unlock-expand'].tree).toBe('land')
   })
 
@@ -832,8 +832,8 @@ describe('beta-4 invariants', () => {
 })
 
 describe('beta-5 invariants', () => {
-  test('buy-pipe 4; two adjacent owned edges join one net', () => {
-    expect(SKUS['buy-pipe'].price).toBe(4)
+  test('buy-pipe 3; two adjacent owned edges join one net', () => {
+    expect(SKUS['buy-pipe'].price).toBe(3)
     const w = new World()
     w.done.add('unlock-irrigation')
     w.done.add('unlock-auto-irrigation')
@@ -847,7 +847,7 @@ describe('beta-5 invariants', () => {
     expect(w.seats[0].place).toEqual({ kind: 'sku', id: 'buy-pipe' })
     expect(w.hasPipe(e1)).toBe(true)
     expect(w.hasPipe(e2)).toBe(true)
-    expect(w.money).toBe(42)
+    expect(w.money).toBe(44)
     const netA = w.netOfVertex({ col: 10, row: 12 })
     const netB = w.netOfVertex({ col: 12, row: 12 })
     expect(netA).toBeDefined()
@@ -867,7 +867,7 @@ describe('beta-5 invariants', () => {
   })
 
   test('prices outputs starter reservoirs', () => {
-    expect(SKUS['buy-pumpjack'].price).toBe(40)
+    expect(SKUS['buy-pumpjack'].price).toBe(50)
     expect(SKUS['buy-well'].price).toBe(75)
     const w = new World()
     w.done.add('unlock-irrigation')
@@ -1006,7 +1006,8 @@ describe('beta-5 invariants', () => {
     expect(RESEARCH['unlock-heirloom']).toMatchObject({
       name: 'Heirloom crops',
       tree: 'plants',
-      reveal: ['expand-land', 'unlock-vehicles'],
+      reveal: ['expand-land', 'unlock-vehicles', 'unlock-crop-variants'],
+      requires: ['unlock-crop-variants'],
     })
     expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({
       name: 'Automated irrigation',
@@ -1042,7 +1043,7 @@ describe('beta-5 invariants', () => {
     expect(w.skuOpen('buy-sprinkler')).toBe(true)
   })
 
-  test('`unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 35, seconds 70 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+  test('`unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
     expect(RESEARCH['unlock-dispatch']).toMatchObject({
       tree: 'automation',
       reveal: ['unlock-vehicles'],
@@ -1050,8 +1051,8 @@ describe('beta-5 invariants', () => {
       effect: { kind: 'feature' },
       grants: ['Automate chrome'],
       name: 'Automated dispatch',
-      cost: 35,
-      seconds: 70,
+      cost: 100,
+      seconds: 80,
     })
     expect(SKUS['buy-traffic-light']).toMatchObject({
       show: 'unlock-sensors',
@@ -1497,6 +1498,7 @@ describe('beta-6 invariants', () => {
     expect(rollShopRarity(5, 0.32)).toBe('common')
     expect(SKILLS.heirloom.gate).toEqual({ kind: 'research', id: 'unlock-heirloom' })
     const w = new World(1)
+    w.done.add('unlock-crop-variants')
     w.family.player.owned.set('seed-bank', 5)
     const u = new Rng(1).stream('shop').next()
     expect(w.buy('pack-wheat')).toBeUndefined()
@@ -1638,7 +1640,7 @@ describe('1.2 machines', () => {
       item: { kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 5, unitSale: 5, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'mill', at: AT })
-    for (let i = 0; i < 80; i++) w.tick(DT_MAX)
+    for (let i = 0; i < 200; i++) w.tick(DT_MAX)
     const drop = w.drops.find(d => d.item.kind === 'sugar')
     expect(drop?.item).toEqual({ kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL })
     expect(mill.units).toBe(0)
@@ -1693,11 +1695,11 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.common.organic).toBe(72)
   })
 
-  test('`SAVE_VERSION` 2.03. `PROTOCOL` 2.03. Wordmark 2.0.3. No migrate. 1.62 file → `\'version\'`.', () => {
+  test('`SAVE_VERSION` 2.04. `PROTOCOL` 2.04. Wordmark 2.0.4. No migrate. 1.62 file → `\'version\'`.', () => {
     const w = new World(1)
     const s = dump(w)
     expect(s.version).toBe(SAVE_VERSION)
-    expect(s.version).toBe(2.03)
+    expect(s.version).toBe(2.04)
     const old = parse(JSON.stringify({ ...s, version: 1.62 }))
     expect(old.ok).toBe(false)
     if (old.ok) return
@@ -1955,9 +1957,11 @@ describe('0.9 log and rng', () => {
   test('shop.next() does not move when grow rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.', () => {
     const seed = 9
     const shopOnly = new World(seed)
+    shopOnly.done.add('unlock-crop-variants')
     shopOnly.family.player.owned.set('seed-bank', 5)
     expect(shopOnly.buy('pack-wheat')).toBeUndefined()
     const grown = new World(seed)
+    grown.done.add('unlock-crop-variants')
     const p = new Plant('carrot', 'common')
     p.maturity = 1
     grown.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
@@ -1972,6 +1976,7 @@ describe('0.9 log and rng', () => {
 
   test('Two growing→ripe on one cell the same day use distinct n. Rarities need not match.', () => {
     const w = new World(1)
+    w.done.add('unlock-crop-variants')
     const first = new Plant('carrot', 'common')
     first.maturity = 1
     w.setCell(AT, { kind: 'growing', soil: bed(), plant: first })
@@ -2097,6 +2102,7 @@ describe('0.9 log and rng', () => {
 
   test('Pack rarity is rollShopRarity(seed-bank tier, shop.next()). Not clock.t. Not money.', () => {
     const w = new World(1)
+    w.done.add('unlock-crop-variants')
     w.family.player.owned.set('seed-bank', 5)
     w.clock.t = 80
     w.money = 80
@@ -2279,7 +2285,7 @@ describe('1.5.2', () => {
     }
   })
 
-  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`; no `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. `haggling` max 3. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_FLOOR` `0.10 / 0.20 / 0.30`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
+  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`; no `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
     expect(PLAYER_SKILL_IDS.includes('driving-classes')).toBe(true)
     expect(PLAYER_SKILL_IDS.includes('machinery' as never)).toBe(false)
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
@@ -2291,12 +2297,14 @@ describe('1.5.2', () => {
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('machine-contracts')).toBe(false)
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('bulk-buying')).toBe(false)
     expect(SKILLS.haggling.maxTier).toBe(3)
+    expect(SKILLS.haggling.gate).toEqual({ kind: 'hidden' })
+    expect(SKILLS.jam.effect).toEqual({ kind: 'jam' })
+    expect(JAM_ROT).toBe(0.15)
     expect(SKILLS.bio.maxTier).toBe(3)
     expect(SKILLS.jam.maxTier).toBe(3)
     expect(SKILLS.industrial.maxTier).toBe(3)
     expect(SKILLS.broker.maxTier).toBe(2)
     expect(SKILLS.broker.gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
-    expect([...JAM_FLOOR]).toEqual([0.1, 0.2, 0.3])
     const w = new World()
     w.family.husband.owned.set('haggling', 2)
     expect(w.skuPrice('buy-shovel')).toBe(8)
@@ -2311,6 +2319,63 @@ describe('1.5.2', () => {
     expect(w.contractCap()).toBe(4)
   })
 
+  test('`unlock-crop-variants` plants, cost 5, 40s, reveal tomato | watermelon | irrigation, effect feature. Without it: ripen identity, shop packs common, silo hides uncommon/rare unless stock. unlock-heirloom requires it.', () => {
+    expect(RESEARCH['unlock-crop-variants']).toMatchObject({
+      tree: 'plants',
+      cost: 5,
+      seconds: 40,
+      reveal: ['unlock-tomato', 'unlock-watermelon', 'unlock-irrigation'],
+      requires: [],
+      effect: { kind: 'feature' },
+    })
+    expect(SKILLS['better-carrot'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
+    expect(SKILLS['better-potato'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
+    expect(SKILLS['better-wheat'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
+    expect(SKILLS['seed-bank'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
+    expect(SKUS['buy-compost-box']).toMatchObject({ unlock: 'start', price: 8 })
+    expect(SKUS['buy-sensor-fert'].need).toEqual(['unlock-fertilizer'])
+    const locked = new World(1)
+    locked.family.player.owned.set('seed-bank', 5)
+    expect(locked.buy('pack-wheat')).toBeUndefined()
+    expect(locked.silo.seeds.find(st => st.crop === 'wheat')?.rarity).toBe('common')
+    const p = new Plant('carrot', 'common')
+    p.maturity = 1
+    p.happiness = HAPPY_MAX
+    locked.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    locked.tick(1 / 15)
+    const ripe = locked.cell(AT)
+    expect(ripe.kind === 'ripe' && ripe.plant.rarity).toBe('common')
+    expect(locked.researchShown('unlock-heirloom')).toBe(false)
+    locked.done.add('unlock-crop-variants')
+    expect(locked.researchShown('unlock-heirloom')).toBe(true)
+    expect(locked.researchOpen('unlock-heirloom')).toBe(true)
+  })
+
+  test('jam rank N: fruit with freshness < 0.5 rots 15% × N slower. Ripe plant and picked fruit. Freezer skips.', () => {
+    const w = new World(1)
+    w.family.daughter.owned.set('jam', 2)
+    const fruit: FruitStack = {
+      kind: 'fruit',
+      crop: 'carrot',
+      rarity: 'common',
+      count: 1,
+      unitSale: 4,
+      freshness: 0.4,
+      bio: true,
+    }
+    w.seats[0].hand = { kind: 'hold', item: fruit }
+    const rot = statsOf('carrot', 'common', w.modifiers).rotSeconds
+    w.tick(DT_MAX)
+    expect(fruit.freshness).toBeCloseTo(0.4 - DT_MAX / (rot * (1 + 0.15 * 2)), 8)
+  })
+
+  test('haggling gate hidden. Never in the offer pool. Effect still applies if owned.', () => {
+    const w = new World(1)
+    expect(w.offers('husband').some(o => o.id === 'haggling')).toBe(false)
+    w.family.husband.owned.set('haggling', 3)
+    expect(w.skuPrice('buy-shovel')).toBe(7)
+  })
+
   test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
     expect(CONTAINERS.bucket.capacityLiters).toBe(5)
     expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
@@ -2319,7 +2384,7 @@ describe('1.5.2', () => {
     expect(SYNTH_BAG_LITERS).toBe(16)
     expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
     expect(COMPOST_LITERS).toBe(5)
-    expect(COMPOST_SECONDS).toBe(90)
+    expect(COMPOST_SECONDS).toBe(60)
     expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
   })

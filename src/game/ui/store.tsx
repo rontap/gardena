@@ -95,9 +95,11 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
     const pack = packSku(crop)
     return (pack !== undefined && world.skuShown(pack)) || RARITY_RANK.some(r => held(crop, r) > 0)
   })
-  const rarities = RARITY_RANK.filter(
-    r => r !== 'heirloom' || world.done.has('unlock-heirloom') || crops.some(c => held(c, 'heirloom') > 0),
-  )
+  const rarities = RARITY_RANK.filter(r => {
+    if (r === 'common') return true
+    if (r === 'heirloom') return world.done.has('unlock-heirloom') || crops.some(c => held(c, 'heirloom') > 0)
+    return world.done.has('unlock-crop-variants') || crops.some(c => held(c, r) > 0)
+  })
   return (
     <Shell
       title="Seed silo"

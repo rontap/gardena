@@ -52,14 +52,14 @@ Legal only when `marketOpen`. Else closed copy.
 
 `stallX`: crop → `CROPS.sale ×` skill `saleMul` from player `better-*` (`Modifier.source === 'skill'`). Rarity is the extra `raritySale` factor, not inside `stallX`. Sugar and machine goods skip `stallX` and `raritySale` (already in `unitSale`). Sugar-cane fruit uses crop `stallX`.
 
-`worth` accumulated at consign as `count × freshMul` for fruit. Above 80% freshness, full price; below, scales down. Jam floors `freshMul` by owned tier. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
+`worth` accumulated at consign as `count × freshMul` for fruit. Above 80% freshness, full price; below, scales down. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
 
 Then at `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
 - heirloom: `rarity === 'heirloom'` of crop stall goods, spirit, cask × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
 - bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
-- clearance: freshness-0 fruit `$1` each. Else jam floor. Sugar and machine goods do not rot
+- clearance: freshness-0 fruit `$1` each. Sugar and machine goods do not rot
 
 Saturation last, per good, over that subtotal. [[mechanics/saturation]]. Clearance `$1` exempt. `marketGain()` is the paid total. At `sat = 0` it equals this number.
 
@@ -73,7 +73,7 @@ Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale
 
 ## Invariants
 
-`market.sell` — Market is Sell all iff `marketOpen`. Sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness (`worth`), rarity (`raritySale` = crop `saleMul` ?? `RARITY_SALE`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)`, better skill `saleMul`, bio `(1 + 0.04 × tier)`; jam floors `freshMul`; clearance freshness-0 fruit `$1` else jam floor. Crop stall stock/worth per rarity×bio. Consign: fruit (incl. sugar-cane), sugar, spirit, cask, jam, oil, flour, extract. Seeds illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Sugar / jam / oil / flour / extract: baked `unitSale`, saleswoman only. Spirit / cask: baked `unitSale`, saleswoman, heirloom if `heirloom`. No berry. Sat last — [[mechanics/saturation]].
+`market.sell` — Market is Sell all iff `marketOpen`. Sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness (`worth`), rarity (`raritySale` = crop `saleMul` ?? `RARITY_SALE`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)`, better skill `saleMul`, bio `(1 + 0.04 × tier)`; clearance freshness-0 fruit `$1`. Crop stall stock/worth per rarity×bio. Consign: fruit (incl. sugar-cane), sugar, spirit, cask, jam, oil, flour, extract. Seeds illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Sugar / jam / oil / flour / extract: baked `unitSale`, saleswoman only. Spirit / cask: baked `unitSale`, saleswoman, heirloom if `heirloom`. No berry. Sat last — [[mechanics/saturation]].
 
 `market.rarity` — Player-facing top rarity is Heirloom (`heirloom`). `RARITY_SALE`.
 

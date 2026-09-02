@@ -18,9 +18,9 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `requires` must never make a player ask why. Pipes need a source; a logic gate needs signals to gate. If the answer is "so the graph looks deeper", it is a `reveal` — which makes no claim about the world and is free to follow theme and workload.
 
-`need` as a list puts an item behind two capabilities without inventing a research row for the intersection. It also keeps the organic route from being punished: the fertilizer sensor accepts either soil row.
+`need` as a list puts an item behind two capabilities without inventing a research row for the intersection.
 
-`researchShown(id)`: `reveal.length === 0 || reveal.some(r => done.has(r))`. `researchOpen(id)`: `requires.every(r => done.has(r))` — a row can be on the shelf and still shut. `unlock-smart-irrigation` is the only such row; the Research card grays and the callout names the missing rows — [[ui/docks]].
+`researchShown(id)`: `reveal.length === 0 || reveal.some(r => done.has(r))`. `researchOpen(id)`: `requires.every(r => done.has(r))` — a row can be on the shelf and still shut. `unlock-smart-irrigation` and `unlock-heirloom` can be shown and shut. The Research card grays and the callout names the missing rows — [[ui/docks]].
 
 `grants`: `readonly string[]` — the concepts a row turns on that no table can express, one short noun phrase each. `SKUS` and `SKILLS` already name what they gate; `grants` covers the rest, the `world.done.has(...)` feature sites. Empty on rows whose unlocks are fully covered by those two tables. Read by [[ui/cheat]] `#debug-techtree`, not by the sim.
 
@@ -44,12 +44,12 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | id | tree | reveal (OR) | requires (AND) | grants |
 |---|---|---|---|---|
 | unlock-fertilizer | plants | — | — | — |
-| unlock-compost | plants | — | — | — |
 | unlock-tomato | plants | — | — | — |
 | unlock-watermelon | plants | — | — | — |
+| unlock-crop-variants | plants | unlock-tomato, unlock-watermelon, unlock-irrigation | — | Rarity rolls on ripen; Uncommon and Rare rows in the seed silo |
 | unlock-grape | plants | unlock-tomato, unlock-watermelon | — | — |
 | unlock-raspberry | plants | unlock-tomato, unlock-watermelon, unlock-grape | — | — |
-| unlock-heirloom | plants | expand-land, unlock-vehicles | — | Heirloom rarity column in the store |
+| unlock-heirloom | plants | expand-land, unlock-vehicles, unlock-crop-variants | unlock-crop-variants | Heirloom rarity column in the store |
 | unlock-expand | land | — | — | Land expansion on the map edge; +1 expansion permit |
 | unlock-pickaxe | land | unlock-better-tools, unlock-expand | — | — |
 | expand-land | land | unlock-expand | unlock-expand | +1 expansion permit |
@@ -72,15 +72,15 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam icon in the almanac |
 | unlock-fermentation | trade | unlock-grinder | — | — |
 
-Fertilizer and compost are identical in money and time on purpose: one decision made two ways, so the whole difference lives in what they do. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Neither is downstream of the other. `unlock-heirloom` reveals on land or vehicles, not on either soil row.
+Synthetic is research; compost box is a start SKU. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. `unlock-crop-variants` reveals after tomato, watermelon, or irrigation. `unlock-heirloom` requires Crop variants and also reveals on land or vehicles.
 
 Advanced sensors and Advanced irrigation carry the money in Automation: both are where the system stops being convenience and starts being expressive, and their own SKUs are pocket change, so the research is the price. Fermentation is priced against [[mechanics/saturation]] — spirits and wine floor at `SAT_FLOOR` where crops floor higher, and they top the contract `GOOD_COST` list.
 
 `unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. Lens `vehicles` unhidden after this row. Not a family-study. `unlock-silos` `effect` `unlock-sku` `buy-silo-seed`.
 
-`unlock-dispatch` `effect` `feature`. Automate chrome iff `unlock-dispatch` in `done`. Card **Automated dispatch**. Blurb: vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop. Cost 35, seconds 70 — preference, vehicles/silos band. `Act.route` no-op unless this row is in `done`.
+`unlock-dispatch` `effect` `feature`. Automate chrome iff `unlock-dispatch` in `done`. Card **Automated dispatch**. Blurb: vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop. Cost 100, seconds 80 — preference. `Act.route` no-op unless this row is in `done`.
 
-`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
+`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` / `unlock-crop-variants` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
@@ -92,7 +92,7 @@ Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock
 
 `buy-fertilizer` unlock `start`. `buy-synth-fertilizer` unlock + show `unlock-fertilizer`. `buy-weed-spray` utility, unlock and show `unlock-fertilizer`.
 
-`buy-compost-box` unlock `unlock-compost`, show `start`. Shown from the start beside the synthetic route, never behind it.
+`buy-compost-box` unlock `start`, show `start`.
 
 The rotary shovel and the diamond pickaxe have no sku. Both are four-star contract prizes — [[mechanics/contracts]].
 
@@ -132,7 +132,7 @@ Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unloc
 | buy-sensor-harvest, buy-sensor-day | unlock-sensors | — |
 | buy-and, buy-or, buy-not | unlock-advanced-sensors | — |
 | buy-sensor-water | unlock-sensors | unlock-irrigation |
-| buy-sensor-fert | unlock-sensors | unlock-fertilizer, unlock-compost |
+| buy-sensor-fert | unlock-sensors | unlock-fertilizer |
 | buy-water-system | unlock-sensors | unlock-adv-irrigation |
 | buy-vehicle-detector | unlock-sensors | unlock-vehicles |
 | buy-traffic-light | unlock-sensors | unlock-dispatch |
@@ -151,7 +151,9 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 `research.tiles` — `buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`. Cosmetic. Keep `ground`.
 
-`research.better` — Better crop is player `better-*` `saleMul` and ripen `extraUp1`. Őstermelő gated on `unlock-heirloom`.
+`research.better` — Better crop is player `better-*` `saleMul` and ripen `extraUp1`. Carrot / potato / wheat and `seed-bank` gated on `unlock-crop-variants`. Őstermelő gated on `unlock-heirloom`.
+
+`research.variants` — `unlock-crop-variants` plants, cost 5, 40s, `reveal` tomato | watermelon | irrigation, `effect` `feature`. Without it: ripen rarity identity, shop packs common, silo hides uncommon/rare unless stock. `unlock-heirloom` `requires` it.
 
 `research.unlockAll` — `unlockAll`: every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll.
 
@@ -159,4 +161,4 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 `research.gates` — `better-olive` `better-grape` `better-sugar-cane` gated on `unlock-olive` / `unlock-grape` / `unlock-fermentation`. `vanilla-tending` gated on `unlock-raspberry`. `better-vanilla` gated on `vanilla-tending`. No `better-*` for `TreeId`.
 
-`research.dispatch` — `unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 35, seconds 70 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.
+`research.dispatch` — `unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.

@@ -54,7 +54,7 @@ import {
 } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { extraGrowUp1, JAM_FLOOR, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
+import { extraGrowUp1, jamRotMul, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   HAPPY_DROWN_SECONDS,
@@ -1545,6 +1545,7 @@ export class World {
   private skillEligible(id: SkillId): boolean {
     const def: SkillDef = SKILLS[id]
     if (this.skillTier(id) >= def.maxTier) return false
+    if (def.gate.kind === 'hidden') return false
     if (def.gate.kind === 'research') return this.done.has(def.gate.id)
     if (def.gate.kind === 'skill') return this.hasSkill(def.gate.id)
     return true
@@ -2588,7 +2589,7 @@ export class World {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
       if (this.silo.free < made.count) return 'Seed silo full'
-      const rarity = rollShopRarity(this.skillTier('seed-bank'), this.rng.stream('shop').next())
+      const rarity = this.shopPackRarity(this.rng.stream('shop').next())
       this.money -= price
       this.putSilo(made.crop, rarity, made.count)
       this.ping()
@@ -3737,7 +3738,7 @@ export class World {
     const made = skuItem(id)
     if (made.kind !== 'seeds') return
     const shop = this.rng.stream('shop')
-    const rarityOf = [0, 1, 2, 3, 4].map(() => rollShopRarity(this.skillTier('seed-bank'), shop.next()))
+    const rarityOf = [0, 1, 2, 3, 4].map(() => this.shopPackRarity(shop.next()))
     const stacks = RARITY_RANK.flatMap(rarity => {
       const n = rarityOf.filter(x => x === rarity).length
       return n === 0 ? [] : [{ rarity, count: n * made.count }]
@@ -3920,7 +3921,6 @@ export class World {
     const saleX = 1 + 0.02 * this.skillTier('saleswoman')
     const heirX = 1 + 0.05 * this.skillTier('heirloom')
     const bioX = 1 + 0.04 * this.skillTier('bio')
-    const jam = this.jamFloor()
     const clearanceOn = this.hasSkill('clearance')
     if (isBakedStall(id)) {
       const count = this.stall[id].stock.common.organic
@@ -3948,19 +3948,17 @@ export class World {
           const worth = this.stall[id].worth[rarity][k]
           if (clearanceOn && worth === 0) return { clean: bioAcc.clean, clearance: bioAcc.clearance + count }
           const avg = worth / count
-          const fresh = avg < jam ? jam : avg
           const organicMul = k === 'organic' ? bioX : 1
-          return { clean: bioAcc.clean + count * fresh * x * rareX * saleX * organicMul, clearance: bioAcc.clearance }
+          return { clean: bioAcc.clean + count * avg * x * rareX * saleX * organicMul, clearance: bioAcc.clearance }
         }, acc)
       },
       { clean: 0, clearance: 0 },
     )
   }
 
-  private jamFloor(): number {
-    const t = this.skillTier('jam')
-    if (t === 0) return 0
-    return JAM_FLOOR[t - 1]
+  private shopPackRarity(u: number): Rarity {
+    if (!this.done.has('unlock-crop-variants')) return 'common'
+    return rollShopRarity(this.skillTier('seed-bank'), u)
   }
 
   nowDay(): number {
@@ -4636,12 +4634,14 @@ export class World {
           const stored = this.ripenN.get(key)
           const n = stored === undefined ? 0 : stored
           const u = this.rng.stream('grow').at(at.col, at.row, this.clock.day, n)
-          c.plant.rarity = rollGrowRarity(
-            c.plant.rarity,
-            c.plant.happiness,
-            u,
-            extraGrowUp1(c.plant.crop, id => this.hasSkill(id)),
-          )
+          c.plant.rarity = this.done.has('unlock-crop-variants')
+            ? rollGrowRarity(
+                c.plant.rarity,
+                c.plant.happiness,
+                u,
+                extraGrowUp1(c.plant.crop, id => this.hasSkill(id)),
+              )
+            : c.plant.rarity
           this.ripenN.set(key, n + 1)
           this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
           dirty = true
@@ -4650,7 +4650,7 @@ export class World {
       }
       if (c.kind === 'ripe') {
         const bar0Fresh = c.plant.freshness < 0.8
-        c.plant.freshness -= dt / st.rotSeconds
+        c.plant.freshness -= dt / (st.rotSeconds * jamRotMul(this.skillTier('jam'), c.plant.freshness))
         if (c.plant.freshness <= 0) {
           this.setCell(at, { kind: 'rotten', soil: c.soil, crop: c.plant.crop })
           dirty = true
@@ -4715,7 +4715,8 @@ export class World {
 
   private tickFreshness(dt: number): void {
     const rot = (f: FruitStack) => {
-      const next = f.freshness - dt / statsOf(f.crop, f.rarity, this.modifiers).rotSeconds
+      const next =
+        f.freshness - dt / (statsOf(f.crop, f.rarity, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
       f.freshness = next < 0 ? 0 : next
     }
     const slot = (s: Slot) => {

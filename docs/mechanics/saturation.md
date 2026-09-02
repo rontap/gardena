@@ -41,7 +41,7 @@ Ten sales of `V/10` pay the same total as one sale of `V`.
 
 ## Order
 
-`marketGain` computes each good's clean subtotal — freshness, `stallX`, `raritySale`, saleswoman, heirloom, bio, jam floor — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
+`marketGain` computes each good's clean subtotal — freshness, `stallX`, `raritySale`, saleswoman, heirloom, bio — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
 
 Clearance's freshness-0 `$1` floor is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`.
 

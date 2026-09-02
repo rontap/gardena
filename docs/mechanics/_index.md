@@ -43,6 +43,7 @@ See [[canon]].
 | plants.fresh | [[mechanics/plants]] |
 | plants.harvest | [[mechanics/plants]] |
 | plants.packs | [[mechanics/plants]] |
+| plants.rarity-lock | [[mechanics/plants]] |
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
 | plants.annual | [[mechanics/plants]] |
@@ -88,9 +89,12 @@ See [[canon]].
 | research.reveal | [[mechanics/research]] |
 | research.gates | [[mechanics/research]] |
 | research.dispatch | [[mechanics/research]] |
+| research.variants | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
 | family.lens | [[mechanics/family]] |
 | family.skills | [[mechanics/family]] |
+| family.jam-rot | [[mechanics/family]] |
+| family.hidden | [[mechanics/family]] |
 | inventory.slots | [[mechanics/inventory]] |
 | inventory.compost | [[mechanics/inventory]] |
 | inventory.stack | [[mechanics/inventory]] |

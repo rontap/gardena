@@ -10,4 +10,6 @@ Steel/iron can, cottage leaf mark (same glyph language as `item-fertilizer`). In
 
 `ui-research-fertilizer.svg` — viewBox `0 0 24 24`. Small synth bag + small spray can. Unlock-fertilizer research face. Coder wires it.
 
+`ui-research-crop-variants.svg` — viewBox `0 0 24 24`. Two quality marks: uncommon `leaf` left, rare `water` right. Crop variants research face. Not heirloom gold.
+
 Assumption: unnamed synth dark is water on the research face.

@@ -16,7 +16,7 @@ Walking speed is not affected yet.
 
 ## Wooden fence
 
-`buy-fence` $10, unlock `unlock-landscaping`.
+`buy-fence` $8, unlock `unlock-landscaping`.
 
 Not a `Cover`. `World.fences` is a `Set` of `"col,row"`, like `segments` / `sprinklers`. Fence sits in the **middle** of a tile, not on an edge.
 

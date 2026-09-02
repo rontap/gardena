@@ -65,7 +65,7 @@ Liters are not counts. Buckets, fertilizer / synth / compost bags, and sugar cap
 
 Ordinary bag `FERT_BAG_LITERS`, always in the shop. Synthetic `SYNTH_BAG_LITERS`, research. Compost `COMPOST_LITERS`, organic feed.
 
-Compost box, `unlock-compost`, plants tree, no prerequisite — priced level with `unlock-fertilizer`. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
+Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
 `COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
 
@@ -83,7 +83,7 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 
 `inventory.slots` — Hand is one item. House 16 slots. Chest `CHEST_SLOTS`. Starter: shovel in hand, bucket on door (`CONTAINERS.bucket`), seed silo starter stacks, three tree seeds, money `MONEY_START`.
 
-`inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. Composting research `unlock-compost`.
+`inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. `buy-compost-box` unlock `start`.
 
 `inventory.stack` — Countable items merge in hand by kind and identity only. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per rank. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`.
 

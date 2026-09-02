@@ -108,8 +108,8 @@ describe('machines', () => {
   })
 
   test('Barrel locks one crop: grape → wine, apple → cider. No mix. No whisky. No migrate.', () => {
-    expect(SAVE_VERSION).toBe(2.03)
-    expect(PROTOCOL).toBe(2.03)
+    expect(SAVE_VERSION).toBe(2.04)
+    expect(PROTOCOL).toBe(2.04)
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
     expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
     expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')

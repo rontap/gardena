@@ -10,7 +10,7 @@ Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertToler
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack rarity is `common` unless the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
+Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack rarity is `common` unless `unlock-crop-variants` is done and the player owns `seed-bank` — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato watermelon grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Trees have no pack.
 
 Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the three starting seeds and the one wild apple are the only ones not won from a contract.
 
@@ -71,7 +71,7 @@ Ripe does not die of water or fertilizer. It only rots.
 
 ## Rarity roll
 
-At ripen: `freshness = 1`. `rarity = rollGrowRarity(rarity, happiness, grow.at(col, row, day, n), extraUp1)`. `n` is `World.ripenN` at that cell, then becomes `n + 1`. Absent 0. Not a `Soil` field. — [[mechanics/rng]]
+At ripen: `freshness = 1`. If `unlock-crop-variants` in `done`: `rarity = rollGrowRarity(rarity, happiness, grow.at(col, row, day, n), extraUp1)`. Else planted rarity. `grow.at` still sampled. `n` is `World.ripenN` at that cell, then becomes `n + 1`. Absent 0. Not a `Soil` field. — [[mechanics/rng]]
 
 `extraUp1` is `BETTER_UP1` if the player owns `better-{crop}`, else 0. Scaled by `h / HAPPY_MAX`. No `better-*` for `TreeId`.
 
@@ -89,11 +89,11 @@ Wild weights `RARITY_WEIGHT` — preference. `rollRarity` for tree fruit drops.
 
 ## Freshness
 
-On the plant, while ripe: `freshness -= dt / rotSeconds`. `<= 0` → `{ kind: 'rotten', soil, crop }`.
+On the plant, while ripe: `freshness -= dt / (rotSeconds × jamRotMul)`. `<= 0` → `{ kind: 'rotten', soil, crop }`. `jamRotMul` 1 unless daughter owns `jam` and freshness `< 0.5` — [[mechanics/family]].
 
 After pick, fruit keeps rotting in hand, house, chest, and ground until sold. `tickFreshness`. Freezer slots skip. Hits 0 and stays fruit. Sugar does not tick.
 
-`freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale`. Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam floor — [[mechanics/family]].
+`freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale`. Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam rot — [[mechanics/family]].
 
 Merge same crop+rarity: weighted `unitSale` and `freshness`. Different rarity never merges.
 
@@ -125,13 +125,15 @@ Shovel: `{ kind: 'tree-seed'; tree: species }`, both cells bare soft.
 
 `plants.happy` — Happiness starts `HAPPY_START`. Drown drain `HAPPY_DROWN_SECONDS`. Wilt `HAPPY_WILT_SECONDS`. Starve `HAPPY_STARVE_SECONDS`. Happiness 0 while growing: drown → `rotten`; wilt/starve → `dead`. Ripe does not die of water or fertilizer.
 
-`plants.ripen` — Ripen: `freshness = 1`, `rarity = rollGrowRarity(rarity, happiness, grow.at(col, row, day, n), extraUp1)`, then `ripenN` at that cell becomes `n + 1`. Absent `n` is 0. `extraUp1` is `BETTER_UP1` if player owns `better-{crop}`, else 0; scaled by `h / HAPPY_MAX`. Ripe `freshness -= dt / rotSeconds`; `<= 0` → `rotten`.
+`plants.ripen` — Ripen: `freshness = 1`. With `unlock-crop-variants`: `rarity = rollGrowRarity(...)`. Without: planted rarity. `ripenN` at that cell becomes `n + 1`. Absent `n` is 0. `extraUp1` is `BETTER_UP1` if player owns `better-{crop}`, else 0; scaled by `h / HAPPY_MAX`. Ripe `freshness -= dt / (rotSeconds × jamRotMul)`; `<= 0` → `rotten`.
 
-`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground) until sold. Freezer slots skip `tickFreshness`. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`, then jam floor if daughter owns `jam`.
+`plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground) until sold. Freezer slots skip `tickFreshness`. `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`. Jam is rot, not a sale floor.
+
+`plants.rarity-lock` — Without `unlock-crop-variants`: ripen identity, shop packs common. Tree drops still `RARITY_WEIGHT`.
 
 `plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, `unitSale = stats.sale`, plot `empty` same soil. Same crop+rarity in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed. Shovel dead, rotten, weed, or grass: no drop.
 
-`plants.packs` — Crop stats are `CROPS`. Shop packs are common unless player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. No tree pack.
+`plants.packs` — Crop stats are `CROPS`. Shop packs are common unless `unlock-crop-variants` done and player owns `seed-bank`: per rank `SEED_BANK_CHANCE`. Base 0. No tree pack.
 
 `plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`.
 

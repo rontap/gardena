@@ -564,7 +564,8 @@ function RarityConcept() {
         Common, some Uncommon, few Rare, almost never Heirloom. The tree itself has no grade.
       </div>
       <div>
-        Happier plants more often ripen as a better grade. A plant below the middle of{' '}
+        Until Crop variants is researched, a plant keeps the grade of the seed you planted, and shop packs of five seeds
+        are Common. After Crop variants, happier plants more often ripen as a better grade. A plant below the middle of{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink> can ripen one grade lower than the
         seed you planted. A plant at or above the middle can ripen one grade higher than the seed you planted, and
         sometimes two grades higher than the seed you planted.{' '}
@@ -573,7 +574,7 @@ function RarityConcept() {
         ripen higher.
       </div>
       <div>
-        Shop packs of five seeds are Common unless you learned{' '}
+        Shop packs of five seeds stay Common unless Crop variants is researched and you learned{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Trusted seed bank</AlmanacLink>. Trusted seed bank is one of{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>your skills on Family</AlmanacLink>. Each rank, a shop pack
         of five seeds is 5% Uncommon, 1.2% Rare, or 0.2% Heirloom.
@@ -610,9 +611,8 @@ function FreshnessConcept() {
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> price for that fruit. Below 80%
         freshness, the money the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays for that
         fruit falls with its freshness.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Still good for jam</AlmanacLink> keeps 10% of the fruit's{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> price as a floor at rank I, 20% at rank
-        II, and 30% at rank III.{' '}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Still good for jam</AlmanacLink> makes fruit below half
+        freshness rot 15% slower at rank I, 30% at rank II, and 45% at rank III.{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Clearance sale</AlmanacLink> pays <Coin n={1} /> for each
         fruit whose freshness has gone to empty.
       </div>
@@ -721,7 +721,7 @@ function MarketConcept() {
         <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Heirloom</AlmanacLink> fruit, spirit, and wine by 5%. Each
         rank of <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Bio farmer</AlmanacLink> raises the money the Market
         pays for organic fruit by 4%. <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Still good for jam</AlmanacLink>{' '}
-        keeps 10% of the fruit's Market price as a floor at rank I, 20% at rank II, and 30% at rank III.{' '}
+        makes fruit below half freshness rot slower, 15% per rank.{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Clearance sale</AlmanacLink> pays <Coin n={1} /> for each
         fruit whose freshness has gone to empty.{' '}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Open late</AlmanacLink> keeps Sell all legal at sunset.{' '}

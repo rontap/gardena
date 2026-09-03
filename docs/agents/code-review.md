@@ -19,6 +19,7 @@ Read [[canon]]. Apply `~/.grok/skills/code-review/SKILL.md` if present. Write th
 - dead layers
 - invented scope
 - padded code
+- a coined or borrowed game word in docs, player copy, or the review itself — never in identifiers [[standards/lexicon]] HUD / chat / update notes must match [[standards/user-facing-text]] **say**
 
 ## Format
 
@@ -28,7 +29,7 @@ Read [[canon]]. Apply `~/.grok/skills/code-review/SKILL.md` if present. Write th
 
 ## Issues
 
-### Issue N — Severity: bug|suggestion|nit
+### Issue N — Severity: blocker|bug|suggestion|nit
 - File: path:line
 - Description:
 - Suggestion:

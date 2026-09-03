@@ -9,6 +9,8 @@ Vault for this game. Agents read this first.
 - [[pipeline]]
 - [[GLOBAL_VERSION]]
 - [[standards/docs]]
+- [[standards/lexicon]]
+- [[standards/user-facing-text]]
 - [[standards/testing]]
 - [[standards/update-notes]]
 
@@ -56,6 +58,7 @@ Vault for this game. Agents read this first.
 
 ## Plans
 
+- [[e2e_test]] — working audit: mechanics vs code vs tests. Not law.
 - [[Path to V1.0 - readonly]] — roadmap, not rules
 - [[plans/early-access-1]] — Early Access 1 spec
 - [[plans/early-access-1.1]] — Early Access multiplayer beta spec

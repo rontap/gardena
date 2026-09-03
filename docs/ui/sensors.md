@@ -138,21 +138,21 @@ Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sens
 
 | sku | `skuLabel` | `skuDesc` / blurb |
 |---|---|---|
-| `buy-lever` | **Lever** | Throw it, or a wire turning on throws it. Output high when on. |
-| `buy-button` | **Button** | Press. Output high for a short pulse. |
-| `buy-lamp` | **Lamp** | Lights when its input is high. |
-| `buy-or` | **OR gate** | Output high if either input is high. |
-| `buy-and` | **AND gate** | Output high if both inputs are high. |
-| `buy-not` | **NOT gate** | Output is the inverse of its input. |
-| `buy-pulser` | **Pulser** | When its input turns on, the output turns on once, then off until the input turns off. |
-| `buy-counter` | **Counter** | Counts while its input is on. Set a number; when the count reaches it, the output turns on once and the count starts over. |
-| `buy-sensor-water` | **Water sensor** | Reads nearby plant water. Output high when a plot matches the checked boxes. |
-| `buy-sensor-fert` | **Fertilizer sensor** | Reads nearby growing plants. Output high when any is starving. |
-| `buy-sensor-harvest` | **Harvest sensor** | Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe. |
-| `buy-sensor-day` | **Day sensor** | Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it. |
-| `buy-water-system` | **Water-system sensor** | Joins a water net. Output high when sprinklers on that net want more than the tanks hold. |
-| `buy-vehicle-detector` | **Vehicle detector** | Flush plate. Output high when a field Quad or tractor sits on this tile. |
-| `buy-traffic-light` | **Traffic light** | Holds a vehicle until the input is green; output is on while a vehicle waits here. |
+| `buy-lever` | **Lever** | A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too. |
+| `buy-button` | **Button** | Press it to send one short signal that stops on its own. |
+| `buy-lamp` | **Lamp** | Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing. |
+| `buy-or` | **OR gate** | Turns on when either of its two inputs is on. |
+| `buy-and` | **AND gate** | Turns on only while both of its inputs are on. |
+| `buy-not` | **NOT gate** | Turns on while its input is off, and off while it is on. |
+| `buy-pulser` | **Pulser** | Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one. |
+| `buy-counter` | **Counter** | Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly. |
+| `buy-sensor-water` | **Water sensor** | Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself. |
+| `buy-sensor-fert` | **Fertilizer sensor** | Watches the growing plants around it and turns on as soon as one is starving for fertilizer. |
+| `buy-sensor-harvest` | **Harvest sensor** | Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe. |
+| `buy-sensor-day` | **Day sensor** | Turns on during the parts of the day you tick: sunrise, day, sunset, twilight. |
+| `buy-water-system` | **Water-system sensor** | Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry. |
+| `buy-vehicle-detector` | **Vehicle detector** | A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off. |
+| `buy-traffic-light` | **Traffic light** | Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish. |
 
 Pulser / counter / day: `show` + `unlock` `unlock-sensors`, `need: []`. AND / OR / NOT: `show: unlock-sensors`, `unlock: unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. Water / fert / water-system / vehicle-detector show on `unlock-sensors` and carry a `need` list; their locked callout names that list. Traffic light: `show` `unlock-sensors`, `need` `unlock-dispatch`. There is no valve SKU on this shelf: `unlock-smart-irrigation` gives the valve its port in place. Locked callout names **Automated dispatch** — [[mechanics/research]].
 

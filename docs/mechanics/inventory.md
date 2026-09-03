@@ -6,7 +6,7 @@ House: 16 slots. Walk to the door, swap with hand. Auto-merge same crop+rarity s
 
 Chest: `CHEST_SLOTS` — preference. 1×1, `unlock-chest`. Walk up, swap any item. Dump/pull all legal until dest or cargo full. Pads + `Act.load`/`unload` — [[mechanics/vehicles]]. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. Guest `swapChest` / Load / Unload: not. — [[mechanics/multiplayer]] `mp.guest`.
 
-Freezer: `FREEZER_SLOTS` — preference. 1×1, `unlock-preservatives`. Reuses chest act / `swapChest`. Slots skip `tickFreshness`. Guest may not open. Same pads / `out` / guest ban as chest. — [[mechanics/machines]] [[mechanics/sensors]]
+Freezer: `FREEZER_SLOTS` — preference. 1×1, `unlock-preservatives`. Reuses chest act / `swapChest`. Slots rot at `FREEZER_ROT_MUL` of the open rate: cold slows rot, it does not stop it and it never restores freshness. Guest may not open. Same pads / `out` / guest ban as chest. — [[mechanics/machines]] [[mechanics/sensors]]
 
 Quad: `VEHICLE_SLOTS` — preference. Any `Item`, chest swap + compact. Freshness ticks (not freezer). `Act.swapVehicle` legal iff parked (`field` && `driver === 'none'`). Stored: no-op. Driven: no-op. Guests may swap. Hangar HUD has no 6-slot. Tractor has no 6-slot. Fuel is not an item.
 

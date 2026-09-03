@@ -23,6 +23,5 @@ Read [[canon]] and [[stack]]. Write immediately. No handoff text.
 2. Types that cannot represent illegal states. See [[canon]].
 3. Totals: inputs → next state. Classes: fields, methods, forbidden.
 4. Name invariants the coder must not runtime-check. Testable only.
-5. Name the files.
-6. Halt: [[canon]].
-7. Done when architecture and mechanics notes match the task.
+5. Halt: [[canon]].
+6. Done when architecture and mechanics notes match the task.

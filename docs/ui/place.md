@@ -89,7 +89,7 @@ Valve: the edge midpoint also draws the open-valve art at 0.7 (`data-valve-ghost
 
 Cell outline stays `stroke-ink`. Copy **Place Pipe** / **Place Valve**. Stay armed.
 
-Already piped / not an edge / unowned → **Cannot place here**. Valve on a valved edge → **Pipe already has a valve**. Poor → **Cannot afford**. A valve on a bare owned edge is legal and lays the pipe with it, priced as both — [[mechanics/water]].
+Already piped / not an edge / unowned → **Cannot place here**. Valve on a valved edge → **Pipe already has a valve**. Poor → **Cannot afford**. `buy-valve` on an owned edge with no pipe lays the pipe and the valve, charging both, or neither. On a bare piped edge it charges the valve alone. — [[mechanics/water]] `water.autolay`.
 
 ## Pipe run
 
@@ -164,7 +164,7 @@ Delete pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU.
 
-`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve, no pipe **Valve needs a pipe**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].
+`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]].
 
 Pipe / delete follow copy: HTML chip under the pointer, same `bg-house` `px-2` `py-0.5` `text-base` `text-ink`, no `skuInner`.
 

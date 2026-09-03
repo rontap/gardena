@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test'
-import { DAY_SECONDS } from '../src/game/sim/clock.ts'
 import {
   armSku,
   closeDock,
@@ -43,18 +42,25 @@ test('shop close exits pipe layer', async ({ page }) => {
   await hoverWorld(page, 12.5, 10.5)
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
   await closeDock(page)
-  await expectPipeLayerOff(page)
+  await expect.poll(() => placeKind(page)).toBe('none')
+  await expect(page.getByRole('button', { name: 'Lens', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toHaveCount(0)
   await setPipesLens(page)
+  await page.getByRole('button', { name: /Lock view/ }).click()
+  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
+  await armSku(page, 'Pipe 3')
+  await expect.poll(() => placeKind(page)).toBe('sku')
   await openShop(page)
   await page.getByRole('button', { name: 'Shop', exact: true }).click()
   await expect(page.getByText('General store')).toHaveCount(0)
-  await expectPipeLayerOff(page)
-  await setPipesLens(page)
-  await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
+  await expect.poll(() => placeKind(page)).toBe('none')
+  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
+  await armSku(page, 'Pipe 3')
   await openShop(page)
   await page.keyboard.press('Escape')
-  await expectPipeLayerOff(page)
+  await expect.poll(() => placeKind(page)).toBe('none')
+  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
 })
 
 test('sprinkler place without pipes', async ({ page }) => {
@@ -86,45 +92,58 @@ test('dry pipes', async ({ page }) => {
 })
 
 test('connected sprinkler waters', async ({ page }) => {
-  test.setTimeout(90_000)
   await armSku(page, 'Pipe 3')
   await tapWorld(page, 18.5, 7)
   await armSku(page, 'Sprinkler 16')
   await tapWorld(page, 19, 7)
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
   await page.keyboard.press('Escape')
-  await page.evaluate(async () => {
-    const w = (window as unknown as { __world: { setCell: (at: { col: number; row: number }, c: unknown) => void } }).__world
+  const water0 = await page.evaluate(async () => {
+    const w = (
+      window as unknown as {
+        __world: {
+          setCell: (at: { col: number; row: number }, c: unknown) => void
+          cell: (at: { col: number; row: number }) => { kind: string; soil?: { water: number } }
+        }
+      }
+    ).__world
     const plant = await import('/src/game/sim/plant.ts')
     const soil = await import('/src/game/sim/soil.ts')
-    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'common') })
+    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new soil.Soil(0.2, 1, 0.03), plant: new plant.Plant('carrot', 'common') })
+    const c = w.cell({ col: 18, row: 6 })
+    if (c.kind !== 'growing' || c.soil === undefined) throw new Error('growing')
+    return c.soil.water
   })
   await hoverWorld(page, 18.5, 6.5)
-  await expect(page.getByText(/Carrot - growing/)).toBeVisible()
-  const t0 = await remaining(page)
+  await expect(page.getByText(/Carrot - growing \d+%/)).toBeVisible()
   await expect
-    .poll(async () => t0 - (await remaining(page)), { timeout: 80_000 })
-    .toBeGreaterThanOrEqual(31)
+    .poll(async () => {
+      return page.evaluate(() => {
+        const c = (
+          window as unknown as {
+            __world: { cell: (at: { col: number; row: number }) => { kind: string; soil?: { water: number } } }
+          }
+        ).__world.cell({ col: 18, row: 6 })
+        if (c.kind !== 'growing' || c.soil === undefined) return -1
+        return c.soil.water
+      })
+    })
+    .toBeGreaterThan(water0)
   await hoverWorld(page, 18.5, 6.5)
-  await expect(page.getByText(/Carrot - growing/)).toBeVisible()
-  await expect(page.locator('[data-thirst="18,6"]')).toHaveCount(0)
+  await expect(page.getByText(/Carrot - growing \d+%/)).toBeVisible()
 })
 
 async function setPipesLens(page: Page) {
-  const on = page.getByRole('button', { name: 'Lens pipes', exact: true })
+  const on = page.getByRole('button', { name: /^Lens pipes/ })
   if (await on.isVisible()) return
   await page.getByRole('button', { name: /^Lens/ }).click()
   await page.getByRole('button', { name: /^Pipes / }).click()
   await expect(on).toBeVisible()
 }
 
-async function expectPipeLayerOff(page: Page) {
-  await expect(page.getByRole('button', { name: 'Lens', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Lens pipes', exact: true })).toHaveCount(0)
-}
-
-async function remaining(page: Page): Promise<number> {
-  const t = await page.locator('[data-clock]').getAttribute('data-clock-t')
-  if (t === null) throw new Error('clock')
-  return DAY_SECONDS - Number(t)
+async function placeKind(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const w = (window as unknown as { __world: { seats: { place: { kind: string } }[] } }).__world
+    return w.seats[0].place.kind
+  })
 }

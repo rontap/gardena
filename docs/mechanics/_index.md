@@ -212,3 +212,6 @@ See [[canon]].
 | play.logged | [[architecture/ai-gameplay-api]] |
 | play.witness | [[architecture/ai-gameplay-api]] |
 | docs.version | [[standards/docs]] |
+| lex.term | [[standards/lexicon]] |
+| lex.copy | [[standards/lexicon]] |
+| lex.user | [[standards/user-facing-text]] |

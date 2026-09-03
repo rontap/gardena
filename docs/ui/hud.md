@@ -31,7 +31,7 @@ Each glyph `relative` `pointer-events-auto`. [[ui/callout-hover]] `placement="be
 | rain | Rain | A little extra water on every tilled plot. Weeds and grass come faster. Rain tanks fill six times faster. Shut off irrigation or picky plants will drown. |
 | dry | Dry | Plots lose a little water to the air. Weeds and grass stay down. Rain tanks sit empty. Pump water costs more at sundown. |
 | flood | Flood | Heavy water on every tilled plot — plants may drown. Rain tanks surge. The stall is closed this morning unless you keep it open around the clock. Fruit sells for more. |
-| drought | Drought | Plots dry out. Wells yield half. Pump water is costly. Shop goods cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more. |
+| drought | Drought | Plots dry out. Wells yield half. Pump water is costly. Seeds and Tools cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more. |
 
 Tomorrow title **Tomorrow · {name}**, body of that kind. `{name}` is Clear / Rain / Dry / Flood / Drought.
 
@@ -98,7 +98,7 @@ Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — deri
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`; if `lens === 'pipes'` or `lens === 'sensors'` then `off`. Matches Esc. Leave `water` / `land` / `ripe` / `kind` / `rarity` / `vehicles`. Right-click: `cancelPlace` only. Esc: `cancelPlace`; pipes or sensors → `off`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
+Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens — [[ui/place]] [[ui/docks]] [[ui/lens]]. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
 
 ## Lenses
 

@@ -16,6 +16,10 @@ User says you are free to decide → one-line assumption, proceed.
 
 Terse. Short. Concise. No padding. No handoff templates. No “as a next step.”
 
+Game words are bound in anything a person reads — text to the user, player copy, `docs/**/*.md`, commit and review text: [[standards/lexicon]]. A term belongs to one mechanic. No coinage, no metaphor, no trade word borrowed from another domain. Unsure → grep the owning note. No term → no concept. Identifiers in `src/` are free; backticked, they are a citation.
+
+Two registers. Vault notes: the vault term, exact. User-facing (chat with the developer, update notes, HUD, player copy): [[standards/user-facing-text]] exact word. The vault word is often not the player's word — translating is the job, inventing a third word is the fault.
+
 ## Shape, then access
 
 Data is complete at the boundary. After that, access is total.

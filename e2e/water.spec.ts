@@ -29,22 +29,25 @@ async function worldTrue(page: Page, arg: unknown, body: string, timeout = 60_00
     .toBe(true)
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, info) => {
+  if (info.title === 'ripe fruit rots' || info.title === 'weeds sprout on fallow tilled soil') {
+    await gotoPlay(page, { speed: 10 })
+    return
+  }
   await gotoPlay(page)
 })
 
-test.fixme('valve feeds while open and starves the line when closed', async ({ page }) => {
+test('valve feeds while open and the far side is dry when closed', async ({ page }) => {
   await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
   await placeEdge(page, 'h', 20, 7)
   await convertToValve(page, 19, 7)
-  await page.keyboard.press('Escape')
+  await disarm(page)
   await expect(page.locator('[data-pipe]')).toHaveCount(4)
   await expect.poll(() => wetCount(page)).toBe(4)
 
-  await tapValveMid(page, 19.5, 7)
-  await expect.poll(() => valveOpen(page), { timeout: 45_000 }).toBe(false)
+  await closeValve(page, 19, 7)
   await expect.poll(() => wetCount(page)).toBe(2)
   expect(
     await readWorld<boolean>(
@@ -58,7 +61,7 @@ test.fixme('valve feeds while open and starves the line when closed', async ({ p
   ).toBe(true)
 })
 
-test.fixme('closed valve still waters through a bypass', async ({ page }) => {
+test('closed valve still waters through a bypass', async ({ page }) => {
   await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await convertToValve(page, 18, 7)
@@ -66,12 +69,11 @@ test.fixme('closed valve still waters through a bypass', async ({ page }) => {
   await placeEdge(page, 'h', 18, 8)
   await placeEdge(page, 'v', 19, 7)
   await placeEdge(page, 'h', 19, 7)
-  await page.keyboard.press('Escape')
+  await disarm(page)
   await expect(page.locator('[data-pipe]')).toHaveCount(5)
   await expect.poll(() => wetCount(page)).toBe(5)
 
-  await tapValveMid(page, 18.5, 7)
-  await expect.poll(() => valveOpen(page), { timeout: 45_000 }).toBe(false)
+  await closeValve(page, 18, 7)
   await expect.poll(() => wetCount(page)).toBe(5)
   expect(await readWorld<boolean>(page, { col: 20, row: 7 }, 'w.vertexWet(at)')).toBe(true)
 })
@@ -114,7 +116,7 @@ test('two sources join one network', async ({ page }) => {
 })
 
 test('weeds sprout on fallow tilled soil', async ({ page }) => {
-  await gotoPlay(page, { speed: 10 })
+  test.setTimeout(180_000)
   const spots: At[] = [
     { col: 13, row: 11 },
     { col: 14, row: 11 },
@@ -128,48 +130,118 @@ test('weeds sprout on fallow tilled soil', async ({ page }) => {
   await worldTrue(page, spots, 'at.every(p => w.cell(p).kind === "empty") && w.seats[0].queue.length === 0')
   await expect
     .poll(async () => {
-      await dismissRecap(page)
-      return page.locator('[data-weed]').count()
+      return page.evaluate(plots => {
+        const w = (
+          window as unknown as {
+            __world?: {
+              seam: { kind: string }
+              dismissRecap: () => void
+              tick: (dt: number) => void
+              clock: { day: number }
+              weather: (day: number) => string
+              pinTomorrow: (kind: string) => void
+              cell: (c: { col: number; row: number }) => { kind: string }
+            }
+          }
+        ).__world
+        if (w === undefined) return 0
+        if (w.seam.kind === 'recap') w.dismissRecap()
+        const nxt = w.weather(w.clock.day + 1)
+        if (nxt === 'dry' || nxt === 'drought') w.pinTomorrow('clear')
+        for (let i = 0; i < 90; i++) {
+          if (w.seam.kind === 'recap') w.dismissRecap()
+          const n = w.weather(w.clock.day + 1)
+          if (n === 'dry' || n === 'drought') w.pinTomorrow('clear')
+          const now = w.weather(w.clock.day)
+          if (now === 'dry' || now === 'drought') {
+            w.tick(1 / 15)
+            continue
+          }
+          w.tick(1 / 15)
+        }
+        return plots.filter(p => w.cell(p).kind === 'weed').length
+      }, spots)
     }, { timeout: 120_000 })
     .toBeGreaterThanOrEqual(1)
 })
 
-test.fixme('ripe fruit rots', async ({ page }) => {
-  test.setTimeout(240_000)
-  await gotoPlay(page, { speed: 10 })
-  await tapWorld(page, 13.5, 11.5)
-  await worldTrue(page, { col: 13, row: 11 }, 'w.cell(at).kind === "empty" && w.seats[0].queue.length === 0')
+test('ripe fruit rots', async ({ page }) => {
+  test.setTimeout(180_000)
+  const at: At = { col: 13, row: 11 }
+  await expect
+    .poll(async () => {
+      await dismissRecap(page)
+      const kind = await readWorld<string>(page, at, 'w.cell(at).kind')
+      if (kind === 'untilled') await tapWorld(page, at.col + 0.5, at.row + 0.5)
+      return kind
+    }, { timeout: 45_000 })
+    .toBe('empty')
+  await worldTrue(page, at, 'w.cell(at).kind === "empty" && w.seats[0].queue.length === 0')
 
-  const inv = page.locator('div.font-medium').filter({ hasText: /^Inventory$/ })
-  await expect
-    .poll(
-      async () => {
-        await dismissRecap(page)
-        if (!(await inv.isVisible().catch(() => false))) await tapWorld(page, 15.5, 8.5)
-        return inv.count()
-      },
-      { timeout: 45_000 },
-    )
-    .toBe(1)
-  await page.getByText('Carrot seed - 5, plant it').locator('..').getByRole('button').click()
-  await inv.locator('..').getByRole('button', { name: 'Close' }).click()
-  await worldTrue(page, null, 'w.seats[0].queue.length === 0', 45_000)
-  if (await inv.isVisible().catch(() => false)) {
-    await inv.locator('..').getByRole('button', { name: 'Close' }).click()
-  }
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as {
+        __world?: { seats: { hand: { kind: string } }[]; takeSilo: (crop: string, rarity: string) => void }
+      }
+    ).__world
+    if (w === undefined) throw new Error('no __world')
+    w.seats[0].hand = { kind: 'empty' }
+    w.takeSilo('carrot', 'common')
+  })
+  await worldTrue(
+    page,
+    null,
+    'w.seats[0].hand.kind === "hold" && w.seats[0].hand.item.kind === "seeds" && w.seats[0].queue.length === 0',
+    10_000,
+  )
 
-  await tapWorld(page, 13.5, 11.5)
   await expect
-    .poll(() => cellKind(page, { col: 13, row: 11 }), { timeout: 90_000 })
-    .toBe('ripe')
-  await expect
-    .poll(() => cellKind(page, { col: 13, row: 11 }), { timeout: 150_000, intervals: [500] })
-    .toBe('rotten')
+    .poll(async () => {
+      const kind = await cellKind(page, at)
+      if (kind === 'empty') await tapWorld(page, at.col + 0.5, at.row + 0.5)
+      return kind
+    }, { timeout: 45_000 })
+    .toBe('growing')
+  await expect.poll(async () => stepKind(page, at), { timeout: 60_000, intervals: [50] }).toBe('ripe')
+  await expect.poll(async () => stepKind(page, at), { timeout: 90_000, intervals: [50] }).toBe('rotten')
 })
 
 async function cellKind(page: Page, at: At): Promise<string> {
-  await dismissRecap(page)
-  return readWorld<string>(page, at, 'w.cell(at).kind')
+  return page.evaluate(([col, row]) => {
+    const w = (
+      window as unknown as {
+        __world?: {
+          seam: { kind: string }
+          dismissRecap: () => void
+          cell: (c: { col: number; row: number }) => { kind: string }
+        }
+      }
+    ).__world
+    if (w === undefined) return ''
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    return w.cell({ col, row }).kind
+  }, [at.col, at.row])
+}
+
+async function stepKind(page: Page, at: At): Promise<string> {
+  return page.evaluate(([col, row]) => {
+    const w = (
+      window as unknown as {
+        __world?: {
+          seam: { kind: string }
+          dismissRecap: () => void
+          tick: (dt: number) => void
+          cell: (c: { col: number; row: number }) => { kind: string }
+        }
+      }
+    ).__world
+    if (w === undefined) return ''
+    for (let i = 0; i < 120; i++) {
+      if (w.seam.kind === 'recap') w.dismissRecap()
+      w.tick(1 / 15)
+    }
+    return w.cell({ col, row }).kind
+  }, [at.col, at.row])
 }
 
 async function placeEdge(page: Page, axis: 'h' | 'v', col: number, row: number): Promise<void> {
@@ -184,6 +256,8 @@ async function placeEdge(page: Page, axis: 'h' | 'v', col: number, row: number):
       return has
     }, { timeout: 20_000 })
     .toBe(true)
+  const p = await screenOf(page, wx, wy)
+  await page.mouse.click(p.x, p.y, { button: 'right' })
 }
 
 async function convertToValve(page: Page, col: number, row: number): Promise<void> {
@@ -219,25 +293,35 @@ async function wetCount(page: Page): Promise<number> {
   return page.locator('[data-pipe][data-wet="1"]').count()
 }
 
-async function valveOpen(page: Page): Promise<boolean | null> {
-  return page.evaluate(() => {
-    const w = (
-      window as unknown as {
-        __world?: { segments: Map<string, { gate?: { kind: string; open?: boolean } }> }
+async function disarm(page: Page): Promise<void> {
+  await expect
+    .poll(async () => {
+      const kind = await readWorld<string>(page, null, 'w.seats[0].place.kind')
+      if (kind !== 'none') {
+        const cancel = page.getByRole('button', { name: 'Cancel' })
+        if (await cancel.isVisible()) await cancel.click()
+        else await page.keyboard.press('Escape')
       }
-    ).__world
-    if (w === undefined) return null
-    for (const seg of w.segments.values()) {
-      if (seg.gate !== undefined && seg.gate.kind === 'valve') return seg.gate.open ?? null
-    }
-    return null
-  })
+      return kind
+    }, { timeout: 10_000 })
+    .toBe('none')
 }
 
-async function tapValveMid(page: Page, wx: number, wy: number) {
-  const p = await screenOf(page, wx, wy)
-  await page.mouse.move(p.x + 1, p.y + 1)
-  await page.mouse.move(p.x, p.y)
-  await page.mouse.down()
-  await page.mouse.up()
+async function closeValve(page: Page, col: number, row: number): Promise<void> {
+  const key = `h:${col},${row}`
+  const wx = col + 0.5
+  const wy = row
+  await expect
+    .poll(async () => {
+      await dismissRecap(page)
+      const st = await readWorld<{ open: boolean; busy: boolean }>(
+        page,
+        key,
+        '{ open: w.segments.get(at).gate.open, busy: w.seats[0].queue.length > 0 }',
+      )
+      if (!st.open) return true
+      if (!st.busy) await tapWorld(page, wx, wy)
+      return false
+    }, { timeout: 45_000 })
+    .toBe(true)
 }

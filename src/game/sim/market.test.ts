@@ -624,6 +624,17 @@ describe('saturation', () => {
     expect(mixed.clearance).toBe(0)
     expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 60 / SAT_DEPTH), 9)
   })
+
+  test("heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider.", () => {
+    const wine = new World(1)
+    wine.family.daughter.owned.set('heirloom', 1)
+    wine.stall.wine.takeSpirit('heirloom', 1, 100)
+    const cider = new World(1)
+    cider.family.daughter.owned.set('heirloom', 1)
+    cider.stall.cider.takeSpirit('heirloom', 1, 100)
+    expect(wine.marketQuote().clean).toBe(105)
+    expect(cider.marketQuote().clean).toBe(100)
+  })
 })
 
 describe('prizes', () => {

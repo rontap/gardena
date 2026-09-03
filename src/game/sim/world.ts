@@ -3939,7 +3939,8 @@ export class World {
           const count = this.stall[id].stock[rarity].organic
           if (count === 0) return goodTotal
           const worth = this.stall[id].worth[rarity].organic
-          return goodTotal + worth * saleX * (rarity === 'heirloom' ? heirX : 1)
+          const heir = id !== 'cider' && rarity === 'heirloom' ? heirX : 1
+          return goodTotal + worth * saleX * heir
         }, 0),
         clearance: 0,
       }

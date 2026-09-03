@@ -13,6 +13,7 @@ Read [[index]] and [[canon]]. Write `docs/` immediately. No handoff text.
 - Code.
 - Paraphrase code into docs.
 - Orphan notes.
+- Coin a term, or move one off its owning note. [[standards/lexicon]] Player / chat / HUD word: [[standards/user-facing-text]].
 - History of what the game was. The only history is `src/game/ui/changelog.md`.
 - [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy.
 

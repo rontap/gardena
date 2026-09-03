@@ -6,7 +6,7 @@ Click-walk speed unchanged — [[items/tiles]]. WASD walk and dash cargo below. 
 
 ## Lens
 
-`Lens` += `vehicles` on `src/game/view/map.tsx`. View-local, not `World`. Unhidden after `unlock-vehicles` in `done`. Not a family-study row. leaveShop / Esc still only force pipes / sensors off.
+`Lens` += `vehicles` on `src/game/view/map.tsx`. View-local, not `World`. Unhidden after `unlock-vehicles` in `done`. Not a family-study row. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens.
 
 Paint hangar-return + machine pad arrows (`HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`) iff local seat is a driver OR `lens === 'vehicles'`. Driving still paints with this lens off. Pad opacity 0.5; 1 iff that pad action legal. Not sim. Not logged.
 

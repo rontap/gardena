@@ -49,6 +49,8 @@ Task: <exact request for this specialist>
 Read first:
 - docs/agents/<type>.md
 - docs/canon.md
+- docs/standards/lexicon.md
+- docs/standards/user-facing-text.md
 - <docs the previous specialist just wrote>
 
 Write immediately where docs/agents/<type>.md allows.
@@ -68,7 +70,7 @@ Versions and player changelog (`wordmark`, `SAVE_VERSION`, dump `version`, `PROT
 
 After each child:
 
-- Allowed `.md` / src / svg missing, or invented scope, or a fallback → reject. Re-ask or re-spawn. Do not silently repair.
+- Allowed `.md` / src / svg missing, or invented scope, or a fallback, or a coined / borrowed game word (`docs/standards/lexicon.md`) → reject. Re-ask or re-spawn. Do not silently repair.
 - One-line question with no writes → ask the user. Do not answer for them.
 - A finished note that names an assumption is not a halt. Spawn the next.
 

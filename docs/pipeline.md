@@ -43,4 +43,5 @@ Only the orchestrator may touch [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, du
 - `subagent_type` = agent file name
 - `description` prefixed `[architect]`, `[coder]`, …
 - Prompt: task, files to read, write the contract `.md` now, no handoff. Halt: [[canon]]
+- Every child prompt reads `docs/standards/lexicon.md`. Chat, copy, HUD, update notes also read `docs/standards/user-facing-text.md` and paste **say**. A coined or borrowed game word in a note, in copy, or in the reply is a failed run — reject on the word, re-spawn. Identifiers are not reviewed for it. [[standards/lexicon]] [[standards/user-facing-text]]
 - Capability: architect / designer / ui-ux / documenter → `read-write`. Coder → `all`. Code-review → `all` (review file only)

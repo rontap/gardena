@@ -12,7 +12,7 @@ Working notes for the game as it runs.
 | `docs/architecture/` | Modules, types, who owns what. Not a file-tree dump. |
 | `docs/ui/` | HUD, docks, inspect, place, copy. |
 | `docs/art/` | Palette, SVG rules, named assets. |
-| `docs/standards/` | How code, tests, and notes are written. Player changelog authorship: [[standards/update-notes]]. |
+| `docs/standards/` | How code, tests, and notes are written. Words and player copy: [[standards/lexicon]]. Exact word per concept: [[standards/user-facing-text]]. Player changelog authorship: [[standards/update-notes]]. |
 | `docs/infra/` | GitHub Actions, Pages, release. Not game rules. |
 | `docs/agents/` | Who writes where. |
 | `docs/plans/` | Roadmap. Not rules. |

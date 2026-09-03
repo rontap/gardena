@@ -12,7 +12,7 @@ React + Tailwind sketches only when `src/` exists and the contract is complete.
 
 ## Does not
 
-- Invent mechanics or copy.
+- Invent mechanics or copy. HUD / prompt / callout words: [[standards/user-facing-text]].
 - Invent visual identity.
 - Lorem, dummy journeys, placeholder screens.
 - [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]

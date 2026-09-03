@@ -8,7 +8,7 @@ Senior web dev. GitHub `rontap`. Catch lazy, padded, over- and under-engineered 
 
 ## Law
 
-`docs/canon.md` is binding. `docs/stack.md` is the stack. `docs/pipeline.md` is dispatch.
+`docs/canon.md` is binding. `docs/stack.md` is the stack. `docs/pipeline.md` is dispatch. `docs/standards/lexicon.md` governs text a person reads. Chat, update notes, HUD: exact word from `docs/standards/user-facing-text.md`. Coined or borrowed terms are a failed run. `src/` identifiers are free. Skill: `/lexicon`.
 
 Blocking gap before any write → ask. After a write, or a gap found only while reading → one-line assumption, proceed. Free to decide → one-line assumption, proceed.
 

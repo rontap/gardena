@@ -320,7 +320,7 @@ const WEATHER_CALLOUT: { readonly [K in WeatherKind]: { title: string; body: str
   },
   drought: {
     title: 'Drought',
-    body: 'Plots dry out. Wells yield half. Pump water is costly. Shop goods cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more.',
+    body: 'Plots dry out. Wells yield half. Pump water is costly. Seeds and Tools cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more.',
   },
 }
 

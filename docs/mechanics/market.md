@@ -52,7 +52,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 
 Legal only when `marketOpen`. Else closed copy.
 
-`marketGain`: per crop good, per rarity × bio, `worth × stallX(id, mods) × raritySale(id, rarity)`, then sale skills. `raritySale` = `CROPS.saleMul?.[rarity] ?? RARITY_SALE[rarity]`. Sugar / jam / oil / flour / extract: `worth ×` saleswoman only. Spirit / cask: `worth ×` saleswoman, and heirloom if `rarity === 'heirloom'`.
+`marketGain`: per crop good, per rarity × bio, `worth × stallX(id, mods) × raritySale(id, rarity)`, then sale skills. `raritySale` = `CROPS.saleMul?.[rarity] ?? RARITY_SALE[rarity]`. Sugar / jam / oil / flour / extract: `worth ×` saleswoman only. Spirit / wine: `worth ×` saleswoman, and heirloom if `rarity === 'heirloom'`. Cider: `worth ×` saleswoman only.
 
 `stallX`: crop → `CROPS.sale ×` skill `saleMul` from player `better-*` (`Modifier.source === 'skill'`). Rarity is the extra `raritySale` factor, not inside `stallX`. Sugar and machine goods skip `stallX` and `raritySale` (already in `unitSale`). Sugar-cane fruit uses crop `stallX`.
 
@@ -61,7 +61,7 @@ Legal only when `marketOpen`. Else closed copy.
 Then at `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
-- heirloom: `rarity === 'heirloom'` of crop stall goods, spirit, cask × `(1 + 0.05 × tier)`. Not sugar / jam / oil / flour / extract
+- heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider. Not sugar / jam / oil / flour / extract
 - bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - clearance: `{ kind: 'rotten' }` `$1` each. Sat exempt. Saleswoman / heirloom / bio / weather do not apply. Sugar and machine goods do not rot. Without the skill: consign refused.
 - flood or drought: fruit stall goods only (annual including sugar-cane, tree fruit) × `WEATHER_FRUIT_SALE`. Not sugar / jam / spirit / wine / oil / flour / extract. After skills, before sat. — [[mechanics/weather]]
@@ -78,7 +78,7 @@ Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale
 
 ## Invariants
 
-`market.sell` — Market is Sell all iff `marketOpen`. Weather block: flood sunrise / drought midday unless `open-24`; `open-late` does not reopen. Then sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: flood “Stall closed this morning.” drought “Stall closed at midday.” else “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness (`worth`), rarity (`raritySale` = crop `saleMul` ?? `RARITY_SALE`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)`, better skill `saleMul`, bio `(1 + 0.04 × tier)`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; clearance `{ kind: 'rotten' }` `$1`, sat exempt, saleswoman / heirloom / bio / weather do not apply. Crop stall stock/worth per rarity×bio. Consign: fruit (incl. sugar-cane), sugar, spirit, cask, jam, oil, flour, extract; `{ kind: 'rotten' }` iff `clearance`. Without the skill: consign refused. Seeds illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract: baked `unitSale`, saleswoman only. Spirit / cask: baked `unitSale`, saleswoman, heirloom if `heirloom`. No berry. Sat last — [[mechanics/saturation]] [[mechanics/weather]].
+`market.sell` — Market is Sell all iff `marketOpen`. Weather block: flood sunrise / drought midday unless `open-24`; `open-late` does not reopen. Then sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: flood “Stall closed this morning.” drought “Stall closed at midday.” else “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness (`worth`), rarity (`raritySale` = crop `saleMul` ?? `RARITY_SALE`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)`, better skill `saleMul`, bio `(1 + 0.04 × tier)`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; clearance `{ kind: 'rotten' }` `$1`, sat exempt, saleswoman / heirloom / bio / weather do not apply. Crop stall stock/worth per rarity×bio. Consign: fruit (incl. sugar-cane), sugar, spirit, cask, jam, oil, flour, extract; `{ kind: 'rotten' }` iff `clearance`. Without the skill: consign refused. Seeds illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if `heirloom`. Cider: baked `unitSale`, saleswoman only. No berry. Sat last — [[mechanics/saturation]] [[mechanics/weather]].
 
 `market.rarity` — Player-facing top rarity is Heirloom (`heirloom`). `RARITY_SALE`.
 

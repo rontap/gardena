@@ -47,7 +47,7 @@ Still `base.w = 2` `base.h = 1` and prop `48×24` occupying both cells.
 
 `App.local: SeatId` is who this page is. Solo and tests: one in-seat, `local === 0`.
 
-`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work/stride and that seat hand/inventory freshness. Seat stays in `seats`. Freezer slots skip `tickFreshness`. [[mechanics/multiplayer]]
+`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work/stride and that seat hand/inventory freshness. Seat stays in `seats`. Freezer slots rot at `FREEZER_ROT_MUL`. [[mechanics/multiplayer]] [[mechanics/machines]]
 
 Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`) live on the seat, not `World`.
 
@@ -85,7 +85,7 @@ Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 �
 
 Crop goods: stock and worth per rarity × `bio`. Illegal: fruit consign that drops `fruit.bio`.
 
-`World.contracts: Contracts`. Live only. Load empty. New farm empty. Consign fills `active` in array order, then stall. Miss on the tick `nowDay` crosses `dueDay`. [[mechanics/contracts]]
+`World.contracts: Contracts`. Dump persists `active` with fills, `takenToday`, `history`, `book`, plus `rep` / `repDay`. Board is not in the file. New farm empty. Consign fills `active` in array order, then stall. Miss on the tick `nowDay` crosses `dueDay`. [[mechanics/contracts]] [[architecture/save]]
 
 ## Hand / Item
 

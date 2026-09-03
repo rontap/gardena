@@ -73,21 +73,21 @@ const FENCE_T =
 const PAVING_T = 'Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.'
 
 const PUMP_T =
-  'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
+  'Gathers ${rate} L/s into a ${cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.'
 const CHEST_T = '9 slots. Walk up and store any item.'
 const GRIND_T = 'Hopper. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.'
-const PIPE_T = 'Pipe. 4 per edge. Hidden unless the Pipes lens or a pipe tool is out.'
+const PIPE_T = 'Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.'
 const SPRINKLER_T =
-  'Waters a 2×2 around a corner, ${day} L a day per tile. Smart sprinklers research lets you dial it down to the exact thirst of one crop.'
-const SPRINKLER_VERT_T = 'Waters a 4×2 strip, ${day} L a day per tile. Rotate while placing to flip NS/EW.'
-const SPRINKLER_LARGE_T = 'Waters a 4×4 around a corner, ${day} L a day per tile.'
+  'Waters a 2×2 area of plots, ${day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.'
+const SPRINKLER_VERT_T = 'Waters a 4×2 strip, ${day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.'
+const SPRINKLER_LARGE_T = 'Waters a 4×4 area, ${day} L a day per plot.'
 const WELL_T =
-  'One tile. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.'
+  'Gathers ${rate} L/s into a ${cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.'
 const VALVE_T =
-  'Sits on an edge like pipe, laying one if the edge is bare. Click it to send the gardener over and turn the flow off or on. Water still reaches a sprinkler by any other open route. Smart irrigation gives every valve a signal input; a wired valve follows the wire instead of the hand.'
-const RAIN_TANK_T = 'Two tiles. Gathers ${rate} L/s into a ${cap} L tank with no pump and no pipe run to a source.'
+  'Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.'
+const RAIN_TANK_T = 'Gathers ${rate} L/s into a ${cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.'
 const TAP_T =
-  'One tile on the grid. Fills a bucket at ${rate} L/s while the tanks hold water, and only as fast as the sources make it once they run dry.'
+  'Fills a bucket at ${rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.'
 
 export function fill(template: string, vars: { readonly [key: string]: string | number }): string {
   return template.replace(/\$\{([^}]+)\}/g, (_, key: string) => {
@@ -440,91 +440,91 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'lever',
       title: 'Lever',
       icon: { kind: 'lever' },
-      blurb: 'Throw it, or a wire turning on throws it. Output high when on.',
+      blurb: 'A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.',
     },
     {
       id: 'button',
       title: 'Button',
       icon: { kind: 'button' },
-      blurb: 'Press. Output high for a short pulse.',
+      blurb: 'Press it to send one short signal that stops on its own.',
     },
     {
       id: 'lamp',
       title: 'Lamp',
       icon: { kind: 'lamp' },
-      blurb: 'Lights when its input is high.',
+      blurb: 'Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.',
     },
     {
       id: 'or',
       title: 'OR gate',
       icon: { kind: 'or' },
-      blurb: 'Output high if either input is high.',
+      blurb: 'Turns on when either of its two inputs is on.',
     },
     {
       id: 'and',
       title: 'AND gate',
       icon: { kind: 'and' },
-      blurb: 'Output high if both inputs are high.',
+      blurb: 'Turns on only while both of its inputs are on.',
     },
     {
       id: 'not',
       title: 'NOT gate',
       icon: { kind: 'not' },
-      blurb: 'Output is the inverse of its input.',
+      blurb: 'Turns on while its input is off, and off while it is on.',
     },
     {
       id: 'pulser',
       title: 'Pulser',
       icon: { kind: 'pulser' },
-      blurb: 'When its input turns on, the output turns on once, then off until the input turns off.',
+      blurb: 'Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one.',
     },
     {
       id: 'counter',
       title: 'Counter',
       icon: { kind: 'counter' },
-      blurb: 'Counts while its input is on. Set a number; when the count reaches it, the output turns on once and the count starts over.',
+      blurb: 'Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly.',
     },
     {
       id: 'sensor-water',
       title: 'Water sensor',
       icon: { kind: 'sensor-water' },
-      blurb: 'Reads nearby plant water. Output high when a plot matches the checked boxes.',
+      blurb: 'Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself.',
     },
     {
       id: 'sensor-fert',
       title: 'Fertilizer sensor',
       icon: { kind: 'sensor-fert' },
-      blurb: 'Reads nearby growing plants. Output high when any is starving.',
+      blurb: 'Watches the growing plants around it and turns on as soon as one is starving for fertilizer.',
     },
     {
       id: 'sensor-harvest',
       title: 'Harvest sensor',
       icon: { kind: 'sensor-harvest' },
-      blurb: 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.',
+      blurb: 'Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe.',
     },
     {
       id: 'sensor-day',
       title: 'Day sensor',
       icon: { kind: 'sensor-day' },
-      blurb: 'Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it.',
+      blurb: 'Turns on during the parts of the day you tick: sunrise, day, sunset, twilight.',
     },
     {
       id: 'water-system',
       title: 'Water-system sensor',
       icon: { kind: 'water-system' },
-      blurb: 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.',
+      blurb: 'Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry.',
     },
     {
       id: 'vehicle-detector',
       title: 'Vehicle detector',
       icon: { kind: 'vehicle-detector' },
-      blurb: 'Flush plate. Output high when a field Quad or tractor sits on this tile.',
+      blurb: 'A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off.',
     },
     {
       id: 'traffic-light',
       title: 'Traffic light',
       icon: { kind: 'traffic-light' },
-      blurb: 'Holds a vehicle until the input is green; output is on while a vehicle waits here.',
+      blurb: 'Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish.',
     },
   ]
 }

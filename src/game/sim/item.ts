@@ -517,7 +517,7 @@ export function skuDesc(id: SkuId): string {
       )
     case 'buy-pumpjack':
       return fill(
-        'Two tiles. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.',
+        'Gathers ${rate} L/s into a ${cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.',
         { rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity },
       )
     case 'buy-chest':
@@ -529,29 +529,29 @@ export function skuDesc(id: SkuId): string {
         workSeconds: GRIND_WORK,
       })
     case 'buy-pipe':
-      return 'Pipe. 4 per edge. Hidden unless the Pipes lens or a pipe tool is out.'
+      return 'Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.'
     case 'buy-sprinkler':
-      return fill('Waters a 2×2 around a corner, ${day} L a day per tile.', { day: SPRINKLER_TILE_DAY })
+      return fill('Waters a 2×2 area of plots, ${day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.', { day: SPRINKLER_TILE_DAY })
     case 'buy-sprinkler-vert':
-      return fill('Waters a 4×2 strip, ${day} L a day per tile. Rotate while placing to flip NS/EW.', {
+      return fill('Waters a 4×2 strip, ${day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.', {
         day: SPRINKLER_TILE_DAY,
       })
     case 'buy-sprinkler-large':
-      return fill('Waters a 4×4 around a corner, ${day} L a day per tile.', { day: SPRINKLER_TILE_DAY })
+      return fill('Waters a 4×4 area, ${day} L a day per plot.', { day: SPRINKLER_TILE_DAY })
     case 'buy-well':
       return fill(
-        'One tile. Makes ${rate} L/s into a ${cap} L tank. Fill a bucket here, or touch any corner with pipe to feed the grid.',
+        'Gathers ${rate} L/s into a ${cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.',
         { rate: SOURCE.well.rate, cap: SOURCE.well.capacity },
       )
     case 'buy-valve':
-      return 'Sits on an edge like pipe, laying one if the edge is bare. Click it to send the gardener over and turn the flow off or on.'
+      return 'Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.'
     case 'buy-rain-tank':
-      return fill('Two tiles. Gathers ${rate} L/s into a ${cap} L tank, no pump needed.', {
+      return fill('Gathers ${rate} L/s into a ${cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.', {
         rate: SOURCE['rain-tank'].rate,
         cap: SOURCE['rain-tank'].capacity,
       })
     case 'buy-tap':
-      return fill('One tile. Fills a bucket at ${rate} L/s while the grid holds water, slower once tanks run dry.', {
+      return fill('Fills a bucket at ${rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.', {
         rate: TAP_RATE,
       })
     case 'buy-tile-paved':
@@ -605,35 +605,35 @@ export function skuDesc(id: SkuId): string {
     case 'buy-silo-produce':
       return '2×3 field tank. Look only.'
     case 'buy-lever':
-      return 'Throw it, or a wire turning on throws it. Output high when on.'
+      return 'A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.'
     case 'buy-button':
-      return 'Press. Output high for a short pulse.'
+      return 'Press it to send one short signal that stops on its own.'
     case 'buy-lamp':
-      return 'Lights when its input is high.'
+      return 'Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.'
     case 'buy-or':
-      return 'Output high if either input is high.'
+      return 'Turns on when either of its two inputs is on.'
     case 'buy-and':
-      return 'Output high if both inputs are high.'
+      return 'Turns on only while both of its inputs are on.'
     case 'buy-not':
-      return 'Output is the inverse of its input.'
+      return 'Turns on while its input is off, and off while it is on.'
     case 'buy-pulser':
-      return 'When its input turns on, the output turns on once, then off until the input turns off.'
+      return 'Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one.'
     case 'buy-counter':
-      return 'Counts while its input is on. Set a number; when the count reaches it, the output turns on once and the count starts over.'
+      return 'Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly.'
     case 'buy-sensor-water':
-      return 'Reads nearby plant water. Output high when a plot matches the checked boxes.'
+      return 'Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself.'
     case 'buy-sensor-fert':
-      return 'Reads nearby growing plants. Output high when any is starving.'
+      return 'Watches the growing plants around it and turns on as soon as one is starving for fertilizer.'
     case 'buy-sensor-harvest':
-      return 'Reads nearby crops. Any: one ripe. All: every growing or ripe plant is ripe.'
+      return 'Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe.'
     case 'buy-sensor-day':
-      return 'Turns on during the parts of the day you check: sunrise, day, sunset, twilight. Day is checked when you place it.'
+      return 'Turns on during the parts of the day you tick: sunrise, day, sunset, twilight.'
     case 'buy-water-system':
-      return 'Joins a water net. Output high when sprinklers on that net want more than the tanks hold.'
+      return 'Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry.'
     case 'buy-vehicle-detector':
-      return 'Flush plate. Output high when a field Quad or tractor sits on this tile.'
+      return 'A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off.'
     case 'buy-traffic-light':
-      return 'Holds a vehicle until the input is green; output is on while a vehicle waits here.'
+      return 'Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish.'
   }
 }
 

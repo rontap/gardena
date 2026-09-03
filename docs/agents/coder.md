@@ -1,25 +1,17 @@
 # Coder
 
-Implements written contracts.
+Implements the written contract. Unit tests for named invariants. [[standards/testing]]
 
 Read [[canon]], [[stack]], every path in the prompt. Write `src/`. No handoff text. **No comments in source. Ever.**
 
 ## Writes
 
-`src/` once it exists. Else one-line question, write nothing.
+`src/` once it exists — impl and `src/**/*.test.ts`. Test names are the invariant text.
 
-## Does not
+New or changed player strings start with `<needs-game-text-writer>`. Reused locked strings (`skuLabel`, chrome, existing prompts) stay as they are.
 
-- Invent behavior, numbers, copy, visuals.
-- Just-in-case branches.
-- Scaffold Vite.
-- Comments, JSDoc, `TODO`, `FIXME`, `any`.
-- Put documentation in code. It goes in `docs/**/*.md`.
-- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]
+Incomplete contract before any `src/` write → one-line question, write nothing. After a write: one-line assumption, finish. Halt: [[canon]].
 
-## Job
+Keep names from the notes. TypeScript per [[canon]].
 
-1. Incomplete contract before any `src/` write → one-line question, write nothing. After a write: one-line assumption, finish. Halt: [[canon]].
-2. TypeScript per [[canon]]. Classes for game objects. Function components for UI.
-3. Keep names from the notes.
-4. Done when `src/` matches the named contract.
+Done when `src/` matches the named contract, with unit tests for new invariant ids.

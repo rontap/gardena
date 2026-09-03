@@ -53,7 +53,7 @@ Missing value → the type is wrong. Fix the type.
 
 ## Tests
 
-Named invariants on the owning note (map: [[mechanics/_index]]), or when the user asks.
+Named invariants on the owning note (map: [[mechanics/_index]]), or when the user asks. Unit tests: [[agents/coder]]. e2e: [[agents/code-review]]. [[standards/testing]]
 
 ## Docs
 

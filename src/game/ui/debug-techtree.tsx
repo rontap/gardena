@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import mermaid from 'mermaid'
 import { RESEARCH } from '../defs/research.ts'
@@ -49,11 +50,17 @@ mermaid.initialize({
 
 const esc = (s: string): string => s.replace(/"/g, '#quot;')
 
-const title = (s: string): string => s.slice(0, 1).toUpperCase() + s.slice(1)
+function title(s: string): string {
+  if (s === 'plants') return m.hud_research_plants()
+  if (s === 'land') return m.hud_research_land()
+  if (s === 'automation') return m.hud_research_automation()
+  if (s === 'trade') return m.hud_research_trade()
+  return s.slice(0, 1).toUpperCase() + s.slice(1)
+}
 
-const projects = (n: number): string => `${n} project${n === 1 ? '' : 's'}`
+const projects = (n: number): string => (n === 1 ? m.hud_debug_project({ n }) : m.hud_debug_projects({ n }))
 
-const secs = (n: number): string => (n < 60 ? `${n}s` : `${Math.floor(n / 60)}m ${n % 60}s`)
+const secs = (n: number): string => (n < 60 ? m.hud_debug_secs({ n }) : m.hud_debug_min_secs({ m: Math.floor(n / 60), s: n % 60 }))
 
 function source(tree: Tree, filter: Filter, leaves: boolean): { src: string; detail: Map<string, Detail> } {
   const detail = new Map<string, Detail>([[KEY_START, { kind: 'start' }]])
@@ -62,7 +69,7 @@ function source(tree: Tree, filter: Filter, leaves: boolean): { src: string; det
   const outside = new Set<ResearchId>()
   for (const n of shown) for (const p of n.parents) if (!ids.has(p)) outside.add(p)
 
-  const lines = ['flowchart LR', `  ${KEY_START}(("Start"))`]
+  const lines = ['flowchart LR', `  ${KEY_START}(("${m.hud_debug_start_node()}"))`]
 
   const groups = new Map<string, string[]>()
   for (const n of shown) {
@@ -175,9 +182,9 @@ export function DebugTechTree() {
       <Chrome className="relative mx-auto w-full max-w-[96rem] px-4 py-3">
         <div className="relative z-20 flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="mr-2 font-display text-lg">Tech tree</div>
+            <div className="mr-2 font-display text-lg">{m.hud_debug_tech()}</div>
             <Btn selected={filter === 'all'} onClick={() => setFilter('all')}>
-              All
+              {m.hud_debug_all()}
             </Btn>
             {tree.trees.map(t => (
               <Btn key={t} selected={filter === t} onClick={() => setFilter(t)}>
@@ -186,10 +193,13 @@ export function DebugTechTree() {
             ))}
             <span className="mx-2 text-ink/25">|</span>
             <Btn selected={leaves} onClick={() => setLeaves(v => !v)}>
-              Unlocks
+              {m.hud_debug_unlocks()}
             </Btn>
             <span className="ml-auto text-sm text-ink/45">
-              {tree.nodes.size} research · {[...tree.nodes.values()].reduce((n, x) => n + x.leaves.length, 0)} unlocks
+              {m.hud_debug_counts({
+                research: tree.nodes.size,
+                unlocks: [...tree.nodes.values()].reduce((n, x) => n + x.leaves.length, 0),
+              })}
             </span>
           </div>
 
@@ -213,13 +223,13 @@ export function DebugTechTree() {
 function Legend() {
   return (
     <div className="flex flex-wrap items-center gap-4 text-sm text-ink/55">
-      <Swatch color="bg-dirt" label="Research" />
-      <Swatch color="bg-parch border border-ink/40" label="Shop item" />
-      <Swatch color="bg-leaf" label="Skill" />
-      <Swatch color="bg-ripe" label="Concept" />
-      <span>→ reveals</span>
-      <span className="font-bold">⇒ requires</span>
-      <span>⇢ second lock</span>
+      <Swatch color="bg-dirt" label={m.names_role_research()} />
+      <Swatch color="bg-parch border border-ink/40" label={m.hud_debug_shop_item()} />
+      <Swatch color="bg-leaf" label={m.hud_debug_skill()} />
+      <Swatch color="bg-ripe" label={m.hud_debug_concept()} />
+      <span>{m.hud_debug_reveals()}</span>
+      <span className="font-bold">{m.hud_debug_requires()}</span>
+      <span>{m.hud_debug_second()}</span>
     </div>
   )
 }
@@ -237,11 +247,9 @@ function Panel({ pick, tree }: { pick: Detail | undefined; tree: Tree }) {
   return (
     <div className="min-h-56 border-t border-ink/20 pt-3">
       {pick === undefined ? (
-        <div className="text-sm text-ink/40">Hover a node.</div>
+        <div className="text-sm text-ink/40">{m.hud_debug_hover()}</div>
       ) : pick.kind === 'start' ? (
-        <div className="text-sm text-ink/55">
-          Everything reachable with no research done. {tree.roots.length} projects open from the start.
-        </div>
+        <div className="text-sm text-ink/55">{m.hud_debug_start({ n: tree.roots.length })}</div>
       ) : pick.kind === 'research' ? (
         <ResearchDetail node={pick.node} tree={tree} />
       ) : (
@@ -266,42 +274,42 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
       <div className="text-sm text-ink/75">{def.blurb}</div>
 
       <div className="flex flex-wrap gap-6">
-        <Stat label="This project">
+        <Stat label={m.hud_debug_this_project()}>
           <Coin n={def.cost} /> <span className="tabular-nums">{secs(def.seconds)}</span>
         </Stat>
-        <Stat label={`Total from scratch (${projects(node.ancestors.length + 1)})`}>
+        <Stat label={m.hud_debug_total({ projects: projects(node.ancestors.length + 1) })}>
           <Coin n={node.totalCost} /> <span className="tabular-nums">{secs(node.totalSeconds)}</span>
         </Stat>
       </div>
 
       {node.ancestors.length > 0 && (
-        <Row label="Needs first">
+        <Row label={m.hud_debug_needs_first()}>
           {node.ancestors
             .map(a => `${RESEARCH[a].name} ($${RESEARCH[a].cost} · ${RESEARCH[a].seconds}s)`)
             .join(' · ')}
         </Row>
       )}
       {def.requires.length > 0 && (
-        <Row label={def.requires.length > 1 ? 'Hard prerequisites (all)' : 'Hard prerequisite'}>
+        <Row label={def.requires.length > 1 ? m.hud_debug_hard_all() : m.hud_debug_hard_one()}>
           {def.requires.map(r => RESEARCH[r].name).join(' · ')}
         </Row>
       )}
 
       <div className="grid grid-cols-3 gap-6">
-        <Col label={`Shop items (${skus.length})`}>
+        <Col label={m.hud_debug_shop_items({ n: skus.length })}>
           {skus.map(l =>
             l.kind !== 'sku' ? null : (
               <li key={`${l.id}-${String(l.second)}`} className="text-sm">
                 {l.label} <span className="text-ink/45">${l.sku.price}</span>
-                {l.second && <span className="ml-1 text-roof">second lock</span>}
+                {l.second && <span className="ml-1 text-roof">{m.hud_debug_second_lock()}</span>}
                 {l.sku.show !== 'start' && l.sku.show !== node.id && (
-                  <span className="ml-1 text-ink/35"> · shelf shows at {RESEARCH[l.sku.show].name}</span>
+                  <span className="ml-1 text-ink/35">{m.hud_debug_shelf_at({ name: RESEARCH[l.sku.show].name })}</span>
                 )}
               </li>
             ),
           )}
         </Col>
-        <Col label={`Skills (${skills.length})`}>
+        <Col label={m.hud_debug_skills({ n: skills.length })}>
           {skills.map(l =>
             l.kind !== 'skill' ? null : (
               <li key={l.id} className="text-sm">
@@ -310,7 +318,7 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
             ),
           )}
         </Col>
-        <Col label={`Concepts (${grants.length})`}>
+        <Col label={m.hud_debug_concepts({ n: grants.length })}>
           {grants.map(l =>
             l.kind !== 'grant' ? null : (
               <li key={l.text} className="text-sm">
@@ -322,7 +330,7 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
       </div>
 
       {tree.nodes.get(node.id)?.children.length !== 0 && (
-        <Row label="Leads to">{(tree.nodes.get(node.id)?.children ?? []).map(c => RESEARCH[c].name).join(' · ')}</Row>
+        <Row label={m.hud_debug_leads()}>{(tree.nodes.get(node.id)?.children ?? []).map(c => RESEARCH[c].name).join(' · ')}</Row>
       )}
     </div>
   )
@@ -337,7 +345,7 @@ function LeafDetail({ leaf, from, tree }: { leaf: Leaf; from: ResearchId; tree: 
           {leaf.kind === 'grant' ? leaf.text : leaf.label}
         </span>
         <span className="text-sm text-ink/45">
-          {leaf.kind === 'sku' ? 'shop item' : leaf.kind === 'skill' ? 'skill' : 'concept'}
+          {leaf.kind === 'sku' ? m.hud_debug_kind_sku() : leaf.kind === 'skill' ? m.hud_debug_kind_skill() : m.hud_debug_kind_concept()}
         </span>
         {leaf.kind !== 'grant' && <span className="text-sm text-ink/45">{leaf.id}</span>}
       </div>
@@ -345,27 +353,27 @@ function LeafDetail({ leaf, from, tree }: { leaf: Leaf; from: ResearchId; tree: 
       {leaf.kind === 'skill' && <div className="text-sm text-ink/75">{leaf.def.blurb}</div>}
       {leaf.kind === 'sku' && (
         <div className="flex flex-wrap gap-6">
-          <Stat label="Price">
+          <Stat label={m.hud_debug_price()}>
             <Coin n={leaf.sku.price} />
           </Stat>
-          <Stat label="Shelf">
+          <Stat label={m.hud_debug_shelf()}>
             <span>{leaf.sku.tab}</span>
           </Stat>
         </div>
       )}
 
       {leaf.kind === 'sku' && (
-        <Row label="Gated by">
+        <Row label={m.hud_debug_gated()}>
           {skuGates(leaf.id)
             .map(g => `${g.field}: ${RESEARCH[g.research].name}`)
-            .join(' · ') || 'nothing, open from the start'}
+            .join(' · ') || m.hud_debug_open_start()}
         </Row>
       )}
-      {leaf.kind !== 'sku' && <Row label="Gated by">{RESEARCH[from].name}</Row>}
+      {leaf.kind !== 'sku' && <Row label={m.hud_debug_gated()}>{RESEARCH[from].name}</Row>}
 
       {node !== undefined && (
         <div className="flex flex-wrap gap-6">
-          <Stat label={`Total to reach it (${projects(node.ancestors.length + 1)})`}>
+          <Stat label={m.hud_debug_total_reach({ projects: projects(node.ancestors.length + 1) })}>
             <Coin n={node.totalCost} /> <span className="tabular-nums">{secs(node.totalSeconds)}</span>
           </Stat>
         </div>

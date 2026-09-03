@@ -148,7 +148,7 @@ Do not block the rest of the HUD. Do not force the camera. If they skip ahead (e
 
 ## Build order
 
-architect (save file + tutorial predicates) → designer (gear + menu if new art) ∥ ui-ux (menu, gear, tutorial card) → coder → documenter → code-review.
+architect (save file + tutorial predicates, menu / gear / tutorial card) → designer (gear + menu if new art) → coder → code-review → documenter ∥ game-text-writer.
 
 ---
 

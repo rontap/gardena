@@ -1,0 +1,113 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "catalog_crop_carrot": "Quick and forgiving. Shrugs off poor soil and thin feeding, but the roots fetch almost nothing.",
+  "catalog_crop_potato": "Thrifty tuber. Drinks less than any other crop and keeps in store the longest.",
+  "catalog_crop_wheat": "Slow grain, wants steady water and rich soil. Cut dry, so it holds its condition.",
+  "catalog_crop_tomato": "Late to ripen and particular about water and feed. Bruises fast once picked.",
+  "catalog_crop_raspberry": "The richest crop and the most delicate. Slow to fruit, first to spoil.",
+  "catalog_crop_apple": "The tree feeds itself - no water, no fertilizer. Slow to set fruit, then keeps for days.",
+  "catalog_crop_grape": "A mid fruit. Softer than a raspberry, and the path to one.",
+  "catalog_crop_vanilla": "Expensive seed, slow, and picky about water and feed. Common pods fetch less than raspberries; rare and heirloom do not.",
+  "catalog_crop_sugar_cane": "Water hungry and sells poorly. Ripe cane is fruit. Mill {cane} cane into {bag} L sugar.",
+  "catalog_crop_apricot": "A fecund tree. Many cheap fruits, no water, no feed.",
+  "catalog_crop_olive": "A slow tree. No water, no feed. Keeps well, and the only way to oil.",
+  "catalog_crop_cherry": "A small tree fruit. No water, no feed. Spoils first among the trees.",
+  "catalog_shovel": "Digs grass and hard soil, and uproots plants and shrubs. {uses} uses, {workSeconds}s per dig.",
+  "catalog_better_shovel": "Same jobs, faster and longer lasting. {uses} uses, {workSeconds}s per dig.",
+  "catalog_pickaxe": "Breaks rocks and very hard soil. {uses} uses, {workSeconds}s per mine.",
+  "catalog_better_pickaxe": "Same jobs, faster and longer lasting. {uses} uses, {workSeconds}s per mine.",
+  "catalog_bucket": "Holds {n} L. Fill at a pump or well. {plot} L fills one plot.",
+  "catalog_weed_spray": "Holds {n} L. Click tilled soil to starve weeds there.",
+  "catalog_pumpjack": "Gathers {rate} L/s into a {cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.",
+  "catalog_chest": "{n} slots. Walk up and store any item.",
+  "catalog_grinder": "Hopper. One fruit becomes {min}–{max} seeds of the same crop and rarity. {workSeconds}s per fruit.",
+  "catalog_pipe": "Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.",
+  "catalog_sprinkler": "Waters a {w}×{h} area of plots, {day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.",
+  "catalog_sprinkler_vert": "Waters a {w}×{h} strip, {day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.",
+  "catalog_sprinkler_large": "Waters a {w}×{h} area, {day} L a day per plot.",
+  "catalog_well": "Gathers {rate} L/s into a {cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.",
+  "catalog_valve": "Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.",
+  "catalog_rain_tank": "Gathers {rate} L/s into a {cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.",
+  "catalog_tap": "Fills a bucket at {rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.",
+  "catalog_hangar": "{w}×{h} industrial shed. Buy Quads and tractors at a hangar.",
+  "catalog_silo": "{w}×{h} field tank. Look only.",
+  "catalog_lever": "A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.",
+  "catalog_button": "Press it to send one short signal that stops on its own.",
+  "catalog_lamp": "Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.",
+  "catalog_or": "Turns on when either of its two inputs is on.",
+  "catalog_and": "Turns on only while both of its inputs are on.",
+  "catalog_not": "Turns on while its input is off, and off while it is on.",
+  "catalog_pulser": "Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one.",
+  "catalog_counter": "Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly.",
+  "catalog_sensor_water": "Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself.",
+  "catalog_sensor_fert": "Watches the growing plants around it and turns on as soon as one is starving for fertilizer.",
+  "catalog_sensor_harvest": "Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe.",
+  "catalog_sensor_day": "Turns on during the parts of the day you tick: sunrise, day, sunset, twilight.",
+  "catalog_water_system": "Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry.",
+  "catalog_vehicle_detector": "A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off.",
+  "catalog_traffic_light": "Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish.",
+  "catalog_sku_pack": "Pack of {n} {name} seeds. Plant on tilled soil.",
+  "catalog_sku_pack_sugar_cane": "Pack of {n} {name} seeds. Plant on tilled soil. Ripe cane is fruit. Mill cane for sugar.",
+  "catalog_sku_pack_grass": "Pack of {n}. Sow on tilled soil. Drinks almost nothing and takes a quarter day to root, then the plot goes back to untilled lawn.",
+  "catalog_sku_buy_fertilizer": "Holds {n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.",
+  "catalog_sku_buy_synth_fertilizer": "Holds {n} L and works the same, but the soil and its produce stop being organic.",
+  "catalog_sku_buy_compost_box": "Drop organic waste in. {need} units make {liters} L of compost in {seconds}s. A chest on the right takes the bag, else it drops beside the box.",
+  "catalog_sku_buy_fence": "Sits in the middle of an untilled tile and joins up with the fences beside it. Marks a boundary; the gardener still walks through.",
+  "catalog_sku_buy_tile": "Paving. Lays on untilled ground and stays put. Keeps the garden walkable and tidy.",
+  "catalog_sku_buy_mill": "Hopper mill. {cane} cane, olive or wheat, or {grass} grass, crush in {work}s. Cane makes {bag} L sugar at {sale}/L.",
+  "catalog_sku_buy_jam": "{fruit} fruit and {sugar} L sugar cook in {seconds}s. Buffer {buffer} L.",
+  "catalog_sku_buy_still": "Distills {cap} potato, wheat or apricot with {water} L water in {seconds}s.",
+  "catalog_sku_buy_barrel": "Five grapes or four apples. Matures in {mature}s, ages to {age}s.",
+  "catalog_sku_buy_freezer": "{n} slots. Fruit in here rots {pct}% slower.",
+  "catalog_sku_buy_freezer_large": "{n} slots. Fruit in here rots {pct}% slower. Earned from a contract, never sold.",
+  "catalog_sku_buy_sugar": "{bag} L bag at {sale}/L.",
+  "catalog_fertilizer": "Holds {n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing. Empty bags are thrown away.",
+  "catalog_synth": "Holds {n} L and tops a plot to full like the ordinary bag, but the soil turns non-organic and so does everything grown in it. Ordinary fertilizer or compost brings it back once {restore} L land at once.",
+  "catalog_compost": "Holds {liters} L. Feeds soil exactly like fertilizer, and it is organic.",
+  "catalog_compost_box": "Drop any organic waste in. {need} units become {liters} L of compost in {seconds}s. A chest on the right takes the bag, else it drops beside the box. Seeds {seeds}, fruit {fruit}, heirloom fruit {heirloom}, rotten fruit {rotten}, dead plants and weeds {dead}.",
+  "catalog_soil": "Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads {min} to {max} L; plants want {mid} L and drown above it. Fertilizer runs from {fertMin} to {fertMax} and a growing plant empties a full plot in three days.",
+  "catalog_weed": "Takes over tilled soil left without seed. Full grown in {seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.",
+  "catalog_rotten": [
+    {
+      "declarations": ["input n", "local nPlural = n: plural"],
+      "selectors": ["nPlural"],
+      "match": {
+        "nPlural=one": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} unit in the compost box.",
+        "nPlural=other": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} units in the compost box."
+      }
+    }
+  ],
+  "catalog_dead": [
+    {
+      "declarations": ["input n", "local nPlural = n: plural"],
+      "selectors": ["nPlural"],
+      "match": {
+        "nPlural=one": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} unit in the compost box.",
+        "nPlural=other": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} units in the compost box."
+      }
+    }
+  ],
+  "catalog_grass": [
+    {
+      "declarations": ["input n", "local nPlural = n: plural"],
+      "selectors": ["nPlural"],
+      "match": {
+        "nPlural=one": "Cut from untilled ground. Worth {n} unit in the compost box.",
+        "nPlural=other": "Cut from untilled ground. Worth {n} units in the compost box."
+      }
+    }
+  ],
+  "catalog_grass_seeds": "Sold in packs of {pack}. Sow on tilled soil. Roots in {seconds}s and drinks only {drink} L a day, then the plot turns back into untilled lawn.",
+  "catalog_fence": "Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.",
+  "catalog_paving": "Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.",
+  "catalog_rotary_shovel": "Motorised. Digs anything a shovel digs, near enough instantly. {uses} uses, {workSeconds}s per dig.",
+  "catalog_diamond_pickaxe": "Cuts rock like tilled soil. {uses} uses, {workSeconds}s per mine.",
+  "catalog_sugar": "{bag} L bag. Does not rot. Mill cane is cheaper per litre.",
+  "catalog_mill": "Hopper mill. {cane} cane, olive or wheat, or {vanilla} vanilla crush in {work}s.",
+  "catalog_still": "Distills {cap} potato, wheat or apricot in {seconds}s.",
+  "catalog_barrel": "Grapes or apples, never mixed. Five grapes or four apples fill a barrel. Wine or cider, not whisky.",
+  "catalog_jam": "{fruit} fruit plus sugar cook in {seconds}s. Tomato is ketchup.",
+  "catalog_freezer": "Small {n} slots, large {m} slots. Fruit in here rots {pct}% slower. The large one is a contract prize, never sold.",
+  "catalog_title_rotten": "Rotten produce",
+  "catalog_title_dead": "Dead plant"
+}

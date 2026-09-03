@@ -1,0 +1,14 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "family_title": "Family",
+  "family_blurb_player": "Works the beds. Speed, tools and the crops themselves.",
+  "family_blurb_husband": "Runs the workshop. Research pace, prices and surveys.",
+  "family_blurb_daughter": "Minds the stall. Sale value, opening hours and grades.",
+  "family_point_one": "point to spend, on anyone",
+  "family_point_many": "points to spend, on anyone",
+  "family_nothing_left": "Nothing left to learn",
+  "family_choose_one": "Choose one",
+  "family_no_point": "No skill point to spend. Finish a day to earn one.",
+  "family_learned": "Learned",
+  "family_none_yet": "None yet"
+}

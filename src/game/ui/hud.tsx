@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { memo, useState } from 'react'
 import * as Progress from '@radix-ui/react-progress'
 import { RESEARCH } from '../defs/research.ts'
@@ -33,9 +34,18 @@ import {
 import { GHOST_SKUS } from '../defs/shelf.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Chrome, Coin } from './frame.tsx'
+import { LENS_ROWS } from './lens.tsx'
 import type { PanelKind } from './panel.ts'
 
 const ROTATABLE = ['buy-sprinkler-vert'] as const
+
+function lensNote(lens: Lens, lock: boolean): string | undefined {
+  if (lens === 'off') return undefined
+  const row = LENS_ROWS.find(r => r.id === lens)
+  if (row === undefined) throw new Error('lens')
+  const name = row.label()
+  return lock ? m.hud_lens_locked_note({ lens: name }) : name
+}
 
 export function Hud({
   world,
@@ -112,7 +122,7 @@ export function Hud({
                 data-clock-t={Math.floor(world.clock.t)}
                 className="text-sm leading-none font-semibold"
               >
-                Day {world.clock.day} · {PHASE_NAME[phase]}
+                {m.hud_clock({ day: world.clock.day, phase: PHASE_NAME[phase]() })}
               </span>
               <div className="relative h-1 w-28 overflow-hidden bg-ink/20">
                 <div ref={el => bindHud('day-bar', el)} data-day-bar className="h-full bg-ripe" style={{ width: '0%' }} />
@@ -125,7 +135,7 @@ export function Hud({
             {world.hasSkill('forecast') && (
               <WeatherGlyph
                 kind={world.weather(world.clock.day + 1)}
-                title={`Tomorrow · ${WEATHER_NAME[world.weather(world.clock.day + 1)]}`}
+                title={m.hud_tomorrow({ name: WEATHER_NAME[world.weather(world.clock.day + 1)]() })}
               />
             )}
           </div>
@@ -139,11 +149,11 @@ export function Hud({
             {def !== undefined && job.kind === 'run' && (
               <>
                 <span className="truncate text-sm leading-none">
-                  <span className="text-ink/50">Researching </span>
+                  <span className="text-ink/50">{m.hud_researching()}</span>
                   <span data-research-left>{def.name}</span>
-                  <span className="text-ink/50"> · </span>
+                  <span className="text-ink/50">{m.hud_dot()}</span>
                   <span data-research-secs className="text-ink/50 tabular-nums">
-                    {Math.ceil(job.left)}s
+                    {m.hud_secs({ secs: Math.ceil(job.left) })}
                   </span>
                 </span>
                 <Progress.Root className="relative h-1.5 max-w-96 overflow-hidden bg-ink/20" value={pct}>
@@ -156,19 +166,19 @@ export function Hud({
             <span
               ref={el => bindHud('fps', el)}
               data-fps
-              title="Frames per second"
+              title={m.hud_fps_title()}
               className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
             />
             <span
               ref={el => bindHud('render', el)}
               data-render
-              title="Simulation time per frame"
+              title={m.hud_render_title()}
               className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
             />
             <span
               ref={el => bindHud('mem', el)}
               data-mem
-              title="JavaScript heap in use"
+              title={m.hud_mem_title()}
               className="pointer-events-auto text-ink/40 transition-colors hover:text-ink/80"
             />
           </div>
@@ -185,21 +195,21 @@ export function Hud({
                   <ConsumableChip
                     art={EXPAND_LAND}
                     n={expandLeft}
-                    title="Expansion"
-                    body={`You have ${expandLeft} farm expansion opportunities.`}
+                    title={m.hud_expansion()}
+                    body={m.hud_expansion_body({ n: expandLeft })}
                   />
                 )}
                 {points > 0 && (
                   <ConsumableChip
                     art={SKILL_POINT}
                     n={points}
-                    title="Skill points"
-                    body={`You have ${points} unspent skill points. Assign them to a family member!`}
+                    title={m.hud_skill_points()}
+                    body={m.hud_skill_points_body({ n: points })}
                   />
                 )}
               </>
             )}
-            <IconButton art={UI_BTN_MULTIPLAYER} label="Multiplayer" selected={panel === 'multiplayer'} onClick={onMultiplayer} />
+            <IconButton art={UI_BTN_MULTIPLAYER} label={m.hud_multiplayer()} selected={panel === 'multiplayer'} onClick={onMultiplayer} />
             <PauseBtn selected={paused} onClick={onPause} />
             <GearBtn selected={panel === 'menu'} onClick={onGear} />
           </div>
@@ -207,22 +217,22 @@ export function Hud({
       </Chrome>
       <Chrome className="pointer-events-none absolute top-20 left-4 z-20 w-24">
         <div className="relative z-20 flex flex-col py-1.5">
-          <FaceBtn art={UI_BTN_SHOP} label="Shop" selected={panel === 'shop'} onClick={onShop} />
-          <FaceBtn art={UI_BTN_BUILD} label="Build" selected={panel === 'build'} onClick={onBuild} />
-          <FaceBtn art={UI_BTN_RESEARCH} label="Research" selected={panel === 'research'} onClick={onResearch} />
-          <FaceBtn art={UI_BTN_MARKET} label="Market" selected={panel === 'market'} onClick={onMarket} />
+          <FaceBtn art={UI_BTN_SHOP} label={m.hud_shop()} selected={panel === 'shop'} onClick={onShop} />
+          <FaceBtn art={UI_BTN_BUILD} label={m.hud_build()} selected={panel === 'build'} onClick={onBuild} />
+          <FaceBtn art={UI_BTN_RESEARCH} label={m.names_role_research()} selected={panel === 'research'} onClick={onResearch} />
+          <FaceBtn art={UI_BTN_MARKET} label={m.names_role_market()} selected={panel === 'market'} onClick={onMarket} />
           <div className="relative">
             <FaceBtn
               art={UI_BTN_LENS}
-              label="Lens"
-              note={lens === 'off' ? undefined : lensLock ? `${lens} locked` : lens}
+              label={m.hud_lens()}
+              note={lensNote(lens, lensLock)}
               selected={panel === 'lens'}
               onClick={onLens}
             />
             {lensLock && (
               <button
                 type="button"
-                aria-label="Clear lens"
+                aria-label={m.hud_clear_lens()}
                 className="pointer-events-auto absolute top-1 right-1 cursor-pointer bg-ink/10 px-1 text-xs leading-none text-ink/70 hover:bg-ink/25"
                 onClick={onLensClear}
               >
@@ -230,20 +240,20 @@ export function Hud({
               </button>
             )}
           </div>
-          <FaceBtn art={UI_BTN_FAMILY} label="Family" selected={panel === 'family'} onClick={onFamily} />
-          <FaceBtn art={UI_BTN_ALMANAC} label="Almanac" selected={panel === 'almanac'} onClick={onAlmanac} />
-          {!guest && <FaceBtn art={UI_BTN_CHEAT} label="Cheat" selected={panel === 'cheat'} onClick={onCheat} />}
+          <FaceBtn art={UI_BTN_FAMILY} label={m.family_title()} selected={panel === 'family'} onClick={onFamily} />
+          <FaceBtn art={UI_BTN_ALMANAC} label={m.hud_almanac()} selected={panel === 'almanac'} onClick={onAlmanac} />
+          {!guest && <FaceBtn art={UI_BTN_CHEAT} label={m.hud_cheat()} selected={panel === 'cheat'} onClick={onCheat} />}
           {trio && (
             <>
               <div className="mx-3 my-1.5 border-t border-ink/20" />
               <FaceBtn
                 art={UI_BTN_DELETE}
-                label="Delete"
+                label={m.hud_delete()}
                 selected={place.kind === 'delete'}
                 onClick={() => world.armDelete()}
               />
-              {canRotate && <FaceBtn art={UI_BTN_ROTATE} label="Rotate" onClick={() => world.rotatePlace()} />}
-              <FaceBtn art={UI_BTN_CANCEL} label="Cancel" onClick={() => world.cancelPlace()} />
+              {canRotate && <FaceBtn art={UI_BTN_ROTATE} label={m.hud_rotate()} onClick={() => world.rotatePlace()} />}
+              <FaceBtn art={UI_BTN_CANCEL} label={m.hud_cancel()} onClick={() => world.cancelPlace()} />
             </>
           )}
         </div>
@@ -254,7 +264,7 @@ export function Hud({
 
 function GearBtn({ selected, onClick }: { selected: boolean; onClick: () => void }) {
   return (
-    <IconButton art={UI_BTN_GEAR} label="Gear" selected={selected} onClick={onClick} />
+    <IconButton art={UI_BTN_GEAR} label={m.hud_gear()} selected={selected} onClick={onClick} />
   )
 }
 
@@ -262,7 +272,7 @@ function PauseBtn({ selected, onClick }: { selected: boolean; onClick: () => voi
   return (
     <IconButton
       art={selected ? UI_BTN_PLAY : UI_BTN_PAUSE}
-      label={selected ? 'Resume' : 'Pause'}
+      label={selected ? m.hud_resume() : m.hud_pause()}
       selected={selected}
       onClick={onClick}
     />
@@ -304,29 +314,17 @@ const IconButton = memo(function IconButton({
   )
 })
 
-const WEATHER_CALLOUT: { readonly [K in WeatherKind]: { title: string; body: string } } = {
-  clear: { title: 'Clear', body: 'Fair weather. Crops, weeds, and water behave as usual.' },
-  rain: {
-    title: 'Rain',
-    body: 'A little extra water on every tilled plot. Weeds and grass come faster. Rain tanks fill six times faster. Shut off irrigation or picky plants will drown.',
-  },
-  dry: {
-    title: 'Dry',
-    body: 'Plots lose a little water to the air. Weeds and grass stay down. Rain tanks sit empty. Pump water costs more at sundown.',
-  },
-  flood: {
-    title: 'Flood',
-    body: 'Heavy water on every tilled plot — plants may drown. Rain tanks surge. The stall is closed this morning unless you keep it open around the clock. Fruit sells for more.',
-  },
-  drought: {
-    title: 'Drought',
-    body: 'Plots dry out. Wells yield half. Pump water is costly. Seeds and Tools cost double. The stall is closed at midday unless you keep it open around the clock. Fruit sells for more.',
-  },
+const WEATHER_CALLOUT: { readonly [K in WeatherKind]: () => { title: string; body: string } } = {
+  clear: () => ({ title: WEATHER_NAME.clear(), body: m.hud_weather_clear_body() }),
+  rain: () => ({ title: WEATHER_NAME.rain(), body: m.hud_weather_rain_body() }),
+  dry: () => ({ title: WEATHER_NAME.dry(), body: m.hud_weather_dry_body() }),
+  flood: () => ({ title: WEATHER_NAME.flood(), body: m.hud_weather_flood_body() }),
+  drought: () => ({ title: WEATHER_NAME.drought(), body: m.hud_weather_drought_body() }),
 }
 
 function WeatherGlyph({ kind, title }: { kind: WeatherKind; title?: string }) {
   const [hot, setHot] = useState(false)
-  const callout = WEATHER_CALLOUT[kind]
+  const callout = WEATHER_CALLOUT[kind]()
   return (
     <div
       className="relative pointer-events-auto"

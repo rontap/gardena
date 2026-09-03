@@ -1,10 +1,9 @@
+import { m } from '../../paraglide/messages.js'
 import { inFade, inWorld, occupiedCells } from './building.ts'
-import { NOT_OWNED } from './prompt.ts'
+import { NOT_OWNED, cropLabel, sensorName, type PromptHit } from './prompt.ts'
 import { onCell } from './drop.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import { TREE_NAME } from '../defs/trees.ts'
-import { cropName, heldText, skuLabel, type Hand } from './item.ts'
-import type { PromptHit } from './prompt.ts'
+import { heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Barrel } from './building.ts'
 import { barrelNeed, caskAgeMul, feedUnits } from './machine.ts'
@@ -15,10 +14,23 @@ import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soi
 import type { TileId } from './ids.ts'
 import type { World } from './world.ts'
 
-const FERT_WORD: { readonly [K in Band]: string } = {
-  green: 'fed',
-  orange: 'mediocre',
-  red: 'starving',
+const FERT_WORD: { readonly [K in Band]: () => string } = {
+  green: m.prompt_fert_fed,
+  orange: m.prompt_fert_mediocre,
+  red: m.prompt_fert_starving,
+}
+
+const TILE_LABEL: { readonly [K in TileId]: () => string } = {
+  paved: m.names_tile_paved,
+  brick: m.names_tile_brick,
+  cobble: m.names_tile_cobble,
+}
+
+const RARITY_LABEL: { readonly [K in Rarity]: () => string } = {
+  common: m.names_rarity_common,
+  uncommon: m.names_rarity_uncommon,
+  rare: m.names_rarity_rare,
+  heirloom: m.names_rarity_heirloom,
 }
 
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
@@ -52,83 +64,116 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   if (at !== undefined) {
     const face = world.faces().find(f => f.at.col === at.col && f.at.row === at.row)
     if (face !== undefined) {
-      if (world.money < face.price) return 'Cannot afford'
-      return `expand ${face.price}`
+      if (world.money < face.price) return m.prompt_cannot_afford()
+      return m.prompt_expand({ price: face.price })
     }
   }
   if (at === undefined) {
-    if (place.kind === 'sku') return `Place ${skuLabel(place.id)}`
-    return '—'
+    if (place.kind === 'sku') return m.prompt_place({ name: skuLabel(place.id) })
+    return m.prompt_emdash()
   }
   if (!inWorld(at, world.owned)) {
     if (inFade(at, world.owned)) return NOT_OWNED
     if (place.kind === 'sku') {
-      return `Place ${skuLabel(place.id)}`
+      return m.prompt_place({ name: skuLabel(place.id) })
     }
-    return '—'
+    return m.prompt_emdash()
   }
   const cell = world.cell(at)
   const lines: string[] = []
   if (place.kind === 'sku') {
-    lines.push(`Place ${skuLabel(place.id)}`)
+    lines.push(m.prompt_place({ name: skuLabel(place.id) }))
   }
   const parked = world.parkedAt(at)
-  if (cell.kind === 'hangar') lines.push('Vehicle hangar')
-  else if (parked !== undefined) lines.push(parked.kind === 'tractor' ? 'Tractor' : 'Quad')
-  else if (cell.kind === 'silo-seed') lines.push('Seeding silo')
-  else if (cell.kind === 'silo-spray') lines.push('Spraying silo')
-  else if (cell.kind === 'silo-produce') lines.push('Produce silo')
-  else if (cell.kind === 'house') lines.push('House')
-  else if (cell.kind === 'truck') lines.push('Market truck')
-  else if (cell.kind === 'pump') lines.push(`Pump - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
-  else if (cell.kind === 'rain-tank') lines.push(`Rainwater tank - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
-  else if (cell.kind === 'tap') lines.push('Tap')
-  else if (cell.kind === 'well') lines.push(`Well - ${liters(cell.water.stored)} of ${liters(cell.water.capacity)}`)
-  else if (cell.kind === 'rock') lines.push('Rock')
-  else if (cell.kind === 'seed-silo') lines.push(`Seed silo - ${cell.used} of ${cell.cap} seeds`)
-  else if (cell.kind === 'additive-store') lines.push(`Additive store - ${liters(cell.used)} of ${liters(cell.cap)}`)
-  else if (cell.kind === 'chest') lines.push('Chest')
-  else if (cell.kind === 'freezer') lines.push('Freezer')
-  else if (cell.kind === 'grinder') lines.push('Seed grinder')
-  else if (cell.kind === 'compost-box') lines.push('Compost box')
-  else if (cell.kind === 'mill') lines.push('Mill')
-  else if (cell.kind === 'still') lines.push('Pot still')
+  if (cell.kind === 'hangar') lines.push(m.names_building_hangar())
+  else if (parked !== undefined) lines.push(parked.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad())
+  else if (cell.kind === 'silo-seed') lines.push(m.names_building_silo_seed())
+  else if (cell.kind === 'silo-spray') lines.push(m.names_building_silo_spray())
+  else if (cell.kind === 'silo-produce') lines.push(m.names_building_silo_produce())
+  else if (cell.kind === 'house') lines.push(m.names_building_house())
+  else if (cell.kind === 'truck') lines.push(m.names_building_truck())
+  else if (cell.kind === 'pump') {
+    lines.push(
+      labeled(m.names_building_pump(), m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) })),
+    )
+  } else if (cell.kind === 'rain-tank') {
+    lines.push(
+      labeled(
+        m.names_building_rain_tank(),
+        m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) }),
+      ),
+    )
+  } else if (cell.kind === 'tap') lines.push(m.names_building_tap())
+  else if (cell.kind === 'well') {
+    lines.push(
+      labeled(m.names_building_well(), m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) })),
+    )
+  } else if (cell.kind === 'rock') lines.push(m.names_building_rock())
+  else if (cell.kind === 'seed-silo') {
+    lines.push(labeled(m.names_building_seed_silo(), m.prompt_of_seeds({ used: cell.used, cap: cell.cap })))
+  } else if (cell.kind === 'additive-store') {
+    lines.push(
+      labeled(m.names_building_additive_store(), m.prompt_of({ stored: liters(cell.used), capacity: liters(cell.cap) })),
+    )
+  } else if (cell.kind === 'chest') lines.push(m.names_building_chest())
+  else if (cell.kind === 'freezer') lines.push(m.names_building_freezer())
+  else if (cell.kind === 'grinder') lines.push(m.names_building_grinder())
+  else if (cell.kind === 'compost-box') lines.push(m.names_building_compost_box())
+  else if (cell.kind === 'mill') lines.push(m.names_building_mill())
+  else if (cell.kind === 'still') lines.push(m.names_building_still())
   else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
-  else if (cell.kind === 'jam') lines.push('Jam machine')
+  else if (cell.kind === 'jam') lines.push(m.names_building_jam())
   else if (cell.kind === 'tree') {
-    const name = `${TREE_NAME[cell.species]} tree`
-    if (cell.juvenile < 1) lines.push(`${name} - growing`)
-    else if (cell.yield.kind === 'on') lines.push(`${name} - on-season`)
-    else lines.push(`${name} - off-season`)
-  }
-  else if (cell.kind === 'untilled') {
+    const name = m.prompt_tree({ name: cropLabel(cell.species) })
+    if (cell.juvenile < 1) lines.push(labeled(name, m.prompt_growing()))
+    else if (cell.yield.kind === 'on') lines.push(labeled(name, m.prompt_on_season()))
+    else lines.push(labeled(name, m.prompt_off_season()))
+  } else if (cell.kind === 'untilled') {
     if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))
-    else if (cell.ground === 'soft') lines.push('Grass')
-    else if (cell.ground === 'hard') lines.push('Hard soil')
-    else lines.push('Very hard soil')
-  } else if (cell.kind === 'infertile') lines.push('Infertile soil')
-  else if (cell.kind === 'empty') lines.push(`Tilled soil - ${soilLine(cell.soil)}`)
-  else if (cell.kind === 'weed') lines.push(`Weed - ${soilLine(cell.soil)}`)
-  else if (cell.kind === 'turf') lines.push(`Grass - rooting ${Math.floor(cell.turf.maturity * 100)}%`)
-  else if (cell.kind === 'growing') {
+    else if (cell.ground === 'soft') lines.push(m.names_ground_grass())
+    else if (cell.ground === 'hard') lines.push(m.names_ground_hard())
+    else lines.push(m.names_ground_very_hard())
+  } else if (cell.kind === 'infertile') lines.push(m.names_ground_infertile())
+  else if (cell.kind === 'empty') lines.push(labeled(m.names_ground_tilled(), soilLine(cell.soil)))
+  else if (cell.kind === 'weed') lines.push(labeled(m.names_ground_weed(), soilLine(cell.soil)))
+  else if (cell.kind === 'turf') {
+    lines.push(labeled(m.names_ground_grass(), m.prompt_rooting_pct({ n: Math.floor(cell.turf.maturity * 100) })))
+  } else if (cell.kind === 'growing') {
     const st = cell.plant.stats(world.modifiers)
-    lines.push(`${cropName(cell.plant.crop)} - growing ${Math.floor(cell.plant.maturity * 100)}%`)
+    lines.push(labeled(cropLabel(cell.plant.crop), m.prompt_growing_pct({ n: Math.floor(cell.plant.maturity * 100) })))
     if (plantStats) {
-      lines.push(`happiness ${Math.floor(cell.plant.happiness * 100)}%`)
-      lines.push(`water ${liters(cell.soil.water)} of ${liters(SOIL_WATER_MID)} - ${waterWord(cell.soil, st.waterTolerance)}`)
-      lines.push(`fertilizer ${Math.floor(cell.soil.fertilizer * 100)}% - ${FERT_WORD[fertBand(cell.soil.fertilizer, st.fertTolerance)]}`)
+      lines.push(m.prompt_happiness({ n: Math.floor(cell.plant.happiness * 100) }))
+      lines.push(
+        m.prompt_water_stat({
+          stored: liters(cell.soil.water),
+          mid: liters(SOIL_WATER_MID),
+          word: waterWord(cell.soil, st.waterTolerance),
+        }),
+      )
+      lines.push(
+        m.prompt_fert_stat({
+          n: Math.floor(cell.soil.fertilizer * 100),
+          word: FERT_WORD[fertBand(cell.soil.fertilizer, st.fertTolerance)](),
+        }),
+      )
     }
   } else if (cell.kind === 'ripe') {
-    lines.push(`${cropName(cell.plant.crop)} - ripe, ${rarityText(cell.plant.rarity)}${plantStats ? `, freshness ${Math.floor(cell.plant.freshness * 100)}%` : ''}`)
+    const rarity = rarityText(cell.plant.rarity)
+    const name = cropLabel(cell.plant.crop)
+    if (plantStats) {
+      lines.push(labeled(name, m.prompt_ripe_fresh({ rarity, n: Math.floor(cell.plant.freshness * 100) })))
+    } else {
+      lines.push(labeled(name, m.prompt_ripe({ rarity })))
+    }
   } else if (cell.kind === 'rotten') {
-    lines.push(`Rotten ${cropName(cell.crop)} - ${soilLine(cell.soil)}`)
+    lines.push(m.prompt_rotten({ name: cropLabel(cell.crop), soil: soilLine(cell.soil) }))
   } else if (isSensor(cell)) {
     if (cell.kind === 'water-system') {
       const around = corners(occupiedCells(cell.base, world.owned)).some(v =>
         incident(v).some(e => world.hasPipe(e)),
       )
-      if (!around) lines.push('Water-system sensor - no pipes around sensor!')
-      else lines.push(`Water-system sensor - ${cell.out === 1 ? 'on' : 'off'}`)
+      if (!around) lines.push(labeled(m.names_sensor_water_system(), m.prompt_no_pipes()))
+      else lines.push(labeled(m.names_sensor_water_system(), cell.out === 1 ? m.prompt_on() : m.prompt_off()))
     } else {
       const on =
         cell.kind === 'lever'
@@ -136,40 +181,12 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
           : cell.kind === 'lamp' || cell.kind === 'traffic-light'
             ? cell.inn === 1
             : cell.out === 1
-      const name =
-        cell.kind === 'lever'
-          ? 'Lever'
-          : cell.kind === 'button'
-            ? 'Button'
-            : cell.kind === 'lamp'
-              ? 'Lamp'
-              : cell.kind === 'or'
-                ? 'OR gate'
-                : cell.kind === 'and'
-                  ? 'AND gate'
-                  : cell.kind === 'not'
-                    ? 'NOT gate'
-                    : cell.kind === 'pulser'
-                      ? 'Pulser'
-                      : cell.kind === 'counter'
-                        ? 'Counter'
-                        : cell.kind === 'sensor-water'
-                          ? 'Water sensor'
-                          : cell.kind === 'sensor-fert'
-                            ? 'Fertilizer sensor'
-                            : cell.kind === 'sensor-harvest'
-                              ? 'Harvest sensor'
-                              : cell.kind === 'sensor-day'
-                                ? 'Day sensor'
-                                : cell.kind === 'traffic-light'
-                                  ? 'Traffic light'
-                                  : 'Vehicle detector'
-      lines.push(`${name} - ${on ? 'on' : 'off'}`)
+      lines.push(labeled(sensorName(cell.kind), on ? m.prompt_on() : m.prompt_off()))
     }
   } else {
-    lines.push(`${cropName(cell.plant.crop)} - dead`)
+    lines.push(labeled(cropLabel(cell.plant.crop), m.prompt_dead()))
   }
-  if (world.hasFence(at)) lines.push('Wooden fence')
+  if (world.hasFence(at)) lines.push(m.names_building_fence())
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {
     const hand: Hand = { kind: 'hold', item: drop.item }
@@ -182,40 +199,41 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
 }
 
 function barrelLine(c: Barrel): string {
-  if (c.crop === 'none') return 'Barrel - empty'
+  const name = m.names_building_barrel()
+  if (c.crop === 'none') return labeled(name, m.prompt_empty())
   const need = barrelNeed(c.crop)
   const n = feedUnits(c.feed)
-  if (n < need) return `Barrel - ${n}/${need} ${cropName(c.crop)}`
-  if (c.age < BARREL_MATURE) return `Barrel - maturing ${Math.floor((c.age / BARREL_MATURE) * 100)}%`
+  if (n < need) return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropLabel(c.crop) }))
+  if (c.age < BARREL_MATURE) return labeled(name, m.prompt_maturing_pct({ n: Math.floor((c.age / BARREL_MATURE) * 100) }))
   const mul = caskAgeMul(c.feed[0].rarity, c.age)
-  return `Barrel - aging ${Math.floor(c.age / DAY_SECONDS)}d, sells at ×${Number(mul.toFixed(2))}`
-}
-
-const TILE_NAME: { readonly [K in TileId]: string } = {
-  paved: 'Paving slab',
-  brick: 'Brickwork',
-  cobble: 'Cobblestone',
+  return labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
 }
 
 function tileName(id: TileId): string {
-  return TILE_NAME[id]
+  return TILE_LABEL[id]()
 }
 
 function soilLine(soil: Soil): string {
-  return `water ${liters(soil.water)}, fertilizer ${Math.floor(soil.fertilizer * 100)}%${soil.bio ? '' : ', not organic'}`
+  const water = liters(soil.water)
+  const n = Math.floor(soil.fertilizer * 100)
+  return soil.bio ? m.prompt_soil({ water, n }) : m.prompt_soil_not_organic({ water, n })
 }
 
 function liters(n: number): string {
-  return `${Number(n.toFixed(2))}L`
+  return m.prompt_liters({ n: Number(n.toFixed(2)) })
 }
 
 function rarityText(rarity: Rarity): string {
-  return rarity.slice(0, 1).toUpperCase() + rarity.slice(1)
+  return RARITY_LABEL[rarity]()
 }
 
 function waterWord(soil: Soil, tol: number): string {
   const band = waterBand(soil.water, tol)
-  if (band === 'green') return 'happy'
-  if (band === 'orange') return soil.drowning ? 'too wet' : 'thirsty'
-  return soil.drowning ? 'drowning' : 'wilting'
+  if (band === 'green') return m.prompt_water_happy()
+  if (band === 'orange') return soil.drowning ? m.prompt_water_too_wet() : m.prompt_water_thirsty()
+  return soil.drowning ? m.prompt_water_drowning() : m.prompt_water_wilting()
+}
+
+function labeled(name: string, detail: string): string {
+  return m.prompt_labeled({ name, detail })
 }

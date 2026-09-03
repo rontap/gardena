@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import * as Dialog from '@radix-ui/react-dialog'
 import type { HarvestSlot, VehicleId, VehicleSlot } from '../sim/ids.ts'
 import { itemLine, type Slot } from '../sim/item.ts'
@@ -50,7 +51,7 @@ function SlotCell({
 
 export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId; onClose: () => void }) {
   const v = world.vehicles.find(x => x.id === id)
-  const title = v !== undefined && v.kind === 'tractor' ? 'Tractor' : 'Quad'
+  const title = v !== undefined && v.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad()
   const trailer: Trailer | undefined =
     v !== undefined && v.kind === 'tractor' && v.hitch !== 'none' ? world.trailers.find(t => t.id === v.hitch) : undefined
   return (
@@ -72,7 +73,7 @@ export function VehicleUi({ world, id, onClose }: { world: World; id: VehicleId;
                 className="px-3 py-2 text-base font-semibold cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
                 onClick={() => world.embark(id)}
               >
-                Embark
+                {m.vehicles_embark()}
               </button>
             </div>
             {v !== undefined && v.kind === 'quad' && (

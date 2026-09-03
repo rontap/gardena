@@ -276,6 +276,7 @@ import {
 } from './pipe.ts'
 import { pull, Reservoir, TAP_RATE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, weedMul, type WeatherKind } from './weather.ts'
+import { m } from '../../paraglide/messages.js'
 import {
   barrelCropOf,
   hangarSiteOk,
@@ -394,38 +395,7 @@ export type Intent =
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
 
-export type TaskName =
-  | 'Move here'
-  | 'Move here and dig'
-  | 'Dig'
-  | 'Mine'
-  | 'Plant'
-  | 'Water'
-  | 'Fertilize'
-  | 'Compost'
-  | 'Harvest'
-  | 'Fill'
-  | 'Drop off'
-  | 'Pick up'
-  | 'Drop'
-  | 'Inventory'
-  | 'Chest'
-  | 'Seed silo'
-  | 'Additives'
-  | 'Grind'
-  | 'Mill'
-  | 'Still'
-  | 'Barrel'
-  | 'Jam'
-  | 'Vehicle hangar'
-  | 'Quad'
-  | 'Tractor'
-  | 'Embark'
-  | 'Valve'
-  | 'Flip'
-  | 'Press'
-  | 'Tend'
-  | 'Spray'
+export type TaskName = string
 
 export type Cue =
   | { kind: 'none' }
@@ -2470,72 +2440,72 @@ export class World {
   taskName(i: Intent): TaskName {
     this.act = this.seats[this.local]
     if (!this.act.actor.inside(dest(i, this))) {
-      if (i.act === 'shovel') return 'Move here and dig'
-      if (i.act === 'consign') return 'Drop off'
-      return 'Move here'
+      if (i.act === 'shovel') return m.prompt_move_here_and_dig()
+      if (i.act === 'consign') return m.prompt_drop_off()
+      return m.prompt_move_here()
     }
     switch (i.act) {
       case 'walk':
-        return 'Move here'
+        return m.prompt_move_here()
       case 'shovel':
-        return 'Dig'
+        return m.prompt_dig()
       case 'mine':
-        return 'Mine'
+        return m.prompt_mine()
       case 'plant':
-        return 'Plant'
+        return m.prompt_plant_bare()
       case 'water':
-        return 'Water'
+        return m.names_face_water()
       case 'fertilize':
-        return 'Fertilize'
+        return m.prompt_fertilize()
       case 'compost':
-        return 'Compost'
+        return m.names_item_compost()
       case 'harvest':
-        return 'Harvest'
+        return m.prompt_harvest()
       case 'fill':
-        return 'Fill'
+        return m.prompt_fill()
       case 'consign':
-        return 'Drop off'
+        return m.prompt_drop_off()
       case 'pickup':
-        return 'Pick up'
+        return m.prompt_pick_up()
       case 'drop':
-        return 'Drop'
+        return m.prompt_drop()
       case 'inventory':
-        return 'Inventory'
+        return m.prompt_inventory()
       case 'chest':
-        return 'Chest'
+        return m.names_building_chest()
       case 'silo':
-        return 'Seed silo'
+        return m.names_building_seed_silo()
       case 'additives':
-        return 'Additives'
+        return m.prompt_additives()
       case 'grind':
-        return 'Grind'
+        return m.prompt_grind()
       case 'mill':
-        return 'Mill'
+        return m.names_building_mill()
       case 'still':
-        return 'Still'
+        return m.names_building_still()
       case 'barrel':
-        return 'Barrel'
+        return m.names_building_barrel()
       case 'jam':
-        return 'Jam'
+        return m.names_building_jam()
       case 'hangar':
-        return 'Vehicle hangar'
+        return m.names_building_hangar()
       case 'vehicle': {
         const v = this.vehicles.find(x => x.id === i.id)
         if (v === undefined) throw new Error('vehicle')
-        return v.kind === 'tractor' ? 'Tractor' : 'Quad'
+        return v.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad()
       }
       case 'embark':
-        return 'Embark'
+        return m.vehicles_embark()
       case 'valve':
-        return 'Valve'
+        return m.names_building_valve()
       case 'toggle': {
         const c = this.cell(i.at)
-        return c.kind === 'button' ? 'Press' : 'Flip'
+        return c.kind === 'button' ? m.prompt_press_bare() : m.prompt_flip_bare()
       }
       case 'tend':
-        return 'Tend'
+        return m.prompt_tend()
       case 'weed-spray':
-        return 'Spray'
+        return m.prompt_spray()
     }
   }
 
@@ -6020,7 +5990,7 @@ export class World {
     if (emptyBucketBlocked(this, at)) return
     const action = primaryAct(this.cell(at))
     if (action === undefined) return
-    this.say(`I cannot use this ${toolName(this.act.hand)} to ${action}`)
+    this.say(m.prompt_cannot_use({ tool: toolName(this.act.hand), action }))
   }
 }
 
@@ -6091,21 +6061,21 @@ export function mood(soil: Soil, st: Stats): string {
 }
 
 function primaryAct(cell: Cell): string | undefined {
-  if (cell.kind === 'ripe') return 'harvest'
-  if (cell.kind === 'growing') return 'water'
-  if (cell.kind === 'weed') return 'dig'
-  if (cell.kind === 'empty') return 'plant'
-  if (cell.kind === 'untilled' && cell.ground === 'very-hard') return 'mine'
-  if (cell.kind === 'untilled') return 'dig'
-  if (cell.kind === 'infertile') return 'plant'
-  if (cell.kind === 'rock') return 'mine'
-  if (cell.kind === 'pump') return 'fill'
-  if (cell.kind === 'grinder') return 'grind'
-  if (cell.kind === 'compost-box') return 'compost'
-  if (cell.kind === 'chest') return 'open'
-  if (cell.kind === 'house') return 'inventory'
-  if (cell.kind === 'dead') return 'dig'
-  if (cell.kind === 'rotten') return 'dig'
+  if (cell.kind === 'ripe') return m.prompt_harvest()
+  if (cell.kind === 'growing') return m.names_face_water()
+  if (cell.kind === 'weed') return m.prompt_dig()
+  if (cell.kind === 'empty') return m.prompt_plant_bare()
+  if (cell.kind === 'untilled' && cell.ground === 'very-hard') return m.prompt_mine()
+  if (cell.kind === 'untilled') return m.prompt_dig()
+  if (cell.kind === 'infertile') return m.prompt_plant_bare()
+  if (cell.kind === 'rock') return m.prompt_mine()
+  if (cell.kind === 'pump') return m.prompt_fill()
+  if (cell.kind === 'grinder') return m.prompt_grind()
+  if (cell.kind === 'compost-box') return m.names_item_compost()
+  if (cell.kind === 'chest') return m.prompt_open_act()
+  if (cell.kind === 'house') return m.prompt_inventory()
+  if (cell.kind === 'dead') return m.prompt_dig()
+  if (cell.kind === 'rotten') return m.prompt_dig()
   return undefined
 }
 

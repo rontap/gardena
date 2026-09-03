@@ -1,18 +1,19 @@
+import { m } from '../../paraglide/messages.js'
 import type { Tutorial, TutorialStep } from '../sim/tutorial.ts'
 import { ready } from '../sim/tutorial.ts'
 import type { World } from '../sim/world.ts'
 import { Chrome } from './frame.tsx'
 
-const COPY: { readonly [K in TutorialStep]: string } = {
-  1: 'Till, plant, water, harvest, sell, buy better tools. Click a grass tile to dig.',
-  2: 'Dig four more plots.',
-  3: 'Click the house and take seeds in hand.',
-  4: 'You only carry one item. Plant the seeds.',
-  5: 'Open Research and start something.',
-  6: 'A plant is thirsty. Pick up the bucket (3 L), fill it at the pump, water the plant.',
-  7: 'Something is ripe. Pick it, then pick another — the same fruit stacks in your hand.',
-  8: 'Drop it at the truck and Sell all.',
-  9: "That's the tour. You're on your own.",
+const COPY: { readonly [K in TutorialStep]: () => string } = {
+  1: () => m.tutorial_1(),
+  2: () => m.tutorial_2(),
+  3: () => m.tutorial_3(),
+  4: () => m.tutorial_4(),
+  5: () => m.tutorial_5(),
+  6: () => m.tutorial_6({ n: 3 }),
+  7: () => m.tutorial_7(),
+  8: () => m.tutorial_8(),
+  9: () => m.tutorial_9(),
 }
 
 export function TutorialCard({
@@ -34,7 +35,7 @@ export function TutorialCard({
         onClick={step === 9 ? onOff : undefined}
       >
         <Chrome className="relative w-80 px-4 pt-4 pb-3">
-          <div className="relative z-20 text-base leading-relaxed text-ink">{COPY[step]}</div>
+          <div className="relative z-20 text-base leading-relaxed text-ink">{COPY[step]()}</div>
         </Chrome>
       </div>
     </div>

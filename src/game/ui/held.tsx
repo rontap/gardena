@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemTip } from '../sim/item.ts'
@@ -80,14 +81,14 @@ export function ItemLineView({ item }: { item: Item }) {
   if (item.kind === 'fruit') {
     return (
       <span className="inline-flex items-center gap-1">
-      {cropVariety(item.crop, item.rarity)} - {item.count}
+      {m.hud_line_count({ name: cropVariety(item.crop, item.rarity), count: item.count })}
       </span>
     )
   }
   if (item.kind === 'sugar') {
     return (
       <span className="inline-flex items-center gap-1">
-      Sugar - {item.liters}L
+      {m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })}
       </span>
     )
   }

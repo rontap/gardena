@@ -25,7 +25,8 @@ import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import type { AnnualId, BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
 import type { Barrel, CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
-import { compostValue, organic, type Item } from './item.ts'
+import { compostValue, cropName, organic, type Item } from './item.ts'
+import { m } from '../../paraglide/messages.js'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder
 
@@ -52,11 +53,11 @@ export function barrelNeed(crop: BarrelCrop): number {
 }
 
 export function millProductName(recipe: MillRecipe): string {
-  if (recipe === 'sugar-cane') return 'sugar'
-  if (recipe === 'olive') return 'olive oil'
-  if (recipe === 'wheat') return 'flour'
-  if (recipe === 'vanilla') return 'vanilla extract'
-  return 'extract'
+  if (recipe === 'sugar-cane') return m.names_item_sugar()
+  if (recipe === 'olive') return m.names_item_oil()
+  if (recipe === 'wheat') return m.names_item_flour()
+  if (recipe === 'vanilla') return m.names_item_vanilla_extract()
+  return m.names_item_extract()
 }
 
 export function millProduct(recipe: MillRecipe): Item {
@@ -263,8 +264,8 @@ export function jamCropOf(item: Item): JamCrop | undefined {
 }
 
 export function jamCropName(crop: JamCrop): string {
-  if (crop === 'tomato') return 'ketchup'
-  return crop
+  if (crop === 'tomato') return m.names_item_ketchup()
+  return cropName(crop)
 }
 
 export function feedUnits(feed: readonly { count: number }[]): number {

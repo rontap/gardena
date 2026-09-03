@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import * as Dialog from '@radix-ui/react-dialog'
 import { itemLine } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
@@ -15,8 +16,8 @@ export function Inventory({ world, onClose }: { world: World; onClose: () => voi
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-20 bg-ink/50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 outline-none">
-          <Frame title="Inventory" onClose={onClose} wide>
-            <Dialog.Title className="sr-only">Inventory</Dialog.Title>
+          <Frame title={m.hud_inventory()} onClose={onClose} wide>
+            <Dialog.Title className="sr-only">{m.hud_inventory()}</Dialog.Title>
             <div className="grid grid-cols-4 gap-2">
               {world.seats[world.local].inventory.map((slot, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">

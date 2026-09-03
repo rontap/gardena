@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useRef, useState } from 'react'
 import type { LoadFailReason } from '../sim/save.ts'
 import { slotExists, slotStamp } from '../sim/save.ts'
@@ -6,11 +7,11 @@ import { Changelog } from './changelog.tsx'
 import { Btn, Chrome } from './frame.tsx'
 import { JoinFields, Notice, type MpFail } from './multiplayer.tsx'
 
-const FAIL: { readonly [K in LoadFailReason]: string } = {
-  'unknown-format': 'The file is in an unknown format.',
-  'not-gardena': 'The file is not a gardena format',
-  version: 'This savefile is from an older Gardena version and could not be loaded',
-  unusable: 'The savefile could not be loaded',
+const FAIL: { readonly [K in LoadFailReason]: () => string } = {
+  'unknown-format': () => m.menu_fail_unknown_format(),
+  'not-gardena': () => m.menu_fail_not_gardena(),
+  version: () => m.menu_fail_version(),
+  unusable: () => m.menu_fail_unusable(),
 }
 
 type MenuPage = { kind: 'home' } | { kind: 'changelog' }
@@ -50,7 +51,7 @@ export function Menu(props: MenuProps) {
   const [page, setPage] = useState<MenuPage>({ kind: 'home' })
   const input = useRef<HTMLInputElement>(null)
   const stamp = slotStamp()
-  const loadLabel = stamp === undefined ? 'Load Save' : `Load Save (${stamp})`
+  const loadLabel = stamp === undefined ? m.menu_load_save() : m.menu_load_save_stamp({ stamp })
   const shell =
     mode === 'boot'
       ? 'absolute inset-0 z-20 flex items-center justify-center'
@@ -78,7 +79,7 @@ export function Menu(props: MenuProps) {
         {showX && (
           <button
             type="button"
-            aria-label="Close"
+            aria-label={m.hud_close()}
             className="absolute top-4 right-4 z-30 cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
             onClick={
               changelog
@@ -96,7 +97,7 @@ export function Menu(props: MenuProps) {
           <h1 className="text-center font-display text-base leading-none">Gardena</h1>
           <button
             type="button"
-            aria-label="Version history"
+            aria-label={m.menu_version_history()}
             aria-pressed={changelog}
             className={
               changelog
@@ -124,7 +125,7 @@ export function Menu(props: MenuProps) {
           ) : (
             <>
               <Btn className="w-full" disabled={mpLocked} onClick={onNew}>
-                New Game
+                {m.menu_new_game()}
               </Btn>
               <Btn className="w-full" disabled={!slotExists() || mpLocked} onClick={onLoad}>
                 {loadLabel}
@@ -138,40 +139,39 @@ export function Menu(props: MenuProps) {
                   el.click()
                 }}
               >
-                Upload Save
+                {m.menu_upload_save()}
               </Btn>
               {mode === 'boot' && (
                 <Btn className="w-full" onClick={props.onJoinOpen}>
-                  Join Multiplayer
+                  {m.menu_join_multiplayer()}
                 </Btn>
               )}
               {mode === 'play' && (
                 <Btn className="w-full" disabled={guest} onClick={props.onSave}>
-                  Save game
+                  {m.menu_save_game()}
                 </Btn>
               )}
               {mode === 'play' && (
                 <Btn className="w-full" disabled={guest} onClick={props.onDownload}>
-                  Download Save
+                  {m.menu_download_save()}
                 </Btn>
               )}
               {mode === 'play' && guest && (
                 <Btn className="w-full" onClick={props.onLeave}>
-                  Leave Multiplayer
+                  {m.menu_leave_multiplayer()}
                 </Btn>
               )}
               {mpLocked && !guest && (
                 <p className="text-xs text-ink/55">
-                  Starting or loading another farm is off while you are hosting — it would drop everyone who
-                  joined.
+                  {m.menu_host_lock()}
                 </p>
               )}
               {guest && (
                 <p className="text-xs text-ink/55">
-                  This farm belongs to the host, so it is theirs to save, load, and download.
+                  {m.menu_guest_lock()}
                 </p>
               )}
-              {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]}</div>}
+              {fail !== undefined && <div className="text-sm text-roof">{FAIL[fail]()}</div>}
               {mode === 'boot' && <Notice fail={props.mpFail} />}
             </>
           )}

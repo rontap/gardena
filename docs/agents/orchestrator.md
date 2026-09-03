@@ -6,20 +6,19 @@ Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
 
 ## Does
 
-- Parse. Blocking gaps before dispatch → ask, stop.
-- Minimum slice from [[pipeline]].
-- Spawn specialists. They read `docs/`, not a handoff blob.
-- Present results. Do not commit or push unless asked.
-- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Or name a child and quote the user allow in that child's prompt. Children never write a version number. Children still do not invent copy; they follow [[standards/update-notes]].
+- Classify the update type. One line. [[pipeline]]
+- Blocking gaps before dispatch → ask, stop.
+- Spawn specialists. Prompt: task, files to read, files to write, done condition.
+- Unversioned: write the architect + coder (+ designer) work.
+- Minor / major: name files. No sample code in the spawn prompt.
+- Grep `<needs-game-text-writer>` after [[agents/game-text-writer]]. Present that agent's summary.
+- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Paste changelog lines the text writer drafted.
 
-## Does not
+## Job
 
-- Invent genre, renderer, mechanics, copy, or visual style.
-- Implement a non-trivial slice when a specialist exists.
-- Spawn for a one-line answer.
-- Write handoff prose. Be terse.
+Trivial unversioned = one obvious edit against a complete contract: do it. Else dispatch.
 
-Trivial = one obvious edit against a complete `docs/` contract. Else dispatch.
+Do not commit or push unless asked.
 
 ## Skill
 

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "vehicles_stored": "Stored",
+  "vehicles_driven": "Driven",
+  "vehicles_automated": "Automated",
+  "vehicles_deployed": "Deployed",
+  "vehicles_attached": "Attached",
+  "vehicles_seeder": "Seeder",
+  "vehicles_sprayer": "Sprayer",
+  "vehicles_harvester": "Harvester",
+  "vehicles_buy_quad": "Buy Quad",
+  "vehicles_buy_tractor": "Buy Tractor",
+  "vehicles_buy_seeder": "Buy seeder",
+  "vehicles_buy_sprayer": "Buy sprayer",
+  "vehicles_buy_harvester": "Buy harvester",
+  "vehicles_deploy": "Deploy",
+  "vehicles_automate": "Automate",
+  "vehicles_refill_all": "Refill all",
+  "vehicles_embark": "Embark",
+  "vehicles_dash_fuel": "F: {pct}%",
+  "vehicles_dash_speed": "V: {n} km/h"
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type WheelEvent as ReactWheelEvent } from 'react'
+import { m } from '../../paraglide/messages.js'
 import { HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../defs/items.ts'
 import { FADE, occupiedCells } from '../sim/building.ts'
 import { onCell } from '../sim/drop.ts'
@@ -67,7 +68,7 @@ function Use({ art }: { art: string }) {
 }
 
 function placeLine(id: SkuId): string {
-  return `Place ${skuLabel(id)}`
+  return m.prompt_place({ name: skuLabel(id) })
 }
 
 function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: number }, clientX: number, clientY: number) {
@@ -316,8 +317,8 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const followText =
     pendingPipe.length > 0
       ? world.money < runCost
-        ? 'Cannot afford'
-        : `${pendingPipe.length} pipe · ${runCost}`
+        ? m.prompt_cannot_afford()
+        : m.prompt_pipe_run({ n: pendingPipe.length, cost: runCost })
       : edgeTool || sprinklerTool || deleteTool
         ? world.promptHit(stayHit).text
         : placeId !== undefined

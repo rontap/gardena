@@ -1,5 +1,6 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
+import { m } from '../../paraglide/messages.js'
 import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   ADDITIVE_CAP_LITERS,
@@ -820,7 +821,7 @@ describe('beta-4 invariants', () => {
     expect(w.seats[0].queue).toEqual(q)
     expect(w.speech).toEqual({
       kind: 'say',
-      text: 'I cannot use this Pickaxe to harvest',
+      text: m.prompt_cannot_use({ tool: m.names_pickaxe_pickaxe(), action: m.prompt_harvest() }),
       left: 2.5,
     })
   })

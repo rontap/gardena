@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { RESEARCH } from '../defs/research.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
@@ -120,8 +121,8 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
       lastNeedle.steer = steerT
       dashSteer.setAttribute('transform', steerT)
     }
-    const fuelText = `F: ${Math.floor(driven.fuel * 100)}%`
-    const speedText = `V: ${Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL)} km/h`
+    const fuelText = m.vehicles_dash_fuel({ pct: Math.floor(driven.fuel * 100) })
+    const speedText = m.vehicles_dash_speed({ n: Math.floor(Math.abs(driven.pose.speed) * QUAD_SHOW_MUL) })
     if (dashFuelReadout !== undefined && lastDash.fuel !== fuelText) {
       lastDash.fuel = fuelText
       dashFuelReadout.textContent = fuelText
@@ -138,7 +139,7 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
     }
   }
   const phase = world.clock.phase()
-  const dayText = `Day ${world.clock.day} · ${PHASE_NAME[phase]}`
+  const dayText = m.hud_clock({ day: world.clock.day, phase: PHASE_NAME[phase]() })
   const clock = hud.get('clock')
   if (clock !== undefined) {
     if (clock.textContent !== dayText) clock.textContent = dayText
@@ -170,7 +171,7 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
       const left = research.querySelector('[data-research-left]')
       if (left !== null) left.textContent = def.name
       const secs = research.querySelector('[data-research-secs]')
-      const secsText = `${Math.ceil(job.left)}s`
+      const secsText = m.hud_secs({ secs: Math.ceil(job.left) })
       if (secs !== null && last.secs !== secsText) {
         last.secs = secsText
         secs.textContent = secsText
@@ -254,7 +255,7 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
   const banner = hud.get('banner')
   if (banner instanceof HTMLElement) {
     const on = world.clock.banner > 0 && world.seam.kind === 'play'
-    const text = on ? `Day ${world.clock.day}` : ''
+    const text = on ? m.hud_day({ day: world.clock.day }) : ''
     if (banner.hidden !== !on) banner.hidden = !on
     if (on && banner.textContent !== text) banner.textContent = text
   }

@@ -9,6 +9,7 @@ Locked for this game.
 | Style | Tailwind |
 | Language | TypeScript |
 | Tests | Vitest (sim), Playwright (e2e) |
+| i18n | Paraglide JS. English only. [[architecture/i18n]] |
 
 Do not add Vue, CSS-in-JS, a second bundler, or a CSS framework.
 

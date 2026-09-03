@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useState } from 'react'
 import { SKILLS, roman, skillBlurb, skillLabel } from '../defs/skills.ts'
 import type { MemberId, SkillId } from '../sim/ids.ts'
@@ -6,22 +7,22 @@ import { PORTRAIT, SKILL_POINT, skillInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Label, Overlay } from './frame.tsx'
 
-const NAMES: { readonly [K in MemberId]: string } = {
-  player: 'You',
-  husband: 'Husband',
-  daughter: 'Daughter',
+const NAMES: { readonly [K in MemberId]: () => string } = {
+  player: () => m.names_member_player(),
+  husband: () => m.names_member_husband(),
+  daughter: () => m.names_member_daughter(),
 }
 
-const ROLES: { readonly [K in MemberId]: string } = {
-  player: 'Gardener',
-  husband: 'Research',
-  daughter: 'Market',
+const ROLES: { readonly [K in MemberId]: () => string } = {
+  player: () => m.names_role_gardener(),
+  husband: () => m.names_role_research(),
+  daughter: () => m.names_role_market(),
 }
 
-const BLURBS: { readonly [K in MemberId]: string } = {
-  player: 'Works the beds. Speed, tools and the crops themselves.',
-  husband: 'Runs the workshop. Research pace, prices and surveys.',
-  daughter: 'Minds the stall. Sale value, opening hours and grades.',
+const BLURBS: { readonly [K in MemberId]: () => string } = {
+  player: () => m.family_blurb_player(),
+  husband: () => m.family_blurb_husband(),
+  daughter: () => m.family_blurb_daughter(),
 }
 
 const MEMBERS: MemberId[] = ['player', 'husband', 'daughter']
@@ -33,7 +34,7 @@ export function Family({ world, onClose }: { world: World; onClose: () => void }
   const [tip, setTip] = useState<Tip>(undefined)
   return (
     <Overlay
-      title="Family"
+      title={m.family_title()}
       onClose={onClose}
       className="max-h-[calc(100%-4rem)] w-[58rem]"
       aside={
@@ -73,7 +74,7 @@ function PointBank({ world }: { world: World }) {
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
       <span className="tabular-nums">{n}</span>
-      <span>{n === 1 ? 'point to spend, on anyone' : 'points to spend, on anyone'}</span>
+      <span>{n === 1 ? m.family_point_one() : m.family_point_many()}</span>
     </div>
   )
 }
@@ -101,14 +102,14 @@ function MemberCol({
           dangerouslySetInnerHTML={{ __html: PORTRAIT[member] }}
         />
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="font-display text-xs leading-none">{NAMES[member]}</div>
-          <div className="text-sm leading-none font-semibold text-ink/60">{ROLES[member]}</div>
-          <div className="mt-1 text-xs leading-snug text-ink/50">{BLURBS[member]}</div>
+          <div className="font-display text-xs leading-none">{NAMES[member]()}</div>
+          <div className="text-sm leading-none font-semibold text-ink/60">{ROLES[member]()}</div>
+          <div className="mt-1 text-xs leading-snug text-ink/50">{BLURBS[member]()}</div>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col px-3 pb-3">
-        <Label>{empty ? 'Nothing left to learn' : 'Choose one'}</Label>
+        <Label>{empty ? m.family_nothing_left() : m.family_choose_one()}</Label>
         <div className="flex flex-col gap-1">
           {SLOTS.map(slot => {
             const o = st.offers[slot]
@@ -125,7 +126,7 @@ function MemberCol({
                   onTip({
                     title: label,
                     description: skillBlurb(o.id, o.tier),
-                    why: canPick ? undefined : 'No skill point to spend. Finish a day to earn one.',
+                    why: canPick ? undefined : m.family_no_point(),
                   })
                 }
                 onPointerLeave={() => onTip(undefined)}
@@ -151,10 +152,10 @@ function MemberCol({
           })}
         </div>
 
-        <Label>Learned</Label>
+        <Label>{m.family_learned()}</Label>
         <div className="flex min-h-9 flex-wrap content-start items-start gap-1 bg-ink/5 p-1.5">
           {owned.length === 0 ? (
-            <span className="px-1 text-sm leading-6 text-ink/40">None yet</span>
+            <span className="px-1 text-sm leading-6 text-ink/40">{m.family_none_yet()}</span>
           ) : (
             owned.map(([id, tier]) => <Learned key={id} id={id} tier={tier} onTip={onTip} />)
           )}

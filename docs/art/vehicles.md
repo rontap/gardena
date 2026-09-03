@@ -73,7 +73,7 @@ Steel drum, iron ribs / legs, oil eave, iron south door. Ink outlines. Map paint
 
 Fuel left, speed mid: limited ticks + short chord, not a circle well. Steer right: small widget. Water tick = fuel full. Ripe tick = +vMax. Dirt-dark = empty / reverse. No letters.
 
-House-fill patches for HTML (ui-ux overlay), empty of ticks/needles:
+House-fill patches for HTML overlay, empty of ticks/needles:
 
 | | viewBox | |
 |---|---|---|

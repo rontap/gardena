@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
@@ -31,12 +32,12 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
     open
       ? undefined
       : weather === 'flood' && phase === 'sunrise' && !allDay
-        ? 'Stall closed this morning.'
+        ? m.market_closed_morning()
         : weather === 'drought' && phase === 'day' && !allDay
-          ? 'Stall closed at midday.'
+          ? m.market_closed_midday()
           : phase === 'sunset'
-            ? 'Stall closed until morning.'
-            : 'Stall closed at twilight.'
+            ? m.market_closed_morning_until()
+            : m.market_closed_twilight()
   const contracts = world.done.has('unlock-contracts')
   const slots = world.contractSlots()
   const cap = world.contractCap()
@@ -45,7 +46,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
   const atCap = world.contracts.active.length >= cap
   return (
     <Overlay
-      title="Market"
+      title={m.names_role_market()}
       onClose={onClose}
       className="max-h-[calc(100%-4rem)] w-[72rem]"
       aside={tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} /> : undefined}
@@ -53,11 +54,11 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
       <Tabs.Root defaultValue="stall" className="relative z-20 flex min-h-0 flex-1 flex-col">
         <Tabs.List className="flex shrink-0 flex-wrap gap-1 border-b border-ink/20 bg-house px-4">
           <Tabs.Trigger value="stall" className={tabTriggerClass}>
-            Stall
+            {m.market_stall()}
           </Tabs.Trigger>
           {contracts && (
             <Tabs.Trigger value="contracts" className={tabTriggerClass}>
-              Contracts
+              {m.market_contracts()}
             </Tabs.Trigger>
           )}
         </Tabs.List>
@@ -65,7 +66,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
           <svg viewBox="0 0 240 120" aria-hidden="true" className="h-24 w-full" dangerouslySetInnerHTML={{ __html: UI_MARKET_STALL }} />
           <div className="flex flex-col gap-2 pt-2">
             {quote.rows.length === 0 ? (
-              <div className="py-4 text-sm text-ink/50">No produce.</div>
+              <div className="py-4 text-sm text-ink/50">{m.market_no_produce()}</div>
             ) : (
               quote.rows.map(row => <StallRow key={row.good} row={row} world={world} onTip={setTip} />)
             )}
@@ -78,7 +79,8 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
                 onClose()
               }}
             >
-              Sell all - <Coin n={quote.paid} />
+              {m.market_sell_all()}
+              <Coin n={quote.paid} />
               {quote.paid !== quote.clean && (
                 <span className="text-ink/55">
                   {' '}
@@ -92,7 +94,7 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
         {contracts && (
           <Tabs.Content value="contracts" className="flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center gap-2 px-1 pb-2 pt-1 text-sm">
-              <span className="text-ink/60">Reputation</span>
+              <span className="text-ink/60">{m.market_reputation()}</span>
               <span className="w-24">
                 <Bar value={world.contracts.rep / REP_MAX} color="bg-tier-2" />
               </span>
@@ -122,39 +124,39 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
   )
 }
 
-const RARITY_NAME: { readonly [K in Rarity]: string } = {
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  heirloom: 'Heirloom',
+const RARITY_NAME: { readonly [K in Rarity]: () => string } = {
+  common: () => m.names_rarity_common(),
+  uncommon: () => m.names_rarity_uncommon(),
+  rare: () => m.names_rarity_rare(),
+  heirloom: () => m.names_rarity_heirloom(),
 }
 
 function rarityClause(demand: Demand): string {
   if (demand.kind === 'plain' || (demand.kind === 'group' && demand.group === 'jam')) return ''
   if (demand.minRarity === 'common') return ''
-  return ` at least rarity of ${RARITY_NAME[demand.minRarity]}`
+  return m.market_rarity_clause({ rarity: RARITY_NAME[demand.minRarity]() })
 }
 
 function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: number): Tip {
   const company = COMPANIES[offer.company].name
-  const days = offer.days === 1 ? '1 day' : `${offer.days} days`
+  const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
-    .map(line => `Deliver ${line.amount} ${demandName(line)}${rarityClause(line)}.`)
+    .map(line => m.market_deliver({ amount: line.amount, good: demandName(line), rarity: rarityClause(line) }))
     .join('\n')
   const cash = offer.prize.kind === 'cash'
   const why =
-    !guest && atCap ? (cap === 4 ? 'Four contracts already running.' : 'Three contracts already running.') : undefined
+    !guest && atCap ? (cap === 4 ? m.market_cap_four() : m.market_cap_three()) : undefined
   return {
     title: company,
     description: (
       <>
-        {`${offer.difficulty}/40 difficulty contract for ${company}.\n${deliver}\nContract duration is ${days}, earn `}
+        {`${m.market_offer_head({ difficulty: offer.difficulty, max: 40, company })}\n${deliver}\n${m.market_duration_earn({ days })}`}
         {cash ? <Coin n={offer.reward} /> : prizeName(offer.prize)}
-        {cash ? ` when completed (${Math.round(offer.markup * 100)}% more than farmer's market).` : ' when completed.'}
-        {'\nCancellation cost is '}
+        {cash ? m.market_when_markup({ markup: Math.round(offer.markup * 100) }) : m.market_when_completed()}
+        {`\n${m.market_cancel_cost()}`}
         <Coin n={offer.penalty} />
-        {'.'}
-        {!guest && !atCap ? '\nClick to accept offer' : null}
+        {m.almanac_period()}
+        {!guest && !atCap ? `\n${m.market_click_accept()}` : null}
         {why !== undefined ? <span className="mt-2 block font-bold text-roof">{why}</span> : null}
       </>
     ),
@@ -183,7 +185,7 @@ export function OfferCard({
       {offer.lines.map((line, i) => (
         <AmountRow key={i} demand={line} count={line.amount} />
       ))}
-      <div className="text-sm">{offer.days === 1 ? '1 day' : `${offer.days} days`}</div>
+      <div className="text-sm">{offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })}</div>
       <div>
         {offer.prize.kind === 'cash' ? <Coin n={offer.reward} /> : <PrizeChip prize={offer.prize} />}
       </div>
@@ -218,14 +220,14 @@ export function OfferCard({
 }
 
 export function prizeName(prize: Prize): string {
-  if (prize.kind === 'cash') return 'Cash'
-  if (prize.kind === 'tree-seed') return `${TREE_NAME[prize.tree]} seed`
-  if (prize.kind === 'seeds') return `${cropName(prize.crop)} seeds`
-  if (prize.kind === 'fertilizer') return 'Fertilizer'
-  if (prize.kind === 'freezer') return 'Large freezer'
-  if (prize.kind === 'expansion-slot') return 'Expansion permit'
-  if (prize.kind === 'skill-points') return prize.n === 1 ? '1 skill point' : `${prize.n} skill points`
-  return prize.tool === 'rotary-shovel' ? 'Rotary shovel' : 'Diamond pickaxe'
+  if (prize.kind === 'cash') return m.market_cash()
+  if (prize.kind === 'tree-seed') return m.market_tree_seed({ tree: TREE_NAME[prize.tree]() })
+  if (prize.kind === 'seeds') return m.market_crop_seeds({ crop: cropName(prize.crop) })
+  if (prize.kind === 'fertilizer') return m.market_prize_fertilizer()
+  if (prize.kind === 'freezer') return m.names_sku_buy_freezer_large()
+  if (prize.kind === 'expansion-slot') return m.market_expansion_permit()
+  if (prize.kind === 'skill-points') return prize.n === 1 ? m.market_skill_point() : m.market_skill_points({ n: prize.n })
+  return prize.tool === 'rotary-shovel' ? m.names_shovel_rotary_shovel() : m.names_pickaxe_diamond_pickaxe()
 }
 
 function prizeItem(prize: Prize): Item | undefined {
@@ -280,7 +282,7 @@ const TIER_DOT: { readonly [K in Stars]: string } = {
 
 export function Difficulty({ stars }: { stars: Stars }) {
   return (
-    <span className="flex shrink-0 items-center gap-1" aria-label={`Difficulty ${stars}`}>
+    <span className="flex shrink-0 items-center gap-1" aria-label={m.market_difficulty({ n: stars })}>
       {Array.from({ length: stars }, (_, i) => (
         <span key={i} className={`h-2 w-2 rounded-full ${TIER_DOT[stars]}`} />
       ))}
@@ -314,7 +316,7 @@ function AmountRow({ demand, count }: { demand: Demand; count: number }) {
 }
 
 function demandName(demand: Demand): string {
-  if (demand.kind === 'group') return demand.group === 'jam' ? 'Any jam' : 'Any spirit'
+  if (demand.kind === 'group') return demand.group === 'jam' ? m.market_any_jam() : m.market_any_spirit()
   return stallName(demandGood(demand))
 }
 
@@ -383,7 +385,7 @@ function ContractsRight({
 }) {
   const empty = world.contracts.active.length === 0 && world.contracts.history.length === 0
   if (empty) {
-    return <div className="flex items-center justify-center text-sm text-ink/50">No contracts running.</div>
+    return <div className="flex items-center justify-center text-sm text-ink/50">{m.market_no_running()}</div>
   }
   return (
     <div className="flex min-h-0 flex-col overflow-y-auto scroll-pane">
@@ -424,7 +426,7 @@ function ActiveCard({
       {!guest && (
         <button
           type="button"
-          aria-label="Cancel"
+          aria-label={m.market_cancel()}
           className={`absolute top-1 right-1 cursor-pointer text-lg ${
             armed ? 'bg-ink text-house' : 'text-ink/60 hover:bg-dirt hover:text-house'
           }`}
@@ -433,7 +435,9 @@ function ActiveCard({
               title: COMPANIES[active.offer.company].name,
               description: (
                 <>
-                  Cancelling this offer will incur a <Coin n={fee} /> penalty.
+                  {m.market_cancelling()}
+                  <Coin n={fee} />
+                  {m.market_penalty()}
                 </>
               ),
             })
@@ -476,7 +480,7 @@ function ActiveCard({
           </div>
         )}
       </div>
-      <div className="text-sm tabular-nums">{left.toFixed(1)} days left</div>
+      <div className="text-sm tabular-nums">{m.market_days_left({ n: left.toFixed(1) })}</div>
       <div>
         {active.offer.prize.kind === 'cash' ? <Coin n={active.offer.reward} /> : <PrizeChip prize={active.offer.prize} />}
       </div>
@@ -500,7 +504,7 @@ export function OutcomePay({ entry }: { entry: HistoryEntry }) {
 
 function HistoryLine({ entry }: { entry: HistoryEntry }) {
   const outcome =
-    entry.outcome.kind === 'done' ? 'Completed' : entry.outcome.kind === 'missed' ? 'Missed' : 'Cancelled'
+    entry.outcome.kind === 'done' ? m.recap_completed() : entry.outcome.kind === 'missed' ? m.recap_missed() : m.recap_cancelled()
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>{COMPANIES[entry.company].name}</span>
@@ -530,7 +534,7 @@ function StallRow({
       onPointerEnter={() =>
         onTip({
           title: stallName(row.good),
-          description: `Floor ${SAT_FLOOR[row.good] * 100}%. ${nd(row.recoverDays)} to clean.`,
+          description: m.market_floor({ n: SAT_FLOOR[row.good] * 100, days: nd(row.recoverDays) }),
         })
       }
       onPointerLeave={() => onTip(undefined)}
@@ -548,19 +552,19 @@ function StallRow({
 
 function nd(days: number): string {
   const n = Math.round(days * 10) / 10
-  return `${Number.isInteger(n) ? n : n.toFixed(1)}d`
+  return m.market_recover({ n: Number.isInteger(n) ? n : n.toFixed(1) })
 }
 
 function stallName(id: StallGoodId): string {
-  if (id === 'sugar') return 'Sugar'
-  if (id === 'wine' || id === 'cider') return CASK_NAME[id]
-  if (id === 'oil') return 'Olive oil'
-  if (id === 'flour') return 'Flour'
-  if (id === 'extract') return 'Extract'
-  if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]
+  if (id === 'sugar') return m.names_item_sugar()
+  if (id === 'wine' || id === 'cider') return CASK_NAME[id]()
+  if (id === 'oil') return m.names_item_oil()
+  if (id === 'flour') return m.names_item_flour()
+  if (id === 'extract') return m.names_item_extract()
+  if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]()
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
-    return crop === 'tomato' ? 'Ketchup' : `${cropName(crop)} jam`
+    return crop === 'tomato' ? m.names_item_ketchup() : m.market_jam({ crop: cropName(crop) })
   }
   if (!isCropStall(id)) throw new Error(`stallName: ${id}`)
   return cropName(id)

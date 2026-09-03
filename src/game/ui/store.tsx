@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS } from '../defs/crops.ts'
@@ -11,18 +12,18 @@ import { CalloutHover } from './callout-hover.tsx'
 import { gateLine, rowState } from './sku-card.tsx'
 import { Bar, Coin, Frame } from './frame.tsx'
 
-const RARITY_LABEL: { readonly [K in Rarity]: string } = {
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  heirloom: 'Heirloom',
+const RARITY_LABEL: { readonly [K in Rarity]: () => string } = {
+  common: () => m.names_rarity_common(),
+  uncommon: () => m.names_rarity_uncommon(),
+  rare: () => m.names_rarity_rare(),
+  heirloom: () => m.names_rarity_heirloom(),
 }
 
-const ADDITIVE_LABEL: { readonly [K in AdditiveId]: string } = {
-  fertilizer: 'Fertilizer',
-  synth: 'Synthetic fertilizer',
-  compost: 'Compost',
-  'weed-spray': 'Weed spray',
+const ADDITIVE_LABEL: { readonly [K in AdditiveId]: () => string } = {
+  fertilizer: () => m.hud_fertilizer(),
+  synth: () => m.names_item_synth(),
+  compost: () => m.names_item_compost(),
+  'weed-spray': () => m.names_item_weed_spray(),
 }
 
 /**
@@ -73,7 +74,7 @@ function Capacity({ hint, used, cap, unit }: { hint: string; used: number; cap: 
       <span className="flex shrink-0 items-center gap-2">
         <Bar value={used / cap} color="bg-ripe" className="h-1.5 w-20" />
         <span className="tabular-nums text-ink/70">
-          {used} / {cap} {unit}
+          {m.hud_capacity_unit({ used, cap, unit })}
         </span>
       </span>
     </div>
@@ -104,13 +105,13 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
   })
   return (
     <Shell
-      title="Seed silo"
+      title={m.names_building_seed_silo()}
       onClose={onClose}
       aside={tip !== undefined ? <SeedTip world={world} crop={tip.crop} rarity={tip.rarity} /> : undefined}
     >
-      <Capacity hint="Click a stack to carry it." used={cell.used} cap={cell.cap} unit="seeds" />
+      <Capacity hint={m.hud_silo_hint()} used={cell.used} cap={cell.cap} unit={m.hud_silo_unit()} />
       {crops.length === 0 ? (
-        <div className="py-4 text-sm text-ink/50">Empty. Seeds you buy are delivered here.</div>
+        <div className="py-4 text-sm text-ink/50">{m.hud_silo_empty()}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="border-separate border-spacing-1.5">
@@ -141,7 +142,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                     <th className="pr-2 align-middle">
                       <div className="flex items-center justify-end gap-1">
                         <span className="text-sm font-semibold whitespace-nowrap text-ink/70">
-                          {RARITY_LABEL[rarity]}
+                          {RARITY_LABEL[rarity]()}
                         </span>
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                           {gem !== undefined && (
@@ -157,7 +158,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                           <button
                             type="button"
                             aria-disabled={n === 0}
-                            aria-label={`${RARITY_LABEL[rarity]} ${cropName(crop)} - ${n}`}
+                            aria-label={m.hud_silo_aria({ rarity: RARITY_LABEL[rarity](), crop: cropName(crop), n })}
                             onPointerEnter={() => setTip({ crop, rarity })}
                             onPointerLeave={() => setTip(undefined)}
                             onFocus={() => setTip({ crop, rarity })}
@@ -188,7 +189,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
           </table>
         </div>
       )}
-      <div className="mt-2 text-sm text-ink/55">Walking up stores every seed you were carrying.</div>
+      <div className="mt-2 text-sm text-ink/55">{m.hud_silo_walk()}</div>
     </Shell>
   )
 }
@@ -204,10 +205,12 @@ function SeedTip({ world, crop, rarity }: { world: World; crop: AnnualId; rarity
       description={
         <>
           <span className="flex items-center gap-1">
-            Seed{pack === undefined ? ': not stocked' : <>: <Coin n={pack} /> per pack of 5</>}
+            {pack === undefined ? m.hud_seed_not_stocked() : <>{m.hud_seed_pack()}<Coin n={pack} />{m.hud_per_pack({ n: 5 })}</>}
           </span>
           <span className="mt-1 flex items-center gap-1">
-            Sells for <Coin n={round(sale)} /> each at {RARITY_LABEL[rarity].toLowerCase()}
+            {m.hud_sells_for()}
+            <Coin n={round(sale)} />
+            {m.hud_each_at({ rarity: RARITY_LABEL[rarity]().toLowerCase() })}
           </span>
         </>
       }
@@ -228,11 +231,12 @@ function AdditiveTip({ world, id }: { world: World; id: AdditiveId }) {
   const state = rowState(world, sku)
   return (
     <CalloutHover
-      title={ADDITIVE_LABEL[id]}
+      title={ADDITIVE_LABEL[id]()}
       description={
         <>
           <span className="flex items-center gap-1">
-            <Coin n={world.skuPrice(sku)} /> for {ADDITIVE_BAG[id]} L, delivered straight here
+            <Coin n={world.skuPrice(sku)} />
+            {m.hud_for_liters({ n: ADDITIVE_BAG[id] })}
           </span>
           {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(world, sku, state)}</span>}
         </>
@@ -246,7 +250,7 @@ function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (
   return (
     <button
       type="button"
-      aria-label={`Buy ${skuLabel(sku)}`}
+      aria-label={m.hud_buy_sku({ name: skuLabel(sku) })}
       aria-disabled={off}
       onPointerEnter={() => onHot(true)}
       onPointerLeave={() => onHot(false)}
@@ -260,7 +264,7 @@ function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (
         off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
       }`}
     >
-      <span className="text-xs font-semibold">Buy</span>
+      <span className="text-xs font-semibold">{m.hud_buy()}</span>
       <span className="text-sm leading-none">
         <Coin n={world.skuPrice(sku)} />
       </span>
@@ -274,12 +278,12 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
   if (cell.kind !== 'additive-store') return null
   return (
     <Shell
-      title="Additive store"
+      title={m.names_building_additive_store()}
       onClose={onClose}
       className="w-[30rem]"
       aside={hot === undefined ? undefined : <AdditiveTip world={world} id={hot} />}
     >
-      <Capacity hint="Click to fill a bag." used={round(cell.used)} cap={cell.cap} unit="L" />
+      <Capacity hint={m.hud_fill_bag()} used={round(cell.used)} cap={cell.cap} unit="L" />
       <div className="flex flex-col gap-1.5">
         {ADDITIVE_IDS.map(id => {
           const liters = cell.litersOf(id)
@@ -305,7 +309,7 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                     __html: faceGfx({ kind: id, liters: ADDITIVE_BAG[id], capacityLiters: ADDITIVE_BAG[id] }),
                   }}
                 />
-                <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]}</span>
+                <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]()}</span>
                 <span className="shrink-0 text-base tabular-nums">{round(liters)} L</span>
               </button>
               {sku !== 'none' && <BuyAdditive world={world} sku={sku} onHot={on => setHot(on ? id : undefined)} />}
@@ -314,8 +318,8 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
         })}
       </div>
       <div className="mt-2 text-sm text-ink/55">
-        {cell.used > 0 ? '' : 'Nothing stocked yet — buy a bag here or at the shop and it is delivered to these tanks. '}
-        Walking up empties any bag you were carrying back into the tanks.
+        {cell.used > 0 ? '' : m.hud_additive_empty()}
+        {m.hud_additive_walk()}
       </div>
     </Shell>
   )

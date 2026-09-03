@@ -1,9 +1,10 @@
+import { m } from '../../paraglide/messages.js'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { shelfOf } from '../defs/shelf.ts'
 import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import { guestBlockedSku } from '../sim/mp.ts'
-import type { World } from '../sim/world.ts'
+import type { BuyFail, World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
 import { machineOfSku } from '../sim/recipe.ts'
 import { CalloutHover } from './callout-hover.tsx'
@@ -12,14 +13,14 @@ import { Coin } from './frame.tsx'
 
 export type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'silo-full' | 'store-full' | 'ok'
 
-const REASON: { readonly [K in RowState]: string } = {
-  'not-researched': 'Locked behind research',
-  'need-skill': 'You need to earn the Vanilla tending skill',
-  'cannot-afford': 'Not enough money',
-  'inventory-full': 'No room in the inventory',
-  'silo-full': 'The seed silo is full',
-  'store-full': 'The additive store is full',
-  ok: '',
+const REASON: { readonly [K in RowState]: () => string } = {
+  'not-researched': () => m.hud_locked_research(),
+  'need-skill': () => m.hud_need_vanilla(),
+  'cannot-afford': () => m.hud_not_enough_money_short(),
+  'inventory-full': () => m.hud_inventory_full(),
+  'silo-full': () => m.hud_silo_full(),
+  'store-full': () => m.hud_store_full(),
+  ok: () => '',
 }
 
 export function rowState(world: World, id: SkuId): RowState {
@@ -50,24 +51,31 @@ export function locked(world: World, id: SkuId): boolean {
 }
 
 export function gateLine(world: World, id: SkuId, state: RowState): string {
-  if (state === 'need-skill') return REASON['need-skill']
-  if (state !== 'not-researched') return REASON[state]
+  if (state === 'need-skill') return REASON['need-skill']()
+  if (state !== 'not-researched') return REASON[state]()
   const sku = SKUS[id]
-  if (sku.need === 'prize') return 'A contract prize. Not for sale.'
-  if (sku.unlock !== 'start' && !world.done.has(sku.unlock)) return `Needs the ${RESEARCH[sku.unlock].name} research`
-  if (sku.need.length > 0) return `Needs ${sku.need.map(r => RESEARCH[r].name).join(' or ')}`
-  return REASON[state]
+  if (sku.need === 'prize') return m.hud_prize_not_sale()
+  if (sku.unlock !== 'start' && !world.done.has(sku.unlock)) return m.hud_needs_research({ name: RESEARCH[sku.unlock].name })
+  if (sku.need.length > 0) return m.hud_needs_or({ names: sku.need.map(r => RESEARCH[r].name).join(' or ') })
+  return REASON[state]()
 }
 
 export function matches(id: SkuId, q: string): boolean {
   const shelf = shelfOf(id)
-  const hay = `${skuLabel(id)} ${shelf.label} ${skuDesc(id)}`.toLowerCase()
+  const hay = `${skuLabel(id)} ${shelf.label()} ${skuDesc(id)}`.toLowerCase()
   return hay.includes(q.trim().toLowerCase())
 }
 
 export function crumbOf(id: SkuId): string {
   const shelf = shelfOf(id)
-  return `${shelf.panel === 'shop' ? 'Store' : 'Build'} · ${shelf.label}`
+  return m.hud_crumb({ panel: shelf.panel === 'shop' ? m.hud_store() : m.hud_build(), shelf: shelf.label() })
+}
+
+function buyFailText(fail: BuyFail): string {
+  if (fail === 'Cannot afford') return m.prompt_cannot_afford()
+  if (fail === 'Inventory full') return m.hud_inventory_full()
+  if (fail === 'Seed silo full') return m.hud_silo_full()
+  return m.hud_store_full()
 }
 
 export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
@@ -92,8 +100,9 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
           {state !== 'ok' && !guestOff && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}
           {bulk !== undefined && (
             <span className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}>
-              Ctrl-click: 5 packs for <Coin n={bulk} />
-              {bulkFail !== undefined && <span>&mdash; {bulkFail.toLowerCase()}</span>}
+              {m.hud_ctrl_packs({ n: 5 })}
+              <Coin n={bulk} />
+              {bulkFail !== undefined && bulkFail !== 'Locked' && <span>&mdash; {buyFailText(bulkFail)}</span>}
             </span>
           )}
         </>
@@ -146,7 +155,7 @@ export function SkuCard({
         dangerouslySetInnerHTML={{ __html: skuInner(id) }}
       />
       <span className="line-clamp-2 min-h-8 text-sm leading-tight font-semibold">{skuLabel(id)}</span>
-      {armed && <span className="text-xs opacity-70">placing</span>}
+      {armed && <span className="text-xs opacity-70">{m.hud_placing()}</span>}
       <span className="text-sm tabular-nums">
         <Coin n={world.skuPrice(id)} />
       </span>

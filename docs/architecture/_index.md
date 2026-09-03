@@ -13,6 +13,7 @@ Module map and types for the game as it runs.
 - [[architecture/tree]]
 - [[architecture/save]]
 - [[architecture/changelog]]
+- [[architecture/i18n]]
 - [[architecture/ai-gameplay-api]]
 
 See [[canon]].

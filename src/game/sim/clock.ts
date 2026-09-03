@@ -1,12 +1,14 @@
+import { m } from '../../paraglide/messages.js'
+
 export const DAY_SECONDS = 240
 
 export type DayPhase = 'sunrise' | 'day' | 'sunset' | 'twilight'
 
-export const PHASE_NAME: { readonly [K in DayPhase]: string } = {
-  sunrise: 'Sunrise',
-  day: 'Midday',
-  sunset: 'Sunset',
-  twilight: 'Twilight',
+export const PHASE_NAME: { readonly [K in DayPhase]: () => string } = {
+  sunrise: () => m.names_phase_sunrise(),
+  day: () => m.names_phase_day(),
+  sunset: () => m.names_phase_sunset(),
+  twilight: () => m.names_phase_twilight(),
 }
 
 export function days(s: number): number {

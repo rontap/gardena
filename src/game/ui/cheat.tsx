@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import type { ReactNode } from 'react'
 import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
 import type { World } from '../sim/world.ts'
@@ -6,11 +7,11 @@ import { Coin, Dock } from './frame.tsx'
 
 export function Cheat({ world, onClose }: { world: World; onClose: () => void }) {
   return (
-    <Dock title="Cheat" onClose={onClose} width="w-80">
+    <Dock title={m.hud_cheat()} onClose={onClose} width="w-80">
       <div className="flex flex-col gap-1.5">
-        <Row label="Unlock all instantly" onClick={() => world.unlockAll()} />
+        <Row label={m.hud_cheat_unlock()} onClick={() => world.unlockAll()} />
         <Row
-          label="Research speed 3×"
+          label={m.hud_cheat_research({ n: 3 })}
           icon={skillInner('research-speed')}
           selected={world.cheatFastResearch}
           onClick={() => world.toggleCheatResearch()}
@@ -18,16 +19,17 @@ export function Cheat({ world, onClose }: { world: World; onClose: () => void })
         <Row
           label={
             <span className="inline-flex items-center gap-1">
-              Gain <Coin n={200} />
+              {m.hud_cheat_money()}
+              <Coin n={200} />
             </span>
           }
           onClick={() => world.cheatMoney()}
         />
-        <Row icon={SKILL_POINT} label="Gain 10 skill points" onClick={() => world.cheatPoints()} />
+        <Row icon={SKILL_POINT} label={m.hud_cheat_points({ n: 10 })} onClick={() => world.cheatPoints()} />
         {WEATHER_KINDS.map(kind => (
           <Row
             key={kind}
-            label={`Tomorrow: ${WEATHER_NAME[kind]}`}
+            label={m.hud_cheat_tomorrow({ name: WEATHER_NAME[kind]() })}
             selected={world.pinnedTomorrow() === kind}
             onClick={() => world.pinTomorrow(kind)}
           />

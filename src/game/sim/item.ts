@@ -1,9 +1,10 @@
-import { fill } from '../defs/catalog.ts'
+import { m } from '../../paraglide/messages.js'
 import {
   BARREL_AGE,
   BARREL_MATURE,
   CASK_SALE,
   SPIRIT_RARITY,
+  CHEST_SLOTS,
   COMPOST_LITERS,
   COMPOST_NEED,
   COMPOST_SECONDS,
@@ -17,6 +18,8 @@ import {
   GRIND_MIN,
   GRASS_PACK,
   GRIND_WORK,
+  HANGAR_H,
+  HANGAR_W,
   JAM_BUFFER,
   JAM_IN,
   JAM_SECONDS,
@@ -26,6 +29,8 @@ import {
   MILL_WORK,
   PICKAXES,
   SHOVELS,
+  SILO_H,
+  SILO_W,
   SPRINKLER_TILE_DAY,
   STILL_CAP,
   STILL_SECONDS,
@@ -37,9 +42,10 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import type { Rarity } from '../defs/rarity.ts'
-import { CLASS_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
+import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
+import { SOIL_WATER_MID } from './soil.ts'
 import type {
   AnnualId,
   CaskId,
@@ -152,21 +158,25 @@ export function organic(item: Item): boolean {
   return compostValue(item) > 0
 }
 
-export const SHOVEL_NAME: { readonly [K in ShovelId]: string } = {
-  shovel: 'Shovel',
-  'better-shovel': 'Better shovel',
-  'rotary-shovel': 'Rotary shovel',
+export const SHOVEL_NAME: { readonly [K in ShovelId]: () => string } = {
+  shovel: () => m.names_shovel_shovel(),
+  'better-shovel': () => m.names_shovel_better_shovel(),
+  'rotary-shovel': () => m.names_shovel_rotary_shovel(),
 }
 
-export const PICKAXE_NAME: { readonly [K in PickaxeId]: string } = {
-  pickaxe: 'Pickaxe',
-  'better-pickaxe': 'Hardened pickaxe',
-  'diamond-pickaxe': 'Diamond pickaxe',
+export const PICKAXE_NAME: { readonly [K in PickaxeId]: () => string } = {
+  pickaxe: () => m.names_pickaxe_pickaxe(),
+  'better-pickaxe': () => m.names_pickaxe_better_pickaxe(),
+  'diamond-pickaxe': () => m.names_pickaxe_diamond_pickaxe(),
+}
+
+export const CONTAINER_NAME: { readonly [K in ContainerId]: () => string } = {
+  bucket: () => m.names_container_bucket(),
+  'large-bucket': () => m.names_container_large_bucket(),
 }
 
 export function cropName(id: CropId): string {
-  if (id === 'sugar-cane') return 'Sugar cane'
-  return id.slice(0, 1).toUpperCase() + id.slice(1)
+  return CROP_NAME[id]()
 }
 
 export function fruitMoney(it: { unitSale: number; count: number; freshness: number }): number {
@@ -185,487 +195,371 @@ export function mergeFreshness(
 }
 
 export function toolName(hand: Hand): string {
-  if (hand.kind === 'empty') return 'hand'
+  if (hand.kind === 'empty') return m.names_item_hand()
   const it = hand.item
-  if (it.kind === 'shovel') return SHOVEL_NAME[it.id]
-  if (it.kind === 'pickaxe') return PICKAXE_NAME[it.id]
-  if (it.kind === 'container') return it.id === 'bucket' ? 'Bucket' : 'Large bucket'
-  if (it.kind === 'fertilizer') return 'Fertilizer bag'
-  if (it.kind === 'synth') return 'Synthetic fertilizer'
-  if (it.kind === 'compost') return 'Compost'
-  if (it.kind === 'seeds') return `${cropName(it.crop)} seed`
-  if (it.kind === 'grass-seeds') return 'Grass seed'
+  if (it.kind === 'shovel') return SHOVEL_NAME[it.id]()
+  if (it.kind === 'pickaxe') return PICKAXE_NAME[it.id]()
+  if (it.kind === 'container') return CONTAINER_NAME[it.id]()
+  if (it.kind === 'fertilizer') return m.names_item_fertilizer()
+  if (it.kind === 'synth') return m.names_item_synth()
+  if (it.kind === 'compost') return m.names_item_compost()
+  if (it.kind === 'seeds') return m.hud_tool_seed({ name: cropName(it.crop) })
+  if (it.kind === 'grass-seeds') return m.names_item_grass_seed()
   if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
-  if (it.kind === 'sugar') return 'Sugar'
-  if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]
-  if (it.kind === 'cask') return CASK_NAME[it.cask]
-  if (it.kind === 'jam') return it.crop === 'tomato' ? 'Ketchup' : `${cropName(it.crop)} jam`
-  if (it.kind === 'oil') return 'Olive oil'
-  if (it.kind === 'flour') return 'Flour'
-  if (it.kind === 'extract') return 'Extract'
-  if (it.kind === 'tree-seed') return `${TREE_NAME[it.tree]} seed`
+  if (it.kind === 'sugar') return m.names_item_sugar()
+  if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]()
+  if (it.kind === 'cask') return CASK_NAME[it.cask]()
+  if (it.kind === 'jam') return it.crop === 'tomato' ? m.names_item_ketchup() : m.hud_tool_jam({ name: cropName(it.crop) })
+  if (it.kind === 'oil') return m.names_item_oil()
+  if (it.kind === 'flour') return m.names_item_flour()
+  if (it.kind === 'extract') return m.names_item_extract()
+  if (it.kind === 'tree-seed') return m.hud_tool_seed({ name: TREE_NAME[it.tree]() })
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
-  if (it.kind === 'weed') return 'Pulled weed'
-  if (it.kind === 'weed-spray') return 'Weed spray'
-  return 'Cut grass'
+  if (it.kind === 'weed') return m.names_item_weed()
+  if (it.kind === 'weed-spray') return m.names_item_weed_spray()
+  return m.names_item_cut_grass()
 }
 
+export const TILE_NAME: { readonly [K in TileId]: () => string } = {
+  paved: () => m.names_tile_paved(),
+  brick: () => m.names_tile_brick(),
+  cobble: () => m.names_tile_cobble(),
+}
+
+const PLACE_NAME = {
+  water: () => m.names_face_water(),
+  pumpjack: () => m.names_face_pumpjack(),
+  chest: () => m.names_building_chest(),
+  grinder: () => m.names_building_grinder(),
+  'compost-box': () => m.names_building_compost_box(),
+  well: () => m.names_building_well(),
+  pipe: () => m.names_building_pipe(),
+  sprinkler: () => m.names_building_sprinkler(),
+  'sprinkler-vert': () => m.names_building_sprinkler_vert(),
+  'sprinkler-large': () => m.names_building_sprinkler_large(),
+  valve: () => m.names_building_valve(),
+  'rain-tank': () => m.names_building_rain_tank(),
+  tap: () => m.names_building_tap(),
+  mill: () => m.names_building_mill(),
+  'jam-machine': () => m.names_building_jam(),
+  still: () => m.names_building_still(),
+  barrel: () => m.names_building_barrel(),
+  freezer: () => m.names_building_freezer(),
+  hangar: () => m.names_building_hangar(),
+  'silo-seed': () => m.names_building_silo_seed(),
+  'silo-spray': () => m.names_building_silo_spray(),
+  'silo-produce': () => m.names_building_silo_produce(),
+  lever: () => m.names_sensor_lever(),
+  button: () => m.names_sensor_button(),
+  lamp: () => m.names_sensor_lamp(),
+  or: () => m.names_sensor_or(),
+  and: () => m.names_sensor_and(),
+  not: () => m.names_sensor_not(),
+  pulser: () => m.names_sensor_pulser(),
+  counter: () => m.names_sensor_counter(),
+  'sensor-water': () => m.names_sensor_water(),
+  'sensor-fert': () => m.names_sensor_fert(),
+  'sensor-harvest': () => m.names_sensor_harvest(),
+  'sensor-day': () => m.names_sensor_day(),
+  'water-system': () => m.names_sensor_water_system(),
+  'vehicle-detector': () => m.names_sensor_vehicle_detector(),
+  'traffic-light': () => m.names_sensor_traffic_light(),
+  delete: () => m.names_face_delete(),
+  fence: () => m.names_building_fence(),
+} as const
+
 export function faceName(face: Face): string {
-  if (face.kind === 'water') return 'Water'
-  if (face.kind === 'pumpjack') return 'Pumpjack'
-  if (face.kind === 'chest') return 'Chest'
-  if (face.kind === 'grinder') return 'Seed grinder'
-  if (face.kind === 'compost-box') return 'Compost box'
-  if (face.kind === 'well') return 'Well'
-  if (face.kind === 'pipe') return 'Pipe'
-  if (face.kind === 'sprinkler') return 'Sprinkler'
-  if (face.kind === 'sprinkler-vert') return 'Vertical sprinkler'
-  if (face.kind === 'sprinkler-large') return 'Large sprinkler'
-  if (face.kind === 'valve') return 'Valve'
-  if (face.kind === 'rain-tank') return 'Rainwater tank'
-  if (face.kind === 'tap') return 'Tap'
-  if (face.kind === 'mill') return 'Mill'
-  if (face.kind === 'jam-machine') return 'Jam machine'
-  if (face.kind === 'still') return 'Pot still'
-  if (face.kind === 'barrel') return 'Barrel'
-  if (face.kind === 'freezer') return 'Freezer'
-  if (face.kind === 'hangar') return 'Vehicle hangar'
-  if (face.kind === 'silo-seed') return 'Seeding silo'
-  if (face.kind === 'silo-spray') return 'Spraying silo'
-  if (face.kind === 'silo-produce') return 'Produce silo'
-  if (face.kind === 'lever') return 'Lever'
-  if (face.kind === 'button') return 'Button'
-  if (face.kind === 'lamp') return 'Lamp'
-  if (face.kind === 'or') return 'OR gate'
-  if (face.kind === 'and') return 'AND gate'
-  if (face.kind === 'not') return 'NOT gate'
-  if (face.kind === 'pulser') return 'Pulser'
-  if (face.kind === 'counter') return 'Counter'
-  if (face.kind === 'sensor-water') return 'Water sensor'
-  if (face.kind === 'sensor-fert') return 'Fertilizer sensor'
-  if (face.kind === 'sensor-harvest') return 'Harvest sensor'
-  if (face.kind === 'sensor-day') return 'Day sensor'
-  if (face.kind === 'water-system') return 'Water-system sensor'
-  if (face.kind === 'vehicle-detector') return 'Vehicle detector'
-  if (face.kind === 'traffic-light') return 'Traffic light'
-  if (face.kind === 'delete') return 'Delete'
-  if (face.kind === 'fence') return 'Wooden fence'
-  if (face.kind === 'tile') {
-    if (face.tile === 'paved') return 'Paving slab'
-    if (face.tile === 'brick') return 'Brickwork'
-    return 'Cobblestone'
+  switch (face.kind) {
+    case 'tile':
+      return TILE_NAME[face.tile]()
+    case 'water':
+    case 'pumpjack':
+    case 'chest':
+    case 'grinder':
+    case 'compost-box':
+    case 'well':
+    case 'pipe':
+    case 'sprinkler':
+    case 'sprinkler-vert':
+    case 'sprinkler-large':
+    case 'valve':
+    case 'rain-tank':
+    case 'tap':
+    case 'mill':
+    case 'jam-machine':
+    case 'still':
+    case 'barrel':
+    case 'freezer':
+    case 'hangar':
+    case 'silo-seed':
+    case 'silo-spray':
+    case 'silo-produce':
+    case 'lever':
+    case 'button':
+    case 'lamp':
+    case 'or':
+    case 'and':
+    case 'not':
+    case 'pulser':
+    case 'counter':
+    case 'sensor-water':
+    case 'sensor-fert':
+    case 'sensor-harvest':
+    case 'sensor-day':
+    case 'water-system':
+    case 'vehicle-detector':
+    case 'traffic-light':
+    case 'delete':
+    case 'fence':
+      return PLACE_NAME[face.kind]()
+    default:
+      return toolName({ kind: 'hold', item: face })
   }
-  return toolName({ kind: 'hold', item: face })
 }
 
 export function caskAgeOf(item: { cask: CaskId; rarity: Rarity; unitSale: number }): number {
   return item.unitSale / (CASK_SALE[item.cask] * SPIRIT_RARITY[item.rarity])
 }
 
-export const CASK_NAME: { readonly [K in CaskId]: string } = {
-  wine: 'Wine',
-  cider: 'Cider',
+export const CASK_NAME: { readonly [K in CaskId]: () => string } = {
+  wine: () => m.names_cask_wine(),
+  cider: () => m.names_cask_cider(),
 }
 
-export const SPIRIT_NAME: { readonly [K in SpiritKind]: string } = {
-  vodka: 'Vodka',
-  beer: 'Beer',
-  brandy: 'Brandy',
-  mixed: 'Mixed spirit',
+export const SPIRIT_NAME: { readonly [K in SpiritKind]: () => string } = {
+  vodka: () => m.names_spirit_vodka(),
+  beer: () => m.names_spirit_beer(),
+  brandy: () => m.names_spirit_brandy(),
+  mixed: () => m.names_spirit_mixed(),
 }
 
 export function rottenName(cls: CropClass): string {
-  return `Rotten ${CLASS_NAME[cls]}`
+  return m.hud_tool_rotten({ cls: CLASS_NAME[cls]() })
 }
 
 export function deadName(cls: CropClass): string {
-  return `Dead ${CLASS_NAME[cls]} plant`
+  return m.hud_tool_dead({ cls: CLASS_NAME[cls]() })
 }
 
 export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'shovel') {
-    return `${SHOVEL_NAME[item.id]} - ${item.usesLeft}/${SHOVELS[item.id].uses} uses left`
+    return m.hud_line_uses({ name: SHOVEL_NAME[item.id](), left: item.usesLeft, uses: SHOVELS[item.id].uses })
   }
   if (item.kind === 'pickaxe') {
-    return `${PICKAXE_NAME[item.id]} - ${item.usesLeft}/${PICKAXES[item.id].uses} uses left`
+    return m.hud_line_uses({ name: PICKAXE_NAME[item.id](), left: item.usesLeft, uses: PICKAXES[item.id].uses })
   }
   if (item.kind === 'container') {
-    const name = item.id === 'bucket' ? 'Bucket' : 'Large bucket'
-    return `${name} - ${item.liters}/${item.capacityLiters}L`
+    return m.hud_line_liters({
+      name: CONTAINER_NAME[item.id](),
+      liters: item.liters,
+      capacity: item.capacityLiters,
+    })
   }
   if (item.kind === 'fertilizer') {
-    return `Fertilizer bag - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+    return m.hud_line_liters({
+      name: m.names_item_fertilizer(),
+      liters: Number(item.liters.toFixed(2)),
+      capacity: item.capacityLiters,
+    })
   }
   if (item.kind === 'synth') {
-    return `Synthetic fertilizer - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+    return m.hud_line_liters({
+      name: m.names_item_synth(),
+      liters: Number(item.liters.toFixed(2)),
+      capacity: item.capacityLiters,
+    })
   }
   if (item.kind === 'compost') {
-    return `Compost - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+    return m.hud_line_liters({
+      name: m.names_item_compost(),
+      liters: Number(item.liters.toFixed(2)),
+      capacity: item.capacityLiters,
+    })
   }
-  if (item.kind === 'seeds') return `${cropName(item.crop)} seed - ${item.count}, plant it`
-  if (item.kind === 'grass-seeds') return `Grass seed - ${item.count}, plant it on tilled soil`
+  if (item.kind === 'seeds') return m.hud_line_seed({ name: cropName(item.crop), count: item.count })
+  if (item.kind === 'grass-seeds') {
+    return m.hud_line_grass_seed({ name: m.names_item_grass_seed(), count: item.count })
+  }
   if (item.kind === 'fruit') {
-    return `${cropVariety(item.crop, item.rarity)} - ${item.count}, freshness ${Math.floor(item.freshness * 100)}%`
+    return m.hud_line_fruit({
+      name: cropVariety(item.crop, item.rarity),
+      count: item.count,
+      pct: Math.floor(item.freshness * 100),
+    })
   }
-  if (item.kind === 'sugar') return `Sugar - ${item.liters}L`
-  if (item.kind === 'spirit') return `${SPIRIT_NAME[item.spirit]} - ${item.count}`
+  if (item.kind === 'sugar') return m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })
+  if (item.kind === 'spirit') return m.hud_line_count({ name: SPIRIT_NAME[item.spirit](), count: item.count })
   if (item.kind === 'cask') {
     const mul = Number(caskAgeOf(item).toFixed(2))
-    return `${CASK_NAME[item.cask]}${mul > 1 ? ` ×${mul}` : ''} - ${item.count}`
+    if (mul > 1) return m.hud_line_cask_aged({ name: CASK_NAME[item.cask](), mul, count: item.count })
+    return m.hud_line_count({ name: CASK_NAME[item.cask](), count: item.count })
   }
   if (item.kind === 'jam') {
-    const name = item.crop === 'tomato' ? 'Ketchup' : `${cropName(item.crop)} jam`
-    return `${name} - ${item.count}`
+    const name = item.crop === 'tomato' ? m.names_item_ketchup() : m.hud_tool_jam({ name: cropName(item.crop) })
+    return m.hud_line_count({ name, count: item.count })
   }
-  if (item.kind === 'oil') return `Olive oil - ${item.count}`
-  if (item.kind === 'flour') return `Flour - ${item.count}`
-  if (item.kind === 'extract') return `Extract - ${item.count}`
-  if (item.kind === 'tree-seed') return `${TREE_NAME[item.tree]} seed - plant it on soft ground`
-  if (item.kind === 'rotten') return `${rottenName(item.cls)} - ${item.count}, compost it`
-  if (item.kind === 'dead') return `${deadName(item.cls)} - ${item.count}, compost it`
-  if (item.kind === 'weed') return `Pulled weed - ${item.count}, compost it`
+  if (item.kind === 'oil') return m.hud_line_count({ name: m.names_item_oil(), count: item.count })
+  if (item.kind === 'flour') return m.hud_line_count({ name: m.names_item_flour(), count: item.count })
+  if (item.kind === 'extract') return m.hud_line_count({ name: m.names_item_extract(), count: item.count })
+  if (item.kind === 'tree-seed') return m.hud_line_tree_seed({ name: TREE_NAME[item.tree]() })
+  if (item.kind === 'rotten') return m.hud_line_compost({ name: rottenName(item.cls), count: item.count })
+  if (item.kind === 'dead') return m.hud_line_compost({ name: deadName(item.cls), count: item.count })
+  if (item.kind === 'weed') return m.hud_line_compost({ name: m.names_item_weed(), count: item.count })
   if (item.kind === 'weed-spray') {
-    return `Weed spray - ${Number(item.liters.toFixed(2))}/${item.capacityLiters}L`
+    return m.hud_line_liters({
+      name: m.names_item_weed_spray(),
+      liters: Number(item.liters.toFixed(2)),
+      capacity: item.capacityLiters,
+    })
   }
-  return `Cut grass - ${item.count}, compost it`
+  return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
 }
 
 export function heldText(hand: Hand, mods: readonly Modifier[]): string {
-  if (hand.kind === 'empty') return 'Nothing in hand'
+  if (hand.kind === 'empty') return m.hud_held_empty()
   return itemLine(hand.item, mods)
 }
 
+const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
+  'pack-carrot': () => m.names_sku_pack_carrot(),
+  'pack-potato': () => m.names_sku_pack_potato(),
+  'pack-wheat': () => m.names_sku_pack_wheat(),
+  'pack-tomato': () => m.names_sku_pack_tomato(),
+  'pack-raspberry': () => m.names_sku_pack_raspberry(),
+  'pack-grape': () => m.names_sku_pack_grape(),
+  'pack-sugar-cane': () => m.names_sku_pack_sugar_cane(),
+  'buy-shovel': () => m.names_sku_buy_shovel(),
+  'buy-better-shovel': () => m.names_sku_buy_better_shovel(),
+  'buy-pickaxe': () => m.names_sku_buy_pickaxe(),
+  'buy-better-pickaxe': () => m.names_sku_buy_better_pickaxe(),
+  'buy-bucket': () => m.names_sku_buy_bucket(),
+  'buy-bucket-large': () => m.names_sku_buy_bucket_large(),
+  'buy-fertilizer': () => m.names_sku_buy_fertilizer(),
+  'buy-synth-fertilizer': () => m.names_sku_buy_synth_fertilizer(),
+  'buy-weed-spray': () => m.names_sku_buy_weed_spray(),
+  'buy-compost-box': () => m.names_sku_buy_compost_box(),
+  'buy-pumpjack': () => m.names_sku_buy_pumpjack(),
+  'buy-chest': () => m.names_sku_buy_chest(),
+  'buy-grinder': () => m.names_sku_buy_grinder(),
+  'buy-pipe': () => m.names_sku_buy_pipe(),
+  'buy-sprinkler': () => m.names_sku_buy_sprinkler(),
+  'buy-sprinkler-vert': () => m.names_sku_buy_sprinkler_vert(),
+  'buy-sprinkler-large': () => m.names_sku_buy_sprinkler_large(),
+  'buy-well': () => m.names_sku_buy_well(),
+  'buy-valve': () => m.names_sku_buy_valve(),
+  'buy-rain-tank': () => m.names_sku_buy_rain_tank(),
+  'buy-tap': () => m.names_sku_buy_tap(),
+  'buy-tile-paved': () => m.names_sku_buy_tile_paved(),
+  'buy-tile-brick': () => m.names_sku_buy_tile_brick(),
+  'buy-tile-cobble': () => m.names_sku_buy_tile_cobble(),
+  'buy-fence': () => m.names_sku_buy_fence(),
+  'pack-grass': () => m.names_sku_pack_grass(),
+  'buy-mill': () => m.names_sku_buy_mill(),
+  'buy-jam': () => m.names_sku_buy_jam(),
+  'buy-still': () => m.names_sku_buy_still(),
+  'buy-barrel': () => m.names_sku_buy_barrel(),
+  'buy-freezer': () => m.names_sku_buy_freezer(),
+  'buy-freezer-large': () => m.names_sku_buy_freezer_large(),
+  'buy-sugar': () => m.names_sku_buy_sugar(),
+  'buy-hangar': () => m.names_sku_buy_hangar(),
+  'buy-silo-seed': () => m.names_sku_buy_silo_seed(),
+  'buy-silo-spray': () => m.names_sku_buy_silo_spray(),
+  'buy-silo-produce': () => m.names_sku_buy_silo_produce(),
+  'buy-lever': () => m.names_sku_buy_lever(),
+  'buy-button': () => m.names_sku_buy_button(),
+  'buy-lamp': () => m.names_sku_buy_lamp(),
+  'buy-or': () => m.names_sku_buy_or(),
+  'buy-and': () => m.names_sku_buy_and(),
+  'buy-not': () => m.names_sku_buy_not(),
+  'buy-pulser': () => m.names_sku_buy_pulser(),
+  'buy-counter': () => m.names_sku_buy_counter(),
+  'buy-sensor-water': () => m.names_sku_buy_sensor_water(),
+  'buy-sensor-fert': () => m.names_sku_buy_sensor_fert(),
+  'buy-sensor-harvest': () => m.names_sku_buy_sensor_harvest(),
+  'buy-sensor-day': () => m.names_sku_buy_sensor_day(),
+  'buy-water-system': () => m.names_sku_buy_water_system(),
+  'buy-vehicle-detector': () => m.names_sku_buy_vehicle_detector(),
+  'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
+}
+
 export function skuLabel(id: SkuId): string {
-  switch (id) {
-    case 'pack-carrot':
-      return 'Carrot seeds'
-    case 'pack-potato':
-      return 'Potato seeds'
-    case 'pack-wheat':
-      return 'Wheat seeds'
-    case 'pack-tomato':
-      return 'Tomato seeds'
-    case 'pack-raspberry':
-      return 'Raspberry seeds'
-    case 'pack-grape':
-      return 'Grape seeds'
-    case 'pack-sugar-cane':
-      return 'Sugar cane seeds'
-    case 'buy-shovel':
-      return 'Shovel'
-    case 'buy-better-shovel':
-      return 'Better shovel'
-    case 'buy-pickaxe':
-      return 'Pickaxe'
-    case 'buy-better-pickaxe':
-      return 'Hardened pickaxe'
-    case 'buy-bucket':
-      return 'Bucket'
-    case 'buy-bucket-large':
-      return 'Large bucket'
-    case 'buy-fertilizer':
-      return 'Fertilizer bag'
-    case 'buy-synth-fertilizer':
-      return 'Synthetic fertilizer'
-    case 'buy-weed-spray':
-      return 'Weed spray'
-    case 'buy-compost-box':
-      return 'Compost box'
-    case 'buy-pumpjack':
-      return 'Pumpjack'
-    case 'buy-chest':
-      return 'Chest'
-    case 'buy-grinder':
-      return 'Seed grinder'
-    case 'buy-pipe':
-      return 'Pipe'
-    case 'buy-sprinkler':
-      return 'Sprinkler'
-    case 'buy-sprinkler-vert':
-      return 'Vertical sprinkler'
-    case 'buy-sprinkler-large':
-      return 'Large sprinkler'
-    case 'buy-well':
-      return 'Well'
-    case 'buy-valve':
-      return 'Valve'
-    case 'buy-rain-tank':
-      return 'Rainwater tank'
-    case 'buy-tap':
-      return 'Tap'
-    case 'buy-tile-paved':
-      return 'Paving slab'
-    case 'buy-tile-brick':
-      return 'Brickwork'
-    case 'buy-tile-cobble':
-      return 'Cobblestone'
-    case 'buy-fence':
-      return 'Wooden fence'
-    case 'pack-grass':
-      return 'Grass seeds'
-    case 'buy-mill':
-      return 'Mill'
-    case 'buy-jam':
-      return 'Jam machine'
-    case 'buy-still':
-      return 'Pot still'
-    case 'buy-barrel':
-      return 'Barrel'
-    case 'buy-freezer':
-      return 'Freezer'
-    case 'buy-freezer-large':
-      return 'Large freezer'
-    case 'buy-sugar':
-      return 'Sugar'
-    case 'buy-hangar':
-      return 'Vehicle hangar'
-    case 'buy-silo-seed':
-      return 'Seeding silo'
-    case 'buy-silo-spray':
-      return 'Spraying silo'
-    case 'buy-silo-produce':
-      return 'Produce silo'
-    case 'buy-lever':
-      return 'Lever'
-    case 'buy-button':
-      return 'Button'
-    case 'buy-lamp':
-      return 'Lamp'
-    case 'buy-or':
-      return 'OR gate'
-    case 'buy-and':
-      return 'AND gate'
-    case 'buy-not':
-      return 'NOT gate'
-    case 'buy-pulser':
-      return 'Pulser'
-    case 'buy-counter':
-      return 'Counter'
-    case 'buy-sensor-water':
-      return 'Water sensor'
-    case 'buy-sensor-fert':
-      return 'Fertilizer sensor'
-    case 'buy-sensor-harvest':
-      return 'Harvest sensor'
-    case 'buy-sensor-day':
-      return 'Day sensor'
-    case 'buy-water-system':
-      return 'Water-system sensor'
-    case 'buy-vehicle-detector':
-      return 'Vehicle detector'
-    case 'buy-traffic-light':
-      return 'Traffic light'
-  }
+  return SKU_LABEL[id]()
+}
+
+const PACK_N = 5
+const FREEZER_PCT = (1 - FREEZER_ROT_MUL) * 100
+
+const SKU_DESC: { readonly [K in SkuId]: () => string } = {
+  'pack-carrot': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('carrot') }),
+  'pack-potato': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('potato') }),
+  'pack-wheat': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('wheat') }),
+  'pack-tomato': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('tomato') }),
+  'pack-raspberry': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('raspberry') }),
+  'pack-grape': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('grape') }),
+  'pack-sugar-cane': () => m.catalog_sku_pack_sugar_cane({ n: PACK_N, name: cropName('sugar-cane') }),
+  'buy-shovel': () => m.catalog_shovel(SHOVELS.shovel),
+  'buy-better-shovel': () => m.catalog_better_shovel(SHOVELS['better-shovel']),
+  'buy-pickaxe': () => m.catalog_pickaxe(PICKAXES.pickaxe),
+  'buy-better-pickaxe': () => m.catalog_better_pickaxe(PICKAXES['better-pickaxe']),
+  'buy-bucket': () => m.catalog_bucket({ n: CONTAINERS.bucket.capacityLiters, plot: SOIL_WATER_MID }),
+  'buy-bucket-large': () => m.catalog_bucket({ n: CONTAINERS['large-bucket'].capacityLiters, plot: SOIL_WATER_MID }),
+  'buy-fertilizer': () => m.catalog_sku_buy_fertilizer({ n: FERT_BAG_LITERS }),
+  'buy-synth-fertilizer': () => m.catalog_sku_buy_synth_fertilizer({ n: SYNTH_BAG_LITERS }),
+  'buy-weed-spray': () => m.catalog_weed_spray({ n: WEED_SPRAY_BAG }),
+  'buy-compost-box': () =>
+    m.catalog_sku_buy_compost_box({ need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS }),
+  'buy-pumpjack': () => m.catalog_pumpjack({ rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
+  'buy-chest': () => m.catalog_chest({ n: CHEST_SLOTS }),
+  'buy-grinder': () => m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
+  'buy-pipe': () => m.catalog_pipe(),
+  'buy-sprinkler': () => m.catalog_sprinkler({ w: 2, h: 2, day: SPRINKLER_TILE_DAY }),
+  'buy-sprinkler-vert': () => m.catalog_sprinkler_vert({ w: 4, h: 2, day: SPRINKLER_TILE_DAY }),
+  'buy-sprinkler-large': () => m.catalog_sprinkler_large({ w: 4, h: 4, day: SPRINKLER_TILE_DAY }),
+  'buy-well': () => m.catalog_well({ rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
+  'buy-valve': () => m.catalog_valve(),
+  'buy-rain-tank': () => m.catalog_rain_tank({ rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
+  'buy-tap': () => m.catalog_tap({ rate: TAP_RATE }),
+  'buy-tile-paved': () => m.catalog_sku_buy_tile(),
+  'buy-tile-brick': () => m.catalog_sku_buy_tile(),
+  'buy-tile-cobble': () => m.catalog_sku_buy_tile(),
+  'buy-fence': () => m.catalog_sku_buy_fence(),
+  'pack-grass': () => m.catalog_sku_pack_grass({ n: GRASS_PACK }),
+  'buy-mill': () =>
+    m.catalog_sku_buy_mill({ cane: MILL_IN, grass: MILL_GRASS, work: MILL_WORK, bag: SUGAR_BAG, sale: SUGAR_MILL }),
+  'buy-jam': () => m.catalog_sku_buy_jam({ fruit: JAM_IN, sugar: JAM_SUGAR, seconds: JAM_SECONDS, buffer: JAM_BUFFER }),
+  'buy-still': () => m.catalog_sku_buy_still({ cap: STILL_CAP, water: STILL_WATER, seconds: STILL_SECONDS }),
+  'buy-barrel': () => m.catalog_sku_buy_barrel({ mature: BARREL_MATURE, age: BARREL_AGE }),
+  'buy-freezer': () => m.catalog_sku_buy_freezer({ n: FREEZER_SLOTS, pct: FREEZER_PCT }),
+  'buy-freezer-large': () => m.catalog_sku_buy_freezer_large({ n: FREEZER_LARGE_SLOTS, pct: FREEZER_PCT }),
+  'buy-sugar': () => m.catalog_sku_buy_sugar({ bag: SUGAR_BAG, sale: SUGAR_SHOP }),
+  'buy-hangar': () => m.catalog_hangar({ w: HANGAR_W, h: HANGAR_H }),
+  'buy-silo-seed': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
+  'buy-silo-spray': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
+  'buy-silo-produce': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
+  'buy-lever': () => m.catalog_lever(),
+  'buy-button': () => m.catalog_button(),
+  'buy-lamp': () => m.catalog_lamp(),
+  'buy-or': () => m.catalog_or(),
+  'buy-and': () => m.catalog_and(),
+  'buy-not': () => m.catalog_not(),
+  'buy-pulser': () => m.catalog_pulser(),
+  'buy-counter': () => m.catalog_counter(),
+  'buy-sensor-water': () => m.catalog_sensor_water(),
+  'buy-sensor-fert': () => m.catalog_sensor_fert(),
+  'buy-sensor-harvest': () => m.catalog_sensor_harvest(),
+  'buy-sensor-day': () => m.catalog_sensor_day(),
+  'buy-water-system': () => m.catalog_water_system(),
+  'buy-vehicle-detector': () => m.catalog_vehicle_detector(),
+  'buy-traffic-light': () => m.catalog_traffic_light(),
 }
 
 export function skuDesc(id: SkuId): string {
-  switch (id) {
-    case 'pack-carrot':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('carrot') })
-    case 'pack-potato':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('potato') })
-    case 'pack-wheat':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('wheat') })
-    case 'pack-tomato':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('tomato') })
-    case 'pack-raspberry':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('raspberry') })
-    case 'pack-grape':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil.', { name: cropName('grape') })
-    case 'pack-sugar-cane':
-      return fill('Pack of 5 ${name} seeds. Plant on tilled soil. Ripe cane is fruit. Mill cane for sugar.', {
-        name: cropName('sugar-cane'),
-      })
-    case 'buy-shovel':
-      return fill(
-        'Digs grass and hard soil, and uproots plants and shrubs. ${uses} uses, ${workSeconds}s per dig.',
-        SHOVELS.shovel,
-      )
-    case 'buy-better-shovel':
-      return fill(
-        'Same jobs, faster and longer lasting. ${uses} uses, ${workSeconds}s per dig.',
-        SHOVELS['better-shovel'],
-      )
-    case 'buy-pickaxe':
-      return fill('Breaks rocks and very hard soil. ${uses} uses, ${workSeconds}s per mine.', PICKAXES.pickaxe)
-    case 'buy-better-pickaxe':
-      return fill(
-        'Same jobs, faster and longer lasting. ${uses} uses, ${workSeconds}s per mine.',
-        PICKAXES['better-pickaxe'],
-      )
-    case 'buy-bucket':
-      return fill('Holds ${n} L. Fill at a pump or well. 1 L fills one plot.', { n: CONTAINERS.bucket.capacityLiters })
-    case 'buy-bucket-large':
-      return fill('Holds ${n} L. Fill at a pump or well. 1 L fills one plot.', {
-        n: CONTAINERS['large-bucket'].capacityLiters,
-      })
-    case 'buy-fertilizer':
-      return fill('Holds ${n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.', {
-        n: FERT_BAG_LITERS,
-      })
-    case 'buy-synth-fertilizer':
-      return fill('Holds ${n} L and works the same, but the soil and its produce stop being organic.', {
-        n: SYNTH_BAG_LITERS,
-      })
-    case 'buy-weed-spray':
-      return fill('Holds ${n} L. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_BAG })
-    case 'buy-compost-box':
-      return fill(
-        'Drop organic waste in. ${need} units make ${liters} L of compost in ${seconds}s. A chest on the right takes the bag, else it drops beside the box.',
-        { need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS },
-      )
-    case 'buy-pumpjack':
-      return fill(
-        'Gathers ${rate} L/s into a ${cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.',
-        { rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity },
-      )
-    case 'buy-chest':
-      return '9 slots. Walk up and store any item.'
-    case 'buy-grinder':
-      return fill('Hopper. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.', {
-        min: GRIND_MIN,
-        max: GRIND_MAX,
-        workSeconds: GRIND_WORK,
-      })
-    case 'buy-pipe':
-      return 'Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.'
-    case 'buy-sprinkler':
-      return fill('Waters a 2×2 area of plots, ${day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.', { day: SPRINKLER_TILE_DAY })
-    case 'buy-sprinkler-vert':
-      return fill('Waters a 4×2 strip, ${day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.', {
-        day: SPRINKLER_TILE_DAY,
-      })
-    case 'buy-sprinkler-large':
-      return fill('Waters a 4×4 area, ${day} L a day per plot.', { day: SPRINKLER_TILE_DAY })
-    case 'buy-well':
-      return fill(
-        'Gathers ${rate} L/s into a ${cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.',
-        { rate: SOURCE.well.rate, cap: SOURCE.well.capacity },
-      )
-    case 'buy-valve':
-      return 'Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.'
-    case 'buy-rain-tank':
-      return fill('Gathers ${rate} L/s into a ${cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.', {
-        rate: SOURCE['rain-tank'].rate,
-        cap: SOURCE['rain-tank'].capacity,
-      })
-    case 'buy-tap':
-      return fill('Fills a bucket at ${rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.', {
-        rate: TAP_RATE,
-      })
-    case 'buy-tile-paved':
-      return TILE_T
-    case 'buy-tile-brick':
-      return TILE_T
-    case 'buy-tile-cobble':
-      return TILE_T
-    case 'buy-fence':
-      return FENCE_T
-    case 'pack-grass':
-      return fill(GRASS_SEED_T, { n: GRASS_PACK })
-    case 'buy-mill':
-      return fill(
-        'Hopper mill. ${in} cane, olive or wheat, or ${grass} grass, crush in ${work}s. Cane makes ${bag} L sugar at ${sale}/L.',
-        { in: MILL_IN, grass: MILL_GRASS, work: MILL_WORK, bag: SUGAR_BAG, sale: SUGAR_MILL },
-      )
-    case 'buy-jam':
-      return fill('${fruit} fruit and ${sugar} L sugar cook in ${seconds}s. Buffer ${buffer} L.', {
-        fruit: JAM_IN,
-        sugar: JAM_SUGAR,
-        seconds: JAM_SECONDS,
-        buffer: JAM_BUFFER,
-      })
-    case 'buy-still':
-      return fill('Distills ${cap} potato, wheat or apricot with ${water} L water in ${seconds}s.', {
-        cap: STILL_CAP,
-        water: STILL_WATER,
-        seconds: STILL_SECONDS,
-      })
-    case 'buy-barrel':
-      return fill('Five grapes or four apples. Matures in ${mature}s, ages to ${age}s.', {
-        mature: BARREL_MATURE,
-        age: BARREL_AGE,
-      })
-    case 'buy-freezer':
-      return fill('${n} slots. Fruit in here rots ${pct}% slower.', { n: FREEZER_SLOTS, pct: (1 - FREEZER_ROT_MUL) * 100 })
-    case 'buy-freezer-large':
-      return fill('${n} slots. Fruit in here rots ${pct}% slower. Earned from a contract, never sold.', {
-        n: FREEZER_LARGE_SLOTS,
-        pct: (1 - FREEZER_ROT_MUL) * 100,
-      })
-    case 'buy-sugar':
-      return fill('${bag} L bag at ${sale}/L.', { bag: SUGAR_BAG, sale: SUGAR_SHOP })
-    case 'buy-hangar':
-      return '3×2 industrial shed. Buy Quads and tractors at a hangar.'
-    case 'buy-silo-seed':
-      return '2×3 field tank. Look only.'
-    case 'buy-silo-spray':
-      return '2×3 field tank. Look only.'
-    case 'buy-silo-produce':
-      return '2×3 field tank. Look only.'
-    case 'buy-lever':
-      return 'A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.'
-    case 'buy-button':
-      return 'Press it to send one short signal that stops on its own.'
-    case 'buy-lamp':
-      return 'Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.'
-    case 'buy-or':
-      return 'Turns on when either of its two inputs is on.'
-    case 'buy-and':
-      return 'Turns on only while both of its inputs are on.'
-    case 'buy-not':
-      return 'Turns on while its input is off, and off while it is on.'
-    case 'buy-pulser':
-      return 'Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one.'
-    case 'buy-counter':
-      return 'Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly.'
-    case 'buy-sensor-water':
-      return 'Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself.'
-    case 'buy-sensor-fert':
-      return 'Watches the growing plants around it and turns on as soon as one is starving for fertilizer.'
-    case 'buy-sensor-harvest':
-      return 'Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe.'
-    case 'buy-sensor-day':
-      return 'Turns on during the parts of the day you tick: sunrise, day, sunset, twilight.'
-    case 'buy-water-system':
-      return 'Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry.'
-    case 'buy-vehicle-detector':
-      return 'A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off.'
-    case 'buy-traffic-light':
-      return 'Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish.'
-  }
+  return SKU_DESC[id]()
 }
 
-const TILE_T = 'Paving. Lays on untilled ground and stays put. Keeps the garden walkable and tidy.'
-const FENCE_T =
-  'Sits in the middle of an untilled tile and joins up with the fences beside it. Marks a boundary; the gardener still walks through.'
-const GRASS_SEED_T =
-  'Pack of ${n}. Sow on tilled soil. Drinks almost nothing and takes a quarter day to root, then the plot goes back to untilled lawn.'
-
 export function itemTip(item: Item): string {
-  if (item.kind === 'shovel') return `${item.id} ${item.usesLeft}`
-  if (item.kind === 'pickaxe') return `${item.id} ${item.usesLeft}`
-  if (item.kind === 'container') return `${item.id} ${item.liters}/${item.capacityLiters}L`
-  if (item.kind === 'fertilizer') return `fertilizer ${item.liters}/${item.capacityLiters}L`
-  if (item.kind === 'synth') return `synth ${item.liters}/${item.capacityLiters}L`
-  if (item.kind === 'compost') return `compost ${item.liters}/${item.capacityLiters}L`
-  if (item.kind === 'seeds') return `seeds ${item.crop} ${item.count}`
-  if (item.kind === 'grass-seeds') return `grass-seeds ${item.count}`
-  if (item.kind === 'fruit') return `fruit ${item.crop} ${item.count}`
-  if (item.kind === 'sugar') return `sugar ${item.liters}L`
-  if (item.kind === 'spirit') return `spirit ${item.spirit} ${item.count}`
-  if (item.kind === 'cask') return `${item.cask} ${item.count} ×${Number(caskAgeOf(item).toFixed(2))}`
-  if (item.kind === 'jam') return `jam ${item.crop} ${item.count}`
-  if (item.kind === 'oil') return `oil ${item.count}`
-  if (item.kind === 'flour') return `flour ${item.count}`
-  if (item.kind === 'extract') return `extract ${item.count}`
-  if (item.kind === 'tree-seed') return `tree-seed ${item.tree}`
-  if (item.kind === 'rotten') return `rotten ${item.cls} ${item.count}`
-  if (item.kind === 'dead') return `dead ${item.cls} ${item.count}`
-  if (item.kind === 'weed') return `weed ${item.count}`
-  if (item.kind === 'weed-spray') return `weed-spray ${item.liters}/${item.capacityLiters}L`
-  return `grass ${item.count}`
+  return itemLine(item, [])
 }
 
 export function makeShovel(id: ShovelId): Item {

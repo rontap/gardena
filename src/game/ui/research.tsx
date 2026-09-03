@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { RESEARCH } from '../defs/research.ts'
@@ -20,7 +21,7 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
   return (
     <Dock
       width="w-[28rem]"
-      title="Research"
+      title={m.names_role_research()}
       onClose={onClose}
       aside={
         tip !== undefined ? (
@@ -38,8 +39,8 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
       footer={
         <div className="text-sm text-ink/55">
           {job.kind === 'run'
-            ? `${RESEARCH[job.id].name} · ${Math.ceil(job.left)}s left`
-            : 'One project at a time. It runs while you garden.'}
+            ? m.hud_research_run({ name: RESEARCH[job.id].name, secs: Math.ceil(job.left) })
+            : m.hud_research_idle()}
         </div>
       }
     >
@@ -55,7 +56,7 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
         <Tabs.List className={tabRailListClass}>
           {TREES.map(id => (
             <Tabs.Trigger key={id} value={id} className={tabRailClass}>
-              {id.slice(0, 1).toUpperCase() + id.slice(1)}
+              {id === 'plants' ? m.hud_research_plants() : id === 'land' ? m.hud_research_land() : id === 'automation' ? m.hud_research_automation() : m.hud_research_trade()}
             </Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -89,15 +90,15 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
   const guest = world.local !== 0
   const off = run || done || gated || busy || guest
   const why = done
-    ? 'Already researched.'
+    ? m.hud_already_researched()
     : run
-      ? 'Running now.'
+      ? m.hud_running_now()
       : gated
-        ? `Needs ${d.requires.map(r => RESEARCH[r].name).join(' and ')} first.`
+        ? m.hud_needs_first({ names: d.requires.map(r => RESEARCH[r].name).join(' and ') })
         : busy
-          ? 'Another project is running. One at a time.'
+          ? m.hud_another_project()
           : world.money < d.cost
-            ? 'Not enough money.'
+            ? m.hud_not_enough_money()
             : undefined
   const face = done
     ? 'cursor-default bg-leaf/20 text-ink/60'
@@ -127,12 +128,14 @@ function Card({ id, world, onTip }: { id: ResearchId; world: World; onTip: (tip:
       <span className="line-clamp-2 min-h-8 text-sm leading-tight font-semibold">{d.name}</span>
       <span className="flex items-center gap-2 text-sm tabular-nums">
         {done ? (
-          <span className="font-semibold">Done</span>
+          <span className="font-semibold">{m.hud_done()}</span>
         ) : (
           <>
             <Coin n={d.cost} />
             <span className="opacity-70">
-              {run ? `${Math.ceil(world.job.kind === 'run' ? world.job.left : 0)}s` : `${d.seconds}s`}
+              {run
+                ? m.hud_secs({ secs: Math.ceil(world.job.kind === 'run' ? world.job.left : 0) })
+                : m.hud_secs({ secs: d.seconds })}
             </span>
           </>
         )}

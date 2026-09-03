@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { BIG_TICK } from '../sim/soil.ts'
 import { SOURCE } from '../sim/water.ts'
@@ -29,11 +30,11 @@ export const DRY_EVAP_TICK = DRY_EVAP_DAY / (DAY_SECONDS / BIG_TICK)
 export const DROUGHT_EVAP_TICK = DROUGHT_EVAP_DAY / (DAY_SECONDS / BIG_TICK)
 
 export const WEATHER_NAME = {
-  clear: 'Clear',
-  rain: 'Rain',
-  dry: 'Dry',
-  flood: 'Flood',
-  drought: 'Drought',
+  clear: () => m.names_weather_clear(),
+  rain: () => m.names_weather_rain(),
+  dry: () => m.names_weather_dry(),
+  flood: () => m.names_weather_flood(),
+  drought: () => m.names_weather_drought(),
 } as const
 
 export const WEATHER_KINDS = ['clear', 'rain', 'dry', 'flood', 'drought'] as const

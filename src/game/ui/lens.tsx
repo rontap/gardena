@@ -1,78 +1,79 @@
+import { m } from '../../paraglide/messages.js'
 import type { World } from '../sim/world.ts'
 import type { Lens } from '../view/map.tsx'
 import { Dock, Label } from './frame.tsx'
 
-type Row = { id: Lens; label: string; blurb: string; swatches: { face: string; name: string }[] }
+type Row = { id: Lens; label: () => string; blurb: () => string; swatches: { face: string; name: () => string }[] }
 
 export const LENS_ROWS: Row[] = [
   {
     id: 'water',
-    label: 'Water need',
-    blurb: 'How close each plot sits to the water its crop wants.',
+    label: () => m.hud_lens_water(),
+    blurb: () => m.hud_lens_water_blurb(),
     swatches: [
-      { face: 'bg-lens-bad', name: 'dry' },
-      { face: 'bg-lens-good', name: 'wet' },
-      { face: 'bg-lens-done', name: 'full' },
+      { face: 'bg-lens-bad', name: () => m.hud_swatch_dry() },
+      { face: 'bg-lens-good', name: () => m.hud_swatch_wet() },
+      { face: 'bg-lens-done', name: () => m.hud_swatch_full() },
     ],
   },
   {
     id: 'land',
-    label: 'Land quality',
-    blurb: 'Fertility baked into the soil, before anything you add.',
+    label: () => m.hud_lens_land(),
+    blurb: () => m.hud_lens_land_blurb(),
     swatches: [
-      { face: 'bg-lens-bad', name: 'low' },
-      { face: 'bg-lens-good', name: 'ok' },
-      { face: 'bg-lens-done', name: 'full' },
+      { face: 'bg-lens-bad', name: () => m.hud_swatch_low() },
+      { face: 'bg-lens-good', name: () => m.hud_swatch_ok() },
+      { face: 'bg-lens-done', name: () => m.hud_swatch_full() },
     ],
   },
   {
     id: 'ripe',
-    label: 'Ripeness',
-    blurb: 'How far along every growing plant is.',
+    label: () => m.hud_lens_ripe(),
+    blurb: () => m.hud_lens_ripe_blurb(),
     swatches: [
-      { face: 'bg-lens-bad', name: 'early' },
-      { face: 'bg-lens-good', name: 'ready' },
-      { face: 'bg-lens-done', name: 'ripe' },
+      { face: 'bg-lens-bad', name: () => m.hud_swatch_early() },
+      { face: 'bg-lens-good', name: () => m.hud_swatch_ready() },
+      { face: 'bg-lens-done', name: () => m.hud_swatch_ripe() },
     ],
   },
   {
     id: 'kind',
-    label: 'Object type',
-    blurb: 'Sorts everything on the map into four families.',
+    label: () => m.hud_lens_kind(),
+    blurb: () => m.hud_lens_kind_blurb(),
     swatches: [
-      { face: 'bg-leaf', name: 'plant' },
-      { face: 'bg-water', name: 'machine' },
-      { face: 'bg-ink', name: 'obstruction' },
-      { face: 'bg-roof', name: 'building' },
+      { face: 'bg-leaf', name: () => m.hud_swatch_plant() },
+      { face: 'bg-water', name: () => m.hud_swatch_machine() },
+      { face: 'bg-ink', name: () => m.hud_swatch_obstruction() },
+      { face: 'bg-roof', name: () => m.hud_swatch_building() },
     ],
   },
   {
     id: 'rarity',
-    label: 'Rarity',
-    blurb: 'The grade every planted crop is currently carrying.',
+    label: () => m.almanac_concept_rarity(),
+    blurb: () => m.hud_lens_rarity_blurb(),
     swatches: [
-      { face: 'bg-house', name: 'common' },
-      { face: 'bg-leaf', name: 'uncommon' },
-      { face: 'bg-water', name: 'rare' },
-      { face: 'bg-ripe', name: 'heirloom' },
+      { face: 'bg-house', name: () => m.hud_swatch_common() },
+      { face: 'bg-leaf', name: () => m.hud_swatch_uncommon() },
+      { face: 'bg-water', name: () => m.hud_swatch_rare() },
+      { face: 'bg-ripe', name: () => m.hud_swatch_heirloom() },
     ],
   },
   {
     id: 'pipes',
-    label: 'Pipes',
-    blurb: 'Reveals the whole water grid and every sprinkler reach.',
+    label: () => m.hud_lens_pipes(),
+    blurb: () => m.hud_lens_pipes_blurb(),
     swatches: [],
   },
   {
     id: 'sensors',
-    label: 'Sensors',
-    blurb: 'Reveals wires and sensor reach.',
+    label: () => m.almanac_tab_sensors(),
+    blurb: () => m.hud_lens_sensors_blurb(),
     swatches: [],
   },
   {
     id: 'vehicles',
-    label: 'Vehicle interactions',
-    blurb: 'Hangar, silo, and machine pads.',
+    label: () => m.hud_lens_vehicles(),
+    blurb: () => m.hud_lens_vehicles_blurb(),
     swatches: [],
   },
 ]
@@ -101,7 +102,7 @@ export function LensPanel({
   })
   const locked = LENS_ROWS.filter(row => row.id === 'water' || row.id === 'land').length - rows.filter(row => row.id === 'water' || row.id === 'land').length
   return (
-    <Dock title="Lens" onClose={onClose} width="w-80">
+    <Dock title={m.hud_lens()} onClose={onClose} width="w-80">
       <button
         type="button"
         onClick={() => onPick('off')}
@@ -109,8 +110,8 @@ export function LensPanel({
           lens === 'off' ? 'bg-ink text-house' : 'bg-ink/8 text-ink/70 hover:bg-ink/15'
         }`}
       >
-        <span>No lens</span>
-        {lens === 'off' && <span className="text-xs">active</span>}
+        <span>{m.hud_lens_off()}</span>
+        {lens === 'off' && <span className="text-xs">{m.hud_lens_active()}</span>}
       </button>
       <button
         type="button"
@@ -124,12 +125,12 @@ export function LensPanel({
               : 'cursor-pointer bg-ink/8 text-ink/70 hover:bg-ink/15'
         }`}
       >
-        <span>Lock view</span>
+        <span>{m.hud_lens_lock()}</span>
         <span className="text-xs">
-          {lens === 'off' ? 'pick a lens first' : lock ? 'stays on when this closes' : 'off when this closes'}
+          {lens === 'off' ? m.hud_lens_pick_first() : lock ? m.hud_lens_stays() : m.hud_lens_off_close()}
         </span>
       </button>
-      <Label>Overlays</Label>
+      <Label>{m.hud_lens_overlays()}</Label>
       <div className="flex flex-col gap-1.5">
         {rows.map(row => {
           const on = lens === row.id
@@ -143,16 +144,16 @@ export function LensPanel({
               }`}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="text-base leading-none font-semibold">{row.label}</span>
-                {on && <span className="text-xs leading-none opacity-70">active</span>}
+                <span className="text-base leading-none font-semibold">{row.label()}</span>
+                {on && <span className="text-xs leading-none opacity-70">{m.hud_lens_active()}</span>}
               </span>
-              <span className={`text-sm leading-snug ${on ? 'text-house/75' : 'text-ink/55'}`}>{row.blurb}</span>
+              <span className={`text-sm leading-snug ${on ? 'text-house/75' : 'text-ink/55'}`}>{row.blurb()}</span>
               {row.swatches.length > 0 && (
                 <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-none">
                   {row.swatches.map(s => (
-                    <span key={s.name} className="flex items-center gap-1">
+                    <span key={s.face} className="flex items-center gap-1">
                       <span className={`inline-block size-2.5 ${s.face} outline outline-ink/30`} />
-                      {s.name}
+                      {s.name()}
                     </span>
                   ))}
                 </span>
@@ -163,7 +164,7 @@ export function LensPanel({
       </div>
       {locked > 0 && (
         <div className="mt-3 border-t border-ink/15 pt-2 text-sm text-ink/45">
-          {locked} more {locked === 1 ? 'lens is' : 'lenses are'} waiting on a family study skill.
+          {locked === 1 ? m.hud_lens_waiting_one({ n: locked }) : m.hud_lens_waiting_many({ n: locked })}
         </div>
       )}
     </Dock>

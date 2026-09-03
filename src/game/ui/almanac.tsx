@@ -1,8 +1,10 @@
+import { m } from '../../paraglide/messages.js'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
 import { CROPS, cropVariety } from '../defs/crops.ts'
-import { RARITY_SALE, raritySale, type Rarity } from '../defs/rarity.ts'
+import { RARITY_SALE, raritySale, SEED_BANK_CHANCE, type Rarity } from '../defs/rarity.ts'
+import { JAM_ROT, SKILLS } from '../defs/skills.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { ANNUAL_IDS, TREE_IDS, type CaskId, type SpiritKind, type TreeId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
@@ -10,7 +12,7 @@ import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { CropId, JamCrop } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
-import { JAM_SALE } from '../defs/items.ts'
+import { JAM_SALE, MILL_IN, SUGAR_BAG } from '../defs/items.ts'
 import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, rarityInner, treeStage } from '../view/svgs.ts'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
@@ -132,34 +134,34 @@ const CONCEPT_IDS: ConceptId[] = [
   'automation',
 ]
 
-const CONCEPT_LABEL: { readonly [K in ConceptId]: string } = {
-  rarity: 'Rarity',
-  freshness: 'Freshness',
-  happiness: 'Happiness',
-  day: 'Day & Night',
-  market: 'Market',
-  skills: 'Skills',
-  family: 'Family',
-  research: 'Research',
-  automation: 'Automation',
+const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
+  rarity: () => m.almanac_concept_rarity(),
+  freshness: () => m.almanac_concept_freshness(),
+  happiness: () => m.almanac_concept_happiness(),
+  day: () => m.almanac_concept_day(),
+  market: () => m.names_role_market(),
+  skills: () => m.almanac_concept_skills(),
+  family: () => m.family_title(),
+  research: () => m.names_role_research(),
+  automation: () => m.hud_research_automation(),
 }
 
-const TABS: { id: AlmanacTab; label: string }[] = [
-  { id: 'seeds', label: 'Seeds' },
-  { id: 'trees', label: 'Trees' },
-  { id: 'utility', label: 'Utility' },
-  { id: 'sensors', label: 'Sensors' },
-  { id: 'automation', label: 'Automation' },
-  { id: 'water', label: 'Water systems' },
-  { id: 'building', label: 'Building' },
-  { id: 'concepts', label: 'Game concepts' },
+const TABS: { id: AlmanacTab; label: () => string }[] = [
+  { id: 'seeds', label: () => m.almanac_tab_seeds() },
+  { id: 'trees', label: () => m.almanac_tab_trees() },
+  { id: 'utility', label: () => m.almanac_tab_utility() },
+  { id: 'sensors', label: () => m.almanac_tab_sensors() },
+  { id: 'automation', label: () => m.hud_research_automation() },
+  { id: 'water', label: () => m.almanac_tab_water() },
+  { id: 'building', label: () => m.almanac_tab_building() },
+  { id: 'concepts', label: () => m.almanac_tab_concepts() },
 ]
 
-const RARITY_TABS: { id: Rarity; label: string }[] = [
-  { id: 'common', label: 'Common' },
-  { id: 'uncommon', label: 'Uncommon' },
-  { id: 'rare', label: 'Rare' },
-  { id: 'heirloom', label: 'Heirloom' },
+const RARITY_TABS: { id: Rarity; label: () => string }[] = [
+  { id: 'common', label: () => m.names_rarity_common() },
+  { id: 'uncommon', label: () => m.names_rarity_uncommon() },
+  { id: 'rare', label: () => m.names_rarity_rare() },
+  { id: 'heirloom', label: () => m.names_rarity_heirloom() },
 ]
 
 const CROP_IDS = [...ANNUAL_IDS] as CropId[]
@@ -221,9 +223,9 @@ function skuEntry(byId: Map<string, CatalogEntry>, id: string): CatalogEntry {
 function rowTitle(row: ListRow, byId: Map<string, CatalogEntry>): string {
   switch (row.kind) {
     case 'overview':
-      return 'Overview'
+      return m.almanac_overview()
     case 'concept':
-      return CONCEPT_LABEL[row.id]
+      return CONCEPT_LABEL[row.id]()
     case 'sku':
       return skuEntry(byId, row.id).title
   }
@@ -277,7 +279,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
     setId(to.id)
   }
   return (
-    <Overlay title="Almanac" onClose={onClose} className="h-[min(48rem,calc(100vh-6rem))] w-[48rem]">
+    <Overlay title={m.hud_almanac()} onClose={onClose} className="h-[min(48rem,calc(100vh-6rem))] w-[48rem]">
       <AlmanacGo.Provider value={go}>
         <Tabs.Root
           value={tab}
@@ -291,7 +293,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
           <Tabs.List className="sticky top-0 z-10 flex shrink-0 flex-wrap gap-1 border-b border-ink/20 bg-house px-4">
             {TABS.map(t => (
               <Tabs.Trigger key={t.id} value={t.id} className={tabTriggerClass}>
-                {t.label}
+                {t.label()}
               </Tabs.Trigger>
             ))}
           </Tabs.List>
@@ -365,7 +367,7 @@ function RowPane({
 function OverviewPane({ tab }: { tab: AlmanacTab }) {
   return (
     <>
-      <div className="mb-3 text-lg leading-relaxed text-ink">Overview</div>
+      <div className="mb-3 text-lg leading-relaxed text-ink">{m.almanac_overview()}</div>
       <div className="flex flex-col gap-3 text-base leading-relaxed text-ink">{overviewBody(tab)}</div>
     </>
   )
@@ -392,29 +394,38 @@ function SeedsOverview() {
   return (
     <>
       <div>
-        Seeds are what you sow in a tilled bed so a plant can grow. You need them to raise fruit you sell at the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>, and to keep a crop going after harvest.
+        {m.almanac_seeds_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_seeds_p1_b()}
       </div>
       <div>
-        Buy a pack of five in the shop, or shovel a growing or ripe plant for one seed. That seed keeps the plant's{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>rarity</AlmanacLink>. Sow it on empty soil, then water and
-        feed the plant until it is ripe. Harvest ripe fruit empty-handed. Shovel Rotten produce or a Dead plant and you
-        get no seed back.
+        {m.almanac_seeds_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_word_rarity()}</AlmanacLink>
+        {m.almanac_seeds_p2_b()}
       </div>
       <div>
-        Fruit of the same crop is not all worth the same money.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink> change what the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays for that fruit.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink> is how the plant is doing while it
-        grows — happier plants more often ripen as a{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>better rarity</AlmanacLink>.
+        {m.almanac_seeds_p3_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_seeds_p3_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_seeds_p3_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_seeds_p3_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_seeds_p3_e()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_better_rarity()}</AlmanacLink>
+        {m.almanac_seeds_p3_f()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -423,20 +434,20 @@ function SeedsOverview() {
 function SensorsOverview() {
   return (
     <>
+      <div>{m.almanac_sensors_p1()}</div>
       <div>
-        Sensors send on or off through a wire so you do not have to stand at the bed. You need them to watch water,
-        harvest, and machines, then let a wire act while you garden.
+        {m.almanac_sensors_p2_a()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'lever' }}>{m.names_sensor_lever()}</AlmanacLink>
+        {m.almanac_sensors_p2_b()}
       </div>
       <div>
-        A <AlmanacLink to={{ tab: 'sensors', id: 'lever' }}>Lever</AlmanacLink> is a switch you flip by hand. Its output
-        is on or off. Run a wire from that output to pause a mill or stop a sprinkler.
+        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        {m.almanac_sensors_p3_a()}
       </div>
       <div>
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>Automation</AlmanacLink> is the machines and stores those
-        wires can run. Open that concept for what the machines are for.
-      </div>
-      <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>Automation</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -446,24 +457,31 @@ function AutomationOverview() {
   return (
     <>
       <div>
-        Automation is machines and stores so you walk less. You need it so plants stay watered, machines keep working,
-        and fruit waits until you take it to the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>.
+        {m.almanac_auto_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_auto_p1_b()}
       </div>
       <div>
-        A <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>Mill</AlmanacLink> is one machine: it turns fruit into
-        goods the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays money for. You get those
-        goods, a place to hold a haul, and less walking between beds. The Freezer keeps fruit from losing freshness.
+        {m.almanac_auto_p2_a()}
+        <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>{m.names_building_mill()}</AlmanacLink>
+        {m.almanac_auto_p2_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_auto_p2_c()}
       </div>
       <div>
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink> is how new machines show up in the
-        shop and the Build menu.{' '}
-        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>Sensors Overview</AlmanacLink> covers the wires that can
-        pause a mill or a sprinkler.
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_auto_p3_a()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>{m.almanac_sensors_overview_link()}</AlmanacLink>
+        {m.almanac_auto_p3_b()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>Sensors Overview</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>{m.almanac_sensors_overview_link()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -472,7 +490,7 @@ function AutomationOverview() {
 function ConceptPane({ id }: { id: ConceptId }) {
   return (
     <>
-      <div className="mb-3 text-lg leading-relaxed text-ink">{CONCEPT_LABEL[id]}</div>
+      <div className="mb-3 text-lg leading-relaxed text-ink">{CONCEPT_LABEL[id]()}</div>
       <div className="flex flex-col gap-3 text-base leading-relaxed text-ink">{conceptBody(id)}</div>
     </>
   )
@@ -523,122 +541,148 @@ function RarityConcept() {
   return (
     <>
       <div>
-        Rarity is the grade of fruit and seed: Common, Uncommon, Rare, or Heirloom. Four grades only.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Bio farmer</AlmanacLink> is a skill, not a fifth grade.
+        {m.almanac_rarity_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.bio.name}</AlmanacLink>
+        {m.almanac_rarity_p1_b()}
       </div>
-      <div>
-        Uncommon, Rare, and Heirloom fruit show a small colored mark: green, blue, or gold. Common fruit has none.
-      </div>
+      <div>{m.almanac_rarity_p2()}</div>
       <div className="flex flex-col gap-1">
-        <RarityHead rarity="common" label="Common" />
+        <RarityHead rarity="common" label={m.names_rarity_common()} />
         <div>
-          Common fruit of that crop sells at the crop's ordinary price at the{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. The Common plant finishes growing in
-          the time written on the crop. Ripe Common fruit stays fresh for the crop's{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>freshness time</AlmanacLink>. The Common plant uses the
-          crop's usual water and feed range.
+          {m.almanac_rarity_common_a()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_common_b()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_freshness_time()}</AlmanacLink>
+          {m.almanac_rarity_common_c()}
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <RarityHead rarity="uncommon" label="Uncommon" />
+        <RarityHead rarity="uncommon" label={m.names_rarity_uncommon()} />
         <div>
-          Uncommon fruit of the same crop sells for a quarter more money at the{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> than Common fruit. The Uncommon plant
-          finishes growing a little sooner than Common of the same crop. Ripe Uncommon fruit{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>keeps as long as</AlmanacLink> Common fruit of that
-          crop. The Uncommon plant needs a slightly tighter water and feed range than Common of the same crop.
+          {m.almanac_rarity_uncommon_a()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_uncommon_b()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_keeps_as_long()}</AlmanacLink>
+          {m.almanac_rarity_uncommon_c()}
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <RarityHead rarity="rare" label="Rare" />
+        <RarityHead rarity="rare" label={m.names_rarity_rare()} />
         <div>
-          Rare fruit of the same crop sells for twice the Common fruit price at the{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. Rare vanilla fruit sells for three
-          times the Common vanilla price at the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>.
-          The Rare plant finishes growing sooner than Common of the same crop. Ripe Rare fruit{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>loses freshness</AlmanacLink> faster than Common fruit of
-          that crop. The Rare plant needs a tighter water and feed range than Uncommon of the same crop.
+          {m.almanac_rarity_rare_a()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_rare_b()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_rare_c()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_loses_freshness()}</AlmanacLink>
+          {m.almanac_rarity_rare_d()}
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <RarityHead rarity="heirloom" label="Heirloom" />
+        <RarityHead rarity="heirloom" label={m.names_rarity_heirloom()} />
         <div>
-          Heirloom fruit of the same crop sells for three and a half times the Common fruit price at the{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. Heirloom vanilla fruit sells for six
-          times the Common vanilla price at the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>.
-          The Heirloom plant finishes growing at the Common pace of that crop. Ripe Heirloom fruit{' '}
-          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>loses freshness</AlmanacLink> faster than Common fruit of
-          that crop. The Heirloom plant needs the tightest water and feed range of the four grades.
+          {m.almanac_rarity_heirloom_a()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_heirloom_b()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+          {m.almanac_rarity_heirloom_c()}
+          <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_loses_freshness()}</AlmanacLink>
+          {m.almanac_rarity_heirloom_d()}
         </div>
       </div>
+      <div>{m.almanac_rarity_p7()}</div>
       <div>
-        Seed you shovel off a plant keeps that plant's grade. Fruit that drops from a tree has its own grade — most
-        Common, some Uncommon, few Rare, almost never Heirloom. The tree itself has no grade.
+        {m.almanac_rarity_p8_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_rarity_p8_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.tending.name}</AlmanacLink>
+        {m.almanac_rarity_p8_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.almanac_crop_skills_family()}</AlmanacLink>
+        {m.almanac_rarity_p8_d()}
       </div>
       <div>
-        Until Crop variants is researched, a plant keeps the grade of the seed you planted, and shop packs of five seeds
-        are Common. After Crop variants, happier plants more often ripen as a better grade. A plant below the middle of{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink> can ripen one grade lower than the
-        seed you planted. A plant at or above the middle can ripen one grade higher than the seed you planted, and
-        sometimes two grades higher than the seed you planted.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Careful tending</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>the crop skills on Family</AlmanacLink> help a happy plant
-        ripen higher.
+        {m.almanac_rarity_p9_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['seed-bank'].name}</AlmanacLink>
+        {m.almanac_rarity_p9_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.almanac_your_skills_family()}</AlmanacLink>
+        {m.almanac_rarity_p9_c({
+          uncommon: SEED_BANK_CHANCE.uncommon * 100,
+          rare: SEED_BANK_CHANCE.rare * 100,
+          heirloom: SEED_BANK_CHANCE.heirloom * 100,
+        })}
       </div>
       <div>
-        Shop packs of five seeds stay Common unless Crop variants is researched and you learned{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Trusted seed bank</AlmanacLink>. Trusted seed bank is one of{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>your skills on Family</AlmanacLink>. Each rank, a shop pack
-        of five seeds is 5% Uncommon, 1.2% Rare, or 0.2% Heirloom.
-      </div>
-      <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
 }
 
 function FreshnessConcept() {
+  const full = 80
   return (
     <>
       <div>
-        Freshness is how much quality ripe fruit still has. You need it because the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays less money for fruit that has gone
-        off.
+        {m.almanac_fresh_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_fresh_p1_b()}
       </div>
       <div>
-        Ripe fruit loses freshness while it sits on the plant. When freshness goes to empty, the plot becomes{' '}
-        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>Rotten produce</AlmanacLink>. Picked fruit keeps losing
-        freshness in your hand, the house, a <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>Chest</AlmanacLink>, and on
-        the ground until you{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Sell all</AlmanacLink>. A{' '}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> holds freshness still.{' '}
-        <AlmanacLink to={{ tab: 'utility', id: 'sugar' }}>Sugar</AlmanacLink> does not lose freshness.
+        {m.almanac_fresh_p2_a()}
+        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
+        {m.almanac_fresh_p2_b()}
+        <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>{m.names_building_chest()}</AlmanacLink>
+        {m.almanac_fresh_p2_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.market_sell_all_label()}</AlmanacLink>
+        {m.almanac_fresh_p2_d()}
+        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
+        {m.almanac_fresh_p2_e()}
+        <AlmanacLink to={{ tab: 'utility', id: 'sugar' }}>{m.names_item_sugar()}</AlmanacLink>
+        {m.almanac_fresh_p2_f()}
       </div>
       <div>
-        Above 80% freshness, the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays the full{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> price for that fruit. Below 80%
-        freshness, the money the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays for that
-        fruit falls with its freshness.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Still good for jam</AlmanacLink> makes fruit below half
-        freshness rot 15% slower at rank I, 30% at rank II, and 45% at rank III.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Clearance sale</AlmanacLink> pays <Coin n={1} /> for each
-        fruit whose freshness has gone to empty.
+        {m.almanac_fresh_p3_a({ full })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_fresh_p3_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_fresh_p3_c({ full })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_fresh_p3_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.jam.name}</AlmanacLink>
+        {m.almanac_fresh_p3_e({ i: JAM_ROT * 100, ii: JAM_ROT * 200, iii: JAM_ROT * 300 })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.clearance.name}</AlmanacLink>
+        {m.almanac_fresh_p3_f()}
+        <Coin n={1} />
+        {m.almanac_fresh_p3_g()}
       </div>
       <div>
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rare</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Heirloom</AlmanacLink> fruit lose freshness faster than{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Common</AlmanacLink> fruit of the same crop.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Uncommon</AlmanacLink> fruit keeps as long as{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Common</AlmanacLink> fruit of that crop.
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_rare()}</AlmanacLink>
+        {m.almanac_and_word()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_heirloom()}</AlmanacLink>
+        {m.almanac_fresh_p4_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_common()}</AlmanacLink>
+        {m.almanac_fresh_p4_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_uncommon()}</AlmanacLink>
+        {m.almanac_fresh_p4_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_common()}</AlmanacLink>
+        {m.almanac_fresh_p4_d()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -647,38 +691,40 @@ function FreshnessConcept() {
 function HappinessConcept() {
   return (
     <>
+      <div>{m.almanac_happy_p1()}</div>
       <div>
-        Happiness is how the plant is doing while it grows. Happiness does not set how fast the plant grows. Too little
-        water, too much water, or too little feed all make the plant finish growing later than it would in the water and
-        feed range written on that crop in this Almanac.
+        {m.almanac_happy_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_better_rarity()}</AlmanacLink>
+        {m.almanac_happy_p2_b()}
       </div>
       <div>
-        You need it because happier plants more often ripen as a{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>better rarity</AlmanacLink>, and a plant whose Happiness goes
-        to empty while still growing can die.
+        {m.almanac_happy_p3_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.tending.name}</AlmanacLink>
+        {m.almanac_happy_p3_b()}
       </div>
       <div>
-        A new plant starts in the middle of Happiness. Empty-handed,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Careful tending</AlmanacLink> lifts Happiness a short way
-        toward full, once, before the plant is ripe. Good water and feed slowly raise Happiness. Too much water drains
-        Happiness fastest, then too little water, then hungry for feed.
+        {m.almanac_happy_p4_a()}
+        <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        {m.almanac_happy_p4_b()}
+        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
+        {m.almanac_happy_p4_c()}
+        <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        {m.almanac_happy_p4_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_loses_freshness()}</AlmanacLink>
+        {m.almanac_happy_p4_e()}
       </div>
       <div>
-        Too much water also slows growth, not only drains Happiness. Too little water slows growth and can wilt a
-        growing plant to a <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>Dead plant</AlmanacLink>. If Happiness goes to
-        empty while the plant is still growing: too much water drowns it into{' '}
-        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>Rotten produce</AlmanacLink>; too little water or no feed leaves
-        a <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>Dead plant</AlmanacLink>. Ripe plants do not die of water or
-        feed; they only <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>lose freshness</AlmanacLink>.
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.almanac_crop_skills_family_cap()}</AlmanacLink>
+        {m.almanac_happy_p5_a()}
       </div>
       <div>
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>The crop skills on Family</AlmanacLink> add a slightly higher
-        chance the ripe fruit is one rarity above the seed when the plant is happy.
-      </div>
-      <div>
-        A <AlmanacLink to={{ tab: 'sensors', id: 'sensor-water' }}>Water sensor</AlmanacLink> is one way to watch for
-        wilt and overwater. See <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink>.
+        {m.almanac_happy_p6_a()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'sensor-water' }}>{m.names_sensor_water()}</AlmanacLink>
+        {m.almanac_happy_p6_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_happy_p6_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -687,27 +733,39 @@ function HappinessConcept() {
 function DayConcept() {
   return (
     <>
-      <div>A day has four parts: sunrise, day, sunset, twilight. There is no night.</div>
+      <div>{m.almanac_day_p1()}</div>
       <div>
-        When twilight ends, the recap opens. The recap is the end-of-day summary: daily pay, tax, what you harvested and
-        lost, <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>research</AlmanacLink> that finished. Play waits until
-        you dismiss it. Dismissing starts the next day and gives{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>You</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Husband</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Daughter</AlmanacLink> one{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>skill point</AlmanacLink> each.
+        {m.almanac_day_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.almanac_word_research()}</AlmanacLink>
+        {m.almanac_day_p2_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.names_member_player()}</AlmanacLink>
+        {m.almanac_day_p2_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.names_member_husband()}</AlmanacLink>
+        {m.almanac_day_p2_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.names_member_daughter()}</AlmanacLink>
+        {m.almanac_day_p2_e()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_skill_point()}</AlmanacLink>
+        {m.almanac_day_p2_f()}
       </div>
       <div>
-        The <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> stays open through sunrise and day.
-        At sunset it needs <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Open late</AlmanacLink>. At twilight it
-        needs <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Open 24/7</AlmanacLink>. You can still drop goods off
-        when it is closed; you cannot <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Sell all</AlmanacLink> until it
-        opens.
+        {m.almanac_day_p3_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_day_p3_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-late'].name}</AlmanacLink>
+        {m.almanac_day_p3_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-24'].name}</AlmanacLink>
+        {m.almanac_day_p3_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.market_sell_all_label()}</AlmanacLink>
+        {m.almanac_day_p3_e()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -716,34 +774,47 @@ function DayConcept() {
 function MarketConcept() {
   return (
     <>
+      <div>{m.almanac_market_p1()}</div>
       <div>
-        The Market is where you sell fruit, sugar, and machine goods for money. Walk them to the market truck, then open
-        Market. The picture is not a building you place.
+        {m.almanac_market_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_market_p2_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_market_p2_c()}
       </div>
       <div>
-        Sell all pays one money total; <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink> are already in that total. You can drop
-        off while the Market is shut. You cannot Sell all until it opens.
+        {m.almanac_market_p3_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_market_p3_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.saleswoman.name}</AlmanacLink>
+        {m.almanac_market_p3_c({ saleswoman: 2 })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.heirloom.name}</AlmanacLink>
+        {m.almanac_market_p3_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.names_rarity_heirloom()}</AlmanacLink>
+        {m.almanac_market_p3_e({ heirloom: 5 })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.bio.name}</AlmanacLink>
+        {m.almanac_market_p3_f({ bio: 4 })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.jam.name}</AlmanacLink>
+        {m.almanac_market_p3_g({ jam: JAM_ROT * 100 })}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.clearance.name}</AlmanacLink>
+        {m.almanac_market_p3_h()}
+        <Coin n={1} />
+        {m.almanac_market_p3_i()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-late'].name}</AlmanacLink>
+        {m.almanac_market_p3_j()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-24'].name}</AlmanacLink>
+        {m.almanac_market_p3_k()}
       </div>
       <div>
-        Daughter skills on <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink> change the money and
-        hours: each rank of <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Saleswoman</AlmanacLink> raises the money
-        the Market pays for every good by 2%. Each rank of{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Őstermelő</AlmanacLink> raises the money the Market pays for{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Heirloom</AlmanacLink> fruit, spirit, and wine by 5%. Each
-        rank of <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Bio farmer</AlmanacLink> raises the money the Market
-        pays for organic fruit by 4%. <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Still good for jam</AlmanacLink>{' '}
-        makes fruit below half freshness rot slower, 15% per rank.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Clearance sale</AlmanacLink> pays <Coin n={1} /> for each
-        fruit whose freshness has gone to empty.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Open late</AlmanacLink> keeps Sell all legal at sunset.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Open 24/7</AlmanacLink> keeps Sell all legal at twilight.
-      </div>
-      <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>Day & Night</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>{m.almanac_concept_day()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -753,30 +824,45 @@ function SkillsConcept() {
   return (
     <>
       <div>
-        Skills are the three people's learned work. The farm is three people. You garden, your husband researches, your
-        daughter runs the <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. Each{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>end-of-day summary</AlmanacLink> gives three skill points to
-        one shared bank, spent on <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>. The three
-        skill choices stay until that person picks. Any point can go to any person.
+        {m.almanac_skills_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_skills_p1_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>{m.almanac_end_of_day()}</AlmanacLink>
+        {m.almanac_skills_p1_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_skills_p1_d()}
       </div>
       <div>
-        Your skills help the garden:{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>happier plants</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>better rarity</AlmanacLink>. Boots lets you walk across the
-        farm faster than without that skill. Speedy research makes research jobs finish in less time than without that
-        skill. Contracts makes utility and automation goods in the shop cost <Coin n={1} /> less money per rank of
-        Contracts, never below <Coin n={1} />. Hers change the money the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink> pays for fruit and goods, and the hours{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Sell all</AlmanacLink> is allowed.
+        {m.almanac_skills_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_happier_plants()}</AlmanacLink>
+        {m.almanac_skills_p2_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_better_rarity()}</AlmanacLink>
+        {m.almanac_skills_p2_c()}
+        <Coin n={1} />
+        {m.almanac_skills_p2_d()}
+        <Coin n={1} />
+        {m.almanac_skills_p2_e()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_skills_p2_f()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.market_sell_all_label()}</AlmanacLink>
+        {m.almanac_skills_p2_g()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>Rarity</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>Day & Night</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'rarity' }}>{m.almanac_concept_rarity()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'day' }}>{m.almanac_concept_day()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -786,20 +872,30 @@ function FamilyConcept() {
   return (
     <>
       <div>
-        Family is You, Husband, and Daughter. Open Family from the same buttons as Almanac,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>. Left to right: You the Gardener,
-        Husband on <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>, Daughter on{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. You work the beds. He runs{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>research</AlmanacLink>. She minds the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. Spend{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>skill points</AlmanacLink> on{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink> here. This Almanac page does not replace
-        Family.
+        {m.almanac_family_p1_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_family_p1_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_family_p1_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_family_p1_d()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_family_p1_e()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.almanac_word_research()}</AlmanacLink>
+        {m.almanac_family_p1_f()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_family_p1_g()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_skill_points()}</AlmanacLink>
+        {m.almanac_family_p1_h()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_family_p1_i()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink> and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>.
+        {m.almanac_family_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_family_p2_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -808,24 +904,25 @@ function FamilyConcept() {
 function ResearchConcept() {
   return (
     <>
+      <div>{m.almanac_research_p1()}</div>
+      <div>{m.almanac_research_p2()}</div>
       <div>
-        Research is your husband's work so the farm can grow past the starter tools and crops. Open Research from the
-        same buttons as Shop and the Build menu to pick a job.
+        {m.almanac_research_p3_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.almanac_word_machines()}</AlmanacLink>
+        {m.almanac_research_p3_b()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_research_p3_c()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_research_p3_d()}
       </div>
       <div>
-        He can run only one job at a time. Starting a job spends money up front. The job takes time in seconds while you
-        garden. When it finishes, new things appear in the shop and the Build menu, and you can buy more land.
-      </div>
-      <div>
-        Research is how you get new crops, tools, water,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>machines</AlmanacLink>, and sensors.{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink> are not research — spend those on{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>.
-      </div>
-      <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>Family</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>Skills</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>Automation</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'family' }}>{m.family_title()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -835,29 +932,42 @@ function AutomationConcept() {
   return (
     <>
       <div>
-        Automation is machines, stores, and wires so you walk less. Plants stay watered. Machines keep working. A wire
-        that is on can pause a <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>Mill</AlmanacLink>.
+        {m.almanac_auto_c_p1_a()}
+        <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>{m.names_building_mill()}</AlmanacLink>
+        {m.almanac_auto_c_p1_b()}
       </div>
       <div>
-        Machines turn fruit into goods you sell at the{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>. A{' '}
-        <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>Chest</AlmanacLink> or{' '}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> holds what you picked; the{' '}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>Freezer</AlmanacLink> keeps fruit from{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>losing freshness</AlmanacLink>. The{' '}
-        <AlmanacLink to={{ tab: 'automation', id: 'hangar' }}>Vehicle hangar</AlmanacLink> and field silos sit on the
-        Automation list with those machines.
+        {m.almanac_auto_c_p2_a()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_auto_c_p2_b()}
+        <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>{m.names_building_chest()}</AlmanacLink>
+        {m.almanac_auto_c_p2_c()}
+        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
+        {m.almanac_auto_c_p2_d()}
+        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
+        {m.almanac_auto_c_p2_e()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_losing_freshness()}</AlmanacLink>
+        {m.almanac_auto_c_p2_f()}
+        <AlmanacLink to={{ tab: 'automation', id: 'hangar' }}>{m.names_building_hangar()}</AlmanacLink>
+        {m.almanac_auto_c_p2_g()}
       </div>
       <div>
-        Wires and sensors send on or off. Open{' '}
-        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>Sensors at Overview</AlmanacLink>. A wire can pause a mill,
-        stop a sprinkler, or open a <AlmanacLink to={{ tab: 'water', id: 'valve' }}>Valve</AlmanacLink>.
+        {m.almanac_auto_c_p3_a()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>{m.almanac_sensors_at_overview()}</AlmanacLink>
+        {m.almanac_auto_c_p3_b()}
+        <AlmanacLink to={{ tab: 'water', id: 'valve' }}>{m.names_building_valve()}</AlmanacLink>
+        {m.almanac_auto_c_p3_c()}
       </div>
       <div>
-        See <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>Research</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>Market</AlmanacLink>,{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>Freshness</AlmanacLink>, and{' '}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>Happiness</AlmanacLink>.
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        {m.almanac_period()}
       </div>
     </>
   )
@@ -891,7 +1001,7 @@ function Pane({ entry, done }: { entry: CatalogEntry; done: AlmanacDone }) {
 function MachineRecipes({ machine }: { machine: MachineId }) {
   return (
     <div className="mt-4">
-      <div className="mb-1 font-display text-xs leading-none text-ink">Recipes</div>
+      <div className="mb-1 font-display text-xs leading-none text-ink">{m.hud_recipes()}</div>
       <Recipes view={{ kind: 'list', machine }} size="md" />
     </div>
   )
@@ -926,7 +1036,7 @@ function RarityTabs({ preview, onPreview }: { preview: Rarity; onPreview: (p: Ra
       <Tabs.List className="flex flex-wrap gap-1 border-b border-ink/20">
         {RARITY_TABS.map(t => (
           <Tabs.Trigger key={t.id} value={t.id} className={tabTriggerClass}>
-            {t.label}
+            {t.label()}
           </Tabs.Trigger>
         ))}
       </Tabs.List>
@@ -953,9 +1063,9 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
       {id === 'sugar-cane' ? (
-        <div className="mb-3 text-base leading-relaxed text-ink/70">Mill 5 cane into 2 L sugar.</div>
+        <div className="mb-3 text-base leading-relaxed text-ink/70">{m.almanac_mill_cane({ cane: MILL_IN, liters: SUGAR_BAG })}</div>
       ) : null}
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex flex-wrap gap-3">
@@ -976,35 +1086,35 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
-          label="Grow time"
+          label={m.almanac_stat_grow()}
           n={meterN(d.growSeconds, colMin('growSeconds'), colMax('growSeconds'))}
-          kind={{ t: 'raw', raw: `${Number(days(st.growSeconds).toFixed(2))} days` }}
+          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.growSeconds).toFixed(2)) }) }}
         />
         <Stat
-          label="Drink"
+          label={m.almanac_stat_drink()}
           n={meterN(d.waterUsePerSec, colMin('waterUsePerSec'), colMax('waterUsePerSec'))}
-          kind={{ t: 'raw', raw: `${Number((d.waterUsePerSec * DAY_SECONDS).toPrecision(1))} L/day` }}
+          kind={{ t: 'raw', raw: m.almanac_l_day({ n: Number((d.waterUsePerSec * DAY_SECONDS).toPrecision(1)) }) }}
         />
         <Stat
-          label="Water range"
+          label={m.almanac_stat_water_range()}
           n={meterN(st.waterTolerance, 0.25, 1)}
           kind={{ t: 'raw', raw: `${liters(SOIL_WATER_MID - st.waterTolerance)}–${liters(SOIL_WATER_MID + st.waterTolerance)}` }}
         />
         <Stat
-          label="Fertilizer"
+          label={m.hud_fertilizer()}
           n={meterN(st.fertTolerance, 0.25, 1)}
-          kind={{ t: 'raw', raw: `happy above ${Math.round((FERT_PLOT_MAX - st.fertTolerance) * 100)}%` }}
+          kind={{ t: 'raw', raw: m.almanac_happy_above({ n: Math.round((FERT_PLOT_MAX - st.fertTolerance) * 100) }) }}
         />
-        <Stat label="Sell" n={meterN(d.sale, colMin('sale'), colMax('sale'))} kind={{ t: 'coin', n: st.sale }} />
+        <Stat label={m.almanac_stat_sell()} n={meterN(d.sale, colMin('sale'), colMax('sale'))} kind={{ t: 'coin', n: st.sale }} />
         <Stat
-          label="Seed price"
+          label={m.almanac_stat_seed_price()}
           n={meterN(d.seed, colMin('seed'), colMax('seed'))}
           kind={{ t: 'coin', n: d.seed * RARITY_SALE[preview] }}
         />
         <Stat
-          label="Freshness"
+          label={m.almanac_concept_freshness()}
           n={meterN(d.rotSeconds, colMin('rotSeconds'), colMax('rotSeconds'))}
-          kind={{ t: 'raw', raw: `${Number(days(st.rotSeconds).toFixed(2))} days` }}
+          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
     </>
@@ -1048,9 +1158,9 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc}</div>
+      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">
-        Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.
+        {m.almanac_tree_drops({ days: TREE_YIELD_DAYS, mul: TREE_YIELD_MUL, off: TREE_OFF_MUL })}
       </div>
       <RarityTabs preview={preview} onPreview={setPreview} />
       <div className="mb-3 flex flex-wrap gap-3">
@@ -1080,24 +1190,24 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
-          label="Juvenile"
+          label={m.almanac_stat_juvenile()}
           n={meterN(def.juvenileSeconds, treeMin('juvenileSeconds'), treeMax('juvenileSeconds'))}
-          kind={{ t: 'raw', raw: `${Number(days(def.juvenileSeconds).toFixed(2))} days` }}
+          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(def.juvenileSeconds).toFixed(2)) }) }}
         />
         <Stat
-          label="Fruit every"
+          label={m.almanac_stat_fruit_every()}
           n={meterN(every, everyMin, everyMax)}
-          kind={{ t: 'raw', raw: `${Number(days(def.fruitSeconds).toFixed(2))} days` }}
+          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(def.fruitSeconds).toFixed(2)) }) }}
         />
         <Stat
-          label="Sell"
+          label={m.almanac_stat_sell()}
           n={meterN(d.sale, treeSaleMin(), treeSaleMax())}
           kind={{ t: 'coin', n: d.sale * raritySale(d, preview) }}
         />
         <Stat
-          label="Freshness"
+          label={m.almanac_concept_freshness()}
           n={meterN(d.rotSeconds, treeRotMin(), treeRotMax())}
-          kind={{ t: 'raw', raw: `${Number(days(st.rotSeconds).toFixed(2))} days` }}
+          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
     </>

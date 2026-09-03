@@ -8,10 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run --dir src --coverage",
+    "i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --emit-ts-declarations",
     "e2e": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@inlang/paraglide-js": "^2.25.0",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-progress": "^1.1.16",
     "@radix-ui/react-tabs": "^1.1.21",

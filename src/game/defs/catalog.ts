@@ -1,9 +1,11 @@
 
-import { CROPS } from './crops.ts'
+import { m } from '../../paraglide/messages.js'
+import { CROP_NAME, CROPS } from './crops.ts'
 import {
   GRASS_GROW,
   GRASS_PACK,
   GRASS_WATER_PER_SEC,
+  CHEST_SLOTS,
   COMPOST_LITERS,
   COMPOST_NEED,
   COMPOST_SECONDS,
@@ -15,7 +17,6 @@ import {
   GRIND_WORK,
   PICKAXES,
   SHOVELS,
-
   SPRINKLER_TILE_DAY,
   SUGAR_BAG,
   SUGAR_SHOP,
@@ -24,16 +25,20 @@ import {
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   FREEZER_ROT_MUL,
+  HANGAR_H,
+  HANGAR_W,
   MILL_IN,
   MILL_VANILLA_IN,
   MILL_WORK,
   JAM_IN,
   JAM_SECONDS,
+  SILO_H,
+  SILO_W,
   STILL_CAP,
   STILL_SECONDS,
 } from './items.ts'
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
-import { BIO_RESTORE, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
+import { BIO_RESTORE, FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { CropId, TileId } from '../sim/ids.ts'
 import type { Face } from '../sim/item.ts'
@@ -45,179 +50,121 @@ export type CatalogEntry = {
   blurb: string
 }
 
-const SHOVEL_T = 'Digs grass and hard soil, and uproots plants and shrubs. ${uses} uses, ${workSeconds}s per dig.'
-const BETTER_SHOVEL_T = 'Same jobs, faster and longer lasting. ${uses} uses, ${workSeconds}s per dig.'
-const PICKAXE_T = 'Breaks rocks and very hard soil. ${uses} uses, ${workSeconds}s per mine.'
-const BETTER_PICKAXE_T = 'Same jobs, faster and longer lasting. ${uses} uses, ${workSeconds}s per mine.'
-const BUCKET_T = 'Holds ${n} L. Fill at a pump or well. 1 L fills one plot.'
-const FERT_T =
-  'Holds ${n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing. Empty bags are thrown away.'
-const SYNTH_T =
-  'Holds ${n} L and tops a plot to full like the ordinary bag, but the soil turns non-organic and so does everything grown in it. Ordinary fertilizer or compost brings it back once ${restore} L land at once.'
-const COMPOST_BOX_T =
-  'Drop any organic waste in. ${need} units become ${liters} L of compost in ${seconds}s. A chest on the right takes the bag, else it drops beside the box. Seeds ${seeds}, fruit ${fruit}, heirloom fruit ${heirloom}, rotten fruit ${rotten}, dead plants and weeds ${dead}.'
-const COMPOST_T = 'Holds ${liters} L. Feeds soil exactly like fertilizer, and it is organic.'
-const WEED_T =
-  'Takes over tilled soil left without seed. Full grown in ${seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.'
-const ROTTEN_T =
-  'What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth ${n} units in the compost box.'
-const DEAD_T =
-  'What is left when a plant dries out or starves. Worth nothing at market, worth ${n} unit in the compost box.'
-const GRASS_T = 'Cut from untilled ground. Worth ${n} unit in the compost box.'
-const SOIL_T =
-  'Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads 0 to ${max} L; plants want ${mid} L and drown above it. Fertilizer runs from 0 to 1 and a growing plant empties a full plot in three days.'
-const TURF_T =
-  'Sold in packs of ${pack}. Sow on tilled soil. Roots in ${seconds}s and drinks only ${drink} L a day, then the plot turns back into untilled lawn.'
-const FENCE_T =
-  'Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.'
-const PAVING_T = 'Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.'
-
-const PUMP_T =
-  'Gathers ${rate} L/s into a ${cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.'
-const CHEST_T = '9 slots. Walk up and store any item.'
-const GRIND_T = 'Hopper. One fruit becomes ${min}–${max} seeds of the same crop and rarity. ${workSeconds}s per fruit.'
-const PIPE_T = 'Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.'
-const SPRINKLER_T =
-  'Waters a 2×2 area of plots, ${day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.'
-const SPRINKLER_VERT_T = 'Waters a 4×2 strip, ${day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.'
-const SPRINKLER_LARGE_T = 'Waters a 4×4 area, ${day} L a day per plot.'
-const WELL_T =
-  'Gathers ${rate} L/s into a ${cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.'
-const VALVE_T =
-  'Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.'
-const RAIN_TANK_T = 'Gathers ${rate} L/s into a ${cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.'
-const TAP_T =
-  'Fills a bucket at ${rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.'
-
-export function fill(template: string, vars: { readonly [key: string]: string | number }): string {
-  return template.replace(/\$\{([^}]+)\}/g, (_, key: string) => {
-    if (!Object.hasOwn(vars, key)) throw new Error(key)
-    return String(vars[key])
-  })
+const TILE_TITLE: { readonly [K in TileId]: () => string } = {
+  paved: () => m.names_tile_paved(),
+  brick: () => m.names_tile_brick(),
+  cobble: () => m.names_tile_cobble(),
 }
 
-const TILE_TITLE: { readonly [K in TileId]: string } = {
-  paved: 'Paving slab',
-  brick: 'Brickwork',
-  cobble: 'Cobblestone',
-}
-
-const ROTARY_T = 'Motorised. Digs anything a shovel digs, near enough instantly. ${uses} uses, ${workSeconds}s per dig.'
-const DIAMOND_T = 'Cuts rock like tilled soil. ${uses} uses, ${workSeconds}s per mine.'
-
-function cropTitle(id: CropId): string {
-  if (id === 'sugar-cane') return 'Sugar cane'
-  return id.slice(0, 1).toUpperCase() + id.slice(1)
-}
+const FREEZER_PCT = (1 - FREEZER_ROT_MUL) * 100
 
 export function catalogEntries(): CatalogEntry[] {
   const crops: CatalogEntry[] = (Object.keys(CROPS) as CropId[]).map(id => {
     const d = CROPS[id]
-    const name = cropTitle(id)
     return {
       id,
-      title: name,
+      title: CROP_NAME[id](),
       icon: { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
-      blurb: d.desc,
+      blurb: d.desc(),
     }
   })
   return [
     ...crops,
     {
       id: 'shovel',
-      title: 'Shovel',
+      title: m.names_shovel_shovel(),
       icon: {
         kind: 'shovel',
         id: 'shovel',
         usesLeft: SHOVELS.shovel.uses,
         workSeconds: SHOVELS.shovel.workSeconds,
       },
-      blurb: fill(SHOVEL_T, SHOVELS.shovel),
+      blurb: m.catalog_shovel(SHOVELS.shovel),
     },
     {
       id: 'better-shovel',
-      title: 'Better shovel',
+      title: m.names_shovel_better_shovel(),
       icon: {
         kind: 'shovel',
         id: 'better-shovel',
         usesLeft: SHOVELS['better-shovel'].uses,
         workSeconds: SHOVELS['better-shovel'].workSeconds,
       },
-      blurb: fill(BETTER_SHOVEL_T, SHOVELS['better-shovel']),
+      blurb: m.catalog_better_shovel(SHOVELS['better-shovel']),
     },
     {
       id: 'pickaxe',
-      title: 'Pickaxe',
+      title: m.names_pickaxe_pickaxe(),
       icon: {
         kind: 'pickaxe',
         id: 'pickaxe',
         usesLeft: PICKAXES.pickaxe.uses,
         workSeconds: PICKAXES.pickaxe.workSeconds,
       },
-      blurb: fill(PICKAXE_T, PICKAXES.pickaxe),
+      blurb: m.catalog_pickaxe(PICKAXES.pickaxe),
     },
     {
       id: 'better-pickaxe',
-      title: 'Hardened pickaxe',
+      title: m.names_pickaxe_better_pickaxe(),
       icon: {
         kind: 'pickaxe',
         id: 'better-pickaxe',
         usesLeft: PICKAXES['better-pickaxe'].uses,
         workSeconds: PICKAXES['better-pickaxe'].workSeconds,
       },
-      blurb: fill(BETTER_PICKAXE_T, PICKAXES['better-pickaxe']),
+      blurb: m.catalog_better_pickaxe(PICKAXES['better-pickaxe']),
     },
     {
       id: 'bucket',
-      title: 'Bucket',
+      title: m.names_container_bucket(),
       icon: {
         kind: 'container',
         id: 'bucket',
         liters: CONTAINERS.bucket.capacityLiters,
         capacityLiters: CONTAINERS.bucket.capacityLiters,
       },
-      blurb: fill(BUCKET_T, { n: CONTAINERS.bucket.capacityLiters }),
+      blurb: m.catalog_bucket({ n: CONTAINERS.bucket.capacityLiters, plot: SOIL_WATER_MID }),
     },
     {
       id: 'large-bucket',
-      title: 'Large bucket',
+      title: m.names_container_large_bucket(),
       icon: {
         kind: 'container',
         id: 'large-bucket',
         liters: CONTAINERS['large-bucket'].capacityLiters,
         capacityLiters: CONTAINERS['large-bucket'].capacityLiters,
       },
-      blurb: fill(BUCKET_T, { n: CONTAINERS['large-bucket'].capacityLiters }),
+      blurb: m.catalog_bucket({ n: CONTAINERS['large-bucket'].capacityLiters, plot: SOIL_WATER_MID }),
     },
     {
       id: 'fertilizer',
-      title: 'Fertilizer bag',
+      title: m.names_item_fertilizer(),
       icon: { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS },
-      blurb: fill(FERT_T, { n: FERT_BAG_LITERS }),
+      blurb: m.catalog_fertilizer({ n: FERT_BAG_LITERS }),
     },
     {
       id: 'synth-fertilizer',
-      title: 'Synthetic fertilizer',
+      title: m.names_item_synth(),
       icon: { kind: 'synth', liters: SYNTH_BAG_LITERS, capacityLiters: SYNTH_BAG_LITERS },
-      blurb: fill(SYNTH_T, { n: SYNTH_BAG_LITERS, restore: BIO_RESTORE }),
+      blurb: m.catalog_synth({ n: SYNTH_BAG_LITERS, restore: BIO_RESTORE }),
     },
     {
       id: 'weed-spray',
-      title: 'Weed spray',
+      title: m.names_item_weed_spray(),
       icon: { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG },
-      blurb: fill('Holds ${n} L. Click tilled soil to starve weeds there.', { n: WEED_SPRAY_BAG }),
+      blurb: m.catalog_weed_spray({ n: WEED_SPRAY_BAG }),
     },
     {
       id: 'compost',
-      title: 'Compost',
+      title: m.names_item_compost(),
       icon: { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS },
-      blurb: fill(COMPOST_T, { liters: COMPOST_LITERS }),
+      blurb: m.catalog_compost({ liters: COMPOST_LITERS }),
     },
     {
       id: 'compost-box',
-      title: 'Compost box',
+      title: m.names_building_compost_box(),
       icon: { kind: 'compost-box' },
-      blurb: fill(COMPOST_BOX_T, {
+      blurb: m.catalog_compost_box({
         need: COMPOST_NEED,
         liters: COMPOST_LITERS,
         seconds: COMPOST_SECONDS,
@@ -230,40 +177,46 @@ export function catalogEntries(): CatalogEntry[] {
     },
     {
       id: 'soil',
-      title: 'Tilled soil',
+      title: m.names_ground_tilled(),
       icon: { kind: 'shovel', id: 'shovel', usesLeft: SHOVELS.shovel.uses, workSeconds: SHOVELS.shovel.workSeconds },
-      blurb: fill(SOIL_T, { max: SOIL_WATER_MAX, mid: SOIL_WATER_MID }),
+      blurb: m.catalog_soil({
+        min: 0,
+        max: SOIL_WATER_MAX,
+        mid: SOIL_WATER_MID,
+        fertMin: 0,
+        fertMax: FERT_PLOT_MAX,
+      }),
     },
     {
       id: 'weed',
-      title: 'Weed',
+      title: m.names_ground_weed(),
       icon: { kind: 'weed', count: 1 },
-      blurb: fill(WEED_T, { seconds: WEED_GROW }),
+      blurb: m.catalog_weed({ seconds: WEED_GROW }),
     },
     {
       id: 'rotten',
-      title: 'Rotten produce',
+      title: m.catalog_title_rotten(),
       icon: { kind: 'rotten', cls: 'fruit', count: 1 },
-      blurb: fill(ROTTEN_T, { n: COMPOST_VALUE.rotten }),
+      blurb: m.catalog_rotten({ n: COMPOST_VALUE.rotten }),
     },
     {
       id: 'dead',
-      title: 'Dead plant',
+      title: m.catalog_title_dead(),
       icon: { kind: 'dead', cls: 'fruit', count: 1 },
-      blurb: fill(DEAD_T, { n: COMPOST_VALUE.dead }),
+      blurb: m.catalog_dead({ n: COMPOST_VALUE.dead }),
     },
     {
       id: 'grass',
-      title: 'Cut grass',
+      title: m.names_item_cut_grass(),
       icon: { kind: 'grass', count: 1 },
-      blurb: fill(GRASS_T, { n: COMPOST_VALUE.grass }),
+      blurb: m.catalog_grass({ n: COMPOST_VALUE.grass }),
     },
 
     {
       id: 'grass-seeds',
-      title: 'Grass seeds',
+      title: m.names_sku_pack_grass(),
       icon: { kind: 'grass-seeds', count: GRASS_PACK },
-      blurb: fill(TURF_T, {
+      blurb: m.catalog_grass_seeds({
         pack: GRASS_PACK,
         seconds: GRASS_GROW,
         drink: Number((GRASS_WATER_PER_SEC * DAY_SECONDS).toFixed(2)),
@@ -271,260 +224,261 @@ export function catalogEntries(): CatalogEntry[] {
     },
     {
       id: 'fence',
-      title: 'Wooden fence',
+      title: m.names_building_fence(),
       icon: { kind: 'fence' },
-      blurb: FENCE_T,
+      blurb: m.catalog_fence(),
     },
     ...(['cobble', 'brick', 'paved'] as TileId[]).map(tile => ({
       id: `tile-${tile}`,
-      title: TILE_TITLE[tile],
+      title: TILE_TITLE[tile](),
       icon: { kind: 'tile' as const, tile },
-      blurb: PAVING_T,
+      blurb: m.catalog_paving(),
     })),
     {
       id: 'rotary-shovel',
-      title: 'Rotary shovel',
+      title: m.names_shovel_rotary_shovel(),
       icon: {
         kind: 'shovel' as const,
         id: 'rotary-shovel' as const,
         usesLeft: SHOVELS['rotary-shovel'].uses,
         workSeconds: SHOVELS['rotary-shovel'].workSeconds,
       },
-      blurb: fill(ROTARY_T, SHOVELS['rotary-shovel']),
+      blurb: m.catalog_rotary_shovel(SHOVELS['rotary-shovel']),
     },
     {
       id: 'diamond-pickaxe',
-      title: 'Diamond pickaxe',
+      title: m.names_pickaxe_diamond_pickaxe(),
       icon: {
         kind: 'pickaxe' as const,
         id: 'diamond-pickaxe' as const,
         usesLeft: PICKAXES['diamond-pickaxe'].uses,
         workSeconds: PICKAXES['diamond-pickaxe'].workSeconds,
       },
-      blurb: fill(DIAMOND_T, PICKAXES['diamond-pickaxe']),
+      blurb: m.catalog_diamond_pickaxe(PICKAXES['diamond-pickaxe']),
     },
     {
       id: 'pumpjack',
-      title: 'Pump',
+      title: m.names_building_pump(),
       icon: { kind: 'pumpjack' },
-      blurb: fill(PUMP_T, { rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
+      blurb: m.catalog_pumpjack({ rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
     },
     {
       id: 'chest',
-      title: 'Chest',
+      title: m.names_building_chest(),
       icon: { kind: 'chest' },
-      blurb: CHEST_T,
+      blurb: m.catalog_chest({ n: CHEST_SLOTS }),
     },
     {
       id: 'grinder',
-      title: 'Seed grinder',
+      title: m.names_building_grinder(),
       icon: { kind: 'grinder' },
-      blurb: fill(GRIND_T, { min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
+      blurb: m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
     },
     {
       id: 'pipe',
-      title: 'Pipe',
+      title: m.names_building_pipe(),
       icon: { kind: 'pipe' },
-      blurb: PIPE_T,
+      blurb: m.catalog_pipe(),
     },
     {
       id: 'sprinkler',
-      title: 'Sprinkler',
+      title: m.names_building_sprinkler(),
       icon: { kind: 'sprinkler' },
-      blurb: fill(SPRINKLER_T, { day: SPRINKLER_TILE_DAY }),
+      blurb: m.catalog_sprinkler({ w: 2, h: 2, day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'sprinkler-vert',
-      title: 'Vertical sprinkler',
+      title: m.names_building_sprinkler_vert(),
       icon: { kind: 'sprinkler-vert' },
-      blurb: fill(SPRINKLER_VERT_T, { day: SPRINKLER_TILE_DAY }),
+      blurb: m.catalog_sprinkler_vert({ w: 4, h: 2, day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'sprinkler-large',
-      title: 'Large sprinkler',
+      title: m.names_building_sprinkler_large(),
       icon: { kind: 'sprinkler-large' },
-      blurb: fill(SPRINKLER_LARGE_T, { day: SPRINKLER_TILE_DAY }),
+      blurb: m.catalog_sprinkler_large({ w: 4, h: 4, day: SPRINKLER_TILE_DAY }),
     },
     {
       id: 'well',
-      title: 'Well',
+      title: m.names_building_well(),
       icon: { kind: 'well' },
-      blurb: fill(WELL_T, { rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
+      blurb: m.catalog_well({ rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
     },
     {
       id: 'valve',
-      title: 'Valve',
+      title: m.names_building_valve(),
       icon: { kind: 'valve' },
-      blurb: VALVE_T,
+      blurb: m.catalog_valve(),
     },
     {
       id: 'rain-tank',
-      title: 'Rainwater tank',
+      title: m.names_building_rain_tank(),
       icon: { kind: 'rain-tank' },
-      blurb: fill(RAIN_TANK_T, { rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
+      blurb: m.catalog_rain_tank({ rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
     },
     {
       id: 'tap',
-      title: 'Tap',
+      title: m.names_building_tap(),
       icon: { kind: 'tap' },
-      blurb: fill(TAP_T, { rate: TAP_RATE }),
+      blurb: m.catalog_tap({ rate: TAP_RATE }),
     },
     {
       id: 'sugar',
-      title: 'Sugar',
+      title: m.names_item_sugar(),
       icon: { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_SHOP },
-      blurb: fill('${bag} L bag. Does not rot. Mill cane is cheaper per litre.', { bag: SUGAR_BAG }),
+      blurb: m.catalog_sugar({ bag: SUGAR_BAG }),
     },
     {
       id: 'mill',
-      title: 'Mill',
+      title: m.names_building_mill(),
       icon: { kind: 'mill' },
-      blurb: fill('Hopper mill. ${in} cane, olive or wheat, or ${vanilla} vanilla crush in ${work}s.', {
-        in: MILL_IN,
+      blurb: m.catalog_mill({
+        cane: MILL_IN,
         vanilla: MILL_VANILLA_IN,
         work: MILL_WORK,
       }),
     },
     {
       id: 'still',
-      title: 'Pot still',
+      title: m.names_building_still(),
       icon: { kind: 'still' },
-      blurb: fill('Distills ${cap} potato, wheat or apricot in ${seconds}s.', { cap: STILL_CAP, seconds: STILL_SECONDS }),
+      blurb: m.catalog_still({ cap: STILL_CAP, seconds: STILL_SECONDS }),
     },
     {
       id: 'barrel',
-      title: 'Barrel',
+      title: m.names_building_barrel(),
       icon: { kind: 'barrel' },
-      blurb: 'Grapes or apples, never mixed. Five grapes or four apples fill a barrel. Wine or cider, not whisky.',
+      blurb: m.catalog_barrel(),
     },
     {
       id: 'jam',
-      title: 'Jam machine',
+      title: m.names_building_jam(),
       icon: { kind: 'jam-machine' },
-      blurb: fill('${fruit} fruit plus sugar cook in ${seconds}s. Tomato is ketchup.', { fruit: JAM_IN, seconds: JAM_SECONDS }),
+      blurb: m.catalog_jam({ fruit: JAM_IN, seconds: JAM_SECONDS }),
     },
     {
       id: 'freezer',
-      title: 'Freezer',
+      title: m.names_building_freezer(),
       icon: { kind: 'freezer', slots: FREEZER_SLOTS },
-      blurb: fill(
-        'Small ${n} slots, large ${m} slots. Fruit in here rots ${pct}% slower. The large one is a contract prize, never sold.',
-        { n: FREEZER_SLOTS, m: FREEZER_LARGE_SLOTS, pct: (1 - FREEZER_ROT_MUL) * 100 },
-      ),
+      blurb: m.catalog_freezer({
+        n: FREEZER_SLOTS,
+        m: FREEZER_LARGE_SLOTS,
+        pct: FREEZER_PCT,
+      }),
     },
     {
       id: 'hangar',
-      title: 'Vehicle hangar',
+      title: m.names_building_hangar(),
       icon: { kind: 'hangar' },
-      blurb: '3×2 industrial shed. Buy Quads and tractors at a hangar.',
+      blurb: m.catalog_hangar({ w: HANGAR_W, h: HANGAR_H }),
     },
     {
       id: 'silo-seed',
-      title: 'Seeding silo',
+      title: m.names_building_silo_seed(),
       icon: { kind: 'silo-seed' },
-      blurb: '2×3 field tank. Look only.',
+      blurb: m.catalog_silo({ w: SILO_W, h: SILO_H }),
     },
     {
       id: 'silo-spray',
-      title: 'Spraying silo',
+      title: m.names_building_silo_spray(),
       icon: { kind: 'silo-spray' },
-      blurb: '2×3 field tank. Look only.',
+      blurb: m.catalog_silo({ w: SILO_W, h: SILO_H }),
     },
     {
       id: 'silo-produce',
-      title: 'Produce silo',
+      title: m.names_building_silo_produce(),
       icon: { kind: 'silo-produce' },
-      blurb: '2×3 field tank. Look only.',
+      blurb: m.catalog_silo({ w: SILO_W, h: SILO_H }),
     },
     {
       id: 'lever',
-      title: 'Lever',
+      title: m.names_sensor_lever(),
       icon: { kind: 'lever' },
-      blurb: 'A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.',
+      blurb: m.catalog_lever(),
     },
     {
       id: 'button',
-      title: 'Button',
+      title: m.names_sensor_button(),
       icon: { kind: 'button' },
-      blurb: 'Press it to send one short signal that stops on its own.',
+      blurb: m.catalog_button(),
     },
     {
       id: 'lamp',
-      title: 'Lamp',
+      title: m.names_sensor_lamp(),
       icon: { kind: 'lamp' },
-      blurb: 'Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.',
+      blurb: m.catalog_lamp(),
     },
     {
       id: 'or',
-      title: 'OR gate',
+      title: m.names_sensor_or(),
       icon: { kind: 'or' },
-      blurb: 'Turns on when either of its two inputs is on.',
+      blurb: m.catalog_or(),
     },
     {
       id: 'and',
-      title: 'AND gate',
+      title: m.names_sensor_and(),
       icon: { kind: 'and' },
-      blurb: 'Turns on only while both of its inputs are on.',
+      blurb: m.catalog_and(),
     },
     {
       id: 'not',
-      title: 'NOT gate',
+      title: m.names_sensor_not(),
       icon: { kind: 'not' },
-      blurb: 'Turns on while its input is off, and off while it is on.',
+      blurb: m.catalog_not(),
     },
     {
       id: 'pulser',
-      title: 'Pulser',
+      title: m.names_sensor_pulser(),
       icon: { kind: 'pulser' },
-      blurb: 'Sends a single signal the moment its input turns on, then stays quiet until that input goes off and comes back. It turns a signal that stays on into a single one.',
+      blurb: m.catalog_pulser(),
     },
     {
       id: 'counter',
-      title: 'Counter',
+      title: m.names_sensor_counter(),
       icon: { kind: 'counter' },
-      blurb: 'Counts up while its input is on. Set a number to stop at: on reaching that count it sends one signal and starts again from zero, so something runs at intervals instead of constantly.',
+      blurb: m.catalog_counter(),
     },
     {
       id: 'sensor-water',
-      title: 'Water sensor',
+      title: m.names_sensor_water(),
       icon: { kind: 'sensor-water' },
-      blurb: 'Watches the plots around it and turns on when a plant is too dry or too wet — tick which of the two you care about. Wire it to a sprinkler and the field waters itself.',
+      blurb: m.catalog_sensor_water(),
     },
     {
       id: 'sensor-fert',
-      title: 'Fertilizer sensor',
+      title: m.names_sensor_fert(),
       icon: { kind: 'sensor-fert' },
-      blurb: 'Watches the growing plants around it and turns on as soon as one is starving for fertilizer.',
+      blurb: m.catalog_sensor_fert(),
     },
     {
       id: 'sensor-harvest',
-      title: 'Harvest sensor',
+      title: m.names_sensor_harvest(),
       icon: { kind: 'sensor-harvest' },
-      blurb: 'Watches the crops around it and turns on when they are ready to pick. Set Any for the first ripe plant, or All to wait until the whole patch is ripe.',
+      blurb: m.catalog_sensor_harvest(),
     },
     {
       id: 'sensor-day',
-      title: 'Day sensor',
+      title: m.names_sensor_day(),
       icon: { kind: 'sensor-day' },
-      blurb: 'Turns on during the parts of the day you tick: sunrise, day, sunset, twilight.',
+      blurb: m.catalog_sensor_day(),
     },
     {
       id: 'water-system',
-      title: 'Water-system sensor',
+      title: m.names_sensor_water_system(),
       icon: { kind: 'water-system' },
-      blurb: 'Joins your water network like a tap, and turns on when the sprinklers want more water than the tanks hold. Wire it to a valve to shut part of the field off before the whole network runs dry.',
+      blurb: m.catalog_water_system(),
     },
     {
       id: 'vehicle-detector',
-      title: 'Vehicle detector',
+      title: m.names_sensor_vehicle_detector(),
       icon: { kind: 'vehicle-detector' },
-      blurb: 'A floor plate you drive over. Turns on while a Quad or tractor stands on it, so an arriving vehicle can set something off.',
+      blurb: m.catalog_vehicle_detector(),
     },
     {
       id: 'traffic-light',
-      title: 'Traffic light',
+      title: m.names_sensor_traffic_light(),
       icon: { kind: 'traffic-light' },
-      blurb: 'Stops a vehicle on its route while its input is off, and lets it go when the input turns on. It sends a signal of its own while a vehicle is waiting, so one vehicle can wait for another to finish.',
+      blurb: m.catalog_traffic_light(),
     },
   ]
 }

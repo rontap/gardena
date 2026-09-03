@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/recipe.ts'
 import { clockText, craftMachine, recipesOf } from '../sim/recipe.ts'
 import type { Face } from '../sim/item.ts'
@@ -19,8 +20,8 @@ function num(n: number): string {
 }
 
 function amountText(a: Amount): string {
-  if (a.kind === 'liters') return `${num(a.l)}L`
-  if (a.kind === 'waste') return `${a.n} waste`
+  if (a.kind === 'liters') return m.hud_amount_liters({ n: num(a.l) })
+  if (a.kind === 'waste') return m.hud_waste({ n: a.n })
   return String(a.n)
 }
 
@@ -148,10 +149,10 @@ function Row({
 const NO_SHORT = { at: -1, text: '' }
 
 function stateLine(craft: Craft): string {
-  if (craft.kind === 'idle') return 'Empty'
-  if (craft.kind === 'paused') return 'Paused by wire'
-  if (craft.kind === 'thirsty') return 'Needs water'
-  if (craft.kind === 'ready') return 'Output blocked'
+  if (craft.kind === 'idle') return m.hud_craft_empty()
+  if (craft.kind === 'paused') return m.hud_craft_paused()
+  if (craft.kind === 'thirsty') return m.hud_craft_thirsty()
+  if (craft.kind === 'ready') return m.hud_craft_blocked()
   return ''
 }
 

@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { BUILD_SHELVES, SHELVES, SHOP_SHELVES, shelfOf, type Shelf, type ShelfId } from '../defs/shelf.ts'
@@ -8,25 +9,25 @@ import { locked, matches, SkuCallout, SkuCard } from './sku-card.tsx'
 
 type Deck = {
   panel: 'shop' | 'build'
-  title: string
+  title: () => string
   shelves: readonly Shelf[]
-  hint: string
+  hint: () => string
 }
 
 const WIDTH = 'w-[28rem]'
 
 const SHOP: Deck = {
   panel: 'shop',
-  title: 'General store',
+  title: () => m.hud_general_store(),
   shelves: SHOP_SHELVES,
-  hint: 'Search the store and the build menu',
+  hint: () => m.hud_shop_hint(),
 }
 
 const BUILD: Deck = {
   panel: 'build',
-  title: 'Build',
+  title: () => m.hud_build(),
   shelves: BUILD_SHELVES,
-  hint: 'Search the build menu and the store',
+  hint: () => m.hud_build_hint(),
 }
 
 export function Shop(props: DeckProps) {
@@ -62,16 +63,16 @@ function SkuDock({ deck, world, onClose, query, setQuery, onGo, onShelf }: DeckP
   return (
     <Dock
       width={WIDTH}
-      title={deck.title}
+      title={deck.title()}
       onClose={onClose}
       aside={hot !== undefined ? <SkuCallout world={world} id={hot} /> : undefined}
       footer={<div className="text-sm text-ink/55">{footer(deck, at, hits)}</div>}
     >
       <div className="mb-2">
-        <SearchField value={query} onChange={setQuery} placeholder={deck.hint} />
+        <SearchField value={query} onChange={setQuery} placeholder={deck.hint()} />
       </div>
       {at === undefined ? (
-        <div className="py-4 text-sm text-ink/50">Nothing here yet. Research opens this shelf.</div>
+        <div className="py-4 text-sm text-ink/50">{m.hud_nothing_here()}</div>
       ) : (
         <Tabs.Root
           value={hits === undefined ? at : ''}
@@ -88,7 +89,7 @@ function SkuDock({ deck, world, onClose, query, setQuery, onGo, onShelf }: DeckP
           <Tabs.List className={tabRailListClass}>
             {open.map(s => (
               <Tabs.Trigger key={s.id} value={s.id} className={tabRailClass}>
-                {s.label}
+                {s.label()}
               </Tabs.Trigger>
             ))}
           </Tabs.List>
@@ -135,7 +136,7 @@ function found(world: World, query: string): SkuId[] {
 }
 
 function footer(deck: Deck, at: ShelfId | undefined, hits: SkuId[] | undefined): string {
-  if (hits !== undefined) return hits.length === 0 ? 'Nothing matches. Escape clears.' : `${hits.length} found. Escape clears.`
+  if (hits !== undefined) return hits.length === 0 ? m.hud_nothing_matches() : m.hud_found({ n: hits.length })
   const shelf = deck.shelves.find(s => s.id === at)
-  return shelf === undefined ? 'Research opens these shelves.' : shelf.line
+  return shelf === undefined ? m.hud_research_opens() : shelf.line()
 }

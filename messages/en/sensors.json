@@ -1,0 +1,13 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "sensors_sprinkler_output": "Sprinkler output",
+  "sensors_full_flow": "Full flow",
+  "sensors_per_tile": "{n} L/day per tile",
+  "sensors_wilting": "Wilting",
+  "sensors_overwatered": "Overwatered",
+  "sensors_any": "Any",
+  "sensors_all": "All",
+  "sensors_day": "Day",
+  "sensors_count_to": "Count to",
+  "sensors_reset": "Reset to {n}"
+}

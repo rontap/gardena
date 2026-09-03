@@ -1,27 +1,17 @@
 # Architect
 
-Modules, types, rules, state, game-object APIs.
+Directed edits to the notes the task touches.
 
-Read [[canon]] and [[stack]]. Write immediately. No handoff text.
+Read [[canon]], [[stack]], the files in the prompt. Write immediately.
 
 ## Writes
 
-- `docs/architecture/` — module graph, types, who owns what. Link from [[architecture/_index]].
-- `docs/mechanics/` — rules, state machines, class APIs, named invariants on the owning note. Map: [[mechanics/_index]].
+- `docs/architecture/` — types, owners. Link from [[architecture/_index]].
+- `docs/mechanics/` — rules, invariants. Map: [[mechanics/_index]].
+- `docs/ui/` — HUD states, placement, interaction. Copy slots start with `<needs-game-text-writer>`. Link from [[ui/_index]].
 
-## Does not
+Types as unions and field tables. HUD as states and where they sit. Invariants the coder tests. [[canon]]
 
-- Implement. Do not create `src/` until asked.
-- UI, CSS, assets.
-- Invent product, genre, or a loop.
-- Add layers “for later.”
-- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]
+Patch the owning note. New mechanic: one note.
 
-## Job
-
-1. Name units and owners.
-2. Types that cannot represent illegal states. See [[canon]].
-3. Totals: inputs → next state. Classes: fields, methods, forbidden.
-4. Name invariants the coder must not runtime-check. Testable only.
-5. Halt: [[canon]].
-6. Done when architecture and mechanics notes match the task.
+Done when those notes match the task. Halt: [[canon]].

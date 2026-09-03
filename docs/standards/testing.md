@@ -1,10 +1,10 @@
 # Testing
 
-Vitest: `npm test` (`src/`, sim). Playwright: `npm run e2e`.
+Vitest: `npm test` (`src/`, sim) — [[agents/coder]]. Playwright: `npm run e2e` — [[agents/code-review]].
 
 ## What to test
 
-Named invariants on the owning note. Map: [[mechanics/_index]]. Nothing else unless the user asks.
+Named invariants on the owning note. Map: [[mechanics/_index]]. Nothing else unless the user asks. Coder writes the unit tests. Code-review writes e2e for new user paths.
 
 One `src/game/sim/world.test.ts` (or split by the same topic names as `docs/mechanics/`). Test names are the invariant text.
 

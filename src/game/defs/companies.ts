@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import type { CompanyId, Prize, PrizeBand } from '../sim/market.h.ts'
 
 /** One pack's worth. Vanilla has no shop pack; this is the only source. */
@@ -20,12 +21,12 @@ export const COMPANY_IDS: readonly CompanyId[] = [
 ]
 
 export const COMPANIES: { readonly [K in CompanyId]: Company } = {
-  'whole-cart': { id: 'whole-cart', name: 'Whole Cart', riff: 'Walmart', region: 'US' },
-  'trade-jo': { id: 'trade-jo', name: 'Trade Jo', riff: "Trader Joe's", region: 'US' },
-  'halbert-eijn': { id: 'halbert-eijn', name: 'Halbert Eijn', riff: 'Albert Heijn', region: 'NL' },
-  'little-lid': { id: 'little-lid', name: 'Little Lid', riff: 'Lidl', region: 'DE' },
-  mercanova: { id: 'mercanova', name: 'Mercanova', riff: 'Mercadona', region: 'ES' },
-  intercrop: { id: 'intercrop', name: 'Intercrop', riff: 'Interspar HU', region: 'HU' },
+  'whole-cart': { id: 'whole-cart', name: m.names_company_whole_cart(), riff: 'Walmart', region: 'US' },
+  'trade-jo': { id: 'trade-jo', name: m.names_company_trade_jo(), riff: "Trader Joe's", region: 'US' },
+  'halbert-eijn': { id: 'halbert-eijn', name: m.names_company_halbert_eijn(), riff: 'Albert Heijn', region: 'NL' },
+  'little-lid': { id: 'little-lid', name: m.names_company_little_lid(), riff: 'Lidl', region: 'DE' },
+  mercanova: { id: 'mercanova', name: m.names_company_mercanova(), riff: 'Mercadona', region: 'ES' },
+  intercrop: { id: 'intercrop', name: m.names_company_intercrop(), riff: 'Interspar HU', region: 'HU' },
 }
 
 /**

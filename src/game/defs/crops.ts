@@ -1,3 +1,5 @@
+import { m } from '../../paraglide/messages.js'
+import { MILL_IN, SUGAR_BAG } from './items.ts'
 import { TOL_MIN, TOL_RARITY, type Rarity } from './rarity.ts'
 import type { CropId } from '../sim/ids.ts'
 
@@ -6,7 +8,7 @@ export type CropClass = 'root' | 'grain' | 'fruit'
 export type CropDef = {
   id: CropId
   cls: CropClass
-  desc: string
+  desc: () => string
   growSeconds: number
   waterUsePerSec: number
   waterTolerance: number
@@ -21,7 +23,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   carrot: {
     id: 'carrot',
     cls: 'root',
-    desc: 'Quick and forgiving. Shrugs off poor soil and thin feeding, but the roots fetch almost nothing.',
+    desc: () => m.catalog_crop_carrot(),
     growSeconds: 90,
     waterUsePerSec: 0.004889,
     waterTolerance: 0.9,
@@ -33,7 +35,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   potato: {
     id: 'potato',
     cls: 'root',
-    desc: 'Thrifty tuber. Drinks less than any other crop and keeps in store the longest.',
+    desc: () => m.catalog_crop_potato(),
     growSeconds: 120,
     waterUsePerSec: 0.00375,
     waterTolerance: 0.85,
@@ -45,7 +47,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   wheat: {
     id: 'wheat',
     cls: 'grain',
-    desc: 'Slow grain, wants steady water and rich soil. Cut dry, so it holds its condition.',
+    desc: () => m.catalog_crop_wheat(),
     growSeconds: 180,
     waterUsePerSec: 0.0045833,
     waterTolerance: 0.75,
@@ -57,7 +59,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   tomato: {
     id: 'tomato',
     cls: 'fruit',
-    desc: 'Late to ripen and particular about water and feed. Bruises fast once picked.',
+    desc: () => m.catalog_crop_tomato(),
     growSeconds: 280,
     waterUsePerSec: 0.0043611,
     waterTolerance: 0.65,
@@ -69,7 +71,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   raspberry: {
     id: 'raspberry',
     cls: 'fruit',
-    desc: 'The richest crop and the most delicate. Slow to fruit, first to spoil.',
+    desc: () => m.catalog_crop_raspberry(),
     growSeconds: 340,
     waterUsePerSec: 0.0045833,
     waterTolerance: 0.6,
@@ -81,7 +83,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   apple: {
     id: 'apple',
     cls: 'fruit',
-    desc: 'The tree feeds itself - no water, no fertilizer. Slow to set fruit, then keeps for days.',
+    desc: () => m.catalog_crop_apple(),
     growSeconds: 600,
     waterUsePerSec: 0,
     waterTolerance: 0.9,
@@ -93,7 +95,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   grape: {
     id: 'grape',
     cls: 'fruit',
-    desc: 'A mid fruit. Softer than a raspberry, and the path to one.',
+    desc: () => m.catalog_crop_grape(),
     growSeconds: 300,
     waterUsePerSec: 0.005,
     waterTolerance: 0.62,
@@ -105,7 +107,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   vanilla: {
     id: 'vanilla',
     cls: 'fruit',
-    desc: 'Expensive seed, slow, and picky about water and feed. Common pods fetch less than raspberries; rare and heirloom do not.',
+    desc: () => m.catalog_crop_vanilla(),
     growSeconds: 480,
     waterUsePerSec: 0.0058333,
     waterTolerance: 0.42,
@@ -118,7 +120,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   'sugar-cane': {
     id: 'sugar-cane',
     cls: 'grain',
-    desc: 'Water hungry and sells poorly. Ripe cane is fruit. Mill 5 cane into 2 L sugar.',
+    desc: () => m.catalog_crop_sugar_cane({ cane: MILL_IN, bag: SUGAR_BAG }),
     growSeconds: 200,
     waterUsePerSec: 0.0104167,
     waterTolerance: 0.55,
@@ -130,7 +132,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   apricot: {
     id: 'apricot',
     cls: 'fruit',
-    desc: 'A fecund tree. Many cheap fruits, no water, no feed.',
+    desc: () => m.catalog_crop_apricot(),
     growSeconds: 480,
     waterUsePerSec: 0,
     waterTolerance: 0.9,
@@ -142,7 +144,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   olive: {
     id: 'olive',
     cls: 'fruit',
-    desc: 'A slow tree. No water, no feed. Keeps well, and the only way to oil.',
+    desc: () => m.catalog_crop_olive(),
     growSeconds: 480,
     waterUsePerSec: 0,
     waterTolerance: 0.9,
@@ -154,7 +156,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   cherry: {
     id: 'cherry',
     cls: 'fruit',
-    desc: 'A small tree fruit. No water, no feed. Spoils first among the trees.',
+    desc: () => m.catalog_crop_cherry(),
     growSeconds: 480,
     waterUsePerSec: 0,
     waterTolerance: 0.9,
@@ -165,10 +167,25 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
   },
 }
 
-export const CLASS_NAME: { readonly [K in CropClass]: string } = {
-  root: 'root',
-  grain: 'grain',
-  fruit: 'fruit',
+export const CLASS_NAME: { readonly [K in CropClass]: () => string } = {
+  root: () => m.names_class_root(),
+  grain: () => m.names_class_grain(),
+  fruit: () => m.names_class_fruit(),
+}
+
+export const CROP_NAME: { readonly [K in CropId]: () => string } = {
+  carrot: () => m.names_crop_carrot(),
+  potato: () => m.names_crop_potato(),
+  wheat: () => m.names_crop_wheat(),
+  tomato: () => m.names_crop_tomato(),
+  raspberry: () => m.names_crop_raspberry(),
+  grape: () => m.names_crop_grape(),
+  vanilla: () => m.names_crop_vanilla(),
+  'sugar-cane': () => m.names_crop_sugar_cane(),
+  apple: () => m.names_crop_apple(),
+  apricot: () => m.names_crop_apricot(),
+  olive: () => m.names_crop_olive(),
+  cherry: () => m.names_crop_cherry(),
 }
 
 export function tolerance(base: number, rarity: Rarity): number {
@@ -176,23 +193,83 @@ export function tolerance(base: number, rarity: Rarity): number {
   return t < TOL_MIN ? TOL_MIN : t
 }
 
-const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: string } } = {
-  carrot: { common: 'Carrot', uncommon: 'Carrot', rare: 'Atomic Red', heirloom: 'Cosmic Purple' },
-  potato: { common: 'Potato', uncommon: 'Potato', rare: 'Adirondack Blue', heirloom: 'Russian Banana' },
-  wheat: { common: 'Wheat', uncommon: 'Wheat', rare: 'Black emmer', heirloom: 'Red Fife' },
-  tomato: { common: 'Tomato', uncommon: 'Tomato', rare: 'Cherokee Purple', heirloom: 'Green Zebra' },
-  raspberry: { common: 'Raspberry', uncommon: 'Raspberry', rare: 'Golden raspberry', heirloom: 'Black raspberry' },
-  apple: { common: 'Apple', uncommon: 'Apple', rare: 'Apple', heirloom: 'Pink Lady' },
-  grape: { common: 'Grape', uncommon: 'Grape', rare: 'White grape', heirloom: 'Kéknyelű' },
-  vanilla: { common: 'Vanilla', uncommon: 'Vanilla', rare: 'Tahitian', heirloom: 'Bourbon' },
-  'sugar-cane': { common: 'Sugar cane', uncommon: 'Sugar cane', rare: 'Purple cane', heirloom: 'Striped cane' },
-  apricot: { common: 'Apricot', uncommon: 'Apricot', rare: 'Moorpark', heirloom: 'Blenheim' },
-  olive: { common: 'Olive', uncommon: 'Olive', rare: 'Kalamata', heirloom: 'Arbequina' },
-  cherry: { common: 'Cherry', uncommon: 'Cherry', rare: 'Sour cherry', heirloom: 'Bing' },
+const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: () => string } } = {
+  carrot: {
+    common: () => m.names_variety_carrot_common(),
+    uncommon: () => m.names_variety_carrot_uncommon(),
+    rare: () => m.names_variety_carrot_rare(),
+    heirloom: () => m.names_variety_carrot_heirloom(),
+  },
+  potato: {
+    common: () => m.names_variety_potato_common(),
+    uncommon: () => m.names_variety_potato_uncommon(),
+    rare: () => m.names_variety_potato_rare(),
+    heirloom: () => m.names_variety_potato_heirloom(),
+  },
+  wheat: {
+    common: () => m.names_variety_wheat_common(),
+    uncommon: () => m.names_variety_wheat_uncommon(),
+    rare: () => m.names_variety_wheat_rare(),
+    heirloom: () => m.names_variety_wheat_heirloom(),
+  },
+  tomato: {
+    common: () => m.names_variety_tomato_common(),
+    uncommon: () => m.names_variety_tomato_uncommon(),
+    rare: () => m.names_variety_tomato_rare(),
+    heirloom: () => m.names_variety_tomato_heirloom(),
+  },
+  raspberry: {
+    common: () => m.names_variety_raspberry_common(),
+    uncommon: () => m.names_variety_raspberry_uncommon(),
+    rare: () => m.names_variety_raspberry_rare(),
+    heirloom: () => m.names_variety_raspberry_heirloom(),
+  },
+  apple: {
+    common: () => m.names_variety_apple_common(),
+    uncommon: () => m.names_variety_apple_uncommon(),
+    rare: () => m.names_variety_apple_rare(),
+    heirloom: () => m.names_variety_apple_heirloom(),
+  },
+  grape: {
+    common: () => m.names_variety_grape_common(),
+    uncommon: () => m.names_variety_grape_uncommon(),
+    rare: () => m.names_variety_grape_rare(),
+    heirloom: () => m.names_variety_grape_heirloom(),
+  },
+  vanilla: {
+    common: () => m.names_variety_vanilla_common(),
+    uncommon: () => m.names_variety_vanilla_uncommon(),
+    rare: () => m.names_variety_vanilla_rare(),
+    heirloom: () => m.names_variety_vanilla_heirloom(),
+  },
+  'sugar-cane': {
+    common: () => m.names_variety_sugar_cane_common(),
+    uncommon: () => m.names_variety_sugar_cane_uncommon(),
+    rare: () => m.names_variety_sugar_cane_rare(),
+    heirloom: () => m.names_variety_sugar_cane_heirloom(),
+  },
+  apricot: {
+    common: () => m.names_variety_apricot_common(),
+    uncommon: () => m.names_variety_apricot_uncommon(),
+    rare: () => m.names_variety_apricot_rare(),
+    heirloom: () => m.names_variety_apricot_heirloom(),
+  },
+  olive: {
+    common: () => m.names_variety_olive_common(),
+    uncommon: () => m.names_variety_olive_uncommon(),
+    rare: () => m.names_variety_olive_rare(),
+    heirloom: () => m.names_variety_olive_heirloom(),
+  },
+  cherry: {
+    common: () => m.names_variety_cherry_common(),
+    uncommon: () => m.names_variety_cherry_uncommon(),
+    rare: () => m.names_variety_cherry_rare(),
+    heirloom: () => m.names_variety_cherry_heirloom(),
+  },
 }
 
 export function cropVariety(id: CropId, rarity: Rarity): string {
-  return VARIETY[id][rarity]
+  return VARIETY[id][rarity]()
 }
 
 export function freshMul(f: number): number {

@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import type {
     AnnualId,
     CropId,
@@ -131,50 +132,65 @@ function row<Id extends SkillId>(
     return {id, member, name, blurb, maxTier, gate, effect}
 }
 
+const WALK_PCT = 5
+const DRIVE_PCT = 5
+const MACHINE_PCT = 5
+const RESEARCH_PCT = 5
+const TAX_PCT = 2
+const SALE_PCT = 2
+const HEIRLOOM_PCT = 5
+const BETTER_SALE_PCT = 4
+const BIO_PCT = 4
+const INDUSTRIAL_PCT = 3
+const HAGGLE_OFF = 1
+const PRICE_FLOOR = 1
+const CLEARANCE_PRICE = 1
+const JAM_PCT = Math.round(JAM_ROT * 100)
+
 export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
-    boots: row('boots', 'player', 'Boots', 'You walk faster. Each rank adds 5%.', 5, {kind: 'walk', mul: 1.05}),
+    boots: row('boots', 'player', m.skills_boots_name(), m.skills_boots_blurb({pct: WALK_PCT}), 5, {kind: 'walk', mul: 1.05}),
     'bulk-up': row(
         'bulk-up',
         'player',
-        'Bulk up',
-        `You carry taller stacks. Each rank adds ${BULK_UP_STEP} to the pile you can hold, ${BULK_UP_CRAFTED_STEP} for bottled and jarred goods.`,
+        m.skills_bulk_up_name(),
+        m.skills_bulk_up_blurb({step: BULK_UP_STEP, crafted: BULK_UP_CRAFTED_STEP}),
         3,
         {kind: 'bulk-up'},
     ),
     'driving-classes': row(
         'driving-classes',
         'player',
-        'Driving classes',
-        'You drive faster and burn less fuel. Each rank adds 5% to top speed and acceleration, and cuts burn 5%.',
+        m.skills_driving_classes_name(),
+        m.skills_driving_classes_blurb({pct: DRIVE_PCT}),
         3,
         {kind: 'driving-classes'},
         {kind: 'research', id: 'unlock-vehicles'},
     ),
-    machinery: row('machinery', 'husband', 'Machinery', 'Machine work finishes sooner. Each rank adds 5%.', 3, {
+    machinery: row('machinery', 'husband', m.skills_machinery_name(), m.skills_machinery_blurb({pct: MACHINE_PCT}), 3, {
         kind: 'machine',
         mul: 1.05,
     }),
     tending: row(
         'tending',
         'player',
-        'Careful tending',
-        'Empty-handed, tend a growing plant or an off-season tree once. Plants become slightly happier. Ripe plants cannot be tended.',
+        m.skills_tending_name(),
+        m.skills_tending_blurb(),
         1,
         {kind: 'tend'},
     ),
     'research-speed': row(
         'research-speed',
         'husband',
-        'Speedy research',
-        'Research is 5% faster.',
+        m.skills_research_speed_name(),
+        m.skills_research_speed_blurb({pct: RESEARCH_PCT}),
         3,
         {kind: 'research-speed', mul: 1.05},
     ),
     haggling: row(
         'haggling',
         'husband',
-        'Haggling',
-        'Utility and automation goods in the store cost less. Each rank knocks $1 off the price.',
+        m.skills_haggling_name(),
+        m.skills_haggling_blurb({off: HAGGLE_OFF}),
         3,
         {kind: 'haggling'},
         {kind: 'hidden'},
@@ -182,40 +198,40 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     forecast: row(
         'forecast',
         'husband',
-        'Weather forecast',
-        "Tomorrow's weather appears next to today on the top bar, so you can plan irrigation, the stall, and pump spend before morning.",
+        m.skills_forecast_name(),
+        m.skills_forecast_blurb(),
         1,
         {kind: 'forecast'},
     ),
     tax: row(
         'tax',
         'husband',
-        'Smart tax returns',
-        'By optimizing your taxes, you can shave off 2% off your taxes at the end of the day, per rank.',
+        m.skills_tax_name(),
+        m.skills_tax_blurb({pct: TAX_PCT}),
         3,
         {kind: 'tax', mul: 0.98},
     ),
     'water-study': row(
         'water-study',
         'husband',
-        'Water study',
-        'Adds Water need to the Lens menu. You can see wet and dry soil across the field.',
+        m.skills_water_study_name(),
+        m.skills_water_study_blurb(),
         1,
         {kind: 'water-study'},
     ),
     'land-study': row(
         'land-study',
         'husband',
-        'Land quality study',
-        'Adds Land quality to the Lens menu. You can see fertilizer in the dirt across the field.',
+        m.skills_land_study_name(),
+        m.skills_land_study_blurb(),
         1,
         {kind: 'land-study'},
     ),
     'inherit-land': row(
         'inherit-land',
         'husband',
-        'Inherit land',
-        'A relative signs a plot over to you. Each rank grants one expansion permit. The land still costs money.',
+        m.skills_inherit_land_name(),
+        m.skills_inherit_land_blurb(),
         2,
         {kind: 'inherit-land'},
         {kind: 'research', id: 'unlock-expand'},
@@ -223,16 +239,16 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     saleswoman: row(
         'saleswoman',
         'daughter',
-        'Saleswoman',
-        'Produce at the stall sells for more. Each rank adds 2%.',
+        m.skills_saleswoman_name(),
+        m.skills_saleswoman_blurb({pct: SALE_PCT}),
         3,
         {kind: 'saleswoman', mul: 1.02},
     ),
     heirloom: row(
         'heirloom',
         'daughter',
-        'Őstermelő',
-        'You have become a noted quality heirloom producer. Heirloom produce sells for more. Each rank adds 5%.',
+        m.skills_heirloom_name(),
+        m.skills_heirloom_blurb({pct: HEIRLOOM_PCT}),
         3,
         {kind: 'heirloom', mul: 1.05},
         {kind: 'research', id: 'unlock-heirloom'},
@@ -240,8 +256,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'seed-bank': row(
         'seed-bank',
         'player',
-        'Trusted seed bank',
-        'There is some chance that seeds bought from the shops have increased rarity.',
+        m.skills_seed_bank_name(),
+        m.skills_seed_bank_blurb(),
         5,
         {kind: 'seed-bank'},
         {kind: 'research', id: 'unlock-crop-variants'},
@@ -249,8 +265,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-carrot': row(
         'better-carrot',
         'player',
-        'Experienced carrot grower',
-        'Carrots sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_carrot_name(),
+        m.skills_better_carrot_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'carrot', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-crop-variants'},
@@ -258,8 +274,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-potato': row(
         'better-potato',
         'player',
-        'Experienced potato grower',
-        'Potatoes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_potato_name(),
+        m.skills_better_potato_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'potato', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-crop-variants'},
@@ -267,8 +283,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-wheat': row(
         'better-wheat',
         'player',
-        'Experienced wheat grower',
-        'Wheat sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_wheat_name(),
+        m.skills_better_wheat_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'wheat', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-crop-variants'},
@@ -276,8 +292,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-tomato': row(
         'better-tomato',
         'player',
-        'Experienced tomato grower',
-        'Tomatoes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_tomato_name(),
+        m.skills_better_tomato_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'tomato', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-tomato'},
@@ -285,8 +301,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-raspberry': row(
         'better-raspberry',
         'player',
-        'Experienced raspberry grower',
-        'Raspberries sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_raspberry_name(),
+        m.skills_better_raspberry_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'raspberry', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-raspberry'},
@@ -294,8 +310,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-grape': row(
         'better-grape',
         'player',
-        'Experienced grape harvester',
-        'Grapes sell for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_grape_name(),
+        m.skills_better_grape_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'grape', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-grape'},
@@ -303,8 +319,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-vanilla': row(
         'better-vanilla',
         'player',
-        'Experienced vanilla harvester',
-        'Vanilla sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_vanilla_name(),
+        m.skills_better_vanilla_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'vanilla', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-raspberry'},
@@ -312,8 +328,8 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'better-sugar-cane': row(
         'better-sugar-cane',
         'player',
-        'Better sugar cane',
-        'Sugar sells for 4% more. Increased chance that a happy plant will produce a superior fruit.',
+        m.skills_better_sugar_cane_name(),
+        m.skills_better_sugar_cane_blurb({pct: BETTER_SALE_PCT}),
         1,
         {kind: 'better', crop: 'sugar-cane', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-fermentation'},
@@ -321,24 +337,24 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     bio: row(
         'bio',
         'daughter',
-        'Bio farmer',
-        'Organic fruit sells for more. Each rank adds 4%.',
+        m.skills_bio_name(),
+        m.skills_bio_blurb({pct: BIO_PCT}),
         3,
         {kind: 'bio', mul: 1.04},
     ),
     industrial: row(
         'industrial',
         'daughter',
-        'Industrial farmer',
-        'Completed contracts pay more. Each rank adds 3%.',
+        m.skills_industrial_name(),
+        m.skills_industrial_blurb({pct: INDUSTRIAL_PCT}),
         3,
         {kind: 'industrial'},
     ),
     broker: row(
         'broker',
         'daughter',
-        'Broker',
-        'The buyer board grows. Rank I adds one offer. Rank II adds one offer and one running contract.',
+        m.skills_broker_name(),
+        m.skills_broker_blurb(),
         2,
         {kind: 'broker'},
         {kind: 'research', id: 'unlock-contracts'},
@@ -346,16 +362,16 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     'open-late': row(
         'open-late',
         'daughter',
-        'Open late',
-        'The stall keeps selling through sunset. It still shuts at twilight.',
+        m.skills_open_late_name(),
+        m.skills_open_late_blurb(),
         1,
         {kind: 'open-late'},
     ),
     'open-24': row(
         'open-24',
         'daughter',
-        'Open 24/7',
-        'The stall keeps selling through twilight as well.',
+        m.skills_open_24_name(),
+        m.skills_open_24_blurb(),
         1,
         {kind: 'open-24'},
         {kind: 'skill', id: 'open-late'},
@@ -363,16 +379,16 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
     jam: row(
         'jam',
         'daughter',
-        'Still good for jam',
-        'Fruit below half freshness rots slower. Each rank adds 15%.',
+        m.skills_jam_name(),
+        m.skills_jam_blurb({pct: JAM_PCT}),
         3,
         {kind: 'jam'},
     ),
     clearance: row(
         'clearance',
         'daughter',
-        'Clearance sale',
-        'Rotten produce sells for $1 apiece.',
+        m.skills_clearance_name(),
+        m.skills_clearance_blurb({price: CLEARANCE_PRICE}),
         1,
         {kind: 'clearance'},
     ),
@@ -393,38 +409,41 @@ export function skillLabel(id: SkillId, tier: number): string {
 export function skillBlurb(id: SkillId, tier: number): string {
     switch (id) {
         case 'boots':
-            return `You walk ${5 * tier}% faster.`
+            return m.skills_boots_skillblurb({pct: WALK_PCT * tier})
         case 'bulk-up':
-            return `You carry up to ${STACK_MAX + BULK_UP_STEP * tier} of a kind in hand, ${STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP * tier} for bottled and jarred goods.`
+            return m.skills_bulk_up_skillblurb({
+                stack: STACK_MAX + BULK_UP_STEP * tier,
+                crafted: STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP * tier,
+            })
         case 'driving-classes':
-            return `You drive ${5 * tier}% faster and burn ${5 * tier}% less fuel.`
+            return m.skills_driving_classes_skillblurb({pct: DRIVE_PCT * tier})
         case 'machinery':
-            return `Machine work finishes ${5 * tier}% sooner.`
+            return m.skills_machinery_skillblurb({pct: MACHINE_PCT * tier})
         case 'research-speed':
-            return `Research jobs finish ${5 * tier}% sooner.`
+            return m.skills_research_speed_skillblurb({pct: RESEARCH_PCT * tier})
         case 'haggling':
-            return `Utility and automation goods in the store cost $${tier} less. Never below $1.`
+            return m.skills_haggling_skillblurb({off: HAGGLE_OFF * tier, floor: PRICE_FLOOR})
         case 'industrial':
-            return `Completed contracts pay ${3 * tier}% more.`
+            return m.skills_industrial_skillblurb({pct: INDUSTRIAL_PCT * tier})
         case 'broker':
-            return tier === 1
-                ? 'The buyer board grows by one offer.'
-                : 'The buyer board grows by one offer and you can run one more contract.'
+            return tier === 1 ? m.skills_broker_skillblurb() : m.skills_broker_skillblurb_ii()
         case 'tax':
-            return `The bill at the end of the day is ${2 * tier}% lighter. You still pay at least $1.`
+            return m.skills_tax_skillblurb({pct: TAX_PCT * tier, floor: PRICE_FLOOR})
         case 'saleswoman':
-            return `Produce at the stall sells for ${2 * tier}% more.`
+            return m.skills_saleswoman_skillblurb({pct: SALE_PCT * tier})
         case 'heirloom':
-            return `Heirloom produce sells for ${5 * tier}% more.`
+            return m.skills_heirloom_skillblurb({pct: HEIRLOOM_PCT * tier})
         case 'bio':
-            return `Organic fruit sells for ${4 * tier}% more.`
-        case 'jam': {
-            const pct = Math.round(JAM_ROT * tier * 100)
-            return `Fruit below half freshness rots ${pct}% slower.`
-        }
+            return m.skills_bio_skillblurb({pct: BIO_PCT * tier})
+        case 'jam':
+            return m.skills_jam_skillblurb({pct: JAM_PCT * tier})
         case 'seed-bank': {
             const n = (rate: number) => `${+(rate * 100 * tier).toFixed(2)}`
-            return `There is some chance that seeds bought from the shops have increased rarity (${n(SEED_BANK_CHANCE.uncommon)}% uncommon, ${n(SEED_BANK_CHANCE.rare)}% rare, ${n(SEED_BANK_CHANCE.heirloom)}% heirloom).`
+            return m.skills_seed_bank_skillblurb({
+                uncommon: n(SEED_BANK_CHANCE.uncommon),
+                rare: n(SEED_BANK_CHANCE.rare),
+                heirloom: n(SEED_BANK_CHANCE.heirloom),
+            })
         }
         default:
             return SKILLS[id].blurb

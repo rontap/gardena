@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { useEffect } from 'react'
 import { heldText } from '../sim/item.ts'
 import { lookText } from '../sim/look.ts'
@@ -71,7 +72,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     return (
       <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
         <div className="flex items-center gap-2 text-sm">
-          <span className="w-20 shrink-0 font-semibold text-ink/70">Growth</span>
+          <span className="w-20 shrink-0 font-semibold text-ink/70">{m.hud_growth()}</span>
           <FillBar value={value} />
           <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(value * 100)}%</span>
         </div>
@@ -91,20 +92,20 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     return (
       <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
         <div className="flex items-center gap-2 text-sm">
-          <span className="w-20 shrink-0 font-semibold text-ink/70">Growth</span>
+          <span className="w-20 shrink-0 font-semibold text-ink/70">{m.hud_growth()}</span>
           <FillBar value={cell.plant.maturity} />
           <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(cell.plant.maturity * 100)}%</span>
         </div>
-        <StatRow label="Happiness" value={cell.plant.happiness} text={`${Math.floor(cell.plant.happiness * 100)}%`} segments={[{ from: 0, to: HAPPY_START / 2, color: 'red' }, { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' }, { from: HAPPY_START, to: 1, color: 'green' }]} />
-        <StatRow label="Fertilizer" value={cell.soil.fertilizer} text={`${Math.floor(cell.soil.fertilizer * 100)}%`} segments={[{ from: 0, to: fertFloor / 2, color: 'red' }, { from: fertFloor / 2, to: fertFloor, color: 'orange' }, { from: fertFloor, to: 1, color: 'green' }]} />
-        <StatRow label="Water" value={cell.soil.water / SOIL_WATER_MAX} text={`${Number(cell.soil.water.toFixed(2))}L`} segments={[{ from: 0, to: waterRed, color: 'red' }, { from: waterRed, to: waterGreenStart, color: 'orange' }, { from: waterGreenStart, to: waterGreenEnd, color: 'green' }, { from: waterGreenEnd, to: waterRedEnd, color: 'orange' }, { from: waterRedEnd, to: 1, color: 'red' }]} />
+        <StatRow label={m.hud_happiness()} value={cell.plant.happiness} text={`${Math.floor(cell.plant.happiness * 100)}%`} segments={[{ from: 0, to: HAPPY_START / 2, color: 'red' }, { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' }, { from: HAPPY_START, to: 1, color: 'green' }]} />
+        <StatRow label={m.hud_fertilizer()} value={cell.soil.fertilizer} text={`${Math.floor(cell.soil.fertilizer * 100)}%`} segments={[{ from: 0, to: fertFloor / 2, color: 'red' }, { from: fertFloor / 2, to: fertFloor, color: 'orange' }, { from: fertFloor, to: 1, color: 'green' }]} />
+        <StatRow label={m.names_face_water()} value={cell.soil.water / SOIL_WATER_MAX} text={`${Number(cell.soil.water.toFixed(2))}L`} segments={[{ from: 0, to: waterRed, color: 'red' }, { from: waterRed, to: waterGreenStart, color: 'orange' }, { from: waterGreenStart, to: waterGreenEnd, color: 'green' }, { from: waterGreenEnd, to: waterRedEnd, color: 'orange' }, { from: waterRedEnd, to: 1, color: 'red' }]} />
       </div>
     )
   }
   if (cell.kind === 'ripe') {
     return (
       <div className="bg-dirt/25 px-3 py-2.5">
-        <StatRow label="Freshness" value={cell.plant.freshness} text={`${Math.floor(cell.plant.freshness * 100)}%`} segments={[{ from: 0, to: 0.8, color: 'red' }, { from: 0.8, to: 1, color: 'green' }]} />
+        <StatRow label={m.hud_freshness()} value={cell.plant.freshness} text={`${Math.floor(cell.plant.freshness * 100)}%`} segments={[{ from: 0, to: 0.8, color: 'red' }, { from: 0.8, to: 1, color: 'green' }]} />
       </div>
     )
   }
@@ -113,17 +114,17 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     return (
       <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
         <div className="flex items-center gap-2 text-sm">
-          <span className="w-32 shrink-0 font-semibold text-ink/70">Fertilizer</span>
+          <span className="w-32 shrink-0 font-semibold text-ink/70">{m.hud_fertilizer()}</span>
           <FillBar value={cell.soil.fertilizer / FERT_PLOT_MAX} />
           <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(cell.soil.fertilizer * 100)}%</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <span className="w-32 shrink-0 font-semibold text-ink/70">Water</span>
+          <span className="w-32 shrink-0 font-semibold text-ink/70">{m.names_face_water()}</span>
           <FillBar value={cell.soil.water / SOIL_WATER_MAX} />
           <span className="w-12 shrink-0 text-right tabular-nums">{Number(cell.soil.water.toFixed(2))}L</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <span className="w-32 shrink-0 font-semibold text-ink/70">Weed resistance</span>
+          <span className="w-32 shrink-0 font-semibold text-ink/70">{m.hud_weed_resistance()}</span>
           <SegmentBar
             value={resist}
             segments={[
@@ -159,7 +160,7 @@ function BarrelAge({ world, hover }: { world: World; hover: PromptHit }) {
   return (
     <div className="bg-dirt/25 px-3 py-2.5">
       <div className="flex items-center gap-2 text-sm">
-        <span className="w-20 shrink-0 font-semibold text-ink/70">Aging</span>
+        <span className="w-20 shrink-0 font-semibold text-ink/70">{m.hud_aging()}</span>
         <FillBar value={Math.min(1, (cell.age - BARREL_MATURE) / BARREL_AGE)} />
         <span className="w-12 shrink-0 text-right tabular-nums">×{Number(mul.toFixed(2))}</span>
       </div>

@@ -23,10 +23,10 @@ Vault for this game. Agents read this first.
 - [[agents/orchestrator]]
 - [[agents/architect]]
 - [[agents/designer]]
-- [[agents/ui-ux]]
 - [[agents/coder]]
-- [[agents/documenter]]
 - [[agents/code-review]]
+- [[agents/documenter]]
+- [[agents/game-text-writer]]
 
 ## Mechanics
 
@@ -42,6 +42,7 @@ Vault for this game. Agents read this first.
 - [[architecture/_index]]
 - [[architecture/tick]]
 - [[architecture/view]]
+- [[architecture/i18n]]
 
 ## Infra
 

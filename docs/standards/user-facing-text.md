@@ -1,8 +1,10 @@
 # User-facing text
 
-Exact word per concept. Agents paste the **say** column. A third word is a coined term.
+Exact word per concept. Paste the **say** column. A third word is a coined term.
 
-`lex.user` — This file is chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, shop, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
+`lex.user` — Chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, shop, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
+
+Authorship: [[agents/game-text-writer]]. Coder prefixes new or changed player strings with `<needs-game-text-writer>`. This agent rewrites them and strips the marker.
 
 No row → no name. Plain English, or ask. [[canon]]
 

@@ -73,7 +73,7 @@ Numbers arrive through `fill` from `src/game/defs/`. Never digits. Never a multi
 
 Systemic wording — one word used across a whole shelf of strings — moves as a set or not at all. Propose it, do not fix one string and leave fourteen.
 
-Authorship of new copy and the changelog: [[standards/update-notes]]. Children never invent it.
+Authorship of new copy: [[agents/game-text-writer]]. Changelog file: [[standards/update-notes]]. Coder marks new strings `<needs-game-text-writer>`.
 
 ## No term
 

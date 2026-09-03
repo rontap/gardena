@@ -42,4 +42,4 @@ Display-level only. Never `gate`, protocol, save version, research ids, breakpoi
 
 ## Who
 
-Orchestrator owns [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, and `src/game/ui/changelog.md`. Children never write a version number and never invent copy. [[pipeline]] [[agents/orchestrator]]
+Orchestrator owns [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, and `src/game/ui/changelog.md`. [[agents/game-text-writer]] drafts the lines; orchestrator pastes. [[pipeline]] [[agents/orchestrator]]

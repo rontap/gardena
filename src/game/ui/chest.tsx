@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import * as Dialog from '@radix-ui/react-dialog'
 import type { Coord } from '../sim/building.ts'
 import { itemLine } from '../sim/item.ts'
@@ -8,7 +9,7 @@ import { ItemFace, ItemLineView } from './held.tsx'
 export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const cell = world.cell(at)
   if (cell.kind !== 'chest' && cell.kind !== 'freezer') return null
-  const title = cell.kind === 'freezer' ? 'Freezer' : 'Chest'
+  const title = cell.kind === 'freezer' ? m.names_building_freezer() : m.names_building_chest()
   return (
     <Dialog.Root
       open

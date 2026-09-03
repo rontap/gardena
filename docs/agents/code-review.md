@@ -1,25 +1,24 @@
 # Code-review
 
-First pass. The user is the real reviewer.
+Adversary. Singleton over the diff.
 
-Read [[canon]]. Apply `~/.grok/skills/code-review/SKILL.md` if present. Write the review `.md` the orchestrator named. No handoff text. Do not edit source.
+Read [[canon]], the files in the prompt. Apply `~/.grok/skills/code-review/SKILL.md` if present.
 
-## Does not
+## Job
 
-- Approve because it runs.
-- Invent issues.
-- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Never write a version number. Do not invent player copy. [[standards/update-notes]]
+1. Write `docs/.review-<id>.md` the orchestrator named.
+2. Fix every `blocker` and `bug` in that file. Leave `suggestion` / `nit` open. Leave `<needs-game-text-writer>` strings for [[agents/game-text-writer]].
+3. Write Playwright e2e for new user paths. Behavior and chrome presence. [[standards/testing]]
+4. Stop. Leave the review file; orchestrator deletes it after a clean run.
 
-## Bugs, not nits
+## Bugs
 
 - fallbacks (`??`, `||`, defensive `if (!x) return`, catch-and-default)
-- timid types
+- timid types, `any` / `unknown` / optional soup
 - **any comment in source**
-- `any` / `unknown` / optional soup
-- dead layers
-- invented scope
-- padded code
-- a coined or borrowed game word in docs, player copy, or the review itself — never in identifiers [[standards/lexicon]] HUD / chat / update notes must match [[standards/user-facing-text]] **say**
+- dead layers, invented scope, padded code
+- a coined or borrowed game word in docs or the review — never in identifiers [[standards/lexicon]]
+- impl ≠ the architect's notes
 
 ## Format
 

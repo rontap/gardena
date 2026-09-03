@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import { forwardRef, type MouseEvent, type ReactNode } from 'react'
 import * as Progress from '@radix-ui/react-progress'
 import {
@@ -216,7 +217,7 @@ export function SearchField({
     <input
       name="search"
       value={value}
-      aria-label="Search"
+      aria-label={m.hud_search()}
       placeholder={placeholder}
       autoComplete="off"
       autoCorrect="off"
@@ -262,7 +263,7 @@ export function Window({
           {onClose !== undefined && (
             <button
               type="button"
-              aria-label="Close"
+              aria-label={m.hud_close()}
               className="-mr-1 cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
               onClick={onClose}
             >

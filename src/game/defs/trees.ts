@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import type { TreeId } from '../sim/ids.ts'
 
 export const TREE_YIELD_DAYS = 2
@@ -17,9 +18,9 @@ export const TREES: { readonly [K in TreeId]: TreeDef } = {
   olive: { id: 'olive', juvenileSeconds: 384, fruitSeconds: 240 },
 }
 
-export const TREE_NAME: { readonly [K in TreeId]: string } = {
-  apple: 'Apple',
-  apricot: 'Apricot',
-  olive: 'Olive',
-  cherry: 'Cherry',
+export const TREE_NAME: { readonly [K in TreeId]: () => string } = {
+  apple: () => m.names_crop_apple(),
+  apricot: () => m.names_crop_apricot(),
+  olive: () => m.names_crop_olive(),
+  cherry: () => m.names_crop_cherry(),
 }

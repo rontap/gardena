@@ -1,3 +1,4 @@
+import { m } from '../../paraglide/messages.js'
 import {
   QUAD_PRICE,
   TRACTOR_PRICE,
@@ -15,14 +16,20 @@ import { Bar, Coin } from './frame.tsx'
 import { Shell } from './store.tsx'
 
 function status(v: Vehicle): string {
-  if (v.pose.kind === 'stored') return 'Stored'
-  if (v.pose.driver !== 'none') return 'Driven'
-  if (v.running) return 'Automated'
-  return 'Deployed'
+  if (v.pose.kind === 'stored') return m.vehicles_stored()
+  if (v.pose.driver !== 'none') return m.vehicles_driven()
+  if (v.running) return m.vehicles_automated()
+  return m.vehicles_deployed()
 }
 
 function trailerStatus(t: Trailer): string {
-  return t.pose.kind === 'stored' ? 'Stored' : 'Attached'
+  return t.pose.kind === 'stored' ? m.vehicles_stored() : m.vehicles_attached()
+}
+
+function trailerName(t: Trailer): string {
+  if (t.kind === 'seed') return m.vehicles_seeder()
+  if (t.kind === 'spray') return m.vehicles_sprayer()
+  return m.vehicles_harvester()
 }
 
 function trailerArt(t: Trailer): string {
@@ -65,7 +72,7 @@ export function HangarUi({
     route.stops.length >= 1
   const cost = world.refillCost()
   return (
-    <Shell title="Vehicle hangar" onClose={onClose} className="w-[30rem]">
+    <Shell title={m.names_building_hangar()} onClose={onClose} className="w-[30rem]">
       <div className="flex flex-col gap-1.5">
         {world.vehicles.map(v => (
           <button
@@ -81,7 +88,7 @@ export function HangarUi({
               className="h-7 w-7 shrink-0"
               dangerouslySetInnerHTML={{ __html: v.kind === 'tractor' ? ITEM_TRACTOR : QUAD }}
             />
-            <span className="min-w-0 flex-1 truncate text-base font-semibold">{v.kind === 'tractor' ? 'Tractor' : 'Quad'}</span>
+            <span className="min-w-0 flex-1 truncate text-base font-semibold">{v.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad()}</span>
             <Bar value={v.fuel} color="bg-ripe" className="h-1.5 w-20" />
             <span className="shrink-0 text-sm">{status(v)}</span>
           </button>
@@ -106,7 +113,7 @@ export function HangarUi({
             >
               <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: trailerArt(t) }} />
               <span className="min-w-0 flex-1 truncate text-base font-semibold">
-                {t.kind === 'seed' ? 'Seeder' : t.kind === 'spray' ? 'Sprayer' : 'Harvester'}
+                {trailerName(t)}
               </span>
               <span className="shrink-0 text-sm tabular-nums">
                 {trailerUsed(t)}/{TRAILER_CAP}
@@ -121,7 +128,7 @@ export function HangarUi({
           className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
           <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: QUAD }} />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold">Buy Quad</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold">{m.vehicles_buy_quad()}</span>
           <Coin n={QUAD_PRICE} />
         </button>
         <button
@@ -130,7 +137,7 @@ export function HangarUi({
           className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
           <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: ITEM_TRACTOR }} />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold">Buy Tractor</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold">{m.vehicles_buy_tractor()}</span>
           <Coin n={TRACTOR_PRICE} />
         </button>
         <button
@@ -139,7 +146,7 @@ export function HangarUi({
           className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
           <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: ITEM_TRAILER_SEED }} />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold">Buy seeder</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold">{m.vehicles_buy_seeder()}</span>
           <Coin n={TRAILER_SEED_PRICE} />
         </button>
         <button
@@ -148,7 +155,7 @@ export function HangarUi({
           className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
           <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: ITEM_TRAILER_SPRAY }} />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold">Buy sprayer</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold">{m.vehicles_buy_sprayer()}</span>
           <Coin n={TRAILER_SPRAY_PRICE} />
         </button>
         <button
@@ -157,7 +164,7 @@ export function HangarUi({
           className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
           <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: ITEM_TRAILER_HARVEST }} />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold">Buy harvester</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold">{m.vehicles_buy_harvester()}</span>
           <Coin n={TRAILER_HARVEST_PRICE} />
         </button>
       </div>
@@ -174,7 +181,7 @@ export function HangarUi({
             canDeploy ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark' : 'cursor-default bg-ink/6 text-ink/35'
           }`}
         >
-          Deploy
+          {m.vehicles_deploy()}
         </button>
         <button
           type="button"
@@ -187,14 +194,14 @@ export function HangarUi({
             world.automate(picked.id, at)
           }}
         >
-          Automate
+          {m.vehicles_automate()}
         </button>
         <button
           type="button"
           onClick={() => world.refill(at)}
           className="flex items-center gap-2 px-3 py-2 text-base font-semibold cursor-pointer bg-dirt text-house hover:bg-dirt-dark"
         >
-          Refill all
+          {m.vehicles_refill_all()}
           <Coin n={cost} />
         </button>
       </div>

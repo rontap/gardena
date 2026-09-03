@@ -1,4 +1,5 @@
-import { CROPS } from '../defs/crops.ts'
+import { m } from '../../paraglide/messages.js'
+import { CROPS, CROP_NAME } from '../defs/crops.ts'
 import { SPRINKLER_TILE_DAY } from '../defs/items.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
@@ -25,28 +26,28 @@ export type HudSpec = {
 const TUNABLE = (Object.keys(CROPS) as CropId[]).filter(id => CROPS[id].waterUsePerSec > 0)
 
 function perDay(n: number): string {
-  return `${Number((n * DAY_SECONDS).toFixed(2))} L/day per tile`
+  return m.sensors_per_tile({ n: Number((n * DAY_SECONDS).toFixed(2)) })
 }
 
 function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
   const s = world.sprinklerAt(at)
   if (s === undefined) return undefined
   return {
-    title: 'Sprinkler output',
+    title: m.sensors_sprinkler_output(),
     col: at.col,
     row: at.row,
     stay: false,
     options: [
       {
         id: 'flat',
-        label: 'Full flow',
-        note: `${SPRINKLER_TILE_DAY} L/day per tile`,
+        label: m.sensors_full_flow(),
+        note: m.sensors_per_tile({ n: SPRINKLER_TILE_DAY }),
         icon: itemInner({ kind: 'sprinkler' }),
         on: s.tune.kind === 'flat',
       },
       ...TUNABLE.map(crop => ({
         id: crop,
-        label: crop.slice(0, 1).toUpperCase() + crop.slice(1),
+        label: CROP_NAME[crop](),
         note: perDay(statsOf(crop, 'common', world.modifiers).waterUsePerSec),
         icon: cropInner(crop, ripeGroup('common')),
         on: s.tune.kind === 'crop' && s.tune.crop === crop,
@@ -62,21 +63,21 @@ function waterSpec(world: World, at: Vertex): HudSpec | undefined {
   const c = world.cell(at)
   if (c.kind !== 'sensor-water') return undefined
   return {
-    title: 'Water sensor',
+    title: m.names_sensor_water(),
     col: at.col,
     row: at.row,
     stay: true,
     options: [
       {
         id: 'wilt',
-        label: 'Wilting',
+        label: m.sensors_wilting(),
         note: '',
         icon: itemInner({ kind: 'sensor-water' }),
         on: c.wilt,
       },
       {
         id: 'over',
-        label: 'Overwatered',
+        label: m.sensors_overwatered(),
         note: '',
         icon: itemInner({ kind: 'sensor-water' }),
         on: c.over,
@@ -93,21 +94,21 @@ function harvestSpec(world: World, at: Vertex): HudSpec | undefined {
   const c = world.cell(at)
   if (c.kind !== 'sensor-harvest') return undefined
   return {
-    title: 'Harvest sensor',
+    title: m.names_sensor_harvest(),
     col: at.col,
     row: at.row,
     stay: true,
     options: [
       {
         id: 'any',
-        label: 'Any',
+        label: m.sensors_any(),
         note: '',
         icon: itemInner({ kind: 'sensor-harvest' }),
         on: c.mode === 'any',
       },
       {
         id: 'all',
-        label: 'All',
+        label: m.sensors_all(),
         note: '',
         icon: itemInner({ kind: 'sensor-harvest' }),
         on: c.mode === 'all',
@@ -123,35 +124,35 @@ function daySpec(world: World, at: Vertex): HudSpec | undefined {
   const c = world.cell(at)
   if (c.kind !== 'sensor-day') return undefined
   return {
-    title: 'Day sensor',
+    title: m.names_sensor_day(),
     col: at.col,
     row: at.row,
     stay: true,
     options: [
       {
         id: 'sunrise',
-        label: 'Sunrise',
+        label: m.names_phase_sunrise(),
         note: '',
         icon: itemInner({ kind: 'sensor-day' }),
         on: c.sunrise,
       },
       {
         id: 'day',
-        label: 'Day',
+        label: m.sensors_day(),
         note: '',
         icon: itemInner({ kind: 'sensor-day' }),
         on: c.day,
       },
       {
         id: 'sunset',
-        label: 'Sunset',
+        label: m.names_phase_sunset(),
         note: '',
         icon: itemInner({ kind: 'sensor-day' }),
         on: c.sunset,
       },
       {
         id: 'twilight',
-        label: 'Twilight',
+        label: m.names_phase_twilight(),
         note: '',
         icon: itemInner({ kind: 'sensor-day' }),
         on: c.twilight,
@@ -198,7 +199,7 @@ function CounterHud({
       <Chrome className="relative">
         <div className="relative z-20 px-2 pb-2 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-lg text-ink">Counter</div>
+            <div className="text-lg text-ink">{m.names_sensor_counter()}</div>
             <button type="button" className="cursor-pointer px-1 text-lg text-ink hover:bg-dirt" onClick={onClose}>
               ×
             </button>
@@ -207,10 +208,10 @@ function CounterHud({
             <div ref={el => bindHud('counter', el)} data-counter className="tabular-nums text-lg">
               {c.count}
             </div>
-            <div className="text-sm">Count to</div>
+            <div className="text-sm">{m.sensors_count_to()}</div>
             <Field
               name="n"
-              aria-label="Count to"
+              aria-label={m.sensors_count_to()}
               value={String(c.n)}
               onChange={v => {
                 const n = Number.parseInt(v, 10)
@@ -219,7 +220,7 @@ function CounterHud({
               }}
             />
             <Btn className="w-full" onClick={() => world.resetCounter(at)}>
-              Reset to 0
+              {m.sensors_reset({ n: 0 })}
             </Btn>
           </div>
         </div>

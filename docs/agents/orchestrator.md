@@ -8,7 +8,7 @@ Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
 
 - Classify the update type. One line. [[pipeline]]
 - Blocking gaps before dispatch → ask, stop.
-- Spawn specialists. Prompt: task, files to read, files to write, done condition.
+- Spawn specialists. Prompt: this-run need, files to read, files to write, done condition. Do not copy or paraphrase a linked note into the prompt. Law lives on the Read list. Need lives in the task line. Not both.
 - Unversioned: write the architect + coder (+ designer) work.
 - Minor / major: name files. No sample code in the spawn prompt.
 - Grep `<needs-game-text-writer>` after [[agents/game-text-writer]]. Present that agent's summary.

@@ -42,15 +42,14 @@ import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
 
-const SPEED = (() => {
-  const raw = new URLSearchParams(window.location.search).get('speed')
-  const n = raw === null ? NaN : Number(raw)
-  return Number.isFinite(n) && n >= 1 ? Math.min(20, n) : 1
-})()
-
 const HASH = window.location.hash
 const START_NOW = HASH === '#start_now' || HASH === '#unlockall'
 const UNLOCK_ALL = HASH === '#unlockall'
+
+function bootCheat(w: World): void {
+  if (new URLSearchParams(window.location.search).get('speed') === '3') w.setCheatSpeed(3)
+}
+
 const BOOT_CAM: Camera = { x: 15.5, y: 9.5, scale: 1 }
 const DIAL_TIMEOUT_MS = 20000
 const RECONNECT_DELAY_MS = 1500
@@ -70,6 +69,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (!START_NOW) return undefined
     const w = new World(undefined, sink)
     if (UNLOCK_ALL) w.unlockAll()
+    bootCheat(w)
     return w
   })
   const [tutorial, setTutorial] = useState<Tutorial>(() =>
@@ -220,7 +220,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     let id = 0
     const loop = (now: number) => {
       const frameDt = (now - last) / 1000
-      const dt = frameDt * SPEED
+      const dt = frameDt * world.cheatSpeed
       last = now
       const inst = 1 / frameDt
       fpsEma = fpsEma === 0 ? inst : fpsEma * 0.9 + inst * 0.1
@@ -374,6 +374,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   function session(next: World, tut: Tutorial): void {
     prevSeam.current = next.seam.kind
     consignRevision.current = next.consignRevision
+    if (next.local === 0) bootCheat(next)
     setWorld(next)
     setTutorial(tut)
     setFail(undefined)

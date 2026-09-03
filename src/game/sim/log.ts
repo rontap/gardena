@@ -114,6 +114,9 @@ export type Cmd =
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'money' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'points' }
   | { a: typeof Act.cheat; t: number; p: SeatId; k: 'research' }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'speed'; n: 1 | 3 }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'day' }
+  | { a: typeof Act.cheat; t: number; p: SeatId; k: 'skills' }
   | { a: typeof Act.drive; t: number; p: SeatId; throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
   | { a: typeof Act.stride; t: number; p: SeatId; x: -1 | 0 | 1; y: -1 | 0 | 1 }
   | { a: typeof Act.buyVehicle; t: number; p: SeatId; c: XY; k: VehicleKind }

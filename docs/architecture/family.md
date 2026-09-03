@@ -46,6 +46,8 @@ Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared.
 
 `unlockAll`: research rows unchanged (every id done, `money += 999`, job idle) **and** `World.points = 99`. Does not pick skills. Does not reroll offers.
 
+`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owning member, including `haggling`. Ignores gates. Rebuilds skill `Modifier`s from owned `better-*` at that tier, `modGen++`. Empties every member's `offers`. Does not spend points. Does not bump `pickCount`. `Act.cheat` `{ k: 'skills' }`.
+
 ## Tend
 
 `Intent` `{ act: 'tend'; at: Coord }`. Plants unchanged: player owns `tending`, empty hand, plot `growing`, `plant.tended === false`. Work `TEND_WORK`. Then `happiness += 0.1`, clamp `HAPPY_MAX`, `tended = true`.
@@ -71,9 +73,9 @@ Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]].
 - Boots: walk step `WALK × (1 + 0.05 × tier)`
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. — [[mechanics/vehicles]]
 - Machinery (husband): `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel not work jobs. Pipe place stays 0
-- Research speed: `job.left -= dt × (1 + 0.05 × tier)`
+- Research speed: `job.left -= dt × (1 + 0.05 × tier) × (cheatFastResearch ? 3 : 1)`
 - `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Drought then ×2 if `tab === 'seeds' | 'utility'`. Hangar-buys still not `skuPrice`. — [[mechanics/weather]]
-- `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`
+- `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`. Ctrl is shop and seed-silo Buy.
 - Seed-bank: `rollShopRarity(tier, u)` on shop packs. `SEED_BANK_CHANCE` per rank. Base always common
 - Tax: `World.tax()` applies smart tax after the expansion formula
 - Water lens: husband owns `water-study`. Land lens: husband owns `land-study`. Vehicle interactions lens: `unlock-vehicles` in `done`, not a family-study. View-local `Lens`

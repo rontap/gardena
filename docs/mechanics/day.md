@@ -30,6 +30,10 @@ On seam, before any field tick:
 
 Then `tally` resets. `dismissRecap()` is the only recap exit: `World.points += POINTS_PER_DAY`, then play, `banner = 2` s — preference.
 
+## End day
+
+Cheat `Act.cheat` `{ k: 'day' }`. Sets `clock.t = DAY_SECONDS`. Does not tick the remaining day. Next `World.tick` seams through `Clock.advance` — stipend, tax, pump bill, recap as usual. Recap already open: no-op. Host only. — [[ui/cheat]]
+
 ## Invariants
 
 `day.seam` — Seam at `t >= DAY_SECONDS` opens recap before any field tick for the new day.
@@ -37,3 +41,5 @@ Then `tally` resets. `dismissRecap()` is the only recap exit: `World.points += P
 `day.phases` — Phases: sunrise, day, sunset, twilight by share of `DAY_SECONDS`. `'night'` is not a `DayPhase`.
 
 `day.recap` — Recap exit is only `dismissRecap()`. Grants `POINTS_PER_DAY` to `World.points`, then play, `banner = 2`.
+
+`day.end-day` — End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams. Recap: no-op.

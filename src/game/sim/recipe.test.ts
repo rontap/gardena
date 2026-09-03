@@ -19,11 +19,12 @@ import {
   STILL_WATER,
   SUGAR_BAG,
 } from '../defs/items.ts'
-import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS } from './ids.ts'
+import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId } from './ids.ts'
 import { barrelNeed, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
-import { MACHINE_IDS, clockText, craftState, recipesOf } from './recipe.ts'
+import { MACHINE_IDS, clockText, craftState, recipesOf, recipesUsing } from './recipe.ts'
 import type { Ingredient, Recipe } from './recipe.ts'
+import type { Face } from './item.ts'
 
 const BASE = { shape: 'rect', col: 10, row: 12, w: 1, h: 1 } as const
 
@@ -250,5 +251,41 @@ describe('recipes.haste', () => {
     still.progress = 0.5
     const distilled = craftState(still, 1.1)
     expect(distilled.kind === 'working' && distilled.left).toBeCloseTo(STILL_SECONDS * 0.5)
+  })
+})
+
+function fruit(crop: CropId): Face {
+  return { kind: 'fruit', crop, rarity: 'rare', count: 1, unitSale: 0, freshness: 0.2, bio: true }
+}
+
+function outKind(r: Recipe): string {
+  if (r.out.kind !== 'exact') return r.out.kind
+  return r.out.face.kind === 'spirit' ? r.out.face.spirit : r.out.face.kind === 'cask' ? r.out.face.cask : r.out.face.kind
+}
+
+describe('machines.recipes-using', () => {
+  test('`recipesUsing(face)` matches `one` inputs by kind+identity. Skip `any` (mixed still, grinder, compost). Still / jam fruit `one` matches even when water / sugar is a second `one`. Almanac Ingredients is this list, gated by machine unlock in `done`. No hardcoded crop→product plates on the fruit row.', () => {
+    expect(recipesUsing(fruit('wheat')).map(r => [r.machine, outKind(r)])).toEqual([
+      ['mill', 'flour'],
+      ['still', 'beer'],
+    ])
+    expect(recipesUsing(fruit('apricot')).map(r => [r.machine, outKind(r)])).toEqual([
+      ['jam', 'jam'],
+      ['still', 'brandy'],
+    ])
+    expect(recipesUsing(fruit('vanilla')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'extract']])
+    expect(recipesUsing(fruit('sugar-cane')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'sugar']])
+    expect(recipesUsing(fruit('apple')).map(r => [r.machine, outKind(r)])).toEqual([['barrel', 'cider']])
+    expect(recipesUsing(fruit('olive')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'oil']])
+    expect(recipesUsing(fruit('grape')).map(r => [r.machine, outKind(r)])).toEqual([
+      ['jam', 'jam'],
+      ['barrel', 'wine'],
+    ])
+    expect(recipesUsing(fruit('carrot'))).toEqual([])
+    expect(recipesUsing(fruit('potato')).map(r => [r.machine, outKind(r)])).toEqual([['still', 'vodka']])
+    expect(recipesUsing({ kind: 'grass', count: 1 }).map(r => r.machine)).toEqual(['mill'])
+    expect(recipesUsing({ kind: 'weed', count: 1 })).toEqual([])
+    expect(recipesUsing({ kind: 'water' })).toEqual(recipesOf('still'))
+    expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 })).toEqual(recipesOf('jam'))
   })
 })

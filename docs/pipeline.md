@@ -58,8 +58,9 @@ New or changed player strings in `src/` and copy slots in `docs/ui/` start with 
 
 - `subagent_type` = agent file name
 - `description` prefixed `[architect]`, `[coder]`, …
-- Prompt: task, files to read, files to write, done condition. The agent file names the rest.
-- [[agents/game-text-writer]] prompt also lists `docs/standards/user-facing-text.md`
+- Prompt: this-run need, files to read, files to write, done condition. The agent file names the rest.
+- Do not copy or paraphrase a linked note into the prompt. Read list xor restatement — never both. User need and new guardrails that are not already a note: the task line only.
+- [[agents/game-text-writer]] Read list includes `docs/standards/user-facing-text.md`. Do not paste that table.
 - Isolation: `none`
 - architect / designer / documenter → `read-write`. coder / code-review / game-text-writer → `all`
 

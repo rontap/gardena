@@ -1,6 +1,6 @@
 # Modules
 
-`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
+`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
 `defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. Player strings: [[architecture/i18n]].
 
@@ -23,7 +23,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track` |
+| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track`, `cheatSpeed`, `cheatFastResearch` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `save.ts` | `Save`, dump / parse — [[architecture/save]] |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
@@ -50,7 +50,7 @@
 | `rng.ts` | `Rng`, streams |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
 | `machine.ts` | mill recipes, sale bake, grind hopper accept, machine west/east |
-| `recipe.ts` | `recipesOf`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2 `barrelNeed`, compost 3, still water face |
+| `recipe.ts` | `recipesOf`, `recipesUsing`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2 `barrelNeed`, compost 3, still water face |
 | `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light |
 
@@ -72,7 +72,7 @@
 | `held.tsx` | hand / item face |
 | `queue.tsx` | intent queue |
 | `shop.tsx` | `World.buy` |
-| `cheat.tsx` | `unlockAll` / cheats |
+| `cheat.tsx` | `unlockAll` / `unlockAllSkills` / `cheatFastResearch` / `cheatSpeed` / end day / weather pins |
 | `research.tsx` | `World.startResearch` |
 | `market.tsx` | Stall \| Contracts overlay |
 | `inventory.tsx` | house slots |

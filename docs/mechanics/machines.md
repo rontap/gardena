@@ -87,7 +87,7 @@ At `units >= need`: tick `progress += dt × machineMul / MILL_WORK`. At 1: consu
 
 `MILL_RECIPES` order: sugar-cane olive wheat grass vanilla.
 
-`millProductName('vanilla')` is `vanilla extract`. Grass name unchanged (`extract`). Vanilla mill yields the existing extract stall good, not a new SKU. Olive mill takes `TreeId` olive fruit.
+`millProductName('vanilla')` is `vanilla extract`. Grass name unchanged (`extract`). Vanilla mill yields the existing extract stall good, not a new SKU. Olive mill takes `TreeId` olive fruit. Almanac extract plate is Ingredients via `recipesUsing`, gate `unlock-grinder`. No CropPane mill line.
 
 Extract: mill recipe, no research gate, sellable, no plant effect.
 
@@ -115,7 +115,7 @@ At `fruit >= JAM_IN` and `sugar >= JAM_SUGAR`: `progress += dt × machineMul / J
 
 `{ kind: 'jam'; crop: JamCrop; count; unitSale }`. No rarity. `unitSale` `JAM_SALE[crop]`. `JAM_CROPS` 5. No apple. Grape jam stays. Apricot / cherry / tomato / raspberry jam stay.
 
-Almanac jam third icon on `JamCrop` panes iff `unlock-preservatives` done. Tomato face **Ketchup**.
+Almanac jam plate on `JamCrop` Ingredients iff `unlock-preservatives` done — `recipesUsing`, not a hardcoded fruit-row plate. Tomato face **Ketchup**. [[ui/almanac]]
 
 ## Still
 
@@ -163,13 +163,19 @@ Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05
 
 ## Recipes
 
-`sim/recipe.ts`. No `World`. The one enumeration of what each machine makes; every number derived from `defs/items.ts` and `sim/machine.ts`, none retyped. Shown by [[ui/recipe]].
+`sim/recipe.ts`. No `World`. The one enumeration of what each machine makes; every number derived from `defs/items.ts` and `sim/machine.ts`, none retyped. Shown by [[ui/recipe]]. Reverse lookup `recipesUsing(face)` for [[ui/almanac]] Ingredients.
 
 `MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box`. Freezer and chest are storage, not machines.
 
 `Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (5).
 
 `Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder (any `AnnualId`), compost fruit (any `CropId`), compost green (weed, grass), compost rotten (`CropClass` faces).
+
+`recipesUsing(face): readonly Recipe[]` — walk `MACHINE_IDS` then `recipesOf`. Include a recipe iff some input is `one` and matches `face` by kind+identity. Skip `any` (mixed still, grinder, compost fruit / green / rotten). A still or jam recipe still matches on its fruit `one` when water or sugar is a second `one`.
+
+Identity: fruit `crop` (not rarity, not bio, not freshness); jam `crop`; spirit `spirit`; cask `cask`; seeds `crop`; else kind only.
+
+Order is machine order then list order. No World. Wheat → mill flour then still beer. Apricot → jam then still brandy. Vanilla → mill extract. Sugar-cane → mill sugar. Apple → barrel cider. Olive → mill oil. Carrot → none.
 
 `Yield` — `exact` | `range`. `range` is the grinder's `GRIND_MIN`..`GRIND_MAX` with `faces` in `ANNUAL_IDS` order, lockstep with the input faces.
 
@@ -209,7 +215,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.sugar` — Ripe cane harvests as fruit. Mill `MILL_IN` cane → `SUGAR_BAG` at `SUGAR_MILL`. Sugar `{ kind: 'sugar'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.
 
-`machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla.
+`machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla. Almanac extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.
 
 `machines.barrel` — Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS`. Rows: 2. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged.
 
@@ -233,10 +239,12 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` 12 — preference. Mill-like tick. Not actor work. Seeds do not merge into house.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists three recipes; the box counts `COMPOST_NEED` waste. Barrel `BARREL_CROPS` 2, inputs equal `barrelNeed`, `age` not `work`.
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists three recipes; the box counts `COMPOST_NEED` waste. Barrel `BARREL_CROPS` 2, inputs equal `barrelNeed`, `age` not `work`. `recipesUsing` is the reverse lookup.
 
 `machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` on the `water` face and `STILL_CAP` fruit.
 
 `machines.recipe-compost` — Compost lists three recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
 
 `machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not.
+
+`machines.recipes-using` — `recipesUsing(face)` matches `one` inputs by kind+identity. Skip `any` (mixed still, grinder, compost). Still / jam fruit `one` matches even when water / sugar is a second `one`. Almanac Ingredients is this list, gated by machine unlock in `done`. No hardcoded crop→product plates on the fruit row.

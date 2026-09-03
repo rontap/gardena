@@ -40,13 +40,13 @@
   "menu_ask_host": "Ask the host to press the multiplayer button and copy their code.",
   "menu_connecting": "Connecting",
   "menu_join": "Join",
-  "menu_host_live": "Your farm is open. Share this code and friends can drop in — the day keeps running while you wait.",
+  "menu_host_live": "Your farm is open. Share this code and friends can drop in.",
   "menu_host_opening": "Opening your farm to the outside world.",
   "menu_getting_code": "getting a code",
   "menu_copied": "Copied",
   "menu_could_not_copy": "Could not copy",
   "menu_copy_code": "Copy code",
-  "menu_copy_fail": "Select the code above and press Ctrl+C instead.",
-  "menu_guest_body": "You are gardening on someone else’s farm. The host owns the save — leaving drops you back to the menu and keeps nothing.",
+  "menu_copy_fail": "Select the code above and press Ctrl+C.",
+  "menu_guest_body": "You are gardening on someone else’s farm.",
   "menu_leave_farm": "Leave farm"
 }

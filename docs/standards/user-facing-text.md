@@ -1,12 +1,13 @@
 # User-facing text
 
-Exact word per concept. Paste the **say** column. A third word is a coined term.
+User-facing text must be standardized and use consistent, useful and understandable names. This document contains law regarding to game concepts that are usable as words, words that are forbidden, and specific examples of bad text with specific ways in which it can be improved.
+This file MUST be read IN FULL, never just grepped or sliced. 
 
 `lex.user` — Chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, shop, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
 
 Authorship: [[agents/game-text-writer]]. Coder prefixes new or changed player strings with `<needs-game-text-writer>`. This agent rewrites them and strips the marker.
 
-No row → no name. Plain English, or ask. [[canon]]
+No row → no name. Plain English, or mark with `<need-help>`. [[canon]]
 
 Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do not synonymize. This table is the overloaded words those sources do not pin.
 
@@ -300,3 +301,6 @@ Almanac Overview pages may define a word on first use. They still may not say: g
 ## Update notes
 
 Line shape [[standards/update-notes]]. Types: `building` `item` `ui` `mechanic` `multiplayer`. Verbs: `New` `Added` `Removed` `Changed` `Fixed bug`. Subject names come from this table / `skuLabel`. `{what it does}` is player register [[standards/lexicon]] `lex.copy`.
+
+# Read Check
+If you have read this document in full, when answering, acknowledge it as "user-facing-text is read in full" otherwise your work will be automatically void because law text was not read.

@@ -2,7 +2,7 @@
 
 Developer law. Not player mechanics. [[architecture/world]] [[architecture/modules]] [[mechanics/_index]]
 
-Sim stays on the main thread. View paints via the Pixi ticker. App accumulator `tick(DT_MAX)` only, at most two ticks per frame. Do not raise `DT_MAX`. Do not interpolate sim. View vehicles keep `QUAD_FOLLOW`. Do not move `World` to a worker. Sim does not camera-cull. View may (`CullerPlugin` on chunks). [[architecture/view]]
+Sim stays on the main thread. View paints via the Pixi ticker. App host accumulator `frameDt * World.cheatSpeed`, then `tick(DT_MAX)` only, at most two ticks per frame. `cheatSpeed` is `1 | 3`. World.tick does not multiply `dt` again. `cheatFastResearch` is job drain, not a tick mul. Do not raise `DT_MAX`. Do not interpolate sim. View vehicles keep `QUAD_FOLLOW`. Do not move `World` to a worker. Sim does not camera-cull. View may (`CullerPlugin` on chunks). [[architecture/view]] [[architecture/world]] `world.cheatSpeed` `world.cheatFastResearch`
 
 Owner: `sim/world.ts`. Indexes live on `World`. `track()` stays on `World`. Do not add `sim/index.ts`.
 
@@ -86,4 +86,4 @@ Water-system sensors: `netOfCell` + cached demand, not `grid().find`.
 
 `tick.nets` — `dirtyNets()` only when `conducts(e)` actually flips or topology changes (place / delete pipe / valve / smart, or a source cell). Not every tick because `smartHold.size > 0`.
 
-`tick.ping` — `ping()` / `pingFor` from tick only on discrete change. Continuous world chrome is the Pixi ticker. Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. A new `DirtyReason` has a view that filters it. Unused reason is a defect. Sim is not interpolated; view vehicles keep `QUAD_FOLLOW`. Sim does not camera-cull; view may.
+`tick.ping` — `ping()` / `pingFor` from tick only on discrete change. Continuous world chrome is the Pixi ticker. Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. A new `DirtyReason` has a view that filters it. Unused reason is a defect. Sim is not interpolated; view vehicles keep `QUAD_FOLLOW`. Sim does not camera-cull; view may. Host accumulator `frameDt * World.cheatSpeed`; World.tick does not multiply `dt`.

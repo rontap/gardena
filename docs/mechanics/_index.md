@@ -33,6 +33,7 @@ See [[canon]].
 | day.seam | [[mechanics/day]] |
 | day.phases | [[mechanics/day]] |
 | day.recap | [[mechanics/day]] |
+| day.end-day | [[mechanics/day]] |
 | expansion.tax | [[mechanics/expansion]] |
 | expansion.chunk | [[mechanics/expansion]] |
 | soil.till | [[mechanics/soil]] |
@@ -108,10 +109,12 @@ See [[canon]].
 | family.skills | [[mechanics/family]] |
 | family.jam-rot | [[mechanics/family]] |
 | family.hidden | [[mechanics/family]] |
+| family.unlockSkills | [[mechanics/family]] |
 | inventory.slots | [[mechanics/inventory]] |
 | inventory.compost | [[mechanics/inventory]] |
 | inventory.stack | [[mechanics/inventory]] |
 | inventory.containers | [[mechanics/inventory]] |
+| inventory.silo-buy | [[mechanics/inventory]] |
 | machines.sugar | [[mechanics/machines]] |
 | machines.barrel | [[mechanics/machines]] |
 | machines.still-foot | [[mechanics/machines]] |
@@ -129,6 +132,7 @@ See [[canon]].
 | machines.recipe-compost | [[mechanics/machines]] |
 | machines.recipe-haste | [[mechanics/machines]] |
 | machines.mill-vanilla | [[mechanics/machines]] |
+| machines.recipes-using | [[mechanics/machines]] |
 | vehicles.kind | [[mechanics/vehicles]] |
 | vehicles.buy | [[mechanics/vehicles]] |
 | vehicles.surface | [[mechanics/vehicles]] |
@@ -200,6 +204,8 @@ See [[canon]].
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
 | world.pause | [[architecture/world]] |
+| world.cheatSpeed | [[architecture/world]] |
+| world.cheatFastResearch | [[architecture/world]] |
 | save.parse | [[architecture/save]] |
 | save.nomigrate | [[architecture/save]] |
 | net.digest | [[architecture/net]] |

@@ -1,3 +1,11 @@
+# 2.1.3 QoL Patch V
+
+The Almanac shows what a crop turns into, the seed silo sells seeds, and the weed spray can gets a nozzle.
+
+- 🎉 Added ui: Recipes. A crop or tree's Almanac page now lists what it turns into at any machine you have already researched, and hovering one shows the price and how that recipe works.
+- 🎉 Added ui: Seed buying. A buy button under each crop column in the Seed silo stocks seeds without a trip to the shop.
+- 🔧 Changed item: Weed spray. previously, the can had no nozzle, now it shows a hose and spray nozzle.
+
 # 2.1.2 QoL Patch IV
 
 Wells become buildings, barrels show their age, and a run of small fixes across the farm.

@@ -22,6 +22,8 @@ import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, STILL_CROPS
 import type { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import type { Face, Item } from './item.ts'
 import {
+  bakeCaskSale,
+  bakeSpiritSale,
   barrelNeed,
   barrelWorking,
   feedUnits,
@@ -133,7 +135,7 @@ function jamRecipe(crop: JamCrop): Recipe {
 }
 
 function spiritFace(spirit: SpiritKind): Face {
-  return { kind: 'spirit', spirit, rarity: 'common', count: 1, unitSale: 0 }
+  return { kind: 'spirit', spirit, rarity: 'common', count: 1, unitSale: bakeSpiritSale(spirit, 'common') }
 }
 
 function stillRecipe(crop: StillCrop): Recipe {
@@ -158,7 +160,13 @@ function barrelRecipe(crop: BarrelCrop): Recipe {
     inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(barrelNeed(crop)) }],
     out: {
       kind: 'exact',
-      face: { kind: 'cask', cask: CASK_OF[crop], rarity: 'common', count: 1, unitSale: 0 },
+      face: {
+        kind: 'cask',
+        cask: CASK_OF[crop],
+        rarity: 'common',
+        count: 1,
+        unitSale: bakeCaskSale(CASK_OF[crop], 'common', BARREL_MATURE),
+      },
       amount: units(1),
     },
     duration: { kind: 'age', seconds: BARREL_MATURE },
@@ -239,6 +247,21 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'barrel') return BARREL_ROWS
   if (m === 'grinder') return [GRINDER]
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN]
+}
+
+function sameIdentity(a: Face, b: Face): boolean {
+  if (a.kind === 'fruit' && b.kind === 'fruit') return a.crop === b.crop
+  if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop
+  if (a.kind === 'seeds' && b.kind === 'seeds') return a.crop === b.crop
+  if (a.kind === 'spirit' && b.kind === 'spirit') return a.spirit === b.spirit
+  if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask
+  return a.kind === b.kind
+}
+
+export function recipesUsing(face: Face): readonly Recipe[] {
+  return MACHINE_IDS.flatMap(id =>
+    recipesOf(id).filter(r => r.inputs.some(input => input.kind === 'one' && sameIdentity(input.face, face))),
+  )
 }
 
 export function clockText(seconds: number): string {

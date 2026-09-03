@@ -81,7 +81,10 @@ function Capacity({ hint, used, cap, unit }: { hint: string; used: number; cap: 
   )
 }
 
-type Tip = { crop: AnnualId; rarity: Rarity } | undefined
+type Tip =
+  | { kind: 'stock'; crop: AnnualId; rarity: Rarity }
+  | { kind: 'buy'; crop: AnnualId; sku: SkuId }
+  | undefined
 
 /**
  * Columns are crops, rows are rarities. Only shelves the player can actually reach
@@ -107,7 +110,13 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
     <Shell
       title={m.names_building_seed_silo()}
       onClose={onClose}
-      aside={tip !== undefined ? <SeedTip world={world} crop={tip.crop} rarity={tip.rarity} /> : undefined}
+      aside={
+        tip === undefined ? undefined : tip.kind === 'buy' ? (
+          <SeedTip world={world} crop={tip.crop} rarity="common" sku={tip.sku} />
+        ) : (
+          <SeedTip world={world} crop={tip.crop} rarity={tip.rarity} />
+        )
+      }
     >
       <Capacity hint={m.hud_silo_hint()} used={cell.used} cap={cell.cap} unit={m.hud_silo_unit()} />
       {crops.length === 0 ? (
@@ -159,9 +168,9 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                             type="button"
                             aria-disabled={n === 0}
                             aria-label={m.hud_silo_aria({ rarity: RARITY_LABEL[rarity](), crop: cropName(crop), n })}
-                            onPointerEnter={() => setTip({ crop, rarity })}
+                            onPointerEnter={() => setTip({ kind: 'stock', crop, rarity })}
                             onPointerLeave={() => setTip(undefined)}
-                            onFocus={() => setTip({ crop, rarity })}
+                            onFocus={() => setTip({ kind: 'stock', crop, rarity })}
                             onClick={() => {
                               if (n === 0) return
                               world.takeSilo(crop, rarity)
@@ -185,6 +194,24 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                   </tr>
                 )
               })}
+              {crops.some(crop => packSku(crop) !== undefined) && (
+                <tr>
+                  <th />
+                  {crops.map(crop => {
+                    const sku = packSku(crop)
+                    if (sku === undefined) return <td key={crop} />
+                    return (
+                      <td key={crop}>
+                        <BuyPack
+                          world={world}
+                          sku={sku}
+                          onHot={on => setTip(on ? { kind: 'buy', crop, sku } : undefined)}
+                        />
+                      </td>
+                    )
+                  })}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -194,11 +221,28 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
   )
 }
 
-function SeedTip({ world, crop, rarity }: { world: World; crop: AnnualId; rarity: Rarity }) {
+function SeedTip({
+  world,
+  crop,
+  rarity,
+  sku,
+}: {
+  world: World
+  crop: AnnualId
+  rarity: Rarity
+  sku?: SkuId
+}) {
   const d = CROPS[crop]
-  const sku = packSku(crop)
-  const pack = sku !== undefined && world.skuShown(sku) ? world.skuPrice(sku) : undefined
+  const packSkuId = sku ?? packSku(crop)
+  const pack =
+    sku !== undefined
+      ? world.skuPrice(sku)
+      : packSkuId !== undefined && world.skuShown(packSkuId)
+        ? world.skuPrice(packSkuId)
+        : undefined
   const sale = d.sale * raritySale(d, rarity)
+  const state = sku !== undefined ? rowState(world, sku) : 'ok'
+  const bulk = sku !== undefined && world.buyPacksFail(sku) === undefined ? world.packsPrice(sku) : undefined
   return (
     <CalloutHover
       title={cropName(crop)}
@@ -212,6 +256,14 @@ function SeedTip({ world, crop, rarity }: { world: World; crop: AnnualId; rarity
             <Coin n={round(sale)} />
             {m.hud_each_at({ rarity: RARITY_LABEL[rarity]().toLowerCase() })}
           </span>
+          {bulk !== undefined && (
+            <span className="mt-1 flex items-center gap-1">
+              <Coin n={bulk} />
+            </span>
+          )}
+          {sku !== undefined && state !== 'ok' && (
+            <span className="mt-2 block font-bold text-roof">{gateLine(world, sku, state)}</span>
+          )}
         </>
       }
     />
@@ -242,6 +294,37 @@ function AdditiveTip({ world, id }: { world: World; id: AdditiveId }) {
         </>
       }
     />
+  )
+}
+
+function BuyPack({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: boolean) => void }) {
+  const off = rowState(world, sku) !== 'ok'
+  return (
+    <button
+      type="button"
+      aria-label={m.hud_buy_sku({ name: skuLabel(sku) })}
+      aria-disabled={off}
+      onPointerEnter={() => onHot(true)}
+      onPointerLeave={() => onHot(false)}
+      onFocus={() => onHot(true)}
+      onBlur={() => onHot(false)}
+      onClick={e => {
+        if (e.ctrlKey && world.buyPacksFail(sku) !== 'Locked') {
+          world.buyPacks(sku)
+          return
+        }
+        if (off) return
+        world.buy(sku)
+      }}
+      className={`flex h-[4.25rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
+        off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+      }`}
+    >
+      <span className="text-xs font-semibold">{m.hud_buy()}</span>
+      <span className="text-sm leading-none">
+        <Coin n={world.skuPrice(sku)} />
+      </span>
+    </button>
   )
 }
 

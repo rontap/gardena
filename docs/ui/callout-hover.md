@@ -20,6 +20,7 @@ Host:
 - [[ui/family]] — wrap around the Family `Chrome`. `right`.
 - Shop / Research — `Dock` `aside`. `right`.
 - Market Overlay `aside` — board offer + active cancel. `right`. [[ui/contracts]] [[ui/market]]
+- Almanac Overlay `aside` — Ingredients yield plate. `right`. Title `faceName`. Body: `Coin` of baked `unitSale`, then that recipe. [[ui/almanac]] [[ui/recipe]]
 - `#debug-contracts` Chrome `aside`. `right`. Host OfferCard, not guest-dead. [[ui/cheat]]
 - Top-ribbon expand / points chips. `below`. Host is the chip (`relative`). Not Overlay. Not a `Panel`. [[ui/hud]]
 - Top-ribbon weather glyphs. `below`. Host is the glyph (`relative`). Current title/body locked on [[mechanics/weather]]. Tomorrow title **Tomorrow · {name}**, body of that kind. [[ui/hud]]

@@ -18,7 +18,7 @@ Only the orchestrator may edit, write, bump, or modify any version number, write
 
 ## Dispatch
 
-Classify unversioned / minor / major. Spawn: `architect`, `designer`, `coder`, `code-review`, `documenter`, `game-text-writer`.
+Classify unversioned / minor / major. Spawn: `architect`, `designer`, `coder`, `code-review`, `documenter`, `game-text-writer`. Prompt: need + read list + write list + done. Do not paraphrase a linked note.
 
 Prefix `description` with `[architect]` / `[coder]` / …
 

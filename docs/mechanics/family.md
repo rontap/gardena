@@ -34,6 +34,8 @@ Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop —
 
 `unlockAll`: every research id done, `money += 999`, job idle, `points = 99`. Does not grant skills. Does not reroll.
 
+`unlockAllSkills`: every `SKILLS` id at that id's `maxTier` on its owning member, including `haggling`. Ignores gates. Rebuilds skill `Modifier`s from owned `better-*` at that tier, `modGen++`. Empties every member's `offers`. Does not spend points. Does not bump `pickCount`. Does not touch research. `Act.cheat` `{ k: 'skills' }`.
+
 ## Offers
 
 Pool = that member’s ids with `owned < max` (or absent) and gate met.
@@ -130,7 +132,7 @@ Crop stall bins: stock + worth per rarity × bio. Illegal: consign that drops `f
 - land-study: unlocks land lens
 - Vehicle interactions lens (`vehicles`) is `unlock-vehicles` in `done`, not a family-study row — [[mechanics/vehicles]]
 - inherit-land: `+1` expansion permit per tier, max 2. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
-- `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
+- `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl is shop and seed-silo Buy gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - seed-bank: shop `pack-*` rarity is `rollShopRarity(tier, shop.next())` iff `unlock-crop-variants` in `done`, else `common`. Stream still consumes `next()`. Per rank: `SEED_BANK_CHANCE`, mutually exclusive, heirloom first. `buy` one `next()` per granted pack. `buyPacks` five. Failed afford / fit / closed: 0. Merges by rarity, needs a house slot per new rarity. Catalog icon stays common. Not `clock.t`. Not `money`. — [[mechanics/rng]]
 - broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5. Broker slots are always cash — the two prize slots are drawn from the base six — [[mechanics/contracts]]
 - industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
@@ -148,4 +150,6 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 
 `family.jam-rot` — `jam` rank N: fruit with freshness `< 0.5` rots `15% × N` slower. Ripe plant and picked fruit. Freezer skips.
 
-`family.hidden` — `haggling` gate `hidden`. Never in the offer pool. Effect still applies if owned.
+`family.hidden` — `haggling` gate `hidden`. Never in the offer pool. Effect still applies if owned. `unlockAllSkills` grants it at `maxTier`.
+
+`family.unlockSkills` — `unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.

@@ -38,24 +38,22 @@ One `spawn_subagent` per specialist. Coders may be several; others are singleton
 | `description` | `[<type>] <5 words>` |
 | `isolation` | `none` |
 
-Prompt:
+Prompt: this-run need, files to read, files to write, done. Do not copy or paraphrase a linked note. The agent file and the Read list are the law.
 
 ```
-Task: <exact request for this specialist>
+Task: <this-run need only — not a restatement of a note>
 
 Read:
 - docs/agents/<type>.md
-- <files this specialist needs>
+- <notes this specialist must open>
 
 Write:
 - <files this specialist may write>
 
 Done: <one line>
-Halt only if the task as given is blocked before any write: one-line question, then stop.
-A gap found after reading or after a write: one-line assumption in the note, finish.
 ```
 
-`game-text-writer` Read list includes `docs/standards/user-facing-text.md`.
+`game-text-writer` Read list includes `docs/standards/user-facing-text.md`. Do not paste it.
 
 Code-review: unique `docs/.review-<id>.md`. It edits source and writes e2e. Delete that file after a clean run.
 

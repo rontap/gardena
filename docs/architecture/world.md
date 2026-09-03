@@ -21,7 +21,7 @@ FruitAnnualId = tomato | raspberry | grape | vanilla
 
 `ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `PlayerSkillId` has no `better-watermelon`. `BETTER_IDS` is a complete `{ [K in AnnualId]: PlayerSkillId }`.
 
-Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: `better-*` on `TreeId`. Illegal: `World.pause`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
+Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: `better-*` on `TreeId`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
 
 `isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
@@ -99,7 +99,15 @@ Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). 
 
 `World.family: Family` always. Offers, owned, pickCount per member. Shared `World.points`. [[architecture/family]].
 
-`offers` length 0..3. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. `cheatFastResearch` multiplies job drain by 3. `cheatMoney` `+200`. `cheatPoints` `+10` to the shared bank.
+`offers` length 0..3. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier` including `haggling`, ignores gates, rebuilds modifiers, empties offers. `cheatFastResearch` multiplies job drain by 3 on top of Speedy research. `cheatMoney` `+200`. `cheatPoints` `+10` to the shared bank. End day sets `clock.t = DAY_SECONDS`.
+
+```
+World.cheatFastResearch = boolean
+World.cheatSpeed         = 1 | 3
+```
+
+`cheatFastResearch` starts false. Not Save. Toggle `Act.cheat` `{ k: 'research' }`.
+`cheatSpeed` starts 1. Not Save. `Act.cheat` `{ k: 'speed'; n: 1 | 3 }`.
 
 ## Time
 
@@ -109,7 +117,7 @@ Tick law: [[architecture/tick]].
 
 `Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
 
-Live: App accumulator fires `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. View paints via the Pixi ticker. No sim interpolation. View vehicles keep `QUAD_FOLLOW`. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]] [[architecture/view]]
+Live: App host accumulator `frameDt * World.cheatSpeed`, then `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. World.tick does not multiply `dt`. View paints via the Pixi ticker. No sim interpolation. View vehicles keep `QUAD_FOLLOW`. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]] [[architecture/view]] [[architecture/tick]]
 
 ### Indexes
 
@@ -182,5 +190,9 @@ Illegal: spatial roll without identity ints. Grow identity `(col, row, day)` wit
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
 
 `world.pause` — World has no `pause` field. Solo family / market / almanac overlay pause is App-local. MP pause is the net flag on `MpHost` / `MpGuest`. Not Save. Not a `Cmd`.
+
+`world.cheatSpeed` — `World.cheatSpeed` is `1 | 3`. App host accumulator `frameDt * cheatSpeed`. World.tick does not multiply `dt`. `Act.cheat` `{ k: 'speed'; n: 1 | 3 }`. `?speed=3` boots 3; any other URL value boots 1. Not job drain.
+
+`world.cheatFastResearch` — `World.cheatFastResearch` is boolean. Starts false. Not Save. Toggle `Act.cheat` `{ k: 'research' }`. On: job drain `× 3` on top of Speedy research. Off: Speedy research only. Not `cheatSpeed`.
 
 Assumption: `dest(additives)` stays `at`.

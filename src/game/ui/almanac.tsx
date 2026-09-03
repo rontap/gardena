@@ -6,17 +6,18 @@ import { CROPS, cropVariety } from '../defs/crops.ts'
 import { RARITY_SALE, raritySale, SEED_BANK_CHANCE, type Rarity } from '../defs/rarity.ts'
 import { JAM_ROT, SKILLS } from '../defs/skills.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
-import { ANNUAL_IDS, TREE_IDS, type CaskId, type SpiritKind, type TreeId } from '../sim/ids.ts'
+import { ANNUAL_IDS, TREE_IDS, type CropId, type TreeId } from '../sim/ids.ts'
+import { faceName, type Face } from '../sim/item.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
-import type { CropId, JamCrop } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
-import { JAM_SALE, MILL_IN, SUGAR_BAG } from '../defs/items.ts'
+import { MILL_IN, SUGAR_BAG } from '../defs/items.ts'
 import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, rarityInner, treeStage } from '../view/svgs.ts'
+import { CalloutHover } from './callout-hover.tsx'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
-import { MACHINE_IDS, type MachineId } from '../sim/recipe.ts'
+import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/recipe.ts'
 import { Recipes } from './recipe.tsx'
 
 type AlmanacTab =
@@ -166,8 +167,14 @@ const RARITY_TABS: { id: Rarity; label: () => string }[] = [
 
 const CROP_IDS = [...ANNUAL_IDS] as CropId[]
 
+type Tip = { title: string; recipe: Recipe } | undefined
+
 const AlmanacGo = createContext<(to: AlmanacNav) => void>(() => {
   throw new Error('AlmanacLink')
+})
+
+const AlmanacTip = createContext<(tip: Tip) => void>(() => {
+  throw new Error('AlmanacTip')
 })
 
 function AlmanacLink({ to, children }: { to: AlmanacNav; children: ReactNode }) {
@@ -270,6 +277,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
   const entries = catalogEntries()
   const [tab, setTab] = useState<AlmanacTab>('seeds')
   const [id, setId] = useState(firstId('seeds'))
+  const [tip, setTip] = useState<Tip>(undefined)
   const byId = new Map(entries.map(e => [e.id, e]))
   const rows = rowsOf(tab)
   const row = rows.find(r => rowId(r) === id)
@@ -277,16 +285,36 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
   const go = (to: AlmanacNav) => {
     setTab(to.tab)
     setId(to.id)
+    setTip(undefined)
   }
   return (
-    <Overlay title={m.hud_almanac()} onClose={onClose} className="h-[min(48rem,calc(100vh-6rem))] w-[48rem]">
+    <Overlay
+      title={m.hud_almanac()}
+      onClose={onClose}
+      className="h-[min(48rem,calc(100vh-6rem))] w-[48rem]"
+      aside={
+        tip !== undefined ? (
+          <CalloutHover
+            title={tip.title}
+            description={
+              <>
+                <Coin n={yieldSale(tip.recipe)} />
+                <Recipes view={{ kind: 'one', recipe: tip.recipe }} size="sm" />
+              </>
+            }
+          />
+        ) : undefined
+      }
+    >
       <AlmanacGo.Provider value={go}>
+        <AlmanacTip.Provider value={setTip}>
         <Tabs.Root
           value={tab}
           onValueChange={v => {
             const next = tabOf(v)
             setTab(next)
             setId(firstId(next))
+            setTip(undefined)
           }}
           className="relative z-20 flex min-h-0 flex-1 flex-col"
         >
@@ -308,7 +336,10 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                     className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-lg ${
                       rid === id ? 'bg-dirt text-house' : 'text-ink hover:bg-dirt/30'
                     }`}
-                    onClick={() => setId(rid)}
+                    onClick={() => {
+                      setId(rid)
+                      setTip(undefined)
+                    }}
                   >
                     {r.kind === 'sku' ? (
                       <svg
@@ -336,6 +367,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
             </div>
           </div>
         </Tabs.Root>
+        </AlmanacTip.Provider>
       </AlmanacGo.Provider>
     </Overlay>
   )
@@ -360,7 +392,7 @@ function RowPane({
     case 'concept':
       return <ConceptPane id={row.id} />
     case 'sku':
-      return <Pane entry={skuEntry(byId, row.id)} done={done} />
+      return <Pane entry={skuEntry(byId, row.id)} done={done} tab={tab} />
   }
 }
 
@@ -975,7 +1007,13 @@ function AutomationConcept() {
 
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
-function Pane({ entry, done }: { entry: CatalogEntry; done: AlmanacDone }) {
+function skuFill(tab: AlmanacTab, id: string): string {
+  if (id === 'sugar') return 'bg-water'
+  if (tab === 'sensors' || tab === 'automation' || tab === 'water') return 'bg-grass'
+  return 'bg-dirt-dark'
+}
+
+function Pane({ entry, done, tab }: { entry: CatalogEntry; done: AlmanacDone; tab: AlmanacTab }) {
   const tree = TREE_IDS.find(id => id === entry.id)
   if (tree !== undefined) return <TreePane id={tree} done={done} />
   const crop = CROP_IDS.find(id => id === entry.id)
@@ -985,7 +1023,7 @@ function Pane({ entry, done }: { entry: CatalogEntry; done: AlmanacDone }) {
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
-      <div className="mb-3 flex h-20 w-20 items-center justify-center bg-dirt-dark">
+      <div className={`mb-3 flex h-20 w-20 items-center justify-center ${skuFill(tab, entry.id)}`}>
         <svg
           className="h-16 w-16"
           viewBox="0 0 24 24"
@@ -1012,7 +1050,7 @@ function PipePane({ title, blurb }: { title: string; blurb: string }) {
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
-      <div className="mb-3 flex h-20 w-20 items-center justify-center bg-dirt-dark">
+      <div className="mb-3 flex h-20 w-20 items-center justify-center bg-grass">
         <svg
           className="h-16 w-16"
           viewBox="0 0 24 24"
@@ -1059,7 +1097,6 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
     freshness: 1,
     bio: true,
   })
-  const jamCrop = id === 'grape' || id === 'raspberry' || id === 'tomato' ? id : undefined
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
@@ -1079,10 +1116,6 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
             dangerouslySetInnerHTML={{ __html: cropInner(id, STAGES[stage] === 'ripe' ? ripe : STAGES[stage]) }}
           />
         </div>
-        {id === 'potato' && done.fermentation ? <SpiritPlate spirit="vodka" /> : null}
-        {id === 'wheat' && done.fermentation ? <SpiritPlate spirit="beer" /> : null}
-        {jamCrop !== undefined && done.preservatives ? <JamPlate crop={jamCrop} /> : null}
-        {id === 'grape' && done.fermentation ? <CaskPlate cask="wine" /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -1117,6 +1150,18 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
           kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
+      <Ingredients
+        face={{
+          kind: 'fruit',
+          crop: id,
+          rarity: preview,
+          count: 1,
+          unitSale: st.sale,
+          freshness: 1,
+          bio: true,
+        }}
+        done={done}
+      />
     </>
   )
 }
@@ -1184,9 +1229,6 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
         <div className="flex h-20 w-10 items-center justify-center bg-grass">
           <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage]) }} />
         </div>
-        {id === 'apple' && done.fermentation ? <CaskPlate cask="cider" /> : null}
-        {(id === 'apricot' || id === 'cherry') && done.preservatives ? <JamPlate crop={id} /> : null}
-        {id === 'olive' && done.grinder ? <OilPlate /> : null}
       </div>
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
@@ -1210,32 +1252,75 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
           kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
+      <Ingredients
+        face={{
+          kind: 'fruit',
+          crop: id,
+          rarity: preview,
+          count: 1,
+          unitSale: d.sale * raritySale(d, preview),
+          freshness: 1,
+          bio: true,
+        }}
+        done={done}
+      />
     </>
   )
 }
 
-function FacePlate({ html }: { html: string }) {
+function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
+  switch (machine) {
+    case 'mill':
+      return done.grinder
+    case 'jam':
+      return done.preservatives
+    case 'still':
+    case 'barrel':
+      return done.fermentation
+    case 'grinder':
+    case 'compost-box':
+      return false
+  }
+}
+
+function yieldFace(recipe: Recipe): Face {
+  if (recipe.out.kind !== 'exact') throw new Error('exact')
+  return recipe.out.face
+}
+
+function yieldSale(recipe: Recipe): number {
+  const face = yieldFace(recipe)
+  if (!('unitSale' in face)) throw new Error('unitSale')
+  return face.unitSale
+}
+
+function Ingredients({ face, done }: { face: Face; done: AlmanacDone }) {
+  const rows = recipesUsing(face).filter(r => recipeOpen(r.machine, done))
+  if (rows.length === 0) return null
   return (
-    <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: html }} />
+    <div className="mt-3 border-t border-ink/20 pt-3">
+      <div className="mb-1 font-display text-xs leading-none text-ink">{m.hud_recipes()}</div>
+      <div className="flex flex-wrap gap-3">
+        {rows.map((recipe, i) => (
+          <IngredientPlate key={i} recipe={recipe} />
+        ))}
+      </div>
     </div>
   )
 }
 
-function JamPlate({ crop }: { crop: JamCrop }) {
-  return <FacePlate html={faceGfx({ kind: 'jam', crop, count: 1, unitSale: JAM_SALE[crop] })} />
-}
-
-function SpiritPlate({ spirit }: { spirit: SpiritKind }) {
-  return <FacePlate html={faceGfx({ kind: 'spirit', spirit, rarity: 'common', count: 1, unitSale: 0 })} />
-}
-
-function CaskPlate({ cask }: { cask: CaskId }) {
-  return <FacePlate html={faceGfx({ kind: 'cask', cask, rarity: 'common', count: 1, unitSale: 0 })} />
-}
-
-function OilPlate() {
-  return <FacePlate html={faceGfx({ kind: 'oil', count: 1, unitSale: 0 })} />
+function IngredientPlate({ recipe }: { recipe: Recipe }) {
+  const setTip = useContext(AlmanacTip)
+  const face = yieldFace(recipe)
+  return (
+    <div
+      className="flex h-20 w-20 items-center justify-center bg-water"
+      onPointerEnter={() => setTip({ title: faceName(face), recipe })}
+      onPointerLeave={() => setTip(undefined)}
+    >
+      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
+    </div>
+  )
 }
 
 function Stat({

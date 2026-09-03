@@ -67,7 +67,7 @@ Cheats are cmds.
 
 `Cmd.t` is `now` after last completed tick, before apply.
 
-Live tick is `DT_MAX` only. App accumulator. Never tick a leftover. View paints via the Pixi ticker. Solo and MP. Tests replay with `dt = DT_MAX`. Same-`t` cmds apply in log order. First wins, second no-op. `t` is non-decreasing. Ticks are not cmds. MP: one `tick(DT_MAX)` per host `bundle`. [[architecture/net]] [[architecture/view]]
+Live tick is `DT_MAX` only. App host accumulator `frameDt * World.cheatSpeed`. Never tick a leftover. World.tick does not multiply `dt`. View paints via the Pixi ticker. Solo and MP. Tests replay with `dt = DT_MAX`. Same-`t` cmds apply in log order. First wins, second no-op. `t` is non-decreasing. Ticks are not cmds. MP: one `tick(DT_MAX)` per host `bundle`. [[architecture/net]] [[architecture/view]] [[architecture/world]] `world.cheatSpeed`
 
 ## JSON
 
@@ -83,7 +83,19 @@ Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. L
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart.
 
-`Act.cheat` inner `k` is a closed union.
+`Act.cheat` inner `k` is a closed union:
+
+```
+| { a: Act.cheat; t; p; k: 'all' }
+| { a: Act.cheat; t; p; k: 'money' }
+| { a: Act.cheat; t; p; k: 'points' }
+| { a: Act.cheat; t; p; k: 'research' }
+| { a: Act.cheat; t; p; k: 'speed'; n: 1 | 3 }
+| { a: Act.cheat; t; p; k: 'day' }
+| { a: Act.cheat; t; p; k: 'skills' }
+```
+
+`n` required on `speed`.
 
 `Act.route` `'o'`. Inner `k` closed union: `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Guest may. All no-op unless `unlock-dispatch` in `done`.
 

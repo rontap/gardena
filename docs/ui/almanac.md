@@ -29,7 +29,7 @@ Crop and Tree panes carry `CROPS.desc` under the name. Crop panes: rarity tabs *
 
 Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink.
 
-Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla mill is the mill recipe list only — no CropPane mill line, no extract plate. [[ui/recipe]]
+Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Extract, flour, brandy, mill sugar sit in Ingredients. [[ui/recipe]]
 
 Olive is `TreeId`: TreePane only.
 
@@ -37,25 +37,35 @@ Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. S
 
 SKU panes stay generic / crop / tree / pipe.
 
-## Product plates
+## Plate fills
 
-Reuse existing faces. No new SVG. `Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives')`. Not a `jam` boolean.
+Reuse existing faces. No new SVG. Plate is `h-20 w-20`, no caption.
 
-Fruit face + plant/tree prop always. Extra plates after that row is in `done`. Same `flex gap-3` row, `flex-wrap`. Grape four plates (fruit, plant, jam, wine) wrap in that row. No new chrome. Plate is the existing `h-20 w-20` `bg-dirt-dark` face, no caption.
+| plate | fill |
+|---|---|
+| Crop fruit face | `bg-dirt-dark` |
+| Crop plant prop | `bg-dirt-dark` |
+| Tree fruit face | `bg-dirt-dark` |
+| Tree 24×48 prop | `bg-grass` |
+| Sensors / Automation / Water systems SKU — buildings, pipe | `bg-grass` |
+| Utility / Building / Seeds non-crop SKU | `bg-dirt-dark` |
+| Machine goods — sugar, spirit, cask, jam, oil, flour, extract | `bg-water` |
 
-| pane | extra | face | gate |
-|---|---|---|---|
-| potato CropPane | vodka | `{ kind: 'spirit'; spirit: 'vodka' }` | `fermentation` |
-| wheat CropPane | beer | `{ kind: 'spirit'; spirit: 'beer' }` | `fermentation` |
-| grape CropPane | jam, then wine | jam grape; `{ kind: 'cask'; cask: 'wine' }` | `preservatives` / `fermentation` |
-| raspberry CropPane | jam | jam raspberry | `preservatives` |
-| tomato CropPane | jam **Ketchup** | jam tomato | `preservatives` |
-| apple TreePane | cider | `{ kind: 'cask'; cask: 'cider' }` | `fermentation` |
-| apricot TreePane | jam | jam apricot | `preservatives` |
-| cherry TreePane | jam | jam cherry | `preservatives` |
-| olive TreePane | oil | `{ kind: 'oil' }` | `grinder` |
+Utility sugar is a machine good: `bg-water`. Compost and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`.
 
-Grape: jam and wine may both show. Wheat: beer, not flour. Apple: cider, not jam. Apricot / cherry: jam, no brandy plate. Illegal: vanilla CropPane product plate. Illegal: flour plate. Illegal: olive on Seeds.
+`Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
+
+## Ingredients
+
+Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only. Same `flex gap-3` `flex-wrap`.
+
+`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that crop's fruit face. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`. Empty → no section.
+
+Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Apricot brandy, wheat flour, vanilla extract, mill sugar show when the recipe matches. Wheat: flour then beer. Apple: cider, not jam. Olive: oil. Grape: jam and wine. No apple jam. Vanilla: no CropPane mill line.
+
+Hover a plate: Overlay `aside` [[ui/callout-hover]] `right`. Title `faceName` of the yield. Body: `Coin` of baked `unitSale` (common), then that recipe `Recipes` `{ kind: 'one'; recipe }` `sm` — [[ui/recipe]]. Leave clears. Plates take pointer events; recipe rows do not.
+
+Illegal: extra product plates on the fruit row. Illegal: olive on Seeds.
 
 ## Shape
 
@@ -68,6 +78,8 @@ Concept ids: `rarity` `freshness` `happiness` `day` `market` `skills` `family` `
 Left-list: SKU rows keep `itemInner`. Overview and concept rows: title only, no icon plate.
 
 Right pane: SKU → existing Pane. Concept → concept pane. Overview → Overview pane.
+
+Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
 
 Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `rarity`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not.
 
@@ -87,7 +99,7 @@ Every value is qualified: subject + amount + unit/noun + where it applies. “Un
 
 Undefined words are illegal unless a natural farming word, or this page (or a linked page) has already defined them.
 
-**Recipe** is defined by [[ui/recipe]] and heads the Automation recipe block.
+**Recipe** is defined by [[ui/recipe]] and heads the Automation recipe block. Crop / tree Ingredients heading reuses that word: **Recipes**.
 
 Ban in player strings unless defined in-page: gem, pip, grade (except Rarity, first sentence: grade = Common / Uncommon / Rare / Heirloom), overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say daily pay). **Build** is ok as “the Build menu.”
 
@@ -125,7 +137,7 @@ Rarity is the grade of fruit and seed: Common / Uncommon / Rare / Heirloom. Four
 
 ## TreePane
 
-Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Extra plates: Product plates.
+Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane.
 
 Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.** Does not say yielding / resting. Look / inspect words are on-season / off-season — [[ui/inspect]].
 

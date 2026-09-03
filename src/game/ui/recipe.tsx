@@ -7,7 +7,10 @@ import { bindHud } from '../view/motion.ts'
 import { faceGfx, UI_ARROW_FILL, UI_ARROW_INK } from '../view/svgs.ts'
 import { useCycle } from './cycle.ts'
 
-export type RecipeView = { kind: 'list'; machine: MachineId } | { kind: 'live'; craft: Craft }
+export type RecipeView =
+  | { kind: 'list'; machine: MachineId }
+  | { kind: 'one'; recipe: Recipe }
+  | { kind: 'live'; craft: Craft }
 
 type Size = 'sm' | 'md'
 
@@ -174,9 +177,29 @@ function LiveRow({ craft, size }: { craft: Craft; size: Size }) {
 }
 
 export function Recipes({ view, size }: { view: RecipeView; size: Size }) {
-  if (view.kind === 'live') return <LiveRow craft={view.craft} size={size} />
+  if (view.kind === 'live') {
+    return (
+      <div className="pointer-events-none">
+        <LiveRow craft={view.craft} size={size} />
+      </div>
+    )
+  }
+  if (view.kind === 'one') {
+    return (
+      <div className="pointer-events-none">
+        <Row
+          recipe={view.recipe}
+          size={size}
+          fill={1}
+          time={clockText(view.recipe.duration.seconds)}
+          short={NO_SHORT}
+          live={false}
+        />
+      </div>
+    )
+  }
   return (
-    <div className="flex flex-col divide-y divide-ink/10">
+    <div className="pointer-events-none flex flex-col divide-y divide-ink/10">
       {recipesOf(view.machine).map((recipe, i) => (
         <Row
           key={i}

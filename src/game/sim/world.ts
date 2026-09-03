@@ -770,6 +770,7 @@ export class World {
   groundRev = 0
   bigTicks = 0
   cheatFastResearch = false
+  cheatSpeed: 1 | 3 = 1
   private bigAcc = 0
   private nets: Net[] | undefined = undefined
   private netAt = new Map<string, Net>()
@@ -874,20 +875,7 @@ export class World {
       this.drops.length = 0
       h.drops.forEach(d => this.drops.push(d))
       this.modifiers.length = 0
-      for (const id of h.family.player.owned.keys()) {
-        const effect = SKILLS[id].effect
-        if (effect.kind === 'better') {
-          this.modifiers.push({
-            id,
-            source: 'skill',
-            crop: effect.crop,
-            saleMul: effect.saleMul,
-            growSpeed: 1,
-            waterUseMul: 1,
-          })
-        }
-      }
-      this.modGen += 1
+      this.rebuildSkillModifiers()
       this.netVerts.clear()
       h.segments.forEach(s => vertsOf(s.at).forEach(v => this.netVerts.add(vertexKey(v))))
       h.sprinklers.forEach(s => this.netVerts.add(vertexKey(s.at)))
@@ -970,6 +958,7 @@ export class World {
   rebase(): void {
     this.bigAcc = 0
     this.cheatFastResearch = false
+    this.cheatSpeed = 1
     this.nets = undefined
     this.seats.forEach(s => {
       s.queue.length = 0
@@ -1138,7 +1127,10 @@ export class World {
         if (cmd.k === 'all') this.unlockAllBody()
         else if (cmd.k === 'money') this.cheatMoneyBody()
         else if (cmd.k === 'points') this.cheatPointsBody()
-        else this.toggleCheatResearchBody()
+        else if (cmd.k === 'research') this.toggleCheatResearchBody()
+        else if (cmd.k === 'speed') this.setCheatSpeedBody(cmd.n)
+        else if (cmd.k === 'day') this.endDayBody()
+        else this.unlockAllSkillsBody()
         return
       case Act.drive:
         this.driveBody(cmd.throttle, cmd.steer)
@@ -1544,6 +1536,25 @@ export class World {
     st.pickCount += 1
     this.rerollOffers(member)
     this.ping()
+  }
+
+  private rebuildSkillModifiers(): void {
+    const keep = this.modifiers.filter(m => m.source !== 'skill')
+    this.modifiers.length = 0
+    keep.forEach(m => this.modifiers.push(m))
+    this.family.player.owned.forEach((_tier, id) => {
+      const effect = SKILLS[id].effect
+      if (effect.kind !== 'better') return
+      this.modifiers.push({
+        id,
+        source: 'skill',
+        crop: effect.crop,
+        saleMul: effect.saleMul,
+        growSpeed: 1,
+        waterUseMul: 1,
+      })
+    })
+    this.modGen += 1
   }
 
   private rerollOffers(member: MemberId): void {
@@ -3679,6 +3690,22 @@ export class World {
     this.ping()
   }
 
+  unlockAllSkills(): void {
+    this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'skills' })
+  }
+
+  private unlockAllSkillsBody(): void {
+    ;(['player', 'husband', 'daughter'] as const).forEach(member => {
+      const st = this.family[member]
+      skillIds(member).forEach(id => {
+        st.owned.set(id as never, SKILLS[id].maxTier)
+      })
+      st.offers = []
+    })
+    this.rebuildSkillModifiers()
+    this.ping()
+  }
+
   cheatMoney(): void {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'money' })
   }
@@ -3703,6 +3730,25 @@ export class World {
 
   private toggleCheatResearchBody(): void {
     this.cheatFastResearch = !this.cheatFastResearch
+    this.ping()
+  }
+
+  setCheatSpeed(n: 1 | 3): void {
+    this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'speed', n })
+  }
+
+  private setCheatSpeedBody(n: 1 | 3): void {
+    this.cheatSpeed = n
+    this.ping()
+  }
+
+  endDay(): void {
+    this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'day' })
+  }
+
+  private endDayBody(): void {
+    if (this.seam.kind === 'recap') return
+    this.clock.t = DAY_SECONDS
     this.ping()
   }
 

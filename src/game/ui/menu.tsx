@@ -109,7 +109,7 @@ export function Menu(props: MenuProps) {
               setPage(page.kind === 'changelog' ? { kind: 'home' } : { kind: 'changelog' })
             }}
           >
-            2.1.2
+            2.1.3
           </button>
           {joining ? (
             <JoinFields

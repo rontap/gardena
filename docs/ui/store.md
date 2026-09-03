@@ -26,6 +26,8 @@ Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any rarity
 
 `bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, rarity)`, whole stack to hand.
 
+Buy row under the rarity rows. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`4.25rem`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`. Click → `world.buy(packSku)`. Ctrl+click → `world.buyPacks(packSku)` when `buyPacksFail` is not `'Locked'`; else plain `buy`, same as shop. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/shop]].
+
 No crops to show at all: *Empty. Seeds you buy are delivered here.*
 
 ## Rarity gems

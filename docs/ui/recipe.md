@@ -1,6 +1,6 @@
 # Recipe
 
-Crafting shown as a picture. One component, three mounts. Rules [[mechanics/machines]]. Table `sim/recipe.ts`.
+Crafting shown as a picture. One component, four mounts. Rules [[mechanics/machines]]. Table `sim/recipe.ts`.
 
 **Recipe** is a player-facing word. Defined here, used in the almanac heading.
 
@@ -11,7 +11,10 @@ No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]
 `ui/recipe.tsx`. `Recipes({ view, size })`.
 
 ```
-RecipeView = { kind: 'list'; machine: MachineId } | { kind: 'live'; craft: Craft }
+RecipeView =
+  | { kind: 'list'; machine: MachineId }
+  | { kind: 'one'; recipe: Recipe }
+  | { kind: 'live'; craft: Craft }
 ```
 
 `size` `'sm'` 24px faces, `'md'` 32px. Three columns per row.
@@ -26,7 +29,7 @@ Each slot is face + **name** + amount. Name is `faceName` — the same words as 
 
 Type: `sm` `text-sm`, `md` `text-base`. Time caption matches. Not `text-xs`.
 
-Both mounts are `pointer-events-none`. No tooltip, no `title`, no hover state, no focusable node. Ever.
+Every mount is `pointer-events-none`. No tooltip, no `title`, no hover state, no focusable node. Ever. Almanac Ingredients plates are the hover target, not this component.
 
 ## Mounts
 
@@ -34,9 +37,12 @@ Both mounts are `pointer-events-none`. No tooltip, no `title`, no hover state, n
 |---|---|---|
 | Shop / Build callout — [[ui/shop]] | `list`, `machineOfSku(id)` | `sm` |
 | Almanac Automation pane — [[ui/almanac]] | `list` | `md` |
+| Almanac Overlay Ingredients callout — [[ui/almanac]] | `one` | `sm` |
 | Bottom-right `Status` — [[ui/inspect]] | `live` | `md` |
 
 Shop shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
+
+Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)`, then `one` in the Overlay callout. `one` is that recipe's row, same three columns as `list`.
 
 ## List rows
 

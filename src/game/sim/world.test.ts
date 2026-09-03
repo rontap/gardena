@@ -35,7 +35,7 @@ import {
   type Rarity,
 } from '../defs/rarity.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
+import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds } from '../defs/skills.ts'
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
@@ -61,7 +61,7 @@ import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng, rollRarity } from './rng.ts'
-import { Clock, days } from './clock.ts'
+import { Clock, DAY_SECONDS, days } from './clock.ts'
 import { BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
 import { SOURCE } from './water.ts'
@@ -790,7 +790,7 @@ describe('beta-4 invariants', () => {
     expect(RESEARCH['unlock-chest'].name).toBe('Chest')
     expect(RESEARCH['unlock-water-storage'].name).toBe('Water storage')
     expect(RESEARCH['unlock-silos'].name).toBe('Field silos')
-    expect(RESEARCH['unlock-expand'].name).toBe('Unlock land')
+    expect(RESEARCH['unlock-expand'].name).toBe('Expansion')
     expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
     expect(RESEARCH['unlock-grinder'].name).toBe('Machinery')
     expect(RESEARCH['unlock-expand'].tree).toBe('land')
@@ -809,7 +809,7 @@ describe('beta-4 invariants', () => {
     w.setCell(AT, { kind: 'infertile' })
     const p = w.prompt(AT)
     expect(p.kind).toBe('blocked')
-    expect(p.text).toBe('does not need seeds')
+    expect(p.text).toBe('Does not need seeds')
   })
 
   test('pickaxe on ripe does not queue and speaks', () => {
@@ -1042,7 +1042,7 @@ describe('beta-5 invariants', () => {
       tree: 'automation',
       reveal: ['unlock-vehicles'],
       requires: ['unlock-vehicles'],
-      grants: ['Automate chrome'],
+      grants: ['Automate on the Vehicle hangar'],
       effect: { kind: 'feature' },
     })
     expect(Object.keys(RESEARCH).includes('unlock-pumpjack')).toBe(false)
@@ -1061,7 +1061,7 @@ describe('beta-5 invariants', () => {
       reveal: ['unlock-vehicles'],
       requires: ['unlock-vehicles'],
       effect: { kind: 'feature' },
-      grants: ['Automate chrome'],
+      grants: ['Automate on the Vehicle hangar'],
       name: 'Automated dispatch',
       cost: 100,
       seconds: 80,
@@ -2784,5 +2784,138 @@ describe('world.pulse', () => {
     w.buy('buy-pipe')
     w.placePipe({ axis: 'h', col: 18, row: 7 })
     expect('pulse' in w).toBe(false)
+  })
+})
+
+describe('family.unlockSkills', () => {
+  test('`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.', () => {
+    const w = new World(1)
+    w.grantPoints(1)
+    const points = w.points
+    const pick = w.family.player.pickCount
+    const done = w.done.size
+    expect(w.family.player.offers.length).toBeGreaterThan(0)
+    w.unlockAllSkills()
+    ;(['player', 'husband', 'daughter'] as const).forEach(member => {
+      skillIds(member).forEach(id => {
+        expect(w.skillTier(id)).toBe(SKILLS[id].maxTier)
+      })
+      expect(w.family[member].offers).toEqual([])
+      expect(w.family[member].pickCount).toBe(member === 'player' ? pick : 0)
+    })
+    expect(w.hasSkill('haggling')).toBe(true)
+    expect(w.done.has('unlock-grape')).toBe(false)
+    expect(w.skillTier('better-grape')).toBe(SKILLS['better-grape'].maxTier)
+    expect(w.points).toBe(points)
+    expect(w.done.size).toBe(done)
+    const better = PLAYER_SKILL_IDS.filter(id => SKILLS[id].effect.kind === 'better')
+    expect(w.modifiers.filter(m => m.source === 'skill').map(m => m.id).sort()).toEqual([...better].sort())
+    expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price - SKILLS.haggling.maxTier)
+    expect(w.log).toEqual([{ a: Act.cheat, t: 0, p: 0, k: 'skills' }])
+
+    const u = new World(1)
+    const owned = {
+      player: u.family.player.owned.size,
+      husband: u.family.husband.owned.size,
+      daughter: u.family.daughter.owned.size,
+    }
+    const offers = u.family.player.offers
+    u.unlockAll()
+    expect(u.family.player.owned.size).toBe(owned.player)
+    expect(u.family.husband.owned.size).toBe(owned.husband)
+    expect(u.family.daughter.owned.size).toBe(owned.daughter)
+    expect(u.hasSkill('haggling')).toBe(false)
+    expect(u.family.player.offers).toBe(offers)
+  })
+})
+
+describe('day.end-day', () => {
+  test('End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams. Recap: no-op.', () => {
+    const w = new World(1)
+    const p = new Plant('carrot', 'common')
+    p.maturity = 0.4
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    w.clock.t = 80
+    w.endDay()
+    expect(w.clock.t).toBe(DAY_SECONDS)
+    expect(p.maturity).toBe(0.4)
+    expect(w.seam.kind).toBe('play')
+    expect(w.log).toEqual([{ a: Act.cheat, t: 0, p: 0, k: 'day' }])
+    w.tick(DT_MAX)
+    expect(w.seam.kind).toBe('recap')
+    expect(p.maturity).toBe(0.4)
+
+    const r = new World(1)
+    r.clock.t = DAY_SECONDS - 0.001
+    r.tick(DT_MAX)
+    expect(r.seam.kind).toBe('recap')
+    const t = r.clock.t
+    r.endDay()
+    expect(r.clock.t).toBe(t)
+    expect(r.seam.kind).toBe('recap')
+  })
+})
+
+describe('world.cheatSpeed', () => {
+  test('`World.cheatSpeed` is `1 | 3`. App host accumulator `frameDt * cheatSpeed`. World.tick does not multiply `dt`. `Act.cheat` `{ k: \'speed\'; n: 1 | 3 }`. `?speed=3` boots 3; any other URL value boots 1. Not job drain.', () => {
+    const w = new World(1)
+    expect(w.cheatSpeed).toBe(1)
+    w.setCheatSpeed(3)
+    expect(w.cheatSpeed).toBe(3)
+    expect(w.log).toEqual([{ a: Act.cheat, t: 0, p: 0, k: 'speed', n: 3 }])
+    w.setCheatSpeed(1)
+    expect(w.cheatSpeed).toBe(1)
+
+    const a = new World(1)
+    const b = new World(1)
+    b.setCheatSpeed(3)
+    const pa = new Plant('carrot', 'common')
+    const pb = new Plant('carrot', 'common')
+    a.setCell(AT, { kind: 'growing', soil: bed(), plant: pa })
+    b.setCell(AT, { kind: 'growing', soil: bed(), plant: pb })
+    a.tick(DT_MAX)
+    b.tick(DT_MAX)
+    expect(pb.maturity).toBe(pa.maturity)
+
+    const c = new World(1)
+    c.setCheatSpeed(3)
+    c.startResearch('unlock-tomato')
+    const left = RESEARCH['unlock-tomato'].seconds
+    c.tick(DT_MAX)
+    expect(c.job.kind === 'run' && c.job.left).toBeCloseTo(left - DT_MAX, 5)
+    expect(c.cheatFastResearch).toBe(false)
+  })
+})
+
+describe('inventory.silo-buy', () => {
+  test('Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same fail / merge / shop-stream as shop. No pack: no Buy.', () => {
+    expect(packSku('vanilla')).toBeUndefined()
+    expect(packSku('carrot')).toBe('pack-carrot')
+    const sku: SkuId = 'pack-carrot'
+    const w = new World(1)
+    w.money = 0
+    expect(w.buy(sku)).toBe('Cannot afford')
+    w.buyPacks(sku)
+    expect(siloCount(w, 'carrot', 'common')).toBe(5)
+    w.money = 50
+    expect(w.buy(sku)).toBeUndefined()
+    expect(siloCount(w, 'carrot', 'common')).toBe(10)
+    const seq1 = new Rng(1).stream('shop')
+    seq1.next()
+    expect(w.rng.stream('shop').next()).toBe(seq1.next())
+    const bulk = new World(1)
+    bulk.money = 50
+    bulk.buyPacks(sku)
+    expect(siloCount(bulk, 'carrot', 'common')).toBe(30)
+    const seq5 = new Rng(1).stream('shop')
+    for (let i = 0; i < 5; i++) seq5.next()
+    expect(bulk.rng.stream('shop').next()).toBe(seq5.next())
+    const full = new World(1)
+    full.money = 50
+    full.silo.seeds.length = 0
+    full.silo.seeds.push({ crop: 'carrot', rarity: 'common', count: SILO_SEED_CAP })
+    expect(full.buy(sku)).toBe('Seed silo full')
+    full.buyPacks(sku)
+    expect(siloCount(full, 'carrot', 'common')).toBe(SILO_SEED_CAP)
   })
 })

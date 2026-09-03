@@ -4,7 +4,7 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `unlockAll`: every row done, `money += 999`, job idle, `points = 99`. Does not grant skills. Does not reroll — [[mechanics/family]]. UI is the Cheat dock, not Research — [[ui/cheat]].
 
-`cheatFastResearch`: job drain `× 3` on top of Speedy research. Toggle. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` to the shared bank.
+`unlockAllSkills` is a different cheat. `cheatFastResearch`: toggle. Selected while on. Job drain `× 3` on top of Speedy research. `Act.cheat` `{ k: 'research' }`. `World.cheatSpeed` is world time, not this arm. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` to the shared bank.
 
 `RESEARCH[id].name` is the visible label. Trees: plants, land, automation, trade.
 
@@ -68,7 +68,7 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-better-tools | trade | — | — | — |
 | unlock-chest | trade | — | — | — |
 | unlock-grinder | trade | — | — | — |
-| unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam icon in the almanac |
+| unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam plates in almanac Ingredients |
 | unlock-fermentation | trade | unlock-grinder | — | — |
 
 Synthetic is research; compost box is a start SKU. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Start plants shelf is three: Synthetic fertilizer, Tomato seeds, Grape seeds. `unlock-grape` cost 12, seconds 40 — preference. `unlock-crop-variants` reveals after tomato, grape, or irrigation. `unlock-heirloom` requires Crop variants and also reveals on land or vehicles.
@@ -83,7 +83,7 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
-Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac jam third icon when `unlock-preservatives` done. Spirit plates gate `unlock-fermentation`. Wine / cider gate `unlock-fermentation`. Oil gates `unlock-grinder`. Layout is UI.
+Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac Ingredients: jam gate `unlock-preservatives`; spirit / wine / cider gate `unlock-fermentation`; oil / flour / extract / mill sugar gate `unlock-grinder`. Layout is UI. — [[ui/almanac]]
 
 `unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop. `buy-weed-spray` gates on `unlock-fertilizer`; the research `effect` stays one SKU.
 
@@ -154,7 +154,7 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 `research.variants` — `unlock-crop-variants` plants, cost 5, 40s, `reveal` tomato | grape | irrigation, `effect` `feature`. Without it: ripen rarity identity, shop packs common, silo hides uncommon/rare unless stock. `unlock-heirloom` `requires` it.
 
-`research.unlockAll` — `unlockAll`: every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll.
+`research.unlockAll` — `unlockAll`: every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll. Job drain ×3 is `cheatFastResearch`, not this.
 
 `research.start` — Plants start shelf is three: `unlock-fertilizer`, `unlock-tomato`, `unlock-grape`. `unlock-grape` `reveal: []`, cost 12, seconds 40 — preference. `pack-grape` unlock `unlock-grape`, show `start`. Pack is not free on day 1.
 

@@ -33,7 +33,9 @@ Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive
 
 Buying: `pack-*` → silo, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds and sugar are not seeds or additives; they still go to the house.
 
-`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl still shop gesture. — [[mechanics/family]]
+Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same bodies as shop. No pack (vanilla): no Buy. — [[ui/store]]
+
+`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`. Ctrl is shop and seed-silo Buy gesture. — [[mechanics/family]]
 
 ## Starter
 
@@ -88,3 +90,5 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 `inventory.stack` — Countable items merge in hand by kind and identity only. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per rank. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`.
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
+
+`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same fail / merge / shop-stream as shop. No pack: no Buy.

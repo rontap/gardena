@@ -52,6 +52,7 @@ Vault for this game. Agents read this first.
 
 - [[ui/_index]]
 - [[ui/changelog]] — menu chrome for the player changelog
+- [[ui/settings]] — player options behind the gear
 
 ## Art
 

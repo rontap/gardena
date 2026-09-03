@@ -1,4 +1,5 @@
 import type { VfxId } from '../sim/ids.ts'
+import { settings } from '../sim/settings.ts'
 
 export type VfxAnchor = 'vertex' | 'cell'
 
@@ -27,4 +28,8 @@ export const VFX: Record<VfxId, VfxDef> = {
   dig: def(4, 0, 0.5, 24, 24, 'cell'),
 }
 
-export const VFX_REDUCED: boolean = matchMedia('(prefers-reduced-motion: reduce)').matches
+const MOTION_QUERY = matchMedia('(prefers-reduced-motion: reduce)')
+
+export function vfxReduced(): boolean {
+  return MOTION_QUERY.matches || settings().reducedMotion
+}

@@ -18,6 +18,8 @@ function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
 async function dismissRecap(page: Page): Promise<void> {
   const recap = page.getByRole('button', { name: /^Day \d+$/ })
   if (await recap.isVisible().catch(() => false)) await recap.click()
+  const resume = page.getByRole('button', { name: 'Resume' })
+  if (await resume.isVisible().catch(() => false)) await resume.click()
 }
 
 async function worldTrue(page: Page, arg: unknown, body: string, timeout = 60_000): Promise<void> {

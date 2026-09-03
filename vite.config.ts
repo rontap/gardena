@@ -14,6 +14,14 @@ export default defineConfig({
       strategy: ['baseLocale'],
     }),
   ],
+  optimizeDeps: {
+    exclude: ['mermaid'],
+  },
+  server: {
+    watch: {
+      ignored: ['**/release/**', '**/coverage/**'],
+    },
+  },
   test: {
     environment: 'node',
     setupFiles: ['src/game/sim/test-setup.ts'],

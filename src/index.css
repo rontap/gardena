@@ -171,3 +171,15 @@ body,
     opacity: 1;
   }
 }
+
+[data-reduced-motion] .menu-canvas-in {
+  animation: none;
+}
+
+[data-reduced-motion] .vfx-frame {
+  animation: none;
+}
+
+[data-reduced-motion] .vfx-frame[data-vfx-i='0'] {
+  opacity: 1;
+}

@@ -41,6 +41,7 @@ import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
+import { saveSettings, settings, type Settings } from './game/sim/settings.ts'
 
 const HASH = window.location.hash
 const START_NOW = HASH === '#start_now' || HASH === '#unlockall'
@@ -97,7 +98,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [editor, setEditor] = useState(false)
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
+  const [prefs, setPrefs] = useState<Settings>(() => settings())
   const pausedRef = useRef(false)
+  const hiddenHeld = useRef(false)
   const aiHoldRef = useRef(false)
   pausedRef.current = paused
   const catchingRef = useRef(false)
@@ -131,6 +134,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (lens === 'water' && !world.hasSkill('water-study')) setLens('off')
     if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
   }, [hudN, lens, world])
+
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-reduced-motion', prefs.reducedMotion)
+  }, [prefs])
 
   useEffect(() => {
     ;(window as unknown as { __world?: World }).__world = world
@@ -207,9 +214,37 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (kind === 'recap' && prevSeam.current === 'play') {
       if (world.local === 0) writeSlot(dump(world))
       setPanel({ kind: 'none' })
+      soloPause(true)
     }
     prevSeam.current = kind
   }, [hudN, world])
+
+  useEffect(() => {
+    if (world === undefined || !prefs.pauseWhenHidden) return
+    const away = () => {
+      if (pausedRef.current) return
+      hiddenHeld.current = true
+      soloPause(true)
+    }
+    const back = () => {
+      if (!hiddenHeld.current) return
+      hiddenHeld.current = false
+      soloPause(false)
+    }
+    const onVisibility = () => {
+      if (document.hidden) away()
+      else back()
+    }
+    window.addEventListener('blur', away)
+    window.addEventListener('focus', back)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('blur', away)
+      window.removeEventListener('focus', back)
+      document.removeEventListener('visibilitychange', onVisibility)
+      back()
+    }
+  }, [world, prefs.pauseWhenHidden])
 
   useEffect(() => {
     if (world === undefined) return
@@ -220,7 +255,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     let id = 0
     const loop = (now: number) => {
       const frameDt = (now - last) / 1000
-      const dt = frameDt * world.cheatSpeed
+      const dt = Math.min(frameDt * world.cheatSpeed, DT_MAX * 2)
       last = now
       const inst = 1 / frameDt
       fpsEma = fpsEma === 0 ? inst : fpsEma * 0.9 + inst * 0.1
@@ -567,7 +602,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function overlayHold(kind: Panel['kind']): boolean {
-    return kind === 'family' || kind === 'market' || kind === 'almanac'
+    return kind === 'family' || kind === 'market' || kind === 'almanac' || kind === 'menu'
   }
 
   function overlayPause(from: Panel['kind'], to: Panel['kind']): void {
@@ -737,6 +772,23 @@ export default function App({ sink }: { sink: WorkerSink }) {
         roomRef.current = ''
         setMpFail('ice')
       })
+  }
+
+  function soloPause(on: boolean): void {
+    if (hostRef.current !== undefined || guestRef.current !== undefined) return
+    pausedRef.current = on
+    setPaused(on)
+  }
+
+  function applySettings(next: Settings): void {
+    saveSettings(next)
+    setPrefs(next)
+  }
+
+  function toMainMenu(): void {
+    const w = worldRef.current
+    if (w !== undefined && guestRef.current === undefined) writeSlot(dump(w))
+    toStartup(undefined, false)
   }
 
   function onPause(): void {
@@ -1005,13 +1057,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
               fail={fail}
               connected={connected}
               guest={guest}
-              onNew={playNew}
               onLoad={playLoad}
               onUpload={playUpload}
               onSave={saveGame}
               onDownload={downloadSave}
-              onLeave={() => toStartup(undefined, false)}
-              onClose={closeMp}
+              onMainMenu={toMainMenu}
+              settings={prefs}
+              onSettings={applySettings}
+              onClose={() => setPanel({ kind: 'none' })}
             />
           )}
           {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && !guest && (

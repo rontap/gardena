@@ -1,3 +1,12 @@
+# 2.2.0 Settings
+
+A Settings page behind the gear, a way back to the startup screen, and a farm that no longer races through the time you spent in another tab.
+
+- 🎉 Added ui: Settings. A page behind the gear holds a reduced-motion switch and a switch that stops the farm while this tab is not in front, and what you save there follows you into every farm on this browser.
+- 🎉 Added ui: Main menu. A button in the gear saves the farm and takes you back to the startup screen.
+- 🔧 Changed mechanic: End of day. previously, the farm started running again the moment you closed the end-of-day summary, now it waits until you press Resume.
+- 🐛 Fixed bug mechanic: Time spent in another tab piled up and the farm raced through it on your return, sometimes past midnight; the farm now carries on from where you left it.
+
 # 2.1.3 QoL Patch V
 
 The Almanac shows what a crop turns into, the seed silo sells seeds, and the weed spray can gets a nozzle.

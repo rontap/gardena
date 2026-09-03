@@ -7,7 +7,7 @@ import type { VfxId } from '../../sim/ids.ts'
 import { TILE, tileVariant } from '../camera.ts'
 import { atlasTex, vfxKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
-import { VFX, VFX_REDUCED } from '../vfx.ts'
+import { VFX, vfxReduced } from '../vfx.ts'
 
 export type VfxMount = { id: VfxId; col: number; row: number; rot: number; burst: boolean; seq?: number }
 
@@ -77,7 +77,7 @@ export class VfxLayer {
   ingest(world: World, now: number): void {
     const got = world.drainBursts()
     if (got.length === 0) return
-    if (VFX_REDUCED) return
+    if (vfxReduced()) return
     this.bursts.push(...got.map(b => ({ ...b, t0: now })))
   }
 
@@ -130,7 +130,7 @@ export class VfxLayer {
     const x = col * TILE
     const y = row * TILE
     const rad = (rot * Math.PI) / 180
-    if (VFX_REDUCED && !burst) {
+    if (vfxReduced() && !burst) {
       const s = this.pool.take(atlasTex(vfxKey(id, 0)))
       if (def.anchor === 'vertex') s.anchor.set(0.5)
       s.position.set(x, y)

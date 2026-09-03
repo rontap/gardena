@@ -27,6 +27,7 @@
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `save.ts` | `Save`, dump / parse — [[architecture/save]] |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
+| `settings.ts` | `Settings`, `settings()` / `saveSettings` — [[ui/settings]] |
 | `log.ts` | `Act`, `Cmd` |
 | `log.worker.ts` | worker JSON sink |
 | `plot.ts` | `Cell`, `Plot` |
@@ -62,6 +63,7 @@
 | `callout-hover.tsx` | `CalloutHover` |
 | `hud.tsx` | clock, ribbon, docks, pause, gear |
 | `menu.tsx` | startup / gear shell, `MenuPage` |
+| `settings.tsx` | `SettingsPage` body — [[ui/settings]] |
 | `changelog.md` | player copy. Shipped. Not `docs/` |
 | `changelog.ts` | `parseChangelog`, `RELEASES` |
 | `changelog.tsx` | `Changelog` body |
@@ -84,7 +86,7 @@
 | `recap.tsx` | end-of-day |
 | `family.tsx` | family overlay |
 
-Panel open/close is App-local. Solo family / market / almanac overlay pause is App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, or parked vehicle. Silo cells are look name only.
+Panel open/close is App-local. Solo family / market / almanac overlay pause, the day-seam pause, and the tab pause are App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, or parked vehicle. Silo cells are look name only.
 
 ## view
 

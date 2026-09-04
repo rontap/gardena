@@ -61,7 +61,7 @@ Hovering a `chest` or `freezer` that holds anything adds one block under the loo
 
 ## Barrel aging
 
-Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskAgeOf` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskAgeOf` still reads the multiplier back out of `unitSale`. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]].
+Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskAgeOf` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskAgeOf` still reads the multiplier back out of `unitSale`. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
 
 ## Ripe
 

@@ -77,6 +77,7 @@ export const SHELVES: readonly Shelf[] = [
       { label: 'Brewing', skus: ['buy-still', 'buy-barrel'] },
       { label: 'Preserving', skus: ['buy-jam'] },
       { label: 'Compost', skus: ['buy-compost-box', 'buy-furnace'] },
+      { label: 'Grafting', skus: ['buy-research-station'] },
     ],
   },
   {

@@ -116,6 +116,7 @@
   "prompt_station_filling": "{name} {have}/{need} \u00b7 Quality {n}%",
   "prompt_station_refuse": "Heirloom fruit only",
   "prompt_station_cut": "Cut grafts",
+  "prompt_aging_max": "{cask} made from {name}. Aging up to {days} days multiplies its sale price by {mul}.",
   "prompt_rotten": "Rotten {name} - {soil}",
   "prompt_dead": "dead",
   "prompt_no_pipes": "no pipes around sensor!",

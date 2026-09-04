@@ -48,6 +48,8 @@ Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L —
 
 Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.
 
+A `weed` plot becomes `empty` on the same click, same soil, no drop. Every other tilled plot keeps its kind. Spray is the one way to clear a standing weed with neither a shovel nor a free hand.
+
 Assumption: bag `WEED_SPRAY_BAG` = 30 L (old 30 uses). Spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work 0.
 
 ## Grass
@@ -70,7 +72,7 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 
 `weeds.outbreak` — Outbreak: when a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.
 
-`weeds.spray` — Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.
+`weeds.spray` — Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. A `weed` plot becomes `empty` on that same click, same soil, no drop; every other tilled plot keeps its kind. Instant. Not untilled. Not spray-trailer.
 
 `weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.
 

@@ -30,7 +30,7 @@ export const CHEST_SLOTS = 9
 export const GRIND_WORK = 12
 export const GRIND_MIN = 1
 export const GRIND_MAX = 3
-export const GRAFT_WORK = 1.2
+export const GRAFT_WORK = 5
 export const CHOP_GRAFTS = 2
 export const NEIGHBOUR_REACH = 2
 
@@ -75,6 +75,11 @@ export const FURNACE_VALUE = {
   wood: 40,
 } as const
 
+export const STATION_IN = 3
+export const STATION_SECONDS = 90
+export const STATION_GRAFT_MIN = 1
+export const STATION_GRAFT_MAX = 2
+
 export const FREEZER_SLOTS = 6
 export const FREEZER_ROT_MUL = 0.2
 
@@ -112,7 +117,8 @@ export const SPIRIT_SALE: { readonly [K in Exclude<SpiritKind, 'mixed'>]: number
   beer: 144,
   brandy: 108,
 }
-export const CASK_AGE = 1.5
+export const CASK_AGE_MIN = 1.5
+export const CASK_AGE_MAX = 3
 export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   apricot: 36,
   grape: 72,

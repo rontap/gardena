@@ -49,6 +49,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-jam',
   'buy-still',
   'buy-furnace',
+  'buy-research-station',
   'buy-barrel',
   'buy-freezer',
   'buy-freezer-large',
@@ -376,6 +377,7 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
+    if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`

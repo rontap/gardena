@@ -8,6 +8,7 @@ import { ChestUi } from './game/ui/chest.tsx'
 import { HangarUi } from './game/ui/hangar.tsx'
 import { VehicleUi } from './game/ui/vehicle.tsx'
 import { AdditivesUi, SiloUi } from './game/ui/store.tsx'
+import { StationUi } from './game/ui/station.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
@@ -203,7 +204,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setPanel(p => (p.kind === 'vehicle' && p.id === cue.id ? p : { kind: 'vehicle', id: cue.id }))
       return
     }
-    if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives') return
+    if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives' && cue.kind !== 'station') return
     const at = cue.at
     setPanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
   }, [hudN, world])
@@ -216,6 +217,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setPanel({ kind: 'none' })
       soloPause(true)
     }
+    if (kind === 'play' && prevSeam.current === 'recap') soloPause(false)
     prevSeam.current = kind
   }, [hudN, world])
 
@@ -987,6 +989,16 @@ export default function App({ sink }: { sink: WorkerSink }) {
           )}
           {panel.kind === 'silo' && (
             <SiloUi
+              world={world}
+              at={panel.at}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
+          {panel.kind === 'station' && (
+            <StationUi
               world={world}
               at={panel.at}
               onClose={() => {

@@ -48,6 +48,7 @@ export type TurnAction =
   | { task: 'swapChest'; at: Coord; i: number }
   | { task: 'take'; from: 'silo'; crop: AnnualId; variety: VarietyId }
   | { task: 'take'; from: 'additive'; id: AdditiveId }
+  | { task: 'take'; from: 'sugar' }
   | { task: 'vehicle'; op: 'buy'; kind: VehicleKind; at: Coord }
   | { task: 'vehicle'; op: 'buyTrailer'; kind: TrailerKind; at: Coord }
   | { task: 'vehicle'; op: 'deploy'; id: VehicleId; at: Coord; hitch: TrailerId | 'none' }
@@ -490,6 +491,7 @@ function act(world: World, a: TurnAction): string {
       return ''
     case 'take':
       if (a.from === 'silo') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'silo', c: a.crop, r: a.variety })
+      else if (a.from === 'sugar') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'sugar', d: 'sugar' })
       else world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'additive', d: a.id })
       return ''
     case 'vehicle':
@@ -626,6 +628,7 @@ play.turn([...TurnAction]) runs the list, then plays out queued work until idle.
   { task:'expand', chunk }
   { task:'swap', i } | { task:'swapChest', at, i }
   { task:'take', from:'silo', crop, variety } | { task:'take', from:'additive', id }
+  { task:'take', from:'sugar' }                one sugar bag out of the additive store
   { task:'vehicle', op, ... }                  buy buyTrailer deploy embark disembark dock
                                                load unload refill seat trailerSlot boom drive
 

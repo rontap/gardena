@@ -56,6 +56,20 @@ export const CASK_IDS: readonly CaskId[] = ['wine', 'cider']
 
 export const CASK_OF: { readonly [K in BarrelCrop]: CaskId } = { grape: 'wine', apple: 'cider' }
 
+export const CROP_OF_CASK: { readonly [K in CaskId]: BarrelCrop } = { wine: 'grape', cider: 'apple' }
+
+export const SPIRIT_OF: { readonly [K in StillCrop]: Exclude<SpiritKind, 'mixed'> } = {
+  potato: 'vodka',
+  wheat: 'beer',
+  apricot: 'brandy',
+}
+
+export const CROP_OF_SPIRIT: { readonly [K in Exclude<SpiritKind, 'mixed'>]: StillCrop } = {
+  vodka: 'potato',
+  beer: 'wheat',
+  brandy: 'apricot',
+}
+
 export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla'
 
 export type JamId = `jam-${JamCrop}`
@@ -210,6 +224,7 @@ export type SkuId =
   | 'buy-traffic-light'
   | 'buy-furnace'
   | 'buy-axe'
+  | 'buy-research-station'
 
 export type SensorKind =
   | 'lever'
@@ -288,3 +303,5 @@ export type VfxId =
   | 'dig'
   | 'furnace'
   | 'furnace-smoke'
+  | 'graft'
+  | 'age'

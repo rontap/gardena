@@ -74,6 +74,8 @@ Lock crop + Variety. Output sale `CASK_SALE[cask] × RATING_SALE[alcohol] × qua
 
 Filling `{n}` feed count. Cap `BARREL_CAP` 5. Maturing `{pct}` = `floor((age / BARREL_MATURE) * 100)`. Aging `{n}` = `floor(age / DAY_SECONDS)`, `{mul}` = age multiplier to two decimals. The Aging fill row is [[ui/inspect]].
 
+An aging barrel adds a second look line under the first: **{Wine|Cider} made from {Variety}. Aging up to {days} days multiplies its sale price by {mul}.** `{days}` = `BARREL_AGE / DAY_SECONDS`, `{mul}` = `caskAgeTop(q)` at the barrel's mean Quality, both to two decimals. It says what the cask can still reach, so a player can price waiting against selling now. Maturing shows no such line — there is no cask yet to name.
+
 Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge the matching cask): **Collect wine** / **Collect cider** off `CASK_OF[crop]`. Same `{ act: 'barrel'; at }`. Merge key is cask + Variety; Quality averages.
 
 ## Jam machine

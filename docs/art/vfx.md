@@ -16,6 +16,8 @@ Pixi ticker cuts over atlas frames. No CSS `<use>`. No rAF outside the Pixi tick
 
 `flow` is not frames. The Pixi ticker drives a transform, a tint, or a dash offset: no atlas frames, no per-instance sim state, no frame index anywhere. Rigid-body transform of a sub-sprite is legal; interpolating a raster frame is still banned. A marching dash and a turning part are transforms; a smeared bitmap is not.
 
+`vfx-graft` and `vfx-age` are `graft` and `age` in `VfxId`. `vfx-age` is a second barrel state, not a replacement for `brew`.
+
 Today `flow` paints water along conducting pipe (dashes marching away from the sources, stopping dead at a closed valve), beads along a high wire from `from` to `to`, and the gardener walk bob. `FLOW_DASH` is the cycle — preference. Direction on pipe is a view-local BFS from the corners of every `World.sources()` cell over conducting edges, not a sim field.
 
 State VFX mounts only while true. An idle machine is zero sprites — there is no `is-working` attribute to match.
@@ -55,6 +57,8 @@ State VFX keeps frame 0 painted and stops animating — the readability signal s
 | `vfx-pour.svg` | `0 0 24 24` | `f0`–`f1` | splash landing |
 | `vfx-furnace.svg` | `0 0 24 24` | `f0`–`f3` | fire at the furnace opening |
 | `vfx-furnace-smoke.svg` | `0 0 24 24` | `f0`–`f3` | smoke rising from the furnace chimney |
+| `vfx-graft.svg` | `0 0 24 24` | `f0`–`f3` | wood chips and leaf ticks rising off the cut |
+| `vfx-age.svg` | `0 0 24 24` | `f0`–`f3` | bubbles rising off an aging cask, denser than `vfx-brew` |
 
 `vfx-spray-large` is its own file, not `vfx-spray` at `scale(2)` — a scaled copy doubles the pixel grid.
 
@@ -75,6 +79,10 @@ Dry, sourceless, unreachable, or nothing growing in the AoE: no VFX.
 ## State: furnace
 
 Working furnace: `vfx-furnace` mounts at the south cell — the opening. `vfx-furnace-smoke` mounts at the north cell — the chimney. Prop groups `off` / `on` light that opening; fire VFX is the fire; smoke VFX is the chimney. Chimney mouth `(12, 14)` in `prop-furnace` and in north-cell local. Smoke viewBox `0 0 24 24`, `cell` origin at the north cell corner, puffs leave that mouth toward y=0. Reduced motion: frame 0 on both. Fire: `fire` / `ripe` / `fruit-red` / `roof`. Smoke: `steel` / `house` / `oil` / `ink`. No `fire` on the smoke.
+
+## State: barrel
+
+A working barrel paints one of two: `brew` while `age < BARREL_MATURE`, `age` after it. Maturing is the fruit fermenting, aging is the cask sitting. One at a time, never both – [[mechanics/machines]].
 
 ## Burst
 
@@ -104,4 +112,6 @@ While a seat’s head intent is `shovel` and `workLeft > 0`:
 
 The patch is ground, so it lives in `VfxLayer.ground`, mounted between `plots` and `pipes` — under the gardener who is digging it, never over. The clods stay on the `vfx` root above. The mask unmounts the tick `doShovel` lands, when `plots` paints the tilled cell for real. One or the other, never both. Cancel or an interrupted queue drops the mask with no ground changed. The mask is the 24-unit cell only; the tilled lip arrives with the real cell.
 
-Keyed per seat, not per cell, so two gardeners digging is two masks. Any timed act can claim it by naming its asset; this slice wires `shovel` only.
+Keyed per seat, not per cell, so two gardeners digging is two masks.
+
+While a seat's head intent is `graft` and `workLeft > 0`, `vfx-graft` mounts at `at` the same way. No ground mask – grafting changes the plant, not the soil. `GRAFT_WORK` is long enough to read, so the work carries the VFX and there is no completion burst. Any other timed act can claim the channel by naming its asset.

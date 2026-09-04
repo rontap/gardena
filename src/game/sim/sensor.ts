@@ -1,5 +1,5 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
-import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, RectBase, SeedSilo } from './building.ts'
+import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, RectBase, ResearchStation, SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -260,7 +260,7 @@ export function isSensor(c: { kind: string }): c is Sensor {
 }
 
 export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
-  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
+  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') {
     return port === 'in' && c.base.col === at.col && c.base.row === at.row
   }
   if (c.kind === 'furnace') {
@@ -297,6 +297,7 @@ export type PortDevice =
   | 'jam'
   | 'still'
   | 'furnace'
+  | 'station'
   | 'chest'
   | 'freezer'
   | 'seed-silo'
@@ -309,6 +310,7 @@ export function portDevice(c: Cell): PortDevice {
     c.kind === 'jam' ||
     c.kind === 'still' ||
     c.kind === 'furnace' ||
+    c.kind === 'station' ||
     c.kind === 'chest' ||
     c.kind === 'freezer' ||
     c.kind === 'seed-silo' ||
@@ -513,7 +515,7 @@ export type EvalIn = {
   valves: Map<string, ValveHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
   raw: Raw
-  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace>
+  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>
   stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>
 }
 
@@ -691,6 +693,7 @@ export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number 
     kind === 'jam' ||
     kind === 'still' ||
     kind === 'furnace' ||
+    kind === 'station' ||
     kind === 'pulser' ||
     kind === 'counter' ||
     kind === 'lever' ||

@@ -99,6 +99,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
 import propTractor from '../../assets/props/prop-tractor.svg?raw'
@@ -194,6 +195,8 @@ import steam from '../../assets/vfx/vfx-steam.svg?raw'
 import dig from '../../assets/vfx/vfx-dig.svg?raw'
 import furnaceVfx from '../../assets/vfx/vfx-furnace.svg?raw'
 import furnaceSmokeVfx from '../../assets/vfx/vfx-furnace-smoke.svg?raw'
+import graftVfx from '../../assets/vfx/vfx-graft.svg?raw'
+import ageVfx from '../../assets/vfx/vfx-age.svg?raw'
 
 const SCALE = 2
 
@@ -244,6 +247,8 @@ export type AtlasKey =
   | 'freezer'
   | 'furnace-off'
   | 'furnace-on'
+  | 'station-off'
+  | 'station-on'
   | 'hangar'
   | 'quad'
   | 'tractor'
@@ -533,6 +538,8 @@ async function load(): Promise<void> {
   put('freezer', propFreezer)
   put('furnace-off', propFurnace, 'off')
   put('furnace-on', propFurnace, 'on')
+  put('station-off', propStation, 'off')
+  put('station-on', propStation, 'on')
   put('hangar', propHangar)
   put('quad', propQuad)
   put('tractor', propTractor)
@@ -677,6 +684,8 @@ async function load(): Promise<void> {
     ['dig', dig, 4],
     ['furnace', furnaceVfx, 4],
     ['furnace-smoke', furnaceSmokeVfx, 4],
+    ['graft', graftVfx, 4],
+    ['age', ageVfx, 4],
   ] as const).forEach(([id, raw, n]) => {
     const frames = [0, 1, 2, 3] as const
     for (const i of frames) {

@@ -468,6 +468,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-jam': {id: 'buy-jam', price: 45, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
     'buy-furnace': {id: 'buy-furnace', price: 55, tab: 'automation', unlock: 'unlock-furnace', show: 'start', need: []},
+    'buy-research-station': {id: 'buy-research-station', price: 60, tab: 'automation', unlock: 'start', show: 'start', need: []},
     'buy-barrel': {id: 'buy-barrel', price: 18, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-freezer-large': {id: 'buy-freezer-large', price: 0, tab: 'automation', unlock: 'start', show: 'start', need: 'prize'},

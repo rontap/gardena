@@ -4,6 +4,7 @@ import {
   HANGAR_W,
   SILO_H,
   SILO_W,
+  SUGAR_BAG,
   HARVEST_SLOTS,
   HITCH_BACK,
   QUAD_ACCEL,
@@ -36,7 +37,9 @@ import {
   type Mill,
   type PotStill,
   type RectBase,
+  type ResearchStation,
   type SeedSilo,
+  type SugarBin,
 } from './building.ts'
 import type { Drop } from './drop.ts'
 import {
@@ -49,6 +52,8 @@ import {
   millApply,
   furnaceAccept,
   furnaceApply,
+  stationAccept,
+  stationApply,
   stillAccept,
   stillApply,
 } from './machine.ts'
@@ -326,7 +331,17 @@ export function integrateVehicle(
   }
 }
 
-export type PadCell = Mill | JamMachine | PotStill | CompostBox | Furnace | Chest | Freezer | SeedSilo | AdditiveStore
+export type PadCell =
+  | Mill
+  | JamMachine
+  | PotStill
+  | CompostBox
+  | Furnace
+  | ResearchStation
+  | Chest
+  | Freezer
+  | SeedSilo
+  | AdditiveStore
 
 export type Cargo =
   | { kind: 'quad'; slots: Slot[] }
@@ -363,6 +378,11 @@ export function dumpAccept(dest: PadCell, item: Item): number {
   if (dest.kind === 'still') return stillAccept(dest, item)
   if (dest.kind === 'compost-box') return organic(item) ? 1 : 0
   if (dest.kind === 'furnace') return furnaceAccept(dest, item)
+  if (dest.kind === 'station') {
+    const take = stationAccept(dest, item)
+    if (take === undefined) return 0
+    return take.n
+  }
   if (dest.kind === 'chest' || dest.kind === 'freezer') return slotsCouldTake(dest.slots, item, dest.slots.length, undefined) ? 1 : 0
   if (dest.kind === 'seed-silo') {
     if (item.kind !== 'seeds') return 0
@@ -370,6 +390,10 @@ export function dumpAccept(dest: PadCell, item: Item): number {
     return n > 0 ? n : 0
   }
   if (dest.kind === 'additive-store') {
+    if (item.kind === 'sugar') {
+      const room = dest.free < item.liters ? dest.free : item.liters
+      return room > 0 ? room : 0
+    }
     if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
     const n = dest.free < item.liters ? dest.free : item.liters
     return n > 0 ? n : 0
@@ -408,6 +432,13 @@ function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => vo
     take(n)
     return
   }
+  if (dest.kind === 'station') {
+    const got = stationAccept(dest, item)
+    if (got === undefined) return
+    stationApply(dest, { ...got, n })
+    take(n)
+    return
+  }
   if (dest.kind === 'chest' || dest.kind === 'freezer') {
     if (!giveSlots(dest.slots, item, dest.slots.length, undefined)) return
     take(-1)
@@ -415,6 +446,11 @@ function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => vo
   }
   if (dest.kind === 'seed-silo' && item.kind === 'seeds') {
     const got = putSiloInto(dest, item.crop, item.variety, item.quality, n)
+    if (got > 0) take(got)
+    return
+  }
+  if (dest.kind === 'additive-store' && item.kind === 'sugar') {
+    const got = putSugarInto(dest, item.liters < n ? item.liters : n, item.unitSale, item.quality)
     if (got > 0) take(got)
     return
   }
@@ -447,6 +483,12 @@ export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[]): boo
     )
   }
   if (src.kind === 'additive-store') {
+    if (
+      src.sugar.liters > 0 &&
+      cargoCouldTake(cargo, sugarBag(src.sugar, src.sugar.liters < SUGAR_BAG ? src.sugar.liters : SUGAR_BAG))
+    ) {
+      return true
+    }
     return src.held.some(h => {
       if (h.liters <= 0) return false
       const bag = ADDITIVE_BAG[h.id]
@@ -460,7 +502,10 @@ export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[]): boo
 export function pullFrom(src: PadCell, cargo: Cargo, drops: Drop[]): void {
   if (src.kind === 'chest' || src.kind === 'freezer') pullSlots(src.slots, cargo)
   else if (src.kind === 'seed-silo') pullSilo(src, cargo)
-  else if (src.kind === 'additive-store') pullAdditive(src, cargo)
+  else if (src.kind === 'additive-store') {
+    pullSugar(src, cargo)
+    pullAdditive(src, cargo)
+  }
   else pullDrops(takeupPad(src.base), cargo, drops)
 }
 
@@ -480,6 +525,32 @@ function pullSilo(silo: SeedSilo, cargo: Cargo): void {
     st.count = item.count
     if (st.count <= 0) silo.seeds.splice(i, 1)
     else i += 1
+  }
+}
+
+function sugarBag(bin: SugarBin, liters: number): Extract<Item, { kind: 'sugar' }> {
+  return { kind: 'sugar', liters, capacityLiters: SUGAR_BAG, unitSale: bin.unitSale, quality: bin.quality }
+}
+
+export function putSugarInto(store: AdditiveStore, liters: number, unitSale: number, quality: number): number {
+  const n = Math.min(liters, store.free)
+  if (n <= 0) return 0
+  const bin = store.sugar
+  const total = bin.liters + n
+  bin.unitSale = (bin.unitSale * bin.liters + unitSale * n) / total
+  bin.quality = (bin.quality * bin.liters + quality * n) / total
+  bin.liters = total
+  return n
+}
+
+function pullSugar(store: AdditiveStore, cargo: Cargo): void {
+  while (store.sugar.liters > 0) {
+    const liters = store.sugar.liters < SUGAR_BAG ? store.sugar.liters : SUGAR_BAG
+    const item = sugarBag(store.sugar, liters)
+    giveCargo(cargo, item)
+    const taken = liters - item.liters
+    if (taken <= 0) return
+    store.sugar.liters -= taken
   }
 }
 

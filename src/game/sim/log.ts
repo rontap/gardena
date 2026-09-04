@@ -101,6 +101,7 @@ export type Cmd =
   | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; c: AnnualId; r: VarietyId }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; d: AdditiveId }
+  | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'sugar'; d: 'sugar' }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
   | { a: typeof Act.openHud; t: number; p: SeatId; k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day'; c: XY }
   | { a: typeof Act.closeHud; t: number; p: SeatId }

@@ -6,6 +6,7 @@ import {
   cropLabel,
   furnaceLook,
   grindLook,
+  stationLook,
   jamLook,
   millLook,
   sensorName,
@@ -18,12 +19,12 @@ import { cropVariety } from '../defs/crops.ts'
 import { heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Barrel } from './building.ts'
-import { barrelNeed, caskAgeMul, feedUnits } from './machine.ts'
-import { BARREL_MATURE, FURNACE_HASTE } from '../defs/items.ts'
+import { barrelNeed, caskAgeMul, caskAgeTop, feedUnits, feedVariety, meanQuality } from './machine.ts'
+import { BARREL_AGE, BARREL_MATURE, FURNACE_HASTE } from '../defs/items.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { isSensor } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
-import type { TileId } from './ids.ts'
+import { CASK_OF, type TileId } from './ids.ts'
 import type { World } from './world.ts'
 
 const FERT_WORD: { readonly [K in Band]: () => string } = {
@@ -130,6 +131,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'mill') lines.push(millLook(cell, hand))
   else if (cell.kind === 'still') lines.push(stillLook(cell, hand))
   else if (cell.kind === 'furnace') lines.push(furnaceLook(cell, hand))
+  else if (cell.kind === 'station') lines.push(stationLook(cell, hand))
   else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
   else if (cell.kind === 'jam') lines.push(jamLook(cell, hand))
   else if (cell.kind === 'tree') lines.push(treeLine(cell))
@@ -229,8 +231,17 @@ function barrelLine(c: Barrel): string {
     return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropVariety(c.crop, c.feed[0]?.variety ?? 'base') }))
   }
   if (c.age < BARREL_MATURE) return labeled(name, m.prompt_maturing_pct({ n: Math.floor((c.age / BARREL_MATURE) * 100) }))
-  const mul = caskAgeMul(c.age)
-  return labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
+  const quality = meanQuality(c.feed)
+  const mul = caskAgeMul(c.age, quality)
+  const line = labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
+  const cask = CASK_OF[c.crop]
+  const top = m.prompt_aging_max({
+    cask: cask === 'wine' ? m.names_cask_wine() : m.names_cask_cider(),
+    name: cropVariety(c.crop, feedVariety(c.feed)),
+    days: Math.round(BARREL_AGE / DAY_SECONDS),
+    mul: Number(caskAgeTop(quality).toFixed(2)),
+  })
+  return `${line}\n${top}`
 }
 
 function tileName(id: TileId): string {

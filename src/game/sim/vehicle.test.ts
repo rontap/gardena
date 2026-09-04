@@ -363,6 +363,7 @@ describe('vehicles I', () => {
       unitSale: 4,
       freshness: 1,
       bio: true,
+      cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
     w.swapVehicle(1, 0)
@@ -654,6 +655,7 @@ describe('vehicles II', () => {
       unitSale: 4,
       freshness: 1,
       bio: true,
+      cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
     w.swapTrailer(1, 0)
@@ -785,7 +787,7 @@ describe('vehicles II', () => {
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 0 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     w.unload()
     const mill = w.cell(millAt)
@@ -945,7 +947,7 @@ describe('vehicles II', () => {
     if (v.kind !== 'quad') return
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 'none' }
     v.running = true

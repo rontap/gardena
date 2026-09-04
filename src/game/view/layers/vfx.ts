@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { vertexKey } from '../../sim/pipe.ts'
 import { millWorking, jamWorking, stillWorking, barrelWorking, furnaceWorking, furnaceStateVfx } from '../../sim/machine.ts'
+import { BARREL_MATURE } from '../../defs/items.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'
 import type { VfxId } from '../../sim/ids.ts'
@@ -25,7 +26,8 @@ function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefine
   if (cell.kind === 'mill') return millWorking(cell) ? 'dust' : undefined
   if (cell.kind === 'jam') return jamWorking(cell) ? 'dust' : undefined
   if (cell.kind === 'still') return stillWorking(cell) ? 'steam' : undefined
-  return barrelWorking(cell) ? 'brew' : undefined
+  if (!barrelWorking(cell)) return undefined
+  return cell.age >= BARREL_MATURE ? 'age' : 'brew'
 }
 
 export class VfxLayer {
@@ -36,6 +38,15 @@ export class VfxLayer {
   private bursts: LiveBurst[] = []
   private world: World | undefined
   mounts: VfxMount[] = []
+
+  private graftPuff(world: World, now: number): void {
+    world.seats.forEach(seat => {
+      const head = seat.queue[0]
+      if (head?.act !== 'graft') return
+      if (seat.workLeft <= 0 || seat.workTotal <= 0) return
+      this.draw('graft', head.at.col, head.at.row, 0, false, now, undefined)
+    })
+  }
 
   private digPatch(world: World, now: number): void {
     let n = 0
@@ -118,6 +129,7 @@ export class VfxLayer {
       this.draw(b.id, b.at.col, b.at.row, 0, true, now, b.t0, b.seq)
     })
     this.digPatch(world, now)
+    this.graftPuff(world, now)
     this.pool.end()
   }
 

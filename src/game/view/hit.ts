@@ -202,7 +202,7 @@ function cellPorts(c: Cell): PortId[] {
     if (c.kind === 'lamp') return ['in']
     return ['out']
   }
-  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') return ['in']
+  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') return ['in']
   if (c.kind === 'furnace') return ['in', 'out']
   if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
     return ['out']
@@ -256,7 +256,7 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
 export function wireSignal(world: World, from: WireEnd): boolean {
   if (from.kind !== 'cell') return false
   const c = world.cell(from.at)
-  if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') return false
+  if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') return false
   if (
     isSensor(c) ||
     c.kind === 'chest' ||

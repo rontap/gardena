@@ -16,14 +16,28 @@ import {
   JAM_SECONDS,
   JAM_SUGAR,
   MILL_WORK,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
+  STATION_IN,
+  STATION_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
 } from '../defs/items.ts'
 import type { CropClass } from '../defs/crops.ts'
+import { ratedVarieties, tierOf, VARIETIES, type Path, type VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
-import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, SPIRIT_KINDS, STILL_CROPS, TREE_IDS } from './ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill } from './building.ts'
+import {
+  ANNUAL_IDS,
+  BARREL_CROPS,
+  CASK_OF,
+  JAM_CROPS,
+  MILL_RECIPES,
+  SPIRIT_KINDS,
+  STILL_CROPS,
+  TREE_IDS,
+} from './ids.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from './building.ts'
 import type { Face, Item } from './item.ts'
 import {
   bakeCaskSale,
@@ -31,6 +45,7 @@ import {
   barrelNeed,
   barrelWorking,
   feedUnits,
+  feedVariety,
   grindProduct,
   jamSale,
   jamWorking,
@@ -42,9 +57,18 @@ import {
   stillWorking,
 } from './machine.ts'
 
-export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace'
+export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'station'
 
-export const MACHINE_IDS: readonly MachineId[] = ['mill', 'jam', 'still', 'barrel', 'grinder', 'compost-box', 'furnace']
+export const MACHINE_IDS: readonly MachineId[] = [
+  'mill',
+  'jam',
+  'still',
+  'barrel',
+  'grinder',
+  'compost-box',
+  'furnace',
+  'station',
+]
 
 export type Amount = { kind: 'units'; n: number } | { kind: 'liters'; l: number } | { kind: 'waste'; n: number }
 
@@ -76,7 +100,7 @@ export type Craft =
   | { kind: 'working'; recipe: Recipe; progress: number; left: number }
   | { kind: 'ready'; recipe: Recipe }
 
-export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace
+export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace | ResearchStation
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
   return MACHINE_IDS.some(m => m === c.kind)
@@ -90,6 +114,7 @@ export function machineOfSku(id: SkuId): MachineId | undefined {
   if (id === 'buy-grinder') return 'grinder'
   if (id === 'buy-compost-box') return 'compost-box'
   if (id === 'buy-furnace') return 'furnace'
+  if (id === 'buy-research-station') return 'station'
   return undefined
 }
 
@@ -99,12 +124,22 @@ function amountOf(item: Item): Amount {
   return { kind: 'units', n: 1 }
 }
 
-function fruitFace(crop: CropId): Face {
-  return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 1, bio: false }
+function fruitFace(crop: CropId, variety: VarietyId): Face {
+  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: false, cut: false }
 }
 
-function seedFace(crop: AnnualId): Face {
-  return { kind: 'seeds', crop, variety: 'base', quality: 0, count: 1 }
+function baseFruit(crop: CropId): Face {
+  return fruitFace(crop, 'base')
+}
+
+function seedFace(crop: AnnualId, variety: VarietyId): Face {
+  return { kind: 'seeds', crop, variety, quality: 0, count: 1 }
+}
+
+export type Pin<C> = { crop: C; variety: VarietyId }
+
+function pins<C extends CropId>(crops: readonly C[], path: Path): readonly Pin<C>[] {
+  return crops.flatMap(crop => ratedVarieties(crop, path).map(variety => ({ crop, variety })))
 }
 
 function units(n: number): Amount {
@@ -113,66 +148,77 @@ function units(n: number): Amount {
 
 const WATER: Ingredient = { kind: 'one', face: { kind: 'water' }, amount: { kind: 'liters', l: STILL_WATER } }
 
-function millRecipe(r: MillRecipe): Recipe {
-  const face: Face = r === 'grass' ? { kind: 'grass', count: 1 } : fruitFace(r)
-  const out = millProduct(r)
+export type MillPin = { recipe: MillRecipe; variety: VarietyId }
+
+export const MILL_PINS: readonly MillPin[] = MILL_RECIPES.flatMap((recipe): MillPin[] =>
+  recipe === 'grass' ? [{ recipe, variety: 'base' }] : ratedVarieties(recipe, 'preserve').map(variety => ({ recipe, variety })),
+)
+
+function millRecipe(pin: MillPin): Recipe {
+  const face: Face = pin.recipe === 'grass' ? { kind: 'grass', count: 1 } : fruitFace(pin.recipe, pin.variety)
+  const out = millProduct(pin.recipe, pin.variety, 0)
   return {
     machine: 'mill',
-    inputs: [{ kind: 'one', face, amount: units(millNeed(r)) }],
+    inputs: [{ kind: 'one', face, amount: units(millNeed(pin.recipe)) }],
     out: { kind: 'exact', face: out, amount: amountOf(out) },
     duration: { kind: 'work', seconds: MILL_WORK },
   }
 }
 
-function jamRecipe(crop: JamCrop): Recipe {
+function jamRecipe({ crop, variety }: Pin<JamCrop>): Recipe {
   return {
     machine: 'jam',
     inputs: [
-      { kind: 'one', face: fruitFace(crop), amount: units(JAM_IN) },
+      { kind: 'one', face: fruitFace(crop, variety), amount: units(JAM_IN) },
       {
         kind: 'one',
         face: { kind: 'sugar', liters: JAM_SUGAR, capacityLiters: JAM_SUGAR, unitSale: 0, quality: 0 },
         amount: { kind: 'liters', l: JAM_SUGAR },
       },
     ],
-    out: { kind: 'exact', face: { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: jamSale(crop) }, amount: units(1) },
+    out: {
+      kind: 'exact',
+      face: { kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: jamSale(crop, variety, 0) },
+      amount: units(1),
+    },
     duration: { kind: 'work', seconds: JAM_SECONDS },
   }
 }
 
-function spiritFace(spirit: SpiritKind): Face {
-  return { kind: 'spirit', spirit, variety: 'base', quality: 0, count: 1, unitSale: bakeSpiritSale(spirit) }
+function spiritFace(spirit: SpiritKind, variety: VarietyId): Face {
+  return { kind: 'spirit', spirit, variety, quality: 0, count: 1, unitSale: bakeSpiritSale(spirit, variety, 0) }
 }
 
-function stillRecipe(crop: StillCrop): Recipe {
+function stillRecipe({ crop, variety }: Pin<StillCrop>): Recipe {
+  const spirit = spiritKind([{ crop, variety, count: STILL_CAP }])
   return {
     machine: 'still',
-    inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(STILL_CAP) }, WATER],
-    out: { kind: 'exact', face: spiritFace(spiritKind([{ crop, count: STILL_CAP }])), amount: units(1) },
+    inputs: [{ kind: 'one', face: fruitFace(crop, variety), amount: units(STILL_CAP) }, WATER],
+    out: { kind: 'exact', face: spiritFace(spirit, variety), amount: units(1) },
     duration: { kind: 'fixed', seconds: STILL_SECONDS },
   }
 }
 
 const MIXED_STILL: Recipe = {
   machine: 'still',
-  inputs: [{ kind: 'any', faces: STILL_CROPS.map(fruitFace), amount: units(STILL_CAP) }, WATER],
-  out: { kind: 'exact', face: spiritFace('mixed'), amount: units(1) },
+  inputs: [{ kind: 'any', faces: STILL_CROPS.map(baseFruit), amount: units(STILL_CAP) }, WATER],
+  out: { kind: 'exact', face: spiritFace('mixed', 'base'), amount: units(1) },
   duration: { kind: 'fixed', seconds: STILL_SECONDS },
 }
 
-function barrelRecipe(crop: BarrelCrop): Recipe {
+function barrelRecipe({ crop, variety }: Pin<BarrelCrop>): Recipe {
   return {
     machine: 'barrel',
-    inputs: [{ kind: 'one', face: fruitFace(crop), amount: units(barrelNeed(crop)) }],
+    inputs: [{ kind: 'one', face: fruitFace(crop, variety), amount: units(barrelNeed(crop)) }],
     out: {
       kind: 'exact',
       face: {
         kind: 'cask',
         cask: CASK_OF[crop],
-        variety: 'base',
+        variety,
         quality: 0,
         count: 1,
-        unitSale: bakeCaskSale(CASK_OF[crop], 0, BARREL_MATURE),
+        unitSale: bakeCaskSale(CASK_OF[crop], variety, 0, BARREL_MATURE),
       },
       amount: units(1),
     },
@@ -180,12 +226,16 @@ function barrelRecipe(crop: BarrelCrop): Recipe {
   }
 }
 
+export const GRIND_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop =>
+  VARIETIES[crop].map(variety => ({ crop, variety })),
+)
+
 const GRINDER: Recipe = {
   machine: 'grinder',
-  inputs: [{ kind: 'any', faces: ANNUAL_IDS.map(fruitFace), amount: units(1) }],
+  inputs: [{ kind: 'any', faces: GRIND_PINS.map(p => fruitFace(p.crop, p.variety)), amount: units(1) }],
   out: {
     kind: 'range',
-    faces: ANNUAL_IDS.map(seedFace),
+    faces: GRIND_PINS.map(p => grindProduct({ crop: p.crop, variety: p.variety, quality: 0 }, 1)),
     min: GRIND_MIN,
     max: GRIND_MAX,
   },
@@ -203,7 +253,7 @@ const COMPOST_FRUIT: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: [...ANNUAL_IDS, ...TREE_IDS].map(fruitFace),
+      faces: [...ANNUAL_IDS, ...TREE_IDS].map(baseFruit),
       amount: units(COMPOST_NEED / COMPOST_VALUE.fruit),
     },
   ],
@@ -262,7 +312,7 @@ const FURNACE_GREEN: Recipe = {
       kind: 'any',
       faces: [
         ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
-        ...ANNUAL_IDS.map(seedFace),
+        ...ANNUAL_IDS.map(c => seedFace(c, 'base')),
         { kind: 'grass-seeds', count: 1 },
         ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t, variety: 'base' as const, quality: 0 })),
         { kind: 'weed', count: 1 },
@@ -281,7 +331,7 @@ const FURNACE_FRUIT: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: [...ANNUAL_IDS, ...TREE_IDS].map(fruitFace),
+      faces: [...ANNUAL_IDS, ...TREE_IDS].map(baseFruit),
       amount: units(FURNACE_NEED / FURNACE_VALUE.fruit),
     },
   ],
@@ -314,7 +364,7 @@ const FURNACE_SPIRIT: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: SPIRIT_KINDS.map(spiritFace),
+      faces: SPIRIT_KINDS.map(k => spiritFace(k, 'base')),
       amount: units(FURNACE_NEED / FURNACE_VALUE.spirit),
     },
   ],
@@ -329,11 +379,34 @@ const FURNACE_WOOD: Recipe = {
   duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
 }
 
-const MILL_ROWS: readonly Recipe[] = MILL_RECIPES.map(millRecipe)
-const JAM_ROWS: readonly Recipe[] = JAM_CROPS.map(jamRecipe)
-const STILL_ROWS: readonly Recipe[] = [...STILL_CROPS.map(stillRecipe), MIXED_STILL]
-const BARREL_ROWS: readonly Recipe[] = BARREL_CROPS.map(barrelRecipe)
+export const STATION_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop =>
+  VARIETIES[crop].filter(v => tierOf(v) === 'heirloom').map(variety => ({ crop, variety })),
+)
+
+function stationRecipe({ crop, variety }: Pin<CropId>): Recipe {
+  return {
+    machine: 'station',
+    inputs: [{ kind: 'one', face: fruitFace(crop, variety), amount: units(STATION_IN) }],
+    out: {
+      kind: 'range',
+      faces: [{ kind: 'graft', crop, variety, quality: 0, count: 1 }],
+      min: STATION_GRAFT_MIN,
+      max: STATION_GRAFT_MAX,
+    },
+    duration: { kind: 'fixed', seconds: STATION_SECONDS },
+  }
+}
+
+export const JAM_PINS: readonly Pin<JamCrop>[] = pins(JAM_CROPS, 'preserve')
+export const STILL_PINS: readonly Pin<StillCrop>[] = pins(STILL_CROPS, 'alcohol')
+export const BARREL_PINS: readonly Pin<BarrelCrop>[] = pins(BARREL_CROPS, 'alcohol')
+
+const MILL_ROWS: readonly Recipe[] = MILL_PINS.map(millRecipe)
+const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
+const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL]
+const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
 const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD]
+const STATION_ROWS: readonly Recipe[] = STATION_PINS.map(stationRecipe)
 
 export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'mill') return MILL_ROWS
@@ -342,15 +415,19 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'barrel') return BARREL_ROWS
   if (m === 'grinder') return [GRINDER]
   if (m === 'furnace') return FURNACE_ROWS
+  if (m === 'station') return STATION_ROWS
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
 
 function sameIdentity(a: Face, b: Face): boolean {
-  if (a.kind === 'fruit' && b.kind === 'fruit') return a.crop === b.crop
-  if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop
-  if (a.kind === 'seeds' && b.kind === 'seeds') return a.crop === b.crop
-  if (a.kind === 'spirit' && b.kind === 'spirit') return a.spirit === b.spirit
-  if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask
+  if (a.kind === 'fruit' && b.kind === 'fruit') return a.crop === b.crop && a.variety === b.variety
+  if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop && a.variety === b.variety
+  if (a.kind === 'seeds' && b.kind === 'seeds') return a.crop === b.crop && a.variety === b.variety
+  if (a.kind === 'graft' && b.kind === 'graft') return a.crop === b.crop && a.variety === b.variety
+  if (a.kind === 'spirit' && b.kind === 'spirit') {
+    return a.spirit === b.spirit && (a.spirit === 'mixed' || a.variety === b.variety)
+  }
+  if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask && a.variety === b.variety
   return a.kind === b.kind
 }
 
@@ -377,7 +454,7 @@ function stage(recipe: Recipe, progress: number, mul: number, haste: number): Cr
 
 function millCraft(c: Mill, mul: number, haste: number): Craft {
   if (c.recipe === 'none') return { kind: 'idle', machine: 'mill' }
-  const recipe = MILL_ROWS[MILL_RECIPES.indexOf(c.recipe)]
+  const recipe = MILL_ROWS[MILL_PINS.findIndex(p => p.recipe === c.recipe && p.variety === c.variety)]
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (millWorking(c)) return stage(recipe, c.progress, mul, haste)
   return { kind: 'filling', recipe, at: 0, have: c.units, need: millNeed(c.recipe) }
@@ -385,7 +462,7 @@ function millCraft(c: Mill, mul: number, haste: number): Craft {
 
 function jamCraft(c: JamMachine, mul: number, haste: number): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'jam' }
-  const recipe = JAM_ROWS[JAM_CROPS.indexOf(c.crop)]
+  const recipe = JAM_ROWS[JAM_PINS.findIndex(p => p.crop === c.crop && p.variety === c.variety)]
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (jamWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (c.fruit < JAM_IN) return { kind: 'filling', recipe, at: 0, have: c.fruit, need: JAM_IN }
@@ -396,7 +473,10 @@ function stillCraft(c: PotStill, mul: number, haste: number): Craft {
   const n = feedUnits(c.feed)
   if (n === 0) return { kind: 'idle', machine: 'still' }
   const kind = spiritKind(c.feed)
-  const recipe = kind === 'mixed' ? MIXED_STILL : STILL_ROWS[STILL_CROPS.indexOf(c.feed[0].crop)]
+  const recipe =
+    kind === 'mixed'
+      ? MIXED_STILL
+      : STILL_ROWS[STILL_PINS.findIndex(p => p.crop === c.feed[0].crop && p.variety === c.feed[0].variety)]
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (stillWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (stillReady(c)) return { kind: 'thirsty', recipe }
@@ -405,7 +485,8 @@ function stillCraft(c: PotStill, mul: number, haste: number): Craft {
 
 function barrelCraft(c: Barrel): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'barrel' }
-  const recipe = BARREL_ROWS[BARREL_CROPS.indexOf(c.crop)]
+  const variety = feedVariety(c.feed)
+  const recipe = BARREL_ROWS[BARREL_PINS.findIndex(p => p.crop === c.crop && p.variety === variety)]
   const n = feedUnits(c.feed)
   const need = barrelNeed(c.crop)
   if (n < need) return { kind: 'filling', recipe, at: 0, have: n, need }
@@ -417,7 +498,7 @@ function grinderCraft(c: Grinder, mul: number, haste: number): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'grinder' }
   const recipe: Recipe = {
     ...GRINDER,
-    inputs: [{ kind: 'one', face: fruitFace(c.crop), amount: units(1) }],
+    inputs: [{ kind: 'one', face: fruitFace(c.crop, c.variety), amount: units(1) }],
     out: {
       kind: 'range',
       faces: [grindProduct(c, 1)],
@@ -444,6 +525,15 @@ function furnaceCraft(c: Furnace, mul: number, haste: number): Craft {
   return stage(recipe, c.progress, mul, haste)
 }
 
+function stationCraft(c: ResearchStation, haste: number): Craft {
+  if (c.crop === 'none') return { kind: 'idle', machine: 'station' }
+  const recipe = STATION_ROWS[STATION_PINS.findIndex(p => p.crop === c.crop && p.variety === c.variety)]
+  if (c.inn === 1) return { kind: 'paused', recipe }
+  if (c.progress >= 1) return { kind: 'ready', recipe }
+  if (c.units < STATION_IN) return { kind: 'filling', recipe, at: 0, have: c.units, need: STATION_IN }
+  return stage(recipe, c.progress, 1, haste)
+}
+
 export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'mill') return millCraft(cell, mul, haste)
   if (cell.kind === 'jam') return jamCraft(cell, mul, haste)
@@ -451,6 +541,7 @@ export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'barrel') return barrelCraft(cell)
   if (cell.kind === 'grinder') return grinderCraft(cell, mul, haste)
   if (cell.kind === 'furnace') return furnaceCraft(cell, mul, haste)
+  if (cell.kind === 'station') return stationCraft(cell, 1)
   return compostCraft(cell, mul, haste)
 }
 

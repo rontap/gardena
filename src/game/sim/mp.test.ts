@@ -155,7 +155,7 @@ describe('1.1 multiplayer', () => {
     const s1 = w.seats[1]
     s1.hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     s1.actor.x = 4
     s1.actor.y = 4
@@ -574,7 +574,7 @@ describe('1.1 multiplayer', () => {
     v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.apply({ a: Act.unload, t: w.now, p: 1 })
     const chest = w.cell(chestAt)
@@ -584,7 +584,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     chest.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5
@@ -611,7 +611,7 @@ describe('1.1 multiplayer', () => {
     v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.apply({ a: Act.unload, t: w.now, p: 1 })
     const fz = w.cell(fzAt)
@@ -621,7 +621,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     fz.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5

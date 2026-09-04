@@ -24,6 +24,7 @@ import {
   PotStill,
   Pump,
   RainTank,
+  ResearchStation,
   Rock,
   SeedSilo,
   Tap,
@@ -41,6 +42,7 @@ import {
   type Coord,
   type RectBase,
   type SiloStack,
+  type SugarBin,
   type TreeYield,
 } from './building.ts'
 import type { Cell, Cover, Ground } from './plot.ts'
@@ -203,6 +205,7 @@ export type SaveCell =
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
+  | { kind: 'station'; base: RectBase; crop: CropId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
@@ -210,7 +213,7 @@ export type SaveCell =
   | { kind: 'silo-spray'; base: RectBase }
   | { kind: 'silo-produce'; base: RectBase }
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
-  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; out: 0 | 1; hold: number }
+  | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; sugar: SugarBin; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
   | { kind: 'lever'; base: RectBase; on: boolean; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
@@ -536,6 +539,7 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'jam' ||
     c.kind === 'still' ||
     c.kind === 'furnace' ||
+    c.kind === 'station' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
     c.kind === 'hangar' ||
@@ -616,6 +620,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         base: c.base,
         useDefault: c.useDefault,
         held: c.held.map(h => ({ ...h })),
+        sugar: { ...c.sugar },
         out: c.out,
         hold: c.hold,
       }
@@ -640,6 +645,17 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
     case 'furnace':
       return { kind: 'furnace', base: c.base, units: c.units, progress: c.progress, inn: c.inn, out: c.out, hold: c.hold }
+    case 'station':
+      return {
+        kind: 'station',
+        base: c.base,
+        crop: c.crop,
+        variety: c.variety,
+        quality: c.quality,
+        units: c.units,
+        progress: c.progress,
+        inn: c.inn,
+      }
     case 'barrel':
       return { kind: 'barrel', base: c.base, crop: c.crop, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
     case 'freezer':
@@ -1177,6 +1193,7 @@ function stampChunks(
               inst.kind === 'jam' ||
               inst.kind === 'still' ||
               inst.kind === 'furnace' ||
+              inst.kind === 'station' ||
               inst.kind === 'barrel' ||
               inst.kind === 'freezer' ||
               inst.kind === 'hangar' ||
@@ -1332,6 +1349,16 @@ function makeLive(sc: SaveCell): Cell | undefined {
       furnace.out = sc.out
       furnace.hold = sc.hold
       return furnace
+    }
+    case 'station': {
+      const station = new ResearchStation(sc.base)
+      station.crop = sc.crop
+      station.variety = sc.variety
+      station.quality = sc.quality
+      station.units = sc.units
+      station.progress = sc.progress
+      station.inn = sc.inn
+      return station
     }
     case 'barrel': {
       const barrel = new Barrel(sc.base)
@@ -1598,7 +1625,9 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const useDefault = bool(o.useDefault)
     const heldIn = arr(o.held)
     const hold = num(o.hold)
+    const sugar = readSugarBin(o.sugar)
     if (base === undefined || useDefault === undefined || heldIn === undefined || hold === undefined) return undefined
+    if (sugar === undefined) return undefined
     if (o.out !== 0 && o.out !== 1) return undefined
     const held: AdditiveHold[] = []
     for (const v of heldIn) {
@@ -1606,7 +1635,7 @@ function readSaveCell(v: unknown): SaveCell | undefined {
       if (h === undefined) return undefined
       held.push(h)
     }
-    return { kind: 'additive-store', base, useDefault, held, out: o.out, hold }
+    return { kind: 'additive-store', base, useDefault, held, sugar, out: o.out, hold }
   }
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
@@ -1679,6 +1708,26 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (o.inn !== 0 && o.inn !== 1) return undefined
     if (o.out !== 0 && o.out !== 1) return undefined
     return { kind: 'furnace', base, units, progress, inn: o.inn, out: o.out, hold }
+  }
+  if (kind === 'station') {
+    const base = readRectBase(o.base)
+    const crop = o.crop === 'none' ? 'none' : readCropId(o.crop)
+    const variety = readVariety(o.variety)
+    const quality = num(o.quality)
+    const units = num(o.units)
+    const progress = num(o.progress)
+    if (
+      base === undefined ||
+      crop === undefined ||
+      variety === undefined ||
+      quality === undefined ||
+      units === undefined ||
+      progress === undefined
+    ) {
+      return undefined
+    }
+    if (o.inn !== 0 && o.inn !== 1) return undefined
+    return { kind: 'station', base, crop, variety, quality, units, progress, inn: o.inn }
   }
   if (kind === 'barrel') {
     const base = readRectBase(o.base)
@@ -2591,17 +2640,19 @@ function readFruitStack(v: unknown): FruitStack | undefined {
   const unitSale = num(o.unitSale)
   const freshness = num(o.freshness)
   const bio = bool(o.bio)
+  const cut = bool(o.cut)
   if (
     variety === undefined ||
     quality === undefined ||
     count === undefined ||
     unitSale === undefined ||
     freshness === undefined ||
-    bio === undefined
+    bio === undefined ||
+    cut === undefined
   ) {
     return undefined
   }
-  return { crop: o.crop, variety, quality, count, unitSale, freshness, bio }
+  return { crop: o.crop, variety, quality, count, unitSale, freshness, bio, cut }
 }
 
 function isShovelId(v: unknown): v is ShovelId {
@@ -2705,6 +2756,16 @@ function readAdditiveHold(v: unknown): AdditiveHold | undefined {
   const liters = num(o.liters)
   if (liters === undefined) return undefined
   return { id: o.id, liters }
+}
+
+function readSugarBin(v: unknown): SugarBin | undefined {
+  const o = obj(v)
+  if (o === undefined) return undefined
+  const liters = num(o.liters)
+  const unitSale = num(o.unitSale)
+  const quality = num(o.quality)
+  if (liters === undefined || unitSale === undefined || quality === undefined) return undefined
+  return { liters, unitSale, quality }
 }
 
 function isAdditiveId(v: unknown): v is AdditiveId {

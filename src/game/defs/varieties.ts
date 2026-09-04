@@ -28,6 +28,10 @@ export type Rating = 1 | 2 | 3 | 4 | 5
 
 export type Use = { preserve: Rating | 'none'; fresh: Rating; alcohol: Rating | 'none' }
 
+export type Path = 'preserve' | 'fresh' | 'alcohol'
+
+export const PATHS: readonly Path[] = ['preserve', 'fresh', 'alcohol']
+
 export const VARIETY_IDS: readonly VarietyId[] = [
   'base',
   'bintje',
@@ -81,6 +85,7 @@ export const QUALITY_TOP = 3.5
 export const QUALITY_STEP = 0.25
 export const BETTER_QUALITY = 0.04
 export const TOL_MIN = 0.25
+export const NO_PATH_SALE = 1
 
 const none3none: Use = { preserve: 'none', fresh: 3, alcohol: 'none' }
 const none33: Use = { preserve: 'none', fresh: 3, alcohol: 3 }
@@ -184,6 +189,18 @@ export function qualityGain(h: number, happyStart: number, happyMax: number): nu
 export function useOf(crop: CropId, variety: VarietyId): Use {
   if (variety === 'base') return BASE_USE[crop]
   return VARIETY[variety].use
+}
+
+export function ratingSale(rating: Rating | 'none'): number {
+  return rating === 'none' ? NO_PATH_SALE : RATING_SALE[rating]
+}
+
+export function pathSale(crop: CropId, variety: VarietyId, path: Path): number {
+  return ratingSale(useOf(crop, variety)[path])
+}
+
+export function ratedVarieties(crop: CropId, path: Path): readonly VarietyId[] {
+  return VARIETIES[crop].filter(v => useOf(crop, v)[path] !== 'none')
 }
 
 export function tierOf(variety: VarietyId): VarietyTier {

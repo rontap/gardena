@@ -100,7 +100,7 @@ Running mean `quality` weighted by units. At `units >= need`: tick `progress += 
 
 Extract: mill recipe, no research gate, sellable, no plant effect. Grass extract quality 0.
 
-Mill ignores freshness. Quality and path rating ride the output.
+Mill ignores freshness. Quality and path rating ride the output. Grass has no crop, so it takes `NO_PATH_SALE` — the neutral 1 an absent path reads as, the same one mixed spirit takes.
 
 Assumption: vanilla mill yields the existing extract stall good, not a new SKU.
 
@@ -186,7 +186,7 @@ Age mul: linear `1 → caskAgeTop(q)` over `BARREL_AGE` after mature. Clamp at `
 
 Cask item `{ kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count; unitSale }`. Age baked into `unitSale` at collect: `CASK_SALE[cask] × RATING_SALE[alcohol] × qualityMul(q) × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
 
-`caskAgeOf(item)` reads that multiplier back out of `unitSale` — no age field on the item. `itemLine` and `itemTip` show it when it rounds above 1. Stacking: `stackable` matches on `cask` + `variety`, and `mergeInto` averages `unitSale` and `quality` weighted by count, so merging a fresh cask into an aged one keeps the total worth intact.
+`caskAgeTop` lerps `CASK_AGE_MIN` to `CASK_AGE_MAX` over quality. `caskAgeOf(item)` reads that multiplier back out of `unitSale` — no age field on the item. `itemLine` and `itemTip` show it when it rounds above 1. Stacking: `stackable` matches on `cask` + `variety`, and `mergeInto` averages `unitSale` and `quality` weighted by count, so merging a fresh cask into an aged one keeps the total worth intact.
 
 Assumption: `caskAgeTop(0)` matches today's lowest cap, `caskAgeTop(1)` the top cap.
 
@@ -199,6 +199,10 @@ Assumption: `caskAgeTop(0)` matches today's lowest cap, `caskAgeTop(1)` the top 
 ## Cut fruit
 
 `{ kind: 'fruit'; ...; cut: boolean }`, required, `false` from the field. The research station returns the fruit it took with `cut = true` and refuses fruit that already carries it. Cut fruit is otherwise ordinary — it sells, jams, stills, and grinds identically. Illegal: optional `cut`.
+
+`cut` is not in the stack identity key — [[mechanics/inventory]] `inventory.stack`. A merged stack is cut when either side was, so the station cannot take back what it has already returned.
+
+Assumption: a merged fruit stack keeps `cut` true when either side carried it — the mirror of `bio`, which stays true only when both sides do.
 
 ## Research station
 
@@ -215,6 +219,10 @@ Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked
 The station's second face — feeding it seed to earn a variety you do not own — is the next update. This update ships the cutting bench only.
 
 Assumption: station graft count uses `grind.at(col, row, day)` on finish, same roll all day on that cell.
+
+Assumption: `ResearchStation` carries no freshness and no organic field, so the returned fruit leaves at freshness 1 and not organic. Sale is `statsOf(crop, variety, quality, mods).sale`. Organic heirloom fruit loses that mark on the bench; sell it before you cut it.
+
+Assumption: both outputs land or neither does. The east store is measured for the cut fruit and the grafts together before either is emitted, so a store with one slot left waits instead of eating the grafts.
 
 Assumption: a tree grind emits one tree seed per unit consumed. `{ kind: 'tree-seed' }` carries no `count`, so a stack of them is not representable; `GRIND_MIN`..`GRIND_MAX` and `GRIND_MIN_AT(q)` govern annual seeds only.
 
@@ -324,7 +332,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace,
 
 `machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT × RATING_SALE[preserve] × qualityMul`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. Grass extract quality 0. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla. Almanac extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.
 
-`machines.barrel` — Barrel locks one `BarrelCrop` + variety on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS` varieties. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged. `caskAgeTop(q)` lerps the cap over quality.
+`machines.barrel` — Barrel locks one `BarrelCrop` + variety on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS` varieties. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged. `caskAgeTop(q)` lerps the cap over quality. Past `BARREL_MATURE` the look block carries a second line naming the cask, the variety it was made from, `BARREL_AGE / DAY_SECONDS` days and `caskAgeTop(q)` — [[ui/machines]]. Maturing carries no such line.
 
 `machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Hit, ghost footprint, I/O, ports, pads stay 2×1. viewBox `48×24`. Prop art occupies 1.5×1 centered in that viewBox. Origin-only paint + `TILE/24` of the viewBox. Do not scale the sprite down.
 
@@ -352,7 +360,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace,
 
 `still.variety` — On finish: every unit one crop and one variety → that crop's named spirit at that variety. Else `mixed` at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)`, neutral rating. One variety or mixed.
 
-`machines.quality-carry` — Output quality is the mean of what went in. Output sale takes `RATING_SALE` of the input variety on that machine's path × `qualityMul`.
+`machines.quality-carry` — Output quality is the mean of what went in. Output sale takes `RATING_SALE` of the input variety on that machine's path × `qualityMul`. `pathSale(crop, variety, path)` is the one reading of it; an absent path (`'none'`) reads `NO_PATH_SALE` 1.
 
 `station.cut` — Fruit `cut: boolean` required, `false` from the field. Station returns `cut = true` and refuses `cut === true`. Cut fruit is otherwise ordinary. Illegal: optional `cut`.
 

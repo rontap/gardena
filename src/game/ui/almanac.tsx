@@ -107,6 +107,7 @@ const AUTO_IDS = [
   'compost-box',
   'mill',
   'furnace',
+  'station',
   'still',
   'barrel',
   'jam',
@@ -292,7 +293,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
             title={tip.title}
             description={
               <>
-                <Coin n={yieldSale(tip.recipe)} />
+                <RecipeSale recipe={tip.recipe} />
                 <Recipes view={{ kind: 'one', recipe: tip.recipe }} size="sm" />
               </>
             }
@@ -1044,7 +1045,7 @@ function PathLine({ path, rating }: { path: 'preserve' | 'fresh' | 'alcohol'; ra
 }
 
 function fruitFace(crop: CropId, variety: VarietyId, sale: number): Face {
-  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, bio: true }
+  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, bio: true, cut: false }
 }
 
 function VarietyRow({
@@ -1236,18 +1237,18 @@ function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
       return false
     case 'furnace':
       return done.furnace
+    case 'station':
+      return true
   }
 }
 
 function yieldFace(recipe: Recipe): Face {
-  if (recipe.out.kind !== 'exact') throw new Error('exact')
-  return recipe.out.face
+  return recipe.out.kind === 'exact' ? recipe.out.face : recipe.out.faces[0]
 }
 
-function yieldSale(recipe: Recipe): number {
+function yieldSale(recipe: Recipe): number | undefined {
   const face = yieldFace(recipe)
-  if (!('unitSale' in face)) throw new Error('unitSale')
-  return face.unitSale
+  return 'unitSale' in face ? face.unitSale : undefined
 }
 
 function Ingredients({ face, done }: { face: Face; done: AlmanacDone }) {
@@ -1263,6 +1264,12 @@ function Ingredients({ face, done }: { face: Face; done: AlmanacDone }) {
       </div>
     </div>
   )
+}
+
+function RecipeSale({ recipe }: { recipe: Recipe }) {
+  const sale = yieldSale(recipe)
+  if (sale === undefined) return null
+  return <Coin n={sale} />
 }
 
 function IngredientPlate({ recipe }: { recipe: Recipe }) {

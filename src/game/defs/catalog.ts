@@ -38,6 +38,10 @@ import {
   JAM_SECONDS,
   SILO_H,
   SILO_W,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
+  STATION_IN,
+  STATION_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
 } from './items.ts'
@@ -68,7 +72,7 @@ export function catalogEntries(): CatalogEntry[] {
     return {
       id,
       title: CROP_NAME[id](),
-      icon: { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: d.sale, freshness: 1, bio: true },
+      icon: { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: d.sale, freshness: 1, bio: true, cut: false },
       blurb: d.desc(),
     }
   })
@@ -353,6 +357,17 @@ export function catalogEntries(): CatalogEntry[] {
       title: m.names_building_furnace(),
       icon: { kind: 'furnace' },
       blurb: m.catalog_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH }),
+    },
+    {
+      id: 'station',
+      title: m.names_building_station(),
+      icon: { kind: 'station' },
+      blurb: m.catalog_station({
+        need: STATION_IN,
+        seconds: STATION_SECONDS,
+        min: STATION_GRAFT_MIN,
+        max: STATION_GRAFT_MAX,
+      }),
     },
     {
       id: 'axe',

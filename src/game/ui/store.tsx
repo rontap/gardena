@@ -4,19 +4,21 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS, cropVariety } from '../defs/crops.ts'
 import { qualityMul, RATING_SALE, useOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
+import { SUGAR_BAG } from '../defs/items.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
-import { skuLabel } from '../sim/item.ts'
+import { cropName, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { cropInner, faceGfx, ripeGroup } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { gateLine, rowState } from './sku-card.tsx'
 import { Bar, Coin, Frame } from './frame.tsx'
 
-const ADDITIVE_LABEL: { readonly [K in AdditiveId]: () => string } = {
+const ADDITIVE_LABEL: { readonly [K in AdditiveId | 'sugar']: () => string } = {
   fertilizer: () => m.hud_fertilizer(),
   synth: () => m.names_item_synth(),
   compost: () => m.names_item_compost(),
   'weed-spray': () => m.names_item_weed_spray(),
+  sugar: () => m.names_item_sugar(),
 }
 
 const FIT = 'w-fit min-w-80 max-w-[min(calc(92vw-17rem),72rem)] max-h-[min(88vh,48rem)]'
@@ -107,7 +109,42 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
       ) : (
         <div className="overflow-x-auto">
           <table className="border-separate border-spacing-1.5">
+            <thead>
+              <tr>
+                {crops.map(crop => (
+                  <th key={crop} className="pb-1 align-bottom">
+                    <div className="flex w-[4.25rem] flex-col items-center gap-0.5">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-9 w-9"
+                        dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(crop, 'base')) }}
+                      />
+                      <span className="w-[4.25rem] text-center text-[11px] leading-tight text-ink/60">
+                        {cropName(crop)}
+                      </span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
+              {crops.some(crop => packSku(crop) !== undefined) && (
+                <tr>
+                  {crops.map(crop => {
+                    const sku = packSku(crop)
+                    if (sku === undefined) return <td key={crop} />
+                    return (
+                      <td key={crop}>
+                        <BuyPack
+                          world={world}
+                          sku={sku}
+                          onHot={on => setTip(on ? { kind: 'buy', crop, sku } : undefined)}
+                        />
+                      </td>
+                    )
+                  })}
+                </tr>
+              )}
               {Array.from({ length: rows }, (_, row) => (
                 <tr key={row}>
                   {crops.map(crop => {
@@ -129,7 +166,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                             if (n === 0) return
                             world.takeSilo(crop, variety)
                           }}
-                          className={`flex h-[4.25rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
+                          className={`flex h-[5.5rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 px-1 ${
                             n === 0
                               ? 'cursor-default bg-ink/6 text-ink/25'
                               : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
@@ -137,10 +174,12 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                         >
                           <svg
                             viewBox="0 0 24 24"
-                            className={`h-8 w-8 ${n === 0 ? 'opacity-30' : ''}`}
+                            className={`h-8 w-8 shrink-0 ${n === 0 ? 'opacity-30' : ''}`}
                             dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(crop, variety)) }}
                           />
-                          <span className="text-[11px] leading-tight">{cropVariety(crop, variety)}</span>
+                          {variety !== 'base' && (
+                            <span className="text-[11px] leading-tight">{cropVariety(crop, variety)}</span>
+                          )}
                           <span className="text-sm leading-none font-bold tabular-nums">{n}</span>
                         </button>
                       </td>
@@ -148,23 +187,6 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                   })}
                 </tr>
               ))}
-              {crops.some(crop => packSku(crop) !== undefined) && (
-                <tr>
-                  {crops.map(crop => {
-                    const sku = packSku(crop)
-                    if (sku === undefined) return <td key={crop} />
-                    return (
-                      <td key={crop}>
-                        <BuyPack
-                          world={world}
-                          sku={sku}
-                          onHot={on => setTip(on ? { kind: 'buy', crop, sku } : undefined)}
-                        />
-                      </td>
-                    )
-                  })}
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -226,14 +248,19 @@ function SeedTip({
   )
 }
 
-const ADDITIVE_SKU: { readonly [K in AdditiveId]: SkuId | 'none' } = {
+type StoreRowId = AdditiveId | 'sugar'
+
+const STORE_ROW_IDS: readonly StoreRowId[] = [...ADDITIVE_IDS, 'sugar']
+
+const ADDITIVE_SKU: { readonly [K in StoreRowId]: SkuId | 'none' } = {
   fertilizer: 'buy-fertilizer',
   synth: 'buy-synth-fertilizer',
   compost: 'none',
   'weed-spray': 'buy-weed-spray',
+  sugar: 'buy-sugar',
 }
 
-function AdditiveTip({ world, id }: { world: World; id: AdditiveId }) {
+function AdditiveTip({ world, id }: { world: World; id: StoreRowId }) {
   const sku = ADDITIVE_SKU[id]
   if (sku === 'none') return null
   const state = rowState(world, sku)
@@ -244,7 +271,7 @@ function AdditiveTip({ world, id }: { world: World; id: AdditiveId }) {
         <>
           <span className="flex items-center gap-1">
             <Coin n={world.skuPrice(sku)} />
-            {m.hud_for_liters({ n: ADDITIVE_BAG[id] })}
+            {m.hud_for_liters({ n: id === 'sugar' ? SUGAR_BAG : ADDITIVE_BAG[id] })}
           </span>
           {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(world, sku, state)}</span>}
         </>
@@ -272,7 +299,7 @@ function BuyPack({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: 
         if (off) return
         world.buy(sku)
       }}
-      className={`flex h-[4.25rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
+      className={`flex h-[5.5rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
         off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
       }`}
     >
@@ -312,7 +339,7 @@ function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (
 }
 
 export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
-  const [hot, setHot] = useState<AdditiveId | undefined>(undefined)
+  const [hot, setHot] = useState<StoreRowId | undefined>(undefined)
   const cell = world.cell(at)
   if (cell.kind !== 'additive-store') return null
   return (
@@ -324,10 +351,11 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
     >
       <Capacity hint={m.hud_fill_bag()} used={round(cell.used)} cap={cell.cap} unit="L" />
       <div className="flex flex-col gap-1.5">
-        {ADDITIVE_IDS.map(id => {
-          const liters = cell.litersOf(id)
+        {STORE_ROW_IDS.map(id => {
+          const liters = id === 'sugar' ? cell.sugar.liters : cell.litersOf(id)
           const off = liters <= 0
           const sku = ADDITIVE_SKU[id]
+          const bag = id === 'sugar' ? SUGAR_BAG : ADDITIVE_BAG[id]
           return (
             <div key={id} className="flex items-stretch gap-1.5">
               <button
@@ -335,7 +363,8 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                 aria-disabled={off}
                 onClick={() => {
                   if (off) return
-                  world.takeAdditive(id)
+                  if (id === 'sugar') world.takeSugar()
+                  else world.takeAdditive(id)
                 }}
                 className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left ${
                   off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
@@ -345,7 +374,11 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                   viewBox="0 0 24 24"
                   className={`h-10 w-10 shrink-0 ${off ? 'opacity-40' : ''}`}
                   dangerouslySetInnerHTML={{
-                    __html: faceGfx({ kind: id, liters: ADDITIVE_BAG[id], capacityLiters: ADDITIVE_BAG[id] }),
+                    __html: faceGfx(
+                      id === 'sugar'
+                        ? { kind: 'sugar', liters: bag, capacityLiters: bag, unitSale: cell.sugar.unitSale, quality: cell.sugar.quality }
+                        : { kind: id, liters: bag, capacityLiters: bag },
+                    ),
                   }}
                 />
                 <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]()}</span>

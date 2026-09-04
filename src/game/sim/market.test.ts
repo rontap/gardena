@@ -67,7 +67,7 @@ describe('contracts', () => {
     b.done.add('unlock-tomato')
     b.seats[0].inventory[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 9, unitSale: 4, freshness: 1, bio: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 9, unitSale: 4, freshness: 1, bio: false, cut: false },
     }
     b.setCell(AT, { kind: 'growing', soil: new Soil(1, 1, WEED_CHANCE), plant: new Plant('potato', 'base', 0) })
     expect(a.clock.day).toBe(b.clock.day)
@@ -449,7 +449,7 @@ describe('contracts', () => {
     w.seats[1].actor.y = PAD.row + 0.5
     w.seats[1].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: CROPS.carrot.sale, freshness: 1, bio: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: CROPS.carrot.sale, freshness: 1, bio: false, cut: false },
     }
     w.apply({ a: Act.enqueue, t: 0, p: 1, i: { act: 'consign' } })
     w.tick(DT_MAX)
@@ -493,7 +493,7 @@ function dropFruit(w: World, crop: 'carrot', n: number, freshness = 1): void {
   w.seats[0].actor.y = PAD.row + 0.5
   w.seats[0].hand = {
     kind: 'hold',
-    item: { kind: 'fruit', crop, variety: 'base', quality: 0, count: n, unitSale: CROPS[crop].sale, freshness, bio: false },
+    item: { kind: 'fruit', crop, variety: 'base', quality: 0, count: n, unitSale: CROPS[crop].sale, freshness, bio: false, cut: false },
   }
   w.enqueue({ act: 'consign' })
   w.tick(DT_MAX)

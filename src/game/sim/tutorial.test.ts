@@ -121,6 +121,7 @@ describe('tutorial', () => {
         unitSale: 1,
         freshness: 1,
         bio: true,
+        cut: false,
       },
     })
     const t = check(w, on(1))

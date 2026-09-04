@@ -112,6 +112,8 @@
   "catalog_title_dead": "Dead plant",
   "catalog_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
   "catalog_sku_buy_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. Holds {cap} units. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
+  "catalog_station": "Cuts grafts from Heirloom fruit. {need} fruit take {seconds}s and come back cut, beside {min} to {max} grafts of that Variety at the Quality that went in. A graft is how a Variety moves onto a plant already in the ground. A chest on the right takes what comes out, else it drops in front.",
+  "catalog_sku_buy_research_station": "Cuts grafts from Heirloom fruit. {need} fruit take {seconds}s and come back cut, beside {min} to {max} grafts of that Variety at the Quality that went in. A graft is how a Variety moves onto a plant already in the ground. A chest on the right takes what comes out, else it drops in front.",
   "catalog_axe": "Chops a mature tree into Wood. The tree then grows a trunk and grows again before it fruits. {uses} uses, {workSeconds}s per chop.",
   "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
   "catalog_ash": [

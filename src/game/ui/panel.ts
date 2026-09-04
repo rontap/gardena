@@ -16,6 +16,7 @@ export type Panel =
   | { kind: 'silo'; at: Coord }
   | { kind: 'additives'; at: Coord }
   | { kind: 'hangar'; at: Coord }
+  | { kind: 'station'; at: Coord }
   | { kind: 'vehicle'; id: VehicleId }
   | { kind: 'menu' }
   | { kind: 'multiplayer' }
@@ -24,7 +25,14 @@ export type PanelKind = Panel['kind']
 
 /** Panels a walk-up cue opened. Closing any of them has to ack the cue. */
 export function cued(kind: PanelKind): boolean {
-  return kind === 'chest' || kind === 'silo' || kind === 'additives' || kind === 'hangar' || kind === 'vehicle'
+  return (
+    kind === 'chest' ||
+    kind === 'silo' ||
+    kind === 'additives' ||
+    kind === 'hangar' ||
+    kind === 'station' ||
+    kind === 'vehicle'
+  )
 }
 
 /** Panels that can leave a placement ghost armed on the map. */

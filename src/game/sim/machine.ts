@@ -22,17 +22,30 @@ import {
   STILL_CAP,
   SUGAR_BAG,
   SUGAR_MILL,
-  CASK_AGE,
+  CASK_AGE_MAX,
+  CASK_AGE_MIN,
   CASK_SALE,
 } from '../defs/items.ts'
-import { qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
+import { NO_PATH_SALE, pathSale, qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
+import { STATION_IN } from '../defs/items.ts'
 import type { BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
-import { isAnnualId } from './ids.ts'
-import type { Barrel, CompostBox, Coord, Furnace, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
-import { compostValue, cropName, furnaceValue, organic, type Item } from './item.ts'
+import { CROP_OF_CASK, CROP_OF_SPIRIT, isAnnualId, SPIRIT_OF } from './ids.ts'
+import type {
+  Barrel,
+  CompostBox,
+  Coord,
+  Furnace,
+  Grinder,
+  JamMachine,
+  Mill,
+  PotStill,
+  RectBase,
+  ResearchStation,
+} from './building.ts'
+import { compostValue, furnaceValue, organic, type Item } from './item.ts'
 import { m } from '../../paraglide/messages.js'
 
-export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace
+export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation
 
 export function isIoCell(c: { kind: string }): c is IoCell {
   return (
@@ -41,7 +54,8 @@ export function isIoCell(c: { kind: string }): c is IoCell {
     c.kind === 'still' ||
     c.kind === 'compost-box' ||
     c.kind === 'grinder' ||
-    c.kind === 'furnace'
+    c.kind === 'furnace' ||
+    c.kind === 'station'
   )
 }
 
@@ -71,8 +85,9 @@ export function millProductName(recipe: MillRecipe): string {
   return m.names_item_extract()
 }
 
-export function millProduct(recipe: MillRecipe, quality = 0): Item {
-  const mul = qualityMul(quality)
+export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: number): Item {
+  const rate = recipe === 'grass' ? NO_PATH_SALE : pathSale(recipe, variety, 'preserve')
+  const mul = rate * qualityMul(quality)
   if (recipe === 'sugar-cane') {
     return { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL * mul, quality }
   }
@@ -123,10 +138,14 @@ export function millDumpUnits(item: Item, recipe: MillRecipe): number {
 
 export type MillTake = { recipe: MillRecipe; n: number }
 
+export function feedVarietyOf(item: Item): VarietyId {
+  return item.kind === 'fruit' ? item.variety : 'base'
+}
+
 export function millAccept(mill: Mill, item: Item): MillTake | undefined {
   const recipe = millRecipeOf(item)
   if (recipe === undefined) return undefined
-  if (mill.recipe !== 'none' && mill.recipe !== recipe) return undefined
+  if (mill.recipe !== 'none' && (mill.recipe !== recipe || mill.variety !== feedVarietyOf(item))) return undefined
   const n = millDumpUnits(item, recipe)
   if (n <= 0) return undefined
   return { recipe, n }
@@ -136,7 +155,7 @@ export function millApply(mill: Mill, item: Item, n: number): void {
   const recipe = millRecipeOf(item)
   if (recipe === undefined || n <= 0) return
   const q = item.kind === 'fruit' ? item.quality : 0
-  const v = item.kind === 'fruit' ? item.variety : 'base'
+  const v = feedVarietyOf(item)
   if (mill.recipe === 'none') {
     mill.recipe = recipe
     mill.variety = v
@@ -172,7 +191,10 @@ export function grindApply(g: Grinder, take: GrindTake): void {
   g.units += take.n
 }
 
-export function grindProduct(g: Grinder, count: number): Extract<Item, { kind: 'seeds' | 'tree-seed' }> {
+export function grindProduct(
+  g: { crop: CropId | 'none'; variety: VarietyId; quality: number },
+  count: number,
+): Extract<Item, { kind: 'seeds' | 'tree-seed' }> {
   if (g.crop === 'none') throw new Error('grind')
   if (!isAnnualId(g.crop)) return { kind: 'tree-seed', tree: g.crop, variety: 'base', quality: g.quality }
   const variety = tierOf(g.variety) === 'heirloom' ? 'base' : g.variety
@@ -193,6 +215,11 @@ export function feedAccept(cell: IoCell, item: Item): number {
   if (cell.kind === 'still') return stillAccept(cell, item)
   if (cell.kind === 'compost-box') return organic(item) ? 1 : 0
   if (cell.kind === 'furnace') return furnaceAccept(cell, item)
+  if (cell.kind === 'station') {
+    const take = stationAccept(cell, item)
+    if (take === undefined) return 0
+    return take.n
+  }
   const take = grindAccept(cell, item)
   if (take === undefined) return 0
   return take.n
@@ -223,6 +250,12 @@ export function feedApply(cell: IoCell, item: Item, n: number): void {
     furnaceApply(cell, item, n)
     return
   }
+  if (cell.kind === 'station') {
+    const got = stationAccept(cell, item)
+    if (got === undefined) return
+    stationApply(cell, { ...got, n })
+    return
+  }
   const take = grindAccept(cell, item)
   if (take === undefined) return
   grindApply(cell, { crop: take.crop, variety: take.variety, quality: take.quality, n })
@@ -249,7 +282,7 @@ export function takeCount(item: Item, n: number): boolean {
 export function jamFruitAccept(jam: JamMachine, item: Item): number {
   const crop = jamCropOf(item)
   if (crop === undefined) return 0
-  if (jam.crop !== 'none' && jam.crop !== crop) return 0
+  if (jam.crop !== 'none' && (jam.crop !== crop || jam.variety !== feedVarietyOf(item))) return 0
   return fruitCount(item)
 }
 
@@ -300,17 +333,17 @@ export function stillCropOf(item: Item): StillCrop | undefined {
   return undefined
 }
 
+export function barrelCropOf(item: Item): BarrelCrop | undefined {
+  const crop = fruitCrop(item)
+  return crop === 'grape' || crop === 'apple' ? crop : undefined
+}
+
 export function jamCropOf(item: Item): JamCrop | undefined {
   const crop = fruitCrop(item)
   if (crop === 'apricot' || crop === 'grape' || crop === 'raspberry' || crop === 'cherry' || crop === 'tomato') {
     return crop
   }
   return undefined
-}
-
-export function jamCropName(crop: JamCrop): string {
-  if (crop === 'tomato') return m.names_item_ketchup()
-  return cropName(crop)
 }
 
 export function feedUnits(feed: readonly { count: number }[]): number {
@@ -348,13 +381,25 @@ export function addBarrelFeed(
   feed.push({ variety, quality, count: n })
 }
 
-export function spiritKind(feed: readonly { crop: StillCrop; count: number }[]): SpiritKind {
-  const crops = new Set(feed.filter(f => f.count > 0).map(f => f.crop))
-  if (crops.size !== 1) return 'mixed'
-  const crop = [...crops][0]
-  if (crop === 'potato') return 'vodka'
-  if (crop === 'wheat') return 'beer'
-  return 'brandy'
+export type BarrelTake = { crop: BarrelCrop; variety: VarietyId; quality: number; n: number }
+
+export function barrelAccept(barrel: Barrel, item: Item): BarrelTake | undefined {
+  const crop = barrelCropOf(item)
+  if (crop === undefined) return undefined
+  const variety = feedVarietyOf(item)
+  if (barrel.crop !== 'none' && (barrel.crop !== crop || feedVariety(barrel.feed) !== variety)) return undefined
+  const room = barrelNeed(barrel.crop === 'none' ? crop : barrel.crop) - feedUnits(barrel.feed)
+  const n = fruitCount(item)
+  if (room <= 0 || n <= 0) return undefined
+  return { crop, variety, quality: fruitQuality(item), n: n < room ? n : room }
+}
+
+export function spiritKind(feed: readonly { crop: StillCrop; variety: VarietyId; count: number }[]): SpiritKind {
+  const live = feed.filter(f => f.count > 0)
+  const crops = new Set(live.map(f => f.crop))
+  const varieties = new Set(live.map(f => f.variety))
+  if (crops.size !== 1 || varieties.size !== 1) return 'mixed'
+  return SPIRIT_OF[[...crops][0]]
 }
 
 export function meanQuality(units: readonly { quality: number; count: number }[]): number {
@@ -374,24 +419,28 @@ export function mixQuality(prevQ: number, prevN: number, addQ: number, addN: num
   return (prevQ * prevN + addQ * addN) / t
 }
 
-export function bakeSpiritSale(kind: SpiritKind, quality = 0): number {
-  const base = kind === 'mixed' ? SPIRIT_SALE.vodka : SPIRIT_SALE[kind]
-  const s = base * qualityMul(quality)
-  return kind === 'mixed' ? s * MIXED_MUL : s
+export function bakeSpiritSale(kind: SpiritKind, variety: VarietyId, quality: number): number {
+  if (kind === 'mixed') return SPIRIT_SALE.vodka * MIXED_MUL * qualityMul(quality)
+  return SPIRIT_SALE[kind] * pathSale(CROP_OF_SPIRIT[kind], variety, 'alcohol') * qualityMul(quality)
 }
 
-export function caskAgeMul(age: number): number {
+export function caskAgeTop(quality: number): number {
+  return CASK_AGE_MIN + (CASK_AGE_MAX - CASK_AGE_MIN) * quality
+}
+
+export function caskAgeMul(age: number, quality: number): number {
   const t = (age - BARREL_MATURE) / BARREL_AGE
   const u = t < 0 ? 0 : t > 1 ? 1 : t
-  return 1 + (CASK_AGE - 1) * u
+  return 1 + (caskAgeTop(quality) - 1) * u
 }
 
-export function bakeCaskSale(cask: CaskId, quality: number, age: number): number {
-  return CASK_SALE[cask] * qualityMul(quality) * caskAgeMul(age)
+export function bakeCaskSale(cask: CaskId, variety: VarietyId, quality: number, age: number): number {
+  const rate = pathSale(CROP_OF_CASK[cask], variety, 'alcohol')
+  return CASK_SALE[cask] * rate * qualityMul(quality) * caskAgeMul(age, quality)
 }
 
-export function jamSale(crop: JamCrop, quality = 0): number {
-  return JAM_SALE[crop] * qualityMul(quality)
+export function jamSale(crop: JamCrop, variety: VarietyId, quality: number): number {
+  return JAM_SALE[crop] * pathSale(crop, variety, 'preserve') * qualityMul(quality)
 }
 
 export function mergeSugar(
@@ -486,6 +535,34 @@ export function furnaceCovers(furnace: Furnace, target: RectBase): boolean {
 
 export function furnaceMul(working: readonly Furnace[], target: RectBase): number {
   return 1 + FURNACE_HASTE * working.filter(f => furnaceCovers(f, target)).length
+}
+
+export type StationTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
+
+export function stationAccept(st: ResearchStation, item: Item): StationTake | undefined {
+  if (item.kind !== 'fruit' || item.cut) return undefined
+  if (tierOf(item.variety) !== 'heirloom') return undefined
+  if (st.crop !== 'none' && (st.crop !== item.crop || st.variety !== item.variety)) return undefined
+  const room = STATION_IN - st.units
+  if (room <= 0 || item.count <= 0) return undefined
+  return { crop: item.crop, variety: item.variety, quality: item.quality, n: Math.min(room, item.count) }
+}
+
+export function stationApply(st: ResearchStation, take: StationTake): void {
+  if (take.n <= 0) return
+  if (st.crop === 'none') {
+    st.crop = take.crop
+    st.variety = take.variety
+    st.quality = take.quality
+    st.units = take.n
+    return
+  }
+  st.quality = mixQuality(st.quality, st.units, take.quality, take.n)
+  st.units += take.n
+}
+
+export function stationWorking(c: ResearchStation): boolean {
+  return c.inn !== 1 && c.crop !== 'none' && c.units >= STATION_IN
 }
 
 export function millWorking(c: Mill): c is Mill & { recipe: MillRecipe } {

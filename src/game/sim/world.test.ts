@@ -45,7 +45,7 @@ import {
   chunkRect,
   occupiedCells,
 } from './building.ts'
-import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
+import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL, SUGAR_SHOP } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse } from './save.ts'
 import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand, type Item } from './item.ts'
@@ -283,6 +283,32 @@ describe('beta-1 invariants', () => {
     expect(w.additives.litersOf('fertilizer')).toBe(0)
   })
 
+  test('sugar is delivered to the additive store and drawn back as a bag', () => {
+    const w = new World()
+    w.money = 999
+    w.done.add('unlock-preservatives')
+    expect(w.buy('buy-sugar')).toBeUndefined()
+    expect(w.seats[0].place.kind).toBe('none')
+    expect(w.additives.sugar.liters).toBe(SUGAR_BAG)
+    expect(w.seats[0].inventory.some(s => s.kind === 'hold' && s.item.kind === 'sugar')).toBe(false)
+    w.seats[0].hand = { kind: 'empty' }
+    w.takeSugar()
+    const hand = handOf(w)
+    expect(hand.kind === 'hold' && hand.item.kind).toBe('sugar')
+    expect(hand.kind === 'hold' && hand.item.kind === 'sugar' && hand.item.liters).toBe(SUGAR_BAG)
+    expect(hand.kind === 'hold' && hand.item.kind === 'sugar' && hand.item.unitSale).toBe(SUGAR_SHOP)
+    expect(w.additives.sugar.liters).toBe(0)
+  })
+
+  test('the store mixes sugar sale and quality by liters', () => {
+    const w = new World()
+    expect(w.putSugar(2, 10, 1)).toBe(2)
+    expect(w.putSugar(2, 20, 0)).toBe(2)
+    expect(w.additives.sugar.liters).toBe(4)
+    expect(w.additives.sugar.unitSale).toBeCloseTo(15, 9)
+    expect(w.additives.sugar.quality).toBeCloseTo(0.5, 9)
+  })
+
   test('additive store caps at its liters and refuses the buy past it', () => {
     const w = new World()
     w.money = 999
@@ -351,9 +377,9 @@ describe('beta-2 invariants', () => {
     w.buy('pack-carrot')
     expectPacked(w)
     expect(siloCount(w, 'carrot', 'base')).toBe(12)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: 4, freshness: 1, bio: true } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: 4, freshness: 1, bio: true, cut: false } }
     w.swap(1)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true, cut: false } }
     w.swap(2)
     expectPacked(w)
     const fruits = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
@@ -718,7 +744,7 @@ describe('beta-4 invariants', () => {
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', variety: 'sonora', quality: 0, count: 1, unitSale: 28, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'sonora', quality: 0, count: 1, unitSale: 28, freshness: 1, bio: true, cut: false },
     }
     w.click(AT)
     w.tick(DT_MAX)
@@ -759,7 +785,7 @@ describe('beta-4 invariants', () => {
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'tomato', variety: 'green-zebra', quality: 0, count: n, unitSale: 22.5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'tomato', variety: 'green-zebra', quality: 0, count: n, unitSale: 22.5, freshness: 1, bio: true, cut: false },
     }
     w.click(AT)
     w.tick(DT_MAX)
@@ -806,7 +832,7 @@ describe('beta-4 invariants', () => {
   test('itemLine fruit shows freshness; berry has no money clause', () => {
     const w = new World()
     expect(
-      itemLine({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true }, w.modifiers),
+      itemLine({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true, cut: false }, w.modifiers),
     ).toBe(`Carrot - 3, freshness 100% ${m.hud_quality_pct({ n: 0 })}`)
     expect(itemLine({ kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5, quality: 0 }, w.modifiers)).toBe(
       `Sugar - 2L ${m.hud_quality_pct({ n: 0 })}`,
@@ -1324,11 +1350,11 @@ describe('beta-6 invariants', () => {
     const w = new World()
     w.seats[0].inventory[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.seats[0].inventory[1] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true, cut: false },
     }
     w.compactInventory()
     const slot = w.seats[0].inventory[0]
@@ -1610,7 +1636,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'mill', at: AT })
     for (let i = 0; i < 200; i++) w.tick(DT_MAX)
@@ -1629,7 +1655,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'still', at: AT })
     for (let i = 0; i < 40; i++) w.tick(DT_MAX)
@@ -1644,7 +1670,7 @@ describe('1.2 machines', () => {
     const chestAt = { col: AT.col + 1, row: AT.row }
     const chest = new Chest({ shape: 'rect', col: chestAt.col, row: chestAt.row, w: 1, h: 1 })
     w.setCell(chestAt, chest)
-    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0 as const, count: 1, unitSale: 4, freshness: 1, bio: true }
+    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0 as const, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false }
     fz.slots[0] = { kind: 'hold', item: { ...fruit } }
     chest.slots[0] = { kind: 'hold', item: { ...fruit } }
     w.tick(1)
@@ -1667,6 +1693,7 @@ describe('1.2 machines', () => {
       unitSale: 3,
       freshness: 0.0001,
       bio: true,
+      cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
     w.seats[0].inventory[0] = { kind: 'hold', item: { ...fruit } }
@@ -1759,7 +1786,7 @@ describe('1.2 machines', () => {
     expect(mill.progress).toBe(0.2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.seats[0].actor.x = millAt.col + 0.5
     w.seats[0].actor.y = millAt.row + 0.5
@@ -2160,6 +2187,21 @@ describe('1.5.2', () => {
     expect(failed.ok).toBe(false)
   })
 
+  test('weed spray clears the weed standing on the plot', () => {
+    const w = new World()
+    const soil = bed()
+    w.setCell(AT, { kind: 'weed', soil, weed: new Weed(0) })
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', liters: 2, capacityLiters: WEED_SPRAY_BAG } }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.enqueue({ act: 'weed-spray', at: AT })
+    w.tick(DT_MAX)
+    const cell = w.cell(AT)
+    expect(cell.kind).toBe('empty')
+    expect(cell.kind === 'empty' && cell.soil).toBe(soil)
+    expect(soil.weedChance).toBeLessThan(0)
+  })
+
   test("Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weeds in hand merge up to the stack cap; full is a no-op that says so. Shovel: no drop, `weedChance = −0.3`.", () => {
     const w = new World()
     const soil = bed()
@@ -2353,6 +2395,7 @@ describe('1.5.2', () => {
       unitSale: 4,
       freshness: 0.4,
       bio: true,
+      cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: fruit }
     const rot = statsOf('carrot', 'base', 0, w.modifiers).rotSeconds
@@ -2587,7 +2630,7 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     expect(w.prompt(at)).toEqual({ kind: 'blocked', text: 'My hand is full!' })
     pickAt(w, at)
@@ -2602,7 +2645,7 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.click(at)
     expect(w.speech).toEqual({ kind: 'say', text: 'My hand is full!', left: SPEECH_S })
@@ -2615,14 +2658,14 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
     ripeAt(w, at, 'potato')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
@@ -2633,7 +2676,7 @@ describe('1.9 stacks', () => {
     expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'cask', cask: 'wine', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true })).toBe(STACK_MAX)
+    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(STACK_MAX)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
   })
 
@@ -2654,11 +2697,11 @@ describe('1.9 stacks', () => {
     w.setCell(at, { kind: 'empty', soil: bed() })
     w.drops.push({
       at,
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 8, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 8, unitSale: 4, freshness: 1, bio: true, cut: false },
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 5, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 5, unitSale: 4, freshness: 1, bio: true, cut: false },
     }
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 0.5
@@ -2949,6 +2992,7 @@ describe('market.quality', () => {
         unitSale: 6,
         freshness: 1,
         bio: true,
+        cut: false,
       },
     }
     w.enqueue({ act: 'consign' })
@@ -3206,7 +3250,7 @@ describe('machines.grind-tree', () => {
   }
 
   function fruitItem(crop: 'apple' | 'grape', variety: VarietyId): Item {
-    return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true }
+    return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false }
   }
 
   test(NAME, () => {

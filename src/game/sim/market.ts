@@ -336,7 +336,7 @@ export function load(D: number): number {
 export function cleanUnit(d: Demand): number {
   if (d.kind === 'group') {
     if (d.group === 'jam') return JAM_MIN
-    return bakeSpiritSale('vodka')
+    return bakeSpiritSale('vodka', 'base', 0)
   }
   return unitOf(d.good)
 }
@@ -354,7 +354,7 @@ function unitOf(good: StallGoodId): number {
   if (good === 'flour') return FLOUR
   if (good === 'extract') return EXTRACT
   if (isCaskClass(good)) return CASK_SALE[good]
-  if (isSpiritClass(good)) return bakeSpiritSale(good)
+  if (isSpiritClass(good)) return bakeSpiritSale(good, 'base', 0)
   return CROPS[good].sale
 }
 

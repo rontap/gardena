@@ -5,6 +5,7 @@ import {
   FERT_BAG_LITERS,
   FREEZER_SLOTS,
   SILO_SEED_CAP,
+  SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
@@ -355,6 +356,20 @@ export class Furnace {
   }
 }
 
+export class ResearchStation {
+  readonly kind = 'station' as const
+  readonly base: RectBase
+  crop: CropId | 'none' = 'none'
+  variety: VarietyId = 'base'
+  quality = 0
+  units = 0
+  progress = 0
+  inn: Signal = 0
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
 export class Barrel {
   readonly kind = 'barrel' as const
   readonly base: RectBase
@@ -455,16 +470,19 @@ export const ADDITIVE_BAG: { readonly [K in AdditiveId]: number } = {
 
 export type AdditiveHold = { id: AdditiveId; liters: number }
 
+export type SugarBin = { liters: number; unitSale: number; quality: number }
+
 export class AdditiveStore extends Store {
   readonly kind = 'additive-store' as const
   readonly held: AdditiveHold[] = []
+  sugar: SugarBin = { liters: 0, unitSale: SUGAR_SHOP, quality: 0 }
   out: Signal = 0
   hold = 0
   constructor(base: RectBase, useDefault = true) {
     super(base, ADDITIVE_CAP_LITERS, useDefault)
   }
   get used(): number {
-    return this.held.reduce((n, h) => n + h.liters, 0)
+    return this.held.reduce((n, h) => n + h.liters, this.sugar.liters)
   }
   litersOf(id: AdditiveId): number {
     return this.held.find(h => h.id === id)?.liters ?? 0

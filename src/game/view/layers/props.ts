@@ -1,6 +1,6 @@
 import { Container, Texture } from 'pixi.js'
 import { HOUSE_BASE } from '../../sim/building.ts'
-import { furnaceWorking } from '../../sim/machine.ts'
+import { furnaceWorking, stationWorking } from '../../sim/machine.ts'
 import { isSensor } from '../../sim/sensor.ts'
 import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'
@@ -68,6 +68,10 @@ export class PropsLayer {
         fg.position.set(at.col * TILE + 3, at.row * TILE + TILE - 5)
         fg.width = (TILE - 6) * t
         fg.height = 2
+        continue
+      }
+      if (cell.kind === 'station') {
+        put(stationWorking(cell) ? 'station-on' : 'station-off', at.col, at.row)
         continue
       }
       if (cell.kind === 'furnace') {

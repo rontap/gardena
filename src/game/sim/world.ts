@@ -39,15 +39,19 @@ import {
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
   FREEZER_ROT_MUL,
-  JAM_BUFFER,
   JAM_IN,
   JAM_SALE,
   JAM_SECONDS,
   JAM_SUGAR,
   MILL_WORK,
+  SUGAR_BAG,
   SUGAR_MILL,
   SPEECH_S,
   SPRINKLER_TILE_RATE,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
+  STATION_IN,
+  STATION_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
@@ -120,6 +124,7 @@ import {
   PotStill,
   Pump,
   RainTank,
+  ResearchStation,
   SILO_BASE,
   SeedSilo,
   Tap,
@@ -169,6 +174,7 @@ import {
   addBarrelFeed,
   addStillFeed,
   bakeSpiritSale,
+  barrelAccept,
   bakeCaskSale,
   barrelNeed,
   feedAccept,
@@ -188,18 +194,22 @@ import {
   grindApply,
   grindProduct,
   isIoCell,
-  jamCropOf,
+  jamFruitAccept,
+  jamFruitApply,
   jamSale,
+  jamSugarAccept,
+  jamSugarApply,
   machineEast,
   machineWest,
 
   millAccept,
   millApply,
+  stationAccept,
+  stationApply,
   jamWorking,
   millNeed,
   millWorking,
   millProduct,
-  mergeSugar,
   spiritKind,
   stillReady,
   stillCropOf,
@@ -289,7 +299,6 @@ import { pull, Reservoir, TAP_RATE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, weedMul, type WeatherKind } from './weather.ts'
 import { m } from '../../paraglide/messages.js'
 import {
-  barrelCropOf,
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
@@ -320,6 +329,7 @@ import {
   headingDelta,
   hitchP,
   insertSlots,
+  putSugarInto,
   integrateVehicle,
   kindAccel,
   kindVMax,
@@ -397,6 +407,7 @@ export type Intent =
   | { act: 'grind'; at: Coord }
   | { act: 'still'; at: Coord }
   | { act: 'furnace'; at: Coord }
+  | { act: 'station'; at: Coord }
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }
@@ -419,6 +430,7 @@ export type Cue =
   | { kind: 'silo'; at: Coord }
   | { kind: 'additives'; at: Coord }
   | { kind: 'hangar'; at: Coord }
+  | { kind: 'station'; at: Coord }
   | { kind: 'vehicle'; id: VehicleId }
 
 export type Speech = { kind: 'none' } | { kind: 'say'; text: string; left: number }
@@ -1109,6 +1121,7 @@ export class World {
         return
       case Act.takeStore:
         if (cmd.k === 'silo') this.takeSiloBody(cmd.c, cmd.r)
+        else if (cmd.k === 'sugar') this.takeSugarBody()
         else this.takeAdditiveBody(cmd.d)
         return
       case Act.swapChest:
@@ -1314,7 +1327,8 @@ export class World {
         cell.kind === 'barrel' ||
         cell.kind === 'grinder' ||
         cell.kind === 'compost-box' ||
-        cell.kind === 'furnace')
+        cell.kind === 'furnace' ||
+        cell.kind === 'station')
     ) {
       this.machines.set(k, here)
     } else this.machines.delete(k)
@@ -2190,6 +2204,14 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'station') {
+      this.stripPadStops(c)
+      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
+      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+
+      this.ping()
+      return
+    }
     if (c.kind === 'barrel') {
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
 
@@ -2550,6 +2572,8 @@ export class World {
         return m.names_building_still()
       case 'furnace':
         return m.names_building_furnace()
+      case 'station':
+        return m.names_building_station()
       case 'barrel':
         return m.names_building_barrel()
       case 'jam':
@@ -2619,10 +2643,9 @@ export class World {
     if (made.kind === 'sugar') {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
-      if (!this.canFitSugar()) return 'Inventory full'
+      if (this.additives.free < made.liters) return 'Additive store full'
       this.money -= price
-      this.putSugar(made)
-      this.compactInventory()
+      this.putSugar(made.liters, made.unitSale, made.quality)
       this.ping()
       return undefined
     }
@@ -2734,6 +2757,7 @@ export class World {
       this.act.place.id === 'buy-well' ||
       this.act.place.id === 'buy-mill' ||
       this.act.place.id === 'buy-jam' ||
+      this.act.place.id === 'buy-research-station' ||
       this.act.place.id === 'buy-barrel' ||
       this.act.place.id === 'buy-freezer' ||
       this.act.place.id === 'buy-freezer-large' ||
@@ -2805,6 +2829,7 @@ export class World {
       else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
       else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
       else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
+      else if (this.act.place.id === 'buy-research-station') this.setCell(at, new ResearchStation(base))
       else if (this.act.place.id === 'buy-barrel') this.setCell(at, new Barrel(base))
       else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
       else if (this.act.place.id === 'buy-freezer-large') {
@@ -2851,6 +2876,7 @@ export class World {
       made.kind === 'jam-machine' ||
       made.kind === 'still' ||
       made.kind === 'furnace' ||
+      made.kind === 'station' ||
       made.kind === 'barrel' ||
       made.kind === 'freezer' ||
       made.kind === 'hangar' ||
@@ -3729,7 +3755,7 @@ export class World {
   private harvestItem(c: Cell): Item | undefined {
     if (c.kind === 'ripe') {
       const p = c.plant
-      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio) }
+      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio, false) }
     }
     if (c.kind === 'growing') {
       const m = c.plant.maturity
@@ -3737,7 +3763,7 @@ export class World {
       if (m > 0.8) {
         const p = c.plant
         const q = this.bakeQuality(p)
-        return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, this.modifiers).sale, m, p.bio) }
+        return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, this.modifiers).sale, m, p.bio, false) }
       }
       return undefined
     }
@@ -3927,6 +3953,27 @@ export class World {
     return n
   }
 
+  putSugar(liters: number, unitSale: number, quality: number): number {
+    return putSugarInto(this.additives, liters, unitSale, quality)
+  }
+
+  takeSugar(): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'sugar', d: 'sugar' })
+  }
+
+  private takeSugarBody(): void {
+    const bin = this.additives.sugar
+    const liters = Math.min(SUGAR_BAG, bin.liters)
+    if (liters <= 0) return
+    if (!this.freeHand()) return
+    bin.liters -= liters
+    this.act.hand = {
+      kind: 'hold',
+      item: { kind: 'sugar', liters, capacityLiters: SUGAR_BAG, unitSale: bin.unitSale, quality: bin.quality },
+    }
+    this.ping()
+  }
+
   takeAdditive(id: AdditiveId): void {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', d: id })
   }
@@ -3947,6 +3994,10 @@ export class World {
 
   private depositAdditives(): void {
     const take = (it: Item): boolean => {
+      if (it.kind === 'sugar') {
+        it.liters -= this.putSugar(it.liters, it.unitSale, it.quality)
+        return it.liters <= 0
+      }
       if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
       const n = this.putAdditive(it.kind, it.liters)
       it.liters -= n
@@ -4395,6 +4446,19 @@ export class World {
         }
         this.arm(0.4)
         return
+      case 'station': {
+        if (this.cell(i.at).kind !== 'station') {
+          this.shiftHead()
+          return
+        }
+        if (this.canStation(i.at)) {
+          this.arm(0.4)
+          return
+        }
+        this.act.cue = { kind: 'station', at: { ...i.at } }
+        this.shiftHead()
+        return
+      }
       case 'barrel':
         if (!this.canBarrel(i.at)) {
           this.shiftHead()
@@ -4531,6 +4595,7 @@ export class World {
     if (i.act === 'mill') this.doMill(i.at)
     if (i.act === 'still') this.doStill(i.at)
     if (i.act === 'furnace') this.doFurnace(i.at)
+    if (i.act === 'station') this.doStation(i.at)
     if (i.act === 'barrel') this.doBarrel(i.at)
     if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
@@ -4602,7 +4667,7 @@ export class World {
 
   private evalSensors(dt: number): void {
     const sensors = new Map<string, Sensor>()
-    const machines = new Map<string, Mill | JamMachine | PotStill | Furnace>()
+    const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>()
     const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
     for (const at of this.sensors.values()) {
       const c = this.cell(at)
@@ -4610,7 +4675,9 @@ export class World {
     }
     for (const at of this.machines.values()) {
       const c = this.cell(at)
-      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace') machines.set(cellKey(at), c)
+      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace' || c.kind === 'station') {
+        machines.set(cellKey(at), c)
+      }
       if (c.kind === 'furnace') stores.set(cellKey(at), c)
     }
     for (const at of this.stores.values()) {
@@ -4860,7 +4927,7 @@ export class World {
         const need = millNeed(c.recipe)
         c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / MILL_WORK
         if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, millProduct(c.recipe, c.quality))) continue
+        if (!this.emitProduct(at, c.base, millProduct(c.recipe, c.variety, c.quality))) continue
         c.progress = 0
         c.units -= need
         if (c.units === 0) mill.recipe = 'none'
@@ -4874,7 +4941,7 @@ export class World {
         if (!jamWorking(c)) continue
         c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / JAM_SECONDS
         if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, variety: c.variety, quality: c.quality, count: 1, unitSale: jamSale(c.crop, c.quality) })) continue
+        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, variety: c.variety, quality: c.quality, count: 1, unitSale: jamSale(c.crop, c.variety, c.quality) })) continue
         c.progress = 0
         c.fruit -= JAM_IN
         c.sugar -= JAM_SUGAR
@@ -4902,7 +4969,7 @@ export class World {
             variety,
             quality,
             count: 1,
-            unitSale: bakeSpiritSale(kind, quality),
+            unitSale: bakeSpiritSale(kind, variety, quality),
           })
         ) {
           continue
@@ -4944,6 +5011,28 @@ export class World {
         this.track(at, c)
         continue
       }
+      if (c.kind === 'station') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.inn === 1) continue
+        if (c.crop === 'none' || c.units < STATION_IN) continue
+        if (c.progress < 1) c.progress += dt / STATION_SECONDS
+        if (c.progress < 1) continue
+        const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day)
+        const count = STATION_GRAFT_MIN + Math.floor(u * (STATION_GRAFT_MAX - STATION_GRAFT_MIN + 1))
+        const sale = statsOf(c.crop, c.variety, c.quality, this.modifiers).sale
+        const cut: Item = {
+          kind: 'fruit',
+          ...fruitStack(c.crop, c.variety, c.quality, STATION_IN, sale, 1, false, true),
+        }
+        const grafts: Item = { kind: 'graft', crop: c.crop, variety: c.variety, quality: c.quality, count }
+        if (!this.emitPair(at, c.base, cut, grafts)) continue
+        c.progress = 0
+        c.units -= STATION_IN
+        if (c.units === 0) c.crop = 'none'
+        this.track(at, c)
+        dirty = true
+        continue
+      }
       if (c.kind === 'furnace') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
         if (c.inn === 1) continue
@@ -4962,6 +5051,21 @@ export class World {
 
   private dropSpot(at: Coord): Coord | undefined {
     return frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
+  }
+
+  private emitPair(at: Coord, base: RectBase, a: Item, b: Item): boolean {
+    const east = machineEast(base)
+    if (this.inWorld(east)) {
+      const store = this.cell(east)
+      if (store.kind === 'chest' || store.kind === 'freezer') {
+        const test: Slot[] = store.slots.map(s =>
+          s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: { ...s.item } },
+        )
+        if (!insertSlots(test, { ...a }, test.length, undefined)) return false
+        if (!insertSlots(test, { ...b }, test.length, undefined)) return false
+      }
+    }
+    return this.emitProduct(at, base, a) && this.emitProduct(at, base, b)
   }
 
   private emitProduct(at: Coord, base: RectBase, item: Item): boolean {
@@ -5208,6 +5312,7 @@ export class World {
         unitSale: sale,
         freshness: 1,
         bio: true,
+        cut: false,
       },
     })
     return true
@@ -5538,7 +5643,7 @@ export class World {
     const c = this.cell(at)
     const bed = c as Extract<Plot, { kind: 'ripe' }>
     const p = bed.plant
-    const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
+    const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio, false)
     this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
 
@@ -5877,14 +5982,23 @@ export class World {
       return
     }
     if (d.group === 'jam') this.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
-    else this.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka'))
+    else this.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0))
   }
 
   private padBuildings(): PadCell[] {
     const out: PadCell[] = []
     for (const at of this.machines.values()) {
       const c = this.cell(at)
-      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box' || c.kind === 'furnace') out.push(c)
+      if (
+        c.kind === 'mill' ||
+        c.kind === 'jam' ||
+        c.kind === 'still' ||
+        c.kind === 'compost-box' ||
+        c.kind === 'furnace' ||
+        c.kind === 'station'
+      ) {
+        out.push(c)
+      }
     }
     for (const at of this.stores.values()) {
       const c = this.cell(at)
@@ -6090,6 +6204,24 @@ export class World {
     this.track(at, furnace)
   }
 
+  canStation(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'station') return false
+    return stationAccept(c, this.act.hand.item) !== undefined
+  }
+
+  private doStation(at: Coord): void {
+    if (!this.canStation(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const station = this.cell(at) as ResearchStation
+    const take = stationAccept(station, this.act.hand.item)
+    if (take === undefined) return
+    stationApply(station, take)
+    this.takeHandCount(take.n)
+    this.track(at, station)
+  }
+
   private canBarrelCollect(at: Coord): boolean {
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
@@ -6097,7 +6229,7 @@ export class World {
     if (this.act.hand.kind === 'empty') return true
     if (this.act.hand.item.kind !== 'cask') return false
     if (this.act.hand.item.cask !== CASK_OF[c.crop]) return false
-    return this.act.hand.item.variety === c.feed[0].variety
+    return this.act.hand.item.variety === feedVariety(c.feed)
   }
 
   private canBarrel(at: Coord): boolean {
@@ -6105,26 +6237,22 @@ export class World {
     if (this.act.hand.kind !== 'hold') return false
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
-    const crop = barrelCropOf(this.act.hand.item)
-    if (crop === undefined) return false
-    if (c.crop !== 'none' && crop !== c.crop) return false
-    const room = barrelNeed(c.crop === 'none' ? crop : c.crop) - feedUnits(c.feed)
-    return room > 0 && fruitCount(this.act.hand.item) > 0
+    return barrelAccept(c, this.act.hand.item) !== undefined
   }
 
   private doBarrel(at: Coord): void {
     if (this.canBarrelCollect(at)) {
       const barrel = this.cell(at) as Barrel
       if (barrel.crop === 'none') return
-      const variety = barrel.feed[0].variety
-      const quality = barrel.feed[0].quality
+      const variety = feedVariety(barrel.feed)
+      const quality = meanQuality(barrel.feed)
       const cask: Item = {
         kind: 'cask',
         cask: CASK_OF[barrel.crop],
         variety,
         quality,
         count: 1,
-        unitSale: bakeCaskSale(CASK_OF[barrel.crop], quality, barrel.age),
+        unitSale: bakeCaskSale(CASK_OF[barrel.crop], variety, quality, barrel.age),
       }
       if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: cask }
       else if (this.act.hand.item.kind === 'cask') {
@@ -6142,20 +6270,14 @@ export class World {
 
       return
     }
-    if (!this.canBarrel(at)) return
     if (this.act.hand.kind !== 'hold') return
     const barrel = this.cell(at) as Barrel
-    const crop = barrelCropOf(this.act.hand.item)
-    const variety = fruitVariety(this.act.hand.item)
-    if (crop === undefined || variety === undefined) return
-    const room = barrelNeed(barrel.crop === 'none' ? crop : barrel.crop) - feedUnits(barrel.feed)
-    const n = Math.min(room, fruitCount(this.act.hand.item))
-    if (n <= 0) return
-    barrel.crop = crop
-    addBarrelFeed(barrel.feed, variety, fruitQuality(this.act.hand.item), n)
-    this.takeHandCount(n)
+    const take = barrelAccept(barrel, this.act.hand.item)
+    if (take === undefined) return
+    barrel.crop = take.crop
+    addBarrelFeed(barrel.feed, take.variety, take.quality, take.n)
+    this.takeHandCount(take.n)
     this.track(at, barrel)
-
   }
 
   private canJam(at: Coord): boolean {
@@ -6163,11 +6285,8 @@ export class World {
     const c = this.cell(at)
     if (c.kind !== 'jam') return false
     const it = this.act.hand.item
-    if (it.kind === 'sugar') return it.liters > 0 && c.sugar < JAM_BUFFER
-    const crop = jamCropOf(it)
-    if (crop === undefined) return false
-    if (c.crop !== 'none' && c.crop !== crop) return false
-    return fruitCount(it) > 0
+    if (it.kind === 'sugar') return jamSugarAccept(c, it) > 0
+    return jamFruitAccept(c, it) > 0
   }
 
   private doJam(at: Coord): void {
@@ -6176,33 +6295,22 @@ export class World {
     const jam = this.cell(at) as JamMachine
     const it = this.act.hand.item
     if (it.kind === 'sugar') {
-      const room = JAM_BUFFER - jam.sugar
-      const take = it.liters < room ? it.liters : room
-      if (take <= 0) return
-      jam.sugar += take
+      const take = jamSugarAccept(jam, it)
+      jamSugarApply(jam, take)
       it.liters -= take
       if (it.liters <= 0) this.act.hand = { kind: 'empty' }
       this.track(at, jam)
-
       return
     }
-    const crop = jamCropOf(it)
-    if (crop === undefined) return
-    const n = fruitCount(it)
-    if (jam.crop === 'none') jam.crop = crop
-    jam.fruit += n
+    const n = jamFruitAccept(jam, it)
+    jamFruitApply(jam, it, n)
     this.takeHandCount(n)
     this.track(at, jam)
-
   }
 
   private takeHandCount(n: number): void {
     if (this.act.hand.kind !== 'hold') return
     if (takeCount(this.act.hand.item, n)) this.act.hand = { kind: 'empty' }
-  }
-
-  private canFitSugar(): boolean {
-    return this.act.inventory.some(s => s.kind === 'empty' || (s.kind === 'hold' && s.item.kind === 'sugar'))
   }
 
   private doWeedSpray(at: Coord): void {
@@ -6212,26 +6320,10 @@ export class World {
     const c = this.cell(at)
     if (!isTilled(c)) return
     c.soil.weedChance = -1
-    this.track(at, c)
+    if (c.kind === 'weed') this.setCell(at, { kind: 'empty', soil: c.soil })
+    else this.track(at, c)
     this.act.hand.item.liters -= 1
     if (this.act.hand.item.liters < 1) this.act.hand = { kind: 'empty' }
-  }
-
-  private putSugar(item: Extract<Item, { kind: 'sugar' }>): void {
-    const merge = this.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'sugar')
-    if (merge >= 0) {
-      const slot = this.act.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'sugar') {
-        const m = mergeSugar(slot.item, item)
-        slot.item.liters = m.liters
-        slot.item.capacityLiters = m.capacityLiters
-        slot.item.unitSale = m.unitSale
-        slot.item.quality = m.quality
-      }
-      return
-    }
-    const empty = this.act.inventory.findIndex(s => s.kind === 'empty')
-    this.act.inventory[empty] = { kind: 'hold', item }
   }
 
   private canGrind(at: Coord): boolean {

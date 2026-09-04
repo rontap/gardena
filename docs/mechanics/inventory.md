@@ -21,7 +21,7 @@ Seeds and additives do not live in the house. Each has a store building, placed 
 | store | holds |
 |---|---|
 | `seed-silo` | `{ crop, variety, quality, count }[]` cap `SILO_SEED_CAP` |
-| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost · weed-spray`, cap `ADDITIVE_CAP_LITERS` |
+| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost · weed-spray`, plus one `sugar: { liters, unitSale, quality }` bin, cap `ADDITIVE_CAP_LITERS` |
 
 Both caps are cumulative across every stack / kind in that store. Silo stacks merge on crop+variety; quality averages weighted by count.
 
@@ -31,7 +31,9 @@ Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO
 
 Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. If the hand already holds something the store would not take back, that item is set down on the nearest plot first — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
-Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds and sugar are not seeds or additives; they still go to the house.
+Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds still go to the house.
+
+Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the four additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
 
 Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same bodies as shop. No pack (vanilla): no Buy. — [[ui/store]]
 
@@ -97,7 +99,7 @@ Mill / jam / still / barrel / freezer / furnace / shop sugar / station: [[mechan
 
 `inventory.stack` — Countable items merge in hand by kind and identity only. `variety` is in the identity key. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per owned tier. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`.
 
-`variety.stack` — Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar.
+`variety.stack` — Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar. Fruit `cut` is not in the identity key; a merged stack is cut when either side was — [[mechanics/machines]] `station.cut`.
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 

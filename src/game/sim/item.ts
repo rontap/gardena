@@ -42,14 +42,19 @@ import {
   STILL_WATER,
   SUGAR_BAG,
   SUGAR_MILL,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
+  STATION_IN,
+  STATION_SECONDS,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
-import { qualityMul, type VarietyId } from '../defs/varieties.ts'
+import { pathSale, qualityMul, type VarietyId } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
+import { CROP_OF_CASK } from './ids.ts'
 import type {
   AnnualId,
   CaskId,
@@ -73,6 +78,7 @@ export type FruitStack = {
   unitSale: number
   freshness: number
   bio: boolean
+  cut: boolean
 }
 
 export type Item =
@@ -84,7 +90,7 @@ export type Item =
   | { kind: 'compost'; liters: number; capacityLiters: number }
   | { kind: 'seeds'; crop: AnnualId; variety: VarietyId; quality: number; count: number }
   | { kind: 'grass-seeds'; count: number }
-  | { kind: 'fruit'; crop: CropId; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean }
+  | { kind: 'fruit'; crop: CropId; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean; cut: boolean }
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
   | { kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
@@ -125,6 +131,7 @@ export type Face =
   | { kind: 'jam-machine' }
   | { kind: 'still' }
   | { kind: 'furnace' }
+  | { kind: 'station' }
   | { kind: 'barrel' }
   | { kind: 'freezer'; slots: number }
   | { kind: 'hangar' }
@@ -217,7 +224,7 @@ export function jamJarName(crop: JamCrop, variety: VarietyId): string {
   if (variety === 'montmorency') return m.names_jam_montmorency()
   if (variety === 'blenheim') return m.names_jam_blenheim()
   if (variety === 'san-marzano') return m.names_jam_san_marzano()
-  if (crop === 'tomato') return m.names_item_ketchup()
+  if (crop === 'tomato' && variety === 'base') return m.names_item_ketchup()
   return m.hud_tool_jam({ name: cropName(crop) })
 }
 
@@ -290,6 +297,7 @@ const PLACE_NAME = {
   'jam-machine': () => m.names_building_jam(),
   still: () => m.names_building_still(),
   furnace: () => m.names_building_furnace(),
+  station: () => m.names_building_station(),
   barrel: () => m.names_building_barrel(),
   freezer: () => m.names_building_freezer(),
   hangar: () => m.names_building_hangar(),
@@ -336,6 +344,7 @@ export function faceName(face: Face): string {
     case 'jam-machine':
     case 'still':
     case 'furnace':
+    case 'station':
     case 'barrel':
     case 'freezer':
     case 'hangar':
@@ -365,8 +374,9 @@ export function faceName(face: Face): string {
   }
 }
 
-export function caskAgeOf(item: { cask: CaskId; quality: number; unitSale: number }): number {
-  return item.unitSale / (CASK_SALE[item.cask] * qualityMul(item.quality))
+export function caskAgeOf(item: { cask: CaskId; variety: VarietyId; quality: number; unitSale: number }): number {
+  const rate = pathSale(CROP_OF_CASK[item.cask], item.variety, 'alcohol')
+  return item.unitSale / (CASK_SALE[item.cask] * rate * qualityMul(item.quality))
 }
 
 export const CASK_NAME: { readonly [K in CaskId]: () => string } = {
@@ -558,6 +568,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
   'buy-furnace': () => m.names_sku_buy_furnace(),
   'buy-axe': () => m.names_sku_buy_axe(),
+  'buy-research-station': () => m.names_sku_buy_research_station(),
 }
 
 export function skuLabel(id: SkuId): string {
@@ -632,6 +643,13 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-furnace': () =>
     m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH, cap: FURNACE_CAP }),
   'buy-axe': () => m.catalog_axe(AXES.axe),
+  'buy-research-station': () =>
+    m.catalog_sku_buy_research_station({
+      need: STATION_IN,
+      seconds: STATION_SECONDS,
+      min: STATION_GRAFT_MIN,
+      max: STATION_GRAFT_MAX,
+    }),
 }
 
 export function skuDesc(id: SkuId): string {
@@ -754,6 +772,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'still' }
     case 'buy-furnace':
       return { kind: 'furnace' }
+    case 'buy-research-station':
+      return { kind: 'station' }
     case 'buy-barrel':
       return { kind: 'barrel' }
     case 'buy-freezer':
@@ -811,8 +831,9 @@ export function fruitStack(
   unitSale: number,
   freshness: number,
   bio: boolean,
+  cut: boolean,
 ): FruitStack {
-  return { crop, variety, quality, count, unitSale, freshness, bio }
+  return { crop, variety, quality, count, unitSale, freshness, bio, cut }
 }
 
 export function mergeQuality(
@@ -860,6 +881,7 @@ export function mergeInto(a: Countable, b: Countable, n: number): void {
     a.freshness = mergeFreshness(a, part)
     a.quality = mergeQuality(a, part)
     a.bio = a.bio && b.bio
+    a.cut = a.cut || b.cut
   } else if ('unitSale' in a && 'unitSale' in b) {
     a.unitSale = mergeUnitSale(a, { ...b, count: n })
     if ('quality' in a && 'quality' in b) a.quality = mergeQuality(a, { ...b, count: n })

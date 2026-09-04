@@ -346,6 +346,7 @@ function demandItem(demand: Demand, count: number): Item {
       crop: demand.good,
       variety: 'base',
       quality: 0,
+      cut: false,
       count,
       unitSale: CROPS[demand.good].sale,
       freshness: 1,
@@ -565,5 +566,5 @@ function boxFace(id: StallGoodId): Item {
   }
   if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, quality: 0, count: 1, unitSale: 1 }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
-  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true }
+  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true, cut: false }
 }

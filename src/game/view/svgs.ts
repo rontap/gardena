@@ -35,6 +35,7 @@ import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
 import itemFreezer from '../../assets/items/item-freezer.svg?raw'
 import itemFurnace from '../../assets/items/item-furnace.svg?raw'
+import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
@@ -58,6 +59,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
 import propTractor from '../../assets/props/prop-tractor.svg?raw'
@@ -408,6 +410,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'barrel') return inner(itemBarrel)
   if (item.kind === 'freezer') return inner(itemFreezer)
   if (item.kind === 'furnace') return inner(itemFurnace)
+  if (item.kind === 'station') return stageOnly(itemStation, 'off')
   if (item.kind === 'hangar') return inner(itemHangar)
   if (item.kind === 'silo-seed') return inner(itemSiloSeed)
   if (item.kind === 'silo-spray') return inner(itemSiloSpray)
@@ -493,6 +496,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
+  if (id === 'buy-research-station') return itemInner({ kind: 'station' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer' || id === 'buy-freezer-large') return itemInner({ kind: 'freezer', slots: 0 })
   if (id === 'buy-hangar') return itemInner({ kind: 'hangar' })
@@ -678,6 +682,10 @@ export function furnaceArt(on: boolean): string {
   return stageOnly(propFurnace, on ? 'on' : 'off')
 }
 export const FURNACE = furnaceArt(false)
+export function stationArt(on: boolean): string {
+  return stageOnly(propStation, on ? 'on' : 'off')
+}
+export const STATION = stationArt(false)
 export const HANGAR = inner(propHangar)
 export const QUAD = inner(propQuad)
 export const TRACTOR = inner(propTractor)
@@ -1065,6 +1073,8 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   FREEZER,
   furnaceArt(false),
   furnaceArt(true),
+  stationArt(false),
+  stationArt(true),
   HANGAR,
   QUAD,
   TRACTOR,

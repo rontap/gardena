@@ -34,6 +34,8 @@ Ink silhouette, water fill, house highlight. Same droplet language as `overlay-w
 
 Apple thick whip. Apricot forked. Olive gnarled, house fleck leaf. Cherry slim, two leaves. Variety is bud fill.
 
+`GRAFT_CUTTING` maps every `CropId` to the cutting it draws. The four tree species name themselves. The eight annuals have no cutting of their own yet and all name `apple`, the plain whip — placeholder art at the correct group count, the way the crop sprites shipped before their redraw. Annual grafts reach the player with the research station, so their eight faces are that update's art.
+
 | species | `base` | `variant` | `variant-2` | `heirloom` |
 |---|---|---|---|---|
 | apple | fruit-red | roof (`kingston-black`) | ripe | blush (`pink-lady`) |

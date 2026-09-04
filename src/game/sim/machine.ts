@@ -25,8 +25,8 @@ import {
   CASK_AGE,
   CASK_SALE,
 } from '../defs/items.ts'
-import { qualityMul, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
+import { qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
+import type { BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
 import type { Barrel, CompostBox, Coord, Furnace, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
 import { compostValue, cropName, furnaceValue, organic, type Item } from './item.ts'
@@ -148,13 +148,12 @@ export function millApply(mill: Mill, item: Item, n: number): void {
   mill.units += n
 }
 
-export type GrindTake = { crop: AnnualId; variety: VarietyId; quality: number; n: number }
+export type GrindTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
 
 export function grindAccept(g: Grinder, item: Item): GrindTake | undefined {
   const crop = fruitCrop(item)
   const variety = fruitVariety(item)
   if (crop === undefined || variety === undefined) return undefined
-  if (!isAnnualId(crop)) return undefined
   if (g.crop !== 'none' && (g.crop !== crop || g.variety !== variety)) return undefined
   const n = fruitCount(item)
   if (n <= 0) return undefined
@@ -173,9 +172,11 @@ export function grindApply(g: Grinder, take: GrindTake): void {
   g.units += take.n
 }
 
-export function grindProduct(g: Grinder, count: number): Extract<Item, { kind: 'seeds' }> {
+export function grindProduct(g: Grinder, count: number): Extract<Item, { kind: 'seeds' | 'tree-seed' }> {
   if (g.crop === 'none') throw new Error('grind')
-  return { kind: 'seeds', crop: g.crop, variety: g.variety, quality: g.quality, count }
+  if (!isAnnualId(g.crop)) return { kind: 'tree-seed', tree: g.crop, variety: 'base', quality: g.quality }
+  const variety = tierOf(g.variety) === 'heirloom' ? 'base' : g.variety
+  return { kind: 'seeds', crop: g.crop, variety, quality: g.quality, count }
 }
 
 export function feedAccept(cell: IoCell, item: Item): number {

@@ -51,6 +51,8 @@ One `lookText` line in that same `Status` block, after the plant or tree look, b
 | those, valid neighbour | (no line) |
 | any other Variety | (no line) |
 
+Hover also paints the reach: one `data-neighbour-reach` path around the union of the cells in range, the same union walk as the furnace covering outline — [[architecture/view]] `view.outline`. Stroke is the inspect-bar `good` when a valid neighbour is in range, `bad` when none is — [[art/palette]]. It draws for those three Varieties only, whether or not the need is met, and only with an empty place tool. No fill. No per-cell rect.
+
 Without a neighbour the plant does not advance toward fruit — annual `maturity` holds, tree `fruit` holds and the seam does not turn `pending` into `on`. Water, fertilizer, happiness, stunt, death, and `juvenile` still tick. Copy [[agents/game-text-writer]].
 
 ## Store contents

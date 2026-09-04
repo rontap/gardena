@@ -38,6 +38,7 @@ import {
 } from './hit.ts'
 import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
+import { STAT_COLOR } from '../ui/status.tsx'
 import { FURNACE, HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
@@ -144,6 +145,12 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, furnacePlace, hangarPlace, siloPlace)
   const hoverOutline = footOutline(hoverFoot)
   const coverOutline = footOutline(coverFoot(world, strokeCell, place))
+  const neighbourWatch =
+    strokeCell !== undefined && place.kind === 'none' && world.inWorld(strokeCell)
+      ? world.neighbourWatch(strokeCell)
+      : undefined
+  const neighbourOutline =
+    neighbourWatch === undefined ? undefined : footOutline(neighbourWatch.reach.filter(c => world.inWorld(c)))
 
   function pushCam(next: Camera): void {
     const b = world.bounds()
@@ -442,6 +449,24 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
               d={coverOutline.d}
               fill="none"
               className="pointer-events-none fill-none stroke-ink"
+              strokeWidth={2}
+              strokeLinejoin="miter"
+              shapeRendering="crispEdges"
+            />
+          </svg>
+        )}
+        {neighbourOutline !== undefined && neighbourWatch !== undefined && (
+          <svg
+            className="pointer-events-none absolute overflow-visible"
+            width={neighbourOutline.w}
+            height={neighbourOutline.h}
+            style={{ left: neighbourOutline.x, top: neighbourOutline.y }}
+          >
+            <path
+              data-neighbour-reach=""
+              d={neighbourOutline.d}
+              fill="none"
+              stroke={neighbourWatch.ok ? STAT_COLOR.green : STAT_COLOR.red}
               strokeWidth={2}
               strokeLinejoin="miter"
               shapeRendering="crispEdges"

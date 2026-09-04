@@ -86,6 +86,7 @@ export type Item =
   | { kind: 'grass-seeds'; count: number }
   | { kind: 'fruit'; crop: CropId; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean }
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
+  | { kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
   | { kind: 'spirit'; spirit: SpiritKind; variety: VarietyId; quality: number; count: number; unitSale: number }
   | { kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count: number; unitSale: number }
@@ -176,6 +177,7 @@ export function furnaceValue(item: Item): number {
     return FURNACE_VALUE.green * item.count
   }
   if (item.kind === 'tree-seed') return FURNACE_VALUE.green
+  if (item.kind === 'graft') return FURNACE_VALUE.green * item.count
   if (item.kind === 'fruit') return FURNACE_VALUE.fruit * item.count
   if (item.kind === 'sugar') return FURNACE_VALUE.fruit * item.liters
   if (item.kind === 'oil') return FURNACE_VALUE.oil * item.count
@@ -463,6 +465,13 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   }
   if (item.kind === 'tree-seed') {
     return `${m.hud_line_tree_seed({ name: cropVariety(item.tree, item.variety) })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'graft') {
+    return m.hud_held_graft({
+      name: cropVariety(item.crop, item.variety),
+      count: item.count,
+      q: Math.floor(item.quality * 100),
+    })
   }
   if (item.kind === 'rotten') return m.hud_line_compost({ name: rottenName(item.cls), count: item.count })
   if (item.kind === 'dead') return m.hud_line_compost({ name: deadName(item.cls), count: item.count })
@@ -839,6 +848,7 @@ export function stackable(a: Countable, b: Countable): boolean {
   if (a.kind === 'spirit') return a.spirit === (b as typeof a).spirit && a.variety === (b as typeof a).variety
   if (a.kind === 'cask') return a.cask === (b as typeof a).cask && a.variety === (b as typeof a).variety
   if (a.kind === 'jam') return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety
+  if (a.kind === 'graft') return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety
   if (a.kind === 'rotten' || a.kind === 'dead') return a.cls === (b as typeof a).cls
   return true
 }

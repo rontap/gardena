@@ -154,6 +154,24 @@ export const STARTER_VARIETY_PACKS: readonly Exclude<VarietyId, 'base'>[] = [
   'keknyelu',
 ]
 
+export const STARTER_TREE_GRAFTS: readonly Exclude<VarietyId, 'base'>[] = [
+  'kingston-black',
+  'pink-lady',
+  'moorpark',
+  'klosterneuburger',
+  'blenheim',
+  'kalamata',
+  'arbequina',
+  'montmorency',
+  'bing',
+]
+
+export const NEIGHBOUR_IDS: readonly VarietyId[] = ['keknyelu', 'pink-lady', 'bing']
+
+export function needsNeighbour(variety: VarietyId): boolean {
+  return NEIGHBOUR_IDS.includes(variety)
+}
+
 export function qualityMul(q: number): number {
   return 1 + (QUALITY_TOP - 1) * q
 }

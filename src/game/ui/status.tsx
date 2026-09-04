@@ -18,7 +18,7 @@ import { Recipes } from './recipe.tsx'
 
 type Segment = { from: number; to: number; color: 'green' | 'orange' | 'red' }
 
-const STAT_COLOR: Record<Segment['color'], string> = {
+export const STAT_COLOR: Record<'green' | 'orange' | 'red', string> = {
   green: '#4f9d69',
   orange: '#d69a3a',
   red: '#c9574b',

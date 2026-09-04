@@ -216,6 +216,8 @@ The station's second face — feeding it seed to earn a variety you do not own �
 
 Assumption: station graft count uses `grind.at(col, row, day)` on finish, same roll all day on that cell.
 
+Assumption: a tree grind emits one tree seed per unit consumed. `{ kind: 'tree-seed' }` carries no `count`, so a stack of them is not representable; `GRIND_MIN`..`GRIND_MAX` and `GRIND_MIN_AT(q)` govern annual seeds only.
+
 ## Furnace
 
 `Furnace` `{ units; progress; inn; out; hold }`. `base.w = 1` `base.h = 2`. Tick origin. Hit, ghost footprint, I/O, ports, pads stay 1×2. viewBox stays `24×48`. Prop art occupies 1×1.5 south-aligned in that viewBox (12 viewBox units empty at the top) so the opening stays in the south cell. Chimney sits in the origin cell. Origin-only paint + `TILE/24` of the viewBox; empty margin is empty pixels. Do not scale the sprite down. [[art/machines]]

@@ -15,7 +15,7 @@ import type {
 import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
 import { ANNUAL_IDS, TREE_IDS } from '../sim/ids.ts'
-import { ripeGroup, fruitGroup, caskGroup, varietyGroup, type VarietyGroup } from './svgs.ts'
+import { ripeGroup, fruitGroup, caskGroup, varietyGroup, graftSpecies, type VarietyGroup } from './svgs.ts'
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
 import type { CropClass } from '../defs/crops.ts'
@@ -72,6 +72,10 @@ import itemSeedApple from '../../assets/items/item-seed-apple.svg?raw'
 import itemSeedApricot from '../../assets/items/item-seed-apricot.svg?raw'
 import itemSeedOlive from '../../assets/items/item-seed-olive.svg?raw'
 import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
+import itemGraftApple from '../../assets/items/item-graft-apple.svg?raw'
+import itemGraftApricot from '../../assets/items/item-graft-apricot.svg?raw'
+import itemGraftOlive from '../../assets/items/item-graft-olive.svg?raw'
+import itemGraftCherry from '../../assets/items/item-graft-cherry.svg?raw'
 import appleTree from '../../assets/props/prop-apple-tree.svg?raw'
 import apricotTree from '../../assets/props/prop-apricot-tree.svg?raw'
 import oliveTree from '../../assets/props/prop-olive-tree.svg?raw'
@@ -306,6 +310,7 @@ export type AtlasKey =
   | `fruit-${CropId}:${VarietyGroup}`
   | `tree-${TreeId}:${TreeAtlasStage}`
   | `tree-seed-${TreeId}`
+  | `graft-${TreeId}:${VarietyGroup}`
   | 'actor-hat'
   | 'actor-body'
   | ShovelId
@@ -457,6 +462,13 @@ const TREE_SEED: { readonly [K in TreeId]: string } = {
   cherry: itemSeedCherry,
 }
 
+const GRAFT: { readonly [K in TreeId]: string } = {
+  apple: itemGraftApple,
+  apricot: itemGraftApricot,
+  olive: itemGraftOlive,
+  cherry: itemGraftCherry,
+}
+
 const TREE: { readonly [K in TreeId]: string } = {
   apple: appleTree,
   apricot: apricotTree,
@@ -606,6 +618,7 @@ async function load(): Promise<void> {
       put(`tree-${id}:${st}-heirloom`, TREE[id], `${st}-heirloom`)
     })
     put(`tree-seed-${id}`, TREE_SEED[id])
+    ;(['base', 'variant', 'variant-2', 'heirloom'] as const).forEach(g => put(`graft-${id}:${g}`, GRAFT[id], g))
   })
   const hat = groupOf(actor, 'hat').replace(/var\(--hat, #d4a017\)/g, '#ffffff')
   const body = innerOf(actor).replace(/<g id="hat"[^>]*>[\s\S]*?<\/g>/, '')
@@ -791,6 +804,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'seeds') return cropKey(item.crop, ripeGroup(item.crop, item.variety))
   if (item.kind === 'fruit') return `fruit-${item.crop}:${fruitGroup(item.crop, item.variety)}`
   if (item.kind === 'tree-seed') return `tree-seed-${item.tree}`
+  if (item.kind === 'graft') return `graft-${graftSpecies(item.crop)}:${varietyGroup(item.crop, item.variety)}`
   if (item.kind === 'shovel') return item.id
   if (item.kind === 'pickaxe') return item.id
   if (item.kind === 'container') return item.id

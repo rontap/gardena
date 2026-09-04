@@ -9,7 +9,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import type { VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
 
@@ -272,7 +272,7 @@ export class Chest {
 export class Grinder {
   readonly kind = 'grinder' as const
   readonly base: RectBase
-  crop: AnnualId | 'none' = 'none'
+  crop: CropId | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   units = 0

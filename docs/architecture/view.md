@@ -46,7 +46,7 @@ Bottom → top, one container each:
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `VFX_REDUCED`: state frame 0, bursts do not mount.
 
-HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
+HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
 
 ## Atlas
 

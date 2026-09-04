@@ -30,6 +30,14 @@ export const CHEST_SLOTS = 9
 export const GRIND_WORK = 12
 export const GRIND_MIN = 1
 export const GRIND_MAX = 3
+export const GRAFT_WORK = 1.2
+export const CHOP_GRAFTS = 2
+export const NEIGHBOUR_REACH = 2
+
+export function grindMinAt(q: number): number {
+  return GRIND_MIN + Math.round((GRIND_MAX - GRIND_MIN) * q)
+}
+
 export const SPEECH_S = 2.5
 export const SHRUB_GROW = 360
 export const GRASS_GROW = DAY_SECONDS / 4

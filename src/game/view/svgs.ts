@@ -21,6 +21,10 @@ import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
 import itemSeedApple from '../../assets/items/item-seed-apple.svg?raw'
+import itemGraftApple from '../../assets/items/item-graft-apple.svg?raw'
+import itemGraftApricot from '../../assets/items/item-graft-apricot.svg?raw'
+import itemGraftOlive from '../../assets/items/item-graft-olive.svg?raw'
+import itemGraftCherry from '../../assets/items/item-graft-cherry.svg?raw'
 import itemSeedApricot from '../../assets/items/item-seed-apricot.svg?raw'
 import itemSeedOlive from '../../assets/items/item-seed-olive.svg?raw'
 import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
@@ -342,6 +346,25 @@ export function varietyGroup(crop: CropId, variety: VarietyId): VarietyGroup {
   return variants[0] === variety ? 'variant' : 'variant-2'
 }
 
+export const GRAFT_CUTTING: { readonly [K in CropId]: TreeId } = {
+  apple: 'apple',
+  apricot: 'apricot',
+  olive: 'olive',
+  cherry: 'cherry',
+  carrot: 'apple',
+  potato: 'apple',
+  wheat: 'apple',
+  tomato: 'apple',
+  raspberry: 'apple',
+  grape: 'apple',
+  vanilla: 'apple',
+  'sugar-cane': 'apple',
+}
+
+export function graftSpecies(crop: CropId): TreeId {
+  return GRAFT_CUTTING[crop]
+}
+
 export function ripeGroup(crop: CropId, variety: VarietyId): CropRipeGroup {
   const g = varietyGroup(crop, variety)
   if (g === 'base') return 'ripe'
@@ -431,6 +454,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'flour') return inner(itemFlour)
   if (item.kind === 'extract') return inner(itemExtract)
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
+  if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.crop, item.variety))
   if (item.kind === 'wood') return inner(itemWood)
   if (item.kind === 'ash') return inner(itemAsh)
   const _x: never = item
@@ -749,6 +773,13 @@ export const TREE_SEED_ART: { readonly [K in TreeId]: string } = {
   apricot: inner(itemSeedApricot),
   olive: inner(itemSeedOlive),
   cherry: inner(itemSeedCherry),
+}
+
+export const GRAFT_ART: { readonly [K in TreeId]: string } = {
+  apple: itemGraftApple,
+  apricot: itemGraftApricot,
+  olive: itemGraftOlive,
+  cherry: itemGraftCherry,
 }
 
 export const APPLE_TREE = inner(appleTree)

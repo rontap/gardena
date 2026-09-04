@@ -573,6 +573,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (cell.kind === 'tree') return { kind: 'blocked', text: treeLine(cell) }
   }
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'graft' && w.canGraft(at)) {
+    return intent(m.prompt_graft(), { act: 'graft', at })
+  }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'tree-seed') {
     const above = { col: at.col, row: at.row - 1 }
     const a = cell

@@ -187,6 +187,8 @@ Complete: the target's `variety` becomes the graft's, the target's `quality` bec
 
 Sources: axe on a mature tree — [[mechanics/trees]] `graft.axe`; research station — [[mechanics/machines]] `station.io`.
 
+Assumption: grafting a `Tree` sets `variety` only. There is no `Tree.quality` to copy onto — [[mechanics/trees]] — and tree fruit stays quality 0.
+
 ## Needs a neighbour
 
 `keknyelu`, `pink-lady`, `bing`. `NEIGHBOUR_IDS`. `NEIGHBOUR_REACH` 2 — preference. Chebyshev, from the plot, or from either cell of a 1×2 tree.

@@ -202,6 +202,11 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     const n = Math.round((world.furnaceMulFor(cell.base) - 1) / FURNACE_HASTE)
     if (n > 0) lines.push(m.prompt_furnace_haste({ n, pct: FURNACE_HASTE * n * 100 }))
   }
+  const watch = world.neighbourWatch(at)
+  if (watch !== undefined && !watch.ok) {
+    const name = cropLabel(watch.crop)
+    lines.push(watch.tree ? m.prompt_neighbour_wait_tree({ name }) : m.prompt_neighbour_wait({ name }))
+  }
   if (world.hasFence(at)) lines.push(m.names_building_fence())
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {

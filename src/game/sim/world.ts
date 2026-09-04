@@ -30,8 +30,11 @@ import {
   TRAILER_SPRAY_PRICE,
   GRASS_GROW,
   GRASS_WATER_PER_SEC,
+  CHOP_GRAFTS,
+  GRAFT_WORK,
+  NEIGHBOUR_REACH,
   GRIND_MAX,
-  GRIND_MIN,
+  grindMinAt,
   GRIND_WORK,
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
@@ -60,8 +63,10 @@ import { PUMP_COST_PER_L, WEATHER_FRUIT_SALE, WEATHER_THROUGH_DAY } from '../def
 import { CROPS, freshMul, HAPPY_DROWN_SECONDS, HAPPY_GAIN_SECONDS, HAPPY_MAX, HAPPY_START, HAPPY_STARVE_SECONDS, HAPPY_WILT_SECONDS } from '../defs/crops.ts'
 import {
   qualityGain,
+  needsNeighbour,
   qualityMul,
   RATING_SALE,
+  STARTER_TREE_GRAFTS,
   STARTER_VARIETY_PACKS,
   tierOf,
   useOf,
@@ -69,7 +74,7 @@ import {
   VARIETY_IDS,
   type VarietyId,
 } from '../defs/varieties.ts'
-import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
+import { CASK_OF, SENSOR_CELL_SKUS, TREE_IDS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -403,6 +408,7 @@ export type Intent =
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
   | { act: 'chop'; at: Coord }
+  | { act: 'graft'; at: Coord }
 
 export type TaskName = string
 
@@ -657,9 +663,19 @@ export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
 
 function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
-  inventory[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apricot', variety: 'base', quality: 0 } }
-  inventory[1] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
-  inventory[2] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry', variety: 'base', quality: 0 } }
+  const stock: Item[] = [
+    ...TREE_IDS.map(tree => ({ kind: 'tree-seed' as const, tree, variety: 'base' as const, quality: 0 })),
+    ...STARTER_TREE_GRAFTS.map(v => ({
+      kind: 'graft' as const,
+      crop: VARIETY[v].crop,
+      variety: v,
+      quality: 0,
+      count: 1,
+    })),
+  ]
+  stock.forEach((item, i) => {
+    inventory[i] = { kind: 'hold', item }
+  })
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
   return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
@@ -2559,6 +2575,8 @@ export class World {
         return m.prompt_spray()
       case 'chop':
         return m.prompt_chop()
+      case 'graft':
+        return m.prompt_graft()
     }
   }
 
@@ -4454,6 +4472,13 @@ export class World {
         }
         this.arm(AXES.axe.workSeconds)
         return
+      case 'graft':
+        if (!this.canGraft(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(GRAFT_WORK)
+        return
     }
   }
 
@@ -4516,6 +4541,7 @@ export class World {
     }
     if (i.act === 'weed-spray') this.doWeedSpray(i.at)
     if (i.act === 'chop') this.doChop(i.at)
+    if (i.act === 'graft') this.doGraft(i.at)
     this.shiftHead()
   }
 
@@ -4706,7 +4732,8 @@ export class World {
           continue
         }
         const stunt = (water === 'red' ? STUNT : 1) * (fert === 'red' ? STUNT : 1)
-        c.plant.maturity += (dt * stunt) / st.growSeconds
+        const lonely = needsNeighbour(c.plant.variety) && !this.hasNeighbour([at], c.plant.crop)
+        if (!lonely) c.plant.maturity += (dt * stunt) / st.growSeconds
         if (c.plant.maturity >= 1) {
           c.plant.maturity = 1
           c.plant.freshness = 1
@@ -4893,7 +4920,8 @@ export class World {
         c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / GRIND_WORK
         if (c.progress < 1) continue
         const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, c.n)
-        const count = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
+        const floor = grindMinAt(c.quality)
+        const count = floor + Math.floor(u * (GRIND_MAX - floor + 1))
         if (!this.emitProduct(at, c.base, grindProduct(c, count))) continue
         c.progress = 0
         c.units -= 1
@@ -5103,6 +5131,7 @@ export class World {
       const c = this.cell(at)
       if (c.kind !== 'tree') continue
       if (c.juvenile < 1) continue
+      if (needsNeighbour(c.variety) && !this.hasNeighbour(this.treeCells(c), c.species)) continue
       this.advanceYield(c)
     }
   }
@@ -5142,6 +5171,7 @@ export class World {
       return true
     }
     if (t.yield.kind === 'pending') return false
+    if (needsNeighbour(t.variety) && !this.hasNeighbour(this.treeCells(t), t.species)) return false
     const ripe = t.fruit >= 1
     const mul = t.yield.kind === 'on' ? TREE_YIELD_MUL : TREE_OFF_MUL
     t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
@@ -5402,12 +5432,96 @@ export class World {
     s.item.usesLeft -= 1
     if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
     const spot = this.dropSpot(at)
-    if (spot !== undefined) this.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
+    if (spot !== undefined) {
+      this.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
+      this.drops.push({
+        at: { ...spot },
+        item: { kind: 'graft', crop: c.species, variety: c.variety, quality: 0, count: CHOP_GRAFTS },
+      })
+    }
     c.trunk = true
     c.juvenile = 0
     c.fruit = 0
     c.yield = { kind: 'pending' }
     c.tended = false
+  }
+
+  treeCells(t: Tree): Coord[] {
+    return [
+      { col: t.base.col, row: t.base.row },
+      { col: t.base.col, row: t.base.row + 1 },
+    ]
+  }
+
+  private goodNeighbour(at: Coord, crop: CropId, self: readonly Coord[]): boolean {
+    if (self.some(s => s.col === at.col && s.row === at.row)) return false
+    if (!this.inWorld(at)) return false
+    const c = this.cell(at)
+    if (c.kind === 'growing') {
+      if (c.plant.crop !== crop || tierOf(c.plant.variety) === 'heirloom') return false
+      const st = this.statsCached(c.plant.crop, c.plant.variety)
+      return (
+        waterBand(c.soil.water, st.waterTolerance) !== 'red' && fertBand(c.soil.fertilizer, st.fertTolerance) !== 'red'
+      )
+    }
+    if (c.kind === 'tree') return c.species === crop && tierOf(c.variety) !== 'heirloom' && c.juvenile >= 1 && !c.trunk
+    return false
+  }
+
+  neighbourReach(cells: readonly Coord[]): Coord[] {
+    const span = Array.from({ length: NEIGHBOUR_REACH * 2 + 1 }, (_, i) => i - NEIGHBOUR_REACH)
+    const seen = new Set<string>()
+    return cells
+      .flatMap(o => span.flatMap(dc => span.map(dr => ({ col: o.col + dc, row: o.row + dr }))))
+      .filter(p => {
+        const k = `${p.col},${p.row}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+  }
+
+  hasNeighbour(cells: readonly Coord[], crop: CropId): boolean {
+    return this.neighbourReach(cells).some(p => this.goodNeighbour(p, crop, cells))
+  }
+
+  neighbourWatch(at: Coord): { crop: CropId; tree: boolean; reach: Coord[]; ok: boolean } | undefined {
+    const c = this.cell(at)
+    if (c.kind === 'growing' && needsNeighbour(c.plant.variety)) {
+      return {
+        crop: c.plant.crop,
+        tree: false,
+        reach: this.neighbourReach([at]),
+        ok: this.hasNeighbour([at], c.plant.crop),
+      }
+    }
+    if (c.kind === 'tree' && needsNeighbour(c.variety) && c.juvenile >= 1 && !c.trunk) {
+      const cells = this.treeCells(c)
+      return { crop: c.species, tree: true, reach: this.neighbourReach(cells), ok: this.hasNeighbour(cells, c.species) }
+    }
+    return undefined
+  }
+
+  canGraft(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'graft') return false
+    const g = this.act.hand.item
+    const c = this.cell(at)
+    if (c.kind === 'growing') return c.plant.crop === g.crop && tierOf(c.plant.variety) !== 'heirloom'
+    if (c.kind === 'tree') return c.species === g.crop && c.juvenile < 1 && tierOf(c.variety) !== 'heirloom'
+    return false
+  }
+
+  private doGraft(at: Coord): void {
+    if (!this.canGraft(at)) return
+    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'graft' }> }
+    const c = this.cell(at)
+    if (c.kind === 'growing') {
+      c.plant.variety = s.item.variety
+      c.plant.quality = s.item.quality
+    }
+    if (c.kind === 'tree') c.variety = s.item.variety
+    s.item.count -= 1
+    if (s.item.count <= 0) this.act.hand = { kind: 'empty' }
   }
 
   private canHarvest(at: Coord): boolean {

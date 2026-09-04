@@ -11,8 +11,11 @@ import {
   CONTAINERS,
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
+  CHOP_GRAFTS,
   GRIND_MAX,
   GRIND_MIN,
+  grindMinAt,
+  NEIGHBOUR_REACH,
   SILO_SEED_CAP,
   SPEECH_S,
   SPRINKLER_TILE_RATE,
@@ -23,7 +26,7 @@ import {
   WEED_SPRAY_BAG,
   GRIND_WORK,
 } from '../defs/items.ts'
-import { BETTER_QUALITY, qualityMul, RATING_SALE, type VarietyId } from '../defs/varieties.ts'
+import { BETTER_QUALITY, qualityMul, RATING_SALE, STARTER_TREE_GRAFTS, VARIETY, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds } from '../defs/skills.ts'
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
@@ -58,6 +61,8 @@ import { SOURCE } from './water.ts'
 import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
+import { grindAccept, grindApply, grindProduct } from './machine.ts'
+import { footOutline } from '../view/outline.ts'
 import { dest, DT_MAX, fillable, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 
@@ -663,10 +668,17 @@ describe('beta-3 invariants', () => {
 })
 
 describe('beta-4 invariants', () => {
-  test('starter house has three tree-seeds', () => {
+  test("`inventory.slots` — House starter: four `'base'` tree seeds and one graft of every tree variety. Thirteen of sixteen.", () => {
     const w = new World()
-    const trees = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'tree-seed').map(s => (s.kind === 'hold' && s.item.kind === 'tree-seed' ? s.item.tree : ''))
-    expect(trees.sort()).toEqual(['apricot', 'cherry', 'olive'])
+    const inv = w.seats[0].inventory
+    const trees = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'tree-seed' ? [s.item] : []))
+    expect(trees.map(t => t.tree).sort()).toEqual(['apple', 'apricot', 'cherry', 'olive'])
+    expect(trees.every(t => t.variety === 'base' && t.quality === 0)).toBe(true)
+    const grafts = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'graft' ? [s.item] : []))
+    expect(grafts.map(g => g.variety).sort()).toEqual([...STARTER_TREE_GRAFTS].sort())
+    expect(grafts.every(g => g.count === 1 && g.quality === 0 && VARIETY[g.variety as Exclude<VarietyId, 'base'>].crop === g.crop)).toBe(true)
+    expect(inv.filter(s => s.kind === 'hold').length).toBe(13)
+    expect(inv.length).toBe(16)
   })
 
   test('buy-chest place 1x1 own slots', () => {
@@ -2946,5 +2958,302 @@ describe('market.quality', () => {
     const unit = qualityMul(0) * RATING_SALE[2]
     expect(w.stall.potato.worth.bintje.organic).toBeCloseTo(2 * unit, 9)
     expect(w.marketQuote().clean).toBeCloseTo(2 * unit * CROPS.potato.sale, 9)
+  })
+})
+
+describe('graft.attach', () => {
+  const NAME =
+    "A graft is never planted. Same crop, target variety tier not `heirloom`. Annual `growing`. Tree `juvenile < 1`. Complete: target `variety` and `quality` become the graft's; one consumed. Maturity, juvenile, `trunk`, happiness, `tended`, organic, soil untouched."
+
+  function grafter(w: World, item: Item): void {
+    w.seats[0].hand = { kind: 'hold', item }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+  }
+
+  test(NAME, () => {
+    const w = new World()
+    const p = new Plant('grape', 'base', 0.1)
+    p.maturity = 0.4
+    p.happiness = 0.7
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    grafter(w, { kind: 'graft', crop: 'grape', variety: 'keknyelu', quality: 0.8, count: 2 })
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(p.variety).toBe('keknyelu')
+    expect(p.quality).toBeCloseTo(0.8, 9)
+    expect(p.maturity).toBeGreaterThanOrEqual(0.4)
+    expect(p.happiness).toBeGreaterThanOrEqual(0.7)
+    const hand = w.seats[0].hand
+    expect(hand.kind === 'hold' && hand.item.kind === 'graft' && hand.item.count).toBe(1)
+  })
+
+  test('Last graft leaves the hand empty. Wrong crop, ripe and empty plots are not targets.', () => {
+    const w = new World()
+    const p = new Plant('grape', 'base', 0)
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    grafter(w, { kind: 'graft', crop: 'grape', variety: 'concord', quality: 0.5, count: 1 })
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(p.variety).toBe('concord')
+    expect(w.seats[0].hand.kind).toBe('empty')
+
+    const w2 = new World()
+    w2.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('tomato', 'base', 0) })
+    grafter(w2, { kind: 'graft', crop: 'grape', variety: 'concord', quality: 0.5, count: 1 })
+    expect(w2.canGraft(AT)).toBe(false)
+    w2.setCell(AT, { kind: 'ripe', soil: bed(), plant: new Plant('grape', 'base', 0) })
+    expect(w2.canGraft(AT)).toBe(false)
+    w2.setCell(AT, { kind: 'empty', soil: bed() })
+    expect(w2.canGraft(AT)).toBe(false)
+  })
+
+  test('An heirloom cannot be grafted over.', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('grape', 'keknyelu', 0) })
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'graft', crop: 'grape', variety: 'concord', quality: 0.5, count: 1 } }
+    expect(w.canGraft(AT)).toBe(false)
+  })
+
+  test('Tree target is `juvenile < 1` - a sapling or a trunk. Not mature. Variety changes; juvenile and `trunk` do not.', () => {
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.3, 0, { kind: 'pending' })
+    w.setCell(AT, sapling)
+    w.setCell(below, sapling)
+    grafter(w, { kind: 'graft', crop: 'apple', variety: 'pink-lady', quality: 0.6, count: 1 })
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(sapling.variety).toBe('pink-lady')
+    expect(sapling.juvenile).toBeGreaterThanOrEqual(0.3)
+    expect(sapling.juvenile).toBeLessThan(1)
+    expect(sapling.trunk).toBe(false)
+
+    const w2 = new World()
+    const mature = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    w2.setCell(AT, mature)
+    w2.setCell(below, mature)
+    grafter(w2, { kind: 'graft', crop: 'apple', variety: 'pink-lady', quality: 0.6, count: 1 })
+    expect(w2.canGraft(AT)).toBe(false)
+  })
+})
+
+describe('graft.axe', () => {
+  test('Chop complete drops 2 grafts of `Tree.variety` at quality 0, then the trunk result.', () => {
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('cherry', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0.5, {
+      kind: 'on',
+      daysLeft: 2,
+    })
+    tree.variety = 'montmorency'
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: 10, workSeconds: 0.1 } }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 2.5
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    const grafts = w.drops.flatMap(d => (d.item.kind === 'graft' ? [d.item] : []))
+    expect(grafts.length).toBe(1)
+    expect(grafts[0]).toMatchObject({ crop: 'cherry', variety: 'montmorency', quality: 0, count: CHOP_GRAFTS })
+    expect(w.drops.some(d => d.item.kind === 'wood')).toBe(true)
+    expect(tree.trunk).toBe(true)
+    expect(tree.juvenile).toBeLessThan(1)
+    expect(tree.fruit).toBe(0)
+    expect(tree.variety).toBe('montmorency')
+  })
+})
+
+describe('variety.neighbour', () => {
+  const NAME =
+    '`keknyelu` `pink-lady` `bing` need a neighbour in Chebyshev `NEIGHBOUR_REACH`. Without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`. Juvenile still grows. Water, fertilizer, happiness, stunt, death still tick.'
+
+  test(NAME, () => {
+    const w = new World()
+    const lonely = new Plant('grape', 'keknyelu', 0)
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: lonely })
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+
+    w.setCell({ col: AT.col + NEIGHBOUR_REACH, row: AT.row }, {
+      kind: 'growing',
+      soil: bed(),
+      plant: new Plant('grape', 'base', 0),
+    })
+    w.tick(1)
+    expect(lonely.maturity).toBeGreaterThan(0)
+  })
+
+  test('Out of reach, an heirloom sibling, a ripe plant and a starving one are not neighbours.', () => {
+    const w = new World()
+    const lonely = new Plant('grape', 'keknyelu', 0)
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: lonely })
+    w.setCell({ col: AT.col + NEIGHBOUR_REACH + 1, row: AT.row }, {
+      kind: 'growing',
+      soil: bed(),
+      plant: new Plant('grape', 'base', 0),
+    })
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+
+    const near = { col: AT.col + 1, row: AT.row }
+    w.setCell(near, { kind: 'growing', soil: bed(), plant: new Plant('grape', 'keknyelu', 0) })
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+
+    w.setCell(near, { kind: 'ripe', soil: bed(), plant: new Plant('grape', 'base', 0) })
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+
+    w.setCell(near, { kind: 'growing', soil: bed(0), plant: new Plant('grape', 'base', 0) })
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+
+    w.setCell(near, { kind: 'growing', soil: bed(), plant: new Plant('grape', 'base', 0) })
+    w.tick(1)
+    expect(lonely.maturity).toBeGreaterThan(0)
+  })
+
+  test('A lonely plant still drinks and still loses happiness.', () => {
+    const w = new World()
+    const lonely = new Plant('grape', 'keknyelu', 0)
+    w.setCell(AT, { kind: 'growing', soil: bed(0), plant: lonely })
+    const before = lonely.happiness
+    w.tick(1)
+    expect(lonely.maturity).toBe(0)
+    expect(lonely.happiness).toBeLessThan(before)
+  })
+
+  test('Hover reach is the Chebyshev block the outline walks: 25 cells from a plot, 30 from a 1x2 tree, one path.', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('grape', 'keknyelu', 0) })
+    const plot = w.neighbourWatch(AT)
+    if (plot === undefined) throw new Error('watch')
+    expect(plot.reach.length).toBe((NEIGHBOUR_REACH * 2 + 1) ** 2)
+    expect(plot.tree).toBe(false)
+    const plotPath = footOutline(plot.reach)
+    if (plotPath === undefined) throw new Error('outline')
+    expect(plotPath.d.match(/M/g)?.length).toBe(1)
+
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    tree.variety = 'pink-lady'
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    const t = w.neighbourWatch(AT)
+    if (t === undefined) throw new Error('watch')
+    expect(t.reach.length).toBe((NEIGHBOUR_REACH * 2 + 1) * (NEIGHBOUR_REACH * 2 + 2))
+    expect(t.tree).toBe(true)
+    const treePath = footOutline(t.reach)
+    if (treePath === undefined) throw new Error('outline')
+    expect(treePath.d.match(/M/g)?.length).toBe(1)
+  })
+
+  test('No watch on a variety that needs no neighbour, nor on a juvenile or trunk tree.', () => {
+    const w = new World()
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('grape', 'concord', 0) })
+    expect(w.neighbourWatch(AT)).toBeUndefined()
+
+    const below = { col: AT.col, row: AT.row + 1 }
+    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.5, 0, { kind: 'pending' })
+    sapling.variety = 'pink-lady'
+    w.setCell(AT, sapling)
+    w.setCell(below, sapling)
+    expect(w.neighbourWatch(AT)).toBeUndefined()
+    sapling.juvenile = 1
+    sapling.trunk = true
+    expect(w.neighbourWatch(AT)).toBeUndefined()
+  })
+
+  test('A lone tree raises `juvenile` but not `fruit`, and the seam leaves `pending` alone.', () => {
+    const w = new World()
+    const below = { col: AT.col, row: AT.row + 1 }
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.5, 0, { kind: 'pending' })
+    tree.variety = 'pink-lady'
+    w.setCell(AT, tree)
+    w.setCell(below, tree)
+    w.tick(1)
+    expect(tree.juvenile).toBeGreaterThan(0.5)
+
+    tree.juvenile = 1
+    tree.fruit = 0
+    tree.yield = { kind: 'pending' }
+    w.clock.t = 239.9
+    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    expect(tree.yield.kind).toBe('pending')
+    expect(tree.fruit).toBe(0)
+    if (w.seam.kind === 'recap') w.dismissRecap()
+
+    const sibAt = { col: AT.col + NEIGHBOUR_REACH, row: AT.row }
+    const sib = new Tree('apple', { shape: 'rect', col: sibAt.col, row: sibAt.row, w: 1, h: 2 }, 1, 0, {
+      kind: 'pending',
+    })
+    w.setCell(sibAt, sib)
+    w.setCell({ col: sibAt.col, row: sibAt.row + 1 }, sib)
+    w.clock.t = 239.9
+    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    expect(tree.yield.kind).toBe('on')
+  })
+})
+
+describe('machines.grind-tree', () => {
+  const NAME =
+    "Tree fruit accepted. Yield `{ kind: 'tree-seed' }` of that species at `'base'`. Annual `heirloom` fruit to `'base'` seeds. Annual `'base'` or `variant` to same variety seeds. Seed quality equals fruit quality. Sugar refused. Hopper locks crop + variety. `GRIND_MIN_AT(q)` raises the yield floor with quality."
+
+  function hopper(): Grinder {
+    return new Grinder({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+  }
+
+  function fruitItem(crop: 'apple' | 'grape', variety: VarietyId): Item {
+    return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true }
+  }
+
+  test(NAME, () => {
+    const tree = hopper()
+    grindApply(tree, { crop: 'apple', variety: 'pink-lady', quality: 0.4, n: 1 })
+    expect(grindProduct(tree, 2)).toEqual({ kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0.4 })
+
+    const heir = hopper()
+    grindApply(heir, { crop: 'tomato', variety: 'san-marzano', quality: 0.25, n: 1 })
+    expect(grindProduct(heir, 2)).toEqual({ kind: 'seeds', crop: 'tomato', variety: 'base', quality: 0.25, count: 2 })
+
+    const variant = hopper()
+    grindApply(variant, { crop: 'grape', variety: 'concord', quality: 0.5, n: 1 })
+    expect(grindProduct(variant, 2)).toEqual({ kind: 'seeds', crop: 'grape', variety: 'concord', quality: 0.5, count: 2 })
+
+    const g = hopper()
+    expect(grindAccept(g, { kind: 'sugar', liters: 5, capacityLiters: 5, unitSale: 1, quality: 0 })).toBeUndefined()
+    expect(grindAccept(g, fruitItem('apple', 'base'))).toMatchObject({ crop: 'apple', variety: 'base' })
+    grindApply(g, { crop: 'apple', variety: 'base', quality: 0, n: 1 })
+    expect(grindAccept(g, fruitItem('apple', 'pink-lady'))).toBeUndefined()
+    expect(grindAccept(g, fruitItem('grape', 'base'))).toBeUndefined()
+  })
+
+  test('`GRIND_MIN_AT(q)` raises the floor and full quality removes the roll.', () => {
+    expect(grindMinAt(0)).toBe(GRIND_MIN)
+    expect(grindMinAt(1)).toBe(GRIND_MAX)
+    expect(grindMinAt(0.5)).toBe(GRIND_MIN + Math.round((GRIND_MAX - GRIND_MIN) * 0.5))
+  })
+})
+
+describe('quality.carry', () => {
+  test("Grind seed quality equals the fruit's quality. Graft copies quality onto the target.", () => {
+    const g = new Grinder({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+    grindApply(g, { crop: 'tomato', variety: 'green-zebra', quality: 0.62, n: 1 })
+    expect(grindProduct(g, 1).quality).toBeCloseTo(0.62, 9)
+
+    const w = new World()
+    const p = new Plant('grape', 'base', 0.05)
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'graft', crop: 'grape', variety: 'concord', quality: 0.77, count: 1 },
+    }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(p.quality).toBeCloseTo(0.77, 9)
   })
 })

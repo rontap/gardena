@@ -31,6 +31,7 @@ import {
   barrelNeed,
   barrelWorking,
   feedUnits,
+  grindProduct,
   jamSale,
   jamWorking,
   millNeed,
@@ -419,7 +420,7 @@ function grinderCraft(c: Grinder, mul: number, haste: number): Craft {
     inputs: [{ kind: 'one', face: fruitFace(c.crop), amount: units(1) }],
     out: {
       kind: 'range',
-      faces: [{ kind: 'seeds', crop: c.crop, variety: c.variety, quality: c.quality, count: 1 }],
+      faces: [grindProduct(c, 1)],
       min: GRIND_MIN,
       max: GRIND_MAX,
     },

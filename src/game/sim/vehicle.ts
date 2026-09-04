@@ -566,6 +566,7 @@ function copyItem(item: Item): Item {
     case 'grass-seeds':
     case 'fruit':
     case 'tree-seed':
+    case 'graft':
     case 'sugar':
     case 'spirit':
     case 'cask':

@@ -197,7 +197,7 @@ export type SaveCell =
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
-  | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
+  | { kind: 'grinder'; base: RectBase; crop: CropId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
@@ -1610,7 +1610,7 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   }
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
-    const crop = o.crop === 'none' ? 'none' : readAnnualId(o.crop)
+    const crop = o.crop === 'none' ? 'none' : readCropId(o.crop)
     const variety = readVariety(o.variety)
     const quality = num(o.quality)
     const units = num(o.units)
@@ -2568,6 +2568,14 @@ function readItem(v: unknown): Item | undefined {
       if (count === undefined) return undefined
       return { kind: o.kind, count }
     }
+    case 'graft': {
+      if (!isCropId(o.crop)) return undefined
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
+      const count = num(o.count)
+      if (variety === undefined || quality === undefined || count === undefined) return undefined
+      return { kind: 'graft', crop: o.crop, variety, quality, count }
+    }
     default:
       return undefined
   }
@@ -2651,8 +2659,8 @@ function readMillRecipe(v: unknown): MillRecipe | 'none' | undefined {
   return undefined
 }
 
-function readAnnualId(v: unknown): AnnualId | undefined {
-  return typeof v === 'string' && (ANNUAL_IDS as readonly string[]).includes(v) ? (v as AnnualId) : undefined
+function readCropId(v: unknown): CropId | undefined {
+  return isCropId(v) ? v : undefined
 }
 
 function readJamCropOrNone(v: unknown): JamCrop | 'none' | undefined {

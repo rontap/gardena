@@ -10,7 +10,13 @@ import {
   COMPOST_SECONDS,
   COMPOST_VALUE,
   CONTAINERS,
+  AXES,
   FERT_BAG_LITERS,
+  FURNACE_ASH,
+  FURNACE_CAP,
+  FURNACE_NEED,
+  FURNACE_SECONDS,
+  FURNACE_VALUE,
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   FREEZER_ROT_MUL,
@@ -93,6 +99,9 @@ export type Item =
   | { kind: 'weed'; count: number }
   | { kind: 'grass'; count: number }
   | { kind: 'weed-spray'; liters: number; capacityLiters: number }
+  | { kind: 'axe'; usesLeft: number; workSeconds: number }
+  | { kind: 'wood'; count: number }
+  | { kind: 'ash'; count: number }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -115,6 +124,7 @@ export type Face =
   | { kind: 'mill' }
   | { kind: 'jam-machine' }
   | { kind: 'still' }
+  | { kind: 'furnace' }
   | { kind: 'barrel' }
   | { kind: 'freezer'; slots: number }
   | { kind: 'hangar' }
@@ -151,6 +161,27 @@ export function compostValue(item: Item): number {
   if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
   if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
   if (item.kind === 'grass') return COMPOST_VALUE.grass * item.count
+  if (item.kind === 'ash') return COMPOST_VALUE.ash * item.count
+  return 0
+}
+
+export function furnaceValue(item: Item): number {
+  if (
+    item.kind === 'rotten' ||
+    item.kind === 'seeds' ||
+    item.kind === 'grass-seeds' ||
+    item.kind === 'weed' ||
+    item.kind === 'grass' ||
+    item.kind === 'dead'
+  ) {
+    return FURNACE_VALUE.green * item.count
+  }
+  if (item.kind === 'tree-seed') return FURNACE_VALUE.green
+  if (item.kind === 'fruit') return FURNACE_VALUE.fruit * item.count
+  if (item.kind === 'sugar') return FURNACE_VALUE.fruit * item.liters
+  if (item.kind === 'oil') return FURNACE_VALUE.oil * item.count
+  if (item.kind === 'spirit') return FURNACE_VALUE.spirit * item.count
+  if (item.kind === 'wood') return FURNACE_VALUE.wood * item.count
   return 0
 }
 
@@ -218,6 +249,9 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return m.names_item_weed()
   if (it.kind === 'weed-spray') return m.names_item_weed_spray()
+  if (it.kind === 'axe') return m.names_item_axe()
+  if (it.kind === 'wood') return m.names_item_wood()
+  if (it.kind === 'ash') return m.names_item_ash()
   return m.names_item_cut_grass()
 }
 
@@ -244,6 +278,7 @@ const PLACE_NAME = {
   mill: () => m.names_building_mill(),
   'jam-machine': () => m.names_building_jam(),
   still: () => m.names_building_still(),
+  furnace: () => m.names_building_furnace(),
   barrel: () => m.names_building_barrel(),
   freezer: () => m.names_building_freezer(),
   hangar: () => m.names_building_hangar(),
@@ -289,6 +324,7 @@ export function faceName(face: Face): string {
     case 'mill':
     case 'jam-machine':
     case 'still':
+    case 'furnace':
     case 'barrel':
     case 'freezer':
     case 'hangar':
@@ -413,6 +449,11 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
       capacity: item.capacityLiters,
     })
   }
+  if (item.kind === 'axe') {
+    return m.hud_line_uses({ name: m.names_item_axe(), left: item.usesLeft, uses: AXES.axe.uses })
+  }
+  if (item.kind === 'wood') return m.hud_line_count({ name: m.names_item_wood(), count: item.count })
+  if (item.kind === 'ash') return m.hud_line_compost({ name: m.names_item_ash(), count: item.count })
   return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
 }
 
@@ -481,6 +522,8 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-water-system': () => m.names_sku_buy_water_system(),
   'buy-vehicle-detector': () => m.names_sku_buy_vehicle_detector(),
   'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
+  'buy-furnace': () => m.names_sku_buy_furnace(),
+  'buy-axe': () => m.names_sku_buy_axe(),
 }
 
 export function skuLabel(id: SkuId): string {
@@ -552,6 +595,9 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-water-system': () => m.catalog_water_system(),
   'buy-vehicle-detector': () => m.catalog_vehicle_detector(),
   'buy-traffic-light': () => m.catalog_traffic_light(),
+  'buy-furnace': () =>
+    m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH, cap: FURNACE_CAP }),
+  'buy-axe': () => m.catalog_axe(AXES.axe),
 }
 
 export function skuDesc(id: SkuId): string {
@@ -570,6 +616,10 @@ export function makeShovel(id: ShovelId): Item {
 export function makePickaxe(id: PickaxeId): Item {
   const d = PICKAXES[id]
   return { kind: 'pickaxe', id, usesLeft: d.uses, workSeconds: d.workSeconds }
+}
+
+export function makeAxe(): Item {
+  return { kind: 'axe', usesLeft: AXES.axe.uses, workSeconds: AXES.axe.workSeconds }
 }
 
 export function makeContainer(id: ContainerId, liters: number): Item {
@@ -616,6 +666,8 @@ export function skuItem(id: SkuId): Face {
       return makePickaxe('pickaxe')
     case 'buy-better-pickaxe':
       return makePickaxe('better-pickaxe')
+    case 'buy-axe':
+      return makeAxe()
     case 'buy-bucket':
       return makeContainer('bucket', CONTAINERS.bucket.capacityLiters)
     case 'buy-bucket-large':
@@ -666,6 +718,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'jam-machine' }
     case 'buy-still':
       return { kind: 'still' }
+    case 'buy-furnace':
+      return { kind: 'furnace' }
     case 'buy-barrel':
       return { kind: 'barrel' }
     case 'buy-freezer':

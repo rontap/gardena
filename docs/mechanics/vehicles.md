@@ -169,7 +169,7 @@ Parked only. `Act.swapTrailer` swaps hand with hopper or `slots[i]`, then compac
 
 ## Machine pads
 
-Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos.
+Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos.
 
 ```
 dropoffPad(base) = { row: base.row - 1, col: base.col + i } for i in 0..w-1
@@ -182,7 +182,7 @@ Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)`
 
 Unload: cargo → building, all legal until dest full. Same accept as walk dump. Load: chest/freezer pull until cargo full; silo seeds; additive bags; machines pick all ground drops on takeup cells the cargo accepts. Quad uses quad slots; tractor still needs hitch (`vehicleCargo()`).
 
-Guest: mill/jam/still/compost/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
+Guest: mill/jam/still/compost/furnace/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
 
 Route load/unload stops: one transfer, same body, then next — [[#Dispatch]].
 

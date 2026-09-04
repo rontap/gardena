@@ -47,13 +47,15 @@ Shop `pack-*` are five seeds. Always common unless the player owns `seed-bank` �
 
 ## Tools
 
-Shovel, better shovel, pickaxe, hardened pickaxe, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds`. Rotary unchanged.
+Shovel, better shovel, pickaxe, hardened pickaxe, axe, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.axe.workSeconds`. Rotary unchanged. No better-axe.
+
+`{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. SKU `buy-axe`. Chop: [[mechanics/trees]] `trees.chop`.
 
 Weed spray: `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L — preference (old 30 uses). `ADDITIVE_BAG.weed-spray = WEED_SPRAY_BAG`. Shared `ADDITIVE_CAP_LITERS`. Buy / walk-up / take like fertilizer. Illegal: `liters` 0 as held (empty bag leaves the hand). No `usesLeft` field. — [[mechanics/weeds]]
 
 ## Stacks
 
-Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+rarity, spirit by kind+rarity, wine by rarity, jam by crop, rotten / dead by `CropClass`, weed and grass by kind alone.
+Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+rarity, spirit by kind+rarity, wine by rarity, jam by crop, rotten / dead by `CropClass`, weed, grass, wood, ash by kind alone.
 
 Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract — preference. `bulk-up` adds `BULK_UP_STEP` per rank, `BULK_UP_CRAFTED_STEP` on the crafted cap — [[mechanics/family]]. `World.stackMax(item)` is derived, not a field.
 
@@ -69,13 +71,15 @@ Ordinary bag `FERT_BAG_LITERS`, always in the shop. Synthetic `SYNTH_BAG_LITERS`
 
 Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
-`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract: not compost.
+`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Ash composts as `count × COMPOST_VALUE.ash`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Spirit / wine / jam / oil / flour / extract / wood: not compost.
+
+`FURNACE_CAP` `FURNACE_NEED` — preference. `furnaceValue` — [[mechanics/machines]] `machines.furnace-feed`. Wood `{ kind: 'wood'; count }`. Ash `{ kind: 'ash'; count }`. Not stall goods. `STACK_MAX`.
 
 ## Grind
 
 Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Annual fruit including sugar-cane (not `TreeId`) → `GRIND_MIN`..`GRIND_MAX` seeds, same crop and rarity. `GRIND_WORK` 12 per fruit tick — preference. A held fruit stack dumps all of it. Tree fruit and sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper`.
 
-Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
+Mill / jam / still / barrel / freezer / furnace / shop sugar: [[mechanics/machines]].
 
 ## Tiles
 
@@ -92,3 +96,5 @@ Mill / jam / still / barrel / freezer / shop sugar: [[mechanics/machines]].
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 
 `inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same fail / merge / shop-stream as shop. No pack: no Buy.
+
+`inventory.ash` — 1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.

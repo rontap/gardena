@@ -1,5 +1,5 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
-import type { AdditiveStore, Chest, Coord, Freezer, JamMachine, Mill, PotStill, RectBase, SeedSilo } from './building.ts'
+import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, RectBase, SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -263,6 +263,9 @@ export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
   if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') {
     return port === 'in' && c.base.col === at.col && c.base.row === at.row
   }
+  if (c.kind === 'furnace') {
+    return (port === 'in' || port === 'out') && c.base.col === at.col && c.base.row === at.row
+  }
   if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
     return port === 'out' && c.base.col === at.col && c.base.row === at.row
   }
@@ -293,6 +296,7 @@ export type PortDevice =
   | 'mill'
   | 'jam'
   | 'still'
+  | 'furnace'
   | 'chest'
   | 'freezer'
   | 'seed-silo'
@@ -304,6 +308,7 @@ export function portDevice(c: Cell): PortDevice {
     c.kind === 'mill' ||
     c.kind === 'jam' ||
     c.kind === 'still' ||
+    c.kind === 'furnace' ||
     c.kind === 'chest' ||
     c.kind === 'freezer' ||
     c.kind === 'seed-silo' ||
@@ -326,7 +331,8 @@ export function rawMap(m: ReadonlyMap<string, Signal>): Raw {
   }
 }
 
-export function storeRaw(c: Chest | Freezer | SeedSilo | AdditiveStore): Signal {
+export function storeRaw(c: Chest | Freezer | SeedSilo | AdditiveStore | Furnace): Signal {
+  if (c.kind === 'furnace') return c.units === 0 ? 1 : 0
   if (c.kind === 'chest' || c.kind === 'freezer') return c.slots.every(s => s.kind !== 'empty') ? 1 : 0
   return c.used >= c.cap ? 1 : 0
 }
@@ -507,8 +513,8 @@ export type EvalIn = {
   valves: Map<string, ValveHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
   raw: Raw
-  machines: ReadonlyMap<string, Mill | JamMachine | PotStill>
-  stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore>
+  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace>
+  stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>
 }
 
 export function evalDag(input: EvalIn): void {
@@ -684,6 +690,7 @@ export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number 
     kind === 'mill' ||
     kind === 'jam' ||
     kind === 'still' ||
+    kind === 'furnace' ||
     kind === 'pulser' ||
     kind === 'counter' ||
     kind === 'lever' ||

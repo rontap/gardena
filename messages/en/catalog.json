@@ -109,5 +109,19 @@
   "catalog_jam": "{fruit} fruit plus sugar cook in {seconds}s. Tomato is ketchup.",
   "catalog_freezer": "Small {n} slots, large {m} slots. Fruit in here rots {pct}% slower. The large one is a contract prize, never sold.",
   "catalog_title_rotten": "Rotten produce",
-  "catalog_title_dead": "Dead plant"
+  "catalog_title_dead": "Dead plant",
+  "catalog_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
+  "catalog_sku_buy_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. Holds {cap} units. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
+  "catalog_axe": "Chops a mature tree into Wood. The tree then grows a trunk and grows again before it fruits. {uses} uses, {workSeconds}s per chop.",
+  "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
+  "catalog_ash": [
+    {
+      "declarations": ["input n", "local nPlural = n: plural"],
+      "selectors": ["nPlural"],
+      "match": {
+        "nPlural=one": "Left when a Furnace finishes a burn. Worth {n} unit in the Compost box.",
+        "nPlural=other": "Left when a Furnace finishes a burn. Worth {n} units in the Compost box."
+      }
+    }
+  ]
 }

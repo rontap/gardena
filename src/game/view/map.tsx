@@ -8,6 +8,7 @@ import type { SkuId } from '../sim/ids.ts'
 import { aoe, edgeKey, vertsOf, type Edge, type Vertex } from '../sim/pipe.ts'
 import type { WireEnd } from '../sim/sensor.ts'
 import type { PromptHit } from '../sim/prompt.ts'
+import { furnaceCoveringCells } from '../sim/machine.ts'
 import { dest, type Place, type World } from '../sim/world.ts'
 import { Coin } from '../ui/frame.tsx'
 import { TILE, clampCam, type Camera } from './camera.ts'
@@ -36,7 +37,8 @@ import {
   type MapClick,
 } from './hit.ts'
 import { WorldView, type ViewHooks } from './world-view.ts'
-import { HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
+import { footOutline } from './outline.ts'
+import { FURNACE, HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
@@ -100,13 +102,15 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank' || placeId === 'buy-still'
+  const furnacePlace = placeId === 'buy-furnace'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
-  const followSku = placeId !== undefined && !pumpjack && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
+  const followSku =
+    placeId !== undefined && !pumpjack && !furnacePlace && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y, VERTEX_HIT) : undefined
   const snapVertex =
@@ -137,8 +141,9 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     (tipDrop.item.kind === 'shovel' || tipDrop.item.kind === 'pickaxe' || tipDrop.item.kind === 'container')
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
-  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, hangarPlace, siloPlace)
+  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, furnacePlace, hangarPlace, siloPlace)
   const hoverOutline = footOutline(hoverFoot)
+  const coverOutline = footOutline(coverFoot(world, strokeCell, place))
 
   function pushCam(next: Camera): void {
     const b = world.bounds()
@@ -420,6 +425,26 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
               fill="none"
               className={skuStroke && world.prompt(strokeCell).kind !== 'place' ? 'stroke-roof' : 'stroke-ink'}
               strokeWidth={2}
+              strokeLinejoin="miter"
+              shapeRendering="crispEdges"
+            />
+          </svg>
+        )}
+        {coverOutline !== undefined && (
+          <svg
+            className="pointer-events-none absolute overflow-visible"
+            width={coverOutline.w}
+            height={coverOutline.h}
+            style={{ left: coverOutline.x, top: coverOutline.y }}
+          >
+            <path
+              data-furnace-cover=""
+              d={coverOutline.d}
+              fill="none"
+              className="pointer-events-none fill-none stroke-ink"
+              strokeWidth={2}
+              strokeLinejoin="miter"
+              shapeRendering="crispEdges"
             />
           </svg>
         )}
@@ -528,6 +553,17 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
           </svg>
         )}
+        {furnacePlace && strokeCell !== undefined && (
+          <svg
+            className="absolute overflow-visible"
+            width={TILE}
+            height={2 * TILE}
+            viewBox="0 0 24 48"
+            style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
+          >
+            <Use art={FURNACE} />
+          </svg>
+        )}
         {queued.map(([k, at]) => (
           <div
             key={`queued-${k}`}
@@ -617,6 +653,14 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
+      {furnacePlace && placeId !== undefined && hoverCell === undefined && (
+        <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
+          <svg className="h-16 w-8" viewBox="0 0 24 48">
+            <Use art={FURNACE} />
+          </svg>
+          <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
+        </div>
+      )}
     </div>
   )
 }
@@ -694,54 +738,22 @@ function paintSpeech(host: HTMLElement, world: World): void {
   if (text !== null && text.textContent !== world.speech.text) text.textContent = world.speech.text
 }
 
-type Outline = { d: string; x: number; y: number; w: number; h: number }
-
-function footOutline(cells: readonly { col: number; row: number }[]): Outline | undefined {
-  if (cells.length === 0) return undefined
-  const cols = cells.map(c => c.col)
-  const rows = cells.map(c => c.row)
-  const minCol = Math.min(...cols)
-  const minRow = Math.min(...rows)
-  const links = new Map<string, string>()
-  cells.forEach(c => {
-    const x = c.col - minCol
-    const y = c.row - minRow
-    ;[
-      [`${x},${y}`, `${x + 1},${y}`],
-      [`${x + 1},${y}`, `${x + 1},${y + 1}`],
-      [`${x + 1},${y + 1}`, `${x},${y + 1}`],
-      [`${x},${y + 1}`, `${x},${y}`],
-    ].forEach(([a, b]) => {
-      if (links.get(b) === a) links.delete(b)
-      else links.set(a, b)
-    })
-  })
-  const px = (k: string): string => {
-    const i = k.indexOf(',')
-    return `${Number(k.slice(0, i)) * TILE} ${Number(k.slice(i + 1)) * TILE}`
+function coverFoot(
+  world: World,
+  stroke: { col: number; row: number } | undefined,
+  place: Place,
+): { col: number; row: number }[] {
+  if (stroke === undefined) return []
+  if (place.kind === 'sku' && place.id === 'buy-furnace') {
+    return furnaceCoveringCells({ shape: 'rect', col: stroke.col, row: stroke.row, w: 1, h: 2 }).filter(c =>
+      world.inWorld(c),
+    )
   }
-  const parts: string[] = []
-  while (links.size > 0) {
-    const start = [...links.keys()][0]
-    const loop = [start]
-    let at = start
-    for (;;) {
-      const next = links.get(at)
-      if (next === undefined) break
-      links.delete(at)
-      if (next === start) break
-      loop.push(next)
-      at = next
-    }
-    parts.push(`M ${loop.map(px).join(' L ')} Z`)
-  }
-  return {
-    d: parts.join(' '),
-    x: minCol * TILE,
-    y: minRow * TILE,
-    w: (Math.max(...cols) + 1 - minCol) * TILE,
-    h: (Math.max(...rows) + 1 - minRow) * TILE,
-  }
+  if (place.kind !== 'none') return []
+  if (!world.inWorld(stroke)) return []
+  const cell = world.cell(stroke)
+  if (cell.kind !== 'furnace') return []
+  return furnaceCoveringCells(cell.base).filter(c => world.inWorld(c))
 }
 
 function strokeFoot(
@@ -749,6 +761,7 @@ function strokeFoot(
   stroke: { col: number; row: number } | undefined,
   place: Place,
   pumpjack: boolean,
+  furnacePlace: boolean,
   hangarPlace: boolean,
   siloPlace: boolean,
 ): { col: number; row: number }[] {
@@ -760,6 +773,7 @@ function strokeFoot(
     return [stroke]
   }
   if (pumpjack) return [stroke, { col: stroke.col + 1, row: stroke.row }]
+  if (furnacePlace) return [stroke, { col: stroke.col, row: stroke.row + 1 }]
   if (hangarPlace) {
     const cells: { col: number; row: number }[] = []
     for (let row = 0; row < HANGAR_H; row++) {

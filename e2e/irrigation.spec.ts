@@ -36,6 +36,13 @@ test('hover outline', async ({ page }) => {
   await expect(stroke).toHaveCount(0)
 })
 
+test('house hover is one outline path', async ({ page }) => {
+  const stroke = page.locator('[data-cell-stroke]')
+  await hoverWorld(page, 16, 7.5)
+  await expect(stroke).toHaveCount(1)
+  expect((await stroke.getAttribute('d'))?.match(/M/g)).toHaveLength(1)
+})
+
 test('shop close exits pipe layer', async ({ page }) => {
   await armSku(page, 'Pipe 3')
   await tapWorld(page, 18.5, 7)

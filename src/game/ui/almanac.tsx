@@ -70,6 +70,7 @@ const UTIL_IDS = [
   'better-shovel',
   'pickaxe',
   'better-pickaxe',
+  'axe',
   'bucket',
   'large-bucket',
   'fertilizer',
@@ -77,6 +78,8 @@ const UTIL_IDS = [
   'weed-spray',
   'compost',
   'sugar',
+  'wood',
+  'ash',
   'rotary-shovel',
   'diamond-pickaxe',
 ]
@@ -102,6 +105,7 @@ const AUTO_IDS = [
   'grinder',
   'compost-box',
   'mill',
+  'furnace',
   'still',
   'barrel',
   'jam',
@@ -361,6 +365,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                   fermentation: world.done.has('unlock-fermentation'),
                   grinder: world.done.has('unlock-grinder'),
                   preservatives: world.done.has('unlock-preservatives'),
+                  furnace: world.done.has('unlock-furnace'),
                 }}
                 tab={tab}
               />
@@ -373,7 +378,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
   )
 }
 
-type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boolean }
+type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boolean; furnace: boolean }
 
 function RowPane({
   row,
@@ -1008,7 +1013,7 @@ function AutomationConcept() {
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
 function skuFill(tab: AlmanacTab, id: string): string {
-  if (id === 'sugar') return 'bg-water'
+  if (id === 'sugar' || id === 'ash') return 'bg-water'
   if (tab === 'sensors' || tab === 'automation' || tab === 'water') return 'bg-grass'
   return 'bg-dirt-dark'
 }
@@ -1194,8 +1199,8 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
   const d = CROPS[id]
   const def = TREES[id]
   const [preview, setPreview] = useState<Rarity>('common')
-  const stage = useCycle(3)
-  const stages = ['grow', 'unripe', 'ripe'] as const
+  const stages = ['trunk', 'grow', 'unripe', 'ripe'] as const
+  const stage = useCycle(stages.length)
   const st = statsOf(id, preview, [])
   const every = 1 / def.fruitSeconds
   const everyMin = 1 / treeMax('fruitSeconds')
@@ -1280,6 +1285,8 @@ function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
     case 'grinder':
     case 'compost-box':
       return false
+    case 'furnace':
+      return done.furnace
   }
 }
 

@@ -1,13 +1,25 @@
 import { m } from '../../paraglide/messages.js'
 import { inFade, inWorld, occupiedCells } from './building.ts'
-import { NOT_OWNED, cropLabel, sensorName, type PromptHit } from './prompt.ts'
+import {
+  NOT_OWNED,
+  compostLine,
+  cropLabel,
+  furnaceLook,
+  grindLook,
+  jamLook,
+  millLook,
+  sensorName,
+  stillLook,
+  treeLine,
+  type PromptHit,
+} from './prompt.ts'
 import { onCell } from './drop.ts'
 import type { Rarity } from '../defs/rarity.ts'
 import { heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Barrel } from './building.ts'
 import { barrelNeed, caskAgeMul, feedUnits } from './machine.ts'
-import { BARREL_MATURE } from '../defs/items.ts'
+import { BARREL_MATURE, FURNACE_HASTE } from '../defs/items.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { isSensor } from './sensor.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
@@ -34,7 +46,9 @@ const RARITY_LABEL: { readonly [K in Rarity]: () => string } = {
 }
 
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
-  const place = world.seats[world.local].place
+  const seat = world.seats[world.local]
+  const place = seat.place
+  const hand = seat.hand
   if (place.kind === 'delete') return world.promptHit(hit).text
   if (
     hit !== undefined &&
@@ -84,6 +98,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   if (place.kind === 'sku') {
     lines.push(m.prompt_place({ name: skuLabel(place.id) }))
   }
+  const faceAt = lines.length
   const parked = world.parkedAt(at)
   if (cell.kind === 'hangar') lines.push(m.names_building_hangar())
   else if (parked !== undefined) lines.push(parked.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad())
@@ -117,18 +132,15 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     )
   } else if (cell.kind === 'chest') lines.push(m.names_building_chest())
   else if (cell.kind === 'freezer') lines.push(m.names_building_freezer())
-  else if (cell.kind === 'grinder') lines.push(m.names_building_grinder())
-  else if (cell.kind === 'compost-box') lines.push(m.names_building_compost_box())
-  else if (cell.kind === 'mill') lines.push(m.names_building_mill())
-  else if (cell.kind === 'still') lines.push(m.names_building_still())
+  else if (cell.kind === 'grinder') lines.push(grindLook(cell, hand))
+  else if (cell.kind === 'compost-box') lines.push(compostLine(cell.units, cell.progress))
+  else if (cell.kind === 'mill') lines.push(millLook(cell, hand))
+  else if (cell.kind === 'still') lines.push(stillLook(cell, hand))
+  else if (cell.kind === 'furnace') lines.push(furnaceLook(cell, hand))
   else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
-  else if (cell.kind === 'jam') lines.push(m.names_building_jam())
-  else if (cell.kind === 'tree') {
-    const name = m.prompt_tree({ name: cropLabel(cell.species) })
-    if (cell.juvenile < 1) lines.push(labeled(name, m.prompt_growing()))
-    else if (cell.yield.kind === 'on') lines.push(labeled(name, m.prompt_on_season()))
-    else lines.push(labeled(name, m.prompt_off_season()))
-  } else if (cell.kind === 'untilled') {
+  else if (cell.kind === 'jam') lines.push(jamLook(cell, hand))
+  else if (cell.kind === 'tree') lines.push(treeLine(cell))
+  else if (cell.kind === 'untilled') {
     if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))
     else if (cell.ground === 'soft') lines.push(m.names_ground_grass())
     else if (cell.ground === 'hard') lines.push(m.names_ground_hard())
@@ -186,14 +198,27 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   } else {
     lines.push(labeled(cropLabel(cell.plant.crop), m.prompt_dead()))
   }
+  const face = lines[faceAt]
+  if (
+    cell.kind === 'mill' ||
+    cell.kind === 'jam' ||
+    cell.kind === 'still' ||
+    cell.kind === 'grinder' ||
+    cell.kind === 'compost-box' ||
+    cell.kind === 'furnace'
+  ) {
+    const n = Math.round((world.furnaceMulFor(cell.base) - 1) / FURNACE_HASTE)
+    if (n > 0) lines.push(m.prompt_furnace_haste({ n, pct: FURNACE_HASTE * n * 100 }))
+  }
   if (world.hasFence(at)) lines.push(m.names_building_fence())
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {
-    const hand: Hand = { kind: 'hold', item: drop.item }
-    lines.push(heldText(hand, world.modifiers))
+    const held: Hand = { kind: 'hold', item: drop.item }
+    lines.push(heldText(held, world.modifiers))
   }
   if (cell.kind !== 'silo-seed' && cell.kind !== 'silo-spray' && cell.kind !== 'silo-produce') {
-    lines.push(world.prompt(at).text)
+    const p = world.prompt(at).text
+    if (p !== face) lines.push(p)
   }
   return lines.join('\n')
 }

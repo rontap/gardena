@@ -27,13 +27,14 @@ Tune `n` out of range is no-op, does not write.
 | sprinkler (after `unlock-smart-irrigation`) | `in` | — |
 | valve, after `unlock-smart-irrigation` | `in` on the body | — |
 | mill, jam, still | `in` origin top | — |
+| furnace | `in` origin top | `out` origin bottom |
 | chest, freezer, seed-silo, additive-store | — | `out` origin bottom |
 
 Compost-box: pads, no port. Barrel, grinder, field silos: no port.
 
 Illegal combos unrepresentable per device. Finalize no-ops a `WireEnd` that the device does not own.
 
-No prop nubs on mill/jam/still/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port.
+No prop nubs on mill/jam/still/furnace/chest/freezer/silo/additive. Sensor lens dots only. `WireEnd.at` = origin. Still east cell: no port. Furnace south cell: no port. First machine with both `in` and `out`.
 
 A port is a disc of `PORT_HIT` at `portXY`, live only in the `sensors` lens. Paint is the hitbox — [[ui/sensors]]. The cell body is the device action in every lens: Flip, Press, Tune. No half-cell port, no lens-dependent hitbox.
 
@@ -63,9 +64,9 @@ Two graphs. Wiring may contain cycles **through memory**. Combinational wiring m
 
 **Sequential (memory) devices:** lever, pulser, counter. Their `in` is sampled from **last tick’s** outputs, then they update. Internally `in` does not combinationally drive `out` this tick. Flip / Press still apply in `apply` (same-tick Flip + eval edge: both, net zero). Traffic-light `in` is a sequential cut for `wouldCycle` (`isSeqIn`); `inn` is sampled **this** tick (mill-like), then wait resolve after `evalDag`. `inn` does not combinationally drive `out`.
 
-**Combinational devices:** not, and, or, lamp, sprinkler `in`, valve `in`, mill / jam / still `in`. Traffic-light `inn` set in `evalDag` like mill.
+**Combinational devices:** not, and, or, lamp, sprinkler `in`, valve `in`, mill / jam / still / furnace `in`. Traffic-light `inn` set in `evalDag` like mill.
 
-**Sources:** button, world-readers, chest / freezer / seed-silo / additive-store. Traffic-light `out` after `tickDispatch` (this tick’s waiters).
+**Sources:** button, world-readers, chest / freezer / seed-silo / additive-store, furnace `out`. Traffic-light `out` after `tickDispatch` (this tick’s waiters).
 
 `wouldCycle(wires, from, to, isSeqIn)`: walk only edges whose `to` is **not** a sequential input. Same-node `from`/`to` is a cycle iff that node is combinational. Lever/pulser/counter/traffic-light out→own in is legal. AND/OR/NOT/lamp out→own in is a cycle.
 
@@ -87,19 +88,21 @@ Unwired input = `0`. Assumption: unwired gate / lamp / NOT / AND / OR / pulser /
 
 `SENSOR_HOLD`: after an output **edge** (0→1 or 1→0), that node keeps the new level for `SENSOR_HOLD` ticks, then follows raw. `hold` is remaining ticks. 0 = not holding.
 
-World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store, traffic-light `out`. Mill/jam/still `inn` like lamp, no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold.
+World-readers: water, fert, harvest, water-system, vehicle, day, chest, freezer, seed-silo, additive-store, furnace `out`, traffic-light `out`. Mill/jam/still/furnace `inn` like lamp, no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold. Furnace `out` high iff `units === 0`. `SENSOR_HOLD` on that `out`.
 
 Button: `out` high exactly `BUTTON_PULSE` ticks. `left` counts down on `tick()`. Reach 0 → `out = 0`. Assumption: toggle while high restarts `BUTTON_PULSE`.
 
 Lever: Flip always `on = !on` in apply (`toggle` walk-to). Eval: `inn` = OR of wires on `in`. If `prev === 0 && inn === 1` then `on = !on`. Then `prev = inn`. `out = on ? 1 : 0`. Unwired `inn` 0: no edge, Flip unchanged. Same-tick Flip + rising edge: both apply (two toggles → net zero). Look **on** / **off** still from `on`.
 
-NOT: `out = 1 - inn`. AND: (OR of `in-l`) AND (OR of `in-r`). OR: (OR of `in-l`) OR (OR of `in-r`). Lamp: `inn` only. Mill/jam/still: `inn === 1` skip tick; unwired 0 ticks. No hold.
+NOT: `out = 1 - inn`. AND: (OR of `in-l`) AND (OR of `in-r`). OR: (OR of `in-l`) OR (OR of `in-r`). Lamp: `inn` only. Mill/jam/still/furnace: `inn === 1` skip tick; unwired 0 ticks. No hold.
 
 Pulser: if `prev === 0 && inn === 1` then `out = 1` else `out = 0`; then `prev = inn`. Pulse is 1 tick on 0→1.
 
 Counter: if `inn === 1` then `count += 1`. If `count >= n` then `out = 1`, `count = 0`; else `out = 0`. Increments each tick `inn === 1`.
 
 Chest / freezer / seed-silo / additive-store: `out` + `SENSOR_HOLD`. Full: chest/freezer no empty slot; silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`.
+
+Furnace: `out` + `SENSOR_HOLD`. High iff `units === 0`. Combinational `inn` like mill, no hold.
 
 ## Counter dial
 
@@ -218,7 +221,7 @@ Guest wire / sensor HUD: [[mechanics/multiplayer]] `mp.guest`.
 
 `sensors.mask` — 3×3 does not read plants outside the square; center building is not a plant.
 
-`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal. Hold on world-readers + sprinkler input + wired valve only. Mill/jam/still `inn` no hold. Pulser / counter / lever no hold. Traffic-light `inn` no hold; `out` + `SENSOR_HOLD` after `tickDispatch`. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day` `traffic-light`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update. Traffic-light `inn` this tick; combo reads last tick’s `out`.
+`sensors.signal` — Signal is `0 | 1`. Combinational graph is a DAG. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal. Hold on world-readers + sprinkler input + wired valve only. Mill/jam/still/furnace `inn` no hold. Furnace `out` + `SENSOR_HOLD`. Pulser / counter / lever no hold. Traffic-light `inn` no hold; `out` + `SENSOR_HOLD` after `tickDispatch`. Digest distinguishes unwired sprinkler vs wired-low. Port level = OR of wires on that `to`. Direct path unique on `nodeKey(from)` → `nodeKey(to)`, not `endKey`. `SensorKind` += `pulser` `counter` `sensor-day` `traffic-light`. Lever has `in`. AND / OR / NOT require `unlock-advanced-sensors`. Memories sample last tick; combo this tick; then sequential update. Traffic-light `inn` this tick; combo reads last tick’s `out`.
 
 `sensors.light` — Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Guest `GUEST_BUILD`. Wait resolve after `evalDag` using this tick’s `inn`.
 

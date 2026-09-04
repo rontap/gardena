@@ -11,6 +11,7 @@ import type {
   SiloSpray,
   JamMachine,
   Mill,
+  Furnace,
   PotStill,
   Pump,
   RainTank,
@@ -60,6 +61,7 @@ export type Cell =
   | Mill
   | JamMachine
   | PotStill
+  | Furnace
   | Barrel
   | Freezer
   | Hangar
@@ -124,6 +126,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'mill' ||
     c.kind === 'jam' ||
     c.kind === 'still' ||
+    c.kind === 'furnace' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
     c.kind === 'hangar' ||

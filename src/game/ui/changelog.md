@@ -1,3 +1,17 @@
+# 2.3.0 Furnace
+
+A Furnace burns mixed waste into Ash and speeds nearby machines, and an Axe chops a mature tree for Wood.
+
+- 🎉 Added building: Furnace. Burns a mixed load into Ash, and a working Furnace makes nearby machines finish faster than they do without one.
+- 🎉 Added item: Axe. Chops a mature tree into Wood; the tree then grows a trunk and grows again before it fruits.
+- 🎉 Added item: Wood. Chopped from a mature tree; burns in a Furnace.
+- 🎉 Added item: Ash. Left when a Furnace finishes a burn; the Compost box takes it as waste.
+- 🔧 Changed mechanic: Trees. previously, a mature tree only grew fruit, now an Axe chops it into Wood, it grows a trunk, then grows again before it fruits.
+- 🔧 Changed ui: Tree inspect. previously, a tree that was not yet mature only read as growing, now a chopped tree reads as a trunk and a sapling still reads as growing.
+- 🔧 Changed building: Furnace. previously, it stretched tall to fill both tiles, now it sits on those same two tiles without stretching, smoke comes from the chimney while it works, and placing or hovering it outlines how far nearby machines finish faster.
+- 🔧 Changed building: Pot still. previously, it stretched wide to fill both tiles, now it sits on those same two tiles without stretching.
+- 🔧 Changed ui: Machine inspect. previously, it did not say a machine finished faster from a working Furnace, now hovering a Mill, Jam machine, Pot still, Seed grinder, Compost box, or Furnace shows it finishes faster with that working Furnace than without a Furnace.
+
 # 2.2.0 Settings
 
 A Settings page behind the gear, a way back to the startup screen, and a farm that no longer races through the time you spent in another tab.

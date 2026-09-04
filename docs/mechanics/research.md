@@ -70,12 +70,13 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-grinder | trade | — | — | — |
 | unlock-preservatives | trade | unlock-grinder | unlock-grinder | Jam plates in almanac Ingredients |
 | unlock-fermentation | trade | unlock-grinder | — | — |
+| unlock-furnace | trade | unlock-fermentation | — | — |
 
 Synthetic is research; compost box is a start SKU. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Start plants shelf is three: Synthetic fertilizer, Tomato seeds, Grape seeds. `unlock-grape` cost 12, seconds 40 — preference. `unlock-crop-variants` reveals after tomato, grape, or irrigation. `unlock-heirloom` requires Crop variants and also reveals on land or vehicles.
 
 Advanced sensors and Advanced irrigation carry the money in Automation: both are where the system stops being convenience and starts being expressive, and their own SKUs are pocket change, so the research is the price. Fermentation is priced against [[mechanics/saturation]] — spirits and wine floor at `SAT_FLOOR` where crops floor higher, and they top the contract `GOOD_COST` list.
 
-`unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. Lens `vehicles` unhidden after this row. Not a family-study. `unlock-silos` `effect` `unlock-sku` `buy-silo-seed`.
+`unlock-vehicles` `effect` `unlock-sku` `buy-hangar`. Quad / tractor / trailers are not SKUs. Lens `vehicles` unhidden after this row. Not a family-study. `unlock-silos` `effect` `unlock-sku` `buy-silo-seed`. `unlock-furnace` `effect` `unlock-sku` `buy-furnace`.
 
 `unlock-dispatch` `effect` `feature`. Automate chrome iff `unlock-dispatch` in `done`. Card **Automated dispatch**. Blurb: vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop. Cost 100, seconds 80 — preference. `Act.route` no-op unless this row is in `done`.
 
@@ -83,7 +84,7 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
-Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac Ingredients: jam gate `unlock-preservatives`; spirit / wine / cider gate `unlock-fermentation`; oil / flour / extract / mill sugar gate `unlock-grinder`. Layout is UI. — [[ui/almanac]]
+Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-furnace` → `buy-furnace`. Name **Furnace**. Cost / seconds preference, mid-end versus `unlock-fermentation`. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac Ingredients: jam gate `unlock-preservatives`; spirit / wine / cider gate `unlock-fermentation`; oil / flour / extract / mill sugar gate `unlock-grinder`. Furnace gate `unlock-furnace`. Layout is UI. — [[ui/almanac]]
 
 `unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always in the shop. `buy-weed-spray` gates on `unlock-fertilizer`; the research `effect` stays one SKU.
 
@@ -97,7 +98,7 @@ The rotary shovel and the diamond pickaxe have no sku. Both are four-star contra
 
 `pack-tomato` show `start`, buy `unlock-tomato`. `pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. No `pack-olive`. No `pack-vanilla`. No `pack-watermelon`. `buy-freezer-large` `need: 'prize'` — shown and buyable only while one is banked.
 
-`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` / `buy-barrel` show `start`, buy `unlock-fermentation`. — [[mechanics/machines]]
+`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` / `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `start`, buy `unlock-furnace`. — [[mechanics/machines]]
 
 ### Water
 
@@ -142,7 +143,7 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 ### Land
 
-`pack-grass`, `buy-fence` and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]]. `buy-better-pickaxe` show after `unlock-pickaxe`. Both pickaxes buy on `unlock-pickaxe` — [[mechanics/expansion]].
+`pack-grass`, `buy-fence` and all three paving SKUs show from `start`, buy after `unlock-landscaping` — [[items/tiles]]. `buy-better-pickaxe` show after `unlock-pickaxe`. Both pickaxes buy on `unlock-pickaxe` — [[mechanics/expansion]]. `buy-axe` utility, unlock and show `unlock-pickaxe`. `unlock-pickaxe` effect stays `buy-pickaxe`. Price preference versus `buy-pickaxe`. `skuLabel` **Axe**.
 
 ## Invariants
 
@@ -158,8 +159,10 @@ AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` re
 
 `research.start` — Plants start shelf is three: `unlock-fertilizer`, `unlock-tomato`, `unlock-grape`. `unlock-grape` `reveal: []`, cost 12, seconds 40 — preference. `pack-grape` unlock `unlock-grape`, show `start`. Pack is not free on day 1.
 
-`research.reveal` — Raspberry research `reveal` tomato | grape. No olive research row. No vanilla research row. Vanilla has no pack. `unlock-fermentation` automation unlocks `pack-sugar-cane` and gates `buy-still` `buy-barrel`. `unlock-grinder` also gates `buy-mill`. `unlock-preservatives` automation, reveal `unlock-grinder`, gates `buy-jam` `buy-freezer` `buy-sugar`.
+`research.reveal` — Raspberry research `reveal` tomato | grape. No olive research row. No vanilla research row. Vanilla has no pack. `unlock-fermentation` automation unlocks `pack-sugar-cane` and gates `buy-still` `buy-barrel`. `unlock-furnace` trade, `reveal` fermentation, gates `buy-furnace`. `unlock-grinder` also gates `buy-mill`. `unlock-preservatives` automation, reveal `unlock-grinder`, gates `buy-jam` `buy-freezer` `buy-sugar`.
 
 `research.gates` — `better-grape` gated on `unlock-grape`. `better-sugar-cane` gated on `unlock-fermentation`. `better-vanilla` gated on `unlock-raspberry`. No `better-*` for `TreeId`. No `unlock-olive`.
 
 `research.dispatch` — `unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.
+
+`research.furnace` — Own trade row, reveal fermentation, gates `buy-furnace`. `buy-axe` on `unlock-pickaxe`.

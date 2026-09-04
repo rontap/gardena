@@ -20,6 +20,7 @@ import {
   SiloSpray,
   JamMachine,
   Mill,
+  Furnace,
   PotStill,
   Pump,
   RainTank,
@@ -140,7 +141,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.12 as const
+export const SAVE_VERSION = 2.13 as const
 
 const INV = 16
 
@@ -196,13 +197,14 @@ export type SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }
-  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean }
+  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; rarity: Rarity; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: 0 | 1 }
+  | { kind: 'furnace'; base: RectBase; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
@@ -300,7 +302,7 @@ export type SaveRecap = {
 
 export type Save = {
   game: 'gardena'
-  version: 2.12
+  version: 2.13
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -551,6 +553,7 @@ function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined {
     c.kind === 'mill' ||
     c.kind === 'jam' ||
     c.kind === 'still' ||
+    c.kind === 'furnace' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
     c.kind === 'hangar' ||
@@ -611,6 +614,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         fruit: c.fruit,
         yield: c.yield,
         tended: c.tended,
+        trunk: c.trunk,
       }
     case 'chest':
       return { kind: 'chest', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
@@ -650,6 +654,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'jam', base: c.base, crop: c.crop, fruit: c.fruit, sugar: c.sugar, progress: c.progress, inn: c.inn }
     case 'still':
       return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
+    case 'furnace':
+      return { kind: 'furnace', base: c.base, units: c.units, progress: c.progress, inn: c.inn, out: c.out, hold: c.hold }
     case 'barrel':
       return { kind: 'barrel', base: c.base, crop: c.crop, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }
     case 'freezer':
@@ -1201,6 +1207,7 @@ function stampChunks(
               inst.kind === 'mill' ||
               inst.kind === 'jam' ||
               inst.kind === 'still' ||
+              inst.kind === 'furnace' ||
               inst.kind === 'barrel' ||
               inst.kind === 'freezer' ||
               inst.kind === 'hangar' ||
@@ -1278,6 +1285,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'tree': {
       const tree = new Tree(sc.species, sc.base, sc.juvenile, sc.fruit, sc.yield)
       tree.tended = sc.tended
+      tree.trunk = sc.trunk
       return tree
     }
     case 'chest': {
@@ -1340,6 +1348,15 @@ function makeLive(sc: SaveCell): Cell | undefined {
       still.n = sc.n
       still.inn = sc.inn
       return still
+    }
+    case 'furnace': {
+      const furnace = new Furnace(sc.base)
+      furnace.units = sc.units
+      furnace.progress = sc.progress
+      furnace.inn = sc.inn
+      furnace.out = sc.out
+      furnace.hold = sc.hold
+      return furnace
     }
     case 'barrel': {
       const barrel = new Barrel(sc.base)
@@ -1567,8 +1584,9 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const fruit = num(o.fruit)
     const y = readTreeYield(o.yield)
     const tended = bool(o.tended)
-    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined || tended === undefined) return undefined
-    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y, tended }
+    const trunk = bool(o.trunk)
+    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined || tended === undefined || trunk === undefined) return undefined
+    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y, tended, trunk }
   }
   if (kind === 'chest') {
     const base = readRectBase(o.base)
@@ -1669,6 +1687,17 @@ function readSaveCell(v: unknown): SaveCell | undefined {
       feed.push(e)
     }
     return { kind: 'still', base, feed, progress, n, inn: o.inn }
+  }
+  if (kind === 'furnace') {
+    const base = readRectBase(o.base)
+    const units = num(o.units)
+    const progress = num(o.progress)
+    const hold = num(o.hold)
+    if (base === undefined || units === undefined || progress === undefined || hold === undefined) return undefined
+    if (base.w !== 1 || base.h !== 2) return undefined
+    if (o.inn !== 0 && o.inn !== 1) return undefined
+    if (o.out !== 0 && o.out !== 1) return undefined
+    return { kind: 'furnace', base, units, progress, inn: o.inn, out: o.out, hold }
   }
   if (kind === 'barrel') {
     const base = readRectBase(o.base)
@@ -2533,6 +2562,18 @@ function readItem(v: unknown): Item | undefined {
       const capacityLiters = num(o.capacityLiters)
       if (liters === undefined || capacityLiters === undefined || liters < 1) return undefined
       return { kind: 'weed-spray', liters, capacityLiters }
+    }
+    case 'axe': {
+      const usesLeft = num(o.usesLeft)
+      const workSeconds = num(o.workSeconds)
+      if (usesLeft === undefined || workSeconds === undefined) return undefined
+      return { kind: 'axe', usesLeft, workSeconds }
+    }
+    case 'wood':
+    case 'ash': {
+      const count = num(o.count)
+      if (count === undefined) return undefined
+      return { kind: o.kind, count }
     }
     default:
       return undefined

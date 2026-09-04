@@ -14,6 +14,10 @@ export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds:
   'diamond-pickaxe': { uses: 1000, workSeconds: 0.4 },
 }
 
+export const AXES = {
+  axe: { uses: 40, workSeconds: 5 },
+} as const
+
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {
   bucket: { capacityLiters: 5 },
   'large-bucket': { capacityLiters: 10 },
@@ -48,6 +52,21 @@ export const COMPOST_VALUE = {
   weed: 1,
   rotten: 2,
   dead: 1,
+  ash: 4,
+} as const
+
+export const FURNACE_CAP = 100
+export const FURNACE_NEED = 20
+export const FURNACE_SECONDS = 240
+export const FURNACE_ASH = 5
+export const FURNACE_REACH = 3
+export const FURNACE_HASTE = 0.25
+export const FURNACE_VALUE = {
+  green: 1,
+  fruit: 3,
+  oil: 25,
+  spirit: 36,
+  wood: 40,
 } as const
 
 export const FREEZER_SLOTS = 6

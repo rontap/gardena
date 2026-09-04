@@ -1,14 +1,14 @@
 # Machines
 
-Look and prompt for mill, jam, still, barrel, freezer, grinder. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
+Look and prompt for mill, jam, still, barrel, freezer, grinder, furnace. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
 
 No ObjectHud. No pop-up GUI. Nothing attaches to the machine. Progress is look text here; the bottom-right `Status` also draws one recipe row — [[ui/recipe]].
 
-Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`.
+Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder / furnace). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`. Furnace look below; dump prompt **Burn**. `{ act: 'furnace'; at }`. Either cell, one look. Prop `off` / `on` from working. Two state VFX while working: `furnace` at the south opening, `furnace-smoke` at the origin chimney. Reduced motion: frame 0 both.
 
-West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. `pointer-events-none`. Not lens. Not a cell hit.
+West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. `pointer-events-none`. Not lens. Not a cell hit. Furnace: origin row only.
 
-Still 2×1. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer: dropoff north Unload, takeup south Load. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still `in` origin top; freezer `out` origin bottom. Lens [[ui/sensors]].
+Still 2×1. Furnace 1×2. Hit, ghost footprint, I/O, ports, pads stay those sizes. viewBox still `48×24` / furnace `24×48`. Prop art occupies 1.5×1 centered (still) and 1×1.5 south-aligned (furnace) inside those viewBoxes. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer / furnace: dropoff north Unload, takeup south Load. Furnace takeup south of the south cell. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still `in` origin top; freezer `out` origin bottom; furnace `in` origin top and `out` origin bottom. Lens [[ui/sensors]].
 
 ## Mill
 
@@ -86,8 +86,38 @@ Look **Freezer**. Prompt walk-up **Freezer**. `{ act: 'chest'; at }`. Host overl
 
 Overlay: chest chrome, title **Freezer**, `FREEZER_SLOTS` 6 cells, 3 columns × 2 rows (`grid-cols-3`). Same swap buttons as chest. Host only.
 
+## Furnace
+
+| when | text |
+|---|---|
+| empty (`units === 0`) | **Furnace** |
+| filling (`units < FURNACE_NEED`) | **Furnace - {n}/{need} units** |
+| working | **Furnace - working {pct}%** |
+| paused (`inn === 1`) | **Furnace - Paused by wire** |
+| ready (`progress >= 1`) | **Furnace - Output blocked** |
+| refuse | **Furnace - will not burn this** |
+| full (`units >= FURNACE_CAP`) | **Furnace - full** |
+
+`{n}` hopper units. Cap `FURNACE_CAP`. Need `FURNACE_NEED`. Mix; no recipe lock. `pct` = `floor(progress * 100)`.
+
+Prompt dump legal: **Burn**. `{ act: 'furnace'; at }`. Either cell.
+
+## Covering haste
+
+Hover mill / jam / still / grinder / compost-box / furnace. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Live covering count `n`, not `furnaceSnap`.
+
+| when | line |
+|---|---|
+| `n > 0` | **Finishes {pct}% faster with {n} working Furnace than without a Furnace.** / **Finishes {pct}% faster with {n} working Furnaces than without a Furnace.** |
+| `n === 0` | (no line) |
+| barrel | never |
+
+`{pct}` is `FURNACE_HASTE × n` as percent. `{n}` is covering working furnaces on that footprint. Plural Furnace / Furnaces. Barrel never, even when `n > 0`. A lone working furnace covers itself, so its own hover shows the line.
+
 ## Sugar
 
 Held: **Sugar - {n}L**. `n` = `liters`. No `count`.
 
-Assumption: freezer overlay is 3×2. Look strings live here; [[ui/inspect]] does not repeat them.
+Held wood: **Wood - {count}**. Held ash: **Ash - {count}, compost it**. Held axe: **Axe - {left}/{uses} uses left**.
+
+Assumption: freezer overlay is 3×2. Look strings live here; [[ui/inspect]] names the haste HUD state and points here.

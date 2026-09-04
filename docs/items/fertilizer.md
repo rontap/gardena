@@ -1,6 +1,6 @@
 # Fertilizer
 
-`fertilizer` — `buy-fertilizer`, `FERT_BAG_LITERS`. `synth-fertilizer` — `buy-synth-fertilizer`, `SYNTH_BAG_LITERS`. `compost` from the box, `COMPOST_LITERS`, not a SKU.
+`fertilizer` — `buy-fertilizer`, `FERT_BAG_LITERS`. `synth-fertilizer` — `buy-synth-fertilizer`, `SYNTH_BAG_LITERS`. `compost` from the box, `COMPOST_LITERS`, not a SKU. Ash `{ kind: 'ash'; count }` into the box: `COMPOST_VALUE.ash` × count. Not a SKU. Not a stall good. Compost still counts `COMPOST_NEED` waste. — [[mechanics/inventory]] `inventory.ash`
 
 Shop bags fill the additive store. Not a place ghost. Feed / spike / `bio`: [[mechanics/soil]]. Caps, bags, drink: [[mechanics/inventory]] [[mechanics/_index]].
 

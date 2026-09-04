@@ -3,6 +3,11 @@ import {
   BARREL_MATURE,
   EXTRACT,
   FLOUR,
+  FURNACE_CAP,
+  FURNACE_NEED,
+  FURNACE_REACH,
+  FURNACE_HASTE,
+  FURNACE_VALUE,
   JAM_BUFFER,
   JAM_IN,
   JAM_SUGAR,
@@ -24,14 +29,21 @@ import {
 import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
 import type { AnnualId, BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
-import type { Barrel, CompostBox, Coord, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
-import { compostValue, cropName, organic, type Item } from './item.ts'
+import type { Barrel, CompostBox, Coord, Furnace, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
+import { compostValue, cropName, furnaceValue, organic, type Item } from './item.ts'
 import { m } from '../../paraglide/messages.js'
 
-export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder
+export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace
 
 export function isIoCell(c: { kind: string }): c is IoCell {
-  return c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box' || c.kind === 'grinder'
+  return (
+    c.kind === 'mill' ||
+    c.kind === 'jam' ||
+    c.kind === 'still' ||
+    c.kind === 'compost-box' ||
+    c.kind === 'grinder' ||
+    c.kind === 'furnace'
+  )
 }
 
 export function machineWest(base: RectBase): Coord {
@@ -160,6 +172,7 @@ export function feedAccept(cell: IoCell, item: Item): number {
   }
   if (cell.kind === 'still') return stillAccept(cell, item)
   if (cell.kind === 'compost-box') return organic(item) ? 1 : 0
+  if (cell.kind === 'furnace') return furnaceAccept(cell, item)
   const take = grindAccept(cell, item)
   if (take === undefined) return 0
   return take.n
@@ -184,6 +197,10 @@ export function feedApply(cell: IoCell, item: Item, n: number): void {
   }
   if (cell.kind === 'compost-box') {
     cell.units += compostValue(item)
+    return
+  }
+  if (cell.kind === 'furnace') {
+    furnaceApply(cell, item, n)
     return
   }
   const take = grindAccept(cell, item)
@@ -346,6 +363,86 @@ export function mergeSugar(
     capacityLiters: a.capacityLiters + b.capacityLiters,
     unitSale: (a.unitSale * a.liters + b.unitSale * b.liters) / liters,
   }
+}
+
+export function furnaceUnit(item: Item): number {
+  if (item.kind === 'tree-seed') return FURNACE_VALUE.green
+  if (item.kind === 'sugar') return FURNACE_VALUE.fruit
+  if ('count' in item) {
+    const n = item.count
+    if (n <= 0) return 0
+    return furnaceValue(item) / n
+  }
+  return 0
+}
+
+export function furnaceAccept(furnace: Furnace, item: Item): number {
+  const unit = furnaceUnit(item)
+  if (unit <= 0) return 0
+  const room = FURNACE_CAP - furnace.units
+  if (room <= 0) return 0
+  if (item.kind === 'tree-seed') return unit <= room ? 1 : 0
+  if (item.kind === 'sugar') {
+    const maxL = room / unit
+    return item.liters < maxL ? item.liters : maxL
+  }
+  if ('count' in item) {
+    const maxN = Math.floor(room / unit)
+    if (maxN <= 0) return 0
+    return item.count < maxN ? item.count : maxN
+  }
+  return 0
+}
+
+export function furnaceApply(furnace: Furnace, item: Item, n: number): void {
+  if (n <= 0) return
+  furnace.units += furnaceUnit(item) * n
+}
+
+export function furnaceWorking(c: Furnace): boolean {
+  return c.units >= FURNACE_NEED && c.inn === 0 && c.progress < 1
+}
+
+export function furnaceStateVfx(origin: Coord): readonly { id: 'furnace' | 'furnace-smoke'; col: number; row: number }[] {
+  return [
+    { id: 'furnace', col: origin.col, row: origin.row + 1 },
+    { id: 'furnace-smoke', col: origin.col, row: origin.row },
+  ]
+}
+
+function chebyshev(a: Coord, b: Coord): number {
+  const dc = a.col < b.col ? b.col - a.col : a.col - b.col
+  const dr = a.row < b.row ? b.row - a.row : a.row - b.row
+  return dc > dr ? dc : dr
+}
+
+export function footprintCells(base: RectBase): Coord[] {
+  return Array.from({ length: base.h }, (_, r) =>
+    Array.from({ length: base.w }, (_, c) => ({ col: base.col + c, row: base.row + r })),
+  ).flat()
+}
+
+export function furnaceCoveringCells(base: RectBase): Coord[] {
+  const foot = footprintCells(base)
+  const minCol = Math.min(...foot.map(c => c.col)) - FURNACE_REACH
+  const maxCol = Math.max(...foot.map(c => c.col)) + FURNACE_REACH
+  const minRow = Math.min(...foot.map(c => c.row)) - FURNACE_REACH
+  const maxRow = Math.max(...foot.map(c => c.row)) + FURNACE_REACH
+  return Array.from({ length: maxRow - minRow + 1 }, (_, i) =>
+    Array.from({ length: maxCol - minCol + 1 }, (_, j) => ({ col: minCol + j, row: minRow + i })),
+  )
+    .flat()
+    .filter(at => foot.some(f => chebyshev(f, at) <= FURNACE_REACH))
+}
+
+export function furnaceCovers(furnace: Furnace, target: RectBase): boolean {
+  const fc = footprintCells(furnace.base)
+  const tc = footprintCells(target)
+  return fc.some(f => tc.some(t => chebyshev(f, t) <= FURNACE_REACH))
+}
+
+export function furnaceMul(working: readonly Furnace[], target: RectBase): number {
+  return 1 + FURNACE_HASTE * working.filter(f => furnaceCovers(f, target)).length
 }
 
 export function millWorking(c: Mill): c is Mill & { recipe: MillRecipe } {

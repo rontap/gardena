@@ -17,12 +17,13 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | ink | `#1c1710` | outlines; UI rails |
 | house | `#cfc6b0` | walls; panel fill |
 | roof | `#8b3a2a` | house; UI header / corner |
+| fire | `#e04610` | furnace flame |
 | tier-1 | `#3d7ea6` | contract difficulty dot, 1 |
 | tier-2 | `#2a9d8f` | contract difficulty dot, 2 |
 | tier-3 | `#e07b18` | contract difficulty dot, 3 |
 | tier-4 | `#e23b2e` | contract difficulty dot, 4 |
 
-`src/index.css` `@theme` `--color-*` matches these except `fruit-red` (SVG only).
+`src/index.css` `@theme` `--color-*` matches these except `fruit-red` and `fire` (SVG only).
 
 ## Industrial
 
@@ -53,4 +54,4 @@ Separate bar palette. Never in `src/assets/*.svg`. Inspect `STAT_COLOR` / `GROWT
 
 Cottage hex, plus industrial metal on vehicle/machine assets. No bar hex. No `currentColor`. No text. `shape-rendering="crispEdges"`. 24-unit tile grid — [[art/svg]]. No raster.
 
-Assumption: industrial tokens stay SVG-only.
+Assumption: industrial tokens stay SVG-only. `fire` is SVG-only, like `fruit-red`.

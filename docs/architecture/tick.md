@@ -19,7 +19,7 @@ Maps, same `Coord` values as `live`. Origin-only for multi-cell. `live` is not a
 | name | members |
 |---|---|
 | grow | growing, ripe, weed, turf, tree origin |
-| machines | mill, jam, still, barrel, grinder, compost origin |
+| machines | mill, jam, still, barrel, grinder, compost, furnace origin |
 | stores | chest, freezer |
 | sensors | sunk sensor cells |
 | buttons | button cells |
@@ -32,10 +32,10 @@ Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase.
 | walk | index |
 |---|---|
 | `tickField` | grow + recover |
-| `tickMachines` / `tickCompost` | machines |
+| `tickMachines` / `tickCompost` | machines. Snapshot working furnaces at start of `tickMachines`; compost uses that set |
 | `tickFreshness` | stores (+ seats / drops / vehicles, not grow). Freezer slots still skip |
 | `tickButtons` | buttons |
-| `evalSensors` | sensors + machines + stores. Not `forEachCell` |
+| `evalSensors` | sensors + machines + stores. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell |
 | `sproutWeeds` | empty |
 | weather soak | tilled. `tickBig` walks it |
 | `padBuildings` | machines + stores (+ `silo` / `additives` / `seedSilos`) |

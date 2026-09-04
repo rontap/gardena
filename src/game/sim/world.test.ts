@@ -193,9 +193,12 @@ describe('beta-1 invariants', () => {
     expect(w.cell(AT).kind).toBe('empty')
   })
 
-  test('house occupies 12 cells, pump one, pumpjack does not mutate starter', () => {
+  test('house occupies 12 cells, pump two, pumpjack does not mutate starter', () => {
     expect(occupiedCells(HOUSE_BASE, HOME)).toHaveLength(12)
-    expect(occupiedCells(PUMP_BASE, HOME)).toEqual([{ col: 18, row: 7 }])
+    expect(occupiedCells(PUMP_BASE, HOME)).toEqual([
+      { col: 18, row: 7 },
+      { col: 19, row: 7 },
+    ])
     const w = new World()
     w.buy('buy-pumpjack')
     expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
@@ -452,6 +455,8 @@ describe('beta-3 invariants', () => {
     expect(w.cell({ col: 17, row: 8 }).kind).toBe('house')
     expect(w.cell({ col: 15, row: 9 }).kind).not.toBe('house')
     expect(w.cell({ col: 18, row: 7 }).kind).toBe('pump')
+    expect(w.cell({ col: 19, row: 7 }).kind).toBe('pump')
+    expect(w.cell({ col: 19, row: 7 })).toBe(w.cell({ col: 18, row: 7 }))
     expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
     expect(w.pump.water.capacity).toBe(SOURCE.pump.capacity)
   })
@@ -2767,6 +2772,7 @@ describe('world.dest', () => {
     w.confirmPlace(stillAt)
     expect(dest({ act: 'still', at: { col: stillAt.col + 1, row: stillAt.row } }, w)).toEqual(stillAt)
     expect(dest({ act: 'fill', at: { col: 18, row: 7 } }, w)).toEqual({ col: 18, row: 7 })
+    expect(dest({ act: 'fill', at: { col: 19, row: 7 } }, w)).toEqual({ col: 18, row: 7 })
     w.buy('buy-pumpjack')
     const jack = { col: 8, row: 16 }
     w.confirmPlace(jack)

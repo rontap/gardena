@@ -46,7 +46,7 @@ Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)`, the
 
 ## List rows
 
-Static. Arrow painted full. Duration is `{n} sec` — `clockText`, the recipe's nominal seconds, base, not divided by `machineMul`, matching the catalog blurbs. Not `m:ss`. Not `Xs`. Not `Xd`.
+Static. Arrow painted full. Duration is `{n} sec` — `clockText`, the recipe's nominal seconds, base, not divided by `machineMul`, not multiplied by `furnaceMul`, matching the catalog blurbs. Not `m:ss`. Not `Xs`. Not `Xd`.
 
 `any` inputs cycle their faces at `CYCLE_MS`. A `range` yield with `faces` shares that index: grinder fruit `i` shows seed `i`. One `useCycle` per row.
 
@@ -59,7 +59,8 @@ Counts from `sim/recipe.ts`. Do not retype.
 | still | `STILL_CROPS` 3 + mixed. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
 | barrel | `BARREL_CROPS` 2 — grape → wine `barrelNeed('grape')` 5, apple → cider `barrelNeed('apple')` 4. |
 | grinder | 1 |
-| compost-box | 3: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5) |
+| compost-box | 4: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5), then ash `one` → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.ash` |
+| furnace | 6: green `any`, fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`. All yield `FURNACE_ASH` ash. Duration `fixed` `FURNACE_SECONDS`. Mix; no recipe lock. Item counts `FURNACE_NEED / FURNACE_VALUE.*` |
 
 ## Live row
 
@@ -67,13 +68,15 @@ One row. Machine empty → cycle every recipe at `CYCLE_MS`. Machine has a recip
 
 Live barrel pins the locked crop’s row (`BARREL_CROPS`: grape wine / apple cider). Empty barrel (`crop === 'none'`) cycles both.
 
+Live furnace empty (`units === 0`) cycles all list rows. Filling / working / ready pin the first list row; `have` / `need` stay furnace units (`FURNACE_NEED`). No `thirsty`. `inn === 1` and `units > 0` → **Paused by wire**.
+
 | `Craft` | row | line under |
 |---|---|---|
 | `idle` | cycles | **Empty** |
 | `filling` | pinned, short input shows `{have}/{need}` in `text-roof` bold | — |
 | `paused` | pinned | **Paused by wire** |
 | `thirsty` | pinned | **Needs water** |
-| `working` | arrow fills `progress`, caption counts down | — |
+| `working` | arrow fills `progress`, caption counts down (tick rate: `machineMul × furnaceMul` on `work`, `furnaceMul` on `fixed`) | — |
 | `ready` | arrow full | **Output blocked** |
 
 `filling.at` indexes `recipe.inputs`. Jam reports fruit first, then sugar. That index is data, not a guess.
@@ -96,7 +99,7 @@ No keyframes, no transition. Reduced motion is not a concern for the arrow.
 
 `idle` is not painted imperatively — the cycle is React's.
 
-The still holds one instance in two cells, so hovering either half binds the same machine and shows one row.
+The still holds one instance in two cells, so hovering either half binds the same machine and shows one row. Furnace: either cell of the 1×2, one row.
 
 ## Cycle
 
@@ -106,4 +109,4 @@ The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePa
 
 Assumption: `useCycle` ignores `prefers-reduced-motion`, as the four call sites it replaced always did.
 
-Assumption: live compost filling pins the fruit row; empty compost is idle and cycles all list rows.
+Assumption: live compost filling pins the fruit row; empty compost is idle and cycles all list rows. Live furnace filling pins the first list row.

@@ -5,7 +5,7 @@ import type { TrailerPose, VehiclePose } from './vehicle.ts'
 import { dump, parse, type Save } from './save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.12
+export const PROTOCOL = 2.13
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -48,6 +48,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-mill',
   'buy-jam',
   'buy-still',
+  'buy-furnace',
   'buy-barrel',
   'buy-freezer',
   'buy-freezer-large',
@@ -372,6 +373,7 @@ export function digestParts(world: World): Record<string, unknown> {
       s += `:${c.plant.crop}:${c.plant.rarity}:${q(c.plant.maturity)}`
     }
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
+    else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`
     else if (

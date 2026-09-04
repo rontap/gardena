@@ -5,6 +5,10 @@ import {
   COMPOST_NEED,
   COMPOST_SECONDS,
   COMPOST_VALUE,
+  FURNACE_ASH,
+  FURNACE_NEED,
+  FURNACE_SECONDS,
+  FURNACE_VALUE,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -18,8 +22,8 @@ import {
 } from '../defs/items.ts'
 import type { CropClass } from '../defs/crops.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
-import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS } from './ids.ts'
-import type { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
+import { ANNUAL_IDS, BARREL_CROPS, CASK_OF, JAM_CROPS, MILL_RECIPES, SPIRIT_KINDS, STILL_CROPS, TREE_IDS } from './ids.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import type { Face, Item } from './item.ts'
 import {
   bakeCaskSale,
@@ -37,9 +41,9 @@ import {
   stillWorking,
 } from './machine.ts'
 
-export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box'
+export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace'
 
-export const MACHINE_IDS: readonly MachineId[] = ['mill', 'jam', 'still', 'barrel', 'grinder', 'compost-box']
+export const MACHINE_IDS: readonly MachineId[] = ['mill', 'jam', 'still', 'barrel', 'grinder', 'compost-box', 'furnace']
 
 export type Amount = { kind: 'units'; n: number } | { kind: 'liters'; l: number } | { kind: 'waste'; n: number }
 
@@ -71,7 +75,7 @@ export type Craft =
   | { kind: 'working'; recipe: Recipe; progress: number; left: number }
   | { kind: 'ready'; recipe: Recipe }
 
-export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox
+export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
   return MACHINE_IDS.some(m => m === c.kind)
@@ -84,6 +88,7 @@ export function machineOfSku(id: SkuId): MachineId | undefined {
   if (id === 'buy-barrel') return 'barrel'
   if (id === 'buy-grinder') return 'grinder'
   if (id === 'buy-compost-box') return 'compost-box'
+  if (id === 'buy-furnace') return 'furnace'
   return undefined
 }
 
@@ -235,10 +240,98 @@ const COMPOST_ROTTEN: Recipe = {
   duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
 }
 
+const COMPOST_ASH: Recipe = {
+  machine: 'compost-box',
+  inputs: [{ kind: 'one', face: { kind: 'ash', count: 1 }, amount: units(COMPOST_NEED / COMPOST_VALUE.ash) }],
+  out: COMPOST_OUT,
+  duration: { kind: 'fixed', seconds: COMPOST_SECONDS },
+}
+
+const FURNACE_OUT: Yield = {
+  kind: 'exact',
+  face: { kind: 'ash', count: FURNACE_ASH },
+  amount: units(FURNACE_ASH),
+}
+
+const FURNACE_GREEN: Recipe = {
+  machine: 'furnace',
+  inputs: [
+    {
+      kind: 'any',
+      faces: [
+        ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
+        ...ANNUAL_IDS.map(seedFace),
+        { kind: 'grass-seeds', count: 1 },
+        ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t })),
+        { kind: 'weed', count: 1 },
+        { kind: 'grass', count: 1 },
+        ...CROP_CLASSES.map(cls => ({ kind: 'dead' as const, cls, count: 1 })),
+      ],
+      amount: units(FURNACE_NEED / FURNACE_VALUE.green),
+    },
+  ],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_FRUIT: Recipe = {
+  machine: 'furnace',
+  inputs: [
+    {
+      kind: 'any',
+      faces: [...ANNUAL_IDS, ...TREE_IDS].map(fruitFace),
+      amount: units(FURNACE_NEED / FURNACE_VALUE.fruit),
+    },
+  ],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_SUGAR: Recipe = {
+  machine: 'furnace',
+  inputs: [
+    {
+      kind: 'one',
+      face: { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 },
+      amount: { kind: 'liters', l: FURNACE_NEED / FURNACE_VALUE.fruit },
+    },
+  ],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_OIL: Recipe = {
+  machine: 'furnace',
+  inputs: [{ kind: 'one', face: { kind: 'oil', count: 1, unitSale: 0 }, amount: units(FURNACE_NEED / FURNACE_VALUE.oil) }],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_SPIRIT: Recipe = {
+  machine: 'furnace',
+  inputs: [
+    {
+      kind: 'any',
+      faces: SPIRIT_KINDS.map(spiritFace),
+      amount: units(FURNACE_NEED / FURNACE_VALUE.spirit),
+    },
+  ],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_WOOD: Recipe = {
+  machine: 'furnace',
+  inputs: [{ kind: 'one', face: { kind: 'wood', count: 1 }, amount: units(FURNACE_NEED / FURNACE_VALUE.wood) }],
+  out: FURNACE_OUT,
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
 const MILL_ROWS: readonly Recipe[] = MILL_RECIPES.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_CROPS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_CROPS.map(stillRecipe), MIXED_STILL]
 const BARREL_ROWS: readonly Recipe[] = BARREL_CROPS.map(barrelRecipe)
+const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD]
 
 export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'mill') return MILL_ROWS
@@ -246,7 +339,8 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'still') return STILL_ROWS
   if (m === 'barrel') return BARREL_ROWS
   if (m === 'grinder') return [GRINDER]
-  return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN]
+  if (m === 'furnace') return FURNACE_ROWS
+  return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
 
 function sameIdentity(a: Face, b: Face): boolean {
@@ -268,39 +362,41 @@ export function clockText(seconds: number): string {
   return m.hud_clock_sec({ secs: Math.round(seconds) })
 }
 
-function recipeSeconds(d: Duration, mul: number): number {
-  return d.kind === 'work' ? d.seconds / mul : d.seconds
+function recipeSeconds(d: Duration, mul: number, haste: number): number {
+  if (d.kind === 'work') return d.seconds / (mul * haste)
+  if (d.kind === 'fixed') return d.seconds / haste
+  return d.seconds
 }
 
-function stage(recipe: Recipe, progress: number, mul: number): Craft {
+function stage(recipe: Recipe, progress: number, mul: number, haste: number): Craft {
   if (progress >= 1) return { kind: 'ready', recipe }
-  return { kind: 'working', recipe, progress, left: (1 - progress) * recipeSeconds(recipe.duration, mul) }
+  return { kind: 'working', recipe, progress, left: (1 - progress) * recipeSeconds(recipe.duration, mul, haste) }
 }
 
-function millCraft(c: Mill, mul: number): Craft {
+function millCraft(c: Mill, mul: number, haste: number): Craft {
   if (c.recipe === 'none') return { kind: 'idle', machine: 'mill' }
   const recipe = MILL_ROWS[MILL_RECIPES.indexOf(c.recipe)]
   if (c.inn === 1) return { kind: 'paused', recipe }
-  if (millWorking(c)) return stage(recipe, c.progress, mul)
+  if (millWorking(c)) return stage(recipe, c.progress, mul, haste)
   return { kind: 'filling', recipe, at: 0, have: c.units, need: millNeed(c.recipe) }
 }
 
-function jamCraft(c: JamMachine, mul: number): Craft {
+function jamCraft(c: JamMachine, mul: number, haste: number): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'jam' }
   const recipe = JAM_ROWS[JAM_CROPS.indexOf(c.crop)]
   if (c.inn === 1) return { kind: 'paused', recipe }
-  if (jamWorking(c)) return stage(recipe, c.progress, mul)
+  if (jamWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (c.fruit < JAM_IN) return { kind: 'filling', recipe, at: 0, have: c.fruit, need: JAM_IN }
   return { kind: 'filling', recipe, at: 1, have: c.sugar, need: JAM_SUGAR }
 }
 
-function stillCraft(c: PotStill, mul: number): Craft {
+function stillCraft(c: PotStill, mul: number, haste: number): Craft {
   const n = feedUnits(c.feed)
   if (n === 0) return { kind: 'idle', machine: 'still' }
   const kind = spiritKind(c.feed)
   const recipe = kind === 'mixed' ? MIXED_STILL : STILL_ROWS[STILL_CROPS.indexOf(c.feed[0].crop)]
   if (c.inn === 1) return { kind: 'paused', recipe }
-  if (stillWorking(c)) return stage(recipe, c.progress, mul)
+  if (stillWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (stillReady(c)) return { kind: 'thirsty', recipe }
   return { kind: 'filling', recipe, at: 0, have: n, need: STILL_CAP }
 }
@@ -315,7 +411,7 @@ function barrelCraft(c: Barrel): Craft {
   return { kind: 'working', recipe, progress: c.age / BARREL_MATURE, left: BARREL_MATURE - c.age }
 }
 
-function grinderCraft(c: Grinder, mul: number): Craft {
+function grinderCraft(c: Grinder, mul: number, haste: number): Craft {
   if (c.crop === 'none') return { kind: 'idle', machine: 'grinder' }
   const recipe: Recipe = {
     ...GRINDER,
@@ -328,22 +424,32 @@ function grinderCraft(c: Grinder, mul: number): Craft {
     },
   }
   if (c.units < 1) return { kind: 'filling', recipe, at: 0, have: c.units, need: 1 }
-  return stage(recipe, c.progress, mul)
+  return stage(recipe, c.progress, mul, haste)
 }
 
-function compostCraft(c: CompostBox, mul: number): Craft {
+function compostCraft(c: CompostBox, mul: number, haste: number): Craft {
   if (c.units === 0) return { kind: 'idle', machine: 'compost-box' }
   if (c.units < COMPOST_NEED) return { kind: 'filling', recipe: COMPOST_FRUIT, at: 0, have: c.units, need: COMPOST_NEED }
-  return stage(COMPOST_FRUIT, c.progress, mul)
+  return stage(COMPOST_FRUIT, c.progress, mul, haste)
 }
 
-export function craftState(cell: CraftCell, mul: number): Craft {
-  if (cell.kind === 'mill') return millCraft(cell, mul)
-  if (cell.kind === 'jam') return jamCraft(cell, mul)
-  if (cell.kind === 'still') return stillCraft(cell, mul)
+function furnaceCraft(c: Furnace, mul: number, haste: number): Craft {
+  if (c.units === 0) return { kind: 'idle', machine: 'furnace' }
+  const recipe = FURNACE_ROWS[0]
+  if (c.inn === 1) return { kind: 'paused', recipe }
+  if (c.progress >= 1) return { kind: 'ready', recipe }
+  if (c.units < FURNACE_NEED) return { kind: 'filling', recipe, at: 0, have: c.units, need: FURNACE_NEED }
+  return stage(recipe, c.progress, mul, haste)
+}
+
+export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
+  if (cell.kind === 'mill') return millCraft(cell, mul, haste)
+  if (cell.kind === 'jam') return jamCraft(cell, mul, haste)
+  if (cell.kind === 'still') return stillCraft(cell, mul, haste)
   if (cell.kind === 'barrel') return barrelCraft(cell)
-  if (cell.kind === 'grinder') return grinderCraft(cell, mul)
-  return compostCraft(cell, mul)
+  if (cell.kind === 'grinder') return grinderCraft(cell, mul, haste)
+  if (cell.kind === 'furnace') return furnaceCraft(cell, mul, haste)
+  return compostCraft(cell, mul, haste)
 }
 
 export function craftMachine(craft: Craft): MachineId {

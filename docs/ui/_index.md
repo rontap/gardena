@@ -8,10 +8,10 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/settings]]
 - [[ui/multiplayer]]
 - [[ui/tutorial]]
-- [[ui/place]]
-- [[ui/inspect]]
-- [[ui/machines]]
-- [[ui/recipe]]
+- [[ui/place]] — furnace 1×2 south
+- [[ui/inspect]] — trunk / grow Growth
+- [[ui/machines]] — furnace
+- [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace. Compost ash. Furnace wood
 - [[ui/vehicles]]
 - [[ui/shop]]
 - [[ui/build]]
@@ -19,7 +19,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather`
 - [[ui/market]]
 - [[ui/contracts]]
-- [[ui/almanac]]
+- [[ui/almanac]] — Automation furnace. Utility axe wood ash. TreePane trunk
 - [[ui/family]]
 - [[ui/callout-hover]]
 - [[ui/docks]]

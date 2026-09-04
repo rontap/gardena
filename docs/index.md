@@ -68,3 +68,5 @@ Vault for this game. Agents read this first.
 - [[plans/1.8.0]] — market pressure + contracts spec. Types are `src/game/sim/market.h.ts`
 - [[plans/1.9.0]] — Automated Dispatch I spec. Routes + traffic light.
 - [[plans/2.0.0-b]] — Legible Build, Living World spec. Lattice, routed runs, valve merge, lens lock, port discs, `flow` VFX.
+- [[plans/2.3.0]] — furnace, axe, wood, ash, trunk
+- [[plans/2.4.0]] — rarity split spec. Variety, quality, grafts, research station.

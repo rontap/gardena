@@ -7,10 +7,22 @@ import {
   MILL_WORK,
   BARREL_MATURE,
   CASK_SALE,
+  AXES,
+  COMPOST_NEED,
+  COMPOST_SECONDS,
+  COMPOST_VALUE,
+  FURNACE_ASH,
+  FURNACE_CAP,
+  FURNACE_HASTE,
+  FURNACE_NEED,
+  FURNACE_REACH,
+  FURNACE_SECONDS,
+  FURNACE_VALUE,
   MIXED_MUL,
   SPIRIT_RARITY,
   SPIRIT_SALE,
   STILL_CAP,
+  STILL_SECONDS,
   SUGAR_BAG,
   SUGAR_MILL,
   SUGAR_SHOP,
@@ -20,13 +32,21 @@ import {
   bakeCaskSale,
   bakeSpiritSale,
   barrelNeed,
+  furnaceAccept,
+  furnaceCoveringCells,
+  furnaceMul,
+  furnaceStateVfx,
+  furnaceWorking,
   meanRarity,
   millNeed,
   millProduct,
   millRecipeOf,
   spiritKind,
 } from './machine.ts'
-import { Barrel, Chest, CompostBox, Freezer, JamMachine, Mill, PAD, PotStill } from './building.ts'
+import { furnaceValue } from './item.ts'
+import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, PAD, PotStill } from './building.ts'
+import { lookText } from './look.ts'
+import { Lever } from './sensor.ts'
 import { BIG_TICK } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -38,7 +58,11 @@ function wheat(n: number) {
 
 function ticks(w: World, seconds: number): void {
   const n = Math.ceil(seconds / DT_MAX) + 1
-  for (let i = 0; i < n; i++) w.tick(DT_MAX)
+  for (let i = 0; i < n; i++) {
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    w.tick(DT_MAX)
+  }
+  if (w.seam.kind === 'recap') w.dismissRecap()
 }
 
 describe('machines', () => {
@@ -272,5 +296,311 @@ describe('machines', () => {
     ticks(w, MILL_WORK)
     expect(mill3.units).toBe(0)
     expect(w.drops.some(d => d.item.kind === 'flour' && d.at.col === mill3At.col && d.at.row === mill3At.row + 1)).toBe(true)
+  })
+})
+
+function putFurnace(w: World, at: { col: number; row: number }): Furnace {
+  const f = new Furnace({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+  w.setCell(at, f)
+  w.setCell({ col: at.col, row: at.row + 1 }, f)
+  return f
+}
+
+describe('machines.furnace-feed', () => {
+  test('Accept compost feedstock + oil + spirit + wood + tree-seed. Values as `FURNACE_VALUE`. Mix. Cap `FURNACE_CAP`. Refuse jam/cask/flour/extract/ash/tools.', () => {
+    expect(FURNACE_CAP).toBe(100)
+    expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 25, spirit: 36, wood: 40 })
+    expect(AXES.axe).toEqual({ uses: 40, workSeconds: 5 })
+    const w = new World(1)
+    const at = { col: AT.col, row: AT.row + 12 }
+    const f = putFurnace(w, at)
+    expect(furnaceValue({ kind: 'weed', count: 3 })).toBe(FURNACE_VALUE.green * 3)
+    expect(furnaceValue({ kind: 'tree-seed', tree: 'apple' })).toBe(FURNACE_VALUE.green)
+    expect(furnaceValue({ kind: 'fruit', crop: 'carrot', rarity: 'heirloom', count: 2, unitSale: 1, freshness: 1, bio: true })).toBe(
+      FURNACE_VALUE.fruit * 2,
+    )
+    expect(furnaceValue({ kind: 'sugar', liters: 3, capacityLiters: 3, unitSale: 1 })).toBe(FURNACE_VALUE.fruit * 3)
+    expect(furnaceValue({ kind: 'oil', count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.oil)
+    expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.spirit)
+    expect(furnaceValue({ kind: 'wood', count: 1 })).toBe(FURNACE_VALUE.wood)
+    expect(furnaceValue({ kind: 'jam', crop: 'grape', count: 1, unitSale: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'ash', count: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 2.5
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    w.enqueue({ act: 'furnace', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(f.units).toBe(FURNACE_VALUE.wood)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed', count: 2 } }
+    w.enqueue({ act: 'furnace', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'jam', crop: 'grape', count: 1, unitSale: 1 } }
+    w.enqueue({ act: 'furnace', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
+    f.units = FURNACE_CAP - 1
+    expect(furnaceAccept(f, { kind: 'wood', count: 1 })).toBe(0)
+    expect(furnaceAccept(f, { kind: 'sugar', liters: 4, capacityLiters: 4, unitSale: 1 })).toBe(1 / FURNACE_VALUE.fruit)
+  })
+})
+
+describe('machines.furnace-burn', () => {
+  test('`FURNACE_NEED` units, `FURNACE_SECONDS`, consume `FURNACE_NEED` at finish, drop `FURNACE_ASH` ash, leftover stays, `inn === 1` skips.', () => {
+    expect(FURNACE_NEED).toBe(20)
+    expect(FURNACE_SECONDS).toBe(240)
+    expect(FURNACE_ASH).toBe(5)
+    const w = new World(1)
+    const at = { col: AT.col, row: AT.row + 12 }
+    const f = putFurnace(w, at)
+    f.units = FURNACE_NEED + 4
+    ticks(w, FURNACE_SECONDS)
+    expect(f.units).toBe(4)
+    expect(f.progress).toBe(0)
+    expect(w.drops.some(d => d.item.kind === 'ash' && d.item.count === FURNACE_ASH)).toBe(true)
+    f.units = FURNACE_NEED
+    const leverAt = { col: at.col, row: at.row - 1 }
+    const lever = new Lever({ shape: 'rect', col: leverAt.col, row: leverAt.row, w: 1, h: 1 })
+    lever.on = true
+    lever.out = 1
+    w.setCell(leverAt, lever)
+    w.wires.push({
+      from: { kind: 'cell', at: leverAt, port: 'out' },
+      to: { kind: 'cell', at, port: 'in' },
+    })
+    const p0 = f.progress
+    ticks(w, FURNACE_SECONDS)
+    expect(f.inn).toBe(1)
+    expect(f.progress).toBe(p0)
+    expect(f.units).toBe(FURNACE_NEED)
+  })
+})
+
+describe('machines.furnace-haste', () => {
+  test('Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n` including self. Still and compost take it. Barrel does not. Waiting / empty / gated do not count.', () => {
+    const w = new World(1)
+    const at = { col: 8, row: 14 }
+    const f = putFurnace(w, at)
+    f.units = FURNACE_NEED
+    expect(furnaceWorking(f)).toBe(true)
+    expect(furnaceMul([f], f.base)).toBe(1 + FURNACE_HASTE)
+    expect(FURNACE_REACH).toBe(3)
+    expect(FURNACE_HASTE).toBe(0.25)
+    const millAt = { col: at.col + 3, row: at.row }
+    const mill = new Mill({ shape: 'rect', col: millAt.col, row: millAt.row, w: 1, h: 1 })
+    mill.recipe = 'wheat'
+    mill.units = MILL_IN
+    w.setCell(millAt, mill)
+    w.tick(DT_MAX)
+    expect(mill.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / MILL_WORK)
+    const stillAt = { col: 8, row: 18 }
+    const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
+    still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
+    still.progress = 0.01
+    w.setCell(stillAt, still)
+    w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
+    const pStill = still.progress
+    w.tick(DT_MAX)
+    expect(still.progress - pStill).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / STILL_SECONDS)
+    const boxAt = { col: 10, row: 14 }
+    const box = new CompostBox({ shape: 'rect', col: boxAt.col, row: boxAt.row, w: 1, h: 1 })
+    box.units = COMPOST_NEED
+    w.setCell(boxAt, box)
+    w.tick(DT_MAX)
+    expect(box.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / COMPOST_SECONDS)
+    const barrelAt = { col: 6, row: 14 }
+    const barrel = new Barrel({ shape: 'rect', col: barrelAt.col, row: barrelAt.row, w: 1, h: 1 })
+    barrel.crop = 'grape'
+    barrel.feed = [{ rarity: 'common', count: 5 }]
+    w.setCell(barrelAt, barrel)
+    w.tick(DT_MAX)
+    expect(barrel.age).toBeCloseTo(DT_MAX)
+    f.progress = 1
+    expect(furnaceWorking(f)).toBe(false)
+    f.progress = 0
+    f.inn = 1
+    expect(furnaceWorking(f)).toBe(false)
+    f.inn = 0
+    f.units = 0
+    expect(furnaceWorking(f)).toBe(false)
+  })
+})
+
+describe('machines.furnace-haste-look', () => {
+  test('Hover mill / jam / still / grinder / compost-box / furnace: one look line iff covering working count `n > 0`. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. Barrel never. `n === 0`: no line. Live working set, not `furnaceSnap`.', () => {
+    const w = new World(1)
+    const millAt = { col: AT.col, row: AT.row + 12 }
+    const jamAt = { col: AT.col, row: AT.row + 14 }
+    const grindAt = { col: AT.col - 4, row: AT.row + 14 }
+    const boxAt = { col: AT.col - 4, row: AT.row + 16 }
+    const stillAt = { col: AT.col, row: AT.row + 16 }
+    const barrelAt = { col: AT.col - 4, row: AT.row + 12 }
+    const f1At = { col: AT.col - 2, row: AT.row + 14 }
+    const f2At = { col: AT.col + 2, row: AT.row + 14 }
+    w.setCell(millAt, new Mill({ shape: 'rect', col: millAt.col, row: millAt.row, w: 1, h: 1 }))
+    w.setCell(jamAt, new JamMachine({ shape: 'rect', col: jamAt.col, row: jamAt.row, w: 1, h: 1 }))
+    w.setCell(grindAt, new Grinder({ shape: 'rect', col: grindAt.col, row: grindAt.row, w: 1, h: 1 }))
+    w.setCell(boxAt, new CompostBox({ shape: 'rect', col: boxAt.col, row: boxAt.row, w: 1, h: 1 }))
+    const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
+    w.setCell(stillAt, still)
+    w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
+    w.setCell(barrelAt, new Barrel({ shape: 'rect', col: barrelAt.col, row: barrelAt.row, w: 1, h: 1 }))
+    const one = `Finishes ${FURNACE_HASTE * 100}% faster with 1 working Furnace than without a Furnace.`
+    const two = `Finishes ${FURNACE_HASTE * 2 * 100}% faster with 2 working Furnaces than without a Furnace.`
+    const mill0 = lookText(w, { kind: 'cell', at: millAt }, false)
+    expect(mill0.split('\n')).not.toContain(one)
+    const f1 = putFurnace(w, f1At)
+    f1.units = FURNACE_NEED
+    const mill1 = lookText(w, { kind: 'cell', at: millAt }, false).split('\n')
+    expect(mill1[0]).toBe('Mill')
+    expect(mill1[1]).toBe(one)
+    expect(mill1.filter(l => l === one)).toHaveLength(1)
+    expect(lookText(w, { kind: 'cell', at: jamAt }, false).split('\n')).toContain(one)
+    expect(lookText(w, { kind: 'cell', at: grindAt }, false).split('\n')).toContain(one)
+    expect(lookText(w, { kind: 'cell', at: boxAt }, false).split('\n')).toContain(one)
+    const stillOrigin = lookText(w, { kind: 'cell', at: stillAt }, false).split('\n')
+    const stillEast = lookText(w, { kind: 'cell', at: { col: stillAt.col + 1, row: stillAt.row } }, false).split('\n')
+    expect(stillOrigin.filter(l => l === one)).toHaveLength(1)
+    expect(stillEast.filter(l => l === one)).toHaveLength(1)
+    const furnaceOrigin = lookText(w, { kind: 'cell', at: f1At }, false).split('\n')
+    const furnaceSouth = lookText(w, { kind: 'cell', at: { col: f1At.col, row: f1At.row + 1 } }, false).split('\n')
+    expect(furnaceOrigin[1]).toBe(one)
+    expect(furnaceOrigin.filter(l => l === one)).toHaveLength(1)
+    expect(furnaceSouth.filter(l => l === one)).toHaveLength(1)
+    expect(lookText(w, { kind: 'cell', at: barrelAt }, false).split('\n')).not.toContain(one)
+    const f2 = putFurnace(w, f2At)
+    f2.units = FURNACE_NEED
+    const mill2 = lookText(w, { kind: 'cell', at: millAt }, false).split('\n')
+    expect(mill2[1]).toBe(two)
+    expect(mill2.filter(l => l === two)).toHaveLength(1)
+    w.tick(DT_MAX)
+    f1.inn = 1
+    f2.inn = 1
+    expect(lookText(w, { kind: 'cell', at: millAt }, false).split('\n')).not.toContain(one)
+    expect(lookText(w, { kind: 'cell', at: millAt }, false).split('\n')).not.toContain(two)
+  })
+})
+
+describe('machines.furnace-io', () => {
+  test('West pull, east push, pads, `in` top, `out` bottom high iff `units === 0`. Origin row only. South cell no port.', () => {
+    const w = new World(1)
+    const at = { col: AT.col, row: AT.row + 12 }
+    const f = putFurnace(w, at)
+    const west = { col: at.col - 1, row: at.row }
+    const east = { col: at.col + 1, row: at.row }
+    const southWest = { col: at.col - 1, row: at.row + 1 }
+    w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
+    w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
+    w.setCell(southWest, new Chest({ shape: 'rect', col: southWest.col, row: southWest.row, w: 1, h: 1 }))
+    const links = w.machineLinks()
+    expect(links.some(l => l.side === 'in' && l.x === at.col - 0.5 && l.y === at.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === at.col + 0.5 && l.y === at.row)).toBe(true)
+    expect(links.some(l => l.y === at.row + 1)).toBe(false)
+    const westChest = w.cell(west)
+    if (westChest.kind !== 'chest') throw new Error('chest')
+    westChest.slots[0] = { kind: 'hold', item: { kind: 'weed', count: 1 } }
+    const southChest = w.cell(southWest)
+    if (southChest.kind !== 'chest') throw new Error('chest')
+    southChest.slots[0] = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    ticks(w, BIG_TICK)
+    expect(f.units).toBe(FURNACE_VALUE.green)
+    expect(southChest.slots[0].kind).toBe('hold')
+    f.units = FURNACE_NEED
+    ticks(w, FURNACE_SECONDS)
+    const eastChest = w.cell(east)
+    if (eastChest.kind !== 'chest') throw new Error('chest')
+    expect(eastChest.slots.some(s => s.kind === 'hold' && s.item.kind === 'ash')).toBe(true)
+    expect(f.units).toBe(0)
+    w.tick(DT_MAX)
+    expect(f.out).toBe(1)
+    f.units = 1
+    w.tick(DT_MAX)
+    expect(f.out).toBe(0)
+    const pads = w.machinePads()
+    expect(pads.some(p => p.side === 'dropoff' && p.row === at.row - 1 && p.col === at.col)).toBe(true)
+    expect(pads.some(p => p.side === 'takeup' && p.row === at.row + 2 && p.col === at.col)).toBe(true)
+  })
+})
+
+describe('machines.furnace-smoke', () => {
+  test('Working furnace mounts two state VFX: `furnace` at the south cell (opening) and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.', () => {
+    const origin = { col: 10, row: 12 }
+    const f = new Furnace({ shape: 'rect', col: origin.col, row: origin.row, w: 1, h: 2 })
+    expect(furnaceWorking(f)).toBe(false)
+    expect(furnaceStateVfx(origin)).toEqual([
+      { id: 'furnace', col: origin.col, row: origin.row + 1 },
+      { id: 'furnace-smoke', col: origin.col, row: origin.row },
+    ])
+    f.units = FURNACE_NEED
+    expect(furnaceWorking(f)).toBe(true)
+    f.inn = 1
+    expect(furnaceWorking(f)).toBe(false)
+    f.inn = 0
+    f.progress = 1
+    expect(furnaceWorking(f)).toBe(false)
+  })
+})
+
+describe('machines.furnace-cover', () => {
+  test('Covering area is Chebyshev ≤ `FURNACE_REACH` over the 1×2 (derived 7×8). Armed `buy-furnace` and unarmed hover of a placed furnace (either cell) paint that area stroke-only. Footprint `data-cell-stroke` stays. Not a lens. Not a dock. Not sprinkler fill.', () => {
+    const base = { shape: 'rect' as const, col: 10, row: 12, w: 1, h: 2 }
+    const cells = furnaceCoveringCells(base)
+    const cols = cells.map(c => c.col)
+    const rows = cells.map(c => c.row)
+    expect(new Set(cells.map(c => `${c.col},${c.row}`)).size).toBe(7 * 8)
+    expect(Math.max(...cols) - Math.min(...cols) + 1).toBe(7)
+    expect(Math.max(...rows) - Math.min(...rows) + 1).toBe(8)
+    expect(Math.min(...cols)).toBe(10 - FURNACE_REACH)
+    expect(Math.max(...cols)).toBe(10 + FURNACE_REACH)
+    expect(Math.min(...rows)).toBe(12 - FURNACE_REACH)
+    expect(Math.max(...rows)).toBe(13 + FURNACE_REACH)
+    const origin = { col: 10, row: 12 }
+    const south = { col: 10, row: 13 }
+    const cheb = (a: { col: number; row: number }, b: { col: number; row: number }) =>
+      Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row))
+    expect(cells.every(c => cheb(c, origin) <= FURNACE_REACH || cheb(c, south) <= FURNACE_REACH)).toBe(true)
+    expect(cells.some(c => c.col === origin.col && c.row === origin.row)).toBe(true)
+    expect(cells.some(c => c.col === south.col && c.row === south.row)).toBe(true)
+  })
+})
+
+describe('view.furnace-cover', () => {
+  test('Armed `buy-furnace` (ghost follows hover) and unarmed hover of a placed furnace (either cell): one `data-furnace-cover` path, the union of covering cells (Chebyshev ≤ `FURNACE_REACH` over the 1×2, derived 7×8). `fill-none` `stroke-ink` `strokeWidth` 2. Clip to owned (`inWorld`); drop fade and off-farm cells. Internal edges dropped. Footprint `data-cell-stroke` stays. Not sprinkler fill. Not a lens. Not a dock. Not Pixi overlay wash.', () => {
+    const w = new World(1)
+    const origin = { shape: 'rect' as const, col: 0, row: 0, w: 1, h: 2 }
+    const clipped = furnaceCoveringCells(origin).filter(c => w.inWorld(c))
+    expect(clipped.length).toBeGreaterThan(0)
+    expect(clipped.length).toBeLessThan(7 * 8)
+    expect(clipped.every(c => w.inWorld(c))).toBe(true)
+    expect(clipped.some(c => c.col < 0 || c.row < 0)).toBe(false)
+    const far = furnaceCoveringCells({ shape: 'rect', col: 100, row: 100, w: 1, h: 2 }).filter(c => w.inWorld(c))
+    expect(far).toEqual([])
+    const f = putFurnace(w, { col: 8, row: 14 })
+    const south = w.cell({ col: f.base.col, row: f.base.row + 1 })
+    if (south.kind !== 'furnace') throw new Error('furnace')
+    expect(furnaceCoveringCells(south.base)).toEqual(furnaceCoveringCells(f.base))
+  })
+})
+
+describe('inventory.ash', () => {
+  test('1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.', () => {
+    expect(COMPOST_VALUE.ash).toBe(4)
+    const w = new World(1)
+    const at = { col: AT.col, row: AT.row + 12 }
+    const box = new CompostBox({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, box)
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 1.5
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'ash', count: 2 } }
+    w.enqueue({ act: 'compost', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(box.units).toBe(COMPOST_VALUE.ash * 2)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    w.enqueue({ act: 'compost', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(box.units).toBe(COMPOST_VALUE.ash * 2)
+    expect(Object.keys(w.stall).includes('ash')).toBe(false)
+    expect(Object.keys(w.stall).includes('wood')).toBe(false)
   })
 })

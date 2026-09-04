@@ -112,6 +112,7 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
     cell.kind === 'mill' ||
     cell.kind === 'jam' ||
     cell.kind === 'still' ||
+    cell.kind === 'furnace' ||
     cell.kind === 'barrel' ||
     cell.kind === 'freezer' ||
     cell.kind === 'hangar' ||
@@ -167,7 +168,14 @@ function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
   if (end.port === 'out') {
     if (cell === undefined) return false
     if (cell.kind === 'lamp' || cell.kind === 'mill' || cell.kind === 'jam' || cell.kind === 'still') return false
-    if (isSensor(cell) || cell.kind === 'chest' || cell.kind === 'freezer' || cell.kind === 'seed-silo' || cell.kind === 'additive-store') {
+    if (
+      isSensor(cell) ||
+      cell.kind === 'chest' ||
+      cell.kind === 'freezer' ||
+      cell.kind === 'seed-silo' ||
+      cell.kind === 'additive-store' ||
+      cell.kind === 'furnace'
+    ) {
       return cell.out === 1
     }
     return false

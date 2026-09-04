@@ -53,7 +53,7 @@ function Badge({ item }: { item: Item }) {
 }
 
 function badge(item: Item): string | undefined {
-  if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
   if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Number(item.liters.toFixed(1))}L`
@@ -70,7 +70,9 @@ function badge(item: Item): string | undefined {
     item.kind === 'rotten' ||
     item.kind === 'dead' ||
     item.kind === 'weed' ||
-    item.kind === 'grass'
+    item.kind === 'grass' ||
+    item.kind === 'wood' ||
+    item.kind === 'ash'
   ) {
     return String(item.count)
   }
@@ -96,7 +98,7 @@ export function ItemLineView({ item }: { item: Item }) {
 }
 
 function heldNumber(item: Item): string {
-  if (item.kind === 'shovel' || item.kind === 'pickaxe') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
   if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Number(item.liters.toFixed(1))}L`

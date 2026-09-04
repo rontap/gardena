@@ -2,7 +2,7 @@
 
 Sources own a tank. They gather every second up to capacity. Consumers spend stored water. A net can burst above production while tanks hold, then falls back to production.
 
-`SOURCE` — preference. Starter pump is `SOURCE.pump`. Pumpjack is the same table, 2×1. Well is the same table, 1×1. Rainwater tank gathers with no pipe run to another source.
+`SOURCE` — preference. Starter pump is `SOURCE.pump`, `PUMP_BASE` 2×1, same instance both cells. Pumpjack is the same table, 2×1. Well is the same table, 1×1. Rainwater tank gathers with no pipe run to another source.
 
 `Reservoir.rate` is `SOURCE[kind].rate` × weather mul for `weather(clock.day)`. Gather uses `rate`. Pump-kind `take()` adds litres to `World.pumpLiters`. Soak/evap is not pour — [[mechanics/weather]].
 

@@ -101,6 +101,7 @@ describe('1.1 multiplayer', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-mill' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-jam' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-still' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-furnace' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-barrel' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-freezer' })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar' })).toBe(true)

@@ -51,6 +51,10 @@ import {
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
+  FURNACE_ASH,
+  FURNACE_NEED,
+  FURNACE_SECONDS,
+  AXES,
 } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
@@ -110,6 +114,7 @@ import {
   House,
   JamMachine,
   Mill,
+  Furnace,
   PAD,
   PUMP_BASE,
   PotStill,
@@ -170,6 +175,10 @@ import {
   feedApply,
   feedUnits,
   feedWhole,
+  furnaceAccept,
+  furnaceApply,
+  furnaceMul,
+  furnaceWorking,
   fruitCount,
   fruitRarity,
   grindAccept,
@@ -282,6 +291,7 @@ import {
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
+  tallSiteOk,
   wideSiteOk,
   readPrompt,
   readPromptHit,
@@ -384,6 +394,7 @@ export type Intent =
   | { act: 'additives'; at: Coord }
   | { act: 'grind'; at: Coord }
   | { act: 'still'; at: Coord }
+  | { act: 'furnace'; at: Coord }
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }
@@ -394,6 +405,7 @@ export type Intent =
   | { act: 'toggle'; at: Coord }
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
+  | { act: 'chop'; at: Coord }
 
 export type TaskName = string
 
@@ -679,7 +691,7 @@ function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
 }
 
 export function dest(i: Intent, w: World): Coord {
-  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still') {
+  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still' || i.act === 'furnace') {
     const c = w.cell(i.at)
     if ('base' in c) return destOrigin(c, w.owned)
     return { ...i.at }
@@ -777,6 +789,7 @@ export class World {
   private readonly chunks = new Map<string, Cell[][]>()
   readonly grow = new Map<string, Coord>()
   readonly machines = new Map<string, Coord>()
+  private furnaceSnap: Furnace[] = []
   readonly stores = new Map<string, Coord>()
   readonly sensors = new Map<string, Coord>()
   readonly buttons = new Map<string, Coord>()
@@ -1291,7 +1304,8 @@ export class World {
         cell.kind === 'still' ||
         cell.kind === 'barrel' ||
         cell.kind === 'grinder' ||
-        cell.kind === 'compost-box')
+        cell.kind === 'compost-box' ||
+        cell.kind === 'furnace')
     ) {
       this.machines.set(k, here)
     } else this.machines.delete(k)
@@ -1453,6 +1467,21 @@ export class World {
 
   machineMul(): number {
     return 1 + 0.05 * this.skillTier('machinery')
+  }
+
+  furnaceMulFor(base: RectBase): number {
+    return furnaceMul(this.workingFurnaces(), base)
+  }
+
+  private workingFurnaces(): Furnace[] {
+    const out: Furnace[] = []
+    for (const at of this.machines.values()) {
+      const c = this.cell(at)
+      if (c.kind !== 'furnace') continue
+      if (c.base.col !== at.col || c.base.row !== at.row) continue
+      if (furnaceWorking(c)) out.push(c)
+    }
+    return out
   }
 
   skuPrice(id: SkuId): number {
@@ -2136,6 +2165,16 @@ export class World {
       this.ping()
       return
     }
+    if (c.kind === 'furnace') {
+      this.stripPadStops(c)
+      occupiedCells(c.base, this.owned).forEach(p => {
+        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
+        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
+      })
+
+      this.ping()
+      return
+    }
     if (c.kind === 'barrel') {
       this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
 
@@ -2494,6 +2533,8 @@ export class World {
         return m.names_building_mill()
       case 'still':
         return m.names_building_still()
+      case 'furnace':
+        return m.names_building_furnace()
       case 'barrel':
         return m.names_building_barrel()
       case 'jam':
@@ -2517,6 +2558,8 @@ export class World {
         return m.prompt_tend()
       case 'weed-spray':
         return m.prompt_spray()
+      case 'chop':
+        return m.prompt_chop()
     }
   }
 
@@ -2633,6 +2676,16 @@ export class World {
       this.money -= price
       this.fences.add(`${at.col},${at.row}`)
         this.ping()
+      return
+    }
+    if (this.act.place.id === 'buy-furnace') {
+      if (!tallSiteOk(this, at)) return
+      this.money -= price
+      const furnace = new Furnace({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+      this.setCell(at, furnace)
+      this.setCell({ col: at.col, row: at.row + 1 }, furnace)
+      this.act.place = { kind: 'none' }
+      this.ping()
       return
     }
     if (this.act.place.id === 'buy-pumpjack' || this.act.place.id === 'buy-rain-tank' || this.act.place.id === 'buy-still') {
@@ -2781,6 +2834,7 @@ export class World {
       made.kind === 'mill' ||
       made.kind === 'jam-machine' ||
       made.kind === 'still' ||
+      made.kind === 'furnace' ||
       made.kind === 'barrel' ||
       made.kind === 'freezer' ||
       made.kind === 'hangar' ||
@@ -4326,6 +4380,13 @@ export class World {
         }
         this.arm(0.4)
         return
+      case 'furnace':
+        if (!this.canFurnace(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(0.4)
+        return
       case 'barrel':
         if (!this.canBarrel(i.at)) {
           this.shiftHead()
@@ -4396,6 +4457,13 @@ export class World {
         this.doWeedSpray(i.at)
         this.shiftHead()
         return
+      case 'chop':
+        if (!this.canChop(i.at)) {
+          this.shiftHead()
+          return
+        }
+        this.arm(AXES.axe.workSeconds)
+        return
     }
   }
 
@@ -4447,6 +4515,7 @@ export class World {
     if (i.act === 'grind') this.doGrind(i.at)
     if (i.act === 'mill') this.doMill(i.at)
     if (i.act === 'still') this.doStill(i.at)
+    if (i.act === 'furnace') this.doFurnace(i.at)
     if (i.act === 'barrel') this.doBarrel(i.at)
     if (i.act === 'jam') this.doJam(i.at)
     if (i.act === 'valve') this.doValve(i.edge)
@@ -4456,6 +4525,7 @@ export class World {
       this.burst('tend', i.at)
     }
     if (i.act === 'weed-spray') this.doWeedSpray(i.at)
+    if (i.act === 'chop') this.doChop(i.at)
     this.shiftHead()
   }
 
@@ -4516,15 +4586,16 @@ export class World {
 
   private evalSensors(dt: number): void {
     const sensors = new Map<string, Sensor>()
-    const machines = new Map<string, Mill | JamMachine | PotStill>()
-    const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore>()
+    const machines = new Map<string, Mill | JamMachine | PotStill | Furnace>()
+    const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
     for (const at of this.sensors.values()) {
       const c = this.cell(at)
       if (isSensor(c)) sensors.set(cellKey(at), c)
     }
     for (const at of this.machines.values()) {
       const c = this.cell(at)
-      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') machines.set(cellKey(at), c)
+      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace') machines.set(cellKey(at), c)
+      if (c.kind === 'furnace') stores.set(cellKey(at), c)
     }
     for (const at of this.stores.values()) {
       const c = this.cell(at)
@@ -4719,7 +4790,7 @@ export class World {
       if (c.kind !== 'compost-box') continue
       if (c.base.col !== at.col || c.base.row !== at.row) continue
       if (c.units < COMPOST_NEED) continue
-      c.progress += dt / COMPOST_SECONDS
+      c.progress += (dt * furnaceMul(this.furnaceSnap, c.base)) / COMPOST_SECONDS
       if (c.progress < 1) continue
       if (!this.emitProduct(at, c.base, makeCompost())) continue
       c.progress = 0
@@ -4771,6 +4842,8 @@ export class World {
   }
 
   private tickMachines(dt: number): void {
+    this.furnaceSnap = this.workingFurnaces()
+    const snap = this.furnaceSnap
     let dirty = false
     for (const at of this.machines.values()) {
       const c = this.cell(at)
@@ -4779,7 +4852,7 @@ export class World {
         const mill: Mill = c
         if (!millWorking(c)) continue
         const need = millNeed(c.recipe)
-        c.progress += (dt * this.machineMul()) / MILL_WORK
+        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / MILL_WORK
         if (c.progress < 1) continue
         if (!this.emitProduct(at, c.base, millProduct(c.recipe))) continue
         c.progress = 0
@@ -4793,7 +4866,7 @@ export class World {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
         const jam: JamMachine = c
         if (!jamWorking(c)) continue
-        c.progress += (dt * this.machineMul()) / JAM_SECONDS
+        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / JAM_SECONDS
         if (c.progress < 1) continue
         if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) })) continue
         c.progress = 0
@@ -4811,7 +4884,7 @@ export class World {
           if (!this.pullStillWater(c)) continue
           dirty = true
         }
-        c.progress += dt / STILL_SECONDS
+        c.progress += (dt * furnaceMul(snap, c.base)) / STILL_SECONDS
         if (c.progress < 1) continue
         const kind = spiritKind(c.feed)
         const u = this.rng.stream('still').at(at.col, at.row, this.clock.day, c.n)
@@ -4837,7 +4910,7 @@ export class World {
       if (c.kind === 'grinder') {
         if (c.base.col !== at.col || c.base.row !== at.row) continue
         if (c.crop === 'none' || c.units < 1) continue
-        c.progress += (dt * this.machineMul()) / GRIND_WORK
+        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / GRIND_WORK
         if (c.progress < 1) continue
         const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, c.n)
         const count = GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
@@ -4863,6 +4936,19 @@ export class World {
         }
         if (was < BARREL_AGE && c.age >= BARREL_AGE) dirty = true
         this.track(at, c)
+        continue
+      }
+      if (c.kind === 'furnace') {
+        if (c.base.col !== at.col || c.base.row !== at.row) continue
+        if (c.inn === 1) continue
+        if (c.units < FURNACE_NEED) continue
+        if (c.progress < 1) c.progress += (dt * furnaceMul(snap, c.base)) / FURNACE_SECONDS
+        if (c.progress < 1) continue
+        if (!this.emitProduct(at, c.base, { kind: 'ash', count: FURNACE_ASH })) continue
+        c.progress = 0
+        c.units -= FURNACE_NEED
+        this.track(at, c)
+        dirty = true
       }
     }
     if (dirty) this.pingFor('field')
@@ -5068,6 +5154,11 @@ export class World {
       t.juvenile += dt / TREES[t.species].juvenileSeconds
       if (t.juvenile < 1) return false
       t.juvenile = 1
+      if (t.trunk) {
+        t.trunk = false
+        t.juvenile = 0
+        return true
+      }
       t.yield = { kind: 'pending' }
       t.fruit = 0
       return true
@@ -5291,7 +5382,7 @@ export class World {
     if (this.act.hand.kind !== 'empty') return false
     const c = this.cell(at)
     if (c.kind === 'growing') return !c.plant.tended
-    if (c.kind === 'tree') return c.juvenile >= 1 && c.yield.kind === 'off' && !c.tended
+    if (c.kind === 'tree') return c.juvenile >= 1 && c.yield.kind === 'off' && !c.tended && !c.trunk
     return false
   }
 
@@ -5308,6 +5399,28 @@ export class World {
       c.yield.chance += 0.15
       c.tended = true
     }
+  }
+
+  private canChop(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'axe') return false
+    const c = this.cell(at)
+    return c.kind === 'tree' && c.juvenile >= 1 && !c.trunk
+  }
+
+  private doChop(at: Coord): void {
+    if (!this.canChop(at)) return
+    const c = this.cell(at)
+    if (c.kind !== 'tree') return
+    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'axe' }> }
+    s.item.usesLeft -= 1
+    if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
+    const spot = this.dropSpot(at)
+    if (spot !== undefined) this.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
+    c.trunk = true
+    c.juvenile = 0
+    c.fruit = 0
+    c.yield = { kind: 'pending' }
+    c.tended = false
   }
 
   private canHarvest(at: Coord): boolean {
@@ -5674,7 +5787,7 @@ export class World {
     const out: PadCell[] = []
     for (const at of this.machines.values()) {
       const c = this.cell(at)
-      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box') out.push(c)
+      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'compost-box' || c.kind === 'furnace') out.push(c)
     }
     for (const at of this.stores.values()) {
       const c = this.cell(at)
@@ -5862,6 +5975,24 @@ export class World {
 
   }
 
+  private canFurnace(at: Coord): boolean {
+    if (this.act.hand.kind !== 'hold') return false
+    const c = this.cell(at)
+    if (c.kind !== 'furnace') return false
+    return furnaceAccept(c, this.act.hand.item) > 0
+  }
+
+  private doFurnace(at: Coord): void {
+    if (!this.canFurnace(at)) return
+    if (this.act.hand.kind !== 'hold') return
+    const furnace = this.cell(at) as Furnace
+    const n = furnaceAccept(furnace, this.act.hand.item)
+    if (n <= 0) return
+    furnaceApply(furnace, this.act.hand.item, n)
+    this.takeHandCount(n)
+    this.track(at, furnace)
+  }
+
   private canBarrelCollect(at: Coord): boolean {
     const c = this.cell(at)
     if (c.kind !== 'barrel') return false
@@ -5968,12 +6099,7 @@ export class World {
 
   private takeHandCount(n: number): void {
     if (this.act.hand.kind !== 'hold') return
-    const it = this.act.hand.item
-    if (it.kind === 'fruit' || it.kind === 'grass') {
-      it.count -= n
-      if (it.count <= 0) this.act.hand = { kind: 'empty' }
-      return
-    }
+    if (takeCount(this.act.hand.item, n)) this.act.hand = { kind: 'empty' }
   }
 
   private canFitSugar(): boolean {

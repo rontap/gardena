@@ -31,6 +31,7 @@ import {
   type CompostBox,
   type Coord,
   type Freezer,
+  type Furnace,
   type JamMachine,
   type Mill,
   type PotStill,
@@ -46,6 +47,8 @@ import {
   mergeSugar,
   millAccept,
   millApply,
+  furnaceAccept,
+  furnaceApply,
   stillAccept,
   stillApply,
 } from './machine.ts'
@@ -323,7 +326,7 @@ export function integrateVehicle(
   }
 }
 
-export type PadCell = Mill | JamMachine | PotStill | CompostBox | Chest | Freezer | SeedSilo | AdditiveStore
+export type PadCell = Mill | JamMachine | PotStill | CompostBox | Furnace | Chest | Freezer | SeedSilo | AdditiveStore
 
 export type Cargo =
   | { kind: 'quad'; slots: Slot[] }
@@ -359,6 +362,7 @@ export function dumpAccept(dest: PadCell, item: Item): number {
   }
   if (dest.kind === 'still') return stillAccept(dest, item)
   if (dest.kind === 'compost-box') return organic(item) ? 1 : 0
+  if (dest.kind === 'furnace') return furnaceAccept(dest, item)
   if (dest.kind === 'chest' || dest.kind === 'freezer') return slotsCouldTake(dest.slots, item, dest.slots.length, undefined) ? 1 : 0
   if (dest.kind === 'seed-silo') {
     if (item.kind !== 'seeds') return 0
@@ -397,6 +401,11 @@ function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => vo
   if (dest.kind === 'compost-box') {
     dest.units += compostValue(item)
     take(-1)
+    return
+  }
+  if (dest.kind === 'furnace') {
+    furnaceApply(dest, item, n)
+    take(n)
     return
   }
   if (dest.kind === 'chest' || dest.kind === 'freezer') {
@@ -569,6 +578,9 @@ function copyItem(item: Item): Item {
     case 'weed':
     case 'grass':
     case 'weed-spray':
+    case 'axe':
+    case 'wood':
+    case 'ash':
       return { ...item }
   }
 }
@@ -667,18 +679,11 @@ function putAdditiveInto(store: AdditiveStore, id: AdditiveId, liters: number): 
 }
 
 function takeItemCount(item: Item, n: number): boolean {
-  if (
-    item.kind === 'fruit' ||
-    item.kind === 'grass' ||
-    item.kind === 'seeds' ||
-    item.kind === 'weed' ||
-    item.kind === 'dead' ||
-    item.kind === 'rotten'
-  ) {
+  if ('count' in item) {
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+  if ('liters' in item) {
     item.liters -= n
     return item.liters <= 0
   }

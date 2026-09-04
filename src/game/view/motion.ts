@@ -196,7 +196,8 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
       qbar.style.width = w
     }
   }
-  const craft = craftCell === undefined ? undefined : craftState(craftCell, world.machineMul())
+  const craft =
+    craftCell === undefined ? undefined : craftState(craftCell, world.machineMul(), world.furnaceMulFor(craftCell.base))
   if (craft !== undefined && craft.kind !== 'idle') {
     const fill = craft.kind === 'working' ? craft.progress : craft.kind === 'ready' ? 1 : 0
     const w = `${(fill <= 0 ? 0 : fill >= 1 ? 1 : fill) * 100}%`

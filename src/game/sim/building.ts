@@ -156,7 +156,7 @@ function clamp(n: number, a: number, c: number): number {
 }
 
 export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 6, w: 4, h: 3 }
-export const PUMP_BASE: CircleBase = { shape: 'circle', cx: 18.5, cy: 7.5, r: 0.5 }
+export const PUMP_BASE: RectBase = { shape: 'rect', col: 18, row: 7, w: 2, h: 1 }
 export const DOOR: Coord = { col: 15, row: 9 }
 export const TRUCK_BASE: RectBase = { shape: 'rect', col: 12, row: 8, w: 2, h: 1 }
 export const YARD: Coord[] = [
@@ -230,6 +230,8 @@ export type TreeYield =
   | { kind: 'on'; daysLeft: 1 | 2 }
   | { kind: 'off'; chance: number }
 
+export type TreeStage = 'trunk' | 'grow' | 'unripe' | 'ripe'
+
 export class Tree {
   readonly kind = 'tree' as const
   readonly species: TreeId
@@ -238,12 +240,19 @@ export class Tree {
   fruit: number
   yield: TreeYield
   tended = false
+  trunk = false
   constructor(species: TreeId, base: RectBase, juvenile = 0, fruit = 0, y: TreeYield = { kind: 'pending' }) {
     this.species = species
     this.base = base
     this.juvenile = juvenile
     this.fruit = fruit
     this.yield = y
+  }
+  stage(): TreeStage {
+    if (this.trunk) return 'trunk'
+    if (this.juvenile < 1) return 'grow'
+    if (this.yield.kind === 'on' || this.fruit >= 1) return 'ripe'
+    return 'unripe'
   }
 }
 
@@ -324,6 +333,19 @@ export class PotStill {
   inn: Signal = 0
   constructor(base: RectBase) {
     this.base = { shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 }
+  }
+}
+
+export class Furnace {
+  readonly kind = 'furnace' as const
+  readonly base: RectBase
+  units = 0
+  progress = 0
+  inn: Signal = 0
+  out: Signal = 0
+  hold = 0
+  constructor(base: RectBase) {
+    this.base = { shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 }
   }
 }
 

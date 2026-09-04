@@ -11,22 +11,23 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE`, `DROP_FACE`, `DROP_INSET`, `DROP_STEP`, `clampCam`, `tileVariant` |
-| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on `dirt-edge` / `dirt-inset` |
+| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on `dirt-edge` / `dirt-inset`. `vfx-furnace-smoke.svg` |
 | `app.ts` | `Application` create / resize / destroy `releaseGlobalResources` |
 | `world-view.ts` | scene graph, dirty patch, Pixi ticker motion, `QUAD_FOLLOW`, `CullerPlugin`, pending pipe run |
 | `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts |
+| `outline.ts` | union footprint path. Directed edges, reverse cancel, then walk |
 | `layers/ground.ts` | terrain + fade chunks |
 | `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences. `pipe-source` |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads |
-| `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts` |
-| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout` |
+| `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Furnace fire south + `furnace-smoke` origin while working |
+| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop) |
 | `motion.ts` | HUD-only binds (`paintMotion` clock / day / research / fps / dash / queue) |
 
-`TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox (still 48×24 occupies both cells).
+`TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2.
 
 `DROP_FACE` 33 — preference (pre-Pixi DropGfx). `DROP_INSET` 4 `DROP_STEP` 6 — preference. Live next to `TILE` in `camera.ts`. Drop sprite scale `DROP_FACE / TILE` on a 24-unit atlas sprite.
 
@@ -45,7 +46,7 @@ Bottom → top, one container each:
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `VFX_REDUCED`: state frame 0, bursts do not mount.
 
-HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
+HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
 
 ## Atlas
 
@@ -133,7 +134,9 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.lens` — Effective lens = `toolLens` when a sku forces one, else `lens`. `toolLens` lives exactly as long as the arming and never overwrites the picked lens. An unlocked lens dies when the Lens dock closes; a locked one survives. `leaveShop` does not touch the lens.
 
-`view.outline` — Hover paints one outline per footprint: the boundary of the union of its cells, internal edges dropped, one `data-cell-stroke` element.
+`view.outline` — Hover paints one outline per footprint: the boundary of the union of its cells, internal edges dropped, one `data-cell-stroke` element. Directed cell-edge set; opposite edges cancel; walk the remainder. Same path for `data-furnace-cover`. Stroke sits inside a 1-unit pad so the 2-wide stroke is not clipped.
+
+`view.furnace-cover` — Armed `buy-furnace` (ghost follows hover) and unarmed hover of a placed furnace (either cell): one `data-furnace-cover` path, the union of covering cells (Chebyshev ≤ `FURNACE_REACH` over the 1×2, derived 7×8). `fill-none` `stroke-ink` `strokeWidth` 2. Clip to owned (`inWorld`); drop fade and off-farm cells. Internal edges dropped. Footprint `data-cell-stroke` stays. Not sprinkler fill. Not a lens. Not a dock. Not Pixi overlay wash.
 
 `view.flow` — The flow `Graphics` repaints on the Pixi ticker, never from a `DirtyReason`. It carries no frames and no sim state. Pipe dash direction is a view-local BFS from source vertices over conducting edges. Each half paints only while its own overlay is up: dashes with `pipesOverlay`, beads with the `sensors` lens. Faint pipe does not flow — nothing reads on a network you are not looking at.
 
@@ -143,6 +146,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.drop` — Drop face scale `DROP_FACE / TILE` on a 24-unit atlas sprite. Pack `DROP_INSET` `DROP_STEP` 2×2. `dropHit` is that sprite rect; topmost wins; overflow into a neighbour still picks that drop. Constants next to `TILE` in `camera.ts`.
 
-`view.vfx.drain` — `VfxLayer.tick` drains `World.bursts` every frame. Do not wait for `DirtyReason` `'vfx'`. Vertex: sprite `anchor` 0.5 at the vertex (px). Cell: origin at the cell corner. `__view.vfxN` is visible VFX sprite count this frame. Locator `data-vfx` is not proof of paint.
+`view.vfx.drain` — `VfxLayer.tick` drains `World.bursts` every frame. Do not wait for `DirtyReason` `'vfx'`. Vertex: sprite `anchor` 0.5 at the vertex (px). Cell: origin at the cell corner. `__view.vfxN` is visible VFX sprite count this frame. Locator `data-vfx` is not proof of paint. Working furnace mounts `furnace` at the south cell and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.
 
 Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
+Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.

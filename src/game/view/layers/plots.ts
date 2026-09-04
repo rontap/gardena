@@ -31,7 +31,13 @@ export class PlotsLayer {
     for (const at of world.grow.values()) {
       const cell = world.cell(at)
       if (cell.kind === 'tree') {
-        const stage = cell.juvenile < 1 ? 'grow' : cell.yield.kind === 'on' || cell.fruit >= 1 ? 'ripe' : 'unripe'
+        const stage = cell.trunk
+          ? 'trunk'
+          : cell.juvenile < 1
+            ? 'grow'
+            : cell.yield.kind === 'on' || cell.fruit >= 1
+              ? 'ripe'
+              : 'unripe'
         const s = this.pool.take(atlasTex(`tree-${cell.species}:${stage}`))
         s.position.set(at.col * TILE, at.row * TILE)
         continue

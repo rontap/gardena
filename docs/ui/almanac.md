@@ -12,9 +12,9 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 |---|---|---|
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
-| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar rotary-shovel diamond-pickaxe |
+| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
-| `automation` | Automation | **Overview**, then chest grinder compost-box mill still barrel jam freezer hangar silo-seed silo-produce silo-spray |
+| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
 | `concepts` | Game concepts | Rarity, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation |
@@ -49,17 +49,17 @@ Reuse existing faces. No new SVG. Plate is `h-20 w-20`, no caption.
 | Tree 24×48 prop | `bg-grass` |
 | Sensors / Automation / Water systems SKU — buildings, pipe | `bg-grass` |
 | Utility / Building / Seeds non-crop SKU | `bg-dirt-dark` |
-| Machine goods — sugar, spirit, cask, jam, oil, flour, extract | `bg-water` |
+| Machine goods — sugar, spirit, cask, jam, oil, flour, extract, ash | `bg-water` |
 
-Utility sugar is a machine good: `bg-water`. Compost and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`.
+Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Wood** **Ash** **Furnace**.
 
-`Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
+`Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives' | 'unlock-furnace')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
 
 ## Ingredients
 
 Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only. Same `flex gap-3` `flex-wrap`.
 
-`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that crop's fruit face. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`. Empty → no section.
+`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that crop's fruit face. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Fruit furnace rows are `any` — skipped.
 
 Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Apricot brandy, wheat flour, vanilla extract, mill sugar show when the recipe matches. Wheat: flour then beer. Apple: cider, not jam. Olive: oil. Grape: jam and wine. No apple jam. Vanilla: no CropPane mill line.
 
@@ -137,7 +137,7 @@ Rarity is the grade of fruit and seed: Common / Uncommon / Rare / Heirloom. Four
 
 ## TreePane
 
-Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane.
+Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane.
 
 Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.** Does not say yielding / resting. Look / inspect words are on-season / off-season — [[ui/inspect]].
 
@@ -153,6 +153,6 @@ Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `useCycle(PIP
 
 Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `setInterval`.
 
-The six machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]].
+The seven machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]].
 
 Assumption: Haggling knocks $1 per rank off utility and automation shop goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.

@@ -94,6 +94,7 @@ import propStill from '../../assets/props/prop-still.svg?raw'
 import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
+import propFurnace from '../../assets/props/prop-furnace.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
 import propTractor from '../../assets/props/prop-tractor.svg?raw'
@@ -175,6 +176,9 @@ import itemKetchup from '../../assets/items/item-ketchup.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
+import itemAxe from '../../assets/items/item-axe.svg?raw'
+import itemWood from '../../assets/items/item-wood.svg?raw'
+import itemAsh from '../../assets/items/item-ash.svg?raw'
 import spray from '../../assets/vfx/vfx-spray.svg?raw'
 import sprayLarge from '../../assets/vfx/vfx-spray-large.svg?raw'
 import sprayVert from '../../assets/vfx/vfx-spray-vert.svg?raw'
@@ -184,6 +188,8 @@ import brew from '../../assets/vfx/vfx-brew.svg?raw'
 import dust from '../../assets/vfx/vfx-dust.svg?raw'
 import steam from '../../assets/vfx/vfx-steam.svg?raw'
 import dig from '../../assets/vfx/vfx-dig.svg?raw'
+import furnaceVfx from '../../assets/vfx/vfx-furnace.svg?raw'
+import furnaceSmokeVfx from '../../assets/vfx/vfx-furnace-smoke.svg?raw'
 
 const SCALE = 2
 
@@ -220,6 +226,8 @@ export type AtlasKey =
   | 'barrel'
   | 'jam'
   | 'freezer'
+  | 'furnace-off'
+  | 'furnace-on'
   | 'hangar'
   | 'quad'
   | 'tractor'
@@ -284,12 +292,15 @@ export type AtlasKey =
   | `weed-${0 | 1}-${'sprout' | 'grow'}`
   | `crop-${CropId}:${CropStage}`
   | `fruit-${CropId}:${'common' | 'rare' | 'heirloom'}`
-  | `tree-${TreeId}:${'grow' | 'unripe' | 'ripe'}`
+  | `tree-${TreeId}:${'trunk' | 'grow' | 'unripe' | 'ripe'}`
   | `tree-seed-${TreeId}`
   | 'actor-hat'
   | 'actor-body'
   | ShovelId
   | PickaxeId
+  | 'axe'
+  | 'wood'
+  | 'ash'
   | ContainerId
   | 'fertilizer'
   | 'weed-spray'
@@ -495,6 +506,8 @@ async function load(): Promise<void> {
   put('barrel', propBarrel)
   put('jam', propJam)
   put('freezer', propFreezer)
+  put('furnace-off', propFurnace, 'off')
+  put('furnace-on', propFurnace, 'on')
   put('hangar', propHangar)
   put('quad', propQuad)
   put('tractor', propTractor)
@@ -573,7 +586,7 @@ async function load(): Promise<void> {
     put(`fruit-${id}:heirloom`, FRUIT[id], 'heirloom')
   })
   ;(TREE_IDS as TreeId[]).forEach(id => {
-    ;(['grow', 'unripe', 'ripe'] as const).forEach(st => put(`tree-${id}:${st}`, TREE[id], st))
+    ;(['trunk', 'grow', 'unripe', 'ripe'] as const).forEach(st => put(`tree-${id}:${st}`, TREE[id], st))
     put(`tree-seed-${id}`, TREE_SEED[id])
   })
   const hat = groupOf(actor, 'hat').replace(/var\(--hat, #d4a017\)/g, '#ffffff')
@@ -618,6 +631,9 @@ async function load(): Promise<void> {
   put('oil', itemOil)
   put('flour', itemFlour)
   put('extract', itemExtract)
+  put('axe', itemAxe)
+  put('wood', itemWood)
+  put('ash', itemAsh)
   ;([
     ['sprinkler-spray', spray, 4],
     ['sprinkler-spray-large', sprayLarge, 4],
@@ -628,6 +644,8 @@ async function load(): Promise<void> {
     ['dust', dust, 2],
     ['steam', steam, 4],
     ['dig', dig, 4],
+    ['furnace', furnaceVfx, 4],
+    ['furnace-smoke', furnaceSmokeVfx, 4],
   ] as const).forEach(([id, raw, n]) => {
     const frames = [0, 1, 2, 3] as const
     for (const i of frames) {
@@ -777,6 +795,9 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'oil') return 'oil'
   if (item.kind === 'flour') return 'flour'
   if (item.kind === 'extract') return 'extract'
+  if (item.kind === 'axe') return 'axe'
+  if (item.kind === 'wood') return 'wood'
+  if (item.kind === 'ash') return 'ash'
   const _: never = item
   throw new Error(String(_))
 }

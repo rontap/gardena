@@ -13,29 +13,31 @@ JamCrop   = 'apricot' | 'grape' | 'raspberry' | 'cherry' | 'tomato'
 
 ## Buildings
 
-1×1 except still. Place like chest. Still: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building.
+1×1 except still and furnace. Place like chest. Still: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace`.
 
 | class | `kind` | sku | unlock |
 |---|---|---|---|
 | `Mill` | `mill` | `buy-mill` | `unlock-grinder` |
 | `JamMachine` | `jam` | `buy-jam` | `unlock-preservatives` |
 | `PotStill` | `still` | `buy-still` | `unlock-fermentation` |
+| `Furnace` | `furnace` | `buy-furnace` | `unlock-furnace` |
 | `Barrel` | `barrel` | `buy-barrel` | `unlock-fermentation` |
 | `Freezer` | `freezer` | `buy-freezer` | `unlock-preservatives` |
 
-`World.stills` holds the same `PotStill` instances as their cells. Join a water net like `Tap` — [[mechanics/water]].
+`World.stills` holds the same `PotStill` instances as their cells. Join a water net like `Tap` — [[mechanics/water]]. Furnace is cell-only, not a water join.
 
 Tick origin cell only (`base` matches `at`), like compost. After eval. Not cmds. Not actor work except dump.
 
-`inn: Signal` on mill / jam / still. Port `in` origin top, lamp. Unwired 0. `inn === 1` skip tick (`progress`; still water `pull`). No hold. Dump + `Act.unload` + west-store pull still fill. Unwired = enabled.
+`inn: Signal` on mill / jam / still / furnace. Port `in` origin top, lamp. Unwired 0. `inn === 1` skip tick (`progress`; still water `pull`). No hold. Dump + `Act.unload` + west-store pull still fill. Unwired = enabled. Furnace also has `out` + `hold` — [[#Furnace]].
 
-Assumption: mill/jam/still tick after this tick’s eval so `inn` gates the same tick.
+Assumption: mill/jam/still/furnace tick after this tick’s eval so `inn` gates the same tick.
+Assumption: `buy-furnace` Processing shelf, compost group.
 
 ## Dump
 
-Intents `still` `barrel` `jam` `mill` at `Coord`. `dest(still)` = origin. `dest(barrel | jam | mill)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
+Intents `still` `barrel` `jam` `mill` `furnace` at `Coord`. `dest(still | furnace)` = origin. `dest(barrel | jam | mill)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost/furnace keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
 
-Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit is not an item after tick. Seeds, tree seeds, tools: refuse.
+Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }` (no crop id). Freshness-0 fruit is not an item after tick. Seeds, tree seeds, tools: refuse. Furnace accept is the feedstock table — [[#Feedstock]]. Not this mill refuse list.
 
 Grinder dump is mill-style: `{ act: 'grind' }`, `arm(0.4)`, into hopper. Not actor `GRIND_WORK`. Guest may dump.
 
@@ -45,7 +47,7 @@ Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
 
 West of the machine = input. East = output. Orthogonal, same row. Not N/S. Not diagonal.
 
-Still: west of origin, east of the east cell (`base.col + base.w`).
+Still: west of origin, east of the east cell (`base.col + base.w`). Furnace: west of origin, east of origin, origin row only. South furnace cell is not I/O.
 
 Targets: chest, freezer (any slot count). Machine is the actor. Link is view-derived from adjacency. Not a `Cell`. Not saved. Not a cmd.
 
@@ -55,9 +57,9 @@ A chest between two machines is A's output and B's input.
 
 **Push** — on produce, not on big tick. If east neighbor is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `frontOf` / `dropSpot` (no plot → wait).
 
-Machines: mill, jam, still, compost-box, grinder. Not barrel.
+Machines: mill, jam, still, compost-box, grinder, furnace. Not barrel.
 
-Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`.
+Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`. Furnace: origin row only.
 
 ## Sugar
 
@@ -119,7 +121,7 @@ Almanac jam plate on `JamCrop` Ingredients iff `unlock-preservatives` done — `
 
 ## Still
 
-`base.w = 2` `base.h = 1` **and** prop `48×24` occupying both cells. Tick origin. Water join any corner. `World.stills` same instances. Origin-only paint + `TILE/24` scale shows the full 48-wide art. [[art/machines]]
+`base.w = 2` `base.h = 1`. Tick origin. Water join any corner. `World.stills` same instances. Hit, ghost footprint, I/O, ports, pads stay 2×1. viewBox stays `48×24`. Prop art occupies 1.5×1 centered in that viewBox (6 viewBox units empty each side). Origin-only paint + `TILE/24` of the viewBox; empty margin is empty pixels. Do not scale the sprite down. [[art/machines]]
 
 `STILL_CAP`. No overload: dump takes only remaining units. Production starts iff feed count `=== STILL_CAP` and `pull` `STILL_WATER` succeeds (full amount; short → pull 0, retry each tick). `STILL_WATER` 2 — preference. Water once at start, not per tick. `inn === 1` skips that pull and `progress`. Still recipes already carry `STILL_WATER` liters on the water face.
 
@@ -157,21 +159,67 @@ Cask item `{ kind: 'cask'; cask: CaskId; rarity; count; unitSale }`. Age baked i
 
 `swapChest` on a freezer cell. Guest: not. Host cue reuses chest.
 
+## Furnace
+
+`Furnace` `{ units; progress; inn; out; hold }`. `base.w = 1` `base.h = 2`. Tick origin. Hit, ghost footprint, I/O, ports, pads stay 1×2. viewBox stays `24×48`. Prop art occupies 1×1.5 south-aligned in that viewBox (12 viewBox units empty at the top) so the opening stays in the south cell. Chimney sits in the origin cell. Origin-only paint + `TILE/24` of the viewBox; empty margin is empty pixels. Do not scale the sprite down. [[art/machines]]
+
+`FURNACE_CAP` `FURNACE_NEED` `FURNACE_SECONDS` `FURNACE_ASH` — preference. No overload: dump takes whole items while `units + furnaceValue <= cap`; sugar liters may partial. Production ticks iff `units >= FURNACE_NEED` and `inn === 0` and `progress < 1`. Mix freely: no recipe lock. `units === 0` → empty.
+
+`progress += dt × furnaceMul / FURNACE_SECONDS`. Not a machinery job. At 1: `units -= FURNACE_NEED`, leftover stays, drop `{ kind: 'ash'; count: FURNACE_ASH }` east store else `frontOf` (full / no plot → wait at `progress >= 1`).
+
+Working: `units >= FURNACE_NEED` and `inn === 0` and `progress < 1`. Prop groups `off` / `on`. Two state VFX while working: `furnace` at the south cell (opening) and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.
+
+`out` high iff `units === 0`. `SENSOR_HOLD` on `out`. Port `in` origin top, `out` origin bottom. First machine with both. Combinational `inn` like mill, no hold. `out` is a world-reader like chest. South cell: no port. Unwired `inn` 0 ticks. `inn === 1` skip tick; dump and Unload still fill.
+
+## Feedstock
+
+`furnaceValue(item)` — `FURNACE_VALUE` preference. Refuse → 0, dump refuses.
+
+| item | units |
+|---|---|
+| rotten, seeds, grass-seeds, tree-seed, weed, grass, dead | `FURNACE_VALUE.green` × count (tree-seed: × 1, no `count`) |
+| fruit (any crop, any rarity) | `FURNACE_VALUE.fruit` × count |
+| sugar | `FURNACE_VALUE.fruit` × liters |
+| oil | `FURNACE_VALUE.oil` × count |
+| spirit (any kind) | `FURNACE_VALUE.spirit` × count |
+| wood | `FURNACE_VALUE.wood` × count |
+
+Heirloom fruit uses the fruit rate. Jam, cask, flour, extract, compost bags, fertilizer, synth, weed-spray, tools, ash: refuse. Tree-seed is green rate even though compost refuses it.
+
+Ash into compost: `COMPOST_VALUE.ash` × count. Compost still counts `COMPOST_NEED` waste. Wood is not compost. Wood and ash are not stall goods.
+
+## furnaceMul
+
+Chebyshev ≤ `FURNACE_REACH` between any cell of a **working** furnace and any cell of the target footprint (derived 7 wide × 8 tall from a 1×2). Count `n` working furnaces in reach, **including the target** if it is a working furnace. `FURNACE_REACH` `FURNACE_HASTE` — preference.
+
+`furnaceMul = 1 + FURNACE_HASTE × n`. Progress `+= dt × machineMul() × furnaceMul / work` on mill, jam, grinder. Progress `+= dt × furnaceMul / fixed` on still, compost-box, furnace. Barrel age unchanged. Catalog `clockText` stays nominal seconds. Live `left` uses the tick rate.
+
+A lone working furnace covers itself. Two covering furnaces on a mill: `n = 2`. Empty / filling / `inn === 1` / waiting on output (`progress >= 1`): that furnace is not in `n`.
+
+Snapshot the working set at the start of `tickMachines` (after this tick’s `evalSensors`). Two-pass: who would tick, then apply. `tickCompost` uses that same set.
+
+Covering area of a 1×2 is that Chebyshev set (derived 7 wide × 8 tall). Armed `buy-furnace` and unarmed hover of a placed furnace paint it stroke-only — [[ui/place]] [[architecture/view]] `view.furnace-cover`.
+
+Hover mill / jam / still / grinder / compost-box / furnace: one look line iff live covering count `n > 0`. Barrel never. `n === 0`: no line. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is that count. Look reads live working furnaces, not `furnaceSnap`. Copy [[ui/machines]] [[ui/inspect]].
+
+Assumption: one snapshot per `World.tick`; compost after machines still reads the start-of-`tickMachines` set.
+Assumption: smoke viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner; smoke sits on the chimney in that cell.
+
 ## Machinery
 
-Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)`. Still / barrel not work jobs. Pipe place stays 0.
+Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)`. Still / barrel / furnace not work jobs. Pipe place stays 0. `furnaceMul` is not `machinery`.
 
 ## Recipes
 
 `sim/recipe.ts`. No `World`. The one enumeration of what each machine makes; every number derived from `defs/items.ts` and `sim/machine.ts`, none retyped. Shown by [[ui/recipe]]. Reverse lookup `recipesUsing(face)` for [[ui/almanac]] Ingredients.
 
-`MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box`. Freezer and chest are storage, not machines.
+`MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`. Freezer and chest are storage, not machines. `machineOfSku('buy-furnace')` is `furnace`. `CraftCell` += `Furnace`.
 
-`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (5).
+`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (5), ash `COMPOST_NEED / COMPOST_VALUE.ash`. Furnace live `have` / `need` are furnace units (`FURNACE_NEED`). List rows show item counts `FURNACE_NEED / FURNACE_VALUE.*`.
 
-`Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder (any `AnnualId`), compost fruit (any `CropId`), compost green (weed, grass), compost rotten (`CropClass` faces).
+`Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder (any `AnnualId`), compost fruit (any `CropId`), compost green (weed, grass), compost rotten (`CropClass` faces), furnace green / fruit / spirit.
 
-`recipesUsing(face): readonly Recipe[]` — walk `MACHINE_IDS` then `recipesOf`. Include a recipe iff some input is `one` and matches `face` by kind+identity. Skip `any` (mixed still, grinder, compost fruit / green / rotten). A still or jam recipe still matches on its fruit `one` when water or sugar is a second `one`.
+`recipesUsing(face): readonly Recipe[]` — walk `MACHINE_IDS` then `recipesOf`. Include a recipe iff some input is `one` and matches `face` by kind+identity. Skip `any` (mixed still, grinder, compost fruit / green / rotten, furnace green / fruit / spirit). A still or jam recipe still matches on its fruit `one` when water or sugar is a second `one`. Furnace sugar / oil / wood `one` match. Compost ash `one` matches.
 
 Identity: fruit `crop` (not rarity, not bio, not freshness); jam `crop`; spirit `spirit`; cask `cask`; seeds `crop`; else kind only.
 
@@ -179,17 +227,17 @@ Order is machine order then list order. No World. Wheat → mill flour then stil
 
 `Yield` — `exact` | `range`. `range` is the grinder's `GRIND_MIN`..`GRIND_MAX` with `faces` in `ANNUAL_IDS` order, lockstep with the input faces.
 
-`Duration` — `work` divided by `machineMul` (mill, jam, grinder); `fixed` not divided (still, compost); `age` for the barrel, which has no `progress`. The one place that rule is written.
+`Duration` — `work` divided by `machineMul` (mill, jam, grinder); `fixed` not divided by `machineMul` (still, compost, furnace); `age` for the barrel, which has no `progress`. `furnaceMul` multiplies mill, jam, grinder, still, compost-box, furnace progress; not barrel. Catalog `clockText` stays nominal seconds. Live `left` uses the tick rate. The one place that rule is written.
 
 `clockText(seconds)` is `{n} sec`. `n` is `Math.round(seconds)`.
 
-Rows: mill `MILL_RECIPES` 5, jam `JAM_CROPS` 5, still `STILL_CROPS` 3 + mixed, barrel `BARREL_CROPS` 2 (`barrelNeed`), grinder 1, compost 3 (fruit, then weed/grass, then rotten). All compost rows yield `COMPOST_LITERS`. `recipesOf('compost-box')` 3. `recipesOf('barrel')` lists `BARREL_CROPS` (grape → wine, apple → cider). Live barrel craft pins to the locked crop.
+Rows: mill `MILL_RECIPES` 5, jam `JAM_CROPS` 5, still `STILL_CROPS` 3 + mixed, barrel `BARREL_CROPS` 2 (`barrelNeed`), grinder 1, compost 4 (fruit, then weed/grass, then rotten, then ash `one`), furnace 6 (green `any`, fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`). All compost rows yield `COMPOST_LITERS`. `recipesOf('compost-box')` 4. `recipesOf('furnace')` 6, all yield `FURNACE_ASH` ash, duration `fixed` `FURNACE_SECONDS`. `recipesOf('barrel')` lists `BARREL_CROPS` (grape → wine, apple → cider). Live barrel craft pins to the locked crop. Live furnace: empty (`units === 0`) cycles all list rows; filling / working / ready pin the first list row; `have` / `need` stay furnace units. Mix; no recipe lock.
 
 Still water is an input of `STILL_WATER` liters drawn with the `water` face — [[art/items]]. Water is not an `Item`. Not `tap`.
 
 Empty compost (`units === 0`) is `idle` so the live row cycles all list rows. Filling / working / ready pin the fruit row; `have` / `need` stay waste. Sim already accepts rotten.
 
-`craftState(cell, mul)` derives the live `Craft`: `idle` `filling` `paused` `thirsty` `working` `ready`. `thirsty` is `stillReady && progress === 0` — `tickMachines` only leaves `progress` at 0 after `pullStillWater` succeeds, so no net read is needed. `ready` is `progress >= 1`, held there while the output has nowhere to go, and the collectable barrel.
+`craftState` derives the live `Craft`: `idle` `filling` `paused` `thirsty` `working` `ready`. `thirsty` is `stillReady && progress === 0` — `tickMachines` only leaves `progress` at 0 after `pullStillWater` succeeds, so no net read is needed. `ready` is `progress >= 1`, held there while the output has nowhere to go, and the collectable barrel. Furnace: no `thirsty`. `inn === 1` and `units > 0` → `paused`. Live `left` uses tick rate (`machineMul × furnaceMul` on `work`, `furnaceMul` on `fixed`).
 
 Assumption: the barrel counts down to `BARREL_MATURE`, not `BARREL_AGE`.
 
@@ -203,13 +251,13 @@ Merge same keys; sugar by liters; else by count; weighted `unitSale`.
 
 ## Output
 
-Produce: mill, jam, still, compost-box, grinder. East store insert if present; else drop `frontOf`. Barrel collect into hand.
+Produce: mill, jam, still, compost-box, grinder, furnace. East store insert if present; else drop `frontOf`. Barrel collect into hand.
 
-Spirit / wine / jam / oil / flour / extract: not compost unless named (sugar only).
+Spirit / wine / jam / oil / flour / extract: not compost unless named (sugar only). Ash composts. Wood does not.
 
 ## Pads
 
-Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Barrel, grinder: not.
+Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: not.
 
 ## Invariants
 
@@ -219,11 +267,11 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.barrel` — Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS`. Rows: 2. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged.
 
-`machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1` **and** prop `48×24` occupying both cells, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Origin-only paint + `TILE/24` scale shows the full 48-wide art.
+`machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Hit, ghost footprint, I/O, ports, pads stay 2×1. viewBox `48×24`. Prop art occupies 1.5×1 centered in that viewBox. Origin-only paint + `TILE/24` of the viewBox. Do not scale the sprite down.
 
-`machines.inn` — `inn === 1` freezes mill/jam/still ticks (progress + still water pull). Dump and Unload still fill.
+`machines.inn` — `inn === 1` freezes mill/jam/still/furnace ticks (progress + still water pull). Dump and Unload still fill.
 
-`machines.unwired` — Unwired mill/jam/still `inn` 0 ticks (enabled).
+`machines.unwired` — Unwired mill/jam/still/furnace `inn` 0 ticks (enabled).
 
 `machines.quad-mill` — Quad on mill dropoff: Unload cane into mill.
 
@@ -231,7 +279,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.water` — `STILL_WATER` 2 preference. Start still requires full pull. Every still recipe carries that many liters on the water face.
 
-`machines.io-side` — West chest/freezer is input. East is output. Still: west of origin, east of east cell.
+`machines.io-side` — West chest/freezer is input. East is output. Still: west of origin, east of east cell. Furnace: west of origin, east of origin, origin row only.
 
 `machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
 
@@ -239,12 +287,28 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer. Dropoff 
 
 `machines.grind-hopper` — Grinder is a hopper. `GRIND_WORK` 12 — preference. Mill-like tick. Not actor work. Seeds do not merge into house.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists three recipes; the box counts `COMPOST_NEED` waste. Barrel `BARREL_CROPS` 2, inputs equal `barrelNeed`, `age` not `work`. `recipesUsing` is the reverse lookup.
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill `MILL_RECIPES` 5; inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam `JAM_CROPS` 5, carries `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed faces matching the annual inputs. Compost lists four recipes; the box counts `COMPOST_NEED` waste. Furnace lists six recipes; the machine counts `FURNACE_NEED` units. Barrel `BARREL_CROPS` 2, inputs equal `barrelNeed`, `age` not `work`. `recipesUsing` is the reverse lookup.
 
 `machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` on the `water` face and `STILL_CAP` fruit.
 
-`machines.recipe-compost` — Compost lists three recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
+`machines.recipe-compost` — Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
 
-`machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not.
+`machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not. `furnaceMul` multiplies mill, jam, grinder, still, compost-box, furnace progress; not barrel. Catalog `clockText` stays nominal.
 
-`machines.recipes-using` — `recipesUsing(face)` matches `one` inputs by kind+identity. Skip `any` (mixed still, grinder, compost). Still / jam fruit `one` matches even when water / sugar is a second `one`. Almanac Ingredients is this list, gated by machine unlock in `done`. No hardcoded crop→product plates on the fruit row.
+`machines.furnace-feed` — Accept compost feedstock + oil + spirit + wood + tree-seed. Values as `FURNACE_VALUE`. Mix. Cap `FURNACE_CAP`. Refuse jam/cask/flour/extract/ash/tools.
+
+`machines.furnace-burn` — `FURNACE_NEED` units, `FURNACE_SECONDS`, consume `FURNACE_NEED` at finish, drop `FURNACE_ASH` ash, leftover stays, `inn === 1` skips.
+
+`machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n` including self. Still and compost take it. Barrel does not. Waiting / empty / gated do not count.
+
+`machines.furnace-io` — West pull, east push, pads, `in` top, `out` bottom high iff `units === 0`. Origin row only. South cell no port.
+
+`machines.furnace-draw` — `Furnace` `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, tick origin. Hit, ghost footprint, I/O, ports, pads stay 1×2. viewBox `24×48`. Prop art occupies 1×1.5 south-aligned in that viewBox so the opening stays in the south cell. Origin-only paint + `TILE/24` of the viewBox. Do not scale the sprite down.
+
+`machines.furnace-smoke` — Working furnace mounts two state VFX: `furnace` at the south cell (opening) and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.
+
+`machines.furnace-cover` — Covering area is Chebyshev ≤ `FURNACE_REACH` over the 1×2 (derived 7×8). Armed `buy-furnace` and unarmed hover of a placed furnace (either cell) paint that area stroke-only. Footprint `data-cell-stroke` stays. Not a lens. Not a dock. Not sprinkler fill.
+
+`machines.furnace-haste-look` — Hover mill / jam / still / grinder / compost-box / furnace: one look line iff covering working count `n > 0`. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. Barrel never. `n === 0`: no line. Live working set, not `furnaceSnap`.
+
+`machines.recipes-using` — `recipesUsing(face)` matches `one` inputs by kind+identity. Skip `any` (mixed still, grinder, compost, furnace green / fruit / spirit). Still / jam fruit `one` matches even when water / sugar is a second `one`. Furnace sugar / oil / wood `one` match. Compost ash `one` matches. Almanac Ingredients is this list, gated by machine unlock in `done`. No hardcoded crop→product plates on the fruit row.

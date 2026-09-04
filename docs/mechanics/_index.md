@@ -5,7 +5,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/day]]
 - [[mechanics/soil]]
 - [[mechanics/plants]]
-- [[mechanics/trees]]
+- [[mechanics/trees]] — axe, wood, trunk
 - [[mechanics/water]]
 - [[mechanics/weather]]
 - [[mechanics/sensors]]
@@ -16,8 +16,8 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/research]]
 - [[mechanics/family]]
 - [[mechanics/expansion]]
-- [[mechanics/inventory]]
-- [[mechanics/machines]]
+- [[mechanics/inventory]] — wood, ash
+- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
 - [[mechanics/rng]]
@@ -57,6 +57,8 @@ See [[canon]].
 | trees.rng | [[mechanics/trees]] |
 | trees.ping | [[mechanics/trees]] |
 | trees.tend | [[mechanics/trees]] |
+| trees.chop | [[mechanics/trees]] |
+| trees.trunk | [[mechanics/trees]] |
 | water.pour | [[mechanics/water]] |
 | water.targets | [[mechanics/water]] |
 | water.valve | [[mechanics/water]] |
@@ -102,6 +104,7 @@ See [[canon]].
 | research.reveal | [[mechanics/research]] |
 | research.gates | [[mechanics/research]] |
 | research.dispatch | [[mechanics/research]] |
+| research.furnace | [[mechanics/research]] |
 | research.variants | [[mechanics/research]] |
 | research.start | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
@@ -115,6 +118,7 @@ See [[canon]].
 | inventory.stack | [[mechanics/inventory]] |
 | inventory.containers | [[mechanics/inventory]] |
 | inventory.silo-buy | [[mechanics/inventory]] |
+| inventory.ash | [[mechanics/inventory]] |
 | machines.sugar | [[mechanics/machines]] |
 | machines.barrel | [[mechanics/machines]] |
 | machines.still-foot | [[mechanics/machines]] |
@@ -133,6 +137,14 @@ See [[canon]].
 | machines.recipe-haste | [[mechanics/machines]] |
 | machines.mill-vanilla | [[mechanics/machines]] |
 | machines.recipes-using | [[mechanics/machines]] |
+| machines.furnace-feed | [[mechanics/machines]] |
+| machines.furnace-burn | [[mechanics/machines]] |
+| machines.furnace-haste | [[mechanics/machines]] |
+| machines.furnace-io | [[mechanics/machines]] |
+| machines.furnace-draw | [[mechanics/machines]] |
+| machines.furnace-smoke | [[mechanics/machines]] |
+| machines.furnace-cover | [[mechanics/machines]] |
+| machines.furnace-haste-look | [[mechanics/machines]] |
 | vehicles.kind | [[mechanics/vehicles]] |
 | vehicles.buy | [[mechanics/vehicles]] |
 | vehicles.surface | [[mechanics/vehicles]] |
@@ -201,6 +213,7 @@ See [[canon]].
 | view.source | [[architecture/view]] |
 | view.drop | [[architecture/view]] |
 | view.vfx.drain | [[architecture/view]] |
+| view.furnace-cover | [[architecture/view]] |
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
 | world.pause | [[architecture/world]] |

@@ -41,6 +41,10 @@
   "prompt_grind": "Grind",
   "prompt_crush_into": "Crush into {name}",
   "prompt_distill": "Distill",
+  "prompt_burn": "Burn",
+  "prompt_chop": "Chop",
+  "prompt_trunk": "trunk",
+  "prompt_will_not_burn": "will not burn this",
   "prompt_collect": "Collect {name}",
   "prompt_fill": "Fill",
   "prompt_fill_named": "Fill {name}",
@@ -114,5 +118,15 @@
   "prompt_water_too_wet": "too wet",
   "prompt_water_thirsty": "thirsty",
   "prompt_water_drowning": "drowning",
-  "prompt_water_wilting": "wilting"
+  "prompt_water_wilting": "wilting",
+  "prompt_furnace_haste": [
+    {
+      "declarations": ["input n", "input pct", "local nPlural = n: plural"],
+      "selectors": ["nPlural"],
+      "match": {
+        "nPlural=one": "Finishes {pct}% faster with {n} working Furnace than without a Furnace.",
+        "nPlural=other": "Finishes {pct}% faster with {n} working Furnaces than without a Furnace."
+      }
+    }
+  ]
 }

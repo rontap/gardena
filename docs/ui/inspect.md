@@ -58,7 +58,7 @@ Weed resistance: 1 at `weedChance === -1`. Green `weedChance < 0` (bar 0.5..1). 
 Empty hand, player owns `tending`, work `TEND_WORK` 0.7s. Click queues `{ act: 'tend'; at }`. Prompt **Tend**.
 
 - growing plot, `plant.tended === false`: plants unchanged. Not ripe. Not twice.
-- tree, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`: either cell of the 1×2. Not pending. Not `{ on }`. Not juvenile. Not twice.
+- tree, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`, `trunk === false`: either cell of the 1×2. Not pending. Not `{ on }`. Not juvenile. Not trunk. Not grow. Not twice.
 
 `pending` look is off-season; prompt is not Tend. Else empty-hand growing / tree stays **Move here**. [[mechanics/family]] [[mechanics/trees]] `trees.tend`.
 
@@ -70,17 +70,20 @@ Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness b
 
 | state | line |
 |---|---|
-| `juvenile < 1` | **{Name} tree - growing** |
+| `trunk === true` | **{Name} tree - trunk** |
+| `trunk === false` && `juvenile < 1` | **{Name} tree - growing** |
 | `yield` `{ on }` | **{Name} tree - on-season** |
 | `pending` or `{ off }` | **{Name} tree - off-season** |
 
-Blue plant FillBar (`#4b91c2` / `#8b887d`), label **Growth**: `juvenile` 0..1 while `juvenile < 1`; `fruit` 0..1 once mature. Number `floor(* 100)%`.
+Blue plant FillBar (`#4b91c2` / `#8b887d`), label **Growth**: `juvenile` 0..1 while `trunk` or `grow`; `fruit` 0..1 once mature. Number `floor(* 100)%`. Trunk and grow both **Growth** on `juvenile`.
 
 ## Prompts
 
 Tree seed in hand (`{ kind: 'tree-seed'; tree }`), hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op — [[mechanics/plants]].
 
-Shovel on tree: **Dig**. `{ act: 'shovel' }`. No harvest on trees.
+Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees.
+
+Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. `{ act: 'chop'; at }`. Either cell. Axe on grow / trunk: no-op. Prompt is the look line.
 
 Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop+rarity in hand under the stack cap. `{ act: 'harvest' }`. Same crop at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters. Not holding sugar.
 
@@ -88,9 +91,19 @@ Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; 
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
+Mill, jam, still, barrel, freezer, grinder, furnace: look and prompt [[ui/machines]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
 
-Mill, jam, still, barrel, grinder, compost-box hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Still: either cell, one row.
+Mill, jam, still, barrel, grinder, compost-box, furnace hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Still / furnace: either cell, one row.
+
+Covering haste is a `lookText` line in that same `Status` block, after the machine look, before the prompt. Not the recipe row. Not ObjectHud. Not a new dock.
+
+| when | line |
+|---|---|
+| mill / jam / still / grinder / compost-box / furnace, covering working `n > 0` | **Finishes {pct}% faster with {n} working Furnace than without a Furnace.** / **Finishes {pct}% faster with {n} working Furnaces than without a Furnace.** |
+| those, `n === 0` | (no line) |
+| barrel | never |
+
+`{pct}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. Still / furnace: either cell, one line. Live working set. Copy [[ui/machines]].
 
 Held sugar: **Sugar - {n}L**.
 

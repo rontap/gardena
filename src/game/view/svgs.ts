@@ -30,6 +30,10 @@ import itemStill from '../../assets/items/item-still.svg?raw'
 import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
 import itemFreezer from '../../assets/items/item-freezer.svg?raw'
+import itemFurnace from '../../assets/items/item-furnace.svg?raw'
+import itemAxe from '../../assets/items/item-axe.svg?raw'
+import itemWood from '../../assets/items/item-wood.svg?raw'
+import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
 import itemSpiritBrandy from '../../assets/items/item-spirit-brandy.svg?raw'
@@ -49,6 +53,7 @@ import propStill from '../../assets/props/prop-still.svg?raw'
 import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
+import propFurnace from '../../assets/props/prop-furnace.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
 import propTractor from '../../assets/props/prop-tractor.svg?raw'
@@ -362,6 +367,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'still') return inner(itemStill)
   if (item.kind === 'barrel') return inner(itemBarrel)
   if (item.kind === 'freezer') return inner(itemFreezer)
+  if (item.kind === 'furnace') return inner(itemFurnace)
   if (item.kind === 'hangar') return inner(itemHangar)
   if (item.kind === 'silo-seed') return inner(itemSiloSeed)
   if (item.kind === 'silo-spray') return inner(itemSiloSpray)
@@ -389,6 +395,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'dead') return deadInner(item.cls)
   if (item.kind === 'shovel') return SHOVEL_ART[item.id]
   if (item.kind === 'pickaxe') return PICKAXE_ART[item.id]
+  if (item.kind === 'axe') return inner(itemAxe)
   if (item.kind === 'container') {
     if (item.id === 'bucket') return inner(bucket)
     return inner(largeBucket)
@@ -407,6 +414,8 @@ export function itemInner(item: Face): string {
   if (item.kind === 'flour') return inner(itemFlour)
   if (item.kind === 'extract') return inner(itemExtract)
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
+  if (item.kind === 'wood') return inner(itemWood)
+  if (item.kind === 'ash') return inner(itemAsh)
   const _x: never = item
   return _x
 }
@@ -442,6 +451,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-mill') return itemInner({ kind: 'mill' })
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
+  if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer' || id === 'buy-freezer-large') return itemInner({ kind: 'freezer', slots: 0 })
   if (id === 'buy-hangar') return itemInner({ kind: 'hangar' })
@@ -564,6 +574,8 @@ export function researchInner(id: ResearchId): string {
       return inner(uiResearchSmart)
     case 'unlock-contracts':
       return inner(skillContracts)
+    case 'unlock-furnace':
+      return inner(itemFurnace)
   }
 }
 
@@ -621,6 +633,10 @@ export const STILL = inner(propStill)
 export const BARREL = inner(propBarrel)
 export const JAM = inner(propJam)
 export const FREEZER = inner(propFreezer)
+export function furnaceArt(on: boolean): string {
+  return stageOnly(propFurnace, on ? 'on' : 'off')
+}
+export const FURNACE = furnaceArt(false)
 export const HANGAR = inner(propHangar)
 export const QUAD = inner(propQuad)
 export const TRACTOR = inner(propTractor)
@@ -719,7 +735,7 @@ export const TREE_SEED_ART: { readonly [K in TreeId]: string } = {
 }
 
 export const APPLE_TREE = inner(appleTree)
-export function treeStage(id: TreeId, stage: 'grow' | 'unripe' | 'ripe'): string {
+export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe'): string {
   return stageOnly(TREE_PROP[id], stage)
 }
 export function appleTreeStage(ripe: boolean): string {
@@ -991,7 +1007,7 @@ export function symHref(html: string): string {
 }
 
 const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-rare', 'ripe-heirloom', 'dead'] as const
-const TREE_STAGES = ['grow', 'unripe', 'ripe'] as const
+const TREE_STAGES = ['trunk', 'grow', 'unripe', 'ripe'] as const
 const GRASS_STAGES = ['sprout', 'grow'] as const
 
 ;[
@@ -1030,6 +1046,8 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   BARREL,
   JAM,
   FREEZER,
+  furnaceArt(false),
+  furnaceArt(true),
   HANGAR,
   QUAD,
   TRACTOR,

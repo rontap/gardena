@@ -13,11 +13,17 @@ TreeYield =
   | { kind: 'pending' }
   | { kind: 'on'; daysLeft: 1 | 2 }
   | { kind: 'off'; chance: number }
+
+TreeStage = 'trunk' | 'grow' | 'unripe' | 'ripe'
 ```
 
-`base` always 1×2. `juvenile` 0..1, then stays 1. `fruit` 0..1 toward next drop, only while mature and not pending. `tended: boolean` required, starts `false`. Illegal: optional `tended`.
+`base` always 1×2. `juvenile` 0..1. From seed: once, then stays 1. After chop: two grows (`trunk` then `grow`). `fruit` 0..1 toward next drop, only while mature and not pending. `tended: boolean` required, starts `false`. `trunk: boolean` required, starts `false`. Illegal: optional `tended`. Illegal: optional `trunk`.
 
-Owner: `sim/building.ts`. Cell only — no `World.trees`. `World.tickTree` in `sim/world.ts` pings `'field'` only on visual stage change. Juvenile increment does not ping.
+Stage: `trunk === true` → `trunk`; else `juvenile < 1` → `grow`; else `yield.kind === 'on' || fruit >= 1` → `ripe`; else `unripe`.
+
+Chop: [[mechanics/trees]] `trees.chop` `trees.trunk`.
+
+Owner: `sim/building.ts`. Cell only — no `World.trees`. `World.tickTree` in `sim/world.ts` pings `'field'` only on visual stage change. Juvenile increment does not ping. Trunk→grow and grow→mature ping.
 
 Tend: [[mechanics/trees]] `trees.tend`. Play witness `Tree.tended` — [[architecture/ai-gameplay-api]].
 

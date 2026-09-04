@@ -26,6 +26,8 @@ export const VFX: Record<VfxId, VfxDef> = {
   dust: def(2, 2, 1.6, 24, 24, 'cell'),
   steam: def(4, 4, 4, 48, 24, 'cell'),
   dig: def(4, 0, 0.5, 24, 24, 'cell'),
+  furnace: def(4, 0, 1.2, 24, 24, 'cell'),
+  'furnace-smoke': def(4, 0, 1.2, 24, 24, 'cell'),
 }
 
 const MOTION_QUERY = matchMedia('(prefers-reduced-motion: reduce)')

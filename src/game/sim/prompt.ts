@@ -1,6 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import type { Rarity } from '../defs/rarity.ts'
-import { inWorld, type Coord } from './building.ts'
+import { inWorld, type Barrel, type Coord, type Furnace, type Grinder, type JamMachine, type Mill, type PotStill, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
 import type { BarrelCrop, CropId, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
@@ -14,8 +14,8 @@ import {
   JAM_IN,
   JAM_SUGAR,
   STILL_CAP,
+  FURNACE_NEED,
 } from '../defs/items.ts'
-import type { Barrel, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import { countable, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
 import {
   barrelNeed,
@@ -28,6 +28,8 @@ import {
   millNeed,
   millProductName,
   millRecipeOf,
+  furnaceAccept,
+  furnaceUnit,
   stillCropOf,
 } from './machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
@@ -212,6 +214,9 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'still') {
     return { kind: 'place', text: m.prompt_delete({ name: m.names_building_still().toLowerCase() }) }
   }
+  if (cell.kind === 'furnace') {
+    return { kind: 'place', text: m.prompt_delete({ name: m.names_building_furnace().toLowerCase() }) }
+  }
   if (cell.kind === 'barrel') {
     return { kind: 'place', text: m.prompt_delete({ name: m.names_building_barrel().toLowerCase() }) }
   }
@@ -380,6 +385,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!wideSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
+    if (w.act.place.id === 'buy-furnace') {
+      if (!tallSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
+      return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
+    }
     if (
       w.act.place.id === 'buy-chest' ||
       w.act.place.id === 'buy-grinder' ||
@@ -463,6 +472,13 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'still') {
     const look = stillLook(cell, w.act.hand)
     if (stillDumpOk(cell, w.act.hand)) return intent(m.prompt_distill(), { act: 'still', at })
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'furnace') {
+    const look = furnaceLook(cell, w.act.hand)
+    if (w.act.hand.kind === 'hold' && furnaceAccept(cell, w.act.hand.item) > 0) {
+      return intent(m.prompt_burn(), { act: 'furnace', at })
+    }
     return { kind: 'blocked', text: look }
   }
   if (cell.kind === 'barrel') {
@@ -553,6 +569,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'dead') return intent(m.prompt_dig_out_dead(), { act: 'shovel', at })
     return needSeeds(cell)
   }
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'axe') {
+    if (cell.kind === 'tree' && cell.juvenile >= 1 && !cell.trunk) {
+      return intent(m.prompt_chop(), { act: 'chop', at })
+    }
+    if (cell.kind === 'tree') return { kind: 'blocked', text: treeLine(cell) }
+  }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'tree-seed') {
     const above = { col: at.col, row: at.row - 1 }
     const a = cell
@@ -638,6 +660,20 @@ export function siloSiteOk(w: World, at: Coord): boolean {
 
 export function wideSiteOk(w: World, at: Coord): boolean {
   const b = { col: at.col + 1, row: at.row }
+  if (!inWorld(at, w.owned) || !inWorld(b, w.owned)) return false
+  if (onCell(w.drops, at).length > 0 || onCell(w.drops, b).length > 0) return false
+  const a = w.cell(at)
+  const c = w.cell(b)
+  return (
+    isPlot(a) &&
+    isPlot(c) &&
+    (a.kind === 'untilled' || a.kind === 'empty') &&
+    (c.kind === 'untilled' || c.kind === 'empty')
+  )
+}
+
+export function tallSiteOk(w: World, at: Coord): boolean {
+  const b = { col: at.col, row: at.row + 1 }
   if (!inWorld(at, w.owned) || !inWorld(b, w.owned)) return false
   if (onCell(w.drops, at).length > 0 || onCell(w.drops, b).length > 0) return false
   const a = w.cell(at)
@@ -809,7 +845,7 @@ function feedKind(item: Item): boolean {
   return item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost'
 }
 
-function compostLine(units: number, progress: number): string {
+export function compostLine(units: number, progress: number): string {
   const name = m.names_building_compost_box()
   if (units < COMPOST_NEED) return labeled(name, m.prompt_n_cap_units({ n: units, cap: COMPOST_NEED }))
   return labeled(name, m.prompt_working_pct({ n: Math.floor(progress * 100) }))
@@ -831,4 +867,25 @@ function sprinklerSku(s: Sprinkler): SkuId {
 
 function labeled(name: string, detail: string): string {
   return m.prompt_labeled({ name, detail })
+}
+
+export function furnaceLook(furnace: Furnace, hand: Hand): string {
+  const name = m.names_building_furnace()
+  if (hand.kind === 'hold') {
+    if (furnaceUnit(hand.item) <= 0) return labeled(name, m.prompt_will_not_burn())
+    if (furnaceAccept(furnace, hand.item) === 0) return labeled(name, m.prompt_full())
+  }
+  if (furnace.progress >= 1) return labeled(name, m.hud_craft_blocked())
+  if (furnace.inn === 1 && furnace.units > 0) return labeled(name, m.hud_craft_paused())
+  if (furnace.units >= FURNACE_NEED) return labeled(name, m.prompt_working_pct({ n: Math.floor(furnace.progress * 100) }))
+  if (furnace.units === 0) return name
+  return labeled(name, m.prompt_n_cap_units({ n: furnace.units, cap: FURNACE_NEED }))
+}
+
+export function treeLine(cell: Tree): string {
+  const name = m.prompt_tree({ name: cropLabel(cell.species) })
+  if (cell.trunk) return labeled(name, m.prompt_trunk())
+  if (cell.juvenile < 1) return labeled(name, m.prompt_growing())
+  if (cell.yield.kind === 'on') return labeled(name, m.prompt_on_season())
+  return labeled(name, m.prompt_off_season())
 }

@@ -1,4 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 48" fill="none" shape-rendering="crispEdges">
+  <g id="trunk">
+    <rect fill="#1c1710" x="6" y="43" width="12" height="4"/>
+    <rect fill="#6b4423" x="7" y="44" width="10" height="2"/>
+    <rect fill="#8a5a32" x="8" y="44" width="4" height="1"/>
+    <rect fill="#1c1710" x="10" y="34" width="4" height="14"/>
+    <rect fill="#1c1710" x="8" y="44" width="8" height="4"/>
+    <rect fill="#6b4423" x="11" y="35" width="2" height="12"/>
+    <rect fill="#8a5a32" x="11" y="35" width="1" height="11"/>
+    <rect fill="#6b4423" x="9" y="45" width="6" height="2"/>
+    <rect fill="#1c1710" x="13" y="35" width="4" height="6"/>
+    <rect fill="#6b4423" x="14" y="36" width="2" height="4"/>
+    <rect fill="#1c1710" x="7" y="37" width="4" height="6"/>
+    <rect fill="#6b4423" x="8" y="38" width="2" height="4"/>
+    <rect fill="#1c1710" x="9" y="32" width="6" height="4"/>
+    <rect fill="#8a5a32" x="10" y="33" width="4" height="2"/>
+    <rect fill="#6b4423" x="11" y="33" width="2" height="1"/>
+    <rect fill="#8a5a32" x="14" y="35" width="2" height="1"/>
+    <rect fill="#8a5a32" x="8" y="37" width="2" height="1"/>
+  </g>
   <g id="grow">
     <rect fill="#1c1710" x="10" y="30" width="4" height="15"/>
     <rect fill="#6b4423" x="11" y="31" width="2" height="13"/>

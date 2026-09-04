@@ -2,7 +2,7 @@
 
 Rects. One concept per file. [[art/svg]] [[art/palette]]
 
-1×1 `0 0 24 24` except still `0 0 48 24`. Item face is the same machine as the prop, larger. Cottage machines: copper reads as roof. Cold / condenser / litre marks read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water.
+1×1 `0 0 24 24` except still `0 0 48 24` and furnace `0 0 24 48`. Occupancy stays 2×1 / 1×2. Drawn still is 1.5×1 (`36×24`) centered (`x=6`–`42`). Drawn furnace is 1×1.5 (`24×36`) south-aligned (`y=12`–`48`). Item face is the same machine as the prop, larger — do not shrink the item. Cottage machines: copper reads as roof. Cold / condenser / litre marks read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water. Furnace: iron / oil stone, roof brick, steel lip; opening on the south face of the south cell. Chimney on the north of that body, in the north cell. Chimney mouth `(12, 14)`.
 
 ## Buildings
 
@@ -10,8 +10,8 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 |---|---|
 | `prop-mill.svg` | hopper crusher, two millstones, chute |
 | `item-mill.svg` | same, shop/hand |
-| `prop-still.svg` | 2×1 `0 0 48 24`, fills both tiles, steel onion + iron lyne, water condenser, litre marks |
-| `item-still.svg` | same, shop/hand |
+| `prop-still.svg` | 2×1 `0 0 48 24`, drawn 1.5×1 (`36×24`) centered `x=6`–`42`, steel onion + iron lyne, water condenser, litre marks |
+| `item-still.svg` | same machine, shop/hand, stays 24×24 |
 | `prop-barrel.svg` | barrel, dirt staves, grape bung |
 | `item-barrel.svg` | same, shop/hand |
 | `prop-jam.svg` | jam cooker, fruit-red pot on house stove |
@@ -20,6 +20,8 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `item-jam-machine.svg` | same, shop/hand |
 | `prop-freezer.svg` | chest-like freezer, house body, water lid and latch |
 | `item-freezer.svg` | same, shop/hand |
+| `prop-furnace.svg` | 1×2 `0 0 24 48`, drawn 1×1.5 (`24×36`) south-aligned `y=12`–`48`, iron / oil body, roof brick, steel lip, opening south, chimney north; groups `off` `on`; chimney mouth `(12, 14)` |
+| `item-furnace.svg` | same machine, shop/hand, stays 24×24 |
 
 ## Fruit
 
@@ -65,4 +67,4 @@ Jar = skill-jam language. Ketchup is a bottle.
 | `item-flour.svg` | house sack, wheat heads |
 | `item-extract.svg` | vial, grass-dark / leaf |
 
-Assumption: uncommon wine/spirit/cane uses common group. Ketchup is a bottle not a jar. Still shop face is the 2×1 still packed into 24×24.
+Assumption: occupancy stays 2×1 / 1×2; only the drawing is 1.5×1 / 1×1.5. Uncommon wine/spirit/cane uses common group. Ketchup is a bottle not a jar. Still shop face is the 2×1 still packed into 24×24.

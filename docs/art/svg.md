@@ -19,7 +19,7 @@ Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac 
 | kind | viewBox |
 |---|---|
 | 1×1 tile, crop, item, actor | `0 0 24 24` |
-| 1×2 tree | `0 0 24 48` |
+| 1×2 tree, furnace | `0 0 24 48` |
 | 2×1 pump, still | `0 0 48 24` |
 | 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |
@@ -37,9 +37,9 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `crop-*.svg` | `sprout` `grow` `ripe` `ripe-rare` `ripe-heirloom` `dead` |
 | `fruit-*.svg` | `common` `rare` `heirloom` |
 | `item-wine.svg` `item-cider.svg` | `common` `rare` `heirloom` |
-| `prop-*-tree.svg` | `grow` `unripe` `ripe` — `grow` is the sapling, [[art/tree]] |
+| `prop-*-tree.svg` | `trunk` `grow` `unripe` `ripe` — `trunk` is the cut trunk, `grow` is the sapling, [[art/tree]] |
 | `crop-weed-*.svg` | `sprout` `grow` |
-| `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` | `off` `on` |
+| `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` `prop-furnace` | `off` `on` |
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |
 | `ui-arrow-right.svg` | `ink` `fill` |
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |

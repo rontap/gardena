@@ -146,6 +146,7 @@ export type ResearchId =
   | 'unlock-advanced-sensors'
   | 'unlock-smart-irrigation'
   | 'unlock-contracts'
+  | 'unlock-furnace'
 
 export type SkuId =
   | 'pack-carrot'
@@ -207,6 +208,8 @@ export type SkuId =
   | 'buy-water-system'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
+  | 'buy-furnace'
+  | 'buy-axe'
 
 export type SensorKind =
   | 'lever'
@@ -283,3 +286,5 @@ export type VfxId =
   | 'dust'
   | 'steam'
   | 'dig'
+  | 'furnace'
+  | 'furnace-smoke'

@@ -77,7 +77,11 @@ export async function openBuild(page: Page): Promise<void> {
   await expect(title).toBeVisible({ timeout: 10_000 })
 }
 
-export async function armSku(page: Page, sku: string, tab: 'Water' | 'Vehicles' = 'Water'): Promise<void> {
+export async function armSku(
+  page: Page,
+  sku: string,
+  tab: 'Water' | 'Vehicles' | 'Processing' = 'Water',
+): Promise<void> {
   await openBuild(page)
   await page.getByRole('tab', { name: tab }).click()
   await page.getByRole('button', { name: skuButton(sku) }).click()

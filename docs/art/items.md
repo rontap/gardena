@@ -19,3 +19,15 @@ Assumption: unnamed synth dark is water on the research face.
 `ui-water.svg` — viewBox `0 0 24 24`. Waterdroplet. Recipe still input. Not the tap. Not `overlay-water`.
 
 Ink silhouette, water fill, house highlight. Same droplet language as `overlay-water`, item-slot size. Face `{ kind: 'water' }`. Chrome only.
+
+## Axe
+
+`item-axe.svg` — viewBox `0 0 24 24`. Wood haft, iron head, one-sided blade. Not the pickaxe T.
+
+## Wood
+
+`item-wood.svg` — viewBox `0 0 24 24`. Cut log. Dirt bark, dirt cut face with rings.
+
+## Ash
+
+`item-ash.svg` — viewBox `0 0 24 24`. Pile. House / ink / dirt. Not a sack.

@@ -53,6 +53,8 @@ State VFX keeps frame 0 painted and stops animating — the readability signal s
 | `vfx-spray-vert.svg` | `0 0 96 48` | `f0`–`f1` | bar spray marching out both ways |
 | `vfx-tend.svg` | `0 0 24 24` | `f0`–`f1` | leaf ticks rising |
 | `vfx-pour.svg` | `0 0 24 24` | `f0`–`f1` | splash landing |
+| `vfx-furnace.svg` | `0 0 24 24` | `f0`–`f3` | fire at the furnace opening |
+| `vfx-furnace-smoke.svg` | `0 0 24 24` | `f0`–`f3` | smoke rising from the furnace chimney |
 
 `vfx-spray-large` is its own file, not `vfx-spray` at `scale(2)` — a scaled copy doubles the pixel grid.
 
@@ -69,6 +71,10 @@ Reach is the real AoE from `aoe()` — [[mechanics/water]]. Basic ±1 tile, larg
 Not `tickBig`. Not `rate()`. `rate()` cannot see that `pull` returned nothing, and `BIG_TICK` is 10 s — that lag was the old still-droplets bug. Invariant 102.
 
 Dry, sourceless, unreachable, or nothing growing in the AoE: no VFX.
+
+## State: furnace
+
+Working furnace: `vfx-furnace` mounts at the south cell — the opening. `vfx-furnace-smoke` mounts at the north cell — the chimney. Prop groups `off` / `on` light that opening; fire VFX is the fire; smoke VFX is the chimney. Chimney mouth `(12, 14)` in `prop-furnace` and in north-cell local. Smoke viewBox `0 0 24 24`, `cell` origin at the north cell corner, puffs leave that mouth toward y=0. Reduced motion: frame 0 on both. Fire: `fire` / `ripe` / `fruit-red` / `roof`. Smoke: `steel` / `house` / `oil` / `ink`. No `fire` on the smoke.
 
 ## Burst
 

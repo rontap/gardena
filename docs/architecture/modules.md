@@ -2,7 +2,7 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. Player strings: [[architecture/i18n]].
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-furnace`. `SkuId` += `buy-furnace` `buy-axe`. `MachineId` += `furnace` (`recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
 
 ## defs
 
@@ -10,11 +10,11 @@
 |---|---|
 | `crops.ts` | `CROPS` |
 | `trees.ts` | `TREES`, `TREE_YIELD_*` |
-| `items.ts` | tool / container / machine / vehicle / sensor hold constants |
+| `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES` `FURNACE_VALUE` `COMPOST_VALUE.ash` |
 | `rarity.ts` | `Rarity` tables |
-| `research.ts` | `RESEARCH`, `SKUS` |
+| `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `buy-furnace`, `buy-axe` |
 | `skills.ts` | `SKILLS` |
-| `catalog.ts` | almanac SKU `CatalogEntry` |
+| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe. Wood, ash item rows |
 | `shelf.ts` | `BuildShelfId` |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
@@ -23,7 +23,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track`, `cheatSpeed`, `cheatFastResearch` |
+| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track`, `cheatSpeed`, `cheatFastResearch`. `tickMachines` `furnaceMul` snapshot. Intent `chop` `furnace` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `save.ts` | `Save`, dump / parse — [[architecture/save]] |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
@@ -37,21 +37,21 @@
 | `stall.ts` | `StallGood` |
 | `market.h.ts` | sat / contract typedefs |
 | `market.ts` | sat helpers, `rollBoard` |
-| `building.ts` | buildings, `Tree` (`tended`), `Hangar`, stores, `AdditiveId` (includes `weed-spray`) |
+| `building.ts` | buildings, `Tree` (`tended`, `trunk`), `Furnace`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`) |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
-| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters` |
-| `prompt.ts` | `Prompt` |
-| `look.ts` | `lookText` |
+| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `wood` `ash`. `furnaceValue`, `compostValue` ash |
+| `prompt.ts` | `Prompt`. Chop / furnace dump |
+| `look.ts` | `lookText`. Furnace / trunk / grow. Covering haste line |
 | `drop.ts` | `Drop` |
 | `gen.ts` | `generateChunk` |
 | `noise.ts` | `goodness` |
 | `modifiers.ts` | `Modifier`, `statsOf` |
 | `rng.ts` | `Rng`, streams |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
-| `machine.ts` | mill recipes, sale bake, grind hopper accept, machine west/east |
-| `recipe.ts` | `recipesOf`, `recipesUsing`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2 `barrelNeed`, compost 3, still water face |
+| `machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east |
+| `recipe.ts` | `recipesOf`, `recipesUsing`, `MILL_RECIPES` 5, `JAM_CROPS` 5, `BARREL_CROPS` 2 `barrelNeed`, compost 4, furnace 6, still water face. `MachineId` += `furnace` |
 | `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light |
 
@@ -99,20 +99,21 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE` |
-| `atlas.ts` | SVG group → `Texture` |
+| `atlas.ts` | SVG group → `Texture`. `vfx-furnace-smoke.svg` |
 | `app.ts` | `Application` lifecycle |
 | `world-view.ts` | scene graph, dirty patch, ticker motion |
 | `hit.ts` | `clickHit` / `nearestEdge` / ghosts |
+| `outline.ts` | union footprint path |
 | `layers/ground.ts` | terrain chunks |
-| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts |
+| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts. Tree stage `trunk` |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos. Furnace `off`/`on`. Still / furnace native viewBox; art 1.5×1 / 1×1.5 inside |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE |
-| `layers/vfx.ts` | `VfxDef`, state / burst |
-| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens` |
-| `svgs.ts` | chrome-only (HUD, almanac, shop) |
-| `motion.ts` | HUD-only binds |
+| `layers/vfx.ts` | `VfxDef`, state / burst. Furnace fire south + `furnace-smoke` origin while working |
+| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. `data-furnace-cover` |
+| `svgs.ts` | chrome-only (HUD, almanac, shop). `treeStage` += `trunk`. Furnace faces |
+| `motion.ts` | HUD-only binds. Live craft `left` uses `furnaceMul` |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes always drawn (faint when lens off). Wetness + AoE still lens / tool. Sprinkler AoE on hover is view. Pipe drag-to-draw is view-local pending run; commit existing `placePipe` per edge; no new cmd.
 
@@ -130,7 +131,8 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 | `Seat` | `World.seats` |
 | `Soil` | `sim/soil.ts`. Required on every `Tilled` plot |
 | `Plant` | `sim/plant.ts`. `crop: AnnualId` |
-| `Tree` | `sim/building.ts`. Same instance in both 1×2 cells |
+| `Tree` | `sim/building.ts`. Same instance in both 1×2 cells. `trunk` required |
+| `Furnace` | `sim/building.ts`. Same instance in both 1×2 cells. Tick origin. Not a `World.furnaces` list |
 | `Reservoir` | `sim/water.ts`. `Pump.water`, `RainTank.water`. `rate` × weather mul |
 | `WeatherKind` | `sim/weather.ts`. `World.weather(day)` |
 | `Stall` | `sim/stall.ts`. `World.stall` complete `StallGoodId` map |
@@ -138,6 +140,6 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 | `MpWire` | `sim/mp.ts` type. PeerJS in `net/peer.ts` only |
 | `MpHost` / `MpGuest` | `sim/mp.ts`. App holds the session |
 
-`World.house` / `truck` / `pumps` / `tanks` / `taps` / `wells` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments` and `World.sprinklers` are the pipe graph. A valve is a `Gate` on a segment. `World.fences` is the fence set.
+`World.house` / `truck` / `pumps` / `tanks` / `taps` / `wells` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `Furnace` same instance both cells; tick via `machines` index; no `World.furnaces` list. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments` and `World.sprinklers` are the pipe graph. A valve is a `Gate` on a segment. `World.fences` is the fence set.
 
 Tutorial is App session state. Save I/O is `sim/save.ts`. App does not own `Save`.

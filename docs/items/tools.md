@@ -1,6 +1,6 @@
 # Tools
 
-`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`.
+`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `AXES.axe`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`.
 
 Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
@@ -14,6 +14,9 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 | pickaxe | buy-pickaxe | unlock-pickaxe |
 | better-pickaxe | buy-better-pickaxe | unlock-pickaxe |
 | diamond-pickaxe | — | four-star contract prize |
+| axe | buy-axe | unlock-pickaxe |
+
+`{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. No better-axe. `AXES.axe` uses / workSeconds — preference. Unlock and show `unlock-pickaxe`. `unlock-pickaxe` effect stays `buy-pickaxe`. Price preference versus `buy-pickaxe`. `skuLabel` **Axe**. Chop: [[mechanics/trees]] `trees.chop`.
 
 Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 

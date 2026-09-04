@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { vertexKey } from '../../sim/pipe.ts'
-import { millWorking, jamWorking, stillWorking, barrelWorking } from '../../sim/machine.ts'
+import { millWorking, jamWorking, stillWorking, barrelWorking, furnaceWorking, furnaceStateVfx } from '../../sim/machine.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'
 import type { VfxId } from '../../sim/ids.ts'
@@ -99,6 +99,12 @@ export class VfxLayer {
     this.pool.begin()
     for (const at of world.machines.values()) {
       const cell = world.cell(at)
+      if (cell.kind === 'furnace') {
+        if (furnaceWorking(cell)) {
+          furnaceStateVfx(at).forEach(m => this.draw(m.id, m.col, m.row, 0, false, now, undefined))
+        }
+        continue
+      }
       const id = busyVfx(cell, at)
       if (id === undefined) continue
       this.draw(id, at.col, at.row, 0, false, now, undefined)

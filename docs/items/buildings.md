@@ -4,7 +4,7 @@
 
 `chest` — `buy-chest`. `grinder` — `buy-grinder`. `compost-box` — `buy-compost-box`.
 
-`mill` — `buy-mill`. `jam` — `buy-jam`. `still` — `buy-still`. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`. Rules: [[mechanics/machines]].
+`mill` — `buy-mill`. `jam` — `buy-jam`. `still` — `buy-still`. `furnace` — `buy-furnace`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `automation`. Almanac **Automation**. `unlock-furnace`, `haggling`. Guest shop + place + delete + dump. `skuLabel` **Furnace**. Rules: [[mechanics/machines]]. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`.
 
 `hangar` — `buy-hangar`. 3×2, door south, no rotate. `Sku.tab` `automation`. Almanac **Automation**. `unlock-vehicles`. Walk-up cue. Quad / tractor / trailer hangar-buys, not place SKUs. Cannot delete while it stores a vehicle or a trailer. Rules: [[mechanics/vehicles]].
 

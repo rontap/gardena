@@ -54,6 +54,8 @@
   "research_unlock_preservatives_blurb": "Make jam from fruit and Sugar; the market pays more for jam than for the fruit, and jam does not lose freshness. A Freezer holds fruit so it rots slower than in a Chest. Sugar is sold by the bag in the Shop.",
   "research_unlock_fermentation_name": "Fermentation",
   "research_unlock_fermentation_blurb": "Sow Sugar cane; ripe cane is fruit that drinks more water than Wheat and sells for less at the market, and a Mill crushes it into Sugar. A Pot still distills a batch into spirits. A Barrel turns Grape into Wine and Apple into Cider.",
+  "research_unlock_furnace_name": "Furnace",
+  "research_unlock_furnace_blurb": "Burn a mixed load into Ash. A working Furnace makes nearby machines finish faster than they do without one.",
   "research_grant_rarity_rolls": "Happy plants can ripen a different rarity than the seed",
   "research_grant_silo_rows": "Uncommon and Rare rows in the Seed silo",
   "research_grant_heirloom_column": "Heirloom row in the Seed silo and the Shop",

@@ -361,6 +361,18 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: m.research_unlock_fermentation_blurb(),
         effect: {kind: 'unlock-sku', sku: 'pack-sugar-cane'},
     },
+    'unlock-furnace': {
+        id: 'unlock-furnace',
+        name: m.research_unlock_furnace_name(),
+        tree: 'trade',
+        cost: 60,
+        seconds: 100,
+        reveal: ['unlock-fermentation'],
+        requires: [],
+        grants: [],
+        blurb: m.research_unlock_furnace_blurb(),
+        effect: {kind: 'unlock-sku', sku: 'buy-furnace'},
+    },
 }
 
 
@@ -401,6 +413,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
         show: 'unlock-pickaxe',
         need: [],
     },
+    'buy-axe': {id: 'buy-axe', price: 16, tab: 'utility', unlock: 'unlock-pickaxe', show: 'unlock-pickaxe', need: []},
     'buy-bucket': {id: 'buy-bucket', price: 8, tab: 'utility', unlock: 'start', show: 'start', need: []},
     'buy-bucket-large': {id: 'buy-bucket-large', price: 22, tab: 'utility', unlock: 'unlock-better-tools', show: 'start', need: []},
     'buy-fertilizer': {id: 'buy-fertilizer', price: 18, tab: 'utility', unlock: 'start', show: 'start', need: []},
@@ -454,6 +467,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-mill': {id: 'buy-mill', price: 45, tab: 'automation', unlock: 'unlock-grinder', show: 'start', need: []},
     'buy-jam': {id: 'buy-jam', price: 45, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
+    'buy-furnace': {id: 'buy-furnace', price: 55, tab: 'automation', unlock: 'unlock-furnace', show: 'start', need: []},
     'buy-barrel': {id: 'buy-barrel', price: 18, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-freezer-large': {id: 'buy-freezer-large', price: 0, tab: 'automation', unlock: 'start', show: 'start', need: 'prize'},

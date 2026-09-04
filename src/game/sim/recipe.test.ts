@@ -47,7 +47,8 @@ describe('recipes.table', () => {
     expect(recipesOf('still').length).toBe(STILL_CROPS.length + 1)
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length)
     expect(recipesOf('grinder').length).toBe(1)
-    expect(recipesOf('compost-box').length).toBe(3)
+    expect(recipesOf('compost-box').length).toBe(4)
+    expect(recipesOf('furnace').length).toBe(6)
   })
 
   test('mill inputs equal millNeed for every recipe', () => {
@@ -105,23 +106,27 @@ describe('recipes.table', () => {
     expect(row.out.faces.map(f => (f.kind === 'seeds' ? f.crop : ''))).toEqual([...ANNUAL_IDS])
   })
 
-  test('Compost lists three recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
-    const [fruit, green, rotten] = recipesOf('compost-box')
-    expect(recipesOf('compost-box').length).toBe(3)
+  test('Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
+    const [fruit, green, rotten, ash] = recipesOf('compost-box')
+    expect(recipesOf('compost-box').length).toBe(4)
     expect(fruit.inputs[0].kind).toBe('any')
     expect(green.inputs[0].kind).toBe('any')
     expect(rotten.inputs[0].kind).toBe('any')
+    expect(ash.inputs[0].kind).toBe('one')
     if (fruit.inputs[0].kind !== 'any' || green.inputs[0].kind !== 'any' || rotten.inputs[0].kind !== 'any') return
     expect(fruit.inputs[0].faces.map(f => (f.kind === 'fruit' ? f.crop : ''))).toEqual([...ANNUAL_IDS, ...TREE_IDS])
     expect(green.inputs[0].faces.map(f => f.kind)).toEqual(['weed', 'grass'])
     expect(rotten.inputs[0].faces.map(f => (f.kind === 'rotten' ? f.cls : ''))).toEqual(['root', 'grain', 'fruit'])
+    expect(ash.inputs[0].kind === 'one' && ash.inputs[0].face.kind).toBe('ash')
     expect(unitsOf(fruit.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.fruit)
     expect(unitsOf(green.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.weed)
     expect(unitsOf(rotten.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.rotten)
     expect(unitsOf(rotten.inputs[0])).toBe(5)
+    expect(unitsOf(ash.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.ash)
     expect(fruit.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
     expect(green.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
     expect(rotten.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
+    expect(ash.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
   })
 
   test('clockText is seconds', () => {
@@ -239,18 +244,30 @@ describe('recipes.state', () => {
 })
 
 describe('recipes.haste', () => {
-  test('machinery speeds a mill but not a still', () => {
+  test('`work` durations divide by `machineMul`; `fixed` and `age` do not. `furnaceMul` multiplies mill, jam, grinder, still, compost-box, furnace progress; not barrel. Catalog `clockText` stays nominal.', () => {
     const mill = new Mill(BASE)
     mill.recipe = 'wheat'
     mill.units = millNeed('wheat')
     const milled = craftState(mill, 1.1)
     expect(milled.kind === 'working' && milled.left).toBeCloseTo(MILL_WORK / 1.1)
+    const hasted = craftState(mill, 1.1, 1.2)
+    expect(hasted.kind === 'working' && hasted.left).toBeCloseTo(MILL_WORK / (1.1 * 1.2))
 
     const still = new PotStill(BASE)
     still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
     still.progress = 0.5
     const distilled = craftState(still, 1.1)
     expect(distilled.kind === 'working' && distilled.left).toBeCloseTo(STILL_SECONDS * 0.5)
+    const stillHaste = craftState(still, 1.1, 1.2)
+    expect(stillHaste.kind === 'working' && stillHaste.left).toBeCloseTo((STILL_SECONDS * 0.5) / 1.2)
+
+    const barrel = new Barrel(BASE)
+    barrel.crop = 'grape'
+    barrel.feed = [{ rarity: 'common', count: 5 }]
+    const aged = craftState(barrel, 1.1, 1.2)
+    expect(aged.kind === 'working' && aged.left).toBe(BARREL_MATURE)
+
+    expect(clockText(STILL_SECONDS)).toBe(`${STILL_SECONDS} sec`)
   })
 })
 
@@ -286,6 +303,12 @@ describe('machines.recipes-using', () => {
     expect(recipesUsing({ kind: 'grass', count: 1 }).map(r => r.machine)).toEqual(['mill'])
     expect(recipesUsing({ kind: 'weed', count: 1 })).toEqual([])
     expect(recipesUsing({ kind: 'water' })).toEqual(recipesOf('still'))
-    expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 })).toEqual(recipesOf('jam'))
+    expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 }).map(r => r.machine)).toEqual([
+      ...recipesOf('jam').map(() => 'jam'),
+      'furnace',
+    ])
+    expect(recipesUsing({ kind: 'oil', count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'wood', count: 1 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'ash', count: 1 }).map(r => r.machine)).toEqual(['compost-box'])
   })
 })

@@ -54,4 +54,6 @@ Separate bar palette. Never in `src/assets/*.svg`. Inspect `STAT_COLOR` / `GROWT
 
 Cottage hex, plus industrial metal on vehicle/machine assets. No bar hex. No `currentColor`. No text. `shape-rendering="crispEdges"`. 24-unit tile grid — [[art/svg]]. No raster.
 
+Tree ripe variety fruit reuses fruit-red, roof, ripe, blush, grape. No new hex.
+
 Assumption: industrial tokens stay SVG-only. `fire` is SVG-only, like `fruit-red`.

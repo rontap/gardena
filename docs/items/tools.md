@@ -16,12 +16,14 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 | diamond-pickaxe | — | four-star contract prize |
 | axe | buy-axe | unlock-pickaxe |
 
-`{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. No better-axe. `AXES.axe` uses / workSeconds — preference. Unlock and show `unlock-pickaxe`. `unlock-pickaxe` effect stays `buy-pickaxe`. Price preference versus `buy-pickaxe`. `skuLabel` **Axe**. Chop: [[mechanics/trees]] `trees.chop`.
+`{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. No better-axe. `AXES.axe` uses / workSeconds — preference. Unlock and show `unlock-pickaxe`. `unlock-pickaxe` effect stays `buy-pickaxe`. Price preference versus `buy-pickaxe`. `skuLabel` **Axe**. Chop: 1 wood and 2 grafts, then trunk — [[mechanics/trees]] `trees.chop` `graft.axe`.
+
+`{ kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }`. Not a tool SKU. Not planted. Attaches — [[mechanics/plants]] `graft.attach`. Furnace green rate. Not compost.
 
 Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 
 `weed-spray` — `{ kind: 'weed-spray'; liters; capacityLiters }`, `WEED_SPRAY_BAG` 30 L. Bag. Additive store, like fertilizer. Not `usesLeft`. Click tilled: [[mechanics/weeds]] [[items/fertilizer]].
 
-Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
+Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their owned tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 
 Hand, house, uses, fill, stacks: [[mechanics/inventory]].

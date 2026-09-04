@@ -32,4 +32,6 @@ Boot `#debug-contracts`: generator ladder, not play. 20 rows × 6 slots = 120 of
 
 Boot `#debug-weather`: forecast table, not play. Not mermaid. Days 1…50 of `forecastWeather(seed, 50)`. Seed shown (`seed {n}`). **Random again** `Btn` increments seed — same as contracts Re-roll. Host `relative mx-auto w-[72rem]`. One row per day: number + kind name + glyph `h-5 w-5` `ui-weather-{kind}` `viewBox="0 0 16 16"`. Kind names Clear Rain Dry Flood Drought only. `main.tsx` hash branch, `openScroll` (coder wires it).
 
+Boot `#debug-iconset`: fruit, seed, growth, and tree SVG groups, not play. Not mermaid. Parses `<g id>` from each `fruit-*`, annual `crop-*` (seed faces + growth stages), `item-seed-*`, and `prop-*-tree`. Grid: one cell per group, face + file + id. Growth is `grid-cols-7` (sprout grow ripe ripe-variant ripe-variant-2 ripe-heirloom dead). Unused Variety slots carry `data-deprecated`, grey cell fill, and the word deprecated. A crop with one variant keeps `'variant-2'` (the distinct face) and deprecates `'variant'` (copy of base). Two variants keep both. Icon art stays full color. Host `relative mx-auto w-[72rem]`. `main.tsx` hash branch, `openScroll`.
+
 Assumption: `#debug-weather` seed starts at 1.

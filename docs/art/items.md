@@ -28,6 +28,19 @@ Ink silhouette, water fill, house highlight. Same droplet language as `overlay-w
 
 `item-wood.svg` — viewBox `0 0 24 24`. Cut log. Dirt bark, dirt cut face with rings.
 
+## Grafts
+
+`item-graft-{apple,apricot,olive,cherry}.svg` — viewBox `0 0 24 24`. Groups `base` `variant` `variant-2` `heirloom`. A cutting: species stick, cut face, buds, a leaf. Not a seed. Not planted.
+
+Apple thick whip. Apricot forked. Olive gnarled, house fleck leaf. Cherry slim, two leaves. Variety is bud fill.
+
+| species | `base` | `variant` | `variant-2` | `heirloom` |
+|---|---|---|---|---|
+| apple | fruit-red | roof (`kingston-black`) | ripe | blush (`pink-lady`) |
+| apricot | ripe | ripe, larger buds (`moorpark`) | blush (`klosterneuburger`) | ripe + blush (`blenheim`) |
+| olive | dirt-dark | grape (`kalamata`) | ripe, more buds (`arbequina`) | house |
+| cherry | fruit-red, two buds | fruit-red, four buds (`montmorency`) | ripe | roof, larger (`bing`) |
+
 ## Ash
 
 `item-ash.svg` — viewBox `0 0 24 24`. Pile. House / ink / dirt. Not a sack.

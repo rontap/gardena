@@ -4,6 +4,8 @@ Daily buyer board, generator, accept / deliver / complete / miss / cancel / reor
 
 `World.contracts` is saved: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`.
 
+The board does not ask for a variety or a quality floor. Quality minimums and a specialty roll are the next update.
+
 ## Board
 
 `CONTRACT_OFFERS`. `CONTRACT_SLOT_MAX`. `ContractId = day * CONTRACT_SLOT_MAX + slot`. `day` is `clock.day`.
@@ -31,19 +33,17 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` a
 | 0 | `D` for that slot |
 | 2 | line 1 good |
 | 3 | line 1 group vs specific (jam / spirit only) |
-| 4 | line 1 `minRarity` (rated / spirit-group only) |
 | 5 | `DeadlineBand` |
 | 6 | `days` inside `DEADLINE_DAYS[band]` on the `DEADLINE_STEP` grid |
 | 7 | line 2 good (pair only) |
 | 8 | line 2 group vs specific |
-| 9 | line 2 `minRarity` |
 | `20+i` | company shuffle, at `(day, 0, ·)` |
 | 30, 31 | the two prize slots, at `(day, 0, ·)` |
 | 32 | rotary vs diamond, when the prize is a tool |
 
-`k` 1 is unused: company no longer depends on `D`. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST` — not a coin flip.
+`k` 1, 4, 9 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST` — not a coin flip.
 
-Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods, rarity or difficulty. It **does** decide the prize, because the prize table is keyed by company.
+Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It **does** decide the prize, because the prize table is keyed by company.
 
 ### Difficulty
 
@@ -56,9 +56,9 @@ D      = l + floor(u * (h - l + 1)) + rep                                   // c
 
 `rep` is `contracts.repDay`, the reputation snapshot taken at the seam, not live rep. Mid-day rep does not move the board.
 
-Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` for carrot / potato / wheat plus `D_RARITY[minRarity]`. `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
+Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` for carrot / potato / wheat. `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
 
-`eff` is what the prize band reads. Not `D`.
+`eff` is what the prize band reads. Not `D`. The difficulty budget is requoted against the smaller spread (no floor spend).
 
 ### Grammar budget
 
@@ -70,11 +70,11 @@ budget = max(opened, -BUDGET_OVERDRAFT)
 pair   = budget >= PAIR_COST                                 // then budget = (budget - PAIR_COST) / 2
 ```
 
-Each line then spends `GOOD_COST[good]` and, for a rated or spirit-group line, `RARITY_COST[minRarity]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
+Each line then spends `GOOD_COST[good]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
 
-`GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read.
+`GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read. Grammar no longer spends on a floor.
 
-Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `rated`. Sugar / oil / flour / extract → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit'; minRarity }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them).
+Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `plain`. Sugar / oil / flour / extract → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit' }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them).
 
 ### Money pool and amount
 
@@ -90,7 +90,7 @@ scale(day) = min(1, SCALE_START + day / SCALE_DAYS)
 
 `LOAD_CURVE` and `LOAD_MAX` — preference. The curve is convex on purpose: the pool must climb harder over the top half of the ladder than the bottom, so a four-star board is worth giving up a prize slot for.
 
-Divide by `cleanUnit`, the rarity-scaled unit the reward is later settled at — **not** `unitOf`, the common-rarity base.
+Divide by `cleanUnit`, the unit the reward is later settled at — **not** `unitOf` if those ever diverge.
 
 `nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`, floor `NICE_AMOUNTS[0]`. There is no discard-and-retry. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`.
 
@@ -123,7 +123,7 @@ Baked at generation. Saturation at delivery does not move `reward`. `industrial`
 
 Two of the six offers each day pay goods instead of money, and pay **no** money.
 
-The board is the only source of tree seeds past the starting three, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these.
+The board is the only source of tree seeds past the starting four, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these. Tree-seed prizes are `'base'` quality 0. Vanilla prizes are `'base'` quality 0.
 
 ```
 Prize =
@@ -155,9 +155,9 @@ Six firms, three columns: Whole Cart / Little Lid tree-seeds-vanilla-tools; Trad
 
 | prize | lands as |
 |---|---|
-| `tree-seed` | drop at `DOOR` |
+| `tree-seed` | drop at `DOOR`, `'base'` quality 0 |
 | `tool` | drop at `DOOR`, full `SHOVELS` / `PICKAXES` uses |
-| `seeds` | `putSilo('vanilla', 'common', count)` |
+| `seeds` | `putSilo('vanilla', 'base', 0, count)` |
 | `fertilizer` | `putAdditive('fertilizer', bags * FERT_BAG_LITERS)`, `bags = max(1, round(reward / SKUS['buy-fertilizer'].price))` — "worth the cash" |
 | `freezer` | `prizeFreezers += 1`; `buy-freezer-large` opens while stock lasts — [[mechanics/research]] |
 | `expansion-slot` | `prizeSlots += 1` — [[mechanics/expansion]] |
@@ -169,31 +169,30 @@ Drops at the door, the way a shovelled-up tree seed drops. Store prizes clamp to
 
 | demand | unit |
 |---|---|
-| `rated` crop | `CROPS[good].sale × raritySale` at `minRarity` |
-| `rated` wine | `WINE_SALE × SPIRIT_RARITY[minRarity]` — no age |
-| `rated` spirit | `bakeSpiritSale(good, minRarity)` |
+| `plain` crop | `CROPS[good].sale` |
+| `plain` wine | `WINE_SALE` — no age |
+| `plain` spirit | `SPIRIT_SALE[spirit]` |
 | `plain` sugar | `SUGAR_MILL` |
 | `plain` jam | `JAM_SALE[crop]` |
 | `plain` oil / flour / extract | `OIL` / `FLOUR` / `EXTRACT` |
 | group jam | `min JAM_SALE` (`cherry`) |
-| group spirit | `bakeSpiritSale('vodka', minRarity)` |
+| group spirit | `SPIRIT_SALE.vodka` |
 
-No skills, freshness, or bio.
+No skills, freshness, bio, quality, or path rating.
 
 ## Accepts
 
 ```
-Accepts(demand, good, rarity) → boolean
+Accepts(demand, good) → boolean
 ```
 
 | demand | accepts |
 |---|---|
-| `rated` | `good === demand.good` and `RARITY_RANK[rarity] >= RARITY_RANK[minRarity]` |
 | `plain` | `good === demand.good` |
 | group jam | `good` is `JamId` |
-| group spirit | `good` is `SpiritKind` and rarity ≥ `minRarity` |
+| group spirit | `good` is `SpiritKind` |
 
-Rarity is a minimum. Higher qualifies as one unit. No overage bonus. Freshness is not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick.
+A match is a match. No overage bonus. Freshness, variety, and quality are not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick.
 
 ## State
 
@@ -265,7 +264,7 @@ Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `inte
 
 `GoodClass` covers every pool member. `FruitAnnualId` = tomato | raspberry | grape | vanilla. Not root/grain, not `sugar-cane`. Olive is `TreeId`. Trees are `TreeId`. `SpiritKind` is not in any pool. `JamId` from `JAM_CROPS` 5. No apple jam.
 
-`defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods, rarity or difficulty. Sector = `region`.
+`defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods or difficulty. Sector = `region`.
 
 ## Skills
 
@@ -295,7 +294,7 @@ Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; j
 
 `contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel remainders do both.
 
-`contracts.demand` — A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.
+`contracts.demand` — A `Demand` is a plain good match or a group. No minimum. `Lines` never nests.
 
 `contracts.amount` — `amount >= AMOUNT_MIN` on every published offer, and `amount <= FEASIBLE_PER_DAY[good] * days * scale(day)`.
 

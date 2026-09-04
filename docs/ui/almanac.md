@@ -14,28 +14,45 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
-| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer hangar silo-seed silo-produce silo-spray |
+| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
-| `concepts` | Game concepts | Rarity, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation |
+| `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation |
 
 Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, label **Overview**, no icon. Tab-scoped id `'overview'`. Tab click on those three lands Overview.
 
-Trees, Utility, Water systems, Building, Game concepts: **no** Overview row. Hangar + silos stay on Automation. Game concepts: no SKU rows.
+Trees, Utility, Water systems, Building, Game concepts: **no** Overview row. Hangar + silos stay on Automation. Station stays on Automation. Game concepts: no SKU rows.
 
 Building stays fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No watermelon row.
 
-Crop and Tree panes carry `CROPS.desc` under the name. Crop panes: rarity tabs **Common** **Uncommon** **Rare** **Heirloom**. Preview swaps fruit face, plant art, and numbers.
+Crop and Tree panes carry `CROPS.desc` under the name.
 
-Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink.
+## Variety row
 
-Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Sell is crop fruit `statsOf`. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Extract, flour, brandy, mill sugar sit in Ingredients. [[ui/recipe]]
+CropPane / TreePane: no ladder tabs. The pane grows a Variety row — one cell per `VARIETIES[crop]`, in list order. Grape and apricot fill four. Carrot, vanilla, sugar-cane fill one. Do not pad empty slots.
+
+Each cell:
+
+| slot | content |
+|---|---|
+| face | fruit face for that Variety, `h-20 w-20` `bg-dirt-dark`, no caption |
+| name | Variety name from `names` |
+| paths | **Preserving** / **Fresh** / **Alcohol** each with its `Rating` 1..5. Omit a path at `'none'`. Never a bare number without the path |
+| description | `<needs-game-text-writer>` one line, the real thing that Variety is known for |
+
+Click selects. Default `'base'`. Selected cell `bg-dirt`. Stats, plant/tree prop preview, and Ingredients follow the selection.
+
+Fruit row above the Variety row stays fruit face + plant/tree prop of the **selected** Variety only. Same `flex gap-3` `flex-wrap`. Plant art cycles `sprout` / `grow` / ripe-group of that Variety. Tree prop cycles `trunk` / `grow` / `unripe` / `ripe`; Variety group on `unripe` / `ripe`. [[architecture/view]]
+
+Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink. Numbers: `statsOf(crop, variety, 0, [])` so Sell is `CROPS.sale × RATING_SALE[use.fresh]` at Quality 0. Seed price is the pack of `'base'` only.
+
+Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Extract, flour, brandy, mill sugar sit in Ingredients. [[ui/recipe]]
 
 Olive is `TreeId`: TreePane only.
 
 Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light panes. Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
 
-SKU panes stay generic / crop / tree / pipe.
+SKU panes stay generic / crop / tree / pipe. Station pane is generic Automation chrome — title, one plate, blurb. No Recipes block.
 
 ## Plate fills
 
@@ -51,21 +68,21 @@ Reuse existing faces. No new SVG. Plate is `h-20 w-20`, no caption.
 | Utility / Building / Seeds non-crop SKU | `bg-dirt-dark` |
 | Machine goods — sugar, spirit, cask, jam, oil, flour, extract, ash | `bg-water` |
 
-Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Wood** **Ash** **Furnace**.
+Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Wood** **Ash** **Furnace**. Station plate `bg-grass`.
 
 `Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives' | 'unlock-furnace')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
 
 ## Ingredients
 
-Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only. Same `flex gap-3` `flex-wrap`.
+Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only.
 
-`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that crop's fruit face. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Fruit furnace rows are `any` — skipped.
+`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that Variety's fruit face (`crop` + `variety`). `recipesUsing` matches a `one` input on crop + Variety. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Fruit furnace rows are `any` — skipped. A path at `'none'` has no `one` row, so it does not appear.
 
-Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Apricot brandy, wheat flour, vanilla extract, mill sugar show when the recipe matches. Wheat: flour then beer. Apple: cider, not jam. Olive: oil. Grape: jam and wine. No apple jam. Vanilla: no CropPane mill line.
+Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Named jam, mill good, spirit, cask show when the recipe matches. No hardcoded plate list.
 
-Hover a plate: Overlay `aside` [[ui/callout-hover]] `right`. Title `faceName` of the yield. Body: `Coin` of baked `unitSale` (common), then that recipe `Recipes` `{ kind: 'one'; recipe }` `sm` — [[ui/recipe]]. Leave clears. Plates take pointer events; recipe rows do not.
+Hover a plate: Overlay `aside` [[ui/callout-hover]] `right`. Title `faceName` of the yield. Body: `Coin` of baked `unitSale` at Quality 0 × that path's `RATING_SALE`, then that recipe `Recipes` `{ kind: 'one'; recipe }` `sm` — [[ui/recipe]]. Leave clears. Plates take pointer events; recipe rows do not.
 
-Illegal: extra product plates on the fruit row. Illegal: olive on Seeds.
+Illegal: extra product plates on the fruit row. Illegal: olive on Seeds. Illegal: a Variety row that is a ladder.
 
 ## Shape
 
@@ -73,7 +90,21 @@ Illegal: extra product plates on the fruit row. Illegal: olive on Seeds.
 
 `AlmanacTab` / `ConceptId` / `AlmanacNav` / `ListRow` — `src/game/ui/almanac.tsx`. Overview id is `'overview'` (tab-scoped).
 
-Concept ids: `rarity` `freshness` `happiness` `day` `market` `skills` `family` `research` `automation`. Labels: Rarity, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation.
+```
+ConceptId =
+  | 'variety'
+  | 'quality'
+  | 'freshness'
+  | 'happiness'
+  | 'day'
+  | 'market'
+  | 'skills'
+  | 'family'
+  | 'research'
+  | 'automation'
+```
+
+Labels: Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation.
 
 Left-list: SKU rows keep `itemInner`. Overview and concept rows: title only, no icon plate.
 
@@ -81,7 +112,7 @@ Right pane: SKU → existing Pane. Concept → concept pane. Overview → Overvi
 
 Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
 
-Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `rarity`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not.
+Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not.
 
 ## AlmanacLink
 
@@ -95,21 +126,21 @@ Link concept names, Overview on the three tabs that have it, and a few example S
 
 ## Copy law
 
-Every value is qualified: subject + amount + unit/noun + where it applies. “Uncommon fruit of the same crop sells for a quarter more money at the Market than Common fruit.” “Rare vanilla fruit sells for three times the Common vanilla price at the Market.” Happiness going to empty. Freshness going to empty.
+Every value is qualified: subject + amount + unit/noun + where it applies. Quality is a percent of how the plant was treated. Variety is what the plant is. A path rating is **Preserving** / **Fresh** / **Alcohol** plus the number.
 
 Undefined words are illegal unless a natural farming word, or this page (or a linked page) has already defined them.
 
 **Recipe** is defined by [[ui/recipe]] and heads the Automation recipe block. Crop / tree Ingredients heading reuses that word: **Recipes**.
 
-Ban in player strings unless defined in-page: gem, pip, grade (except Rarity, first sentence: grade = Common / Uncommon / Rare / Heirloom), overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say daily pay). **Build** is ok as “the Build menu.”
-
-**“gem” is banned.** The colored `rarityInner` mark may still draw on the Rarity page. First use: “Uncommon, Rare, and Heirloom fruit show a small colored mark: green, blue, or gold. Common fruit has none.” After that, “the mark.”
+Ban in player strings unless defined in-page: gem, pip, overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say daily pay). **Build** is ok as “the Build menu.” `tier` is vault-only.
 
 Natural farmer words need no glossary. Game systems get a first-sentence definition on their own page.
 
-Still forbidden: stall, rolled, RNG, water lives, spoils soonest, SKU dumps, Cosmic Purple lists.
+Still forbidden: stall, rolled, RNG, water lives, spoils soonest, SKU dumps.
 
-Coin `<Coin />` for money amounts. Four rarities only.
+Coin `<Coin />` for money amounts.
+
+Variety and Quality concept copy, Variety descriptions, Seeds Overview links to those two: `<needs-game-text-writer>`.
 
 ## Overview
 
@@ -117,9 +148,9 @@ Help page. Same chrome as Game concepts. Title = list label **Overview**. No SKU
 
 A page is good iff the reader can answer: why do I need this, what can I use it for, what do I get from it.
 
-Forbidden on Overview: item-by-item link list of that tab’s rows; research-gated “after X you can”; full listing of crops / machines / sensors / variants; “See also” dump of every SKU title.
+Forbidden on Overview: item-by-item link list of that tab’s rows; research-gated “after X you can”; full listing of crops / machines / sensors / varieties; “See also” dump of every SKU title.
 
-Doorway links: a few named concepts or one example SKU, not a roster. Seeds Overview may link Rarity / Happiness / Freshness / Market. Sensors Overview may link Automation concept and one example (Lever or Water sensor). Automation Overview may link Market / Research / Sensors Overview.
+Doorway links: a few named concepts or one example SKU, not a roster. Seeds Overview may link Variety / Quality / Happiness / Freshness / Market. Sensors Overview may link Automation concept and one example (Lever or Water sensor). Automation Overview may link Market / Research / Sensors Overview.
 
 Copy lives in `src/game/ui/almanac.tsx`. Do not paste it here. Wrap the marked names in `AlmanacLink`.
 
@@ -129,19 +160,21 @@ Player help center. Same left-list + right-pane chrome as SKU entries. No SKU pl
 
 Copy lives in `src/game/ui/almanac.tsx`. Wrap marked names in `AlmanacLink`.
 
-Forbidden: Overview as a link-list of the tab’s SKUs. Research-gated walkthroughs. Full listing of items or variants. Unqualified stubs. Developer words: gem, pip, rolled, RNG, tick, DAG, node, SKU, dump, unitSale, seam, Cmd, hash, overlay, HUD, ribbon, dock. “Stall” — in game it is **Market**.
+Forbidden: Overview as a link-list of the tab’s SKUs. Research-gated walkthroughs. Full listing of items or varieties. Unqualified stubs. Developer words: gem, pip, rolled, RNG, tick, DAG, node, SKU, dump, unitSale, seam, Cmd, hash, overlay, HUD, ribbon, dock. “Stall” — in game it is **Market**.
 
 Automation here is the **concept page**, not a second copy of the SKU tab.
 
-Rarity is the grade of fruit and seed: Common / Uncommon / Rare / Heirloom. Four grades only. Bio farmer is a skill, not a grade. Common: no `rarityInner`. Uncommon / Rare / Heirloom: `rarityInner(rarity)` fills uncommon `leaf`, rare `water`, heirloom `ripe`. Same fills as `qualityPip`. Copy never says gem or pip.
+**Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. `<needs-game-text-writer>`.
+
+**Quality** is how well the plant was treated. A percent. Sale, seed carry, stack average. Bought seed starts at nothing. `<needs-game-text-writer>`.
 
 ## TreePane
 
-Same shell as CropPane: rarity tabs, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Rarity tabs preview dropped fruit only — the tree has no rarity. Name is `cropVariety(id, preview)`. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane.
+Same shell as CropPane: Variety row, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Variety row previews dropped fruit of that Variety — the tree's growth stage is not a Variety. Name is the Variety. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane, `recipesUsing` on that Variety's fruit.
 
 Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.** Does not say yielding / resting. Look / inspect words are on-season / off-season — [[ui/inspect]].
 
-Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale`), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price. Numbers: [[mechanics/trees]].
+Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale × RATING_SALE[use.fresh]` at Quality 0), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price. Numbers: [[mechanics/trees]]. Tree fruit Quality is 0.
 
 ## Pipe
 
@@ -149,10 +182,10 @@ Water systems list row `pipe` only. Valve and the sprinklers stay their own stat
 
 Same generic pane chrome as other non-crop entries: title, one plate, blurb. The plate is not `itemInner({ kind: 'pipe' })`.
 
-Cycle join art the way CropPane cycles `sprout` / `grow` / `ripe`: `useCycle(PIPE_JOINS.length)`, `CYCLE_MS` 800 — [[ui/recipe]]. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`.
+Cycle join art the way CropPane cycles `sprout` / `grow` / ripe: `useCycle(PIPE_JOINS.length)`, `CYCLE_MS` 800 — [[ui/recipe]]. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`.
 
-Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `setInterval`.
+Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `setInterval`. Variety row does not cycle.
 
-The seven machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]].
+The seven machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]]. Station does not.
 
-Assumption: Haggling knocks $1 per rank off utility and automation shop goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.
+Assumption: Haggling knocks $1 per owned haggling off utility and automation shop goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.

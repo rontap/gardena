@@ -4,8 +4,8 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 
 - [[mechanics/day]]
 - [[mechanics/soil]]
-- [[mechanics/plants]]
-- [[mechanics/trees]] — axe, wood, trunk
+- [[mechanics/plants]] — variety, quality, graft attach, neighbour
+- [[mechanics/trees]] — axe, wood, trunk, grafts
 - [[mechanics/water]]
 - [[mechanics/weather]]
 - [[mechanics/sensors]]
@@ -16,8 +16,8 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/research]]
 - [[mechanics/family]]
 - [[mechanics/expansion]]
-- [[mechanics/inventory]] — wood, ash
-- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace
+- [[mechanics/inventory]] — wood, ash, graft
+- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
 - [[mechanics/rng]]
@@ -45,12 +45,17 @@ See [[canon]].
 | plants.fresh | [[mechanics/plants]] |
 | plants.harvest | [[mechanics/plants]] |
 | plants.packs | [[mechanics/plants]] |
-| plants.rarity-lock | [[mechanics/plants]] |
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
 | plants.annual | [[mechanics/plants]] |
 | plants.tree-foot | [[mechanics/plants]] |
 | plants.kinds | [[mechanics/plants]] |
+| variety.identity | [[mechanics/plants]] |
+| variety.neighbour | [[mechanics/plants]] |
+| graft.attach | [[mechanics/plants]] |
+| quality.ripen | [[mechanics/plants]] |
+| quality.sale | [[mechanics/plants]] |
+| quality.carry | [[mechanics/plants]] |
 | trees.wild | [[mechanics/trees]] |
 | trees.yield | [[mechanics/trees]] |
 | trees.drop | [[mechanics/trees]] |
@@ -58,6 +63,7 @@ See [[canon]].
 | trees.ping | [[mechanics/trees]] |
 | trees.tend | [[mechanics/trees]] |
 | trees.chop | [[mechanics/trees]] |
+| graft.axe | [[mechanics/trees]] |
 | trees.trunk | [[mechanics/trees]] |
 | water.pour | [[mechanics/water]] |
 | water.targets | [[mechanics/water]] |
@@ -79,7 +85,7 @@ See [[canon]].
 | weeds.pull | [[mechanics/weeds]] |
 | weeds.grass | [[mechanics/weeds]] |
 | market.sell | [[mechanics/market]] |
-| market.rarity | [[mechanics/market]] |
+| market.quality | [[mechanics/market]] |
 | market.vodka-common | [[mechanics/market]] |
 | market.vodka-heirloom | [[mechanics/market]] |
 | market.mixed | [[mechanics/market]] |
@@ -113,9 +119,11 @@ See [[canon]].
 | family.jam-rot | [[mechanics/family]] |
 | family.hidden | [[mechanics/family]] |
 | family.unlockSkills | [[mechanics/family]] |
+| family.better-set | [[mechanics/family]] |
 | inventory.slots | [[mechanics/inventory]] |
 | inventory.compost | [[mechanics/inventory]] |
 | inventory.stack | [[mechanics/inventory]] |
+| variety.stack | [[mechanics/inventory]] |
 | inventory.containers | [[mechanics/inventory]] |
 | inventory.silo-buy | [[mechanics/inventory]] |
 | inventory.ash | [[mechanics/inventory]] |
@@ -131,6 +139,13 @@ See [[canon]].
 | machines.io-pull | [[mechanics/machines]] |
 | machines.io-push | [[mechanics/machines]] |
 | machines.grind-hopper | [[mechanics/machines]] |
+| machines.grind-tree | [[mechanics/machines]] |
+| machines.variety-lock | [[mechanics/machines]] |
+| still.variety | [[mechanics/machines]] |
+| machines.quality-carry | [[mechanics/machines]] |
+| station.cut | [[mechanics/machines]] |
+| station.io | [[mechanics/machines]] |
+| variety.copy | [[mechanics/machines]] |
 | machines.recipe-source | [[mechanics/machines]] |
 | machines.recipe-water | [[mechanics/machines]] |
 | machines.recipe-compost | [[mechanics/machines]] |
@@ -181,11 +196,8 @@ See [[canon]].
 | log.cmds | [[mechanics/log]] |
 | log.json | [[mechanics/log]] |
 | log.letters | [[mechanics/log]] |
-| rng.shop | [[mechanics/rng]] |
-| rng.ripen-n | [[mechanics/rng]] |
 | rng.spatial | [[mechanics/rng]] |
 | rng.fail | [[mechanics/rng]] |
-| rng.pack | [[mechanics/rng]] |
 | tutorial.on | [[mechanics/tutorial]] |
 | tutorial.session | [[mechanics/tutorial]] |
 | tutorial.tilled | [[mechanics/tutorial]] |

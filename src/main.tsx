@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { WorkerSink } from './game/sim/log.ts'
 import { DebugContracts } from './game/ui/debug-contracts.tsx'
+import { DebugIconset } from './game/ui/debug-iconset.tsx'
 import { DebugWeather } from './game/ui/debug-weather.tsx'
 
 const root = document.getElementById('root')!
@@ -36,6 +37,13 @@ if (location.hash === '#debug-techtree') {
   createRoot(root).render(
     <StrictMode>
       <DebugWeather />
+    </StrictMode>,
+  )
+} else if (location.hash === '#debug-iconset') {
+  openScroll()
+  createRoot(root).render(
+    <StrictMode>
+      <DebugIconset />
     </StrictMode>,
   )
 } else {

@@ -291,7 +291,7 @@ import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type Pic
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/market.h.ts'
 
-const CROPS: { readonly [K in CropId]: string } = {
+export const CROPS: { readonly [K in CropId]: string } = {
   carrot,
   potato,
   wheat,
@@ -306,7 +306,7 @@ const CROPS: { readonly [K in CropId]: string } = {
   cherry: apple,
 }
 
-const FRUIT: { readonly [K in CropId]: string } = {
+export const FRUIT: { readonly [K in CropId]: string } = {
   carrot: fruitCarrot,
   potato: fruitPotato,
   wheat: fruitWheat,
@@ -321,7 +321,7 @@ const FRUIT: { readonly [K in CropId]: string } = {
   cherry: fruitCherry,
 }
 
-const TREE_PROP: { readonly [K in TreeId]: string } = {
+export const TREE_PROP: { readonly [K in TreeId]: string } = {
   apple: appleTree,
   apricot: apricotTree,
   olive: oliveTree,
@@ -954,6 +954,16 @@ export function groupInner(raw: string, id: string): string {
   const open = `<g id="${id}">`
   const start = raw.indexOf(open) + open.length
   return raw.slice(start, raw.indexOf('</g>', start))
+}
+
+export function svgGroupIds(raw: string): string[] {
+  return [...raw.matchAll(/<g id="([^"]+)"/g)].map(m => m[1]!)
+}
+
+export function svgViewBox(raw: string): string {
+  const found = /viewBox="([^"]+)"/.exec(raw)
+  if (found === null) throw new Error('viewBox')
+  return found[1]!
 }
 
 function stageOnly(raw: string, stage: string): string {

@@ -19,7 +19,7 @@ Maps, same `Coord` values as `live`. Origin-only for multi-cell. `live` is not a
 | name | members |
 |---|---|
 | grow | growing, ripe, weed, turf, tree origin |
-| machines | mill, jam, still, barrel, grinder, compost, furnace origin |
+| machines | mill, jam, still, barrel, grinder, compost, furnace, station origin |
 | stores | chest, freezer |
 | sensors | sunk sensor cells |
 | buttons | button cells |
@@ -35,7 +35,7 @@ Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase.
 | `tickMachines` / `tickCompost` | machines. Snapshot working furnaces at start of `tickMachines`; compost uses that set |
 | `tickFreshness` | stores (+ seats / drops / vehicles, not grow). Freezer slots still skip |
 | `tickButtons` | buttons |
-| `evalSensors` | sensors + machines + stores. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell |
+| `evalSensors` | sensors + machines + stores. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell. Station `inn` combinational |
 | `sproutWeeds` | empty |
 | weather soak | tilled. `tickBig` walks it |
 | `padBuildings` | machines + stores (+ `silo` / `additives` / `seedSilos`) |
@@ -74,7 +74,7 @@ A new `DirtyReason` must have a view that filters it. Unused reason is a defect.
 
 ## Stats
 
-`World.modGen` increments when `modifiers` change. Cache `statsOf(crop, rarity)` for that generation. Plants do not re-filter modifiers every tick.
+`World.modGen` increments when `modifiers` change. Cache `statsOf(crop, variety)` for that generation. `qualityMul` applies at sale, not in the cache key. Plants do not re-filter modifiers every tick.
 
 ## Water
 

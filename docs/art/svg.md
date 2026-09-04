@@ -34,10 +34,12 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 
 | files | ids |
 |---|---|
-| `crop-*.svg` | `sprout` `grow` `ripe` `ripe-rare` `ripe-heirloom` `dead` |
-| `fruit-*.svg` | `common` `rare` `heirloom` |
+| `crop-*.svg` | `sprout` `grow` `ripe` `ripe-variant` `ripe-variant-2` `ripe-heirloom` `dead` |
+| `fruit-*.svg` | `base` `variant` `variant-2` `heirloom` |
 | `item-wine.svg` `item-cider.svg` | `common` `rare` `heirloom` |
-| `prop-*-tree.svg` | `trunk` `grow` `unripe` `ripe` — `trunk` is the cut trunk, `grow` is the sapling, [[art/tree]] |
+| `prop-*-tree.svg` | `trunk` `grow` `unripe` `unripe-variant` `unripe-variant-2` `unripe-heirloom` `ripe` `ripe-variant` `ripe-variant-2` `ripe-heirloom` — `trunk` is the cut trunk, `grow` is the sapling, [[art/tree]] |
+| `item-graft-*.svg` | `base` `variant` `variant-2` `heirloom` |
+| `item-research-station` `prop-research-station` | `off` `on` |
 | `crop-weed-*.svg` | `sprout` `grow` |
 | `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` `prop-furnace` | `off` `on` |
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |
@@ -46,7 +48,9 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `pipe-valve-jack` | `jack` |
 
-Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). Uncommon uses `common` / `ripe`.
+Four variety faces. Crop ripe: `ripe` (base), `ripe-variant`, `ripe-variant-2`, `ripe-heirloom`. Fruit: `base`, `variant`, `variant-2`, `heirloom`. Extra groups on a crop with fewer varieties may copy `ripe` / `base`. Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`).
+
+Not this set: watermelon, grass, weed, rotten.
 
 Rotten field plant is `crop-rotten.svg`, not a crop group.
 

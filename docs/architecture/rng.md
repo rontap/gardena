@@ -2,7 +2,7 @@
 
 Deterministic streams. [[architecture/world]] [[architecture/log]] [[architecture/modules]] [[mechanics/rng]]
 
-`hash` mixer stays. `rollRarity` stays. `rollShopRarity` / `rollGrowRarity` stay in `defs/rarity.ts`. Owner: `sim/rng.ts`. `World.rng`, `World.ripenN` on `sim/world.ts`.
+`hash` mixer stays. Owner: `sim/rng.ts`. `World.rng` on `sim/world.ts`. No `World.ripenN`. No grow stream.
 
 ## Seed
 
@@ -10,11 +10,11 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 
 ## Types
 
-`StreamId = SpatialId | SeqId`. Spatial: `gen` `grow` `weed` `grass` `tree` `skill` `grind` `still` `barrel` `contract` `weather`. Seq: `shop` `fruit`. Shape: `sim/rng.ts`.
+`StreamId = SpatialId | SeqId`. Spatial: `gen` `weed` `grass` `tree` `skill` `grind` `contract` `weather`. Seq: `fruit`. Shape: `sim/rng.ts`.
 
 `streamSeed` = mixer u32 of `world.seed` and `StreamId`. `at(...ints)` mixes those ints onto `streamSeed` and returns `[0,1)`. `next()` mixes a per-stream monotonic seq starting at 0.
 
-Illegal: `Spatial.at()` with no ints. Illegal: `next()` on a spatial id. Illegal: `at()` on `shop` / `fruit`. Illegal: `clock.t` or `money` as entropy.
+Illegal: `Spatial.at()` with no ints. Illegal: `next()` on a spatial id. Illegal: `at()` on `fruit`. Illegal: `clock.t` or `money` as entropy.
 
 ## Identities
 
@@ -30,16 +30,6 @@ Illegal: `Spatial.at()` with no ints. Illegal: `next()` on a spatial id. Illegal
 | 5 | goodIx | crate |
 
 Noise uses octave lattice, not world `(col, row, oct)`.
-
-### grow — `at(col, row, day, n)`
-
-`n` = prior ripen count on that cell. Illegal to reuse `(col, row, day)` alone.
-
-`n` lives on `World`, not `Soil`. `World.ripenN` keyed `col,row`. Absent = 0. On growing → ripe: roll with current `n`, then store `n + 1`. Survives harvest, till, `freshSoil`, delete. `Soil` is replaced; a Soil field would reset.
-
-### shop — `next()` per pack granted
-
-One `next()` per pack actually put in inventory. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`. Success = 5 `next()`s, in order. Failed afford / fit / closed sku consumes 0. `u` still goes to `rollShopRarity(seed-bank tier, u)`.
 
 ### weed — `at(col, row, bigTicks)` including kind
 
@@ -65,7 +55,7 @@ Yield on/off. `col, row` = `Tree.base`.
 
 ### fruit — `next()` per successful drop
 
-Consume only when a drop spot is found and fruit is spawned. Failed drop does not consume. `rollRarity(u)`.
+Consume only when a drop spot is found and fruit is spawned. Failed drop does not consume. One `next()`: spot. Variety is the tree's. Quality is 0.
 
 ### skill — `at(memberIx, pickCount, i)`
 
@@ -73,19 +63,11 @@ Consume only when a drop spot is found and fruit is spawned. Failed drop does no
 
 ### grind — `at(col, row, day, i)`
 
-`i` is the unit index in that grind.
-
-### still — `at(col, row, day, n)`
-
-`n` is the still’s batch index. Consume on finish only. Failed start (no water) consumes 0.
-
-### barrel — `at(col, row, day, n)`
-
-`n` is the barrel’s batch index. Consume at mature only. Collect does not consume.
+`i` is the unit index in that grind. Station graft count 1–2 uses `grind.at(col, row, day)` on finish only.
 
 ### contract — `at(day, slot, k)`
 
-Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, slot, k)` only. Amount is derived. Pair is leftover budget, not a roll. `rollBoard` [[mechanics/contracts]].
+Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, slot, k)` only. Amount is derived. Pair is leftover budget, not a roll. `k` 4 and 9 unused. `rollBoard` [[mechanics/contracts]].
 
 ### weather — `at(day, k)`
 

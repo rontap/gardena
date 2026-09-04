@@ -22,6 +22,8 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `item-freezer.svg` | same, shop/hand |
 | `prop-furnace.svg` | 1×2 `0 0 24 48`, drawn 1×1.5 (`24×36`) south-aligned `y=12`–`48`, iron / oil body, roof brick, steel lip, opening south, chimney north; groups `off` `on`; chimney mouth `(12, 14)` |
 | `item-furnace.svg` | same machine, shop/hand, stays 24×24 |
+| `prop-research-station.svg` | 1×1 `0 0 24 24`, cottage shed, west hopper, millstone cutting block, roof knife, east crate; groups `off` `on`. Not industrial metal |
+| `item-research-station.svg` | same machine, shop/hand, larger; groups `off` `on` |
 
 ## Fruit
 
@@ -44,7 +46,10 @@ No groups. Shop/hand/almanac face.
 
 | file | groups | depicts |
 |---|---|---|
-| `item-wine.svg` | `common` `rare` `heirloom` | long-neck bottle. Common grape; rare house; heirloom ripe |
+| `item-wine.svg` | `common` `rare` `heirloom` | long-neck bottle. `common` grape; `rare` house; `heirloom` ripe |
+| `item-cider.svg` | `common` `rare` `heirloom` | squat bottle, ripe fill |
+
+Variety faces for wine, cider, and named jam (`concord` grape jelly, `black-raspberry` jam, `montmorency` preserve, `blenheim` jam, `san-marzano` passata) are Sprint 4. Do not redraw those SVGs in this sprint.
 
 ## Jams
 
@@ -67,4 +72,6 @@ Jar = skill-jam language. Ketchup is a bottle.
 | `item-flour.svg` | house sack, wheat heads |
 | `item-extract.svg` | vial, grass-dark / leaf |
 
-Assumption: occupancy stays 2×1 / 1×2; only the drawing is 1.5×1 / 1×1.5. Uncommon wine/spirit/cane uses common group. Ketchup is a bottle not a jar. Still shop face is the 2×1 still packed into 24×24.
+Station `off` is empty block, knife resting, empty crate. `on` is fruit in the hopper, fruit on the block with house cut face, graft in the crate. Cottage processing cutting bench. Mill language: hopper, millstone, crate. Knife copper reads as roof. No steel / iron / oil.
+
+Assumption: occupancy stays 2×1 / 1×2; only the drawing is 1.5×1 / 1×1.5. Wine / cider / cane `rare` unused: `common` stands in. Ketchup is a bottle not a jar. Still shop face is the 2×1 still packed into 24×24.

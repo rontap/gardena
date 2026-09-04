@@ -2,8 +2,9 @@ import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import type { SkillId } from '../sim/ids.ts'
 import { BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED } from './items.ts'
-import { SEED_BANK_CHANCE } from './rarity.ts'
-import { JAM_ROT, SKILLS, skillBlurb } from './skills.ts'
+import { BETTER_IDS, JAM_ROT, SKILLS, betterGain, skillBlurb } from './skills.ts'
+import { BETTER_QUALITY } from './varieties.ts'
+import { HAPPY_MAX } from './crops.ts'
 
 describe('skills i18n', () => {
   test('RESEARCH[id].name and .blurb and SKILLS[id].name/.blurb become calls to `m.*`', () => {
@@ -19,8 +20,6 @@ describe('skills i18n', () => {
     )
     expect(SKILLS['driving-classes'].blurb).toBe(m.skills_driving_classes_blurb({ pct: 5 }))
     expect(SKILLS.tending.blurb).toBe(m.skills_tending_blurb())
-    expect(SKILLS['seed-bank'].blurb).toBe(m.skills_seed_bank_blurb())
-    expect(SKILLS['better-carrot'].blurb).toBe(m.skills_better_carrot_blurb({ pct: 4 }))
     expect(SKILLS['research-speed'].blurb).toBe(m.skills_research_speed_blurb({ pct: 5 }))
     expect(SKILLS.machinery.blurb).toBe(m.skills_machinery_blurb({ pct: 5 }))
     expect(SKILLS.haggling.blurb).toBe(m.skills_haggling_blurb({ off: 1 }))
@@ -42,14 +41,6 @@ describe('skills i18n', () => {
 
   test('Hover uses `skillBlurb(id, tier)` — jam names the rank’s slower rot; seed-bank names the rank’s shop pack odds.', () => {
     expect(skillBlurb('jam', 2)).toBe(m.skills_jam_skillblurb({ pct: Math.round(JAM_ROT * 2 * 100) }))
-    const n = (rate: number) => `${+(rate * 100 * 3).toFixed(2)}`
-    expect(skillBlurb('seed-bank', 3)).toBe(
-      m.skills_seed_bank_skillblurb({
-        uncommon: n(SEED_BANK_CHANCE.uncommon),
-        rare: n(SEED_BANK_CHANCE.rare),
-        heirloom: n(SEED_BANK_CHANCE.heirloom),
-      }),
-    )
   })
 
   test('Numbers from `src/game/defs/`. Copy never embeds digits.', () => {
@@ -72,6 +63,26 @@ describe('skills i18n', () => {
     expect(skillBlurb('heirloom', 2)).toBe(m.skills_heirloom_skillblurb({ pct: 5 * 2 }))
     expect(skillBlurb('bio', 3)).toBe(m.skills_bio_skillblurb({ pct: 4 * 3 }))
     expect(skillBlurb('tending', 1)).toBe(SKILLS.tending.blurb)
-    expect(skillBlurb('better-carrot', 1)).toBe(SKILLS['better-carrot'].blurb)
+    expect(skillBlurb('better-potato', 1)).toBe(SKILLS['better-potato'].blurb)
+  })
+})
+
+describe('family.better-set', () => {
+  test('`better-*` exists for potato wheat tomato raspberry grape apple apricot olive cherry. `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)`. Tree `better-*` is `saleMul` only.', () => {
+    expect(Object.keys(BETTER_IDS).sort()).toEqual(
+      ['apple', 'apricot', 'cherry', 'grape', 'olive', 'potato', 'raspberry', 'tomato', 'wheat'].sort(),
+    )
+    expect('better-carrot' in SKILLS).toBe(false)
+    expect('better-vanilla' in SKILLS).toBe(false)
+    expect('better-sugar-cane' in SKILLS).toBe(false)
+    expect(SKILLS['better-apple'].gate).toEqual({ kind: 'none' })
+    expect(SKILLS['better-apricot'].gate).toEqual({ kind: 'none' })
+    expect(SKILLS['better-olive'].gate).toEqual({ kind: 'none' })
+    expect(SKILLS['better-cherry'].gate).toEqual({ kind: 'none' })
+    const owned = (id: SkillId) => (id === 'better-potato' ? 1 : 0)
+    expect(betterGain('potato', HAPPY_MAX, owned)).toBe(BETTER_QUALITY)
+    expect(betterGain('potato', HAPPY_MAX / 2, owned)).toBe(BETTER_QUALITY * 0.5)
+    expect(betterGain('carrot', HAPPY_MAX, owned)).toBe(0)
+    expect(betterGain('apple', HAPPY_MAX, id => (id === 'better-apple' ? 1 : 0))).toBe(BETTER_QUALITY)
   })
 })

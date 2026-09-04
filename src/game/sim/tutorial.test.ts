@@ -21,7 +21,7 @@ function plots(w: World, n: number, kind: 'empty' | 'growing' | 'ripe'): void {
   for (let i = 0; i < n; i++) {
     const at = { col: 10 + i, row: 12 }
     if (kind === 'empty') w.setCell(at, { kind: 'empty', soil: bed() })
-    else w.setCell(at, { kind, soil: bed(), plant: new Plant('carrot', 'common') })
+    else w.setCell(at, { kind, soil: bed(), plant: new Plant('carrot', 'base', 0) })
   }
 }
 
@@ -95,7 +95,7 @@ describe('tutorial', () => {
 
   test('Step 6 ready is `waterBand(...) === \'red\'` on a `growing` plant. No extra thirst flag.', () => {
     const w = new World(1)
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: bed(0), plant: p })
     expect(waterBand(0, p.stats(w.modifiers).waterTolerance)).toBe('red')
     const t: Tutorial = { kind: 'on', step: 6, poured: false, sold: false }
@@ -109,14 +109,14 @@ describe('tutorial', () => {
   test('Step 8 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.', () => {
     const w = new World(1)
     plots(w, 4, 'growing')
-    w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
+    w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'base', 0) })
     w.done.add('unlock-tomato')
     w.drops.push({
       at: AT,
       item: {
         kind: 'fruit',
         crop: 'carrot',
-        rarity: 'common',
+        variety: 'base', quality: 0,
         count: 1,
         unitSale: 1,
         freshness: 1,
@@ -135,7 +135,7 @@ describe('tutorial', () => {
     expect(w.marketGain()).toBe(0)
     const noop = check(w, t)
     expect(noop.kind === 'on' && noop.step === 8).toBe(true)
-    w.stall.carrot.take('common', 2, 1, true)
+    w.stall.carrot.take('base', 2, 1, true)
     expect(w.marketOpen() && w.marketGain() > 0).toBe(true)
     const pays = w.marketOpen() && w.marketGain() > 0
     w.sellAll()
@@ -165,8 +165,8 @@ describe('tutorial', () => {
 
   test('dump→parse restores seed, clock, money, shop/fruit cursors, a tilled cell, idle gardener', () => {
     const w = new World(1)
-    w.rng.stream('shop').next()
-    w.rng.stream('shop').next()
+    w.rng.stream('fruit').next()
+    w.rng.stream('fruit').next()
     w.rng.stream('fruit').next()
     w.setCell(AT, { kind: 'empty', soil: bed(0.8, 0.4) })
     w.clock.day = 3
@@ -183,17 +183,17 @@ describe('tutorial', () => {
     expect(r.world.clock.day).toBe(3)
     expect(r.world.clock.t).toBe(41)
     expect(r.world.money).toBe(88)
-    expect(r.world.rng.consumed('shop')).toBe(2)
-    expect(r.world.rng.consumed('fruit')).toBe(1)
+    expect(r.world.rng.consumed('fruit')).toBe(3)
     expect(r.world.cell(AT).kind).toBe('empty')
     expect(r.world.seats[0].queue).toEqual([])
     expect(r.world.seats[0].actor.work).toBe(0)
     expect(r.world.seats[0].actor.x).toBe(12.25)
     expect(r.world.seats[0].actor.y).toBe(9.75)
     const seq = new Rng(1)
-    seq.stream('shop').next()
-    seq.stream('shop').next()
-    expect(r.world.rng.stream('shop').next()).toBe(seq.stream('shop').next())
+    seq.stream('fruit').next()
+    seq.stream('fruit').next()
+    seq.stream('fruit').next()
+    expect(r.world.rng.stream('fruit').next()).toBe(seq.stream('fruit').next())
   })
 
   test('bad item kind fails parse', () => {

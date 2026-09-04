@@ -1,6 +1,6 @@
 import { type CropClass } from '../defs/crops.ts'
 import { CHEST_SLOTS, CONTAINERS, COUNTER_MAX, FREEZER_LARGE_SLOTS, FREEZER_SLOTS, HARVEST_SLOTS, PICKAXES, SHOVELS, VEHICLE_SLOTS } from '../defs/items.ts'
-import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
+import { isVarietyId, VARIETY_IDS, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH } from '../defs/research.ts'
 import { DAUGHTER_SKILL_IDS, HUSBAND_SKILL_IDS, PLAYER_SKILL_IDS } from '../defs/skills.ts'
 import { Actor } from './actor.ts'
@@ -55,7 +55,6 @@ import {
   type DaughterSkillId,
   type HusbandSkillId,
   JAM_CROPS,
-  JAM_IDS,
   type JamCrop,
   MILL_RECIPES,
   type MillRecipe,
@@ -89,10 +88,8 @@ import type {
   HistoryEntry,
   Lines,
   Outcome,
-  PlainGoodId,
   Prize,
   PrizeTool,
-  RarityGoodId,
   Stars,
 } from './market.h.ts'
 import { COMPANY_IDS } from '../defs/companies.ts'
@@ -149,7 +146,7 @@ export type LoadFailReason = 'unknown-format' | 'not-gardena' | 'version' | 'unu
 
 export type LoadResult = { ok: true; world: World } | { ok: false; reason: LoadFailReason }
 
-export type SaveRng = { seed: number; shop: number; fruit: number }
+export type SaveRng = { seed: number; fruit: number }
 
 export type SaveMember<Id> = {
   pickCount: number
@@ -162,15 +159,16 @@ export type SaveStallGood = {
   market: number
   target: number
   acc: number
-  stock: { [K in Rarity]: { organic: number; synth: number } }
-  worth: { [K in Rarity]: { organic: number; synth: number } }
+  stock: { [K in VarietyId]: { organic: number; synth: number } }
+  worth: { [K in VarietyId]: { organic: number; synth: number } }
 }
 
 export type SaveSoil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
 
 export type SavePlant = {
   crop: AnnualId
-  rarity: Rarity
+  variety: VarietyId
+  quality: number
   maturity: number
   freshness: number
   happiness: number
@@ -197,15 +195,15 @@ export type SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }
-  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean }
+  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
-  | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; rarity: Rarity; units: number; progress: number; n: number }
+  | { kind: 'grinder'; base: RectBase; crop: AnnualId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
-  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; units: number; progress: number; inn: 0 | 1 }
-  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
-  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; rarity: Rarity; count: number }[]; progress: number; n: number; inn: 0 | 1 }
+  | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
+  | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
+  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
-  | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { rarity: Rarity; count: number }[]; age: number; n: number }
+  | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
   | { kind: 'silo-seed'; base: RectBase }
@@ -332,7 +330,6 @@ export type Save = {
   stall: { [K in StallGoodId]: SaveStallGood }
   tally: { died: number; harvests: number; research: ResearchId[] }
   seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
-  ripenN: { col: number; row: number; n: number }[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
   sprinklers: Sprinkler[]
@@ -360,7 +357,7 @@ export function dump(world: World): Save {
     game: 'gardena',
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
-    rng: { seed: world.rng.seed, shop: world.rng.consumed('shop'), fruit: world.rng.consumed('fruit') },
+    rng: { seed: world.rng.seed, fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },
     money: world.money,
     rep: world.contracts.rep,
@@ -415,11 +412,6 @@ export function dump(world: World): Save {
               water: world.seam.recap.water,
             },
           },
-    ripenN: [...world.ripenN.entries()].flatMap(([k, n]) => {
-      if (n <= 0) return []
-      const i = k.indexOf(',')
-      return [{ col: Number(k.slice(0, i)), row: Number(k.slice(i + 1)), n }]
-    }),
     chunks: world.owned.map(id => {
       const { col0, row0 } = chunkRect(id)
       const cells: SaveCell[][] = []
@@ -518,18 +510,8 @@ function dumpStall(g: StallGood): SaveStallGood {
     market: 0,
     target: 0,
     acc: 0,
-    stock: {
-      common: { ...g.stock.common },
-      uncommon: { ...g.stock.uncommon },
-      rare: { ...g.stock.rare },
-      heirloom: { ...g.stock.heirloom },
-    },
-    worth: {
-      common: { ...g.worth.common },
-      uncommon: { ...g.worth.uncommon },
-      rare: { ...g.worth.rare },
-      heirloom: { ...g.worth.heirloom },
-    },
+    stock: Object.fromEntries(VARIETY_IDS.map(v => [v, { ...g.stock[v] }])) as SaveStallGood['stock'],
+    worth: Object.fromEntries(VARIETY_IDS.map(v => [v, { ...g.worth[v] }])) as SaveStallGood['worth'],
   }
 }
 
@@ -615,6 +597,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         yield: c.yield,
         tended: c.tended,
         trunk: c.trunk,
+        variety: c.variety,
       }
     case 'chest':
       return { kind: 'chest', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }
@@ -641,7 +624,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         kind: 'grinder',
         base: c.base,
         crop: c.crop,
-        rarity: c.rarity,
+        variety: c.variety,
+        quality: c.quality,
         units: c.units,
         progress: c.progress,
         n: c.n,
@@ -649,9 +633,9 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'compost-box':
       return { kind: 'compost-box', base: c.base, units: c.units, progress: c.progress }
     case 'mill':
-      return { kind: 'mill', base: c.base, recipe: c.recipe, units: c.units, progress: c.progress, inn: c.inn }
+      return { kind: 'mill', base: c.base, recipe: c.recipe, variety: c.variety, quality: c.quality, units: c.units, progress: c.progress, inn: c.inn }
     case 'jam':
-      return { kind: 'jam', base: c.base, crop: c.crop, fruit: c.fruit, sugar: c.sugar, progress: c.progress, inn: c.inn }
+      return { kind: 'jam', base: c.base, crop: c.crop, variety: c.variety, quality: c.quality, fruit: c.fruit, sugar: c.sugar, progress: c.progress, inn: c.inn }
     case 'still':
       return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
     case 'furnace':
@@ -719,7 +703,8 @@ function dumpSoil(s: Soil): SaveSoil {
 function dumpPlant(p: Plant): SavePlant {
   return {
     crop: p.crop,
-    rarity: p.rarity,
+    variety: p.variety,
+    quality: p.quality,
     maturity: p.maturity,
     freshness: p.freshness,
     happiness: p.happiness,
@@ -781,7 +766,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   if (rngIn === undefined || clockIn === undefined) return undefined
   if (familyIn === undefined || tallyIn === undefined) return undefined
   const seed = num(rngIn.seed)
-  const shop = num(rngIn.shop)
   const fruit = num(rngIn.fruit)
   const day = num(clockIn.day)
   const t = num(clockIn.t)
@@ -798,7 +782,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   const seats = readSeats(rec)
   if (
     seed === undefined ||
-    shop === undefined ||
     fruit === undefined ||
     day === undefined ||
     t === undefined ||
@@ -835,18 +818,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
   if (tally === undefined) return undefined
   const seam = readSeam(rec.seam)
   if (seam === undefined) return undefined
-  const ripenIn = arr(rec.ripenN)
-  if (ripenIn === undefined) return undefined
-  const ripenN: { col: number; row: number; n: number }[] = []
-  for (const e of ripenIn) {
-    const o = obj(e)
-    if (o === undefined) return undefined
-    const col = num(o.col)
-    const row = num(o.row)
-    const n = num(o.n)
-    if (col === undefined || row === undefined || n === undefined || n <= 0) return undefined
-    ripenN.push({ col, row, n })
-  }
   const chunksIn = arr(rec.chunks)
   if (chunksIn === undefined) return undefined
   const chunks: { id: ChunkId; cells: SaveCell[][] }[] = []
@@ -964,7 +935,7 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     contracts,
     version: SAVE_VERSION,
     savedAt,
-    rng: { seed, shop, fruit },
+    rng: { seed, fruit },
     clock: { day, t },
     money,
     rep,
@@ -982,7 +953,6 @@ function readSave(rec: Record<string, unknown>): Save | undefined {
     stall,
     tally,
     seam,
-    ripenN,
     chunks,
     segments,
     sprinklers,
@@ -1004,7 +974,7 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
   const live = stampChunks(owned, save.chunks)
   if (live === undefined) return undefined
   const h: Hydrate = {
-    rng: new Rng(save.rng.seed, { shop: save.rng.shop, fruit: save.rng.fruit }),
+    rng: new Rng(save.rng.seed, { fruit: save.rng.fruit }),
     sink,
     house: live.house,
     silo: live.silo,
@@ -1071,7 +1041,6 @@ function worldFromSave(save: Save, sink: LogSink): World | undefined {
             kind: 'recap',
             recap: { ...save.seam.recap, contracts: [] },
           },
-    ripenN: save.ripenN,
     segments: save.segments,
     wells: live.wells,
     sprinklers: save.sprinklers,
@@ -1102,7 +1071,7 @@ function makeStallMap(s: Save['stall']): StallMap {
   for (const id of STALL_IDS) {
     const src = s[id]
     const g = new StallGood(id)
-    RARITY_RANK.forEach(r => {
+    VARIETY_IDS.forEach(r => {
       g.stock[r] = { organic: src.stock[r].organic, synth: src.stock[r].synth }
       g.worth[r] = { organic: src.worth[r].organic, synth: src.worth[r].synth }
     })
@@ -1286,6 +1255,7 @@ function makeLive(sc: SaveCell): Cell | undefined {
       const tree = new Tree(sc.species, sc.base, sc.juvenile, sc.fruit, sc.yield)
       tree.tended = sc.tended
       tree.trunk = sc.trunk
+      tree.variety = sc.variety
       return tree
     }
     case 'chest': {
@@ -1312,7 +1282,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'grinder': {
       const g = new Grinder(sc.base)
       g.crop = sc.crop
-      g.rarity = sc.rarity
+      g.variety = sc.variety
+      g.quality = sc.quality
       g.units = sc.units
       g.progress = sc.progress
       g.n = sc.n
@@ -1327,6 +1298,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'mill': {
       const mill = new Mill(sc.base)
       mill.recipe = sc.recipe
+      mill.variety = sc.variety
+      mill.quality = sc.quality
       mill.units = sc.units
       mill.progress = sc.progress
       mill.inn = sc.inn
@@ -1335,6 +1308,8 @@ function makeLive(sc: SaveCell): Cell | undefined {
     case 'jam': {
       const jam = new JamMachine(sc.base)
       jam.crop = sc.crop
+      jam.variety = sc.variety
+      jam.quality = sc.quality
       jam.fruit = sc.fruit
       jam.sugar = sc.sugar
       jam.progress = sc.progress
@@ -1494,7 +1469,7 @@ function makeSoil(s: SaveSoil): Soil {
 }
 
 function makePlant(p: SavePlant): Plant {
-  const plant = new Plant(p.crop, p.rarity)
+  const plant = new Plant(p.crop, p.variety, p.quality)
   plant.maturity = p.maturity
   plant.freshness = p.freshness
   plant.happiness = p.happiness
@@ -1585,8 +1560,9 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     const y = readTreeYield(o.yield)
     const tended = bool(o.tended)
     const trunk = bool(o.trunk)
-    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined || tended === undefined || trunk === undefined) return undefined
-    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y, tended, trunk }
+    const variety = readVariety(o.variety)
+    if (base === undefined || juvenile === undefined || fruit === undefined || y === undefined || tended === undefined || trunk === undefined || variety === undefined) return undefined
+    return { kind: 'tree', species: o.species, base, juvenile, fruit, yield: y, tended, trunk, variety }
   }
   if (kind === 'chest') {
     const base = readRectBase(o.base)
@@ -1635,14 +1611,15 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   if (kind === 'grinder') {
     const base = readRectBase(o.base)
     const crop = o.crop === 'none' ? 'none' : readAnnualId(o.crop)
-    const rarity = readRarity(o.rarity)
+    const variety = readVariety(o.variety)
+    const quality = num(o.quality)
     const units = num(o.units)
     const progress = num(o.progress)
     const n = num(o.n)
-    if (base === undefined || crop === undefined || rarity === undefined || units === undefined || progress === undefined || n === undefined) {
+    if (base === undefined || crop === undefined || variety === undefined || quality === undefined || units === undefined || progress === undefined || n === undefined) {
       return undefined
     }
-    return { kind: 'grinder', base, crop, rarity, units, progress, n }
+    return { kind: 'grinder', base, crop, variety, quality, units, progress, n }
   }
   if (kind === 'compost-box') {
     const base = readRectBase(o.base)
@@ -1654,23 +1631,27 @@ function readSaveCell(v: unknown): SaveCell | undefined {
   if (kind === 'mill') {
     const base = readRectBase(o.base)
     const recipe = readMillRecipe(o.recipe)
+    const variety = readVariety(o.variety)
+    const quality = num(o.quality)
     const units = num(o.units)
     const progress = num(o.progress)
-    if (base === undefined || recipe === undefined || units === undefined || progress === undefined) return undefined
+    if (base === undefined || recipe === undefined || variety === undefined || quality === undefined || units === undefined || progress === undefined) return undefined
     if (o.inn !== 0 && o.inn !== 1) return undefined
-    return { kind: 'mill', base, recipe, units, progress, inn: o.inn }
+    return { kind: 'mill', base, recipe, variety, quality, units, progress, inn: o.inn }
   }
   if (kind === 'jam') {
     const base = readRectBase(o.base)
     const crop = readJamCropOrNone(o.crop)
+    const variety = readVariety(o.variety)
+    const quality = num(o.quality)
     const fruit = num(o.fruit)
     const sugar = num(o.sugar)
     const progress = num(o.progress)
-    if (base === undefined || crop === undefined || fruit === undefined || sugar === undefined || progress === undefined) {
+    if (base === undefined || crop === undefined || variety === undefined || quality === undefined || fruit === undefined || sugar === undefined || progress === undefined) {
       return undefined
     }
     if (o.inn !== 0 && o.inn !== 1) return undefined
-    return { kind: 'jam', base, crop, fruit, sugar, progress, inn: o.inn }
+    return { kind: 'jam', base, crop, variety, quality, fruit, sugar, progress, inn: o.inn }
   }
   if (kind === 'still') {
     const base = readRectBase(o.base)
@@ -1680,7 +1661,7 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined || feedIn === undefined || progress === undefined || n === undefined) return undefined
     if (base.w !== 2 || base.h !== 1) return undefined
     if (o.inn !== 0 && o.inn !== 1) return undefined
-    const feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
+    const feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[] = []
     for (const f of feedIn) {
       const e = readStillFeed(f)
       if (e === undefined) return undefined
@@ -1708,7 +1689,7 @@ function readSaveCell(v: unknown): SaveCell | undefined {
     if (base === undefined || crop === undefined || feedIn === undefined || age === undefined || n === undefined) {
       return undefined
     }
-    const feed: { rarity: Rarity; count: number }[] = []
+    const feed: { variety: VarietyId; quality: number; count: number }[] = []
     for (const f of feedIn) {
       const e = readBarrelFeed(f)
       if (e === undefined) return undefined
@@ -2086,14 +2067,16 @@ function readPlant(v: unknown): SavePlant | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
   if (!isAnnual(o.crop)) return undefined
-  const rarity = readRarity(o.rarity)
+  const variety = readVariety(o.variety)
+  const quality = num(o.quality)
   const maturity = num(o.maturity)
   const freshness = num(o.freshness)
   const happiness = num(o.happiness)
   const bio = bool(o.bio)
   const tended = bool(o.tended)
   if (
-    rarity === undefined ||
+    variety === undefined ||
+    quality === undefined ||
     maturity === undefined ||
     freshness === undefined ||
     happiness === undefined ||
@@ -2102,7 +2085,7 @@ function readPlant(v: unknown): SavePlant | undefined {
   ) {
     return undefined
   }
-  return { crop: o.crop, rarity, maturity, freshness, happiness, bio, tended }
+  return { crop: o.crop, variety, quality, maturity, freshness, happiness, bio, tended }
 }
 
 function readWeed(v: unknown): SaveWeed | undefined {
@@ -2271,11 +2254,11 @@ function readStallGoodSave(v: unknown): SaveStallGood | undefined {
   return { offered, market, target, acc, stock, worth }
 }
 
-function readBins(v: unknown): { [K in Rarity]: { organic: number; synth: number } } | undefined {
+function readBins(v: unknown): { [K in VarietyId]: { organic: number; synth: number } } | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
-  const out = {} as { [K in Rarity]: { organic: number; synth: number } }
-  for (const r of RARITY_RANK) {
+  const out = {} as { [K in VarietyId]: { organic: number; synth: number } }
+  for (const r of VARIETY_IDS) {
     const b = obj(o[r])
     if (b === undefined) return undefined
     const organic = num(b.organic)
@@ -2487,10 +2470,11 @@ function readItem(v: unknown): Item | undefined {
     }
     case 'seeds': {
       if (!isAnnual(o.crop)) return undefined
-      const rarity = readRarity(o.rarity)
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
       const count = num(o.count)
-      if (rarity === undefined || count === undefined) return undefined
-      return { kind: 'seeds', crop: o.crop, rarity, count }
+      if (variety === undefined || quality === undefined || count === undefined) return undefined
+      return { kind: 'seeds', crop: o.crop, variety, quality, count }
     }
     case 'grass-seeds': {
       const count = num(o.count)
@@ -2504,45 +2488,54 @@ function readItem(v: unknown): Item | undefined {
     }
     case 'tree-seed': {
       if (!isTreeIdValue(o.tree)) return undefined
-      return { kind: 'tree-seed', tree: o.tree }
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
+      if (variety === undefined || quality === undefined) return undefined
+      return { kind: 'tree-seed', tree: o.tree, variety, quality }
     }
     case 'sugar': {
       const liters = num(o.liters)
       const capacityLiters = num(o.capacityLiters)
       const unitSale = num(o.unitSale)
-      if (liters === undefined || capacityLiters === undefined || unitSale === undefined) return undefined
-      return { kind: 'sugar', liters, capacityLiters, unitSale }
+      const quality = num(o.quality)
+      if (liters === undefined || capacityLiters === undefined || unitSale === undefined || quality === undefined) return undefined
+      return { kind: 'sugar', liters, capacityLiters, unitSale, quality }
     }
     case 'spirit': {
       if (!isSpiritKind(o.spirit)) return undefined
-      const rarity = readRarity(o.rarity)
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
       const count = num(o.count)
       const unitSale = num(o.unitSale)
-      if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
-      return { kind: 'spirit', spirit: o.spirit, rarity, count, unitSale }
+      if (variety === undefined || quality === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: 'spirit', spirit: o.spirit, variety, quality, count, unitSale }
     }
     case 'cask': {
       if (!isCaskId(o.cask)) return undefined
-      const rarity = readRarity(o.rarity)
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
       const count = num(o.count)
       const unitSale = num(o.unitSale)
-      if (rarity === undefined || count === undefined || unitSale === undefined) return undefined
-      return { kind: 'cask', cask: o.cask, rarity, count, unitSale }
+      if (variety === undefined || quality === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: 'cask', cask: o.cask, variety, quality, count, unitSale }
     }
     case 'jam': {
       if (!isJamCrop(o.crop)) return undefined
+      const variety = readVariety(o.variety)
+      const quality = num(o.quality)
       const count = num(o.count)
       const unitSale = num(o.unitSale)
-      if (count === undefined || unitSale === undefined) return undefined
-      return { kind: 'jam', crop: o.crop, count, unitSale }
+      if (variety === undefined || quality === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: 'jam', crop: o.crop, variety, quality, count, unitSale }
     }
     case 'oil':
     case 'flour':
     case 'extract': {
+      const quality = num(o.quality)
       const count = num(o.count)
       const unitSale = num(o.unitSale)
-      if (count === undefined || unitSale === undefined) return undefined
-      return { kind: o.kind, count, unitSale }
+      if (quality === undefined || count === undefined || unitSale === undefined) return undefined
+      return { kind: o.kind, quality, count, unitSale }
     }
     case 'rotten':
     case 'dead': {
@@ -2584,13 +2577,15 @@ function readFruitStack(v: unknown): FruitStack | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
   if (!isCropId(o.crop)) return undefined
-  const rarity = readRarity(o.rarity)
+  const variety = readVariety(o.variety)
+  const quality = num(o.quality)
   const count = num(o.count)
   const unitSale = num(o.unitSale)
   const freshness = num(o.freshness)
   const bio = bool(o.bio)
   if (
-    rarity === undefined ||
+    variety === undefined ||
+    quality === undefined ||
     count === undefined ||
     unitSale === undefined ||
     freshness === undefined ||
@@ -2598,7 +2593,7 @@ function readFruitStack(v: unknown): FruitStack | undefined {
   ) {
     return undefined
   }
-  return { crop: o.crop, rarity, count, unitSale, freshness, bio }
+  return { crop: o.crop, variety, quality, count, unitSale, freshness, bio }
 }
 
 function isShovelId(v: unknown): v is ShovelId {
@@ -2666,31 +2661,34 @@ function readJamCropOrNone(v: unknown): JamCrop | 'none' | undefined {
   return undefined
 }
 
-function readStillFeed(v: unknown): { crop: StillCrop; rarity: Rarity; count: number } | undefined {
+function readStillFeed(v: unknown): { crop: StillCrop; variety: VarietyId; quality: number; count: number } | undefined {
   const o = obj(v)
   if (o === undefined || !isStillCrop(o.crop)) return undefined
-  const rarity = readRarity(o.rarity)
+  const variety = readVariety(o.variety)
+  const quality = num(o.quality)
   const count = num(o.count)
-  if (rarity === undefined || count === undefined) return undefined
-  return { crop: o.crop, rarity, count }
+  if (variety === undefined || quality === undefined || count === undefined) return undefined
+  return { crop: o.crop, variety, quality, count }
 }
 
-function readBarrelFeed(v: unknown): { rarity: Rarity; count: number } | undefined {
+function readBarrelFeed(v: unknown): { variety: VarietyId; quality: number; count: number } | undefined {
   const o = obj(v)
   if (o === undefined) return undefined
-  const rarity = readRarity(o.rarity)
+  const variety = readVariety(o.variety)
+  const quality = num(o.quality)
   const count = num(o.count)
-  if (rarity === undefined || count === undefined) return undefined
-  return { rarity, count }
+  if (variety === undefined || quality === undefined || count === undefined) return undefined
+  return { variety, quality, count }
 }
 
 function readSiloStack(v: unknown): SiloStack | undefined {
   const o = obj(v)
   if (o === undefined || !isAnnual(o.crop)) return undefined
-  const rarity = readRarity(o.rarity)
+  const variety = readVariety(o.variety)
+  const quality = num(o.quality)
   const count = num(o.count)
-  if (rarity === undefined || count === undefined) return undefined
-  return { crop: o.crop, rarity, count }
+  if (variety === undefined || quality === undefined || count === undefined) return undefined
+  return { crop: o.crop, variety, quality, count }
 }
 
 function readAdditiveHold(v: unknown): AdditiveHold | undefined {
@@ -2705,9 +2703,8 @@ function isAdditiveId(v: unknown): v is AdditiveId {
   return typeof v === 'string' && (ADDITIVE_IDS as readonly string[]).includes(v)
 }
 
-function readRarity(v: unknown): Rarity | undefined {
-  if (v === 'common' || v === 'uncommon' || v === 'rare' || v === 'heirloom') return v
-  return undefined
+function readVariety(v: unknown): VarietyId | undefined {
+  return isVarietyId(v) ? v : undefined
 }
 
 function num(v: unknown): number | undefined {
@@ -2737,7 +2734,6 @@ function arr(v: unknown): unknown[] | undefined {
 
 const DEADLINE_BAND_VALUES: readonly DeadlineBand[] = ['tight', 'normal', 'long']
 const STARS_VALUES: readonly Stars[] = [1, 2, 3, 4]
-const PLAIN_GOOD_VALUES: readonly PlainGoodId[] = ['sugar', 'oil', 'flour', 'extract', ...JAM_IDS]
 const PRIZE_TOOL_VALUES: readonly PrizeTool[] = ['rotary-shovel', 'diamond-pickaxe']
 
 function dumpContracts(c: Contracts): SaveContracts {
@@ -2900,19 +2896,13 @@ function readDemand(v: unknown): Demand | undefined {
   if (o === undefined) return undefined
   const amount = num(o.amount)
   if (amount === undefined) return undefined
-  if (o.kind === 'rated') {
-    if (!isRarityGoodId(o.good) || !isRarity(o.minRarity)) return undefined
-    return { kind: 'rated', good: o.good, minRarity: o.minRarity, amount }
-  }
   if (o.kind === 'plain') {
-    if (!(PLAIN_GOOD_VALUES as readonly unknown[]).includes(o.good)) return undefined
-    return { kind: 'plain', good: o.good as PlainGoodId, amount }
+    if (!(STALL_IDS as readonly unknown[]).includes(o.good)) return undefined
+    return { kind: 'plain', good: o.good as StallGoodId, amount }
   }
   if (o.kind !== 'group') return undefined
   if (o.group === 'jam') return { kind: 'group', group: 'jam', amount }
-  if (o.group === 'spirit' && isRarity(o.minRarity)) {
-    return { kind: 'group', group: 'spirit', minRarity: o.minRarity, amount }
-  }
+  if (o.group === 'spirit') return { kind: 'group', group: 'spirit', amount }
   return undefined
 }
 
@@ -2991,10 +2981,4 @@ function isCaskId(v: unknown): v is CaskId {
   return (CASK_IDS as readonly unknown[]).includes(v)
 }
 
-function isRarity(v: unknown): v is Rarity {
-  return (RARITY_RANK as readonly unknown[]).includes(v)
-}
 
-function isRarityGoodId(v: unknown): v is RarityGoodId {
-  return isCropId(v) || isSpiritKind(v) || isCaskId(v)
-}

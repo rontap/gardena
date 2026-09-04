@@ -79,11 +79,11 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 
 | variety | jam reads |
 |---|---|
-| `concord` | `<needs-game-text-writer>` Grape jelly |
-| `black-raspberry` | `<needs-game-text-writer>` Black raspberry jam |
-| `montmorency` | `<needs-game-text-writer>` Sour cherry preserve |
-| `blenheim` | `<needs-game-text-writer>` Blenheim apricot jam |
-| `san-marzano` | `<needs-game-text-writer>` Passata |
+| `concord` | **Grape jelly** |
+| `black-raspberry` | **Black raspberry jam** |
+| `montmorency` | **Sour cherry preserve** |
+| `blenheim` | **Blenheim apricot jam** |
+| `san-marzano` | **Passata** |
 | tomato `'base'` | **Ketchup** |
 | else | `{Crop} jam` |
 

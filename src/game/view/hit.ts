@@ -13,7 +13,7 @@ import type { Place, World } from '../sim/world.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import { DROP_FACE, DROP_INSET, DROP_STEP, TILE } from './camera.ts'
 
-export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'rarity' | 'pipes' | 'sensors' | 'vehicles'
+export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'variety' | 'pipes' | 'sensors' | 'vehicles'
 
 export type MapClick = PromptHit
 

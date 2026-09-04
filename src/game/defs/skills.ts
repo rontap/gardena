@@ -1,6 +1,5 @@
 import { m } from '../../paraglide/messages.js'
 import type {
-    AnnualId,
     CropId,
     DaughterSkillId,
     HusbandSkillId,
@@ -9,9 +8,9 @@ import type {
     ResearchId,
     SkillId,
 } from '../sim/ids.ts'
-import {isTreeId} from '../sim/ids.ts'
 import {BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED} from './items.ts'
-import {SEED_BANK_CHANCE} from './rarity.ts'
+import {BETTER_QUALITY} from './varieties.ts'
+import {HAPPY_MAX} from './crops.ts'
 
 export const TEND_WORK = 0.7
 
@@ -20,33 +19,37 @@ export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'bulk-up',
     'driving-classes',
     'tending',
-    'seed-bank',
-    'better-carrot',
     'better-potato',
     'better-wheat',
     'better-tomato',
     'better-raspberry',
     'better-grape',
-    'better-vanilla',
-    'better-sugar-cane',
+    'better-apple',
+    'better-apricot',
+    'better-olive',
+    'better-cherry',
 ]
 
+export type BetterCrop = 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'grape' | 'apple' | 'apricot' | 'olive' | 'cherry'
+
 export const BETTER_IDS = {
-    carrot: 'better-carrot',
     potato: 'better-potato',
     wheat: 'better-wheat',
     tomato: 'better-tomato',
     raspberry: 'better-raspberry',
     grape: 'better-grape',
-    vanilla: 'better-vanilla',
-    'sugar-cane': 'better-sugar-cane',
-} as const satisfies { readonly [K in AnnualId]: PlayerSkillId }
+    apple: 'better-apple',
+    apricot: 'better-apricot',
+    olive: 'better-olive',
+    cherry: 'better-cherry',
+} as const satisfies { readonly [K in BetterCrop]: PlayerSkillId }
 
-export const BETTER_UP1 = 0.04
-
-export function extraGrowUp1(crop: CropId, has: (id: SkillId) => boolean): number {
-    if (isTreeId(crop)) return 0
-    return has(BETTER_IDS[crop]) ? BETTER_UP1 : 0
+export function betterGain(crop: CropId, h: number, tierOf: (id: SkillId) => number): number {
+    if (!(crop in BETTER_IDS)) return 0
+    const id = BETTER_IDS[crop as BetterCrop]
+    const t = tierOf(id)
+    if (t <= 0) return 0
+    return BETTER_QUALITY * t * (h / HAPPY_MAX)
 }
 
 export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
@@ -102,7 +105,6 @@ export type SkillEffect =
     | { kind: 'saleswoman'; mul: 1.02 }
     | { kind: 'heirloom'; mul: 1.05 }
     | { kind: 'better'; crop: CropId; saleMul: 1.04; up1: 0.04 }
-    | { kind: 'seed-bank' }
     | { kind: 'bio'; mul: 1.04 }
     | { kind: 'open-late' }
     | { kind: 'open-24' }
@@ -253,24 +255,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'heirloom', mul: 1.05},
         {kind: 'research', id: 'unlock-heirloom'},
     ),
-    'seed-bank': row(
-        'seed-bank',
-        'player',
-        m.skills_seed_bank_name(),
-        m.skills_seed_bank_blurb(),
-        5,
-        {kind: 'seed-bank'},
-        {kind: 'research', id: 'unlock-crop-variants'},
-    ),
-    'better-carrot': row(
-        'better-carrot',
-        'player',
-        m.skills_better_carrot_name(),
-        m.skills_better_carrot_blurb({pct: BETTER_SALE_PCT}),
-        1,
-        {kind: 'better', crop: 'carrot', saleMul: 1.04, up1: 0.04},
-        {kind: 'research', id: 'unlock-crop-variants'},
-    ),
     'better-potato': row(
         'better-potato',
         'player',
@@ -316,23 +300,37 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'better', crop: 'grape', saleMul: 1.04, up1: 0.04},
         {kind: 'research', id: 'unlock-grape'},
     ),
-    'better-vanilla': row(
-        'better-vanilla',
+    'better-apple': row(
+        'better-apple',
         'player',
-        m.skills_better_vanilla_name(),
-        m.skills_better_vanilla_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_apple_name(),
+        m.skills_better_apple_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'vanilla', saleMul: 1.04, up1: 0.04},
-        {kind: 'research', id: 'unlock-raspberry'},
+        {kind: 'better', crop: 'apple', saleMul: 1.04, up1: 0.04},
     ),
-    'better-sugar-cane': row(
-        'better-sugar-cane',
+    'better-apricot': row(
+        'better-apricot',
         'player',
-        m.skills_better_sugar_cane_name(),
-        m.skills_better_sugar_cane_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_apricot_name(),
+        m.skills_better_apricot_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'sugar-cane', saleMul: 1.04, up1: 0.04},
-        {kind: 'research', id: 'unlock-fermentation'},
+        {kind: 'better', crop: 'apricot', saleMul: 1.04, up1: 0.04},
+    ),
+    'better-olive': row(
+        'better-olive',
+        'player',
+        m.skills_better_olive_name(),
+        m.skills_better_olive_blurb({pct: BETTER_SALE_PCT}),
+        1,
+        {kind: 'better', crop: 'olive', saleMul: 1.04, up1: 0.04},
+    ),
+    'better-cherry': row(
+        'better-cherry',
+        'player',
+        m.skills_better_cherry_name(),
+        m.skills_better_cherry_blurb({pct: BETTER_SALE_PCT}),
+        1,
+        {kind: 'better', crop: 'cherry', saleMul: 1.04, up1: 0.04},
     ),
     bio: row(
         'bio',
@@ -437,14 +435,6 @@ export function skillBlurb(id: SkillId, tier: number): string {
             return m.skills_bio_skillblurb({pct: BIO_PCT * tier})
         case 'jam':
             return m.skills_jam_skillblurb({pct: JAM_PCT * tier})
-        case 'seed-bank': {
-            const n = (rate: number) => `${+(rate * 100 * tier).toFixed(2)}`
-            return m.skills_seed_bank_skillblurb({
-                uncommon: n(SEED_BANK_CHANCE.uncommon),
-                rare: n(SEED_BANK_CHANCE.rare),
-                heirloom: n(SEED_BANK_CHANCE.heirloom),
-            })
-        }
         default:
             return SKILLS[id].blurb
     }

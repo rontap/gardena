@@ -33,8 +33,6 @@ import {
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
-  EXTRACT,
-  FLOUR,
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
   FREEZER_ROT_MUL,
@@ -44,7 +42,6 @@ import {
   JAM_SECONDS,
   JAM_SUGAR,
   MILL_WORK,
-  OIL,
   SUGAR_MILL,
   SPEECH_S,
   SPRINKLER_TILE_RATE,
@@ -58,21 +55,20 @@ import {
 } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { extraGrowUp1, jamRotMul, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
+import { betterGain, jamRotMul, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
 import { PUMP_COST_PER_L, WEATHER_FRUIT_SALE, WEATHER_THROUGH_DAY } from '../defs/weather.ts'
-import { CROPS, freshMul } from '../defs/crops.ts'
+import { CROPS, freshMul, HAPPY_DROWN_SECONDS, HAPPY_GAIN_SECONDS, HAPPY_MAX, HAPPY_START, HAPPY_STARVE_SECONDS, HAPPY_WILT_SECONDS } from '../defs/crops.ts'
 import {
-  HAPPY_DROWN_SECONDS,
-  HAPPY_GAIN_SECONDS,
-  HAPPY_MAX,
-  HAPPY_STARVE_SECONDS,
-  HAPPY_WILT_SECONDS,
-  RARITY_RANK,
-  RARITY_SALE,
-  rollGrowRarity,
-  rollShopRarity,
-  type Rarity,
-} from '../defs/rarity.ts'
+  qualityGain,
+  qualityMul,
+  RATING_SALE,
+  STARTER_VARIETY_PACKS,
+  tierOf,
+  useOf,
+  VARIETY,
+  VARIETY_IDS,
+  type VarietyId,
+} from '../defs/varieties.ts'
 import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
 import type {
   AnnualId,
@@ -84,7 +80,6 @@ import type {
   ResearchId,
   SkillId,
   HarvestSlot,
-  JamCrop,
   RouteId,
   SkuId,
   StallGoodId,
@@ -180,7 +175,10 @@ import {
   furnaceMul,
   furnaceWorking,
   fruitCount,
-  fruitRarity,
+  feedVariety,
+  fruitQuality,
+  fruitVariety,
+  meanQuality,
   grindAccept,
   grindApply,
   grindProduct,
@@ -189,7 +187,7 @@ import {
   jamSale,
   machineEast,
   machineWest,
-  meanRarity,
+
   millAccept,
   millApply,
   jamWorking,
@@ -240,7 +238,6 @@ import {
   isCropStall,
   isSpiritStall,
   makeStall,
-  stallRarity,
   stallX,
   STALL_IDS,
   type StallMap,
@@ -302,7 +299,7 @@ import {
   type PromptHit,
 } from './prompt.ts'
 import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
-import { Rng, rollRarity } from './rng.ts'
+import { Rng } from './rng.ts'
 import {
   boomHits,
   canDumpCargo,
@@ -570,7 +567,6 @@ export type Hydrate = {
   job: Job
   tally: DayTally
   seam: Seam
-  ripenN: { col: number; row: number; n: number }[]
   segments: Segment[]
   wells: Well[]
   sprinklers: Sprinkler[]
@@ -661,19 +657,19 @@ export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
 
 function soloSeat(playerId: PlayerId, name: string): Seat {
   const inventory = emptyInv()
-  inventory[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apricot' } }
-  inventory[1] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
-  inventory[2] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry' } }
+  inventory[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apricot', variety: 'base', quality: 0 } }
+  inventory[1] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
+  inventory[2] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry', variety: 'base', quality: 0 } }
   const x = DOOR.col + 0.5
   const y = DOOR.row + 0.5
   return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
 }
 /** Starter seed stock. Lives in the seed silo, not the house. */
-const STARTER_SEEDS: readonly { crop: AnnualId; rarity: Rarity; count: number }[] = [
-  { crop: 'carrot', rarity: 'common', count: 5 },
-  { crop: 'carrot', rarity: 'rare', count: 2 },
-  { crop: 'tomato', rarity: 'rare', count: 2 },
-  { crop: 'potato', rarity: 'heirloom', count: 2 },
+const STARTER_SEEDS: readonly { crop: AnnualId; variety: VarietyId; quality: number; count: number }[] = [
+  { crop: 'carrot', variety: 'base', quality: 0, count: 7 },
+  { crop: 'tomato', variety: 'base', quality: 0, count: 2 },
+  { crop: 'potato', variety: 'base', quality: 0, count: 2 },
+  ...STARTER_VARIETY_PACKS.map(v => ({ crop: VARIETY[v].crop as AnnualId, variety: v, quality: 0, count: 5 })),
 ]
 
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
@@ -722,7 +718,6 @@ export class World {
   private readonly cmds: Cmd[] = []
   private logBase = 0
   now = 0
-  readonly ripenN = new Map<string, number>()
   private readonly sink: LogSink
   purchases = 0
   prizeSlots = 0
@@ -876,8 +871,6 @@ export class World {
       this.job = h.job
       this.tally = h.tally
       this.seam = h.seam
-      this.ripenN.clear()
-      h.ripenN.forEach(e => this.ripenN.set(`${e.col},${e.row}`, e.n))
       this.segments.clear()
       h.segments.forEach(s => this.segments.set(edgeKey(s.at), s))
       this.wells = h.wells
@@ -927,7 +920,7 @@ export class World {
     )
     this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
-    STARTER_SEEDS.forEach(st => this.putSilo(st.crop, st.rarity, st.count))
+    STARTER_SEEDS.forEach(st => this.putSilo(st.crop, st.variety, st.quality, st.count))
     this.drops.push({ at: { ...DOOR }, item: makeContainer('bucket', CONTAINERS.bucket.capacityLiters) })
     this.indexAll()
     this.rebuildWeather()
@@ -1365,17 +1358,23 @@ export class World {
     this.rebuildWired()
   }
 
-  private statsCached(crop: CropId, rarity: Rarity): Stats {
+  private statsCached(crop: CropId, variety: VarietyId): Stats {
     if (this.statsCacheGen !== this.modGen) {
       this.statsCache.clear()
       this.statsCacheGen = this.modGen
     }
-    const k = `${crop}:${rarity}`
+    const k = `${crop}:${variety}`
     const hit = this.statsCache.get(k)
     if (hit !== undefined) return hit
-    const st = statsOf(crop, rarity, this.modifiers)
+    const st = statsOf(crop, variety, 0, this.modifiers)
     this.statsCache.set(k, st)
     return st
+  }
+
+  private bakeQuality(p: Plant): number {
+    const h = p.happiness
+    const next = p.quality + qualityGain(h, HAPPY_START, HAPPY_MAX) + betterGain(p.crop, h, id => this.skillTier(id))
+    return next < 0 ? 0 : next > 1 ? 1 : next
   }
 
   forEachCell(fn: (at: Coord, cell: Cell) => void): void {
@@ -2386,7 +2385,7 @@ export class World {
 
   tileRate(s: Sprinkler): number {
     if (s.tune.kind === 'flat') return SPRINKLER_TILE_RATE
-    return statsOf(s.tune.crop, 'common', this.modifiers).waterUsePerSec
+    return statsOf(s.tune.crop, 'base', 0, this.modifiers).waterUsePerSec
   }
 
   demand(s: Sprinkler): number {
@@ -2613,9 +2612,8 @@ export class World {
       const price = this.skuPrice(id)
       if (this.money < price) return 'Cannot afford'
       if (this.silo.free < made.count) return 'Seed silo full'
-      const rarity = this.shopPackRarity(this.rng.stream('shop').next())
       this.money -= price
-      this.putSilo(made.crop, rarity, made.count)
+      this.putSilo(made.crop, 'base', 0, made.count)
       this.ping()
       return undefined
     }
@@ -3680,7 +3678,7 @@ export class World {
       if (t.hopper.kind === 'empty') return
       if (c.kind !== 'empty') return
       const seeds = t.hopper.item
-      this.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.rarity) })
+      this.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.variety, seeds.quality) })
       seeds.count -= 1
       if (seeds.count === 0) t.hopper = { kind: 'empty' }
       return
@@ -3713,14 +3711,15 @@ export class World {
   private harvestItem(c: Cell): Item | undefined {
     if (c.kind === 'ripe') {
       const p = c.plant
-      return { kind: 'fruit', ...fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio) }
+      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio) }
     }
     if (c.kind === 'growing') {
       const m = c.plant.maturity
-      if (m < 0.2) return { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 }
+      if (m < 0.2) return { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 }
       if (m > 0.8) {
         const p = c.plant
-        return { kind: 'fruit', ...fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, m, p.bio) }
+        const q = this.bakeQuality(p)
+        return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, this.modifiers).sale, m, p.bio) }
       }
       return undefined
     }
@@ -3814,14 +3813,8 @@ export class World {
     if (this.buyPacksFail(id) !== undefined) return
     const made = skuItem(id)
     if (made.kind !== 'seeds') return
-    const shop = this.rng.stream('shop')
-    const rarityOf = [0, 1, 2, 3, 4].map(() => this.shopPackRarity(shop.next()))
-    const stacks = RARITY_RANK.flatMap(rarity => {
-      const n = rarityOf.filter(x => x === rarity).length
-      return n === 0 ? [] : [{ rarity, count: n * made.count }]
-    })
     this.money -= this.packsPrice(id)
-    stacks.forEach(st => this.putSilo(made.crop, st.rarity, st.count))
+    this.putSilo(made.crop, 'base', 0, 5 * made.count)
     this.ping()
   }
 
@@ -3863,27 +3856,29 @@ export class World {
   // --- seed silo -------------------------------------------------------------
 
   /** Adds to the silo up to its cap. Returns how many seeds actually landed. */
-  putSilo(crop: AnnualId, rarity: Rarity, count: number): number {
+  putSilo(crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
     const n = Math.min(count, this.silo.free)
     if (n <= 0) return 0
-    const hit = this.silo.seeds.find(st => st.crop === crop && st.rarity === rarity)
-    if (hit !== undefined) hit.count += n
-    else this.silo.seeds.push({ crop, rarity, count: n })
+    const hit = this.silo.seeds.find(st => st.crop === crop && st.variety === variety)
+    if (hit !== undefined) {
+      hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
+      hit.count += n
+    } else this.silo.seeds.push({ crop, variety, quality, count: n })
     return n
   }
 
-  takeSilo(crop: AnnualId, rarity: Rarity): void {
-    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', c: crop, r: rarity })
+  takeSilo(crop: AnnualId, variety: VarietyId): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', c: crop, r: variety })
   }
 
-  private takeSiloBody(crop: AnnualId, rarity: Rarity): void {
-    const i = this.silo.seeds.findIndex(st => st.crop === crop && st.rarity === rarity)
+  private takeSiloBody(crop: AnnualId, variety: VarietyId): void {
+    const i = this.silo.seeds.findIndex(st => st.crop === crop && st.variety === variety)
     if (i < 0) return
     const st = this.silo.seeds[i]
     if (st.count <= 0) return
     if (!this.freeHand()) return
     this.silo.seeds.splice(i, 1)
-    this.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, rarity, count: st.count } }
+    this.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, variety, quality: st.quality, count: st.count } }
     this.ping()
   }
 
@@ -3891,7 +3886,7 @@ export class World {
   private depositSilo(): void {
     const take = (it: Item): boolean => {
       if (it.kind !== 'seeds') return false
-      const n = this.putSilo(it.crop, it.rarity, it.count)
+      const n = this.putSilo(it.crop, it.variety, it.quality, it.count)
       it.count -= n
       return it.count <= 0
     }
@@ -3999,17 +3994,17 @@ export class World {
     const heirX = 1 + 0.05 * this.skillTier('heirloom')
     const bioX = 1 + 0.04 * this.skillTier('bio')
     if (isBakedStall(id)) {
-      const count = this.stall[id].stock.common.organic
+      const count = this.stall[id].stock.base.organic
       if (count === 0) return { clean: 0, clearance: 0 }
-      return { clean: this.stall[id].worth.common.organic * saleX, clearance: 0 }
+      return { clean: this.stall[id].worth.base.organic * saleX, clearance: 0 }
     }
     if (isSpiritStall(id)) {
       return {
-        clean: RARITY_RANK.reduce((goodTotal, rarity) => {
-          const count = this.stall[id].stock[rarity].organic
+        clean: VARIETY_IDS.reduce((goodTotal, variety) => {
+          const count = this.stall[id].stock[variety].organic
           if (count === 0) return goodTotal
-          const worth = this.stall[id].worth[rarity].organic
-          const heir = id !== 'cider' && rarity === 'heirloom' ? heirX : 1
+          const worth = this.stall[id].worth[variety].organic
+          const heir = id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
           return goodTotal + worth * saleX * heir
         }, 0),
         clearance: 0,
@@ -4018,25 +4013,20 @@ export class World {
     const x = stallX(id, this.modifiers)
     const w = this.weather(this.clock.day)
     const wx = w === 'flood' || w === 'drought' ? WEATHER_FRUIT_SALE : 1
-    return RARITY_RANK.reduce(
-      (acc, rarity) => {
-        const rareX = stallRarity(id, rarity) * (rarity === 'heirloom' ? heirX : 1)
+    return VARIETY_IDS.reduce(
+      (acc, variety) => {
+        const heir = tierOf(variety) === 'heirloom' ? heirX : 1
         return BIO_KEYS.reduce((bioAcc, k) => {
-          const count = this.stall[id].stock[rarity][k]
+          const count = this.stall[id].stock[variety][k]
           if (count === 0) return bioAcc
-          const worth = this.stall[id].worth[rarity][k]
+          const worth = this.stall[id].worth[variety][k]
           const avg = worth / count
           const organicMul = k === 'organic' ? bioX : 1
-          return { clean: bioAcc.clean + count * avg * x * rareX * saleX * organicMul * wx, clearance: bioAcc.clearance }
+          return { clean: bioAcc.clean + count * avg * x * heir * saleX * organicMul * wx, clearance: bioAcc.clearance }
         }, acc)
       },
       { clean: 0, clearance: 0 },
     )
-  }
-
-  private shopPackRarity(u: number): Rarity {
-    if (!this.done.has('unlock-crop-variants')) return 'common'
-    return rollShopRarity(this.skillTier('seed-bank'), u)
   }
 
   nowDay(): number {
@@ -4075,9 +4065,9 @@ export class World {
       this.stall[row.good].sat = Math.min(1, row.sat + row.clean / SAT_DEPTH)
     })
     STALL_IDS.forEach(id => {
-      RARITY_RANK.forEach(rarity => {
-        this.stall[id].stock[rarity] = { organic: 0, synth: 0 }
-        this.stall[id].worth[rarity] = { organic: 0, synth: 0 }
+      VARIETY_IDS.forEach(variety => {
+        this.stall[id].stock[variety] = { organic: 0, synth: 0 }
+        this.stall[id].worth[variety] = { organic: 0, synth: 0 }
       })
     })
     this.money += quote.paid
@@ -4699,7 +4689,7 @@ export class World {
       }
       if (c.kind !== 'growing' && c.kind !== 'ripe') continue
       const stage0 = c.plant.stage(c.kind)
-      const st = this.statsCached(c.plant.crop, c.plant.rarity)
+      const st = this.statsCached(c.plant.crop, c.plant.variety)
       const mood0 = mood(c.soil, st)
       if (c.kind === 'growing') {
         c.soil.drink(st.waterUsePerSec * dt)
@@ -4707,6 +4697,7 @@ export class World {
         if (!c.soil.bio) c.plant.bio = false
         const water = waterBand(c.soil.water, st.waterTolerance)
         const fert = fertBand(c.soil.fertilizer, st.fertTolerance)
+        const q = this.bakeQuality(c.plant)
         const harm = age(c.plant, c.soil, water, fert, dt)
         if (harm.kind === 'hurt' && c.plant.happiness <= 0) {
           this.setCell(at, doomed(harm.by, c.soil, c.plant))
@@ -4719,19 +4710,7 @@ export class World {
         if (c.plant.maturity >= 1) {
           c.plant.maturity = 1
           c.plant.freshness = 1
-          const key = `${at.col},${at.row}`
-          const stored = this.ripenN.get(key)
-          const n = stored === undefined ? 0 : stored
-          const u = this.rng.stream('grow').at(at.col, at.row, this.clock.day, n)
-          c.plant.rarity = this.done.has('unlock-crop-variants')
-            ? rollGrowRarity(
-                c.plant.rarity,
-                c.plant.happiness,
-                u,
-                extraGrowUp1(c.plant.crop, id => this.hasSkill(id)),
-              )
-            : c.plant.rarity
-          this.ripenN.set(key, n + 1)
+          c.plant.quality = q
           this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
           dirty = true
           continue
@@ -4805,7 +4784,7 @@ export class World {
     const rot = (f: FruitStack, mul: number) => {
       const next =
         f.freshness -
-        (dt * mul) / (statsOf(f.crop, f.rarity, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
+        (dt * mul) / (statsOf(f.crop, f.variety, 0, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
       f.freshness = next < 0 ? 0 : next
     }
     const spoil = (item: Item, mul: number): Item => {
@@ -4854,7 +4833,7 @@ export class World {
         const need = millNeed(c.recipe)
         c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / MILL_WORK
         if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, millProduct(c.recipe))) continue
+        if (!this.emitProduct(at, c.base, millProduct(c.recipe, c.quality))) continue
         c.progress = 0
         c.units -= need
         if (c.units === 0) mill.recipe = 'none'
@@ -4868,7 +4847,7 @@ export class World {
         if (!jamWorking(c)) continue
         c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / JAM_SECONDS
         if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, count: 1, unitSale: jamSale(c.crop) })) continue
+        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, variety: c.variety, quality: c.quality, count: 1, unitSale: jamSale(c.crop, c.quality) })) continue
         c.progress = 0
         c.fruit -= JAM_IN
         c.sugar -= JAM_SUGAR
@@ -4887,15 +4866,16 @@ export class World {
         c.progress += (dt * furnaceMul(snap, c.base)) / STILL_SECONDS
         if (c.progress < 1) continue
         const kind = spiritKind(c.feed)
-        const u = this.rng.stream('still').at(at.col, at.row, this.clock.day, c.n)
-        const rarity = meanRarity(c.feed, u)
+        const quality = meanQuality(c.feed)
+        const variety = kind === 'mixed' ? 'base' : feedVariety(c.feed)
         if (
           !this.emitProduct(at, c.base, {
             kind: 'spirit',
             spirit: kind,
-            rarity,
+            variety,
+            quality,
             count: 1,
-            unitSale: bakeSpiritSale(kind, rarity),
+            unitSale: bakeSpiritSale(kind, quality),
           })
         ) {
           continue
@@ -4929,9 +4909,7 @@ export class World {
         const was = c.age
         c.age += dt
         if (was < BARREL_MATURE && c.age >= BARREL_MATURE) {
-          const u = this.rng.stream('barrel').at(at.col, at.row, this.clock.day, c.n)
-          const rarity = meanRarity(c.feed, u)
-          c.feed = [{ rarity, count: barrelNeed(c.crop) }]
+          c.feed = [{ variety: feedVariety(c.feed), quality: meanQuality(c.feed), count: barrelNeed(c.crop) }]
           c.n += 1
         }
         if (was < BARREL_AGE && c.age >= BARREL_AGE) dirty = true
@@ -5188,11 +5166,19 @@ export class World {
     if (open.length === 0) return false
     const fruit = this.rng.stream('fruit')
     const hit = open[Math.floor(fruit.next() * open.length)]
-    const rarity = rollRarity(fruit.next())
-    const sale = CROPS[t.species].sale * RARITY_SALE[rarity]
+    const sale = statsOf(t.species, t.variety, 0, this.modifiers).sale
     this.drops.push({
       at: { ...hit },
-      item: { kind: 'fruit', crop: t.species, rarity, count: 1, unitSale: sale, freshness: 1, bio: true },
+      item: {
+        kind: 'fruit',
+        crop: t.species,
+        variety: t.variety,
+        quality: 0,
+        count: 1,
+        unitSale: sale,
+        freshness: 1,
+        bio: true,
+      },
     })
     return true
   }
@@ -5225,7 +5211,7 @@ export class World {
     const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
     if (c.kind === 'tree') {
       occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
-      this.drops.push({ at: { ...at }, item: { kind: 'tree-seed', tree: c.species } })
+      this.drops.push({ at: { ...at }, item: { kind: 'tree-seed', tree: c.species, variety: c.variety, quality: 0 } })
       s.item.usesLeft -= 1
       if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
 
@@ -5234,7 +5220,7 @@ export class World {
     if (c.kind === 'growing' || c.kind === 'ripe') {
       this.drops.push({
         at: { ...at },
-        item: { kind: 'seeds', crop: c.plant.crop, rarity: c.plant.rarity, count: 1 },
+        item: { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 },
       })
     }
     if (c.kind === 'weed') c.soil.weedChance = -0.3
@@ -5288,6 +5274,7 @@ export class World {
       const above = this.seedPair(at)
       if (above === undefined) return
       const tree = new Tree(this.act.hand.item.tree, { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 })
+      tree.variety = this.act.hand.item.variety
       this.setCell(above, tree)
       this.setCell(at, tree)
       this.act.hand = { kind: 'empty' }
@@ -5310,7 +5297,7 @@ export class World {
     this.setCell(at, {
       kind: 'growing',
       soil: bed.soil,
-      plant: new Plant(s.item.crop, s.item.rarity),
+      plant: new Plant(s.item.crop, s.item.variety, s.item.quality),
     })
     s.item.count -= 1
     if (s.item.count <= 0) this.act.hand = { kind: 'empty' }
@@ -5429,7 +5416,7 @@ export class World {
     if (this.act.hand.kind === 'empty') return true
     const it = this.act.hand.item
     if (it.kind !== 'fruit') return false
-    return it.crop === c.plant.crop && it.rarity === c.plant.rarity && it.count < this.stackMax(it)
+    return it.crop === c.plant.crop && it.variety === c.plant.variety && it.count < this.stackMax(it)
   }
 
   private doHarvest(at: Coord): void {
@@ -5437,7 +5424,7 @@ export class World {
     const c = this.cell(at)
     const bed = c as Extract<Plot, { kind: 'ripe' }>
     const p = bed.plant
-    const picked = fruitStack(p.crop, p.rarity, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
+    const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio)
     this.setCell(at, { kind: 'empty', soil: bed.soil })
     this.tally.harvests += 1
 
@@ -5512,15 +5499,16 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const item = this.act.hand.item
     if (item.kind === 'fruit') {
-      this.splitConsign(item.crop, item.rarity, item.count, item.freshness === 0, rest => {
-        this.stall[item.crop].take(item.rarity, rest, freshMul(item.freshness), item.bio)
+      const unit = freshMul(item.freshness) * qualityMul(item.quality) * RATING_SALE[useOf(item.crop, item.variety).fresh]
+      this.splitConsign(item.crop, item.count, item.freshness === 0, rest => {
+        this.stall[item.crop].take(item.variety, rest, unit, item.bio)
       })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'sugar') {
-      this.splitConsign('sugar', 'common', item.liters, false, rest => {
+      this.splitConsign('sugar', item.liters, false, rest => {
         this.stall.sugar.takeSugar(rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
@@ -5528,23 +5516,23 @@ export class World {
       return
     }
     if (item.kind === 'spirit') {
-      this.splitConsign(item.spirit, item.rarity, item.count, false, rest => {
-        this.stall[item.spirit].takeSpirit(item.rarity, rest, item.unitSale)
+      this.splitConsign(item.spirit, item.count, false, rest => {
+        this.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'cask') {
-      this.splitConsign(item.cask, item.rarity, item.count, false, rest => {
-        this.stall[item.cask].takeSpirit(item.rarity, rest, item.unitSale)
+      this.splitConsign(item.cask, item.count, false, rest => {
+        this.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
       this.completeConsign()
       return
     }
     if (item.kind === 'jam') {
-      this.splitConsign(`jam-${item.crop}`, 'common', item.count, false, rest => {
+      this.splitConsign(`jam-${item.crop}`, item.count, false, rest => {
         this.stall[`jam-${item.crop}`].takeBaked(rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
@@ -5552,7 +5540,7 @@ export class World {
       return
     }
     if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
-      this.splitConsign(item.kind, 'common', item.count, false, rest => {
+      this.splitConsign(item.kind, item.count, false, rest => {
         this.stall[item.kind].takeBaked(rest, item.unitSale)
       })
       this.act.hand = { kind: 'empty' }
@@ -5575,22 +5563,21 @@ export class World {
 
   private splitConsign(
     good: StallGoodId,
-    rarity: Rarity,
     n: number,
     skip: boolean,
     restToStall: (rest: number) => void,
   ): void {
-    const bound = skip ? 0 : this.fillContracts(good, rarity, n)
+    const bound = skip ? 0 : this.fillContracts(good, n)
     const rest = n - bound
     if (rest > 0) restToStall(rest)
   }
 
-  private fillContracts(good: StallGoodId, rarity: Rarity, n: number): number {
+  private fillContracts(good: StallGoodId, n: number): number {
     let left = n
     this.contracts.active.forEach(a => {
       a.bins.forEach(bin => {
         if (left <= 0) return
-        if (!Accepts(bin.demand, good, rarity)) return
+        if (!Accepts(bin.demand, good)) return
         const room = bin.demand.amount - bin.filled
         if (room <= 0) return
         const take = left < room ? left : room
@@ -5705,7 +5692,7 @@ export class World {
       return
     }
     if (prize.kind === 'seeds') {
-      this.putSilo(prize.crop, 'common', prize.count)
+      this.putSilo(prize.crop, 'base', 0, prize.count)
       return
     }
     if (prize.kind === 'fertilizer') {
@@ -5715,7 +5702,7 @@ export class World {
     }
     const item: Item =
       prize.kind === 'tree-seed'
-        ? { kind: 'tree-seed', tree: prize.tree }
+        ? { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
         : prize.tool === 'rotary-shovel'
           ? makeShovel('rotary-shovel')
           : makePickaxe('diamond-pickaxe')
@@ -5768,19 +5755,15 @@ export class World {
   }
 
   private consignDemand(d: Demand, n: number): void {
-    if (d.kind === 'rated') {
-      if (isCropStall(d.good)) this.stall[d.good].take(d.minRarity, n, 1, false)
-      else this.stall[d.good].takeSpirit(d.minRarity, n, cleanUnit(d))
-      return
-    }
     if (d.kind === 'plain') {
-      if (d.good === 'sugar') this.stall.sugar.takeSugar(n, SUGAR_MILL)
-      else if (d.good === 'oil' || d.good === 'flour' || d.good === 'extract') this.stall[d.good].takeBaked(n, d.good === 'oil' ? OIL : d.good === 'flour' ? FLOUR : EXTRACT)
-      else this.stall[d.good].takeBaked(n, JAM_SALE[d.good.slice(4) as JamCrop])
+      if (isCropStall(d.good)) this.stall[d.good].take('base', n, 1, false)
+      else if (isSpiritStall(d.good)) this.stall[d.good].takeSpirit('base', n, cleanUnit(d))
+      else if (d.good === 'sugar') this.stall.sugar.takeSugar(n, SUGAR_MILL)
+      else this.stall[d.good].takeBaked(n, cleanUnit(d))
       return
     }
     if (d.group === 'jam') this.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
-    else this.stall.vodka.takeSpirit(d.minRarity, n, bakeSpiritSale('vodka', d.minRarity))
+    else this.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka'))
   }
 
   private padBuildings(): PadCell[] {
@@ -5964,12 +5947,12 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const still = this.cell(at) as PotStill
     const crop = stillCropOf(this.act.hand.item)
-    const rarity = fruitRarity(this.act.hand.item)
-    if (crop === undefined || rarity === undefined) return
+    const variety = fruitVariety(this.act.hand.item)
+    if (crop === undefined || variety === undefined) return
     const room = STILL_CAP - feedUnits(still.feed)
     const n = Math.min(room, fruitCount(this.act.hand.item))
     if (n <= 0) return
-    addStillFeed(still.feed, crop, rarity, n)
+    addStillFeed(still.feed, crop, variety, fruitQuality(this.act.hand.item), n)
     this.takeHandCount(n)
     this.track(at, still)
 
@@ -6000,7 +5983,7 @@ export class World {
     if (this.act.hand.kind === 'empty') return true
     if (this.act.hand.item.kind !== 'cask') return false
     if (this.act.hand.item.cask !== CASK_OF[c.crop]) return false
-    return this.act.hand.item.rarity === c.feed[0].rarity
+    return this.act.hand.item.variety === c.feed[0].variety
   }
 
   private canBarrel(at: Coord): boolean {
@@ -6019,13 +6002,15 @@ export class World {
     if (this.canBarrelCollect(at)) {
       const barrel = this.cell(at) as Barrel
       if (barrel.crop === 'none') return
-      const rarity = barrel.feed[0].rarity
+      const variety = barrel.feed[0].variety
+      const quality = barrel.feed[0].quality
       const cask: Item = {
         kind: 'cask',
         cask: CASK_OF[barrel.crop],
-        rarity,
+        variety,
+        quality,
         count: 1,
-        unitSale: bakeCaskSale(CASK_OF[barrel.crop], rarity, barrel.age),
+        unitSale: bakeCaskSale(CASK_OF[barrel.crop], quality, barrel.age),
       }
       if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: cask }
       else if (this.act.hand.item.kind === 'cask') {
@@ -6047,13 +6032,13 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const barrel = this.cell(at) as Barrel
     const crop = barrelCropOf(this.act.hand.item)
-    const rarity = fruitRarity(this.act.hand.item)
-    if (crop === undefined || rarity === undefined) return
+    const variety = fruitVariety(this.act.hand.item)
+    if (crop === undefined || variety === undefined) return
     const room = barrelNeed(barrel.crop === 'none' ? crop : barrel.crop) - feedUnits(barrel.feed)
     const n = Math.min(room, fruitCount(this.act.hand.item))
     if (n <= 0) return
     barrel.crop = crop
-    addBarrelFeed(barrel.feed, rarity, n)
+    addBarrelFeed(barrel.feed, variety, fruitQuality(this.act.hand.item), n)
     this.takeHandCount(n)
     this.track(at, barrel)
 
@@ -6127,6 +6112,7 @@ export class World {
         slot.item.liters = m.liters
         slot.item.capacityLiters = m.capacityLiters
         slot.item.unitSale = m.unitSale
+        slot.item.quality = m.quality
       }
       return
     }

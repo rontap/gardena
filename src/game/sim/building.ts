@@ -8,7 +8,7 @@ import {
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
 import type { Slot } from './item.ts'
 import { Reservoir } from './water.ts'
@@ -241,6 +241,7 @@ export class Tree {
   yield: TreeYield
   tended = false
   trunk = false
+  variety: VarietyId = 'base'
   constructor(species: TreeId, base: RectBase, juvenile = 0, fruit = 0, y: TreeYield = { kind: 'pending' }) {
     this.species = species
     this.base = base
@@ -272,7 +273,8 @@ export class Grinder {
   readonly kind = 'grinder' as const
   readonly base: RectBase
   crop: AnnualId | 'none' = 'none'
-  rarity: Rarity = 'common'
+  variety: VarietyId = 'base'
+  quality = 0
   units = 0
   progress = 0
   n = 0
@@ -303,6 +305,8 @@ export class Mill {
   readonly kind = 'mill' as const
   readonly base: RectBase
   recipe: MillRecipe | 'none' = 'none'
+  variety: VarietyId = 'base'
+  quality = 0
   units = 0
   progress = 0
   inn: Signal = 0
@@ -315,6 +319,8 @@ export class JamMachine {
   readonly kind = 'jam' as const
   readonly base: RectBase
   crop: JamCrop | 'none' = 'none'
+  variety: VarietyId = 'base'
+  quality = 0
   fruit = 0
   sugar = 0
   progress = 0
@@ -327,7 +333,7 @@ export class JamMachine {
 export class PotStill {
   readonly kind = 'still' as const
   readonly base: RectBase
-  feed: { crop: StillCrop; rarity: Rarity; count: number }[] = []
+  feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[] = []
   progress = 0
   n = 0
   inn: Signal = 0
@@ -353,7 +359,7 @@ export class Barrel {
   readonly kind = 'barrel' as const
   readonly base: RectBase
   crop: BarrelCrop | 'none' = 'none'
-  feed: { rarity: Rarity; count: number }[] = []
+  feed: { variety: VarietyId; quality: number; count: number }[] = []
   age = 0
   n = 0
   constructor(base: RectBase) {
@@ -422,7 +428,7 @@ export abstract class Store {
   }
 }
 
-export type SiloStack = { crop: AnnualId; rarity: Rarity; count: number }
+export type SiloStack = { crop: AnnualId; variety: VarietyId; quality: number; count: number }
 
 export class SeedSilo extends Store {
   readonly kind = 'seed-silo' as const

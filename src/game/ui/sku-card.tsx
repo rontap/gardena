@@ -3,6 +3,7 @@ import { RESEARCH, SKUS } from '../defs/research.ts'
 import { shelfOf } from '../defs/shelf.ts'
 import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
+import { cropVariety } from '../defs/crops.ts'
 import { guestBlockedSku } from '../sim/mp.ts'
 import type { BuyFail, World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
@@ -42,10 +43,6 @@ export function rowState(world: World, id: SkuId): RowState {
   return 'ok'
 }
 
-/**
- * Research gating only. Never money or capacity: those flip while the player
- * hovers, and cards must not reshuffle under the cursor.
- */
 export function locked(world: World, id: SkuId): boolean {
   return !world.skuOpen(id)
 }
@@ -85,6 +82,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
   const bulk = bulkFail === 'Locked' ? undefined : world.packsPrice(id)
   const guestOff = world.local !== 0 && guestBlockedSku(id)
   const machine = machineOfSku(id)
+  const made = skuItem(id)
   return (
     <CalloutHover
       title={skuLabel(id)}
@@ -92,6 +90,11 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
         <>
           <span className="mb-2 block text-xs opacity-60">{crumb}</span>
           <span>{skuDesc(id)}</span>
+          {made.kind === 'seeds' && (
+            <span className="mt-1 block">
+              {cropVariety(made.crop, 'base')} {m.hud_shop_seed({ n: 0 })}
+            </span>
+          )}
           {machine !== undefined && (
             <span className="mt-2 block border-t border-ink/15 pt-1">
               <Recipes view={{ kind: 'list', machine }} size="sm" />

@@ -1,23 +1,16 @@
 import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { CROPS } from '../defs/crops.ts'
-import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
+import { CROPS, cropVariety } from '../defs/crops.ts'
+import { qualityMul, RATING_SALE, useOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
-import { cropName, skuLabel } from '../sim/item.ts'
+import { skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
-import { cropInner, faceGfx, rarityInner, ripeGroup } from '../view/svgs.ts'
+import { cropInner, faceGfx, ripeGroup } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { gateLine, rowState } from './sku-card.tsx'
 import { Bar, Coin, Frame } from './frame.tsx'
-
-const RARITY_LABEL: { readonly [K in Rarity]: () => string } = {
-  common: () => m.names_rarity_common(),
-  uncommon: () => m.names_rarity_uncommon(),
-  rare: () => m.names_rarity_rare(),
-  heirloom: () => m.names_rarity_heirloom(),
-}
 
 const ADDITIVE_LABEL: { readonly [K in AdditiveId]: () => string } = {
   fertilizer: () => m.hud_fertilizer(),
@@ -26,11 +19,6 @@ const ADDITIVE_LABEL: { readonly [K in AdditiveId]: () => string } = {
   'weed-spray': () => m.names_item_weed_spray(),
 }
 
-/**
- * Stores size to their contents: `w-fit` plus a max box, so one unlocked crop reads as a
- * small panel and ten read as a wide one with no hand-tuned width per shelf. The max
- * leaves room for the hover callout on the right, which the panel must never crowd out.
- */
 const FIT = 'w-fit min-w-80 max-w-[min(calc(92vw-17rem),72rem)] max-h-[min(88vh,48rem)]'
 
 export function Shell({
@@ -66,7 +54,6 @@ export function Shell({
   )
 }
 
-/** Hint on the left, fill and count on the right — the bar sits next to the number it describes. */
 function Capacity({ hint, used, cap, unit }: { hint: string; used: number; cap: number; unit: string }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-4 text-sm">
@@ -82,39 +69,35 @@ function Capacity({ hint, used, cap, unit }: { hint: string; used: number; cap: 
 }
 
 type Tip =
-  | { kind: 'stock'; crop: AnnualId; rarity: Rarity }
+  | { kind: 'stock'; crop: AnnualId; variety: VarietyId }
   | { kind: 'buy'; crop: AnnualId; sku: SkuId }
   | undefined
 
-/**
- * Columns are crops, rows are rarities. Only shelves the player can actually reach
- * are drawn: a crop appears once its pack is on the shop shelf, heirloom once the
- * research lands. Stock the silo already holds always shows, whatever the gates say.
- */
 export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const [tip, setTip] = useState<Tip>(undefined)
   const cell = world.cell(at)
   if (cell.kind !== 'seed-silo') return null
-  const held = (crop: AnnualId, rarity: Rarity): number =>
-    cell.seeds.find(st => st.crop === crop && st.rarity === rarity)?.count ?? 0
+  const stackOf = (crop: AnnualId, variety: VarietyId) => cell.seeds.find(st => st.crop === crop && st.variety === variety)
+  const held = (crop: AnnualId, variety: VarietyId): number => stackOf(crop, variety)?.count ?? 0
   const crops = ANNUAL_IDS.filter(crop => {
     const pack = packSku(crop)
-    return (pack !== undefined && world.skuShown(pack)) || RARITY_RANK.some(r => held(crop, r) > 0)
+    return (pack !== undefined && world.skuShown(pack)) || VARIETIES[crop].some(v => held(crop, v) > 0)
   })
-  const rarities = RARITY_RANK.filter(r => {
-    if (r === 'common') return true
-    if (r === 'heirloom') return world.done.has('unlock-heirloom') || crops.some(c => held(c, 'heirloom') > 0)
-    return world.done.has('unlock-crop-variants') || crops.some(c => held(c, r) > 0)
-  })
+  const rows = Math.max(0, ...crops.map(c => VARIETIES[c].length))
   return (
     <Shell
       title={m.names_building_seed_silo()}
       onClose={onClose}
       aside={
         tip === undefined ? undefined : tip.kind === 'buy' ? (
-          <SeedTip world={world} crop={tip.crop} rarity="common" sku={tip.sku} />
+          <SeedTip world={world} crop={tip.crop} variety="base" quality={0} sku={tip.sku} />
         ) : (
-          <SeedTip world={world} crop={tip.crop} rarity={tip.rarity} />
+          <SeedTip
+            world={world}
+            crop={tip.crop}
+            variety={tip.variety}
+            quality={stackOf(tip.crop, tip.variety)?.quality ?? 0}
+          />
         )
       }
     >
@@ -124,79 +107,49 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
       ) : (
         <div className="overflow-x-auto">
           <table className="border-separate border-spacing-1.5">
-            <thead>
-              <tr>
-                <th />
-                {crops.map(crop => (
-                  <th key={crop} className="pb-1 align-bottom">
-                    <div className="flex w-[4.25rem] flex-col items-center gap-0.5">
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-9 w-9"
-                        dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup('common')) }}
-                      />
-                      <span className="w-[4.25rem] text-center text-[11px] leading-tight text-ink/60">
-                        {cropName(crop)}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
             <tbody>
-              {rarities.map(rarity => {
-                const gem = rarityInner(rarity)
-                return (
-                  <tr key={rarity}>
-                    <th className="pr-2 align-middle">
-                      <div className="flex items-center justify-end gap-1">
-                        <span className="text-sm font-semibold whitespace-nowrap text-ink/70">
-                          {RARITY_LABEL[rarity]()}
-                        </span>
-                        <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                          {gem !== undefined && (
-                            <svg viewBox="0 0 24 24" className="h-4 w-4" dangerouslySetInnerHTML={{ __html: gem }} />
-                          )}
-                        </span>
-                      </div>
-                    </th>
-                    {crops.map(crop => {
-                      const n = held(crop, rarity)
-                      return (
-                        <td key={crop}>
-                          <button
-                            type="button"
-                            aria-disabled={n === 0}
-                            aria-label={m.hud_silo_aria({ rarity: RARITY_LABEL[rarity](), crop: cropName(crop), n })}
-                            onPointerEnter={() => setTip({ kind: 'stock', crop, rarity })}
-                            onPointerLeave={() => setTip(undefined)}
-                            onFocus={() => setTip({ kind: 'stock', crop, rarity })}
-                            onClick={() => {
-                              if (n === 0) return
-                              world.takeSilo(crop, rarity)
-                            }}
-                            className={`flex h-[4.25rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
-                              n === 0
-                                ? 'cursor-default bg-ink/6 text-ink/25'
-                                : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
-                            }`}
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              className={`h-8 w-8 ${n === 0 ? 'opacity-30' : ''}`}
-                              dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(rarity)) }}
-                            />
-                            <span className="text-sm leading-none font-bold tabular-nums">{n}</span>
-                          </button>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
+              {Array.from({ length: rows }, (_, row) => (
+                <tr key={row}>
+                  {crops.map(crop => {
+                    const variety = VARIETIES[crop][row]
+                    if (variety === undefined) return <td key={crop} />
+                    const n = held(crop, variety)
+                    const show = variety === 'base' || n > 0
+                    if (!show) return <td key={crop} />
+                    return (
+                      <td key={crop}>
+                        <button
+                          type="button"
+                          aria-disabled={n === 0}
+                          aria-label={m.hud_silo_cell_aria({ variety: cropVariety(crop, variety), n })}
+                          onPointerEnter={() => setTip({ kind: 'stock', crop, variety })}
+                          onPointerLeave={() => setTip(undefined)}
+                          onFocus={() => setTip({ kind: 'stock', crop, variety })}
+                          onClick={() => {
+                            if (n === 0) return
+                            world.takeSilo(crop, variety)
+                          }}
+                          className={`flex h-[4.25rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
+                            n === 0
+                              ? 'cursor-default bg-ink/6 text-ink/25'
+                              : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
+                          }`}
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            className={`h-8 w-8 ${n === 0 ? 'opacity-30' : ''}`}
+                            dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(crop, variety)) }}
+                          />
+                          <span className="text-[11px] leading-tight">{cropVariety(crop, variety)}</span>
+                          <span className="text-sm leading-none font-bold tabular-nums">{n}</span>
+                        </button>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
               {crops.some(crop => packSku(crop) !== undefined) && (
                 <tr>
-                  <th />
                   {crops.map(crop => {
                     const sku = packSku(crop)
                     if (sku === undefined) return <td key={crop} />
@@ -224,12 +177,14 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
 function SeedTip({
   world,
   crop,
-  rarity,
+  variety,
+  quality,
   sku,
 }: {
   world: World
   crop: AnnualId
-  rarity: Rarity
+  variety: VarietyId
+  quality: number
   sku?: SkuId
 }) {
   const d = CROPS[crop]
@@ -240,21 +195,22 @@ function SeedTip({
       : packSkuId !== undefined && world.skuShown(packSkuId)
         ? world.skuPrice(packSkuId)
         : undefined
-  const sale = d.sale * raritySale(d, rarity)
+  const sale = d.sale * qualityMul(quality) * RATING_SALE[useOf(crop, variety).fresh]
   const state = sku !== undefined ? rowState(world, sku) : 'ok'
   const bulk = sku !== undefined && world.buyPacksFail(sku) === undefined ? world.packsPrice(sku) : undefined
   return (
     <CalloutHover
-      title={cropName(crop)}
+      title={cropVariety(crop, variety)}
       description={
         <>
+          <span className="flex items-center gap-1">{m.hud_silo_quality({ n: Math.floor(quality * 100) })}</span>
           <span className="flex items-center gap-1">
             {pack === undefined ? m.hud_seed_not_stocked() : <>{m.hud_seed_pack()}<Coin n={pack} />{m.hud_per_pack({ n: 5 })}</>}
           </span>
           <span className="mt-1 flex items-center gap-1">
             {m.hud_sells_for()}
             <Coin n={round(sale)} />
-            {m.hud_each_at({ rarity: RARITY_LABEL[rarity]().toLowerCase() })}
+            {m.hud_silo_sale()}
           </span>
           {bulk !== undefined && (
             <span className="mt-1 flex items-center gap-1">

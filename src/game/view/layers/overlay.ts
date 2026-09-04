@@ -9,7 +9,7 @@ import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
 import { goodness } from '../../sim/noise.ts'
 import type { CropId } from '../../sim/ids.ts'
-import type { Rarity } from '../../defs/rarity.ts'
+import { VARIETY, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex } from '../atlas.ts'
@@ -42,11 +42,21 @@ const BAND_TINT: { readonly [K in Band]: number } = {
 
 const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
 
-function plantBands(crop: CropId, rarity: Rarity, soil: Soil): { water: Band; fert: Band } {
+function plantBands(crop: CropId, tier: VarietyTier, soil: Soil): { water: Band; fert: Band } {
   return {
-    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, rarity)),
-    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, rarity)),
+    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, tier)),
+    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, tier)),
   }
+}
+
+function varietyTierOf(variety: VarietyId): VarietyTier {
+  return variety === 'base' ? 'base' : VARIETY[variety].tier
+}
+
+const TIER_WASH: { readonly [K in VarietyTier]: { fill: number; op: number } } = {
+  base: { fill: WASH, op: 0.35 },
+  variant: { fill: LEAF, op: 0.45 },
+  heirloom: { fill: RIPE, op: 0.45 },
 }
 
 function mix(a: number, b: number, t: number): number {
@@ -71,7 +81,7 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
   if (lens === 'water') {
     if (!isTilled(cell)) return undefined
     if (cell.kind === 'growing' || cell.kind === 'ripe') {
-      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).water]
+      return BAND_TINT[plantBands(cell.plant.crop, varietyTierOf(cell.plant.variety), cell.soil).water]
     }
     if (cell.soil.water >= SOIL_WATER_MID) return LENS_DONE
     return scaleTint(cell.soil.water / SOIL_WATER_MID)
@@ -83,7 +93,7 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
       return undefined
     }
     if (cell.kind === 'growing' || cell.kind === 'ripe') {
-      return BAND_TINT[plantBands(cell.plant.crop, cell.plant.rarity, cell.soil).fert]
+      return BAND_TINT[plantBands(cell.plant.crop, varietyTierOf(cell.plant.variety), cell.soil).fert]
     }
     if (cell.soil.fertilizer >= 1) return LENS_DONE
     return scaleTint(cell.soil.fertilizer)
@@ -136,12 +146,16 @@ function lensFill(
   g: number,
 ): { fill: number; op: number; hard: boolean } | undefined {
   if (lens === 'off' || lens === 'vehicles') return undefined
-  if (lens === 'rarity') {
-    if (cell.kind !== 'growing' && cell.kind !== 'ripe' && cell.kind !== 'dead') return undefined
-    if (cell.plant.rarity === 'common') return { fill: WASH, op: 0.35, hard: false }
-    if (cell.plant.rarity === 'uncommon') return { fill: LEAF, op: 0.45, hard: false }
-    if (cell.plant.rarity === 'rare') return { fill: WATER, op: 0.45, hard: false }
-    return { fill: LENS_MID, op: 0.45, hard: false }
+  if (lens === 'variety') {
+    if (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') {
+      const w = TIER_WASH[varietyTierOf(cell.plant.variety)]
+      return { fill: w.fill, op: w.op, hard: false }
+    }
+    if (cell.kind === 'tree') {
+      const w = TIER_WASH[varietyTierOf(cell.variety)]
+      return { fill: w.fill, op: w.op, hard: false }
+    }
+    return undefined
   }
   if (lens === 'pipes') {
     if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap' || cell.kind === 'well') {

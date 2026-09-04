@@ -370,8 +370,12 @@ export function digestParts(world: World): Record<string, unknown> {
   world.forEachCell((at, c) => {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
-      s += `:${c.plant.crop}:${c.plant.rarity}:${q(c.plant.maturity)}`
+      s += `:${c.plant.crop}:${c.plant.variety}:${q(c.plant.quality)}:${q(c.plant.maturity)}`
     }
+    if (c.kind === 'tree') s += `:${c.variety}`
+    if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
+    if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
+    if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`

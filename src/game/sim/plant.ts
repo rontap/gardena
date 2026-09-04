@@ -1,4 +1,5 @@
-import { HAPPY_START, type Rarity } from '../defs/rarity.ts'
+import { HAPPY_START } from '../defs/crops.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import type { AnnualId } from './ids.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 
@@ -12,15 +13,17 @@ export class Plant {
   tended = false
 
   readonly crop: AnnualId
-  rarity: Rarity
+  variety: VarietyId
+  quality: number
 
-  constructor(crop: AnnualId, rarity: Rarity) {
+  constructor(crop: AnnualId, variety: VarietyId, quality: number) {
     this.crop = crop
-    this.rarity = rarity
+    this.variety = variety
+    this.quality = quality
   }
 
   stats(mods: readonly Modifier[]): Stats {
-    return statsOf(this.crop, this.rarity, mods)
+    return statsOf(this.crop, this.variety, this.quality, mods)
   }
 
   stage(kind: 'growing' | 'ripe' | 'dead'): 'sprout' | 'grow' | 'ripe' | 'dead' {

@@ -48,13 +48,12 @@ export const LENS_ROWS: Row[] = [
     ],
   },
   {
-    id: 'rarity',
-    label: () => m.almanac_concept_rarity(),
-    blurb: () => m.hud_lens_rarity_blurb(),
+    id: 'variety',
+    label: () => m.almanac_concept_variety(),
+    blurb: () => m.hud_lens_variety_blurb(),
     swatches: [
-      { face: 'bg-house', name: () => m.hud_swatch_common() },
-      { face: 'bg-leaf', name: () => m.hud_swatch_uncommon() },
-      { face: 'bg-water', name: () => m.hud_swatch_rare() },
+      { face: 'bg-house', name: () => m.hud_swatch_base() },
+      { face: 'bg-leaf', name: () => m.hud_swatch_variant() },
       { face: 'bg-ripe', name: () => m.hud_swatch_heirloom() },
     ],
   },

@@ -230,7 +230,6 @@ import skillBulkUp from '../../assets/skills/skill-bulk-buying.svg?raw'
 import skillDrivingClasses from '../../assets/skills/skill-driving-classes.svg?raw'
 import skillMachinery from '../../assets/skills/skill-machinery.svg?raw'
 import skillTending from '../../assets/skills/skill-tending.svg?raw'
-import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
 import skillContracts from '../../assets/skills/skill-contracts.svg?raw'
 import skillBroker from '../../assets/skills/skill-broker.svg?raw'
@@ -262,7 +261,6 @@ import uiRecapNight from '../../assets/ui/ui-recap-night.svg?raw'
 import uiCoin from '../../assets/ui/ui-coin.svg?raw'
 import uiCoinSilver from '../../assets/ui/ui-coin-silver.svg?raw'
 import uiMeter from '../../assets/ui/ui-meter.svg?raw'
-import uiQuality from '../../assets/ui/ui-quality.svg?raw'
 import uiPhaseSunrise from '../../assets/ui/ui-phase-sunrise.svg?raw'
 import uiPhaseDay from '../../assets/ui/ui-phase-day.svg?raw'
 import uiPhaseSunset from '../../assets/ui/ui-phase-sunset.svg?raw'
@@ -284,7 +282,7 @@ import uiCornerTr from '../../assets/ui/ui-corner-tr.svg'
 import uiCornerBr from '../../assets/ui/ui-corner-br.svg'
 import uiCornerBl from '../../assets/ui/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import { VARIETIES, VARIETY, type VarietyId } from '../defs/varieties.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
 import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
@@ -330,16 +328,35 @@ export const TREE_PROP: { readonly [K in TreeId]: string } = {
 
 export type { Face }
 
-export function ripeGroup(rarity: Rarity): 'ripe' | 'ripe-rare' | 'ripe-heirloom' {
-  if (rarity === 'rare') return 'ripe-rare'
-  if (rarity === 'heirloom') return 'ripe-heirloom'
-  return 'ripe'
+export type VarietyGroup = 'base' | 'variant' | 'variant-2' | 'heirloom'
+
+export type CropRipeGroup = 'ripe' | 'ripe-variant' | 'ripe-variant-2' | 'ripe-heirloom'
+
+export type CaskGroup = 'common' | 'rare' | 'heirloom'
+
+export function varietyGroup(crop: CropId, variety: VarietyId): VarietyGroup {
+  if (variety === 'base') return 'base'
+  const t = VARIETY[variety].tier
+  if (t === 'heirloom') return 'heirloom'
+  const variants = VARIETIES[crop].filter(v => v !== 'base' && VARIETY[v].tier === 'variant')
+  return variants[0] === variety ? 'variant' : 'variant-2'
 }
 
-export function fruitGroup(rarity: Rarity): 'common' | 'rare' | 'heirloom' {
-  if (rarity === 'rare') return 'rare'
-  if (rarity === 'heirloom') return 'heirloom'
-  return 'common'
+export function ripeGroup(crop: CropId, variety: VarietyId): CropRipeGroup {
+  const g = varietyGroup(crop, variety)
+  if (g === 'base') return 'ripe'
+  return `ripe-${g}`
+}
+
+export function fruitGroup(crop: CropId, variety: VarietyId): VarietyGroup {
+  return varietyGroup(crop, variety)
+}
+
+export function caskGroup(variety: VarietyId): CaskGroup {
+  if (variety === 'base') return 'common'
+  const t = VARIETY[variety].tier
+  if (t === 'heirloom') return 'heirloom'
+  return 'rare'
 }
 
 export function cropInner(id: CropId, stage: string): string {
@@ -404,11 +421,11 @@ export function itemInner(item: Face): string {
   if (item.kind === 'weed-spray') return inner(itemWeedSpray)
   if (item.kind === 'synth') return inner(itemSynth)
   if (item.kind === 'compost') return inner(itemCompost)
-  if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.rarity))
-  if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.rarity))
+  if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.crop, item.variety))
+  if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.crop, item.variety))
   if (item.kind === 'sugar') return inner(itemSugar)
   if (item.kind === 'spirit') return SPIRIT_ART[item.spirit]
-  if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], fruitGroup(item.rarity))
+  if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], caskGroup(item.variety))
   if (item.kind === 'jam') return item.crop === 'tomato' ? inner(itemKetchup) : inner(JAM_ART[item.crop])
   if (item.kind === 'oil') return inner(itemOil)
   if (item.kind === 'flour') return inner(itemFlour)
@@ -523,11 +540,11 @@ export function fenceFit(n: boolean, e: boolean, s: boolean, w: boolean): { html
 export function researchInner(id: ResearchId): string {
   switch (id) {
     case 'unlock-tomato':
-      return stageOnly(FRUIT.tomato, 'common')
+      return stageOnly(FRUIT.tomato, 'base')
     case 'unlock-grape':
-      return stageOnly(FRUIT.grape, 'common')
+      return stageOnly(FRUIT.grape, 'base')
     case 'unlock-raspberry':
-      return stageOnly(FRUIT.raspberry, 'common')
+      return stageOnly(FRUIT.raspberry, 'base')
     case 'unlock-fermentation':
       return inner(itemStill)
     case 'unlock-preservatives':
@@ -735,11 +752,13 @@ export const TREE_SEED_ART: { readonly [K in TreeId]: string } = {
 }
 
 export const APPLE_TREE = inner(appleTree)
-export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe'): string {
-  return stageOnly(TREE_PROP[id], stage)
+export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe', variety: VarietyId): string {
+  if (stage === 'trunk' || stage === 'grow') return stageOnly(TREE_PROP[id], stage)
+  const g = varietyGroup(id, variety)
+  return stageOnly(TREE_PROP[id], g === 'base' ? stage : `${stage}-${g}`)
 }
 export function appleTreeStage(ripe: boolean): string {
-  return treeStage('apple', ripe ? 'ripe' : 'unripe')
+  return treeStage('apple', ripe ? 'ripe' : 'unripe', 'base')
 }
 export const CROP_ROTTEN = inner(cropRotten)
 const WEED = [weed0, weed1] as const
@@ -775,7 +794,6 @@ export const UI_BTN_DISABLED = groupInner(uiBtn, 'disabled')
 export const UI_COIN = inner(uiCoin)
 export const UI_COIN_SILVER = inner(uiCoinSilver)
 export const UI_METER = uiMeter
-export const UI_QUALITY = inner(uiQuality)
 export const UI_BTN_SHOP = uiBtnShop
 export const UI_BTN_BUILD = uiBtnBuild
 export const UI_BTN_CHEAT = uiBtnCheat
@@ -807,7 +825,6 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'driving-classes': inner(skillDrivingClasses),
   machinery: inner(skillMachinery),
   tending: inner(skillTending),
-  'seed-bank': inner(skillSeedBank),
   'research-speed': inner(skillResearchSpeed),
   haggling: inner(skillContracts),
   broker: inner(skillBroker),
@@ -818,14 +835,15 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'inherit-land': inner(uiResearchExpand),
   saleswoman: inner(skillSaleswoman),
   heirloom: inner(skillHeirloom),
-  'better-carrot': inner(skillBetter),
   'better-potato': inner(skillBetter),
   'better-wheat': inner(skillBetter),
   'better-tomato': inner(skillBetter),
   'better-raspberry': inner(skillBetter),
   'better-grape': inner(skillBetter),
-  'better-vanilla': inner(skillBetter),
-  'better-sugar-cane': inner(skillBetter),
+  'better-apple': inner(skillBetter),
+  'better-apricot': inner(skillBetter),
+  'better-olive': inner(skillBetter),
+  'better-cherry': inner(skillBetter),
   bio: inner(skillBio),
   industrial: inner(skillIndustrial),
   'open-late': inner(skillOpenLate),
@@ -835,38 +853,23 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
 }
 
 export function fruitInner(crop: CropId): string {
-  return stageOnly(FRUIT[crop], 'common')
+  return stageOnly(FRUIT[crop], 'base')
+}
+
+const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: CropId } = {
+  'better-potato': 'potato',
+  'better-wheat': 'wheat',
+  'better-tomato': 'tomato',
+  'better-raspberry': 'raspberry',
+  'better-grape': 'grape',
+  'better-apple': 'apple',
+  'better-apricot': 'apricot',
+  'better-olive': 'olive',
+  'better-cherry': 'cherry',
 }
 
 export function skillInner(id: SkillId): string {
-  if (
-    id === 'better-carrot' ||
-    id === 'better-potato' ||
-    id === 'better-wheat' ||
-    id === 'better-tomato' ||
-    id === 'better-raspberry' ||
-    id === 'better-grape' ||
-    id === 'better-vanilla' ||
-    id === 'better-sugar-cane'
-  ) {
-    const crop =
-      id === 'better-carrot'
-        ? 'carrot'
-        : id === 'better-potato'
-          ? 'potato'
-          : id === 'better-wheat'
-            ? 'wheat'
-            : id === 'better-tomato'
-              ? 'tomato'
-              : id === 'better-raspberry'
-                ? 'raspberry'
-                : id === 'better-grape'
-                  ? 'grape'
-                  : id === 'better-vanilla'
-                    ? 'vanilla'
-                    : 'sugar-cane'
-    return `${fruitInner(crop)}${inner(skillBetter)}`
-  }
+  if (id in BETTER_CROP) return `${fruitInner(BETTER_CROP[id as keyof typeof BETTER_CROP])}${inner(skillBetter)}`
   return SKILL_ART[id]
 }
 export const UI_MARKET_STALL = uiMarketStall
@@ -899,36 +902,8 @@ export function btnFace(raw: string, state: BtnState): string {
   return groupInner(raw, state)
 }
 
-/**
- * Standalone rarity gem, big enough to read in a row head — the pip on an item face is
- * fused into the item and far too small. Heirloom is the `unlock-heirloom` research icon
- * itself, and the other tiers are that same gem recolored, so the two screens never drift.
- * Common has no gem; plain stock needs no badge.
- */
-export function rarityInner(rarity: Rarity): string | undefined {
-  if (rarity === 'common') return undefined
-  const fill = rarity === 'uncommon' ? '#6bc04a' : rarity === 'rare' ? '#3d7ea6' : '#d4a017'
-  return inner(skillHeirloom).replace('id="fill" fill="#d4a017"', `id="fill" fill="${fill}"`)
-}
-
-export function qualityPip(rarity: Rarity): string | undefined {
-  if (rarity === 'common') return undefined
-  const fill = rarity === 'uncommon' ? '#6bc04a' : rarity === 'rare' ? '#3d7ea6' : '#d4a017'
-  return UI_QUALITY.replace('id="fill" fill="#6bc04a"', `id="fill" fill="${fill}"`)
-}
-
-export function faceRarity(item: Face): Rarity | undefined {
-  if (item.kind === 'seeds' || item.kind === 'fruit') return item.rarity
-  return undefined
-}
-
 export function faceGfx(item: Face): string {
-  const base = itemInner(item)
-  const r = faceRarity(item)
-  if (r === undefined) return base
-  const pip = qualityPip(r)
-  if (pip === undefined) return base
-  return `${base}<g transform="translate(16,16)">${pip}</g>`
+  return itemInner(item)
 }
 
 export function meterInner(filled: number, token: 'dirt' | 'leaf'): string {
@@ -1016,8 +991,9 @@ export function symHref(html: string): string {
   return `#${symId(html)}`
 }
 
-const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-rare', 'ripe-heirloom', 'dead'] as const
-const TREE_STAGES = ['trunk', 'grow', 'unripe', 'ripe'] as const
+const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-variant', 'ripe-variant-2', 'ripe-heirloom', 'dead'] as const
+const TREE_STAGES = ['trunk', 'grow'] as const
+const TREE_FRUIT_STAGES = ['unripe', 'ripe'] as const
 const GRASS_STAGES = ['sprout', 'grow'] as const
 
 ;[
@@ -1113,7 +1089,10 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   weedInner(0, 'grow'),
   weedInner(1, 'sprout'),
   weedInner(1, 'grow'),
-  ...(TREE_IDS as TreeId[]).flatMap(t => TREE_STAGES.map(s => treeStage(t, s))),
+  ...(TREE_IDS as TreeId[]).flatMap(t => [
+    ...TREE_STAGES.map(s => treeStage(t, s, 'base')),
+    ...VARIETIES[t].flatMap(v => TREE_FRUIT_STAGES.map(s => treeStage(t, s, v))),
+  ]),
   ...Object.values(TREE_SEED_ART),
   ...([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c =>
     CROP_STAGES.map(s => cropInner(c, s)),
@@ -1142,8 +1121,4 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   ].flatMap(art => (['idle', 'hover', 'selected', 'disabled'] as const).map(s => btnFace(art, s))),
 ].forEach(art => {
   symId(art)
-})
-;(['uncommon', 'rare', 'heirloom'] as const).forEach(r => {
-  const pip = qualityPip(r)
-  if (pip !== undefined) symId(pip)
 })

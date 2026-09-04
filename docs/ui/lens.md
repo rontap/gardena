@@ -16,10 +16,12 @@ Card: name `text-base` semibold, one-line blurb `text-sm`, then the swatch legen
 `land` also tints **untilled** ground by the goodness field (the fertility a dig would give): very-hard / hard reads red-orange, soft runs orange → green. Infertile is flat `lens-bad`. Use it to pick where to dig.
 | `ripe` | Ripeness | early `lens-bad` · ready `lens-good` · ripe `lens-done` |
 | `kind` | Object type | plant `leaf` · machine `water` · obstruction `ink` · building `roof` |
-| `rarity` | Rarity | common `house` · uncommon `leaf` · rare `water` · **heirloom** `ripe` |
+| `variety` | Variety | `base` `house` · `variant` `leaf` · `heirloom` `ripe` |
 | `pipes` | Pipes | none |
 | `sensors` | Sensors | none |
 | `vehicles` | Vehicle interactions | none |
+
+`variety` tints growing, ripe, and dead annuals, and trees, by `VarietyTier`. `'base'` when `variety === 'base'`, else `VARIETY[v].tier`. Same `tier` shares a wash. Other cells: no wash.
 
 Sensors card blurb: Reveals wires and sensor reach.
 

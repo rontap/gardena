@@ -18,7 +18,6 @@ import {
   MILL_VANILLA_OUT,
   MIXED_MUL,
   OIL,
-  SPIRIT_RARITY,
   SPIRIT_SALE,
   STILL_CAP,
   SUGAR_BAG,
@@ -26,7 +25,7 @@ import {
   CASK_AGE,
   CASK_SALE,
 } from '../defs/items.ts'
-import { RARITY_RANK, type Rarity } from '../defs/rarity.ts'
+import { qualityMul, type VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
 import { isAnnualId } from './ids.ts'
 import type { Barrel, CompostBox, Coord, Furnace, Grinder, JamMachine, Mill, PotStill, RectBase } from './building.ts'
@@ -72,14 +71,15 @@ export function millProductName(recipe: MillRecipe): string {
   return m.names_item_extract()
 }
 
-export function millProduct(recipe: MillRecipe): Item {
+export function millProduct(recipe: MillRecipe, quality = 0): Item {
+  const mul = qualityMul(quality)
   if (recipe === 'sugar-cane') {
-    return { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL }
+    return { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL * mul, quality }
   }
-  if (recipe === 'olive') return { kind: 'oil', count: 1, unitSale: OIL }
-  if (recipe === 'wheat') return { kind: 'flour', count: 1, unitSale: FLOUR }
-  if (recipe === 'vanilla') return { kind: 'extract', count: MILL_VANILLA_OUT, unitSale: EXTRACT }
-  return { kind: 'extract', count: 1, unitSale: EXTRACT }
+  if (recipe === 'olive') return { kind: 'oil', count: 1, unitSale: OIL * mul, quality }
+  if (recipe === 'wheat') return { kind: 'flour', count: 1, unitSale: FLOUR * mul, quality }
+  if (recipe === 'vanilla') return { kind: 'extract', count: MILL_VANILLA_OUT, unitSale: EXTRACT * mul, quality }
+  return { kind: 'extract', count: 1, unitSale: EXTRACT * mul, quality }
 }
 
 export function fruitCrop(item: Item): CropId | undefined {
@@ -92,9 +92,15 @@ export function fruitCount(item: Item): number {
   return 0
 }
 
-export function fruitRarity(item: Item): Rarity | undefined {
-  if (item.kind === 'fruit') return item.rarity
+export function fruitVariety(item: Item): VarietyId | undefined {
+  if (item.kind === 'fruit') return item.variety
   return undefined
+}
+
+export function fruitQuality(item: Item): number {
+  if (item.kind === 'fruit') return item.quality
+  if (item.kind === 'sugar') return item.quality
+  return 0
 }
 
 export function millRecipeOf(item: Item): MillRecipe | undefined {
@@ -129,34 +135,47 @@ export function millAccept(mill: Mill, item: Item): MillTake | undefined {
 export function millApply(mill: Mill, item: Item, n: number): void {
   const recipe = millRecipeOf(item)
   if (recipe === undefined || n <= 0) return
-  if (mill.recipe === 'none') mill.recipe = recipe
+  const q = item.kind === 'fruit' ? item.quality : 0
+  const v = item.kind === 'fruit' ? item.variety : 'base'
+  if (mill.recipe === 'none') {
+    mill.recipe = recipe
+    mill.variety = v
+    mill.quality = q
+    mill.units = n
+    return
+  }
+  mill.quality = mixQuality(mill.quality, mill.units, q, n)
   mill.units += n
 }
 
-export type GrindTake = { crop: AnnualId; rarity: Rarity; n: number }
+export type GrindTake = { crop: AnnualId; variety: VarietyId; quality: number; n: number }
 
 export function grindAccept(g: Grinder, item: Item): GrindTake | undefined {
   const crop = fruitCrop(item)
-  const rarity = fruitRarity(item)
-  if (crop === undefined || rarity === undefined) return undefined
+  const variety = fruitVariety(item)
+  if (crop === undefined || variety === undefined) return undefined
   if (!isAnnualId(crop)) return undefined
-  if (g.crop !== 'none' && (g.crop !== crop || g.rarity !== rarity)) return undefined
+  if (g.crop !== 'none' && (g.crop !== crop || g.variety !== variety)) return undefined
   const n = fruitCount(item)
   if (n <= 0) return undefined
-  return { crop, rarity, n }
+  return { crop, variety, quality: fruitQuality(item), n }
 }
 
 export function grindApply(g: Grinder, take: GrindTake): void {
   if (g.crop === 'none') {
     g.crop = take.crop
-    g.rarity = take.rarity
+    g.variety = take.variety
+    g.quality = take.quality
+    g.units = take.n
+    return
   }
+  g.quality = mixQuality(g.quality, g.units, take.quality, take.n)
   g.units += take.n
 }
 
 export function grindProduct(g: Grinder, count: number): Extract<Item, { kind: 'seeds' }> {
   if (g.crop === 'none') throw new Error('grind')
-  return { kind: 'seeds', crop: g.crop, rarity: g.rarity, count }
+  return { kind: 'seeds', crop: g.crop, variety: g.variety, quality: g.quality, count }
 }
 
 export function feedAccept(cell: IoCell, item: Item): number {
@@ -205,7 +224,7 @@ export function feedApply(cell: IoCell, item: Item, n: number): void {
   }
   const take = grindAccept(cell, item)
   if (take === undefined) return
-  grindApply(cell, { crop: take.crop, rarity: take.rarity, n })
+  grindApply(cell, { crop: take.crop, variety: take.variety, quality: take.quality, n })
 }
 
 export function feedWhole(cell: IoCell): boolean {
@@ -234,9 +253,17 @@ export function jamFruitAccept(jam: JamMachine, item: Item): number {
 }
 
 export function jamFruitApply(jam: JamMachine, item: Item, n: number): void {
+  if (item.kind !== 'fruit') return
   const crop = jamCropOf(item)
   if (crop === undefined || n <= 0) return
-  if (jam.crop === 'none') jam.crop = crop
+  if (jam.crop === 'none') {
+    jam.crop = crop
+    jam.variety = item.variety
+    jam.quality = item.quality
+    jam.fruit = n
+    return
+  }
+  jam.quality = mixQuality(jam.quality, jam.fruit, item.quality, n)
   jam.fruit += n
 }
 
@@ -261,9 +288,9 @@ export function stillAccept(still: PotStill, item: Item): number {
 
 export function stillApply(still: PotStill, item: Item, n: number): void {
   const crop = stillCropOf(item)
-  const rarity = fruitRarity(item)
-  if (crop === undefined || rarity === undefined || n <= 0) return
-  addStillFeed(still.feed, crop, rarity, n)
+  const variety = fruitVariety(item)
+  if (crop === undefined || variety === undefined || n <= 0) return
+  addStillFeed(still.feed, crop, variety, fruitQuality(item), n)
 }
 
 export function stillCropOf(item: Item): StillCrop | undefined {
@@ -290,26 +317,34 @@ export function feedUnits(feed: readonly { count: number }[]): number {
 }
 
 export function addStillFeed(
-  feed: { crop: StillCrop; rarity: Rarity; count: number }[],
+  feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[],
   crop: StillCrop,
-  rarity: Rarity,
+  variety: VarietyId,
+  quality: number,
   n: number,
 ): void {
-  const hit = feed.find(f => f.crop === crop && f.rarity === rarity)
+  const hit = feed.find(f => f.crop === crop && f.variety === variety)
   if (hit !== undefined) {
+    hit.quality = mixQuality(hit.quality, hit.count, quality, n)
     hit.count += n
     return
   }
-  feed.push({ crop, rarity, count: n })
+  feed.push({ crop, variety, quality, count: n })
 }
 
-export function addBarrelFeed(feed: { rarity: Rarity; count: number }[], rarity: Rarity, n: number): void {
-  const hit = feed.find(f => f.rarity === rarity)
+export function addBarrelFeed(
+  feed: { variety: VarietyId; quality: number; count: number }[],
+  variety: VarietyId,
+  quality: number,
+  n: number,
+): void {
+  const hit = feed.find(f => f.variety === variety)
   if (hit !== undefined) {
+    hit.quality = mixQuality(hit.quality, hit.count, quality, n)
     hit.count += n
     return
   }
-  feed.push({ rarity, count: n })
+  feed.push({ variety, quality, count: n })
 }
 
 export function spiritKind(feed: readonly { crop: StillCrop; count: number }[]): SpiritKind {
@@ -321,35 +356,41 @@ export function spiritKind(feed: readonly { crop: StillCrop; count: number }[]):
   return 'brandy'
 }
 
-export function meanRarity(units: readonly { rarity: Rarity; count: number }[], u: number): Rarity {
+export function meanQuality(units: readonly { quality: number; count: number }[]): number {
   const total = units.reduce((n, x) => n + x.count, 0)
-  const mean = units.reduce((n, x) => n + RARITY_RANK.indexOf(x.rarity) * x.count, 0) / total
-  const flo = Math.floor(mean)
-  const frac = mean - flo
-  const i = u < frac ? Math.ceil(mean) : flo
-  const j = i < 0 ? 0 : i > 3 ? 3 : i
-  return RARITY_RANK[j]
+  if (total <= 0) return 0
+  return units.reduce((n, x) => n + x.quality * x.count, 0) / total
 }
 
-export function bakeSpiritSale(kind: SpiritKind, rarity: Rarity): number {
+export function feedVariety(units: readonly { variety: VarietyId; count: number }[]): VarietyId {
+  const live = units.filter(x => x.count > 0)
+  return live.length === 0 ? 'base' : live[0].variety
+}
+
+export function mixQuality(prevQ: number, prevN: number, addQ: number, addN: number): number {
+  const t = prevN + addN
+  if (t <= 0) return 0
+  return (prevQ * prevN + addQ * addN) / t
+}
+
+export function bakeSpiritSale(kind: SpiritKind, quality = 0): number {
   const base = kind === 'mixed' ? SPIRIT_SALE.vodka : SPIRIT_SALE[kind]
-  const s = base * SPIRIT_RARITY[rarity]
+  const s = base * qualityMul(quality)
   return kind === 'mixed' ? s * MIXED_MUL : s
 }
 
-export function caskAgeMul(rarity: Rarity, age: number): number {
+export function caskAgeMul(age: number): number {
   const t = (age - BARREL_MATURE) / BARREL_AGE
   const u = t < 0 ? 0 : t > 1 ? 1 : t
-  const cap = CASK_AGE[rarity]
-  return 1 + (cap - 1) * u
+  return 1 + (CASK_AGE - 1) * u
 }
 
-export function bakeCaskSale(cask: CaskId, rarity: Rarity, age: number): number {
-  return CASK_SALE[cask] * SPIRIT_RARITY[rarity] * caskAgeMul(rarity, age)
+export function bakeCaskSale(cask: CaskId, quality: number, age: number): number {
+  return CASK_SALE[cask] * qualityMul(quality) * caskAgeMul(age)
 }
 
-export function jamSale(crop: JamCrop): number {
-  return JAM_SALE[crop]
+export function jamSale(crop: JamCrop, quality = 0): number {
+  return JAM_SALE[crop] * qualityMul(quality)
 }
 
 export function mergeSugar(
@@ -362,6 +403,7 @@ export function mergeSugar(
     liters,
     capacityLiters: a.capacityLiters + b.capacityLiters,
     unitSale: (a.unitSale * a.liters + b.unitSale * b.liters) / liters,
+    quality: mixQuality(a.quality, a.liters, b.quality, b.liters),
   }
 }
 

@@ -1,7 +1,7 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
-import { CROPS, freshMul } from '../defs/crops.ts'
+import { CROPS, freshMul, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import {
   ADDITIVE_CAP_LITERS,
   BULK_UP_CRAFTED_STEP,
@@ -23,17 +23,7 @@ import {
   WEED_SPRAY_BAG,
   GRIND_WORK,
 } from '../defs/items.ts'
-import {
-  HAPPY_MAX,
-  HAPPY_START,
-  RARITY_SALE,
-  RARITY_WEIGHT,
-  rarityOdds,
-  rollGrowRarity,
-  rollShopRarity,
-  stepRarity,
-  type Rarity,
-} from '../defs/rarity.ts'
+import { BETTER_QUALITY, qualityMul, RATING_SALE, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds } from '../defs/skills.ts'
 import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
@@ -60,7 +50,7 @@ import { Plant, Weed } from './plant.ts'
 import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
-import { Rng, rollRarity } from './rng.ts'
+import { Rng } from './rng.ts'
 import { Clock, DAY_SECONDS, days } from './clock.ts'
 import { BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
@@ -70,7 +60,7 @@ import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
 import { dest, DT_MAX, fillable, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
-import { qualityPip } from '../view/svgs.ts'
+
 
 const HOME = [{ cx: 0, cy: 0 }]
 const AT = { col: 10, row: 12 }
@@ -90,7 +80,7 @@ describe('beta-1 invariants', () => {
 
   test('no plant tick across sundown', () => {
     const w = new World()
-    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('carrot', 'common') })
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: new Plant('carrot', 'base', 0) })
     w.clock.t = 239.999
     const before = (w.cell(AT) as { plant: Plant }).plant.maturity
     w.tick(1)
@@ -101,9 +91,9 @@ describe('beta-1 invariants', () => {
 
   test('growing plant grows; wilted grows stunted', () => {
     const w = new World()
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: bed(0.5), plant: p })
-    const dry = new Plant('carrot', 'common')
+    const dry = new Plant('carrot', 'base', 0)
     w.setCell({ col: 10, row: 13 }, { kind: 'growing', soil: bed(0), plant: dry })
     const dt = 1 / 15
     w.tick(dt)
@@ -113,14 +103,14 @@ describe('beta-1 invariants', () => {
 
   test('dry starving soil kills growing not ripe', () => {
     const w = new World()
-    const g = new Plant('carrot', 'common')
+    const g = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: bed(0, 0), plant: g })
     for (let n = 0; n < 2000 && w.cell(AT).kind === 'growing'; n++) {
       if (w.seam.kind === 'recap') w.dismissRecap()
       w.tick(1)
     }
     expect(w.cell(AT).kind).toBe('dead')
-    const r = new Plant('carrot', 'common')
+    const r = new Plant('carrot', 'base', 0)
     r.maturity = 1
     const ripe = { col: 11, row: 12 }
     w.setCell(ripe, { kind: 'ripe', soil: bed(0, 0), plant: r })
@@ -138,7 +128,7 @@ describe('beta-1 invariants', () => {
       item: { kind: 'container', id: 'bucket', liters: 2, capacityLiters: 2 },
     }
     const s = bed(0.4)
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: s, plant: p })
     w.seats[0].actor.x = 10.5
     w.seats[0].actor.y = 12.5
@@ -177,8 +167,8 @@ describe('beta-1 invariants', () => {
       growSpeed: 1,
       waterUseMul: 1,
     })
-    const sale = new Plant('carrot', 'common').stats(w.modifiers).sale
-    expect(sale).toBe(CROPS.carrot.sale * RARITY_SALE.common * 1.04)
+    const sale = new Plant('carrot', 'base', 0).stats(w.modifiers).sale
+    expect(sale).toBe(CROPS.carrot.sale * 1.04)
   })
 
   test('shovel 0 removes item', () => {
@@ -238,7 +228,7 @@ describe('beta-1 invariants', () => {
 
   test('seed buy merges into the silo, not the house', () => {
     const w = new World()
-    expect(siloCount(w, 'carrot', 'common')).toBe(5)
+    expect(siloCount(w, 'carrot', 'base')).toBe(7)
     expect(w.seats[0].inventory.some(s => s.kind === 'hold' && s.item.kind === 'seeds')).toBe(false)
     expect(w.drops).toHaveLength(1)
     expect(w.drops[0].item.kind).toBe('container')
@@ -246,31 +236,31 @@ describe('beta-1 invariants', () => {
     expect(w.money).toBe(47)
     expect(w.seats[0].place.kind).toBe('none')
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind).toBe('shovel')
-    expect(siloCount(w, 'carrot', 'common')).toBe(10)
+    expect(siloCount(w, 'carrot', 'base')).toBe(12)
   })
 
   test('silo take puts the whole stack in hand and refuses past the cap', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'empty' }
-    w.takeSilo('potato', 'heirloom')
+    w.takeSilo('potato', 'base')
     const hand = handOf(w)
     expect(hand.kind === 'hold' && hand.item.kind === 'seeds' && hand.item.count).toBe(2)
-    expect(siloCount(w, 'potato', 'heirloom')).toBe(0)
+    expect(siloCount(w, 'potato', 'base')).toBe(0)
     w.silo.seeds.length = 0
-    w.silo.seeds.push({ crop: 'carrot', rarity: 'common', count: SILO_SEED_CAP })
+    w.silo.seeds.push({ crop: 'carrot', variety: 'base', quality: 0, count: SILO_SEED_CAP })
     w.money = 999
     expect(w.buy('pack-wheat')).toBe('Seed silo full')
   })
 
   test('walking up to the silo stores every seed you carry', () => {
     const w = new World()
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'wheat', rarity: 'rare', count: 3 } }
-    w.seats[0].inventory[5] = { kind: 'hold', item: { kind: 'seeds', crop: 'grape', rarity: 'common', count: 4 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'wheat', variety: 'sonora', quality: 0, count: 3 } }
+    w.seats[0].inventory[5] = { kind: 'hold', item: { kind: 'seeds', crop: 'grape', variety: 'base', quality: 0, count: 4 } }
     w.click({ col: SILO_BASE.col, row: SILO_BASE.row })
     for (let n = 0; n < 60 && w.seats[0].queue.length > 0; n++) w.tick(1 / 15)
     expect(w.seats[0].hand.kind).toBe('empty')
-    expect(siloCount(w, 'wheat', 'rare')).toBe(3)
-    expect(siloCount(w, 'grape', 'common')).toBe(4)
+    expect(siloCount(w, 'wheat', 'sonora')).toBe(8)
+    expect(siloCount(w, 'grape', 'base')).toBe(4)
     expect(w.seats[0].cue.kind).toBe('silo')
   })
 
@@ -300,11 +290,11 @@ describe('beta-1 invariants', () => {
     const w = new World()
     const before = w.drops.length
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind).toBe('shovel')
-    w.takeSilo('carrot', 'common')
+    w.takeSilo('carrot', 'base')
     expect(w.drops).toHaveLength(before + 1)
     expect(w.drops[w.drops.length - 1].item.kind).toBe('shovel')
     const hand = handOf(w)
-    expect(hand.kind === 'hold' && hand.item.kind === 'seeds' && hand.item.count).toBe(5)
+    expect(hand.kind === 'hold' && hand.item.kind === 'seeds' && hand.item.count).toBe(7)
   })
 })
 
@@ -355,10 +345,10 @@ describe('beta-2 invariants', () => {
     const w = new World()
     w.buy('pack-carrot')
     expectPacked(w)
-    expect(siloCount(w, 'carrot', 'common')).toBe(10)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 2, unitSale: 4, freshness: 1, bio: true } }
+    expect(siloCount(w, 'carrot', 'base')).toBe(12)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: 4, freshness: 1, bio: true } }
     w.swap(1)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true } }
     w.swap(2)
     expectPacked(w)
     const fruits = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
@@ -400,7 +390,7 @@ describe('beta-2 invariants', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
     const soil = bed()
-    w.setCell(AT, { kind: 'growing', soil, plant: new Plant('carrot', 'common') })
+    w.setCell(AT, { kind: 'growing', soil, plant: new Plant('carrot', 'base', 0) })
     w.seats[0].actor.x = 10.5
     w.seats[0].actor.y = 12.5
     w.click(AT)
@@ -408,11 +398,11 @@ describe('beta-2 invariants', () => {
     expect(w.cell(AT).kind).toBe('empty')
     expect((w.cell(AT) as { soil: Soil }).soil).toBe(soil)
     const seed = w.drops.find(d => d.at.col === 10 && d.at.row === 12)
-    expect(seed?.item).toEqual({ kind: 'seeds', crop: 'carrot', rarity: 'common', count: 1 })
+    expect(seed?.item).toEqual({ kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 1 })
     w.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
     const dead = { col: 10, row: 13 }
     const deadSoil = bed()
-    w.setCell(dead, { kind: 'dead', soil: deadSoil, plant: new Plant('carrot', 'common') })
+    w.setCell(dead, { kind: 'dead', soil: deadSoil, plant: new Plant('carrot', 'base', 0) })
     const n = w.drops.length
     w.seats[0].actor.x = 10.5
     w.seats[0].actor.y = 13.5
@@ -555,7 +545,7 @@ describe('beta-3 invariants', () => {
     w.click(AT)
     for (let i = 0; i < 70; i++) w.tick(1 / 15)
     expect(w.cell(AT).kind).toBe('infertile')
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 1 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 1 } }
     w.click(AT)
     expect(w.seats[0].queue).toHaveLength(0)
     expect(w.cell(AT).kind).toBe('infertile')
@@ -637,7 +627,7 @@ describe('beta-3 invariants', () => {
     w.setCell(AT, bare('soft'))
     w.setCell(above, bare('soft'))
     w.setCell({ col: AT.col, row: AT.row + 1 }, bare('soft'))
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry' } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'tree-seed', tree: 'cherry', variety: 'base', quality: 0 } }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 2.5
     w.click(AT)
@@ -654,8 +644,8 @@ describe('beta-3 invariants', () => {
     expect(SKUS['buy-pickaxe'].price).toBe(18)
     expect(SKUS['buy-pickaxe'].unlock).toBe('unlock-pickaxe')
     expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-pickaxe')
-    expect(RARITY_SALE).toEqual({ common: 1, uncommon: 1.25, rare: 2, heirloom: 3.5 })
-    expect(RARITY_WEIGHT).toEqual({ common: 0.55, uncommon: 0.35, rare: 0.09, heirloom: 0.01 })
+    expect(qualityMul(0)).toBe(1)
+    expect(qualityMul(1)).toBe(3.5)
     expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
   })
 
@@ -704,7 +694,7 @@ describe('beta-4 invariants', () => {
     expect(cb.slots).toHaveLength(9)
     expect(ca.slots.every(s => s.kind === 'empty')).toBe(true)
     expect(ca.slots).not.toBe(cb.slots)
-    ca.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
+    ca.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
     expect(cb.slots[0].kind).toBe('empty')
   })
 
@@ -712,11 +702,11 @@ describe('beta-4 invariants', () => {
     expect(GRIND_WORK).toBe(12)
     const w = grindWorld(7)
     w.seats[0].inventory.forEach((_, i) => {
-      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', rarity: 'rare', count: 1, unitSale: 28, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'sonora', quality: 0, count: 1, unitSale: 28, freshness: 1, bio: true },
     }
     w.click(AT)
     w.tick(DT_MAX)
@@ -726,7 +716,7 @@ describe('beta-4 invariants', () => {
     expect(g.kind).toBe('grinder')
     if (g.kind !== 'grinder') return
     expect(g.crop).toBe('wheat')
-    expect(g.rarity).toBe('rare')
+    expect(g.variety).toBe('sonora')
     expect(g.units).toBe(1)
     const loaded = parse(JSON.stringify(dump(w)))
     expect(loaded.ok).toBe(true)
@@ -743,7 +733,7 @@ describe('beta-4 invariants', () => {
     const dropped = w.drops.filter(d => d.item.kind === 'seeds')
     expect(dropped).toHaveLength(1)
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.crop).toBe('wheat')
-    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.rarity).toBe('rare')
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.variety).toBe('sonora')
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
     expect(g.crop).toBe('none')
@@ -753,11 +743,11 @@ describe('beta-4 invariants', () => {
     const n = 3
     const w = grindWorld(11)
     w.seats[0].inventory.forEach((_, i) => {
-      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
+      w.seats[0].inventory[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'tomato', rarity: 'uncommon', count: n, unitSale: 22.5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'tomato', variety: 'green-zebra', quality: 0, count: n, unitSale: 22.5, freshness: 1, bio: true },
     }
     w.click(AT)
     w.tick(DT_MAX)
@@ -772,7 +762,7 @@ describe('beta-4 invariants', () => {
       const u = new Rng(11).stream('grind').at(AT.col, AT.row, 1, i)
       expectCount += GRIND_MIN + Math.floor(u * (GRIND_MAX - GRIND_MIN + 1))
     }
-    const dropped = w.drops.filter(d => d.item.kind === 'seeds' && d.item.crop === 'tomato' && d.item.rarity === 'uncommon')
+    const dropped = w.drops.filter(d => d.item.kind === 'seeds' && d.item.crop === 'tomato' && d.item.variety === 'green-zebra')
     const got = dropped.reduce((s, d) => s + (d.item.kind === 'seeds' ? d.item.count : 0), 0)
     expect(got).toBe(expectCount)
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
@@ -804,9 +794,11 @@ describe('beta-4 invariants', () => {
   test('itemLine fruit shows freshness; berry has no money clause', () => {
     const w = new World()
     expect(
-      itemLine({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true }, w.modifiers),
-    ).toBe('Carrot - 3, freshness 100%')
-    expect(itemLine({ kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 }, w.modifiers)).toBe('Sugar - 2L')
+      itemLine({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true }, w.modifiers),
+    ).toBe(`Carrot - 3, freshness 100% ${m.hud_quality_pct({ n: 0 })}`)
+    expect(itemLine({ kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5, quality: 0 }, w.modifiers)).toBe(
+      `Sugar - 2L ${m.hud_quality_pct({ n: 0 })}`,
+    )
   })
 
   test('infertile prompt is does not need seeds', () => {
@@ -819,7 +811,7 @@ describe('beta-4 invariants', () => {
 
   test('pickaxe on ripe does not queue and speaks', () => {
     const w = new World()
-    w.setCell(AT, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'common') })
+    w.setCell(AT, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'base', 0) })
     w.seats[0].hand = { kind: 'hold', item: makePickaxe('pickaxe') }
     const q = [...w.seats[0].queue]
     w.click(AT)
@@ -957,7 +949,7 @@ describe('beta-5 invariants', () => {
     ;[5, 6, 7, 8, 9].forEach(col => {
       const s = bed(0.2)
       soils.push(s)
-      const p = new Plant('carrot', 'common')
+      const p = new Plant('carrot', 'base', 0)
       w.setCell({ col, row: 19 }, { kind: 'growing', soil: s, plant: p })
     })
     for (let n = 0; n < 10; n++) w.tick(1 / 15)
@@ -985,7 +977,7 @@ describe('beta-5 invariants', () => {
     w.buy('buy-sprinkler')
     const v = { col: 5, row: 20 }
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    w.setCell({ col: 5, row: 19 }, { kind: 'growing', soil: bed(0.2), plant: new Plant('carrot', 'common') })
+    w.setCell({ col: 5, row: 19 }, { kind: 'growing', soil: bed(0.2), plant: new Plant('carrot', 'base', 0) })
 
     w.tick(DT_MAX)
     expect(w.vfx.get(vertexKey(v))).toBe(true)
@@ -1159,10 +1151,10 @@ describe('beta-5 invariants', () => {
     w.buy('buy-sprinkler')
     w.placeSprinkler({ variant: 'basic', at: { col: 19, row: 7 }, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const gs = bed(0.5)
-    const g = new Plant('carrot', 'common')
+    const g = new Plant('carrot', 'base', 0)
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: gs, plant: g })
     const rs = bed(0.5)
-    const r = new Plant('carrot', 'common')
+    const r = new Plant('carrot', 'base', 0)
     r.maturity = 1
     w.setCell({ col: 19, row: 6 }, { kind: 'ripe', soil: rs, plant: r })
     w.tick(1 / 15)
@@ -1190,7 +1182,7 @@ describe('beta-5 invariants', () => {
     w.buy('buy-sprinkler')
     const v = { col: 19, row: 7 }
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    const g = new Plant('carrot', 'common')
+    const g = new Plant('carrot', 'base', 0)
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: bed(0.5), plant: g })
     expect(w.rate(v)).toBe(0)
     w.buy('buy-pipe')
@@ -1210,7 +1202,7 @@ describe('beta-5 invariants', () => {
     const v = { col: 19, row: 7 }
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const s = bed(0.5)
-    const g = new Plant('carrot', 'common')
+    const g = new Plant('carrot', 'base', 0)
     w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: s, plant: g })
     const r = w.rate(v)
     expect(r).toBeGreaterThan(0)
@@ -1268,7 +1260,7 @@ describe('beta-6 invariants', () => {
 
   test('ripe plant freshness starts 1 then rots', () => {
     const w = new World()
-    const p = new Plant('raspberry', 'common')
+    const p = new Plant('raspberry', 'base', 0)
     w.setCell(AT, { kind: 'ripe', soil: bed(), plant: p })
     expect(p.freshness).toBe(1)
     const rot = CROPS.raspberry.rotSeconds
@@ -1284,8 +1276,8 @@ describe('beta-6 invariants', () => {
     w.seats[0].hand = { kind: 'empty' }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
-    const sale = new Plant('carrot', 'common').stats(w.modifiers).sale
-    const a = new Plant('carrot', 'common')
+    const sale = new Plant('carrot', 'base', 0).stats(w.modifiers).sale
+    const a = new Plant('carrot', 'base', 0)
     a.freshness = 1
     w.setCell(AT, { kind: 'ripe', soil: bed(), plant: a })
     w.click(AT)
@@ -1299,7 +1291,7 @@ describe('beta-6 invariants', () => {
     expect(freshMul(0.8)).toBe(1)
     expect(freshMul(0.4)).toBe(0.5)
     w.seats[0].hand = { kind: 'empty' }
-    const b = new Plant('carrot', 'common')
+    const b = new Plant('carrot', 'base', 0)
     b.freshness = 0.4
     w.setCell(AT, { kind: 'ripe', soil: bed(), plant: b })
     w.click(AT)
@@ -1320,11 +1312,11 @@ describe('beta-6 invariants', () => {
     const w = new World()
     w.seats[0].inventory[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
     }
     w.seats[0].inventory[1] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true },
     }
     w.compactInventory()
     const slot = w.seats[0].inventory[0]
@@ -1383,8 +1375,8 @@ describe('beta-6 invariants', () => {
     const chest = w.cell(AT)
     expect(chest.kind).toBe('chest')
     if (chest.kind !== 'chest') return
-    chest.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
-    chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
+    chest.slots[0] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
+    chest.slots[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 2 } }
     w.armDelete()
     const n = w.drops.length
     w.deleteBuilding(AT)
@@ -1420,23 +1412,16 @@ describe('beta-6 invariants', () => {
     expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'rotten')).toBe(false)
   })
 
-  test('qualityPip uncommon+ only', () => {
-    expect(qualityPip('common')).toBeUndefined()
-    expect(qualityPip('uncommon')).toBeTruthy()
-    expect(qualityPip('rare')).toBeTruthy()
-    expect(qualityPip('heirloom')).toBeTruthy()
-  })
-
   test('different rarity seeds do not merge', () => {
     const w = new World()
-    w.seats[0].inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 2 } }
-    w.seats[0].inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'rare', count: 3 } }
+    w.seats[0].inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 2 } }
+    w.seats[0].inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'bintje', quality: 0, count: 3 } }
     w.compactInventory()
     const a = w.seats[0].inventory[0]
     const b = w.seats[0].inventory[1]
-    expect(a.kind === 'hold' && a.item.kind === 'seeds' && a.item.rarity).toBe('common')
+    expect(a.kind === 'hold' && a.item.kind === 'seeds' && a.item.variety).toBe('base')
     expect(a.kind === 'hold' && a.item.kind === 'seeds' && a.item.count).toBe(2)
-    expect(b.kind === 'hold' && b.item.kind === 'seeds' && b.item.rarity).toBe('rare')
+    expect(b.kind === 'hold' && b.item.kind === 'seeds' && b.item.variety).toBe('bintje')
     expect(b.kind === 'hold' && b.item.kind === 'seeds' && b.item.count).toBe(3)
   })
 
@@ -1459,11 +1444,11 @@ describe('beta-6 invariants', () => {
   test('wilted plant stunts; growing wet plant still grows and both drink', () => {
     const w = new World()
     const drySoil = bed(0)
-    const wilt = new Plant('carrot', 'common')
+    const wilt = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: drySoil, plant: wilt })
     const wetAt = { col: 11, row: 12 }
     const wetSoil = bed(1)
-    const wet = new Plant('carrot', 'common')
+    const wet = new Plant('carrot', 'base', 0)
     w.setCell(wetAt, { kind: 'growing', soil: wetSoil, plant: wet })
     const use = wilt.stats(w.modifiers).waterUsePerSec
     const dt = 1 / 15
@@ -1474,47 +1459,21 @@ describe('beta-6 invariants', () => {
     expect(wet.maturity).toBeCloseTo(dt / CROPS.carrot.growSeconds, 9)
   })
 
-  test('happiness odds at 50% and 0%', () => {
-    expect(rarityOdds(HAPPY_START)).toEqual({ up2: 0.005, up1: 0.05, down: 0 })
-    expect(rarityOdds(0)).toEqual({ up2: 0, up1: 0, down: 0.05 })
-    expect(rarityOdds(HAPPY_MAX, 0.04)).toEqual({ up2: 0.01, up1: 0.14, down: 0 })
-    expect(rarityOdds(HAPPY_START, 0.04)).toEqual({ up2: 0.005, up1: 0.07, down: 0 })
-    expect(stepRarity('common', -1)).toBe('common')
-    expect(stepRarity('heirloom', 2)).toBe('heirloom')
-    expect(rollGrowRarity('common', HAPPY_START, 0)).toBe('rare')
-    expect(rollGrowRarity('common', HAPPY_START, 0.004)).toBe('rare')
-    expect(rollGrowRarity('common', HAPPY_START, 0.006)).toBe('uncommon')
-    expect(rollGrowRarity('common', HAPPY_START, 0.06)).toBe('common')
-    expect(rollGrowRarity('uncommon', 0, 0.01)).toBe('common')
-    expect(rollGrowRarity('common', HAPPY_MAX, 0.111)).toBe('common')
-    expect(rollGrowRarity('common', HAPPY_MAX, 0.111, 0.04)).toBe('uncommon')
-  })
-
-  test('shop packs stay common until Trusted seed bank', () => {
-    expect(rollShopRarity(0, 0)).toBe('common')
-    expect(rollShopRarity(5, 0)).toBe('heirloom')
-    expect(rollShopRarity(5, 0.009)).toBe('heirloom')
-    expect(rollShopRarity(5, 0.011)).toBe('rare')
-    expect(rollShopRarity(5, 0.069)).toBe('rare')
-    expect(rollShopRarity(5, 0.071)).toBe('uncommon')
-    expect(rollShopRarity(5, 0.319)).toBe('uncommon')
-    expect(rollShopRarity(5, 0.32)).toBe('common')
+  test("shop packs are `'base'` quality 0. `heirloom` skill gated on `unlock-heirloom`.", () => {
     expect(SKILLS.heirloom.gate).toEqual({ kind: 'research', id: 'unlock-heirloom' })
     const w = new World(1)
-    w.done.add('unlock-crop-variants')
-    w.family.player.owned.set('seed-bank', 5)
-    const u = new Rng(1).stream('shop').next()
     expect(w.buy('pack-wheat')).toBeUndefined()
-    expect(w.silo.seeds.find(st => st.crop === 'wheat')).toEqual({
+    expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')).toEqual({
       crop: 'wheat',
-      rarity: rollShopRarity(5, u),
+      variety: 'base',
+      quality: 0,
       count: 5,
     })
   })
 
   test('wilt drains happiness', () => {
     const w = new World()
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: bed(0), plant: p })
     w.tick(1 / 15)
     expect(p.happiness).toBeLessThan(HAPPY_START)
@@ -1547,10 +1506,9 @@ function sorted(cs: { col: number; row: number }[]): { col: number; row: number 
 describe('0.8 plants and trees', () => {
   test('vanilla saleMul 1 / 1.25 / 3 / 6; common 22 < raspberry 26', () => {
     const w = new World()
-    expect(statsOf('vanilla', 'common', w.modifiers).sale).toBe(22)
-    expect(statsOf('vanilla', 'rare', w.modifiers).sale).toBe(66)
-    expect(statsOf('vanilla', 'heirloom', w.modifiers).sale).toBe(132)
-    expect(statsOf('raspberry', 'common', w.modifiers).sale).toBe(26)
+    expect(statsOf('vanilla', 'base', 0, w.modifiers).sale).toBe(22)
+    expect(statsOf('vanilla', 'base', 1, w.modifiers).sale).toBe(22 * 3.5)
+    expect(statsOf('raspberry', 'base', 0, w.modifiers).sale).toBe(26)
   })
 
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
@@ -1575,7 +1533,7 @@ describe('0.8 plants and trees', () => {
     w.seats[0].hand = { kind: 'empty' }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
-    const p = new Plant('sugar-cane', 'common')
+    const p = new Plant('sugar-cane', 'base', 0)
     w.setCell(AT, { kind: 'ripe', soil: bed(), plant: p })
     w.click(AT)
     for (let i = 0; i < 20; i++) w.tick(1 / 15)
@@ -1584,7 +1542,7 @@ describe('0.8 plants and trees', () => {
     if (h.kind !== 'hold' || h.item.kind !== 'fruit') throw new Error('fruit')
     expect(h.item.crop).toBe('sugar-cane')
     expect(w.cell(AT).kind).toBe('empty')
-    expect('count' in { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 }).toBe(false)
+    expect('count' in { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5, quality: 0 }).toBe(false)
   })
 
   test('tree juvenile then pending; next seam starts yield', () => {
@@ -1640,12 +1598,12 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 5, unitSale: 5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'mill', at: AT })
     for (let i = 0; i < 200; i++) w.tick(DT_MAX)
     const drop = w.drops.find(d => d.item.kind === 'sugar')
-    expect(drop?.item).toEqual({ kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL })
+    expect(drop?.item).toEqual({ kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL, quality: 0 })
     expect(mill.units).toBe(0)
   })
 
@@ -1659,7 +1617,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 10, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'still', at: AT })
     for (let i = 0; i < 40; i++) w.tick(DT_MAX)
@@ -1674,7 +1632,7 @@ describe('1.2 machines', () => {
     const chestAt = { col: AT.col + 1, row: AT.row }
     const chest = new Chest({ shape: 'rect', col: chestAt.col, row: chestAt.row, w: 1, h: 1 })
     w.setCell(chestAt, chest)
-    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, rarity: 'common' as const, count: 1, unitSale: 4, freshness: 1, bio: true }
+    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0 as const, count: 1, unitSale: 4, freshness: 1, bio: true }
     fz.slots[0] = { kind: 'hold', item: { ...fruit } }
     chest.slots[0] = { kind: 'hold', item: { ...fruit } }
     w.tick(1)
@@ -1692,7 +1650,7 @@ describe('1.2 machines', () => {
     const fruit = {
       kind: 'fruit' as const,
       crop: 'carrot' as const,
-      rarity: 'common' as const,
+      variety: 'base' as const, quality: 0 as const,
       count: 3,
       unitSale: 3,
       freshness: 0.0001,
@@ -1718,12 +1676,12 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 72 },
+      item: { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 72 },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.vodka.stock.common.organic).toBe(1)
-    expect(w.stall.vodka.worth.common.organic).toBe(72)
+    expect(w.stall.vodka.stock.base.organic).toBe(1)
+    expect(w.stall.vodka.worth.base.organic).toBe(72)
   })
 
   test('Broken dump missing seats → unusable. No migrate.', () => {
@@ -1755,7 +1713,7 @@ describe('1.2 machines', () => {
     expect(a.base.col).toBe(10)
     expect(a.base.row).toBe(16)
     expect(w.stills).toContain(a)
-    a.feed = [{ crop: 'potato', rarity: 'common', count: 10 }]
+    a.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: 10 }]
     a.progress = 0.5
     w.tick(DT_MAX)
     expect(a.progress).toBeGreaterThan(0.5)
@@ -1789,7 +1747,7 @@ describe('1.2 machines', () => {
     expect(mill.progress).toBe(0.2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', rarity: 'common', count: 3, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true },
     }
     w.seats[0].actor.x = millAt.col + 0.5
     w.seats[0].actor.y = millAt.row + 0.5
@@ -1804,8 +1762,8 @@ function handOf(w: World): Hand {
   return w.seats[0].hand
 }
 
-function siloCount(w: World, crop: AnnualId, rarity: Rarity): number {
-  return w.silo.seeds.find(st => st.crop === crop && st.rarity === rarity)?.count ?? 0
+function siloCount(w: World, crop: AnnualId, variety: VarietyId): number {
+  return w.silo.seeds.find(st => st.crop === crop && st.variety === variety)?.count ?? 0
 }
 
 function expectPacked(w: World): void {
@@ -1818,7 +1776,7 @@ function expectPacked(w: World): void {
     }
     expect(empty).toBe(false)
     if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
-      const key = `${slot.item.kind}:${slot.item.crop}:${slot.item.rarity}`
+      const key = `${slot.item.kind}:${slot.item.crop}:${slot.item.variety}`
       expect(seen.has(key)).toBe(false)
       seen.add(key)
     }
@@ -1890,7 +1848,7 @@ function digest(w: World) {
   w.forEachCell((at, c) => {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
-      s += `:${c.plant.crop}:${c.plant.rarity}:${c.plant.maturity}`
+      s += `:${c.plant.crop}:${c.plant.variety}:${c.plant.quality}:${c.plant.maturity}`
     }
     cells.push(s)
   })
@@ -1951,7 +1909,7 @@ describe('0.9 log and rng', () => {
 
   test('Log is player Cmds only. Not sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, walk, panel, camera, hover, lens.', () => {
     const w = new World(1)
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     p.maturity = 1
     w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
     w.tick(1 / 15)
@@ -1988,46 +1946,37 @@ describe('0.9 log and rng', () => {
   test('shop.next() does not move when grow rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.', () => {
     const seed = 9
     const shopOnly = new World(seed)
-    shopOnly.done.add('unlock-crop-variants')
-    shopOnly.family.player.owned.set('seed-bank', 5)
     expect(shopOnly.buy('pack-wheat')).toBeUndefined()
     const grown = new World(seed)
-    grown.done.add('unlock-crop-variants')
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     p.maturity = 1
     grown.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
     grown.tick(1 / 15)
-    grown.family.player.owned.set('seed-bank', 5)
     expect(grown.buy('pack-wheat')).toBeUndefined()
-    const want = rollShopRarity(5, new Rng(seed).stream('shop').next())
-    const stack = (w: World) => w.silo.seeds.find(st => st.crop === 'wheat')
-    expect(stack(shopOnly)?.rarity).toBe(want)
-    expect(stack(grown)?.rarity).toBe(want)
+    const stack = (w: World) => w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')
+    expect(stack(shopOnly)?.variety).toBe('base')
+    expect(stack(grown)?.variety).toBe('base')
+    expect(stack(shopOnly)?.quality).toBe(0)
+    expect(stack(grown)?.quality).toBe(0)
   })
 
   test('Two growing→ripe on one cell the same day use distinct n. Rarities need not match.', () => {
     const w = new World(1)
-    w.done.add('unlock-crop-variants')
-    const first = new Plant('carrot', 'common')
+    const first = new Plant('carrot', 'base', 0)
     first.maturity = 1
     w.setCell(AT, { kind: 'growing', soil: bed(), plant: first })
     w.tick(1 / 15)
     const ripe0 = w.cell(AT)
     expect(ripe0.kind).toBe('ripe')
-    expect(w.ripenN.get('10,12')).toBe(1)
-    const r0 = ripe0.kind === 'ripe' ? ripe0.plant.rarity : 'common'
-    const second = new Plant('carrot', 'common')
+    expect(ripe0.kind === 'ripe' && ripe0.plant.quality).toBe(0)
+    expect(ripe0.kind === 'ripe' && ripe0.plant.variety).toBe('base')
+    const second = new Plant('carrot', 'base', 0)
     second.maturity = 1
     w.setCell(AT, { kind: 'growing', soil: bed(), plant: second })
     w.tick(1 / 15)
     const ripe1 = w.cell(AT)
     expect(ripe1.kind).toBe('ripe')
-    expect(w.ripenN.get('10,12')).toBe(2)
-    const r1 = ripe1.kind === 'ripe' ? ripe1.plant.rarity : 'common'
-    const grow = new Rng(1).stream('grow')
-    expect(grow.at(AT.col, AT.row, 1, 0)).not.toBe(grow.at(AT.col, AT.row, 1, 1))
-    expect(r0).toBe(rollGrowRarity('common', first.happiness, new Rng(1).stream('grow').at(AT.col, AT.row, 1, 0)))
-    expect(r1).toBe(rollGrowRarity('common', second.happiness, new Rng(1).stream('grow').at(AT.col, AT.row, 1, 1)))
+    expect(ripe1.kind === 'ripe' && ripe1.plant.quality).toBe(0)
   })
 
   test('Two successful tree drops the same day each consume two fruit.next(): drop spot then rarity. Rarities need not match.', () => {
@@ -2053,15 +2002,12 @@ describe('0.9 log and rng', () => {
     tree.fruit = 1
     w.tick(1 / 15)
     expect(w.drops.length).toBe(n0 + 2)
-    const fruit = new Rng(1).stream('fruit')
-    fruit.next()
-    const a = rollRarity(fruit.next())
-    fruit.next()
-    const b = rollRarity(fruit.next())
     const olives = w.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'olive')
     expect(olives).toHaveLength(2)
-    expect(olives[0].item.kind === 'fruit' && olives[0].item.rarity).toBe(a)
-    expect(olives[1].item.kind === 'fruit' && olives[1].item.rarity).toBe(b)
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.quality).toBe(0)
+    expect(olives[1].item.kind === 'fruit' && olives[1].item.quality).toBe(0)
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.variety).toBe('base')
+    expect(w.rng.consumed('fruit')).toBe(2)
   })
 
   test('Failed buy / buyPacks (closed, cannot afford, cannot fit) consumes 0 shop.next(). Failed tree drop consumes 0 fruit.next(). Granted pack: one next() each. buyPacks success: 5.', () => {
@@ -2073,26 +2019,17 @@ describe('0.9 log and rng', () => {
     expect(w.buy('pack-tomato')).toBeUndefined()
     w.money = 50
     w.silo.seeds.length = 0
-    w.silo.seeds.push({ crop: 'carrot', rarity: 'common', count: SILO_SEED_CAP })
+    w.silo.seeds.push({ crop: 'carrot', variety: 'base', quality: 0, count: SILO_SEED_CAP })
     expect(w.buy('pack-carrot')).toBe('Seed silo full')
     w.silo.seeds.length = 0
     expect(w.buy('pack-wheat')).toBeUndefined()
-    const u0 = new Rng(seed).stream('shop').next()
-    expect(w.silo.seeds.find(st => st.crop === 'wheat')?.rarity).toBe(rollShopRarity(0, u0))
+    expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
+    expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.quality).toBe(0)
     const bulk = new World(seed)
     bulk.money = 1000
     bulk.buyPacks('pack-wheat')
-    const shop = new Rng(seed).stream('shop')
-    const expectN = [0, 1, 2, 3, 4].map(() => rollShopRarity(0, shop.next()))
-    const got: { [r: string]: number } = { common: 0, uncommon: 0, rare: 0, heirloom: 0 }
-    const want: { [r: string]: number } = { common: 0, uncommon: 0, rare: 0, heirloom: 0 }
-    expectN.forEach(r => {
-      want[r] += 5
-    })
-    bulk.silo.seeds.forEach(st => {
-      if (st.crop === 'wheat') got[st.rarity] += st.count
-    })
-    expect(got).toEqual(want)
+    expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.count).toBe(25)
+    expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
     const dropFail = new World(seed)
     const trapped = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
       kind: 'on',
@@ -2112,38 +2049,32 @@ describe('0.9 log and rng', () => {
     dropFail.tick(1 / 15)
     const olives = dropFail.drops.filter(d => d.item.kind === 'fruit' && d.item.crop === 'olive')
     expect(olives).toHaveLength(1)
-    expect(olives[0].item.kind === 'fruit' && olives[0].item.rarity).toBe(rollRarity(new Rng(seed).stream('fruit').next()))
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.quality).toBe(0)
+    expect(olives[0].item.kind === 'fruit' && olives[0].item.variety).toBe('base')
+    expect(dropFail.rng.consumed('fruit')).toBe(1)
   })
 
   test('existing common carrot stack in the silo: buy and buyPacks merge; shop.next consumed 1 then 5', () => {
     const w = new World(1)
     w.money = 50
-    expect(siloCount(w, 'carrot', 'common')).toBe(5)
+    expect(siloCount(w, 'carrot', 'base')).toBe(7)
     expect(w.buy('pack-carrot')).toBeUndefined()
-    expect(siloCount(w, 'carrot', 'common')).toBe(10)
-    const seq1 = new Rng(1).stream('shop')
-    seq1.next()
-    expect(w.rng.stream('shop').next()).toBe(seq1.next())
+    expect(siloCount(w, 'carrot', 'base')).toBe(12)
     const bulk = new World(1)
     bulk.money = 50
     bulk.buyPacks('pack-carrot')
-    expect(siloCount(bulk, 'carrot', 'common')).toBe(30)
-    const seq5 = new Rng(1).stream('shop')
-    for (let i = 0; i < 5; i++) seq5.next()
-    expect(bulk.rng.stream('shop').next()).toBe(seq5.next())
+    expect(siloCount(bulk, 'carrot', 'base')).toBe(32)
   })
 
   test('Pack rarity is rollShopRarity(seed-bank tier, shop.next()). Not clock.t. Not money.', () => {
     const w = new World(1)
-    w.done.add('unlock-crop-variants')
-    w.family.player.owned.set('seed-bank', 5)
     w.clock.t = 80
     w.money = 80
-    const u = new Rng(1).stream('shop').next()
     expect(w.buy('pack-wheat')).toBeUndefined()
-    expect(w.silo.seeds.find(st => st.crop === 'wheat')).toEqual({
+    expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')).toEqual({
       crop: 'wheat',
-      rarity: rollShopRarity(5, u),
+      variety: 'base',
+      quality: 0,
       count: 5,
     })
   })
@@ -2378,23 +2309,21 @@ describe('1.5.2', () => {
       requires: [],
       effect: { kind: 'feature' },
     })
-    expect(SKILLS['better-carrot'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
     expect(SKILLS['better-potato'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
     expect(SKILLS['better-wheat'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
-    expect(SKILLS['seed-bank'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
     expect(SKUS['buy-compost-box']).toMatchObject({ unlock: 'start', price: 8 })
     expect(SKUS['buy-sensor-fert'].need).toEqual(['unlock-fertilizer'])
     const locked = new World(1)
-    locked.family.player.owned.set('seed-bank', 5)
     expect(locked.buy('pack-wheat')).toBeUndefined()
-    expect(locked.silo.seeds.find(st => st.crop === 'wheat')?.rarity).toBe('common')
-    const p = new Plant('carrot', 'common')
+    expect(locked.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
+    const p = new Plant('carrot', 'base', 0)
     p.maturity = 1
     p.happiness = HAPPY_MAX
     locked.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
     locked.tick(1 / 15)
     const ripe = locked.cell(AT)
-    expect(ripe.kind === 'ripe' && ripe.plant.rarity).toBe('common')
+    expect(ripe.kind === 'ripe' && ripe.plant.variety).toBe('base')
+    expect(ripe.kind === 'ripe' && ripe.plant.quality).toBeCloseTo(0.25, 8)
     expect(locked.researchShown('unlock-heirloom')).toBe(false)
     locked.done.add('unlock-crop-variants')
     expect(locked.researchShown('unlock-heirloom')).toBe(true)
@@ -2407,14 +2336,14 @@ describe('1.5.2', () => {
     const fruit: Extract<Item, { kind: 'fruit' }> = {
       kind: 'fruit',
       crop: 'carrot',
-      rarity: 'common',
+      variety: 'base', quality: 0,
       count: 1,
       unitSale: 4,
       freshness: 0.4,
       bio: true,
     }
     w.seats[0].hand = { kind: 'hold', item: fruit }
-    const rot = statsOf('carrot', 'common', w.modifiers).rotSeconds
+    const rot = statsOf('carrot', 'base', 0, w.modifiers).rotSeconds
     w.tick(DT_MAX)
     expect(fruit.freshness).toBeCloseTo(0.4 - DT_MAX / (rot * (1 + 0.15 * 2)), 8)
   })
@@ -2617,8 +2546,8 @@ describe('1.8 permits and points', () => {
 })
 
 describe('1.9 stacks', () => {
-  function ripeAt(w: World, at: { col: number; row: number }, crop: AnnualId, rarity: Rarity): void {
-    w.setCell(at, { kind: 'ripe', soil: bed(), plant: new Plant(crop, rarity) })
+  function ripeAt(w: World, at: { col: number; row: number }, crop: AnnualId, variety: VarietyId = 'base'): void {
+    w.setCell(at, { kind: 'ripe', soil: bed(), plant: new Plant(crop, variety, 0) })
   }
 
   function pickAt(w: World, at: { col: number; row: number }): void {
@@ -2633,7 +2562,7 @@ describe('1.9 stacks', () => {
     w.seats[0].hand = { kind: 'empty' }
     for (let i = 0; i < STACK_MAX; i++) {
       const at = { col: 10 + i, row: 12 }
-      ripeAt(w, at, 'carrot', 'common')
+      ripeAt(w, at, 'carrot', 'base')
       pickAt(w, at)
     }
     const hand = handOf(w)
@@ -2643,10 +2572,10 @@ describe('1.9 stacks', () => {
   test('A full hand refuses the merge, keeps the crop on the plant, and says so.', () => {
     const w = new World(1)
     const at = { col: 10, row: 12 }
-    ripeAt(w, at, 'carrot', 'common')
+    ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
     }
     expect(w.prompt(at)).toEqual({ kind: 'blocked', text: 'My hand is full!' })
     pickAt(w, at)
@@ -2658,10 +2587,10 @@ describe('1.9 stacks', () => {
   test('Clicking a ripe plot with a full hand speaks `HAND_FULL`, not the wrong-tool line.', () => {
     const w = new World(1)
     const at = { col: 10, row: 12 }
-    ripeAt(w, at, 'carrot', 'common')
+    ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true },
     }
     w.click(at)
     expect(w.speech).toEqual({ kind: 'say', text: 'My hand is full!', left: SPEECH_S })
@@ -2671,17 +2600,17 @@ describe('1.9 stacks', () => {
   test('A different crop or rarity does not merge; the plant keeps its fruit.', () => {
     const w = new World(1)
     const at = { col: 10, row: 12 }
-    ripeAt(w, at, 'carrot', 'common')
+    ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
-    ripeAt(w, at, 'carrot', 'common')
+    ripeAt(w, at, 'potato')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'rare', count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
@@ -2689,10 +2618,10 @@ describe('1.9 stacks', () => {
 
   test('Bottled and jarred goods cap at `STACK_MAX_CRAFTED`.', () => {
     const w = new World(1)
-    expect(w.stackMax({ kind: 'jam', crop: 'apricot', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'cask', cask: 'wine', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 1, freshness: 1, bio: true })).toBe(STACK_MAX)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'cask', cask: 'wine', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true })).toBe(STACK_MAX)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
   })
 
@@ -2704,7 +2633,7 @@ describe('1.9 stacks', () => {
     expect(PLAYER_SKILL_IDS.includes('bulk-up')).toBe(true)
     w.family.player.owned.set('bulk-up', 2)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX + 2 * BULK_UP_STEP)
-    expect(w.stackMax({ kind: 'jam', crop: 'apricot', count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
   })
 
   test('Pick up merges what fits and leaves the remainder on the ground.', () => {
@@ -2713,11 +2642,11 @@ describe('1.9 stacks', () => {
     w.setCell(at, { kind: 'empty', soil: bed() })
     w.drops.push({
       at,
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 8, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 8, unitSale: 4, freshness: 1, bio: true },
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 5, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 5, unitSale: 4, freshness: 1, bio: true },
     }
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 0.5
@@ -2734,7 +2663,7 @@ describe('1.9 stacks', () => {
     const w = new World(1)
     const at = { col: 10, row: 12 }
     w.setCell(at, { kind: 'empty', soil: bed() })
-    w.drops.push({ at, item: { kind: 'tree-seed', tree: 'apple' } })
+    w.drops.push({ at, item: { kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0 } })
     w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 0.5
@@ -2838,7 +2767,7 @@ describe('family.unlockSkills', () => {
 describe('day.end-day', () => {
   test('End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams. Recap: no-op.', () => {
     const w = new World(1)
-    const p = new Plant('carrot', 'common')
+    const p = new Plant('carrot', 'base', 0)
     p.maturity = 0.4
     w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
     w.clock.t = 80
@@ -2875,8 +2804,8 @@ describe('world.cheatSpeed', () => {
     const a = new World(1)
     const b = new World(1)
     b.setCheatSpeed(3)
-    const pa = new Plant('carrot', 'common')
-    const pb = new Plant('carrot', 'common')
+    const pa = new Plant('carrot', 'base', 0)
+    const pb = new Plant('carrot', 'base', 0)
     a.setCell(AT, { kind: 'growing', soil: bed(), plant: pa })
     b.setCell(AT, { kind: 'growing', soil: bed(), plant: pb })
     a.tick(DT_MAX)
@@ -2902,26 +2831,120 @@ describe('inventory.silo-buy', () => {
     w.money = 0
     expect(w.buy(sku)).toBe('Cannot afford')
     w.buyPacks(sku)
-    expect(siloCount(w, 'carrot', 'common')).toBe(5)
+    expect(siloCount(w, 'carrot', 'base')).toBe(7)
     w.money = 50
     expect(w.buy(sku)).toBeUndefined()
-    expect(siloCount(w, 'carrot', 'common')).toBe(10)
-    const seq1 = new Rng(1).stream('shop')
-    seq1.next()
-    expect(w.rng.stream('shop').next()).toBe(seq1.next())
+    expect(siloCount(w, 'carrot', 'base')).toBe(12)
     const bulk = new World(1)
     bulk.money = 50
     bulk.buyPacks(sku)
-    expect(siloCount(bulk, 'carrot', 'common')).toBe(30)
-    const seq5 = new Rng(1).stream('shop')
-    for (let i = 0; i < 5; i++) seq5.next()
-    expect(bulk.rng.stream('shop').next()).toBe(seq5.next())
+    expect(siloCount(bulk, 'carrot', 'base')).toBe(32)
     const full = new World(1)
     full.money = 50
     full.silo.seeds.length = 0
-    full.silo.seeds.push({ crop: 'carrot', rarity: 'common', count: SILO_SEED_CAP })
+    full.silo.seeds.push({ crop: 'carrot', variety: 'base', quality: 0, count: SILO_SEED_CAP })
     expect(full.buy(sku)).toBe('Seed silo full')
     full.buyPacks(sku)
-    expect(siloCount(full, 'carrot', 'common')).toBe(SILO_SEED_CAP)
+    expect(siloCount(full, 'carrot', 'base')).toBe(SILO_SEED_CAP)
+  })
+})
+
+describe('variety.stack', () => {
+  test('Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar.', () => {
+    const w = new World(1)
+    w.seats[0].inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'base', quality: 0, count: 2 } }
+    w.seats[0].inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'bintje', quality: 0, count: 3 } }
+    w.compactInventory()
+    expect(w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'seeds')).toHaveLength(2)
+    w.seats[0].inventory[0] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'bintje', quality: 0, count: 2 } }
+    w.seats[0].inventory[1] = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'bintje', quality: 1, count: 2 } }
+    w.compactInventory()
+    const merged = w.seats[0].inventory[0]
+    expect(merged.kind === 'hold' && merged.item.kind === 'seeds' && merged.item.count).toBe(4)
+    expect(merged.kind === 'hold' && merged.item.kind === 'seeds' && merged.item.quality).toBe(0.5)
+    w.seats[0].inventory[0] = {
+      kind: 'hold',
+      item: { kind: 'sugar', liters: 1, capacityLiters: 2, unitSale: 5, quality: 0 },
+    }
+    w.seats[0].inventory[1] = {
+      kind: 'hold',
+      item: { kind: 'sugar', liters: 1, capacityLiters: 2, unitSale: 5, quality: 1 },
+    }
+    w.compactInventory()
+    const sugar = w.seats[0].inventory[0]
+    expect(sugar.kind === 'hold' && sugar.item.kind === 'sugar' && sugar.item.liters).toBe(2)
+    expect(sugar.kind === 'hold' && sugar.item.kind === 'sugar' && sugar.item.quality).toBe(0.5)
+  })
+})
+
+describe('quality.ripen', () => {
+  test('No roll at ripen. Bought seed quality 0 stays 0 if happiness stays `HAPPY_START`. `betterGain` only if `better-{crop}` owned. Tree fruit quality is 0.', () => {
+    const w = new World(1)
+    const p = new Plant('potato', 'base', 0)
+    p.maturity = 1
+    p.happiness = HAPPY_START
+    w.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
+    w.tick(DT_MAX)
+    const ripe = w.cell(AT)
+    expect(ripe.kind === 'ripe' && ripe.plant.quality).toBe(0)
+    expect(ripe.kind === 'ripe' && ripe.plant.variety).toBe('base')
+    const cared = new Plant('potato', 'base', 0)
+    cared.maturity = 1
+    cared.happiness = HAPPY_MAX
+    w.setCell({ col: 11, row: 12 }, { kind: 'growing', soil: bed(), plant: cared })
+    w.tick(DT_MAX)
+    const ripeCared = w.cell({ col: 11, row: 12 })
+    expect(ripeCared.kind === 'ripe' && ripeCared.plant.quality).toBeCloseTo(0.25, 8)
+    w.family.player.owned.set('better-potato', 1)
+    const skilled = new Plant('potato', 'base', 0)
+    skilled.maturity = 1
+    skilled.happiness = HAPPY_MAX
+    w.setCell({ col: 12, row: 12 }, { kind: 'growing', soil: bed(), plant: skilled })
+    w.tick(DT_MAX)
+    const ripeSkill = w.cell({ col: 12, row: 12 })
+    expect(ripeSkill.kind === 'ripe' && ripeSkill.plant.quality).toBeCloseTo(0.25 + BETTER_QUALITY, 8)
+    const tree = new Tree('olive', { shape: 'rect', col: 8, row: 12, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 2 })
+    w.setCell({ col: 8, row: 12 }, tree)
+    w.setCell({ col: 8, row: 13 }, tree)
+    ;[
+      { col: 7, row: 12 },
+      { col: 9, row: 12 },
+      { col: 8, row: 11 },
+      { col: 7, row: 13 },
+      { col: 9, row: 13 },
+      { col: 8, row: 14 },
+    ].forEach(at => w.setCell(at, { kind: 'empty', soil: bed() }))
+    const n = w.drops.length
+    w.tick(DT_MAX)
+    const fruit = w.drops.find((d, i) => i >= n && d.item.kind === 'fruit')
+    expect(fruit !== undefined && fruit.item.kind === 'fruit' && fruit.item.quality).toBe(0)
+  })
+})
+
+describe('market.quality', () => {
+  test('Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `RATING_SALE[use.fresh]` into `worth`. Sell all uses `stallX` and sale skills; no second path multiplier.', () => {
+    const w = new World(1)
+    w.seats[0].actor.x = PAD.col + 0.5
+    w.seats[0].actor.y = PAD.row + 0.5
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: {
+        kind: 'fruit',
+        crop: 'potato',
+        variety: 'bintje',
+        quality: 0,
+        count: 2,
+        unitSale: 6,
+        freshness: 1,
+        bio: true,
+      },
+    }
+    w.enqueue({ act: 'consign' })
+    w.tick(DT_MAX)
+    expect(w.stall.potato.stock.bintje.organic).toBe(2)
+    expect(w.stall.potato.stock.base.organic).toBe(0)
+    const unit = qualityMul(0) * RATING_SALE[2]
+    expect(w.stall.potato.worth.bintje.organic).toBeCloseTo(2 * unit, 9)
+    expect(w.marketQuote().clean).toBeCloseTo(2 * unit * CROPS.potato.sale, 9)
   })
 })

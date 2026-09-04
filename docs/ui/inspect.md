@@ -10,7 +10,7 @@ Held, tooltip, silo cell, shop seed card: Variety name, Quality as that percent.
 
 ## Growing
 
-Look names the Variety, not the crop alone. Copy: `<needs-game-text-writer>`. Growth % stays on the bar.
+Look names the Variety, not the crop alone. Copy: **{Variety}**. Growth % stays on the bar.
 
 | row | fill | number |
 |---|---|---|
@@ -46,8 +46,8 @@ One `lookText` line in that same `Status` block, after the plant or tree look, b
 
 | when | line |
 |---|---|
-| growing annual, that Variety, no valid neighbour | `<needs-game-text-writer>` names what it is waiting for |
-| tree, that Variety, `juvenile >= 1`, `trunk === false`, no valid neighbour | `<needs-game-text-writer>` names what it is waiting for |
+| growing annual, that Variety, no valid neighbour | **Needs another {crop} nearby that is not Heirloom.** |
+| tree, that Variety, `juvenile >= 1`, `trunk === false`, no valid neighbour | **Needs another {crop} tree nearby that is not Heirloom.** |
 | those, valid neighbour | (no line) |
 | any other Variety | (no line) |
 
@@ -63,7 +63,7 @@ Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARRE
 
 ## Ripe
 
-Look names the Variety and Quality as a percent. Copy: `<needs-game-text-writer>`. Freshness only on the bar. Red `0 .. 0.8`, green `0.8 .. 1`. No amber. Notch at current. Number `floor(freshness * 100)%`.
+Look names the Variety and Quality as a percent. Copy: **{Variety} · Quality {n}%**. Freshness only on the bar. Red `0 .. 0.8`, green `0.8 .. 1`. No amber. Notch at current. Number `floor(freshness * 100)%`.
 
 Weed / dead / rotten / turf / untilled: no bars.
 
@@ -92,7 +92,7 @@ Empty hand, player owns `tending`, work `TEND_WORK` 0.7s. Click queues `{ act: '
 
 Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars. No soil bars.
 
-`lookText` uses the Variety name. No `%` in the line. Player copy: resting → off-season, yielding → on-season. Copy: `<needs-game-text-writer>`.
+`lookText` uses the Variety name. No `%` in the line. Player copy: resting → off-season, yielding → on-season. Copy: **{Variety} tree - {trunk \| growing \| on-season \| off-season}**.
 
 | state | line |
 |---|---|
@@ -147,10 +147,10 @@ Covering haste is a `lookText` line in that same `Status` block, after the machi
 
 | item | line |
 |---|---|
-| fruit | `<needs-game-text-writer>` Variety, count, Quality as percent, freshness |
-| seeds | `<needs-game-text-writer>` Variety, count, Quality as percent |
-| tree-seed | `<needs-game-text-writer>` species, Variety, Quality as percent |
-| graft | `<needs-game-text-writer>` Variety, count, Quality as percent |
+| fruit | **{Variety} - {count}, freshness {n}% · Quality {n}%** |
+| seeds | **{Variety} seed - {count}, plant it · Quality {n}%** |
+| tree-seed | **{Variety} seed - plant it on soft ground · Quality {n}%** |
+| graft | **{Variety} graft - {count} · Quality {n}%** |
 | spirit / cask / jam / oil / flour / extract / sugar | Quality as percent with the existing name line. Named jam from [[ui/recipe]]. Sugar **Sugar - {n}L** |
 | wood | **Wood - {count}** |
 | ash | **Ash - {count}, compost it** |

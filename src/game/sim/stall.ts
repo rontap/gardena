@@ -1,5 +1,5 @@
 import { CROPS } from '../defs/crops.ts'
-import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
+import { VARIETY_IDS, type VarietyId } from '../defs/varieties.ts'
 import { YARD, type Coord } from './building.ts'
 import {
   ANNUAL_IDS,
@@ -59,25 +59,15 @@ export function stallX(id: StallGoodId, mods: readonly Modifier[]): number {
   return CROPS[id].sale * saleMul(id, mods)
 }
 
-export function stallRarity(id: StallGoodId, rarity: Rarity): number {
-  if (!isCropStall(id)) return 1
-  return raritySale(CROPS[id], rarity)
-}
-
-function emptyBins(): { [K in Rarity]: BioBins } {
-  return {
-    common: { organic: 0, synth: 0 },
-    uncommon: { organic: 0, synth: 0 },
-    rare: { organic: 0, synth: 0 },
-    heirloom: { organic: 0, synth: 0 },
-  }
+function emptyBins(): { [K in VarietyId]: BioBins } {
+  return Object.fromEntries(VARIETY_IDS.map(v => [v, { organic: 0, synth: 0 }])) as { [K in VarietyId]: BioBins }
 }
 
 export class StallGood {
   readonly id: StallGoodId
   sat: number
-  readonly stock: { [K in Rarity]: BioBins }
-  readonly worth: { [K in Rarity]: BioBins }
+  readonly stock: { [K in VarietyId]: BioBins }
+  readonly worth: { [K in VarietyId]: BioBins }
 
   constructor(id: StallGoodId) {
     this.id = id
@@ -86,30 +76,30 @@ export class StallGood {
     this.worth = emptyBins()
   }
 
-  take(rarity: Rarity, count: number, freshness: number, bio: boolean): void {
+  take(variety: VarietyId, count: number, unitWorth: number, bio: boolean): void {
     const k = bioKey(bio)
-    this.stock[rarity][k] += count
-    this.worth[rarity][k] += count * freshness
+    this.stock[variety][k] += count
+    this.worth[variety][k] += count * unitWorth
   }
 
   takeSugar(liters: number, unitSale: number): void {
-    this.stock.common.organic += liters
-    this.worth.common.organic += liters * unitSale
+    this.stock.base.organic += liters
+    this.worth.base.organic += liters * unitSale
   }
 
   takeBaked(count: number, unitSale: number): void {
-    this.stock.common.organic += count
-    this.worth.common.organic += count * unitSale
+    this.stock.base.organic += count
+    this.worth.base.organic += count * unitSale
   }
 
-  takeSpirit(rarity: Rarity, count: number, unitSale: number): void {
-    this.stock[rarity].organic += count
-    this.worth[rarity].organic += count * unitSale
+  takeSpirit(variety: VarietyId, count: number, unitSale: number): void {
+    this.stock[variety].organic += count
+    this.worth[variety].organic += count * unitSale
   }
 }
 
 export function binCount(g: StallGood): number {
-  return RARITY_RANK.reduce((n, rarity) => n + g.stock[rarity].organic + g.stock[rarity].synth, 0)
+  return VARIETY_IDS.reduce((n, variety) => n + g.stock[variety].organic + g.stock[variety].synth, 0)
 }
 
 export type StallMap = { [K in StallGoodId]: StallGood }

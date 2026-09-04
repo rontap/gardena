@@ -38,7 +38,7 @@ Each cell:
 | face | fruit face for that Variety, `h-20 w-20` `bg-dirt-dark`, no caption |
 | name | Variety name from `names` |
 | paths | **Preserving** / **Fresh** / **Alcohol** each with its `Rating` 1..5. Omit a path at `'none'`. Never a bare number without the path |
-| description | `<needs-game-text-writer>` one line, the real thing that Variety is known for |
+| description | one line, the real thing that Variety is known for. Bintje: **A Dutch potato grown for frying and for spirit.** Full set `almanac_variety_desc_*` |
 
 Click selects. Default `'base'`. Selected cell `bg-dirt`. Stats, plant/tree prop preview, and Ingredients follow the selection.
 
@@ -140,7 +140,7 @@ Still forbidden: stall, rolled, RNG, water lives, spoils soonest, SKU dumps.
 
 Coin `<Coin />` for money amounts.
 
-Variety and Quality concept copy, Variety descriptions, Seeds Overview links to those two: `<needs-game-text-writer>`.
+Variety and Quality concept copy, Variety descriptions, Seeds Overview links to those two: `almanac_variety_p1` `almanac_quality_p1` `almanac_seeds_p2_*` `almanac_seeds_p3_*` `almanac_variety_desc_*`.
 
 ## Overview
 
@@ -164,9 +164,9 @@ Forbidden: Overview as a link-list of the tab’s SKUs. Research-gated walkthrou
 
 Automation here is the **concept page**, not a second copy of the SKU tab.
 
-**Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. `<needs-game-text-writer>`.
+**Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. Copy: **Variety is what the plant is. Potato and Bintje are two Varieties of potato — siblings, not steps. Each Variety carries Preserving, Fresh, and Alcohol, each with a number from 1 to 5, or no number if that crop has no such path. Preserving is jam and the mill. Fresh is fruit sold as it is. Alcohol is the Pot still and the Barrel. The Market pays more for a high number on the path of the good you made.**
 
-**Quality** is how well the plant was treated. A percent. Sale, seed carry, stack average. Bought seed starts at nothing. `<needs-game-text-writer>`.
+**Quality** is how well the plant was treated. A percent. Sale, seed carry, stack average. Bought seed starts at nothing. Copy: **Quality is how well the plant was treated, shown as a percent. The Market pays more for higher Quality fruit of the same Variety. A seed you shovel keeps that plant's Quality, and a stack of the same Variety averages Quality. Seed you buy starts at 0%. Happiness while the plant grows is the live care; Quality is set when the fruit ripens. Tree fruit is 0%.**
 
 ## TreePane
 

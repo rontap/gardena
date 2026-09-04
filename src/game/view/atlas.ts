@@ -15,11 +15,11 @@ import type {
 import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
 import { ANNUAL_IDS, TREE_IDS } from '../sim/ids.ts'
-import { ripeGroup, fruitGroup } from './svgs.ts'
+import { ripeGroup, fruitGroup, caskGroup, varietyGroup, type VarietyGroup } from './svgs.ts'
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
 import type { CropClass } from '../defs/crops.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import { counterDial } from '../sim/sensor.ts'
 
 import grass0 from '../../assets/tiles/tile-grass-0.svg?raw'
@@ -193,7 +193,19 @@ import furnaceSmokeVfx from '../../assets/vfx/vfx-furnace-smoke.svg?raw'
 
 const SCALE = 2
 
-export type CropStage = 'sprout' | 'grow' | 'ripe' | 'ripe-rare' | 'ripe-heirloom' | 'dead'
+export type CropStage = 'sprout' | 'grow' | 'ripe' | 'ripe-variant' | 'ripe-variant-2' | 'ripe-heirloom' | 'dead'
+
+export type TreeAtlasStage =
+  | 'trunk'
+  | 'grow'
+  | 'unripe'
+  | 'unripe-variant'
+  | 'unripe-variant-2'
+  | 'unripe-heirloom'
+  | 'ripe'
+  | 'ripe-variant'
+  | 'ripe-variant-2'
+  | 'ripe-heirloom'
 
 export type AtlasKey =
   | `grass-${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`
@@ -291,8 +303,8 @@ export type AtlasKey =
   | 'turf-grow'
   | `weed-${0 | 1}-${'sprout' | 'grow'}`
   | `crop-${CropId}:${CropStage}`
-  | `fruit-${CropId}:${'common' | 'rare' | 'heirloom'}`
-  | `tree-${TreeId}:${'trunk' | 'grow' | 'unripe' | 'ripe'}`
+  | `fruit-${CropId}:${VarietyGroup}`
+  | `tree-${TreeId}:${TreeAtlasStage}`
   | `tree-seed-${TreeId}`
   | 'actor-hat'
   | 'actor-body'
@@ -452,7 +464,8 @@ const TREE: { readonly [K in TreeId]: string } = {
   cherry: cherryTree,
 }
 
-const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-rare', 'ripe-heirloom', 'dead'] as const
+const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-variant', 'ripe-variant-2', 'ripe-heirloom', 'dead'] as const
+const TREE_FRUIT_STAGES = ['unripe', 'ripe'] as const
 
 async function load(): Promise<void> {
   const jobs: (() => Promise<void>)[] = []
@@ -581,12 +594,17 @@ async function load(): Promise<void> {
     CROP_STAGES.forEach(st => put(`crop-${id}:${st}`, CROP[id], st))
   })
   ;[...ANNUAL_IDS, ...TREE_IDS].forEach(id => {
-    put(`fruit-${id}:common`, FRUIT[id], 'common')
-    put(`fruit-${id}:rare`, FRUIT[id], 'rare')
-    put(`fruit-${id}:heirloom`, FRUIT[id], 'heirloom')
+    ;(['base', 'variant', 'variant-2', 'heirloom'] as const).forEach(g => put(`fruit-${id}:${g}`, FRUIT[id], g))
   })
   ;(TREE_IDS as TreeId[]).forEach(id => {
-    ;(['trunk', 'grow', 'unripe', 'ripe'] as const).forEach(st => put(`tree-${id}:${st}`, TREE[id], st))
+    put(`tree-${id}:trunk`, TREE[id], 'trunk')
+    put(`tree-${id}:grow`, TREE[id], 'grow')
+    TREE_FRUIT_STAGES.forEach(st => {
+      put(`tree-${id}:${st}`, TREE[id], st)
+      put(`tree-${id}:${st}-variant`, TREE[id], `${st}-variant`)
+      put(`tree-${id}:${st}-variant-2`, TREE[id], `${st}-variant-2`)
+      put(`tree-${id}:${st}-heirloom`, TREE[id], `${st}-heirloom`)
+    })
     put(`tree-seed-${id}`, TREE_SEED[id])
   })
   const hat = groupOf(actor, 'hat').replace(/var\(--hat, #d4a017\)/g, '#ffffff')
@@ -770,8 +788,8 @@ export const HAT: { readonly [K in SeatId]: number } = {
 }
 
 export function faceKey(item: Item): AtlasKey {
-  if (item.kind === 'seeds') return cropKey(item.crop, ripeGroup(item.rarity))
-  if (item.kind === 'fruit') return `fruit-${item.crop}:${fruitGroup(item.rarity)}`
+  if (item.kind === 'seeds') return cropKey(item.crop, ripeGroup(item.crop, item.variety))
+  if (item.kind === 'fruit') return `fruit-${item.crop}:${fruitGroup(item.crop, item.variety)}`
   if (item.kind === 'tree-seed') return `tree-seed-${item.tree}`
   if (item.kind === 'shovel') return item.id
   if (item.kind === 'pickaxe') return item.id
@@ -787,7 +805,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'dead') return `item-dead-${item.cls}`
   if (item.kind === 'sugar') return 'sugar'
   if (item.kind === 'spirit') return `spirit-${item.spirit}`
-  if (item.kind === 'cask') return `cask-${item.cask}-${fruitGroup(item.rarity)}`
+  if (item.kind === 'cask') return `cask-${item.cask}-${caskGroup(item.variety)}`
   if (item.kind === 'jam') {
     if (item.crop === 'tomato') return 'ketchup'
     return `jam-${item.crop}`
@@ -802,6 +820,12 @@ export function faceKey(item: Item): AtlasKey {
   throw new Error(String(_))
 }
 
-export function ripeStage(rarity: Rarity): CropStage {
-  return ripeGroup(rarity)
+export function ripeStage(crop: CropId, variety: VarietyId): CropStage {
+  return ripeGroup(crop, variety)
+}
+
+export function treeAtlasStage(species: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe', variety: VarietyId): TreeAtlasStage {
+  if (stage === 'trunk' || stage === 'grow') return stage
+  const g = varietyGroup(species, variety)
+  return g === 'base' ? stage : `${stage}-${g}`
 }

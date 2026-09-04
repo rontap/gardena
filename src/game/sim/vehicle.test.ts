@@ -358,7 +358,7 @@ describe('vehicles I', () => {
     const fruit = {
       kind: 'fruit' as const,
       crop: 'carrot' as const,
-      rarity: 'common' as const,
+      variety: 'base' as const, quality: 0 as const,
       count: 1,
       unitSale: 4,
       freshness: 1,
@@ -526,7 +526,7 @@ describe('vehicles II', () => {
     w.buyTrailer(AT, 'seed')
     w.deploy(1, AT, 1)
     parkSwap(w)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 20 } }
     w.swapTrailer(1, 0)
     const south = { col: 11, row: 16 }
     w.setCell(south, { kind: 'empty', soil: new Soil(1, 1, 0.03) })
@@ -539,7 +539,7 @@ describe('vehicles II', () => {
     expect(bed.kind).toBe('growing')
     if (bed.kind !== 'growing') throw new Error('growing')
     expect(bed.plant.crop).toBe('carrot')
-    expect(bed.plant.rarity).toBe('common')
+    expect(bed.plant.variety).toBe('base')
   })
 
   test('Boom spray band. Full plot skip. TRAILER_CAP floor(liters).', () => {
@@ -589,15 +589,15 @@ describe('vehicles II', () => {
     const dead = { col: 13, row: 16 }
     const rotten = { col: 9, row: 15 }
     const weed = { col: 10, row: 15 }
-    const ripePlant = new Plant('carrot', 'common')
+    const ripePlant = new Plant('carrot', 'base', 0)
     ripePlant.freshness = 0.9
-    const youngPlant = new Plant('wheat', 'common')
+    const youngPlant = new Plant('wheat', 'base', 0)
     youngPlant.maturity = 0.1
-    const midPlant = new Plant('tomato', 'common')
+    const midPlant = new Plant('tomato', 'base', 0)
     midPlant.maturity = 0.5
-    const latePlant = new Plant('potato', 'common')
+    const latePlant = new Plant('potato', 'base', 0)
     latePlant.maturity = 0.9
-    const deadPlant = new Plant('raspberry', 'common')
+    const deadPlant = new Plant('raspberry', 'base', 0)
     w.setCell(ripe, { kind: 'ripe', soil: soil(), plant: ripePlant })
     w.setCell(young, { kind: 'growing', soil: soil(), plant: youngPlant })
     w.setCell(mid, { kind: 'growing', soil: soil(), plant: midPlant })
@@ -649,7 +649,7 @@ describe('vehicles II', () => {
     const fruit = {
       kind: 'fruit' as const,
       crop: 'carrot' as const,
-      rarity: 'common' as const,
+      variety: 'base' as const, quality: 0 as const,
       count: 1,
       unitSale: 4,
       freshness: 1,
@@ -785,7 +785,7 @@ describe('vehicles II', () => {
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 0 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 5, unitSale: 5, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true },
     }
     w.unload()
     const mill = w.cell(millAt)
@@ -811,7 +811,7 @@ describe('vehicles II', () => {
     v.pose.y = 13.5
     w.drops.push({
       at: { col: 16, row: 13 },
-      item: { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5 },
+      item: { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5, quality: 0 },
     })
     w.load()
     const t = w.trailers[0]
@@ -945,7 +945,7 @@ describe('vehicles II', () => {
     if (v.kind !== 'quad') return
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', rarity: 'common', count: 1, unitSale: 4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true },
     }
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 'none' }
     v.running = true

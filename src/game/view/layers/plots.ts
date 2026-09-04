@@ -1,10 +1,11 @@
 import { Container, Texture } from 'pixi.js'
 import { isPlot } from '../../sim/plot.ts'
 import { CROPS, tolerance } from '../../defs/crops.ts'
+import { tierOf } from '../../defs/varieties.ts'
 import { fertBand, waterBand, SOIL_WATER_MAX } from '../../sim/soil.ts'
 import type { World } from '../../sim/world.ts'
 import { EDGE_PAD, TILE, tileVariant } from '../camera.ts'
-import { atlasTex, cropKey, ripeStage } from '../atlas.ts'
+import { atlasTex, cropKey, ripeStage, treeAtlasStage } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 
 const WHITE = Texture.WHITE
@@ -38,7 +39,7 @@ export class PlotsLayer {
             : cell.yield.kind === 'on' || cell.fruit >= 1
               ? 'ripe'
               : 'unripe'
-        const s = this.pool.take(atlasTex(`tree-${cell.species}:${stage}`))
+        const s = this.pool.take(atlasTex(`tree-${cell.species}:${treeAtlasStage(cell.species, stage, cell.variety)}`))
         s.position.set(at.col * TILE, at.row * TILE)
         continue
       }
@@ -94,13 +95,14 @@ export class PlotsLayer {
       s.position.set(col * TILE, row * TILE)
     }
     if (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') {
-      const stage = cell.kind === 'ripe' ? ripeStage(cell.plant.rarity) : cell.plant.stage(cell.kind)
+      const stage = cell.kind === 'ripe' ? ripeStage(cell.plant.crop, cell.plant.variety) : cell.plant.stage(cell.kind)
       const s = this.pool.take(atlasTex(cropKey(cell.plant.crop, stage)))
       s.position.set(col * TILE, row * TILE)
     }
     if (cell.kind === 'growing') {
-      const water = waterBand(cell.soil.water, tolerance(CROPS[cell.plant.crop].waterTolerance, cell.plant.rarity))
-      const fert = fertBand(cell.soil.fertilizer, tolerance(CROPS[cell.plant.crop].fertTolerance, cell.plant.rarity))
+      const t = tierOf(cell.plant.variety)
+      const water = waterBand(cell.soil.water, tolerance(CROPS[cell.plant.crop].waterTolerance, t))
+      const fert = fertBand(cell.soil.fertilizer, tolerance(CROPS[cell.plant.crop].fertTolerance, t))
       if (water !== 'green') {
         this.bar(col, row, TILE - 6, water === 'red' ? BAD : MID, ((TILE - 6) * cell.soil.water) / SOIL_WATER_MAX)
       }

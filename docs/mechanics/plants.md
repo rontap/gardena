@@ -203,7 +203,7 @@ Without one, the plant does not advance toward fruit:
 - annual: `maturity` does not increase. Water, fertilizer, happiness, stunt and death all still tick — a lonely plant can still die of thirst.
 - tree: `fruit` does not increase and the seam does not turn `pending` into `on`. `juvenile` still grows, so a lone orchard can be raised and then given its neighbour.
 
-Look line and inspect name it — [[ui/inspect]]. Copy `<needs-game-text-writer>`.
+Look line and inspect name it — [[ui/inspect]]. Copy **Needs another {crop} nearby that is not Heirloom.** / **Needs another {crop} tree nearby that is not Heirloom.**
 
 ## Trees
 

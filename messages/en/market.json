@@ -21,6 +21,7 @@
   "market_difficulty": "Difficulty {n}",
   "market_rarity_clause": " at least rarity of {rarity}",
   "market_deliver": "Deliver {amount} {good}{rarity}.",
+  "market_deliver_plain": "Deliver {amount} {good}.",
   "market_offer_head": "{difficulty}/{max} difficulty contract for {company}.",
   "market_duration_earn": "Contract duration is {days}, earn ",
   "market_when_markup": " when completed ({markup}% more than farmer's market).",

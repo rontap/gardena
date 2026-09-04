@@ -5,11 +5,9 @@ import {
   FLOUR,
   JAM_SALE,
   OIL,
-  SPIRIT_RARITY,
   SUGAR_MILL,
   CASK_SALE,
 } from '../defs/items.ts'
-import { RARITY_RANK, raritySale, type Rarity } from '../defs/rarity.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from './ids.ts'
 import { bakeSpiritSale } from './machine.ts'
@@ -22,9 +20,7 @@ import type {
   Demand,
   GroupId,
   Lines,
-  PlainGoodId,
   Prize,
-  RarityGoodId,
   Stars,
 } from './market.h.ts'
 import { STALL_IDS } from './stall.ts'
@@ -110,8 +106,6 @@ export const STARTER_CROPS: readonly StallGoodId[] = ['carrot', 'potato', 'wheat
 
 export const D_STARTER = -1
 
-export const D_RARITY: { readonly [K in Rarity]: number } = { common: 0, uncommon: 0, rare: 1, heirloom: 3 }
-
 export const SLOT_BANDS: readonly (readonly [number, number])[] = [
   [8, 16],
   [13, 21],
@@ -191,13 +185,6 @@ export const DEADLINE_WEIGHT: { readonly [K in DeadlineBand]: number } = {
   tight: 2,
   normal: 5,
   long: 2,
-}
-
-export const RARITY_COST: { readonly [K in Rarity]: number } = {
-  common: 0,
-  uncommon: 2,
-  rare: 5,
-  heirloom: 9,
 }
 
 export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
@@ -297,10 +284,9 @@ const DEADLINE_BANDS: readonly DeadlineBand[] = ['tight', 'normal', 'long']
 const JAM_MIN = Math.min(...JAM_IDS.map(id => JAM_SALE[jamCrop(id)]))
 
 type Shape =
-  | { kind: 'rated'; good: RarityGoodId; minRarity: Rarity }
-  | { kind: 'plain'; good: PlainGoodId }
+  | { kind: 'plain'; good: StallGoodId }
   | { kind: 'group'; group: 'jam' }
-  | { kind: 'group'; group: 'spirit'; minRarity: Rarity }
+  | { kind: 'group'; group: 'spirit' }
 
 function isJamClass(g: StallGoodId): g is JamId {
   return (JAM_IDS as readonly string[]).includes(g)
@@ -350,24 +336,12 @@ export function load(D: number): number {
 export function cleanUnit(d: Demand): number {
   if (d.kind === 'group') {
     if (d.group === 'jam') return JAM_MIN
-    return bakeSpiritSale('vodka', d.minRarity)
+    return bakeSpiritSale('vodka')
   }
-  if (d.kind === 'plain') {
-    if (d.good === 'sugar') return SUGAR_MILL
-    if (d.good === 'oil') return OIL
-    if (d.good === 'flour') return FLOUR
-    if (d.good === 'extract') return EXTRACT
-    return JAM_SALE[jamCrop(d.good)]
-  }
-  if (isCaskClass(d.good)) return CASK_SALE[d.good] * SPIRIT_RARITY[d.minRarity]
-  if (d.good === 'vodka' || d.good === 'beer' || d.good === 'brandy' || d.good === 'mixed') {
-    return bakeSpiritSale(d.good, d.minRarity)
-  }
-  return CROPS[d.good].sale * raritySale(CROPS[d.good], d.minRarity)
+  return unitOf(d.good)
 }
 
 export function demandGood(d: Demand): StallGoodId {
-  if (d.kind === 'rated') return d.good
   if (d.kind === 'plain') return d.good
   if (d.group === 'jam') return 'jam-cherry'
   return 'vodka'
@@ -380,7 +354,7 @@ function unitOf(good: StallGoodId): number {
   if (good === 'flour') return FLOUR
   if (good === 'extract') return EXTRACT
   if (isCaskClass(good)) return CASK_SALE[good]
-  if (isSpiritClass(good)) return bakeSpiritSale(good, 'common')
+  if (isSpiritClass(good)) return bakeSpiritSale(good)
   return CROPS[good].sale
 }
 
@@ -394,23 +368,15 @@ export const REFERENCE_GOLD_PER_DAY = (() => {
 })()
 
 function demandOf(shape: Shape, amount: number): Demand {
-  if (shape.kind === 'rated') return { kind: 'rated', good: shape.good, minRarity: shape.minRarity, amount }
   if (shape.kind === 'plain') return { kind: 'plain', good: shape.good, amount }
   if (shape.group === 'jam') return { kind: 'group', group: 'jam', amount }
-  return { kind: 'group', group: 'spirit', minRarity: shape.minRarity, amount }
+  return { kind: 'group', group: 'spirit', amount }
 }
 
 function shapeGood(shape: Shape): StallGoodId {
   return demandGood(demandOf(shape, AMOUNT_MIN))
 }
 
-/**
- * Units to ask for so the line is worth roughly `target`.
- *
- * Prices by `cleanUnit`, the same rarity-scaled unit `clean` pays out with — not
- * the common-rarity `unitOf` — or a rare line would be sized for common prices
- * and settled at rare ones. The cap is throughput, so it stays on raw counts.
- */
 function lineAmount(shape: Shape, days: number, day: number, target: number): number {
   const good = shapeGood(shape)
   const wanted = target / cleanUnit(demandOf(shape, AMOUNT_MIN))
@@ -451,9 +417,7 @@ function candidates(
 
 function shapeD(shape: Shape): number {
   const good = shapeGood(shape)
-  const starter = (STARTER_CROPS as readonly string[]).includes(good) ? D_STARTER : 0
-  if (shape.kind === 'plain' || (shape.kind === 'group' && shape.group === 'jam')) return starter
-  return starter + D_RARITY[shape.minRarity]
+  return (STARTER_CROPS as readonly string[]).includes(good) ? D_STARTER : 0
 }
 
 function spendLine(
@@ -474,16 +438,10 @@ function spendLine(
     }
     return { shape: { kind: 'plain', good }, budget }
   }
-  if (good === 'oil' || good === 'flour') {
-    return { shape: { kind: 'plain', good }, budget }
-  }
-  const rarities = RARITY_RANK.filter(r => RARITY_COST[r] <= budget + BUDGET_OVERDRAFT)
-  const minRarity = pick(rarities, stream.at(day, slot, kGood + 2))
-  budget -= RARITY_COST[minRarity]
   if (isSpiritClass(good) && grouped && GROUP_TIER.spirit <= tier) {
-    return { shape: { kind: 'group', group: 'spirit', minRarity }, budget: budget - GROUP_COST }
+    return { shape: { kind: 'group', group: 'spirit' }, budget: budget - GROUP_COST }
   }
-  return { shape: { kind: 'rated', good, minRarity }, budget }
+  return { shape: { kind: 'plain', good }, budget }
 }
 
 function shuffled(stream: Spatial, day: number, n: number): readonly CompanyId[] {
@@ -609,13 +567,10 @@ export function rollBoardAtD(rng: Rng, D: number, slots: number): readonly Contr
   return withPrizes(stream, D, base)
 }
 
-export function Accepts(d: Demand, good: StallGoodId, rarity: Rarity): boolean {
-  if (d.kind === 'rated') {
-    return good === d.good && RARITY_RANK.indexOf(rarity) >= RARITY_RANK.indexOf(d.minRarity)
-  }
+export function Accepts(d: Demand, good: StallGoodId): boolean {
   if (d.kind === 'plain') return good === d.good
   if (d.group === 'jam') return (JAM_IDS as readonly string[]).includes(good)
-  return (SPIRIT_KINDS as readonly string[]).includes(good) && RARITY_RANK.indexOf(rarity) >= RARITY_RANK.indexOf(d.minRarity)
+  return (SPIRIT_KINDS as readonly string[]).includes(good)
 }
 
 export function missPenalty(a: Active): number {

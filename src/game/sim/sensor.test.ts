@@ -58,7 +58,7 @@ function grow(
   water: number,
   fert = 1,
 ): void {
-  w.setCell(at, { kind, soil: new Soil(water, fert, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+  w.setCell(at, { kind, soil: new Soil(water, fert, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
 }
 
 describe('1.6 sensors', () => {
@@ -443,12 +443,12 @@ describe('1.6 sensors', () => {
     const cells = new Map([
       [
         '5,5',
-        { kind: 'growing' as const, soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') },
+        { kind: 'growing' as const, soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) },
       ],
     ])
     const at = (c: { col: number; row: number }) => cells.get(`${c.col},${c.row}`)
     expect(readerRaw(s, at, [])).toBe(0)
-    cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
     expect(readerRaw(s, at, [])).toBe(0)
     const w = new World(1)
     ready(w)
@@ -773,7 +773,7 @@ describe('1.6 sensors', () => {
     unwired.buy('buy-sprinkler')
     unwired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const soilU = new Soil(0.5, 1, WEED_CHANCE)
-    unwired.setCell(cropAt, { kind: 'growing', soil: soilU, plant: new Plant('carrot', 'common') })
+    unwired.setCell(cropAt, { kind: 'growing', soil: soilU, plant: new Plant('carrot', 'base', 0) })
     unwired.tick(DT_MAX)
     expect(soilU.water).toBeGreaterThan(0.5)
     expect(unwired.rate(v)).toBeCloseTo(SPRINKLER_TILE_RATE, 9)
@@ -801,7 +801,7 @@ describe('1.6 sensors', () => {
     wired.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
     expect(wired.wires).toHaveLength(1)
     const soilOff = new Soil(0.5, 1, WEED_CHANCE)
-    wired.setCell(cropAt, { kind: 'growing', soil: soilOff, plant: new Plant('carrot', 'common') })
+    wired.setCell(cropAt, { kind: 'growing', soil: soilOff, plant: new Plant('carrot', 'base', 0) })
     wired.tick(DT_MAX)
     expect(soilOff.water).toBeLessThan(0.5)
     expect(wired.rate(v)).toBe(0)
@@ -817,7 +817,7 @@ describe('1.6 sensors', () => {
     twin.placePipe({ axis: 'h', col: 18, row: 7 })
     twin.buy('buy-sprinkler')
     twin.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
     twin.tick(DT_MAX)
     const clone = new World(1)
     ready(clone)
@@ -830,7 +830,7 @@ describe('1.6 sensors', () => {
     clone.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     clone.armWire({ kind: 'cell', at: A, port: 'out' })
     clone.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'sprinkler', at: v, port: 'in' })
-    clone.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'common') })
+    clone.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
     clone.tick(DT_MAX)
     expect(clone.sprinklerAt(v)?.inn).toBe(0)
     expect(twin.sprinklerAt(v)?.inn).toBe(0)
@@ -846,7 +846,7 @@ describe('1.6 sensors', () => {
     expect(sprOn.inn).toBe(1)
     wired.tuneSprinkler(v, { kind: 'crop', crop: 'carrot' })
     expect(sprOn.tune).toEqual({ kind: 'crop', crop: 'carrot' })
-    expect(wired.demand(sprOn)).toBe(statsOf('carrot', 'common', wired.modifiers).waterUsePerSec)
+    expect(wired.demand(sprOn)).toBe(statsOf('carrot', 'base', 0, wired.modifiers).waterUsePerSec)
     const s = dump(wired)
     expect(s.sprinklers[0].inn).toBe(1)
     expect(s.sprinklers[0].hold).toBe(SENSOR_HOLD)
@@ -1012,7 +1012,7 @@ describe('1.6 sensors', () => {
     if (chest.kind !== 'chest') return
     expect(chest.out).toBe(0)
     for (let i = 0; i < 9; i++) {
-      chest.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apple' } }
+      chest.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0 } }
     }
     w.tick(DT_MAX)
     expect(chest.out).toBe(1)
@@ -1032,7 +1032,7 @@ describe('1.6 sensors', () => {
     const add = w.additives
     expect(silo.out).toBe(0)
     expect(add.out).toBe(0)
-    silo.seeds.push({ crop: 'carrot', rarity: 'common', count: silo.cap - silo.used })
+    silo.seeds.push({ crop: 'carrot', variety: 'base', quality: 0, count: silo.cap - silo.used })
     add.held.push({ id: 'fertilizer', liters: add.cap - add.used })
     w.tick(DT_MAX)
     expect(silo.out).toBe(1)

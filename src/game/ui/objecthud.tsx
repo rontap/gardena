@@ -48,8 +48,8 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
       ...TUNABLE.map(crop => ({
         id: crop,
         label: CROP_NAME[crop](),
-        note: perDay(statsOf(crop, 'common', world.modifiers).waterUsePerSec),
-        icon: cropInner(crop, ripeGroup('common')),
+        note: perDay(statsOf(crop, 'base', 0, world.modifiers).waterUsePerSec),
+        icon: cropInner(crop, ripeGroup(crop, 'base')),
         on: s.tune.kind === 'crop' && s.tune.crop === crop,
       })),
     ],

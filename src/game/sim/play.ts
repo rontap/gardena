@@ -1,7 +1,7 @@
 /**
  * THIS FILE IS FOR AI-INTERACTIVE GAMEPLAY - IT IS NOT A CORE GAMEPLAY LOOP MECHANIC FILE
  */
-import type { Rarity } from '../defs/rarity.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { SKILLS } from '../defs/skills.ts'
 import type { AdditiveId, ChunkId, Coord } from './building.ts'
@@ -46,7 +46,7 @@ export type TurnAction =
   | { task: 'expand'; chunk: ChunkId }
   | { task: 'swap'; i: number }
   | { task: 'swapChest'; at: Coord; i: number }
-  | { task: 'take'; from: 'silo'; crop: AnnualId; rarity: Rarity }
+  | { task: 'take'; from: 'silo'; crop: AnnualId; variety: VarietyId }
   | { task: 'take'; from: 'additive'; id: AdditiveId }
   | { task: 'vehicle'; op: 'buy'; kind: VehicleKind; at: Coord }
   | { task: 'vehicle'; op: 'buyTrailer'; kind: TrailerKind; at: Coord }
@@ -489,7 +489,7 @@ function act(world: World, a: TurnAction): string {
       world.swapChest(a.at, a.i)
       return ''
     case 'take':
-      if (a.from === 'silo') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'silo', c: a.crop, r: a.rarity })
+      if (a.from === 'silo') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'silo', c: a.crop, r: a.variety })
       else world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'additive', d: a.id })
       return ''
     case 'vehicle':
@@ -625,7 +625,7 @@ play.turn([...TurnAction]) runs the list, then plays out queued work until idle.
   { task:'skill', member, slot }
   { task:'expand', chunk }
   { task:'swap', i } | { task:'swapChest', at, i }
-  { task:'take', from:'silo', crop, rarity } | { task:'take', from:'additive', id }
+  { task:'take', from:'silo', crop, variety } | { task:'take', from:'additive', id }
   { task:'vehicle', op, ... }                  buy buyTrailer deploy embark disembark dock
                                                load unload refill seat trailerSlot boom drive
 

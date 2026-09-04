@@ -99,11 +99,11 @@ function amountOf(item: Item): Amount {
 }
 
 function fruitFace(crop: CropId): Face {
-  return { kind: 'fruit', crop, rarity: 'common', count: 1, unitSale: 0, freshness: 1, bio: false }
+  return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 1, bio: false }
 }
 
 function seedFace(crop: AnnualId): Face {
-  return { kind: 'seeds', crop, rarity: 'common', count: 1 }
+  return { kind: 'seeds', crop, variety: 'base', quality: 0, count: 1 }
 }
 
 function units(n: number): Amount {
@@ -130,17 +130,17 @@ function jamRecipe(crop: JamCrop): Recipe {
       { kind: 'one', face: fruitFace(crop), amount: units(JAM_IN) },
       {
         kind: 'one',
-        face: { kind: 'sugar', liters: JAM_SUGAR, capacityLiters: JAM_SUGAR, unitSale: 0 },
+        face: { kind: 'sugar', liters: JAM_SUGAR, capacityLiters: JAM_SUGAR, unitSale: 0, quality: 0 },
         amount: { kind: 'liters', l: JAM_SUGAR },
       },
     ],
-    out: { kind: 'exact', face: { kind: 'jam', crop, count: 1, unitSale: jamSale(crop) }, amount: units(1) },
+    out: { kind: 'exact', face: { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: jamSale(crop) }, amount: units(1) },
     duration: { kind: 'work', seconds: JAM_SECONDS },
   }
 }
 
 function spiritFace(spirit: SpiritKind): Face {
-  return { kind: 'spirit', spirit, rarity: 'common', count: 1, unitSale: bakeSpiritSale(spirit, 'common') }
+  return { kind: 'spirit', spirit, variety: 'base', quality: 0, count: 1, unitSale: bakeSpiritSale(spirit) }
 }
 
 function stillRecipe(crop: StillCrop): Recipe {
@@ -168,9 +168,10 @@ function barrelRecipe(crop: BarrelCrop): Recipe {
       face: {
         kind: 'cask',
         cask: CASK_OF[crop],
-        rarity: 'common',
+        variety: 'base',
+        quality: 0,
         count: 1,
-        unitSale: bakeCaskSale(CASK_OF[crop], 'common', BARREL_MATURE),
+        unitSale: bakeCaskSale(CASK_OF[crop], 0, BARREL_MATURE),
       },
       amount: units(1),
     },
@@ -262,7 +263,7 @@ const FURNACE_GREEN: Recipe = {
         ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
         ...ANNUAL_IDS.map(seedFace),
         { kind: 'grass-seeds', count: 1 },
-        ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t })),
+        ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t, variety: 'base' as const, quality: 0 })),
         { kind: 'weed', count: 1 },
         { kind: 'grass', count: 1 },
         ...CROP_CLASSES.map(cls => ({ kind: 'dead' as const, cls, count: 1 })),
@@ -292,7 +293,7 @@ const FURNACE_SUGAR: Recipe = {
   inputs: [
     {
       kind: 'one',
-      face: { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 },
+      face: { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0, quality: 0 },
       amount: { kind: 'liters', l: FURNACE_NEED / FURNACE_VALUE.fruit },
     },
   ],
@@ -302,7 +303,7 @@ const FURNACE_SUGAR: Recipe = {
 
 const FURNACE_OIL: Recipe = {
   machine: 'furnace',
-  inputs: [{ kind: 'one', face: { kind: 'oil', count: 1, unitSale: 0 }, amount: units(FURNACE_NEED / FURNACE_VALUE.oil) }],
+  inputs: [{ kind: 'one', face: { kind: 'oil', quality: 0, count: 1, unitSale: 0 }, amount: units(FURNACE_NEED / FURNACE_VALUE.oil) }],
   out: FURNACE_OUT,
   duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
 }
@@ -418,7 +419,7 @@ function grinderCraft(c: Grinder, mul: number, haste: number): Craft {
     inputs: [{ kind: 'one', face: fruitFace(c.crop), amount: units(1) }],
     out: {
       kind: 'range',
-      faces: [{ kind: 'seeds', crop: c.crop, rarity: c.rarity, count: 1 }],
+      faces: [{ kind: 'seeds', crop: c.crop, variety: c.variety, quality: c.quality, count: 1 }],
       min: GRIND_MIN,
       max: GRIND_MAX,
     },

@@ -210,7 +210,7 @@ ResearchStation { crop: CropId | 'none'; variety: VarietyId; quality: number; un
 
 Accepts **heirloom fruit only**, `cut === false`. First dump locks crop + variety; later dumps must match. `units === 0` → `'none'`. Empty stores `variety: 'base'` and `quality: 0` until the first dump locks both. `STATION_IN`, `STATION_SECONDS`, `STATION_GRAFT_MIN` 1, `STATION_GRAFT_MAX` 2 — preference. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` **and** a rolled 1–2 grafts of that variety, both at the input quality. `grind.at(col, row, day)`. East store else `frontOf`; no room → wait.
 
-Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked variety, quality in, grafts out, progress. [[ui/station]]. Copy `<needs-game-text-writer>`.
+Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked variety, quality in, grafts out, progress. [[ui/station]]. Copy **Grafting bench**.
 
 The station's second face — feeding it seed to earn a variety you do not own — is the next update. This update ships the cutting bench only.
 

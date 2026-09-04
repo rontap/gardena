@@ -1,5 +1,3 @@
-import { RARITY_WEIGHT, type Rarity } from '../defs/rarity.ts'
-
 export function hash(seed: number, salt: string, ...ints: number[]): number {
   let h = seed >>> 0
   for (let i = 0; i < salt.length; i++) h = mix(h, salt.charCodeAt(i))
@@ -19,18 +17,8 @@ function streamSeed(seed: number, id: StreamId): number {
   return h
 }
 
-export function rollRarity(u: number): Rarity {
-  let acc = 0
-  const order = ['common', 'uncommon', 'rare', 'heirloom'] as const
-  for (const r of order) {
-    acc += RARITY_WEIGHT[r]
-    if (acc > u) return r
-  }
-  return 'heirloom'
-}
-
-export type SpatialId = 'gen' | 'grow' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'still' | 'barrel' | 'contract' | 'weather'
-export type SeqId = 'shop' | 'fruit'
+export type SpatialId = 'gen' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'contract' | 'weather'
+export type SeqId = 'fruit'
 export type StreamId = SpatialId | SeqId
 export type Stream = Spatial | Seq
 
@@ -68,10 +56,9 @@ export class Rng {
   readonly seed: number
   private readonly spatials = new Map<SpatialId, Spatial>()
   private readonly seqs = new Map<SeqId, Seq>()
-  constructor(seed?: number, seq?: { shop: number; fruit: number }) {
+  constructor(seed?: number, seq?: { fruit: number }) {
     this.seed = seed === undefined ? (Math.random() * 0x100000000) >>> 0 : seed
     if (seq !== undefined) {
-      this.seqs.set('shop', new Seq(streamSeed(this.seed, 'shop'), seq.shop))
       this.seqs.set('fruit', new Seq(streamSeed(this.seed, 'fruit'), seq.fruit))
     }
   }
@@ -83,7 +70,7 @@ export class Rng {
   stream(id: SpatialId): Spatial
   stream(id: SeqId): Seq
   stream(id: StreamId): Spatial | Seq {
-    if (id === 'shop' || id === 'fruit') {
+    if (id === 'fruit') {
       const hit = this.seqs.get(id)
       if (hit !== undefined) return hit
       const made = new Seq(streamSeed(this.seed, id))

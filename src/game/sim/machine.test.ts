@@ -19,7 +19,6 @@ import {
   FURNACE_SECONDS,
   FURNACE_VALUE,
   MIXED_MUL,
-  SPIRIT_RARITY,
   SPIRIT_SALE,
   STILL_CAP,
   STILL_SECONDS,
@@ -37,7 +36,7 @@ import {
   furnaceMul,
   furnaceStateVfx,
   furnaceWorking,
-  meanRarity,
+  meanQuality,
   millNeed,
   millProduct,
   millRecipeOf,
@@ -53,7 +52,7 @@ import { DT_MAX, World } from './world.ts'
 const AT = { col: 10, row: 12 }
 
 function wheat(n: number) {
-  return { kind: 'fruit' as const, crop: 'wheat' as const, rarity: 'common' as const, count: n, unitSale: 8, freshness: 1, bio: true }
+  return { kind: 'fruit' as const, crop: 'wheat' as const, variety: 'base' as const, quality: 0 as const, count: n, unitSale: 8, freshness: 1, bio: true }
 }
 
 function ticks(w: World, seconds: number): void {
@@ -72,7 +71,7 @@ describe('machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 10, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
@@ -80,7 +79,7 @@ describe('machines', () => {
     expect(w.marketQuote().clean).toBe(60)
     expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 60), 9)
     expect(spiritKind([{ crop: 'potato', count: 10 }])).toBe('vodka')
-    expect(bakeSpiritSale('vodka', 'common')).toBe(72)
+    expect(bakeSpiritSale('vodka')).toBe(72)
   })
 
   test('10 heirloom potato fruit `marketGain` $210. One still batch of 10 heirloom potato is vodka `unitSale` $104.', () => {
@@ -89,19 +88,19 @@ describe('machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', rarity: 'heirloom', count: 10, unitSale: 21, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'russian-banana', quality: 1, count: 10, unitSale: 21, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBe(210)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 210), 9)
-    expect(bakeSpiritSale('vodka', 'heirloom')).toBe(SPIRIT_SALE.vodka * SPIRIT_RARITY.heirloom)
+    expect(w.marketQuote().clean).toBe(378)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 378), 9)
+    expect(bakeSpiritSale('vodka', 1)).toBe(SPIRIT_SALE.vodka * 3.5)
   })
 
   test('Mixed still `unitSale` = `MIXED_MUL` × that rarity’s spirit sale. Mixed common vodka < 10 common potato fruit $60.', () => {
-    const mixed = bakeSpiritSale('mixed', 'common')
-    expect(mixed).toBe(MIXED_MUL * SPIRIT_SALE.vodka * SPIRIT_RARITY.common)
+    const mixed = bakeSpiritSale('mixed')
+    expect(mixed).toBe(MIXED_MUL * SPIRIT_SALE.vodka)
     expect(mixed).toBeLessThan(60)
     expect(
       spiritKind([
@@ -124,8 +123,9 @@ describe('machines', () => {
       liters: SUGAR_BAG,
       capacityLiters: SUGAR_BAG,
       unitSale: SUGAR_MILL,
+      quality: 0,
     })
-    expect(millRecipeOf({ kind: 'fruit', crop: 'sugar-cane', rarity: 'common', count: 1, unitSale: 5, freshness: 1, bio: true })).toBe(
+    expect(millRecipeOf({ kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true })).toBe(
       'sugar-cane',
     )
   })
@@ -133,11 +133,10 @@ describe('machines', () => {
   test('Barrel locks one `BarrelCrop` on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed(\'apple\')` 4, `barrelNeed(\'grape\')` 5. `recipesOf(\'barrel\')` lists `BARREL_CROPS`. Rows: 2. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged.', () => {
     expect(barrelNeed('apple')).toBe(4)
     expect(barrelNeed('grape')).toBe(5)
-    expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0)).toBe('rare')
-    expect(meanRarity([{ rarity: 'common', count: 1 }, { rarity: 'heirloom', count: 1 }], 0.5)).toBe('uncommon')
-    expect(meanRarity([{ rarity: 'heirloom', count: 1 }], 0.99)).toBe('heirloom')
-    expect(meanRarity([{ rarity: 'common', count: 1 }], 0.99)).toBe('common')
-    expect(bakeCaskSale('cider', 'common', BARREL_MATURE)).toBe(CASK_SALE.cider)
+    expect(meanQuality([{ quality: 0, count: 1 }, { quality: 1, count: 1 }])).toBe(0.5)
+    expect(meanQuality([{ quality: 1, count: 1 }])).toBe(1)
+    expect(meanQuality([{ quality: 0, count: 1 }])).toBe(0)
+    expect(bakeCaskSale('cider', 0, BARREL_MATURE)).toBe(CASK_SALE.cider)
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 6 }
     w.setCell(at, new Barrel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 }))
@@ -145,7 +144,7 @@ describe('machines', () => {
     w.seats[0].actor.y = at.row + 1.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 15.4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 15.4, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -154,14 +153,14 @@ describe('machines', () => {
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'grape', rarity: 'common', count: 3, unitSale: 18, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'grape', variety: 'base', quality: 0, count: 3, unitSale: 18, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', rarity: 'common', count: 2, unitSale: 15.4, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 15.4, freshness: 1, bio: true },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -169,7 +168,7 @@ describe('machines', () => {
     barrel.age = BARREL_MATURE
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'cask', cask: 'cider', rarity: 'common', count: 1, unitSale: CASK_SALE.cider },
+      item: { kind: 'cask', cask: 'cider', variety: 'base', quality: 0, count: 1, unitSale: CASK_SALE.cider },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -226,7 +225,7 @@ describe('machines', () => {
     if (jc.kind !== 'chest') throw new Error('chest')
     jc.slots[0] = {
       kind: 'hold',
-      item: { kind: 'sugar', liters: 10, capacityLiters: 10, unitSale: SUGAR_MILL },
+      item: { kind: 'sugar', liters: 10, capacityLiters: 10, unitSale: SUGAR_MILL, quality: 0 },
     }
     ticks(w, BIG_TICK)
     expect(jam.sugar).toBe(JAM_BUFFER)
@@ -241,7 +240,7 @@ describe('machines', () => {
     if (sc.kind !== 'chest') throw new Error('chest')
     sc.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', rarity: 'common', count: 12, unitSale: 6, freshness: 1, bio: true },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 6, freshness: 1, bio: true },
     }
     ticks(w, BIG_TICK)
     expect(still.feed.reduce((n, f) => n + f.count, 0)).toBe(STILL_CAP)
@@ -281,7 +280,7 @@ describe('machines', () => {
     w.setCell(mill2At, mill2)
     const full = new Chest({ shape: 'rect', col: e2.col, row: e2.row, w: 1, h: 1 })
     full.slots.forEach((_, i) => {
-      full.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive' } }
+      full.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
     })
     w.setCell(e2, full)
     const flour0 = w.drops.filter(d => d.item.kind === 'flour').length
@@ -315,15 +314,15 @@ describe('machines.furnace-feed', () => {
     const at = { col: AT.col, row: AT.row + 12 }
     const f = putFurnace(w, at)
     expect(furnaceValue({ kind: 'weed', count: 3 })).toBe(FURNACE_VALUE.green * 3)
-    expect(furnaceValue({ kind: 'tree-seed', tree: 'apple' })).toBe(FURNACE_VALUE.green)
-    expect(furnaceValue({ kind: 'fruit', crop: 'carrot', rarity: 'heirloom', count: 2, unitSale: 1, freshness: 1, bio: true })).toBe(
+    expect(furnaceValue({ kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0 })).toBe(FURNACE_VALUE.green)
+    expect(furnaceValue({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 1, count: 2, unitSale: 1, freshness: 1, bio: true })).toBe(
       FURNACE_VALUE.fruit * 2,
     )
-    expect(furnaceValue({ kind: 'sugar', liters: 3, capacityLiters: 3, unitSale: 1 })).toBe(FURNACE_VALUE.fruit * 3)
-    expect(furnaceValue({ kind: 'oil', count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.oil)
-    expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', rarity: 'common', count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.spirit)
+    expect(furnaceValue({ kind: 'sugar', liters: 3, capacityLiters: 3, unitSale: 1, quality: 0 })).toBe(FURNACE_VALUE.fruit * 3)
+    expect(furnaceValue({ kind: 'oil', quality: 0, count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.oil)
+    expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.spirit)
     expect(furnaceValue({ kind: 'wood', count: 1 })).toBe(FURNACE_VALUE.wood)
-    expect(furnaceValue({ kind: 'jam', crop: 'grape', count: 1, unitSale: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'ash', count: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
     w.seats[0].actor.x = at.col + 0.5
@@ -336,13 +335,13 @@ describe('machines.furnace-feed', () => {
     w.enqueue({ act: 'furnace', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'jam', crop: 'grape', count: 1, unitSale: 1 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1 } }
     w.enqueue({ act: 'furnace', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
     f.units = FURNACE_CAP - 1
     expect(furnaceAccept(f, { kind: 'wood', count: 1 })).toBe(0)
-    expect(furnaceAccept(f, { kind: 'sugar', liters: 4, capacityLiters: 4, unitSale: 1 })).toBe(1 / FURNACE_VALUE.fruit)
+    expect(furnaceAccept(f, { kind: 'sugar', liters: 4, capacityLiters: 4, unitSale: 1, quality: 0 })).toBe(1 / FURNACE_VALUE.fruit)
   })
 })
 
@@ -396,7 +395,7 @@ describe('machines.furnace-haste', () => {
     expect(mill.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / MILL_WORK)
     const stillAt = { col: 8, row: 18 }
     const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
-    still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
+    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
     still.progress = 0.01
     w.setCell(stillAt, still)
     w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
@@ -412,7 +411,7 @@ describe('machines.furnace-haste', () => {
     const barrelAt = { col: 6, row: 14 }
     const barrel = new Barrel({ shape: 'rect', col: barrelAt.col, row: barrelAt.row, w: 1, h: 1 })
     barrel.crop = 'grape'
-    barrel.feed = [{ rarity: 'common', count: 5 }]
+    barrel.feed = [{ variety: 'base', quality: 0, count: 5 }]
     w.setCell(barrelAt, barrel)
     w.tick(DT_MAX)
     expect(barrel.age).toBeCloseTo(DT_MAX)

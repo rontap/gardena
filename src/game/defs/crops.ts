@@ -1,6 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { MILL_IN, SUGAR_BAG } from './items.ts'
-import { TOL_MIN, TOL_RARITY, type Rarity } from './rarity.ts'
+import { TOL_MIN, VARIETY_TOL, type VarietyId, type VarietyTier } from './varieties.ts'
 import type { CropId } from '../sim/ids.ts'
 
 export type CropClass = 'root' | 'grain' | 'fruit'
@@ -16,7 +16,7 @@ export type CropDef = {
   sale: number
   seed: number
   rotSeconds: number
-  saleMul?: { readonly [K in Rarity]: number }
+  saleMul?: number
 }
 
 export const CROPS: { readonly [K in CropId]: CropDef } = {
@@ -115,7 +115,7 @@ export const CROPS: { readonly [K in CropId]: CropDef } = {
     sale: 22,
     seed: 8,
     rotSeconds: 600,
-    saleMul: { common: 1, uncommon: 1.25, rare: 3, heirloom: 6 },
+    saleMul: 1,
   },
   'sugar-cane': {
     id: 'sugar-cane',
@@ -188,88 +188,43 @@ export const CROP_NAME: { readonly [K in CropId]: () => string } = {
   cherry: () => m.names_crop_cherry(),
 }
 
-export function tolerance(base: number, rarity: Rarity): number {
-  const t = base * TOL_RARITY[rarity]
+export const HAPPY_START = 0.5
+export const HAPPY_MAX = 1
+export const HAPPY_GAIN_SECONDS = 900
+export const HAPPY_WILT_SECONDS = 240
+export const HAPPY_STARVE_SECONDS = 400
+export const HAPPY_DROWN_SECONDS = 180
+
+export function tolerance(base: number, tier: VarietyTier): number {
+  const t = base * VARIETY_TOL[tier]
   return t < TOL_MIN ? TOL_MIN : t
 }
 
-const VARIETY: { readonly [K in CropId]: { readonly [R in Rarity]: () => string } } = {
-  carrot: {
-    common: () => m.names_variety_carrot_common(),
-    uncommon: () => m.names_variety_carrot_uncommon(),
-    rare: () => m.names_variety_carrot_rare(),
-    heirloom: () => m.names_variety_carrot_heirloom(),
-  },
-  potato: {
-    common: () => m.names_variety_potato_common(),
-    uncommon: () => m.names_variety_potato_uncommon(),
-    rare: () => m.names_variety_potato_rare(),
-    heirloom: () => m.names_variety_potato_heirloom(),
-  },
-  wheat: {
-    common: () => m.names_variety_wheat_common(),
-    uncommon: () => m.names_variety_wheat_uncommon(),
-    rare: () => m.names_variety_wheat_rare(),
-    heirloom: () => m.names_variety_wheat_heirloom(),
-  },
-  tomato: {
-    common: () => m.names_variety_tomato_common(),
-    uncommon: () => m.names_variety_tomato_uncommon(),
-    rare: () => m.names_variety_tomato_rare(),
-    heirloom: () => m.names_variety_tomato_heirloom(),
-  },
-  raspberry: {
-    common: () => m.names_variety_raspberry_common(),
-    uncommon: () => m.names_variety_raspberry_uncommon(),
-    rare: () => m.names_variety_raspberry_rare(),
-    heirloom: () => m.names_variety_raspberry_heirloom(),
-  },
-  apple: {
-    common: () => m.names_variety_apple_common(),
-    uncommon: () => m.names_variety_apple_uncommon(),
-    rare: () => m.names_variety_apple_rare(),
-    heirloom: () => m.names_variety_apple_heirloom(),
-  },
-  grape: {
-    common: () => m.names_variety_grape_common(),
-    uncommon: () => m.names_variety_grape_uncommon(),
-    rare: () => m.names_variety_grape_rare(),
-    heirloom: () => m.names_variety_grape_heirloom(),
-  },
-  vanilla: {
-    common: () => m.names_variety_vanilla_common(),
-    uncommon: () => m.names_variety_vanilla_uncommon(),
-    rare: () => m.names_variety_vanilla_rare(),
-    heirloom: () => m.names_variety_vanilla_heirloom(),
-  },
-  'sugar-cane': {
-    common: () => m.names_variety_sugar_cane_common(),
-    uncommon: () => m.names_variety_sugar_cane_uncommon(),
-    rare: () => m.names_variety_sugar_cane_rare(),
-    heirloom: () => m.names_variety_sugar_cane_heirloom(),
-  },
-  apricot: {
-    common: () => m.names_variety_apricot_common(),
-    uncommon: () => m.names_variety_apricot_uncommon(),
-    rare: () => m.names_variety_apricot_rare(),
-    heirloom: () => m.names_variety_apricot_heirloom(),
-  },
-  olive: {
-    common: () => m.names_variety_olive_common(),
-    uncommon: () => m.names_variety_olive_uncommon(),
-    rare: () => m.names_variety_olive_rare(),
-    heirloom: () => m.names_variety_olive_heirloom(),
-  },
-  cherry: {
-    common: () => m.names_variety_cherry_common(),
-    uncommon: () => m.names_variety_cherry_uncommon(),
-    rare: () => m.names_variety_cherry_rare(),
-    heirloom: () => m.names_variety_cherry_heirloom(),
-  },
+const NAMED: { readonly [K in Exclude<VarietyId, 'base'>]: () => string } = {
+  bintje: () => m.names_variety_bintje(),
+  'russian-banana': () => m.names_variety_russian_banana(),
+  sonora: () => m.names_variety_sonora(),
+  'red-fife': () => m.names_variety_red_fife(),
+  'green-zebra': () => m.names_variety_green_zebra(),
+  'san-marzano': () => m.names_variety_san_marzano(),
+  'black-raspberry': () => m.names_variety_black_raspberry(),
+  concord: () => m.names_variety_concord(),
+  thompson: () => m.names_variety_thompson(),
+  keknyelu: () => m.names_variety_keknyelu(),
+  'kingston-black': () => m.names_variety_kingston_black(),
+  'pink-lady': () => m.names_variety_pink_lady(),
+  moorpark: () => m.names_variety_moorpark(),
+  klosterneuburger: () => m.names_variety_klosterneuburger(),
+  blenheim: () => m.names_variety_blenheim(),
+  kalamata: () => m.names_variety_kalamata(),
+  arbequina: () => m.names_variety_arbequina(),
+  montmorency: () => m.names_variety_montmorency(),
+  bing: () => m.names_variety_bing(),
 }
 
-export function cropVariety(id: CropId, rarity: Rarity): string {
-  return VARIETY[id][rarity]()
+export function cropVariety(id: CropId, variety: VarietyId): string {
+  if (variety === 'base') return CROP_NAME[id]()
+  return NAMED[variety]()
 }
 
 export function freshMul(f: number): number {

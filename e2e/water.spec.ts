@@ -183,12 +183,12 @@ test('ripe fruit rots', async ({ page }) => {
   await page.evaluate(() => {
     const w = (
       window as unknown as {
-        __world?: { seats: { hand: { kind: string } }[]; takeSilo: (crop: string, rarity: string) => void }
+        __world?: { seats: { hand: { kind: string } }[]; takeSilo: (crop: string, variety: string) => void }
       }
     ).__world
     if (w === undefined) throw new Error('no __world')
     w.seats[0].hand = { kind: 'empty' }
-    w.takeSilo('carrot', 'common')
+    w.takeSilo('carrot', 'base')
   })
   await worldTrue(
     page,

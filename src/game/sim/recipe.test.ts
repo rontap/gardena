@@ -175,13 +175,13 @@ describe('recipes.state', () => {
 
   test('a full still with no progress is thirsty', () => {
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
+    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
     expect(craftState(still, 1).kind).toBe('thirsty')
   })
 
   test('a running still pins to its spirit', () => {
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
+    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
     still.progress = 0.5
     const craft = craftState(still, 1)
     expect(craft.kind).toBe('working')
@@ -194,8 +194,8 @@ describe('recipes.state', () => {
   test('a mixed still pins to the mixed row', () => {
     const still = new PotStill(BASE)
     still.feed = [
-      { crop: 'potato', rarity: 'common', count: 5 },
-      { crop: 'wheat', rarity: 'common', count: 5 },
+      { crop: 'potato', variety: 'base', quality: 0, count: 5 },
+      { crop: 'wheat', variety: 'base', quality: 0, count: 5 },
     ]
     still.progress = 0.5
     const craft = craftState(still, 1)
@@ -216,7 +216,7 @@ describe('recipes.state', () => {
   test('a barrel counts down to maturity', () => {
     const barrel = new Barrel(BASE)
     barrel.crop = 'grape'
-    barrel.feed = [{ rarity: 'common', count: BARREL_CAP }]
+    barrel.feed = [{ variety: 'base', quality: 0, count: BARREL_CAP }]
     const craft = craftState(barrel, 1)
     expect(craft).toMatchObject({ kind: 'working', progress: 0, left: BARREL_MATURE })
   })
@@ -254,7 +254,7 @@ describe('recipes.haste', () => {
     expect(hasted.kind === 'working' && hasted.left).toBeCloseTo(MILL_WORK / (1.1 * 1.2))
 
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', rarity: 'common', count: STILL_CAP }]
+    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
     still.progress = 0.5
     const distilled = craftState(still, 1.1)
     expect(distilled.kind === 'working' && distilled.left).toBeCloseTo(STILL_SECONDS * 0.5)
@@ -263,7 +263,7 @@ describe('recipes.haste', () => {
 
     const barrel = new Barrel(BASE)
     barrel.crop = 'grape'
-    barrel.feed = [{ rarity: 'common', count: 5 }]
+    barrel.feed = [{ variety: 'base', quality: 0, count: 5 }]
     const aged = craftState(barrel, 1.1, 1.2)
     expect(aged.kind === 'working' && aged.left).toBe(BARREL_MATURE)
 
@@ -272,7 +272,7 @@ describe('recipes.haste', () => {
 })
 
 function fruit(crop: CropId): Face {
-  return { kind: 'fruit', crop, rarity: 'rare', count: 1, unitSale: 0, freshness: 0.2, bio: true }
+  return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 0.2, bio: true }
 }
 
 function outKind(r: Recipe): string {
@@ -303,11 +303,11 @@ describe('machines.recipes-using', () => {
     expect(recipesUsing({ kind: 'grass', count: 1 }).map(r => r.machine)).toEqual(['mill'])
     expect(recipesUsing({ kind: 'weed', count: 1 })).toEqual([])
     expect(recipesUsing({ kind: 'water' })).toEqual(recipesOf('still'))
-    expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0 }).map(r => r.machine)).toEqual([
+    expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0, quality: 0 }).map(r => r.machine)).toEqual([
       ...recipesOf('jam').map(() => 'jam'),
       'furnace',
     ])
-    expect(recipesUsing({ kind: 'oil', count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'oil', quality: 0, count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
     expect(recipesUsing({ kind: 'wood', count: 1 }).map(r => r.machine)).toEqual(['furnace'])
     expect(recipesUsing({ kind: 'ash', count: 1 }).map(r => r.machine)).toEqual(['compost-box'])
   })

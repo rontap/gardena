@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
-import type { Rarity } from '../defs/rarity.ts'
+
 import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
@@ -13,7 +13,7 @@ import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR 
 import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/market.h.ts'
 import { binCount, isCropStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, EXPAND_LAND, qualityPip, SKILL_POINT, skuInner, UI_MARKET_STALL } from '../view/svgs.ts'
+import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, UI_MARKET_STALL } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Btn, Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { ItemFace } from './held.tsx'
@@ -124,24 +124,11 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
   )
 }
 
-const RARITY_NAME: { readonly [K in Rarity]: () => string } = {
-  common: () => m.names_rarity_common(),
-  uncommon: () => m.names_rarity_uncommon(),
-  rare: () => m.names_rarity_rare(),
-  heirloom: () => m.names_rarity_heirloom(),
-}
-
-function rarityClause(demand: Demand): string {
-  if (demand.kind === 'plain' || (demand.kind === 'group' && demand.group === 'jam')) return ''
-  if (demand.minRarity === 'common') return ''
-  return m.market_rarity_clause({ rarity: RARITY_NAME[demand.minRarity]() })
-}
-
 function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: number): Tip {
   const company = COMPANIES[offer.company].name
   const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
-    .map(line => m.market_deliver({ amount: line.amount, good: demandName(line), rarity: rarityClause(line) }))
+    .map(line => m.market_deliver_plain({ amount: line.amount, good: demandName(line) }))
     .join('\n')
   const cash = offer.prize.kind === 'cash'
   const why =
@@ -231,8 +218,8 @@ export function prizeName(prize: Prize): string {
 }
 
 function prizeItem(prize: Prize): Item | undefined {
-  if (prize.kind === 'tree-seed') return { kind: 'tree-seed', tree: prize.tree }
-  if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, rarity: 'common', count: prize.count }
+  if (prize.kind === 'tree-seed') return { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
+  if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, variety: 'base', quality: 0, count: prize.count }
   if (prize.kind === 'fertilizer') {
     return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
   }
@@ -322,7 +309,7 @@ function demandName(demand: Demand): string {
 
 function AnyJamFace({ count }: { count: number }) {
   const stage = useCycle(JAM_CROPS.length)
-  return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], count, unitSale: 1 }} />
+  return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], variety: 'base', quality: 0, count, unitSale: 1 }} />
 }
 
 function demandFace(demand: Demand, count: number) {
@@ -332,44 +319,40 @@ function demandFace(demand: Demand, count: number) {
     ) : (
       <ItemFace item={demandItem(demand, count)} />
     )
-  if (demand.kind === 'plain' || (demand.kind === 'group' && demand.group === 'jam')) return face
-  const pip = qualityPip(demand.minRarity)
-  if (pip === undefined) return face
-  return (
-    <>
-      {face}
-      <svg viewBox="0 0 8 8" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: pip }} />
-    </>
-  )
+  return face
 }
 
 function demandItem(demand: Demand, count: number): Item {
   if (demand.kind === 'group' && demand.group === 'spirit') {
-    return { kind: 'spirit', spirit: 'vodka', rarity: demand.minRarity, count, unitSale: 1 }
+    return { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count, unitSale: 1 }
   }
   if (demand.kind === 'plain') {
-    if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL }
+    if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL, quality: 0 }
     if (demand.good === 'oil' || demand.good === 'flour' || demand.good === 'extract') {
-      return { kind: demand.good, count, unitSale: 1 }
+      return { kind: demand.good, quality: 0, count, unitSale: 1 }
     }
-    return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, count, unitSale: 1 }
+    if (demand.good === 'wine' || demand.good === 'cider') {
+      return { kind: 'cask', cask: demand.good, variety: 'base', quality: 0, count, unitSale: 1 }
+    }
+    if (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed') {
+      return { kind: 'spirit', spirit: demand.good, variety: 'base', quality: 0, count, unitSale: 1 }
+    }
+    if (demand.good.startsWith('jam-')) {
+      return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, variety: 'base', quality: 0, count, unitSale: 1 }
+    }
+    if (!isCropStall(demand.good)) throw new Error('demandItem')
+    return {
+      kind: 'fruit',
+      crop: demand.good,
+      variety: 'base',
+      quality: 0,
+      count,
+      unitSale: CROPS[demand.good].sale,
+      freshness: 1,
+      bio: false,
+    }
   }
-  if (demand.kind === 'rated' && (demand.good === 'wine' || demand.good === 'cider')) {
-    return { kind: 'cask', cask: demand.good, rarity: demand.minRarity, count, unitSale: 1 }
-  }
-  if (demand.kind === 'rated' && (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed')) {
-    return { kind: 'spirit', spirit: demand.good, rarity: demand.minRarity, count, unitSale: 1 }
-  }
-  if (demand.kind !== 'rated' || !isCropStall(demand.good)) throw new Error('demandItem')
-  return {
-    kind: 'fruit',
-    crop: demand.good,
-    rarity: demand.minRarity,
-    count,
-    unitSale: CROPS[demand.good].sale,
-    freshness: 1,
-    bio: false,
-  }
+  throw new Error('demandItem')
 }
 
 function ContractsRight({
@@ -571,16 +554,16 @@ function stallName(id: StallGoodId): string {
 }
 
 function boxFace(id: StallGoodId): Item {
-  if (id === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL }
+  if (id === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL, quality: 0 }
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') {
-    return { kind: 'spirit', spirit: id, rarity: 'common', count: 1, unitSale: 1 }
+    return { kind: 'spirit', spirit: id, variety: 'base', quality: 0, count: 1, unitSale: 1 }
   }
-  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, rarity: 'common', count: 1, unitSale: 1 }
+  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, variety: 'base', quality: 0, count: 1, unitSale: 1 }
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
-    return { kind: 'jam', crop, count: 1, unitSale: 1 }
+    return { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: 1 }
   }
-  if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, count: 1, unitSale: 1 }
+  if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, quality: 0, count: 1, unitSale: 1 }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
-  return { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true }
+  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true }
 }

@@ -14,7 +14,7 @@ import {
   type PromptHit,
 } from './prompt.ts'
 import { onCell } from './drop.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import { cropVariety } from '../defs/crops.ts'
 import { heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Barrel } from './building.ts'
@@ -36,13 +36,6 @@ const TILE_LABEL: { readonly [K in TileId]: () => string } = {
   paved: m.names_tile_paved,
   brick: m.names_tile_brick,
   cobble: m.names_tile_cobble,
-}
-
-const RARITY_LABEL: { readonly [K in Rarity]: () => string } = {
-  common: m.names_rarity_common,
-  uncommon: m.names_rarity_uncommon,
-  rare: m.names_rarity_rare,
-  heirloom: m.names_rarity_heirloom,
 }
 
 export function lookText(world: World, hit: PromptHit | undefined, plantStats: boolean): string {
@@ -152,7 +145,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     lines.push(labeled(m.names_ground_grass(), m.prompt_rooting_pct({ n: Math.floor(cell.turf.maturity * 100) })))
   } else if (cell.kind === 'growing') {
     const st = cell.plant.stats(world.modifiers)
-    lines.push(labeled(cropLabel(cell.plant.crop), m.prompt_growing_pct({ n: Math.floor(cell.plant.maturity * 100) })))
+    lines.push(m.prompt_growing_variety({ name: cropVariety(cell.plant.crop, cell.plant.variety) }))
     if (plantStats) {
       lines.push(m.prompt_happiness({ n: Math.floor(cell.plant.happiness * 100) }))
       lines.push(
@@ -170,13 +163,12 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       )
     }
   } else if (cell.kind === 'ripe') {
-    const rarity = rarityText(cell.plant.rarity)
-    const name = cropLabel(cell.plant.crop)
-    if (plantStats) {
-      lines.push(labeled(name, m.prompt_ripe_fresh({ rarity, n: Math.floor(cell.plant.freshness * 100) })))
-    } else {
-      lines.push(labeled(name, m.prompt_ripe({ rarity })))
-    }
+    lines.push(
+      m.prompt_ripe_quality({
+        name: cropVariety(cell.plant.crop, cell.plant.variety),
+        n: Math.floor(cell.plant.quality * 100),
+      }),
+    )
   } else if (cell.kind === 'rotten') {
     lines.push(m.prompt_rotten({ name: cropLabel(cell.crop), soil: soilLine(cell.soil) }))
   } else if (isSensor(cell)) {
@@ -228,9 +220,11 @@ function barrelLine(c: Barrel): string {
   if (c.crop === 'none') return labeled(name, m.prompt_empty())
   const need = barrelNeed(c.crop)
   const n = feedUnits(c.feed)
-  if (n < need) return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropLabel(c.crop) }))
+  if (n < need) {
+    return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropVariety(c.crop, c.feed[0]?.variety ?? 'base') }))
+  }
   if (c.age < BARREL_MATURE) return labeled(name, m.prompt_maturing_pct({ n: Math.floor((c.age / BARREL_MATURE) * 100) }))
-  const mul = caskAgeMul(c.feed[0].rarity, c.age)
+  const mul = caskAgeMul(c.age)
   return labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
 }
 
@@ -246,10 +240,6 @@ function soilLine(soil: Soil): string {
 
 function liters(n: number): string {
   return m.prompt_liters({ n: Number(n.toFixed(2)) })
-}
-
-function rarityText(rarity: Rarity): string {
-  return RARITY_LABEL[rarity]()
 }
 
 function waterWord(soil: Soil, tol: number): string {

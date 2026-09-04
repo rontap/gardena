@@ -2,7 +2,7 @@
 
 Tab on [[ui/market]]. Panel stays `{ kind: 'market' }`. Hidden iff `!world.done.has('unlock-contracts')`. [[mechanics/contracts]].
 
-`slots = CONTRACT_OFFERS +` (broker ≥ 1 ? 1 : 0). Cap `CONTRACT_ACTIVE +` (broker ≥ 2 ? 1 : 0). Board `rollBoard(world.rng, world.clock.day, slots)`. Drop ids in `takenToday` — those cards are gone. Regenerating is free. Panel does not re-roll mix / amount / fee lerp; remaining days and live cancel fee are display (`nowDay` as mechanics, `cancelFee(active, nowDay)`).
+`slots = CONTRACT_OFFERS +` (broker ≥ 1 ? 1 : 0). Cap `CONTRACT_ACTIVE +` (broker ≥ 2 ? 1 : 0). Board `rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay)`. Drop ids in `takenToday` — those cards are gone. Regenerating is free. Panel does not re-roll mix / amount / fee lerp; remaining days and live cancel fee are display (`nowDay` as mechanics, `cancelFee(active, nowDay)`).
 
 Host: Accept / Cancel / Reorder. Guest: board and fill progress; those controls omitted. Guest cmds never fire. [[ui/multiplayer]]
 
@@ -38,7 +38,7 @@ The card is the Accept control. Not a nested label. Frame `bg-ink/6 px-3 py-2 fl
 Not the `disabled` attribute. Taken today: card gone, not grey.
 
 ```
-[ face name                            pips ]
+[ face name                      Difficulty ]
 [ ItemFace (count)  demandName              ]
 [ ItemFace (count)  demandName              ]   ← pair only
 [ 1 day | N days                            ]
@@ -57,22 +57,13 @@ Prize / cash **own line**, no truncate. Cash: `<Coin n={offer.reward} />`. Prize
 
 [[ui/callout-hover]] on Market Overlay `aside`. Title `COMPANIES[offer.company].name`. Hover on guest and host, including at-cap. Prize-only hover **replaces** the old “Pays … instead of money / No cash” card.
 
-`item` = `demandName`. Rarity clause iff `minRarity` present and not `common`.
-
-```
-RARITY_NAME: { readonly [K in Rarity]: string } = {
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  heirloom: 'Heirloom',
-}
-```
+`item` = `demandName`. The board does not ask for a variety or a quality floor. [[mechanics/contracts]]
 
 Body, `whitespace-pre-line` fragment:
 
 ```
 {difficulty}/40 difficulty contract for {company}.
-Deliver {amount} {item}[ at least rarity of {Rarity}].
+Deliver {amount} {item}.
 [Deliver …]  ← pair only
 Contract duration is {n} day(s), earn {reward} when completed[{monetary}].
 Cancellation cost is {fee}.
@@ -80,7 +71,7 @@ Cancellation cost is {fee}.
 ```
 
 - `{difficulty}` = `offer.difficulty`. `{company}` = `COMPANIES[offer.company].name`.
-- One **Deliver** line per demand. `{item}` = `demandName(demand)`. Append ` at least rarity of {RARITY_NAME[minRarity]}` iff that demand has `minRarity` and `minRarity !== 'common'`.
+- One **Deliver** line per demand. `{item}` = `demandName(demand)`.
 - Duration: `1 day` / `{n} days` (`n === 1` vs else). Same as the card.
 - Cash: `{reward}` is `<Coin n={offer.reward} />`. `{monetary}` is ` ({pct}% more than farmer's market)` with `pct = Math.round(offer.markup * 100)`.
 - Prize: `{reward}` is `prizeName(offer.prize)`. No `{monetary}`.
@@ -97,19 +88,19 @@ Name is `COMPANIES[offer.company].name`. Complete book — all six `CompanyId`: 
 
 ### Line face
 
-Count / liters is on the `Item` (`demandItem(demand, count)`). Sugar liters = count.
+Count / liters is on the `Item` (`demandItem(demand, count)`). Sugar and extract are never demanded.
+
+A `Demand` is `plain` or group. Faces carry no mark — the Variety group is the face. Board does not ask for a variety: every demand face is `'base'`.
 
 | demand | face |
 |---|---|
-| rated crop | fruit `ItemFace`, `rarity: minRarity`, `count`. Sugar-cane is cane fruit. |
-| rated wine | wine `ItemFace`, `rarity: minRarity`, `count` |
-| rated spirit | that spirit `ItemFace`, `rarity: minRarity`, `count` |
-| plain sugar / oil / flour / extract | that `ItemFace` |
-| plain jam | jam `ItemFace` (`JamId` crop; tomato ketchup) |
-| group jam | `AnyJamFace`: cycles `JAM_CROPS` every 800ms, `ItemFace` jam, `count` |
-| group spirit | vodka spirit `ItemFace`, `rarity: minRarity`, `count` |
-
-`qualityPip(minRarity)` beside the face unless `plain` or group jam. `qualityPip` is undefined for common — no extra mark. Fruit `ItemFace` also composites its own pip; live still draws this extra `qualityPip` for rated fruit. Not stars.
+| plain crop | fruit `ItemFace`, `'base'`, `count`. Sugar-cane is cane fruit. |
+| plain wine / cider | that cask `ItemFace`, `'base'`, `count` |
+| plain spirit | that spirit `ItemFace`, `'base'`, `count` |
+| plain oil / flour | that `ItemFace` |
+| plain jam | jam `ItemFace` (`JamId` crop; tomato ketchup), `'base'` |
+| group jam | `AnyJamFace`: cycles `JAM_CROPS` every 800ms, `ItemFace` jam `'base'`, `count` |
+| group spirit | vodka spirit `ItemFace`, `'base'`, `count` |
 
 `demandName`: group jam **Any jam**, group spirit **Any spirit**, else `stallName`.
 
@@ -122,7 +113,7 @@ Count / liters is on the `Item` (`demandItem(demand, count)`). Sugar liters = co
 `world.contracts.active` array order — that is fill order. Same card frame `relative bg-ink/6 px-3 py-2 flex flex-col gap-1`. Stacked `flex flex-col gap-2`.
 
 ```
-[ face name                            pips ] [▲]
+[ face name                      Difficulty ] [▲]
 [ ItemFace (remaining)  demandName          ] [▼]
 [ ItemFace (remaining)  demandName          ]
 [ {x.x} days left                           ]
@@ -158,4 +149,4 @@ Below the stack. One line each, `history` array order, at most `CONTRACT_HISTORY
 
 Seam dialog [[ui/docks]]. When `unlock-contracts` done: that day's `Recap.contracts` as history lines (completed / missed / cancelled) and **A new board is up.** Omit the block when not unlocked.
 
-Assumption: guest sees board and fill progress plus offer hover, Accept/Cancel/Reorder omitted. Group spirit face is vodka at `minRarity`. Cancel × hover title is the company name.
+Assumption: guest sees board and fill progress plus offer hover, Accept/Cancel/Reorder omitted. Demand faces are `'base'` quality 0. Group spirit face is vodka `'base'`. Cancel × hover title is the company name.

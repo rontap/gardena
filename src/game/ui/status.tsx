@@ -9,7 +9,7 @@ import { DashFace, ItemLineView } from './held.tsx'
 import { faceGfx } from '../view/svgs.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 import { isPlot } from '../sim/plot.ts'
-import { HAPPY_START } from '../defs/rarity.ts'
+import { HAPPY_START } from '../defs/crops.ts'
 import { craftState, isCraftCell } from '../sim/recipe.ts'
 import { caskAgeMul } from '../sim/machine.ts'
 import { BARREL_AGE, BARREL_MATURE } from '../defs/items.ts'
@@ -156,7 +156,7 @@ function BarrelAge({ world, hover }: { world: World; hover: PromptHit }) {
   if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
   const cell = world.cell(hover.at)
   if (cell.kind !== 'barrel' || cell.crop === 'none' || cell.age < BARREL_MATURE) return null
-  const mul = caskAgeMul(cell.feed[0].rarity, cell.age)
+  const mul = caskAgeMul(cell.age)
   return (
     <div className="bg-dirt/25 px-3 py-2.5">
       <div className="flex items-center gap-2 text-sm">

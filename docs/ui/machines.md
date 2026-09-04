@@ -20,7 +20,7 @@ Lock crop + Variety. Output sale `product × RATING_SALE[preserve] × qualityMul
 |---|---|
 | empty (`recipe` `'none'`) | **Mill** |
 | filling | **{have}/{need} → {product}** |
-| wrong locked | `<needs-game-text-writer>` locked Variety only |
+| wrong locked | **{Variety} only** |
 | full (`units >= need`) | **Mill - full** |
 
 `need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15; vanilla `MILL_VANILLA_IN`. `{product}`: sugar, olive oil, flour, extract, vanilla extract. `millProductName('vanilla')` is **vanilla extract**. Grass name unchanged.
@@ -35,7 +35,7 @@ Lock crop + Variety. Hopper identity includes Variety. Annual `tier` `heirloom` 
 |---|---|
 | empty (`crop` `'none'`) | **Seed grinder** |
 | filling | **{have} → seeds** |
-| wrong locked | `<needs-game-text-writer>` locked Variety only |
+| wrong locked | **{Variety} only** |
 | working (`units >= 1`) | **Seed grinder - working {pct}%** |
 
 `{have}` hopper units. Need 1.
@@ -65,11 +65,11 @@ Lock crop + Variety. Output sale `CASK_SALE[cask] × RATING_SALE[alcohol] × qua
 | when | text |
 |---|---|
 | empty | **Barrel - {n}/5** |
-| Variety locked, filling | `<needs-game-text-writer>` `{n}/5` Variety |
+| Variety locked, filling | **Barrel - {n}/{need} {Variety}** |
 | maturing (`age < BARREL_MATURE`) | **Barrel - maturing {pct}%** |
 | aging | **Barrel - aging {n}d, sells at ×{mul}** |
 | refuse not a barrel crop | **Barrel - grapes or apples** |
-| refuse wrong Variety | `<needs-game-text-writer>` locked Variety only |
+| refuse wrong Variety | **{Variety} only** |
 | full | **Barrel - full** |
 
 Filling `{n}` feed count. Cap `BARREL_CAP` 5. Maturing `{pct}` = `floor((age / BARREL_MATURE) * 100)`. Aging `{n}` = `floor(age / DAY_SECONDS)`, `{mul}` = age multiplier to two decimals. The Aging fill row is [[ui/inspect]].
@@ -83,14 +83,14 @@ Lock crop + Variety. Output sale `JAM_SALE[crop] × RATING_SALE[preserve] × qua
 | when | text |
 |---|---|
 | empty | **Jam machine** |
-| fruit locked, wrong | `<needs-game-text-writer>` locked Variety only |
-| filling fruit | `<needs-game-text-writer>` `{fruit}/5` named jar |
+| fruit locked, wrong | **{Variety} only** |
+| filling fruit | **{fruit}/5 {jar}** |
 | sugar buffer | **{sugar}L / 4L** |
 | working | **Jam machine - working {pct}%** |
 
 `{fruit}` vs `JAM_IN` 5. Buffer vs `JAM_BUFFER` 4 L. Buffer line while filling (with the fruit line). Working line alone.
 
-Prompt fruit dump: **Make jam** / **Make ketchup**. Named jar dump prompt: `<needs-game-text-writer>`. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`. Apple fruit is refuse. Dump illegal. Prompt stays the look line. Not **Make jam**.
+Prompt fruit dump: **Make jam** / **Make ketchup**. Named jar dump prompt: **Make grape jelly** / **Make black raspberry jam** / **Make sour cherry preserve** / **Make Blenheim apricot jam** / **Make Passata**. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`. Apple fruit is refuse. Dump illegal. Prompt stays the look line. Not **Make jam**.
 
 ## Freezer
 

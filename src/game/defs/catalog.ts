@@ -68,7 +68,7 @@ export function catalogEntries(): CatalogEntry[] {
     return {
       id,
       title: CROP_NAME[id](),
-      icon: { kind: 'fruit', crop: id, rarity: 'common', count: 1, unitSale: d.sale, freshness: 1, bio: true },
+      icon: { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: d.sale, freshness: 1, bio: true },
       blurb: d.desc(),
     }
   })
@@ -174,7 +174,7 @@ export function catalogEntries(): CatalogEntry[] {
         seconds: COMPOST_SECONDS,
         seeds: COMPOST_VALUE.seeds,
         fruit: COMPOST_VALUE.fruit,
-        heirloom: COMPOST_VALUE.heirloom,
+        heirloom: COMPOST_VALUE.fruit,
         rotten: COMPOST_VALUE.rotten,
         dead: COMPOST_VALUE.dead,
       }),
@@ -329,7 +329,7 @@ export function catalogEntries(): CatalogEntry[] {
     {
       id: 'sugar',
       title: m.names_item_sugar(),
-      icon: { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_SHOP },
+      icon: { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_SHOP, quality: 0 },
       blurb: m.catalog_sugar({ bag: SUGAR_BAG }),
     },
     {

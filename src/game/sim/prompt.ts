@@ -1,8 +1,9 @@
 import { m } from '../../paraglide/messages.js'
-import type { Rarity } from '../defs/rarity.ts'
+import { cropVariety } from '../defs/crops.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import { inWorld, type Barrel, type Coord, type Furnace, type Grinder, type JamMachine, type Mill, type PotStill, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
-import type { BarrelCrop, CropId, SensorKind, SkuId } from './ids.ts'
+import type { BarrelCrop, CropId, JamCrop, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
 import {
   BARREL_MATURE,
@@ -16,13 +17,12 @@ import {
   STILL_CAP,
   FURNACE_NEED,
 } from '../defs/items.ts'
-import { countable, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
+import { countable, jamJarName, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
 import {
   barrelNeed,
   feedUnits,
   fruitCrop,
   grindAccept,
-  jamCropName,
   jamCropOf,
   millDumpUnits,
   millNeed,
@@ -500,10 +500,8 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (w.act.hand.kind === 'hold' && jamFruitOk(cell, w.act.hand)) {
       const crop = jamCropOf(w.act.hand.item)
-      return intent(
-        crop === 'tomato' ? m.prompt_make({ name: m.names_item_ketchup().toLowerCase() }) : m.prompt_make_jam(),
-        { act: 'jam', at },
-      )
+      const variety = w.act.hand.item.kind === 'fruit' ? w.act.hand.item.variety : 'base'
+      return intent(jamDumpPrompt(crop, variety), { act: 'jam', at })
     }
     return { kind: 'blocked', text: look }
   }
@@ -616,8 +614,8 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return intent(m.prompt_spray(), { act: 'weed-spray', at })
   }
   if (cell.kind === 'ripe') {
-    if (canHarvestHand(w, cell.plant.crop, cell.plant.rarity)) return intent(m.prompt_harvest(), { act: 'harvest', at })
-    if (sameFruitInHand(w, cell.plant.crop, cell.plant.rarity)) return { kind: 'blocked', text: HAND_FULL }
+    if (canHarvestHand(w, cell.plant.crop, cell.plant.variety)) return intent(m.prompt_harvest(), { act: 'harvest', at })
+    if (sameFruitInHand(w, cell.plant.crop, cell.plant.variety)) return { kind: 'blocked', text: HAND_FULL }
   }
   if (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass')) {
     const kind = cell.kind === 'weed' ? 'weed' : 'grass'
@@ -686,16 +684,16 @@ export function tallSiteOk(w: World, at: Coord): boolean {
   )
 }
 
-function canHarvestHand(w: World, crop: CropId, rarity: Rarity): boolean {
+function canHarvestHand(w: World, crop: CropId, variety: VarietyId): boolean {
   if (w.act.hand.kind === 'empty') return true
   const it = w.act.hand.item
-  return it.kind === 'fruit' && it.crop === crop && it.rarity === rarity && it.count < w.stackMax(it)
+  return it.kind === 'fruit' && it.crop === crop && it.variety === variety && it.count < w.stackMax(it)
 }
 
-function sameFruitInHand(w: World, crop: CropId, rarity: Rarity): boolean {
+function sameFruitInHand(w: World, crop: CropId, variety: VarietyId): boolean {
   if (w.act.hand.kind !== 'hold') return false
   const it = w.act.hand.item
-  return it.kind === 'fruit' && it.crop === crop && it.rarity === rarity
+  return it.kind === 'fruit' && it.crop === crop && it.variety === variety
 }
 
 function handFullFor(w: World, item: Item): boolean {
@@ -721,7 +719,9 @@ export function millLook(mill: Mill, hand: Hand): string {
   if (mill.recipe !== 'none' && hand.kind === 'hold') {
     const recipe = millRecipeOf(hand.item)
     if (recipe !== undefined && recipe !== mill.recipe) {
-      return labeled(name, m.prompt_only({ product: millProductName(mill.recipe) }))
+      const locked =
+        mill.recipe === 'grass' ? millProductName(mill.recipe) : cropVariety(mill.recipe, mill.variety)
+      return labeled(name, m.prompt_only({ product: locked }))
     }
   }
   if (mill.recipe === 'none') return name
@@ -743,7 +743,7 @@ export function grindLook(g: Grinder, hand: Hand): string {
   if (g.crop !== 'none' && hand.kind === 'hold') {
     const take = grindAccept(g, hand.item)
     if (fruitCrop(hand.item) !== undefined && take === undefined) {
-      return labeled(name, m.prompt_only({ product: cropLabel(g.crop) }))
+      return labeled(name, m.prompt_only({ product: cropVariety(g.crop, g.variety) }))
     }
   }
   if (g.crop === 'none') return name
@@ -785,11 +785,13 @@ export function barrelLook(barrel: Barrel, hand: Hand): string {
   if (hand.kind === 'hold' && fruitCrop(hand.item) !== undefined) {
     const crop = barrelCropOf(hand.item)
     if (crop === undefined) return labeled(name, m.prompt_grapes_or_apples())
-    if (barrel.crop !== 'none' && crop !== barrel.crop) return labeled(name, m.prompt_crop_s_only({ crop: cropLabel(barrel.crop) }))
+    if (barrel.crop !== 'none' && crop !== barrel.crop) {
+      return labeled(name, m.prompt_only({ product: cropVariety(barrel.crop, barrel.feed[0]?.variety ?? 'base') }))
+    }
     if (n === need) return labeled(name, m.prompt_full())
   }
   if (barrel.crop === 'none') return labeled(name, m.prompt_n_cap({ n, cap: 5 }))
-  return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropLabel(barrel.crop) }))
+  return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropVariety(barrel.crop, barrel.feed[0]?.variety ?? 'base') }))
 }
 
 function barrelDumpOk(barrel: Barrel, hand: Hand): boolean {
@@ -807,7 +809,7 @@ function barrelCollectOk(barrel: Barrel, hand: Hand): boolean {
   return (
     hand.item.kind === 'cask' &&
     hand.item.cask === CASK_OF[barrel.crop] &&
-    hand.item.rarity === barrel.feed[0].rarity
+    hand.item.variety === barrel.feed[0].variety
   )
 }
 
@@ -818,14 +820,33 @@ export function jamLook(jam: JamMachine, hand: Hand): string {
   }
   if (jam.crop !== 'none' && hand.kind === 'hold') {
     const crop = jamCropOf(hand.item)
-    if (crop !== undefined && crop !== jam.crop) return labeled(name, m.prompt_only({ product: jamCropName(jam.crop) }))
+    if (crop !== undefined && crop !== jam.crop) {
+      return labeled(name, m.prompt_only({ product: cropVariety(jam.crop, jam.variety) }))
+    }
   }
   if (jam.crop === 'none' && jam.fruit === 0 && jam.sugar === 0) return name
   const fruitLine =
-    jam.crop === 'none' ? undefined : labeled(name, m.prompt_n_cap_crop({ n: jam.fruit, cap: JAM_IN, crop: jamCropName(jam.crop) }))
+    jam.crop === 'none'
+      ? undefined
+      : labeled(name, m.prompt_n_cap_crop({ n: jam.fruit, cap: JAM_IN, crop: jamJarName(jam.crop, jam.variety) }))
   const buf = m.prompt_jam_buffer({ sugar: jam.sugar, cap: JAM_BUFFER })
   if (fruitLine !== undefined) return `${fruitLine}\n${buf}`
   return buf
+}
+
+function jamDumpPrompt(crop: JamCrop | undefined, variety: VarietyId): string {
+  if (crop === undefined) return m.prompt_make_jam()
+  if (crop === 'tomato' && variety === 'base') return m.prompt_make({ name: m.names_item_ketchup().toLowerCase() })
+  if (
+    variety === 'concord' ||
+    variety === 'black-raspberry' ||
+    variety === 'montmorency' ||
+    variety === 'blenheim' ||
+    variety === 'san-marzano'
+  ) {
+    return m.prompt_make({ name: jamJarName(crop, variety) })
+  }
+  return m.prompt_make_jam()
 }
 
 function jamFruitOk(jam: JamMachine, hand: Hand): boolean {
@@ -883,7 +904,7 @@ export function furnaceLook(furnace: Furnace, hand: Hand): string {
 }
 
 export function treeLine(cell: Tree): string {
-  const name = m.prompt_tree({ name: cropLabel(cell.species) })
+  const name = m.prompt_tree({ name: cropVariety(cell.species, cell.variety) })
   if (cell.trunk) return labeled(name, m.prompt_trunk())
   if (cell.juvenile < 1) return labeled(name, m.prompt_growing())
   if (cell.yield.kind === 'on') return labeled(name, m.prompt_on_season())

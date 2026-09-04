@@ -20,9 +20,9 @@ import {
   TRAILER_LEN,
   VEHICLE_SLOTS,
 } from '../defs/items.ts'
-import type { Rarity } from '../defs/rarity.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
-import { compostValue, mergeFreshness, mergeUnitSale, organic, type Item, type Slot } from './item.ts'
+import { compostValue, countable, mergeInto, organic, stackable, type Item, type Slot } from './item.ts'
 import {
   ADDITIVE_BAG,
   type AdditiveId,
@@ -414,7 +414,7 @@ function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => vo
     return
   }
   if (dest.kind === 'seed-silo' && item.kind === 'seeds') {
-    const got = putSiloInto(dest, item.crop, item.rarity, n)
+    const got = putSiloInto(dest, item.crop, item.variety, item.quality, n)
     if (got > 0) take(got)
     return
   }
@@ -443,7 +443,7 @@ export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[]): boo
   }
   if (src.kind === 'seed-silo') {
     return src.seeds.some(
-      st => st.count > 0 && cargoCouldTake(cargo, { kind: 'seeds', crop: st.crop, rarity: st.rarity, count: st.count }),
+      st => st.count > 0 && cargoCouldTake(cargo, { kind: 'seeds', crop: st.crop, variety: st.variety, quality: st.quality, count: st.count }),
     )
   }
   if (src.kind === 'additive-store') {
@@ -475,7 +475,7 @@ function pullSlots(slots: Slot[], cargo: Cargo): void {
 function pullSilo(silo: SeedSilo, cargo: Cargo): void {
   for (let i = 0; i < silo.seeds.length; ) {
     const st = silo.seeds[i]
-    const item: Item = { kind: 'seeds', crop: st.crop, rarity: st.rarity, count: st.count }
+    const item: Item = { kind: 'seeds', crop: st.crop, variety: st.variety, quality: st.quality, count: st.count }
     giveCargo(cargo, item)
     st.count = item.count
     if (st.count <= 0) silo.seeds.splice(i, 1)
@@ -545,7 +545,7 @@ function cargoCouldTake(cargo: Cargo, item: Item): boolean {
     if (item.kind !== 'seeds') return false
     if (cargo.trailer.hopper.kind === 'empty') return item.count > 0
     const h = cargo.trailer.hopper.item
-    if (h.crop !== item.crop || h.rarity !== item.rarity) return false
+    if (h.crop !== item.crop || h.variety !== item.variety) return false
     return h.count < TRAILER_CAP
   }
   if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return false
@@ -609,13 +609,18 @@ function giveCargo(cargo: Cargo, item: Item): boolean {
     const have = cargo.trailer.hopper.kind === 'empty' ? 0 : cargo.trailer.hopper.item.count
     if (cargo.trailer.hopper.kind === 'hold') {
       const h = cargo.trailer.hopper.item
-      if (h.crop !== item.crop || h.rarity !== item.rarity) return false
+      if (h.crop !== item.crop || h.variety !== item.variety) return false
     }
     const n = item.count < TRAILER_CAP - have ? item.count : TRAILER_CAP - have
     if (n <= 0) return false
     if (cargo.trailer.hopper.kind === 'empty') {
-      cargo.trailer.hopper = { kind: 'hold', item: { kind: 'seeds', crop: item.crop, rarity: item.rarity, count: n } }
-    } else cargo.trailer.hopper.item.count += n
+      cargo.trailer.hopper = { kind: 'hold', item: { kind: 'seeds', crop: item.crop, variety: item.variety, quality: item.quality, count: n } }
+    } else {
+      cargo.trailer.hopper.item.quality =
+        (cargo.trailer.hopper.item.quality * cargo.trailer.hopper.item.count + item.quality * n) /
+        (cargo.trailer.hopper.item.count + n)
+      cargo.trailer.hopper.item.count += n
+    }
     item.count -= n
     return item.count <= 0
   }
@@ -660,12 +665,14 @@ function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number 
   return true
 }
 
-function putSiloInto(silo: SeedSilo, crop: AnnualId, rarity: Rarity, count: number): number {
+function putSiloInto(silo: SeedSilo, crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
   const n = Math.min(count, silo.free)
   if (n <= 0) return 0
-  const hit = silo.seeds.find(st => st.crop === crop && st.rarity === rarity)
-  if (hit !== undefined) hit.count += n
-  else silo.seeds.push({ crop, rarity, count: n })
+  const hit = silo.seeds.find(st => st.crop === crop && st.variety === variety)
+  if (hit !== undefined) {
+    hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
+    hit.count += n
+  } else silo.seeds.push({ crop, variety, quality, count: n })
   return n
 }
 
@@ -714,22 +721,17 @@ export function compactSlots(slots: Slot[]): void {
     if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
       const kind = slot.item.kind
       const crop = slot.item.crop
-      const rarity = slot.item.rarity
+      const variety = slot.item.variety
       const hit = kept.find(
         s =>
           s.kind === 'hold' &&
           s.item.kind === kind &&
           (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
           s.item.crop === crop &&
-          s.item.rarity === rarity,
+          s.item.variety === variety,
       )
       if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
-        if (hit.item.kind === 'fruit' && slot.item.kind === 'fruit') {
-          hit.item.unitSale = mergeUnitSale(hit.item, slot.item)
-          hit.item.freshness = mergeFreshness(hit.item, slot.item)
-          hit.item.bio = hit.item.bio && slot.item.bio
-        }
-        hit.item.count += slot.item.count
+        mergeInto(hit.item, slot.item, slot.item.count)
         return
       }
     }
@@ -740,6 +742,7 @@ export function compactSlots(slots: Slot[]): void {
         hit.item.liters = m.liters
         hit.item.capacityLiters = m.capacityLiters
         hit.item.unitSale = m.unitSale
+        hit.item.quality = m.quality
         return
       }
     }
@@ -756,13 +759,12 @@ export function compactSlots(slots: Slot[]): void {
         s =>
           s.kind === 'hold' &&
           s.item.kind === it.kind &&
-          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.rarity === it.rarity)) &&
-          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.rarity === it.rarity)) &&
-          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop)),
+          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.variety === it.variety)) &&
+          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.variety === it.variety)) &&
+          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop && s.item.variety === it.variety)),
       )
-      if (hit !== undefined && hit.kind === 'hold' && 'count' in hit.item && 'unitSale' in hit.item && 'count' in it) {
-        hit.item.unitSale = mergeUnitSale(hit.item, it)
-        hit.item.count += it.count
+      if (hit !== undefined && hit.kind === 'hold' && countable(hit.item) && countable(it) && stackable(hit.item, it)) {
+        mergeInto(hit.item, it, it.count)
         return
       }
     }

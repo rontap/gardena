@@ -1,5 +1,4 @@
-import type { Rarity } from '../defs/rarity.ts'
-import type { CaskId, CropId, JamId, PickaxeId, ShovelId, SpiritKind, StallGoodId, TreeId } from './ids.ts'
+import type { CaskId, CropId, JamId, PickaxeId, ShovelId, StallGoodId, TreeId } from './ids.ts'
 
 export declare const SAT_DEPTH: number
 
@@ -42,15 +41,12 @@ export type GroupId = 'jam' | 'spirit'
 
 export type ContractGoodId = Exclude<StallGoodId, 'sugar' | 'extract'>
 
-export type RarityGoodId = CropId | SpiritKind | CaskId
-
-export type PlainGoodId = 'sugar' | JamId | 'oil' | 'flour' | 'extract'
+export type PlainGoodId = StallGoodId
 
 export type Demand =
-  | { kind: 'rated'; good: RarityGoodId; minRarity: Rarity; amount: number }
-  | { kind: 'plain'; good: PlainGoodId; amount: number }
+  | { kind: 'plain'; good: StallGoodId; amount: number }
   | { kind: 'group'; group: 'jam'; amount: number }
-  | { kind: 'group'; group: 'spirit'; minRarity: Rarity; amount: number }
+  | { kind: 'group'; group: 'spirit'; amount: number }
 
 export type Lines = readonly [Demand] | readonly [Demand, Demand]
 
@@ -151,8 +147,6 @@ export declare const PRIZE_SLOTS: number
 
 export declare const DEADLINE_COST: { readonly [K in DeadlineBand]: number }
 
-export declare const RARITY_COST: { readonly [K in Rarity]: number }
-
 export declare const GOOD_COST: { readonly [K in StallGoodId]: number }
 
 export declare const PAIR_COST: number
@@ -189,4 +183,4 @@ export type CancelFee = (a: Active, nowDay: number) => number
 
 export type MissPenalty = (a: Active) => number
 
-export type Accepts = (d: Demand, good: StallGoodId, rarity: Rarity) => boolean
+export type Accepts = (d: Demand, good: StallGoodId) => boolean

@@ -1,6 +1,5 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
-import type { Rarity } from './rarity.ts'
 
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
   shovel: { uses: 80, workSeconds: 1.1 },
@@ -47,7 +46,6 @@ export const COMPOST_SECONDS = 60
 export const COMPOST_VALUE = {
   seeds: 1,
   fruit: 5,
-  heirloom: 20,
   grass: 1,
   weed: 1,
   rotten: 2,
@@ -106,18 +104,7 @@ export const SPIRIT_SALE: { readonly [K in Exclude<SpiritKind, 'mixed'>]: number
   beer: 144,
   brandy: 108,
 }
-export const SPIRIT_RARITY: { readonly [K in Rarity]: number } = {
-  common: 1,
-  uncommon: 1.15,
-  rare: 1.3,
-  heirloom: 1.45,
-}
-export const CASK_AGE: { readonly [K in Rarity]: number } = {
-  common: 1.5,
-  uncommon: 2,
-  rare: 2.5,
-  heirloom: 3,
-}
+export const CASK_AGE = 1.5
 export const JAM_SALE: { readonly [K in JamCrop]: number } = {
   apricot: 36,
   grape: 72,

@@ -3,7 +3,6 @@ import {
   BARREL_AGE,
   BARREL_MATURE,
   CASK_SALE,
-  SPIRIT_RARITY,
   CHEST_SLOTS,
   COMPOST_LITERS,
   COMPOST_NEED,
@@ -47,9 +46,8 @@ import {
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import type { Rarity } from '../defs/rarity.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
-import { TREE_NAME } from '../defs/trees.ts'
+import { qualityMul, type VarietyId } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
 import type {
@@ -69,7 +67,8 @@ import type { Modifier } from './modifiers.ts'
 
 export type FruitStack = {
   crop: CropId
-  rarity: Rarity
+  variety: VarietyId
+  quality: number
   count: number
   unitSale: number
   freshness: number
@@ -83,17 +82,17 @@ export type Item =
   | { kind: 'fertilizer'; liters: number; capacityLiters: number }
   | { kind: 'synth'; liters: number; capacityLiters: number }
   | { kind: 'compost'; liters: number; capacityLiters: number }
-  | { kind: 'seeds'; crop: AnnualId; rarity: Rarity; count: number }
+  | { kind: 'seeds'; crop: AnnualId; variety: VarietyId; quality: number; count: number }
   | { kind: 'grass-seeds'; count: number }
-  | { kind: 'fruit'; crop: CropId; rarity: Rarity; count: number; unitSale: number; freshness: number; bio: boolean }
-  | { kind: 'tree-seed'; tree: TreeId }
-  | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number }
-  | { kind: 'spirit'; spirit: SpiritKind; rarity: Rarity; count: number; unitSale: number }
-  | { kind: 'cask'; cask: CaskId; rarity: Rarity; count: number; unitSale: number }
-  | { kind: 'jam'; crop: JamCrop; count: number; unitSale: number }
-  | { kind: 'oil'; count: number; unitSale: number }
-  | { kind: 'flour'; count: number; unitSale: number }
-  | { kind: 'extract'; count: number; unitSale: number }
+  | { kind: 'fruit'; crop: CropId; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean }
+  | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
+  | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
+  | { kind: 'spirit'; spirit: SpiritKind; variety: VarietyId; quality: number; count: number; unitSale: number }
+  | { kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count: number; unitSale: number }
+  | { kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count: number; unitSale: number }
+  | { kind: 'oil'; quality: number; count: number; unitSale: number }
+  | { kind: 'flour'; quality: number; count: number; unitSale: number }
+  | { kind: 'extract'; quality: number; count: number; unitSale: number }
   | { kind: 'rotten'; cls: CropClass; count: number }
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
@@ -154,7 +153,7 @@ export function compostValue(item: Item): number {
   if (item.kind === 'seeds') return COMPOST_VALUE.seeds * item.count
   if (item.kind === 'grass-seeds') return COMPOST_VALUE.seeds * item.count
   if (item.kind === 'fruit') {
-    return (item.rarity === 'heirloom' ? COMPOST_VALUE.heirloom : COMPOST_VALUE.fruit) * item.count
+    return COMPOST_VALUE.fruit * item.count
   }
   if (item.kind === 'sugar') return COMPOST_VALUE.fruit * item.liters
   if (item.kind === 'rotten') return COMPOST_VALUE.rotten * item.count
@@ -210,6 +209,16 @@ export function cropName(id: CropId): string {
   return CROP_NAME[id]()
 }
 
+export function jamJarName(crop: JamCrop, variety: VarietyId): string {
+  if (variety === 'concord') return m.names_jam_concord()
+  if (variety === 'black-raspberry') return m.names_jam_black_raspberry()
+  if (variety === 'montmorency') return m.names_jam_montmorency()
+  if (variety === 'blenheim') return m.names_jam_blenheim()
+  if (variety === 'san-marzano') return m.names_jam_san_marzano()
+  if (crop === 'tomato') return m.names_item_ketchup()
+  return m.hud_tool_jam({ name: cropName(crop) })
+}
+
 export function fruitMoney(it: { unitSale: number; count: number; freshness: number }): number {
   return it.unitSale * it.count * freshMul(it.freshness)
 }
@@ -236,15 +245,15 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'compost') return m.names_item_compost()
   if (it.kind === 'seeds') return m.hud_tool_seed({ name: cropName(it.crop) })
   if (it.kind === 'grass-seeds') return m.names_item_grass_seed()
-  if (it.kind === 'fruit') return cropVariety(it.crop, it.rarity)
+  if (it.kind === 'fruit') return cropVariety(it.crop, it.variety)
   if (it.kind === 'sugar') return m.names_item_sugar()
   if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]()
   if (it.kind === 'cask') return CASK_NAME[it.cask]()
-  if (it.kind === 'jam') return it.crop === 'tomato' ? m.names_item_ketchup() : m.hud_tool_jam({ name: cropName(it.crop) })
+  if (it.kind === 'jam') return jamJarName(it.crop, it.variety)
   if (it.kind === 'oil') return m.names_item_oil()
   if (it.kind === 'flour') return m.names_item_flour()
   if (it.kind === 'extract') return m.names_item_extract()
-  if (it.kind === 'tree-seed') return m.hud_tool_seed({ name: TREE_NAME[it.tree]() })
+  if (it.kind === 'tree-seed') return m.hud_tool_seed({ name: cropVariety(it.tree, it.variety) })
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
   if (it.kind === 'weed') return m.names_item_weed()
@@ -354,8 +363,8 @@ export function faceName(face: Face): string {
   }
 }
 
-export function caskAgeOf(item: { cask: CaskId; rarity: Rarity; unitSale: number }): number {
-  return item.unitSale / (CASK_SALE[item.cask] * SPIRIT_RARITY[item.rarity])
+export function caskAgeOf(item: { cask: CaskId; quality: number; unitSale: number }): number {
+  return item.unitSale / (CASK_SALE[item.cask] * qualityMul(item.quality))
 }
 
 export const CASK_NAME: { readonly [K in CaskId]: () => string } = {
@@ -413,32 +422,48 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
       capacity: item.capacityLiters,
     })
   }
-  if (item.kind === 'seeds') return m.hud_line_seed({ name: cropName(item.crop), count: item.count })
+  if (item.kind === 'seeds') {
+    return `${m.hud_line_seed({ name: cropVariety(item.crop, item.variety), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
   if (item.kind === 'grass-seeds') {
     return m.hud_line_grass_seed({ name: m.names_item_grass_seed(), count: item.count })
   }
   if (item.kind === 'fruit') {
-    return m.hud_line_fruit({
-      name: cropVariety(item.crop, item.rarity),
+    return `${m.hud_line_fruit({
+      name: cropVariety(item.crop, item.variety),
       count: item.count,
       pct: Math.floor(item.freshness * 100),
-    })
+    })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
-  if (item.kind === 'sugar') return m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })
-  if (item.kind === 'spirit') return m.hud_line_count({ name: SPIRIT_NAME[item.spirit](), count: item.count })
+  if (item.kind === 'sugar') {
+    return `${m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'spirit') {
+    return `${m.hud_line_count({ name: SPIRIT_NAME[item.spirit](), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
   if (item.kind === 'cask') {
     const mul = Number(caskAgeOf(item).toFixed(2))
-    if (mul > 1) return m.hud_line_cask_aged({ name: CASK_NAME[item.cask](), mul, count: item.count })
-    return m.hud_line_count({ name: CASK_NAME[item.cask](), count: item.count })
+    const line =
+      mul > 1
+        ? m.hud_line_cask_aged({ name: CASK_NAME[item.cask](), mul, count: item.count })
+        : m.hud_line_count({ name: CASK_NAME[item.cask](), count: item.count })
+    return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'jam') {
-    const name = item.crop === 'tomato' ? m.names_item_ketchup() : m.hud_tool_jam({ name: cropName(item.crop) })
-    return m.hud_line_count({ name, count: item.count })
+    return `${m.hud_line_count({ name: jamJarName(item.crop, item.variety), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
-  if (item.kind === 'oil') return m.hud_line_count({ name: m.names_item_oil(), count: item.count })
-  if (item.kind === 'flour') return m.hud_line_count({ name: m.names_item_flour(), count: item.count })
-  if (item.kind === 'extract') return m.hud_line_count({ name: m.names_item_extract(), count: item.count })
-  if (item.kind === 'tree-seed') return m.hud_line_tree_seed({ name: TREE_NAME[item.tree]() })
+  if (item.kind === 'oil') {
+    return `${m.hud_line_count({ name: m.names_item_oil(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'flour') {
+    return `${m.hud_line_count({ name: m.names_item_flour(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'extract') {
+    return `${m.hud_line_count({ name: m.names_item_extract(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'tree-seed') {
+    return `${m.hud_line_tree_seed({ name: cropVariety(item.tree, item.variety) })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
   if (item.kind === 'rotten') return m.hud_line_compost({ name: rottenName(item.cls), count: item.count })
   if (item.kind === 'dead') return m.hud_line_compost({ name: deadName(item.cls), count: item.count })
   if (item.kind === 'weed') return m.hud_line_compost({ name: m.names_item_weed(), count: item.count })
@@ -638,26 +663,26 @@ export function makeCompost(): Item {
   return { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS }
 }
 
-export function makeSugar(liters: number, capacityLiters: number, unitSale: number): Item {
-  return { kind: 'sugar', liters, capacityLiters, unitSale }
+export function makeSugar(liters: number, capacityLiters: number, unitSale: number, quality = 0): Item {
+  return { kind: 'sugar', liters, capacityLiters, unitSale, quality }
 }
 
 export function skuItem(id: SkuId): Face {
   switch (id) {
     case 'pack-carrot':
-      return { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 5 }
     case 'pack-potato':
-      return { kind: 'seeds', crop: 'potato', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'potato', variety: 'base', quality: 0, count: 5 }
     case 'pack-wheat':
-      return { kind: 'seeds', crop: 'wheat', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'wheat', variety: 'base', quality: 0, count: 5 }
     case 'pack-tomato':
-      return { kind: 'seeds', crop: 'tomato', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'tomato', variety: 'base', quality: 0, count: 5 }
     case 'pack-raspberry':
-      return { kind: 'seeds', crop: 'raspberry', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'raspberry', variety: 'base', quality: 0, count: 5 }
     case 'pack-grape':
-      return { kind: 'seeds', crop: 'grape', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'grape', variety: 'base', quality: 0, count: 5 }
     case 'pack-sugar-cane':
-      return { kind: 'seeds', crop: 'sugar-cane', rarity: 'common', count: 5 }
+      return { kind: 'seeds', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5 }
     case 'buy-shovel':
       return makeShovel('shovel')
     case 'buy-better-shovel':
@@ -771,13 +796,21 @@ export function skuItem(id: SkuId): Face {
 
 export function fruitStack(
   crop: CropId,
-  rarity: Rarity,
+  variety: VarietyId,
+  quality: number,
   count: number,
   unitSale: number,
   freshness: number,
   bio: boolean,
 ): FruitStack {
-  return { crop, rarity, count, unitSale, freshness, bio }
+  return { crop, variety, quality, count, unitSale, freshness, bio }
+}
+
+export function mergeQuality(
+  a: { quality: number; count: number },
+  b: { quality: number; count: number },
+): number {
+  return (a.quality * a.count + b.quality * b.count) / (a.count + b.count)
 }
 
 export type Countable = Extract<Item, { count: number }>
@@ -800,12 +833,12 @@ export function crafted(item: Countable): boolean {
 export function stackable(a: Countable, b: Countable): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'seeds' || a.kind === 'fruit') {
-    const o = b as Extract<Countable, { crop: CropId | AnnualId; rarity: Rarity }>
-    return a.crop === o.crop && a.rarity === o.rarity
+    const o = b as Extract<Countable, { crop: CropId | AnnualId; variety: VarietyId }>
+    return a.crop === o.crop && a.variety === o.variety
   }
-  if (a.kind === 'spirit') return a.spirit === (b as typeof a).spirit && a.rarity === (b as typeof a).rarity
-  if (a.kind === 'cask') return a.cask === (b as typeof a).cask && a.rarity === (b as typeof a).rarity
-  if (a.kind === 'jam') return a.crop === (b as typeof a).crop
+  if (a.kind === 'spirit') return a.spirit === (b as typeof a).spirit && a.variety === (b as typeof a).variety
+  if (a.kind === 'cask') return a.cask === (b as typeof a).cask && a.variety === (b as typeof a).variety
+  if (a.kind === 'jam') return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety
   if (a.kind === 'rotten' || a.kind === 'dead') return a.cls === (b as typeof a).cls
   return true
 }
@@ -815,9 +848,13 @@ export function mergeInto(a: Countable, b: Countable, n: number): void {
     const part = { ...b, count: n }
     a.unitSale = mergeUnitSale(a, part)
     a.freshness = mergeFreshness(a, part)
+    a.quality = mergeQuality(a, part)
     a.bio = a.bio && b.bio
   } else if ('unitSale' in a && 'unitSale' in b) {
     a.unitSale = mergeUnitSale(a, { ...b, count: n })
+    if ('quality' in a && 'quality' in b) a.quality = mergeQuality(a, { ...b, count: n })
+  } else if ('quality' in a && 'quality' in b) {
+    a.quality = mergeQuality(a, { ...b, count: n })
   }
   a.count += n
 }

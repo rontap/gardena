@@ -2,8 +2,8 @@ import { m } from '../../paraglide/messages.js'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
-import { CROPS, cropVariety } from '../defs/crops.ts'
-import { RATING_SALE, VARIETIES, useOf, type Rating, type VarietyId } from '../defs/varieties.ts'
+import { CROP_NAME, CROPS } from '../defs/crops.ts'
+import type { VarietyId } from '../defs/varieties.ts'
 import { JAM_ROT, SKILLS } from '../defs/skills.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { ANNUAL_IDS, TREE_IDS, type CropId, type TreeId } from '../sim/ids.ts'
@@ -987,113 +987,19 @@ function PipePane({ title, blurb }: { title: string; blurb: string }) {
   )
 }
 
-const BASE_VARIETY_DESC: { readonly [K in CropId]: () => string } = {
-  carrot: () => m.almanac_variety_desc_carrot(),
-  potato: () => m.almanac_variety_desc_potato(),
-  wheat: () => m.almanac_variety_desc_wheat(),
-  tomato: () => m.almanac_variety_desc_tomato(),
-  raspberry: () => m.almanac_variety_desc_raspberry(),
-  grape: () => m.almanac_variety_desc_grape(),
-  vanilla: () => m.almanac_variety_desc_vanilla(),
-  'sugar-cane': () => m.almanac_variety_desc_sugar_cane(),
-  apple: () => m.almanac_variety_desc_apple(),
-  apricot: () => m.almanac_variety_desc_apricot(),
-  olive: () => m.almanac_variety_desc_olive(),
-  cherry: () => m.almanac_variety_desc_cherry(),
-}
-
-const NAMED_VARIETY_DESC: { readonly [K in Exclude<VarietyId, 'base'>]: () => string } = {
-  bintje: () => m.almanac_variety_desc_bintje(),
-  'russian-banana': () => m.almanac_variety_desc_russian_banana(),
-  sonora: () => m.almanac_variety_desc_sonora(),
-  'red-fife': () => m.almanac_variety_desc_red_fife(),
-  'green-zebra': () => m.almanac_variety_desc_green_zebra(),
-  'san-marzano': () => m.almanac_variety_desc_san_marzano(),
-  'black-raspberry': () => m.almanac_variety_desc_black_raspberry(),
-  concord: () => m.almanac_variety_desc_concord(),
-  thompson: () => m.almanac_variety_desc_thompson(),
-  keknyelu: () => m.almanac_variety_desc_keknyelu(),
-  'kingston-black': () => m.almanac_variety_desc_kingston_black(),
-  'pink-lady': () => m.almanac_variety_desc_pink_lady(),
-  moorpark: () => m.almanac_variety_desc_moorpark(),
-  klosterneuburger: () => m.almanac_variety_desc_klosterneuburger(),
-  blenheim: () => m.almanac_variety_desc_blenheim(),
-  kalamata: () => m.almanac_variety_desc_kalamata(),
-  arbequina: () => m.almanac_variety_desc_arbequina(),
-  montmorency: () => m.almanac_variety_desc_montmorency(),
-  bing: () => m.almanac_variety_desc_bing(),
-}
-
-function varietyDesc(crop: CropId, v: VarietyId): string {
-  if (v === 'base') return BASE_VARIETY_DESC[crop]()
-  return NAMED_VARIETY_DESC[v]()
-}
-
-function pathLabel(path: 'preserve' | 'fresh' | 'alcohol'): string {
-  if (path === 'preserve') return m.names_path_preserve()
-  if (path === 'fresh') return m.names_path_fresh()
-  return m.names_path_alcohol()
-}
-
-function PathLine({ path, rating }: { path: 'preserve' | 'fresh' | 'alcohol'; rating: Rating | 'none' }) {
-  if (rating === 'none') return null
-  return (
-    <div className="text-sm">
-      {pathLabel(path)} {rating}
-    </div>
-  )
-}
-
 function fruitFace(crop: CropId, variety: VarietyId, sale: number): Face {
   return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, bio: true, cut: false }
 }
 
-function VarietyRow({
-  crop,
-  selected,
-  onSelect,
-}: {
-  crop: CropId
-  selected: VarietyId
-  onSelect: (v: VarietyId) => void
-}) {
-  return (
-    <div className="mb-3 flex flex-wrap gap-2">
-      {VARIETIES[crop].map(v => {
-        const use = useOf(crop, v)
-        return (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onSelect(v)}
-            className={`flex min-w-24 flex-col gap-1 px-2 py-2 text-left ${v === selected ? 'bg-dirt' : 'bg-ink/6 hover:bg-ink/12'}`}
-          >
-            <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-              <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruitFace(crop, v, 0)) }} />
-            </div>
-            <div className="text-sm font-semibold">{cropVariety(crop, v)}</div>
-            <PathLine path="preserve" rating={use.preserve} />
-            <PathLine path="fresh" rating={use.fresh} />
-            <PathLine path="alcohol" rating={use.alcohol} />
-            <div className="text-sm text-ink/70">{varietyDesc(crop, v)}</div>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
   const d = CROPS[id]
-  const [preview, setPreview] = useState<VarietyId>('base')
   const stage = useCycle(3)
-  const ripe = ripeGroup(id, preview)
-  const st = statsOf(id, preview, 0, [])
-  const product = faceGfx(fruitFace(id, preview, st.sale))
-  const plant = STAGES[stage] === 'ripe' ? ripe : STAGES[stage]
+  const st = statsOf(id, 'base', 0, [])
+  const product = faceGfx(fruitFace(id, 'base', st.sale))
+  const plant = STAGES[stage] === 'ripe' ? ripeGroup('base') : STAGES[stage]
   return (
     <>
-      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[id]()}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
       {id === 'sugar-cane' ? (
         <div className="mb-3 text-base leading-relaxed text-ink/70">{m.almanac_mill_cane({ cane: MILL_IN, liters: SUGAR_BAG })}</div>
@@ -1106,7 +1012,6 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
           <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: cropInner(id, plant) }} />
         </div>
       </div>
-      <VarietyRow crop={id} selected={preview} onSelect={setPreview} />
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
           label={m.almanac_stat_grow()}
@@ -1140,7 +1045,7 @@ function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
           kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
-      <Ingredients face={fruitFace(id, preview, st.sale)} done={done} />
+      <Ingredients face={fruitFace(id, 'base', st.sale)} done={done} />
     </>
   )
 }
@@ -1172,30 +1077,28 @@ function treeRotMax(): number {
 function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
   const d = CROPS[id]
   const def = TREES[id]
-  const [preview, setPreview] = useState<VarietyId>('base')
   const stages = ['trunk', 'grow', 'unripe', 'ripe'] as const
   const stage = useCycle(stages.length)
-  const st = statsOf(id, preview, 0, [])
+  const st = statsOf(id, 'base', 0, [])
   const every = 1 / def.fruitSeconds
   const everyMin = 1 / treeMax('fruitSeconds')
   const everyMax = 1 / treeMin('fruitSeconds')
-  const sale = d.sale * RATING_SALE[useOf(id, preview).fresh]
+  const sale = st.sale
   return (
     <>
-      <div className="mb-2 text-lg leading-relaxed text-ink">{cropVariety(id, preview)}</div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[id]()}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
       <div className="mb-3 text-base leading-relaxed text-ink/70">
         {m.almanac_tree_drops({ days: TREE_YIELD_DAYS, mul: TREE_YIELD_MUL, off: TREE_OFF_MUL })}
       </div>
       <div className="mb-3 flex flex-wrap gap-3">
         <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruitFace(id, preview, sale)) }} />
+          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruitFace(id, 'base', sale)) }} />
         </div>
         <div className="flex h-20 w-10 items-center justify-center bg-grass">
-          <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage], preview) }} />
+          <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage], 'base') }} />
         </div>
       </div>
-      <VarietyRow crop={id} selected={preview} onSelect={setPreview} />
       <div className="flex flex-col gap-2 text-base text-ink">
         <Stat
           label={m.almanac_stat_juvenile()}
@@ -1218,7 +1121,7 @@ function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
           kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
         />
       </div>
-      <Ingredients face={fruitFace(id, preview, sale)} done={done} />
+      <Ingredients face={fruitFace(id, 'base', sale)} done={done} />
     </>
   )
 }

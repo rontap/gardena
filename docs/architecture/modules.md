@@ -10,7 +10,7 @@
 |---|---|
 | `crops.ts` | `CROPS`, `HAPPY_*` |
 | `trees.ts` | `TREES`, `TREE_YIELD_*` |
-| `varieties.ts` | `VarietyId`, `VarietyTier`, `Use`, `VARIETY`, `VARIETIES`, `RATING_SALE`, `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT`, `QUALITY_TOP`, `QUALITY_STEP`, `BETTER_QUALITY`, `NEIGHBOUR_IDS`, `NEIGHBOUR_REACH` |
+| `varieties.ts` | `VarietyId`, `VarietyTier`, `Purpose`, `VARIETY`, `VARIETIES`, `PURPOSE_MUL`, `purposeMul`, `purposeOf`, `tierOf`, `caskGroup`, `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT`, `QUALITY_TOP`, `QUALITY_STEP`, `BETTER_QUALITY`, `NEIGHBOUR_IDS`, `NEIGHBOUR_REACH` |
 | `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` |
 | `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `buy-furnace`, `buy-axe`, `buy-research-station` |
 | `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS` |

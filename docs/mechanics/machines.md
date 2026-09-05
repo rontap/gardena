@@ -72,7 +72,7 @@ Blue chute west, green chute east. Always painted, under the machine and chest. 
 
 `{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `count` on sugar. Merge: weighted `unitSale` and `quality` by liters; `liters` sums; `capacityLiters` sums. Shop sugar quality 0.
 
-`SUGAR_BAG`. Mill output `unitSale` `SUGAR_MILL × RATING_SALE[preserve] × qualityMul(mean q)`. Shop `buy-sugar` `SUGAR_SHOP` for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
+`SUGAR_BAG`. Mill output `unitSale` `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Shop `buy-sugar` `SUGAR_SHOP` for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
 
 Growing + milling cane is cheaper per liter than shop (`SUGAR_MILL < SUGAR_SHOP`). Cane fruit also sells as fruit.
 
@@ -84,15 +84,15 @@ Hopper. First accepted dump locks `recipe` + `variety`. Later dumps must match b
 
 Need: cane / olive / wheat `MILL_IN`. Grass `MILL_GRASS` — `{ kind: 'grass' }`, not grass-seeds. Vanilla `MILL_VANILLA_IN` 2 — preference. `millNeed('vanilla')` is `MILL_VANILLA_IN`. `MILL_VANILLA_OUT` 3 — preference. `millRecipeOf`: grass, or fruit sugar-cane | olive | wheat | vanilla.
 
-Running mean `quality` weighted by units. At `units >= need`: tick `progress += dt × machineMul / MILL_WORK`. At 1: consume need, drop output `frontOf` (compost rule: no plot → wait), leftover stays. Output quality is the mean of what went in. Output sale takes `RATING_SALE[preserve]` of the locked variety × `qualityMul(mean q)`.
+Running mean `quality` weighted by units. At `units >= need`: tick `progress += dt × machineMul / MILL_WORK`. At 1: consume need, drop output `frontOf` (compost rule: no plot → wait), leftover stays. Output quality is the mean of what went in. Output sale takes `purposeMul(locked variety, 'processed')` × `qualityMul(mean q)`.
 
 | recipe | in | out |
 |---|---|---|
-| `'sugar-cane'` | `MILL_IN` fruit | sugar `SUGAR_BAG` L, `SUGAR_MILL × RATING_SALE[preserve] × qualityMul` |
-| `'olive'` | `MILL_IN` fruit | `{ kind: 'oil'; quality }` `OIL × RATING_SALE[preserve] × qualityMul` |
-| `'wheat'` | `MILL_IN` fruit | `{ kind: 'flour'; quality }` `FLOUR × RATING_SALE[preserve] × qualityMul` |
+| `'sugar-cane'` | `MILL_IN` fruit | sugar `SUGAR_BAG` L, `SUGAR_MILL × purposeMul(v, 'processed') × qualityMul` |
+| `'olive'` | `MILL_IN` fruit | `{ kind: 'oil'; quality }` `OIL × purposeMul(v, 'processed') × qualityMul` |
+| `'wheat'` | `MILL_IN` fruit | `{ kind: 'flour'; quality }` `FLOUR × purposeMul(v, 'processed') × qualityMul` |
 | `'grass'` | `MILL_GRASS` grass | `{ kind: 'extract' }` count 1, `EXTRACT`, quality 0 |
-| `'vanilla'` | `MILL_VANILLA_IN` fruit | `{ kind: 'extract'; quality }` count `MILL_VANILLA_OUT`, `EXTRACT × RATING_SALE[preserve] × qualityMul` |
+| `'vanilla'` | `MILL_VANILLA_IN` fruit | `{ kind: 'extract'; quality }` count `MILL_VANILLA_OUT`, `EXTRACT × purposeMul(v, 'processed') × qualityMul` |
 
 `MILL_RECIPES` order: sugar-cane olive wheat grass vanilla.
 
@@ -134,7 +134,7 @@ Assumption: jam output quality is the mean of the fruit that went in.
 
 At `fruit >= JAM_IN` and `sugar >= JAM_SUGAR`: `progress += dt × machineMul / JAM_SECONDS`. At 1: `fruit -= JAM_IN`, `sugar -= JAM_SUGAR`, drop jam `frontOf` (wait if no plot).
 
-`{ kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count; unitSale }`. `unitSale` `JAM_SALE[crop] × RATING_SALE[preserve] × qualityMul(mean q)`. `JAM_CROPS` 5. No apple. Grape jam stays. Apricot / cherry / tomato / raspberry jam stay.
+`{ kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count; unitSale }`. `unitSale` `JAM_SALE[crop] × purposeMul(variety, 'processed') × qualityMul(mean q)`. `JAM_CROPS` 5. No apple. Grape jam stays. Apricot / cherry / tomato / raspberry jam stay.
 
 Five varieties have a real product of their own and get a name; every other variety falls back to the plain jam of its crop, and `'base'` tomato keeps **Ketchup**.
 
@@ -142,8 +142,6 @@ Five varieties have a real product of their own and get a name; every other vari
 |---|---|
 | `concord` | Grape jelly |
 | `black-raspberry` | Black raspberry jam |
-| `montmorency` | Sour cherry preserve |
-| `blenheim` | Blenheim apricot jam |
 | `san-marzano` | Passata |
 
 Almanac jam plate on `JamCrop` Ingredients iff `unlock-preservatives` done — `recipesUsing`, not a hardcoded fruit-row plate. Tomato face **Ketchup** when variety is `'base'`. [[ui/almanac]]
@@ -160,7 +158,7 @@ No lock, it still mixes. Feed `{ crop: StillCrop; variety: VarietyId; quality: n
 
 `spiritKind`: all potato → `vodka`; all wheat → `beer`; all apricot → `brandy`; else `mixed`.
 
-On finish: if every unit shares one crop **and** one variety, the batch is that crop's named spirit at that variety — `SPIRIT_SALE[spirit] × RATING_SALE[alcohol] × qualityMul(mean q)`. Anything else is `mixed`, at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)` with a neutral rating. One variety or mixed; there is no partial credit.
+On finish: if every unit shares one crop **and** one variety, the batch is that crop's named spirit at that variety — `SPIRIT_SALE[spirit] × purposeMul(variety, 'alcohol') × qualityMul(mean q)`. `klosterneuburger` brandy carries a name of its own, `spiritName(spirit, variety)`, the way a named jam does; no new `SpiritKind`, no new `StallGoodId`, no new icon. Anything else is `mixed`, at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)` at the neutral rate. One variety or mixed; there is no partial credit.
 
 ```
 Spirit =
@@ -184,9 +182,9 @@ Collect after mature only. Same `act: 'barrel'`: empty hand or a mergeable cask 
 
 Age mul: linear `1 → caskAgeTop(q)` over `BARREL_AGE` after mature. Clamp at `caskAgeTop`.
 
-Cask item `{ kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count; unitSale }`. Age baked into `unitSale` at collect: `CASK_SALE[cask] × RATING_SALE[alcohol] × qualityMul(q) × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
+Cask item `{ kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count; unitSale }`. Age baked into `unitSale` at collect: `CASK_SALE[cask] × purposeMul(variety, 'alcohol') × qualityMul(q) × ageMul`. `count` 1. One barrel SKU. Illegal whisky.
 
-`caskAgeTop` lerps `CASK_AGE_MIN` to `CASK_AGE_MAX` over quality. `caskAgeOf(item)` reads that multiplier back out of `unitSale` — no age field on the item. `itemLine` and `itemTip` show it when it rounds above 1. Stacking: `stackable` matches on `cask` + `variety`, and `mergeInto` averages `unitSale` and `quality` weighted by count, so merging a fresh cask into an aged one keeps the total worth intact.
+`caskAgeTop` lerps `CASK_AGE_MIN` to `CASK_AGE_MAX` over quality. `caskMulOf(item)` = `unitSale / (CASK_SALE[cask] × qualityMul(quality))` reads purpose and age back out as one multiplier — no age field on the item, and no coupling to the purpose table. `itemLine` and `itemTip` show it when it rounds off 1. Cask, spirit and jam lines all carry that `×{mul}`; the cask keeps one plain name per `CaskId`, and only the heirloom tier draws its own jar. Stacking: `stackable` matches on `cask` + `variety`, and `mergeInto` averages `unitSale` and `quality` weighted by count, so merging a fresh cask into an aged one keeps the total worth intact.
 
 Assumption: `caskAgeTop(0)` matches today's lowest cap, `caskAgeTop(1)` the top cap.
 
@@ -328,9 +326,9 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace,
 
 ## Invariants
 
-`machines.sugar` — Ripe cane harvests as fruit. Mill `MILL_IN` cane → `SUGAR_BAG` at `SUGAR_MILL × RATING_SALE[preserve] × qualityMul`. Sugar `{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `sugar.count`. Sugar does not tick freshness. Shop sugar quality 0.
+`machines.sugar` — Ripe cane harvests as fruit. Mill `MILL_IN` cane → `SUGAR_BAG` at `SUGAR_MILL × purposeMul(v, 'processed') × qualityMul`. Sugar `{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `sugar.count`. Sugar does not tick freshness. Shop sugar quality 0.
 
-`machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT × RATING_SALE[preserve] × qualityMul`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. Grass extract quality 0. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla. Almanac extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.
+`machines.mill-vanilla` — Mill recipe `'vanilla'`: `MILL_VANILLA_IN` vanilla fruit → `{ kind: 'extract' }` count `MILL_VANILLA_OUT`, `unitSale` `EXTRACT × purposeMul(v, 'processed') × qualityMul`. Same stall good as grass mill. `millProductName('vanilla')` is `vanilla extract`. Grass name unchanged. Grass extract quality 0. No new SKU. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla. Almanac extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.
 
 `machines.barrel` — Barrel locks one `BarrelCrop` + variety on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS` varieties. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged. `caskAgeTop(q)` lerps the cap over quality. Past `BARREL_MATURE` the look block carries a second line naming the cask, the variety it was made from, `BARREL_AGE / DAY_SECONDS` days and `caskAgeTop(q)` — [[ui/machines]]. Maturing carries no such line.
 
@@ -360,7 +358,7 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace,
 
 `still.variety` — On finish: every unit one crop and one variety → that crop's named spirit at that variety. Else `mixed` at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)`, neutral rating. One variety or mixed.
 
-`machines.quality-carry` — Output quality is the mean of what went in. Output sale takes `RATING_SALE` of the input variety on that machine's path × `qualityMul`. `pathSale(crop, variety, path)` is the one reading of it; an absent path (`'none'`) reads `NO_PATH_SALE` 1.
+`machines.quality-carry` — Output quality is the mean of what went in. Output sale takes `purposeMul(input variety, that machine's path)` × `qualityMul`. Which machines a crop can reach is `MILL_RECIPES` / `JAM_CROPS` / `STILL_CROPS` / `BARREL_CROPS`, not a variety field.
 
 `station.cut` — Fruit `cut: boolean` required, `false` from the field. Station returns `cut = true` and refuses `cut === true`. Cut fruit is otherwise ordinary. Illegal: optional `cut`.
 
@@ -368,7 +366,9 @@ Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace,
 
 `variety.copy` — Station grafts are the locked variety at input quality.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill rows pinned to each variety of `MILL_RECIPES` crops (grass: one); inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla). Jam rows pinned to each variety of `JAM_CROPS`, carry `JAM_IN` fruit and `JAM_SUGAR` liters. No apple jam. Named jam titles on `concord` `black-raspberry` `montmorency` `blenheim` `san-marzano`; `'base'` tomato is Ketchup. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed / tree-seed faces. Compost lists four recipes; the box counts `COMPOST_NEED` waste. Furnace lists six recipes; the machine counts `FURNACE_NEED` units. Barrel `BARREL_CROPS` varieties, inputs equal `barrelNeed`, `age` not `work`. Station rows pinned to each `heirloom` fruit. `recipesUsing` matches `one` inputs on crop + variety.
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration. Mill, jam, still and barrel pin every variety of their crops (grass: one); mill inputs equal `millNeed` (`MILL_VANILLA_IN` on vanilla), jam rows carry `JAM_IN` fruit and `JAM_SUGAR` liters, barrel inputs equal `barrelNeed` and `age` not `work`. No apple jam. Named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup. Grinder yields `GRIND_MIN`..`GRIND_MAX` with seed / tree-seed faces. Compost lists four recipes; the box counts `COMPOST_NEED` waste. Furnace lists six recipes; the machine counts `FURNACE_NEED` units. Station rows pinned to each `heirloom` fruit.
+
+`machines.recipe-collapse` — `recipesOf(machine)` is the catalog listing and collapses; the per-variety rows behind it stay whole for `craftState`. Rows of one machine and one crop whose output reads the same name and draws the same group (`sameProduct`) merge into one row whose fruit input becomes `{ kind: 'any'; faces }` and cycles — [[ui/recipe]]. A product the player can tell apart keeps its own row. `recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop; it never matches the grinder, furnace or mixed-still rows, which take many crops.
 
 `machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` on the `water` face and `STILL_CAP` fruit.
 

@@ -4,7 +4,7 @@ Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineV
 
 Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
 
-Player words on this HUD: **Variety**, **Quality** as `floor(quality * 100)%`, paths **Preserving** / **Fresh** / **Alcohol**. A rating number never appears without its path. `tier` is vault-only.
+Player words on this HUD: **Variety** as `{Crop} ({Variety})`, **Quality** as `floor(quality * 100)%`. `tier` and `purpose` are vault-only; a purpose reaches the player as **Fresh** / **Preserving** / **Alcohol** on the seed callout — [[ui/store]] — and as the `×{mul}` on a cask, spirit or jam line.
 
 Held, tooltip, silo cell, shop seed card: Variety name, Quality as that percent. Shop pack is `'base'` at Quality 0. Faces carry no mark — the Variety group is the face. [[architecture/view]] [[ui/store]]
 
@@ -61,7 +61,7 @@ Hovering a `chest` or `freezer` that holds anything adds one block under the loo
 
 ## Barrel aging
 
-Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskAgeOf` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskAgeOf` still reads the multiplier back out of `unitSale`. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
+Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskMulOf` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskMulOf` reads purpose and age back out of `unitSale` as one multiplier. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
 
 ## Ripe
 

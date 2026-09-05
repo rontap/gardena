@@ -55,31 +55,25 @@ HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech
 Group selection is by Variety, not a ladder.
 
 ```
-VarietyGroup = 'base' | 'variant' | 'variant-2' | 'heirloom'
+VarietyGroup = VarietyTier = 'base' | 'variant' | 'heirloom'
+CaskGroup    = 'base' | 'heirloom'
 TreeStage    = 'trunk' | 'grow' | 'unripe' | 'ripe'
 CropStage    = 'sprout' | 'grow' | 'ripe' | 'dead'
 ```
 
-`varietyGroup(crop, variety): VarietyGroup`
+`varietyGroup(variety)` **is** `tierOf(variety)`. A crop carries at most one `variant` and at most one `heirloom`, so the group is the tier — nothing positional, nothing to order.
 
-| Variety | group |
-|---|---|
-| `'base'` | `'base'` |
-| `VARIETY[v].tier === 'heirloom'` | `'heirloom'` |
-| first `tier` `'variant'` of that crop, two variants | `'variant'` |
-| first `tier` `'variant'` of that crop, one variant | `'variant-2'` |
-| second `tier` `'variant'` of that crop | `'variant-2'` |
+Illegal: comparing two Varieties. Illegal: a group from anything but `VARIETY`.
 
-Illegal: comparing two Varieties. Illegal: a group from anything but `VARIETIES[crop]` + `VARIETY`.
+| `VarietyGroup` | plant ripe | fruit / graft | tree mature | cask |
+|---|---|---|---|---|
+| `'base'` | `ripe` | `base` | `ripe` | `base` |
+| `'variant'` | `ripe-variant` | `variant` | `ripe-variant` | `base` |
+| `'heirloom'` | `ripe-heirloom` | `heirloom` | `ripe-heirloom` | `heirloom` |
 
-| `VarietyGroup` | plant ripe | fruit / cask / graft | tree mature |
-|---|---|---|---|
-| `'base'` | `ripe` | `base` | `unripe` / `ripe` |
-| `'variant'` | `ripe-variant` | `variant` | `unripe-variant` / `ripe-variant` |
-| `'variant-2'` | `ripe-variant-2` | `variant-2` | `unripe-variant-2` / `ripe-variant-2` |
-| `'heirloom'` | `ripe-heirloom` | `heirloom` | `unripe-heirloom` / `ripe-heirloom` |
+Tree `trunk`, `grow` and `unripe` are shared, not Variety — unripe fruit does not show what it will become. `caskGroup` collapses `'variant'` onto `'base'`, so a variant wine is the plain jar and carries its worth in `×{mul}` instead. Fruit `fruit-${CropId}:${VarietyGroup}`. Plant `crop-${CropId}:${CropStage}` with ripe from `ripeGroup`. Tree atlas `tree-${TreeId}:${TreeAtlasStage}`. Cask `cask-${CaskId}-${CaskGroup}`.
 
-Cask still has three groups; `'variant-2'` shares `'variant'` on wine / cider until Sprint 4. Tree `trunk` / `grow` are shared, not Variety. Fruit `fruit-${CropId}:${VarietyGroup}`. Plant `crop-${CropId}:${CropStage}` with ripe from `varietyGroup`. Tree atlas `tree-${TreeId}:${group}` for each mature id. Cask `cask-${CaskId}:${VarietyGroup}`.
+A file carries exactly the groups `VARIETIES[crop]` asks for and no others — `atlas.test.ts` `view.groups` sweeps every key the loader builds against the file it reads. `groupOf` throws outside its `try`, so a missing group is a permanent, cached atlas boot failure.
 
 ```
 AtlasKey +=
@@ -186,7 +180,9 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.vfx.drain` — `VfxLayer.tick` drains `World.bursts` every frame. Do not wait for `DirtyReason` `'vfx'`. Vertex: sprite `anchor` 0.5 at the vertex (px). Cell: origin at the cell corner. `__view.vfxN` is visible VFX sprite count this frame. Locator `data-vfx` is not proof of paint. Working furnace mounts `furnace` at the south cell and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.
 
-`view.variety` — Plant ripe, fruit, cask, tree unripe/ripe, and graft faces select `varietyGroup(crop, variety)`. Never a ladder. Two Varieties of one crop that share a `tier` `'variant'` take `'variant'` then `'variant-2'` in `VARIETIES[crop]` order. One such Variety takes `'variant-2'` (the distinct face). HUD chrome uses the same selector in `svgs.ts`.
+`view.variety` — Plant ripe, fruit, cask, tree ripe, and graft faces select the Variety's `tier` as its group. Never a ladder, never positional: one crop carries at most one `'variant'` and one `'heirloom'`. Unripe trees carry no Variety. `caskGroup` collapses `'variant'` onto `'base'`. HUD chrome uses the same selector in `svgs.ts`.
+
+`view.groups` — Every `<g id>` the atlas asks for exists in the file it reads, and the file carries no group the atlas never asks for.
 
 Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
 Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.

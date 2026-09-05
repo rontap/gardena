@@ -26,10 +26,10 @@ import {
   CASK_AGE_MIN,
   CASK_SALE,
 } from '../defs/items.ts'
-import { NO_PATH_SALE, pathSale, qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
+import { purposeMul, qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
 import { STATION_IN } from '../defs/items.ts'
 import type { BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
-import { CROP_OF_CASK, CROP_OF_SPIRIT, isAnnualId, SPIRIT_OF } from './ids.ts'
+import { isAnnualId, SPIRIT_OF } from './ids.ts'
 import type {
   Barrel,
   CompostBox,
@@ -86,7 +86,7 @@ export function millProductName(recipe: MillRecipe): string {
 }
 
 export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: number): Item {
-  const rate = recipe === 'grass' ? NO_PATH_SALE : pathSale(recipe, variety, 'preserve')
+  const rate = recipe === 'grass' ? 1 : purposeMul(variety, 'processed')
   const mul = rate * qualityMul(quality)
   if (recipe === 'sugar-cane') {
     return { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL * mul, quality }
@@ -421,7 +421,7 @@ export function mixQuality(prevQ: number, prevN: number, addQ: number, addN: num
 
 export function bakeSpiritSale(kind: SpiritKind, variety: VarietyId, quality: number): number {
   if (kind === 'mixed') return SPIRIT_SALE.vodka * MIXED_MUL * qualityMul(quality)
-  return SPIRIT_SALE[kind] * pathSale(CROP_OF_SPIRIT[kind], variety, 'alcohol') * qualityMul(quality)
+  return SPIRIT_SALE[kind] * purposeMul(variety, 'alcohol') * qualityMul(quality)
 }
 
 export function caskAgeTop(quality: number): number {
@@ -435,12 +435,11 @@ export function caskAgeMul(age: number, quality: number): number {
 }
 
 export function bakeCaskSale(cask: CaskId, variety: VarietyId, quality: number, age: number): number {
-  const rate = pathSale(CROP_OF_CASK[cask], variety, 'alcohol')
-  return CASK_SALE[cask] * rate * qualityMul(quality) * caskAgeMul(age, quality)
+  return CASK_SALE[cask] * purposeMul(variety, 'alcohol') * qualityMul(quality) * caskAgeMul(age, quality)
 }
 
 export function jamSale(crop: JamCrop, variety: VarietyId, quality: number): number {
-  return JAM_SALE[crop] * pathSale(crop, variety, 'preserve') * qualityMul(quality)
+  return JAM_SALE[crop] * purposeMul(variety, 'processed') * qualityMul(quality)
 }
 
 export function mergeSugar(

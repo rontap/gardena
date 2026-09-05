@@ -27,24 +27,15 @@ Building stays fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No w
 
 Crop and Tree panes carry `CROPS.desc` under the name.
 
-## Variety row
+## The base plant only
 
-CropPane / TreePane: no ladder tabs. The pane grows a Variety row — one cell per `VARIETIES[crop]`, in list order. Grape and apricot fill four. Carrot, vanilla, sugar-cane fill one. Do not pad empty slots.
+CropPane / TreePane show the crop, not its Varieties. No Variety row, no per-Variety description, no path ratings, no selector. Every face, stat and Recipe on the pane is `'base'`. The Almanac is where a player learns what a crop is; what a Variety is for is read where they pick one — the seed silo and shop seed callout — [[ui/store]].
 
-Each cell:
+Fruit row: fruit face + plant/tree prop at `'base'`. Same `flex gap-3` `flex-wrap`. Plant art cycles `sprout` / `grow` / `ripe`. Tree prop cycles `trunk` / `grow` / `unripe` / `ripe`. [[architecture/view]]
 
-| slot | content |
-|---|---|
-| face | fruit face for that Variety, `h-20 w-20` `bg-dirt-dark`, no caption |
-| name | Variety name from `names` |
-| paths | **Preserving** / **Fresh** / **Alcohol** each with its `Rating` 1..5. Omit a path at `'none'`. Never a bare number without the path |
-| description | one line, the real thing that Variety is known for. Bintje: **A Dutch potato grown for frying and for spirit.** Full set `almanac_variety_desc_*` |
+Illegal: a Variety row. Illegal: a ladder. Illegal: a rating number.
 
-Click selects. Default `'base'`. Selected cell `bg-dirt`. Stats, plant/tree prop preview, and Ingredients follow the selection.
-
-Fruit row above the Variety row stays fruit face + plant/tree prop of the **selected** Variety only. Same `flex gap-3` `flex-wrap`. Plant art cycles `sprout` / `grow` / ripe-group of that Variety. Tree prop cycles `trunk` / `grow` / `unripe` / `ripe`; Variety group on `unripe` / `ripe`. [[architecture/view]]
-
-Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink. Numbers: `statsOf(crop, variety, 0, [])` so Sell is `CROPS.sale × RATING_SALE[use.fresh]` at Quality 0. Seed price is the pack of `'base'` only.
+Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink. Numbers: `statsOf(crop, 'base', 0, [])` so Sell is `CROPS.sale` at Quality 0. Seed price is the pack of `'base'` only.
 
 Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Extract, flour, brandy, mill sugar sit in Ingredients. [[ui/recipe]]
 
@@ -76,11 +67,11 @@ Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. 
 
 Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only.
 
-`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipes-using`. CropPane / TreePane pass that Variety's fruit face (`crop` + `variety`). `recipesUsing` matches a `one` input on crop + Variety. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Fruit furnace rows are `any` — skipped. A path at `'none'` has no `one` row, so it does not appear.
+`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipe-collapse`. CropPane / TreePane pass the `'base'` fruit face. `recipesUsing` matches a `one` input on crop + Variety, and a collapsed `any` input whose faces are all one crop. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Furnace, grinder and mixed-still rows take many crops — skipped. A crop no machine accepts has no row, so it does not appear.
 
 Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Named jam, mill good, spirit, cask show when the recipe matches. No hardcoded plate list.
 
-Hover a plate: Overlay `aside` [[ui/callout-hover]] `right`. Title `faceName` of the yield. Body: `Coin` of baked `unitSale` at Quality 0 × that path's `RATING_SALE`, then that recipe `Recipes` `{ kind: 'one'; recipe }` `sm` — [[ui/recipe]]. Leave clears. Plates take pointer events; recipe rows do not.
+Hover a plate: Overlay `aside` [[ui/callout-hover]] `right`. Title `faceName` of the yield. Body: `Coin` of baked `unitSale` at Quality 0, then that recipe `Recipes` `{ kind: 'one'; recipe }` `sm` — [[ui/recipe]]. Leave clears. Plates take pointer events; recipe rows do not.
 
 Illegal: extra product plates on the fruit row. Illegal: olive on Seeds. Illegal: a Variety row that is a ladder.
 
@@ -126,7 +117,7 @@ Link concept names, Overview on the three tabs that have it, and a few example S
 
 ## Copy law
 
-Every value is qualified: subject + amount + unit/noun + where it applies. Quality is a percent of how the plant was treated. Variety is what the plant is. A path rating is **Preserving** / **Fresh** / **Alcohol** plus the number.
+Every value is qualified: subject + amount + unit/noun + where it applies. Quality is a percent of how the plant was treated. Variety is what the plant is. A purpose is **Fresh** / **Preserving** / **Alcohol** plus what it pays.
 
 Undefined words are illegal unless a natural farming word, or this page (or a linked page) has already defined them.
 
@@ -140,7 +131,7 @@ Still forbidden: stall, rolled, RNG, water lives, spoils soonest, SKU dumps.
 
 Coin `<Coin />` for money amounts.
 
-Variety and Quality concept copy, Variety descriptions, Seeds Overview links to those two: `almanac_variety_p1` `almanac_quality_p1` `almanac_seeds_p2_*` `almanac_seeds_p3_*` `almanac_variety_desc_*`.
+Variety and Quality concept copy, Seeds Overview links to those two: `almanac_variety_p1` `almanac_quality_p1` `almanac_seeds_p2_*` `almanac_seeds_p3_*`. The `almanac_variety_desc_*` keys are no longer read.
 
 ## Overview
 
@@ -164,17 +155,17 @@ Forbidden: Overview as a link-list of the tab’s SKUs. Research-gated walkthrou
 
 Automation here is the **concept page**, not a second copy of the SKU tab.
 
-**Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. Copy: **Variety is what the plant is. Potato and Bintje are two Varieties of potato — siblings, not steps. Each Variety carries Preserving, Fresh, and Alcohol, each with a number from 1 to 5, or no number if that crop has no such path. Preserving is jam and the mill. Fresh is fruit sold as it is. Alcohol is the Pot still and the Barrel. The Market pays more for a high number on the path of the good you made.**
+**Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. Copy: **Variety is what the plant is. Potato and Bintje are two Varieties of potato — siblings, not steps. Each Variety is good for one of three things: Fresh, the fruit sold as it is; Preserving, the Jam machine and the Mill; or Alcohol, the Pot still and the Barrel. The Market pays more for a Variety used the way it is meant, and less for one used any other way. The plain crop is even at all three.**
 
 **Quality** is how well the plant was treated. A percent. Sale, seed carry, stack average. Bought seed starts at nothing. Copy: **Quality is how well the plant was treated, shown as a percent. The Market pays more for higher Quality fruit of the same Variety. A seed you shovel keeps that plant's Quality, and a stack of the same Variety averages Quality. Seed you buy starts at 0%. Happiness while the plant grows is the live care; Quality is set when the fruit ripens. Tree fruit is 0%.**
 
 ## TreePane
 
-Same shell as CropPane: Variety row, fruit face + 24×48 prop, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. Variety row previews dropped fruit of that Variety — the tree's growth stage is not a Variety. Name is the Variety. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane, `recipesUsing` on that Variety's fruit.
+Same shell as CropPane: fruit face + 24×48 prop at `'base'`, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. No Variety row. Name is the species. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane, `recipesUsing` on that Variety's fruit.
 
 Line under desc: **Drops on the grass. {TREE_YIELD_DAYS} days at ×{TREE_YIELD_MUL}, then ×{TREE_OFF_MUL}.** Does not say yielding / resting. Look / inspect words are on-season / off-season — [[ui/inspect]].
 
-Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale × RATING_SALE[use.fresh]` at Quality 0), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price. Numbers: [[mechanics/trees]]. Tree fruit Quality is 0.
+Rows: Juvenile (`juvenileSeconds`), Fruit every (`1 / fruitSeconds`), Sell (`CROPS.sale` at Quality 0), Freshness (`rotSeconds`). No Water. No Yield. No Drink. No Fertilizer. No Seed price. Numbers: [[mechanics/trees]]. Tree fruit Quality is 0.
 
 ## Pipe
 

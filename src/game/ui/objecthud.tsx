@@ -49,7 +49,7 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
         id: crop,
         label: CROP_NAME[crop](),
         note: perDay(statsOf(crop, 'base', 0, world.modifiers).waterUsePerSec),
-        icon: cropInner(crop, ripeGroup(crop, 'base')),
+        icon: cropInner(crop, ripeGroup('base')),
         on: s.tune.kind === 'crop' && s.tune.crop === crop,
       })),
     ],

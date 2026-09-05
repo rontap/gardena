@@ -140,7 +140,7 @@ import { makeQuad, makeTractor, type Route, type RouteStop, type SeedHopper, typ
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.14 as const
+export const SAVE_VERSION = 2.15 as const
 
 const INV = 16
 

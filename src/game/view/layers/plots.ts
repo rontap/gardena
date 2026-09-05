@@ -39,7 +39,7 @@ export class PlotsLayer {
             : cell.yield.kind === 'on' || cell.fruit >= 1
               ? 'ripe'
               : 'unripe'
-        const s = this.pool.take(atlasTex(`tree-${cell.species}:${treeAtlasStage(cell.species, stage, cell.variety)}`))
+        const s = this.pool.take(atlasTex(`tree-${cell.species}:${treeAtlasStage(stage, cell.variety)}`))
         s.position.set(at.col * TILE, at.row * TILE)
         continue
       }
@@ -95,7 +95,7 @@ export class PlotsLayer {
       s.position.set(col * TILE, row * TILE)
     }
     if (cell.kind === 'growing' || cell.kind === 'ripe' || cell.kind === 'dead') {
-      const stage = cell.kind === 'ripe' ? ripeStage(cell.plant.crop, cell.plant.variety) : cell.plant.stage(cell.kind)
+      const stage = cell.kind === 'ripe' ? ripeStage(cell.plant.variety) : cell.plant.stage(cell.kind)
       const s = this.pool.take(atlasTex(cropKey(cell.plant.crop, stage)))
       s.position.set(col * TILE, row * TILE)
     }

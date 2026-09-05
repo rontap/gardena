@@ -202,29 +202,27 @@ export function tolerance(base: number, tier: VarietyTier): number {
 
 const NAMED: { readonly [K in Exclude<VarietyId, 'base'>]: () => string } = {
   bintje: () => m.names_variety_bintje(),
-  'russian-banana': () => m.names_variety_russian_banana(),
-  sonora: () => m.names_variety_sonora(),
   'red-fife': () => m.names_variety_red_fife(),
   'green-zebra': () => m.names_variety_green_zebra(),
   'san-marzano': () => m.names_variety_san_marzano(),
   'black-raspberry': () => m.names_variety_black_raspberry(),
   concord: () => m.names_variety_concord(),
-  thompson: () => m.names_variety_thompson(),
   keknyelu: () => m.names_variety_keknyelu(),
   'kingston-black': () => m.names_variety_kingston_black(),
   'pink-lady': () => m.names_variety_pink_lady(),
-  moorpark: () => m.names_variety_moorpark(),
   klosterneuburger: () => m.names_variety_klosterneuburger(),
   blenheim: () => m.names_variety_blenheim(),
-  kalamata: () => m.names_variety_kalamata(),
   arbequina: () => m.names_variety_arbequina(),
-  montmorency: () => m.names_variety_montmorency(),
   bing: () => m.names_variety_bing(),
+}
+
+export function varietyName(variety: Exclude<VarietyId, 'base'>): string {
+  return NAMED[variety]()
 }
 
 export function cropVariety(id: CropId, variety: VarietyId): string {
   if (variety === 'base') return CROP_NAME[id]()
-  return NAMED[variety]()
+  return m.names_variety_pair({ crop: CROP_NAME[id](), variety: NAMED[variety]() })
 }
 
 export function freshMul(f: number): number {

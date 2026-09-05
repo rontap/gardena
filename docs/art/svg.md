@@ -34,11 +34,11 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 
 | files | ids |
 |---|---|
-| `crop-*.svg` | `sprout` `grow` `ripe` `ripe-variant` `ripe-variant-2` `ripe-heirloom` `dead` |
-| `fruit-*.svg` | `base` `variant` `variant-2` `heirloom` |
-| `item-wine.svg` `item-cider.svg` | `common` `rare` `heirloom` |
-| `prop-*-tree.svg` | `trunk` `grow` `unripe` `unripe-variant` `unripe-variant-2` `unripe-heirloom` `ripe` `ripe-variant` `ripe-variant-2` `ripe-heirloom` — `trunk` is the cut trunk, `grow` is the sapling, [[art/tree]] |
-| `item-graft-*.svg` | `base` `variant` `variant-2` `heirloom` |
+| `crop-*.svg` | `sprout` `grow` `dead`, plus one ripe group per Variety of that crop: `ripe` `ripe-variant` `ripe-heirloom` |
+| `fruit-*.svg` | one per Variety of that crop: `base` `variant` `heirloom` |
+| `item-wine.svg` `item-cider.svg` | `base` `heirloom` |
+| `prop-*-tree.svg` | `trunk` `grow` `unripe`, plus one ripe group per Variety: `ripe` `ripe-variant` `ripe-heirloom` — `trunk` is the cut trunk, `grow` is the sapling, [[art/tree]] |
+| `item-graft-*.svg` | one per Variety group that species is asked for; `item-graft-apple.svg` carries all three because every annual routes to it |
 | `item-research-station` `prop-research-station` | `off` `on` |
 | `crop-weed-*.svg` | `sprout` `grow` |
 | `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` `prop-furnace` | `off` `on` |
@@ -48,7 +48,7 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `pipe-valve-jack` | `jack` |
 
-Four variety faces. Crop ripe: `ripe` (base), `ripe-variant`, `ripe-variant-2`, `ripe-heirloom`. Fruit: `base`, `variant`, `variant-2`, `heirloom`. Extra groups on a crop with fewer varieties may copy `ripe` / `base`. Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`).
+One face per Variety, no more and no fewer. Crop ripe: `ripe` (base), `ripe-variant`, `ripe-heirloom`. Fruit: `base`, `variant`, `heirloom`. A crop with fewer Varieties carries fewer groups — a spare group is art nobody can reach, and a copy of `base` is a Variety the player cannot see. Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). `atlas.test.ts` `view.groups` holds the files and the code to the same set.
 
 Not this set: watermelon, grass, weed, rotten.
 

@@ -43,9 +43,9 @@ Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same bo
 
 Shovel in hand. Bucket on the doorstep (full `CONTAINERS.bucket`). Money `MONEY_START` — preference.
 
-Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one pack of 5 of each annual variety: `bintje` `russian-banana` `sonora` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `thompson` `keknyelu`. Ten packs. Total under `SILO_SEED_CAP`.
+Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one pack of 5 of each annual variety: `bintje` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `keknyelu`. Seven packs. Total under `SILO_SEED_CAP`.
 
-House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0, and one graft of every tree variety: `kingston-black` `pink-lady` `moorpark` `klosterneuburger` `blenheim` `kalamata` `arbequina` `montmorency` `bing`. Thirteen of sixteen. Graft quality 0.
+House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0, and one graft of every tree variety: `kingston-black` `pink-lady` `blenheim` `klosterneuburger` `arbequina` `bing`. Ten of sixteen. Graft quality 0.
 
 Shop `pack-*` are five seeds, `'base'`, quality 0.
 

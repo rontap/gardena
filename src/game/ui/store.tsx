@@ -2,7 +2,7 @@ import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS, cropVariety } from '../defs/crops.ts'
-import { qualityMul, RATING_SALE, useOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
+import { purposeMul, purposeOf, qualityMul, VARIETIES, type Purpose, type VarietyId } from '../defs/varieties.ts'
 import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
 import { SUGAR_BAG } from '../defs/items.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
@@ -117,7 +117,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                       <svg
                         viewBox="0 0 24 24"
                         className="h-9 w-9"
-                        dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(crop, 'base')) }}
+                        dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup('base')) }}
                       />
                       <span className="w-[4.25rem] text-center text-[11px] leading-tight text-ink/60">
                         {cropName(crop)}
@@ -175,7 +175,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                           <svg
                             viewBox="0 0 24 24"
                             className={`h-8 w-8 shrink-0 ${n === 0 ? 'opacity-30' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(crop, variety)) }}
+                            dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(variety)) }}
                           />
                           {variety !== 'base' && (
                             <span className="text-[11px] leading-tight">{cropVariety(crop, variety)}</span>
@@ -217,7 +217,7 @@ function SeedTip({
       : packSkuId !== undefined && world.skuShown(packSkuId)
         ? world.skuPrice(packSkuId)
         : undefined
-  const sale = d.sale * qualityMul(quality) * RATING_SALE[useOf(crop, variety).fresh]
+  const sale = d.sale * qualityMul(quality) * purposeMul(variety, 'produce')
   const state = sku !== undefined ? rowState(world, sku) : 'ok'
   const bulk = sku !== undefined && world.buyPacksFail(sku) === undefined ? world.packsPrice(sku) : undefined
   return (
@@ -226,6 +226,7 @@ function SeedTip({
       description={
         <>
           <span className="flex items-center gap-1">{m.hud_silo_quality({ n: Math.floor(quality * 100) })}</span>
+          <PurposeLine variety={variety} />
           <span className="flex items-center gap-1">
             {pack === undefined ? m.hud_seed_not_stocked() : <>{m.hud_seed_pack()}<Coin n={pack} />{m.hud_per_pack({ n: 5 })}</>}
           </span>
@@ -245,6 +246,22 @@ function SeedTip({
         </>
       }
     />
+  )
+}
+
+const PURPOSE_LABEL: { readonly [K in Purpose]: () => string } = {
+  produce: () => m.names_purpose_produce(),
+  processed: () => m.names_purpose_processed(),
+  alcohol: () => m.names_purpose_alcohol(),
+}
+
+function PurposeLine({ variety }: { variety: VarietyId }) {
+  const purpose = purposeOf(variety)
+  if (purpose === 'base') return null
+  return (
+    <span className="flex items-center gap-1">
+      {m.hud_best_for({ purpose: PURPOSE_LABEL[purpose](), mul: purposeMul(variety, purpose) })}
+    </span>
   )
 }
 

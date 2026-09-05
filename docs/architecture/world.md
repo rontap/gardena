@@ -19,9 +19,9 @@ BarrelCrop   = grape | apple
 CaskId       = wine | cider
 FruitAnnualId = tomato | raspberry | grape | vanilla
 VarietyTier  = base | variant | heirloom
-VarietyId    = base | bintje | russian-banana | sonora | red-fife | green-zebra | san-marzano
-             | black-raspberry | concord | thompson | keknyelu | kingston-black | pink-lady
-             | moorpark | klosterneuburger | blenheim | kalamata | arbequina | montmorency | bing
+VarietyId    = base | bintje | red-fife | green-zebra | san-marzano | black-raspberry
+             | concord | keknyelu | kingston-black | pink-lady | blenheim | klosterneuburger
+             | arbequina | bing
 ```
 
 `ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.

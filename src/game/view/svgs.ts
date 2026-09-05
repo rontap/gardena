@@ -288,7 +288,7 @@ import uiCornerTr from '../../assets/ui/ui-corner-tr.svg'
 import uiCornerBr from '../../assets/ui/ui-corner-br.svg'
 import uiCornerBl from '../../assets/ui/ui-corner-bl.svg'
 import type { CropClass } from '../defs/crops.ts'
-import { VARIETIES, VARIETY, type VarietyId } from '../defs/varieties.ts'
+import { caskGroup, tierOf, VARIETIES, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
 import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
@@ -334,18 +334,12 @@ export const TREE_PROP: { readonly [K in TreeId]: string } = {
 
 export type { Face }
 
-export type VarietyGroup = 'base' | 'variant' | 'variant-2' | 'heirloom'
+export type VarietyGroup = VarietyTier
 
-export type CropRipeGroup = 'ripe' | 'ripe-variant' | 'ripe-variant-2' | 'ripe-heirloom'
+export type CropRipeGroup = 'ripe' | 'ripe-variant' | 'ripe-heirloom'
 
-export type CaskGroup = 'common' | 'rare' | 'heirloom'
-
-export function varietyGroup(crop: CropId, variety: VarietyId): VarietyGroup {
-  if (variety === 'base') return 'base'
-  const t = VARIETY[variety].tier
-  if (t === 'heirloom') return 'heirloom'
-  const variants = VARIETIES[crop].filter(v => v !== 'base' && VARIETY[v].tier === 'variant')
-  return variants[0] === variety ? 'variant' : 'variant-2'
+export function varietyGroup(variety: VarietyId): VarietyGroup {
+  return tierOf(variety)
 }
 
 export const GRAFT_CUTTING: { readonly [K in CropId]: TreeId } = {
@@ -367,21 +361,14 @@ export function graftSpecies(crop: CropId): TreeId {
   return GRAFT_CUTTING[crop]
 }
 
-export function ripeGroup(crop: CropId, variety: VarietyId): CropRipeGroup {
-  const g = varietyGroup(crop, variety)
+export function ripeGroup(variety: VarietyId): CropRipeGroup {
+  const g = tierOf(variety)
   if (g === 'base') return 'ripe'
   return `ripe-${g}`
 }
 
-export function fruitGroup(crop: CropId, variety: VarietyId): VarietyGroup {
-  return varietyGroup(crop, variety)
-}
-
-export function caskGroup(variety: VarietyId): CaskGroup {
-  if (variety === 'base') return 'common'
-  const t = VARIETY[variety].tier
-  if (t === 'heirloom') return 'heirloom'
-  return 'rare'
+export function fruitGroup(variety: VarietyId): VarietyGroup {
+  return tierOf(variety)
 }
 
 export function cropInner(id: CropId, stage: string): string {
@@ -447,8 +434,8 @@ export function itemInner(item: Face): string {
   if (item.kind === 'weed-spray') return inner(itemWeedSpray)
   if (item.kind === 'synth') return inner(itemSynth)
   if (item.kind === 'compost') return inner(itemCompost)
-  if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.crop, item.variety))
-  if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.crop, item.variety))
+  if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.variety))
+  if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
   if (item.kind === 'sugar') return inner(itemSugar)
   if (item.kind === 'spirit') return SPIRIT_ART[item.spirit]
   if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], caskGroup(item.variety))
@@ -457,7 +444,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'flour') return inner(itemFlour)
   if (item.kind === 'extract') return inner(itemExtract)
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
-  if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.crop, item.variety))
+  if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.variety))
   if (item.kind === 'wood') return inner(itemWood)
   if (item.kind === 'ash') return inner(itemAsh)
   const _x: never = item
@@ -792,8 +779,8 @@ export const GRAFT_ART: { readonly [K in TreeId]: string } = {
 
 export const APPLE_TREE = inner(appleTree)
 export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe', variety: VarietyId): string {
-  if (stage === 'trunk' || stage === 'grow') return stageOnly(TREE_PROP[id], stage)
-  const g = varietyGroup(id, variety)
+  if (stage !== 'ripe') return stageOnly(TREE_PROP[id], stage)
+  const g = tierOf(variety)
   return stageOnly(TREE_PROP[id], g === 'base' ? stage : `${stage}-${g}`)
 }
 export function appleTreeStage(ripe: boolean): string {
@@ -1030,9 +1017,9 @@ export function symHref(html: string): string {
   return `#${symId(html)}`
 }
 
-const CROP_STAGES = ['sprout', 'grow', 'ripe', 'ripe-variant', 'ripe-variant-2', 'ripe-heirloom', 'dead'] as const
+const CROP_STAGES = ['sprout', 'grow', 'dead'] as const
 const TREE_STAGES = ['trunk', 'grow'] as const
-const TREE_FRUIT_STAGES = ['unripe', 'ripe'] as const
+
 const GRASS_STAGES = ['sprout', 'grow'] as const
 
 ;[
@@ -1132,12 +1119,14 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   weedInner(1, 'grow'),
   ...(TREE_IDS as TreeId[]).flatMap(t => [
     ...TREE_STAGES.map(s => treeStage(t, s, 'base')),
-    ...VARIETIES[t].flatMap(v => TREE_FRUIT_STAGES.map(s => treeStage(t, s, v))),
+    treeStage(t, 'unripe', 'base'),
+    ...VARIETIES[t].map(v => treeStage(t, 'ripe', v)),
   ]),
   ...Object.values(TREE_SEED_ART),
-  ...([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c =>
-    CROP_STAGES.map(s => cropInner(c, s)),
-  ),
+  ...(ANNUAL_IDS as CropId[]).flatMap(c => [
+    ...CROP_STAGES.map(s => cropInner(c, s)),
+    ...VARIETIES[c].map(v => cropInner(c, ripeGroup(v))),
+  ]),
   ACTOR,
   UI_COIN,
   UI_COIN_SILVER,

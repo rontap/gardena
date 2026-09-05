@@ -1,0 +1,26 @@
+{
+  "$schema": "https://inlang.com/schema/project-settings",
+  "baseLocale": "en",
+  "locales": ["en"],
+  "modules": [
+    "https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4.4.0/dist/index.js",
+    "https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2.2.6/dist/index.js"
+  ],
+  "plugin.inlang.messageFormat": {
+    "pathPattern": [
+      "./messages/{locale}/names.json",
+      "./messages/{locale}/catalog.json",
+      "./messages/{locale}/prompt.json",
+      "./messages/{locale}/hud.json",
+      "./messages/{locale}/skills.json",
+      "./messages/{locale}/research.json",
+      "./messages/{locale}/almanac.json",
+      "./messages/{locale}/market.json",
+      "./messages/{locale}/family.json",
+      "./messages/{locale}/vehicles.json",
+      "./messages/{locale}/sensors.json",
+      "./messages/{locale}/menu.json",
+      "./messages/{locale}/tutorial.json"
+    ]
+  }
+}

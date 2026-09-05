@@ -18,7 +18,7 @@ Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Ca
 
 Shop and Build docks `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. Both docks can arm: a search result acts where it lives, whichever dock is open — [[ui/shop]].
 
-Esc / dock **×** / a rail toggle that closes **Shop** or **Build** / leaving the shop system → `leaveShop`: `cancelPlace` and clear the search box. `leaveShop` does not touch the lens: `toolLens` ends with the arming — [[ui/lens]]. Selecting Build **Sensors** (`logic`) sets and locks `lens = 'sensors'` and does not arm. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
+Esc / dock **×** / a rail toggle that closes **Shop** or **Build** / leaving the shop system → `leaveShop`: `cancelPlace`, clear the search box, restore an unlocked Build peek. `toolLens` ends with the arming — [[ui/lens]]. Selecting Build Water / Vehicles / Sensors peeks that lens with no lock and does not arm. A locked lens is not touched. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
 
 ## Pointer
 
@@ -85,7 +85,7 @@ Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost
 
 `buy-still`: 2-tile ghost like pumpjack (viewBox 48×24). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Ghost footprint stays 2×1. Prop art occupies 1.5×1 centered in that viewBox.
 
-`buy-research-station`: 2-tile ghost like pumpjack (viewBox 48×24). Confirm occupies both cells. Disarm. No rotate. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Copy **Place Seed Variety Station**. `skuLabel` **Seed Variety Station**. [[ui/station]]
+`buy-research-station`: 2-tile ghost like pumpjack (viewBox 48×24). Confirm occupies both cells. Disarm. No rotate. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Ghost art is `STATION`, not `STILL`. Copy **Place Seed Variety Station**. `skuLabel` **Seed Variety Station**. [[ui/station]]
 
 `buy-furnace`: 2-tile ghost viewBox 24×48, origin = hovered cell, extends south. Confirm occupies both cells. Disarm. No rotate. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Copy **Place Furnace**. `skuLabel` **Furnace**. Ghost footprint stays 1×2. Prop art occupies 1×1.5 south-aligned in that viewBox. Covering stroke follows this ghost — [[#Covering]].
 

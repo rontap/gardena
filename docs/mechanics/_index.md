@@ -140,8 +140,11 @@ See [[canon]].
 | machines.io-push | [[mechanics/machines]] |
 | machines.grind-hopper | [[mechanics/machines]] |
 | machines.grind-tree | [[mechanics/machines]] |
+| machines.grind-variant-row | [[mechanics/machines]] |
 | machines.variety-lock | [[mechanics/machines]] |
 | still.variety | [[mechanics/machines]] |
+| machines.jam-sugar | [[mechanics/machines]] |
+| machines.cask-premium | [[mechanics/machines]] |
 | machines.quality-carry | [[mechanics/machines]] |
 | station.cut | [[mechanics/machines]] |
 | station.io | [[mechanics/machines]] |
@@ -226,6 +229,7 @@ See [[canon]].
 | view.drop | [[architecture/view]] |
 | view.vfx.drain | [[architecture/view]] |
 | view.furnace-cover | [[architecture/view]] |
+| view.named-face | [[architecture/view]] |
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
 | world.pause | [[architecture/world]] |

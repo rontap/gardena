@@ -96,9 +96,9 @@ Speed arc ends at `+vMax`, not paved/machinery cap. Reverse is the same arc nega
 
 `ui-hangar-return.svg`, `0 0 24 24`. South pad mark. Ripe arrow, ink outline, points north into the door. No button groups. Reuse on silo pads.
 
-`ui-pad-drop.svg`, `0 0 24 24`. Machine dropoff. Steel arrow, iron dock, oil bay. Points south into the building. No baked opacity.
+`ui-pad-drop.svg`, `0 0 24 24`. Machine dropoff (Unload). Steel arrow, iron dock, oil bay. Dock on the south face. Arrow points north, out of the building. No baked opacity.
 
-`ui-pad-take.svg`, `0 0 24 24`. Machine takeup. Steel arrow, iron dock, oil bay. Points north out of the south face. Not hangar-return. No baked opacity.
+`ui-pad-take.svg`, `0 0 24 24`. Machine takeup (Load). Steel arrow, iron dock, oil bay. Points north out of the south face. Not hangar-return. No baked opacity.
 
 `ui-slot-down.svg`, `0 0 24 24`. Down arrow for consume hopper. Ripe fill, ink outline. Points south.
 

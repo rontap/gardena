@@ -18,7 +18,6 @@ import {
   JAM_BUFFER,
   JAM_IN,
   JAM_SECONDS,
-  JAM_SUGAR,
   MILL_WORK,
   SILO_SEED_CAP,
   STATION_GRAFT_MAX,
@@ -51,6 +50,7 @@ import {
   grindProduct,
   jamCropOf,
   jamSale,
+  jamSugar,
   jamWorking,
   meanQuality,
   millDumpUnits,
@@ -573,7 +573,7 @@ export class JamMachine extends Machine {
     }
     this.progress = 0
     this.fruit -= JAM_IN
-    this.sugar -= JAM_SUGAR
+    this.sugar -= jamSugar(this.crop, this.variety)
     if (this.fruit === 0) {
       const jam: JamMachine = this
       jam.crop = 'none'

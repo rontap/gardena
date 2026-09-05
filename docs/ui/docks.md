@@ -32,7 +32,7 @@ A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A
 
 Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants start shelf: **Synthetic fertilizer**, **Tomato seeds**, **Grape seeds**. Grape seeds on the shelf from the first day. **Crop variants** after tomato, grape, or irrigation. **Raspberry seeds** after tomato or grape. **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla, no olive, no watermelon research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Chest**, **Machinery**; **Fermentation** after the grinder.
 
-**×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace` and search query cleared. It does not touch the lens: a tool lens ends with the arming, and a picked lens is the Lens dock’s business — [[ui/lens]]. Selecting Build **Sensors** (`logic`) is not a close: `onShelf('logic')` → sets and locks `sensors`, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
+**×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Vehicles / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
 
 ## Overlays
 

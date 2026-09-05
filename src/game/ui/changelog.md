@@ -1,3 +1,23 @@
+# 2.4.1 QoL VI
+
+Heirloom Varieties leave the barrel and the jam machine as products of their own, with names and containers to match, and the inspect panel reads Quality and Freshness off bars.
+
+- 🐛 Fixed bug building: Seed Variety Station. Placing it showed a Pot still, now the ghost is the station.
+- 🔧 Changed ui: Build. previously, only the Sensors tab locked the Sensors lens, now the Water tab turns on Pipes, the Vehicles tab turns on Vehicle interactions, and the Sensors tab turns on Sensors, none of them locked, and leaving Build or those tabs restores the lens you had, unless Lock view is already on.
+- 🔧 Changed ui: Load and Unload. previously, both arrows pointed into the building, now Unload points out of the building.
+- 🔧 Changed ui: Recipes. previously, a long name wrapped the row while faces cycled, now the row stays one line and the hover card is wider.
+- 🔧 Changed ui: Held item. previously, its name sat in the body face, now it sits in the rustic title face and reads a little larger.
+- 🔧 Changed building: Seed grinder. previously, every fruit shared one cycling row, now Bintje, Red Fife, Green Zebra and Concord have their own row that returns that Variety's seed.
+- 🔧 Changed mechanic: Premium casks. previously, a barrel filled with an Heirloom Variety poured the same Wine or Cider as any other Variety, now it pours Premium wine or Premium cider, and the name follows the bottle from the barrel to the stall.
+- 🔧 Changed item: Grape jelly. previously, it drew the plain grape jam jar, now it draws a taller jar under a gold wax cap with a label of its own.
+- 🔧 Changed item: Black raspberry jam. previously, it drew the plain raspberry jam jar, now it draws a jar under a tied cloth lid, filled almost black.
+- 🔧 Changed item: Passata. previously, it drew the ketchup bottle, now it is a can with a label of its own.
+- 🔧 Changed item: Barackpálinka. previously, it read Apricot pálinka and drew the Brandy bottle, now it reads Barackpálinka and draws a slim gold-foiled bottle nothing else uses.
+- 🔧 Changed building: Jam machine. previously, every jar took the same sugar, now Passata takes none and ketchup takes twice what a jam does.
+- 🔧 Changed mechanic: Starting stock. previously, the house held tree seeds and grafts only, now it also holds five Kéknyelű grapes and five San Marzano tomatoes, enough for one barrel and one Passata before your first harvest.
+- 🔧 Changed ui: Seed silo. previously, sugar cane sat in the last column, now it sits in the first, and still only appears once you have researched it.
+- 🔧 Changed ui: Inspect. previously, a ripe plant printed its Quality in the title and a fruit on the ground printed its Quality and freshness in text, now both read them off a blue Quality bar and a red-to-green Freshness bar.
+
 # 2.4.0 Variety
 
 Every plant now carries a Variety it was sown with and a Quality it earned, grafts move a Variety onto a plant already growing, and the machines pass both into what they make.

@@ -16,7 +16,7 @@ import {
 } from './prompt.ts'
 import { onCell } from './drop.ts'
 import { cropVariety } from '../defs/crops.ts'
-import { heldText, skuLabel, type Hand } from './item.ts'
+import { caskName, heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Barrel } from './building.ts'
 import { barrelNeed, caskAgeMul, caskAgeTop, feedUnits, feedVariety, meanQuality } from './feature-machines/machine.ts'
@@ -165,12 +165,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       )
     }
   } else if (cell.kind === 'ripe') {
-    lines.push(
-      m.prompt_ripe_quality({
-        name: cropVariety(cell.plant.crop, cell.plant.variety),
-        n: Math.floor(cell.plant.quality * 100),
-      }),
-    )
+    lines.push(m.prompt_ripe_variety({ name: cropVariety(cell.plant.crop, cell.plant.variety) }))
   } else if (cell.kind === 'rotten') {
     lines.push(m.prompt_rotten({ name: cropLabel(cell.crop), soil: soilLine(cell.soil) }))
   } else if (isSensor(cell)) {
@@ -206,7 +201,11 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   const drop = onCell(world.drops, at).at(-1)
   if (drop !== undefined) {
     const held: Hand = { kind: 'hold', item: drop.item }
-    lines.push(heldText(held, world.modifiers))
+    lines.push(
+      drop.item.kind === 'fruit'
+        ? m.hud_line_count({ name: cropVariety(drop.item.crop, drop.item.variety), count: drop.item.count })
+        : heldText(held, world.modifiers),
+    )
   }
   if (cell.kind !== 'silo-seed' && cell.kind !== 'silo-spray' && cell.kind !== 'silo-produce') {
     const p = world.prompt(at).text
@@ -227,9 +226,8 @@ function barrelLine(c: Barrel): string {
   const quality = meanQuality(c.feed)
   const mul = caskAgeMul(c.age, quality)
   const line = labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
-  const cask = CASK_OF[c.crop]
   const top = m.prompt_aging_max({
-    cask: cask === 'wine' ? m.names_cask_wine() : m.names_cask_cider(),
+    cask: caskName(CASK_OF[c.crop], feedVariety(c.feed)),
     name: cropVariety(c.crop, feedVariety(c.feed)),
     days: Math.round(BARREL_AGE / DAY_SECONDS),
     mul: Number(caskAgeTop(quality).toFixed(2)),

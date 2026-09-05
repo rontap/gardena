@@ -27,10 +27,21 @@ Labels **Mill** **Pot still** **Barrel** **Jam machine** **Freezer** **Vehicle h
 
 Build owns the placement ghost, but the store can arm one too — a cross-panel search result acts where it lives. So both docks count as arming panels:
 
-- **Shop ↔ Build** keeps the armed ghost and the pipes / sensors lens. Switching decks is not putting the tool down.
-- Leaving both for any other panel, or closing the dock, or Escape: `leaveShop` = `cancelPlace`, query cleared. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens.
+- **Shop ↔ Build** keeps the armed ghost. Switching decks is not putting the tool down. A peeked Build lens ends: Shop is not a Build tab.
+- Leaving both for any other panel, or closing the dock, or Escape: `leaveShop` = `cancelPlace`, query cleared, peeked lens restored. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. `leaveShop` restores an unlocked peek only.
 - Right-click: `cancelPlace` only.
 
-`SkuDock` `onShelf: (id: ShelfId) => void`. Shop and Build both receive it. Category rail fires it. App: `id === 'logic'` → `setLens('sensors')`. Does not arm a SKU. Switching to another Build category does **not** force the lens off.
+`SkuDock` `onShelf: (id: ShelfId) => void`. Shop and Build both receive it. Category rail fires it, including the tab that is open when the dock mounts. Does not arm a SKU.
+
+Build peek, no lock — [[ui/lens]]:
+
+| tab | lens |
+|---|---|
+| Water | `pipes` |
+| Vehicles | `vehicles` |
+| Sensors (`logic`) | `sensors` |
+| Processing, Storage, Land | restore the lens that was on before the peek |
+
+A locked lens is not touched. Twitching off a peek tab, closing Build, or leaving the shop system restores that saved lens. `toolLens` still wins while a sku is armed.
 
 One helper in `App` owns leave, and every path calls it — the menu and multiplayer toggles used to cancel the ghost while leaving the overlay on.

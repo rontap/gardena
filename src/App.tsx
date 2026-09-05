@@ -25,6 +25,7 @@ import { Menu } from './game/ui/menu.tsx'
 import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
+import type { ShelfId } from './game/defs/shelf.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
@@ -95,6 +96,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [hover, setHover] = useState<PromptHit | undefined>(undefined)
   const [lens, setLens] = useState<Lens>('off')
   const [lensLock, setLensLock] = useState(false)
+  const peekLens = useRef<Lens | undefined>(undefined)
   const toolLens = world === undefined ? undefined : toolLensOf(world)
   const [editor, setEditor] = useState(false)
   const editorLens = useRef<Lens>('off')
@@ -515,10 +517,33 @@ export default function App({ sink }: { sink: WorkerSink }) {
     URL.revokeObjectURL(url)
   }
 
+  function endPeek(): void {
+    if (lensLock) {
+      peekLens.current = undefined
+      return
+    }
+    const saved = peekLens.current
+    if (saved === undefined) return
+    peekLens.current = undefined
+    setLens(saved)
+  }
+
+  function applyShelfLens(id: ShelfId): void {
+    if (lensLock) return
+    const want = BUILD_LENS[id]
+    if (want !== undefined) {
+      if (peekLens.current === undefined) peekLens.current = lens
+      setLens(want)
+      return
+    }
+    endPeek()
+  }
+
   function leaveShop(): void {
     if (world === undefined) return
     world.cancelPlace()
     setQuery('')
+    endPeek()
   }
 
   function closeLens(): void {
@@ -945,12 +970,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
-              onShelf={id => {
-                if (id === 'logic') {
-                  setLens('sensors')
-                  setLensLock(true)
-                }
-              }}
+              onShelf={applyShelfLens}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })
@@ -963,12 +983,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               query={query}
               setQuery={setQuery}
               onGo={p => setPanel({ kind: p })}
-              onShelf={id => {
-                if (id === 'logic') {
-                  setLens('sensors')
-                  setLensLock(true)
-                }
-              }}
+              onShelf={applyShelfLens}
               onClose={() => {
                 leaveShop()
                 setPanel({ kind: 'none' })
@@ -1302,6 +1317,12 @@ function Dash({
       </div>
     </div>
   )
+}
+
+const BUILD_LENS: Partial<Record<ShelfId, Lens>> = {
+  water: 'pipes',
+  vehicles: 'vehicles',
+  logic: 'sensors',
 }
 
 function sensorArmed(world: World): boolean {

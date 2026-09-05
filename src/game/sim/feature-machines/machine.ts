@@ -10,6 +10,7 @@ import {
   JAM_IN,
   JAM_SUGAR,
   JAM_SALE,
+  KETCHUP_SUGAR,
   MILL_GRASS,
   MILL_IN,
   MILL_VANILLA_IN,
@@ -303,6 +304,12 @@ export function jamSale(crop: JamCrop, variety: VarietyId, quality: number): num
   return JAM_SALE[crop] * purposeMul(variety, 'processed') * qualityMul(quality)
 }
 
+export function jamSugar(crop: JamCrop, variety: VarietyId): number {
+  if (variety === 'san-marzano') return 0
+  if (crop === 'tomato') return KETCHUP_SUGAR
+  return JAM_SUGAR
+}
+
 export function mergeSugar(
   a: Extract<Item, { kind: 'sugar' }>,
   b: Extract<Item, { kind: 'sugar' }>,
@@ -400,7 +407,7 @@ export function millWorking(c: Mill): c is Mill & { recipe: MillRecipe } {
 }
 
 export function jamWorking(c: JamMachine): c is JamMachine & { crop: JamCrop } {
-  return c.inn !== 1 && c.crop !== 'none' && c.fruit >= JAM_IN && c.sugar >= JAM_SUGAR
+  return c.inn !== 1 && c.crop !== 'none' && c.fruit >= JAM_IN && c.sugar >= jamSugar(c.crop, c.variety)
 }
 
 export function stillReady(c: PotStill): boolean {

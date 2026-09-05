@@ -50,6 +50,10 @@ import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
 import itemJamRaspberry from '../../assets/items/item-jam-raspberry.svg?raw'
 import itemJamCherry from '../../assets/items/item-jam-cherry.svg?raw'
 import itemKetchup from '../../assets/items/item-ketchup.svg?raw'
+import itemJamConcord from '../../assets/items/item-jam-concord.svg?raw'
+import itemJamBlackRaspberry from '../../assets/items/item-jam-black-raspberry.svg?raw'
+import itemPassata from '../../assets/items/item-passata.svg?raw'
+import itemSpiritPalinka from '../../assets/items/item-spirit-palinka.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
@@ -291,7 +295,7 @@ import type { CropClass } from '../defs/crops.ts'
 import { caskGroup, tierOf, VARIETIES, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
-import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
+import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type JamCrop, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type SpiritKind, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/feature-contracts/market.h.ts'
 
@@ -371,6 +375,21 @@ export function fruitGroup(variety: VarietyId): VarietyGroup {
   return tierOf(variety)
 }
 
+export type JamArt = `jam-${Exclude<JamCrop, 'tomato'>}` | 'ketchup' | 'jam-concord' | 'jam-black-raspberry' | 'passata'
+
+export function jamArt(crop: JamCrop, variety: VarietyId): JamArt {
+  if (variety === 'concord') return 'jam-concord'
+  if (variety === 'black-raspberry') return 'jam-black-raspberry'
+  if (variety === 'san-marzano') return 'passata'
+  return crop === 'tomato' ? 'ketchup' : `jam-${crop}`
+}
+
+export type SpiritArt = `spirit-${SpiritKind}` | 'spirit-palinka'
+
+export function spiritArt(spirit: SpiritKind, variety: VarietyId): SpiritArt {
+  return spirit === 'brandy' && variety === 'klosterneuburger' ? 'spirit-palinka' : `spirit-${spirit}`
+}
+
 export function cropInner(id: CropId, stage: string): string {
   return stageOnly(CROPS[id], stage)
 }
@@ -437,9 +456,9 @@ export function itemInner(item: Face): string {
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
   if (item.kind === 'sugar') return inner(itemSugar)
-  if (item.kind === 'spirit') return SPIRIT_ART[item.spirit]
+  if (item.kind === 'spirit') return SPIRIT_ART[spiritArt(item.spirit, item.variety)]
   if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], caskGroup(item.variety))
-  if (item.kind === 'jam') return item.crop === 'tomato' ? inner(itemKetchup) : inner(JAM_ART[item.crop])
+  if (item.kind === 'jam') return inner(JAM_ART[jamArt(item.crop, item.variety)])
   if (item.kind === 'oil') return inner(itemOil)
   if (item.kind === 'flour') return inner(itemFlour)
   if (item.kind === 'extract') return inner(itemExtract)
@@ -451,20 +470,24 @@ export function itemInner(item: Face): string {
   return _x
 }
 
-const SPIRIT_ART = {
-  vodka: inner(itemSpiritVodka),
-  beer: inner(itemSpiritBeer),
-  brandy: inner(itemSpiritBrandy),
-  mixed: inner(itemSpiritMixed),
-} as const
+const SPIRIT_ART: { readonly [K in SpiritArt]: string } = {
+  'spirit-vodka': inner(itemSpiritVodka),
+  'spirit-beer': inner(itemSpiritBeer),
+  'spirit-brandy': inner(itemSpiritBrandy),
+  'spirit-mixed': inner(itemSpiritMixed),
+  'spirit-palinka': inner(itemSpiritPalinka),
+}
 
-const JAM_ART = {
-  apricot: itemJamApricot,
-  grape: itemJamGrape,
-  raspberry: itemJamRaspberry,
-  cherry: itemJamCherry,
-  tomato: itemKetchup,
-} as const
+const JAM_ART: { readonly [K in JamArt]: string } = {
+  'jam-apricot': itemJamApricot,
+  'jam-grape': itemJamGrape,
+  'jam-raspberry': itemJamRaspberry,
+  'jam-cherry': itemJamCherry,
+  ketchup: itemKetchup,
+  'jam-concord': itemJamConcord,
+  'jam-black-raspberry': itemJamBlackRaspberry,
+  passata: itemPassata,
+}
 
 export function skuInner(id: SkuId): string {
   if (id === 'buy-chest') return itemInner({ kind: 'chest' })

@@ -18,7 +18,7 @@ Title **Seed silo**. Footer *Walking up stores every seed you were carrying.*
 
 Width is `w-fit` inside `min-w-80 max-w-[min(calc(92vw-17rem),72rem)] max-h-[min(88vh,48rem)]`, so the panel grows with what is unlocked instead of carrying a width per shelf. The `17rem` subtracted from the viewport is the callout gutter: the panel may never grow so wide that the hover callout falls off screen. Past the max the grid scrolls inside `overflow-x-auto`, never the page.
 
-Table with a crop head row. Columns are crops; the `thead` cell carries the crop's `'base'` ripe face at `h-9` over the crop name in `text-[11px] text-ink/60`, so a column is read by its crop before anything under it.
+Table with a crop head row. Columns are crops, `SILO_CROPS`: sugar cane first, then `ANNUAL_IDS` order. The gate is unchanged — the column appears when `pack-sugar-cane` is shown, not before. Only the silo reorders; `ANNUAL_IDS` itself is the market and grinder order and does not move. The `thead` cell carries the crop's `'base'` ripe face at `h-9` over the crop name in `text-[11px] text-ink/60`, so a column is read by its crop before anything under it.
 
 There is no shared row ladder and no row-head `tier` label — Variety is identity, not a ladder, so nothing labels a row. Each column stacks `VARIETIES[crop]` in list order. Row 0 is `'base'` on every shown crop. Later rows are that crop's later ids; a crop with fewer Varieties leaves the cell empty, not a dummy. Rows therefore mix tiers across columns, which is correct: row 1 is one crop's variant and another's heirloom.
 

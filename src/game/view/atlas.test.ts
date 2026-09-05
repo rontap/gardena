@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
 import { atlasVb, treeAtlasStage } from './atlas.ts'
-import { fruitGroup, graftSpecies, ripeGroup, varietyGroup } from './svgs.ts'
-import { caskGroup, VARIETIES } from '../defs/varieties.ts'
-import { ANNUAL_IDS, CASK_IDS, TREE_IDS, type CropId } from '../sim/ids.ts'
+import { fruitGroup, graftSpecies, jamArt, ripeGroup, spiritArt, varietyGroup } from './svgs.ts'
+import { caskGroup, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
+import { ANNUAL_IDS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type CropId } from '../sim/ids.ts'
 
 const ASSETS = import.meta.glob('../../assets/**/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<
   string,
@@ -33,6 +33,23 @@ test("view.variety — Plant ripe, fruit, cask, tree ripe, and graft faces selec
   expect(caskGroup('concord')).toBe('base')
   expect(caskGroup('kingston-black')).toBe('base')
   expect(caskGroup('keknyelu')).toBe('heirloom')
+})
+
+test('view.named-face — `jamArt` and `spiritArt` are the only statement of which face a named product draws. A Variety that renames a jar or a bottle draws its own file; every other Variety of that crop falls back to the crop face. Every face they can name has a file.', () => {
+  expect(jamArt('grape', 'concord')).toBe('jam-concord')
+  expect(jamArt('raspberry', 'black-raspberry')).toBe('jam-black-raspberry')
+  expect(jamArt('tomato', 'san-marzano')).toBe('passata')
+  expect(jamArt('tomato', 'base')).toBe('ketchup')
+  expect(jamArt('tomato', 'green-zebra')).toBe('ketchup')
+  expect(jamArt('apricot', 'blenheim')).toBe('jam-apricot')
+  expect(spiritArt('brandy', 'klosterneuburger')).toBe('spirit-palinka')
+  expect(spiritArt('brandy', 'blenheim')).toBe('spirit-brandy')
+  SPIRIT_KINDS.forEach(k => expect(spiritArt(k, 'base')).toBe(`spirit-${k}`))
+  const files = [
+    ...JAM_CROPS.flatMap(crop => VARIETIES[crop].map(v => jamArt(crop, v))),
+    ...SPIRIT_KINDS.flatMap(k => VARIETY_IDS.map(v => spiritArt(k, v))),
+  ]
+  files.forEach(id => expect(ASSETS[`../../assets/items/item-${id}.svg`]).toBeDefined())
 })
 
 function groupIds(file: string): string[] {

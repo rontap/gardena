@@ -43,6 +43,8 @@ Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same bo
 
 Shovel in hand. Bucket on the doorstep (full `CONTAINERS.bucket`). Money `MONEY_START` — preference.
 
+House: four `base` tree seeds, one graft of every tree variety, and `STARTER_FRUIT_N` fruit of every `STARTER_FRUIT` Variety — `keknyelu` and `san-marzano`, Quality 0, fresh, organic. Twelve of sixteen slots. That is one barrel of Premium wine and one Passata without waiting on a first crop.
+
 Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one pack of 5 of each annual variety: `bintje` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `keknyelu`. Seven packs. Total under `SILO_SEED_CAP`.
 
 House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0, and one graft of every tree variety: `kingston-black` `pink-lady` `blenheim` `klosterneuburger` `arbequina` `bing`. Ten of sixteen. Graft quality 0.
@@ -93,7 +95,7 @@ Mill / jam / still / barrel / freezer / furnace / shop sugar / station: [[mechan
 
 ## Invariants
 
-`inventory.slots` — Hand is one item. House 16 slots. Chest `CHEST_SLOTS`. Starter: shovel in hand, bucket on door (`CONTAINERS.bucket`), seed silo starter `'base'` stacks plus one pack of each annual variety, four `'base'` tree seeds and one graft of every tree variety, money `MONEY_START`.
+`inventory.slots` — Hand is one item. House 16 slots. Chest `CHEST_SLOTS`. Starter: shovel in hand, bucket on door (`CONTAINERS.bucket`), seed silo starter `'base'` stacks plus one pack of each annual variety, four `'base'` tree seeds, one graft of every tree variety, `STARTER_FRUIT_N` fruit of every `STARTER_FRUIT` Variety, money `MONEY_START`.
 
 `inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. `buy-compost-box` unlock `start`. Graft not compost.
 

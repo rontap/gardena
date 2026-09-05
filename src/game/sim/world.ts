@@ -23,6 +23,8 @@ import {
 } from '../defs/crops.ts'
 import {
   qualityGain,
+  STARTER_FRUIT,
+  STARTER_FRUIT_N,
   STARTER_TREE_GRAFTS,
   STARTER_VARIETY_PACKS,
   VARIETY,
@@ -302,6 +304,17 @@ function soloSeat(playerId: PlayerId, name: string): Seat {
       variety: v,
       quality: 0,
       count: 1,
+    })),
+    ...STARTER_FRUIT.map(v => ({
+      kind: 'fruit' as const,
+      crop: VARIETY[v].crop,
+      variety: v as VarietyId,
+      quality: 0,
+      count: STARTER_FRUIT_N,
+      unitSale: statsOf(VARIETY[v].crop, v, 0, []).sale,
+      freshness: 1,
+      bio: true,
+      cut: false,
     })),
   ]
   stock.forEach((item, i) => {

@@ -38,8 +38,13 @@ Three states, view-local in `map.tsx`. Not `World`, not Save, not logged.
 | `lens` | the picked lens |
 | `lensLock` | survives the dock closing |
 | `toolLens` | forced by an armed sku, lives exactly as long as that arming |
+| Build peek | unlocked `lens` while a Build Water / Vehicles / Sensors tab is open |
 
 Effective lens = `toolLens` when set, else `lens`. Disarm restores the picked lens; it never overwrites it. `toolLens` is `sensors` while a sensor-cell sku is armed, `pipes` while a `PIPE_PLACE` sku or delete is armed.
+
+Build peek is not `toolLens` and is not a lock. App remembers the `lens` that was on, writes the tab's lens, and restores on leaving that tab, closing Build, or leaving the shop system. Water → `pipes`. Vehicles → `vehicles`. Sensors → `sensors`. Processing / Storage / Land restore. `lensLock` already true → no write, no remember, no restore. Confirming a sensor-cell place still sets and locks `sensors`, once per arming.
+
+Assumption: Water tab peeks `pipes`, not Water need — Water need is a study skill, and the tab is pumps, pipes, and sprinklers.
 
 **Lock view** sits under **No lens**, `selected` on `lensLock`, disabled while `lens === 'off'` with the reason in the row — [[ui/callout-hover]]. Closing the dock (**×**, rail toggle, Esc) drops an unlocked lens to `off` and keeps a locked one.
 
@@ -59,7 +64,7 @@ Water-source mark (`pipe-source`, × + tap glyph on each occupied pump / rain-ta
 
 Wetness + AoE wash when `lens === 'pipes'` or place is delete / an `AOE_WASH` sku (`buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large`). Unarmed hover of a placed sprinkler also paints that head’s `aoe()` — [[ui/place]].
 
-Sensors: wires + port chrome + 3×3 reader wash when the effective lens is `sensors`. Build shelf `logic` sets it, locks it, and does not arm. Confirming a sensor-cell place sets and locks it too, look **Sensors lens locked**, once per arming. `leaveShop` no longer touches the lens: `toolLens` ends with the arming.
+Sensors: wires + port chrome + 3×3 reader wash when the effective lens is `sensors`. Build shelf `logic` peeks it unlocked and does not arm. Confirming a sensor-cell place sets and locks it, look **Sensors lens locked**, once per arming. `leaveShop` restores an unlocked Build peek; `toolLens` ends with the arming. A locked lens is not touched.
 
 Vehicles: paint hangar-return + pad arrows iff `driverVehicle(local)` OR `lens === 'vehicles'`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. No wash. Driving still paints with this lens off. Editor on: force this lens; route overlay numbered. This lens and editor off: thin assigned routes, no numbers. [[ui/vehicles]]
 

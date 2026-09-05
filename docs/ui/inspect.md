@@ -1,6 +1,6 @@
 # Inspect
 
-Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. Then `lookText` (cell name, soil, prompt). Armed place tints the look block roof (`bg-roof/20`, larger type).
+Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is `font-display` `text-sm` `truncate` — rustic, a step up from body, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof (`bg-roof/20`).
 
 Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
 
@@ -65,7 +65,20 @@ Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARRE
 
 ## Ripe
 
-Look names the Variety and Quality as a percent. Copy: **{Variety} · Quality {n}%**. Freshness only on the bar. Red `0 .. 0.8`, green `0.8 .. 1`. No amber. Notch at current. Number `floor(freshness * 100)%`.
+Look names the Variety and nothing else. Copy: **{Variety}**. Quality and Freshness are the two bars under it, `FruitStats`.
+
+| row | style | value |
+|---|---|---|
+| Quality | blue FillBar `#4b91c2` / `#8b887d` | `floor(quality * 100)%` |
+| Freshness | banded, no amber | `floor(freshness * 100)%` |
+
+Freshness bands: red `0 .. 0.8`, green `0.8 .. 1`. Notch at current.
+
+## Fruit on the ground
+
+A fruit item lying on the hovered cell draws the same `FruitStats` block, from the item's own `quality` and `freshness`. Top drop only, the one the look line names. Its look line is **{Variety} - {count}** and stops there: the numbers live on the bars, the same rule the ripe plot follows. Any other dropped item keeps its full `heldText` line and draws no bars.
+
+A ripe plot carrying a dropped fruit draws both blocks, plant first, drop second — the same order the two look lines are in. They are two different things and neither replaces the other.
 
 Weed / dead / rotten / turf / untilled: no bars.
 
@@ -149,11 +162,11 @@ Covering haste is a `lookText` line in that same `Status` block, after the machi
 
 | item | line |
 |---|---|
-| fruit | **{Variety} - {count}, freshness {n}% · Quality {n}%** |
+| fruit | **{Variety} - {count}, freshness {n}% · Quality {n}%** — the held line, not the ground line |
 | seeds | **{Variety} seed - {count}, plant it · Quality {n}%** |
 | tree-seed | **{Variety} seed - plant it on soft ground · Quality {n}%** |
 | graft | **{Variety} graft - {count} · Quality {n}%** |
-| spirit / cask / jam / oil / flour / extract / sugar | Quality as percent with the existing name line. Named jam from [[ui/recipe]]. Sugar **Sugar - {n}L** |
+| spirit / cask / jam / oil / flour / extract / sugar | Quality as percent with the existing name line. Named jam and **Premium** casks from [[ui/recipe]]. Sugar **Sugar - {n}L** |
 | wood | **Wood - {count}** |
 | ash | **Ash - {count}, compost it** |
 | axe | **Axe - {left}/{uses} uses left** |

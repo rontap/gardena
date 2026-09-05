@@ -36,10 +36,10 @@ function cycleLen(recipe: Recipe): number {
 
 function Slot({ face, text, size, warn }: { face: Face; text: string; size: Size; warn: boolean }) {
   return (
-    <span className="flex min-w-0 items-center gap-1.5">
+    <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <svg viewBox="0 0 24 24" className={`shrink-0 ${FACE[size]}`} dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
-      <span className={`flex min-w-0 flex-col ${warn ? 'font-bold text-roof' : 'text-ink/80'}`}>
-        <span className={`${TYPE[size]} leading-tight`}>{faceName(face)}</span>
+      <span className={`flex min-w-0 flex-col overflow-hidden ${warn ? 'font-bold text-roof' : 'text-ink/80'}`}>
+        <span className={`${TYPE[size]} truncate leading-tight whitespace-nowrap`}>{faceName(face)}</span>
         <span className={`${TYPE[size]} leading-none tabular-nums`}>{text}</span>
       </span>
     </span>
@@ -119,8 +119,8 @@ function Row({
 }) {
   const stage = useCycle(cycleLen(recipe))
   return (
-    <div className="flex items-center gap-2 py-1.5">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 py-1.5">
+      <div className="flex min-w-0 flex-col gap-1">
         {recipe.inputs.map((input, i) => (
           <InputSlot
             key={i}
@@ -142,7 +142,7 @@ function Row({
           {time}
         </span>
       </div>
-      <div className="flex min-w-0 flex-1 justify-end">
+      <div className="flex min-w-0 justify-end">
         <OutputSlot out={recipe.out} size={size} stage={stage} />
       </div>
     </div>

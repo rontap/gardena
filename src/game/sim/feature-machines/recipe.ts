@@ -14,7 +14,6 @@ import {
   GRIND_WORK,
   JAM_IN,
   JAM_SECONDS,
-  JAM_SUGAR,
   MILL_WORK,
   STATION_GRAFT_MAX,
   STATION_GRAFT_MIN,
@@ -31,6 +30,7 @@ import {
   ANNUAL_IDS,
   BARREL_CROPS,
   CASK_OF,
+  isAnnualId,
   JAM_CROPS,
   MILL_RECIPES,
   SPIRIT_KINDS,
@@ -48,6 +48,7 @@ import {
   feedVariety,
   grindProduct,
   jamSale,
+  jamSugar,
   jamWorking,
   millNeed,
   millProduct,
@@ -153,15 +154,20 @@ function millRecipe(pin: MillPin): Recipe {
 }
 
 function jamRecipe({ crop, variety }: Pin<JamCrop>): Recipe {
+  const sugar = jamSugar(crop, variety)
   return {
     machine: 'jam',
     inputs: [
       { kind: 'one', face: fruitFace(crop, variety), amount: units(JAM_IN) },
-      {
-        kind: 'one',
-        face: { kind: 'sugar', liters: JAM_SUGAR, capacityLiters: JAM_SUGAR, unitSale: 0, quality: 0 },
-        amount: { kind: 'liters', l: JAM_SUGAR },
-      },
+      ...(sugar === 0
+        ? []
+        : [
+            {
+              kind: 'one' as const,
+              face: { kind: 'sugar' as const, liters: sugar, capacityLiters: sugar, unitSale: 0, quality: 0 },
+              amount: { kind: 'liters' as const, l: sugar },
+            },
+          ]),
     ],
     out: {
       kind: 'exact',
@@ -217,17 +223,30 @@ export const GRIND_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].f
   VARIETIES[crop].map(variety => ({ crop, variety })),
 )
 
-const GRINDER: Recipe = {
-  machine: 'grinder',
-  inputs: [{ kind: 'any', faces: GRIND_PINS.map(p => fruitFace(p.crop, p.variety)), amount: units(1) }],
-  out: {
-    kind: 'range',
-    faces: GRIND_PINS.map(p => grindProduct({ crop: p.crop, variety: p.variety, quality: 0 }, 1)),
-    min: GRIND_MIN,
-    max: GRIND_MAX,
-  },
-  duration: { kind: 'work', seconds: GRIND_WORK },
+export const GRIND_VARIANT_PINS: readonly Pin<CropId>[] = GRIND_PINS.filter(
+  p => isAnnualId(p.crop) && tierOf(p.variety) === 'variant',
+)
+
+export const GRIND_PLAIN_PINS: readonly Pin<CropId>[] = GRIND_PINS.filter(
+  p => !(isAnnualId(p.crop) && tierOf(p.variety) === 'variant'),
+)
+
+function grindRow(pins: readonly Pin<CropId>[]): Recipe {
+  return {
+    machine: 'grinder',
+    inputs: [{ kind: 'any', faces: pins.map(p => fruitFace(p.crop, p.variety)), amount: units(1) }],
+    out: {
+      kind: 'range',
+      faces: pins.map(p => grindProduct({ crop: p.crop, variety: p.variety, quality: 0 }, 1)),
+      min: GRIND_MIN,
+      max: GRIND_MAX,
+    },
+    duration: { kind: 'work', seconds: GRIND_WORK },
+  }
 }
+
+const GRINDER = grindRow(GRIND_PLAIN_PINS)
+const GRINDER_VARIANT = grindRow(GRIND_VARIANT_PINS)
 
 const COMPOST_OUT: Yield = {
   kind: 'exact',
@@ -451,7 +470,7 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'jam') return JAM_LIST
   if (m === 'still') return STILL_LIST
   if (m === 'barrel') return BARREL_LIST
-  if (m === 'grinder') return [GRINDER]
+  if (m === 'grinder') return [GRINDER, GRINDER_VARIANT]
   if (m === 'furnace') return FURNACE_ROWS
   if (m === 'station') return STATION_LIST
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
@@ -513,7 +532,7 @@ function jamCraft(c: JamMachine, mul: number, haste: number): Craft {
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (jamWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (c.fruit < JAM_IN) return { kind: 'filling', recipe, at: 0, have: c.fruit, need: JAM_IN }
-  return { kind: 'filling', recipe, at: 1, have: c.sugar, need: JAM_SUGAR }
+  return { kind: 'filling', recipe, at: 1, have: c.sugar, need: jamSugar(c.crop, c.variety) }
 }
 
 function stillCraft(c: PotStill, mul: number, haste: number): Craft {

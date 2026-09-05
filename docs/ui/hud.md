@@ -98,7 +98,7 @@ Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — deri
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace`. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens — [[ui/place]] [[ui/docks]] [[ui/lens]]. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build **Sensors** tab sets `lens = 'sensors'` and does not arm. Switching Build category does not force the lens off.
+Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace` and restores an unlocked Build peek. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water / Vehicles / Sensors peek the matching lens with no lock — [[ui/lens]] [[ui/build]].
 
 ## Lenses
 
@@ -124,8 +124,10 @@ Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears in
 
 ## Bottom-right
 
-`absolute right-4 bottom-4 z-20` `w-80`. Queue (if any) then [[ui/inspect]].
+`absolute right-4 bottom-4 z-20` `w-80`. Queue (if any) then [[ui/inspect]]. Held name and the first look line: `font-display` `text-sm` — [[ui/type]].
 
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
+
+`e2e/buildings.spec.ts`: `#unlockall`, place every cell Build sku, `e2e/shots/buildings.png`.
 
 Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]].

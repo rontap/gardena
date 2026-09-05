@@ -40,7 +40,7 @@ import {
 import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
 import { STAT_COLOR } from '../ui/status.tsx'
-import { FURNACE, HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STILL, skuInner, symHref } from './svgs.ts'
+import { FURNACE, HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
@@ -73,6 +73,13 @@ function Use({ art }: { art: string }) {
 
 function placeLine(id: SkuId): string {
   return m.prompt_place({ name: skuLabel(id) })
+}
+
+function wideGhost(id: SkuId): string {
+  if (id === 'buy-pumpjack') return PUMP
+  if (id === 'buy-rain-tank') return RAIN_TANK
+  if (id === 'buy-research-station') return STATION
+  return STILL
 }
 
 function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: number }, clientX: number, clientY: number) {
@@ -579,7 +586,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             viewBox="0 0 48 24"
             style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
           >
-            <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
+            <Use art={wideGhost(placeId)} />
           </svg>
         )}
         {furnacePlace && strokeCell !== undefined && (
@@ -677,7 +684,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       {pumpjack && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-8 w-16" viewBox="0 0 48 24">
-            <Use art={placeId === 'buy-pumpjack' ? PUMP : placeId === 'buy-rain-tank' ? RAIN_TANK : STILL} />
+            <Use art={wideGhost(placeId)} />
           </svg>
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>

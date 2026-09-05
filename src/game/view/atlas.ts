@@ -3,10 +3,8 @@ import type {
   ContainerId,
   CropId,
   CaskId,
-  JamCrop,
   PickaxeId,
   ShovelId,
-  SpiritKind,
   TileId,
   TrailerKind,
   TreeId,
@@ -15,7 +13,7 @@ import type {
 import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
 import { ANNUAL_IDS, TREE_IDS } from '../sim/ids.ts'
-import { ripeGroup, fruitGroup, varietyGroup, graftSpecies, type VarietyGroup } from './svgs.ts'
+import { ripeGroup, fruitGroup, jamArt, spiritArt, varietyGroup, graftSpecies, type JamArt, type SpiritArt, type VarietyGroup } from './svgs.ts'
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
 import type { CropClass } from '../defs/crops.ts'
@@ -178,6 +176,10 @@ import itemJamGrape from '../../assets/items/item-jam-grape.svg?raw'
 import itemJamRaspberry from '../../assets/items/item-jam-raspberry.svg?raw'
 import itemJamCherry from '../../assets/items/item-jam-cherry.svg?raw'
 import itemKetchup from '../../assets/items/item-ketchup.svg?raw'
+import itemJamConcord from '../../assets/items/item-jam-concord.svg?raw'
+import itemJamBlackRaspberry from '../../assets/items/item-jam-black-raspberry.svg?raw'
+import itemPassata from '../../assets/items/item-passata.svg?raw'
+import itemSpiritPalinka from '../../assets/items/item-spirit-palinka.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
@@ -322,10 +324,9 @@ export type AtlasKey =
   | `item-dead-${CropClass}`
   | 'item-grass'
   | 'sugar'
-  | `spirit-${SpiritKind}`
+  | SpiritArt
   | `cask-${CaskId}-${CaskGroup}`
-  | `jam-${Exclude<JamCrop, 'tomato'>}`
-  | 'ketchup'
+  | JamArt
   | 'oil'
   | 'flour'
   | 'extract'
@@ -656,6 +657,7 @@ async function load(): Promise<void> {
   put('spirit-beer', itemSpiritBeer)
   put('spirit-brandy', itemSpiritBrandy)
   put('spirit-mixed', itemSpiritMixed)
+  put('spirit-palinka', itemSpiritPalinka)
   CASK_GROUPS.forEach(g => {
     put(`cask-wine-${g}`, itemWine, g)
     put(`cask-cider-${g}`, itemCider, g)
@@ -665,6 +667,9 @@ async function load(): Promise<void> {
   put('jam-raspberry', itemJamRaspberry)
   put('jam-cherry', itemJamCherry)
   put('ketchup', itemKetchup)
+  put('jam-concord', itemJamConcord)
+  put('jam-black-raspberry', itemJamBlackRaspberry)
+  put('passata', itemPassata)
   put('oil', itemOil)
   put('flour', itemFlour)
   put('extract', itemExtract)
@@ -826,12 +831,9 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'rotten') return `item-rotten-${item.cls}`
   if (item.kind === 'dead') return `item-dead-${item.cls}`
   if (item.kind === 'sugar') return 'sugar'
-  if (item.kind === 'spirit') return `spirit-${item.spirit}`
+  if (item.kind === 'spirit') return spiritArt(item.spirit, item.variety)
   if (item.kind === 'cask') return `cask-${item.cask}-${caskGroup(item.variety)}`
-  if (item.kind === 'jam') {
-    if (item.crop === 'tomato') return 'ketchup'
-    return `jam-${item.crop}`
-  }
+  if (item.kind === 'jam') return jamArt(item.crop, item.variety)
   if (item.kind === 'oil') return 'oil'
   if (item.kind === 'flour') return 'flour'
   if (item.kind === 'extract') return 'extract'

@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { BUILD_SHELVES, SHELVES, SHOP_SHELVES, shelfOf, type Shelf, type ShelfId } from '../defs/shelf.ts'
 import type { SkuId } from '../sim/ids.ts'
@@ -53,6 +53,11 @@ function SkuDock({ deck, world, onClose, query, setQuery, onGo, onShelf }: DeckP
   const [tab, setTab] = useState<ShelfId | undefined>(undefined)
   const at = tab !== undefined && open.some(s => s.id === tab) ? tab : open[0]?.id
   const hits = query.trim() === '' ? undefined : found(world, query)
+  const onShelfRef = useRef(onShelf)
+  onShelfRef.current = onShelf
+  useEffect(() => {
+    if (at !== undefined) onShelfRef.current(at)
+  }, [at])
 
   function act(id: SkuId): void {
     const home = shelfOf(id).panel

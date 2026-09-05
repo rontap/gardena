@@ -13,12 +13,11 @@ import {
   SILO_W,
   JAM_BUFFER,
   JAM_IN,
-  JAM_SUGAR,
   STATION_IN,
   STILL_CAP,
   FURNACE_NEED,
 } from '../defs/items.ts'
-import { countable, jamJar, jamJarName, skuLabel, stackable, toolName, type Hand, type Item } from './item.ts'
+import { caskName, countable, jamJar, jamJarName, skuLabel, stackable, toolName, type Hand, type Item } from './item.ts'
 import {
   barrelAccept,
   barrelCropOf,
@@ -29,6 +28,7 @@ import {
   grindAccept,
   jamCropOf,
   jamFruitAccept,
+  jamSugar,
   millAccept,
   millNeed,
   millRecipeOf,
@@ -601,8 +601,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'barrel') {
     const look = barrelLook(cell, w.act.hand)
     if (barrelCollectOk(cell, w.act.hand) && cell.crop !== 'none') {
-      const cask = CASK_OF[cell.crop]
-      const name = (cask === 'wine' ? m.names_cask_wine() : m.names_cask_cider()).toLowerCase()
+      const name = caskName(CASK_OF[cell.crop], feedVariety(cell.feed)).toLowerCase()
       return intent(m.prompt_collect({ name }), { act: 'barrel', at })
     }
     if (barrelDumpOk(cell, w.act.hand)) {
@@ -912,7 +911,7 @@ function barrelCollectOk(barrel: Barrel, hand: Hand): boolean {
 
 export function jamLook(jam: JamMachine, hand: Hand): string {
   const name = m.names_building_jam()
-  if (jam.fruit >= JAM_IN && jam.sugar >= JAM_SUGAR && jam.crop !== 'none') {
+  if (jam.crop !== 'none' && jam.fruit >= JAM_IN && jam.sugar >= jamSugar(jam.crop, jam.variety)) {
     return labeled(name, m.prompt_working_pct({ n: Math.floor(jam.progress * 100) }))
   }
   if (jam.crop !== 'none' && hand.kind === 'hold') {

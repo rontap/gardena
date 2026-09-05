@@ -104,7 +104,7 @@
   "prompt_ripe": "ripe, {rarity}",
   "prompt_ripe_fresh": "ripe, {rarity}, freshness {n}%",
   "prompt_growing_variety": "{name}",
-  "prompt_ripe_quality": "{name} \u00b7 Quality {n}%",
+  "prompt_ripe_variety": "{name}",
   "prompt_tree_variety": "{name}",
   "prompt_neighbour_wait": "Needs another {name} nearby that is not Heirloom.",
   "prompt_neighbour_wait_tree": "Needs another {name} tree nearby that is not Heirloom.",

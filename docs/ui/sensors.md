@@ -10,9 +10,9 @@ No new chrome shell. No wire SKU. No new `@theme` color.
 
 Wires are sim-state always. Paint and port hits iff the effective lens is `sensors`. An armed sensor-cell SKU forces it through `toolLens`, and confirming a place locks it — [[ui/lens]].
 
-Selecting Build shelf `logic` (**Sensors**) sets and locks `lens = 'sensors'`. Does not arm a SKU. [[ui/build]]
+Selecting Build shelf `logic` (**Sensors**) peeks `lens = 'sensors'` with no lock. Does not arm a SKU. [[ui/build]]
 
-Esc / Shop **×** / Build close / leaving the shop system: `cancelPlace` only. The lens is untouched — a locked `sensors` survives, and an unlocked one dies with the Lens dock, not the shop.
+Esc / Shop **×** / Build close / leaving the shop system: `cancelPlace` and restore an unlocked peek. A locked `sensors` survives. An unlocked peek dies with Build, not the Lens dock.
 
 ## Fade
 

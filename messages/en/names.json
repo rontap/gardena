@@ -34,6 +34,7 @@
   "names_spirit_mixed": "Mixed spirit",
   "names_cask_wine": "Wine",
   "names_cask_cider": "Cider",
+  "names_cask_premium": "Premium {name}",
   "names_tile_paved": "Paving slab",
   "names_tile_brick": "Brickwork",
   "names_tile_cobble": "Cobblestone",
@@ -265,7 +266,7 @@
   "names_sku_buy_research_station": "Seed Variety Station",
   "names_item_graft": "{name} graft",
   "names_variety_pair": "{crop} ({variety})",
-  "names_spirit_klosterneuburger": "Apricot pálinka",
+  "names_spirit_klosterneuburger": "Barackpálinka",
   "names_purpose_produce": "Fresh",
   "names_purpose_processed": "Preserving",
   "names_purpose_alcohol": "Alcohol"

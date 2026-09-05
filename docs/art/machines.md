@@ -41,6 +41,7 @@ No groups. Shop/hand/almanac face.
 | `item-spirit-beer.svg` | gold bottle, house foam |
 | `item-spirit-brandy.svg` | roof bottle, ripe body |
 | `item-spirit-mixed.svg` | bottle, dirt / ripe / blush thirds |
+| `item-spirit-palinka.svg` | slim bottle, long gold-foiled neck, cream label between gold rules, blush apricot mark and blush spirit — `klosterneuburger` brandy only, `spiritArt` |
 
 ## Wine
 
@@ -49,7 +50,7 @@ No groups. Shop/hand/almanac face.
 | `item-wine.svg` | `common` `rare` `heirloom` | long-neck bottle. `common` grape; `rare` house; `heirloom` ripe |
 | `item-cider.svg` | `common` `rare` `heirloom` | squat bottle, ripe fill |
 
-Wine and cider carry two faces, `base` and `heirloom` — a variant cask draws the plain jar. Named jam (`concord` grape jelly, `black-raspberry` jam, `san-marzano` passata) is a name, not a face.
+Wine and cider carry two faces, `base` and `heirloom` — a variant cask draws the plain jar. The heirloom face is the one the player reads as **Premium wine** / **Premium cider** — [[mechanics/machines]].
 
 ## Jams
 
@@ -62,6 +63,11 @@ Jar = skill-jam language. Ketchup is a bottle.
 | `item-jam-raspberry.svg` | jar, fruit-red fill, berry dots |
 | `item-jam-cherry.svg` | jar, roof fill, two cherries |
 | `item-ketchup.svg` | squeeze bottle, fruit-red |
+| `item-jam-concord.svg` | tall jelly jar, gold wax cap, grape jelly, gold label with a cluster |
+| `item-jam-black-raspberry.svg` | jar under a cloth lid tied with twine, near-black fill, gold-ruled label with five ink berries |
+| `item-passata.svg` | tin can, rims top and bottom, fruit-red label between gold rules, house tomato |
+
+A named jar is a face, not only a name. `jamArt` selects it. `concord` and `black-raspberry` stay jars and say premium with the cap and the gold; `san-marzano` leaves the jar language altogether, because passata is sold in a can.
 
 ## Mill outs
 
@@ -74,4 +80,4 @@ Jar = skill-jam language. Ketchup is a bottle.
 
 Station `off` is dark seed trays, an unlit lamp, and three bare cuttings in their pots. `on` lights the lamp fruit-red and puts leaf shoots on the trays and every cutting. Cottage propagation bench. Language: seed tray, potting bench, cutting. Lamp face is iron; no steel or oil.
 
-Assumption: occupancy stays 2×1 / 1×2; only the drawing is 1.5×1 / 1×1.5. Wine / cider / cane `rare` unused: `common` stands in. Ketchup is a bottle not a jar. Still shop face is the 2×1 still packed into 24×24.
+Assumption: occupancy stays 2×1 / 1×2; only the drawing is 1.5×1 / 1×1.5. Wine / cider / cane `rare` unused: `common` stands in. Ketchup is a bottle not a jar. Passata is a can not a jar. Still shop face is the 2×1 still packed into 24×24.

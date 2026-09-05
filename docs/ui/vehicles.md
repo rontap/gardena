@@ -215,7 +215,7 @@ Enter, same text-field ignore. If driving → `Act.disembark`. Else closest fiel
 
 `ui-hangar-return` on each hangar’s three pad tiles and on every seed/spray/produce silo’s two pad tiles (`siloPad`). `pointer-events-none`. Paint iff `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Same art. No wash. Driving still paints with this lens off. Silo pads: no dialog.
 
-`ui-pad-drop` on dropoff tiles, `ui-pad-take` on takeup. Mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store. Not barrel, grinder, field silos. Same show rule: `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `pointer-events-none`. No wash. `leaveShop` / Esc still only pipes / sensors → `off`. [[ui/lens]] [[ui/hud]]
+`ui-pad-drop` on dropoff tiles, `ui-pad-take` on takeup. Dropoff arrow points out of the building. Mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store. Not barrel, grinder, field silos. Same show rule: `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `pointer-events-none`. No wash. `leaveShop` restores an unlocked Build peek. [[ui/lens]] [[ui/hud]]
 
 ## View
 

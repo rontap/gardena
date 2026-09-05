@@ -40,7 +40,7 @@ worth += count × freshMul(freshness) × qualityMul(quality) × purposeMul(varie
 
 Sugar: stall id `sugar`, one bin, `worth += liters × unitSale`.
 
-Spirit / cask: stall id `SpiritKind` / `CaskId`, stock per variety (mixed: one bin), `worth += count × unitSale`.
+Spirit / cask: stall id `SpiritKind` / `CaskId`, stock per variety (mixed: one bin), `worth += count × unitSale`. The bin is a `CaskId` and reads the plain `CASK_NAME`; the **Premium** prefix is on the item, which carries a variety — [[mechanics/machines]].
 
 Jam / oil / flour / extract: one bin, `worth += count × unitSale`. `jam-tomato` **Ketchup** when variety is `'base'`. Named jars — [[mechanics/machines]].
 

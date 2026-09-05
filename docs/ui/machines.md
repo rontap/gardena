@@ -80,7 +80,7 @@ Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge 
 
 ## Jam machine
 
-Lock crop + Variety. Output sale `JAM_SALE[crop] × purposeMul(variety, 'processed') × qualityMul(mean q)`. Named jars [[ui/recipe]]. Every tomato but San Marzano is **Ketchup**.
+Lock crop + Variety. Output sale `JAM_SALE[crop] × purposeMul(variety, 'processed') × qualityMul(mean q)`. Named jars [[ui/recipe]]. Every tomato but San Marzano is **Ketchup**. Sugar is per jar, `jamSugar` — [[mechanics/machines]].
 
 | when | text |
 |---|---|

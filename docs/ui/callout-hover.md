@@ -1,6 +1,6 @@
 # Callout hover
 
-`CalloutHover` in `src/game/ui/callout-hover.tsx`. Chrome card, same rails as a main window. `w-64`. Title in `font-display` `text-xs`, then description `text-sm` `text-ink/75`, `whitespace-pre-line`.
+`CalloutHover` in `src/game/ui/callout-hover.tsx`. Chrome card, same rails as a main window. `w-80`. Title in `font-display` `text-xs`, then description `text-sm` `text-ink/75`, `whitespace-pre-line`. Wider than a body card so a Recipe row with long `faceName` stays one line — [[ui/recipe]].
 
 ```
 placement: 'right' | 'below'

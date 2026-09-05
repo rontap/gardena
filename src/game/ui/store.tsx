@@ -75,13 +75,15 @@ type Tip =
   | { kind: 'buy'; crop: AnnualId; sku: SkuId }
   | undefined
 
+const SILO_CROPS: readonly AnnualId[] = ['sugar-cane', ...ANNUAL_IDS.filter(c => c !== 'sugar-cane')]
+
 export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const [tip, setTip] = useState<Tip>(undefined)
   const cell = world.cell(at)
   if (cell.kind !== 'seed-silo') return null
   const stackOf = (crop: AnnualId, variety: VarietyId) => cell.seeds.find(st => st.crop === crop && st.variety === variety)
   const held = (crop: AnnualId, variety: VarietyId): number => stackOf(crop, variety)?.count ?? 0
-  const crops = ANNUAL_IDS.filter(crop => {
+  const crops = SILO_CROPS.filter(crop => {
     const pack = packSku(crop)
     return (pack !== undefined && world.skuShown(pack)) || VARIETIES[crop].some(v => held(crop, v) > 0)
   })

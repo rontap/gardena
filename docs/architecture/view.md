@@ -82,6 +82,8 @@ AtlasKey +=
   | 'station-on'
 ```
 
+A product a Variety renames also carries its own face, and one selector says which: `jamArt(crop, variety)` and `spiritArt(spirit, variety)` in `svgs.ts`, read by both the HUD chrome and `faceKey`. `jamArt` adds `'jam-concord'` `'jam-black-raspberry'` `'passata'` beside the per-crop jars and `'ketchup'`; `spiritArt` adds `'spirit-palinka'` for `klosterneuburger` brandy. Whole files, not `<g id>` groups — a named product is a different container, not a tint of the same one.
+
 `faceKey` / `itemInner` take Variety, not a ladder. Graft face. Station prop `off` / `on`. Faces carry no Quality mark; Quality is copy — [[ui/inspect]].
 
 `EDGE_PAD` 4 — preference. Raster `dirt-edge` / `dirt-inset` with 4 viewBox units on every side (32×32 source, then 2×). Equal pad keeps the 24-unit cell at texture center. Other atlas keys stay viewBox-tight. `tile-dirt-edge.svg` / `tile-dirt-inset.svg` overhang the 24-unit grid (edge paths to y=26, inset from -3,-3); a viewBox-tight raster clips the lip. [[art/tilled-edges]]
@@ -183,6 +185,8 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 `view.variety` — Plant ripe, fruit, cask, tree ripe, and graft faces select the Variety's `tier` as its group. Never a ladder, never positional: one crop carries at most one `'variant'` and one `'heirloom'`. Unripe trees carry no Variety. `caskGroup` collapses `'variant'` onto `'base'`. HUD chrome uses the same selector in `svgs.ts`.
 
 `view.groups` — Every `<g id>` the atlas asks for exists in the file it reads, and the file carries no group the atlas never asks for.
+
+`view.named-face` — `jamArt` and `spiritArt` are the only statement of which face a named product draws. A Variety that renames a jar or a bottle draws its own file; every other Variety of that crop falls back to the crop face. `faceKey` and `itemInner` both call them, so the atlas key and the HUD chrome can never disagree.
 
 Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
 Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.

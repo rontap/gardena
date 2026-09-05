@@ -2,6 +2,7 @@ import { m } from '../../paraglide/messages.js'
 import { useEffect } from 'react'
 import { heldText } from '../sim/item.ts'
 import { lookText } from '../sim/look.ts'
+import { onCell } from '../sim/drop.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import type { World } from '../sim/world.ts'
 import { Chrome } from './frame.tsx'
@@ -64,6 +65,36 @@ function StatRow({ label, value, text, segments }: { label: string; value: numbe
   )
 }
 
+const FRESH_SEGMENTS: readonly Segment[] = [
+  { from: 0, to: 0.8, color: 'red' },
+  { from: 0.8, to: 1, color: 'green' },
+]
+
+function FruitStats({ quality, freshness }: { quality: number; freshness: number }) {
+  return (
+    <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="w-20 shrink-0 font-semibold text-ink/70">{m.hud_quality()}</span>
+        <FillBar value={quality} />
+        <span className="w-12 shrink-0 text-right tabular-nums">{Math.floor(quality * 100)}%</span>
+      </div>
+      <StatRow
+        label={m.hud_freshness()}
+        value={freshness}
+        text={`${Math.floor(freshness * 100)}%`}
+        segments={FRESH_SEGMENTS}
+      />
+    </div>
+  )
+}
+
+function DropStats({ world, hover }: { world: World; hover: PromptHit }) {
+  if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
+  const item = onCell(world.drops, hover.at).at(-1)?.item
+  if (item?.kind !== 'fruit') return null
+  return <FruitStats quality={item.quality} freshness={item.freshness} />
+}
+
 function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   if (hover.kind !== 'cell' || !world.inWorld(hover.at)) return null
   const cell = world.cell(hover.at)
@@ -103,11 +134,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     )
   }
   if (cell.kind === 'ripe') {
-    return (
-      <div className="bg-dirt/25 px-3 py-2.5">
-        <StatRow label={m.hud_freshness()} value={cell.plant.freshness} text={`${Math.floor(cell.plant.freshness * 100)}%`} segments={[{ from: 0, to: 0.8, color: 'red' }, { from: 0.8, to: 1, color: 'green' }]} />
-      </div>
-    )
+    return <FruitStats quality={cell.plant.quality} freshness={cell.plant.freshness} />
   }
   if (cell.kind === 'empty') {
     const resist = Math.min(1, Math.max(0, (1 - cell.soil.weedChance) / 2))
@@ -183,6 +210,23 @@ function MachineCraft({ world, hover }: { world: World; hover: PromptHit }) {
   )
 }
 
+function LookBlock({ body, armed }: { body: string; armed: boolean }) {
+  const nl = body.indexOf('\n')
+  const title = nl < 0 ? body : body.slice(0, nl)
+  const rest = nl < 0 ? '' : body.slice(nl + 1)
+  return (
+    <div
+      data-look
+      className={`relative px-3 py-3 leading-snug ${
+        armed ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
+      }`}
+    >
+      {title !== '' && <div className="truncate font-display text-sm leading-tight whitespace-nowrap">{title}</div>}
+      {rest !== '' && <div className="mt-1 whitespace-pre-line">{rest}</div>}
+    </div>
+  )
+}
+
 export function Status({
   world,
   hover,
@@ -204,7 +248,7 @@ export function Status({
         ) : (
           <div className="h-12 w-12 shrink-0 bg-dirt-dark" />
         )}
-        <div className="min-w-0 text-base leading-snug font-semibold">
+        <div className="min-w-0 truncate font-display text-sm leading-tight whitespace-nowrap">
           {hand.kind === 'hold' && (hand.item.kind === 'fruit' || hand.item.kind === 'sugar') ? (
             <ItemLineView item={hand.item} />
           ) : (
@@ -212,15 +256,9 @@ export function Status({
           )}
         </div>
       </div>
-      <div
-        data-look
-        className={`relative px-3 py-3 leading-snug whitespace-pre-line ${
-          seat.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
-        }`}
-      >
-          {body}
-        </div>
+      <LookBlock body={body} armed={seat.place.kind !== 'none'} />
         {hover !== undefined && <PlantStats world={world} hover={hover} />}
+        {hover !== undefined && <DropStats world={world} hover={hover} />}
         {hover !== undefined && <StoreContents world={world} hover={hover} />}
         {hover !== undefined && <MachineCraft world={world} hover={hover} />}
         {hover !== undefined && <BarrelAge world={world} hover={hover} />}

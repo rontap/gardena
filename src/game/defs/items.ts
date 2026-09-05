@@ -96,6 +96,7 @@ export const MILL_VANILLA_OUT = 3
 export const MILL_WORK = 10
 export const JAM_IN = 5
 export const JAM_SUGAR = 0.4
+export const KETCHUP_SUGAR = 0.8
 export const JAM_SECONDS = 40
 export const JAM_BUFFER = 4
 export const STILL_CAP = 10

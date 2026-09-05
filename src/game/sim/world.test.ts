@@ -30,6 +30,8 @@ import {
     BETTER_QUALITY,
     purposeMul,
     qualityMul,
+    STARTER_FRUIT,
+    STARTER_FRUIT_N,
     STARTER_TREE_GRAFTS,
     VARIETY,
     type VarietyId
@@ -481,7 +483,7 @@ describe('beta-2 invariants', () => {
         }
         w.swap(2)
         expectPacked(w)
-        const fruits = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit')
+        const fruits = w.seats[0].inventory.filter(s => s.kind === 'hold' && s.item.kind === 'fruit' && s.item.crop === 'carrot')
         expect(fruits).toHaveLength(1)
         expect(fruits[0].kind === 'hold' && fruits[0].item.kind === 'fruit' && fruits[0].item.count).toBe(5)
     })
@@ -796,7 +798,7 @@ describe('beta-3 invariants', () => {
 })
 
 describe('beta-4 invariants', () => {
-    test("`inventory.slots` — House starter: four `'base'` tree seeds and one graft of every tree variety. Ten of sixteen.", () => {
+    test("`inventory.slots` — House starter: four `'base'` tree seeds, one graft of every tree variety, and a stack of every starter Heirloom fruit. Twelve of sixteen.", () => {
         const w = new World()
         const inv = w.seats[0].inventory
         const trees = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'tree-seed' ? [s.item] : []))
@@ -805,7 +807,12 @@ describe('beta-4 invariants', () => {
         const grafts = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'graft' ? [s.item] : []))
         expect(grafts.map(g => g.variety).sort()).toEqual([...STARTER_TREE_GRAFTS].sort())
         expect(grafts.every(g => g.count === 1 && g.quality === 0 && VARIETY[g.variety as Exclude<VarietyId, 'base'>].crop === g.crop)).toBe(true)
-        expect(inv.filter(s => s.kind === 'hold').length).toBe(TREE_IDS.length + STARTER_TREE_GRAFTS.length)
+        const fruit = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'fruit' ? [s.item] : []))
+        expect(fruit.map(f => f.variety).sort()).toEqual([...STARTER_FRUIT].sort())
+        expect(fruit.every(f => f.count === STARTER_FRUIT_N && f.quality === 0 && f.freshness === 1 && f.bio)).toBe(true)
+        expect(inv.filter(s => s.kind === 'hold').length).toBe(
+            TREE_IDS.length + STARTER_TREE_GRAFTS.length + STARTER_FRUIT.length,
+        )
         expect(inv.length).toBe(16)
     })
 

@@ -31,7 +31,7 @@ import {
   SUGAR_MILL,
   SUGAR_SHOP,
 } from '../../defs/items.ts'
-import { purposeMul, PURPOSE_MUL, qualityMul } from '../../defs/varieties.ts'
+import { caskGroup, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
 import { paid } from '../feature-contracts/market.ts'
 import {
   bakeCaskSale,
@@ -59,7 +59,8 @@ import {
   stationApply,
   stationWorking,
 } from './machine.ts'
-import { caskMulOf, furnaceValue, mergeInto, type Item } from '../item.ts'
+import { CASK_NAME, caskMulOf, caskName, furnaceValue, mergeInto, type Item } from '../item.ts'
+import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
@@ -782,13 +783,28 @@ describe('machines.barrel aging look', () => {
     const lines = lookText(w, { kind: 'cell', at: AT }, false).split('\n')
     const top = lines.find(l => l.includes(String(Math.round(BARREL_AGE / DAY_SECONDS))))
     expect(top).toBeDefined()
-    expect(top).toContain(m.names_cask_wine())
+    expect(top).toContain(caskName('wine', 'keknyelu'))
+    expect(caskName('wine', 'keknyelu')).not.toBe(m.names_cask_wine())
+    expect(caskName('wine', 'concord')).toBe(m.names_cask_wine())
     expect(top).toContain('Kéknyelű')
     expect(top).toContain(String(caskAgeTop(1)))
 
     barrel.age = BARREL_MATURE - 1
     const young = lookText(w, { kind: 'cell', at: AT }, false).split('\n')
-    expect(young.some(l => l.includes(m.names_cask_wine()))).toBe(false)
+    expect(young.some(l => l.includes(caskName('wine', 'keknyelu')))).toBe(false)
+  })
+})
+
+describe('machines.cask-premium', () => {
+  test('`machines.cask-premium` — A cask from an Heirloom Variety reads Premium; every other Variety reads the plain cask name. The stall bin is a `CaskId` and keeps `CASK_NAME`.', () => {
+    CASK_IDS.forEach(cask => {
+      expect(caskName(cask, 'base')).toBe(CASK_NAME[cask]())
+      VARIETIES[CROP_OF_CASK[cask]].forEach(v => {
+        const premium = caskGroup(v) === 'heirloom'
+        expect(caskName(cask, v) === CASK_NAME[cask]()).toBe(!premium)
+        expect(caskName(cask, v).includes(CASK_NAME[cask]().toLowerCase())).toBe(premium)
+      })
+    })
   })
 })
 

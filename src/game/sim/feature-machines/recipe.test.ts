@@ -11,6 +11,7 @@ import {
   EXTRACT,
   JAM_IN,
   JAM_SUGAR,
+  KETCHUP_SUGAR,
   MILL_VANILLA_IN,
   MILL_VANILLA_OUT,
   MILL_WORK,
@@ -21,11 +22,13 @@ import {
 } from '../../defs/items.ts'
 import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop, type MillRecipe } from '../ids.ts'
 import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
-import { barrelNeed, millNeed } from './machine.ts'
+import { barrelNeed, jamSugar, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from '../building.ts'
 import {
   BARREL_PINS,
   GRIND_PINS,
+  GRIND_PLAIN_PINS,
+  GRIND_VARIANT_PINS,
   JAM_PINS,
   MACHINE_IDS,
   MILL_PINS,
@@ -65,7 +68,7 @@ describe('recipes.table', () => {
     expect(recipesOf('jam').length).toBe(8)
     expect(recipesOf('still').length).toBe(STILL_CROPS.length + 2)
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length * 2)
-    expect(recipesOf('grinder').length).toBe(1)
+    expect(recipesOf('grinder').length).toBe(2)
     expect(recipesOf('compost-box').length).toBe(4)
     expect(recipesOf('furnace').length).toBe(6)
     expect(recipesOf('station').length).toBe(
@@ -115,32 +118,64 @@ describe('recipes.table', () => {
     })
   })
 
-  test('jam carries fruit units and a sugar charge', () => {
+  test('`machines.jam-sugar` — Sugar is per jar: `san-marzano` none, tomato twice a jam, everything else `JAM_SUGAR`. A jar at 0 carries no sugar input.', () => {
+    expect(jamSugar('grape', 'concord')).toBe(JAM_SUGAR)
+    expect(jamSugar('tomato', 'base')).toBe(KETCHUP_SUGAR)
+    expect(jamSugar('tomato', 'green-zebra')).toBe(KETCHUP_SUGAR)
+    expect(KETCHUP_SUGAR).toBe(2 * JAM_SUGAR)
+    expect(jamSugar('tomato', 'san-marzano')).toBe(0)
     recipesOf('jam').forEach(r => {
       expect(unitsOf(r.inputs[0])).toBe(JAM_IN)
-      expect(litersOf(r.inputs)).toEqual([JAM_SUGAR])
+      const out = r.out
+      if (out.kind !== 'exact' || out.face.kind !== 'jam') throw new Error('jam row')
+      const sugar = jamSugar(out.face.crop, out.face.variety)
+      expect(litersOf(r.inputs)).toEqual(sugar === 0 ? [] : [sugar])
     })
   })
 
   test('grinder yields the seed range in lockstep with every crop and variety', () => {
-    const row = recipesOf('grinder')[0]
-    const input = row.inputs[0]
-    expect(row.out).toMatchObject({ kind: 'range', min: GRIND_MIN, max: GRIND_MAX })
-    expect(input.kind).toBe('any')
-    expect(row.out.kind).toBe('range')
-    if (input.kind !== 'any' || row.out.kind !== 'range') return
+    const [plain, variant] = recipesOf('grinder')
+    expect(plain.out).toMatchObject({ kind: 'range', min: GRIND_MIN, max: GRIND_MAX })
+    expect(variant.out).toMatchObject({ kind: 'range', min: GRIND_MIN, max: GRIND_MAX })
     const pins = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop => VARIETIES[crop].map(v => [crop, v]))
     expect(GRIND_PINS.map(p => [p.crop, p.variety])).toEqual(pins)
-    expect(input.faces.map(f => (f.kind === 'fruit' ? [f.crop, f.variety] : []))).toEqual(pins)
+    expect(GRIND_VARIANT_PINS.every(p => ANNUAL_IDS.some(a => a === p.crop) && tierOf(p.variety) === 'variant')).toBe(true)
+    expect(GRIND_PLAIN_PINS).toEqual(GRIND_PINS.filter(p => !GRIND_VARIANT_PINS.includes(p)))
+    const input = plain.inputs[0]
+    expect(input.kind).toBe('any')
+    expect(plain.out.kind).toBe('range')
+    if (input.kind !== 'any' || plain.out.kind !== 'range') return
+    expect(input.faces.map(f => (f.kind === 'fruit' ? [f.crop, f.variety] : []))).toEqual(
+      GRIND_PLAIN_PINS.map(p => [p.crop, p.variety]),
+    )
     expect(
-      row.out.faces.map(f => (f.kind === 'seeds' ? ['seeds', f.crop, f.variety] : f.kind === 'tree-seed' ? ['tree-seed', f.tree, f.variety] : [])),
+      plain.out.faces.map(f => (f.kind === 'seeds' ? ['seeds', f.crop, f.variety] : f.kind === 'tree-seed' ? ['tree-seed', f.tree, f.variety] : [])),
     ).toEqual(
-      GRIND_PINS.map(p =>
+      GRIND_PLAIN_PINS.map(p =>
         ANNUAL_IDS.some(a => a === p.crop)
           ? ['seeds', p.crop, tierOf(p.variety) === 'heirloom' ? 'base' : p.variety]
           : ['tree-seed', p.crop, 'base'],
       ),
     )
+  })
+
+  test("`recipesOf('grinder')` is two rows. Second row is annual `variant` fruit only, yield that Variety's seeds. First row is every other grind pin: `'base'` and `heirloom` annuals plus tree fruit. Trees never join the second row. Sim `grindProduct` is unchanged.", () => {
+    const [plain, variant] = recipesOf('grinder')
+    const vIn = variant.inputs[0]
+    const vOut = variant.out
+    expect(vIn.kind).toBe('any')
+    expect(vOut.kind).toBe('range')
+    if (vIn.kind !== 'any' || vOut.kind !== 'range') return
+    expect(vIn.faces.map(f => (f.kind === 'fruit' ? [f.crop, f.variety] : []))).toEqual(
+      GRIND_VARIANT_PINS.map(p => [p.crop, p.variety]),
+    )
+    expect(vOut.faces.map(f => (f.kind === 'seeds' ? [f.crop, f.variety] : []))).toEqual(
+      GRIND_VARIANT_PINS.map(p => [p.crop, p.variety]),
+    )
+    const pIn = plain.inputs[0]
+    if (pIn.kind !== 'any') return
+    expect(pIn.faces.some(f => f.kind === 'fruit' && ANNUAL_IDS.some(a => a === f.crop) && tierOf(f.variety) === 'variant')).toBe(false)
+    expect(pIn.faces.some(f => f.kind === 'fruit' && TREE_IDS.some(t => t === f.crop))).toBe(true)
   })
 
   test('Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
@@ -247,12 +282,18 @@ describe('recipes.state', () => {
     })
   })
 
-  test('jam short on sugar points at the sugar input', () => {
+  test('jam short on sugar points at the sugar input; Passata never waits on sugar', () => {
     const jam = new JamMachine(BASE)
     jam.crop = 'grape'
     jam.fruit = JAM_IN
     jam.sugar = 0
     expect(craftState(jam, 1)).toMatchObject({ kind: 'filling', at: 1, have: 0, need: JAM_SUGAR })
+    const passata = new JamMachine(BASE)
+    passata.crop = 'tomato'
+    passata.variety = 'san-marzano'
+    passata.fruit = JAM_IN
+    passata.sugar = 0
+    expect(craftState(passata, 1).kind).toBe('working')
   })
 
   test('a barrel counts down to maturity', () => {
@@ -345,8 +386,10 @@ describe('machines.recipes-using', () => {
     expect(recipesUsing({ kind: 'grass', count: 1 }).map(r => r.machine)).toEqual(['mill'])
     expect(recipesUsing({ kind: 'weed', count: 1 })).toEqual([])
     expect(recipesUsing({ kind: 'water' })).toEqual(recipesOf('still'))
+    const sugarJams = recipesOf('jam').filter(r => litersOf(r.inputs).length > 0)
+    expect(sugarJams.length).toBe(recipesOf('jam').length - 1)
     expect(recipesUsing({ kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 0, quality: 0 }).map(r => r.machine)).toEqual([
-      ...recipesOf('jam').map(() => 'jam'),
+      ...sugarJams.map(() => 'jam'),
       'furnace',
     ])
     expect(recipesUsing({ kind: 'oil', quality: 0, count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])

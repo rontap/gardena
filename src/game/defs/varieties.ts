@@ -114,6 +114,10 @@ export const STARTER_VARIETY_PACKS: readonly Exclude<VarietyId, 'base'>[] = [
   'keknyelu',
 ]
 
+export const STARTER_FRUIT: readonly Exclude<VarietyId, 'base'>[] = ['keknyelu', 'san-marzano']
+
+export const STARTER_FRUIT_N = 5
+
 export const STARTER_TREE_GRAFTS: readonly Exclude<VarietyId, 'base'>[] = [
   'kingston-black',
   'pink-lady',

@@ -28,7 +28,7 @@ Recipe = {
 
 A `one` fruit / seed / jam face carries `variety`. `recipesUsing(face)` matches crop + Variety on a `one` input. Almanac Ingredients follows that list — [[ui/almanac]]. `any` inputs do not pin a Variety.
 
-`size` `'sm'` 24px faces, `'md'` 32px. Three columns per row.
+`size` `'sm'` 24px faces, `'md'` 32px. Three columns per row: `grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]`. Input and yield each take at most half. The row does not wrap. Names `whitespace-nowrap` `truncate`. Cycle never changes row height.
 
 | col | content |
 |---|---|
@@ -66,10 +66,10 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 | machine | rows |
 |---|---|
 | mill | one row per `MILL_RECIPES` entry — every Variety of that crop collapses onto it, five rows. Grass unchanged. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. |
-| jam | eight rows. A named jar keeps its own row; every other Variety of that crop collapses onto the plain jar. No apple. Named jars below. Every tomato but San Marzano is **Ketchup**. |
+| jam | eight rows. Sugar per jar, `jamSugar`: the Passata row is one input, the Ketchup row twice a jam. A named jar keeps its own row; every other Variety of that crop collapses onto the plain jar. No apple. Named jars below. Every tomato but San Marzano is **Ketchup**. |
 | still | five rows: one per `STILL_CROPS` entry, Klosterneuburger apart under its own spirit name, plus mixed `any`. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
 | barrel | four rows: per crop, `'base'` and the variant collapse onto one jar, the heirloom keeps its own (its jar is drawn apart). Grape → wine `barrelNeed('grape')`, apple → cider `barrelNeed('apple')`. |
-| grinder | 1. `any` faces: annual fruit plus tree fruit. Yield seeds / tree-seed at `'base'` when the input `tier` is `heirloom` or the input is tree fruit; else same Variety. Quality carries. |
+| grinder | 2. First `any`: `'base'` and `heirloom` annuals plus every tree fruit. Yield seeds / tree-seed at `'base'` when the input `tier` is `heirloom` or the input is tree fruit; else same Variety. Second `any`: annual `variant` fruit only, yield that Variety's seeds. Trees stay on the first row. Quality carries. |
 | compost-box | 4: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5), then ash `one` → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Variety ignored. |
 | furnace | 6: green `any` (includes graft), fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`. All yield `FURNACE_ASH` ash. Duration `fixed` `FURNACE_SECONDS`. Mix; no recipe lock. Item counts `FURNACE_NEED / FURNACE_VALUE.*`. Variety and Quality ignored. |
 
@@ -83,6 +83,8 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 | `black-raspberry` | **Black raspberry jam** |
 | `san-marzano` | **Passata** |
 | tomato `'base'` | **Ketchup** |
+
+A named jar draws its own face — [[art/machines]]. A cask from an heirloom Variety reads **Premium wine** / **Premium cider**, `caskName`.
 | else | `{Crop} jam` |
 
 ## Live row
@@ -133,5 +135,7 @@ The still holds one instance in two cells, so hovering either half binds the sam
 The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePane` / CropPane plant stages / TreePane stages [[ui/almanac]]. Variety row does not cycle.
 
 Assumption: `useCycle` ignores `prefers-reduced-motion`, as the four call sites it replaced always did.
+
+Assumption: recipe columns `minmax(0,1fr)` each are the 0.5 clamp — names truncate rather than wrap, every mount.
 
 Assumption: live compost filling pins the fruit row; empty compost is idle and cycles all list rows. Live furnace filling pins the first list row.

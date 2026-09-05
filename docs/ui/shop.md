@@ -63,7 +63,7 @@ The `Store · Seeds` / `Build · Water` crumb is the first line of the [[ui/call
 
 Acting on a result whose home is the other dock switches to that dock. The query survives the switch; the armed ghost survives it too.
 
-`SkuDock` `onShelf: (id: ShelfId) => void`. Shop and Build both receive it. Category rail `onValueChange` calls it with the shelf id. Shop never emits `logic`. App: `id === 'logic'` → `setLens('sensors')`. Does not arm a SKU. Other ids: no-op. Switching away from Sensors does not force the lens off. [[ui/build]] [[ui/sensors]]
+`SkuDock` `onShelf: (id: ShelfId) => void`. Shop and Build both receive it. Category rail `onValueChange` and the open tab on mount call it with the shelf id. Shop never emits `logic`. Build Water / Vehicles / Sensors peek the matching lens with no lock — [[ui/build]] [[ui/lens]]. Other ids restore an unlocked peek. Does not arm a SKU.
 
 Escape in the field clears the query and goes no further. Escape with the field already empty falls through to the window handler, which cancels the ghost and closes the dock — the most-used key in the game does not get swallowed by a text box.
 

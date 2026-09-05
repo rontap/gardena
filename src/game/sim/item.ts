@@ -28,7 +28,6 @@ import {
   JAM_BUFFER,
   JAM_IN,
   JAM_SECONDS,
-  JAM_SUGAR,
   MILL_GRASS,
   MILL_IN,
   MILL_WORK,
@@ -51,7 +50,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
-import { purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
+import { caskGroup, purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
 import type {
@@ -266,7 +265,7 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'fruit') return cropVariety(it.crop, it.variety)
   if (it.kind === 'sugar') return m.names_item_sugar()
   if (it.kind === 'spirit') return spiritName(it.spirit, it.variety)
-  if (it.kind === 'cask') return CASK_NAME[it.cask]()
+  if (it.kind === 'cask') return caskName(it.cask, it.variety)
   if (it.kind === 'jam') return jamJarName(it.crop, it.variety)
   if (it.kind === 'oil') return m.names_item_oil()
   if (it.kind === 'flour') return m.names_item_flour()
@@ -399,6 +398,11 @@ export const CASK_NAME: { readonly [K in CaskId]: () => string } = {
   cider: () => m.names_cask_cider(),
 }
 
+export function caskName(cask: CaskId, variety: VarietyId): string {
+  const name = CASK_NAME[cask]()
+  return caskGroup(variety) === 'heirloom' ? m.names_cask_premium({ name: name.toLowerCase() }) : name
+}
+
 export const SPIRIT_NAME: { readonly [K in SpiritKind]: () => string } = {
   vodka: () => m.names_spirit_vodka(),
   beer: () => m.names_spirit_beer(),
@@ -470,7 +474,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'cask') {
-    const line = countMul(CASK_NAME[item.cask](), caskMulOf(item), item.count)
+    const line = countMul(caskName(item.cask, item.variety), caskMulOf(item), item.count)
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'jam') {
@@ -629,7 +633,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'pack-grass': () => m.catalog_sku_pack_grass({ n: GRASS_PACK }),
   'buy-mill': () =>
     m.catalog_sku_buy_mill({ cane: MILL_IN, grass: MILL_GRASS, work: MILL_WORK, bag: SUGAR_BAG, sale: SUGAR_MILL }),
-  'buy-jam': () => m.catalog_sku_buy_jam({ fruit: JAM_IN, sugar: JAM_SUGAR, seconds: JAM_SECONDS, buffer: JAM_BUFFER }),
+  'buy-jam': () => m.catalog_sku_buy_jam({ fruit: JAM_IN, seconds: JAM_SECONDS, buffer: JAM_BUFFER }),
   'buy-still': () => m.catalog_sku_buy_still({ cap: STILL_CAP, water: STILL_WATER, seconds: STILL_SECONDS }),
   'buy-barrel': () => m.catalog_sku_buy_barrel({ mature: BARREL_MATURE, age: BARREL_AGE }),
   'buy-freezer': () => m.catalog_sku_buy_freezer({ n: FREEZER_SLOTS, pct: FREEZER_PCT }),

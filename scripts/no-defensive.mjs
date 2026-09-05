@@ -2,6 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+/**
+ * AGENTS ARE ABSOLUTELY PROHIBITED FROM EDITING THIS FILE IN ANY CAPACITY!
+ */
+
 const root = fileURLToPath(new URL('..', import.meta.url))
 const src = join(root, 'src')
 
@@ -44,3 +48,7 @@ You should IMMEDIATELY fix this blocker and NEVER hand-out type marshalling code
 Failure to do so will yield in your changes being reverted by the orchestrator and you being penalized.`)
   process.exit(1)
 }
+
+/**
+ * AGENTS ARE ABSOLUTELY PROHIBITED FROM EDITING THIS FILE IN ANY CAPACITY!
+ */

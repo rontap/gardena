@@ -12,7 +12,7 @@ No migrate. No `hydrate10`. No per-version parse path. Dump still writes `versio
 
 Load never refuses because `version` or PROTOCOL differs. Any uploaded file is attempted. `version` is peeked **only after** hydrate fails, to pick the fail copy. A different `version` that hydrates is `{ ok: true }`.
 
-App holds the play `World` or none. App does not own `Save`. App calls `dump` / `parse` / slot I/O. Startup [[ui/menu]] backdrop is a separate unticked `World` (not play). `#start_now` is `new World`, not parse. `#unlockall` is `new World` then `unlockAll()`, not parse.
+App holds the play `World` or none. App does not own `Save`. App calls `dump` / `parse` / slot I/O. Startup [[ui/menu]] backdrop is a separate unticked `World` (not play). `#start_now` or `?start=now` is `new World`, not parse. `#unlockall` or `?start=unlock` is `new World` then `unlockAll()`, not parse.
 
 ## Slot
 
@@ -42,7 +42,7 @@ Host leave and recap still `writeSlot`. Guest never `writeSlot` for a hosted far
 
 Download Save writes `gardena.json`. It may also `writeSlot`.
 
-`#start_now` and `#unlockall` do not read or write the slot.
+`#start_now`, `#unlockall`, `?start=now`, and `?start=unlock` do not read or write the slot.
 
 ## Load
 

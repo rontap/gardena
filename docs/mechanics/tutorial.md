@@ -8,16 +8,16 @@ Decided when play starts. Not re-checked mid-farm.
 
 | start | tutorial |
 |---|---|
-| New Game, `!slotExists()`, fragment not `start_now` or `unlockall` | on |
+| New Game, `!slotExists()`, fragment not `start_now` or `unlockall`, query not `start=now` or `start=unlock` | on |
 | New Game, `slotExists()` | off |
 | Load Save | off |
 | Upload Save | off |
-| fragment `start_now` (`#start_now`) | off |
-| fragment `unlockall` (`#unlockall`) | off |
+| fragment `start_now` (`#start_now`) or query `start=now` | off |
+| fragment `unlockall` (`#unlockall`) or query `start=unlock` | off |
 
 `slotExists()` is `SLOT_KEY` present. Off even if they press New Game.
 
-`#start_now` is `new World`. `#unlockall` is `new World` then `unlockAll()`. Neither reads or writes the slot. App maps both fragments to `startTutorial('start_now')`.
+`#start_now` / `?start=now` is `new World`. `#unlockall` / `?start=unlock` is `new World` then `unlockAll()`. Neither reads or writes the slot. App maps both fragments and both query values to `startTutorial('start_now')`.
 
 On only for first-time New Game with no stored farm.
 
@@ -107,7 +107,7 @@ Crops, buildings, skills, economy stay as they are. Shop prices out of scope. HU
 
 ## Invariants
 
-`tutorial.on` — Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall`. `slotExists()` or `#start_now` or `#unlockall` → off, including New Game. Load / Upload → off.
+`tutorial.on` — Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall` and query not `start=now` or `start=unlock`. `slotExists()` or `#start_now` or `#unlockall` or `?start=now` or `?start=unlock` → off, including New Game. Load / Upload → off.
 
 `tutorial.session` — No tutorial field on `Save` or `World`. Session only. Parse does not resume a step.
 

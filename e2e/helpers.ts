@@ -4,22 +4,36 @@ export const TILE = 48
 export const CAM_X = 15.5
 export const CAM_Y = 9.5
 
-export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: number }): Promise<void> {
-  const q = opts?.speed !== undefined ? `?speed=${opts.speed}` : ''
-  const hash = opts?.unlock === true ? '#unlockall' : '#start_now'
-  await page.goto(`/${q}${hash}`)
-  await expect(page.locator('.bg-grass').first()).toBeVisible({ timeout: 30_000 })
+export async function waitPlay(page: Page): Promise<void> {
+  await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible({ timeout: 30_000 })
   await expect
     .poll(
       () =>
-        page.evaluate(
-          () =>
-            (window as unknown as { __view?: unknown }).__view !== undefined &&
-            (window as unknown as { __world?: unknown }).__world !== undefined,
-        ),
+        page.evaluate(() => {
+          const w = window as Window & { __view?: object; __world?: object }
+          return w.__view !== undefined && w.__world !== undefined
+        }),
       { timeout: 30_000 },
     )
     .toBe(true)
+}
+
+export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: number }): Promise<void> {
+  const params = new URLSearchParams()
+  if (opts?.speed !== undefined) params.set('speed', String(opts.speed))
+  params.set('start', opts?.unlock === true ? 'unlock' : 'now')
+  await page.goto(`/?${params.toString()}`, { waitUntil: 'domcontentloaded' })
+  await waitPlay(page)
+}
+
+export async function dismissRecap(page: Page): Promise<void> {
+  const recap = page.getByRole('button', { name: /^Day \d+$/ })
+  if (await recap.isVisible({ timeout: 0 })) {
+    await recap.click()
+    await expect(recap).toHaveCount(0)
+  }
+  const resume = page.getByRole('button', { name: 'Resume' })
+  if (await resume.isVisible({ timeout: 0 })) await resume.click()
 }
 
 export function hudMoney(page: Page) {
@@ -71,21 +85,24 @@ export async function tapWorld(page: Page, wx: number, wy: number) {
 }
 
 export async function closeDock(page: Page): Promise<void> {
+  await dismissRecap(page)
   await page.getByRole('button', { name: 'Close' }).click()
 }
 
 export async function openShop(page: Page): Promise<void> {
-  const dock = page.getByText('General store')
-  if (await dock.isVisible()) return
+  await dismissRecap(page)
+  const seeds = page.getByRole('tab', { name: 'Seeds' })
+  if (await seeds.isVisible()) return
   await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(dock).toBeVisible({ timeout: 10_000 })
+  await expect(seeds).toBeVisible({ timeout: 10_000 })
 }
 
 export async function openBuild(page: Page): Promise<void> {
-  const title = page.locator('div.font-display').filter({ hasText: /^Build$/ })
-  if (await title.isVisible()) return
+  await dismissRecap(page)
+  const water = page.getByRole('tab', { name: 'Water' })
+  if (await water.isVisible()) return
   await page.getByRole('button', { name: 'Build', exact: true }).click()
-  await expect(title).toBeVisible({ timeout: 10_000 })
+  await expect(water).toBeVisible({ timeout: 10_000 })
 }
 
 export async function armSku(
@@ -95,7 +112,9 @@ export async function armSku(
 ): Promise<void> {
   await openBuild(page)
   await page.getByRole('tab', { name: tab }).click()
-  await page.getByRole('button', { name: skuButton(sku) }).click()
+  const btn = page.getByRole('button', { name: skuButton(sku) })
+  await expect(btn).toBeVisible({ timeout: 10_000 })
+  await btn.click()
 }
 
 function skuButton(sku: string): RegExp {

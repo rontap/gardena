@@ -42,7 +42,7 @@ First paint. A `new World` (random seed, MemorySink) is the backdrop: map full-b
 
 Menu shell `absolute inset-0 z-20 flex items-center justify-center`. No `bg-dirt`. No dim. Backdrop does not dismiss. Esc is App join-close only — not changelog-to-home. Boot home: no ×. Changelog × → home.
 
-Skip this screen only when the fragment is `start_now` (`#start_now`) or `unlockall` (`#unlockall`) → new farm, tutorial off, play. `#unlockall` then `unlockAll()` — [[ui/cheat]].
+Skip this screen only when the fragment is `start_now` (`#start_now`) or `unlockall` (`#unlockall`), or the query is `start=now` / `start=unlock` → new farm, tutorial off, play. `#unlockall` and `?start=unlock` then `unlockAll()` — [[ui/cheat]]. Playwright boots with the query. The menu backdrop is also `.bg-grass`; play is the Shop rail.
 
 Four buttons, in order:
 

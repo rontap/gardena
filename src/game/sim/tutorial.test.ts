@@ -26,7 +26,7 @@ function plots(w: World, n: number, kind: 'empty' | 'growing' | 'ripe'): void {
 }
 
 describe('tutorial', () => {
-  test('Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall`. `slotExists()` or `#start_now` or `#unlockall` → off, including New Game. Load / Upload → off.', () => {
+  test('Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall` and query not `start=now` or `start=unlock`. `slotExists()` or `#start_now` or `#unlockall` or `?start=now` or `?start=unlock` → off, including New Game. Load / Upload → off.', () => {
     expect(startTutorial('new', false).kind).toBe('on')
     expect(startTutorial('new', true).kind).toBe('off')
     expect(startTutorial('start_now', false).kind).toBe('off')

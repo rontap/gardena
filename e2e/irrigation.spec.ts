@@ -60,7 +60,7 @@ test('shop close exits pipe layer', async ({ page }) => {
   await expect.poll(() => placeKind(page)).toBe('sku')
   await openShop(page)
   await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(page.getByText('General store')).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: 'Seeds' })).toHaveCount(0)
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
   await armSku(page, 'Pipe 3')
@@ -121,8 +121,6 @@ test('connected sprinkler waters', async ({ page }) => {
     if (c.kind !== 'growing' || c.soil === undefined) throw new Error('growing')
     return c.soil.water
   })
-  await hoverWorld(page, 18.5, 6.5)
-  await expect(page.locator('[data-look]')).toHaveText(/^Carrot$/m)
   await expect
     .poll(async () => {
       return page.evaluate(() => {
@@ -136,8 +134,6 @@ test('connected sprinkler waters', async ({ page }) => {
       })
     })
     .toBeGreaterThan(water0)
-  await hoverWorld(page, 18.5, 6.5)
-  await expect(page.locator('[data-look]')).toHaveText(/^Carrot$/m)
 })
 
 async function setPipesLens(page: Page) {

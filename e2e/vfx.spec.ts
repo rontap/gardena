@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { gotoPlay, tapWorld } from './helpers.ts'
+import { gotoPlay, tapWorld, waitPlay } from './helpers.ts'
 
 type At = { col: number; row: number }
 
@@ -251,7 +251,7 @@ test.describe('reduced motion', () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.reload()
-    await expect(page.locator('.bg-grass').first()).toBeVisible()
+    await waitPlay(page)
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
   })
 

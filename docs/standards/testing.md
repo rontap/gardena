@@ -12,7 +12,7 @@ One `src/game/sim/world.test.ts` (or split by the same topic names as `docs/mech
 
 Never test specifically for versions, ever. `expect(SAVE_VERSION)` or `PROTOCOL` `.toBe` is disallowed.
 
-Copy wording, layout, SVG, Tailwind. Playwright covers HUD smoke only. `e2e/buildings.spec.ts` is a placement census shot, not a copy test.
+Copy wording, layout, SVG, Tailwind. Playwright covers HUD smoke only. `e2e/buildings.spec.ts` is a placement census shot, not a copy test. Do not `toHaveText` look copy. Boot `?start=now` / `?start=unlock` — wait for the Shop rail, not `.bg-grass` (the menu backdrop is grass too). CI runs one worker.
 
 Changelog *line-shape* is tested (dialect fixtures, not player sentences). Copy exemption does not cover the parser. [[architecture/changelog]] [[standards/update-notes]]
 

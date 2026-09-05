@@ -46,8 +46,10 @@ import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
 import { saveSettings, settings, type Settings } from './game/sim/settings.ts'
 
 const HASH = window.location.hash
-const START_NOW = HASH === '#start_now' || HASH === '#unlockall'
-const UNLOCK_ALL = HASH === '#unlockall'
+const START = new URLSearchParams(window.location.search).get('start')
+const START_NOW =
+  HASH === '#start_now' || HASH === '#unlockall' || START === 'now' || START === 'unlock'
+const UNLOCK_ALL = HASH === '#unlockall' || START === 'unlock'
 
 function bootCheat(w: World): void {
   if (new URLSearchParams(window.location.search).get('speed') === '3') w.setCheatSpeed(3)

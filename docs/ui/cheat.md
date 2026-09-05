@@ -22,7 +22,7 @@ Weather pins after End day. Wrap the five kind rows in `grid grid-cols-2 gap-1.5
 
 Not in the Research dock. [[mechanics/research]] [[mechanics/family]].
 
-Boot `#unlockall`: skip menu like `#start_now`, then `unlockAll()`. Not skills. Not a Cheat row. Play tests use the hash or `window.__world.unlockAll()`, not this dock. [[ui/menu]] [[architecture/save]]
+Boot `#unlockall` or `?start=unlock`: skip menu like `#start_now` / `?start=now`, then `unlockAll()`. Not skills. Not a Cheat row. Play tests use `?start=unlock` or `window.__world.unlockAll()`, not this dock. [[ui/menu]] [[architecture/save]]
 
 Boot `?speed=3`: play World `cheatSpeed` 3 via `Act.cheat` `{ k: 'speed'; n: 3 }`. Any other URL value (absent, `1`, `10`, `3.0`) boots 1.
 

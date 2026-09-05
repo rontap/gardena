@@ -8,7 +8,18 @@ export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: nu
   const q = opts?.speed !== undefined ? `?speed=${opts.speed}` : ''
   const hash = opts?.unlock === true ? '#unlockall' : '#start_now'
   await page.goto(`/${q}${hash}`)
-  await expect(page.locator('.bg-grass').first()).toBeVisible()
+  await expect(page.locator('.bg-grass').first()).toBeVisible({ timeout: 30_000 })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __view?: unknown }).__view !== undefined &&
+            (window as unknown as { __world?: unknown }).__world !== undefined,
+        ),
+      { timeout: 30_000 },
+    )
+    .toBe(true)
 }
 
 export function hudMoney(page: Page) {

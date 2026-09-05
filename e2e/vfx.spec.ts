@@ -24,7 +24,7 @@ async function setCrop(page: Page, at: At, growing: boolean): Promise<void> {
       }
       const plant = await import('/src/game/sim/plant.ts')
       const soil = await import('/src/game/sim/soil.ts')
-      w.setCell(a, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'common') })
+      w.setCell(a, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'base', 0) })
     },
     [at, growing] as const,
   )
@@ -77,7 +77,7 @@ test('vertical spray is oriented like its AoE, both facings', async ({ page }) =
       cells.forEach((c: { col: number; row: number }) => {
         const kind = w.cell(c).kind
         if (w.inWorld(c) && kind !== 'pump' && kind !== 'house' && kind !== 'truck')
-          w.setCell(c, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'common') })
+          w.setCell(c, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'base', 0) })
       })
       ;(window as unknown as { __aoe: unknown }).__aoe = cells
     }, rotate)
@@ -151,12 +151,17 @@ test('a wired-off mill shows nothing', async ({ page }) => {
     const w = (window as unknown as { __world: any }).__world
     w.buy('buy-mill')
     w.confirmPlace({ col: 18, row: 6 })
+    w.buy('buy-lever')
+    w.confirmPlace({ col: 20, row: 6 })
+    w.armWire({ kind: 'cell', at: { col: 20, row: 6 }, port: 'out' })
+    w.placeWire({ kind: 'cell', at: { col: 20, row: 6 }, port: 'out' }, { kind: 'cell', at: { col: 18, row: 6 }, port: 'in' })
+    w.cell({ col: 20, row: 6 }).on = true
     const c = w.cell({ col: 18, row: 6 })
     c.recipe = 'olive'
     c.units = 5
-    c.inn = 1
     w.ping()
   })
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __world: any }).__world.cell({ col: 18, row: 6 }).inn)).toBe(1)
   await expect(page.locator('[data-vfx="dust"]')).toHaveCount(0)
 })
 
@@ -168,7 +173,7 @@ test('a barrel bubbles while it ages and stops when it is done', async ({ page }
     w.confirmPlace({ col: 18, row: 6 })
     const c = w.cell({ col: 18, row: 6 })
     c.crop = 'grape'
-    c.feed = [{ rarity: 'common', count: items.BARREL_CAP }]
+    c.feed = [{ variety: 'base', quality: 0, count: items.BARREL_CAP }]
     c.age = 0
     w.ping()
   })
@@ -192,9 +197,9 @@ test('a still with no water shows no steam; steam follows progress', async ({ pa
     const w = (window as unknown as { __world: any }).__world
     const items = await import('/src/game/defs/items.ts')
     w.buy('buy-still')
-    w.confirmPlace({ col: 18, row: 6 })
-    const c = w.cell({ col: 18, row: 6 })
-    c.feed = [{ crop: 'potato', rarity: 'common', count: items.STILL_CAP }]
+    w.confirmPlace({ col: 24, row: 14 })
+    const c = w.cell({ col: 24, row: 14 })
+    c.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: items.STILL_CAP }]
     c.progress = 0
     w.ping()
   })
@@ -202,7 +207,7 @@ test('a still with no water shows no steam; steam follows progress', async ({ pa
 
   await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
-    w.cell({ col: 18, row: 6 }).progress = 0.1
+    w.cell({ col: 24, row: 14 }).progress = 0.1
     w.ping()
   })
   const steam = page.locator('[data-vfx="steam"]')

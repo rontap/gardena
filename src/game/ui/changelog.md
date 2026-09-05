@@ -1,3 +1,33 @@
+# 2.4.0 Variety
+
+Every plant now carries a Variety it was sown with and a Quality it earned, grafts move a Variety onto a plant already growing, and the machines pass both into what they make.
+
+- 🎉 Added mechanic: Variety. Every seed carries a named Variety that is set when it goes in the ground and never changes, and each Variety is better at Preserving, at Fresh, or at Alcohol than its siblings.
+  - Two Varieties of one crop are siblings, not steps. Bintje and Russian Banana are both potatoes, and neither is the better potato.
+  - Preserving is the Jam machine and the Mill, Fresh is fruit sold as it is, and Alcohol is the Pot still and the Barrel.
+  - The Market pays more for a good made on the path its Variety is rated highest on, and less for one made on the path it is rated lowest.
+  - Kéknyelű, Pink Lady and Bing stop short of fruit unless another plant of the same crop that is not Heirloom is growing within two tiles.
+  - Carrot, vanilla and sugar cane have one Variety each, and nothing about them changes.
+- 🎉 Added mechanic: Quality. Every plant, fruit and good carries a Quality percent for how well it was treated, and the Market pays more for a higher one.
+  - A plant kept happy hands its seed a better Quality than it was given, and a neglected plant hands down a worse one.
+  - Seed bought from a shop starts at 0%, and merging two stacks of one Variety averages their Quality.
+  - Fruit that drops from a tree is 0%.
+- 🎉 Added building: Seed Variety Station. Takes Heirloom fruit, hands it back cut, and cuts one or two grafts of that Variety out of it.
+- 🎉 Added item: Graft. Attaches to a plant or a sapling that is already in the ground and turns it into the graft's Variety; it is never sown like a seed.
+- 🎉 Added mechanic: Named preserves. A jar takes the name of the Variety that filled it, so Concord grapes come out as Grape jelly, San Marzano tomatoes as Passata, Montmorency cherries as Sour cherry preserve, Blenheim apricots as Blenheim apricot jam, and Black raspberries as Black raspberry jam.
+- 🎉 Added mechanic: Starting stock. The Seed silo starts with a pack of every annual Variety, and you start carrying a plain tree seed of each species and one graft of every tree Variety.
+- 🎉 Added mechanic: Experienced apple, apricot, olive and cherry growers. Trees carry a Variety now, so each of those four crops has a grower skill of its own.
+- 🔧 Changed mechanic: Trees. previously, an Axe on a mature tree gave Wood alone, now it also gives two grafts of that tree's Variety, so an orchard can make more of what it already holds.
+- 🔧 Changed building: Seed grinder. previously, it refused tree fruit, now it takes tree fruit and returns a tree seed, and Heirloom fruit returns the plain seed of its crop instead of its own.
+- 🔧 Changed building: Mill. previously, every fruit of a crop milled to the same flour at the same price, now the hopper holds one Variety and the flour carries that Variety's Preserving rating and the Quality that went in.
+- 🔧 Changed building: Jam machine. previously, a jar sold at one price for its crop, now the machine holds one Variety and the jar carries that Variety's Preserving rating and the Quality that went in.
+- 🔧 Changed building: Pot still. previously, a load of one crop made that crop's spirit at one price, now a load that shares one crop and one Variety makes that spirit at the Variety's Alcohol rating and the Quality that went in, and any other load comes out as a mixed spirit.
+- 🔧 Changed building: Barrel. previously, how far a cask aged came from the fruit that filled it, now it comes from the Quality that went in.
+- 🔧 Changed ui: Field lens. previously, the lens over the field showed what each planted crop was carrying, now the Variety lens colours every plot by the Variety growing on it.
+- 🔧 Changed ui: Almanac. previously, a crop page explained the steps a fruit could ripen into, now it carries a Variety page and a Quality page, and each crop lists its Varieties with their Preserving, Fresh and Alcohol numbers.
+- 🚫 Removed mechanic: Trusted seed bank. Seed packs bought from a shop no longer arrive better than the plain pack.
+- 🚫 Removed mechanic: Experienced carrot, vanilla and sugar cane growers. Those three crops have one Variety each, so there was nothing left for the skill to raise.
+
 # 2.3.0 Furnace
 
 A Furnace burns mixed waste into Ash and speeds nearby machines, and an Axe chops a mature tree for Wood.

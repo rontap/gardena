@@ -55,9 +55,9 @@ One HTML overlay SVG `path` over the canvas (`fill-none` `strokeWidth` 2): the b
 
 Unarmed, and while pipe / valve / sprinkler / delete / sensor-cell / wire armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not a black bar.
 
-Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Place ghosts for pumpjack / still / furnace / hangar / silo already cover footprint — keep. Pumpjack, rain-tank, still: both occupied cells. Furnace: both occupied cells, 24×48. Hangar and field silos: all six. Outline stays and matches.
+Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Place ghosts for pumpjack / still / station / furnace / hangar / silo already cover footprint — keep. Pumpjack, rain-tank, still, station: both occupied cells. Furnace: both occupied cells, 24×48. Hangar and field silos: all six. Outline stays and matches.
 
-Unarmed hover of a multi-cell building (house, hangar, field silo, still, furnace, pumpjack, rain-tank, tree, seed-silo, additive-store): one outline around **the whole instance**, no internal edges. Same `stroke-ink`. Ghost footprints (pumpjack, rain-tank, still, furnace, hangar, the three field silos) are the same one outline. Station is 1×1, like chest.
+Unarmed hover of a multi-cell building (house, hangar, field silo, still, station, furnace, pumpjack, rain-tank, tree, seed-silo, additive-store): one outline around **the whole instance**, no internal edges. Same `stroke-ink`. Ghost footprints (pumpjack, rain-tank, still, station, furnace, hangar, the three field silos) are the same one outline.
 
 ## Covering
 
@@ -79,11 +79,13 @@ Gone. No gold cell. No pulse label on the map. Look line + ghost remain the conf
 
 HTML overlays over the canvas. Tokens [[art/palette]] / `@theme`. No unnamed hex. Farm sprites have no DOM.
 
-Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-barrel` `buy-freezer` `buy-research-station` and the fifteen sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Screen-fixed, `ptr + 16,16`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. `pointer-events-none`. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, barrel, freezer, research station disarm. Sensor cells stay armed. Tiles stay armed. Station `skuLabel` **Grafting bench**. [[ui/station]]
+Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-barrel` `buy-freezer` and the fifteen sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Screen-fixed, `ptr + 16,16`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. `pointer-events-none`. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Compost-box, mill, jam, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 jack+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
 `buy-still`: 2-tile ghost like pumpjack (viewBox 48×24). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Ghost footprint stays 2×1. Prop art occupies 1.5×1 centered in that viewBox.
+
+`buy-research-station`: 2-tile ghost like pumpjack (viewBox 48×24). Confirm occupies both cells. Disarm. No rotate. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Copy **Place Seed Variety Station**. `skuLabel` **Seed Variety Station**. [[ui/station]]
 
 `buy-furnace`: 2-tile ghost viewBox 24×48, origin = hovered cell, extends south. Confirm occupies both cells. Disarm. No rotate. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`. Copy **Place Furnace**. `skuLabel` **Furnace**. Ghost footprint stays 1×2. Prop art occupies 1×1.5 south-aligned in that viewBox. Covering stroke follows this ghost — [[#Covering]].
 

@@ -213,6 +213,7 @@ export function Status({
         </div>
       </div>
       <div
+        data-look
         className={`relative px-3 py-3 leading-snug whitespace-pre-line ${
           seat.place.kind !== 'none' ? 'bg-roof/20 text-sm text-roof' : 'bg-dirt/25 text-sm text-ink/80'
         }`}

@@ -1,6 +1,6 @@
 # Station
 
-Walk-up panel for the research station. Shape [[ui/store]]: Radix dialog + `Frame` `Shell`, optional width, hover `aside`. Opened by a walk-up cue, never from the rail. Not a dock. Not ObjectHud. Dump is a world act on the cell, not a control in the panel.
+Walk-up panel for the research station. Player name **Seed Variety Station**. Shape [[ui/store]]: Radix dialog + `Frame` `Shell`, optional width, hover `aside`. Opened by a walk-up cue, never from the rail. Not a dock. Not ObjectHud. Dump is a world act on the cell, not a control in the panel.
 
 Rules [[mechanics/machines]] `station.cut` `station.io` `variety.copy`. Place [[ui/place]]. Look points here from [[ui/inspect]].
 
@@ -23,7 +23,7 @@ ResearchStation = {
 
 `units === 0` → `crop` `'none'`. `quality` 0..1, required. Illegal: optional `variety`. Illegal: optional `quality`.
 
-`dest(station)` = `at`. 1×1. Pads, west pull, east push, `inn` port: mill. Dropoff north Unload, takeup south Load. Lens [[ui/sensors]].
+`dest(station)` = `at`. 2×1, origin NW, no rotate, same instance both cells, hover origin extends east — place like the still, [[ui/place]]. Pads, west pull, east push, `inn` port: still. Dropoff north Unload, takeup south Load. Lens [[ui/sensors]].
 
 SKU `buy-research-station`. Processing shelf. `show: 'start'`. `need: []`. `haggling`. Guest may shop, place, delete, dump, and open this panel.
 
@@ -41,7 +41,7 @@ Walk-up opens the panel. It does not dump.
 
 ## Panel
 
-Title **Grafting bench** — named for what the building becomes. `Shell` from [[ui/store]]. Width `w-[30rem]`.
+Title **Seed Variety Station** — named for what the building becomes. `Shell` from [[ui/store]]. Width `w-[30rem]`.
 
 | field | shows |
 |---|---|
@@ -50,7 +50,7 @@ Title **Grafting bench** — named for what the building becomes. `Shell` from [
 | grafts | **{min}–{max} grafts** out as `STATION_GRAFT_MIN`–`STATION_GRAFT_MAX` of that Variety |
 | progress | `Bar` `value` 0..1, `bg-leaf` on `bg-ink/25`, same as a research run |
 
-No withdraw grid. No deposit control. Footer **Dump Heirloom fruit on the bench. Walking up does not dump.**
+No withdraw grid. No deposit control. Footer **Dump Heirloom fruit on the station. Walking up does not dump.**
 
 ## Look
 
@@ -58,17 +58,17 @@ Either the walk-up prompt or the dump prompt, not both. Dump legal → prompt is
 
 | when | text |
 |---|---|
-| empty (`crop` `'none'`) | **Grafting bench** |
-| filling | **Grafting bench - {Variety} {have}/{need} · Quality {n}%** |
+| empty (`crop` `'none'`) | **Seed Variety Station** |
+| filling | **Seed Variety Station - {Variety} {have}/{need} · Quality {n}%** |
 | wrong locked | **{Variety} only** |
 | refuse not heirloom / already `cut` | **Heirloom fruit only** |
-| working | **Grafting bench - working {pct}%** |
-| paused (`inn === 1`) | **Grafting bench - Paused by wire** |
-| ready, output blocked | **Grafting bench - Output blocked** |
+| working | **Seed Variety Station - working {pct}%** |
+| paused (`inn === 1`) | **Seed Variety Station - Paused by wire** |
+| ready, output blocked | **Seed Variety Station - Output blocked** |
 
 `{pct}` = `floor(progress * 100)`. `{need}` = `STATION_IN`.
 
-Prompt dump legal: **Cut grafts**. `{ act: 'station'; at }`. Prompt walk-up: the look line for the state the bench is in, not a bare title. `{ act: 'station'; at }` opens the cue when dump is not legal. The prompt and the look line are then the same string, so the hover reads once instead of twice — [[ui/inspect]].
+Prompt dump legal: **Cut grafts**. `{ act: 'station'; at }`. Prompt walk-up: the look line for the state the station is in, not a bare title. `{ act: 'station'; at }` opens the cue when dump is not legal. The prompt and the look line are then the same string, so the hover reads once instead of twice — [[ui/inspect]].
 
 No covering haste line. No live recipe row.
 

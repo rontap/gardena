@@ -51,10 +51,10 @@ test('shop close exits pipe layer', async ({ page }) => {
   await closeDock(page)
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: 'Lens', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Lens pipes/i })).toHaveCount(0)
   await setPipesLens(page)
   await page.getByRole('button', { name: /Lock view/ }).click()
-  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
   await armSku(page, 'Pipe 3')
   await expect.poll(() => placeKind(page)).toBe('sku')
@@ -62,12 +62,12 @@ test('shop close exits pipe layer', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click()
   await expect(page.getByText('General store')).toHaveCount(0)
   await expect.poll(() => placeKind(page)).toBe('none')
-  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
   await armSku(page, 'Pipe 3')
   await openShop(page)
   await page.keyboard.press('Escape')
   await expect.poll(() => placeKind(page)).toBe('none')
-  await expect(page.getByRole('button', { name: /^Lens pipes/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
 })
 
 test('sprinkler place without pipes', async ({ page }) => {
@@ -116,13 +116,13 @@ test('connected sprinkler waters', async ({ page }) => {
     ).__world
     const plant = await import('/src/game/sim/plant.ts')
     const soil = await import('/src/game/sim/soil.ts')
-    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new soil.Soil(0.2, 1, 0.03), plant: new plant.Plant('carrot', 'common') })
+    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new soil.Soil(0.2, 1, 0.03), plant: new plant.Plant('carrot', 'base', 0) })
     const c = w.cell({ col: 18, row: 6 })
     if (c.kind !== 'growing' || c.soil === undefined) throw new Error('growing')
     return c.soil.water
   })
   await hoverWorld(page, 18.5, 6.5)
-  await expect(page.getByText(/Carrot - growing \d+%/)).toBeVisible()
+  await expect(page.locator('[data-look]')).toHaveText(/^Carrot$/m)
   await expect
     .poll(async () => {
       return page.evaluate(() => {
@@ -137,11 +137,11 @@ test('connected sprinkler waters', async ({ page }) => {
     })
     .toBeGreaterThan(water0)
   await hoverWorld(page, 18.5, 6.5)
-  await expect(page.getByText(/Carrot - growing \d+%/)).toBeVisible()
+  await expect(page.locator('[data-look]')).toHaveText(/^Carrot$/m)
 })
 
 async function setPipesLens(page: Page) {
-  const on = page.getByRole('button', { name: /^Lens pipes/ })
+  const on = page.getByRole('button', { name: /^Lens pipes/i })
   if (await on.isVisible()) return
   await page.getByRole('button', { name: /^Lens/ }).click()
   await page.getByRole('button', { name: /^Pipes / }).click()

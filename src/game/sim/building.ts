@@ -366,7 +366,7 @@ export class ResearchStation {
   progress = 0
   inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = base
+    this.base = { shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 }
   }
 }
 

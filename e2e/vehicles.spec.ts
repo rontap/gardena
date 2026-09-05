@@ -130,7 +130,7 @@ test('tractor seeder boom', async ({ page }) => {
     if (v.kind !== 'field') return
     w.seats[0].actor.x = v.x
     w.seats[0].actor.y = v.y
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 20 } }
     w.swapTrailer(1, 0)
   })
   await page.evaluate(() => {
@@ -230,7 +230,7 @@ test('Enter embark/disembark; boom toggle paints rake width', async ({ page }) =
     }
     w.seats[0].actor.x = v.x
     w.seats[0].actor.y = v.y
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', rarity: 'common', count: 20 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 20 } }
     w.swapTrailer(1, 0)
   })
   await page.keyboard.press('Enter')

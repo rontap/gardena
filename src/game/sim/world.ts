@@ -2206,8 +2206,10 @@ export class World {
     }
     if (c.kind === 'station') {
       this.stripPadStops(c)
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
+      occupiedCells(c.base, this.owned).forEach(p => {
+        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
+        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
+      })
 
       this.ping()
       return
@@ -2727,11 +2729,20 @@ export class World {
       this.ping()
       return
     }
-    if (this.act.place.id === 'buy-pumpjack' || this.act.place.id === 'buy-rain-tank' || this.act.place.id === 'buy-still') {
+    if (
+      this.act.place.id === 'buy-pumpjack' ||
+      this.act.place.id === 'buy-rain-tank' ||
+      this.act.place.id === 'buy-still' ||
+      this.act.place.id === 'buy-research-station'
+    ) {
       if (!wideSiteOk(this, at)) return
       this.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 2, h: 1 }
-      if (this.act.place.id === 'buy-still') {
+      if (this.act.place.id === 'buy-research-station') {
+        const station = new ResearchStation(base)
+        this.setCell(at, station)
+        this.setCell({ col: at.col + 1, row: at.row }, station)
+      } else if (this.act.place.id === 'buy-still') {
         const still = new PotStill(base)
         this.stills.push(still)
         this.setCell(at, still)
@@ -2757,7 +2768,6 @@ export class World {
       this.act.place.id === 'buy-well' ||
       this.act.place.id === 'buy-mill' ||
       this.act.place.id === 'buy-jam' ||
-      this.act.place.id === 'buy-research-station' ||
       this.act.place.id === 'buy-barrel' ||
       this.act.place.id === 'buy-freezer' ||
       this.act.place.id === 'buy-freezer-large' ||
@@ -2829,7 +2839,6 @@ export class World {
       else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
       else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
       else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
-      else if (this.act.place.id === 'buy-research-station') this.setCell(at, new ResearchStation(base))
       else if (this.act.place.id === 'buy-barrel') this.setCell(at, new Barrel(base))
       else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
       else if (this.act.place.id === 'buy-freezer-large') {

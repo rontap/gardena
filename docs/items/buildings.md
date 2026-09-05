@@ -6,7 +6,7 @@
 
 `mill` — `buy-mill`. `jam` — `buy-jam`. `still` — `buy-still`. `furnace` — `buy-furnace`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `automation`. Almanac **Automation**. `unlock-furnace`, `haggling`. Guest shop + place + delete + dump. `skuLabel` **Furnace**. Rules: [[mechanics/machines]]. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`.
 
-`station` — `buy-research-station`. 1×1, place like a chest. Processing shelf, `show: 'start'`, `need: []`. No research row this update. `haggling`. Guest shop + place + delete + dump. `dest(station)` = `at`. Pads, west pull, east push, `inn`, like the mill. Heirloom fruit in, cut fruit and grafts out. Panel [[ui/station]]. Rules: [[mechanics/machines]] `station.io`.
+`station` — `buy-research-station`. 2×1, place like the still. Processing shelf, `show: 'start'`, `need: []`. No research row this update. `haggling`. Guest shop + place + delete + dump. `dest(station)` = `at`. Pads, west pull, east push, `inn`, like the still. Heirloom fruit in, cut fruit and grafts out. Panel [[ui/station]]. Rules: [[mechanics/machines]] `station.io`.
 
 Assumption: the station is named for what it becomes, not only for what it does this update.
 

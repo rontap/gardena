@@ -102,7 +102,11 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const place = world.seats[world.local].place
   const placing = place.kind === 'sku' || place.kind === 'delete'
   const placeId = place.kind === 'sku' ? place.id : undefined
-  const pumpjack = placeId === 'buy-pumpjack' || placeId === 'buy-rain-tank' || placeId === 'buy-still'
+  const pumpjack =
+    placeId === 'buy-pumpjack' ||
+    placeId === 'buy-rain-tank' ||
+    placeId === 'buy-still' ||
+    placeId === 'buy-research-station'
   const furnacePlace = placeId === 'buy-furnace'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'

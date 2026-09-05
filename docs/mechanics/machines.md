@@ -15,7 +15,7 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 
 ## Buildings
 
-1×1 except still and furnace. Place like chest. Still: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station`.
+1×1 except still, station and furnace. Place like chest. Still and station: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station`.
 
 | class | `kind` | sku | unlock |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
 
 West of the machine = input. East = output. Orthogonal, same row. Not N/S. Not diagonal.
 
-Still: west of origin, east of the east cell (`base.col + base.w`). Furnace: west of origin, east of origin, origin row only. South furnace cell is not I/O. Station: west of `at`, east of `at`, like mill.
+Still and station: west of origin, east of the east cell (`base.col + base.w`). Furnace: west of origin, east of origin, origin row only. South furnace cell is not I/O.
 
 Targets: chest, freezer (any slot count). Machine is the actor. Link is view-derived from adjacency. Not a `Cell`. Not saved. Not a cmd.
 
@@ -214,13 +214,13 @@ ResearchStation { crop: CropId | 'none'; variety: VarietyId; quality: number; un
 
 Accepts **heirloom fruit only**, `cut === false`. First dump locks crop + variety; later dumps must match. `units === 0` → `'none'`. Empty stores `variety: 'base'` and `quality: 0` until the first dump locks both. `STATION_IN`, `STATION_SECONDS`, `STATION_GRAFT_MIN` 1, `STATION_GRAFT_MAX` 2 — preference. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` **and** a rolled 1–2 grafts of that variety, both at the input quality. `grind.at(col, row, day)`. East store else `frontOf`; no room → wait.
 
-Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked variety, quality in, grafts out, progress. [[ui/station]]. Copy **Grafting bench**.
+Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked variety, quality in, grafts out, progress. [[ui/station]]. Copy **Seed Variety Station**.
 
-The station's second face — feeding it seed to earn a variety you do not own — is the next update. This update ships the cutting bench only.
+The station's second face — feeding it seed to earn a variety you do not own — is the next update. This update ships the cutting side only.
 
 Assumption: station graft count uses `grind.at(col, row, day)` on finish, same roll all day on that cell.
 
-Assumption: `ResearchStation` carries no freshness and no organic field, so the returned fruit leaves at freshness 1 and not organic. Sale is `statsOf(crop, variety, quality, mods).sale`. Organic heirloom fruit loses that mark on the bench; sell it before you cut it.
+Assumption: `ResearchStation` carries no freshness and no organic field, so the returned fruit leaves at freshness 1 and not organic. Sale is `statsOf(crop, variety, quality, mods).sale`. Organic heirloom fruit loses that mark at the station; sell it before you cut it.
 
 Assumption: both outputs land or neither does. The east store is measured for the cut fruit and the grafts together before either is emitted, so a store with one slot left waits instead of eating the grafts.
 

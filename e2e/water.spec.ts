@@ -41,22 +41,22 @@ test.beforeEach(async ({ page }, info) => {
 
 test('valve feeds while open and the far side is dry when closed', async ({ page }) => {
   await unlockWorld(page)
-  await placeEdge(page, 'h', 18, 7)
-  await placeEdge(page, 'h', 19, 7)
   await placeEdge(page, 'h', 20, 7)
-  await convertToValve(page, 19, 7)
+  await placeEdge(page, 'h', 21, 7)
+  await placeEdge(page, 'h', 22, 7)
+  await convertToValve(page, 21, 7)
   await disarm(page)
   await expect(page.locator('[data-pipe]')).toHaveCount(4)
   await expect.poll(() => wetCount(page)).toBe(4)
 
-  await closeValve(page, 19, 7)
+  await closeValve(page, 21, 7)
   await expect.poll(() => wetCount(page)).toBe(2)
   expect(
     await readWorld<boolean>(
       page,
       [
-        { col: 20, row: 7 },
-        { col: 21, row: 7 },
+        { col: 22, row: 7 },
+        { col: 23, row: 7 },
       ],
       'at.every(v => !w.vertexWet(v))',
     ),

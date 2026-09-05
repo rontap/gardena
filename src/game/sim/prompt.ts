@@ -387,7 +387,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (w.hasFence(at)) return { kind: 'blocked', text: m.prompt_already_fenced() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
-    if (w.act.place.id === 'buy-pumpjack' || w.act.place.id === 'buy-rain-tank' || w.act.place.id === 'buy-still') {
+    if (
+      w.act.place.id === 'buy-pumpjack' ||
+      w.act.place.id === 'buy-rain-tank' ||
+      w.act.place.id === 'buy-still' ||
+      w.act.place.id === 'buy-research-station'
+    ) {
       if (!wideSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }

@@ -161,10 +161,6 @@ export function purposeMul(variety: VarietyId, path: Purpose): number {
   return purpose === path ? mul.on : mul.off
 }
 
-export function isVarietyId(v: unknown): v is VarietyId {
-  return typeof v === 'string' && (VARIETY_IDS as readonly string[]).includes(v)
-}
-
 export function varietyFits(crop: CropId, variety: VarietyId): boolean {
   if (variety === 'base') return true
   return VARIETY[variety].crop === crop

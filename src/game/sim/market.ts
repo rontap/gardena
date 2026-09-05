@@ -1,30 +1,40 @@
 import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
+import { SKUS } from '../defs/research.ts'
 import {
   EXTRACT,
+  FERT_BAG_LITERS,
   FLOUR,
   JAM_SALE,
   OIL,
   SUGAR_MILL,
   CASK_SALE,
 } from '../defs/items.ts'
+import { DOOR } from './building.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from './ids.ts'
+import { makePickaxe, makeShovel, type Item } from './item.ts'
 import { bakeSpiritSale } from './machine.ts'
 import type {
   Active,
+  Bins,
+  CompanyBook,
   CompanyId,
   ContractGoodId,
+  ContractId,
   ContractOffer,
+  Contracts,
   DeadlineBand,
   Demand,
   GroupId,
+  HistoryEntry,
   Lines,
   Prize,
   Stars,
 } from './market.h.ts'
-import { STALL_IDS } from './stall.ts'
+import { isCropStall, isSpiritStall, STALL_IDS } from './stall.ts'
 import type { Rng, Spatial } from './rng.ts'
+import type { World } from './world.ts'
 
 export const SAT_DEPTH = 400
 
@@ -594,4 +604,191 @@ export function needOf(a: Active): number {
 
 export function filledOf(a: Active): number {
   return a.bins.reduce((n, b) => n + b.filled, 0)
+}
+
+export function emptyBook(): CompanyBook {
+  return {
+    'whole-cart': { done: 0, missed: 0 },
+    'trade-jo': { done: 0, missed: 0 },
+    'halbert-eijn': { done: 0, missed: 0 },
+    'little-lid': { done: 0, missed: 0 },
+    mercanova: { done: 0, missed: 0 },
+    intercrop: { done: 0, missed: 0 },
+  }
+}
+
+export function emptyContracts(): Contracts {
+  return { active: [], takenToday: [], history: [], book: emptyBook(), rep: 0, repDay: 0 }
+}
+
+export function addRep(w: World, n: number): void {
+  const next = w.contracts.rep + n
+  w.contracts.rep = next < 0 ? 0 : next > REP_MAX ? REP_MAX : next
+}
+
+function dropActive(w: World, a: Active): void {
+  w.contracts.active = w.contracts.active.filter(x => x.offer.id !== a.offer.id)
+}
+
+function pushHistory(w: World, e: HistoryEntry): void {
+  w.contracts.history.push(e)
+  if (w.contracts.history.length > CONTRACT_HISTORY_MAX) w.contracts.history.shift()
+  w.tally.contracts.push(e)
+}
+
+function consignDemand(w: World, d: Demand, n: number): void {
+  if (d.kind === 'plain') {
+    if (isCropStall(d.good)) w.stall[d.good].take('base', n, 1, false)
+    else if (isSpiritStall(d.good)) w.stall[d.good].takeSpirit('base', n, cleanUnit(d))
+    else if (d.good === 'sugar') w.stall.sugar.takeSugar(n, SUGAR_MILL)
+    else w.stall[d.good].takeBaked(n, cleanUnit(d))
+    return
+  }
+  if (d.group === 'jam') w.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
+  else w.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0))
+}
+
+function dumpFilled(w: World, a: Active): number {
+  const add = new Map<StallGoodId, number>()
+  a.bins.forEach(bin => {
+    if (bin.filled <= 0) return
+    const good = demandGood(bin.demand)
+    const V = bin.filled * cleanUnit(bin.demand)
+    const cur = add.get(good)
+    add.set(good, cur === undefined ? V : cur + V)
+    consignDemand(w, bin.demand, bin.filled)
+  })
+  let sold = 0
+  add.forEach((V, good) => {
+    sold += paid(w.stall[good].sat, good, V)
+    w.stall[good].sat = Math.min(1, w.stall[good].sat + V / SAT_DEPTH)
+  })
+  return sold
+}
+
+function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: number): void {
+  if (prize.kind === 'skill-points') {
+    w.grantPoints(prize.n)
+    return
+  }
+  if (prize.kind === 'expansion-slot') {
+    w.prizeSlots += 1
+    return
+  }
+  if (prize.kind === 'freezer') {
+    w.prizeFreezers += 1
+    return
+  }
+  if (prize.kind === 'seeds') {
+    w.putSilo(prize.crop, 'base', 0, prize.count)
+    return
+  }
+  if (prize.kind === 'fertilizer') {
+    const bags = Math.max(1, Math.round(cash / SKUS['buy-fertilizer'].price))
+    w.putAdditive('fertilizer', bags * FERT_BAG_LITERS)
+    return
+  }
+  const item: Item =
+    prize.kind === 'tree-seed'
+      ? { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
+      : prize.tool === 'rotary-shovel'
+        ? makeShovel('rotary-shovel')
+        : makePickaxe('diamond-pickaxe')
+  w.drops.push({ at: { ...DOOR }, item })
+}
+
+function resolveDone(w: World, a: Active): void {
+  const prize = a.offer.prize
+  const paidN = prize.kind === 'cash' ? a.offer.reward * (1 + 0.03 * w.skillTier('industrial')) : 0
+  if (prize.kind === 'cash') w.money += paidN
+  else payPrize(w, prize, a.offer.reward)
+  w.contracts.book[a.offer.company].done += 1
+  addRep(w, REP_DONE[a.offer.stars])
+  dropActive(w, a)
+  pushHistory(w, {
+    id: a.offer.id,
+    company: a.offer.company,
+    stars: a.offer.stars,
+    day: w.clock.day,
+    outcome: { kind: 'done', paid: paidN, prize },
+  })
+  w.ping()
+}
+
+function resolveMiss(w: World, a: Active): void {
+  const sold = dumpFilled(w, a)
+  const penalty = missPenalty(a)
+  w.money += sold - penalty
+  w.contracts.book[a.offer.company].missed += 1
+  addRep(w, -REP_LOST[a.offer.stars])
+  dropActive(w, a)
+  pushHistory(w, {
+    id: a.offer.id,
+    company: a.offer.company,
+    stars: a.offer.stars,
+    day: w.clock.day,
+    outcome: { kind: 'missed', sold, penalty },
+  })
+  w.ping()
+}
+
+export function finishFull(w: World): void {
+  w.contracts.active
+    .filter(a => a.bins.every(b => b.filled === b.demand.amount))
+    .slice()
+    .forEach(a => resolveDone(w, a))
+}
+
+export function tickContracts(w: World, before: number, after: number): void {
+  w.contracts.active
+    .filter(a => before < a.dueDay && after >= a.dueDay)
+    .slice()
+    .forEach(a => {
+      if (a.bins.every(b => b.filled === b.demand.amount)) resolveDone(w, a)
+      else resolveMiss(w, a)
+    })
+}
+
+export function acceptContractBody(w: World, c: ContractId): void {
+  if (!w.done.has('unlock-contracts')) return
+  if (w.contracts.active.length >= w.contractCap()) return
+  if (w.contracts.takenToday.includes(c)) return
+  const offer = rollBoard(w.rng, w.clock.day, w.contractSlots(), w.contracts.repDay).find(o => o.id === c)
+  if (offer === undefined) return
+  const bins: Bins =
+    offer.lines.length === 1
+      ? [{ demand: offer.lines[0], filled: 0 }]
+      : [{ demand: offer.lines[0], filled: 0 }, { demand: offer.lines[1], filled: 0 }]
+  w.contracts.active.push({ offer, dueDay: w.nowDay() + offer.days, bins })
+  w.contracts.takenToday.push(c)
+  w.ping()
+}
+
+export function cancelContractBody(w: World, c: ContractId): void {
+  const a = w.contracts.active.find(x => x.offer.id === c)
+  if (a === undefined) return
+  const sold = dumpFilled(w, a)
+  const fee = cancelFee(a, w.nowDay())
+  w.money += sold - fee
+  addRep(w, -REP_LOST[a.offer.stars])
+  dropActive(w, a)
+  pushHistory(w, {
+    id: a.offer.id,
+    company: a.offer.company,
+    stars: a.offer.stars,
+    day: w.clock.day,
+    outcome: { kind: 'cancelled', sold, fee },
+  })
+  w.ping()
+}
+
+export function reorderContractBody(w: World, c: ContractId, d: 1 | -1): void {
+  const i = w.contracts.active.findIndex(x => x.offer.id === c)
+  if (i < 0) return
+  const j = i + d
+  if (j < 0 || j >= w.contracts.active.length) return
+  const cur = w.contracts.active[i]
+  w.contracts.active[i] = w.contracts.active[j]
+  w.contracts.active[j] = cur
+  w.ping()
 }

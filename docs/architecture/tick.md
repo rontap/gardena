@@ -4,7 +4,7 @@ Developer law. Not player mechanics. [[architecture/world]] [[architecture/modul
 
 Sim stays on the main thread. View paints via the Pixi ticker. App host accumulator `min(frameDt * World.cheatSpeed, DT_MAX * 2)`, then `tick(DT_MAX)` only, at most two ticks per frame. The clamp is what the frame can actually spend, so a throttled or hidden tab banks no debt and never fast-forwards on return. `cheatSpeed` is `1 | 3`. World.tick does not multiply `dt` again. `cheatFastResearch` is job drain, not a tick mul. Do not raise `DT_MAX`. Do not interpolate sim. View vehicles keep `QUAD_FOLLOW`. Do not move `World` to a worker. Sim does not camera-cull. View may (`CullerPlugin` on chunks). [[architecture/view]] [[architecture/world]] `world.cheatSpeed` `world.cheatFastResearch`
 
-Owner: `sim/world.ts`. Indexes live on `World`. `track()` stays on `World`. Do not add `sim/index.ts`.
+Owner: `sim/world.ts`. Indexes live on `World`. `track()` stays on `World`. Do not add `sim/index.ts`. Tick order stays. Extracting functions `World` calls is legal. A new mechanic is a new `sim/<name>.ts`. Do not append it onto `World`.
 
 ## Cadence
 

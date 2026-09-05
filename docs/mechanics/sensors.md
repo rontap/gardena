@@ -16,6 +16,10 @@ Place defaults: `Lever.on = false` `inn = 0` `prev = 0`. `Button.left = 0`. Puls
 
 Tune `n` out of range is no-op, does not write.
 
+## Make table
+
+Not a table in `src/` yet. Next to the classes: `{ [K in SensorKind]: { sku, make } }`. `makeSensor` / `skuKind` become lookups of that map. Ports live on the device. Building `ownsPort`: origin cell and `c.ports` includes the port. Sensor kind arms stay until that wave. `evalDag` stays a function. Do not unify sensors with `Machine`. Sprinkler `in` and valve `in` stay on those `WireEnd`s, not a building class. Live `makeSensor` / `skuKind` / sensor `ownsPort` switches stay until that wave.
+
 ## Ports
 
 | kind | in | out |
@@ -26,7 +30,7 @@ Tune `n` out of range is no-op, does not write.
 | and, or | `in-l` left, `in-r` right | `out` bottom |
 | sprinkler (after `unlock-smart-irrigation`) | `in` | — |
 | valve, after `unlock-smart-irrigation` | `in` on the body | — |
-| mill, jam, still | `in` origin top | — |
+| mill, jam, still, station | `in` origin top | — |
 | furnace | `in` origin top | `out` origin bottom |
 | chest, freezer, seed-silo, additive-store | — | `out` origin bottom |
 

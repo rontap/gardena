@@ -38,10 +38,13 @@ Defects:
 - `try/catch` on expected paths
 - `if (!x) return` defensive exits
 - silent empty arrays / zero / identity when input is wrong
+- runtime `typeof … ===` / `!==`, `Array.isArray`, `Number.isFinite` in `src/`
 
 Optional chaining traverses a known nest. It does not probe existence.
 
 Missing value → the type is wrong. Fix the type.
+
+Save is gold; no marshalling. Type-level `typeof` in types (`typeof Act.click`, `(typeof IDS)[number]`) is not this ban.
 
 ## Code shape
 

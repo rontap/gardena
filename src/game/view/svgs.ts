@@ -1002,7 +1002,7 @@ export function symId(html: string): string {
 }
 
 export function symHref(html: string): string {
-  if (symAcc === undefined && typeof document !== 'undefined') {
+  if (symAcc === undefined) {
     const host = document.createElement('div')
     host.setAttribute('aria-hidden', 'true')
     host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'

@@ -1,7 +1,7 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
 import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, RectBase, ResearchStation, SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
-import type { SensorKind, Signal } from './ids.ts'
+import type { SensorKind, Signal, SkuId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import type { Cell } from './plot.ts'
@@ -17,201 +17,161 @@ export type WireEnd =
 
 export type Wire = { from: WireEnd; to: WireEnd }
 
-export class Lever {
+abstract class SensorBase {
+  readonly base: RectBase
+  readonly ports: readonly PortId[] = []
+  constructor(base: RectBase) {
+    this.base = base
+  }
+}
+
+abstract class HeldSensor extends SensorBase {
+  out: Signal = 0
+  hold = 0
+  eval(raw: Signal): void {
+    const next = stepHold(this.out, this.hold, raw)
+    this.out = next.out
+    this.hold = next.hold
+  }
+}
+
+export class Lever extends SensorBase {
   readonly kind = 'lever' as const
-  readonly base: RectBase
-  on: boolean
-  inn: Signal
-  prev: Signal
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.on = false
-    this.inn = 0
-    this.prev = 0
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  on = false
+  inn: Signal = 0
+  prev: Signal = 0
+  out: Signal = 0
+  sample(inn: Signal): void {
+    this.inn = inn
+  }
+  eval(): void {
+    if (this.prev === 0 && this.inn === 1) this.on = !this.on
+    this.prev = this.inn
+    this.out = this.on ? 1 : 0
   }
 }
 
-export class Button {
+export class Button extends SensorBase {
   readonly kind = 'button' as const
-  readonly base: RectBase
-  left: number
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.left = 0
-    this.out = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
+  left = 0
+  out: Signal = 0
 }
 
-export class Lamp {
+export class Lamp extends SensorBase {
   readonly kind = 'lamp' as const
-  readonly base: RectBase
-  inn: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.inn = 0
+  override readonly ports: readonly PortId[] = ['in']
+  inn: Signal = 0
+  eval(inn: Signal): void {
+    this.inn = inn
   }
 }
 
-export class NotGate {
+export class NotGate extends SensorBase {
   readonly kind = 'not' as const
-  readonly base: RectBase
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  out: Signal = 0
+  eval(inn: Signal): void {
+    this.out = inn === 1 ? 0 : 1
   }
 }
 
-export class AndGate {
+export class AndGate extends SensorBase {
   readonly kind = 'and' as const
-  readonly base: RectBase
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in-l', 'in-r', 'out']
+  out: Signal = 0
+  eval(l: Signal, r: Signal): void {
+    this.out = l === 1 && r === 1 ? 1 : 0
   }
 }
 
-export class OrGate {
+export class OrGate extends SensorBase {
   readonly kind = 'or' as const
-  readonly base: RectBase
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in-l', 'in-r', 'out']
+  out: Signal = 0
+  eval(l: Signal, r: Signal): void {
+    this.out = l === 1 || r === 1 ? 1 : 0
   }
 }
 
-export class Pulser {
+export class Pulser extends SensorBase {
   readonly kind = 'pulser' as const
-  readonly base: RectBase
-  inn: Signal
-  prev: Signal
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.inn = 0
-    this.prev = 0
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  inn: Signal = 0
+  prev: Signal = 0
+  out: Signal = 0
+  sample(inn: Signal): void {
+    this.inn = inn
+  }
+  eval(): void {
+    this.out = this.prev === 0 && this.inn === 1 ? 1 : 0
+    this.prev = this.inn
   }
 }
 
-export class Counter {
+export class Counter extends SensorBase {
   readonly kind = 'counter' as const
-  readonly base: RectBase
-  inn: Signal
-  n: number
-  count: number
-  out: Signal
-  constructor(base: RectBase) {
-    this.base = base
-    this.inn = 0
-    this.n = 1
-    this.count = 0
-    this.out = 0
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  inn: Signal = 0
+  n = 1
+  count = 0
+  out: Signal = 0
+  sample(inn: Signal): void {
+    this.inn = inn
+  }
+  eval(): void {
+    if (this.inn === 1) this.count += 1
+    if (this.count >= this.n) {
+      this.out = 1
+      this.count = 0
+    } else this.out = 0
   }
 }
 
-export class WaterSensor {
+export class WaterSensor extends HeldSensor {
   readonly kind = 'sensor-water' as const
-  readonly base: RectBase
-  wilt: boolean
-  over: boolean
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.wilt = true
-    this.over = true
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
+  wilt = true
+  over = true
 }
 
-export class FertSensor {
+export class FertSensor extends HeldSensor {
   readonly kind = 'sensor-fert' as const
-  readonly base: RectBase
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
 }
 
-export class HarvestSensor {
+export class HarvestSensor extends HeldSensor {
   readonly kind = 'sensor-harvest' as const
-  readonly base: RectBase
-  mode: 'any' | 'all'
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.mode = 'any'
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
+  mode: 'any' | 'all' = 'any'
 }
 
-export class DaySensor {
+export class DaySensor extends HeldSensor {
   readonly kind = 'sensor-day' as const
-  readonly base: RectBase
-  sunrise: boolean
-  day: boolean
-  sunset: boolean
-  twilight: boolean
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.sunrise = false
-    this.day = true
-    this.sunset = false
-    this.twilight = false
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
+  sunrise = false
+  day = true
+  sunset = false
+  twilight = false
 }
 
-export class WaterSystem {
+export class WaterSystem extends HeldSensor {
   readonly kind = 'water-system' as const
-  readonly base: RectBase
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
 }
 
-export class VehicleSensor {
+export class VehicleSensor extends HeldSensor {
   readonly kind = 'vehicle-detector' as const
-  readonly base: RectBase
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.out = 0
-    this.hold = 0
-  }
+  override readonly ports: readonly PortId[] = ['out']
 }
 
-export class TrafficLight {
+export class TrafficLight extends HeldSensor {
   readonly kind = 'traffic-light' as const
-  readonly base: RectBase
-  inn: Signal
-  out: Signal
-  hold: number
-  constructor(base: RectBase) {
-    this.base = base
-    this.inn = 0
-    this.out = 0
-    this.hold = 0
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  inn: Signal = 0
+  sample(inn: Signal): void {
+    this.inn = inn
   }
 }
 
@@ -232,27 +192,28 @@ export type Sensor =
   | VehicleSensor
   | TrafficLight
 
+const MAKE: { [K in SensorKind]: { sku: SkuId; make: (base: RectBase) => Sensor } } = {
+  lever: { sku: 'buy-lever', make: base => new Lever(base) },
+  button: { sku: 'buy-button', make: base => new Button(base) },
+  lamp: { sku: 'buy-lamp', make: base => new Lamp(base) },
+  or: { sku: 'buy-or', make: base => new OrGate(base) },
+  and: { sku: 'buy-and', make: base => new AndGate(base) },
+  not: { sku: 'buy-not', make: base => new NotGate(base) },
+  pulser: { sku: 'buy-pulser', make: base => new Pulser(base) },
+  counter: { sku: 'buy-counter', make: base => new Counter(base) },
+  'sensor-water': { sku: 'buy-sensor-water', make: base => new WaterSensor(base) },
+  'sensor-fert': { sku: 'buy-sensor-fert', make: base => new FertSensor(base) },
+  'sensor-harvest': { sku: 'buy-sensor-harvest', make: base => new HarvestSensor(base) },
+  'sensor-day': { sku: 'buy-sensor-day', make: base => new DaySensor(base) },
+  'water-system': { sku: 'buy-water-system', make: base => new WaterSystem(base) },
+  'vehicle-detector': { sku: 'buy-vehicle-detector', make: base => new VehicleSensor(base) },
+  'traffic-light': { sku: 'buy-traffic-light', make: base => new TrafficLight(base) },
+}
+
 export type ValveHold = { e: Edge; level: Signal; hold: number }
 
-const OUT_KINDS: ReadonlySet<SensorKind> = new Set([
-  'lever',
-  'button',
-  'or',
-  'and',
-  'not',
-  'pulser',
-  'counter',
-  'sensor-water',
-  'sensor-fert',
-  'sensor-harvest',
-  'sensor-day',
-  'water-system',
-  'vehicle-detector',
-  'traffic-light',
-])
-
 export function isSensorKind(k: string): k is SensorKind {
-  return OUT_KINDS.has(k as SensorKind) || k === 'lamp'
+  return k in MAKE
 }
 
 export function isSensor(c: { kind: string }): c is Sensor {
@@ -260,22 +221,11 @@ export function isSensor(c: { kind: string }): c is Sensor {
 }
 
 export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
-  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') {
-    return port === 'in' && c.base.col === at.col && c.base.row === at.row
+  if (isSensor(c)) return c.base.col === at.col && c.base.row === at.row && c.ports.includes(port)
+  if ('ports' in c) {
+    return c.base.col === at.col && c.base.row === at.row && c.ports.some(p => p === port)
   }
-  if (c.kind === 'furnace') {
-    return (port === 'in' || port === 'out') && c.base.col === at.col && c.base.row === at.row
-  }
-  if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
-    return port === 'out' && c.base.col === at.col && c.base.row === at.row
-  }
-  if (!isSensor(c)) return false
-  if (c.kind === 'lamp') return port === 'in'
-  if (c.kind === 'not' || c.kind === 'pulser' || c.kind === 'counter' || c.kind === 'lever' || c.kind === 'traffic-light') {
-    return port === 'in' || port === 'out'
-  }
-  if (c.kind === 'and' || c.kind === 'or') return port === 'in-l' || port === 'in-r' || port === 'out'
-  return port === 'out'
+  return false
 }
 
 export function isOutEnd(end: WireEnd, cell: Cell | undefined): boolean {
@@ -505,10 +455,6 @@ export function wouldCycle(
   return false
 }
 
-function as01(n: number): Signal {
-  return n === 0 ? 0 : 1
-}
-
 export type EvalIn = {
   sensors: ReadonlyMap<string, Sensor>
   wires: readonly Wire[]
@@ -563,10 +509,7 @@ export function evalDag(input: EvalIn): void {
       s.kind === 'water-system' ||
       s.kind === 'vehicle-detector'
     ) {
-      const r = raw.get(cellKey({ col: s.base.col, row: s.base.row }))
-      const next = stepHold(s.out, s.hold, r)
-      s.out = next.out
-      s.hold = next.hold
+      s.eval(raw.get(cellKey({ col: s.base.col, row: s.base.row })))
     }
   })
   stores.forEach((s, k) => {
@@ -614,37 +557,22 @@ export function evalDag(input: EvalIn): void {
     const s = sensors.get(k)
     if (s === undefined) return
     const at = { col: s.base.col, row: s.base.row }
-    if (s.kind === 'lamp') s.inn = innOf(at, 'in')
-    else if (s.kind === 'not') s.out = as01(1 - innOf(at, 'in'))
-    else if (s.kind === 'and') s.out = innOf(at, 'in-l') === 1 && innOf(at, 'in-r') === 1 ? 1 : 0
-    else if (s.kind === 'or') s.out = innOf(at, 'in-l') === 1 || innOf(at, 'in-r') === 1 ? 1 : 0
+    if (s.kind === 'lamp' || s.kind === 'not') s.eval(innOf(at, 'in'))
+    else if (s.kind === 'and' || s.kind === 'or') s.eval(innOf(at, 'in-l'), innOf(at, 'in-r'))
   })
   machines.forEach(m => {
     m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
   })
   sensors.forEach(s => {
-    if (s.kind === 'traffic-light') s.inn = innOf({ col: s.base.col, row: s.base.row }, 'in')
+    if (s.kind === 'traffic-light') s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))
   })
   sensors.forEach(s => {
     if (s.kind === 'pulser' || s.kind === 'counter' || s.kind === 'lever') {
-      s.inn = innOf({ col: s.base.col, row: s.base.row }, 'in')
+      s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))
     }
   })
   sensors.forEach(s => {
-    if (s.kind === 'pulser') {
-      s.out = s.prev === 0 && s.inn === 1 ? 1 : 0
-      s.prev = s.inn
-    } else if (s.kind === 'counter') {
-      if (s.inn === 1) s.count += 1
-      if (s.count >= s.n) {
-        s.out = 1
-        s.count = 0
-      } else s.out = 0
-    } else if (s.kind === 'lever') {
-      if (s.prev === 0 && s.inn === 1) s.on = !s.on
-      s.prev = s.inn
-      s.out = s.on ? 1 : 0
-    }
+    if (s.kind === 'pulser' || s.kind === 'counter' || s.kind === 'lever') s.eval()
   })
   valves.forEach(h => {
     const inn = orTo(endKey({ kind: 'valve', e: h.e, port: 'in' }))
@@ -752,55 +680,9 @@ export function nearestWire(
 }
 
 export function makeSensor(id: SensorKind, base: RectBase): Sensor {
-  switch (id) {
-    case 'lever':
-      return new Lever(base)
-    case 'button':
-      return new Button(base)
-    case 'lamp':
-      return new Lamp(base)
-    case 'not':
-      return new NotGate(base)
-    case 'and':
-      return new AndGate(base)
-    case 'or':
-      return new OrGate(base)
-    case 'pulser':
-      return new Pulser(base)
-    case 'counter':
-      return new Counter(base)
-    case 'sensor-water':
-      return new WaterSensor(base)
-    case 'sensor-fert':
-      return new FertSensor(base)
-    case 'sensor-harvest':
-      return new HarvestSensor(base)
-    case 'sensor-day':
-      return new DaySensor(base)
-    case 'water-system':
-      return new WaterSystem(base)
-    case 'vehicle-detector':
-      return new VehicleSensor(base)
-    case 'traffic-light':
-      return new TrafficLight(base)
-  }
+  return MAKE[id].make(base)
 }
 
 export function skuKind(id: string): SensorKind | undefined {
-  if (id === 'buy-lever') return 'lever'
-  if (id === 'buy-button') return 'button'
-  if (id === 'buy-lamp') return 'lamp'
-  if (id === 'buy-or') return 'or'
-  if (id === 'buy-and') return 'and'
-  if (id === 'buy-not') return 'not'
-  if (id === 'buy-pulser') return 'pulser'
-  if (id === 'buy-counter') return 'counter'
-  if (id === 'buy-sensor-water') return 'sensor-water'
-  if (id === 'buy-sensor-fert') return 'sensor-fert'
-  if (id === 'buy-sensor-harvest') return 'sensor-harvest'
-  if (id === 'buy-sensor-day') return 'sensor-day'
-  if (id === 'buy-water-system') return 'water-system'
-  if (id === 'buy-vehicle-detector') return 'vehicle-detector'
-  if (id === 'buy-traffic-light') return 'traffic-light'
-  return undefined
+  return (Object.keys(MAKE) as SensorKind[]).find(k => MAKE[k].sku === id)
 }

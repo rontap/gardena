@@ -62,13 +62,15 @@ LoadResult =
 parse(text: string, sink?: LogSink): LoadResult
 ```
 
+`JSON.parse` as `Save`. No `unknown` walk. No `obj`/`arr`/`num`/`bool`.
+
 1. `JSON.parse` throws → `unknown-format`.
-2. JSON value is not an object, or `game` missing or not `"gardena"` → `not-gardena`. Stop.
-3. One hydrate of the live fields. No version gate. No `hydrate10`. No per-version reader. No peek except `game` (step 2) and `version` (step 4).
+2. `game !== "gardena"` → `not-gardena`. Stop.
+3. Hydrate from `Save` is total. No version gate. No `hydrate10`. No per-version reader. No peek except `game` (step 2) and `version` (step 4).
 4. Hydrate fails: file `version` ≠ dump `version` (absent included) → `version`; else `unusable`.
 5. Reconstructs → `{ ok: true; world }` even if file `version` ≠ dump `version`.
 
-`ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate is total.
+`ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate from `Save` is total.
 
 After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `hud` absent. No `World.pulse`. `cheatSpeed` 1. `cheatFastResearch` false. `clock.banner` 0. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally / recap `contracts` arrays hydrate empty.
 
@@ -118,7 +120,7 @@ Working notes never write version digits; they [[GLOBAL_VERSION]].
 
 ## Invariants
 
-`save.parse` — `parse(text)`: `JSON.parse` throw → `{ ok: false, reason: 'unknown-format' }`. Non-object or `game !== "gardena"` → `reason: 'not-gardena'`. Always one hydrate of live fields including `seats`. Reconstruct → `{ ok: true, world }` even if file `version` ≠ dump `version`. Hydrate fail: file `version` ≠ dump `version` (absent included) → `reason: 'version'`; else `reason: 'unusable'`. No migrate. No version gate. Peek `game` then, after fail only, `version`. `LoadFailReason` is `'unknown-format' | 'not-gardena' | 'version' | 'unusable'`.
+`save.parse` — `parse(text)`: `JSON.parse` as `Save`. No `unknown` walk. No `obj`/`arr`/`num`/`bool`. `JSON.parse` throw → `{ ok: false, reason: 'unknown-format' }`. `game !== "gardena"` → `reason: 'not-gardena'`. Hydrate from `Save` is total. Reconstruct → `{ ok: true, world }` even if file `version` ≠ dump `version`. Hydrate fail: file `version` ≠ dump `version` (absent included) → `reason: 'version'`; else `reason: 'unusable'`. No migrate. No version gate. Peek `game` then, after fail only, `version`. `LoadFailReason` is `'unknown-format' | 'not-gardena' | 'version' | 'unusable'`.
 
 `save.nomigrate` — Parse identity: `game === "gardena"`. No migrate. No version gate. File `version` ≠ dump `version` that hydrates is `{ ok: true }`. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, `routes`, `nextRouteId`, hangar/silo cells, `wires`, sensor cells, mill/jam/still/station `inn`, mill `recipe`/`variety`/`quality`, jam `crop`/`variety`/`quality`, furnace `units`/`progress`/`inn`/`out`/`hold`, grinder `crop`/`variety`/`quality`/`units`/`progress`/`n`, station `crop`/`variety`/`quality`/`units`/`progress`, still feed `{ crop, variety, quality, count }`, barrel `crop`/`variety`/`quality`/`age`, chest/freezer/seed-silo/additive-store `out` `hold`, additive-store `sugar` `{ liters, unitSale, quality }`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, traffic-light `inn`/`out`/`hold`, per vehicle `route`/`cursor`/`running`/`dwell`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Tree.tended`, `Tree.trunk`, `Tree.variety`, `Plant.variety` `Plant.quality`, `Item` `weed-spray` `liters` (not `usesLeft`), `Item` `axe` `usesLeft`+`workSeconds`, `Item` `wood` `count`, `Item` `ash` `count`, `Item` `graft`, fruit `cut` `variety` `quality`, `World.clearance`, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`, recap `water` when seam is recap. Weather table not in the file. Pins not in the file. `pumpLiters` not in the file. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file. `cheatSpeed` not in the file (load 1). `cheatFastResearch` not in the file (load false). Illegal: `{ kind: 'box' }`.
 

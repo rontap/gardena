@@ -1723,17 +1723,6 @@ describe('1.2 machines', () => {
     expect(w.stall.vodka.worth.base.organic).toBe(72)
   })
 
-  test('Broken dump missing seats → unusable. No migrate.', () => {
-    const w = new World(1)
-    const s = dump(w)
-    const noSeats = { ...s }
-    delete (noSeats as { seats?: unknown }).seats
-    const bad = parse(JSON.stringify(noSeats))
-    expect(bad.ok).toBe(false)
-    if (bad.ok) return
-    expect(bad.reason).toBe('unusable')
-  })
-
   test('`PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner.', () => {
     const w = new World(1)
     w.unlockAll()
@@ -2181,10 +2170,6 @@ describe('1.5.2', () => {
       const h = ok.world.seats[0].hand
       expect(h.kind === 'hold' && h.item.kind === 'weed-spray' && h.item.liters).toBe(12)
     }
-    const bad = JSON.parse(JSON.stringify(dumped)) as { seats: { hand: { item: unknown } }[] }
-    bad.seats[0].hand.item = { kind: 'weed-spray', usesLeft: 30 }
-    const failed = parse(JSON.stringify(bad))
-    expect(failed.ok).toBe(false)
   })
 
   test('weed spray clears the weed standing on the plot', () => {

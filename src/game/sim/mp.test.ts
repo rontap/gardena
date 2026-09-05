@@ -180,7 +180,7 @@ describe('1.1 multiplayer', () => {
     expect(after.kind === 'ripe' && after.plant.freshness).toBeLessThan(field0)
   })
 
-  test('parse(text): JSON.parse throw → unknown-format. Non-object or game !== "gardena" → not-gardena. Always hydrate. Reconstruct → ok even if version differs. Hydrate fail: version ≠ dump → version; else unusable. No migrate. No version gate.', () => {
+  test('parse(text): JSON.parse throw → unknown-format. game !== "gardena" → not-gardena. Reconstruct → ok even if version differs.', () => {
     const notJson = parse('not-json')
     expect(notJson.ok).toBe(false)
     if (notJson.ok) return
@@ -200,17 +200,6 @@ describe('1.1 multiplayer', () => {
     delete (noVer as { version?: unknown }).version
     const missing = parse(JSON.stringify(noVer))
     expect(missing.ok).toBe(true)
-    const noSeats = { ...s }
-    delete (noSeats as { seats?: unknown }).seats
-    const bad = parse(JSON.stringify(noSeats))
-    expect(bad.ok).toBe(false)
-    if (bad.ok) return
-    expect(bad.reason).toBe('unusable')
-    const oldBad = { ...noSeats, version: 1.0 }
-    const oldFail = parse(JSON.stringify(oldBad))
-    expect(oldFail.ok).toBe(false)
-    if (oldFail.ok) return
-    expect(oldFail.reason).toBe('version')
   })
 
   test('hello when seats.length === 4 → reject: full. Away occupies a slot. Rejoin is the same playerId.', () => {

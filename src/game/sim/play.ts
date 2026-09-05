@@ -499,31 +499,33 @@ function act(world: World, a: TurnAction): string {
   }
 }
 
-type Witness = { n: number; act: string; at: Coord; before: number | string }
+type Witness =
+  | { n: number; act: string; at: Coord; k: 'metric'; before: number }
+  | { n: number; act: string; at: Coord; k: 'state'; before: string }
 
 const KIND_ACTS = ['shovel', 'mine', 'harvest', 'plant', 'weed-spray']
 
 const SOIL_ACTS = ['water', 'fertilize', 'compost']
 
-function witnessOf(world: World, act: string, at: Coord): number | string | undefined {
+function witnessOf(world: World, act: string, at: Coord): { k: 'metric'; n: number } | { k: 'state'; s: string } | undefined {
   const c = world.cell(at)
-  if (KIND_ACTS.includes(act)) return c.kind
+  if (KIND_ACTS.includes(act)) return { k: 'state', s: c.kind }
   if (act === 'tend') {
-    if (c.kind === 'tree') return String(c.tended)
-    if (!isTilled(c)) return 'no soil'
-    return c.kind === 'growing' || c.kind === 'ripe' ? String(c.plant.tended) : 'no plant'
+    if (c.kind === 'tree') return { k: 'state', s: String(c.tended) }
+    if (!isTilled(c)) return { k: 'state', s: 'no soil' }
+    return c.kind === 'growing' || c.kind === 'ripe' ? { k: 'state', s: String(c.plant.tended) } : { k: 'state', s: 'no plant' }
   }
-  if (!isTilled(c)) return SOIL_ACTS.includes(act) ? 'no soil' : undefined
-  if (act === 'water') return c.soil.water
-  if (SOIL_ACTS.includes(act)) return c.soil.fertilizer
+  if (!isTilled(c)) return SOIL_ACTS.includes(act) ? { k: 'state', s: 'no soil' } : undefined
+  if (act === 'water') return { k: 'metric', n: c.soil.water }
+  if (SOIL_ACTS.includes(act)) return { k: 'metric', n: c.soil.fertilizer }
   return undefined
 }
 
 function landed(world: World, w: Witness): boolean {
   const now = witnessOf(world, w.act, w.at)
   if (now === undefined) return true
-  if (SOIL_ACTS.includes(w.act)) return typeof w.before === 'number' && (now as number) > w.before
-  return now !== w.before
+  if (w.k === 'metric') return now.k === 'metric' && now.n > w.before
+  return now.k === 'state' && now.s !== w.before
 }
 
 function step(world: World, days: Recap[]): void {
@@ -548,7 +550,11 @@ export function turn(world: World, actions: readonly TurnAction[]): TurnReport {
     const note = act(world, a)
     tasks.push({ n: i + 1, task: taskText(a), ok: note === '', note })
     if (a.task === 'enqueue' && 'at' in a && note === '' && seen !== undefined) {
-      watch.push({ n: i + 1, act: a.act, at: a.at, before: seen })
+      watch.push(
+        seen.k === 'metric'
+          ? { n: i + 1, act: a.act, at: a.at, k: 'metric', before: seen.n }
+          : { n: i + 1, act: a.act, at: a.at, k: 'state', before: seen.s },
+      )
     }
     if (a.task !== 'wait') return
     const n = Math.ceil(a.sec / DT_MAX)

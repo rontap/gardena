@@ -347,7 +347,6 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     ...new Map(
       world.seats[world.local].queue
         .map(i => dest(i, world))
-        .filter(at => Number.isFinite(at.col) && Number.isFinite(at.row))
         .map(at => [`${at.col},${at.row}`, at] as const),
     ).entries(),
   ]

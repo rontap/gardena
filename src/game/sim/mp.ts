@@ -86,83 +86,39 @@ const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
   'buy-fence',
 ])
 
-function isRec(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null
-}
-
-function seatId(n: unknown): SeatId | undefined {
-  if (n === 0 || n === 1 || n === 2 || n === 3) return n
-  return undefined
-}
-
 export function readMpMsg(data: unknown): MpMsg | undefined {
-  if (!isRec(data)) return undefined
-  switch (data.a) {
-    case 'hello': {
-      if (typeof data.protocol !== 'number' || typeof data.playerId !== 'string') return undefined
-      const name = typeof data.name === 'string' ? cleanName(data.name) : ''
-      const desyncT = typeof data.desyncT === 'number' ? data.desyncT : undefined
-      return { a: 'hello', protocol: data.protocol, playerId: data.playerId, name, desyncT }
-    }
-    case 'welcome': {
-      const seat = seatId(data.seat)
-      if (
-        typeof data.protocol !== 'number' ||
-        seat === undefined ||
-        !isRec(data.save) ||
-        typeof data.now !== 'number' ||
-        typeof data.paused !== 'boolean'
-      ) {
-        return undefined
-      }
-      return { a: 'welcome', protocol: data.protocol, seat, save: data.save as Save, now: data.now, paused: data.paused }
-    }
-    case 'reject': {
-      if (data.reason !== 'version' && data.reason !== 'full' && data.reason !== 'busy') return undefined
-      return { a: 'reject', reason: data.reason }
-    }
+  if (data === null || data === undefined) return undefined
+  const msg = data as MpMsg
+  switch (msg.a) {
+    case 'hello':
+      return { a: 'hello', protocol: msg.protocol, playerId: msg.playerId, name: cleanName(msg.name), desyncT: msg.desyncT }
+    case 'welcome':
+      return msg
+    case 'reject':
+      if (msg.reason !== 'version' && msg.reason !== 'full' && msg.reason !== 'busy') return undefined
+      return msg
     case 'ready':
       return { a: 'ready' }
     case 'ping':
       return { a: 'ping' }
-    case 'bundle': {
-      if (typeof data.t !== 'number' || !Array.isArray(data.cmds)) return undefined
-      return { a: 'bundle', t: data.t, cmds: data.cmds as Cmd[] }
-    }
-    case 'intent': {
-      if (!isRec(data.cmd)) return undefined
-      return { a: 'intent', cmd: data.cmd as Cmd }
-    }
-    case 'pause': {
-      if (typeof data.on !== 'boolean') return undefined
-      return { a: 'pause', on: data.on }
-    }
-    case 'digest': {
-      if (typeof data.t !== 'number' || typeof data.hex !== 'string') return undefined
-      return { a: 'digest', t: data.t, hex: data.hex }
-    }
-    case 'resync': {
-      if (!isRec(data.save) || typeof data.now !== 'number') return undefined
-      return { a: 'resync', save: data.save as Save, now: data.now }
-    }
-    case 'roster': {
-      const rows = Array.isArray(data.seats) ? data.seats : undefined
-      if (rows === undefined) return undefined
-      const seats: RosterSeat[] = []
-      for (const raw of rows) {
-        if (!isRec(raw)) return undefined
-        const id = seatId(raw.id)
-        if (id === undefined || typeof raw.name !== 'string') return undefined
-        if (raw.presence !== 'in' && raw.presence !== 'away') return undefined
-        if (typeof raw.napping !== 'boolean') return undefined
-        seats.push({ id, name: cleanName(raw.name), presence: raw.presence, napping: raw.napping })
+    case 'bundle':
+      return msg
+    case 'intent':
+      return msg
+    case 'pause':
+      return msg
+    case 'digest':
+      return msg
+    case 'resync':
+      return msg
+    case 'roster':
+      return {
+        a: 'roster',
+        seats: msg.seats.map(s => ({ id: s.id, name: cleanName(s.name), presence: s.presence, napping: s.napping })),
       }
-      return { a: 'roster', seats }
-    }
-    case 'bye': {
-      if (data.why !== 'host-left' && data.why !== 'kicked' && data.why !== 'lost') return undefined
-      return { a: 'bye', why: data.why }
-    }
+    case 'bye':
+      if (msg.why !== 'host-left' && msg.why !== 'kicked' && msg.why !== 'lost') return undefined
+      return msg
     default:
       return undefined
   }

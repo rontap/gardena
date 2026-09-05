@@ -192,21 +192,21 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     const cue = world.seats[world.local].cue
     if (cue.kind === 'none') {
-      setPanel(p => (p.kind === 'hangar' || p.kind === 'vehicle' ? { kind: 'none' } : p))
+      updatePanel(p => (p.kind === 'hangar' || p.kind === 'vehicle' ? { kind: 'none' } : p))
       return
     }
     if (cue.kind === 'hangar') {
       setHangarPick(undefined)
-      setPanel(p => (p.kind === 'hangar' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'hangar', at: cue.at }))
+      updatePanel(p => (p.kind === 'hangar' && p.at.col === cue.at.col && p.at.row === cue.at.row ? p : { kind: 'hangar', at: cue.at }))
       return
     }
     if (cue.kind === 'vehicle') {
-      setPanel(p => (p.kind === 'vehicle' && p.id === cue.id ? p : { kind: 'vehicle', id: cue.id }))
+      updatePanel(p => (p.kind === 'vehicle' && p.id === cue.id ? p : { kind: 'vehicle', id: cue.id }))
       return
     }
     if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives' && cue.kind !== 'station') return
     const at = cue.at
-    setPanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
+    updatePanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
   }, [hudN, world])
 
   useEffect(() => {
@@ -319,7 +319,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
         if (world.local === 0) world.dismissRecap()
         return
       }
-      setPanel(p => {
+      updatePanel(p => {
         if (cued(p.kind)) world.ackCue()
         if (p.kind === 'multiplayer') closeMpRef.current()
         return { kind: 'none' }
@@ -539,7 +539,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   function open(next: Panel): void {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
-    setPanel(p => {
+    updatePanel(p => {
       const to = p.kind === next.kind ? { kind: 'none' as const } : next
       if (p.kind === 'lens' && to.kind !== 'lens' && !lensLock) setLens('off')
       if (arming(p.kind) && !arming(to.kind)) leaveShop()
@@ -559,7 +559,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   function toggleMenu(): void {
     if (world === undefined) return
     if (world.seam.kind === 'recap') return
-    setPanel(p => {
+    updatePanel(p => {
       if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
@@ -625,12 +625,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
   }
 
-  function setPanel(next: Panel | ((p: Panel) => Panel)): void {
+  function setPanel(next: Panel): void {
     const from = panelRef.current.kind
-    const n = typeof next === 'function' ? next(panelRef.current) : next
-    panelRef.current = n
-    setPanelState(n)
-    overlayPause(from, n.kind)
+    panelRef.current = next
+    setPanelState(next)
+    overlayPause(from, next.kind)
+  }
+
+  function updatePanel(fn: (p: Panel) => Panel): void {
+    setPanel(fn(panelRef.current))
   }
 
   function setMpPanel(open: boolean): void {
@@ -655,7 +658,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seam.kind === 'recap') return
     if (role === 'off') startHost()
     let open = false
-    setPanel(p => {
+    updatePanel(p => {
       if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
       open = p.kind !== 'multiplayer'

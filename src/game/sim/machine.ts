@@ -3,12 +3,10 @@ import {
   BARREL_MATURE,
   EXTRACT,
   FLOUR,
-  FURNACE_CAP,
   FURNACE_NEED,
   FURNACE_REACH,
   FURNACE_HASTE,
   FURNACE_VALUE,
-  JAM_BUFFER,
   JAM_IN,
   JAM_SUGAR,
   JAM_SALE,
@@ -42,8 +40,7 @@ import type {
   RectBase,
   ResearchStation,
 } from './building.ts'
-import { compostValue, furnaceValue, organic, type Item } from './item.ts'
-import { m } from '../../paraglide/messages.js'
+import { furnaceValue, type Item } from './item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation
 
@@ -75,14 +72,6 @@ export function millNeed(recipe: MillRecipe): number {
 
 export function barrelNeed(crop: BarrelCrop): number {
   return crop === 'apple' ? 4 : 5
-}
-
-export function millProductName(recipe: MillRecipe): string {
-  if (recipe === 'sugar-cane') return m.names_item_sugar()
-  if (recipe === 'olive') return m.names_item_oil()
-  if (recipe === 'wheat') return m.names_item_flour()
-  if (recipe === 'vanilla') return m.names_item_vanilla_extract()
-  return m.names_item_extract()
 }
 
 export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: number): Item {
@@ -143,52 +132,26 @@ export function feedVarietyOf(item: Item): VarietyId {
 }
 
 export function millAccept(mill: Mill, item: Item): MillTake | undefined {
+  const n = mill.accept(item)
+  if (n <= 0) return undefined
   const recipe = millRecipeOf(item)
   if (recipe === undefined) return undefined
-  if (mill.recipe !== 'none' && (mill.recipe !== recipe || mill.variety !== feedVarietyOf(item))) return undefined
-  const n = millDumpUnits(item, recipe)
-  if (n <= 0) return undefined
   return { recipe, n }
-}
-
-export function millApply(mill: Mill, item: Item, n: number): void {
-  const recipe = millRecipeOf(item)
-  if (recipe === undefined || n <= 0) return
-  const q = item.kind === 'fruit' ? item.quality : 0
-  const v = feedVarietyOf(item)
-  if (mill.recipe === 'none') {
-    mill.recipe = recipe
-    mill.variety = v
-    mill.quality = q
-    mill.units = n
-    return
-  }
-  mill.quality = mixQuality(mill.quality, mill.units, q, n)
-  mill.units += n
 }
 
 export type GrindTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
 
 export function grindAccept(g: Grinder, item: Item): GrindTake | undefined {
+  const n = g.accept(item)
+  if (n <= 0) return undefined
   const crop = fruitCrop(item)
   const variety = fruitVariety(item)
   if (crop === undefined || variety === undefined) return undefined
-  if (g.crop !== 'none' && (g.crop !== crop || g.variety !== variety)) return undefined
-  const n = fruitCount(item)
-  if (n <= 0) return undefined
   return { crop, variety, quality: fruitQuality(item), n }
 }
 
 export function grindApply(g: Grinder, take: GrindTake): void {
-  if (g.crop === 'none') {
-    g.crop = take.crop
-    g.variety = take.variety
-    g.quality = take.quality
-    g.units = take.n
-    return
-  }
-  g.quality = mixQuality(g.quality, g.units, take.quality, take.n)
-  g.units += take.n
+  g.applyTake(take.crop, take.variety, take.quality, take.n)
 }
 
 export function grindProduct(
@@ -199,70 +162,6 @@ export function grindProduct(
   if (!isAnnualId(g.crop)) return { kind: 'tree-seed', tree: g.crop, variety: 'base', quality: g.quality }
   const variety = tierOf(g.variety) === 'heirloom' ? 'base' : g.variety
   return { kind: 'seeds', crop: g.crop, variety, quality: g.quality, count }
-}
-
-export function feedAccept(cell: IoCell, item: Item): number {
-  if (cell.kind === 'mill') {
-    const take = millAccept(cell, item)
-    if (take === undefined) return 0
-    return take.n
-  }
-  if (cell.kind === 'jam') {
-    const sugar = jamSugarAccept(cell, item)
-    if (sugar > 0) return sugar
-    return jamFruitAccept(cell, item)
-  }
-  if (cell.kind === 'still') return stillAccept(cell, item)
-  if (cell.kind === 'compost-box') return organic(item) ? 1 : 0
-  if (cell.kind === 'furnace') return furnaceAccept(cell, item)
-  if (cell.kind === 'station') {
-    const take = stationAccept(cell, item)
-    if (take === undefined) return 0
-    return take.n
-  }
-  const take = grindAccept(cell, item)
-  if (take === undefined) return 0
-  return take.n
-}
-
-export function feedApply(cell: IoCell, item: Item, n: number): void {
-  if (cell.kind === 'mill') {
-    millApply(cell, item, n)
-    return
-  }
-  if (cell.kind === 'jam') {
-    if (item.kind === 'sugar') {
-      jamSugarApply(cell, n)
-      return
-    }
-    jamFruitApply(cell, item, n)
-    return
-  }
-  if (cell.kind === 'still') {
-    stillApply(cell, item, n)
-    return
-  }
-  if (cell.kind === 'compost-box') {
-    cell.units += compostValue(item)
-    return
-  }
-  if (cell.kind === 'furnace') {
-    furnaceApply(cell, item, n)
-    return
-  }
-  if (cell.kind === 'station') {
-    const got = stationAccept(cell, item)
-    if (got === undefined) return
-    stationApply(cell, { ...got, n })
-    return
-  }
-  const take = grindAccept(cell, item)
-  if (take === undefined) return
-  grindApply(cell, { crop: take.crop, variety: take.variety, quality: take.quality, n })
-}
-
-export function feedWhole(cell: IoCell): boolean {
-  return cell.kind === 'compost-box'
 }
 
 export function takeCount(item: Item, n: number): boolean {
@@ -277,54 +176,16 @@ export function takeCount(item: Item, n: number): boolean {
   return true
 }
 
-
-
 export function jamFruitAccept(jam: JamMachine, item: Item): number {
-  const crop = jamCropOf(item)
-  if (crop === undefined) return 0
-  if (jam.crop !== 'none' && (jam.crop !== crop || jam.variety !== feedVarietyOf(item))) return 0
-  return fruitCount(item)
-}
-
-export function jamFruitApply(jam: JamMachine, item: Item, n: number): void {
-  if (item.kind !== 'fruit') return
-  const crop = jamCropOf(item)
-  if (crop === undefined || n <= 0) return
-  if (jam.crop === 'none') {
-    jam.crop = crop
-    jam.variety = item.variety
-    jam.quality = item.quality
-    jam.fruit = n
-    return
-  }
-  jam.quality = mixQuality(jam.quality, jam.fruit, item.quality, n)
-  jam.fruit += n
+  return jam.acceptFruit(item)
 }
 
 export function jamSugarAccept(jam: JamMachine, item: Item): number {
-  if (item.kind !== 'sugar') return 0
-  const room = JAM_BUFFER - jam.sugar
-  if (room <= 0 || item.liters <= 0) return 0
-  return item.liters < room ? item.liters : room
-}
-
-export function jamSugarApply(jam: JamMachine, n: number): void {
-  jam.sugar += n
+  return jam.acceptSugar(item)
 }
 
 export function stillAccept(still: PotStill, item: Item): number {
-  if (stillCropOf(item) === undefined) return 0
-  const room = STILL_CAP - feedUnits(still.feed)
-  const n = fruitCount(item)
-  if (room <= 0 || n <= 0) return 0
-  return n < room ? n : room
-}
-
-export function stillApply(still: PotStill, item: Item, n: number): void {
-  const crop = stillCropOf(item)
-  const variety = fruitVariety(item)
-  if (crop === undefined || variety === undefined || n <= 0) return
-  addStillFeed(still.feed, crop, variety, fruitQuality(item), n)
+  return still.accept(item)
 }
 
 export function stillCropOf(item: Item): StillCrop | undefined {
@@ -468,26 +329,7 @@ export function furnaceUnit(item: Item): number {
 }
 
 export function furnaceAccept(furnace: Furnace, item: Item): number {
-  const unit = furnaceUnit(item)
-  if (unit <= 0) return 0
-  const room = FURNACE_CAP - furnace.units
-  if (room <= 0) return 0
-  if (item.kind === 'tree-seed') return unit <= room ? 1 : 0
-  if (item.kind === 'sugar') {
-    const maxL = room / unit
-    return item.liters < maxL ? item.liters : maxL
-  }
-  if ('count' in item) {
-    const maxN = Math.floor(room / unit)
-    if (maxN <= 0) return 0
-    return item.count < maxN ? item.count : maxN
-  }
-  return 0
-}
-
-export function furnaceApply(furnace: Furnace, item: Item, n: number): void {
-  if (n <= 0) return
-  furnace.units += furnaceUnit(item) * n
+  return furnace.accept(item)
 }
 
 export function furnaceWorking(c: Furnace): boolean {
@@ -539,25 +381,14 @@ export function furnaceMul(working: readonly Furnace[], target: RectBase): numbe
 export type StationTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
 
 export function stationAccept(st: ResearchStation, item: Item): StationTake | undefined {
-  if (item.kind !== 'fruit' || item.cut) return undefined
-  if (tierOf(item.variety) !== 'heirloom') return undefined
-  if (st.crop !== 'none' && (st.crop !== item.crop || st.variety !== item.variety)) return undefined
-  const room = STATION_IN - st.units
-  if (room <= 0 || item.count <= 0) return undefined
-  return { crop: item.crop, variety: item.variety, quality: item.quality, n: Math.min(room, item.count) }
+  const n = st.accept(item)
+  if (n <= 0) return undefined
+  if (item.kind !== 'fruit') return undefined
+  return { crop: item.crop, variety: item.variety, quality: item.quality, n }
 }
 
 export function stationApply(st: ResearchStation, take: StationTake): void {
-  if (take.n <= 0) return
-  if (st.crop === 'none') {
-    st.crop = take.crop
-    st.variety = take.variety
-    st.quality = take.quality
-    st.units = take.n
-    return
-  }
-  st.quality = mixQuality(st.quality, st.units, take.quality, take.n)
-  st.units += take.n
+  st.applyTake(take.crop, take.variety, take.quality, take.n)
 }
 
 export function stationWorking(c: ResearchStation): boolean {

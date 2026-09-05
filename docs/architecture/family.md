@@ -2,7 +2,7 @@
 
 HUD panel + `World` fields. Not XP. No “has family” flag. No `Family` class.
 
-Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Mutation: `World`. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (point). Art: [[art/skills]]. Rules: [[mechanics/family]].
+Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Offers, pick, and skill-modifier rebuild live in `sim/family.ts`: `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` after `family` exists. Hydrate rebuilds modifiers; it does not reroll. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (point). Art: [[art/skills]]. Rules: [[mechanics/family]].
 
 Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`.
 

@@ -197,19 +197,4 @@ describe('tutorial', () => {
     expect(r.world.rng.stream('fruit').next()).toBe(seq.stream('fruit').next())
   })
 
-  test('bad item kind fails parse', () => {
-    const w = new World(1)
-    const badHand = dump(w)
-    badHand.seats[0].hand = { kind: 'hold', item: { kind: 'nope' } as never }
-    const r = parse(JSON.stringify(badHand))
-    expect(r.ok).toBe(false)
-    if (r.ok) return
-    expect(r.reason).toBe('unusable')
-    const badBox = dump(w)
-    badBox.drops.push({ at: { col: 0, row: 0 }, item: { kind: 'box' } as never })
-    const r2 = parse(JSON.stringify(badBox))
-    expect(r2.ok).toBe(false)
-    if (r2.ok) return
-    expect(r2.reason).toBe('unusable')
-  })
 })

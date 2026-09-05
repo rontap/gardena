@@ -1,7 +1,11 @@
+import { CROPS } from '../defs/crops.ts'
 import {
+  AUTO_DECEL_MUL,
+  AUTO_VMAX_MUL,
   BOOM_LONG,
   HANGAR_H,
   HANGAR_W,
+  HEADING_SOUTH,
   SILO_H,
   SILO_W,
   SUGAR_BAG,
@@ -9,56 +13,57 @@ import {
   HITCH_BACK,
   QUAD_ACCEL,
   QUAD_EMPTY_MUL,
+  QUAD_FUEL_SECONDS,
+  QUAD_PRICE,
+  QUAD_REFILL,
   QUAD_VMAX,
   QUAD_YAW,
+  ROUTE_ALIGN,
+  ROUTE_ARRIVE,
   SURFACE_NORMAL,
   SURFACE_PAVED,
   SURFACE_SLOW,
   TRACTOR_ACCEL,
+  TRACTOR_PRICE,
   TRACTOR_VMAX,
   TRACTOR_YAW,
   TRAILER_CAP,
+  TRAILER_HARVEST_PRICE,
   TRAILER_LEN,
+  TRAILER_SEED_PRICE,
+  TRAILER_SPRAY_PRICE,
   VEHICLE_SLOTS,
 } from '../defs/items.ts'
-import type { VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
-import { compostValue, countable, mergeInto, organic, stackable, type Item, type Slot } from './item.ts'
+import type { HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
+import {
+  cargoCount,
+  compactSlots,
+  fruitStack,
+  giveSlots,
+  insertSlots,
+  slotsCouldTake,
+  type Item,
+  type Slot,
+} from './item.ts'
 import {
   ADDITIVE_BAG,
   type AdditiveId,
   type AdditiveStore,
-  type Chest,
-  type CompostBox,
+  type BaseBuilding,
   type Coord,
-  type Freezer,
-  type Furnace,
-  type JamMachine,
-  type Mill,
-  type PotStill,
   type RectBase,
-  type ResearchStation,
   type SeedSilo,
   type SugarBin,
 } from './building.ts'
 import type { Drop } from './drop.ts'
-import {
-  jamFruitAccept,
-  jamFruitApply,
-  jamSugarAccept,
-  jamSugarApply,
-  mergeSugar,
-  millAccept,
-  millApply,
-  furnaceAccept,
-  furnaceApply,
-  stationAccept,
-  stationApply,
-  stillAccept,
-  stillApply,
-} from './machine.ts'
+import { Act, type Cmd } from './log.ts'
+import { statsOf } from './modifiers.ts'
+import { Plant } from './plant.ts'
 import { isSolid, isTilled, type Cell } from './plot.ts'
-import type { SeatId } from './world.ts'
+import { FERT_PLOT_MAX } from './soil.ts'
+import type { SeatId, World } from './world.ts'
+
+export { cargoCount, compactSlots, insertSlots }
 
 export type Drive = { throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
 
@@ -282,13 +287,6 @@ export function boomHits(p: { x: number; y: number }, heading: number, wide: num
   return hits
 }
 
-export function cargoCount(item: Item): number {
-  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'dead' || item.kind === 'rotten' || item.kind === 'weed') {
-    return item.count
-  }
-  return 0
-}
-
 export function trailerUsed(t: Trailer): number {
   if (t.kind === 'seed') return t.hopper.kind === 'empty' ? 0 : t.hopper.item.count
   if (t.kind === 'spray') return t.hopper.kind === 'empty' ? 0 : Math.floor(t.hopper.item.liters)
@@ -331,17 +329,11 @@ export function integrateVehicle(
   }
 }
 
-export type PadCell =
-  | Mill
-  | JamMachine
-  | PotStill
-  | CompostBox
-  | Furnace
-  | ResearchStation
-  | Chest
-  | Freezer
-  | SeedSilo
-  | AdditiveStore
+export type PadCell = Extract<Cell, BaseBuilding> & { readonly pads: 'both' }
+
+export function isPadCell(c: Cell): c is PadCell {
+  return 'pads' in c && c.pads === 'both'
+}
 
 export type Cargo =
   | { kind: 'quad'; slots: Slot[] }
@@ -365,99 +357,12 @@ export function vehicleCargo(v: Vehicle, trailers: readonly Trailer[]): Cargo | 
 }
 
 export function dumpAccept(dest: PadCell, item: Item): number {
-  if (dest.kind === 'mill') {
-    const take = millAccept(dest, item)
-    if (take === undefined) return 0
-    return take.n
-  }
-  if (dest.kind === 'jam') {
-    const sugar = jamSugarAccept(dest, item)
-    if (sugar > 0) return sugar
-    return jamFruitAccept(dest, item)
-  }
-  if (dest.kind === 'still') return stillAccept(dest, item)
-  if (dest.kind === 'compost-box') return organic(item) ? 1 : 0
-  if (dest.kind === 'furnace') return furnaceAccept(dest, item)
-  if (dest.kind === 'station') {
-    const take = stationAccept(dest, item)
-    if (take === undefined) return 0
-    return take.n
-  }
-  if (dest.kind === 'chest' || dest.kind === 'freezer') return slotsCouldTake(dest.slots, item, dest.slots.length, undefined) ? 1 : 0
-  if (dest.kind === 'seed-silo') {
-    if (item.kind !== 'seeds') return 0
-    const n = dest.free < item.count ? dest.free : item.count
-    return n > 0 ? n : 0
-  }
-  if (dest.kind === 'additive-store') {
-    if (item.kind === 'sugar') {
-      const room = dest.free < item.liters ? dest.free : item.liters
-      return room > 0 ? room : 0
-    }
-    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
-    const n = dest.free < item.liters ? dest.free : item.liters
-    return n > 0 ? n : 0
-  }
-  return 0
+  return dest.accept(item)
 }
 
 function dumpApply(dest: PadCell, item: Item, n: number, take: (n: number) => void): void {
-  if (dest.kind === 'mill') {
-    millApply(dest, item, n)
-    take(n)
-    return
-  }
-  if (dest.kind === 'jam') {
-    if (item.kind === 'sugar') {
-      jamSugarApply(dest, n)
-      take(n)
-      return
-    }
-    jamFruitApply(dest, item, n)
-    take(n)
-    return
-  }
-  if (dest.kind === 'still') {
-    stillApply(dest, item, n)
-    take(n)
-    return
-  }
-  if (dest.kind === 'compost-box') {
-    dest.units += compostValue(item)
-    take(-1)
-    return
-  }
-  if (dest.kind === 'furnace') {
-    furnaceApply(dest, item, n)
-    take(n)
-    return
-  }
-  if (dest.kind === 'station') {
-    const got = stationAccept(dest, item)
-    if (got === undefined) return
-    stationApply(dest, { ...got, n })
-    take(n)
-    return
-  }
-  if (dest.kind === 'chest' || dest.kind === 'freezer') {
-    if (!giveSlots(dest.slots, item, dest.slots.length, undefined)) return
-    take(-1)
-    return
-  }
-  if (dest.kind === 'seed-silo' && item.kind === 'seeds') {
-    const got = putSiloInto(dest, item.crop, item.variety, item.quality, n)
-    if (got > 0) take(got)
-    return
-  }
-  if (dest.kind === 'additive-store' && item.kind === 'sugar') {
-    const got = putSugarInto(dest, item.liters < n ? item.liters : n, item.unitSale, item.quality)
-    if (got > 0) take(got)
-    return
-  }
-  if (dest.kind === 'additive-store' && (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray')) {
-    const got = putAdditiveInto(dest, item.kind, n)
-    if (got > 0) take(got)
-  }
+  dest.apply(item, n)
+  take(dest.takeAll ? -1 : n)
 }
 
 export function canDumpCargo(cargo: Cargo, dest: PadCell): boolean {
@@ -533,14 +438,7 @@ function sugarBag(bin: SugarBin, liters: number): Extract<Item, { kind: 'sugar' 
 }
 
 export function putSugarInto(store: AdditiveStore, liters: number, unitSale: number, quality: number): number {
-  const n = Math.min(liters, store.free)
-  if (n <= 0) return 0
-  const bin = store.sugar
-  const total = bin.liters + n
-  bin.unitSale = (bin.unitSale * bin.liters + unitSale * n) / total
-  bin.quality = (bin.quality * bin.liters + quality * n) / total
-  bin.liters = total
-  return n
+  return store.putSugar(liters, unitSale, quality)
 }
 
 function pullSugar(store: AdditiveStore, cargo: Cargo): void {
@@ -625,54 +523,6 @@ function cargoCouldTake(cargo: Cargo, item: Item): boolean {
   return Math.floor(cargo.trailer.hopper.item.liters) < TRAILER_CAP
 }
 
-function copyItem(item: Item): Item {
-  switch (item.kind) {
-    case 'shovel':
-    case 'pickaxe':
-    case 'container':
-    case 'fertilizer':
-    case 'synth':
-    case 'compost':
-    case 'seeds':
-    case 'grass-seeds':
-    case 'fruit':
-    case 'tree-seed':
-    case 'graft':
-    case 'sugar':
-    case 'spirit':
-    case 'cask':
-    case 'jam':
-    case 'oil':
-    case 'flour':
-    case 'extract':
-    case 'rotten':
-    case 'dead':
-    case 'weed':
-    case 'grass':
-    case 'weed-spray':
-    case 'axe':
-    case 'wood':
-    case 'ash':
-      return { ...item }
-  }
-}
-
-function slotsCouldTake(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
-  const add = cargoCount(item)
-  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
-  if (maxUsed !== undefined && add > 0 && used >= maxUsed) return false
-  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: copyItem(s.item) }))
-  const piece =
-    add > 0 && maxUsed !== undefined && (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'dead' || item.kind === 'rotten' || item.kind === 'weed')
-      ? { ...item, count: add < maxUsed - used ? add : maxUsed - used }
-      : copyItem(item)
-  const empty = copy.findIndex(s => s.kind === 'empty')
-  if (empty >= 0) copy[empty] = { kind: 'hold', item: piece }
-  else copy.push({ kind: 'hold', item: piece })
-  compactSlots(copy)
-  return copy.filter(s => s.kind === 'hold').length <= maxSlots
-}
-
 function giveCargo(cargo: Cargo, item: Item): boolean {
   if (cargo.kind === 'quad') return giveSlots(cargo.slots, item, VEHICLE_SLOTS, undefined)
   if (cargo.kind === 'harvest') return giveSlots(cargo.slots, item, HARVEST_SLOTS, TRAILER_CAP)
@@ -709,54 +559,6 @@ function giveCargo(cargo: Cargo, item: Item): boolean {
   return item.liters <= 0
 }
 
-function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
-  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
-  if (
-    item.kind === 'fruit' ||
-    item.kind === 'seeds' ||
-    item.kind === 'dead' ||
-    item.kind === 'rotten' ||
-    item.kind === 'weed' ||
-    item.kind === 'grass'
-  ) {
-    const room = maxUsed === undefined ? item.count : maxUsed - used
-    const n = item.count < room ? item.count : room
-    if (n <= 0) return false
-    const piece = { ...item, count: n }
-    if (!insertSlots(slots, piece, maxSlots, maxUsed)) return false
-    item.count -= n
-    return item.count <= 0
-  }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
-    const piece = { ...item }
-    if (!insertSlots(slots, piece, maxSlots, undefined)) return false
-    item.liters = 0
-    return true
-  }
-  if (!insertSlots(slots, item, maxSlots, undefined)) return false
-  return true
-}
-
-function putSiloInto(silo: SeedSilo, crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
-  const n = Math.min(count, silo.free)
-  if (n <= 0) return 0
-  const hit = silo.seeds.find(st => st.crop === crop && st.variety === variety)
-  if (hit !== undefined) {
-    hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
-    hit.count += n
-  } else silo.seeds.push({ crop, variety, quality, count: n })
-  return n
-}
-
-function putAdditiveInto(store: AdditiveStore, id: AdditiveId, liters: number): number {
-  const n = Math.min(liters, store.free)
-  if (n <= 0) return 0
-  const hit = store.held.find(h => h.id === id)
-  if (hit !== undefined) hit.liters += n
-  else store.held.push({ id, liters: n })
-  return n
-}
-
 function takeItemCount(item: Item, n: number): boolean {
   if ('count' in item) {
     item.count -= n
@@ -769,104 +571,664 @@ function takeItemCount(item: Item, n: number): boolean {
   return true
 }
 
-export function insertSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
-  const n = cargoCount(item)
-  const used = slots.reduce((s, x) => s + (x.kind === 'hold' ? cargoCount(x.item) : 0), 0)
-  if (maxUsed !== undefined && used + n > maxUsed) return false
-  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: s.item }))
-  const empty = copy.findIndex(s => s.kind === 'empty')
-  if (empty >= 0) copy[empty] = { kind: 'hold', item }
-  else copy.push({ kind: 'hold', item })
-  compactSlots(copy)
-  const kept = copy.filter(s => s.kind === 'hold')
-  if (kept.length > maxSlots) return false
-  for (let i = 0; i < maxSlots; i++) {
-    slots[i] = i < kept.length ? kept[i] : { kind: 'empty' }
-  }
-  return true
+export function storedHere(p: VehiclePose | TrailerPose, origin: Coord): boolean {
+  return p.kind === 'stored' && p.hangar.col === origin.col && p.hangar.row === origin.row
 }
 
-export function compactSlots(slots: Slot[]): void {
-  const kept: Slot[] = []
-  slots.forEach(slot => {
-    if (slot.kind === 'empty') return
-    if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
-      const kind = slot.item.kind
-      const crop = slot.item.crop
-      const variety = slot.item.variety
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === kind &&
-          (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
-          s.item.crop === crop &&
-          s.item.variety === variety,
-      )
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
-        mergeInto(hit.item, slot.item, slot.item.count)
-        return
-      }
+function harvestInsert(slots: Slot[], item: Item): boolean {
+  return insertSlots(slots, item, HARVEST_SLOTS, TRAILER_CAP)
+}
+
+export function driverVehicle(w: World, id: SeatId): Vehicle | undefined {
+  return w.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === id)
+}
+
+export function cargo(w: World): Cargo | undefined {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return undefined
+  return vehicleCargo(v, w.trailers)
+}
+
+export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
+  for (const cell of w.padBuildings()) {
+    if (onPad(dropoffPad(cell.base), at)) return { cell, side: 'dropoff' }
+    if (onPad(takeupPad(cell.base), at)) return { cell, side: 'takeup' }
+  }
+  return undefined
+}
+
+export function driveBody(w: World, throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
+  if (driverVehicle(w, w.act.id) === undefined) return
+  w.act.drive = { throttle, steer }
+  w.ping()
+}
+
+export function buyVehicleBody(w: World, at: Coord, k: VehicleKind): void {
+  if (!w.done.has('unlock-vehicles')) return
+  const price = k === 'quad' ? QUAD_PRICE : TRACTOR_PRICE
+  if (w.money < price) return
+  const origin = w.hangarOrigin(at)
+  if (origin === undefined) return
+  w.money -= price
+  const id = w.nextVehicleId
+  w.nextVehicleId += 1
+  const pose = { kind: 'stored' as const, hangar: { ...origin } }
+  w.vehicles.push(k === 'quad' ? makeQuad(id, 1, emptyVehicleSlots(), pose) : makeTractor(id, 1, 'none', 5, pose))
+  w.ping()
+}
+
+export function buyTrailerBody(w: World, at: Coord, k: TrailerKind): void {
+  if (!w.done.has('unlock-vehicles')) return
+  const price = k === 'seed' ? TRAILER_SEED_PRICE : k === 'spray' ? TRAILER_SPRAY_PRICE : TRAILER_HARVEST_PRICE
+  if (w.money < price) return
+  const origin = w.hangarOrigin(at)
+  if (origin === undefined) return
+  w.money -= price
+  const id = w.nextTrailerId
+  w.nextTrailerId += 1
+  const pose = { kind: 'stored' as const, hangar: { ...origin } }
+  const trailer: Trailer =
+    k === 'seed'
+      ? { kind: 'seed', id, pose, hopper: { kind: 'empty' } }
+      : k === 'spray'
+        ? { kind: 'spray', id, pose, hopper: { kind: 'empty' } }
+        : { kind: 'harvest', id, pose, slots: emptyHarvestSlots() }
+  w.trailers.push(trailer)
+  w.ping()
+}
+
+export function deployBody(w: World, id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
+  const v = w.vehicles.find(x => x.id === id)
+  if (v === undefined || v.pose.kind !== 'stored') return
+  if (driverVehicle(w, w.act.id) !== undefined) return
+  const origin = w.hangarOrigin(at)
+  if (origin === undefined) return
+  const hangar = w.cell(origin)
+  if (hangar.kind !== 'hangar') return
+  const pad = padCenter(hangar.base)
+  if (!w.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
+  if (v.kind === 'quad' && hitch !== 'none') return
+  let trailer: Trailer | undefined
+  if (v.kind === 'tractor') {
+    if (hitch !== 'none') {
+      trailer = w.trailers.find(x => x.id === hitch)
+      if (trailer === undefined || trailer.pose.kind !== 'stored') return
     }
-    if (slot.item.kind === 'sugar') {
-      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
-      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
-        const m = mergeSugar(hit.item, slot.item)
-        hit.item.liters = m.liters
-        hit.item.capacityLiters = m.capacityLiters
-        hit.item.unitSale = m.unitSale
-        hit.item.quality = m.quality
-        return
-      }
+    v.hitch = hitch
+  }
+  v.pose = {
+    kind: 'field',
+    x: pad.x,
+    y: pad.y,
+    heading: HEADING_SOUTH,
+    speed: 0,
+    driver: w.act.id,
+  }
+  if (trailer !== undefined) {
+    trailer.pose = { kind: 'attached', vehicle: id, heading: HEADING_SOUTH }
+  }
+  w.act.drive = { throttle: 0, steer: 0 }
+  w.act.queue.length = 0
+  w.act.workLeft = 0
+  w.act.workTotal = 0
+  w.act.filling = false
+  w.act.cue = { kind: 'none' }
+  w.act.actor.x = pad.x
+  w.act.actor.y = pad.y
+  w.ping()
+}
+
+export function board(w: World, v: Vehicle): void {
+  if (v.pose.kind !== 'field') return
+  v.pose.driver = w.act.id
+  w.act.drive = { throttle: 0, steer: 0 }
+  w.act.queue.length = 0
+  w.act.workLeft = 0
+  w.act.workTotal = 0
+  w.act.filling = false
+  w.act.cue = { kind: 'none' }
+  w.act.actor.x = v.pose.x
+  w.act.actor.y = v.pose.y
+}
+
+export function embarkBody(w: World, id: VehicleId): void {
+  const v = w.vehicles.find(x => x.id === id)
+  if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+  if (driverVehicle(w, w.act.id) !== undefined) return
+  if (v.running) {
+    v.running = false
+    v.pose.speed = 0
+  }
+  const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+  if (w.act.actor.inside(floor)) {
+    board(w, v)
+    w.ping()
+    return
+  }
+  w.enqueueOn(w.act, { act: 'embark', id })
+}
+
+export function disembarkBody(w: World): void {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return
+  v.pose.speed = 0
+  v.pose.driver = 'none'
+  w.act.actor.x = v.pose.x
+  w.act.actor.y = v.pose.y
+  w.act.drive = { throttle: 0, steer: 0 }
+  w.act.queue.length = 0
+  w.ping()
+}
+
+export function dockBody(w: World): void {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return
+  const hangar = w.hangarAtPad({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  if (hangar === undefined) return
+  const x = v.pose.x
+  const y = v.pose.y
+  const origin = { col: hangar.base.col, row: hangar.base.row }
+  if (v.kind === 'tractor' && v.hitch !== 'none') {
+    const t = w.trailers.find(x => x.id === v.hitch)
+    if (t !== undefined) t.pose = { kind: 'stored', hangar: origin }
+    v.hitch = 'none'
+  }
+  v.pose = { kind: 'stored', hangar: origin }
+  v.running = false
+  w.act.actor.x = x
+  w.act.actor.y = y
+  w.act.drive = { throttle: 0, steer: 0 }
+  w.act.queue.length = 0
+  w.ping()
+}
+
+export function swapVehicleBody(w: World, id: VehicleId, i: VehicleSlot): void {
+  const v = w.vehicles.find(x => x.id === id)
+  if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
+  const held = w.act.hand
+  w.act.hand = v.slots[i]
+  v.slots[i] = held
+  compactSlots(v.slots)
+  w.ping()
+}
+
+export function swapTrailerBody(w: World, u: TrailerId, i: HarvestSlot): void {
+  const t = w.trailers.find(x => x.id === u)
+  if (t === undefined || t.pose.kind !== 'attached') return
+  const hitch = t.pose.vehicle
+  const v = w.vehicles.find(x => x.id === hitch)
+  if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
+  if (t.kind === 'seed') {
+    if (i !== 0) return
+    const hand = w.act.hand
+    if (hand.kind === 'hold') {
+      if (hand.item.kind !== 'seeds') return
+      if (hand.item.count > TRAILER_CAP) return
+      w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+      t.hopper = { kind: 'hold', item: hand.item }
+    } else {
+      w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+      t.hopper = { kind: 'empty' }
     }
-    if (
-      slot.item.kind === 'spirit' ||
-      slot.item.kind === 'cask' ||
-      slot.item.kind === 'jam' ||
-      slot.item.kind === 'oil' ||
-      slot.item.kind === 'flour' ||
-      slot.item.kind === 'extract'
-    ) {
-      const it = slot.item
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === it.kind &&
-          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.variety === it.variety)) &&
-          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.variety === it.variety)) &&
-          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop && s.item.variety === it.variety)),
-      )
-      if (hit !== undefined && hit.kind === 'hold' && countable(hit.item) && countable(it) && stackable(hit.item, it)) {
-        mergeInto(hit.item, it, it.count)
-        return
-      }
+    w.ping()
+    return
+  }
+  if (t.kind === 'spray') {
+    if (i !== 0) return
+    const hand = w.act.hand
+    if (hand.kind === 'hold') {
+      if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'synth' && hand.item.kind !== 'compost') return
+      if (Math.floor(hand.item.liters) > TRAILER_CAP) return
+      w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+      t.hopper = { kind: 'hold', item: hand.item }
+    } else {
+      w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
+      t.hopper = { kind: 'empty' }
     }
-    if (slot.item.kind === 'rotten' || slot.item.kind === 'dead') {
-      const kind = slot.item.kind
-      const cls = slot.item.cls
-      const hit = kept.find(
-        s =>
-          s.kind === 'hold' &&
-          s.item.kind === kind &&
-          (s.item.kind === 'rotten' || s.item.kind === 'dead') &&
-          s.item.cls === cls,
-      )
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'rotten' || hit.item.kind === 'dead')) {
-        hit.item.count += slot.item.count
-        return
-      }
-    }
-    if (slot.item.kind === 'weed' || slot.item.kind === 'grass') {
-      const kind = slot.item.kind
-      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === kind)
-      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'weed' || hit.item.kind === 'grass')) {
-        hit.item.count += slot.item.count
-        return
-      }
-    }
-    kept.push(slot)
+    w.ping()
+    return
+  }
+  const slot = t.slots[i]
+  const incoming = w.act.hand.kind === 'hold' ? cargoCount(w.act.hand.item) : 0
+  const outgoing = slot.kind === 'hold' ? cargoCount(slot.item) : 0
+  if (trailerUsed(t) - outgoing + incoming > TRAILER_CAP) return
+  const held = w.act.hand
+  w.act.hand = slot
+  t.slots[i] = held
+  compactSlots(t.slots)
+  w.ping()
+}
+
+export function refillBody(w: World, at: Coord): void {
+  if (w.hangarOrigin(at) === undefined) return
+  const cost = w.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
+  if (w.money < cost) return
+  w.money -= cost
+  w.vehicles.forEach(v => {
+    v.fuel = 1
   })
-  kept.forEach((s, i) => {
-    slots[i] = s
+  w.ping()
+}
+
+export function setBoomBody(w: World, width: 3 | 5): void {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.kind !== 'tractor') return
+  v.boom = width
+  w.ping()
+}
+
+export function stopLegal(w: World, s: RouteStop): boolean {
+  if (s.kind === 'goto') return w.inWorld({ col: Math.floor(s.x), row: Math.floor(s.y) })
+  if (!w.inWorld(s.at)) return false
+  if (s.kind === 'wait') return w.cell(s.at).kind === 'traffic-light'
+  const hit = padHit(w, s.at)
+  if (hit === undefined) return false
+  if (s.kind === 'unload') return hit.side === 'dropoff'
+  return hit.side === 'takeup'
+}
+
+export function stripRouteStops(w: World, route: Route, drop: (s: RouteStop, i: number) => boolean): void {
+  const map: number[] = []
+  const kept: RouteStop[] = []
+  route.stops.forEach((s, i) => {
+    if (drop(s, i)) map[i] = -1
+    else {
+      map[i] = kept.length
+      kept.push(s)
+    }
   })
-  for (let i = kept.length; i < slots.length; i++) slots[i] = { kind: 'empty' }
+  route.stops = kept
+  w.vehicles.forEach(v => {
+    if (v.route !== route.id) return
+    if (kept.length === 0) {
+      v.cursor = 0
+      v.running = false
+      return
+    }
+    if (map[v.cursor] >= 0) {
+      v.cursor = map[v.cursor]
+      return
+    }
+    let j = v.cursor + 1
+    while (j < map.length && map[j] < 0) j += 1
+    v.cursor = j < map.length ? map[j] : 0
+  })
+}
+
+export function stripStops(w: World, drop: (s: RouteStop) => boolean): void {
+  w.routes.forEach(r => stripRouteStops(w, r, s => drop(s)))
+}
+
+export function stripPadStops(w: World, cell: PadCell): void {
+  const pads = [...dropoffPad(cell.base), ...takeupPad(cell.base)]
+  stripStops(
+    w,
+    s => (s.kind === 'load' || s.kind === 'unload') && pads.some(p => p.col === s.at.col && p.row === s.at.row),
+  )
+}
+
+export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>): void {
+  if (!w.done.has('unlock-dispatch')) return
+  if (cmd.k === 'create') {
+    const id = w.nextRouteId
+    w.nextRouteId += 1
+    w.routes.push({ id, name: `Route ${id}`, stops: [] })
+    w.ping()
+    return
+  }
+  if (cmd.k === 'delete') {
+    if (w.vehicles.some(v => v.route === cmd.r)) return
+    const i = w.routes.findIndex(r => r.id === cmd.r)
+    if (i < 0) return
+    w.routes.splice(i, 1)
+    w.ping()
+    return
+  }
+  if (cmd.k === 'assign') {
+    const v = w.vehicles.find(x => x.id === cmd.v)
+    if (v === undefined) return
+    if (cmd.r === 'none') {
+      v.route = 'none'
+      v.cursor = 0
+      v.running = false
+      w.ping()
+      return
+    }
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    if (v.route !== cmd.r) v.cursor = 0
+    v.route = cmd.r
+    if (route.stops.length === 0) v.running = false
+    w.ping()
+    return
+  }
+  if (cmd.k === 'add') {
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    if (!stopLegal(w, cmd.s)) return
+    route.stops.push(cmd.s)
+    w.ping()
+    return
+  }
+  if (cmd.k === 'remove') {
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    if (cmd.i < 0 || cmd.i >= route.stops.length) return
+    stripRouteStops(w, route, (_s, i) => i === cmd.i)
+    w.ping()
+    return
+  }
+  if (cmd.k === 'reorder') {
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    const j = cmd.i + cmd.d
+    if (cmd.i < 0 || cmd.i >= route.stops.length || j < 0 || j >= route.stops.length) return
+    const a = route.stops[cmd.i]
+    route.stops[cmd.i] = route.stops[j]
+    route.stops[j] = a
+    w.vehicles.forEach(v => {
+      if (v.route !== route.id) return
+      if (v.cursor === cmd.i) v.cursor = j
+      else if (v.cursor === j) v.cursor = cmd.i
+    })
+    w.ping()
+    return
+  }
+  if (cmd.k === 'rename') {
+    if (cmd.n === '') return
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    route.name = cmd.n
+    w.ping()
+    return
+  }
+  if (cmd.k === 'start') {
+    const v = driverVehicle(w, w.act.id)
+    if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
+    const route = w.routeById(v.route)
+    if (route === undefined || route.stops.length === 0) return
+    disembarkBody(w)
+    v.running = true
+    v.dwell = 0
+    w.ping()
+    return
+  }
+  if (cmd.k === 'automate') {
+    const v = w.vehicles.find(x => x.id === cmd.v)
+    if (v === undefined || v.pose.kind !== 'stored' || v.route === 'none') return
+    const route = w.routeById(v.route)
+    if (route === undefined || route.stops.length === 0) return
+    const origin = w.hangarOrigin({ col: cmd.c[0], row: cmd.c[1] })
+    if (origin === undefined) return
+    const hangar = w.cell(origin)
+    if (hangar.kind !== 'hangar') return
+    const pad = padCenter(hangar.base)
+    if (!w.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
+    v.pose = {
+      kind: 'field',
+      x: pad.x,
+      y: pad.y,
+      heading: HEADING_SOUTH,
+      speed: 0,
+      driver: 'none',
+    }
+    v.cursor = 0
+    v.running = true
+    v.dwell = 0
+    w.ping()
+  }
+}
+
+export function stopArrived(pose: Extract<VehiclePose, { kind: 'field' }>, stop: RouteStop): boolean {
+  if (stop.kind === 'goto') return Math.hypot(pose.x - stop.x, pose.y - stop.y) <= ROUTE_ARRIVE
+  if (Math.floor(pose.x) !== stop.at.col || Math.floor(pose.y) !== stop.at.row) return false
+  return pose.speed === 0
+}
+
+export function advanceRoute(v: Vehicle, route: Route): void {
+  v.cursor = (v.cursor + 1) % route.stops.length
+  v.dwell = 0
+}
+
+function arriveGoto(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): void {
+  if (v.route === 'none') return
+  const route = w.routeById(v.route)
+  if (route === undefined || route.stops.length === 0) return
+  const stop = route.stops[v.cursor]
+  if (stop.kind !== 'goto') return
+  if (Math.hypot(pose.x - stop.x, pose.y - stop.y) > ROUTE_ARRIVE) return
+  advanceRoute(v, route)
+}
+
+function autoDrive(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): Drive {
+  const zero: Drive = { throttle: 0, steer: 0 }
+  if (v.fuel === 0) return zero
+  if (v.dwell > 0) return zero
+  if (v.route === 'none') return zero
+  const route = w.routeById(v.route)
+  if (route === undefined || route.stops.length === 0) return zero
+  const stop = route.stops[v.cursor]
+  if (stopArrived(pose, stop)) return zero
+  if (stop.kind !== 'goto' && Math.floor(pose.x) === stop.at.col && Math.floor(pose.y) === stop.at.row) return zero
+  const target = stopXY(stop)
+  const want = Math.atan2(target.y - pose.y, target.x - pose.x)
+  const d = headingDelta(pose.heading, want)
+  if (Math.abs(d) > ROUTE_ALIGN) return { throttle: 0, steer: d > 0 ? 1 : -1 }
+  if (stop.kind !== 'goto') {
+    const dist = Math.hypot(target.x - pose.x, target.y - pose.y)
+    const decel = kindAccel(v.kind) * AUTO_DECEL_MUL
+    const stopDist = (pose.speed * pose.speed) / (2 * decel) + 0.2
+    if (dist <= stopDist) return zero
+  }
+  return { throttle: 1, steer: 0 }
+}
+
+function harvestItem(w: World, c: Cell): Item | undefined {
+  if (c.kind === 'ripe') {
+    const p = c.plant
+    return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(w.modifiers).sale, p.freshness, p.bio, false) }
+  }
+  if (c.kind === 'growing') {
+    const m = c.plant.maturity
+    if (m < 0.2) return { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 }
+    if (m > 0.8) {
+      const p = c.plant
+      const q = w.bakeQuality(p)
+      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, w.modifiers).sale, m, p.bio, false) }
+    }
+    return undefined
+  }
+  if (c.kind === 'dead') return { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 }
+  if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 }
+  if (c.kind === 'weed') return { kind: 'weed', count: 1 }
+  return undefined
+}
+
+function boomCell(w: World, t: Trailer, at: Coord): void {
+  const c = w.cell(at)
+  if (t.kind === 'seed') {
+    if (t.hopper.kind === 'empty') return
+    if (c.kind !== 'empty') return
+    const seeds = t.hopper.item
+    w.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.variety, seeds.quality) })
+    seeds.count -= 1
+    if (seeds.count === 0) t.hopper = { kind: 'empty' }
+    return
+  }
+  if (t.kind === 'spray') {
+    if (t.hopper.kind === 'empty') return
+    if (!isTilled(c) || c.soil.fertilizer >= FERT_PLOT_MAX) return
+    const bag = t.hopper.item
+    const need = FERT_PLOT_MAX - c.soil.fertilizer
+    const use = need > bag.liters ? bag.liters : need
+    if (bag.kind === 'synth') c.soil.spike(use)
+    else c.soil.feed(use)
+    bag.liters -= use
+    if (bag.liters <= 0) t.hopper = { kind: 'empty' }
+    return
+  }
+  if (c.kind === 'tree' || c.kind === 'turf') return
+  const item = harvestItem(w, c)
+  if (item === undefined) {
+    if (c.kind === 'growing' && c.plant.maturity >= 0.2 && c.plant.maturity <= 0.8) {
+      w.setCell(at, { kind: 'empty', soil: c.soil })
+    }
+    return
+  }
+  if (!harvestInsert(t.slots, item)) return
+  if (c.kind === 'ripe') w.tally.harvests += 1
+  if (isTilled(c)) w.setCell(at, { kind: 'empty', soil: c.soil })
+}
+
+function boom(
+  w: World,
+  v: Extract<Vehicle, { kind: 'tractor' }>,
+  t: Trailer,
+  active: boolean,
+  steer: number,
+  heading: number,
+): void {
+  if (v.pose.kind !== 'field') return
+  if (!active) return
+  if (steer !== 0) return
+  if (v.pose.speed <= 0) return
+  const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
+  boomHits(p, heading, v.boom, at => w.inWorld(at)).forEach(at => boomCell(w, t, at))
+}
+
+export function tickVehicles(w: World, dt: number): void {
+  w.vehicles.forEach(v => {
+    if (v.pose.kind !== 'field') return
+    const pose = v.pose
+    const before = { x: pose.x, y: pose.y, heading: pose.heading }
+    const driver = pose.driver === 'none' ? undefined : w.seats[pose.driver]
+    const accel = kindAccel(v.kind)
+    const auto = driver === undefined && v.running
+    let steer = 0
+    if (auto) {
+      const drive = autoDrive(w, v, pose)
+      steer = drive.steer
+      const driving = w.skillTier('driving-classes')
+      if (drive.throttle !== 0 || drive.steer !== 0) {
+        const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
+        v.fuel = next < 0 ? 0 : next
+      }
+      const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
+      const surface = surfaceMul(w.cell(at))
+      const drivingMul = 1 + 0.05 * driving
+      const braking = drive.throttle === 0 && pose.speed !== 0
+      integrateVehicle(
+        pose,
+        drive,
+        dt,
+        v.fuel,
+        surface,
+        p => w.inWorld(p),
+        kindVMax(v.kind) * drivingMul * AUTO_VMAX_MUL,
+        accel * drivingMul * (braking ? AUTO_DECEL_MUL : 1),
+        kindYaw(v.kind),
+      )
+      if (v.fuel > 0) arriveGoto(w, v, pose)
+    } else if (driver === undefined) {
+      pose.speed = seekSpeed(pose.speed, 0, accel, dt)
+      const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
+      const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
+      if (w.inWorld({ col: Math.floor(nx), row: Math.floor(ny) })) {
+        pose.x = nx
+        pose.y = ny
+      }
+    } else {
+      steer = driver.drive.steer
+      const driving = w.skillTier('driving-classes')
+      if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
+        const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
+        v.fuel = next < 0 ? 0 : next
+      }
+      const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
+      const surface = surfaceMul(w.cell(at))
+      const drivingMul = 1 + 0.05 * driving
+      integrateVehicle(
+        pose,
+        driver.drive,
+        dt,
+        v.fuel,
+        surface,
+        p => w.inWorld(p),
+        kindVMax(v.kind) * drivingMul,
+        accel * drivingMul,
+        kindYaw(v.kind),
+      )
+      driver.actor.x = pose.x
+      driver.actor.y = pose.y
+    }
+    if (v.kind === 'tractor' && v.hitch !== 'none') {
+      const t = w.trailers.find(x => x.id === v.hitch)
+      if (t !== undefined && t.pose.kind === 'attached') {
+        followHitch(t.pose, before, pose)
+        boom(w, v, t, driver !== undefined || auto, steer, t.pose.heading)
+      }
+    }
+  })
+}
+
+export function transferLoad(w: World, v: Vehicle): void {
+  if (v.pose.kind !== 'field') return
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  const load = vehicleCargo(v, w.trailers)
+  if (hit === undefined || hit.side !== 'takeup' || load === undefined) return
+  pullFrom(hit.cell, load, w.drops)
+}
+
+export function transferUnload(w: World, v: Vehicle): void {
+  if (v.pose.kind !== 'field') return
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  const load = vehicleCargo(v, w.trailers)
+  if (hit === undefined || hit.side !== 'dropoff' || load === undefined) return
+  dumpCargo(load, hit.cell)
+}
+
+export function loadBody(w: World): void {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  const load = cargo(w)
+  if (hit === undefined || hit.side !== 'takeup' || load === undefined) return
+  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
+  transferLoad(w, v)
+  w.ping()
+}
+
+export function unloadBody(w: World): void {
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  const load = cargo(w)
+  if (hit === undefined || hit.side !== 'dropoff' || load === undefined) return
+  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
+  transferUnload(w, v)
+  w.ping()
+}
+
+export function loadWould(w: World): boolean {
+  const load = cargo(w)
+  if (load === undefined) return false
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return false
+  if (v.pose.speed !== 0) return false
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  if (hit === undefined || hit.side !== 'takeup') return false
+  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
+  return canPull(hit.cell, load, w.drops)
+}
+
+export function unloadWould(w: World): boolean {
+  const load = cargo(w)
+  if (load === undefined) return false
+  const v = driverVehicle(w, w.act.id)
+  if (v === undefined || v.pose.kind !== 'field') return false
+  if (v.pose.speed !== 0) return false
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  if (hit === undefined || hit.side !== 'dropoff') return false
+  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
+  return canDumpCargo(load, hit.cell)
 }

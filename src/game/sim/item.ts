@@ -906,3 +906,189 @@ export function mergeInto(a: Countable, b: Countable, n: number): void {
   }
   a.count += n
 }
+
+export function cargoCount(item: Item): number {
+  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'dead' || item.kind === 'rotten' || item.kind === 'weed') {
+    return item.count
+  }
+  return 0
+}
+
+function copyItem(item: Item): Item {
+  switch (item.kind) {
+    case 'shovel':
+    case 'pickaxe':
+    case 'container':
+    case 'fertilizer':
+    case 'synth':
+    case 'compost':
+    case 'seeds':
+    case 'grass-seeds':
+    case 'fruit':
+    case 'tree-seed':
+    case 'graft':
+    case 'sugar':
+    case 'spirit':
+    case 'cask':
+    case 'jam':
+    case 'oil':
+    case 'flour':
+    case 'extract':
+    case 'rotten':
+    case 'dead':
+    case 'weed':
+    case 'grass':
+    case 'weed-spray':
+    case 'axe':
+    case 'wood':
+    case 'ash':
+      return { ...item }
+  }
+}
+
+export function slotsCouldTake(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const add = cargoCount(item)
+  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
+  if (maxUsed !== undefined && add > 0 && used >= maxUsed) return false
+  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: copyItem(s.item) }))
+  const piece =
+    add > 0 && maxUsed !== undefined && (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'dead' || item.kind === 'rotten' || item.kind === 'weed')
+      ? { ...item, count: add < maxUsed - used ? add : maxUsed - used }
+      : copyItem(item)
+  const empty = copy.findIndex(s => s.kind === 'empty')
+  if (empty >= 0) copy[empty] = { kind: 'hold', item: piece }
+  else copy.push({ kind: 'hold', item: piece })
+  compactSlots(copy)
+  return copy.filter(s => s.kind === 'hold').length <= maxSlots
+}
+
+export function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const used = slots.reduce((n, s) => n + (s.kind === 'hold' ? cargoCount(s.item) : 0), 0)
+  if (
+    item.kind === 'fruit' ||
+    item.kind === 'seeds' ||
+    item.kind === 'dead' ||
+    item.kind === 'rotten' ||
+    item.kind === 'weed' ||
+    item.kind === 'grass'
+  ) {
+    const room = maxUsed === undefined ? item.count : maxUsed - used
+    const n = item.count < room ? item.count : room
+    if (n <= 0) return false
+    const piece = { ...item, count: n }
+    if (!insertSlots(slots, piece, maxSlots, maxUsed)) return false
+    item.count -= n
+    return item.count <= 0
+  }
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+    const piece = { ...item }
+    if (!insertSlots(slots, piece, maxSlots, undefined)) return false
+    item.liters = 0
+    return true
+  }
+  if (!insertSlots(slots, item, maxSlots, undefined)) return false
+  return true
+}
+
+export function insertSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: number | undefined): boolean {
+  const n = cargoCount(item)
+  const used = slots.reduce((s, x) => s + (x.kind === 'hold' ? cargoCount(x.item) : 0), 0)
+  if (maxUsed !== undefined && used + n > maxUsed) return false
+  const copy: Slot[] = slots.map(s => (s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: s.item }))
+  const empty = copy.findIndex(s => s.kind === 'empty')
+  if (empty >= 0) copy[empty] = { kind: 'hold', item }
+  else copy.push({ kind: 'hold', item })
+  compactSlots(copy)
+  const kept = copy.filter(s => s.kind === 'hold')
+  if (kept.length > maxSlots) return false
+  for (let i = 0; i < maxSlots; i++) {
+    slots[i] = i < kept.length ? kept[i] : { kind: 'empty' }
+  }
+  return true
+}
+
+export function compactSlots(slots: Slot[]): void {
+  const kept: Slot[] = []
+  slots.forEach(slot => {
+    if (slot.kind === 'empty') return
+    if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
+      const kind = slot.item.kind
+      const crop = slot.item.crop
+      const variety = slot.item.variety
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === kind &&
+          (s.item.kind === 'seeds' || s.item.kind === 'fruit') &&
+          s.item.crop === crop &&
+          s.item.variety === variety,
+      )
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'seeds' || hit.item.kind === 'fruit')) {
+        mergeInto(hit.item, slot.item, slot.item.count)
+        return
+      }
+    }
+    if (slot.item.kind === 'sugar') {
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === 'sugar')
+      if (hit !== undefined && hit.kind === 'hold' && hit.item.kind === 'sugar') {
+        const liters = hit.item.liters + slot.item.liters
+        hit.item.capacityLiters = hit.item.capacityLiters + slot.item.capacityLiters
+        hit.item.unitSale = (hit.item.unitSale * hit.item.liters + slot.item.unitSale * slot.item.liters) / liters
+        hit.item.quality =
+          liters <= 0 ? 0 : (hit.item.quality * hit.item.liters + slot.item.quality * slot.item.liters) / liters
+        hit.item.liters = liters
+        return
+      }
+    }
+    if (
+      slot.item.kind === 'spirit' ||
+      slot.item.kind === 'cask' ||
+      slot.item.kind === 'jam' ||
+      slot.item.kind === 'oil' ||
+      slot.item.kind === 'flour' ||
+      slot.item.kind === 'extract'
+    ) {
+      const it = slot.item
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === it.kind &&
+          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.variety === it.variety)) &&
+          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.variety === it.variety)) &&
+          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop && s.item.variety === it.variety)),
+      )
+      if (hit !== undefined && hit.kind === 'hold' && countable(hit.item) && countable(it) && stackable(hit.item, it)) {
+        mergeInto(hit.item, it, it.count)
+        return
+      }
+    }
+    if (slot.item.kind === 'rotten' || slot.item.kind === 'dead') {
+      const kind = slot.item.kind
+      const cls = slot.item.cls
+      const hit = kept.find(
+        s =>
+          s.kind === 'hold' &&
+          s.item.kind === kind &&
+          (s.item.kind === 'rotten' || s.item.kind === 'dead') &&
+          s.item.cls === cls,
+      )
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'rotten' || hit.item.kind === 'dead')) {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    if (slot.item.kind === 'weed' || slot.item.kind === 'grass') {
+      const kind = slot.item.kind
+      const hit = kept.find(s => s.kind === 'hold' && s.item.kind === kind)
+      if (hit !== undefined && hit.kind === 'hold' && (hit.item.kind === 'weed' || hit.item.kind === 'grass')) {
+        hit.item.count += slot.item.count
+        return
+      }
+    }
+    kept.push(slot)
+  })
+  kept.forEach((s, i) => {
+    slots[i] = s
+  })
+  for (let i = kept.length; i < slots.length; i++) slots[i] = { kind: 'empty' }
+}

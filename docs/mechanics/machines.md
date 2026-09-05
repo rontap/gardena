@@ -40,6 +40,38 @@ Assumption: `buy-furnace` Processing shelf, compost group.
 Assumption: `buy-research-station` `Sku.tab` `automation` so `haggling` applies.
 Assumption: the station is named for what it becomes, not only for what it does this update.
 
+## BaseBuilding
+
+Shape: [[architecture/modules]] Building I/O.
+
+```
+BaseBuilding
+  base
+  accept(item) → 0
+  apply(item, n) → no-op
+  ports → []
+  pads → 'none'
+  takeAll → false
+
+Machine extends BaseBuilding
+  inn: Signal
+  pads → 'both'
+```
+
+`Store` extends `BaseBuilding`.
+
+`Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`.
+
+`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`. Grinder / barrel keep `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
+
+`Store`: `SeedSilo`, `AdditiveStore`. Override `pads` `'both'`, `ports` `['out']`.
+
+House / pump / hangar / field silos unchanged this pass.
+
+Override only when the body is real logic. Do not put mill / jam / furnace specifics on `Machine`. Mill / jam / still / station `ports` `['in']`. Furnace `['in','out']`.
+
+Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / chest / freezer / seed-silo / additive-store: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`.
+
 ## Dump
 
 Intents `still` `barrel` `jam` `mill` `furnace` `station` at `Coord`. `dest(still | furnace)` = origin. `dest(barrel | jam | mill | station)` = `at`. Instant dump like compost: consume accepted cargo, not per-unit grind-work. Dump/pull all legal until dest full. Mill/jam/still/compost/furnace/station keep `frontOf` drops. Guest may dump. Vehicle I/O [[mechanics/vehicles]]. [[architecture/world]] `world.dest`.
@@ -322,7 +354,9 @@ Spirit / wine / jam / oil / flour / extract / graft: not compost unless named (s
 
 ## Pads
 
-Geometric, not a `Cell`. Mill, still, jam, compost-box, chest, freezer, furnace, station. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: not.
+Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station: `'both'`.
+
+`IoCell` is west-pull (mill, jam, still, compost-box, grinder, furnace, station). Not the same set as `PadCell`.
 
 ## Invariants
 

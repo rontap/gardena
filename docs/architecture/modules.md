@@ -21,9 +21,12 @@
 
 ## sim
 
+`World` is the live-state owner and tick sequencer. `track()` stays on `World`. Do not add `sim/index.ts`. New mechanic → new `sim/<name>.ts`. Do not append a mechanic onto `World`. Pattern: `vehicle.ts` — types and functions in the feature file; `World` holds lists and calls in. Extracting functions `World` calls is legal; the extract is not in `src/` until that wave.
+
 | file | owner |
 |---|---|
-| `world.ts` | `World`, `Seat`, tick, dispatch / apply, indexes / `track`, `cheatSpeed`, `cheatFastResearch`. `tickMachines` `furnaceMul` snapshot. Intent `chop` `furnace` `graft` `station` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, place / click, seats. `World`, `Seat`, `cheatSpeed`, `cheatFastResearch`. Still holds `tickMachines` `furnaceMul` snapshot. Intent `chop` `furnace` `graft` `station` |
+| `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `save.ts` | `Save`, dump / parse — [[architecture/save]] |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
@@ -37,7 +40,7 @@
 | `stall.ts` | `StallGood`. Crop bins per variety × bio |
 | `market.h.ts` | sat / contract typedefs. `Demand` plain or group |
 | `market.ts` | sat helpers, `rollBoard` |
-| `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace`, `ResearchStation`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality |
+| `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace`, `ResearchStation`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality. `BaseBuilding` `Machine`; `Store` extends `BaseBuilding` |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
@@ -53,7 +56,7 @@
 | `machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
 | `recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
 | `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
-| `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light |
+| `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light. Will: make table `{ [K in SensorKind]: { sku, make } }` next to the classes; `makeSensor` / `skuKind` lookups; ports on the device. `evalDag` stays a function. Not a `Machine` |
 
 ## ui
 
@@ -145,3 +148,37 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 `World.house` / `truck` / `pumps` / `tanks` / `taps` / `wells` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `Furnace` same instance both cells; tick via `machines` index; no `World.furnaces` list. Station tick via `machines` index. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments` and `World.sprinklers` are the pipe graph. A valve is a `Gate` on a segment. `World.fences` is the fence set.
 
 Tutorial is App session state. Save I/O is `sim/save.ts`. App does not own `Save`.
+
+## Building I/O
+
+```
+BaseBuilding
+  base
+  accept(item) → 0
+  apply(item, n) → no-op
+  ports → []
+  pads → 'none'
+  takeAll → false
+
+Machine extends BaseBuilding
+  inn: Signal
+  pads → 'both'
+```
+
+`Store` extends `BaseBuilding`.
+
+`Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`.
+
+`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`. Grinder / barrel keep `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
+
+`Store`: `SeedSilo`, `AdditiveStore`. Override `pads` `'both'`, `ports` `['out']`.
+
+House / pump / hangar / field silos unchanged this pass.
+
+Override only when the body is real logic. Do not put mill / jam / furnace specifics on `Machine`. Mill / jam / still / station `ports` `['in']`. Furnace `['in','out']`.
+
+Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / chest / freezer / seed-silo / additive-store: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`.
+
+Sensors are not `Machine`. Make table and ports: [[mechanics/sensors]].
+
+Assumption: leftover `useOf` is `purposeMul`; no `pathUse`.

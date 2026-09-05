@@ -4,14 +4,33 @@ import {
   COMPOST_LITERS,
   FERT_BAG_LITERS,
   FREEZER_SLOTS,
+  FURNACE_CAP,
+  JAM_BUFFER,
   SILO_SEED_CAP,
+  STATION_IN,
+  STILL_CAP,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import type { VarietyId } from '../defs/varieties.ts'
+import { tierOf, type VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
-import type { Slot } from './item.ts'
+import { compostValue, giveSlots, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import {
+  addStillFeed,
+  feedUnits,
+  feedVarietyOf,
+  fruitCount,
+  fruitCrop,
+  fruitQuality,
+  fruitVariety,
+  furnaceUnit,
+  jamCropOf,
+  millDumpUnits,
+  millRecipeOf,
+  mixQuality,
+  stillCropOf,
+} from './machine.ts'
 import { Reservoir } from './water.ts'
 
 export type Coord = { col: number; row: number }
@@ -258,21 +277,47 @@ export class Tree {
   }
 }
 
-export class Chest {
-  readonly kind = 'chest' as const
+export class BaseBuilding {
   readonly base: RectBase
+  readonly ports: readonly ('out' | 'in' | 'in-l' | 'in-r')[] = []
+  readonly pads: 'none' | 'both' = 'none'
+  readonly takeAll: boolean = false
+  constructor(base: RectBase) {
+    this.base = base
+  }
+  accept(_item: Item): number {
+    return 0
+  }
+  apply(_item: Item, _n: number): void {}
+}
+
+export class Machine extends BaseBuilding {
+  inn: Signal = 0
+  override readonly pads = 'both'
+}
+
+export class Chest extends BaseBuilding {
+  readonly kind = 'chest' as const
+  override readonly pads = 'both'
+  override readonly takeAll = true
+  override readonly ports = ['out'] as const
   readonly slots: Slot[]
   out: Signal = 0
   hold = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
     this.slots = Array.from({ length: CHEST_SLOTS }, (): Slot => ({ kind: 'empty' }))
+  }
+  override accept(item: Item): number {
+    return slotsCouldTake(this.slots, item, this.slots.length, undefined) ? 1 : 0
+  }
+  override apply(item: Item, _n: number): void {
+    giveSlots(this.slots, item, this.slots.length, undefined)
   }
 }
 
-export class Grinder {
+export class Grinder extends BaseBuilding {
   readonly kind = 'grinder' as const
-  readonly base: RectBase
   crop: CropId | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
@@ -280,17 +325,50 @@ export class Grinder {
   progress = 0
   n = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
+  }
+  override accept(item: Item): number {
+    const crop = fruitCrop(item)
+    const variety = fruitVariety(item)
+    if (crop === undefined || variety === undefined) return 0
+    if (this.crop !== 'none' && (this.crop !== crop || this.variety !== variety)) return 0
+    const n = fruitCount(item)
+    if (n <= 0) return 0
+    return n
+  }
+  override apply(item: Item, n: number): void {
+    const crop = fruitCrop(item)
+    const variety = fruitVariety(item)
+    if (crop === undefined || variety === undefined) return
+    this.applyTake(crop, variety, fruitQuality(item), n)
+  }
+  applyTake(crop: CropId, variety: VarietyId, quality: number, n: number): void {
+    if (this.crop === 'none') {
+      this.crop = crop
+      this.variety = variety
+      this.quality = quality
+      this.units = n
+      return
+    }
+    this.quality = mixQuality(this.quality, this.units, quality, n)
+    this.units += n
   }
 }
 
-export class CompostBox {
+export class CompostBox extends BaseBuilding {
   readonly kind = 'compost-box' as const
-  readonly base: RectBase
+  override readonly pads = 'both'
+  override readonly takeAll = true
   units = 0
   progress = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
+  }
+  override accept(item: Item): number {
+    return organic(item) ? 1 : 0
+  }
+  override apply(item: Item, _n: number): void {
+    this.units += compostValue(item)
   }
 }
 
@@ -302,95 +380,218 @@ export class Truck {
   }
 }
 
-export class Mill {
+export class Mill extends Machine {
   readonly kind = 'mill' as const
-  readonly base: RectBase
+  override readonly ports = ['in'] as const
   recipe: MillRecipe | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   units = 0
   progress = 0
-  inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
+  }
+  override accept(item: Item): number {
+    const recipe = millRecipeOf(item)
+    if (recipe === undefined) return 0
+    if (this.recipe !== 'none' && (this.recipe !== recipe || this.variety !== feedVarietyOf(item))) return 0
+    const n = millDumpUnits(item, recipe)
+    if (n <= 0) return 0
+    return n
+  }
+  override apply(item: Item, n: number): void {
+    const recipe = millRecipeOf(item)
+    if (recipe === undefined || n <= 0) return
+    const q = item.kind === 'fruit' ? item.quality : 0
+    const v = feedVarietyOf(item)
+    if (this.recipe === 'none') {
+      this.recipe = recipe
+      this.variety = v
+      this.quality = q
+      this.units = n
+      return
+    }
+    this.quality = mixQuality(this.quality, this.units, q, n)
+    this.units += n
   }
 }
 
-export class JamMachine {
+export class JamMachine extends Machine {
   readonly kind = 'jam' as const
-  readonly base: RectBase
+  override readonly ports = ['in'] as const
   crop: JamCrop | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   fruit = 0
   sugar = 0
   progress = 0
-  inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
+  }
+  override accept(item: Item): number {
+    if (item.kind === 'sugar') return this.acceptSugar(item)
+    return this.acceptFruit(item)
+  }
+  override apply(item: Item, n: number): void {
+    if (item.kind === 'sugar') {
+      this.applySugar(n)
+      return
+    }
+    this.applyFruit(item, n)
+  }
+  acceptFruit(item: Item): number {
+    const crop = jamCropOf(item)
+    if (crop === undefined) return 0
+    if (this.crop !== 'none' && (this.crop !== crop || this.variety !== feedVarietyOf(item))) return 0
+    return fruitCount(item)
+  }
+  applyFruit(item: Item, n: number): void {
+    if (item.kind !== 'fruit') return
+    const crop = jamCropOf(item)
+    if (crop === undefined || n <= 0) return
+    if (this.crop === 'none') {
+      this.crop = crop
+      this.variety = item.variety
+      this.quality = item.quality
+      this.fruit = n
+      return
+    }
+    this.quality = mixQuality(this.quality, this.fruit, item.quality, n)
+    this.fruit += n
+  }
+  acceptSugar(item: Item): number {
+    if (item.kind !== 'sugar') return 0
+    const room = JAM_BUFFER - this.sugar
+    if (room <= 0 || item.liters <= 0) return 0
+    return item.liters < room ? item.liters : room
+  }
+  applySugar(n: number): void {
+    this.sugar += n
   }
 }
 
-export class PotStill {
+export class PotStill extends Machine {
   readonly kind = 'still' as const
-  readonly base: RectBase
+  override readonly ports = ['in'] as const
   feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[] = []
   progress = 0
   n = 0
-  inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = { shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 }
+    super({ shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 })
+  }
+  override accept(item: Item): number {
+    if (stillCropOf(item) === undefined) return 0
+    const room = STILL_CAP - feedUnits(this.feed)
+    const n = fruitCount(item)
+    if (room <= 0 || n <= 0) return 0
+    return n < room ? n : room
+  }
+  override apply(item: Item, n: number): void {
+    const crop = stillCropOf(item)
+    const variety = fruitVariety(item)
+    if (crop === undefined || variety === undefined || n <= 0) return
+    addStillFeed(this.feed, crop, variety, fruitQuality(item), n)
   }
 }
 
-export class Furnace {
+export class Furnace extends Machine {
   readonly kind = 'furnace' as const
-  readonly base: RectBase
+  override readonly ports = ['in', 'out'] as const
   units = 0
   progress = 0
-  inn: Signal = 0
   out: Signal = 0
   hold = 0
   constructor(base: RectBase) {
-    this.base = { shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 }
+    super({ shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 })
+  }
+  override accept(item: Item): number {
+    const unit = furnaceUnit(item)
+    if (unit <= 0) return 0
+    const room = FURNACE_CAP - this.units
+    if (room <= 0) return 0
+    if (item.kind === 'tree-seed') return unit <= room ? 1 : 0
+    if (item.kind === 'sugar') {
+      const maxL = room / unit
+      return item.liters < maxL ? item.liters : maxL
+    }
+    if ('count' in item) {
+      const maxN = Math.floor(room / unit)
+      if (maxN <= 0) return 0
+      return item.count < maxN ? item.count : maxN
+    }
+    return 0
+  }
+  override apply(item: Item, n: number): void {
+    if (n <= 0) return
+    this.units += furnaceUnit(item) * n
   }
 }
 
-export class ResearchStation {
+export class ResearchStation extends Machine {
   readonly kind = 'station' as const
-  readonly base: RectBase
+  override readonly ports = ['in'] as const
   crop: CropId | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   units = 0
   progress = 0
-  inn: Signal = 0
   constructor(base: RectBase) {
-    this.base = { shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 }
+    super({ shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 })
+  }
+  override accept(item: Item): number {
+    if (item.kind !== 'fruit' || item.cut) return 0
+    if (tierOf(item.variety) !== 'heirloom') return 0
+    if (this.crop !== 'none' && (this.crop !== item.crop || this.variety !== item.variety)) return 0
+    const room = STATION_IN - this.units
+    if (room <= 0 || item.count <= 0) return 0
+    return Math.min(room, item.count)
+  }
+  override apply(item: Item, n: number): void {
+    if (item.kind !== 'fruit') return
+    this.applyTake(item.crop, item.variety, item.quality, n)
+  }
+  applyTake(crop: CropId, variety: VarietyId, quality: number, n: number): void {
+    if (n <= 0) return
+    if (this.crop === 'none') {
+      this.crop = crop
+      this.variety = variety
+      this.quality = quality
+      this.units = n
+      return
+    }
+    this.quality = mixQuality(this.quality, this.units, quality, n)
+    this.units += n
   }
 }
 
-export class Barrel {
+export class Barrel extends BaseBuilding {
   readonly kind = 'barrel' as const
-  readonly base: RectBase
   crop: BarrelCrop | 'none' = 'none'
   feed: { variety: VarietyId; quality: number; count: number }[] = []
   age = 0
   n = 0
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
   }
 }
 
-export class Freezer {
+export class Freezer extends BaseBuilding {
   readonly kind = 'freezer' as const
-  readonly base: RectBase
+  override readonly pads = 'both'
+  override readonly takeAll = true
+  override readonly ports = ['out'] as const
   readonly slots: Slot[]
   out: Signal = 0
   hold = 0
   constructor(base: RectBase, n: number = FREEZER_SLOTS) {
-    this.base = base
+    super(base)
     this.slots = Array.from({ length: n }, (): Slot => ({ kind: 'empty' }))
+  }
+  override accept(item: Item): number {
+    return slotsCouldTake(this.slots, item, this.slots.length, undefined) ? 1 : 0
+  }
+  override apply(item: Item, _n: number): void {
+    giveSlots(this.slots, item, this.slots.length, undefined)
   }
 }
 
@@ -427,12 +628,13 @@ export class SiloProduce {
 }
 
 
-export abstract class Store {
-  readonly base: RectBase
+export abstract class Store extends BaseBuilding {
   readonly cap: number
   useDefault: boolean
+  override readonly pads = 'both'
+  override readonly ports = ['out'] as const
   constructor(base: RectBase, cap: number, useDefault = true) {
-    this.base = base
+    super(base)
     this.cap = cap
     this.useDefault = useDefault
   }
@@ -455,6 +657,25 @@ export class SeedSilo extends Store {
   }
   get used(): number {
     return this.seeds.reduce((n, s) => n + s.count, 0)
+  }
+  override accept(item: Item): number {
+    if (item.kind !== 'seeds') return 0
+    const n = this.free < item.count ? this.free : item.count
+    return n > 0 ? n : 0
+  }
+  override apply(item: Item, n: number): void {
+    if (item.kind !== 'seeds') return
+    this.put(item.crop, item.variety, item.quality, n)
+  }
+  put(crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
+    const n = Math.min(count, this.free)
+    if (n <= 0) return 0
+    const hit = this.seeds.find(st => st.crop === crop && st.variety === variety)
+    if (hit !== undefined) {
+      hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
+      hit.count += n
+    } else this.seeds.push({ crop, variety, quality, count: n })
+    return n
   }
 }
 
@@ -486,6 +707,42 @@ export class AdditiveStore extends Store {
   }
   litersOf(id: AdditiveId): number {
     return this.held.find(h => h.id === id)?.liters ?? 0
+  }
+  override accept(item: Item): number {
+    if (item.kind === 'sugar') {
+      const room = this.free < item.liters ? this.free : item.liters
+      return room > 0 ? room : 0
+    }
+    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
+    const n = this.free < item.liters ? this.free : item.liters
+    return n > 0 ? n : 0
+  }
+  override apply(item: Item, n: number): void {
+    if (item.kind === 'sugar') {
+      this.putSugar(item.liters < n ? item.liters : n, item.unitSale, item.quality)
+      return
+    }
+    if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+      this.putAdditive(item.kind, n)
+    }
+  }
+  putSugar(liters: number, unitSale: number, quality: number): number {
+    const n = Math.min(liters, this.free)
+    if (n <= 0) return 0
+    const bin = this.sugar
+    const total = bin.liters + n
+    bin.unitSale = (bin.unitSale * bin.liters + unitSale * n) / total
+    bin.quality = (bin.quality * bin.liters + quality * n) / total
+    bin.liters = total
+    return n
+  }
+  putAdditive(id: AdditiveId, liters: number): number {
+    const n = Math.min(liters, this.free)
+    if (n <= 0) return 0
+    const hit = this.held.find(h => h.id === id)
+    if (hit !== undefined) hit.liters += n
+    else this.held.push({ id, liters: n })
+    return n
   }
 }
 

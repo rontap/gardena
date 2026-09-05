@@ -1,9 +1,7 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
-import { m } from '../../paraglide/messages.js'
-import { CROPS, freshMul, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
+import { CROPS, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import {
-  ADDITIVE_CAP_LITERS,
   BULK_UP_CRAFTED_STEP,
   BULK_UP_STEP,
   COMPOST_LITERS,
@@ -18,83 +16,47 @@ import {
   NEIGHBOUR_REACH,
   SILO_SEED_CAP,
   SPEECH_S,
-  SPRINKLER_TILE_RATE,
   STACK_MAX,
   STACK_MAX_CRAFTED,
   STILL_WATER,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
-  GRIND_WORK,
 } from '../defs/items.ts'
-import { BETTER_QUALITY, purposeMul, qualityMul, STARTER_TREE_GRAFTS, VARIETY, type VarietyId } from '../defs/varieties.ts'
+import { BETTER_QUALITY, purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds } from '../defs/skills.ts'
-import { packSku, TREE_IDS, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
+import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
+import { packSku, type AnnualId, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
-  DOOR,
   Freezer,
   Grinder,
-  HOUSE_BASE,
   Mill,
   PAD,
   PotStill,
-  PUMP_BASE,
-  SILO_BASE,
   chunkRect,
-  occupiedCells,
 } from './building.ts'
-import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL, SUGAR_SHOP } from '../defs/items.ts'
+import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse } from './feature-save/save.ts'
-import { fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand, type Item } from './item.ts'
+import { makeShovel, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
-import { aoe, junction, vertexKey, type Edge } from './pipe.ts'
 import { Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng } from './rng.ts'
-import { Clock, DAY_SECONDS, days } from './clock.ts'
-import { BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
+import { Soil, SOIL_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
-import { SOURCE } from './water.ts'
-import { goodness } from './noise.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
 import { grindAccept, grindApply, grindProduct } from './feature-machines/machine.ts'
 import { footOutline } from '../view/outline.ts'
 import { DT_MAX, POINTS_PER_DAY, World } from './world.ts'
-import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
+import { SHOP_SKUS } from '../defs/shelf.ts'
 
-
-const HOME = [{ cx: 0, cy: 0 }]
 const AT = { col: 10, row: 12 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
   return new Soil(water, fertilizer, WEED_CHANCE)
-}
-
-
-function readHand(w: World): Hand {
-  return w.seats[0].hand
-}
-
-function grindWorld(seed: number): World {
-  const w = new World(seed)
-  w.setCell(AT, new Grinder({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
-  w.seats[0].actor.x = AT.col + 0.5
-  w.seats[0].actor.y = AT.row + 0.5
-  return w
-}
-
-
-
-function sameEdge(a: Edge, b: Edge): boolean {
-  return a.axis === b.axis && a.col === b.col && a.row === b.row
-}
-
-function sorted(cs: { col: number; row: number }[]): { col: number; row: number }[] {
-  return [...cs].sort((a, b) => a.row - b.row || a.col - b.col)
 }
 
 function handOf(w: World): Hand {
@@ -105,23 +67,6 @@ function siloCount(w: World, crop: AnnualId, variety: VarietyId): number {
   const hit = w.silo.seeds.find(st => st.crop === crop && st.variety === variety)
   if (hit === undefined) return 0
   return hit.count
-}
-
-function expectPacked(w: World): void {
-  const seen = new Set<string>()
-  let empty = false
-  w.seats[0].inventory.forEach(slot => {
-    if (slot.kind === 'empty') {
-      empty = true
-      return
-    }
-    expect(empty).toBe(false)
-    if (slot.item.kind === 'seeds' || slot.item.kind === 'fruit') {
-      const key = `${slot.item.kind}:${slot.item.crop}:${slot.item.variety}`
-      expect(seen.has(key)).toBe(false)
-      seen.add(key)
-    }
-  })
 }
 
 function play(seed: number, cmds: Cmd[], dt = 1 / 15): World {

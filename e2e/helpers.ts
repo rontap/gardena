@@ -91,7 +91,7 @@ export async function openBuild(page: Page): Promise<void> {
 export async function armSku(
   page: Page,
   sku: string,
-  tab: 'Water' | 'Vehicles' | 'Processing' = 'Water',
+  tab: 'Water' | 'Vehicles' | 'Processing' | 'Sensors' | 'Storage' | 'Land' = 'Water',
 ): Promise<void> {
   await openBuild(page)
   await page.getByRole('tab', { name: tab }).click()

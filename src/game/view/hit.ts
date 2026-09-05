@@ -1,6 +1,6 @@
 import { SENSOR_CELL_SKUS, type SkuId } from '../sim/ids.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
-import { nearestWire, portXY, type PortId, type WireEnd } from '../sim/sensor.ts'
+import { drivesOut, nearestWire, portXY, type PortId, type WireEnd } from '../sim/sensor.ts'
 import type { Cell } from '../sim/plot.ts'
 import type { Place, World } from '../sim/world.ts'
 import type { PromptHit } from '../sim/prompt.ts'
@@ -230,8 +230,7 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
 export function wireSignal(world: World, from: WireEnd): boolean {
   if (from.kind !== 'cell') return false
   const c = world.cell(from.at)
-  if ('ports' in c && c.ports.includes('out') && 'out' in c) return c.out === 1
-  return false
+  return drivesOut(c) && c.out === 1
 }
 
 function valveHit(world: World, wx: number, wy: number): Edge | undefined {

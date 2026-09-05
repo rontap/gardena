@@ -228,6 +228,10 @@ export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
   return false
 }
 
+export function drivesOut(c: Cell): c is Cell & { out: Signal } {
+  return 'ports' in c && c.ports.some(p => p === 'out')
+}
+
 export function isOutEnd(end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind !== 'cell') return false
   if (cell === undefined) return false

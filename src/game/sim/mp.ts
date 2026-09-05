@@ -1,6 +1,7 @@
 import { SKUS } from '../defs/research.ts'
 import type { SkuId } from './ids.ts'
 import { Act, type Cmd } from './log.ts'
+import { drivesOut } from './sensor.ts'
 import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
@@ -338,7 +339,7 @@ export function digestParts(world: World): Record<string, unknown> {
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`
-    else if ('ports' in c && c.ports.includes('out') && 'out' in c) s += `:out${c.out}`
+    else if (drivesOut(c)) s += `:out${c.out}`
     cells.push(s)
   })
   const seats = world.seats.map(s => ({

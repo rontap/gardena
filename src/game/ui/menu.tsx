@@ -209,10 +209,12 @@ export function Menu(props: MenuProps) {
             accept=".json,application/json"
             className="hidden"
             onChange={e => {
-              const list = e.target.files
-              e.target.value = ''
-              if (list?.length === 0) return
-              void list[0].text().then(onUpload)
+              const list = e.currentTarget.files
+              if (list === null) throw new Error('files')
+              if (list.length === 0) return
+              const file = list[0]
+              e.currentTarget.value = ''
+              void file.text().then(onUpload)
             }}
           />
         </div>

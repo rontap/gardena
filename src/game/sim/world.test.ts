@@ -1,34 +1,18 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import {describe, expect, test} from 'vitest'
 import {m} from '../../paraglide/messages.js'
-import {CROPS, freshMul, HAPPY_MAX, HAPPY_START} from '../defs/crops.ts'
+import {CROPS, freshMul, HAPPY_START} from '../defs/crops.ts'
 import {
     ADDITIVE_CAP_LITERS,
-    BULK_UP_CRAFTED_STEP,
-    BULK_UP_STEP,
-    COMPOST_LITERS,
-    COMPOST_SECONDS,
     CONTAINERS,
     FERT_BAG_LITERS,
-    FREEZER_LARGE_SLOTS,
-    CHOP_GRAFTS,
     GRIND_MAX,
     GRIND_MIN,
-    grindMinAt,
-    NEIGHBOUR_REACH,
     SILO_SEED_CAP,
-    SPEECH_S,
     SPRINKLER_TILE_RATE,
-    STACK_MAX,
-    STACK_MAX_CRAFTED,
-    STILL_WATER,
-    SYNTH_BAG_LITERS,
-    WEED_SPRAY_BAG,
     GRIND_WORK,
 } from '../defs/items.ts'
 import {
-    BETTER_QUALITY,
-    purposeMul,
     qualityMul,
     STARTER_FRUIT,
     STARTER_FRUIT_N,
@@ -37,31 +21,25 @@ import {
     type VarietyId
 } from '../defs/varieties.ts'
 import {RESEARCH, SKUS} from '../defs/research.ts'
-import {HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds} from '../defs/skills.ts'
-import {packSku, TREE_IDS, type AnnualId, type ResearchId, type SkuId} from './ids.ts'
+import {PLAYER_SKILL_IDS, SKILLS, skillIds} from '../defs/skills.ts'
+import {TREE_IDS, type AnnualId, type ResearchId, type SkuId} from './ids.ts'
 import {
     Chest,
-    CHUNK,
     DOOR,
-    Freezer,
     Grinder,
     HOUSE_BASE,
-    Mill,
     PAD,
-    PotStill,
     PUMP_BASE,
     SILO_BASE,
-    chunkRect,
     occupiedCells,
 } from './building.ts'
-import {FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL, SUGAR_SHOP} from '../defs/items.ts'
-import {TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL} from '../defs/trees.ts'
+import {SUGAR_BAG, SUGAR_SHOP} from '../defs/items.ts'
 import {dump, parse} from './feature-save/save.ts'
-import {fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand, type Item} from './item.ts'
-import {Plant, Weed} from './plant.ts'
+import {fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand} from './item.ts'
+import {Plant} from './plant.ts'
 import {aoe, junction, vertexKey, type Edge} from './pipe.ts'
 import {Rock, Tree} from './building.ts'
-import {Act, type Cmd} from './log.ts'
+import {Act} from './log.ts'
 import {Rng} from './rng.ts'
 import {Clock, DAY_SECONDS, days} from './clock.ts'
 import {
@@ -71,23 +49,16 @@ import {
     SOIL_WATER_MID,
     STUNT,
     WEED_CHANCE,
-    WEED_FERT_PER_SEC,
     GRASS_CHANCE,
-    PLANT_FERT_PER_SEC,
     ramped
 } from './soil.ts'
 import {bare} from './plot.ts'
 import {SOURCE} from './water.ts'
 import {goodness} from './noise.ts'
-import {STALL_IDS} from './stall.ts'
-import {statsOf} from './modifiers.ts'
-import {grindAccept, grindApply, grindProduct} from './feature-machines/machine.ts'
-import {footOutline} from '../view/outline.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
-import {DT_MAX, POINTS_PER_DAY, World} from './world.ts'
+import {DT_MAX, World} from './world.ts'
 import {BUILD_SKUS, SHELVES, SHOP_SKUS} from '../defs/shelf.ts'
-
 
 const HOME = [{cx: 0, cy: 0}]
 const AT = {col: 10, row: 12}

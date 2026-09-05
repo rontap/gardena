@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { vertexKey } from '../../sim/pipe.ts'
-import { millWorking, jamWorking, stillWorking, barrelWorking, furnaceWorking, furnaceStateVfx } from '../../sim/machine.ts'
+import { millWorking, jamWorking, stillWorking, barrelWorking, furnaceWorking, furnaceStateVfx } from '../../sim/feature-machines/machine.ts'
 import { BARREL_MATURE } from '../../defs/items.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'

@@ -9,7 +9,7 @@ import {
 } from '../defs/items.ts'
 import type { Coord } from '../sim/building.ts'
 import type { TrailerId, VehicleId } from '../sim/ids.ts'
-import { trailerUsed, type Trailer, type Vehicle } from '../sim/vehicle.ts'
+import { trailerUsed, type Trailer, type Vehicle } from '../sim/feature-vehicles/vehicle.ts'
 import type { World } from '../sim/world.ts'
 import { ITEM_TRAILER_HARVEST, ITEM_TRAILER_SEED, ITEM_TRAILER_SPRAY, ITEM_TRACTOR, QUAD } from '../view/svgs.ts'
 import { Bar, Coin } from './frame.tsx'
@@ -61,7 +61,7 @@ export function HangarUi({
   const pickedTrailer = selectedTrailer === undefined ? undefined : world.trailers.find(t => t.id === selectedTrailer)
   const tractorStored = picked !== undefined && picked.kind === 'tractor' && picked.pose.kind === 'stored'
   const hitchOk =
-    pickedTrailer === undefined || (pickedTrailer.pose.kind === 'stored' && tractorStored)
+    pickedTrailer?.pose.kind === 'stored' ? tractorStored : pickedTrailer === undefined
   const canDeploy = picked !== undefined && picked.pose.kind === 'stored' && hitchOk
   const route = picked !== undefined && picked.route !== 'none' ? world.routeById(picked.route) : undefined
   const canAuto =

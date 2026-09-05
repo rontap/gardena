@@ -2,7 +2,7 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `SkuId` += `buy-furnace` `buy-axe` `buy-research-station`. `MachineId` += `furnace` `station` (`recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `SkuId` += `buy-furnace` `buy-axe` `buy-research-station`. `MachineId` += `furnace` `station` (`feature-machines/recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
 
 ## defs
 
@@ -21,14 +21,16 @@
 
 ## sim
 
-`World` is the live-state owner and tick sequencer. `track()` stays on `World`. Do not add `sim/index.ts`. New mechanic → new `sim/<name>.ts`. Do not append a mechanic onto `World`. Pattern: `vehicle.ts` — types and functions in the feature file; `World` holds lists and calls in. Extracting functions `World` calls is legal; the extract is not in `src/` until that wave.
+`World` is the live-state owner and tick sequencer. `track()` stays on `World`. Do not add `sim/index.ts`. New mechanic → new `sim/<name>.ts`. Do not append a mechanic onto `World`. Pattern: `feature-vehicles/` — types in `vehicle.h.ts`, functions in `vehicle.ts`; `World` holds lists and calls in. Extracting functions `World` calls is legal; the extract is not in `src/` until that wave.
 
 | file | owner |
 |---|---|
-| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, place / click, seats. `World`, `Seat`, `cheatSpeed`, `cheatFastResearch`. Still holds `tickMachines` `furnaceMul` snapshot. Intent `chop` `furnace` `graft` `station` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Machine tick / compost tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Intent `chop` `furnace` `graft` `station` |
 | `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
-| `save.ts` | `Save`, dump / parse — [[architecture/save]] |
+| `feature-save/save.h.ts` | `Save` typedefs |
+| `feature-save/save.ts` | dump / parse — [[architecture/save]] |
+| `feature-save/save.parse.ts` | parse |
 | `tutorial.ts` | session check — [[mechanics/tutorial]] |
 | `settings.ts` | `Settings`, `settings()` / `saveSettings` — [[ui/settings]] |
 | `log.ts` | `Act`, `Cmd` |
@@ -38,8 +40,8 @@
 | `plant.ts` | `Plant` (`variety`, `quality`), `Weed` |
 | `water.ts` | `Reservoir`, `pull()` |
 | `stall.ts` | `StallGood`. Crop bins per variety × bio |
-| `market.h.ts` | sat / contract typedefs. `Demand` plain or group |
-| `market.ts` | sat helpers, `rollBoard` |
+| `feature-contracts/market.h.ts` | sat / contract typedefs. `Demand` plain or group |
+| `feature-contracts/market.ts` | sat helpers, `rollBoard` |
 | `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace`, `ResearchStation`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality. `BaseBuilding` `Machine`; `Store` extends `BaseBuilding` |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
@@ -53,9 +55,17 @@
 | `modifiers.ts` | `Modifier`, `statsOf(crop, variety, quality, mods)` |
 | `rng.ts` | `Rng`, streams |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
-| `machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
-| `recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
-| `vehicle.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop`, integrate |
+| `feature-machines/machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
+| `feature-machines/machines.tick.ts` | `tickMachines` `tickCompost` `pullMachineStores` `emitProduct` `emitPair` `dropSpot` `pullStillWater` `workingFurnaces` `furnaceMulFor`. Snapshot `World.furnaceSnap` at start of `tickMachines` |
+| `feature-machines/machines.helpers.ts` | `canMill`/`doMill` `canJam`/`doJam` `canStill`/`doStill` `canFurnace`/`doFurnace` `canStation`/`doStation` `canGrind`/`doGrind` `canBarrel`/`doBarrel`/`canBarrelCollect` `canCompost`/`doCompost`. Public `canStation` / `dropSpot` / `furnaceMulFor` stay World wrappers |
+| `feature-machines/recipe.h.ts` | `Recipe`, `Craft`, `MachineId` |
+| `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
+| `feature-field/field.ts` | grow / recover tick, tree seam, weeds, grass |
+| `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft |
+| `feature-place/place.ts` | `buyBody` `buyPacksBody` `clickBody` `clickValveBody` `rightClickBody` `expandBody` `faces` `placePipeBody` `deletePipeBody` `placeSprinklerBody` `deleteSprinklerBody` `armDeleteBody` `rotatePlaceBody` `cancelPlaceBody`. Public `buy` / `click` / `confirmPlace` stay World wrappers |
+| `feature-place/place.helpers.ts` | `confirmPlace` `deleteBuildingBody` `pruneVert` |
+| `feature-vehicles/vehicle.h.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop` |
+| `feature-vehicles/vehicle.ts` | integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light. Will: make table `{ [K in SensorKind]: { sku, make } }` next to the classes; `makeSensor` / `skuKind` lookups; ports on the device. `evalDag` stays a function. Not a `Machine` |
 
 ## ui
@@ -147,7 +157,7 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 
 `World.house` / `truck` / `pumps` / `tanks` / `taps` / `wells` / `stills` / `waterSystems` / `hangars` / field silos / `silo` / `additives` are the same instances stored in their cells. `Furnace` same instance both cells; tick via `machines` index; no `World.furnaces` list. Station tick via `machines` index. `World.vehicles` / `World.trailers` / `World.routes` are lists, not cells. `World.wires` is the signal graph. `tickDispatch` on `world.ts` after `evalDag`. `World.segments` and `World.sprinklers` are the pipe graph. A valve is a `Gate` on a segment. `World.fences` is the fence set.
 
-Tutorial is App session state. Save I/O is `sim/save.ts`. App does not own `Save`.
+Tutorial is App session state. Save I/O is `sim/feature-save/save.ts`. App does not own `Save`.
 
 ## Building I/O
 
@@ -182,3 +192,5 @@ Walk dump, chest west-pull / east-push, and vehicle pads all go through instance
 Sensors are not `Machine`. Make table and ports: [[mechanics/sensors]].
 
 Assumption: leftover `useOf` is `purposeMul`; no `pathUse`.
+
+Assumption: `Place` / `StayArmed` stay on `world.ts`; dest and wire place stay.

@@ -5,7 +5,7 @@ import { Tree, frontOf } from './building.ts'
 import { makeAxe } from './item.ts'
 import { treeLine } from './prompt.ts'
 import { bare } from './plot.ts'
-import { dump, parse } from './save.ts'
+import { dump, parse } from './feature-save/save.ts'
 import { DT_MAX, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }

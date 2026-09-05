@@ -1,6 +1,7 @@
-import { CROPS } from '../defs/crops.ts'
+import { CROPS } from '../../defs/crops.ts'
 import {
   AUTO_DECEL_MUL,
+  DISPATCH_DWELL,
   AUTO_VMAX_MUL,
   BOOM_LONG,
   HANGAR_H,
@@ -33,8 +34,8 @@ import {
   TRAILER_SEED_PRICE,
   TRAILER_SPRAY_PRICE,
   VEHICLE_SLOTS,
-} from '../defs/items.ts'
-import type { HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from './ids.ts'
+} from '../../defs/items.ts'
+import type { HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from '../ids.ts'
 import {
   cargoCount,
   compactSlots,
@@ -44,81 +45,58 @@ import {
   slotsCouldTake,
   type Item,
   type Slot,
-} from './item.ts'
+} from '../item.ts'
 import {
   ADDITIVE_BAG,
   type AdditiveId,
   type AdditiveStore,
-  type BaseBuilding,
   type Coord,
   type RectBase,
   type SeedSilo,
   type SugarBin,
-} from './building.ts'
-import type { Drop } from './drop.ts'
-import { Act, type Cmd } from './log.ts'
-import { statsOf } from './modifiers.ts'
-import { Plant } from './plant.ts'
-import { isSolid, isTilled, type Cell } from './plot.ts'
-import { FERT_PLOT_MAX } from './soil.ts'
-import type { SeatId, World } from './world.ts'
+} from '../building.ts'
+import type { Drop } from '../drop.ts'
+import { Act, type Cmd } from '../log.ts'
+import { statsOf } from '../modifiers.ts'
+import { Plant } from '../plant.ts'
+import { isSolid, isTilled, type Cell } from '../plot.ts'
+import { FERT_PLOT_MAX } from '../soil.ts'
+import { stepHold, type Sensor } from '../sensor.ts'
+import type { SeatId, World } from '../world.ts'
+import type {
+  Cargo,
+  Drive,
+  PadCell,
+  Route,
+  RouteStop,
+  Trailer,
+  TrailerPose,
+  Vehicle,
+  VehiclePose,
+} from './vehicle.h.ts'
 
 export { cargoCount, compactSlots, insertSlots }
 
-export type Drive = { throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
-
-export type RouteStop =
-  | { kind: 'goto'; x: number; y: number }
-  | { kind: 'unload'; at: Coord }
-  | { kind: 'load'; at: Coord }
-  | { kind: 'wait'; at: Coord }
-
-export type Route = { id: RouteId; name: string; stops: RouteStop[] }
-
-export type VehiclePose =
-  | { kind: 'stored'; hangar: Coord }
-  | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }
-
-export type TrailerPose =
-  | { kind: 'stored'; hangar: Coord }
-  | { kind: 'attached'; vehicle: VehicleId; heading: number }
-
-export type SeedHopper = { kind: 'empty' } | { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
-export type SprayHopper =
-  | { kind: 'empty' }
-  | { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'synth' | 'compost' }> }
-
-export type Vehicle =
-  | {
-      kind: 'quad'
-      id: VehicleId
-      fuel: number
-      slots: Slot[]
-      pose: VehiclePose
-      route: RouteId | 'none'
-      cursor: number
-      running: boolean
-      dwell: number
-    }
-  | {
-      kind: 'tractor'
-      id: VehicleId
-      fuel: number
-      hitch: TrailerId | 'none'
-      boom: 3 | 5
-      pose: VehiclePose
-      route: RouteId | 'none'
-      cursor: number
-      running: boolean
-      dwell: number
-    }
-
-export type Trailer =
-  | { kind: 'seed'; id: TrailerId; pose: TrailerPose; hopper: SeedHopper }
-  | { kind: 'spray'; id: TrailerId; pose: TrailerPose; hopper: SprayHopper }
-  | { kind: 'harvest'; id: TrailerId; pose: TrailerPose; slots: Slot[] }
-
-export type { HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot }
+export type {
+  Cargo,
+  Drive,
+  HarvestSlot,
+  PadCell,
+  Route,
+  RouteId,
+  RouteStop,
+  SeedHopper,
+  SprayHopper,
+  Trailer,
+  TrailerId,
+  TrailerKind,
+  TrailerPose,
+  Vehicle,
+  VehicleId,
+  VehicleKind,
+  VehiclePose,
+  VehicleSlot,
+} from './vehicle.h.ts'
 
 export function emptyVehicleSlots(): Slot[] {
   return Array.from({ length: VEHICLE_SLOTS }, (): Slot => ({ kind: 'empty' }))
@@ -329,17 +307,9 @@ export function integrateVehicle(
   }
 }
 
-export type PadCell = Extract<Cell, BaseBuilding> & { readonly pads: 'both' }
-
 export function isPadCell(c: Cell): c is PadCell {
   return 'pads' in c && c.pads === 'both'
 }
-
-export type Cargo =
-  | { kind: 'quad'; slots: Slot[] }
-  | { kind: 'harvest'; slots: Slot[] }
-  | { kind: 'seed'; trailer: Extract<Trailer, { kind: 'seed' }> }
-  | { kind: 'spray'; trailer: Extract<Trailer, { kind: 'spray' }> }
 
 export function trailerOf(trailers: readonly Trailer[], id: TrailerId): Trailer {
   const t = trailers.find(x => x.id === id)
@@ -585,12 +555,35 @@ export function driverVehicle(w: World, id: SeatId): Vehicle | undefined {
 
 export function cargo(w: World): Cargo | undefined {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return undefined
+  if (v?.pose.kind !== 'field') return undefined
   return vehicleCargo(v, w.trailers)
 }
 
+export function padBuildings(w: World): PadCell[] {
+  const out: PadCell[] = []
+  for (const at of w.machines.values()) {
+    const c = w.cell(at)
+    if (
+      c.kind === 'mill' ||
+      c.kind === 'jam' ||
+      c.kind === 'still' ||
+      c.kind === 'compost-box' ||
+      c.kind === 'furnace' ||
+      c.kind === 'station'
+    ) {
+      out.push(c)
+    }
+  }
+  for (const at of w.stores.values()) {
+    const c = w.cell(at)
+    if (c.kind === 'chest' || c.kind === 'freezer') out.push(c)
+  }
+  out.push(w.silo, w.additives)
+  return out
+}
+
 export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
-  for (const cell of w.padBuildings()) {
+  for (const cell of padBuildings(w)) {
     if (onPad(dropoffPad(cell.base), at)) return { cell, side: 'dropoff' }
     if (onPad(takeupPad(cell.base), at)) return { cell, side: 'takeup' }
   }
@@ -639,7 +632,7 @@ export function buyTrailerBody(w: World, at: Coord, k: TrailerKind): void {
 
 export function deployBody(w: World, id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
   const v = w.vehicles.find(x => x.id === id)
-  if (v === undefined || v.pose.kind !== 'stored') return
+  if (v?.pose.kind !== 'stored') return
   if (driverVehicle(w, w.act.id) !== undefined) return
   const origin = w.hangarOrigin(at)
   if (origin === undefined) return
@@ -652,7 +645,7 @@ export function deployBody(w: World, id: VehicleId, at: Coord, hitch: TrailerId 
   if (v.kind === 'tractor') {
     if (hitch !== 'none') {
       trailer = w.trailers.find(x => x.id === hitch)
-      if (trailer === undefined || trailer.pose.kind !== 'stored') return
+      if (trailer?.pose.kind !== 'stored') return
     }
     v.hitch = hitch
   }
@@ -693,7 +686,7 @@ export function board(w: World, v: Vehicle): void {
 
 export function embarkBody(w: World, id: VehicleId): void {
   const v = w.vehicles.find(x => x.id === id)
-  if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+  if (v?.pose.kind !== 'field' || v.pose.driver !== 'none') return
   if (driverVehicle(w, w.act.id) !== undefined) return
   if (v.running) {
     v.running = false
@@ -710,7 +703,7 @@ export function embarkBody(w: World, id: VehicleId): void {
 
 export function disembarkBody(w: World): void {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return
+  if (v?.pose.kind !== 'field') return
   v.pose.speed = 0
   v.pose.driver = 'none'
   w.act.actor.x = v.pose.x
@@ -722,7 +715,7 @@ export function disembarkBody(w: World): void {
 
 export function dockBody(w: World): void {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return
+  if (v?.pose.kind !== 'field') return
   const hangar = w.hangarAtPad({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   if (hangar === undefined) return
   const x = v.pose.x
@@ -744,7 +737,7 @@ export function dockBody(w: World): void {
 
 export function swapVehicleBody(w: World, id: VehicleId, i: VehicleSlot): void {
   const v = w.vehicles.find(x => x.id === id)
-  if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
+  if (v?.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
   const held = w.act.hand
   w.act.hand = v.slots[i]
   v.slots[i] = held
@@ -754,10 +747,10 @@ export function swapVehicleBody(w: World, id: VehicleId, i: VehicleSlot): void {
 
 export function swapTrailerBody(w: World, u: TrailerId, i: HarvestSlot): void {
   const t = w.trailers.find(x => x.id === u)
-  if (t === undefined || t.pose.kind !== 'attached') return
+  if (t?.pose.kind !== 'attached') return
   const hitch = t.pose.vehicle
   const v = w.vehicles.find(x => x.id === hitch)
-  if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
+  if (v?.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
   if (t.kind === 'seed') {
     if (i !== 0) return
     const hand = w.act.hand
@@ -812,7 +805,7 @@ export function refillBody(w: World, at: Coord): void {
 
 export function setBoomBody(w: World, width: 3 | 5): void {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.kind !== 'tractor') return
+  if (v?.kind !== 'tractor') return
   v.boom = width
   w.ping()
 }
@@ -944,9 +937,9 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
   }
   if (cmd.k === 'start') {
     const v = driverVehicle(w, w.act.id)
-    if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
+    if (v?.pose.kind !== 'field' || v.route === 'none') return
     const route = w.routeById(v.route)
-    if (route === undefined || route.stops.length === 0) return
+    if (!(route?.stops.length)) return
     disembarkBody(w)
     v.running = true
     v.dwell = 0
@@ -955,9 +948,9 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
   }
   if (cmd.k === 'automate') {
     const v = w.vehicles.find(x => x.id === cmd.v)
-    if (v === undefined || v.pose.kind !== 'stored' || v.route === 'none') return
+    if (v?.pose.kind !== 'stored' || v.route === 'none') return
     const route = w.routeById(v.route)
-    if (route === undefined || route.stops.length === 0) return
+    if (!(route?.stops.length)) return
     const origin = w.hangarOrigin({ col: cmd.c[0], row: cmd.c[1] })
     if (origin === undefined) return
     const hangar = w.cell(origin)
@@ -993,7 +986,7 @@ export function advanceRoute(v: Vehicle, route: Route): void {
 function arriveGoto(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): void {
   if (v.route === 'none') return
   const route = w.routeById(v.route)
-  if (route === undefined || route.stops.length === 0) return
+  if (!(route?.stops.length)) return
   const stop = route.stops[v.cursor]
   if (stop.kind !== 'goto') return
   if (Math.hypot(pose.x - stop.x, pose.y - stop.y) > ROUTE_ARRIVE) return
@@ -1006,7 +999,7 @@ function autoDrive(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'fie
   if (v.dwell > 0) return zero
   if (v.route === 'none') return zero
   const route = w.routeById(v.route)
-  if (route === undefined || route.stops.length === 0) return zero
+  if (!(route?.stops.length)) return zero
   const stop = route.stops[v.cursor]
   if (stopArrived(pose, stop)) return zero
   if (stop.kind !== 'goto' && Math.floor(pose.x) === stop.at.col && Math.floor(pose.y) === stop.at.row) return zero
@@ -1175,7 +1168,7 @@ export function transferLoad(w: World, v: Vehicle): void {
   if (v.pose.kind !== 'field') return
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = vehicleCargo(v, w.trailers)
-  if (hit === undefined || hit.side !== 'takeup' || load === undefined) return
+  if (hit?.side !== 'takeup' || load === undefined) return
   pullFrom(hit.cell, load, w.drops)
 }
 
@@ -1183,16 +1176,16 @@ export function transferUnload(w: World, v: Vehicle): void {
   if (v.pose.kind !== 'field') return
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = vehicleCargo(v, w.trailers)
-  if (hit === undefined || hit.side !== 'dropoff' || load === undefined) return
+  if (hit?.side !== 'dropoff' || load === undefined) return
   dumpCargo(load, hit.cell)
 }
 
 export function loadBody(w: World): void {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return
+  if (v?.pose.kind !== 'field') return
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = cargo(w)
-  if (hit === undefined || hit.side !== 'takeup' || load === undefined) return
+  if (hit?.side !== 'takeup' || load === undefined) return
   if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
   transferLoad(w, v)
   w.ping()
@@ -1200,10 +1193,10 @@ export function loadBody(w: World): void {
 
 export function unloadBody(w: World): void {
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return
+  if (v?.pose.kind !== 'field') return
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = cargo(w)
-  if (hit === undefined || hit.side !== 'dropoff' || load === undefined) return
+  if (hit?.side !== 'dropoff' || load === undefined) return
   if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
   transferUnload(w, v)
   w.ping()
@@ -1213,10 +1206,10 @@ export function loadWould(w: World): boolean {
   const load = cargo(w)
   if (load === undefined) return false
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return false
+  if (v?.pose.kind !== 'field') return false
   if (v.pose.speed !== 0) return false
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-  if (hit === undefined || hit.side !== 'takeup') return false
+  if (hit?.side !== 'takeup') return false
   if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
   return canPull(hit.cell, load, w.drops)
 }
@@ -1225,10 +1218,61 @@ export function unloadWould(w: World): boolean {
   const load = cargo(w)
   if (load === undefined) return false
   const v = driverVehicle(w, w.act.id)
-  if (v === undefined || v.pose.kind !== 'field') return false
+  if (v?.pose.kind !== 'field') return false
   if (v.pose.speed !== 0) return false
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-  if (hit === undefined || hit.side !== 'dropoff') return false
+  if (hit?.side !== 'dropoff') return false
   if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
   return canDumpCargo(load, hit.cell)
+}
+
+export function tickDispatch(w: World, dt: number): void {
+  w.vehicles.forEach(v => {
+    if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return
+    const route = w.routeById(v.route)
+    if (!(route?.stops.length)) return
+    const stop = route.stops[v.cursor]
+    if (stop.kind === 'goto') return
+    if (!stopArrived(v.pose, stop)) return
+    if (v.fuel === 0) return
+    if (stop.kind === 'wait') {
+      if (!w.inWorld(stop.at)) return
+      const light = w.cell(stop.at)
+      if (light.kind !== 'traffic-light') return
+      if (light.inn === 1) advanceRoute(v, route)
+      return
+    }
+    if (v.dwell <= 0) {
+      v.dwell = DISPATCH_DWELL
+      return
+    }
+    v.dwell -= dt
+    if (v.dwell > 0) return
+    v.dwell = 0
+    if (stop.kind === 'load') transferLoad(w, v)
+    else transferUnload(w, v)
+    advanceRoute(v, route)
+  })
+  for (const at of w.sensors.values()) {
+    const c = w.cell(at)
+    if (c.kind !== 'traffic-light') continue
+    const raw: 0 | 1 = lightWaiter(w, c) ? 1 : 0
+    const next = stepHold(c.out, c.hold, raw)
+    c.out = next.out
+    c.hold = next.hold
+  }
+}
+
+export function lightWaiter(w: World, light: Extract<Sensor, { kind: 'traffic-light' }>): boolean {
+  const at = { col: light.base.col, row: light.base.row }
+  return w.vehicles.some(v => {
+    if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return false
+    const route = w.routeById(v.route)
+    if (!(route?.stops.length)) return false
+    const stop = route.stops[v.cursor]
+    if (stop.kind !== 'wait') return false
+    if (stop.at.col !== at.col || stop.at.row !== at.row) return false
+    if (Math.floor(v.pose.x) !== at.col || Math.floor(v.pose.y) !== at.row) return false
+    return light.inn === 0
+  })
 }

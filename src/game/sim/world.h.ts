@@ -1,18 +1,43 @@
-import type { World } from './world.ts'
-import { VARIETY, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, DaughterSkillId, HusbandSkillId, PlayerSkillId, ResearchId, SkillId, RouteId, SkuId, TrailerId, VehicleId, VfxId } from './ids.ts'
-import { Actor } from './actor.ts'
-import { AdditiveStore, DOOR, Hangar, SiloProduce, SiloSeed, SiloSpray, House, PAD, PotStill, Pump, RainTank, SeedSilo, Tap, Well, Truck, occupiedCells, type Base, type ChunkId, type Coord } from './building.ts'
+import type { Actor } from './actor.ts'
+import type {
+  AdditiveStore,
+  ChunkId,
+  Coord,
+  Hangar,
+  House,
+  PotStill,
+  Pump,
+  RainTank,
+  SeedSilo,
+  SiloProduce,
+  SiloSeed,
+  SiloSpray,
+  Tap,
+  Truck,
+  Well,
+} from './building.ts'
 import type { Drop } from './drop.ts'
-import { makeShovel, type Hand, type Item, type Slot } from './item.ts'
-import type { Contracts, HistoryEntry } from './market.h.ts'
-import type { StallMap } from './stall.ts'
+import type {
+  DaughterSkillId,
+  HusbandSkillId,
+  PlayerSkillId,
+  ResearchId,
+  RouteId,
+  SkillId,
+  SkuId,
+  TrailerId,
+  VehicleId,
+  VfxId,
+} from './ids.ts'
+import type { Hand, Slot } from './item.ts'
+import type { LogSink } from './log.ts'
+import type { Contracts, HistoryEntry } from './feature-contracts/market.h.ts'
 import type { Cell } from './plot.ts'
 import type { Edge, Segment, Sprinkler, Vertex } from './pipe.ts'
-import { Reservoir } from './water.ts'
-import type { LogSink } from './log.ts'
-import { Rng } from './rng.ts'
-import type { Drive, Route, Trailer, Vehicle } from './vehicle.ts'
+import type { Rng } from './rng.ts'
+import type { Reservoir } from './water.ts'
+import type { Drive, Route, Trailer, Vehicle } from './feature-vehicles/vehicle.h.ts'
+import type { StallMap } from './stall.ts'
 import type { ValveHold, WaterSystem, Wire, WireEnd } from './sensor.ts'
 
 export type Intent =
@@ -219,134 +244,3 @@ export type Hydrate = {
   drops: Drop[]
   clearance: number
 }
-
-export const POINTS_PER_DAY = 3
-
-export const DAY_STIPEND = 10
-export const MP_ID_KEY = 'gardena-mp-id'
-
-export const QUEUE_CAP = 8
-
-export const DT_MAX = 1 / 15
-const INV = 16
-
-export const MP_NAME_KEY = 'gardena-mp-name'
-export const NAME_MAX = 16
-
-export function cleanName(raw: string): string {
-  return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
-}
-
-export function localPlayerName(): string {
-  return cleanName(localStorage.getItem(MP_NAME_KEY) ?? '')
-}
-
-export function setLocalPlayerName(raw: string): void {
-  localStorage.setItem(MP_NAME_KEY, cleanName(raw))
-}
-
-export function localPlayerId(): PlayerId {
-  const have = localStorage.getItem(MP_ID_KEY)
-  if (have !== null) return have
-  const id = crypto.randomUUID()
-  localStorage.setItem(MP_ID_KEY, id)
-  return id
-}
-
-function emptyInv(): Slot[] {
-  return Array.from({ length: INV }, (): Slot => ({ kind: 'empty' }))
-}
-
-export function defaultSeatName(id: SeatId): string {
-  return `P${id + 1}`
-}
-
-function liveSeat(
-  id: SeatId,
-  playerId: PlayerId,
-  name: string,
-  actor: Actor,
-  hand: Hand,
-  inventory: Slot[],
-  presence: Presence,
-): Seat {
-  return {
-    id,
-    playerId,
-    name: name === '' ? defaultSeatName(id) : name,
-    actor,
-    hand,
-    inventory,
-    queue: [],
-    presence,
-    napping: false,
-    cue: { kind: 'none' },
-    place: { kind: 'none' },
-    drive: { throttle: 0, steer: 0 },
-    stride: { x: 0, y: 0 },
-    workLeft: 0,
-    workTotal: 0,
-    filling: false,
-    legStart: { x: actor.x, y: actor.y },
-  }
-}
-
-export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
-  const x = DOOR.col + 0.5 + id * 0.6
-  const y = DOOR.row + 0.5
-  return liveSeat(id, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, emptyInv(), 'in')
-}
-
-function soloSeat(playerId: PlayerId, name: string): Seat {
-  const inventory = emptyInv()
-  const stock: Item[] = [
-    ...TREE_IDS.map(tree => ({ kind: 'tree-seed' as const, tree, variety: 'base' as const, quality: 0 })),
-    ...STARTER_TREE_GRAFTS.map(v => ({
-      kind: 'graft' as const,
-      crop: VARIETY[v].crop,
-      variety: v,
-      quality: 0,
-      count: 1,
-    })),
-  ]
-  stock.forEach((item, i) => {
-    inventory[i] = { kind: 'hold', item }
-  })
-  const x = DOOR.col + 0.5
-  const y = DOOR.row + 0.5
-  return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
-}
-const STARTER_SEEDS: readonly { crop: AnnualId; variety: VarietyId; quality: number; count: number }[] = [
-  { crop: 'carrot', variety: 'base', quality: 0, count: 7 },
-  { crop: 'tomato', variety: 'base', quality: 0, count: 2 },
-  { crop: 'potato', variety: 'base', quality: 0, count: 2 },
-  ...STARTER_VARIETY_PACKS.map(v => ({ crop: VARIETY[v].crop as AnnualId, variety: v, quality: 0, count: 5 })),
-]
-
-function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
-  if (c.base.shape === 'circle') return occupiedCells(c.base, owned)[0]
-  return { col: c.base.col, row: c.base.row }
-}
-
-export function dest(i: Intent, w: World): Coord {
-  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still' || i.act === 'furnace') {
-    const c = w.cell(i.at)
-    if ('base' in c) return destOrigin(c, w.owned)
-    return { ...i.at }
-  }
-  if (i.act === 'consign') return { ...PAD }
-  if (i.act === 'inventory') return { ...DOOR }
-  if (i.act === 'toggle') return i.at
-  if (i.act === 'vehicle' || i.act === 'embark') {
-    const v = w.vehicles.find(x => x.id === i.id)
-    if (v !== undefined && v.pose.kind === 'field') {
-      return { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-    }
-    return { col: Number.POSITIVE_INFINITY, row: Number.POSITIVE_INFINITY }
-  }
-  return i.at
-}
-
-export type PingKind = 'dirty' | 'poured' | 'sold'
-
-export type DirtyReason = 'act' | 'field' | 'big' | 'speech' | 'vfx'

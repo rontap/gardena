@@ -1,6 +1,6 @@
 import { Container, Texture } from 'pixi.js'
 import { HOUSE_BASE } from '../../sim/building.ts'
-import { furnaceWorking, stationWorking } from '../../sim/machine.ts'
+import { furnaceWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
 import { isSensor } from '../../sim/sensor.ts'
 import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'

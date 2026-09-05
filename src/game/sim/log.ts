@@ -13,10 +13,10 @@ import type {
   VehicleKind,
   VehicleSlot,
 } from './ids.ts'
-import type { ContractId } from './market.h.ts'
+import type { ContractId } from './feature-contracts/market.h.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { WireEnd } from './sensor.ts'
-import type { RouteStop } from './vehicle.ts'
+import type { RouteStop } from './feature-vehicles/vehicle.ts'
 import type { Intent, SeatId } from './world.ts'
 
 export type XY = [col: number, row: number]

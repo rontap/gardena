@@ -1,15 +1,112 @@
-import type { World } from './world.ts'
-import { pullWater, sources } from './nets.ts'
-import { grindMinAt } from '../defs/items.ts'
-import { jamRotMul } from '../defs/skills.ts'
-import { CROPS } from '../defs/crops.ts'
-import { JamMachine, Mill, Furnace, PotStill, frontOf, inWorld, type Coord, type RectBase } from './building.ts'
-import { fruitStack, makeCompost, type FruitStack, type Item, type Slot } from './item.ts'
-import { bakeSpiritSale, barrelNeed, feedUnits, furnaceMul, furnaceWorking, feedVariety, meanQuality, grindProduct, isIoCell, jamSale, machineEast, machineWest, jamWorking, millNeed, millWorking, millProduct, spiritKind, stillReady, takeCount } from './machine.ts'
-import { mul } from './market.ts'
-import { statsOf } from './modifiers.ts'
-import { isPlot } from './plot.ts'
-import { compactSlots, insertSlots } from './vehicle.ts'
+import {
+  BARREL_AGE,
+  BARREL_MATURE,
+  COMPOST_NEED,
+  COMPOST_SECONDS,
+  FURNACE_ASH,
+  FURNACE_NEED,
+  FURNACE_SECONDS,
+  GRIND_MAX,
+  grindMinAt,
+  GRIND_WORK,
+  JAM_IN,
+  JAM_SECONDS,
+  JAM_SUGAR,
+  MILL_WORK,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
+  STATION_IN,
+  STATION_SECONDS,
+  STILL_SECONDS,
+  STILL_WATER,
+} from '../../defs/items.ts'
+import {
+  frontOf,
+  type Coord,
+  type Furnace,
+  type JamMachine,
+  type Mill,
+  type PotStill,
+  type RectBase,
+} from '../building.ts'
+import { compactSlots, fruitStack, insertSlots, makeCompost, type Item, type Slot } from '../item.ts'
+import { statsOf } from '../modifiers.ts'
+import { isPlot } from '../plot.ts'
+import type { World } from '../world.ts'
+import {
+  bakeSpiritSale,
+  barrelNeed,
+  feedUnits,
+  feedVariety,
+  furnaceMul,
+  furnaceWorking,
+  grindProduct,
+  isIoCell,
+  jamSale,
+  jamWorking,
+  machineEast,
+  machineWest,
+  meanQuality,
+  millNeed,
+  millProduct,
+  millWorking,
+  spiritKind,
+  stillReady,
+  takeCount,
+} from './machine.ts'
+
+export {
+  canBarrel,
+  canBarrelCollect,
+  canCompost,
+  canFurnace,
+  canGrind,
+  canJam,
+  canMill,
+  canStation,
+  canStill,
+  doBarrel,
+  doCompost,
+  doFurnace,
+  doGrind,
+  doJam,
+  doMill,
+  doStation,
+  doStill,
+} from './machines.helpers.ts'
+
+export function furnaceMulFor(w: World, base: RectBase): number {
+  return furnaceMul(workingFurnaces(w), base)
+}
+
+export function workingFurnaces(w: World): Furnace[] {
+  const out: Furnace[] = []
+  for (const at of w.machines.values()) {
+    const c = w.cell(at)
+    if (c.kind !== 'furnace') continue
+    if (c.base.col !== at.col || c.base.row !== at.row) continue
+    if (furnaceWorking(c)) out.push(c)
+  }
+  return out
+}
+
+export function tickCompost(w: World, dt: number): void {
+  let dirty = false
+  for (const at of w.machines.values()) {
+    const c = w.cell(at)
+    if (c.kind !== 'compost-box') continue
+    if (c.base.col !== at.col || c.base.row !== at.row) continue
+    if (c.units < COMPOST_NEED) continue
+    c.progress += (dt * furnaceMul(w.furnaceSnap, c.base)) / COMPOST_SECONDS
+    if (c.progress < 1) continue
+    if (!emitProduct(w, at, c.base, makeCompost())) continue
+    c.progress = 0
+    c.units -= COMPOST_NEED
+    w.track(at, c)
+    dirty = true
+  }
+  if (dirty) w.pingFor('field')
+}
 
 export function tickMachines(w: World, dt: number): void {
   w.furnaceSnap = workingFurnaces(w)
@@ -146,87 +243,8 @@ export function tickMachines(w: World, dt: number): void {
   if (dirty) w.pingFor('field')
 }
 
-export function tickCompost(w: World, dt: number): void {
-  let dirty = false
-  for (const at of w.machines.values()) {
-    const c = w.cell(at)
-    if (c.kind !== 'compost-box') continue
-    if (c.base.col !== at.col || c.base.row !== at.row) continue
-    if (c.units < COMPOST_NEED) continue
-    c.progress += (dt * furnaceMul(w.furnaceSnap, c.base)) / COMPOST_SECONDS
-    if (c.progress < 1) continue
-    if (!emitProduct(w, at, c.base, makeCompost())) continue
-    c.progress = 0
-    c.units -= COMPOST_NEED
-    w.track(at, c)
-    dirty = true
-  }
-  if (dirty) w.pingFor('field')
-}
-
-export function tickFreshness(w: World, dt: number): void {
-  const rot = (f: FruitStack, mul: number) => {
-    const next =
-      f.freshness -
-      (dt * mul) / (statsOf(f.crop, f.variety, 0, w.modifiers).rotSeconds * jamRotMul(w.skillTier('jam'), f.freshness))
-    f.freshness = next < 0 ? 0 : next
-  }
-  const spoil = (item: Item, mul: number): Item => {
-    if (item.kind !== 'fruit') return item
-    rot(item, mul)
-    if (item.freshness > 0) return item
-    return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count }
-  }
-  const slots = (mul: number) => (s: Slot) => {
-    if (s.kind !== 'hold') return
-    s.item = spoil(s.item, mul)
-  }
-  const open = slots(1)
-  const chilled = slots(FREEZER_ROT_MUL)
-  w.seats.forEach(s => {
-    if (s.presence === 'away') return
-    open(s.hand)
-    s.inventory.forEach(open)
-  })
-  w.drops.forEach(d => {
-    d.item = spoil(d.item, 1)
-  })
-  for (const at of w.stores.values()) {
-    const c = w.cell(at)
-    if (c.kind === 'chest') c.slots.forEach(open)
-    if (c.kind === 'freezer') c.slots.forEach(chilled)
-  }
-  w.vehicles.forEach(v => {
-    if (v.kind === 'quad') v.slots.forEach(open)
-  })
-  w.trailers.forEach(t => {
-    if (t.kind === 'harvest') t.slots.forEach(open)
-  })
-}
-
-export function pullMachineStores(w: World): void {
-  let dirty = false
-  for (const at of w.machines.values()) {
-    const c = w.cell(at)
-    if (!isIoCell(c)) continue
-    if (c.base.col !== at.col || c.base.row !== at.row) continue
-    const west = machineWest(c.base)
-    if (!w.inWorld(west)) continue
-    const store = w.cell(west)
-    if (store.kind !== 'chest' && store.kind !== 'freezer') continue
-    store.slots.forEach((s, i) => {
-      if (s.kind !== 'hold') return
-      const n = c.accept(s.item)
-      if (n <= 0) return
-      c.apply(s.item, n)
-      if (c.takeAll || takeCount(s.item, n)) store.slots[i] = { kind: 'empty' }
-      dirty = true
-    })
-    compactSlots(store.slots)
-    w.track(at, c)
-    w.track(west, store)
-  }
-  if (dirty) w.pingFor('field')
+export function dropSpot(w: World, at: Coord): Coord | undefined {
+  return frontOf(at).find(p => w.inWorld(p) && isPlot(w.cell(p)))
 }
 
 export function emitPair(w: World, at: Coord, base: RectBase, a: Item, b: Item): boolean {
@@ -258,8 +276,29 @@ export function emitProduct(w: World, at: Coord, base: RectBase, item: Item): bo
   return true
 }
 
-export function dropSpot(w: World, at: Coord): Coord | undefined {
-  return frontOf(at).find(p => w.inWorld(p) && isPlot(w.cell(p)))
+export function pullMachineStores(w: World): void {
+  let dirty = false
+  for (const at of w.machines.values()) {
+    const c = w.cell(at)
+    if (!isIoCell(c)) continue
+    if (c.base.col !== at.col || c.base.row !== at.row) continue
+    const west = machineWest(c.base)
+    if (!w.inWorld(west)) continue
+    const store = w.cell(west)
+    if (store.kind !== 'chest' && store.kind !== 'freezer') continue
+    store.slots.forEach((s, i) => {
+      if (s.kind !== 'hold') return
+      const n = c.accept(s.item)
+      if (n <= 0) return
+      c.apply(s.item, n)
+      if (c.takeAll || takeCount(s.item, n)) store.slots[i] = { kind: 'empty' }
+      dirty = true
+    })
+    compactSlots(store.slots)
+    w.track(at, c)
+    w.track(west, store)
+  }
+  if (dirty) w.pingFor('field')
 }
 
 export function pullStillWater(w: World, still: PotStill): boolean {
@@ -267,17 +306,6 @@ export function pullStillWater(w: World, still: PotStill): boolean {
   if (net === undefined) return false
   const held = net.sources.reduce((n, s) => n + s.stored, 0)
   if (held < STILL_WATER) return false
-  pullWater(w, net.sources, STILL_WATER)
+  w.pullWater(net.sources, STILL_WATER)
   return true
-}
-
-export function workingFurnaces(w: World): Furnace[] {
-  const out: Furnace[] = []
-  for (const at of w.machines.values()) {
-    const c = w.cell(at)
-    if (c.kind !== 'furnace') continue
-    if (c.base.col !== at.col || c.base.row !== at.row) continue
-    if (furnaceWorking(c)) out.push(c)
-  }
-  return out
 }

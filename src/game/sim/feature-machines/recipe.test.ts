@@ -18,11 +18,11 @@ import {
   STILL_SECONDS,
   STILL_WATER,
   SUGAR_BAG,
-} from '../defs/items.ts'
-import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop, type MillRecipe } from './ids.ts'
-import { tierOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
+} from '../../defs/items.ts'
+import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop, type MillRecipe } from '../ids.ts'
+import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
 import { barrelNeed, millNeed } from './machine.ts'
-import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
+import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from '../building.ts'
 import {
   BARREL_PINS,
   GRIND_PINS,
@@ -36,7 +36,7 @@ import {
   recipesUsing,
 } from './recipe.ts'
 import type { Ingredient, Recipe } from './recipe.ts'
-import { faceName, type Face } from './item.ts'
+import { faceName, type Face } from '../item.ts'
 
 const BASE = { shape: 'rect', col: 10, row: 12, w: 1, h: 1 } as const
 

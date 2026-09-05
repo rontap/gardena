@@ -31,19 +31,19 @@ import {
   TRAILER_HARVEST_PRICE,
   TRAILER_SEED_PRICE,
   VEHICLE_SLOTS,
-} from '../defs/items.ts'
-import { SKUS } from '../defs/research.ts'
-import { dump, parse } from './save.ts'
-import { permit } from './mp.ts'
-import { Act } from './log.ts'
-import { lookText } from './look.ts'
-import { dest, DT_MAX, World } from './world.ts'
-import { SILO_BASE } from './building.ts'
+} from '../../defs/items.ts'
+import { SKUS } from '../../defs/research.ts'
+import { dump, parse } from '../feature-save/save.ts'
+import { permit } from '../mp.ts'
+import { Act } from '../log.ts'
+import { lookText } from '../look.ts'
+import { dest, DT_MAX, World } from '../world.ts'
+import { SILO_BASE } from '../building.ts'
 import { boomHits, dropoffPad, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, trailerUsed } from './vehicle.ts'
-import { isSolid } from './plot.ts'
-import { Plant, Weed } from './plant.ts'
-import { FERT_PLOT_MAX, Soil } from './soil.ts'
-import { CROPS } from '../defs/crops.ts'
+import { isSolid } from '../plot.ts'
+import { Plant, Weed } from '../plant.ts'
+import { FERT_PLOT_MAX, Soil } from '../soil.ts'
+import { CROPS } from '../../defs/crops.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -625,19 +625,19 @@ describe('vehicles II', () => {
     const deadItem = items.find(it => it.kind === 'dead')
     const rottenItem = items.find(it => it.kind === 'rotten')
     const weedItem = items.find(it => it.kind === 'weed')
-    if (fruitCarrot === undefined || fruitCarrot.kind !== 'fruit') throw new Error('ripe fruit')
+    if (fruitCarrot?.kind !== 'fruit') throw new Error('ripe fruit')
     expect(fruitCarrot.freshness).toBeCloseTo(0.9, 2)
     expect(fruitCarrot.unitSale).toBe(ripePlant.stats(w.modifiers).sale)
-    if (seedWheat === undefined || seedWheat.kind !== 'seeds') throw new Error('young seed')
+    if (seedWheat?.kind !== 'seeds') throw new Error('young seed')
     expect(seedWheat.count).toBe(1)
-    if (fruitPotato === undefined || fruitPotato.kind !== 'fruit') throw new Error('late fruit')
+    if (fruitPotato?.kind !== 'fruit') throw new Error('late fruit')
     expect(fruitPotato.freshness).toBeCloseTo(0.9, 2)
     expect(fruitPotato.unitSale).toBe(latePlant.stats(w.modifiers).sale)
-    if (deadItem === undefined || deadItem.kind !== 'dead') throw new Error('dead')
+    if (deadItem?.kind !== 'dead') throw new Error('dead')
     expect(deadItem.cls).toBe(CROPS.raspberry.cls)
-    if (rottenItem === undefined || rottenItem.kind !== 'rotten') throw new Error('rotten')
+    if (rottenItem?.kind !== 'rotten') throw new Error('rotten')
     expect(rottenItem.cls).toBe(CROPS.grape.cls)
-    if (weedItem === undefined || weedItem.kind !== 'weed') throw new Error('weed')
+    if (weedItem?.kind !== 'weed') throw new Error('weed')
     expect(weedItem.count).toBe(1)
     expect(items.some(it => it.kind === 'fruit' && it.crop === 'tomato')).toBe(false)
   })

@@ -1,6 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
-import { CONTRACT_OFFERS, REP_MAX, rollBoard, rollBoardAtD } from '../sim/market.ts'
+import { CONTRACT_OFFERS, REP_MAX, rollBoard, rollBoardAtD } from '../sim/feature-contracts/market.ts'
 import { Rng } from '../sim/rng.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Btn, Chrome } from './frame.tsx'

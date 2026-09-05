@@ -1,4 +1,4 @@
-import { m } from '../../paraglide/messages.js'
+import { m } from '../../../paraglide/messages.js'
 import {
   BARREL_MATURE,
   COMPOST_LITERS,
@@ -23,10 +23,10 @@ import {
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
-} from '../defs/items.ts'
-import type { CropClass } from '../defs/crops.ts'
-import { caskGroup, tierOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
+} from '../../defs/items.ts'
+import type { CropClass } from '../../defs/crops.ts'
+import { caskGroup, tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
+import type { AnnualId, BarrelCrop, CropId, JamCrop, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import {
   ANNUAL_IDS,
   BARREL_CROPS,
@@ -36,9 +36,9 @@ import {
   SPIRIT_KINDS,
   STILL_CROPS,
   TREE_IDS,
-} from './ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from './building.ts'
-import { faceName, type Face, type Item } from './item.ts'
+} from '../ids.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
+import { faceName, type Face, type Item } from '../item.ts'
 import {
   bakeCaskSale,
   bakeSpiritSale,
@@ -56,8 +56,31 @@ import {
   stillReady,
   stillWorking,
 } from './machine.ts'
+import type {
+  Amount,
+  Craft,
+  CraftCell,
+  Duration,
+  Ingredient,
+  MachineId,
+  MillPin,
+  Pin,
+  Recipe,
+  Yield,
+} from './recipe.h.ts'
 
-export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'station'
+export type {
+  Amount,
+  Craft,
+  CraftCell,
+  Duration,
+  Ingredient,
+  MachineId,
+  MillPin,
+  Pin,
+  Recipe,
+  Yield,
+} from './recipe.h.ts'
 
 export const MACHINE_IDS: readonly MachineId[] = [
   'mill',
@@ -69,38 +92,6 @@ export const MACHINE_IDS: readonly MachineId[] = [
   'furnace',
   'station',
 ]
-
-export type Amount = { kind: 'units'; n: number } | { kind: 'liters'; l: number } | { kind: 'waste'; n: number }
-
-export type Ingredient =
-  | { kind: 'one'; face: Face; amount: Amount }
-  | { kind: 'any'; faces: readonly Face[]; amount: Amount }
-
-export type Yield =
-  | { kind: 'exact'; face: Face; amount: Amount }
-  | { kind: 'range'; faces: readonly Face[]; min: number; max: number }
-
-export type Duration =
-  | { kind: 'work'; seconds: number }
-  | { kind: 'fixed'; seconds: number }
-  | { kind: 'age'; seconds: number }
-
-export type Recipe = {
-  machine: MachineId
-  inputs: readonly Ingredient[]
-  out: Yield
-  duration: Duration
-}
-
-export type Craft =
-  | { kind: 'idle'; machine: MachineId }
-  | { kind: 'filling'; recipe: Recipe; at: number; have: number; need: number }
-  | { kind: 'paused'; recipe: Recipe }
-  | { kind: 'thirsty'; recipe: Recipe }
-  | { kind: 'working'; recipe: Recipe; progress: number; left: number }
-  | { kind: 'ready'; recipe: Recipe }
-
-export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace | ResearchStation
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
   return MACHINE_IDS.some(m => m === c.kind)
@@ -136,8 +127,6 @@ function seedFace(crop: AnnualId, variety: VarietyId): Face {
   return { kind: 'seeds', crop, variety, quality: 0, count: 1 }
 }
 
-export type Pin<C> = { crop: C; variety: VarietyId }
-
 function pins<C extends CropId>(crops: readonly C[]): readonly Pin<C>[] {
   return crops.flatMap(crop => VARIETIES[crop].map(variety => ({ crop, variety })))
 }
@@ -147,8 +136,6 @@ function units(n: number): Amount {
 }
 
 const WATER: Ingredient = { kind: 'one', face: { kind: 'water' }, amount: { kind: 'liters', l: STILL_WATER } }
-
-export type MillPin = { recipe: MillRecipe; variety: VarietyId }
 
 export const MILL_PINS: readonly MillPin[] = MILL_RECIPES.flatMap((recipe): MillPin[] =>
   recipe === 'grass' ? [{ recipe, variety: 'base' }] : VARIETIES[recipe].map(variety => ({ recipe, variety })),
@@ -426,7 +413,7 @@ export function sameProduct(a: Recipe, b: Recipe): boolean {
 
 function fruitOf(row: Recipe): Face | undefined {
   const input = row.inputs.find(i => i.kind === 'one' && i.face.kind === 'fruit')
-  return input === undefined || input.kind !== 'one' ? undefined : input.face
+  return input?.kind !== 'one' ? undefined : input.face
 }
 
 function withFruitFaces(row: Recipe, faces: readonly Face[]): Recipe {
@@ -442,7 +429,7 @@ function collapse(rows: readonly Recipe[]): readonly Recipe[] {
   const groups: { head: Recipe; crop: CropId | 'none'; faces: Face[] }[] = []
   rows.forEach(row => {
     const face = fruitOf(row)
-    const crop = face === undefined || face.kind !== 'fruit' ? 'none' : face.crop
+    const crop = face?.kind !== 'fruit' ? 'none' : face.crop
     const hit = crop === 'none' ? undefined : groups.find(g => g.crop === crop && sameProduct(g.head, row))
     if (hit === undefined) {
       groups.push({ head: row, crop, faces: face === undefined ? [] : [face] })

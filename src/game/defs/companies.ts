@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import type { CompanyId, Prize, PrizeBand } from '../sim/market.h.ts'
+import type { CompanyId, Prize, PrizeBand } from '../sim/feature-contracts/market.h.ts'
 
 /** One pack's worth. Vanilla has no shop pack; this is the only source. */
 export const VANILLA_PRIZE_SEEDS = 5

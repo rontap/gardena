@@ -30,7 +30,7 @@ import {
   millRecipeOf,
   mixQuality,
   stillCropOf,
-} from './machine.ts'
+} from './feature-machines/machine.ts'
 import { Reservoir } from './water.ts'
 
 export type Coord = { col: number; row: number }

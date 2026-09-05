@@ -1,6 +1,6 @@
-import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
-import { CROPS } from '../defs/crops.ts'
-import { SKUS } from '../defs/research.ts'
+import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
+import { CROPS } from '../../defs/crops.ts'
+import { SKUS } from '../../defs/research.ts'
 import {
   EXTRACT,
   FERT_BAG_LITERS,
@@ -9,12 +9,12 @@ import {
   OIL,
   SUGAR_MILL,
   CASK_SALE,
-} from '../defs/items.ts'
-import { DOOR } from './building.ts'
-import { DAY_SECONDS } from './clock.ts'
-import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from './ids.ts'
-import { makePickaxe, makeShovel, type Item } from './item.ts'
-import { bakeSpiritSale } from './machine.ts'
+} from '../../defs/items.ts'
+import { DOOR } from '../building.ts'
+import { DAY_SECONDS } from '../clock.ts'
+import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from '../ids.ts'
+import { makePickaxe, makeShovel, type Item } from '../item.ts'
+import { bakeSpiritSale } from '../feature-machines/machine.ts'
 import type {
   Active,
   Bins,
@@ -32,9 +32,9 @@ import type {
   Prize,
   Stars,
 } from './market.h.ts'
-import { isCropStall, isSpiritStall, STALL_IDS } from './stall.ts'
-import type { Rng, Spatial } from './rng.ts'
-import type { World } from './world.ts'
+import { isCropStall, isSpiritStall, STALL_IDS } from '../stall.ts'
+import type { Rng, Spatial } from '../rng.ts'
+import type { World } from '../world.ts'
 
 export const SAT_DEPTH = 400
 

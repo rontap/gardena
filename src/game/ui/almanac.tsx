@@ -17,7 +17,7 @@ import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, P
 import { CalloutHover } from './callout-hover.tsx'
 import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
-import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/recipe.ts'
+import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
 import { Recipes } from './recipe.tsx'
 
 type AlmanacTab =

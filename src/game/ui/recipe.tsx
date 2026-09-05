@@ -1,6 +1,6 @@
 import { m } from '../../paraglide/messages.js'
-import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/recipe.ts'
-import { clockText, craftMachine, recipesOf } from '../sim/recipe.ts'
+import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/feature-machines/recipe.ts'
+import { clockText, craftMachine, recipesOf } from '../sim/feature-machines/recipe.ts'
 import type { Face } from '../sim/item.ts'
 import { faceName } from '../sim/item.ts'
 import { bindHud } from '../view/motion.ts'

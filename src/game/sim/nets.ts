@@ -1,13 +1,22 @@
-import type { World } from './world.ts'
-import { type Net } from './world.h.ts'
-import { inWorld, occupiedCells, type Base, type Coord } from './building.ts'
+import { SPRINKLER_TILE_RATE } from '../defs/items.ts'
+import { occupiedCells, type Base, type Coord } from './building.ts'
 import { statsOf } from './modifiers.ts'
-import { aoe, edgeKey, corners, flows, incident, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
-import { pull, Reservoir } from './water.ts'
-import { pourEligible } from './sensor.ts'
+import { aoe, edgeKey, corners, incident, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
+import { pourEligible, cellKey, dayRaw, evalDag, isSensor, readerRaw, rawMap, storeRaw, vehicleRaw, type Sensor } from './sensor.ts'
+import type { Chest, Freezer, Furnace, JamMachine, Mill, PotStill, ResearchStation, SeedSilo, AdditiveStore } from './building.ts'
+import type { Net, World } from './world.ts'
+import { tickVfx } from './tick.ts'
 
-export function grid(w: World): Net[] {
-  if (w.nets !== undefined) return w.nets
+export function fillable(world: World, at: Coord): boolean {
+  const c = world.cell(at)
+  if (c.kind === 'pump' || c.kind === 'rain-tank' || c.kind === 'well') return true
+  if (c.kind !== 'tap') return false
+  const net = netOfCell(world, c.base)
+  return net !== undefined && net.sources.length > 0
+}
+
+export function grid(world: World): Net[] {
+  if (world.nets !== undefined) return world.nets
   const up = new Map<string, string>()
   const root = (k: string): string => {
     let r = k
@@ -22,13 +31,13 @@ export function grid(w: World): Net[] {
     add(b)
     up.set(root(a), root(b))
   }
-  w.segments.forEach(seg => {
-    if (!conducts(w, seg.at)) return
+  world.segments.forEach(seg => {
+    if (!world.conducts(seg.at)) return
     const [a, b] = vertsOf(seg.at)
     join(vertexKey(a), vertexKey(b))
   })
-  const sources = sources(w)
-  const sourceCorners = sources.map(s => corners(occupiedCells(s.base, w.owned)).map(vertexKey))
+  const sources = world.sources()
+  const sourceCorners = sources.map(s => corners(occupiedCells(s.base, world.owned)).map(vertexKey))
   sourceCorners.forEach(ks => {
     ks.forEach(k => add(k))
     ks.slice(1).forEach(k => join(ks[0], k))
@@ -45,43 +54,56 @@ export function grid(w: World): Net[] {
   sources.forEach((s, i) => {
     netOf(sourceCorners[i][0]).sources.push(s.water)
   })
-  w.sprinklers.forEach(s => {
+  world.sprinklers.forEach(s => {
     const k = vertexKey(s.at)
     if (!up.has(k)) return
-    if (!incident(s.at).some(e => conducts(w, e))) return
+    if (!incident(s.at).some(e => world.conducts(e))) return
     netOf(k).sprinklers.push(s)
   })
-  w.taps.forEach(t => {
-    const hit = corners(occupiedCells(t.base, w.owned)).find(
-      v => up.has(vertexKey(v)) && incident(v).some(e => conducts(w, e)),
+  world.taps.forEach(t => {
+    const hit = corners(occupiedCells(t.base, world.owned)).find(
+      v => up.has(vertexKey(v)) && incident(v).some(e => world.conducts(e)),
     )
     if (hit === undefined) return
     netOf(vertexKey(hit)).taps.push(t)
   })
-  w.stills.forEach(s => {
-    const hit = corners(occupiedCells(s.base, w.owned)).find(
-      v => up.has(vertexKey(v)) && incident(v).some(e => conducts(w, e)),
+  world.stills.forEach(s => {
+    const hit = corners(occupiedCells(s.base, world.owned)).find(
+      v => up.has(vertexKey(v)) && incident(v).some(e => world.conducts(e)),
     )
     if (hit === undefined) return
     netOf(vertexKey(hit)).stills.push(s)
   })
-  w.waterSystems.forEach(s => {
-    const hit = corners(occupiedCells(s.base, w.owned)).find(
-      v => up.has(vertexKey(v)) && incident(v).some(e => conducts(w, e)),
+  world.waterSystems.forEach(s => {
+    const hit = corners(occupiedCells(s.base, world.owned)).find(
+      v => up.has(vertexKey(v)) && incident(v).some(e => world.conducts(e)),
     )
     if (hit === undefined) return
     netOf(vertexKey(hit)).waterSystems.push(s)
   })
-  w.netAt = new Map([...up.keys()].map(k => [k, netOf(k)]))
-  w.nets = [...byRoot.values()]
-  return w.nets
+  world.netAt = new Map([...up.keys()].map(k => [k, netOf(k)]))
+  world.nets = [...byRoot.values()]
+  return world.nets
 }
 
-export function dirtyNets(w: World): void {
-  w.nets = undefined
+export function netOfVertex(world: World, v: Vertex): Net | undefined {
+  grid(world)
+  return world.netAt.get(vertexKey(v))
 }
 
-export function pendingWet(w: World, e: Edge): boolean {
+export function netOfCell(world: World, base: Base): Net | undefined {
+  grid(world)
+  const hit = corners(occupiedCells(base, world.owned)).find(v => world.netAt.has(vertexKey(v)))
+  if (hit === undefined) return undefined
+  return world.netAt.get(vertexKey(hit))
+}
+
+export function vertexWet(world: World, v: Vertex): boolean {
+  const net = netOfVertex(world, v)
+  return net !== undefined && net.sources.length > 0
+}
+
+export function pendingWet(world: World, e: Edge): boolean {
   const seen = new Set<string>([edgeKey(e)])
   const verts = new Set<string>()
   const q: Edge[] = [e]
@@ -92,100 +114,92 @@ export function pendingWet(w: World, e: Edge): boolean {
       verts.add(vertexKey(v))
       incident(v).forEach(n => {
         const k = edgeKey(n)
-        if (seen.has(k) || !conducts(w, n)) return
+        if (seen.has(k) || !world.conducts(n)) return
         seen.add(k)
         q.push(n)
       })
     })
   }
   return (
-    sources(w).some(p =>
-      corners(occupiedCells(p.base, w.owned)).some(v => verts.has(vertexKey(v))),
+    world.sources().some(p =>
+      corners(occupiedCells(p.base, world.owned)).some(v => verts.has(vertexKey(v))),
     )
   )
 }
 
-export function sprinklerTargets(w: World, s: Sprinkler): Coord[] {
+export function sprinklerTargets(world: World, s: Sprinkler): Coord[] {
   const k = vertexKey(s.at)
-  const hit = w.sprinklerTargetCache.get(k)
+  const hit = world.sprinklerTargetCache.get(k)
   if (hit !== undefined) return hit
-  const made = aoe(s).filter(at => w.inWorld(at) && w.cell(at).kind === 'growing')
-  w.sprinklerTargetCache.set(k, made)
+  const made = aoe(s).filter(at => world.inWorld(at) && world.cell(at).kind === 'growing')
+  world.sprinklerTargetCache.set(k, made)
   return made
 }
 
-export function dropTargetCachesAt(w: World, at: Coord): void {
-  w.sprinklers.forEach(s => {
-    if (aoe(s).some(c => c.col === at.col && c.row === at.row)) w.sprinklerTargetCache.delete(vertexKey(s.at))
+export function dropTargetCachesAt(world: World, at: Coord): void {
+  world.sprinklers.forEach(s => {
+    if (aoe(s).some(c => c.col === at.col && c.row === at.row)) world.sprinklerTargetCache.delete(vertexKey(s.at))
   })
 }
 
-export function rebuildWired(w: World): void {
-  w.wiredVerts.clear()
+export function rebuildWired(world: World): void {
+  world.wiredVerts.clear()
   const keep = new Map<string, Edge>()
-  if (w.done.has('unlock-smart-irrigation')) {
-    w.wires.forEach(w => {
-      if (w.to.kind === 'sprinkler') w.wiredVerts.add(vertexKey(w.to.at))
-      if (w.to.kind === 'valve' && w.hasValve(w.to.e)) keep.set(edgeKey(w.to.e), w.to.e)
+  if (world.done.has('unlock-smart-irrigation')) {
+    world.wires.forEach(w => {
+      if (w.to.kind === 'sprinkler') world.wiredVerts.add(vertexKey(w.to.at))
+      if (w.to.kind === 'valve' && world.hasValve(w.to.e)) keep.set(edgeKey(w.to.e), w.to.e)
     })
   }
-  ;[...w.valveHold.keys()].forEach(k => {
-    if (!keep.has(k)) w.valveHold.delete(k)
+  ;[...world.valveHold.keys()].forEach(k => {
+    if (!keep.has(k)) world.valveHold.delete(k)
   })
   keep.forEach((e, k) => {
-    if (!w.valveHold.has(k)) w.valveHold.set(k, { e, level: 0, hold: 0 })
+    if (!world.valveHold.has(k)) world.valveHold.set(k, { e, level: 0, hold: 0 })
   })
-  dirtyNets(w)
+  world.dirtyNets()
 }
 
-export function tileRate(w: World, s: Sprinkler): number {
+export function tileRate(world: World, s: Sprinkler): number {
   if (s.tune.kind === 'flat') return SPRINKLER_TILE_RATE
-  return statsOf(s.tune.crop, 'base', 0, w.modifiers).waterUsePerSec
+  return statsOf(s.tune.crop, 'base', 0, world.modifiers).waterUsePerSec
 }
 
-export function demand(w: World, s: Sprinkler): number {
-  return sprinklerTargets(w, s).length * tileRate(w, s)
+export function demand(world: World, s: Sprinkler): number {
+  return sprinklerTargets(world, s).length * tileRate(world, s)
 }
 
-export function sprinklerWired(w: World, at: Vertex): boolean {
-  return w.wiredVerts.has(vertexKey(at))
+export function sprinklerWired(world: World, at: Vertex): boolean {
+  return world.wiredVerts.has(vertexKey(at))
 }
 
-export function mayPour(w: World, s: Sprinkler): boolean {
-  return pourEligible(sprinklerWired(w, s.at), s.inn)
+export function mayPour(world: World, s: Sprinkler): boolean {
+  return pourEligible(sprinklerWired(world, s.at), s.inn)
 }
 
-export function rate(w: World, v: Vertex): number {
-  const s = w.sprinklerAt(v)
+export function rate(world: World, v: Vertex): number {
+  const s = world.sprinklerAt(v)
   if (s === undefined) return 0
-  if (!mayPour(w, s)) return 0
-  const net = w.netOfVertex(v)
-  if (net === undefined || net.sprinklers.length === 0) return 0
+  if (!mayPour(world, s)) return 0
+  const net = netOfVertex(world, v)
+  if (!(net?.sprinklers.length)) return 0
   if (net.sources.every(r => r.stored === 0)) return 0
-  const total = net.sprinklers.reduce((a, x) => a + (mayPour(w, x) ? demand(w, x) : 0), 0)
+  const total = net.sprinklers.reduce((a, x) => a + (mayPour(world, x) ? demand(world, x) : 0), 0)
   if (total === 0) return 0
   const supply = net.sources.reduce((a, r) => a + r.rate, 0)
   const served = total > supply ? supply : total
-  return (demand(w, s) / total) * served
+  return (demand(world, s) / total) * served
 }
 
-export function pullWater(w: World, sources: readonly Reservoir[], want: number): number {
-  const before = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
-  const got = pull(sources, want)
-  const after = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
-  w.pumpLiters += after - before
-  return got
-}
-
-export function tickWater(w: World, dt: number): void {
+export function tickWater(world: World, dt: number): void {
   const pouring = new Set<string>()
-  grid(w).forEach(net => {
-    const active = net.sprinklers.filter(s => mayPour(w, s))
-    const lists = active.map(s => sprinklerTargets(w, s))
-    const want = active.map((s, i) => lists[i].length * tileRate(w, s) * dt)
+  grid(world).forEach(net => {
+    const active = net.sprinklers.filter(s => mayPour(world, s))
+    const lists = active.map(s => sprinklerTargets(world, s))
+    const want = active.map((s, i) => lists[i].length * tileRate(world, s) * dt)
     const total = want.reduce((a, b) => a + b, 0)
     if (total === 0) return
-    const got = pullWater(w, net.sources, total)
+    const got = world.pullWater(net.sources, total)
     if (got === 0) return
     active.forEach((s, i) => {
       const targets = lists[i]
@@ -193,54 +207,72 @@ export function tickWater(w: World, dt: number): void {
       pouring.add(vertexKey(s.at))
       const add = ((want[i] / total) * got) / targets.length
       targets.forEach(at => {
-        const c = w.cell(at)
+        const c = world.cell(at)
         if (c.kind !== 'growing') return
         c.soil.soak(add)
       })
     })
   })
-  if (tickVfx(w, pouring)) w.pingFor('vfx')
+  if (tickVfx(world, pouring)) world.pingFor('vfx')
 }
 
-export function gatherWater(w: World, dt: number): void {
-  sources(w).forEach(s => s.water.gather(dt))
-}
-
-export function sources(w: World): { base: Base; water: Reservoir }[] {
-  return [...w.pumps, ...w.tanks, ...w.wells]
-}
-
-export function pruneVert(w: World, e: Edge | Vertex): void {
-  const verts = 'axis' in e ? vertsOf(e) : [e]
-  verts.forEach(v => {
-    const keep =
-      incident(v).some(x => w.segments.has(edgeKey(x))) || w.sprinklers.has(vertexKey(v))
-    if (!keep) w.netVerts.delete(vertexKey(v))
-  })
-}
-
-export function tickVfx(w: World, pouring: ReadonlySet<string>): boolean {
-  let changed = false
-  w.vfx.forEach((_on, k) => {
-    if (!w.sprinklers.has(k)) {
-      w.vfx.delete(k)
-      changed = true
+export function evalSensors(world: World, dt: number): void {
+  const sensors = new Map<string, Sensor>()
+  const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>()
+  const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
+  for (const at of world.sensors.values()) {
+    const c = world.cell(at)
+    if (isSensor(c)) sensors.set(cellKey(at), c)
+  }
+  for (const at of world.machines.values()) {
+    const c = world.cell(at)
+    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace' || c.kind === 'station') {
+      machines.set(cellKey(at), c)
+    }
+    if (c.kind === 'furnace') stores.set(cellKey(at), c)
+  }
+  for (const at of world.stores.values()) {
+    const c = world.cell(at)
+    if (c.kind === 'chest' || c.kind === 'freezer') stores.set(cellKey(at), c)
+  }
+  stores.set(cellKey({ col: world.silo.base.col, row: world.silo.base.row }), world.silo)
+  stores.set(cellKey({ col: world.additives.base.col, row: world.additives.base.row }), world.additives)
+  const raw = new Map<string, 0 | 1>()
+  sensors.forEach((s, k) => {
+    if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
+      raw.set(k, readerRaw(s, at => (world.inWorld(at) ? world.cell(at) : undefined), world.modifiers))
+    } else if (s.kind === 'sensor-day') {
+      raw.set(k, dayRaw(s, world.clock.phase()))
+    } else if (s.kind === 'water-system') {
+      grid(world)
+      const hit = corners(occupiedCells(s.base, world.owned)).find(
+        v => world.netAt.has(vertexKey(v)) && incident(v).some(e => world.conducts(e)),
+      )
+      const net = hit === undefined ? undefined : world.netAt.get(vertexKey(hit))
+      if (net === undefined) {
+        raw.set(k, 0)
+        return
+      }
+      const stored = net.sources.reduce((a, r) => a + r.stored, 0)
+      const want = net.sprinklers.reduce((a, spr) => a + (mayPour(world, spr) ? demand(world, spr) * dt : 0), 0)
+      raw.set(k, want > stored ? 1 : 0)
+    } else if (s.kind === 'vehicle-detector') {
+      raw.set(k, vehicleRaw({ col: s.base.col, row: s.base.row }, world.vehicles))
     }
   })
-  w.sprinklers.forEach((_s, k) => {
-    const now = pouring.has(k)
-    if (w.vfx.get(k) !== now) {
-      w.vfx.set(k, now)
-      changed = true
-    }
+  stores.forEach((s, k) => {
+    raw.set(k, storeRaw(s))
   })
-  return changed
+  const prevLevels = new Map<string, 0 | 1>()
+  world.valveHold.forEach((h, k) => prevLevels.set(k, h.level))
+  evalDag({ sensors, wires: world.wires, valves: world.valveHold, sprinklers: world.sprinklers, raw: rawMap(raw), machines, stores })
+  let flipped = false
+  world.valveHold.forEach((h, k) => {
+    if (prevLevels.get(k) !== h.level) flipped = true
+  })
+  if (flipped) world.dirtyNets()
 }
 
-export function conducts(w: World, e: Edge): boolean {
-  const seg = w.segments.get(edgeKey(e))
-  if (seg === undefined) return false
-  const h = w.valveHold.get(edgeKey(e))
-  if (h !== undefined) return h.level === 1
-  return flows(seg)
+export function gatherWater(world: World, dt: number): void {
+  world.sources().forEach(s => s.water.gather(dt))
 }

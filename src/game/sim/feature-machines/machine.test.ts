@@ -30,9 +30,9 @@ import {
   SUGAR_BAG,
   SUGAR_MILL,
   SUGAR_SHOP,
-} from '../defs/items.ts'
-import { purposeMul, PURPOSE_MUL, qualityMul } from '../defs/varieties.ts'
-import { paid } from './market.ts'
+} from '../../defs/items.ts'
+import { purposeMul, PURPOSE_MUL, qualityMul } from '../../defs/varieties.ts'
+import { paid } from '../feature-contracts/market.ts'
 import {
   bakeCaskSale,
   bakeSpiritSale,
@@ -59,17 +59,17 @@ import {
   stationApply,
   stationWorking,
 } from './machine.ts'
-import { caskMulOf, furnaceValue, mergeInto, type Item } from './item.ts'
-import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE } from '../defs/items.ts'
-import { Plant } from './plant.ts'
-import { Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
-import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, PAD, PotStill, ResearchStation } from './building.ts'
-import { lookText } from './look.ts'
-import { Lever } from './sensor.ts'
-import { BIG_TICK } from './soil.ts'
-import { DT_MAX, World } from './world.ts'
-import { m } from '../../paraglide/messages.js'
-import { DAY_SECONDS } from './clock.ts'
+import { caskMulOf, furnaceValue, mergeInto, type Item } from '../item.ts'
+import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE } from '../../defs/items.ts'
+import { Plant } from '../plant.ts'
+import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
+import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, PAD, PotStill, ResearchStation } from '../building.ts'
+import { lookText } from '../look.ts'
+import { Lever } from '../sensor.ts'
+import { BIG_TICK } from '../soil.ts'
+import { DT_MAX, World } from '../world.ts'
+import { m } from '../../../paraglide/messages.js'
+import { DAY_SECONDS } from '../clock.ts'
 
 const AT = { col: 10, row: 12 }
 

@@ -2,7 +2,7 @@
 import { describe, expect, test } from 'vitest'
 import { Plant } from './plant.ts'
 import { Rng } from './rng.ts'
-import { dump, parse } from './save.ts'
+import { dump, parse } from './feature-save/save.ts'
 import { Soil, SOIL_WATER_MID, waterBand } from './soil.ts'
 import { check, ready, startTutorial, type Tutorial } from './tutorial.ts'
 import { World } from './world.ts'

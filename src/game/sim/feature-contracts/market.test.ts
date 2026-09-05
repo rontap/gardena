@@ -1,14 +1,14 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
-import { CROPS } from '../defs/crops.ts'
-import { COMPANY_PRIZES, prizeBandOf } from '../defs/companies.ts'
-import { PAD } from './building.ts'
-import { Act } from './log.ts'
-import { permit } from './mp.ts'
-import { Plant } from './plant.ts'
-import { dump, parse } from './save.ts'
-import { Soil, WEED_CHANCE } from './soil.ts'
-import { DAY_SECONDS } from './clock.ts'
+import { CROPS } from '../../defs/crops.ts'
+import { COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
+import { PAD } from '../building.ts'
+import { Act } from '../log.ts'
+import { permit } from '../mp.ts'
+import { Plant } from '../plant.ts'
+import { dump, parse } from '../feature-save/save.ts'
+import { Soil, WEED_CHANCE } from '../soil.ts'
+import { DAY_SECONDS } from '../clock.ts'
 import type { Active, ContractOffer, Demand, Lines } from './market.h.ts'
 import {
   AMOUNT_MIN,
@@ -44,9 +44,9 @@ import {
   rollBoard,
   scale,
 } from './market.ts'
-import { Rng } from './rng.ts'
-import { STALL_IDS } from './stall.ts'
-import { DT_MAX, World } from './world.ts'
+import { Rng } from '../rng.ts'
+import { STALL_IDS } from '../stall.ts'
+import { DT_MAX, World } from '../world.ts'
 
 const AT = { col: 10, row: 12 }
 

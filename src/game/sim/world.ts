@@ -1,83 +1,35 @@
 import {
-  BARREL_AGE,
-  BARREL_MATURE,
-  COMPOST_NEED,
   BULK_UP_CRAFTED_STEP,
   BULK_UP_STEP,
-  COMPOST_SECONDS,
   COUNTER_MAX,
   STACK_MAX,
   STACK_MAX_CRAFTED,
   CONTAINERS,
-  HANGAR_H,
-  HANGAR_W,
-  SILO_H,
-  SILO_W,
-  HARVEST_SLOTS,
-  HEADING_SOUTH,
-  QUAD_FUEL_SECONDS,
-  QUAD_PRICE,
   QUAD_REFILL,
-  AUTO_DECEL_MUL,
-  AUTO_VMAX_MUL,
-  DISPATCH_DWELL,
-  ROUTE_ALIGN,
-  ROUTE_ARRIVE,
-  TRACTOR_PRICE,
-  TRAILER_CAP,
-  TRAILER_HARVEST_PRICE,
-  TRAILER_SEED_PRICE,
-  TRAILER_SPRAY_PRICE,
-  GRASS_GROW,
-  GRASS_WATER_PER_SEC,
-  CHOP_GRAFTS,
-  GRAFT_WORK,
-  NEIGHBOUR_REACH,
-  GRIND_MAX,
-  grindMinAt,
-  GRIND_WORK,
-  FERT_BAG_LITERS,
-  FREEZER_LARGE_SLOTS,
-  FREEZER_ROT_MUL,
-  JAM_IN,
-  JAM_SALE,
-  JAM_SECONDS,
-  JAM_SUGAR,
-  MILL_WORK,
-  SUGAR_BAG,
-  SUGAR_MILL,
-  SPEECH_S,
-  SPRINKLER_TILE_RATE,
-  STATION_GRAFT_MAX,
-  STATION_GRAFT_MIN,
-  STATION_IN,
-  STATION_SECONDS,
-  STILL_CAP,
-  STILL_SECONDS,
-  STILL_WATER,
-  FURNACE_ASH,
-  FURNACE_NEED,
-  FURNACE_SECONDS,
-  AXES,
+  SPEECH_S
 } from '../defs/items.ts'
-import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { betterGain, jamRotMul, SKILLS, TEND_WORK, skillIds, type SkillDef } from '../defs/skills.ts'
-import { PUMP_COST_PER_L, WEATHER_FRUIT_SALE, WEATHER_THROUGH_DAY } from '../defs/weather.ts'
-import { CROPS, freshMul, HAPPY_DROWN_SECONDS, HAPPY_GAIN_SECONDS, HAPPY_MAX, HAPPY_START, HAPPY_STARVE_SECONDS, HAPPY_WILT_SECONDS } from '../defs/crops.ts'
+import {
+  betterGain,
+  SKILLS
+} from '../defs/skills.ts'
+import {
+  PUMP_COST_PER_L,
+  WEATHER_THROUGH_DAY
+} from '../defs/weather.ts'
+import {
+  CROPS,
+  HAPPY_MAX,
+  HAPPY_START
+} from '../defs/crops.ts'
 import {
   qualityGain,
-  needsNeighbour,
-  purposeMul,
-  qualityMul,
   STARTER_TREE_GRAFTS,
   STARTER_VARIETY_PACKS,
-  tierOf,
   VARIETY,
-  VARIETY_IDS,
-  type VarietyId,
+  type VarietyId
 } from '../defs/varieties.ts'
-import { CASK_OF, SENSOR_CELL_SKUS, TREE_IDS } from './ids.ts'
+import { TREE_IDS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -90,201 +42,103 @@ import type {
   HarvestSlot,
   RouteId,
   SkuId,
-  StallGoodId,
   TrailerId,
   TrailerKind,
   VehicleId,
   VehicleKind,
   VehicleSlot,
-  VfxId,
+  VfxId
 } from './ids.ts'
 import { Actor, WALK } from './actor.ts'
 import {
-  ADDITIVE_BAG,
   ADDITIVE_BASE,
   AdditiveStore,
   CHUNK,
-  Chest,
-  CompostBox,
   DOOR,
-  Freezer,
-  Grinder,
-  Hangar,
   HOUSE_BASE,
-  SiloProduce,
-  SiloSeed,
-  SiloSpray,
   House,
-  JamMachine,
-  Mill,
-  Furnace,
-  PAD,
   PUMP_BASE,
-  PotStill,
   Pump,
-  RainTank,
-  ResearchStation,
   SILO_BASE,
   SeedSilo,
-  Tap,
-  Well,
-  Tree,
   TRUCK_BASE,
   Truck,
-  Barrel,
   chunkKey,
   chunkOf,
   chunkRect,
-  frontOf,
-  inFade,
   inWorld,
   local,
-  occupiedCells,
   type AdditiveId,
   type Base,
   type ChunkId,
   type Coord,
+  type Furnace,
+  type Hangar,
+  type PotStill,
+  type RainTank,
   type RectBase,
+  type SiloProduce,
+  type SiloSeed,
+  type SiloSpray,
+  type Tap,
+  type Tree,
+  type Well
 } from './building.ts'
 import { Clock, DAY_SECONDS } from './clock.ts'
-import { onCell, topIndex, type Drop } from './drop.ts'
+import {
+  type Drop
+} from './drop.ts'
 import { generateChunk } from './gen.ts'
 import {
-  compostValue,
-  countable,
   crafted,
-  fruitStack,
-  mergeInto,
-  stackable,
-  makeCompost,
   makeContainer,
-  makePickaxe,
   makeShovel,
-  organic,
-  skuItem,
-  toolName,
   type Countable,
-  type FruitStack,
   type Hand,
   type Item,
-  type Slot,
+  type Slot
 } from './item.ts'
 import {
-  addBarrelFeed,
-  addStillFeed,
-  bakeSpiritSale,
-  barrelAccept,
-  bakeCaskSale,
-  barrelNeed,
-  feedAccept,
-  feedApply,
-  feedUnits,
-  feedWhole,
-  furnaceAccept,
-  furnaceApply,
-  furnaceMul,
-  furnaceWorking,
-  fruitCount,
-  feedVariety,
-  fruitQuality,
-  fruitVariety,
-  meanQuality,
-  grindAccept,
-  grindApply,
-  grindProduct,
   isIoCell,
-  jamFruitAccept,
-  jamFruitApply,
-  jamSale,
-  jamSugarAccept,
-  jamSugarApply,
   machineEast,
-  machineWest,
-
-  millAccept,
-  millApply,
-  stationAccept,
-  stationApply,
-  jamWorking,
-  millNeed,
-  millWorking,
-  millProduct,
-  spiritKind,
-  stillReady,
-  stillCropOf,
-  takeCount,
-} from './machine.ts'
+  machineWest
+} from './feature-machines/machine.ts'
+import * as machines from './feature-machines/machines.tick.ts'
 import {
-  Accepts,
   CONTRACT_ACTIVE,
-  CONTRACT_HISTORY_MAX,
   CONTRACT_OFFERS,
-  SAT_DEPTH,
-  SAT_RECOVER_PER_DAY,
-  cancelFee,
-  cleanUnit,
-  demandGood,
-  missPenalty,
-  mul,
-  paid,
   recover,
-  rollBoard,
-  REP_DONE,
-  REP_IDLE,
-  REP_LOST,
-  REP_MAX,
-} from './market.ts'
+  emptyContracts,
+  addRep,
+  tickContracts as tickContractsFn,
+  acceptContractBody as acceptContractFn,
+  cancelContractBody as cancelContractFn,
+  reorderContractBody as reorderContractFn,
+  REP_IDLE
+} from './feature-contracts/market.ts'
 import type {
-  Active,
-  Bins,
-  CompanyBook,
   ContractId,
   Contracts,
-  Demand,
-  HistoryEntry,
-  Prize,
-  SellAllQuote,
-} from './market.h.ts'
+  SellAllQuote
+} from './feature-contracts/market.h.ts'
 import {
-  BIO_KEYS,
-  binCount,
-  isBakedStall,
-  isCropStall,
-  isSpiritStall,
   makeStall,
-  stallX,
   STALL_IDS,
-  type StallMap,
+  type StallMap
 } from './stall.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
-import { goodness } from './noise.ts'
-import { Plant, Turf, Weed, type Doom } from './plant.ts'
-import { bare, isFenceSite, isPlot, isTileSite, isTilled, type Cell, type Plot } from './plot.ts'
+import { Plant } from './plant.ts'
 import {
-  BIG_TICK,
-  FERT_PLOT_MAX,
-  GRASS_CHANCE,
-  PLANT_FERT_PER_SEC,
-  SOIL_TILL_WATER,
-  SOIL_WATER_MID,
-  STUNT,
-  Soil,
-  WEED_CHANCE,
-  WEED_FERT_PER_SEC,
-  WEED_GROW,
-  WEED_WATER_PER_SEC,
-  fertBand,
-  ramped,
-  waterBand,
-  type Band,
+  isTilled,
+  type Cell
+} from './plot.ts'
+import {
+  WEED_CHANCE
 } from './soil.ts'
 import {
-  aoe,
   edgeKey,
   edgeOwned as pipeOwned,
-  corners,
   flows,
-  incident,
   vertexKey,
   vertexOwned as pipeVertexOwned,
   vertsOf,
@@ -292,305 +146,81 @@ import {
   type Segment,
   type Sprinkler,
   type Tune,
-  type Vertex,
+  type Vertex
 } from './pipe.ts'
-import { pull, Reservoir, TAP_RATE } from './water.ts'
-import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, weedMul, type WeatherKind } from './weather.ts'
-import { m } from '../../paraglide/messages.js'
 import {
-  hangarSiteOk,
-  placeSolidOk,
-  siloSiteOk,
-  tallSiteOk,
-  wideSiteOk,
+  pull,
+  Reservoir
+} from './water.ts'
+import { forecastWeather, pumpCostMul, sourceRateMul, type WeatherKind } from './weather.ts'
+import {
   readPrompt,
   readPromptHit,
-  valvePrompt,
-  HAND_FULL,
-  NOT_OWNED,
   type Prompt,
-  type PromptHit,
+  type PromptHit
 } from './prompt.ts'
 import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng } from './rng.ts'
 import {
-  boomHits,
-  canDumpCargo,
-  canPull,
-  cargoCount,
   compactSlots,
   dropoffPad,
-  dumpCargo,
-  emptyHarvestSlots,
-  emptyVehicleSlots,
-  followHitch,
   hangarPad,
-  headingDelta,
-  hitchP,
-  insertSlots,
   putSugarInto,
-  integrateVehicle,
-  kindAccel,
-  kindVMax,
-  kindYaw,
-  makeQuad,
-  makeTractor,
-  onPad,
-  padCenter,
-  pullFrom,
-  seekSpeed,
-  stopXY,
-  surfaceMul,
   takeupPad,
-  trailerUsed,
-  vehicleCargo,
-  type Drive,
   type PadCell,
   type Route,
   type RouteStop,
   type Trailer,
-  type TrailerPose,
-  type Vehicle,
-  type VehiclePose,
-} from './vehicle.ts'
+  type Vehicle
+} from './feature-vehicles/vehicle.ts'
 import {
-  cellKey,
-  dayRaw,
   dropIncident,
-  evalDag,
-  flipLever,
-  hitsCell,
-  tickButton,
-  hitsEdge,
-  hitsVertex,
   isInEnd,
   isOutEnd,
   isSensor,
-  makeSensor,
-  pressButton,
-  pourEligible,
-  rawMap,
-  readerRaw,
   sameEnd,
   sameNode,
-  storeRaw,
-  vehicleRaw,
-  skuKind,
   isSeqIn,
-  stepHold,
   wouldCycle,
   type Sensor,
   type ValveHold,
   type WaterSystem,
   type Wire,
-  type WireEnd,
+  type WireEnd
 } from './sensor.ts'
+import { applyCmd } from './apply.ts'
+import * as family from './family.ts'
+import { emptyMember, initFamily } from './family.ts'
+import * as queue from './queue.ts'
+import * as nets from './nets.ts'
+import * as store from './store.ts'
+import * as vehicles from './feature-vehicles/vehicle.ts'
+import * as tick from './tick.ts'
+import * as field from './feature-field/field.ts'
+import * as place from './feature-place/place.ts'
 
-export type Intent =
-  | { act: 'walk'; at: Coord }
-  | { act: 'shovel'; at: Coord }
-  | { act: 'mine'; at: Coord }
-  | { act: 'plant'; at: Coord }
-  | { act: 'water'; at: Coord }
-  | { act: 'fertilize'; at: Coord }
-  | { act: 'compost'; at: Coord }
-  | { act: 'harvest'; at: Coord }
-  | { act: 'fill'; at: Coord }
-  | { act: 'consign' }
-  | { act: 'pickup'; at: Coord }
-  | { act: 'drop'; at: Coord }
-  | { act: 'inventory' }
-  | { act: 'chest'; at: Coord }
-  | { act: 'silo'; at: Coord }
-  | { act: 'additives'; at: Coord }
-  | { act: 'grind'; at: Coord }
-  | { act: 'still'; at: Coord }
-  | { act: 'furnace'; at: Coord }
-  | { act: 'station'; at: Coord }
-  | { act: 'barrel'; at: Coord }
-  | { act: 'jam'; at: Coord }
-  | { act: 'mill'; at: Coord }
-  | { act: 'hangar'; at: Coord }
-  | { act: 'vehicle'; id: VehicleId }
-  | { act: 'embark'; id: VehicleId }
-  | { act: 'valve'; at: Coord; edge: Edge }
-  | { act: 'toggle'; at: Coord }
-  | { act: 'tend'; at: Coord }
-  | { act: 'weed-spray'; at: Coord }
-  | { act: 'chop'; at: Coord }
-  | { act: 'graft'; at: Coord }
-
-export type TaskName = string
-
-export type Cue =
-  | { kind: 'none' }
-  | { kind: 'inventory' }
-  | { kind: 'chest'; at: Coord }
-  | { kind: 'silo'; at: Coord }
-  | { kind: 'additives'; at: Coord }
-  | { kind: 'hangar'; at: Coord }
-  | { kind: 'station'; at: Coord }
-  | { kind: 'vehicle'; id: VehicleId }
-
-export type Speech = { kind: 'none' } | { kind: 'say'; text: string; left: number }
-
-export type Place =
-  | { kind: 'none' }
-  | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert'> }
-  | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
-  | { kind: 'wire'; from: WireEnd }
-  | { kind: 'delete' }
-
-export type StayArmed =
-  | 'buy-pipe'
-  | 'buy-sprinkler'
-  | 'buy-sprinkler-vert'
-  | 'buy-sprinkler-large'
-  | 'buy-lever'
-  | 'buy-button'
-  | 'buy-lamp'
-  | 'buy-or'
-  | 'buy-and'
-  | 'buy-not'
-  | 'buy-pulser'
-  | 'buy-counter'
-  | 'buy-sensor-water'
-  | 'buy-sensor-fert'
-  | 'buy-sensor-harvest'
-  | 'buy-sensor-day'
-  | 'buy-water-system'
-  | 'buy-vehicle-detector'
-  | 'buy-traffic-light'
-  | 'delete'
-
-export type SeatId = 0 | 1 | 2 | 3
-export type Presence = 'in' | 'away'
-export type PlayerId = string
-
-export type Seat = {
-  id: SeatId
-  playerId: PlayerId
-  name: string
-  actor: Actor
-  hand: Hand
-  inventory: Slot[]
-  queue: Intent[]
-  presence: Presence
-  /** Set by the host after a long silence; drives the sleeping sprite. Never saved. */
-  napping: boolean
-  cue: Cue
-  place: Place
-  drive: Drive
-  stride: { x: -1 | 0 | 1; y: -1 | 0 | 1 }
-  workLeft: number
-  workTotal: number
-  filling: boolean
-  legStart: { x: number; y: number }
-}
-
-export type Burst = { id: VfxId; at: Coord; seq: number }
-
-export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
-
-export type Net = {
-  sources: Reservoir[]
-  sprinklers: Sprinkler[]
-  taps: Tap[]
-  stills: PotStill[]
-  waterSystems: WaterSystem[]
-}
-
-export type HudTarget =
-  | { kind: 'sprinkler'; at: Vertex }
-  | { kind: 'water'; at: Coord }
-  | { kind: 'harvest'; at: Coord }
-  | { kind: 'counter'; at: Coord }
-  | { kind: 'day'; at: Coord }
-
-export type DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
-
-export type Recap = {
-  day: number
-  money: number
-  stipend: number
-  died: number
-  harvests: number
-  research: ResearchId[]
-  tax: number
-  water: number
-  contracts: HistoryEntry[]
-}
-
-export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
-
-export type SkillRef<Id extends SkillId = SkillId> = { id: Id; tier: number }
-
-export type MemberState<Id extends SkillId> = {
-  pickCount: number
-  owned: Map<Id, number>
-  offers: SkillRef<Id>[]
-}
-
-export type Family = {
-  player: MemberState<PlayerSkillId>
-  husband: MemberState<HusbandSkillId>
-  daughter: MemberState<DaughterSkillId>
-}
-
-export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; price: number }
-
-export type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
-
-export type Hydrate = {
-  rng: Rng
-  sink: LogSink
-  house: House
-  truck: Truck
-  silo: SeedSilo
-  additives: AdditiveStore
-  pumps: Pump[]
-  tanks: RainTank[]
-  taps: Tap[]
-  stills: PotStill[]
-  waterSystems: WaterSystem[]
-  wires: Wire[]
-  valveHold: ValveHold[]
-  hangars: Hangar[]
-  seedSilos: SiloSeed[]
-  spraySilos: SiloSpray[]
-  produceSilos: SiloProduce[]
-  vehicles: Vehicle[]
-  nextVehicleId: VehicleId
-  trailers: Trailer[]
-  nextTrailerId: TrailerId
-  routes: Route[]
-  nextRouteId: RouteId
-  stall: StallMap
-  family: Family
-  points: number
-  seats: Seat[]
-  owned: ChunkId[]
-  chunks: Map<string, Cell[][]>
-  clock: { day: number; t: number }
-  money: number
-  rep: number
-  repDay: number
-  contracts: Contracts
-  purchases: number
-  prizeSlots: number
-  prizeFreezers: number
-  bigTicks: number
-  done: ResearchId[]
-  job: Job
-  tally: DayTally
-  seam: Seam
-  segments: Segment[]
-  wells: Well[]
-  sprinklers: Sprinkler[]
-  fences: Coord[]
-  drops: Drop[]
-  clearance: number
-}
+export { mood, pourTarget, waterable } from './feature-field/field.ts'
+export type * from './world.h.ts'
+import type {
+  Burst,
+  BuyFail,
+  DayTally,
+  ExpandFace,
+  Family,
+  HudTarget,
+  Hydrate,
+  Intent,
+  Job,
+  Net,
+  PlayerId,
+  Presence,
+  Seat,
+  SeatId,
+  Seam,
+  SkillRef,
+  Speech,
+  TaskName,
+} from './world.h.ts'
 
 export const POINTS_PER_DAY = 3
 
@@ -599,15 +229,12 @@ export const MP_ID_KEY = 'gardena-mp-id'
 
 export const QUEUE_CAP = 8
 
-const TREE_DROP_ROWS = [-1, 0, 1, 2]
-const TREE_DROP_COLS = [-1, 0, 1]
 export const DT_MAX = 1 / 15
 const INV = 16
 
 export const MP_NAME_KEY = 'gardena-mp-name'
 export const NAME_MAX = 16
 
-/** Trim to something that fits a roster row and never renders as blank. */
 export function cleanName(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
 }
@@ -691,15 +318,13 @@ function soloSeat(playerId: PlayerId, name: string): Seat {
   const y = DOOR.row + 0.5
   return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
 }
-/** Starter seed stock. Lives in the seed silo, not the house. */
+
 const STARTER_SEEDS: readonly { crop: AnnualId; variety: VarietyId; quality: number; count: number }[] = [
   { crop: 'carrot', variety: 'base', quality: 0, count: 7 },
   { crop: 'tomato', variety: 'base', quality: 0, count: 2 },
   { crop: 'potato', variety: 'base', quality: 0, count: 2 },
   ...STARTER_VARIETY_PACKS.map(v => ({ crop: VARIETY[v].crop as AnnualId, variety: v, quality: 0, count: 5 })),
 ]
-
-const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
 function groundSig(c: Cell): string {
   if (c.kind === 'untilled' && c.cover.kind === 'tile') return `t:${c.cover.tile}`
@@ -708,29 +333,7 @@ function groundSig(c: Cell): string {
   return 'g'
 }
 
-function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
-  if (c.base.shape === 'circle') return occupiedCells(c.base, owned)[0]
-  return { col: c.base.col, row: c.base.row }
-}
-
-export function dest(i: Intent, w: World): Coord {
-  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still' || i.act === 'furnace') {
-    const c = w.cell(i.at)
-    if ('base' in c) return destOrigin(c, w.owned)
-    return { ...i.at }
-  }
-  if (i.act === 'consign') return { ...PAD }
-  if (i.act === 'inventory') return { ...DOOR }
-  if (i.act === 'toggle') return i.at
-  if (i.act === 'vehicle' || i.act === 'embark') {
-    const v = w.vehicles.find(x => x.id === i.id)
-    if (v !== undefined && v.pose.kind === 'field') {
-      return { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-    }
-    return { col: Number.POSITIVE_INFINITY, row: Number.POSITIVE_INFINITY }
-  }
-  return i.at
-}
+export { dest } from './queue.ts'
 
 const LOG_CAP = 500
 
@@ -739,6 +342,8 @@ export type PingKind = 'dirty' | 'poured' | 'sold'
 export type DirtyReason = 'act' | 'field' | 'big' | 'speech' | 'vfx'
 
 const NO_REASONS: ReadonlySet<DirtyReason> = new Set()
+
+const HYDRATE = Symbol()
 
 export class World {
   readonly rng: Rng
@@ -772,8 +377,8 @@ export class World {
   readonly fences = new Set<string>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
-  private readonly sprinklerTargetCache = new Map<string, Coord[]>()
-  private readonly wiredVerts = new Set<string>()
+  readonly sprinklerTargetCache = new Map<string, Coord[]>()
+  readonly wiredVerts = new Set<string>()
   readonly house: House
   readonly truck: Truck
   readonly silo: SeedSilo
@@ -805,13 +410,13 @@ export class World {
   bigTicks = 0
   cheatFastResearch = false
   cheatSpeed: 1 | 3 = 1
-  private bigAcc = 0
-  private nets: Net[] | undefined = undefined
-  private netAt = new Map<string, Net>()
-  private readonly chunks = new Map<string, Cell[][]>()
+  bigAcc = 0
+  nets: Net[] | undefined = undefined
+  netAt = new Map<string, Net>()
+  readonly chunks = new Map<string, Cell[][]>()
   readonly grow = new Map<string, Coord>()
   readonly machines = new Map<string, Coord>()
-  private furnaceSnap: Furnace[] = []
+  furnaceSnap: Furnace[] = []
   readonly stores = new Map<string, Coord>()
   readonly sensors = new Map<string, Coord>()
   readonly buttons = new Map<string, Coord>()
@@ -832,10 +437,10 @@ export class World {
   private flushQueued = false
 
   constructor(seed?: number, sink?: LogSink)
-  constructor(h: Hydrate)
-  constructor(seedOrH?: number | Hydrate, sink: LogSink = new MemorySink()) {
-    if (typeof seedOrH === 'object') {
-      const h = seedOrH
+  constructor(tag: typeof HYDRATE, h: Hydrate)
+  constructor(seedOrTag?: number | typeof HYDRATE, sinkOrH: LogSink | Hydrate = new MemorySink()) {
+    if (seedOrTag === HYDRATE) {
+      const h = sinkOrH as Hydrate
       this.rng = h.rng
       this.sink = h.sink
       this.house = h.house
@@ -908,7 +513,7 @@ export class World {
       this.drops.length = 0
       h.drops.forEach(d => this.drops.push(d))
       this.modifiers.length = 0
-      this.rebuildSkillModifiers()
+      family.rebuildSkillModifiers(this)
       this.netVerts.clear()
       h.segments.forEach(s => vertsOf(s.at).forEach(v => this.netVerts.add(vertexKey(v))))
       h.sprinklers.forEach(s => this.netVerts.add(vertexKey(s.at)))
@@ -924,8 +529,8 @@ export class World {
       this.applyWeatherRates()
       return
     }
-    this.rng = new Rng(seedOrH)
-    this.sink = sink
+    this.rng = new Rng(seedOrTag)
+    this.sink = sinkOrH as LogSink
     this.sink.reset(this.rng.seed)
     this.house = new House(HOUSE_BASE, DOOR)
     this.truck = new Truck(TRUCK_BASE)
@@ -938,9 +543,7 @@ export class World {
       husband: emptyMember(),
       daughter: emptyMember(),
     }
-    this.rerollOffers('player')
-    this.rerollOffers('husband')
-    this.rerollOffers('daughter')
+    initFamily(this)
     this.chunks.set(
       chunkKey(this.owned[0]),
       generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck, this.silo, this.additives),
@@ -955,7 +558,7 @@ export class World {
   }
 
   static hydrate(h: Hydrate): World {
-    return new World(h)
+    return new World(HYDRATE, h)
   }
 
   get seed(): number {
@@ -970,8 +573,7 @@ export class World {
     return this.logBase + this.cmds.length
   }
 
-  /** `undefined` when `n` fell off the back of the ring buffer: those commands are gone, and
-   * clamping to 0 would silently re-send up to `LOG_CAP` already-applied ones. */
+  
   logSince(n: number): Cmd[] | undefined {
     if (n < this.logBase) return undefined
     return this.cmds.slice(n - this.logBase)
@@ -981,13 +583,7 @@ export class World {
     return this.pumps[0]
   }
 
-  /**
-   * Reduce the live world to exactly what a `dump` -> `parse` round trip produces.
-   * `hydrate` normalises this state; a host that snapshots without it hands the guest a world
-   * that differs the moment it is born -- in state the digest checks (seat `place`, `actor`)
-   * and in state it does not (`bigAcc` phase, `live` iteration order). `resync` ships the same
-   * dump, so without this the repair is diverged too and the link burns its retry budget.
-   */
+  
   rebase(): void {
     this.bigAcc = 0
     this.cheatFastResearch = false
@@ -1072,176 +668,7 @@ export class World {
   apply(cmd: Extract<Cmd, { a: typeof Act.buy }>): BuyFail | undefined
   apply(cmd: Cmd): void
   apply(cmd: Cmd): 'queued' | 'placed' | 'blocked' | 'noop' | BuyFail | undefined | void {
-    // A peer that has not yet been snapshotted with a newly joined seat can be handed a command
-    // for it. No-op rather than throw inside the transport's data handler.
-    const seat = this.seats[cmd.p]
-    if (seat === undefined) return
-    this.act = seat
-    switch (cmd.a) {
-      case Act.click:
-        return this.clickBody({ col: cmd.c[0], row: cmd.c[1] })
-      case Act.clickValve:
-        this.clickValveBody(cmd.e)
-        return
-      case Act.enqueue:
-        this.enqueueOn(this.act, cmd.i)
-        return
-      case Act.buy:
-        return this.buyBody(cmd.s)
-      case Act.buyPacks:
-        this.buyPacksBody(cmd.s)
-        return
-      case Act.placePipe:
-        this.placePipeBody(cmd.e)
-        return
-      case Act.placeSprinkler:
-        this.placeSprinklerBody(cmd.s)
-        return
-      case Act.delete:
-        if (cmd.k === 'pipe') this.deletePipeBody(cmd.e)
-        else if (cmd.k === 'sprinkler') this.deleteSprinklerBody({ col: cmd.c[0], row: cmd.c[1] })
-        else if (cmd.k === 'wire') this.deleteWireBody(cmd.from, cmd.to)
-        else this.deleteBuildingBody({ col: cmd.c[0], row: cmd.c[1] })
-        return
-      case Act.expand:
-        this.expandBody(cmd.k)
-        return
-      case Act.startResearch:
-        this.startResearchBody(cmd.r)
-        return
-      case Act.pickSkill:
-        this.pickSkillBody(cmd.m, cmd.s)
-        return
-      case Act.sellAll:
-        this.sellAllBody()
-        return
-      case Act.swap:
-        this.swapBody(cmd.i)
-        return
-      case Act.takeStore:
-        if (cmd.k === 'silo') this.takeSiloBody(cmd.c, cmd.r)
-        else if (cmd.k === 'sugar') this.takeSugarBody()
-        else this.takeAdditiveBody(cmd.d)
-        return
-      case Act.swapChest:
-        this.swapChestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.i)
-        return
-      case Act.tuneSprinkler:
-        this.tuneSprinklerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.u)
-        return
-      case Act.openHud:
-        if (cmd.k === 'sprinkler') this.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
-        else if (cmd.k === 'water') this.openHudBody({ kind: 'water', at: { col: cmd.c[0], row: cmd.c[1] } })
-        else if (cmd.k === 'harvest') this.openHudBody({ kind: 'harvest', at: { col: cmd.c[0], row: cmd.c[1] } })
-        else if (cmd.k === 'counter') this.openHudBody({ kind: 'counter', at: { col: cmd.c[0], row: cmd.c[1] } })
-        else this.openHudBody({ kind: 'day', at: { col: cmd.c[0], row: cmd.c[1] } })
-        return
-      case Act.closeHud:
-        this.closeHudBody()
-        return
-      case Act.armDelete:
-        this.armDeleteBody()
-        return
-      case Act.cancelPlace:
-        this.cancelPlaceBody()
-        return
-      case Act.rotatePlace:
-        this.rotatePlaceBody()
-        return
-      case Act.dismissRecap:
-        this.dismissRecapBody()
-        return
-      case Act.ackCue:
-        this.ackCueBody()
-        return
-      case Act.rightClick:
-        this.rightClickBody({ col: cmd.c[0], row: cmd.c[1] })
-        return
-      case Act.cheat:
-        if (cmd.k === 'all') this.unlockAllBody()
-        else if (cmd.k === 'money') this.cheatMoneyBody()
-        else if (cmd.k === 'points') this.cheatPointsBody()
-        else if (cmd.k === 'research') this.toggleCheatResearchBody()
-        else if (cmd.k === 'speed') this.setCheatSpeedBody(cmd.n)
-        else if (cmd.k === 'day') this.endDayBody()
-        else this.unlockAllSkillsBody()
-        return
-      case Act.drive:
-        this.driveBody(cmd.throttle, cmd.steer)
-        return
-      case Act.stride:
-        this.strideBody(cmd.x, cmd.y)
-        return
-      case Act.buyVehicle:
-        this.buyVehicleBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.k)
-        return
-      case Act.buyTrailer:
-        this.buyTrailerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.k)
-        return
-      case Act.deploy:
-        this.deployBody(cmd.v, { col: cmd.c[0], row: cmd.c[1] }, cmd.hitch)
-        return
-      case Act.embark:
-        this.embarkBody(cmd.v)
-        return
-      case Act.disembark:
-        this.disembarkBody()
-        return
-      case Act.dock:
-        this.dockBody()
-        return
-      case Act.swapVehicle:
-        this.swapVehicleBody(cmd.v, cmd.i)
-        return
-      case Act.swapTrailer:
-        this.swapTrailerBody(cmd.u, cmd.i)
-        return
-      case Act.refill:
-        this.refillBody({ col: cmd.c[0], row: cmd.c[1] })
-        return
-      case Act.setBoom:
-        this.setBoomBody(cmd.w)
-        return
-      case Act.armWire:
-        this.armWireBody(cmd.from)
-        return
-      case Act.placeWire:
-        this.placeWireBody(cmd.from, cmd.to)
-        return
-      case Act.tuneWater:
-        this.tuneWaterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.wilt, cmd.over)
-        return
-      case Act.tuneHarvest:
-        this.tuneHarvestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.mode)
-        return
-      case Act.tuneCounter:
-        this.tuneCounterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.n)
-        return
-      case Act.resetCounter:
-        this.resetCounterBody({ col: cmd.c[0], row: cmd.c[1] })
-        return
-      case Act.tuneDay:
-        this.tuneDayBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.sunrise, cmd.day, cmd.sunset, cmd.twilight)
-        return
-      case Act.load:
-        this.loadBody()
-        return
-      case Act.unload:
-        this.unloadBody()
-        return
-      case Act.acceptContract:
-        this.acceptContractBody(cmd.c)
-        return
-      case Act.cancelContract:
-        this.cancelContractBody(cmd.c)
-        return
-      case Act.reorderContract:
-        this.reorderContractBody(cmd.c, cmd.d)
-        return
-      case Act.route:
-        this.routeBody(cmd)
-        return
-    }
+    return applyCmd(this, cmd)
   }
 
   on(fn: (kind: PingKind, reasons: ReadonlySet<DirtyReason>) => void): () => void {
@@ -1274,7 +701,7 @@ export class World {
     queueMicrotask(() => this.flushDirty())
   }
 
-  private emit(kind: Exclude<PingKind, 'dirty'>): void {
+  emit(kind: Exclude<PingKind, 'dirty'>): void {
     this.subs.forEach(f => f(kind, NO_REASONS))
   }
 
@@ -1299,7 +726,7 @@ export class World {
     if (prevTilled !== isTilled(cell)) this.invalidateDirtEdges(at)
   }
 
-  private track(at: Coord, cell: Cell): void {
+  track(at: Coord, cell: Cell): void {
     const k = `${at.col},${at.row}`
     const here = { col: at.col, row: at.row }
     const origin =
@@ -1371,7 +798,7 @@ export class World {
     return sig
   }
 
-  private indexAll(): void {
+  indexAll(): void {
     this.grow.clear()
     this.machines.clear()
     this.stores.clear()
@@ -1387,7 +814,7 @@ export class World {
     this.rebuildWired()
   }
 
-  private statsCached(crop: CropId, variety: VarietyId): Stats {
+  statsCached(crop: CropId, variety: VarietyId): Stats {
     if (this.statsCacheGen !== this.modGen) {
       this.statsCache.clear()
       this.statsCacheGen = this.modGen
@@ -1400,7 +827,7 @@ export class World {
     return st
   }
 
-  private bakeQuality(p: Plant): number {
+  bakeQuality(p: Plant): number {
     const h = p.happiness
     const next = p.quality + qualityGain(h, HAPPY_START, HAPPY_MAX) + betterGain(p.crop, h, id => this.skillTier(id))
     return next < 0 ? 0 : next > 1 ? 1 : next
@@ -1447,7 +874,7 @@ export class World {
       : STACK_MAX + BULK_UP_STEP * this.skillTier('bulk-up')
   }
 
-  /** Expansion permits earned, from research, `inherit-land`, and contract prizes. */
+  
   expandSlots(): number {
     return (
       (this.done.has('unlock-expand') ? 1 : 0) +
@@ -1458,7 +885,7 @@ export class World {
     )
   }
 
-  /** Permits not yet spent. Each expansion consumes one. */
+  
   expandLeft(): number {
     const left = this.expandSlots() - this.purchases
     return left < 0 ? 0 : left
@@ -1498,18 +925,7 @@ export class World {
   }
 
   furnaceMulFor(base: RectBase): number {
-    return furnaceMul(this.workingFurnaces(), base)
-  }
-
-  private workingFurnaces(): Furnace[] {
-    const out: Furnace[] = []
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (c.kind !== 'furnace') continue
-      if (c.base.col !== at.col || c.base.row !== at.row) continue
-      if (furnaceWorking(c)) out.push(c)
-    }
-    return out
+    return machines.furnaceMulFor(this, base)
   }
 
   skuPrice(id: SkuId): number {
@@ -1555,7 +971,7 @@ export class World {
     })
   }
 
-  private pullWater(sources: readonly Reservoir[], want: number): number {
+  pullWater(sources: readonly Reservoir[], want: number): number {
     const before = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
     const got = pull(sources, want)
     const after = sources.reduce((n, s) => n + (s.kind === 'pump' ? s.drawn : 0), 0)
@@ -1571,129 +987,12 @@ export class World {
     this.commit({ a: Act.pickSkill, t: this.now, p: this.local, m: member, s: slot })
   }
 
-  private pickSkillBody(member: MemberId, slot: number): void {
-    const st = this.family[member]
-    if (this.points < 1) return
-    const offer = st.offers[slot]
-    if (offer === undefined) return
-    this.points -= 1
-    st.owned.set(offer.id as never, offer.tier)
-    const effect = SKILLS[offer.id].effect
-    if (effect.kind === 'better') {
-      this.modifiers.push({
-        id: offer.id,
-        source: 'skill',
-        crop: effect.crop,
-        saleMul: effect.saleMul,
-        growSpeed: 1,
-        waterUseMul: 1,
-      })
-      this.modGen += 1
-    }
-    st.pickCount += 1
-    this.rerollOffers(member)
-    this.ping()
-  }
-
-  private rebuildSkillModifiers(): void {
-    const keep = this.modifiers.filter(m => m.source !== 'skill')
-    this.modifiers.length = 0
-    keep.forEach(m => this.modifiers.push(m))
-    this.family.player.owned.forEach((_tier, id) => {
-      const effect = SKILLS[id].effect
-      if (effect.kind !== 'better') return
-      this.modifiers.push({
-        id,
-        source: 'skill',
-        crop: effect.crop,
-        saleMul: effect.saleMul,
-        growSpeed: 1,
-        waterUseMul: 1,
-      })
-    })
-    this.modGen += 1
-  }
-
-  private rerollOffers(member: MemberId): void {
-    const st = this.family[member]
-    const pool = skillIds(member).filter(id => this.skillEligible(id))
-    const n = Math.min(3, pool.length)
-    const left = [...pool]
-    const out: SkillRef[] = []
-    for (let i = 0; i < n; i++) {
-      const u = this.rng.stream('skill').at(MEMBER_IX[member], st.pickCount, i)
-      const ix = Math.floor(u * left.length)
-      const id = left.splice(ix, 1)[0]
-      const have = this.skillTier(id)
-      out.push({ id, tier: have + 1 })
-    }
-    st.offers = out as never
-  }
-
-  private skillEligible(id: SkillId): boolean {
-    const def: SkillDef = SKILLS[id]
-    if (this.skillTier(id) >= def.maxTier) return false
-    if (def.gate.kind === 'hidden') return false
-    if (def.gate.kind === 'research') return this.done.has(def.gate.id)
-    if (def.gate.kind === 'skill') return this.hasSkill(def.gate.id)
-    return true
-  }
-
   faces(): ExpandFace[] {
-    if (!this.done.has('unlock-expand')) return []
-    const have = new Set(this.owned.map(chunkKey))
-    const seen = new Set<string>()
-    const price = this.expandPrice()
-    const out: ExpandFace[] = []
-    const dirs = [
-      { dir: 'n' as const, dcx: 0, dcy: -1 },
-      { dir: 'e' as const, dcx: 1, dcy: 0 },
-      { dir: 's' as const, dcx: 0, dcy: 1 },
-      { dir: 'w' as const, dcx: -1, dcy: 0 },
-    ]
-    this.owned.forEach(o => {
-      const rect = chunkRect(o)
-      dirs.forEach(d => {
-        const id = { cx: o.cx + d.dcx, cy: o.cy + d.dcy }
-        const key = chunkKey(id)
-        if (have.has(key) || seen.has(key)) return
-        seen.add(key)
-        const at =
-          d.dir === 'n'
-            ? { col: rect.col0 + CHUNK / 2, row: rect.row0 - 1 }
-            : d.dir === 'e'
-              ? { col: rect.col1, row: rect.row0 + CHUNK / 2 }
-              : d.dir === 's'
-                ? { col: rect.col0 + CHUNK / 2, row: rect.row1 }
-                : { col: rect.col0 - 1, row: rect.row0 + CHUNK / 2 }
-        out.push({ id, dir: d.dir, at, price })
-      })
-    })
-    return out
+    return place.faces(this)
   }
 
   expand(id: ChunkId): void {
     this.commit({ a: Act.expand, t: this.now, p: this.local, k: id })
-  }
-
-  private expandBody(id: ChunkId): void {
-    if (!this.done.has('unlock-expand')) return
-    if (this.expandLeft() <= 0) return
-    if (this.owned.some(c => c.cx === id.cx && c.cy === id.cy)) return
-    if (!this.owned.some(c => Math.abs(c.cx - id.cx) + Math.abs(c.cy - id.cy) === 1)) return
-    const price = this.expandPrice()
-    if (this.money < price) return
-    this.money -= price
-    this.owned.push(id)
-    this.purchases += 1
-    this.dirtyNets()
-    this.sprinklerTargetCache.clear()
-    this.chunks.set(
-      chunkKey(id),
-      generateChunk(this.rng, id, this.house, this.pumps[0], this.truck, this.silo, this.additives),
-    )
-    this.indexAll()
-    this.ping()
   }
 
   skuOpen(id: SkuId): boolean {
@@ -1709,7 +1008,7 @@ export class World {
     return s === 'start' || this.done.has(s)
   }
 
-  /** Unplaced contract-prize stock for a `need: 'prize'` sku. */
+  
   prizeStock(id: SkuId): number {
     return id === 'buy-freezer-large' ? this.prizeFreezers : 0
   }
@@ -1768,15 +1067,6 @@ export class World {
     })
   }
 
-  private pruneVert(e: Edge | Vertex): void {
-    const verts = 'axis' in e ? vertsOf(e) : [e]
-    verts.forEach(v => {
-      const keep =
-        incident(v).some(x => this.segments.has(edgeKey(x))) || this.sprinklers.has(vertexKey(v))
-      if (!keep) this.netVerts.delete(vertexKey(v))
-    })
-  }
-
   edgeOwned(e: Edge): boolean {
     return pipeOwned(e, at => this.inWorld(at))
   }
@@ -1789,58 +1079,13 @@ export class World {
     this.commit({ a: Act.placePipe, t: this.now, p: this.local, e })
   }
 
-  private placePipeBody(e: Edge): void {
-    if (this.act.place.kind !== 'sku') return
-    const id = this.act.place.id
-    if (id !== 'buy-pipe' && id !== 'buy-valve') return
-    if (this.money < this.skuPrice(id)) return
-    if (!this.edgeOwned(e)) return
-    if (id === 'buy-pipe') {
-      if (this.hasPipe(e)) return
-      this.segments.set(edgeKey(e), { at: e, gate: { kind: 'bare' } })
-      vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
-    } else if (id === 'buy-valve') {
-      const seg = this.segmentAt(e)
-      if (seg === undefined) {
-        const total = this.skuPrice('buy-pipe') + this.skuPrice('buy-valve')
-        if (this.money < total) return
-        this.segments.set(edgeKey(e), { at: e, gate: { kind: 'valve', open: true } })
-        vertsOf(e).forEach(v => this.netVerts.add(vertexKey(v)))
-        this.money -= total
-        this.dirtyNets()
-        this.ping()
-        return
-      }
-      if (seg.gate.kind !== 'bare') return
-      seg.gate = { kind: 'valve', open: true }
-    }
-    this.money -= this.skuPrice(id)
-    this.dirtyNets()
-    this.ping()
-  }
-
   deletePipe(e: Edge): void {
     this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'pipe', e })
   }
 
-  private deletePipeBody(e: Edge): void {
-    if (this.act.place.kind !== 'delete') return
-    const seg = this.segmentAt(e)
-    if (!this.edgeOwned(e) || seg === undefined) return
-    if (seg.gate.kind === 'valve') {
-      seg.gate = { kind: 'bare' }
-      this.dropWires(w => hitsEdge(w.from, e) || hitsEdge(w.to, e))
-    } else {
-      this.segments.delete(edgeKey(e))
-      this.pruneVert(e)
-    }
-    this.dirtyNets()
-    this.ping()
-  }
-
   toggleValve(e: Edge): void {
     const seg = this.segmentAt(e)
-    if (seg === undefined || seg.gate.kind !== 'valve') return
+    if (seg?.gate.kind !== 'valve') return
     seg.gate = { kind: 'valve', open: !seg.gate.open }
     this.dirtyNets()
     this.ping()
@@ -1856,7 +1101,7 @@ export class World {
     })
   }
 
-  private openHudBody(target: HudTarget): void {
+  openHudBody(target: HudTarget): void {
     this.hud = target
     this.ping()
   }
@@ -1865,7 +1110,7 @@ export class World {
     this.commit({ a: Act.closeHud, t: this.now, p: this.local })
   }
 
-  private closeHudBody(): void {
+  closeHudBody(): void {
     if (this.hud === undefined) return
     this.hud = undefined
     this.ping()
@@ -1875,7 +1120,7 @@ export class World {
     this.commit({ a: Act.tuneSprinkler, t: this.now, p: this.local, c: [at.col, at.row], u: tune })
   }
 
-  private tuneSprinklerBody(at: Vertex, tune: Tune): void {
+  tuneSprinklerBody(at: Vertex, tune: Tune): void {
     const s = this.sprinklerAt(at)
     if (s === undefined) return
     s.tune = tune
@@ -1886,54 +1131,19 @@ export class World {
     this.commit({ a: Act.placeSprinkler, t: this.now, p: this.local, s })
   }
 
-  private placeSprinklerBody(s: Sprinkler): void {
-    const id = sprinklerSku(s)
-    if (this.act.place.kind !== 'sku' || this.act.place.id !== id) return
-    if (this.money < this.skuPrice(id)) return
-    if (!this.vertexOwned(s.at)) return
-    if (this.sprinklerAt(s.at) !== undefined) return
-    const placed: Sprinkler =
-      this.act.place.id === 'buy-sprinkler-vert'
-        ? { variant: 'vert', at: s.at, facing: this.act.place.facing, tune: { kind: 'flat' }, inn: 0, hold: 0 }
-        : { ...s, inn: 0, hold: 0 }
-    if (!aoe(placed).every(c => this.inWorld(c))) return
-    this.money -= this.skuPrice(id)
-    this.sprinklers.set(vertexKey(placed.at), placed)
-    this.sprinklerTargetCache.delete(vertexKey(placed.at))
-    this.netVerts.add(vertexKey(placed.at))
-    this.dirtyNets()
-    this.ping()
-  }
-
   deleteSprinkler(v: Vertex): void {
     this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'sprinkler', c: [v.col, v.row] })
-  }
-
-  private deleteSprinklerBody(v: Vertex): void {
-    if (this.act.place.kind !== 'delete') return
-    if (this.sprinklerAt(v) === undefined) return
-    this.sprinklers.delete(vertexKey(v))
-    this.sprinklerTargetCache.delete(vertexKey(v))
-    this.dropWires(w => hitsVertex(w.from, v) || hitsVertex(w.to, v))
-    this.pruneVert(v)
-    this.dirtyNets()
-    this.ping()
   }
 
   armDelete(): void {
     this.commit({ a: Act.armDelete, t: this.now, p: this.local })
   }
 
-  private armDeleteBody(): void {
-    this.act.place = { kind: 'delete' }
-    this.ping()
-  }
-
   armWire(from: WireEnd): void {
     this.commit({ a: Act.armWire, t: this.now, p: this.local, from })
   }
 
-  private armWireBody(from: WireEnd): void {
+  armWireBody(from: WireEnd): void {
     if (!this.portLegal(from, 'from')) return
     this.act.place = { kind: 'wire', from }
     this.ping()
@@ -1943,7 +1153,7 @@ export class World {
     this.commit({ a: Act.placeWire, t: this.now, p: this.local, from, to })
   }
 
-  private placeWireBody(from: WireEnd, to: WireEnd): void {
+  placeWireBody(from: WireEnd, to: WireEnd): void {
     if (this.act.place.kind !== 'wire') return
     if (!this.portLegal(from, 'from') || !this.portLegal(to, 'to')) return
     const next = this.wires.filter(w => !(sameNode(w.from, from) && sameNode(w.to, to)))
@@ -1972,7 +1182,7 @@ export class World {
     this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'wire', from, to })
   }
 
-  private deleteWireBody(from: WireEnd, to: WireEnd): void {
+  deleteWireBody(from: WireEnd, to: WireEnd): void {
     if (this.act.place.kind !== 'delete') return
     const next = this.wires.filter(w => !sameEnd(w.from, from) || !sameEnd(w.to, to))
     if (next.length === this.wires.length) return
@@ -1986,7 +1196,7 @@ export class World {
     this.commit({ a: Act.tuneWater, t: this.now, p: this.local, c: [at.col, at.row], wilt, over })
   }
 
-  private tuneWaterBody(at: Coord, wilt: boolean, over: boolean): void {
+  tuneWaterBody(at: Coord, wilt: boolean, over: boolean): void {
     const c = this.cell(at)
     if (c.kind !== 'sensor-water') return
     c.wilt = wilt
@@ -1998,7 +1208,7 @@ export class World {
     this.commit({ a: Act.tuneHarvest, t: this.now, p: this.local, c: [at.col, at.row], mode })
   }
 
-  private tuneHarvestBody(at: Coord, mode: 'any' | 'all'): void {
+  tuneHarvestBody(at: Coord, mode: 'any' | 'all'): void {
     const c = this.cell(at)
     if (c.kind !== 'sensor-harvest') return
     c.mode = mode
@@ -2009,7 +1219,7 @@ export class World {
     this.commit({ a: Act.tuneCounter, t: this.now, p: this.local, c: [at.col, at.row], n })
   }
 
-  private tuneCounterBody(at: Coord, n: number): void {
+  tuneCounterBody(at: Coord, n: number): void {
     if (!Number.isInteger(n) || n < 1 || n > COUNTER_MAX) return
     const c = this.cell(at)
     if (c.kind !== 'counter') return
@@ -2021,7 +1231,7 @@ export class World {
     this.commit({ a: Act.resetCounter, t: this.now, p: this.local, c: [at.col, at.row] })
   }
 
-  private resetCounterBody(at: Coord): void {
+  resetCounterBody(at: Coord): void {
     const c = this.cell(at)
     if (c.kind !== 'counter') return
     c.count = 0
@@ -2041,7 +1251,7 @@ export class World {
     })
   }
 
-  private tuneDayBody(at: Coord, sunrise: boolean, day: boolean, sunset: boolean, twilight: boolean): void {
+  tuneDayBody(at: Coord, sunrise: boolean, day: boolean, sunset: boolean, twilight: boolean): void {
     const c = this.cell(at)
     if (c.kind !== 'sensor-day') return
     c.sunrise = sunrise
@@ -2051,7 +1261,7 @@ export class World {
     this.ping()
   }
 
-  private dropWires(gone: (w: Wire) => boolean): void {
+  dropWires(gone: (w: Wire) => boolean): void {
     const next = dropIncident(this.wires, gone)
     this.wires.length = 0
     next.forEach(w => this.wires.push(w))
@@ -2078,379 +1288,56 @@ export class World {
     this.commit({ a: Act.rotatePlace, t: this.now, p: this.local })
   }
 
-  private rotatePlaceBody(): void {
-    if (this.act.place.kind !== 'sku' || this.act.place.id !== 'buy-sprinkler-vert') return
-    this.act.place = {
-      kind: 'sku',
-      id: 'buy-sprinkler-vert',
-      facing: this.act.place.facing === 'ns' ? 'ew' : 'ns',
-    }
-    this.ping()
-  }
-
   deleteBuilding(at: Coord): void {
     this.commit({ a: Act.delete, t: this.now, p: this.local, k: 'building', c: [at.col, at.row] })
-  }
-
-  private deleteBuildingBody(at: Coord): void {
-    if (this.act.place.kind !== 'delete') return
-    if (!inWorld(at, this.owned)) return
-    const c = this.cell(at)
-    if (this.hasFence(at)) {
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
-      if (this.act.id !== 0) return
-      this.fences.delete(`${at.col},${at.row}`)
-      this.ping()
-      return
-    }
-    if (c.kind === 'untilled' && c.cover.kind === 'tile') {
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
-      if (this.act.id !== 0) return
-      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
-      this.ping()
-      return
-    }
-    if (c.kind === 'pump') {
-      if (c.form === 'starter') return
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-      this.pumps.splice(this.pumps.indexOf(c), 1)
-      this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'rain-tank') {
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-      this.tanks.splice(this.tanks.indexOf(c), 1)
-      this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'tap') {
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.taps.splice(this.taps.indexOf(c), 1)
-      this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'well') {
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      this.wells.splice(this.wells.indexOf(c), 1)
-      this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'chest') {
-      this.stripPadStops(c)
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      c.slots.forEach(s => {
-        if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
-      })
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'compost-box') {
-      this.stripPadStops(c)
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'mill') {
-      this.stripPadStops(c)
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'jam') {
-      this.stripPadStops(c)
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'still') {
-      this.stripPadStops(c)
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-      this.stills.splice(this.stills.indexOf(c), 1)
-      this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'furnace') {
-      this.stripPadStops(c)
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'station') {
-      this.stripPadStops(c)
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.dropWires(w => hitsCell(w.from, p) || hitsCell(w.to, p))
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'barrel') {
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'freezer') {
-      this.stripPadStops(c)
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      c.slots.forEach(s => {
-        if (s.kind === 'hold') this.drops.push({ at: { ...at }, item: s.item })
-      })
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'hangar') {
-      const origin = { col: c.base.col, row: c.base.row }
-      if (this.hangarStores(origin)) return
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-      this.hangars.splice(this.hangars.indexOf(c), 1)
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'silo-seed' || c.kind === 'silo-spray' || c.kind === 'silo-produce') {
-      occupiedCells(c.base, this.owned).forEach(p => {
-        this.setCell(p, { kind: 'empty', soil: this.freshSoil(p) })
-      })
-      if (c.kind === 'silo-seed') this.seedSilos.splice(this.seedSilos.indexOf(c), 1)
-      else if (c.kind === 'silo-spray') this.spraySilos.splice(this.spraySilos.indexOf(c), 1)
-      else this.produceSilos.splice(this.produceSilos.indexOf(c), 1)
-      this.ping()
-      return
-    }
-    if (isSensor(c)) {
-      if (c.kind === 'traffic-light') {
-        this.stripStops(s => s.kind === 'wait' && s.at.col === at.col && s.at.row === at.row)
-      }
-      this.dropWires(w => hitsCell(w.from, at) || hitsCell(w.to, at))
-      if (c.kind === 'water-system') this.waterSystems.splice(this.waterSystems.indexOf(c), 1)
-      this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-      if (c.kind === 'water-system') this.dirtyNets()
-
-      this.ping()
-      return
-    }
-    if (c.kind !== 'grinder') return
-    this.setCell(at, { kind: 'empty', soil: this.freshSoil(at) })
-
-    this.ping()
   }
 
   sources(): { base: Base; water: Reservoir }[] {
     return [...this.pumps, ...this.tanks, ...this.wells]
   }
 
-  private dirtyNets(): void {
+  dirtyNets(): void {
     this.nets = undefined
   }
 
-  private grid(): Net[] {
-    if (this.nets !== undefined) return this.nets
-    const up = new Map<string, string>()
-    const root = (k: string): string => {
-      let r = k
-      while (up.get(r) !== r) r = up.get(r) as string
-      return r
-    }
-    const add = (k: string): void => {
-      if (!up.has(k)) up.set(k, k)
-    }
-    const join = (a: string, b: string): void => {
-      add(a)
-      add(b)
-      up.set(root(a), root(b))
-    }
-    this.segments.forEach(seg => {
-      if (!this.conducts(seg.at)) return
-      const [a, b] = vertsOf(seg.at)
-      join(vertexKey(a), vertexKey(b))
-    })
-    const sources = this.sources()
-    const sourceCorners = sources.map(s => corners(occupiedCells(s.base, this.owned)).map(vertexKey))
-    sourceCorners.forEach(ks => {
-      ks.forEach(k => add(k))
-      ks.slice(1).forEach(k => join(ks[0], k))
-    })
-    const byRoot = new Map<string, Net>()
-    const netOf = (k: string): Net => {
-      const r = root(k)
-      const hit = byRoot.get(r)
-      if (hit !== undefined) return hit
-      const made: Net = { sources: [], sprinklers: [], taps: [], stills: [], waterSystems: [] }
-      byRoot.set(r, made)
-      return made
-    }
-    sources.forEach((s, i) => {
-      netOf(sourceCorners[i][0]).sources.push(s.water)
-    })
-    this.sprinklers.forEach(s => {
-      const k = vertexKey(s.at)
-      if (!up.has(k)) return
-      if (!incident(s.at).some(e => this.conducts(e))) return
-      netOf(k).sprinklers.push(s)
-    })
-    this.taps.forEach(t => {
-      const hit = corners(occupiedCells(t.base, this.owned)).find(
-        v => up.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
-      )
-      if (hit === undefined) return
-      netOf(vertexKey(hit)).taps.push(t)
-    })
-    this.stills.forEach(s => {
-      const hit = corners(occupiedCells(s.base, this.owned)).find(
-        v => up.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
-      )
-      if (hit === undefined) return
-      netOf(vertexKey(hit)).stills.push(s)
-    })
-    this.waterSystems.forEach(s => {
-      const hit = corners(occupiedCells(s.base, this.owned)).find(
-        v => up.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
-      )
-      if (hit === undefined) return
-      netOf(vertexKey(hit)).waterSystems.push(s)
-    })
-    this.netAt = new Map([...up.keys()].map(k => [k, netOf(k)]))
-    this.nets = [...byRoot.values()]
-    return this.nets
-  }
-
   netOfVertex(v: Vertex): Net | undefined {
-    this.grid()
-    return this.netAt.get(vertexKey(v))
+    return nets.netOfVertex(this, v)
   }
 
   netOfCell(base: Base): Net | undefined {
-    this.grid()
-    const hit = corners(occupiedCells(base, this.owned)).find(v => this.netAt.has(vertexKey(v)))
-    if (hit === undefined) return undefined
-    return this.netAt.get(vertexKey(hit))
+    return nets.netOfCell(this, base)
   }
 
   vertexWet(v: Vertex): boolean {
-    const net = this.netOfVertex(v)
-    return net !== undefined && net.sources.length > 0
+    return nets.vertexWet(this, v)
   }
 
   pendingWet(e: Edge): boolean {
-    const seen = new Set<string>([edgeKey(e)])
-    const verts = new Set<string>()
-    const q: Edge[] = [e]
-    while (q.length > 0) {
-      const cur = q[q.length - 1]
-      q.pop()
-      vertsOf(cur).forEach(v => {
-        verts.add(vertexKey(v))
-        incident(v).forEach(n => {
-          const k = edgeKey(n)
-          if (seen.has(k) || !this.conducts(n)) return
-          seen.add(k)
-          q.push(n)
-        })
-      })
-    }
-    return (
-      this.sources().some(p =>
-        corners(occupiedCells(p.base, this.owned)).some(v => verts.has(vertexKey(v))),
-      )
-    )
+    return nets.pendingWet(this, e)
   }
 
   sprinklerTargets(s: Sprinkler): Coord[] {
-    const k = vertexKey(s.at)
-    const hit = this.sprinklerTargetCache.get(k)
-    if (hit !== undefined) return hit
-    const made = aoe(s).filter(at => this.inWorld(at) && this.cell(at).kind === 'growing')
-    this.sprinklerTargetCache.set(k, made)
-    return made
+    return nets.sprinklerTargets(this, s)
   }
 
   private dropTargetCachesAt(at: Coord): void {
-    this.sprinklers.forEach(s => {
-      if (aoe(s).some(c => c.col === at.col && c.row === at.row)) this.sprinklerTargetCache.delete(vertexKey(s.at))
-    })
+    nets.dropTargetCachesAt(this, at)
   }
 
-  private rebuildWired(): void {
-    this.wiredVerts.clear()
-    const keep = new Map<string, Edge>()
-    if (this.done.has('unlock-smart-irrigation')) {
-      this.wires.forEach(w => {
-        if (w.to.kind === 'sprinkler') this.wiredVerts.add(vertexKey(w.to.at))
-        if (w.to.kind === 'valve' && this.hasValve(w.to.e)) keep.set(edgeKey(w.to.e), w.to.e)
-      })
-    }
-    ;[...this.valveHold.keys()].forEach(k => {
-      if (!keep.has(k)) this.valveHold.delete(k)
-    })
-    keep.forEach((e, k) => {
-      if (!this.valveHold.has(k)) this.valveHold.set(k, { e, level: 0, hold: 0 })
-    })
-    this.dirtyNets()
+  rebuildWired(): void {
+    nets.rebuildWired(this)
   }
 
   tileRate(s: Sprinkler): number {
-    if (s.tune.kind === 'flat') return SPRINKLER_TILE_RATE
-    return statsOf(s.tune.crop, 'base', 0, this.modifiers).waterUsePerSec
+    return nets.tileRate(this, s)
   }
 
   demand(s: Sprinkler): number {
-    return this.sprinklerTargets(s).length * this.tileRate(s)
-  }
-
-  private sprinklerWired(at: Vertex): boolean {
-    return this.wiredVerts.has(vertexKey(at))
-  }
-
-  private mayPour(s: Sprinkler): boolean {
-    return pourEligible(this.sprinklerWired(s.at), s.inn)
+    return nets.demand(this, s)
   }
 
   rate(v: Vertex): number {
-    const s = this.sprinklerAt(v)
-    if (s === undefined) return 0
-    if (!this.mayPour(s)) return 0
-    const net = this.netOfVertex(v)
-    if (net === undefined || net.sprinklers.length === 0) return 0
-    if (net.sources.every(r => r.stored === 0)) return 0
-    const total = net.sprinklers.reduce((a, x) => a + (this.mayPour(x) ? this.demand(x) : 0), 0)
-    if (total === 0) return 0
-    const supply = net.sources.reduce((a, r) => a + r.rate, 0)
-    const served = total > supply ? supply : total
-    return (this.demand(s) / total) * served
+    return nets.rate(this, v)
   }
 
   prompt(at: Coord): Prompt {
@@ -2472,40 +1359,15 @@ export class World {
     return this.commit({ a: Act.click, t: this.now, p: this.local, c: [at.col, at.row] })
   }
 
-  private clickBody(at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
-    if (this.driverVehicle(this.act.id) !== undefined) return 'noop'
-    if (!inWorld(at, this.owned)) {
-      if (inFade(at, this.owned) && this.act.place.kind === 'none') this.say(NOT_OWNED)
-      return 'noop'
-    }
-    const p = readPrompt(this, at)
-    if (p.kind === 'intent') {
-      this.enqueueOn(this.act, p.intent)
-      return 'queued'
-    }
-    if (p.kind === 'place') {
-      this.confirmPlace(at)
-      return 'placed'
-    }
-    if (this.act.place.kind === 'none' && inWorld(at, this.owned)) this.maybeSay(at, p.text)
-    return 'blocked'
-  }
-
   clickValve(e: Edge): void {
     this.commit({ a: Act.clickValve, t: this.now, p: this.local, e })
-  }
-
-  private clickValveBody(e: Edge): void {
-    const p = valvePrompt(this, e)
-    if (p.kind !== 'intent') return
-    this.enqueueOn(this.act, p.intent)
   }
 
   ackCue(): void {
     this.commit({ a: Act.ackCue, t: this.now, p: this.local })
   }
 
-  private ackCueBody(): void {
+  ackCueBody(): void {
     this.act.cue = { kind: 'none' }
     this.ping()
   }
@@ -2514,439 +1376,46 @@ export class World {
     this.enqueueOn(this.seats[this.local], i)
   }
 
-  private enqueueOn(seat: Seat, i: Intent): void {
+  enqueueOn(seat: Seat, i: Intent): void {
     if (seat.queue.length >= QUEUE_CAP) return
     const start = seat.queue.length === 0
     seat.queue.push(i)
     if (start) {
       this.act = seat
-      this.markWalk(i)
+      queue.markWalk(this, i)
     }
     this.ping()
   }
 
   taskName(i: Intent): TaskName {
-    this.act = this.seats[this.local]
-    if (!this.act.actor.inside(dest(i, this))) {
-      if (i.act === 'shovel') return m.prompt_move_here_and_dig()
-      if (i.act === 'consign') return m.prompt_drop_off()
-      return m.prompt_move_here()
-    }
-    switch (i.act) {
-      case 'walk':
-        return m.prompt_move_here()
-      case 'shovel':
-        return m.prompt_dig()
-      case 'mine':
-        return m.prompt_mine()
-      case 'plant':
-        return m.prompt_plant_bare()
-      case 'water':
-        return m.names_face_water()
-      case 'fertilize':
-        return m.prompt_fertilize()
-      case 'compost':
-        return m.names_item_compost()
-      case 'harvest':
-        return m.prompt_harvest()
-      case 'fill':
-        return m.prompt_fill()
-      case 'consign':
-        return m.prompt_drop_off()
-      case 'pickup':
-        return m.prompt_pick_up()
-      case 'drop':
-        return m.prompt_drop()
-      case 'inventory':
-        return m.prompt_inventory()
-      case 'chest':
-        return m.names_building_chest()
-      case 'silo':
-        return m.names_building_seed_silo()
-      case 'additives':
-        return m.prompt_additives()
-      case 'grind':
-        return m.prompt_grind()
-      case 'mill':
-        return m.names_building_mill()
-      case 'still':
-        return m.names_building_still()
-      case 'furnace':
-        return m.names_building_furnace()
-      case 'station':
-        return m.names_building_station()
-      case 'barrel':
-        return m.names_building_barrel()
-      case 'jam':
-        return m.names_building_jam()
-      case 'hangar':
-        return m.names_building_hangar()
-      case 'vehicle': {
-        const v = this.vehicles.find(x => x.id === i.id)
-        if (v === undefined) throw new Error('vehicle')
-        return v.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad()
-      }
-      case 'embark':
-        return m.vehicles_embark()
-      case 'valve':
-        return m.names_building_valve()
-      case 'toggle': {
-        const c = this.cell(i.at)
-        return c.kind === 'button' ? m.prompt_press_bare() : m.prompt_flip_bare()
-      }
-      case 'tend':
-        return m.prompt_tend()
-      case 'weed-spray':
-        return m.prompt_spray()
-      case 'chop':
-        return m.prompt_chop()
-      case 'graft':
-        return m.prompt_graft()
-    }
+    return queue.taskName(this, i)
   }
 
   taskProgress(): number {
-    this.act = this.seats[this.local]
-    const head = this.act.queue[0]
-    if (head === undefined) return 0
-    if (this.act.workLeft > 0 && this.act.workTotal > 0) return 1 - this.act.workLeft / this.act.workTotal
-    if (this.act.filling && this.act.hand.kind === 'hold' && this.act.hand.item.kind === 'container') {
-      return this.act.hand.item.liters / this.act.hand.item.capacityLiters
-    }
-    const at = dest(head, this)
-    if (!this.act.actor.inside(at)) {
-      const tx = at.col + 0.5
-      const ty = at.row + 0.5
-      const span = Math.hypot(this.act.legStart.x - tx, this.act.legStart.y - ty)
-      if (span === 0) return 1
-      return 1 - Math.hypot(this.act.actor.x - tx, this.act.actor.y - ty) / span
-    }
-    return 1
+    return queue.taskProgress(this)
   }
 
   buy(id: SkuId): BuyFail | undefined {
     return this.commit({ a: Act.buy, t: this.now, p: this.local, s: id })
   }
 
-  private buyBody(id: SkuId): BuyFail | undefined {
-    if (!this.skuOpen(id)) return undefined
-    const made = skuItem(id)
-    if (made.kind === 'grass-seeds') {
-      const price = this.skuPrice(id)
-      if (this.money < price) return 'Cannot afford'
-      if (!this.canFitGrass()) return 'Inventory full'
-      this.money -= price
-      this.putGrass(made.count)
-      this.compactInventory()
-      this.ping()
-      return undefined
-    }
-    if (made.kind === 'sugar') {
-      const price = this.skuPrice(id)
-      if (this.money < price) return 'Cannot afford'
-      if (this.additives.free < made.liters) return 'Additive store full'
-      this.money -= price
-      this.putSugar(made.liters, made.unitSale, made.quality)
-      this.ping()
-      return undefined
-    }
-    if (made.kind === 'seeds') {
-      const price = this.skuPrice(id)
-      if (this.money < price) return 'Cannot afford'
-      if (this.silo.free < made.count) return 'Seed silo full'
-      this.money -= price
-      this.putSilo(made.crop, 'base', 0, made.count)
-      this.ping()
-      return undefined
-    }
-    if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
-      const price = this.skuPrice(id)
-      if (this.money < price) return 'Cannot afford'
-      if (this.additives.free < made.liters) return 'Additive store full'
-      this.money -= price
-      this.putAdditive(made.kind, made.liters)
-      this.ping()
-      return undefined
-    }
-    if (id === 'buy-sprinkler-vert') this.act.place = { kind: 'sku', id: 'buy-sprinkler-vert', facing: 'ns' }
-    else this.act.place = { kind: 'sku', id }
-    this.ping()
-    return undefined
-  }
-
   confirmPlace(at: Coord): void {
-    if (this.act.place.kind === 'delete') {
-      this.deleteBuildingBody(at)
-      return
-    }
-    if (this.act.place.kind !== 'sku') return
-    if (
-      this.act.place.id === 'buy-pipe' ||
-      this.act.place.id === 'buy-valve' ||
-      this.act.place.id === 'buy-sprinkler' ||
-      this.act.place.id === 'buy-sprinkler-vert' ||
-      this.act.place.id === 'buy-sprinkler-large'
-    ) {
-      return
-    }
-    const price = this.skuPrice(this.act.place.id)
-    if (this.money < price) return
-    if (
-      this.act.place.id === 'buy-tile-paved' ||
-      this.act.place.id === 'buy-tile-brick' ||
-      this.act.place.id === 'buy-tile-cobble'
-    ) {
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
-      if (this.act.id !== 0) return
-      if (!inWorld(at, this.owned)) return
-      const c = this.cell(at)
-      if (!isTileSite(c)) return
-      const tile = this.act.place.id === 'buy-tile-paved' ? 'paved' : this.act.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
-      this.money -= price
-      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
-        this.ping()
-      return
-    }
-    if (this.act.place.id === 'buy-fence') {
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
-      if (this.act.id !== 0) return
-      if (!inWorld(at, this.owned)) return
-      if (!isFenceSite(this.cell(at))) return
-      if (this.hasFence(at)) return
-      this.money -= price
-      this.fences.add(`${at.col},${at.row}`)
-        this.ping()
-      return
-    }
-    if (this.act.place.id === 'buy-furnace') {
-      if (!tallSiteOk(this, at)) return
-      this.money -= price
-      const furnace = new Furnace({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
-      this.setCell(at, furnace)
-      this.setCell({ col: at.col, row: at.row + 1 }, furnace)
-      this.act.place = { kind: 'none' }
-      this.ping()
-      return
-    }
-    if (
-      this.act.place.id === 'buy-pumpjack' ||
-      this.act.place.id === 'buy-rain-tank' ||
-      this.act.place.id === 'buy-still' ||
-      this.act.place.id === 'buy-research-station'
-    ) {
-      if (!wideSiteOk(this, at)) return
-      this.money -= price
-      const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 2, h: 1 }
-      if (this.act.place.id === 'buy-research-station') {
-        const station = new ResearchStation(base)
-        this.setCell(at, station)
-        this.setCell({ col: at.col + 1, row: at.row }, station)
-      } else if (this.act.place.id === 'buy-still') {
-        const still = new PotStill(base)
-        this.stills.push(still)
-        this.setCell(at, still)
-        this.setCell({ col: at.col + 1, row: at.row }, still)
-        this.dirtyNets()
-      } else {
-        const made = this.act.place.id === 'buy-pumpjack' ? new Pump(base, 'jack') : new RainTank(base)
-        if (made.kind === 'pump') this.pumps.push(made)
-        else this.tanks.push(made)
-        this.setCell(at, made)
-        this.setCell({ col: at.col + 1, row: at.row }, made)
-        this.dirtyNets()
-      }
-        this.act.place = { kind: 'none' }
-      this.ping()
-      return
-    }
-    if (
-      this.act.place.id === 'buy-chest' ||
-      this.act.place.id === 'buy-grinder' ||
-      this.act.place.id === 'buy-compost-box' ||
-      this.act.place.id === 'buy-tap' ||
-      this.act.place.id === 'buy-well' ||
-      this.act.place.id === 'buy-mill' ||
-      this.act.place.id === 'buy-jam' ||
-      this.act.place.id === 'buy-barrel' ||
-      this.act.place.id === 'buy-freezer' ||
-      this.act.place.id === 'buy-freezer-large' ||
-      this.act.place.id === 'buy-hangar' ||
-      this.act.place.id === 'buy-silo-seed' ||
-      this.act.place.id === 'buy-silo-spray' ||
-      this.act.place.id === 'buy-silo-produce' ||
-      (SENSOR_CELL_SKUS as readonly string[]).includes(this.act.place.id)
-    ) {
-      if (this.act.place.id === 'buy-hangar') {
-        if (!hangarSiteOk(this, at)) return
-        this.money -= price
-        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: HANGAR_W, h: HANGAR_H }
-        const made = new Hangar(base)
-        this.hangars.push(made)
-        for (let row = 0; row < HANGAR_H; row++) {
-          for (let col = 0; col < HANGAR_W; col++) {
-            this.setCell({ col: at.col + col, row: at.row + row }, made)
-          }
-        }
-
-        this.act.place = { kind: 'none' }
-        this.ping()
-        return
-      }
-      if (
-        this.act.place.id === 'buy-silo-seed' ||
-        this.act.place.id === 'buy-silo-spray' ||
-        this.act.place.id === 'buy-silo-produce'
-      ) {
-        if (!siloSiteOk(this, at)) return
-        this.money -= price
-        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: SILO_W, h: SILO_H }
-        const sku = this.act.place.id
-        const made =
-          sku === 'buy-silo-seed' ? new SiloSeed(base) : sku === 'buy-silo-spray' ? new SiloSpray(base) : new SiloProduce(base)
-        if (made.kind === 'silo-seed') this.seedSilos.push(made)
-        else if (made.kind === 'silo-spray') this.spraySilos.push(made)
-        else this.produceSilos.push(made)
-        for (let row = 0; row < SILO_H; row++) {
-          for (let col = 0; col < SILO_W; col++) {
-            this.setCell({ col: at.col + col, row: at.row + row }, made)
-          }
-        }
-
-        this.act.place = { kind: 'none' }
-        this.ping()
-        return
-      }
-      const kind = skuKind(this.act.place.id)
-      if (kind !== undefined) {
-        if (!placeSolidOk(this, at)) return
-        this.money -= price
-        const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
-        const made = makeSensor(kind, base)
-        this.setCell(at, made)
-        if (made.kind === 'water-system') {
-          this.waterSystems.push(made)
-          this.dirtyNets()
-        }
-            this.ping()
-        return
-      }
-      if (!placeSolidOk(this, at)) return
-      this.money -= price
-      const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
-      if (this.act.place.id === 'buy-chest') this.setCell(at, new Chest(base))
-      else if (this.act.place.id === 'buy-grinder') this.setCell(at, new Grinder(base))
-      else if (this.act.place.id === 'buy-compost-box') this.setCell(at, new CompostBox(base))
-      else if (this.act.place.id === 'buy-mill') this.setCell(at, new Mill(base))
-      else if (this.act.place.id === 'buy-jam') this.setCell(at, new JamMachine(base))
-      else if (this.act.place.id === 'buy-barrel') this.setCell(at, new Barrel(base))
-      else if (this.act.place.id === 'buy-freezer') this.setCell(at, new Freezer(base))
-      else if (this.act.place.id === 'buy-freezer-large') {
-        this.prizeFreezers -= 1
-        this.setCell(at, new Freezer(base, FREEZER_LARGE_SLOTS))
-      }
-      else if (this.act.place.id === 'buy-well') {
-        const well = new Well(base)
-        this.wells.push(well)
-        this.setCell(at, well)
-        this.dirtyNets()
-      }
-      else {
-        const tap = new Tap(base)
-        this.taps.push(tap)
-        this.setCell(at, tap)
-        this.dirtyNets()
-      }
-        this.act.place = { kind: 'none' }
-      this.ping()
-      return
-    }
-    if (!inWorld(at, this.owned) || !isPlot(this.cell(at))) return
-    const made = skuItem(this.act.place.id)
-    if (
-      made.kind === 'pumpjack' ||
-      made.kind === 'seeds' ||
-      made.kind === 'chest' ||
-      made.kind === 'grinder' ||
-      made.kind === 'compost-box' ||
-      made.kind === 'well' ||
-      made.kind === 'valve' ||
-      made.kind === 'rain-tank' ||
-      made.kind === 'tap' ||
-      made.kind === 'pipe' ||
-      made.kind === 'sprinkler' ||
-      made.kind === 'sprinkler-vert' ||
-      made.kind === 'sprinkler-large' ||
-      made.kind === 'delete' ||
-      made.kind === 'tile' ||
-      made.kind === 'fence' ||
-      made.kind === 'grass-seeds' ||
-      made.kind === 'mill' ||
-      made.kind === 'jam-machine' ||
-      made.kind === 'still' ||
-      made.kind === 'furnace' ||
-      made.kind === 'station' ||
-      made.kind === 'barrel' ||
-      made.kind === 'freezer' ||
-      made.kind === 'hangar' ||
-      made.kind === 'silo-seed' ||
-      made.kind === 'silo-spray' ||
-      made.kind === 'silo-produce' ||
-      made.kind === 'sugar' ||
-      made.kind === 'lever' ||
-      made.kind === 'button' ||
-      made.kind === 'lamp' ||
-      made.kind === 'or' ||
-      made.kind === 'and' ||
-      made.kind === 'not' ||
-      made.kind === 'pulser' ||
-      made.kind === 'counter' ||
-      made.kind === 'sensor-water' ||
-      made.kind === 'sensor-fert' ||
-      made.kind === 'sensor-harvest' ||
-      made.kind === 'sensor-day' ||
-      made.kind === 'water-system' ||
-      made.kind === 'vehicle-detector' ||
-      made.kind === 'traffic-light' ||
-      made.kind === 'water'
-    ) {
-      return
-    }
-    this.money -= price
-    this.drops.push({ at: { ...at }, item: made })
-    this.act.place = { kind: 'none' }
-    this.ping()
+    place.confirmPlace(this, at)
   }
 
   cancelPlace(): void {
     this.commit({ a: Act.cancelPlace, t: this.now, p: this.local })
   }
 
-  private cancelPlaceBody(): void {
-    if (this.act.place.kind === 'none') return
-    this.act.place = { kind: 'none' }
-    this.ping()
-  }
-
   rightClick(at: Coord): void {
     this.commit({ a: Act.rightClick, t: this.now, p: this.local, c: [at.col, at.row] })
-  }
-
-  private rightClickBody(at: Coord): void {
-    if (this.act.place.kind !== 'none') {
-      this.cancelPlaceBody()
-      return
-    }
-    if (!inWorld(at, this.owned)) return
-    if (!isPlot(this.cell(at))) return
-    if (this.act.hand.kind !== 'hold') return
-    this.enqueueOn(this.act, { act: 'drop', at: { ...at } })
   }
 
   swap(i: number): void {
     this.commit({ a: Act.swap, t: this.now, p: this.local, i })
   }
 
-  private swapBody(i: number): void {
+  swapBody(i: number): void {
     const held = this.act.hand
     this.act.hand = this.act.inventory[i]
     this.act.inventory[i] = held
@@ -2958,7 +1427,7 @@ export class World {
     this.commit({ a: Act.swapChest, t: this.now, p: this.local, c: [at.col, at.row], i })
   }
 
-  private swapChestBody(at: Coord, i: number): void {
+  swapChestBody(at: Coord, i: number): void {
     const cell = this.cell(at)
     if (cell.kind !== 'chest' && cell.kind !== 'freezer') return
     const held = this.act.hand
@@ -2976,17 +1445,11 @@ export class World {
     this.commit({ a: Act.drive, t: this.now, p: this.local, throttle, steer })
   }
 
-  private driveBody(throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
-    if (this.driverVehicle(this.act.id) === undefined) return
-    this.act.drive = { throttle, steer }
-    this.ping()
-  }
-
   stride(x: -1 | 0 | 1, y: -1 | 0 | 1): void {
     this.commit({ a: Act.stride, t: this.now, p: this.local, x, y })
   }
 
-  private strideBody(x: -1 | 0 | 1, y: -1 | 0 | 1): void {
+  strideBody(x: -1 | 0 | 1, y: -1 | 0 | 1): void {
     if (this.driverVehicle(this.act.id) !== undefined) return
     this.act.stride = { x, y }
     this.ping()
@@ -2996,230 +1459,36 @@ export class World {
     this.commit({ a: Act.buyVehicle, t: this.now, p: this.local, c: [at.col, at.row], k })
   }
 
-  private buyVehicleBody(at: Coord, k: VehicleKind): void {
-    if (!this.done.has('unlock-vehicles')) return
-    const price = k === 'quad' ? QUAD_PRICE : TRACTOR_PRICE
-    if (this.money < price) return
-    const origin = this.hangarOrigin(at)
-    if (origin === undefined) return
-    this.money -= price
-    const id = this.nextVehicleId
-    this.nextVehicleId += 1
-    const pose = { kind: 'stored' as const, hangar: { ...origin } }
-    this.vehicles.push(k === 'quad' ? makeQuad(id, 1, emptyVehicleSlots(), pose) : makeTractor(id, 1, 'none', 5, pose))
-    this.ping()
-  }
-
   buyTrailer(at: Coord, k: TrailerKind): void {
     this.commit({ a: Act.buyTrailer, t: this.now, p: this.local, c: [at.col, at.row], k })
-  }
-
-  private buyTrailerBody(at: Coord, k: TrailerKind): void {
-    if (!this.done.has('unlock-vehicles')) return
-    const price = k === 'seed' ? TRAILER_SEED_PRICE : k === 'spray' ? TRAILER_SPRAY_PRICE : TRAILER_HARVEST_PRICE
-    if (this.money < price) return
-    const origin = this.hangarOrigin(at)
-    if (origin === undefined) return
-    this.money -= price
-    const id = this.nextTrailerId
-    this.nextTrailerId += 1
-    const pose = { kind: 'stored' as const, hangar: { ...origin } }
-    const trailer: Trailer =
-      k === 'seed'
-        ? { kind: 'seed', id, pose, hopper: { kind: 'empty' } }
-        : k === 'spray'
-          ? { kind: 'spray', id, pose, hopper: { kind: 'empty' } }
-          : { kind: 'harvest', id, pose, slots: emptyHarvestSlots() }
-    this.trailers.push(trailer)
-    this.ping()
   }
 
   deploy(id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
     this.commit({ a: Act.deploy, t: this.now, p: this.local, v: id, c: [at.col, at.row], hitch })
   }
 
-  private deployBody(id: VehicleId, at: Coord, hitch: TrailerId | 'none'): void {
-    const v = this.vehicles.find(x => x.id === id)
-    if (v === undefined || v.pose.kind !== 'stored') return
-    if (this.driverVehicle(this.act.id) !== undefined) return
-    const origin = this.hangarOrigin(at)
-    if (origin === undefined) return
-    const hangar = this.cell(origin)
-    if (hangar.kind !== 'hangar') return
-    const pad = padCenter(hangar.base)
-    if (!this.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
-    if (v.kind === 'quad' && hitch !== 'none') return
-    let trailer: Trailer | undefined
-    if (v.kind === 'tractor') {
-      if (hitch !== 'none') {
-        trailer = this.trailers.find(x => x.id === hitch)
-        if (trailer === undefined || trailer.pose.kind !== 'stored') return
-      }
-      v.hitch = hitch
-    }
-    v.pose = {
-      kind: 'field',
-      x: pad.x,
-      y: pad.y,
-      heading: HEADING_SOUTH,
-      speed: 0,
-      driver: this.act.id,
-    }
-    if (trailer !== undefined) {
-      trailer.pose = { kind: 'attached', vehicle: id, heading: HEADING_SOUTH }
-    }
-    this.act.drive = { throttle: 0, steer: 0 }
-    this.act.queue.length = 0
-    this.act.workLeft = 0
-    this.act.workTotal = 0
-    this.act.filling = false
-    this.act.cue = { kind: 'none' }
-    this.act.actor.x = pad.x
-    this.act.actor.y = pad.y
-    this.ping()
-  }
-
   embark(id: VehicleId): void {
     this.commit({ a: Act.embark, t: this.now, p: this.local, v: id })
-  }
-
-  private embarkBody(id: VehicleId): void {
-    const v = this.vehicles.find(x => x.id === id)
-    if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') return
-    if (this.driverVehicle(this.act.id) !== undefined) return
-    if (v.running) {
-      v.running = false
-      v.pose.speed = 0
-    }
-    const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-    if (this.act.actor.inside(floor)) {
-      this.board(v)
-      this.ping()
-      return
-    }
-    this.enqueueOn(this.act, { act: 'embark', id })
   }
 
   disembark(): void {
     this.commit({ a: Act.disembark, t: this.now, p: this.local })
   }
 
-  private disembarkBody(): void {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return
-    v.pose.speed = 0
-    v.pose.driver = 'none'
-    this.act.actor.x = v.pose.x
-    this.act.actor.y = v.pose.y
-    this.act.drive = { throttle: 0, steer: 0 }
-    this.act.queue.length = 0
-    this.ping()
-  }
-
   dock(): void {
     this.commit({ a: Act.dock, t: this.now, p: this.local })
-  }
-
-  private dockBody(): void {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return
-    const hangar = this.hangarAtPad({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    if (hangar === undefined) return
-    const x = v.pose.x
-    const y = v.pose.y
-    const origin = { col: hangar.base.col, row: hangar.base.row }
-    if (v.kind === 'tractor' && v.hitch !== 'none') {
-      const t = this.trailers.find(x => x.id === v.hitch)
-      if (t !== undefined) t.pose = { kind: 'stored', hangar: origin }
-      v.hitch = 'none'
-    }
-    v.pose = { kind: 'stored', hangar: origin }
-    v.running = false
-    this.act.actor.x = x
-    this.act.actor.y = y
-    this.act.drive = { throttle: 0, steer: 0 }
-    this.act.queue.length = 0
-    this.ping()
   }
 
   swapVehicle(id: VehicleId, i: VehicleSlot): void {
     this.commit({ a: Act.swapVehicle, t: this.now, p: this.local, v: id, i })
   }
 
-  private swapVehicleBody(id: VehicleId, i: VehicleSlot): void {
-    const v = this.vehicles.find(x => x.id === id)
-    if (v === undefined || v.kind !== 'quad' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
-    const held = this.act.hand
-    this.act.hand = v.slots[i]
-    v.slots[i] = held
-    compactSlots(v.slots)
-    this.ping()
-  }
-
   swapTrailer(u: TrailerId, i: HarvestSlot): void {
     this.commit({ a: Act.swapTrailer, t: this.now, p: this.local, u, i })
   }
 
-  private swapTrailerBody(u: TrailerId, i: HarvestSlot): void {
-    const t = this.trailers.find(x => x.id === u)
-    if (t === undefined || t.pose.kind !== 'attached') return
-    const hitch = t.pose.vehicle
-    const v = this.vehicles.find(x => x.id === hitch)
-    if (v === undefined || v.kind !== 'tractor' || v.pose.kind !== 'field' || v.pose.driver !== 'none' || v.running) return
-    if (t.kind === 'seed') {
-      if (i !== 0) return
-      const hand = this.act.hand
-      if (hand.kind === 'hold') {
-        if (hand.item.kind !== 'seeds') return
-        if (hand.item.count > TRAILER_CAP) return
-        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
-        t.hopper = { kind: 'hold', item: hand.item }
-      } else {
-        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
-        t.hopper = { kind: 'empty' }
-      }
-      this.ping()
-      return
-    }
-    if (t.kind === 'spray') {
-      if (i !== 0) return
-      const hand = this.act.hand
-      if (hand.kind === 'hold') {
-        if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'synth' && hand.item.kind !== 'compost') return
-        if (Math.floor(hand.item.liters) > TRAILER_CAP) return
-        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
-        t.hopper = { kind: 'hold', item: hand.item }
-      } else {
-        this.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
-        t.hopper = { kind: 'empty' }
-      }
-      this.ping()
-      return
-    }
-    const slot = t.slots[i]
-    const incoming = this.act.hand.kind === 'hold' ? cargoCount(this.act.hand.item) : 0
-    const outgoing = slot.kind === 'hold' ? cargoCount(slot.item) : 0
-    if (trailerUsed(t) - outgoing + incoming > TRAILER_CAP) return
-    const held = this.act.hand
-    this.act.hand = slot
-    t.slots[i] = held
-    compactSlots(t.slots)
-    this.ping()
-  }
-
   refill(at: Coord): void {
     this.commit({ a: Act.refill, t: this.now, p: this.local, c: [at.col, at.row] })
-  }
-
-  private refillBody(at: Coord): void {
-    if (this.hangarOrigin(at) === undefined) return
-    const cost = this.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
-    if (this.money < cost) return
-    this.money -= cost
-    this.vehicles.forEach(v => {
-      v.fuel = 1
-    })
-    this.ping()
   }
 
   refillCost(): number {
@@ -3279,181 +1548,12 @@ export class World {
   }
 
   stopAt(at: Coord, xy: { x: number; y: number }): RouteStop | undefined {
-    const hit = this.padHit(at)
+    const hit = vehicles.padHit(this, at)
     if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row } }
     if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row } }
     if (this.inWorld(at) && this.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
     if (this.inWorld(at)) return { kind: 'goto', x: xy.x, y: xy.y }
     return undefined
-  }
-
-  private routeBody(cmd: Extract<Cmd, { a: typeof Act.route }>): void {
-    if (!this.done.has('unlock-dispatch')) return
-    if (cmd.k === 'create') {
-      const id = this.nextRouteId
-      this.nextRouteId += 1
-      this.routes.push({ id, name: `Route ${id}`, stops: [] })
-      this.ping()
-      return
-    }
-    if (cmd.k === 'delete') {
-      if (this.vehicles.some(v => v.route === cmd.r)) return
-      const i = this.routes.findIndex(r => r.id === cmd.r)
-      if (i < 0) return
-      this.routes.splice(i, 1)
-      this.ping()
-      return
-    }
-    if (cmd.k === 'assign') {
-      const v = this.vehicles.find(x => x.id === cmd.v)
-      if (v === undefined) return
-      if (cmd.r === 'none') {
-        v.route = 'none'
-        v.cursor = 0
-        v.running = false
-        this.ping()
-        return
-      }
-      const route = this.routeById(cmd.r)
-      if (route === undefined) return
-      if (v.route !== cmd.r) v.cursor = 0
-      v.route = cmd.r
-      if (route.stops.length === 0) v.running = false
-      this.ping()
-      return
-    }
-    if (cmd.k === 'add') {
-      const route = this.routeById(cmd.r)
-      if (route === undefined) return
-      if (!this.stopLegal(cmd.s)) return
-      route.stops.push(cmd.s)
-      this.ping()
-      return
-    }
-    if (cmd.k === 'remove') {
-      const route = this.routeById(cmd.r)
-      if (route === undefined) return
-      if (cmd.i < 0 || cmd.i >= route.stops.length) return
-      this.stripRouteStops(route, (_s, i) => i === cmd.i)
-      this.ping()
-      return
-    }
-    if (cmd.k === 'reorder') {
-      const route = this.routeById(cmd.r)
-      if (route === undefined) return
-      const j = cmd.i + cmd.d
-      if (cmd.i < 0 || cmd.i >= route.stops.length || j < 0 || j >= route.stops.length) return
-      const a = route.stops[cmd.i]
-      route.stops[cmd.i] = route.stops[j]
-      route.stops[j] = a
-      this.vehicles.forEach(v => {
-        if (v.route !== route.id) return
-        if (v.cursor === cmd.i) v.cursor = j
-        else if (v.cursor === j) v.cursor = cmd.i
-      })
-      this.ping()
-      return
-    }
-    if (cmd.k === 'rename') {
-      if (cmd.n === '') return
-      const route = this.routeById(cmd.r)
-      if (route === undefined) return
-      route.name = cmd.n
-      this.ping()
-      return
-    }
-    if (cmd.k === 'start') {
-      const v = this.driverVehicle(this.act.id)
-      if (v === undefined || v.pose.kind !== 'field' || v.route === 'none') return
-      const route = this.routeById(v.route)
-      if (route === undefined || route.stops.length === 0) return
-      this.disembarkBody()
-      v.running = true
-      v.dwell = 0
-      this.ping()
-      return
-    }
-    if (cmd.k === 'automate') {
-      const v = this.vehicles.find(x => x.id === cmd.v)
-      if (v === undefined || v.pose.kind !== 'stored' || v.route === 'none') return
-      const route = this.routeById(v.route)
-      if (route === undefined || route.stops.length === 0) return
-      const origin = this.hangarOrigin({ col: cmd.c[0], row: cmd.c[1] })
-      if (origin === undefined) return
-      const hangar = this.cell(origin)
-      if (hangar.kind !== 'hangar') return
-      const pad = padCenter(hangar.base)
-      if (!this.inWorld({ col: Math.floor(pad.x), row: Math.floor(pad.y) })) return
-      v.pose = {
-        kind: 'field',
-        x: pad.x,
-        y: pad.y,
-        heading: HEADING_SOUTH,
-        speed: 0,
-        driver: 'none',
-      }
-      v.cursor = 0
-      v.running = true
-      v.dwell = 0
-      this.ping()
-    }
-  }
-
-  private stopLegal(s: RouteStop): boolean {
-    if (s.kind === 'goto') return this.inWorld({ col: Math.floor(s.x), row: Math.floor(s.y) })
-    if (!this.inWorld(s.at)) return false
-    if (s.kind === 'wait') return this.cell(s.at).kind === 'traffic-light'
-    const hit = this.padHit(s.at)
-    if (hit === undefined) return false
-    if (s.kind === 'unload') return hit.side === 'dropoff'
-    return hit.side === 'takeup'
-  }
-
-  private stripRouteStops(route: Route, drop: (s: RouteStop, i: number) => boolean): void {
-    const map: number[] = []
-    const kept: RouteStop[] = []
-    route.stops.forEach((s, i) => {
-      if (drop(s, i)) map[i] = -1
-      else {
-        map[i] = kept.length
-        kept.push(s)
-      }
-    })
-    route.stops = kept
-    this.vehicles.forEach(v => {
-      if (v.route !== route.id) return
-      if (kept.length === 0) {
-        v.cursor = 0
-        v.running = false
-        return
-      }
-      if (map[v.cursor] >= 0) {
-        v.cursor = map[v.cursor]
-        return
-      }
-      let j = v.cursor + 1
-      while (j < map.length && map[j] < 0) j += 1
-      v.cursor = j < map.length ? map[j] : 0
-    })
-  }
-
-  private stripStops(drop: (s: RouteStop) => boolean): void {
-    this.routes.forEach(r => this.stripRouteStops(r, s => drop(s)))
-  }
-
-  private stripPadStops(cell: PadCell): void {
-    const pads = [...dropoffPad(cell.base), ...takeupPad(cell.base)]
-    this.stripStops(
-      s =>
-        (s.kind === 'load' || s.kind === 'unload') && pads.some(p => p.col === s.at.col && p.row === s.at.row),
-    )
-  }
-
-  private setBoomBody(w: 3 | 5): void {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.kind !== 'tractor') return
-    v.boom = w
-    this.ping()
   }
 
   enter(): void {
@@ -3474,14 +1574,14 @@ export class World {
         bestD = d
       }
     })
-    if (best === undefined || best.pose.kind !== 'field') return
+    if (best?.pose.kind !== 'field') return
     this.seats[this.local].actor.x = best.pose.x
     this.seats[this.local].actor.y = best.pose.y
     this.embark(best.id)
   }
 
   driverVehicle(id: SeatId): Vehicle | undefined {
-    return this.vehicles.find(v => v.pose.kind === 'field' && v.pose.driver === id)
+    return vehicles.driverVehicle(this, id)
   }
 
   parkedAt(at: Coord): Vehicle | undefined {
@@ -3502,7 +1602,7 @@ export class World {
   }
 
   hangarStores(origin: Coord): boolean {
-    return this.vehicles.some(v => storedHere(v.pose, origin)) || this.trailers.some(t => storedHere(t.pose, origin))
+    return this.vehicles.some(v => vehicles.storedHere(v.pose, origin)) || this.trailers.some(t => vehicles.storedHere(t.pose, origin))
   }
 
   hangarAtPad(at: Coord): Hangar | undefined {
@@ -3511,7 +1611,7 @@ export class World {
 
   vehicleCargo(): boolean {
     const v = this.driverVehicle(this.local)
-    if (v === undefined || v.pose.kind !== 'field') return false
+    if (v?.pose.kind !== 'field') return false
     if (v.kind === 'tractor' && v.hitch === 'none') return false
     return true
   }
@@ -3526,12 +1626,12 @@ export class World {
 
   canLoad(): boolean {
     this.act = this.seats[this.local]
-    return this.loadWould()
+    return vehicles.loadWould(this)
   }
 
   canUnload(): boolean {
     this.act = this.seats[this.local]
-    return this.unloadWould()
+    return vehicles.unloadWould(this)
   }
 
   machinePads(): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
@@ -3545,11 +1645,11 @@ export class World {
     this.padBuildings().forEach(b => {
       dropoffPad(b.base).forEach(p => {
         const on = floor !== undefined && p.col === floor.col && p.row === floor.row
-        out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && this.unloadWould() })
+        out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && vehicles.unloadWould(this) })
       })
       takeupPad(b.base).forEach(p => {
         const on = floor !== undefined && p.col === floor.col && p.row === floor.row
-        out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && this.loadWould() })
+        out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && vehicles.loadWould(this) })
       })
     })
     return out
@@ -3577,215 +1677,11 @@ export class World {
     return out
   }
 
-  private board(v: Vehicle): void {
-    if (v.pose.kind !== 'field') return
-    v.pose.driver = this.act.id
-    this.act.drive = { throttle: 0, steer: 0 }
-    this.act.queue.length = 0
-    this.act.workLeft = 0
-    this.act.workTotal = 0
-    this.act.filling = false
-    this.act.cue = { kind: 'none' }
-    this.act.actor.x = v.pose.x
-    this.act.actor.y = v.pose.y
-  }
-
-  private tickVehicles(dt: number): void {
-    this.vehicles.forEach(v => {
-      if (v.pose.kind !== 'field') return
-      const pose = v.pose
-      const before = { x: pose.x, y: pose.y, heading: pose.heading }
-      const driver = pose.driver === 'none' ? undefined : this.seats[pose.driver]
-      const accel = kindAccel(v.kind)
-      const auto = driver === undefined && v.running
-      let steer = 0
-      if (auto) {
-        const drive = this.autoDrive(v, pose)
-        steer = drive.steer
-        const driving = this.skillTier('driving-classes')
-        if (drive.throttle !== 0 || drive.steer !== 0) {
-          const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
-          v.fuel = next < 0 ? 0 : next
-        }
-        const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
-        const surface = surfaceMul(this.cell(at))
-        const drivingMul = 1 + 0.05 * driving
-        const braking = drive.throttle === 0 && pose.speed !== 0
-        integrateVehicle(
-          pose,
-          drive,
-          dt,
-          v.fuel,
-          surface,
-          p => this.inWorld(p),
-          kindVMax(v.kind) * drivingMul * AUTO_VMAX_MUL,
-          accel * drivingMul * (braking ? AUTO_DECEL_MUL : 1),
-          kindYaw(v.kind),
-        )
-        if (v.fuel > 0) this.arriveGoto(v, pose)
-      } else if (driver === undefined) {
-        pose.speed = seekSpeed(pose.speed, 0, accel, dt)
-        const nx = pose.x + Math.cos(pose.heading) * pose.speed * dt
-        const ny = pose.y + Math.sin(pose.heading) * pose.speed * dt
-        if (this.inWorld({ col: Math.floor(nx), row: Math.floor(ny) })) {
-          pose.x = nx
-          pose.y = ny
-        }
-      } else {
-        steer = driver.drive.steer
-        const driving = this.skillTier('driving-classes')
-        if (driver.drive.throttle !== 0 || driver.drive.steer !== 0) {
-          const next = v.fuel - (dt / QUAD_FUEL_SECONDS) * (1 - 0.05 * driving)
-          v.fuel = next < 0 ? 0 : next
-        }
-        const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
-        const surface = surfaceMul(this.cell(at))
-        const drivingMul = 1 + 0.05 * driving
-        integrateVehicle(
-          pose,
-          driver.drive,
-          dt,
-          v.fuel,
-          surface,
-          p => this.inWorld(p),
-          kindVMax(v.kind) * drivingMul,
-          accel * drivingMul,
-          kindYaw(v.kind),
-        )
-        driver.actor.x = pose.x
-        driver.actor.y = pose.y
-      }
-      if (v.kind === 'tractor' && v.hitch !== 'none') {
-        const t = this.trailers.find(x => x.id === v.hitch)
-        if (t !== undefined && t.pose.kind === 'attached') {
-          followHitch(t.pose, before, pose)
-          this.boom(v, t, driver !== undefined || auto, steer, t.pose.heading)
-        }
-      }
-    })
-  }
-
-  private autoDrive(v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): Drive {
-    const zero: Drive = { throttle: 0, steer: 0 }
-    if (v.fuel === 0) return zero
-    if (v.dwell > 0) return zero
-    if (v.route === 'none') return zero
-    const route = this.routeById(v.route)
-    if (route === undefined || route.stops.length === 0) return zero
-    const stop = route.stops[v.cursor]
-    if (this.stopArrived(pose, stop)) return zero
-    if (stop.kind !== 'goto' && Math.floor(pose.x) === stop.at.col && Math.floor(pose.y) === stop.at.row) return zero
-    const target = stopXY(stop)
-    const want = Math.atan2(target.y - pose.y, target.x - pose.x)
-    const d = headingDelta(pose.heading, want)
-    if (Math.abs(d) > ROUTE_ALIGN) return { throttle: 0, steer: d > 0 ? 1 : -1 }
-    if (stop.kind !== 'goto') {
-      const dist = Math.hypot(target.x - pose.x, target.y - pose.y)
-      const decel = kindAccel(v.kind) * AUTO_DECEL_MUL
-      const stopDist = (pose.speed * pose.speed) / (2 * decel) + 0.2
-      if (dist <= stopDist) return zero
-    }
-    return { throttle: 1, steer: 0 }
-  }
-
-  private stopArrived(pose: Extract<VehiclePose, { kind: 'field' }>, stop: RouteStop): boolean {
-    if (stop.kind === 'goto') return Math.hypot(pose.x - stop.x, pose.y - stop.y) <= ROUTE_ARRIVE
-    if (Math.floor(pose.x) !== stop.at.col || Math.floor(pose.y) !== stop.at.row) return false
-    return pose.speed === 0
-  }
-
-  private arriveGoto(v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): void {
-    if (v.route === 'none') return
-    const route = this.routeById(v.route)
-    if (route === undefined || route.stops.length === 0) return
-    const stop = route.stops[v.cursor]
-    if (stop.kind !== 'goto') return
-    if (Math.hypot(pose.x - stop.x, pose.y - stop.y) > ROUTE_ARRIVE) return
-    this.advanceRoute(v, route)
-  }
-
-  private advanceRoute(v: Vehicle, route: Route): void {
-    v.cursor = (v.cursor + 1) % route.stops.length
-    v.dwell = 0
-  }
-
-  private boom(
-    v: Extract<Vehicle, { kind: 'tractor' }>,
-    t: Trailer,
-    active: boolean,
-    steer: number,
-    heading: number,
-  ): void {
-    if (v.pose.kind !== 'field') return
-    if (!active) return
-    if (steer !== 0) return
-    if (v.pose.speed <= 0) return
-    const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
-    boomHits(p, heading, v.boom, at => this.inWorld(at)).forEach(at => this.boomCell(t, at))
-  }
-
-  private boomCell(t: Trailer, at: Coord): void {
-    const c = this.cell(at)
-    if (t.kind === 'seed') {
-      if (t.hopper.kind === 'empty') return
-      if (c.kind !== 'empty') return
-      const seeds = t.hopper.item
-      this.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.variety, seeds.quality) })
-      seeds.count -= 1
-      if (seeds.count === 0) t.hopper = { kind: 'empty' }
-      return
-    }
-    if (t.kind === 'spray') {
-      if (t.hopper.kind === 'empty') return
-      if (!isTilled(c) || c.soil.fertilizer >= FERT_PLOT_MAX) return
-      const bag = t.hopper.item
-      const need = FERT_PLOT_MAX - c.soil.fertilizer
-      const use = need > bag.liters ? bag.liters : need
-      if (bag.kind === 'synth') c.soil.spike(use)
-      else c.soil.feed(use)
-      bag.liters -= use
-      if (bag.liters <= 0) t.hopper = { kind: 'empty' }
-      return
-    }
-    if (c.kind === 'tree' || c.kind === 'turf') return
-    const item = this.harvestItem(c)
-    if (item === undefined) {
-      if (c.kind === 'growing' && c.plant.maturity >= 0.2 && c.plant.maturity <= 0.8) {
-        this.setCell(at, { kind: 'empty', soil: c.soil })
-      }
-      return
-    }
-    if (!harvestInsert(t.slots, item)) return
-    if (c.kind === 'ripe') this.tally.harvests += 1
-    if (isTilled(c)) this.setCell(at, { kind: 'empty', soil: c.soil })
-  }
-
-  private harvestItem(c: Cell): Item | undefined {
-    if (c.kind === 'ripe') {
-      const p = c.plant
-      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio, false) }
-    }
-    if (c.kind === 'growing') {
-      const m = c.plant.maturity
-      if (m < 0.2) return { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 }
-      if (m > 0.8) {
-        const p = c.plant
-        const q = this.bakeQuality(p)
-        return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, this.modifiers).sale, m, p.bio, false) }
-      }
-      return undefined
-    }
-    if (c.kind === 'dead') return { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 }
-    if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 }
-    if (c.kind === 'weed') return { kind: 'weed', count: 1 }
-    return undefined
-  }
-
   unlockAll(): void {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'all' })
   }
 
-  private unlockAllBody(): void {
+  unlockAllBody(): void {
     ;(Object.keys(RESEARCH) as ResearchId[]).forEach(id => {
       this.done.add(id)
     })
@@ -3799,23 +1695,11 @@ export class World {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'skills' })
   }
 
-  private unlockAllSkillsBody(): void {
-    ;(['player', 'husband', 'daughter'] as const).forEach(member => {
-      const st = this.family[member]
-      skillIds(member).forEach(id => {
-        st.owned.set(id as never, SKILLS[id].maxTier)
-      })
-      st.offers = []
-    })
-    this.rebuildSkillModifiers()
-    this.ping()
-  }
-
   cheatMoney(): void {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'money' })
   }
 
-  private cheatMoneyBody(): void {
+  cheatMoneyBody(): void {
     this.money += 200
     this.ping()
   }
@@ -3824,7 +1708,7 @@ export class World {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'points' })
   }
 
-  private cheatPointsBody(): void {
+  cheatPointsBody(): void {
     this.points += 10
     this.ping()
   }
@@ -3833,7 +1717,7 @@ export class World {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'research' })
   }
 
-  private toggleCheatResearchBody(): void {
+  toggleCheatResearchBody(): void {
     this.cheatFastResearch = !this.cheatFastResearch
     this.ping()
   }
@@ -3842,7 +1726,7 @@ export class World {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'speed', n })
   }
 
-  private setCheatSpeedBody(n: 1 | 3): void {
+  setCheatSpeedBody(n: 1 | 3): void {
     this.cheatSpeed = n
     this.ping()
   }
@@ -3851,7 +1735,7 @@ export class World {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'day' })
   }
 
-  private endDayBody(): void {
+  endDayBody(): void {
     if (this.seam.kind === 'recap') return
     this.clock.t = DAY_SECONDS
     this.ping()
@@ -3861,104 +1745,28 @@ export class World {
     this.commit({ a: Act.buyPacks, t: this.now, p: this.local, s: id })
   }
 
-  private buyPacksBody(id: SkuId): void {
-    if (this.buyPacksFail(id) !== undefined) return
-    const made = skuItem(id)
-    if (made.kind !== 'seeds') return
-    this.money -= this.packsPrice(id)
-    this.putSilo(made.crop, 'base', 0, 5 * made.count)
-    this.ping()
-  }
-
   packsPrice(id: SkuId): number {
-    return 5 * this.skuPrice(id) * 0.95
+    return place.packsPrice(this, id)
   }
 
   buyPacksFail(id: SkuId): BuyFail | 'Locked' | undefined {
-    if (!this.skuOpen(id)) return 'Locked'
-    const made = skuItem(id)
-    if (made.kind !== 'seeds') return 'Locked'
-    if (this.money < this.packsPrice(id)) return 'Cannot afford'
-    if (this.silo.free < 5 * made.count) return 'Seed silo full'
-    return undefined
+    return place.buyPacksFail(this, id)
   }
 
-  private grassSlot(): number {
-    return this.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
-  }
-
-  private canFitGrass(): boolean {
-    return this.grassSlot() >= 0 || this.act.inventory.some(s => s.kind === 'empty')
-  }
-
-  private putGrass(count: number): void {
-    const merge = this.grassSlot()
-    if (merge >= 0) {
-      const slot = this.act.inventory[merge]
-      if (slot.kind === 'hold' && slot.item.kind === 'grass-seeds') slot.item.count += count
-      return
-    }
-    this.act.inventory[this.act.inventory.findIndex(s => s.kind === 'empty')] = {
-      kind: 'hold',
-      item: { kind: 'grass-seeds', count },
-    }
-  }
-
-
-  // --- seed silo -------------------------------------------------------------
-
-  /** Adds to the silo up to its cap. Returns how many seeds actually landed. */
+  
   putSilo(crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
-    const n = Math.min(count, this.silo.free)
-    if (n <= 0) return 0
-    const hit = this.silo.seeds.find(st => st.crop === crop && st.variety === variety)
-    if (hit !== undefined) {
-      hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
-      hit.count += n
-    } else this.silo.seeds.push({ crop, variety, quality, count: n })
-    return n
+    return store.putSilo(this, crop, variety, quality, count)
   }
 
   takeSilo(crop: AnnualId, variety: VarietyId): void {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', c: crop, r: variety })
   }
 
-  private takeSiloBody(crop: AnnualId, variety: VarietyId): void {
-    const i = this.silo.seeds.findIndex(st => st.crop === crop && st.variety === variety)
-    if (i < 0) return
-    const st = this.silo.seeds[i]
-    if (st.count <= 0) return
-    if (!this.freeHand()) return
-    this.silo.seeds.splice(i, 1)
-    this.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, variety, quality: st.quality, count: st.count } }
-    this.ping()
-  }
+  
 
-  /** Walking up puts every seed you carry away. Overflow stays on you. */
-  private depositSilo(): void {
-    const take = (it: Item): boolean => {
-      if (it.kind !== 'seeds') return false
-      const n = this.putSilo(it.crop, it.variety, it.quality, it.count)
-      it.count -= n
-      return it.count <= 0
-    }
-    if (this.act.hand.kind === 'hold' && take(this.act.hand.item)) this.act.hand = { kind: 'empty' }
-    this.act.inventory.forEach((slot, i) => {
-      if (slot.kind === 'hold' && take(slot.item)) this.act.inventory[i] = { kind: 'empty' }
-    })
-    this.compactInventory()
-  }
-
-  // --- additive store --------------------------------------------------------
-
-  /** Adds liters up to the shared cap. Returns how many liters actually landed. */
+  
   putAdditive(id: AdditiveId, liters: number): number {
-    const n = Math.min(liters, this.additives.free)
-    if (n <= 0) return 0
-    const hit = this.additives.held.find(h => h.id === id)
-    if (hit !== undefined) hit.liters += n
-    else this.additives.held.push({ id, liters: n })
-    return n
+    return store.putAdditive(this, id, liters)
   }
 
   putSugar(liters: number, unitSale: number, quality: number): number {
@@ -3969,141 +1777,19 @@ export class World {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'sugar', d: 'sugar' })
   }
 
-  private takeSugarBody(): void {
-    const bin = this.additives.sugar
-    const liters = Math.min(SUGAR_BAG, bin.liters)
-    if (liters <= 0) return
-    if (!this.freeHand()) return
-    bin.liters -= liters
-    this.act.hand = {
-      kind: 'hold',
-      item: { kind: 'sugar', liters, capacityLiters: SUGAR_BAG, unitSale: bin.unitSale, quality: bin.quality },
-    }
-    this.ping()
-  }
-
   takeAdditive(id: AdditiveId): void {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', d: id })
   }
 
-  private takeAdditiveBody(id: AdditiveId): void {
-    const i = this.additives.held.findIndex(h => h.id === id)
-    if (i < 0) return
-    const held = this.additives.held[i]
-    const bag = ADDITIVE_BAG[id]
-    const liters = Math.min(bag, held.liters)
-    if (liters <= 0) return
-    if (!this.freeHand()) return
-    held.liters -= liters
-    if (held.liters <= 0) this.additives.held.splice(i, 1)
-    this.act.hand = { kind: 'hold', item: { kind: id, liters, capacityLiters: bag } }
-    this.ping()
-  }
-
-  private depositAdditives(): void {
-    const take = (it: Item): boolean => {
-      if (it.kind === 'sugar') {
-        it.liters -= this.putSugar(it.liters, it.unitSale, it.quality)
-        return it.liters <= 0
-      }
-      if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
-      const n = this.putAdditive(it.kind, it.liters)
-      it.liters -= n
-      return it.liters <= 0
-    }
-    if (this.act.hand.kind === 'hold' && take(this.act.hand.item)) this.act.hand = { kind: 'empty' }
-    this.act.inventory.forEach((slot, i) => {
-      if (slot.kind === 'hold' && take(slot.item)) this.act.inventory[i] = { kind: 'empty' }
-    })
-    this.compactInventory()
-  }
-
-  /**
-   * Clears the hand for a withdrawal. Anything the store would not take back is set
-   * down first, so taking never silently destroys what you were carrying.
-   */
-  private freeHand(): boolean {
-    if (this.act.hand.kind !== 'hold') return true
-    const at = this.dropSite()
-    if (at === undefined) return false
-    this.drops.push({ at, item: this.act.hand.item })
-    this.act.hand = { kind: 'empty' }
-    return true
-  }
-
-  private dropSite(): Coord | undefined {
-    const here = { col: Math.floor(this.act.actor.x), row: Math.floor(this.act.actor.y) }
-    if (this.inWorld(here) && isPlot(this.cell(here))) return here
-    const near = frontOf(here).find(p => this.inWorld(p) && isPlot(this.cell(p)))
-    return near === undefined ? undefined : { ...near }
-  }
+  
 
   marketQuote(): SellAllQuote {
-    const rows = STALL_IDS.flatMap(id => {
-      if (binCount(this.stall[id]) <= 0) return []
-      const { clean } = this.stallClean(id)
-      const sat = this.stall[id].sat
-      return [
-        {
-          good: id,
-          sat,
-          mul: mul(sat, id),
-          clean,
-          paid: paid(sat, id, clean),
-          recoverDays: sat / SAT_RECOVER_PER_DAY,
-        },
-      ]
-    })
-    return {
-      rows,
-      clean: rows.reduce((n, r) => n + r.clean, 0),
-      paid: rows.reduce((n, r) => n + r.paid, 0) + this.clearance,
-    }
+    return store.marketQuote(this)
   }
 
   marketGain(): number {
     if (!this.marketOpen()) return 0
     return this.marketQuote().paid
-  }
-
-  private stallClean(id: StallGoodId): { clean: number; clearance: number } {
-    const saleX = 1 + 0.02 * this.skillTier('saleswoman')
-    const heirX = 1 + 0.05 * this.skillTier('heirloom')
-    const bioX = 1 + 0.04 * this.skillTier('bio')
-    if (isBakedStall(id)) {
-      const count = this.stall[id].stock.base.organic
-      if (count === 0) return { clean: 0, clearance: 0 }
-      return { clean: this.stall[id].worth.base.organic * saleX, clearance: 0 }
-    }
-    if (isSpiritStall(id)) {
-      return {
-        clean: VARIETY_IDS.reduce((goodTotal, variety) => {
-          const count = this.stall[id].stock[variety].organic
-          if (count === 0) return goodTotal
-          const worth = this.stall[id].worth[variety].organic
-          const heir = id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
-          return goodTotal + worth * saleX * heir
-        }, 0),
-        clearance: 0,
-      }
-    }
-    const x = stallX(id, this.modifiers)
-    const w = this.weather(this.clock.day)
-    const wx = w === 'flood' || w === 'drought' ? WEATHER_FRUIT_SALE : 1
-    return VARIETY_IDS.reduce(
-      (acc, variety) => {
-        const heir = tierOf(variety) === 'heirloom' ? heirX : 1
-        return BIO_KEYS.reduce((bioAcc, k) => {
-          const count = this.stall[id].stock[variety][k]
-          if (count === 0) return bioAcc
-          const worth = this.stall[id].worth[variety][k]
-          const avg = worth / count
-          const organicMul = k === 'organic' ? bioX : 1
-          return { clean: bioAcc.clean + count * avg * x * heir * saleX * organicMul * wx, clearance: bioAcc.clearance }
-        }, acc)
-      },
-      { clean: 0, clearance: 0 },
-    )
   }
 
   nowDay(): number {
@@ -4134,25 +1820,7 @@ export class World {
     this.commit({ a: Act.sellAll, t: this.now, p: this.local })
   }
 
-  private sellAllBody(): void {
-    if (!this.marketOpen()) return
-    const quote = this.marketQuote()
-    if (quote.paid === 0) return
-    quote.rows.forEach(row => {
-      this.stall[row.good].sat = Math.min(1, row.sat + row.clean / SAT_DEPTH)
-    })
-    STALL_IDS.forEach(id => {
-      VARIETY_IDS.forEach(variety => {
-        this.stall[id].stock[variety] = { organic: 0, synth: 0 }
-        this.stall[id].worth[variety] = { organic: 0, synth: 0 }
-      })
-    })
-    this.money += quote.paid
-    this.clearance = 0
-    this.emit('sold')
-  }
-
-  /** Every hard prerequisite done. Reveal is separate: a row can be on the shelf and still shut. */
+  
   researchOpen(id: ResearchId): boolean {
     return RESEARCH[id].requires.every(r => this.done.has(r))
   }
@@ -4161,7 +1829,7 @@ export class World {
     this.commit({ a: Act.startResearch, t: this.now, p: this.local, r: id })
   }
 
-  private startResearchBody(id: ResearchId): void {
+  startResearchBody(id: ResearchId): void {
     if (this.job.kind === 'run') return
     if (this.done.has(id)) return
     if (!this.researchOpen(id)) return
@@ -4176,7 +1844,7 @@ export class World {
     this.commit({ a: Act.dismissRecap, t: this.now, p: this.local })
   }
 
-  private dismissRecapBody(): void {
+  dismissRecapBody(): void {
     if (this.seam.kind !== 'recap') return
     this.grantPoints(POINTS_PER_DAY)
     this.seam = { kind: 'play' }
@@ -4197,14 +1865,14 @@ export class World {
         s.workTotal = 0
         s.filling = false
       })
-      this.tickContracts(beforeDay, this.nowDay())
+      tickContractsFn(this, beforeDay, this.nowDay())
       this.money += DAY_STIPEND
       const tax = this.tax()
       this.money -= tax
       const bill = this.pumpLiters * PUMP_COST_PER_L * pumpCostMul(this.weather(this.clock.day - 1))
       this.money -= bill
       this.pumpLiters = 0
-      this.tickTreesSeam()
+      field.tickTreesSeam(this)
       this.seam = {
         kind: 'recap',
         recap: {
@@ -4220,15 +1888,15 @@ export class World {
         },
       }
       this.tally = { died: 0, harvests: 0, research: [], contracts: [] }
-      if (this.done.has('unlock-contracts') && this.contracts.takenToday.length === 0) this.addRep(-REP_IDLE)
+      if (this.done.has('unlock-contracts') && this.contracts.takenToday.length === 0) addRep(this, -REP_IDLE)
       this.contracts.takenToday = []
       this.contracts.repDay = this.contracts.rep
       this.ping()
       return
     }
-    this.tickSpeech(dt)
-    this.tickJob(dt)
-    this.tickButtons()
+    tick.tickSpeech(this, dt)
+    tick.tickJob(this, dt)
+    tick.tickButtons(this)
     this.seats.forEach(s => {
       if (s.presence !== 'in') return
       if (this.driverVehicle(s.id) !== undefined) return
@@ -4244,337 +1912,23 @@ export class World {
         s.actor.y += (s.stride.y / hypot) * step
         return
       }
-      this.tickQueue(dt)
+      queue.tickQueue(this, dt)
     })
-    // Never `this.local` here: it is 0 on the host and 1..3 on a guest, so anything downstream
-    // that reads `act` would diverge. Seat 0 always exists and is the same seat on every peer.
     this.act = this.seats[0]
-    this.tickVehicles(dt)
-    this.tickField(dt)
-    this.gatherWater(dt)
-    this.evalSensors(dt)
-    this.tickDispatch(dt)
-    this.tickMachines(dt)
-    this.tickWater(dt)
-    this.tickFreshness(dt)
-    this.tickCompost(dt)
-    this.tickBig(dt)
-    this.tickContracts(beforeDay, this.nowDay())
+    vehicles.tickVehicles(this, dt)
+    field.tickField(this, dt)
+    nets.gatherWater(this, dt)
+    nets.evalSensors(this, dt)
+    vehicles.tickDispatch(this, dt)
+    machines.tickMachines(this, dt)
+    nets.tickWater(this, dt)
+    tick.tickFreshness(this, dt)
+    machines.tickCompost(this, dt)
+    tick.tickBig(this, dt)
+    tickContractsFn(this, beforeDay, this.nowDay())
     STALL_IDS.forEach(id => {
       this.stall[id].sat = recover(this.stall[id].sat, dt)
     })
-  }
-
-  private tickSpeech(dt: number): void {
-    if (this.speech.kind !== 'say') return
-    this.speech.left -= dt
-    if (this.speech.left > 0) return
-    this.speech = { kind: 'none' }
-    this.pingFor('speech')
-  }
-
-  private tickJob(dt: number): void {
-    if (this.job.kind === 'idle') return
-    const cheat = this.cheatFastResearch ? 3 : 1
-    this.job.left -= dt * (1 + 0.05 * this.skillTier('research-speed')) * cheat
-    if (this.job.left > 0) return
-    const id = this.job.id
-    this.done.add(id)
-    this.tally.research.push(id)
-    this.job = { kind: 'idle' }
-    if (id === 'unlock-smart-irrigation') this.rebuildWired()
-    this.ping()
-  }
-
-  private tickQueue(dt: number): void {
-    if (this.act.workLeft > 0) {
-      this.act.workLeft -= dt
-      if (this.act.workLeft > 0) return
-      this.finishWork()
-      return
-    }
-    if (this.act.filling) {
-      this.tickFill(dt)
-      return
-    }
-    const next = this.act.queue[0]
-    if (next === undefined) return
-    if (next.act === 'vehicle' || next.act === 'embark') {
-      const v = this.vehicles.find(x => x.id === next.id)
-      if (v === undefined || v.pose.kind !== 'field') {
-        this.shiftHead()
-        return
-      }
-    }
-    const at = dest(next, this)
-    if (!this.act.actor.inside(at)) {
-      this.act.actor.walkToward(at, dt, this.walkSpeed())
-      return
-    }
-    this.begin(next)
-  }
-
-  private begin(i: Intent): void {
-    switch (i.act) {
-      case 'walk':
-        this.shiftHead()
-        return
-      case 'shovel':
-        if (!this.canShovel(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(shovelTime(this, i.at))
-        return
-      case 'mine':
-        if (!this.canMine(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(mineTime(this, i.at))
-        return
-      case 'plant':
-        if (!this.canPlant(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.5)
-        return
-      case 'water':
-        if (!this.canWater(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'fertilize':
-        if (!this.canFertilize(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.6)
-        return
-      case 'compost':
-        if (!this.canCompost(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'harvest':
-        if (!this.canHarvest(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.5)
-        return
-      case 'pickup':
-        this.doPickup(i.at)
-        this.shiftHead()
-        return
-      case 'consign':
-        this.doConsign()
-        this.shiftHead()
-        return
-      case 'fill':
-        if (!this.canFill(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.act.filling = true
-        return
-      case 'drop':
-        this.doDrop(i.at)
-        this.shiftHead()
-        return
-      case 'inventory':
-        this.act.cue = { kind: 'inventory' }
-        this.shiftHead()
-        return
-      case 'silo': {
-        if (this.cell(i.at).kind !== 'seed-silo') {
-          this.shiftHead()
-          return
-        }
-        this.depositSilo()
-        this.act.cue = { kind: 'silo', at: { ...i.at } }
-        this.shiftHead()
-        return
-      }
-      case 'additives': {
-        if (this.cell(i.at).kind !== 'additive-store') {
-          this.shiftHead()
-          return
-        }
-        this.depositAdditives()
-        this.act.cue = { kind: 'additives', at: { ...i.at } }
-        this.shiftHead()
-        return
-      }
-      case 'chest': {
-        const c = this.cell(i.at)
-        if (c.kind !== 'chest' && c.kind !== 'freezer') {
-          this.shiftHead()
-          return
-        }
-        // TODO 1.1 multiplayer guest chest swap
-        if (this.act.id !== 0) {
-          this.shiftHead()
-          return
-        }
-        this.act.cue = { kind: 'chest', at: { ...i.at } }
-        this.shiftHead()
-        return
-      }
-      case 'grind':
-        if (!this.canGrind(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'mill':
-        if (!this.canMill(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'still':
-        if (!this.canStill(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'furnace':
-        if (!this.canFurnace(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'station': {
-        if (this.cell(i.at).kind !== 'station') {
-          this.shiftHead()
-          return
-        }
-        if (this.canStation(i.at)) {
-          this.arm(0.4)
-          return
-        }
-        this.act.cue = { kind: 'station', at: { ...i.at } }
-        this.shiftHead()
-        return
-      }
-      case 'barrel':
-        if (!this.canBarrel(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'jam':
-        if (!this.canJam(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(0.4)
-        return
-      case 'hangar': {
-        if (this.cell(i.at).kind !== 'hangar') {
-          this.shiftHead()
-          return
-        }
-        this.act.cue = { kind: 'hangar', at: { ...i.at } }
-        this.shiftHead()
-        return
-      }
-      case 'vehicle': {
-        const v = this.vehicles.find(x => x.id === i.id)
-        if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') {
-          this.shiftHead()
-          return
-        }
-        this.act.cue = { kind: 'vehicle', id: i.id }
-        this.shiftHead()
-        return
-      }
-      case 'embark': {
-        const v = this.vehicles.find(x => x.id === i.id)
-        if (
-          v === undefined ||
-          v.pose.kind !== 'field' ||
-          v.pose.driver !== 'none' ||
-          this.driverVehicle(this.act.id) !== undefined
-        ) {
-          this.shiftHead()
-          return
-        }
-        const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-        if (!this.act.actor.inside(floor)) {
-          this.shiftHead()
-          return
-        }
-        this.board(v)
-        this.shiftHead()
-        return
-      }
-      case 'valve':
-        this.arm(0.3 / this.machineMul())
-        return
-      case 'toggle':
-        this.arm(0)
-        return
-      case 'tend':
-        if (!this.canTend(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(TEND_WORK)
-        return
-      case 'weed-spray':
-        this.doWeedSpray(i.at)
-        this.shiftHead()
-        return
-      case 'chop':
-        if (!this.canChop(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(AXES.axe.workSeconds)
-        return
-      case 'graft':
-        if (!this.canGraft(i.at)) {
-          this.shiftHead()
-          return
-        }
-        this.arm(GRAFT_WORK)
-        return
-    }
-  }
-
-  private arm(seconds: number): void {
-    if (seconds <= 0) {
-      this.finishWork()
-      return
-    }
-    this.act.workLeft = seconds
-    this.act.workTotal = seconds
-  }
-
-  private markWalk(i: Intent): void {
-    if (this.act.actor.inside(dest(i, this))) return
-    this.act.legStart = { x: this.act.actor.x, y: this.act.actor.y }
-  }
-
-  private shiftHead(): void {
-    this.act.queue.shift()
-    this.act.workLeft = 0
-    this.act.workTotal = 0
-    const next = this.act.queue[0]
-    if (next !== undefined) this.markWalk(next)
-    this.ping()
   }
 
   burst(id: VfxId, at: Coord): void {
@@ -4586,1915 +1940,56 @@ export class World {
     return this.bursts.splice(0, this.bursts.length)
   }
 
-  private finishWork(): void {
-    const i = this.act.queue[0]
-    if (i === undefined) return
-    if (i.act === 'shovel') this.doShovel(i.at)
-    if (i.act === 'mine') this.doMine(i.at)
-    if (i.act === 'plant') this.doPlant(i.at)
-    if (i.act === 'water' && this.doWater(i.at)) {
-      this.emit('poured')
-      this.burst('pour', i.at)
-    }
-    if (i.act === 'fertilize') this.doFertilize(i.at)
-    if (i.act === 'compost') this.doCompost(i.at)
-    if (i.act === 'harvest') this.doHarvest(i.at)
-    if (i.act === 'grind') this.doGrind(i.at)
-    if (i.act === 'mill') this.doMill(i.at)
-    if (i.act === 'still') this.doStill(i.at)
-    if (i.act === 'furnace') this.doFurnace(i.at)
-    if (i.act === 'station') this.doStation(i.at)
-    if (i.act === 'barrel') this.doBarrel(i.at)
-    if (i.act === 'jam') this.doJam(i.at)
-    if (i.act === 'valve') this.doValve(i.edge)
-    if (i.act === 'toggle') this.doToggle(i.at)
-    if (i.act === 'tend') {
-      this.doTend(i.at)
-      this.burst('tend', i.at)
-    }
-    if (i.act === 'weed-spray') this.doWeedSpray(i.at)
-    if (i.act === 'chop') this.doChop(i.at)
-    if (i.act === 'graft') this.doGraft(i.at)
-    this.shiftHead()
-  }
-
-  private tickFill(dt: number): void {
-    const head = this.act.queue[0]
-    if (head === undefined || head.act !== 'fill') {
-      this.act.filling = false
-      this.shiftHead()
-      return
-    }
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'container') {
-      this.act.filling = false
-      this.shiftHead()
-      return
-    }
-    const c0 = this.cell(head.at)
-    const source: Pump | RainTank | Tap | Well | undefined =
-      c0.kind === 'pump' || c0.kind === 'rain-tank' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
-    if (source === undefined) {
-      this.act.filling = false
-      this.shiftHead()
-      return
-    }
-    const c = this.act.hand.item
-    const miss = c.capacityLiters - c.liters
-    if (miss <= 0) {
-      this.act.filling = false
-        this.shiftHead()
-      return
-    }
-    const add = this.fillDraw(source, dt)
-    c.liters = add >= miss ? c.capacityLiters : c.liters + add
-    if (c.liters === c.capacityLiters) {
-      this.act.filling = false
-        this.shiftHead()
-    }
-  }
-
-  private fillDraw(source: Pump | RainTank | Tap | Well, dt: number): number {
-    if (source.kind === 'tap') {
-      const net = this.netOfCell(source.base)
-      if (net === undefined) return 0
-      const got = this.pullWater(net.sources, TAP_RATE * dt)
-      source.drawn += got
-      return got
-    }
-    const got = source.water.take(source.water.rate * dt)
-    if (source.kind === 'pump') this.pumpLiters += got
-    return got
-  }
-
-  private tickButtons(): void {
-    for (const at of this.buttons.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'button') tickButton(c)
-    }
-  }
-
-  private evalSensors(dt: number): void {
-    const sensors = new Map<string, Sensor>()
-    const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>()
-    const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
-    for (const at of this.sensors.values()) {
-      const c = this.cell(at)
-      if (isSensor(c)) sensors.set(cellKey(at), c)
-    }
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace' || c.kind === 'station') {
-        machines.set(cellKey(at), c)
-      }
-      if (c.kind === 'furnace') stores.set(cellKey(at), c)
-    }
-    for (const at of this.stores.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'chest' || c.kind === 'freezer') stores.set(cellKey(at), c)
-    }
-    stores.set(cellKey({ col: this.silo.base.col, row: this.silo.base.row }), this.silo)
-    stores.set(cellKey({ col: this.additives.base.col, row: this.additives.base.row }), this.additives)
-    const raw = new Map<string, 0 | 1>()
-    sensors.forEach((s, k) => {
-      if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
-        raw.set(k, readerRaw(s, at => (this.inWorld(at) ? this.cell(at) : undefined), this.modifiers))
-      } else if (s.kind === 'sensor-day') {
-        raw.set(k, dayRaw(s, this.clock.phase()))
-      } else if (s.kind === 'water-system') {
-        this.grid()
-        const hit = corners(occupiedCells(s.base, this.owned)).find(
-          v => this.netAt.has(vertexKey(v)) && incident(v).some(e => this.conducts(e)),
-        )
-        const net = hit === undefined ? undefined : this.netAt.get(vertexKey(hit))
-        if (net === undefined) {
-          raw.set(k, 0)
-          return
-        }
-        const stored = net.sources.reduce((a, r) => a + r.stored, 0)
-        const want = net.sprinklers.reduce((a, spr) => a + (this.mayPour(spr) ? this.demand(spr) * dt : 0), 0)
-        raw.set(k, want > stored ? 1 : 0)
-      } else if (s.kind === 'vehicle-detector') {
-        raw.set(k, vehicleRaw({ col: s.base.col, row: s.base.row }, this.vehicles))
-      }
-    })
-    stores.forEach((s, k) => {
-      raw.set(k, storeRaw(s))
-    })
-    const prevLevels = new Map<string, 0 | 1>()
-    this.valveHold.forEach((h, k) => prevLevels.set(k, h.level))
-    evalDag({ sensors, wires: this.wires, valves: this.valveHold, sprinklers: this.sprinklers, raw: rawMap(raw), machines, stores })
-    let flipped = false
-    this.valveHold.forEach((h, k) => {
-      if (prevLevels.get(k) !== h.level) flipped = true
-    })
-    if (flipped) this.dirtyNets()
-  }
-
-  private doToggle(at: Coord): void {
-    const c = this.cell(at)
-    if (c.kind === 'lever') {
-      flipLever(c)
-
-      this.ping()
-      return
-    }
-    if (c.kind === 'button') {
-      pressButton(c)
-
-      this.ping()
-    }
-  }
-
-  private tickField(dt: number): void {
-    let dirty = false
-    for (const [k, at] of this.recover) {
-      const c = this.cell(at)
-      if (!isTilled(c) || c.soil.weedChance >= WEED_CHANCE) {
-        this.recover.delete(k)
-        continue
-      }
-      const next = c.soil.weedChance + (0.15 * dt) / DAY_SECONDS
-      c.soil.weedChance = next > WEED_CHANCE ? WEED_CHANCE : next
-      if (c.soil.weedChance >= WEED_CHANCE) this.recover.delete(k)
-    }
-    for (const at of this.grow.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'tree') {
-        if (this.tickTree(c, dt)) dirty = true
-        continue
-      }
-      if (c.kind === 'turf') {
-        const stage0 = c.turf.stage()
-        c.soil.drink(GRASS_WATER_PER_SEC * dt)
-        c.turf.maturity += dt / GRASS_GROW
-        if (c.turf.maturity >= 1) {
-          this.setCell(at, { kind: 'untilled', ground: 'soft', cover: { kind: 'grass', variant: c.turf.variant } })
-          dirty = true
-          continue
-        }
-        if (c.turf.stage() !== stage0) dirty = true
-        continue
-      }
-      if (c.kind === 'weed') {
-        const stage0 = c.weed.stage()
-        c.soil.drink(WEED_WATER_PER_SEC * dt)
-        c.soil.starve(WEED_FERT_PER_SEC * dt)
-        const grown = c.weed.maturity + dt / WEED_GROW
-        c.weed.maturity = grown > 1 ? 1 : grown
-        if (c.weed.maturity === 1 && !c.weed.spread) {
-          this.outbreak(at)
-          c.weed.spread = true
-        }
-        if (c.weed.stage() !== stage0) dirty = true
-        continue
-      }
-      if (c.kind !== 'growing' && c.kind !== 'ripe') continue
-      const stage0 = c.plant.stage(c.kind)
-      const st = this.statsCached(c.plant.crop, c.plant.variety)
-      const mood0 = mood(c.soil, st)
-      if (c.kind === 'growing') {
-        c.soil.drink(st.waterUsePerSec * dt)
-        c.soil.starve(PLANT_FERT_PER_SEC * dt)
-        if (!c.soil.bio) c.plant.bio = false
-        const water = waterBand(c.soil.water, st.waterTolerance)
-        const fert = fertBand(c.soil.fertilizer, st.fertTolerance)
-        const q = this.bakeQuality(c.plant)
-        const harm = age(c.plant, c.soil, water, fert, dt)
-        if (harm.kind === 'hurt' && c.plant.happiness <= 0) {
-          this.setCell(at, doomed(harm.by, c.soil, c.plant))
-          this.tally.died += 1
-          dirty = true
-          continue
-        }
-        const stunt = (water === 'red' ? STUNT : 1) * (fert === 'red' ? STUNT : 1)
-        const lonely = needsNeighbour(c.plant.variety) && !this.hasNeighbour([at], c.plant.crop)
-        if (!lonely) c.plant.maturity += (dt * stunt) / st.growSeconds
-        if (c.plant.maturity >= 1) {
-          c.plant.maturity = 1
-          c.plant.freshness = 1
-          c.plant.quality = q
-          this.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
-          dirty = true
-          continue
-        }
-      }
-      if (c.kind === 'ripe') {
-        const bar0Fresh = c.plant.freshness < 0.8
-        c.plant.freshness -= dt / (st.rotSeconds * jamRotMul(this.skillTier('jam'), c.plant.freshness))
-        if (c.plant.freshness <= 0) {
-          this.setCell(at, { kind: 'rotten', soil: c.soil, crop: c.plant.crop })
-          dirty = true
-          continue
-        }
-        if (c.plant.freshness < 0.8 !== bar0Fresh) dirty = true
-      }
-      const now = this.cell(at)
-      if (now.kind !== 'growing' && now.kind !== 'ripe') continue
-      if (now.plant.stage(now.kind) !== stage0 || mood(now.soil, st) !== mood0) dirty = true
-    }
-    if (dirty) this.pingFor('field')
-  }
-
-  private gatherWater(dt: number): void {
-    this.sources().forEach(s => s.water.gather(dt))
-  }
-
-  private tickWater(dt: number): void {
-    const pouring = new Set<string>()
-    this.grid().forEach(net => {
-      const active = net.sprinklers.filter(s => this.mayPour(s))
-      const lists = active.map(s => this.sprinklerTargets(s))
-      const want = active.map((s, i) => lists[i].length * this.tileRate(s) * dt)
-      const total = want.reduce((a, b) => a + b, 0)
-      if (total === 0) return
-      const got = this.pullWater(net.sources, total)
-      if (got === 0) return
-      active.forEach((s, i) => {
-        const targets = lists[i]
-        if (targets.length === 0) return
-        pouring.add(vertexKey(s.at))
-        const add = ((want[i] / total) * got) / targets.length
-        targets.forEach(at => {
-          const c = this.cell(at)
-          if (c.kind !== 'growing') return
-          c.soil.soak(add)
-        })
-      })
-    })
-    if (this.tickVfx(pouring)) this.pingFor('vfx')
-  }
-
-  private tickCompost(dt: number): void {
-    let dirty = false
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (c.kind !== 'compost-box') continue
-      if (c.base.col !== at.col || c.base.row !== at.row) continue
-      if (c.units < COMPOST_NEED) continue
-      c.progress += (dt * furnaceMul(this.furnaceSnap, c.base)) / COMPOST_SECONDS
-      if (c.progress < 1) continue
-      if (!this.emitProduct(at, c.base, makeCompost())) continue
-      c.progress = 0
-      c.units -= COMPOST_NEED
-      this.track(at, c)
-      dirty = true
-    }
-    if (dirty) this.pingFor('field')
-  }
-
-  private tickFreshness(dt: number): void {
-    const rot = (f: FruitStack, mul: number) => {
-      const next =
-        f.freshness -
-        (dt * mul) / (statsOf(f.crop, f.variety, 0, this.modifiers).rotSeconds * jamRotMul(this.skillTier('jam'), f.freshness))
-      f.freshness = next < 0 ? 0 : next
-    }
-    const spoil = (item: Item, mul: number): Item => {
-      if (item.kind !== 'fruit') return item
-      rot(item, mul)
-      if (item.freshness > 0) return item
-      return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count }
-    }
-    const slots = (mul: number) => (s: Slot) => {
-      if (s.kind !== 'hold') return
-      s.item = spoil(s.item, mul)
-    }
-    const open = slots(1)
-    const chilled = slots(FREEZER_ROT_MUL)
-    this.seats.forEach(s => {
-      if (s.presence === 'away') return
-      open(s.hand)
-      s.inventory.forEach(open)
-    })
-    this.drops.forEach(d => {
-      d.item = spoil(d.item, 1)
-    })
-    for (const at of this.stores.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'chest') c.slots.forEach(open)
-      if (c.kind === 'freezer') c.slots.forEach(chilled)
-    }
-    this.vehicles.forEach(v => {
-      if (v.kind === 'quad') v.slots.forEach(open)
-    })
-    this.trailers.forEach(t => {
-      if (t.kind === 'harvest') t.slots.forEach(open)
-    })
-  }
-
-  private tickMachines(dt: number): void {
-    this.furnaceSnap = this.workingFurnaces()
-    const snap = this.furnaceSnap
-    let dirty = false
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'mill') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        const mill: Mill = c
-        if (!millWorking(c)) continue
-        const need = millNeed(c.recipe)
-        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / MILL_WORK
-        if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, millProduct(c.recipe, c.variety, c.quality))) continue
-        c.progress = 0
-        c.units -= need
-        if (c.units === 0) mill.recipe = 'none'
-        this.track(at, c)
-        dirty = true
-        continue
-      }
-      if (c.kind === 'jam') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        const jam: JamMachine = c
-        if (!jamWorking(c)) continue
-        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / JAM_SECONDS
-        if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, { kind: 'jam', crop: c.crop, variety: c.variety, quality: c.quality, count: 1, unitSale: jamSale(c.crop, c.variety, c.quality) })) continue
-        c.progress = 0
-        c.fruit -= JAM_IN
-        c.sugar -= JAM_SUGAR
-        if (c.fruit === 0) jam.crop = 'none'
-        this.track(at, c)
-        dirty = true
-        continue
-      }
-      if (c.kind === 'still') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (!stillReady(c)) continue
-        if (c.progress === 0) {
-          if (!this.pullStillWater(c)) continue
-          dirty = true
-        }
-        c.progress += (dt * furnaceMul(snap, c.base)) / STILL_SECONDS
-        if (c.progress < 1) continue
-        const kind = spiritKind(c.feed)
-        const quality = meanQuality(c.feed)
-        const variety = kind === 'mixed' ? 'base' : feedVariety(c.feed)
-        if (
-          !this.emitProduct(at, c.base, {
-            kind: 'spirit',
-            spirit: kind,
-            variety,
-            quality,
-            count: 1,
-            unitSale: bakeSpiritSale(kind, variety, quality),
-          })
-        ) {
-          continue
-        }
-        c.feed = []
-        c.progress = 0
-        c.n += 1
-        this.track(at, c)
-        dirty = true
-        continue
-      }
-      if (c.kind === 'grinder') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.crop === 'none' || c.units < 1) continue
-        c.progress += (dt * this.machineMul() * furnaceMul(snap, c.base)) / GRIND_WORK
-        if (c.progress < 1) continue
-        const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day, c.n)
-        const floor = grindMinAt(c.quality)
-        const count = floor + Math.floor(u * (GRIND_MAX - floor + 1))
-        if (!this.emitProduct(at, c.base, grindProduct(c, count))) continue
-        c.progress = 0
-        c.units -= 1
-        c.n += 1
-        if (c.units === 0) c.crop = 'none'
-        this.track(at, c)
-        dirty = true
-        continue
-      }
-      if (c.kind === 'barrel') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.crop === 'none' || feedUnits(c.feed) !== barrelNeed(c.crop)) continue
-        const was = c.age
-        c.age += dt
-        if (was < BARREL_MATURE && c.age >= BARREL_MATURE) {
-          c.feed = [{ variety: feedVariety(c.feed), quality: meanQuality(c.feed), count: barrelNeed(c.crop) }]
-          c.n += 1
-        }
-        if (was < BARREL_AGE && c.age >= BARREL_AGE) dirty = true
-        this.track(at, c)
-        continue
-      }
-      if (c.kind === 'station') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.inn === 1) continue
-        if (c.crop === 'none' || c.units < STATION_IN) continue
-        if (c.progress < 1) c.progress += dt / STATION_SECONDS
-        if (c.progress < 1) continue
-        const u = this.rng.stream('grind').at(at.col, at.row, this.clock.day)
-        const count = STATION_GRAFT_MIN + Math.floor(u * (STATION_GRAFT_MAX - STATION_GRAFT_MIN + 1))
-        const sale = statsOf(c.crop, c.variety, c.quality, this.modifiers).sale
-        const cut: Item = {
-          kind: 'fruit',
-          ...fruitStack(c.crop, c.variety, c.quality, STATION_IN, sale, 1, false, true),
-        }
-        const grafts: Item = { kind: 'graft', crop: c.crop, variety: c.variety, quality: c.quality, count }
-        if (!this.emitPair(at, c.base, cut, grafts)) continue
-        c.progress = 0
-        c.units -= STATION_IN
-        if (c.units === 0) c.crop = 'none'
-        this.track(at, c)
-        dirty = true
-        continue
-      }
-      if (c.kind === 'furnace') {
-        if (c.base.col !== at.col || c.base.row !== at.row) continue
-        if (c.inn === 1) continue
-        if (c.units < FURNACE_NEED) continue
-        if (c.progress < 1) c.progress += (dt * furnaceMul(snap, c.base)) / FURNACE_SECONDS
-        if (c.progress < 1) continue
-        if (!this.emitProduct(at, c.base, { kind: 'ash', count: FURNACE_ASH })) continue
-        c.progress = 0
-        c.units -= FURNACE_NEED
-        this.track(at, c)
-        dirty = true
-      }
-    }
-    if (dirty) this.pingFor('field')
-  }
-
-  private dropSpot(at: Coord): Coord | undefined {
-    return frontOf(at).find(p => this.inWorld(p) && isPlot(this.cell(p)))
-  }
-
-  private emitPair(at: Coord, base: RectBase, a: Item, b: Item): boolean {
-    const east = machineEast(base)
-    if (this.inWorld(east)) {
-      const store = this.cell(east)
-      if (store.kind === 'chest' || store.kind === 'freezer') {
-        const test: Slot[] = store.slots.map(s =>
-          s.kind === 'empty' ? { kind: 'empty' as const } : { kind: 'hold' as const, item: { ...s.item } },
-        )
-        if (!insertSlots(test, { ...a }, test.length, undefined)) return false
-        if (!insertSlots(test, { ...b }, test.length, undefined)) return false
-      }
-    }
-    return this.emitProduct(at, base, a) && this.emitProduct(at, base, b)
-  }
-
-  private emitProduct(at: Coord, base: RectBase, item: Item): boolean {
-    const east = machineEast(base)
-    if (this.inWorld(east)) {
-      const store = this.cell(east)
-      if (store.kind === 'chest' || store.kind === 'freezer') {
-        return insertSlots(store.slots, item, store.slots.length, undefined)
-      }
-    }
-    const spot = this.dropSpot(at)
-    if (spot === undefined) return false
-    this.drops.push({ at: spot, item })
-    return true
-  }
-
-  private pullMachineStores(): void {
-    let dirty = false
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (!isIoCell(c)) continue
-      if (c.base.col !== at.col || c.base.row !== at.row) continue
-      const west = machineWest(c.base)
-      if (!this.inWorld(west)) continue
-      const store = this.cell(west)
-      if (store.kind !== 'chest' && store.kind !== 'freezer') continue
-      store.slots.forEach((s, i) => {
-        if (s.kind !== 'hold') return
-        const n = feedAccept(c, s.item)
-        if (n <= 0) return
-        feedApply(c, s.item, n)
-        if (feedWhole(c) || takeCount(s.item, n)) store.slots[i] = { kind: 'empty' }
-        dirty = true
-      })
-      compactSlots(store.slots)
-      this.track(at, c)
-      this.track(west, store)
-    }
-    if (dirty) this.pingFor('field')
-  }
-
-  private pullStillWater(still: PotStill): boolean {
-    const net = this.netOfCell(still.base)
-    if (net === undefined) return false
-    const held = net.sources.reduce((n, s) => n + s.stored, 0)
-    if (held < STILL_WATER) return false
-    this.pullWater(net.sources, STILL_WATER)
-    return true
-  }
-
-  private tickBig(dt: number): void {
-    this.bigAcc += dt
-    if (this.bigAcc < BIG_TICK) return
-    this.bigAcc -= BIG_TICK
-    this.bigTicks += 1
-    this.pullMachineStores()
-    const d = soakDelta(this.weather(this.clock.day))
-    if (d !== 0) {
-      for (const at of this.tilled.values()) {
-        const c = this.cell(at)
-        if (!isTilled(c)) continue
-        if (d > 0) c.soil.soak(d)
-        else c.soil.drink(-d)
-      }
-    }
-    const weeds = this.sproutWeeds()
-    const grass = this.sproutGrass()
-    if (weeds || grass || d !== 0) this.pingFor('big')
-  }
-
-  private tickVfx(pouring: ReadonlySet<string>): boolean {
-    let changed = false
-    this.vfx.forEach((_on, k) => {
-      if (!this.sprinklers.has(k)) {
-        this.vfx.delete(k)
-        changed = true
-      }
-    })
-    this.sprinklers.forEach((_s, k) => {
-      const now = pouring.has(k)
-      if (this.vfx.get(k) !== now) {
-        this.vfx.set(k, now)
-        changed = true
-      }
-    })
-    return changed
-  }
-
-  private sproutWeeds(): boolean {
-    const mul = weedMul(this.weather(this.clock.day))
-    if (mul === 0) return false
-    let grew = false
-    for (const at of this.empty.values()) {
-      const c = this.cell(at)
-      if (c.kind !== 'empty') continue
-      if (this.rng.stream('weed').at(at.col, at.row, this.bigTicks) >= ramped(c.soil.weedChance, this.bigTicks) * mul) continue
-      const variant = this.rng.stream('weed').at(at.col, at.row, this.bigTicks, 1) < 0.5 ? 0 : 1
-      this.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
-      grew = true
-    }
-    return grew
-  }
-
-  private outbreak(at: Coord): void {
-    ;[
-      { col: at.col - 1, row: at.row },
-      { col: at.col + 1, row: at.row },
-      { col: at.col, row: at.row - 1 },
-      { col: at.col, row: at.row + 1 },
-    ].forEach(n => {
-      if (!this.inWorld(n)) return
-      const c = this.cell(n)
-      if (c.kind !== 'empty') return
-      c.soil.weedChance += 0.05
-      this.track(n, c)
-    })
+  dropSpot(at: Coord): Coord | undefined {
+    return machines.dropSpot(this, at)
   }
 
   grassCount(): number {
-    return this.owned.reduce((n, id) => {
-      const { col0, row0, col1, row1 } = chunkRect(id)
-      let hit = 0
-      for (let row = row0; row < row1; row++) {
-        for (let col = col0; col < col1; col++) {
-          const c = this.cell({ col, row })
-          if (c.kind === 'untilled' && c.cover.kind === 'grass') hit += 1
-        }
-      }
-      return n + hit
-    }, 0)
-  }
-
-  private sproutGrass(): boolean {
-    const mul = weedMul(this.weather(this.clock.day))
-    if (mul === 0) return false
-    if (this.grassCount() >= CHUNK * this.owned.length) return false
-    const grass = this.rng.stream('grass')
-    const ownedCellCount = this.owned.length * CHUNK * CHUNK
-    if (!(Math.min(1, ramped(GRASS_CHANCE, this.bigTicks) * ownedCellCount) * mul > grass.at(this.bigTicks))) return false
-    const per = CHUNK * CHUNK
-    for (let i = 0; i < 24; i++) {
-      const u = grass.at(this.bigTicks, i, 0)
-      let index = Math.floor(u * ownedCellCount)
-      if (index >= ownedCellCount) index = ownedCellCount - 1
-      const id = this.owned[Math.floor(index / per)]
-      const localIx = index % per
-      const { col0, row0 } = chunkRect(id)
-      const col = col0 + (localIx % CHUNK)
-      const row = row0 + Math.floor(localIx / CHUNK)
-      const at = { col, row }
-      const c = this.cell(at)
-      if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
-      if (onCell(this.drops, at).length > 0) continue
-      const variant = Math.floor(grass.at(col, row, this.bigTicks) * 3) as 0 | 1 | 2
-      this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'grass', variant } })
-      return true
-    }
-    return false
-  }
-
-  private freshSoil(at: Coord): Soil {
-    return new Soil(SOIL_TILL_WATER, goodness(this.rng, at.col, at.row), WEED_CHANCE)
-  }
-
-  private tickTreesSeam(): void {
-    for (const at of this.grow.values()) {
-      const c = this.cell(at)
-      if (c.kind !== 'tree') continue
-      if (c.juvenile < 1) continue
-      if (needsNeighbour(c.variety) && !this.hasNeighbour(this.treeCells(c), c.species)) continue
-      this.advanceYield(c)
-    }
-  }
-
-  private advanceYield(t: Tree): void {
-    if (t.yield.kind === 'pending') {
-      t.yield = { kind: 'on', daysLeft: TREE_YIELD_DAYS }
-      return
-    }
-    if (t.yield.kind === 'on') {
-      const left = (t.yield.daysLeft - 1) as 0 | 1
-      if (left === 0) {
-        t.tended = false
-        t.yield = { kind: 'off', chance: -0.2 }
-      } else {
-        t.yield = { kind: 'on', daysLeft: left }
-      }
-      return
-    }
-    const chance = t.yield.chance + 0.2
-    const u = this.rng.stream('tree').at(t.base.col, t.base.row, this.clock.day)
-    t.yield = u < chance ? { kind: 'on', daysLeft: TREE_YIELD_DAYS } : { kind: 'off', chance }
-  }
-
-  private tickTree(t: Tree, dt: number): boolean {
-    if (t.juvenile < 1) {
-      t.juvenile += dt / TREES[t.species].juvenileSeconds
-      if (t.juvenile < 1) return false
-      t.juvenile = 1
-      if (t.trunk) {
-        t.trunk = false
-        t.juvenile = 0
-        return true
-      }
-      t.yield = { kind: 'pending' }
-      t.fruit = 0
-      return true
-    }
-    if (t.yield.kind === 'pending') return false
-    if (needsNeighbour(t.variety) && !this.hasNeighbour(this.treeCells(t), t.species)) return false
-    const ripe = t.fruit >= 1
-    const mul = t.yield.kind === 'on' ? TREE_YIELD_MUL : TREE_OFF_MUL
-    t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
-    if (t.fruit < 1) return false
-    if (!this.dropTreeFruit(t)) {
-      t.fruit = 1
-      return !ripe
-    }
-    t.fruit = 0
-    this.tally.harvests += 1
-    return true
-  }
-
-  private dropTreeFruit(t: Tree): boolean {
-    const open = TREE_DROP_ROWS.flatMap(dr =>
-      TREE_DROP_COLS.map(dc => ({ col: t.base.col + dc, row: t.base.row + dr })),
-    ).filter(p => {
-      if (p.col === t.base.col && (p.row === t.base.row || p.row === t.base.row + 1)) return false
-      if (!this.inWorld(p)) return false
-      return isPlot(this.cell(p))
-    })
-    if (open.length === 0) return false
-    const fruit = this.rng.stream('fruit')
-    const hit = open[Math.floor(fruit.next() * open.length)]
-    const sale = statsOf(t.species, t.variety, 0, this.modifiers).sale
-    this.drops.push({
-      at: { ...hit },
-      item: {
-        kind: 'fruit',
-        crop: t.species,
-        variety: t.variety,
-        quality: 0,
-        count: 1,
-        unitSale: sale,
-        freshness: 1,
-        bio: true,
-        cut: false,
-      },
-    })
-    return true
-  }
-
-  private seedPair(at: Coord): Coord | undefined {
-    const above = { col: at.col, row: at.row - 1 }
-    if (!this.inWorld(above)) return undefined
-    const a = this.cell(at)
-    const b = this.cell(above)
-    if (a.kind !== 'untilled' || b.kind !== 'untilled') return undefined
-    if (a.ground !== 'soft' || b.ground !== 'soft') return undefined
-    if (a.cover.kind === 'tile' || b.cover.kind === 'tile') return undefined
-    return above
-  }
-
-  private canShovel(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'shovel') return false
-    const c = this.cell(at)
-    if (c.kind === 'tree') return true
-    if (!isPlot(c)) return false
-    if (c.kind === 'infertile') return false
-    if (c.kind === 'untilled' && c.ground === 'very-hard') return false
-    if (c.kind === 'untilled' && c.ground === 'hard') return this.act.hand.item.usesLeft >= 2
-    return true
-  }
-
-  private doShovel(at: Coord): boolean {
-    if (!this.canShovel(at)) return false
-    const c = this.cell(at)
-    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
-    if (c.kind === 'tree') {
-      occupiedCells(c.base, this.owned).forEach(p => this.setCell(p, bare('soft')))
-      this.drops.push({ at: { ...at }, item: { kind: 'tree-seed', tree: c.species, variety: c.variety, quality: 0 } })
-      s.item.usesLeft -= 1
-      if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-
-      return true
-    }
-    if (c.kind === 'growing' || c.kind === 'ripe') {
-      this.drops.push({
-        at: { ...at },
-        item: { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 },
-      })
-    }
-    if (c.kind === 'weed') c.soil.weedChance = -0.3
-    this.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : this.freshSoil(at) })
-    const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
-    s.item.usesLeft -= cost
-    if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-
-    return true
-  }
-
-  private canMine(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'pickaxe') return false
-    const c = this.cell(at)
-    if (c.kind === 'untilled' && c.ground === 'very-hard') return true
-    if (c.kind !== 'rock') return false
-    const n = occupiedCells(c.base, this.owned).length
-    return n < 2 || this.act.hand.item.usesLeft >= 2
-  }
-
-  private doMine(at: Coord): void {
-    if (!this.canMine(at)) return
-    const c = this.cell(at)
-    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'pickaxe' }> }
-    if (c.kind === 'untilled' && c.ground === 'very-hard') {
-      this.setCell(at, { kind: 'infertile' })
-      s.item.usesLeft -= 1
-      if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-        return
-    }
-    if (c.kind !== 'rock') return
-    const n = occupiedCells(c.base, this.owned).length
-    occupiedCells(c.base, this.owned).forEach(p => {
-      this.setCell(p, bare('soft'))
-    })
-    s.item.usesLeft -= n === 1 ? 1 : 2
-    if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-  }
-
-  private canPlant(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    if (this.act.hand.item.kind === 'tree-seed') return this.seedPair(at) !== undefined
-    if (this.act.hand.item.kind !== 'seeds' && this.act.hand.item.kind !== 'grass-seeds') return false
-    return this.cell(at).kind === 'empty'
-  }
-
-  private doPlant(at: Coord): void {
-    if (!this.canPlant(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    if (this.act.hand.item.kind === 'tree-seed') {
-      const above = this.seedPair(at)
-      if (above === undefined) return
-      const tree = new Tree(this.act.hand.item.tree, { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 })
-      tree.variety = this.act.hand.item.variety
-      this.setCell(above, tree)
-      this.setCell(at, tree)
-      this.act.hand = { kind: 'empty' }
-
-      return
-    }
-    const bed = this.cell(at) as Extract<Plot, { kind: 'empty' }>
-    if (this.act.hand.item.kind === 'grass-seeds') {
-      const g = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'grass-seeds' }> }
-      const variant = Math.floor(this.rng.stream('gen').at(3, at.col, at.row) * 3) as 0 | 1 | 2
-      this.setCell(at, { kind: 'turf', soil: bed.soil, turf: new Turf(variant) })
-      g.item.count -= 1
-      if (g.item.count <= 0) this.act.hand = { kind: 'empty' }
-
-      this.compactInventory()
-      this.ping()
-      return
-    }
-    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
-    this.setCell(at, {
-      kind: 'growing',
-      soil: bed.soil,
-      plant: new Plant(s.item.crop, s.item.variety, s.item.quality),
-    })
-    s.item.count -= 1
-    if (s.item.count <= 0) this.act.hand = { kind: 'empty' }
-
-  }
-
-  private canWater(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'container') return false
-    if (this.act.hand.item.liters <= 0) return false
-    return waterable(this.cell(at), this.modifiers)
-  }
-
-  private doWater(at: Coord): boolean {
-    if (!this.canWater(at)) return false
-    const c = this.cell(at) as Extract<Plot, { soil: Soil }>
-    const bucket = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'container' }> }
-    const need = pourTarget(c, this.modifiers) - c.soil.water
-    const use = need > bucket.item.liters ? bucket.item.liters : need
-    c.soil.soak(use)
-    bucket.item.liters -= use
-
-    return c.kind === 'growing' || c.kind === 'ripe'
-  }
-
-  private doValve(edge: Edge): void {
-    this.toggleValve(edge)
-  }
-
-  private canFertilize(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const it = this.act.hand.item
-    if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost') return false
-    if (it.liters <= 0) return false
-    const c = this.cell(at)
-    return isTilled(c) && c.soil.fertilizer < FERT_PLOT_MAX
-  }
-
-  private doFertilize(at: Coord): void {
-    if (!this.canFertilize(at)) return
-    const c = this.cell(at) as Extract<Plot, { soil: Soil }>
-    const bag = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'synth' | 'compost' }> }
-    const need = FERT_PLOT_MAX - c.soil.fertilizer
-    const use = need > bag.item.liters ? bag.item.liters : need
-    if (bag.item.kind === 'synth') c.soil.spike(use)
-    else c.soil.feed(use)
-    bag.item.liters -= use
-    if (bag.item.liters <= 0) this.act.hand = { kind: 'empty' }
-
-  }
-
-  private canCompost(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    if (this.cell(at).kind !== 'compost-box') return false
-    return organic(this.act.hand.item)
-  }
-
-  private doCompost(at: Coord): void {
-    if (!this.canCompost(at)) return
-    const box = this.cell(at) as CompostBox
-    const held = this.act.hand as { kind: 'hold'; item: Item }
-    box.units += compostValue(held.item)
-    this.track(at, box)
-    this.act.hand = { kind: 'empty' }
-
+    return field.grassCount(this)
   }
 
   canTend(at: Coord): boolean {
-    if (!this.hasSkill('tending')) return false
-    if (this.act.hand.kind !== 'empty') return false
-    const c = this.cell(at)
-    if (c.kind === 'growing') return !c.plant.tended
-    if (c.kind === 'tree') return c.juvenile >= 1 && c.yield.kind === 'off' && !c.tended && !c.trunk
-    return false
-  }
-
-  private doTend(at: Coord): void {
-    if (!this.canTend(at)) return
-    const c = this.cell(at)
-    if (c.kind === 'growing') {
-      c.plant.happiness += 0.1
-      if (c.plant.happiness > HAPPY_MAX) c.plant.happiness = HAPPY_MAX
-      c.plant.tended = true
-      return
-    }
-    if (c.kind === 'tree' && c.yield.kind === 'off') {
-      c.yield.chance += 0.15
-      c.tended = true
-    }
-  }
-
-  private canChop(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'axe') return false
-    const c = this.cell(at)
-    return c.kind === 'tree' && c.juvenile >= 1 && !c.trunk
-  }
-
-  private doChop(at: Coord): void {
-    if (!this.canChop(at)) return
-    const c = this.cell(at)
-    if (c.kind !== 'tree') return
-    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'axe' }> }
-    s.item.usesLeft -= 1
-    if (s.item.usesLeft <= 0) this.act.hand = { kind: 'empty' }
-    const spot = this.dropSpot(at)
-    if (spot !== undefined) {
-      this.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
-      this.drops.push({
-        at: { ...spot },
-        item: { kind: 'graft', crop: c.species, variety: c.variety, quality: 0, count: CHOP_GRAFTS },
-      })
-    }
-    c.trunk = true
-    c.juvenile = 0
-    c.fruit = 0
-    c.yield = { kind: 'pending' }
-    c.tended = false
+    return field.canTend(this, at)
   }
 
   treeCells(t: Tree): Coord[] {
-    return [
-      { col: t.base.col, row: t.base.row },
-      { col: t.base.col, row: t.base.row + 1 },
-    ]
-  }
-
-  private goodNeighbour(at: Coord, crop: CropId, self: readonly Coord[]): boolean {
-    if (self.some(s => s.col === at.col && s.row === at.row)) return false
-    if (!this.inWorld(at)) return false
-    const c = this.cell(at)
-    if (c.kind === 'growing') {
-      if (c.plant.crop !== crop || tierOf(c.plant.variety) === 'heirloom') return false
-      const st = this.statsCached(c.plant.crop, c.plant.variety)
-      return (
-        waterBand(c.soil.water, st.waterTolerance) !== 'red' && fertBand(c.soil.fertilizer, st.fertTolerance) !== 'red'
-      )
-    }
-    if (c.kind === 'tree') return c.species === crop && tierOf(c.variety) !== 'heirloom' && c.juvenile >= 1 && !c.trunk
-    return false
+    return field.treeCells(t)
   }
 
   neighbourReach(cells: readonly Coord[]): Coord[] {
-    const span = Array.from({ length: NEIGHBOUR_REACH * 2 + 1 }, (_, i) => i - NEIGHBOUR_REACH)
-    const seen = new Set<string>()
-    return cells
-      .flatMap(o => span.flatMap(dc => span.map(dr => ({ col: o.col + dc, row: o.row + dr }))))
-      .filter(p => {
-        const k = `${p.col},${p.row}`
-        if (seen.has(k)) return false
-        seen.add(k)
-        return true
-      })
+    return field.neighbourReach(cells)
   }
 
   hasNeighbour(cells: readonly Coord[], crop: CropId): boolean {
-    return this.neighbourReach(cells).some(p => this.goodNeighbour(p, crop, cells))
+    return field.hasNeighbour(this, cells, crop)
   }
 
   neighbourWatch(at: Coord): { crop: CropId; tree: boolean; reach: Coord[]; ok: boolean } | undefined {
-    const c = this.cell(at)
-    if (c.kind === 'growing' && needsNeighbour(c.plant.variety)) {
-      return {
-        crop: c.plant.crop,
-        tree: false,
-        reach: this.neighbourReach([at]),
-        ok: this.hasNeighbour([at], c.plant.crop),
-      }
-    }
-    if (c.kind === 'tree' && needsNeighbour(c.variety) && c.juvenile >= 1 && !c.trunk) {
-      const cells = this.treeCells(c)
-      return { crop: c.species, tree: true, reach: this.neighbourReach(cells), ok: this.hasNeighbour(cells, c.species) }
-    }
-    return undefined
+    return field.neighbourWatch(this, at)
   }
 
   canGraft(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'graft') return false
-    const g = this.act.hand.item
-    const c = this.cell(at)
-    if (c.kind === 'growing') return c.plant.crop === g.crop && tierOf(c.plant.variety) !== 'heirloom'
-    if (c.kind === 'tree') return c.species === g.crop && c.juvenile < 1 && tierOf(c.variety) !== 'heirloom'
-    return false
+    return field.canGraft(this, at)
   }
 
-  private doGraft(at: Coord): void {
-    if (!this.canGraft(at)) return
-    const s = this.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'graft' }> }
-    const c = this.cell(at)
-    if (c.kind === 'growing') {
-      c.plant.variety = s.item.variety
-      c.plant.quality = s.item.quality
-    }
-    if (c.kind === 'tree') c.variety = s.item.variety
-    s.item.count -= 1
-    if (s.item.count <= 0) this.act.hand = { kind: 'empty' }
-  }
+  
 
-  private canHarvest(at: Coord): boolean {
-    const c = this.cell(at)
-    if (c.kind !== 'ripe') return false
-    if (this.act.hand.kind === 'empty') return true
-    const it = this.act.hand.item
-    if (it.kind !== 'fruit') return false
-    return it.crop === c.plant.crop && it.variety === c.plant.variety && it.count < this.stackMax(it)
-  }
-
-  private doHarvest(at: Coord): void {
-    if (!this.canHarvest(at)) return
-    const c = this.cell(at)
-    const bed = c as Extract<Plot, { kind: 'ripe' }>
-    const p = bed.plant
-    const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(this.modifiers).sale, p.freshness, p.bio, false)
-    this.setCell(at, { kind: 'empty', soil: bed.soil })
-    this.tally.harvests += 1
-
-    if (this.act.hand.kind === 'empty') {
-      this.act.hand = { kind: 'hold', item: { kind: 'fruit', ...picked } }
-      return
-    }
-    if (this.act.hand.item.kind === 'fruit') mergeInto(this.act.hand.item, { kind: 'fruit', ...picked }, 1)
-  }
-
-  private canFill(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'container') return false
-    return fillable(this, at)
-  }
-
-  private doPickup(at: Coord): void {
-    const i = topIndex(this.drops, at)
-    if (i < 0) {
-      const c = this.cell(at)
-      const cover = c.kind === 'untilled' && c.cover.kind === 'grass'
-      if (c.kind !== 'weed' && !cover) return
-      const kind = c.kind === 'weed' ? 'weed' : 'grass'
-      const held = this.act.hand
-      if (held.kind === 'hold') {
-        if (held.item.kind !== kind) return
-        if (held.item.count >= this.stackMax(held.item)) {
-          this.say(HAND_FULL)
-          return
-        }
-        held.item.count += 1
-      }
-      if (c.kind === 'weed') {
-        c.soil.weedChance = 0
-        this.setCell(at, { kind: 'empty', soil: c.soil })
-      } else if (c.kind === 'untilled') {
-        this.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
-      }
-      if (held.kind === 'empty') this.act.hand = { kind: 'hold', item: { kind, count: 1 } }
-        return
-    }
-    const taken = this.drops[i].item
-    const held = this.act.hand
-    if (held.kind === 'hold' && countable(held.item) && countable(taken) && stackable(held.item, taken)) {
-      const room = this.stackMax(held.item) - held.item.count
-      if (room <= 0) {
-        this.say(HAND_FULL)
-        return
-      }
-      const n = taken.count < room ? taken.count : room
-      mergeInto(held.item, taken, n)
-      if (n === taken.count) this.drops.splice(i, 1)
-      else taken.count -= n
-        return
-    }
-    this.drops.splice(i, 1)
-    if (held.kind === 'empty') {
-      this.act.hand = { kind: 'hold', item: taken }
-        return
-    }
-    this.drops.push({ at: { ...at }, item: held.item })
-    this.act.hand = { kind: 'hold', item: taken }
-  }
-
-  private doDrop(at: Coord): void {
-    if (this.act.hand.kind !== 'hold') return
-    if (!isPlot(this.cell(at))) return
-    this.drops.push({ at: { ...at }, item: this.act.hand.item })
-    this.act.hand = { kind: 'empty' }
-  }
-
-  private doConsign(): void {
-    if (this.act.hand.kind !== 'hold') return
-    const item = this.act.hand.item
-    if (item.kind === 'fruit') {
-      const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
-      this.splitConsign(item.crop, item.count, item.freshness === 0, rest => {
-        this.stall[item.crop].take(item.variety, rest, unit, item.bio)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'sugar') {
-      this.splitConsign('sugar', item.liters, false, rest => {
-        this.stall.sugar.takeSugar(rest, item.unitSale)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'spirit') {
-      this.splitConsign(item.spirit, item.count, false, rest => {
-        this.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'cask') {
-      this.splitConsign(item.cask, item.count, false, rest => {
-        this.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'jam') {
-      this.splitConsign(`jam-${item.crop}`, item.count, false, rest => {
-        this.stall[`jam-${item.crop}`].takeBaked(rest, item.unitSale)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
-      this.splitConsign(item.kind, item.count, false, rest => {
-        this.stall[item.kind].takeBaked(rest, item.unitSale)
-      })
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-      return
-    }
-    if (item.kind === 'rotten') {
-      if (!this.hasSkill('clearance')) return
-      this.clearance += item.count
-      this.act.hand = { kind: 'empty' }
-      this.completeConsign()
-    }
-  }
-
-  private completeConsign(): void {
-    this.consignRevision += 1
-
-    this.finishFull()
-  }
-
-  private splitConsign(
-    good: StallGoodId,
-    n: number,
-    skip: boolean,
-    restToStall: (rest: number) => void,
-  ): void {
-    const bound = skip ? 0 : this.fillContracts(good, n)
-    const rest = n - bound
-    if (rest > 0) restToStall(rest)
-  }
-
-  private fillContracts(good: StallGoodId, n: number): number {
-    let left = n
-    this.contracts.active.forEach(a => {
-      a.bins.forEach(bin => {
-        if (left <= 0) return
-        if (!Accepts(bin.demand, good)) return
-        const room = bin.demand.amount - bin.filled
-        if (room <= 0) return
-        const take = left < room ? left : room
-        bin.filled += take
-        left -= take
-      })
-    })
-    return n - left
-  }
-
-  private finishFull(): void {
-    this.contracts.active
-      .filter(a => a.bins.every(b => b.filled === b.demand.amount))
-      .slice()
-      .forEach(a => this.resolveDone(a))
-  }
-
-  private tickContracts(before: number, after: number): void {
-    this.contracts.active
-      .filter(a => before < a.dueDay && after >= a.dueDay)
-      .slice()
-      .forEach(a => {
-        if (a.bins.every(b => b.filled === b.demand.amount)) this.resolveDone(a)
-        else this.resolveMiss(a)
-      })
-  }
-
-  private acceptContractBody(c: ContractId): void {
-    if (!this.done.has('unlock-contracts')) return
-    if (this.contracts.active.length >= this.contractCap()) return
-    if (this.contracts.takenToday.includes(c)) return
-    const offer = rollBoard(this.rng, this.clock.day, this.contractSlots(), this.contracts.repDay).find(o => o.id === c)
-    if (offer === undefined) return
-    const bins: Bins =
-      offer.lines.length === 1
-        ? [{ demand: offer.lines[0], filled: 0 }]
-        : [{ demand: offer.lines[0], filled: 0 }, { demand: offer.lines[1], filled: 0 }]
-    this.contracts.active.push({ offer, dueDay: this.nowDay() + offer.days, bins })
-    this.contracts.takenToday.push(c)
-    this.ping()
-  }
-
-  private cancelContractBody(c: ContractId): void {
-    const a = this.contracts.active.find(x => x.offer.id === c)
-    if (a === undefined) return
-    const sold = this.dumpFilled(a)
-    const fee = cancelFee(a, this.nowDay())
-    this.money += sold - fee
-    this.addRep(-REP_LOST[a.offer.stars])
-    this.dropActive(a)
-    this.pushHistory({
-      id: a.offer.id,
-      company: a.offer.company,
-      stars: a.offer.stars,
-      day: this.clock.day,
-      outcome: { kind: 'cancelled', sold, fee },
-    })
-    this.ping()
-  }
-
-  private addRep(n: number): void {
-    const next = this.contracts.rep + n
-    this.contracts.rep = next < 0 ? 0 : next > REP_MAX ? REP_MAX : next
-  }
-
-  private reorderContractBody(c: ContractId, d: 1 | -1): void {
-    const i = this.contracts.active.findIndex(x => x.offer.id === c)
-    if (i < 0) return
-    const j = i + d
-    if (j < 0 || j >= this.contracts.active.length) return
-    const cur = this.contracts.active[i]
-    this.contracts.active[i] = this.contracts.active[j]
-    this.contracts.active[j] = cur
-    this.ping()
-  }
-
-  private resolveDone(a: Active): void {
-    const prize = a.offer.prize
-    const paidN = prize.kind === 'cash' ? a.offer.reward * (1 + 0.03 * this.skillTier('industrial')) : 0
-    if (prize.kind === 'cash') this.money += paidN
-    else this.payPrize(prize, a.offer.reward)
-    this.contracts.book[a.offer.company].done += 1
-    this.addRep(REP_DONE[a.offer.stars])
-    this.dropActive(a)
-    this.pushHistory({
-      id: a.offer.id,
-      company: a.offer.company,
-      stars: a.offer.stars,
-      day: this.clock.day,
-      outcome: { kind: 'done', paid: paidN, prize },
-    })
-    this.ping()
-  }
-
-  /**
-   * Hands over a non-cash prize. Goods land at the house door, the way a
-   * shovelled-up tree seed does; bulk goes straight to its store. `cash` is the
-   * money reward the contract would otherwise have paid, which is what the
-   * fertilizer prize is priced against.
-   */
-  private payPrize(prize: Exclude<Prize, { kind: 'cash' }>, cash: number): void {
-    if (prize.kind === 'skill-points') {
-      this.grantPoints(prize.n)
-      return
-    }
-    if (prize.kind === 'expansion-slot') {
-      this.prizeSlots += 1
-      return
-    }
-    if (prize.kind === 'freezer') {
-      this.prizeFreezers += 1
-      return
-    }
-    if (prize.kind === 'seeds') {
-      this.putSilo(prize.crop, 'base', 0, prize.count)
-      return
-    }
-    if (prize.kind === 'fertilizer') {
-      const bags = Math.max(1, Math.round(cash / SKUS['buy-fertilizer'].price))
-      this.putAdditive('fertilizer', bags * FERT_BAG_LITERS)
-      return
-    }
-    const item: Item =
-      prize.kind === 'tree-seed'
-        ? { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
-        : prize.tool === 'rotary-shovel'
-          ? makeShovel('rotary-shovel')
-          : makePickaxe('diamond-pickaxe')
-    this.drops.push({ at: { ...DOOR }, item })
-  }
-
-  private resolveMiss(a: Active): void {
-    const sold = this.dumpFilled(a)
-    const penalty = missPenalty(a)
-    this.money += sold - penalty
-    this.contracts.book[a.offer.company].missed += 1
-    this.addRep(-REP_LOST[a.offer.stars])
-    this.dropActive(a)
-    this.pushHistory({
-      id: a.offer.id,
-      company: a.offer.company,
-      stars: a.offer.stars,
-      day: this.clock.day,
-      outcome: { kind: 'missed', sold, penalty },
-    })
-    this.ping()
-  }
-
-  private dropActive(a: Active): void {
-    this.contracts.active = this.contracts.active.filter(x => x.offer.id !== a.offer.id)
-  }
-
-  private pushHistory(e: HistoryEntry): void {
-    this.contracts.history.push(e)
-    if (this.contracts.history.length > CONTRACT_HISTORY_MAX) this.contracts.history.shift()
-    this.tally.contracts.push(e)
-  }
-
-  private dumpFilled(a: Active): number {
-    const add = new Map<StallGoodId, number>()
-    a.bins.forEach(bin => {
-      if (bin.filled <= 0) return
-      const good = demandGood(bin.demand)
-      const V = bin.filled * cleanUnit(bin.demand)
-      const cur = add.get(good)
-      add.set(good, cur === undefined ? V : cur + V)
-      this.consignDemand(bin.demand, bin.filled)
-    })
-    let sold = 0
-    add.forEach((V, good) => {
-      sold += paid(this.stall[good].sat, good, V)
-      this.stall[good].sat = Math.min(1, this.stall[good].sat + V / SAT_DEPTH)
-    })
-    return sold
-  }
-
-  private consignDemand(d: Demand, n: number): void {
-    if (d.kind === 'plain') {
-      if (isCropStall(d.good)) this.stall[d.good].take('base', n, 1, false)
-      else if (isSpiritStall(d.good)) this.stall[d.good].takeSpirit('base', n, cleanUnit(d))
-      else if (d.good === 'sugar') this.stall.sugar.takeSugar(n, SUGAR_MILL)
-      else this.stall[d.good].takeBaked(n, cleanUnit(d))
-      return
-    }
-    if (d.group === 'jam') this.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
-    else this.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0))
-  }
-
-  private padBuildings(): PadCell[] {
-    const out: PadCell[] = []
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (
-        c.kind === 'mill' ||
-        c.kind === 'jam' ||
-        c.kind === 'still' ||
-        c.kind === 'compost-box' ||
-        c.kind === 'furnace' ||
-        c.kind === 'station'
-      ) {
-        out.push(c)
-      }
-    }
-    for (const at of this.stores.values()) {
-      const c = this.cell(at)
-      if (c.kind === 'chest' || c.kind === 'freezer') out.push(c)
-    }
-    out.push(this.silo, this.additives)
-    return out
-  }
-
-  private padHit(at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
-    for (const cell of this.padBuildings()) {
-      if (onPad(dropoffPad(cell.base), at)) return { cell, side: 'dropoff' }
-      if (onPad(takeupPad(cell.base), at)) return { cell, side: 'takeup' }
-    }
-    return undefined
+  padBuildings(): PadCell[] {
+    return vehicles.padBuildings(this)
   }
 
   private padSideOfLocal(): 'dropoff' | 'takeup' | undefined {
     const v = this.driverVehicle(this.local)
-    if (v === undefined || v.pose.kind !== 'field') return undefined
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+    if (v?.pose.kind !== 'field') return undefined
+    const hit = vehicles.padHit(this, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
     return hit === undefined ? undefined : hit.side
   }
 
-  private cargo() {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return undefined
-    return vehicleCargo(v, this.trailers)
-  }
-
-  private transferLoad(v: Vehicle): void {
-    if (v.pose.kind !== 'field') return
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    const cargo = vehicleCargo(v, this.trailers)
-    if (hit === undefined || hit.side !== 'takeup' || cargo === undefined) return
-    pullFrom(hit.cell, cargo, this.drops)
-  }
-
-  private transferUnload(v: Vehicle): void {
-    if (v.pose.kind !== 'field') return
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    const cargo = vehicleCargo(v, this.trailers)
-    if (hit === undefined || hit.side !== 'dropoff' || cargo === undefined) return
-    dumpCargo(cargo, hit.cell)
-  }
-
-  private loadBody(): void {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    const cargo = this.cargo()
-    if (hit === undefined || hit.side !== 'takeup' || cargo === undefined) return
-    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
-    this.transferLoad(v)
-    this.ping()
-  }
-
-  private unloadBody(): void {
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    const cargo = this.cargo()
-    if (hit === undefined || hit.side !== 'dropoff' || cargo === undefined) return
-    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
-    this.transferUnload(v)
-    this.ping()
-  }
-
-  private tickDispatch(dt: number): void {
-    this.vehicles.forEach(v => {
-      if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return
-      const route = this.routeById(v.route)
-      if (route === undefined || route.stops.length === 0) return
-      const stop = route.stops[v.cursor]
-      if (stop.kind === 'goto') return
-      if (!this.stopArrived(v.pose, stop)) return
-      if (v.fuel === 0) return
-      if (stop.kind === 'wait') {
-        if (!this.inWorld(stop.at)) return
-        const light = this.cell(stop.at)
-        if (light.kind !== 'traffic-light') return
-        if (light.inn === 1) this.advanceRoute(v, route)
-        return
-      }
-      if (v.dwell <= 0) {
-        v.dwell = DISPATCH_DWELL
-        return
-      }
-      v.dwell -= dt
-      if (v.dwell > 0) return
-      v.dwell = 0
-      if (stop.kind === 'load') this.transferLoad(v)
-      else this.transferUnload(v)
-      this.advanceRoute(v, route)
-    })
-    for (const at of this.sensors.values()) {
-      const c = this.cell(at)
-      if (c.kind !== 'traffic-light') continue
-      const raw: 0 | 1 = this.lightWaiter(c) ? 1 : 0
-      const next = stepHold(c.out, c.hold, raw)
-      c.out = next.out
-      c.hold = next.hold
-    }
-  }
-
-  private lightWaiter(light: Extract<Sensor, { kind: 'traffic-light' }>): boolean {
-    const at = { col: light.base.col, row: light.base.row }
-    return this.vehicles.some(v => {
-      if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return false
-      const route = this.routeById(v.route)
-      if (route === undefined || route.stops.length === 0) return false
-      const stop = route.stops[v.cursor]
-      if (stop.kind !== 'wait') return false
-      if (stop.at.col !== at.col || stop.at.row !== at.row) return false
-      if (Math.floor(v.pose.x) !== at.col || Math.floor(v.pose.y) !== at.row) return false
-      return light.inn === 0
-    })
-  }
-
-  private loadWould(): boolean {
-    const cargo = this.cargo()
-    if (cargo === undefined) return false
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return false
-    if (v.pose.speed !== 0) return false
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    if (hit === undefined || hit.side !== 'takeup') return false
-    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
-    return canPull(hit.cell, cargo, this.drops)
-  }
-
-  private unloadWould(): boolean {
-    const cargo = this.cargo()
-    if (cargo === undefined) return false
-    const v = this.driverVehicle(this.act.id)
-    if (v === undefined || v.pose.kind !== 'field') return false
-    if (v.pose.speed !== 0) return false
-    const hit = this.padHit({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    if (hit === undefined || hit.side !== 'dropoff') return false
-    if (this.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
-    return canDumpCargo(cargo, hit.cell)
-  }
-
-  private canMill(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'mill') return false
-    return millAccept(c, this.act.hand.item) !== undefined
-  }
-
-  private doMill(at: Coord): void {
-    if (!this.canMill(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const mill = this.cell(at) as Mill
-    const take = millAccept(mill, this.act.hand.item)
-    if (take === undefined) return
-    millApply(mill, this.act.hand.item, take.n)
-    this.takeHandCount(take.n)
-    this.track(at, mill)
-  }
-
-  private canStill(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'still') return false
-    const crop = stillCropOf(this.act.hand.item)
-    if (crop === undefined) return false
-    const room = STILL_CAP - feedUnits(c.feed)
-    return room > 0 && fruitCount(this.act.hand.item) > 0
-  }
-
-  private doStill(at: Coord): void {
-    if (!this.canStill(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const still = this.cell(at) as PotStill
-    const crop = stillCropOf(this.act.hand.item)
-    const variety = fruitVariety(this.act.hand.item)
-    if (crop === undefined || variety === undefined) return
-    const room = STILL_CAP - feedUnits(still.feed)
-    const n = Math.min(room, fruitCount(this.act.hand.item))
-    if (n <= 0) return
-    addStillFeed(still.feed, crop, variety, fruitQuality(this.act.hand.item), n)
-    this.takeHandCount(n)
-    this.track(at, still)
-
-  }
-
-  private canFurnace(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'furnace') return false
-    return furnaceAccept(c, this.act.hand.item) > 0
-  }
-
-  private doFurnace(at: Coord): void {
-    if (!this.canFurnace(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const furnace = this.cell(at) as Furnace
-    const n = furnaceAccept(furnace, this.act.hand.item)
-    if (n <= 0) return
-    furnaceApply(furnace, this.act.hand.item, n)
-    this.takeHandCount(n)
-    this.track(at, furnace)
-  }
-
   canStation(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'station') return false
-    return stationAccept(c, this.act.hand.item) !== undefined
+    return machines.canStation(this, at)
   }
 
-  private doStation(at: Coord): void {
-    if (!this.canStation(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const station = this.cell(at) as ResearchStation
-    const take = stationAccept(station, this.act.hand.item)
-    if (take === undefined) return
-    stationApply(station, take)
-    this.takeHandCount(take.n)
-    this.track(at, station)
-  }
-
-  private canBarrelCollect(at: Coord): boolean {
-    const c = this.cell(at)
-    if (c.kind !== 'barrel') return false
-    if (c.crop === 'none' || feedUnits(c.feed) !== barrelNeed(c.crop) || c.age < BARREL_MATURE) return false
-    if (this.act.hand.kind === 'empty') return true
-    if (this.act.hand.item.kind !== 'cask') return false
-    if (this.act.hand.item.cask !== CASK_OF[c.crop]) return false
-    return this.act.hand.item.variety === feedVariety(c.feed)
-  }
-
-  private canBarrel(at: Coord): boolean {
-    if (this.canBarrelCollect(at)) return true
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'barrel') return false
-    return barrelAccept(c, this.act.hand.item) !== undefined
-  }
-
-  private doBarrel(at: Coord): void {
-    if (this.canBarrelCollect(at)) {
-      const barrel = this.cell(at) as Barrel
-      if (barrel.crop === 'none') return
-      const variety = feedVariety(barrel.feed)
-      const quality = meanQuality(barrel.feed)
-      const cask: Item = {
-        kind: 'cask',
-        cask: CASK_OF[barrel.crop],
-        variety,
-        quality,
-        count: 1,
-        unitSale: bakeCaskSale(CASK_OF[barrel.crop], variety, quality, barrel.age),
-      }
-      if (this.act.hand.kind === 'empty') this.act.hand = { kind: 'hold', item: cask }
-      else if (this.act.hand.item.kind === 'cask') {
-        const it = this.act.hand.item
-        if (it.count >= this.stackMax(it)) {
-          this.say(HAND_FULL)
-          return
-        }
-        mergeInto(it, cask, 1)
-      }
-      barrel.feed = []
-      barrel.age = 0
-      barrel.crop = 'none'
-      this.track(at, barrel)
-
-      return
-    }
-    if (this.act.hand.kind !== 'hold') return
-    const barrel = this.cell(at) as Barrel
-    const take = barrelAccept(barrel, this.act.hand.item)
-    if (take === undefined) return
-    barrel.crop = take.crop
-    addBarrelFeed(barrel.feed, take.variety, take.quality, take.n)
-    this.takeHandCount(take.n)
-    this.track(at, barrel)
-  }
-
-  private canJam(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'jam') return false
-    const it = this.act.hand.item
-    if (it.kind === 'sugar') return jamSugarAccept(c, it) > 0
-    return jamFruitAccept(c, it) > 0
-  }
-
-  private doJam(at: Coord): void {
-    if (!this.canJam(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const jam = this.cell(at) as JamMachine
-    const it = this.act.hand.item
-    if (it.kind === 'sugar') {
-      const take = jamSugarAccept(jam, it)
-      jamSugarApply(jam, take)
-      it.liters -= take
-      if (it.liters <= 0) this.act.hand = { kind: 'empty' }
-      this.track(at, jam)
-      return
-    }
-    const n = jamFruitAccept(jam, it)
-    jamFruitApply(jam, it, n)
-    this.takeHandCount(n)
-    this.track(at, jam)
-  }
-
-  private takeHandCount(n: number): void {
-    if (this.act.hand.kind !== 'hold') return
-    if (takeCount(this.act.hand.item, n)) this.act.hand = { kind: 'empty' }
-  }
-
-  private doWeedSpray(at: Coord): void {
-    if (this.act.hand.kind !== 'hold' || this.act.hand.item.kind !== 'weed-spray') return
-    if (this.act.hand.item.liters < 1) return
-    if (!this.inWorld(at)) return
-    const c = this.cell(at)
-    if (!isTilled(c)) return
-    c.soil.weedChance = -1
-    if (c.kind === 'weed') this.setCell(at, { kind: 'empty', soil: c.soil })
-    else this.track(at, c)
-    this.act.hand.item.liters -= 1
-    if (this.act.hand.item.liters < 1) this.act.hand = { kind: 'empty' }
-  }
-
-  private canGrind(at: Coord): boolean {
-    if (this.act.hand.kind !== 'hold') return false
-    const c = this.cell(at)
-    if (c.kind !== 'grinder') return false
-    return grindAccept(c, this.act.hand.item) !== undefined
-  }
-
-  private doGrind(at: Coord): void {
-    if (!this.canGrind(at)) return
-    if (this.act.hand.kind !== 'hold') return
-    const grinder = this.cell(at) as Grinder
-    const take = grindAccept(grinder, this.act.hand.item)
-    if (take === undefined) return
-    grindApply(grinder, take)
-    this.takeHandCount(take.n)
-    this.track(at, grinder)
-
-  }
-
-  private maybeSay(at: Coord, blocked: string): void {
-    if (blocked === HAND_FULL) {
-      this.say(HAND_FULL)
-      return
-    }
-    if (usesLeftBlocked(this, at)) return
-    if (emptyBucketBlocked(this, at)) return
-    const action = primaryAct(this.cell(at))
-    if (action === undefined) return
-    this.say(m.prompt_cannot_use({ tool: toolName(this.act.hand), action }))
-  }
 }
 
-function usesLeftBlocked(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const cell = w.cell(at)
-  if (w.act.hand.item.kind === 'shovel' && cell.kind === 'untilled' && cell.ground === 'hard' && w.act.hand.item.usesLeft < 2) {
-    return true
-  }
-  if (w.act.hand.item.kind === 'pickaxe' && cell.kind === 'rock') {
-    const n = cell.base.w * cell.base.h
-    if (n > 1 && w.act.hand.item.usesLeft < 2) return true
-  }
-  return false
-}
+export { fillable } from './nets.ts'
 
-function emptyBucketBlocked(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'container' || w.act.hand.item.liters > 0) return false
-  return waterable(w.cell(at), w.modifiers)
-}
-
-export function fillable(w: World, at: Coord): boolean {
-  const c = w.cell(at)
-  if (c.kind === 'pump' || c.kind === 'rain-tank' || c.kind === 'well') return true
-  if (c.kind !== 'tap') return false
-  const net = w.netOfCell(c.base)
-  return net !== undefined && net.sources.length > 0
-}
-
-export function pourTarget(c: Extract<Plot, { soil: Soil }>, mods: readonly Modifier[]): number {
-  if (c.kind !== 'growing' && c.kind !== 'ripe') return SOIL_WATER_MID
-  return SOIL_WATER_MID + c.plant.stats(mods).waterTolerance
-}
-
-export function waterable(c: Cell, mods: readonly Modifier[]): boolean {
-  if (c.kind !== 'empty' && c.kind !== 'weed' && c.kind !== 'growing' && c.kind !== 'ripe') return false
-  return c.soil.water < pourTarget(c, mods)
-}
-
-type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
-
-function age(plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
-  let harm: Harm = { kind: 'none' }
-  if (fert === 'red') {
-    plant.happiness -= dt / HAPPY_STARVE_SECONDS
-    harm = { kind: 'hurt', by: 'starve' }
-  }
-  if (water === 'red') {
-    const by: Doom = soil.drowning ? 'drown' : 'wilt'
-    plant.happiness -= dt / (by === 'drown' ? HAPPY_DROWN_SECONDS : HAPPY_WILT_SECONDS)
-    harm = { kind: 'hurt', by }
-  }
-  if (harm.kind === 'none') {
-    if (fert === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
-    if (water === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
-  }
-  plant.happiness = plant.happiness < 0 ? 0 : plant.happiness > HAPPY_MAX ? HAPPY_MAX : plant.happiness
-  return harm
-}
-
-function doomed(by: Doom, soil: Soil, plant: Plant): Plot {
-  if (by === 'drown') return { kind: 'rotten', soil, crop: plant.crop }
-  return { kind: 'dead', soil, plant }
-}
-
-export function mood(soil: Soil, st: Stats): string {
-  return `${waterBand(soil.water, st.waterTolerance)}-${fertBand(soil.fertilizer, st.fertTolerance)}`
-}
-
-function primaryAct(cell: Cell): string | undefined {
-  if (cell.kind === 'ripe') return m.prompt_harvest()
-  if (cell.kind === 'growing') return m.names_face_water()
-  if (cell.kind === 'weed') return m.prompt_dig()
-  if (cell.kind === 'empty') return m.prompt_plant_bare()
-  if (cell.kind === 'untilled' && cell.ground === 'very-hard') return m.prompt_mine()
-  if (cell.kind === 'untilled') return m.prompt_dig()
-  if (cell.kind === 'infertile') return m.prompt_plant_bare()
-  if (cell.kind === 'rock') return m.prompt_mine()
-  if (cell.kind === 'pump') return m.prompt_fill()
-  if (cell.kind === 'grinder') return m.prompt_grind()
-  if (cell.kind === 'compost-box') return m.names_item_compost()
-  if (cell.kind === 'chest') return m.prompt_open_act()
-  if (cell.kind === 'house') return m.prompt_inventory()
-  if (cell.kind === 'dead') return m.prompt_dig()
-  if (cell.kind === 'rotten') return m.prompt_dig()
-  return undefined
-}
-
-function shovelTime(w: World, at: Coord): number {
-  const s = (w.act.hand as { item: Extract<Item, { kind: 'shovel' }> }).item
-  const c = w.cell(at)
-  if (c.kind === 'untilled' && c.ground === 'hard') return s.workSeconds * 2
-  return s.workSeconds
-}
-
-function mineTime(w: World, at: Coord): number {
-  const p = (w.act.hand as { item: Extract<Item, { kind: 'pickaxe' }> }).item
-  const c = w.cell(at)
-  if (c.kind !== 'rock') return p.workSeconds
-  const n = occupiedCells(c.base, w.owned).length
-  return n === 1 ? p.workSeconds : p.workSeconds * 2
-}
-
-function sprinklerSku(s: Sprinkler): SkuId {
-  if (s.variant === 'basic') return 'buy-sprinkler'
-  if (s.variant === 'vert') return 'buy-sprinkler-vert'
-  return 'buy-sprinkler-large'
-}
-
-function emptyBook(): CompanyBook {
-  return {
-    'whole-cart': { done: 0, missed: 0 },
-    'trade-jo': { done: 0, missed: 0 },
-    'halbert-eijn': { done: 0, missed: 0 },
-    'little-lid': { done: 0, missed: 0 },
-    mercanova: { done: 0, missed: 0 },
-    intercrop: { done: 0, missed: 0 },
-  }
-}
-
-function emptyContracts(): Contracts {
-  return { active: [], takenToday: [], history: [], book: emptyBook(), rep: 0, repDay: 0 }
-}
-
-function emptyMember<Id extends SkillId>(): MemberState<Id> {
-  return { pickCount: 0, owned: new Map(), offers: [] }
-}
-
-function harvestInsert(slots: Slot[], item: Item): boolean {
-  return insertSlots(slots, item, HARVEST_SLOTS, TRAILER_CAP)
-}
-
-function storedHere(p: VehiclePose | TrailerPose, origin: Coord): boolean {
-  return p.kind === 'stored' && p.hangar.col === origin.col && p.hangar.row === origin.row
-}

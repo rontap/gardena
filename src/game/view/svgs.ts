@@ -293,7 +293,7 @@ import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
 import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
-import type { CompanyId } from '../sim/market.h.ts'
+import type { CompanyId } from '../sim/feature-contracts/market.h.ts'
 
 export const CROPS: { readonly [K in CropId]: string } = {
   carrot,

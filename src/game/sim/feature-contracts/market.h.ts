@@ -1,4 +1,4 @@
-import type { CaskId, CropId, JamId, PickaxeId, ShovelId, StallGoodId, TreeId } from './ids.ts'
+import type { CaskId, CropId, JamId, PickaxeId, ShovelId, StallGoodId, TreeId } from '../ids.ts'
 
 export declare const SAT_DEPTH: number
 

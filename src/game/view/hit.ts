@@ -278,7 +278,8 @@ function valveHit(world: World, wx: number, wy: number): Edge | undefined {
     const my = seg.at.axis === 'h' ? seg.at.row : seg.at.row + 0.5
     const d = Math.hypot(wx - mx, wy - my)
     if (d > VERTEX_HIT) return
-    if (best === undefined || d < best.d) best = { edge: seg.at, d }
+    if (best === undefined) best = { edge: seg.at, d }
+    else if (d < best.d) best = { edge: seg.at, d }
   })
   if (best === undefined) return undefined
   return (best as { edge: Edge; d: number }).edge

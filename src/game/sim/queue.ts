@@ -1,770 +1,604 @@
-import type { World } from './world.ts'
-import { canChop, canCompost, canFertilize, canGraft, canHarvest, canMine, canPlant, canShovel, canTend, canWater, doChop, doCompost, doFertilize, doGraft, doHarvest, doMine, doPlant, doShovel, doTend, doWater, doWeedSpray } from './field.ts'
-import { demand, pullWater, rate, sources } from './nets.ts'
-import { putAdditive, putSilo, putSugar, stackMax } from './store.ts'
-import { dest, type Intent } from './world.h.ts'
-import { AXES } from '../defs/items.ts'
-import { freshMul } from '../defs/crops.ts'
-import { purposeMul, qualityMul } from '../defs/varieties.ts'
-import type { StallGoodId } from './ids.ts'
-import { Pump, RainTank, Tap, Well, Barrel, local, type Coord } from './building.ts'
-import { topIndex } from './drop.ts'
-import { countable, mergeInto, stackable, type Item } from './item.ts'
-import { addBarrelFeed, barrelAccept, bakeCaskSale, barrelNeed, feedUnits, feedVariety, meanQuality, takeCount } from './machine.ts'
-import { Accepts, finishFull } from './market.ts'
-import { isPlot } from './plot.ts'
-import type { Edge } from './pipe.ts'
-import { board, driverVehicle } from './vehicle.ts'
+import { TEND_WORK } from '../defs/skills.ts'
+import { AXES, GRAFT_WORK } from '../defs/items.ts'
+import { m } from '../../paraglide/messages.js'
+import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type RainTank, type Tap, type Well } from './building.ts'
+import { TAP_RATE } from './water.ts'
 import { flipLever, pressButton } from './sensor.ts'
+import { type Edge } from './pipe.ts'
+import { countable, mergeInto, stackable, type Item } from './item.ts'
+import { topIndex } from './drop.ts'
+import { isPlot } from './plot.ts'
+import { HAND_FULL } from './prompt.ts'
+import * as field from './feature-field/field.ts'
+import * as machines from './feature-machines/machines.tick.ts'
+import * as vehicles from './feature-vehicles/vehicle.ts'
+import * as store from './store.ts'
+import { fillable } from './nets.ts'
+import type { Intent, TaskName, World } from './world.ts'
 
-export function begin(w: World, i: Intent): void {
+function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
+  if (c.base.shape === 'circle') return occupiedCells(c.base, owned)[0]
+  return { col: c.base.col, row: c.base.row }
+}
+
+export function dest(i: Intent, world: World): Coord {
+  if (i.act === 'fill' || i.act === 'hangar' || i.act === 'silo' || i.act === 'still' || i.act === 'furnace') {
+    const c = world.cell(i.at)
+    if ('base' in c) return destOrigin(c, world.owned)
+    return { ...i.at }
+  }
+  if (i.act === 'consign') return { ...PAD }
+  if (i.act === 'inventory') return { ...DOOR }
+  if (i.act === 'toggle') return i.at
+  if (i.act === 'vehicle' || i.act === 'embark') {
+    const v = world.vehicles.find(x => x.id === i.id)
+    if (v !== undefined && v.pose.kind === 'field') {
+      return { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+    }
+    return { col: Number.POSITIVE_INFINITY, row: Number.POSITIVE_INFINITY }
+  }
+  return i.at
+}
+
+export function taskName(world: World, i: Intent): TaskName {
+  world.act = world.seats[world.local]
+  if (!world.act.actor.inside(dest(i, world))) {
+    if (i.act === 'shovel') return m.prompt_move_here_and_dig()
+    if (i.act === 'consign') return m.prompt_drop_off()
+    return m.prompt_move_here()
+  }
   switch (i.act) {
     case 'walk':
-      shiftHead(w)
-      return
+      return m.prompt_move_here()
     case 'shovel':
-      if (!canShovel(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, shovelTime(w, i.at))
-      return
+      return m.prompt_dig()
     case 'mine':
-      if (!canMine(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, mineTime(w, i.at))
-      return
+      return m.prompt_mine()
     case 'plant':
-      if (!canPlant(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.5)
-      return
+      return m.prompt_plant_bare()
     case 'water':
-      if (!canWater(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.names_face_water()
     case 'fertilize':
-      if (!canFertilize(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.6)
-      return
+      return m.prompt_fertilize()
     case 'compost':
-      if (!canCompost(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.names_item_compost()
     case 'harvest':
-      if (!canHarvest(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.5)
-      return
-    case 'pickup':
-      doPickup(w, i.at)
-      shiftHead(w)
-      return
-    case 'consign':
-      doConsign(w)
-      shiftHead(w)
-      return
+      return m.prompt_harvest()
     case 'fill':
-      if (!canFill(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      w.act.filling = true
-      return
+      return m.prompt_fill()
+    case 'consign':
+      return m.prompt_drop_off()
+    case 'pickup':
+      return m.prompt_pick_up()
     case 'drop':
-      doDrop(w, i.at)
-      shiftHead(w)
-      return
+      return m.prompt_drop()
     case 'inventory':
-      w.act.cue = { kind: 'inventory' }
-      shiftHead(w)
-      return
-    case 'silo': {
-      if (w.cell(i.at).kind !== 'seed-silo') {
-        shiftHead(w)
-        return
-      }
-      depositSilo(w)
-      w.act.cue = { kind: 'silo', at: { ...i.at } }
-      shiftHead(w)
-      return
-    }
-    case 'additives': {
-      if (w.cell(i.at).kind !== 'additive-store') {
-        shiftHead(w)
-        return
-      }
-      depositAdditives(w)
-      w.act.cue = { kind: 'additives', at: { ...i.at } }
-      shiftHead(w)
-      return
-    }
-    case 'chest': {
-      const c = w.cell(i.at)
-      if (c.kind !== 'chest' && c.kind !== 'freezer') {
-        shiftHead(w)
-        return
-      }
-      if (w.act.id !== 0) {
-        shiftHead(w)
-        return
-      }
-      w.act.cue = { kind: 'chest', at: { ...i.at } }
-      shiftHead(w)
-      return
-    }
+      return m.prompt_inventory()
+    case 'chest':
+      return m.names_building_chest()
+    case 'silo':
+      return m.names_building_seed_silo()
+    case 'additives':
+      return m.prompt_additives()
     case 'grind':
-      if (!canGrind(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.prompt_grind()
     case 'mill':
-      if (!canMill(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.names_building_mill()
     case 'still':
-      if (!canStill(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.names_building_still()
     case 'furnace':
-      if (!canFurnace(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
-    case 'station': {
-      if (w.cell(i.at).kind !== 'station') {
-        shiftHead(w)
-        return
-      }
-      if (canStation(w, i.at)) {
-        arm(w, 0.4)
-        return
-      }
-      w.act.cue = { kind: 'station', at: { ...i.at } }
-      shiftHead(w)
-      return
-    }
+      return m.names_building_furnace()
+    case 'station':
+      return m.names_building_station()
     case 'barrel':
-      if (!canBarrel(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
+      return m.names_building_barrel()
     case 'jam':
-      if (!canJam(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, 0.4)
-      return
-    case 'hangar': {
-      if (w.cell(i.at).kind !== 'hangar') {
-        shiftHead(w)
-        return
-      }
-      w.act.cue = { kind: 'hangar', at: { ...i.at } }
-      shiftHead(w)
-      return
-    }
+      return m.names_building_jam()
+    case 'hangar':
+      return m.names_building_hangar()
     case 'vehicle': {
-      const v = w.vehicles.find(x => x.id === i.id)
-      if (v === undefined || v.pose.kind !== 'field' || v.pose.driver !== 'none') {
-        shiftHead(w)
-        return
-      }
-      w.act.cue = { kind: 'vehicle', id: i.id }
-      shiftHead(w)
-      return
+      const v = world.vehicles.find(x => x.id === i.id)
+      if (v === undefined) throw new Error('vehicle')
+      return v.kind === 'tractor' ? m.names_vehicle_tractor() : m.names_vehicle_quad()
     }
-    case 'embark': {
-      const v = w.vehicles.find(x => x.id === i.id)
-      if (
-        v === undefined ||
-        v.pose.kind !== 'field' ||
-        v.pose.driver !== 'none' ||
-        w.driverVehicle(w.act.id) !== undefined
-      ) {
-        shiftHead(w)
-        return
-      }
-      const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-      if (!w.act.actor.inside(floor)) {
-        shiftHead(w)
-        return
-      }
-      board(w, v)
-      shiftHead(w)
-      return
-    }
+    case 'embark':
+      return m.vehicles_embark()
     case 'valve':
-      arm(w, 0.3 / w.machineMul())
-      return
-    case 'toggle':
-      arm(w, 0)
-      return
-    case 'tend':
-      if (!canTend(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, TEND_WORK)
-      return
-    case 'weed-spray':
-      doWeedSpray(w, i.at)
-      shiftHead(w)
-      return
-    case 'chop':
-      if (!canChop(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, AXES.axe.workSeconds)
-      return
-    case 'graft':
-      if (!canGraft(w, i.at)) {
-        shiftHead(w)
-        return
-      }
-      arm(w, GRAFT_WORK)
-      return
-  }
-}
-
-export function finishWork(w: World): void {
-  const i = w.act.queue[0]
-  if (i === undefined) return
-  if (i.act === 'shovel') doShovel(w, i.at)
-  if (i.act === 'mine') doMine(w, i.at)
-  if (i.act === 'plant') doPlant(w, i.at)
-  if (i.act === 'water' && doWater(w, i.at)) {
-    w.emit('poured')
-    w.burst('pour', i.at)
-  }
-  if (i.act === 'fertilize') doFertilize(w, i.at)
-  if (i.act === 'compost') doCompost(w, i.at)
-  if (i.act === 'harvest') doHarvest(w, i.at)
-  if (i.act === 'grind') doGrind(w, i.at)
-  if (i.act === 'mill') doMill(w, i.at)
-  if (i.act === 'still') doStill(w, i.at)
-  if (i.act === 'furnace') doFurnace(w, i.at)
-  if (i.act === 'station') doStation(w, i.at)
-  if (i.act === 'barrel') doBarrel(w, i.at)
-  if (i.act === 'jam') doJam(w, i.at)
-  if (i.act === 'valve') doValve(w, i.edge)
-  if (i.act === 'toggle') doToggle(w, i.at)
-  if (i.act === 'tend') {
-    doTend(w, i.at)
-    w.burst('tend', i.at)
-  }
-  if (i.act === 'weed-spray') doWeedSpray(w, i.at)
-  if (i.act === 'chop') doChop(w, i.at)
-  if (i.act === 'graft') doGraft(w, i.at)
-  shiftHead(w)
-}
-
-export function tickQueue(w: World, dt: number): void {
-  if (w.act.workLeft > 0) {
-    w.act.workLeft -= dt
-    if (w.act.workLeft > 0) return
-    finishWork(w)
-    return
-  }
-  if (w.act.filling) {
-    tickFill(w, dt)
-    return
-  }
-  const next = w.act.queue[0]
-  if (next === undefined) return
-  if (next.act === 'vehicle' || next.act === 'embark') {
-    const v = w.vehicles.find(x => x.id === next.id)
-    if (v === undefined || v.pose.kind !== 'field') {
-      shiftHead(w)
-      return
+      return m.names_building_valve()
+    case 'toggle': {
+      const c = world.cell(i.at)
+      return c.kind === 'button' ? m.prompt_press_bare() : m.prompt_flip_bare()
     }
-  }
-  const at = dest(next, w)
-  if (!w.act.actor.inside(at)) {
-    w.act.actor.walkToward(at, dt, w.walkSpeed())
-    return
-  }
-  begin(w, next)
-}
-
-export function tickFill(w: World, dt: number): void {
-  const head = w.act.queue[0]
-  if (head === undefined || head.act !== 'fill') {
-    w.act.filling = false
-    shiftHead(w)
-    return
-  }
-  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'container') {
-    w.act.filling = false
-    shiftHead(w)
-    return
-  }
-  const c0 = w.cell(head.at)
-  const source: Pump | RainTank | Tap | Well | undefined =
-    c0.kind === 'pump' || c0.kind === 'rain-tank' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
-  if (source === undefined) {
-    w.act.filling = false
-    shiftHead(w)
-    return
-  }
-  const c = w.act.hand.item
-  const miss = c.capacityLiters - c.liters
-  if (miss <= 0) {
-    w.act.filling = false
-      shiftHead(w)
-    return
-  }
-  const add = fillDraw(w, source, dt)
-  c.liters = add >= miss ? c.capacityLiters : c.liters + add
-  if (c.liters === c.capacityLiters) {
-    w.act.filling = false
-      shiftHead(w)
+    case 'tend':
+      return m.prompt_tend()
+    case 'weed-spray':
+      return m.prompt_spray()
+    case 'chop':
+      return m.prompt_chop()
+    case 'graft':
+      return m.prompt_graft()
   }
 }
 
-export function fillDraw(w: World, source: Pump | RainTank | Tap | Well, dt: number): number {
-  if (source.kind === 'tap') {
-    const net = w.netOfCell(source.base)
-    if (net === undefined) return 0
-    const got = pullWater(w, net.sources, TAP_RATE * dt)
-    source.drawn += got
-    return got
-  }
-  const got = source.water.take(source.water.rate * dt)
-  if (source.kind === 'pump') w.pumpLiters += got
-  return got
-}
-
-export function arm(w: World, seconds: number): void {
-  if (seconds <= 0) {
-    finishWork(w)
-    return
-  }
-  w.act.workLeft = seconds
-  w.act.workTotal = seconds
-}
-
-export function markWalk(w: World, i: Intent): void {
-  if (w.act.actor.inside(dest(i, w))) return
-  w.act.legStart = { x: w.act.actor.x, y: w.act.actor.y }
-}
-
-export function shiftHead(w: World): void {
-  w.act.queue.shift()
-  w.act.workLeft = 0
-  w.act.workTotal = 0
-  const next = w.act.queue[0]
-  if (next !== undefined) markWalk(w, next)
-  w.ping()
-}
-
-export function taskProgress(w: World): number {
-  w.act = w.seats[w.local]
-  const head = w.act.queue[0]
+export function taskProgress(world: World): number {
+  world.act = world.seats[world.local]
+  const head = world.act.queue[0]
   if (head === undefined) return 0
-  if (w.act.workLeft > 0 && w.act.workTotal > 0) return 1 - w.act.workLeft / w.act.workTotal
-  if (w.act.filling && w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'container') {
-    return w.act.hand.item.liters / w.act.hand.item.capacityLiters
+  if (world.act.workLeft > 0 && world.act.workTotal > 0) return 1 - world.act.workLeft / world.act.workTotal
+  if (world.act.filling && world.act.hand.kind === 'hold' && world.act.hand.item.kind === 'container') {
+    return world.act.hand.item.liters / world.act.hand.item.capacityLiters
   }
-  const at = dest(head, w)
-  if (!w.act.actor.inside(at)) {
+  const at = dest(head, world)
+  if (!world.act.actor.inside(at)) {
     const tx = at.col + 0.5
     const ty = at.row + 0.5
-    const span = Math.hypot(w.act.legStart.x - tx, w.act.legStart.y - ty)
+    const span = Math.hypot(world.act.legStart.x - tx, world.act.legStart.y - ty)
     if (span === 0) return 1
-    return 1 - Math.hypot(w.act.actor.x - tx, w.act.actor.y - ty) / span
+    return 1 - Math.hypot(world.act.actor.x - tx, world.act.actor.y - ty) / span
   }
   return 1
 }
 
-export function doPickup(w: World, at: Coord): void {
-  const i = topIndex(w.drops, at)
+export function tickQueue(world: World, dt: number): void {
+  if (world.act.workLeft > 0) {
+    world.act.workLeft -= dt
+    if (world.act.workLeft > 0) return
+    finishWork(world)
+    return
+  }
+  if (world.act.filling) {
+    tickFill(world, dt)
+    return
+  }
+  const next = world.act.queue[0]
+  if (next === undefined) return
+  if (next.act === 'vehicle' || next.act === 'embark') {
+    const v = world.vehicles.find(x => x.id === next.id)
+    if (v?.pose.kind !== 'field') {
+      shiftHead(world)
+      return
+    }
+  }
+  const at = dest(next, world)
+  if (!world.act.actor.inside(at)) {
+    world.act.actor.walkToward(at, dt, world.walkSpeed())
+    return
+  }
+  begin(world, next)
+}
+
+export function begin(world: World, i: Intent): void {
+  switch (i.act) {
+    case 'walk':
+      shiftHead(world)
+      return
+    case 'shovel':
+      if (!field.canShovel(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, shovelTime(world, i.at))
+      return
+    case 'mine':
+      if (!field.canMine(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, mineTime(world, i.at))
+      return
+    case 'plant':
+      if (!field.canPlant(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.5)
+      return
+    case 'water':
+      if (!field.canWater(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'fertilize':
+      if (!field.canFertilize(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.6)
+      return
+    case 'compost':
+      if (!machines.canCompost(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'harvest':
+      if (!field.canHarvest(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.5)
+      return
+    case 'pickup':
+      doPickup(world, i.at)
+      shiftHead(world)
+      return
+    case 'consign':
+      store.doConsign(world)
+      shiftHead(world)
+      return
+    case 'fill':
+      if (!canFill(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      world.act.filling = true
+      return
+    case 'drop':
+      doDrop(world, i.at)
+      shiftHead(world)
+      return
+    case 'inventory':
+      world.act.cue = { kind: 'inventory' }
+      shiftHead(world)
+      return
+    case 'silo': {
+      if (world.cell(i.at).kind !== 'seed-silo') {
+        shiftHead(world)
+        return
+      }
+      store.depositSilo(world)
+      world.act.cue = { kind: 'silo', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
+    case 'additives': {
+      if (world.cell(i.at).kind !== 'additive-store') {
+        shiftHead(world)
+        return
+      }
+      store.depositAdditives(world)
+      world.act.cue = { kind: 'additives', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
+    case 'chest': {
+      const c = world.cell(i.at)
+      if (c.kind !== 'chest' && c.kind !== 'freezer') {
+        shiftHead(world)
+        return
+      }
+      // TODO 1.1 multiplayer guest chest swap
+      if (world.act.id !== 0) {
+        shiftHead(world)
+        return
+      }
+      world.act.cue = { kind: 'chest', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
+    case 'grind':
+      if (!machines.canGrind(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'mill':
+      if (!machines.canMill(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'still':
+      if (!machines.canStill(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'furnace':
+      if (!machines.canFurnace(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'station': {
+      if (world.cell(i.at).kind !== 'station') {
+        shiftHead(world)
+        return
+      }
+      if (machines.canStation(world, i.at)) {
+        arm(world, 0.4)
+        return
+      }
+      world.act.cue = { kind: 'station', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
+    case 'barrel':
+      if (!machines.canBarrel(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'jam':
+      if (!machines.canJam(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
+    case 'hangar': {
+      if (world.cell(i.at).kind !== 'hangar') {
+        shiftHead(world)
+        return
+      }
+      world.act.cue = { kind: 'hangar', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
+    case 'vehicle': {
+      const v = world.vehicles.find(x => x.id === i.id)
+      if (v?.pose.kind !== 'field' || v.pose.driver !== 'none') {
+        shiftHead(world)
+        return
+      }
+      world.act.cue = { kind: 'vehicle', id: i.id }
+      shiftHead(world)
+      return
+    }
+    case 'embark': {
+      const v = world.vehicles.find(x => x.id === i.id)
+      if (
+        v?.pose.kind !== 'field' ||
+        v.pose.driver !== 'none' ||
+        world.driverVehicle(world.act.id) !== undefined
+      ) {
+        shiftHead(world)
+        return
+      }
+      const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
+      if (!world.act.actor.inside(floor)) {
+        shiftHead(world)
+        return
+      }
+      vehicles.board(world, v)
+      shiftHead(world)
+      return
+    }
+    case 'valve':
+      arm(world, 0.3 / world.machineMul())
+      return
+    case 'toggle':
+      arm(world, 0)
+      return
+    case 'tend':
+      if (!field.canTend(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, TEND_WORK)
+      return
+    case 'weed-spray':
+      field.doWeedSpray(world, i.at)
+      shiftHead(world)
+      return
+    case 'chop':
+      if (!field.canChop(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, AXES.axe.workSeconds)
+      return
+    case 'graft':
+      if (!field.canGraft(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, GRAFT_WORK)
+      return
+  }
+}
+
+export function arm(world: World, seconds: number): void {
+  if (seconds <= 0) {
+    finishWork(world)
+    return
+  }
+  world.act.workLeft = seconds
+  world.act.workTotal = seconds
+}
+
+export function markWalk(world: World, i: Intent): void {
+  if (world.act.actor.inside(dest(i, world))) return
+  world.act.legStart = { x: world.act.actor.x, y: world.act.actor.y }
+}
+
+export function shiftHead(world: World): void {
+  world.act.queue.shift()
+  world.act.workLeft = 0
+  world.act.workTotal = 0
+  const next = world.act.queue[0]
+  if (next !== undefined) markWalk(world, next)
+  world.ping()
+}
+
+export function finishWork(world: World): void {
+  const i = world.act.queue[0]
+  if (i === undefined) return
+  if (i.act === 'shovel') field.doShovel(world, i.at)
+  if (i.act === 'mine') field.doMine(world, i.at)
+  if (i.act === 'plant') field.doPlant(world, i.at)
+  if (i.act === 'water' && field.doWater(world, i.at)) {
+    world.emit('poured')
+    world.burst('pour', i.at)
+  }
+  if (i.act === 'fertilize') field.doFertilize(world, i.at)
+  if (i.act === 'compost') machines.doCompost(world, i.at)
+  if (i.act === 'harvest') field.doHarvest(world, i.at)
+  if (i.act === 'grind') machines.doGrind(world, i.at)
+  if (i.act === 'mill') machines.doMill(world, i.at)
+  if (i.act === 'still') machines.doStill(world, i.at)
+  if (i.act === 'furnace') machines.doFurnace(world, i.at)
+  if (i.act === 'station') machines.doStation(world, i.at)
+  if (i.act === 'barrel') machines.doBarrel(world, i.at)
+  if (i.act === 'jam') machines.doJam(world, i.at)
+  if (i.act === 'valve') doValve(world, i.edge)
+  if (i.act === 'toggle') doToggle(world, i.at)
+  if (i.act === 'tend') {
+    field.doTend(world, i.at)
+    world.burst('tend', i.at)
+  }
+  if (i.act === 'weed-spray') field.doWeedSpray(world, i.at)
+  if (i.act === 'chop') field.doChop(world, i.at)
+  if (i.act === 'graft') field.doGraft(world, i.at)
+  shiftHead(world)
+}
+
+export function tickFill(world: World, dt: number): void {
+  const head = world.act.queue[0]
+  if (head?.act !== 'fill') {
+    world.act.filling = false
+    shiftHead(world)
+    return
+  }
+  if (world.act.hand.kind !== 'hold' || world.act.hand.item.kind !== 'container') {
+    world.act.filling = false
+    shiftHead(world)
+    return
+  }
+  const c0 = world.cell(head.at)
+  const source: Pump | RainTank | Tap | Well | undefined =
+    c0.kind === 'pump' || c0.kind === 'rain-tank' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
+  if (source === undefined) {
+    world.act.filling = false
+    shiftHead(world)
+    return
+  }
+  const c = world.act.hand.item
+  const miss = c.capacityLiters - c.liters
+  if (miss <= 0) {
+    world.act.filling = false
+      shiftHead(world)
+    return
+  }
+  const add = fillDraw(world, source, dt)
+  c.liters = add >= miss ? c.capacityLiters : c.liters + add
+  if (c.liters === c.capacityLiters) {
+    world.act.filling = false
+      shiftHead(world)
+  }
+}
+
+export function fillDraw(world: World, source: Pump | RainTank | Tap | Well, dt: number): number {
+  if (source.kind === 'tap') {
+    const net = world.netOfCell(source.base)
+    if (net === undefined) return 0
+    const got = world.pullWater(net.sources, TAP_RATE * dt)
+    source.drawn += got
+    return got
+  }
+  const got = source.water.take(source.water.rate * dt)
+  if (source.kind === 'pump') world.pumpLiters += got
+  return got
+}
+
+export function doToggle(world: World, at: Coord): void {
+  const c = world.cell(at)
+  if (c.kind === 'lever') {
+    flipLever(c)
+
+    world.ping()
+    return
+  }
+  if (c.kind === 'button') {
+    pressButton(c)
+
+    world.ping()
+  }
+}
+
+export function doPickup(world: World, at: Coord): void {
+  const i = topIndex(world.drops, at)
   if (i < 0) {
-    const c = w.cell(at)
+    const c = world.cell(at)
     const cover = c.kind === 'untilled' && c.cover.kind === 'grass'
     if (c.kind !== 'weed' && !cover) return
     const kind = c.kind === 'weed' ? 'weed' : 'grass'
-    const held = w.act.hand
+    const held = world.act.hand
     if (held.kind === 'hold') {
       if (held.item.kind !== kind) return
-      if (held.item.count >= stackMax(w, held.item)) {
-        w.say(HAND_FULL)
+      if (held.item.count >= world.stackMax(held.item)) {
+        world.say(HAND_FULL)
         return
       }
       held.item.count += 1
     }
     if (c.kind === 'weed') {
       c.soil.weedChance = 0
-      w.setCell(at, { kind: 'empty', soil: c.soil })
+      world.setCell(at, { kind: 'empty', soil: c.soil })
     } else if (c.kind === 'untilled') {
-      w.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
+      world.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
     }
-    if (held.kind === 'empty') w.act.hand = { kind: 'hold', item: { kind, count: 1 } }
+    if (held.kind === 'empty') world.act.hand = { kind: 'hold', item: { kind, count: 1 } }
       return
   }
-  const taken = w.drops[i].item
-  const held = w.act.hand
+  const taken = world.drops[i].item
+  const held = world.act.hand
   if (held.kind === 'hold' && countable(held.item) && countable(taken) && stackable(held.item, taken)) {
-    const room = stackMax(w, held.item) - held.item.count
+    const room = world.stackMax(held.item) - held.item.count
     if (room <= 0) {
-      w.say(HAND_FULL)
+      world.say(HAND_FULL)
       return
     }
     const n = taken.count < room ? taken.count : room
     mergeInto(held.item, taken, n)
-    if (n === taken.count) w.drops.splice(i, 1)
+    if (n === taken.count) world.drops.splice(i, 1)
     else taken.count -= n
       return
   }
-  w.drops.splice(i, 1)
+  world.drops.splice(i, 1)
   if (held.kind === 'empty') {
-    w.act.hand = { kind: 'hold', item: taken }
+    world.act.hand = { kind: 'hold', item: taken }
       return
   }
-  w.drops.push({ at: { ...at }, item: held.item })
-  w.act.hand = { kind: 'hold', item: taken }
+  world.drops.push({ at: { ...at }, item: held.item })
+  world.act.hand = { kind: 'hold', item: taken }
 }
 
-export function doDrop(w: World, at: Coord): void {
-  if (w.act.hand.kind !== 'hold') return
-  if (!isPlot(w.cell(at))) return
-  w.drops.push({ at: { ...at }, item: w.act.hand.item })
-  w.act.hand = { kind: 'empty' }
+export function doDrop(world: World, at: Coord): void {
+  if (world.act.hand.kind !== 'hold') return
+  if (!isPlot(world.cell(at))) return
+  world.drops.push({ at: { ...at }, item: world.act.hand.item })
+  world.act.hand = { kind: 'empty' }
 }
 
-export function doConsign(w: World): void {
-  if (w.act.hand.kind !== 'hold') return
-  const item = w.act.hand.item
-  if (item.kind === 'fruit') {
-    const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
-    splitConsign(w, item.crop, item.count, item.freshness === 0, rest => {
-      w.stall[item.crop].take(item.variety, rest, unit, item.bio)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'sugar') {
-    splitConsign(w, 'sugar', item.liters, false, rest => {
-      w.stall.sugar.takeSugar(rest, item.unitSale)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'spirit') {
-    splitConsign(w, item.spirit, item.count, false, rest => {
-      w.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'cask') {
-    splitConsign(w, item.cask, item.count, false, rest => {
-      w.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'jam') {
-    splitConsign(w, `jam-${item.crop}`, item.count, false, rest => {
-      w.stall[`jam-${item.crop}`].takeBaked(rest, item.unitSale)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
-    splitConsign(w, item.kind, item.count, false, rest => {
-      w.stall[item.kind].takeBaked(rest, item.unitSale)
-    })
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-    return
-  }
-  if (item.kind === 'rotten') {
-    if (!w.hasSkill('clearance')) return
-    w.clearance += item.count
-    w.act.hand = { kind: 'empty' }
-    completeConsign(w)
-  }
+export function canFill(world: World, at: Coord): boolean {
+  if (world.act.hand.kind !== 'hold' || world.act.hand.item.kind !== 'container') return false
+  return fillable(world, at)
 }
 
-export function completeConsign(w: World): void {
-  w.consignRevision += 1
-
-  finishFull(w)
+export function doValve(world: World, edge: Edge): void {
+  world.toggleValve(edge)
 }
 
-export function splitConsign(w: World, 
-  good: StallGoodId,
-  n: number,
-  skip: boolean,
-  restToStall: (rest: number) => void,
-): void {
-  const bound = skip ? 0 : fillContracts(w, good, n)
-  const rest = n - bound
-  if (rest > 0) restToStall(rest)
+function shovelTime(world: World, at: Coord): number {
+  const s = (world.act.hand as { item: Extract<Item, { kind: 'shovel' }> }).item
+  const c = world.cell(at)
+  if (c.kind === 'untilled' && c.ground === 'hard') return s.workSeconds * 2
+  return s.workSeconds
 }
 
-export function fillContracts(w: World, good: StallGoodId, n: number): number {
-  let left = n
-  w.contracts.active.forEach(a => {
-    a.bins.forEach(bin => {
-      if (left <= 0) return
-      if (!Accepts(bin.demand, good)) return
-      const room = bin.demand.amount - bin.filled
-      if (room <= 0) return
-      const take = left < room ? left : room
-      bin.filled += take
-      left -= take
-    })
-  })
-  return n - left
-}
-
-export function doMill(w: World, at: Coord): void {
-  if (!canMill(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'mill') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function doStill(w: World, at: Coord): void {
-  if (!canStill(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'still') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function doFurnace(w: World, at: Coord): void {
-  if (!canFurnace(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'furnace') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function doStation(w: World, at: Coord): void {
-  if (!canStation(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'station') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function doBarrel(w: World, at: Coord): void {
-  if (canBarrelCollect(w, at)) {
-    const barrel = w.cell(at) as Barrel
-    if (barrel.crop === 'none') return
-    const variety = feedVariety(barrel.feed)
-    const quality = meanQuality(barrel.feed)
-    const cask: Item = {
-      kind: 'cask',
-      cask: CASK_OF[barrel.crop],
-      variety,
-      quality,
-      count: 1,
-      unitSale: bakeCaskSale(CASK_OF[barrel.crop], variety, quality, barrel.age),
-    }
-    if (w.act.hand.kind === 'empty') w.act.hand = { kind: 'hold', item: cask }
-    else if (w.act.hand.item.kind === 'cask') {
-      const it = w.act.hand.item
-      if (it.count >= stackMax(w, it)) {
-        w.say(HAND_FULL)
-        return
-      }
-      mergeInto(it, cask, 1)
-    }
-    barrel.feed = []
-    barrel.age = 0
-    barrel.crop = 'none'
-    w.track(at, barrel)
-
-    return
-  }
-  if (w.act.hand.kind !== 'hold') return
-  const barrel = w.cell(at) as Barrel
-  const take = barrelAccept(barrel, w.act.hand.item)
-  if (take === undefined) return
-  barrel.crop = take.crop
-  addBarrelFeed(barrel.feed, take.variety, take.quality, take.n)
-  takeHandCount(w, take.n)
-  w.track(at, barrel)
-}
-
-export function doJam(w: World, at: Coord): void {
-  if (!canJam(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'jam') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function doGrind(w: World, at: Coord): void {
-  if (!canGrind(w, at) || w.act.hand.kind !== 'hold') return
-  const c = w.cell(at)
-  if (c.kind !== 'grinder') return
-  const n = c.accept(w.act.hand.item)
-  c.apply(w.act.hand.item, n)
-  takeHandCount(w, n)
-  w.track(at, c)
-}
-
-export function canMill(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'mill' && c.accept(w.act.hand.item) > 0
-}
-
-export function canStill(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'still' && c.accept(w.act.hand.item) > 0
-}
-
-export function canFurnace(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'furnace' && c.accept(w.act.hand.item) > 0
-}
-
-export function canStation(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'station' && c.accept(w.act.hand.item) > 0
-}
-
-export function canBarrel(w: World, at: Coord): boolean {
-  if (canBarrelCollect(w, at)) return true
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  if (c.kind !== 'barrel') return false
-  return barrelAccept(c, w.act.hand.item) !== undefined
-}
-
-export function canBarrelCollect(w: World, at: Coord): boolean {
-  const c = w.cell(at)
-  if (c.kind !== 'barrel') return false
-  if (c.crop === 'none' || feedUnits(c.feed) !== barrelNeed(c.crop) || c.age < BARREL_MATURE) return false
-  if (w.act.hand.kind === 'empty') return true
-  if (w.act.hand.item.kind !== 'cask') return false
-  if (w.act.hand.item.cask !== CASK_OF[c.crop]) return false
-  return w.act.hand.item.variety === feedVariety(c.feed)
-}
-
-export function canJam(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'jam' && c.accept(w.act.hand.item) > 0
-}
-
-export function canGrind(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold') return false
-  const c = w.cell(at)
-  return c.kind === 'grinder' && c.accept(w.act.hand.item) > 0
-}
-
-export function canFill(w: World, at: Coord): boolean {
-  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'container') return false
-  return fillable(w, at)
-}
-
-export function doValve(w: World, edge: Edge): void {
-  w.toggleValve(edge)
-}
-
-export function doToggle(w: World, at: Coord): void {
-  const c = w.cell(at)
-  if (c.kind === 'lever') {
-    flipLever(c)
-
-    w.ping()
-    return
-  }
-  if (c.kind === 'button') {
-    pressButton(c)
-
-    w.ping()
-  }
-}
-
-export function takeHandCount(w: World, n: number): void {
-  if (w.act.hand.kind !== 'hold') return
-  if (takeCount(w.act.hand.item, n)) w.act.hand = { kind: 'empty' }
-}
-
-export function depositSilo(w: World): void {
-  const take = (it: Item): boolean => {
-    if (it.kind !== 'seeds') return false
-    const n = putSilo(w, it.crop, it.variety, it.quality, it.count)
-    it.count -= n
-    return it.count <= 0
-  }
-  if (w.act.hand.kind === 'hold' && take(w.act.hand.item)) w.act.hand = { kind: 'empty' }
-  w.act.inventory.forEach((slot, i) => {
-    if (slot.kind === 'hold' && take(slot.item)) w.act.inventory[i] = { kind: 'empty' }
-  })
-  w.compactInventory()
-}
-
-export function depositAdditives(w: World): void {
-  const take = (it: Item): boolean => {
-    if (it.kind === 'sugar') {
-      it.liters -= putSugar(w, it.liters, it.unitSale, it.quality)
-      return it.liters <= 0
-    }
-    if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
-    const n = putAdditive(w, it.kind, it.liters)
-    it.liters -= n
-    return it.liters <= 0
-  }
-  if (w.act.hand.kind === 'hold' && take(w.act.hand.item)) w.act.hand = { kind: 'empty' }
-  w.act.inventory.forEach((slot, i) => {
-    if (slot.kind === 'hold' && take(slot.item)) w.act.inventory[i] = { kind: 'empty' }
-  })
-  w.compactInventory()
+function mineTime(world: World, at: Coord): number {
+  const p = (world.act.hand as { item: Extract<Item, { kind: 'pickaxe' }> }).item
+  const c = world.cell(at)
+  if (c.kind !== 'rock') return p.workSeconds
+  const n = occupiedCells(c.base, world.owned).length
+  return n === 1 ? p.workSeconds : p.workSeconds * 2
 }

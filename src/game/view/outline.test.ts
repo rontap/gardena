@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { TILE } from './camera.ts'
 import { footOutline } from './outline.ts'
-import { furnaceCoveringCells } from '../sim/machine.ts'
+import { furnaceCoveringCells } from '../sim/feature-machines/machine.ts'
 
 function verts(d: string): { x: number; y: number }[] {
   return [...d.matchAll(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)].map(m => ({

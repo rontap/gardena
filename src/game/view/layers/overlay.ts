@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js'
 import { FADE, chunkKey, chunkOf } from '../../sim/building.ts'
-import { hangarPad, siloPad, stopXY } from '../../sim/vehicle.ts'
+import { hangarPad, siloPad, stopXY } from '../../sim/feature-vehicles/vehicle.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
 import { occupiedCells } from '../../sim/building.ts'
 import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'

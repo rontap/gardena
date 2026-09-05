@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import { useRef, useState } from 'react'
-import type { LoadFailReason } from '../sim/save.ts'
-import { slotExists, slotStamp } from '../sim/save.ts'
+import type { LoadFailReason } from '../sim/feature-save/save.ts'
+import { slotExists, slotStamp } from '../sim/feature-save/save.ts'
 import { UI_MENU } from '../view/svgs.ts'
 import { Changelog } from './changelog.tsx'
 import { Btn, Chrome } from './frame.tsx'
@@ -211,7 +211,7 @@ export function Menu(props: MenuProps) {
             onChange={e => {
               const list = e.target.files
               e.target.value = ''
-              if (list === null || list.length === 0) return
+              if (list?.length === 0) return
               void list[0].text().then(onUpload)
             }}
           />

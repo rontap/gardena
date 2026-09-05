@@ -23,11 +23,11 @@ import {
   CASK_AGE_MAX,
   CASK_AGE_MIN,
   CASK_SALE,
-} from '../defs/items.ts'
-import { purposeMul, qualityMul, tierOf, type VarietyId } from '../defs/varieties.ts'
-import { STATION_IN } from '../defs/items.ts'
-import type { BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from './ids.ts'
-import { isAnnualId, SPIRIT_OF } from './ids.ts'
+} from '../../defs/items.ts'
+import { purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
+import { STATION_IN } from '../../defs/items.ts'
+import type { BarrelCrop, CaskId, CropId, JamCrop, MillRecipe, SpiritKind, StillCrop } from '../ids.ts'
+import { isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
   Barrel,
   CompostBox,
@@ -39,8 +39,8 @@ import type {
   PotStill,
   RectBase,
   ResearchStation,
-} from './building.ts'
-import { furnaceValue, type Item } from './item.ts'
+} from '../building.ts'
+import { furnaceValue, type Item } from '../item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation
 

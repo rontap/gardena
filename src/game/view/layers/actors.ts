@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js'
 import { TRAILER_LEN } from '../../defs/items.ts'
-import { hitchP, trailerCenter, wrapHeading } from '../../sim/vehicle.ts'
+import { hitchP, trailerCenter, wrapHeading } from '../../sim/feature-vehicles/vehicle.ts'
 import type { SeatId, World } from '../../sim/world.ts'
 import type { VehicleId } from '../../sim/ids.ts'
 import { DROP_FACE, TILE } from '../camera.ts'

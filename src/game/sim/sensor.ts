@@ -6,7 +6,7 @@ import type { Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import type { Cell } from './plot.ts'
 import { fertBand, waterBand } from './soil.ts'
-import type { Vehicle } from './vehicle.ts'
+import type { Vehicle } from './feature-vehicles/vehicle.ts'
 
 export type PortId = 'out' | 'in' | 'in-l' | 'in-r'
 

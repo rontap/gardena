@@ -34,13 +34,13 @@ import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
 import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
 import { SENSOR_LENS_SKUS, type RouteId, type TrailerId, type VehicleId } from './game/sim/ids.ts'
 import type { Item } from './game/sim/item.ts'
-import { trailerUsed } from './game/sim/vehicle.ts'
+import { trailerUsed } from './game/sim/feature-vehicles/vehicle.ts'
 import { Btn, Field, Window } from './game/ui/frame.tsx'
 import { DashFace } from './game/ui/held.tsx'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
-import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/save.ts'
+import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/feature-save/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
 import { saveSettings, settings, type Settings } from './game/sim/settings.ts'
 
@@ -1152,7 +1152,7 @@ function Dash({
   onOpenEditor: () => void
 }) {
   const driven = world.driverVehicle(world.local)
-  if (driven === undefined || driven.pose.kind !== 'field') return null
+  if (driven?.pose.kind !== 'field') return null
   const onPad = world.hangarAtPad({ col: Math.floor(driven.pose.x), row: Math.floor(driven.pose.y) }) !== undefined
   const hitch =
     driven.kind === 'tractor' && driven.hitch !== 'none' ? trailerOf(world, driven.hitch) : undefined
@@ -1375,7 +1375,7 @@ function dispatchClick(world: World, hit: MapClick): void {
 }
 
 function addStopHint(world: World, hover: PromptHit | undefined): string | undefined {
-  if (hover === undefined || hover.kind !== 'cell') return undefined
+  if (hover?.kind !== 'cell') return undefined
   if (!world.inWorld(hover.at)) return undefined
   const s = world.stopAt(hover.at, { x: hover.at.col + 0.5, y: hover.at.row + 0.5 })
   if (s === undefined) return undefined

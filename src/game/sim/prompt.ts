@@ -36,7 +36,7 @@ import {
   furnaceUnit,
   stationAccept,
   stillCropOf,
-} from './machine.ts'
+} from './feature-machines/machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPlot, isTilled, isTileSite, type Cell } from './plot.ts'
@@ -276,7 +276,7 @@ export function valveStand(w: World, e: Edge): Coord {
 
 export function valvePrompt(w: World, e: Edge): Prompt {
   const seg = w.segmentAt(e)
-  if (seg === undefined || seg.gate.kind !== 'valve') return { kind: 'blocked', text: m.prompt_cannot_reach() }
+  if (seg?.gate.kind !== 'valve') return { kind: 'blocked', text: m.prompt_cannot_reach() }
   if (w.valveWired(e)) return { kind: 'blocked', text: labeled(m.names_building_valve(), m.prompt_wired()) }
   return intent(
     seg.gate.open
@@ -383,7 +383,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
 export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   if (w.act.place.kind === 'wire') {
     const from = w.act.place.from
-    if (hit === undefined || hit.kind !== 'port') return { kind: 'blocked', text: m.prompt_cannot_wire() }
+    if (hit?.kind !== 'port') return { kind: 'blocked', text: m.prompt_cannot_wire() }
     if (hit.end.port === 'out') return { kind: 'blocked', text: m.prompt_cannot_wire() }
     if (w.wires.some(x => sameNode(x.from, from) && sameNode(x.to, hit.end))) {
       return { kind: 'place', text: m.prompt_remove_wire() }
@@ -398,7 +398,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     return { kind: 'place', text: m.prompt_place_bare() }
   }
   if (w.act.place.kind === 'sku' && (w.act.place.id === 'buy-pipe' || w.act.place.id === 'buy-valve')) {
-    if (hit === undefined || hit.kind !== 'edge') {
+    if (hit?.kind !== 'edge') {
       if (w.money < w.skuPrice(w.act.place.id)) return { kind: 'blocked', text: m.prompt_cannot_afford() }
       return { kind: 'blocked', text: m.prompt_cannot_place() }
     }
@@ -432,7 +432,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
       w.act.place.id === 'buy-sprinkler-vert' ||
       w.act.place.id === 'buy-sprinkler-large')
   ) {
-    if (hit === undefined || hit.kind !== 'sprinkler') {
+    if (hit?.kind !== 'sprinkler') {
       if (w.money < w.skuPrice(w.act.place.id)) return { kind: 'blocked', text: m.prompt_cannot_afford() }
       return { kind: 'blocked', text: m.prompt_cannot_place() }
     }
@@ -444,7 +444,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     if (hit !== undefined && hit.kind === 'cell') return deleteBuildingPrompt(w, hit.at)
     return { kind: 'blocked', text: m.prompt_cannot_delete() }
   }
-  if (hit === undefined || hit.kind !== 'cell') {
+  if (hit?.kind !== 'cell') {
     if (w.act.place.kind === 'sku') {
       if (w.money < w.skuPrice(w.act.place.id)) return { kind: 'blocked', text: m.prompt_cannot_afford() }
       return { kind: 'blocked', text: m.prompt_cannot_place() }

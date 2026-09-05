@@ -1,6 +1,6 @@
-import { CHEST_SLOTS } from '../defs/items.ts'
-import { VARIETY_IDS } from '../defs/varieties.ts'
-import { Actor } from './actor.ts'
+import { CHEST_SLOTS } from '../../defs/items.ts'
+import { VARIETY_IDS } from '../../defs/varieties.ts'
+import { Actor } from '../actor.ts'
 import {
   AdditiveStore,
   CHUNK,
@@ -31,11 +31,11 @@ import {
   chunkKey,
   chunkRect,
   type ChunkId,
-} from './building.ts'
-import type { Cell } from './plot.ts'
-import type { SkillId } from './ids.ts'
-import type { Bins, Contracts } from './market.h.ts'
-import { MemorySink, type LogSink } from './log.ts'
+} from '../building.ts'
+import type { Cell } from '../plot.ts'
+import type { SkillId } from '../ids.ts'
+import type { Bins, Contracts } from '../feature-contracts/market.h.ts'
+import { MemorySink, type LogSink } from '../log.ts'
 import {
   AndGate,
   Button,
@@ -52,11 +52,11 @@ import {
   VehicleSensor,
   WaterSensor,
   WaterSystem,
-} from './sensor.ts'
-import { Plant, Turf, Weed } from './plant.ts'
-import { Rng } from './rng.ts'
-import { Soil } from './soil.ts'
-import { STALL_IDS, StallGood, type StallMap } from './stall.ts'
+} from '../sensor.ts'
+import { Plant, Turf, Weed } from '../plant.ts'
+import { Rng } from '../rng.ts'
+import { Soil } from '../soil.ts'
+import { STALL_IDS, StallGood, type StallMap } from '../stall.ts'
 import {
   World,
   type Family,
@@ -64,8 +64,8 @@ import {
   type MemberState,
   type Seat,
   type SeatId,
-} from './world.ts'
-import { makeQuad, makeTractor, type Trailer, type Vehicle } from './vehicle.ts'
+} from '../world.ts'
+import { makeQuad, makeTractor, type Trailer, type Vehicle } from '../feature-vehicles/vehicle.ts'
 import {
   type LoadResult,
   type Save,
@@ -85,7 +85,7 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
   } catch {
     return { ok: false, reason: 'unknown-format' }
   }
-  if (save === null || save.game !== 'gardena') return { ok: false, reason: 'not-gardena' }
+  if (save?.game !== 'gardena') return { ok: false, reason: 'not-gardena' }
   return { ok: true, world: worldFromSave(save, sink) }
 }
 

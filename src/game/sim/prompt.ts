@@ -43,7 +43,10 @@ import { isFenceSite, isPlot, isTilled, isTileSite, type Cell } from './plot.ts'
 import { isSensor, isSeqIn, sameNode, wouldCycle, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
-import { dest, fillable, waterable, type Intent, type TaskName, type World } from './world.ts'
+import { dest } from './queue.ts'
+import { fillable } from './nets.ts'
+import { waterable } from './feature-field/field.helpers.ts'
+import type { Intent, TaskName, World } from './world.ts'
 
 export const NOT_OWNED = m.prompt_not_owned()
 export const HAND_FULL = m.prompt_hand_full()

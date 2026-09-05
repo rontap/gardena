@@ -293,13 +293,13 @@ Chebyshev ≤ `FURNACE_REACH` between any cell of a **working** furnace and any 
 
 A lone working furnace covers itself. Two covering furnaces on a mill: `n = 2`. Empty / filling / `inn === 1` / waiting on output (`progress >= 1`): that furnace is not in `n`.
 
-Snapshot the working set at the start of `tickMachines` (after this tick’s `evalSensors`). Two-pass: who would tick, then apply. `tickCompost` uses that same set.
+Snapshot the working set at the start of `tickMachines` (after this tick’s `evalSensors`). Two-pass: who would tick, then apply. Compost-box reads that same set from the same loop.
 
 Covering area of a 1×2 is that Chebyshev set (derived 7 wide × 8 tall). Armed `buy-furnace` and unarmed hover of a placed furnace paint it stroke-only — [[ui/place]] [[architecture/view]] `view.furnace-cover`.
 
 Hover mill / jam / still / grinder / compost-box / furnace: one look line iff live covering count `n > 0`. Barrel never. Station never. `n === 0`: no line. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is that count. Look reads live working furnaces, not `furnaceSnap`. Copy [[ui/machines]] [[ui/inspect]].
 
-Assumption: one snapshot per `World.tick`; compost after machines still reads the start-of-`tickMachines` set.
+Assumption: one snapshot per `World.tick`; compost-box in `tickMachines` still reads the start-of-loop set. Compost bags have no freshness, so compost-box in that loop is not a freshness change.
 Assumption: smoke viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner; smoke sits on the chimney in that cell.
 
 ## Machinery

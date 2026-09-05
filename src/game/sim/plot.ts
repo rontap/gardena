@@ -1,28 +1,29 @@
-import type {
-  AdditiveStore,
-  Chest,
-  CompostBox,
-  Freezer,
-  Grinder,
-  Hangar,
-  House,
-  SiloProduce,
-  SiloSeed,
-  SiloSpray,
-  JamMachine,
-  Mill,
-  Furnace,
-  PotStill,
-  Pump,
-  ResearchStation,
-  RainTank,
-  Rock,
-  SeedSilo,
-  Tap,
-  Tree,
-  Truck,
-  Well,
-  Barrel,
+import {
+  BaseBuilding,
+  type AdditiveStore,
+  type Chest,
+  type CompostBox,
+  type Freezer,
+  type Grinder,
+  type Hangar,
+  type House,
+  type SiloProduce,
+  type SiloSeed,
+  type SiloSpray,
+  type JamMachine,
+  type Mill,
+  type Furnace,
+  type PotStill,
+  type Pump,
+  type ResearchStation,
+  type RainTank,
+  type Rock,
+  type SeedSilo,
+  type Tap,
+  type Tree,
+  type Truck,
+  type Well,
+  type Barrel,
 } from './building.ts'
 import type { CropId, TileId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
@@ -114,6 +115,7 @@ export function isFenceSite(c: Cell): c is Extract<Plot, { kind: 'untilled' }> {
 
 export function isSolid(c: Cell): boolean {
   return (
+    (c instanceof BaseBuilding && c.solid) ||
     c.kind === 'house' ||
     c.kind === 'pump' ||
     c.kind === 'rain-tank' ||
@@ -121,17 +123,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'well' ||
     c.kind === 'rock' ||
     c.kind === 'tree' ||
-    c.kind === 'chest' ||
-    c.kind === 'grinder' ||
-    c.kind === 'compost-box' ||
     c.kind === 'truck' ||
-    c.kind === 'mill' ||
-    c.kind === 'jam' ||
-    c.kind === 'still' ||
-    c.kind === 'furnace' ||
-    c.kind === 'station' ||
-    c.kind === 'barrel' ||
-    c.kind === 'freezer' ||
     c.kind === 'hangar' ||
     c.kind === 'silo-seed' ||
     c.kind === 'silo-spray' ||

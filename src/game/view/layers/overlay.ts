@@ -4,7 +4,7 @@ import { hangarPad, siloPad, stopXY } from '../../sim/feature-vehicles/vehicle.t
 import { isTilled, type Cell } from '../../sim/plot.ts'
 import { occupiedCells } from '../../sim/building.ts'
 import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'
-import { area3, isSensor, ownsPort, portDevice, portXY, sameEnd, wireControls, type PortId, type WireEnd } from '../../sim/sensor.ts'
+import { area3, isSensor, ownsPort, portXY, sameEnd, wireControls, type PortId, type WireEnd } from '../../sim/sensor.ts'
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
 import { goodness } from '../../sim/noise.ts'
@@ -182,17 +182,7 @@ function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
   }
   if (end.port === 'out') {
     if (cell === undefined) return false
-    if (cell.kind === 'lamp' || cell.kind === 'mill' || cell.kind === 'jam' || cell.kind === 'still' || cell.kind === 'station') return false
-    if (
-      isSensor(cell) ||
-      cell.kind === 'chest' ||
-      cell.kind === 'freezer' ||
-      cell.kind === 'seed-silo' ||
-      cell.kind === 'additive-store' ||
-      cell.kind === 'furnace'
-    ) {
-      return cell.out === 1
-    }
+    if ('ports' in cell && cell.ports.includes('out') && 'out' in cell) return cell.out === 1
     return false
   }
   return world.wires.some(w => sameEnd(w.to, end) && wireSignal(world, w.from))
@@ -449,7 +439,7 @@ export class OverlayLayer {
       PORTS.forEach(port => {
         if (!ownsPort(c, at, port)) return
         const end: WireEnd = { kind: 'cell', at, port }
-        const p = portXY(end, portDevice(c))
+        const p = portXY(end, 'ports' in c ? c.ports : undefined)
         marks.push({ x: p.x, y: p.y, out: port === 'out', high: portHigh(world, end, c) })
       })
     }

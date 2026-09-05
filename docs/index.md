@@ -58,15 +58,4 @@ Vault for this game. Agents read this first.
 
 - [[art/_index]]
 
-## Plans
 
-- [[e2e_test]] — working audit: mechanics vs code vs tests. Not law.
-- [[Path to V1.0 - readonly]] — roadmap, not rules
-- [[plans/early-access-1]] — Early Access 1 spec
-- [[plans/early-access-1.1]] — Early Access multiplayer beta spec
-- [[plans/early-access-2]] — Early Access 2 disease design notes, not yet spec
-- [[plans/1.8.0]] — market pressure + contracts spec. Types are `src/game/sim/market.h.ts`
-- [[plans/1.9.0]] — Automated Dispatch I spec. Routes + traffic light.
-- [[plans/2.0.0-b]] — Legible Build, Living World spec. Lattice, routed runs, valve merge, lens lock, port discs, `flow` VFX.
-- [[plans/2.3.0]] — furnace, axe, wood, ash, trunk
-- [[plans/2.4.0]] — rarity split spec. Variety, quality, grafts, research station.

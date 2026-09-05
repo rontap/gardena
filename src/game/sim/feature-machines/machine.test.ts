@@ -65,7 +65,7 @@ import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
 import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, PAD, PotStill, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
-import { Lever } from '../sensor.ts'
+import { Lamp, Lever } from '../sensor.ts'
 import { BIG_TICK } from '../soil.ts'
 import { DT_MAX, World } from '../world.ts'
 import { m } from '../../../paraglide/messages.js'
@@ -865,6 +865,55 @@ describe('variety.copy', () => {
     expect(cell.kind === 'growing' && cell.plant.variety).toBe('red-fife')
     expect(cell.kind === 'growing' && cell.plant.quality).toBe(0.75)
     expect(w.seats[0].hand.kind).toBe('empty')
+  })
+})
+
+describe('building.flags', () => {
+  test('`BaseBuilding` carries `solid` `ticks` `hasted` beside `ports` `pads` `takeAll`. A building that wants the default declares nothing. No call site re-derives a flag by listing kinds.', () => {
+    const base = { shape: 'rect' as const, col: 0, row: 0, w: 1, h: 1 }
+    const chest = new Chest(base)
+    expect(chest.solid).toBe(true)
+    expect(chest.ticks).toBe(false)
+    expect(chest.hasted).toBe(false)
+    const mill = new Mill(base)
+    expect(mill.ticks).toBe(true)
+    expect(mill.hasted).toBe(true)
+    const station = new ResearchStation(base)
+    expect(station.ticks).toBe(true)
+    expect(station.hasted).toBe(false)
+    const barrel = new Barrel(base)
+    expect(barrel.ticks).toBe(true)
+    expect(barrel.hasted).toBe(false)
+    const box = new CompostBox(base)
+    expect(box.ticks).toBe(true)
+    expect(box.hasted).toBe(true)
+    const grind = new Grinder(base)
+    expect(grind.ticks).toBe(true)
+    expect(grind.hasted).toBe(true)
+  })
+})
+
+describe('building.ports-single', () => {
+  test('`ports` is the only statement of which ports a cell has. `hit.ts` has no `portsOf`. Sensors carry the same field.', () => {
+    const base = { shape: 'rect' as const, col: 0, row: 0, w: 1, h: 1 }
+    expect([...new Mill(base).ports]).toEqual(['in'])
+    expect([...new Furnace(base).ports]).toEqual(['in', 'out'])
+    expect([...new Chest(base).ports]).toEqual(['out'])
+    expect([...new Lamp(base).ports]).toEqual(['in'])
+    expect([...new Lever(base).ports]).toEqual(['in', 'out'])
+  })
+})
+
+describe('machines.tick-self', () => {
+  test('`tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine.', () => {
+    const w = new World(1)
+    const at = { col: 10, row: 14 }
+    const mill = new Mill({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    mill.recipe = 'wheat'
+    mill.units = MILL_IN
+    w.setCell(at, mill)
+    expect(mill.tick(w, at, DT_MAX)).toBe(false)
+    expect(mill.progress).toBeCloseTo((DT_MAX * w.machineMul()) / MILL_WORK)
   })
 })
 

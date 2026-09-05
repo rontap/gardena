@@ -193,14 +193,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     lines.push(labeled(cropLabel(cell.plant.crop), m.prompt_dead()))
   }
   const face = lines[faceAt]
-  if (
-    cell.kind === 'mill' ||
-    cell.kind === 'jam' ||
-    cell.kind === 'still' ||
-    cell.kind === 'grinder' ||
-    cell.kind === 'compost-box' ||
-    cell.kind === 'furnace'
-  ) {
+  if ('hasted' in cell && cell.hasted) {
     const n = Math.round((world.furnaceMulFor(cell.base) - 1) / FURNACE_HASTE)
     if (n > 0) lines.push(m.prompt_furnace_haste({ n, pct: FURNACE_HASTE * n * 100 }))
   }

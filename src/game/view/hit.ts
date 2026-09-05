@@ -1,13 +1,6 @@
 import { SENSOR_CELL_SKUS, type SkuId } from '../sim/ids.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
-import {
-  isSensor,
-  nearestWire,
-  portDevice,
-  portXY,
-  type PortId,
-  type WireEnd,
-} from '../sim/sensor.ts'
+import { nearestWire, portXY, type PortId, type WireEnd } from '../sim/sensor.ts'
 import type { Cell } from '../sim/plot.ts'
 import type { Place, World } from '../sim/world.ts'
 import type { PromptHit } from '../sim/prompt.ts'
@@ -166,7 +159,10 @@ export function sprinklerOk(world: World, s: Sprinkler): boolean {
 }
 
 export function wireEndXY(world: World, end: WireEnd): { x: number; y: number } {
-  if (end.kind === 'cell') return portXY(end, portDevice(world.cell(end.at)))
+  if (end.kind === 'cell') {
+    const c = world.cell(end.at)
+    return portXY(end, 'ports' in c ? c.ports : undefined)
+  }
   return portXY(end)
 }
 
@@ -187,29 +183,6 @@ function originOk(c: Cell, at: { col: number; row: number }): boolean {
   return c.base.col === at.col && c.base.row === at.row
 }
 
-function cellPorts(c: Cell): PortId[] {
-  if (isSensor(c)) {
-    if (c.kind === 'and' || c.kind === 'or') return ['in-l', 'in-r', 'out']
-    if (
-      c.kind === 'not' ||
-      c.kind === 'pulser' ||
-      c.kind === 'counter' ||
-      c.kind === 'lever' ||
-      c.kind === 'traffic-light'
-    ) {
-      return ['in', 'out']
-    }
-    if (c.kind === 'lamp') return ['in']
-    return ['out']
-  }
-  if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') return ['in']
-  if (c.kind === 'furnace') return ['in', 'out']
-  if (c.kind === 'chest' || c.kind === 'freezer' || c.kind === 'seed-silo' || c.kind === 'additive-store') {
-    return ['out']
-  }
-  return []
-}
-
 function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
   const col = Math.floor(wx)
   const row = Math.floor(wy)
@@ -227,9 +200,10 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
       if (!world.inWorld(at)) continue
       const c = world.cell(at)
       if (!originOk(c, at)) continue
-      cellPorts(c).forEach(port => {
+      if (!('ports' in c)) continue
+      c.ports.forEach(port => {
         const end: WireEnd = { kind: 'cell', at, port }
-        const p = portXY(end, portDevice(c))
+        const p = portXY(end, c.ports)
         take(end, p.x, p.y)
       })
     }
@@ -256,17 +230,7 @@ function portHit(world: World, wx: number, wy: number): WireEnd | undefined {
 export function wireSignal(world: World, from: WireEnd): boolean {
   if (from.kind !== 'cell') return false
   const c = world.cell(from.at)
-  if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'station') return false
-  if (
-    isSensor(c) ||
-    c.kind === 'chest' ||
-    c.kind === 'freezer' ||
-    c.kind === 'seed-silo' ||
-    c.kind === 'additive-store' ||
-    c.kind === 'furnace'
-  ) {
-    return c.out === 1
-  }
+  if ('ports' in c && c.ports.includes('out') && 'out' in c) return c.out === 1
   return false
 }
 

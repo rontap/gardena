@@ -254,20 +254,7 @@ export type PortDevice =
   | 'additive-store'
 
 export function portDevice(c: Cell): PortDevice {
-  if (
-    isSensor(c) ||
-    c.kind === 'mill' ||
-    c.kind === 'jam' ||
-    c.kind === 'still' ||
-    c.kind === 'furnace' ||
-    c.kind === 'station' ||
-    c.kind === 'chest' ||
-    c.kind === 'freezer' ||
-    c.kind === 'seed-silo' ||
-    c.kind === 'additive-store'
-  ) {
-    return c.kind
-  }
+  if (isSensor(c) || ('ports' in c && c.ports.length > 0)) return c.kind as PortDevice
   throw new Error('port')
 }
 
@@ -604,7 +591,7 @@ export function hitsEdge(end: WireEnd, e: Edge): boolean {
   return end.kind === 'valve' && end.e.axis === e.axis && end.e.col === e.col && end.e.row === e.row
 }
 
-export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number } {
+export function portXY(end: WireEnd, ports?: readonly PortId[]): { x: number; y: number } {
   if (end.kind === 'sprinkler') return { x: end.at.col, y: end.at.row }
   if (end.kind === 'valve') {
     if (end.e.axis === 'h') return { x: end.e.col + 0.5, y: end.e.row }
@@ -614,21 +601,7 @@ export function portXY(end: WireEnd, kind?: PortDevice): { x: number; y: number 
   if (end.port === 'out') return { x: col + 0.5, y: row + 1 }
   if (end.port === 'in-l') return { x: col, y: row + 0.5 }
   if (end.port === 'in-r') return { x: col + 1, y: row + 0.5 }
-  if (
-    kind === 'not' ||
-    kind === 'lamp' ||
-    kind === 'mill' ||
-    kind === 'jam' ||
-    kind === 'still' ||
-    kind === 'furnace' ||
-    kind === 'station' ||
-    kind === 'pulser' ||
-    kind === 'counter' ||
-    kind === 'lever' ||
-    kind === 'traffic-light'
-  ) {
-    return { x: col + 0.5, y: row }
-  }
+  if (ports !== undefined && ports.includes('in')) return { x: col + 0.5, y: row }
   return { x: col + 0.5, y: row + 0.5 }
 }
 

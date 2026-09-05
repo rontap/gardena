@@ -563,16 +563,7 @@ export function padBuildings(w: World): PadCell[] {
   const out: PadCell[] = []
   for (const at of w.machines.values()) {
     const c = w.cell(at)
-    if (
-      c.kind === 'mill' ||
-      c.kind === 'jam' ||
-      c.kind === 'still' ||
-      c.kind === 'compost-box' ||
-      c.kind === 'furnace' ||
-      c.kind === 'station'
-    ) {
-      out.push(c)
-    }
+    if (isPadCell(c)) out.push(c)
   }
   for (const at of w.stores.values()) {
     const c = w.cell(at)

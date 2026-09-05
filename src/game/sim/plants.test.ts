@@ -63,7 +63,7 @@ import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
 import { grindAccept, grindApply, grindProduct } from './feature-machines/machine.ts'
 import { footOutline } from '../view/outline.ts'
-import { dest, DT_MAX, fillable, POINTS_PER_DAY, World } from './world.ts'
+import { DT_MAX, POINTS_PER_DAY, World } from './world.ts'
 import { BUILD_SKUS, SHELVES, SHOP_SKUS } from '../defs/shelf.ts'
 
 

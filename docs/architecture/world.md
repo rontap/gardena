@@ -147,7 +147,7 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 | empty | empty plots |
 | tilled | `isTilled` |
 
-`tickField` grow+recover. `tickMachines` / `tickCompost` machines. `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
+`tickField` grow+recover. `tickMachines` machines (compost-box in the same loop). `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
 
 `forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. View dirty walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`. [[architecture/view]] `view.scan`.
 

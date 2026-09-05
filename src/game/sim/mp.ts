@@ -338,24 +338,7 @@ export function digestParts(world: World): Record<string, unknown> {
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`
-    else if (
-      c.kind === 'button' ||
-      c.kind === 'or' ||
-      c.kind === 'and' ||
-      c.kind === 'not' ||
-      c.kind === 'sensor-water' ||
-      c.kind === 'sensor-fert' ||
-      c.kind === 'sensor-harvest' ||
-      c.kind === 'sensor-day' ||
-      c.kind === 'water-system' ||
-      c.kind === 'vehicle-detector' ||
-      c.kind === 'chest' ||
-      c.kind === 'freezer' ||
-      c.kind === 'seed-silo' ||
-      c.kind === 'additive-store'
-    ) {
-      s += `:out${c.out}`
-    }
+    else if ('ports' in c && c.ports.includes('out') && 'out' in c) s += `:out${c.out}`
     cells.push(s)
   })
   const seats = world.seats.map(s => ({

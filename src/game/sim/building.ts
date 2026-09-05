@@ -1,36 +1,70 @@
 import {
   ADDITIVE_CAP_LITERS,
+  BARREL_AGE,
+  BARREL_MATURE,
   CHEST_SLOTS,
   COMPOST_LITERS,
+  COMPOST_NEED,
+  COMPOST_SECONDS,
   FERT_BAG_LITERS,
   FREEZER_SLOTS,
+  FURNACE_ASH,
   FURNACE_CAP,
+  FURNACE_NEED,
+  FURNACE_SECONDS,
+  GRIND_MAX,
+  grindMinAt,
+  GRIND_WORK,
   JAM_BUFFER,
+  JAM_IN,
+  JAM_SECONDS,
+  JAM_SUGAR,
+  MILL_WORK,
   SILO_SEED_CAP,
+  STATION_GRAFT_MAX,
+  STATION_GRAFT_MIN,
   STATION_IN,
+  STATION_SECONDS,
   STILL_CAP,
+  STILL_SECONDS,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
-import { compostValue, giveSlots, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import { compostValue, fruitStack, giveSlots, makeCompost, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import { statsOf } from './modifiers.ts'
 import {
   addStillFeed,
+  bakeSpiritSale,
+  barrelNeed,
   feedUnits,
+  feedVariety,
   feedVarietyOf,
   fruitCount,
   fruitCrop,
   fruitQuality,
   fruitVariety,
+  furnaceMul,
   furnaceUnit,
+  grindProduct,
   jamCropOf,
+  jamSale,
+  jamWorking,
+  meanQuality,
   millDumpUnits,
+  millNeed,
+  millProduct,
   millRecipeOf,
+  millWorking,
   mixQuality,
+  spiritKind,
   stillCropOf,
+  stillReady,
 } from './feature-machines/machine.ts'
+import { emitPair, emitProduct, pullStillWater } from './feature-machines/machines.emit.ts'
+import type { World } from './world.ts'
 import { Reservoir } from './water.ts'
 
 export type Coord = { col: number; row: number }
@@ -282,6 +316,9 @@ export class BaseBuilding {
   readonly ports: readonly ('out' | 'in' | 'in-l' | 'in-r')[] = []
   readonly pads: 'none' | 'both' = 'none'
   readonly takeAll: boolean = false
+  readonly solid: boolean = true
+  readonly ticks: boolean = false
+  readonly hasted: boolean = false
   constructor(base: RectBase) {
     this.base = base
   }
@@ -289,11 +326,15 @@ export class BaseBuilding {
     return 0
   }
   apply(_item: Item, _n: number): void {}
+  tick(_w: World, _at: Coord, _dt: number): boolean {
+    return false
+  }
 }
 
 export class Machine extends BaseBuilding {
   inn: Signal = 0
   override readonly pads = 'both'
+  override readonly ticks = true
 }
 
 export class Chest extends BaseBuilding {
@@ -318,6 +359,8 @@ export class Chest extends BaseBuilding {
 
 export class Grinder extends BaseBuilding {
   readonly kind = 'grinder' as const
+  override readonly ticks = true
+  override readonly hasted = true
   crop: CropId | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
@@ -353,12 +396,29 @@ export class Grinder extends BaseBuilding {
     this.quality = mixQuality(this.quality, this.units, quality, n)
     this.units += n
   }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.crop === 'none' || this.units < 1) return false
+    this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / GRIND_WORK
+    if (this.progress < 1) return false
+    const u = w.rng.stream('grind').at(at.col, at.row, w.clock.day, this.n)
+    const floor = grindMinAt(this.quality)
+    const count = floor + Math.floor(u * (GRIND_MAX - floor + 1))
+    if (!emitProduct(w, at, this.base, grindProduct(this, count))) return false
+    this.progress = 0
+    this.units -= 1
+    this.n += 1
+    if (this.units === 0) this.crop = 'none'
+    w.track(at, this)
+    return true
+  }
 }
 
 export class CompostBox extends BaseBuilding {
   readonly kind = 'compost-box' as const
   override readonly pads = 'both'
   override readonly takeAll = true
+  override readonly ticks = true
+  override readonly hasted = true
   units = 0
   progress = 0
   constructor(base: RectBase) {
@@ -369,6 +429,16 @@ export class CompostBox extends BaseBuilding {
   }
   override apply(item: Item, _n: number): void {
     this.units += compostValue(item)
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.units < COMPOST_NEED) return false
+    this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / COMPOST_SECONDS
+    if (this.progress < 1) return false
+    if (!emitProduct(w, at, this.base, makeCompost())) return false
+    this.progress = 0
+    this.units -= COMPOST_NEED
+    w.track(at, this)
+    return true
   }
 }
 
@@ -383,6 +453,7 @@ export class Truck {
 export class Mill extends Machine {
   readonly kind = 'mill' as const
   override readonly ports = ['in'] as const
+  override readonly hasted = true
   recipe: MillRecipe | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
@@ -414,11 +485,27 @@ export class Mill extends Machine {
     this.quality = mixQuality(this.quality, this.units, q, n)
     this.units += n
   }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (!millWorking(this)) return false
+    const need = millNeed(this.recipe)
+    this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / MILL_WORK
+    if (this.progress < 1) return false
+    if (!emitProduct(w, at, this.base, millProduct(this.recipe, this.variety, this.quality))) return false
+    this.progress = 0
+    this.units -= need
+    if (this.units === 0) {
+      const mill: Mill = this
+      mill.recipe = 'none'
+    }
+    w.track(at, this)
+    return true
+  }
 }
 
 export class JamMachine extends Machine {
   readonly kind = 'jam' as const
   override readonly ports = ['in'] as const
+  override readonly hasted = true
   crop: JamCrop | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
@@ -468,11 +555,38 @@ export class JamMachine extends Machine {
   applySugar(n: number): void {
     this.sugar += n
   }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (!jamWorking(this)) return false
+    this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / JAM_SECONDS
+    if (this.progress < 1) return false
+    if (
+      !emitProduct(w, at, this.base, {
+        kind: 'jam',
+        crop: this.crop,
+        variety: this.variety,
+        quality: this.quality,
+        count: 1,
+        unitSale: jamSale(this.crop, this.variety, this.quality),
+      })
+    ) {
+      return false
+    }
+    this.progress = 0
+    this.fruit -= JAM_IN
+    this.sugar -= JAM_SUGAR
+    if (this.fruit === 0) {
+      const jam: JamMachine = this
+      jam.crop = 'none'
+    }
+    w.track(at, this)
+    return true
+  }
 }
 
 export class PotStill extends Machine {
   readonly kind = 'still' as const
   override readonly ports = ['in'] as const
+  override readonly hasted = true
   feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[] = []
   progress = 0
   n = 0
@@ -492,11 +606,42 @@ export class PotStill extends Machine {
     if (crop === undefined || variety === undefined || n <= 0) return
     addStillFeed(this.feed, crop, variety, fruitQuality(item), n)
   }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (!stillReady(this)) return false
+    let dirty = false
+    if (this.progress === 0) {
+      if (!pullStillWater(w, this)) return false
+      dirty = true
+    }
+    this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / STILL_SECONDS
+    if (this.progress < 1) return dirty
+    const kind = spiritKind(this.feed)
+    const quality = meanQuality(this.feed)
+    const variety = kind === 'mixed' ? 'base' : feedVariety(this.feed)
+    if (
+      !emitProduct(w, at, this.base, {
+        kind: 'spirit',
+        spirit: kind,
+        variety,
+        quality,
+        count: 1,
+        unitSale: bakeSpiritSale(kind, variety, quality),
+      })
+    ) {
+      return dirty
+    }
+    this.feed = []
+    this.progress = 0
+    this.n += 1
+    w.track(at, this)
+    return true
+  }
 }
 
 export class Furnace extends Machine {
   readonly kind = 'furnace' as const
   override readonly ports = ['in', 'out'] as const
+  override readonly hasted = true
   units = 0
   progress = 0
   out: Signal = 0
@@ -524,6 +669,17 @@ export class Furnace extends Machine {
   override apply(item: Item, n: number): void {
     if (n <= 0) return
     this.units += furnaceUnit(item) * n
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.inn === 1) return false
+    if (this.units < FURNACE_NEED) return false
+    if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / FURNACE_SECONDS
+    if (this.progress < 1) return false
+    if (!emitProduct(w, at, this.base, { kind: 'ash', count: FURNACE_ASH })) return false
+    this.progress = 0
+    this.units -= FURNACE_NEED
+    w.track(at, this)
+    return true
   }
 }
 
@@ -562,16 +718,48 @@ export class ResearchStation extends Machine {
     this.quality = mixQuality(this.quality, this.units, quality, n)
     this.units += n
   }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.inn === 1) return false
+    if (this.crop === 'none' || this.units < STATION_IN) return false
+    if (this.progress < 1) this.progress += dt / STATION_SECONDS
+    if (this.progress < 1) return false
+    const u = w.rng.stream('grind').at(at.col, at.row, w.clock.day)
+    const count = STATION_GRAFT_MIN + Math.floor(u * (STATION_GRAFT_MAX - STATION_GRAFT_MIN + 1))
+    const sale = statsOf(this.crop, this.variety, this.quality, w.modifiers).sale
+    const cut: Item = {
+      kind: 'fruit',
+      ...fruitStack(this.crop, this.variety, this.quality, STATION_IN, sale, 1, false, true),
+    }
+    const grafts: Item = { kind: 'graft', crop: this.crop, variety: this.variety, quality: this.quality, count }
+    if (!emitPair(w, at, this.base, cut, grafts)) return false
+    this.progress = 0
+    this.units -= STATION_IN
+    if (this.units === 0) this.crop = 'none'
+    w.track(at, this)
+    return true
+  }
 }
 
 export class Barrel extends BaseBuilding {
   readonly kind = 'barrel' as const
+  override readonly ticks = true
   crop: BarrelCrop | 'none' = 'none'
   feed: { variety: VarietyId; quality: number; count: number }[] = []
   age = 0
   n = 0
   constructor(base: RectBase) {
     super(base)
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.crop === 'none' || feedUnits(this.feed) !== barrelNeed(this.crop)) return false
+    const was = this.age
+    this.age += dt
+    if (was < BARREL_MATURE && this.age >= BARREL_MATURE) {
+      this.feed = [{ variety: feedVariety(this.feed), quality: meanQuality(this.feed), count: barrelNeed(this.crop) }]
+      this.n += 1
+    }
+    w.track(at, this)
+    return was < BARREL_AGE && this.age >= BARREL_AGE
   }
 }
 

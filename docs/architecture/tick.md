@@ -32,7 +32,7 @@ Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase.
 | walk | index |
 |---|---|
 | `tickField` | grow + recover |
-| `tickMachines` / `tickCompost` | machines. Snapshot working furnaces at start of `tickMachines`; compost uses that set |
+| `tickMachines` | machines. Snapshot working furnaces at start; compost-box ticks in the same loop |
 | `tickFreshness` | stores (+ seats / drops / vehicles, not grow). Freezer slots still skip |
 | `tickButtons` | buttons |
 | `evalSensors` | sensors + machines + stores. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell. Station `inn` combinational |

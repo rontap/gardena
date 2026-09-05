@@ -25,7 +25,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Machine tick / compost tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Intent `chop` `furnace` `graft` `station` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Intent `chop` `furnace` `graft` `station` |
 | `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `feature-save/save.h.ts` | `Save` typedefs |
@@ -56,7 +56,8 @@
 | `rng.ts` | `Rng`, streams |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
 | `feature-machines/machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
-| `feature-machines/machines.tick.ts` | `tickMachines` `tickCompost` `pullMachineStores` `emitProduct` `emitPair` `dropSpot` `pullStillWater` `workingFurnaces` `furnaceMulFor`. Snapshot `World.furnaceSnap` at start of `tickMachines` |
+| `feature-machines/machines.tick.ts` | `tickMachines` `pullMachineStores` `workingFurnaces` `furnaceMulFor`. Snapshot `World.furnaceSnap` at start of `tickMachines`. Re-exports emit |
+| `feature-machines/machines.emit.ts` | `emitProduct` `emitPair` `dropSpot` `pullStillWater`. Called from `BaseBuilding.tick` |
 | `feature-machines/machines.helpers.ts` | `canMill`/`doMill` `canJam`/`doJam` `canStill`/`doStill` `canFurnace`/`doFurnace` `canStation`/`doStation` `canGrind`/`doGrind` `canBarrel`/`doBarrel`/`canBarrelCollect` `canCompost`/`doCompost`. Public `canStation` / `dropSpot` / `furnaceMulFor` stay World wrappers |
 | `feature-machines/recipe.h.ts` | `Recipe`, `Craft`, `MachineId` |
 | `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
@@ -169,28 +170,45 @@ BaseBuilding
   ports → []
   pads → 'none'
   takeAll → false
+  solid → true
+  ticks → false
+  hasted → false
+  tick(w, at, dt) → false
 
 Machine extends BaseBuilding
   inn: Signal
   pads → 'both'
+  ticks → true
 ```
 
 `Store` extends `BaseBuilding`.
 
 `Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`.
 
-`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`. Grinder / barrel keep `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
+`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`, `ticks`, `hasted`. Grinder `ticks` `hasted`, pads `'none'`. Barrel `ticks`, pads `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
 
 `Store`: `SeedSilo`, `AdditiveStore`. Override `pads` `'both'`, `ports` `['out']`.
+
+A building that wants the default writes nothing. `solid` every `BaseBuilding`. `ticks` mill jam still grinder barrel furnace station compost-box — `World.machines`. `hasted` mill jam still grinder furnace compost-box — furnace haste look. Station and barrel tick; they are not `hasted`. `BaseBuilding.tick(w, at, dt)` returns whether it changed anything. `tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine. Compost-box ticks in that loop. `emitProduct` / `emitPair` / `dropSpot` / `pullStillWater` stay free functions in `machines.emit.ts`; the machine calls them.
 
 House / pump / hangar / field silos unchanged this pass.
 
 Override only when the body is real logic. Do not put mill / jam / furnace specifics on `Machine`. Mill / jam / still / station `ports` `['in']`. Furnace `['in','out']`.
 
-Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / chest / freezer / seed-silo / additive-store: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`.
+Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / chest / freezer / seed-silo / additive-store: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Keep `isIoCell` as its own predicate, not a flag alias. Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`. `isSolid` uses `solid` for the `BaseBuilding` half; house / rock / tree / truck / pump / sensors stay kind arms.
 
-Sensors are not `Machine`. Make table and ports: [[mechanics/sensors]].
+Sensors are not `Machine` and not `BaseBuilding`. They carry the same readonly `ports`. Make table and ports: [[mechanics/sensors]].
+
+`building.flags` — `BaseBuilding` carries `solid` `ticks` `hasted` beside `ports` `pads` `takeAll`. A building that wants the default declares nothing. No call site re-derives a flag by listing kinds.
+
+`building.ports-single` — `ports` is the only statement of which ports a cell has. `hit.ts` has no `portsOf`. Sensors carry the same field.
+
+`machines.tick-self` — `tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine.
 
 Assumption: leftover `useOf` is `purposeMul`; no `pathUse`.
 
 Assumption: `Place` / `StayArmed` stay on `world.ts`; dest and wire place stay.
+
+Assumption: `hasted` is a flag, not `machineMul` on the class — the still and furnace take furnace haste but not the machinery skill, and one boolean says that where a rate method would hide it.
+
+Assumption: sensors gain `ports` in Cut 1. They are not `BaseBuilding` and this spec does not make them one.

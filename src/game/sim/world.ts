@@ -18,7 +18,6 @@ import {
   WEATHER_THROUGH_DAY
 } from '../defs/weather.ts'
 import {
-  CROPS,
   HAPPY_MAX,
   HAPPY_START
 } from '../defs/crops.ts'
@@ -81,7 +80,6 @@ import {
   type SiloSeed,
   type SiloSpray,
   type Tap,
-  type Tree,
   type Well
 } from './building.ts'
 import { Clock, DAY_SECONDS } from './clock.ts'
@@ -111,9 +109,6 @@ import {
   emptyContracts,
   addRep,
   tickContracts as tickContractsFn,
-  acceptContractBody as acceptContractFn,
-  cancelContractBody as cancelContractFn,
-  reorderContractBody as reorderContractFn,
   REP_IDLE
 } from './feature-contracts/market.ts'
 import type {
@@ -182,7 +177,6 @@ import {
   sameNode,
   isSeqIn,
   wouldCycle,
-  type Sensor,
   type ValveHold,
   type WaterSystem,
   type Wire,
@@ -199,7 +193,6 @@ import * as tick from './tick.ts'
 import * as field from './feature-field/field.ts'
 import * as place from './feature-place/place.ts'
 
-export { mood, pourTarget, waterable } from './feature-field/field.ts'
 export type * from './world.h.ts'
 import type {
   Burst,
@@ -332,8 +325,6 @@ function groundSig(c: Cell): string {
   if ((c.kind === 'untilled' && c.ground === 'very-hard') || c.kind === 'infertile') return 'vh'
   return 'g'
 }
-
-export { dest } from './queue.ts'
 
 const LOG_CAP = 500
 
@@ -745,19 +736,8 @@ export class World {
     ) {
       this.grow.set(k, here)
     } else this.grow.delete(k)
-    if (
-      origin &&
-      (cell.kind === 'mill' ||
-        cell.kind === 'jam' ||
-        cell.kind === 'still' ||
-        cell.kind === 'barrel' ||
-        cell.kind === 'grinder' ||
-        cell.kind === 'compost-box' ||
-        cell.kind === 'furnace' ||
-        cell.kind === 'station')
-    ) {
-      this.machines.set(k, here)
-    } else this.machines.delete(k)
+    if (origin && 'ticks' in cell && cell.ticks) this.machines.set(k, here)
+    else this.machines.delete(k)
     if (cell.kind === 'chest' || cell.kind === 'freezer') this.stores.set(k, here)
     else this.stores.delete(k)
     if (isSensor(cell)) this.sensors.set(k, here)
@@ -1277,13 +1257,6 @@ export class World {
     return isInEnd(end, c, valve, sprinkler)
   }
 
-  sensorAt(at: Coord): Sensor | undefined {
-    if (!this.inWorld(at)) return undefined
-    const c = this.cell(at)
-    if (!isSensor(c)) return undefined
-    return c
-  }
-
   rotatePlace(): void {
     this.commit({ a: Act.rotatePlace, t: this.now, p: this.local })
   }
@@ -1316,20 +1289,12 @@ export class World {
     return nets.pendingWet(this, e)
   }
 
-  sprinklerTargets(s: Sprinkler): Coord[] {
-    return nets.sprinklerTargets(this, s)
-  }
-
   private dropTargetCachesAt(at: Coord): void {
     nets.dropTargetCachesAt(this, at)
   }
 
   rebuildWired(): void {
     nets.rebuildWired(this)
-  }
-
-  tileRate(s: Sprinkler): number {
-    return nets.tileRate(this, s)
   }
 
   demand(s: Sprinkler): number {
@@ -1509,10 +1474,6 @@ export class World {
 
   createRoute(): void {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'create' })
-  }
-
-  deleteRoute(r: RouteId): void {
-    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'delete', r })
   }
 
   assignRoute(v: VehicleId, r: RouteId | 'none'): void {
@@ -1923,7 +1884,6 @@ export class World {
     machines.tickMachines(this, dt)
     nets.tickWater(this, dt)
     tick.tickFreshness(this, dt)
-    machines.tickCompost(this, dt)
     tick.tickBig(this, dt)
     tickContractsFn(this, beforeDay, this.nowDay())
     STALL_IDS.forEach(id => {
@@ -1944,24 +1904,8 @@ export class World {
     return machines.dropSpot(this, at)
   }
 
-  grassCount(): number {
-    return field.grassCount(this)
-  }
-
   canTend(at: Coord): boolean {
     return field.canTend(this, at)
-  }
-
-  treeCells(t: Tree): Coord[] {
-    return field.treeCells(t)
-  }
-
-  neighbourReach(cells: readonly Coord[]): Coord[] {
-    return field.neighbourReach(cells)
-  }
-
-  hasNeighbour(cells: readonly Coord[], crop: CropId): boolean {
-    return field.hasNeighbour(this, cells, crop)
   }
 
   neighbourWatch(at: Coord): { crop: CropId; tree: boolean; reach: Coord[]; ok: boolean } | undefined {
@@ -1990,6 +1934,4 @@ export class World {
   }
 
 }
-
-export { fillable } from './nets.ts'
 

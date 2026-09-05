@@ -403,8 +403,8 @@ describe('1.6 sensors', () => {
   })
 
   test('Lamp portXY in is top.', () => {
-    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'lamp')).toEqual({ x: 4.5, y: 7 })
-    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, 'not')).toEqual({ x: 4.5, y: 7 })
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, ['in'])).toEqual({ x: 4.5, y: 7 })
+    expect(portXY({ kind: 'cell', at: { col: 4, row: 7 }, port: 'in' }, ['in', 'out'])).toEqual({ x: 4.5, y: 7 })
   })
 
   test('isolated water-system out stays 0.', () => {
@@ -1224,8 +1224,8 @@ describe('1.6 sensors', () => {
     expect(lookText(w, { kind: 'cell', at: A }, false)).toContain('Traffic light')
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-traffic-light' })).toBe(true)
     expect(isSeqIn({ kind: 'cell', at: A, port: 'in' }, light)).toBe(true)
-    expect(portXY({ kind: 'cell', at: A, port: 'in' }, 'traffic-light')).toEqual({ x: A.col + 0.5, y: A.row })
-    expect(portXY({ kind: 'cell', at: A, port: 'out' }, 'traffic-light')).toEqual({ x: A.col + 0.5, y: A.row + 1 })
+    expect(portXY({ kind: 'cell', at: A, port: 'in' }, light.ports)).toEqual({ x: A.col + 0.5, y: A.row })
+    expect(portXY({ kind: 'cell', at: A, port: 'out' }, light.ports)).toEqual({ x: A.col + 0.5, y: A.row + 1 })
     const hangar = { col: 16, row: 16 }
     w.buy('buy-hangar')
     w.confirmPlace(hangar)

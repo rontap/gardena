@@ -5,24 +5,21 @@ export const CAM_X = 15.5
 export const CAM_Y = 9.5
 
 export async function waitPlay(page: Page): Promise<void> {
-  await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible({ timeout: 30_000 })
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const w = window as Window & { __view?: object; __world?: object }
-          return w.__view !== undefined && w.__world !== undefined
-        }),
-      { timeout: 30_000 },
-    )
-    .toBe(true)
+  await expect(async () => {
+    await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible({ timeout: 5_000 })
+    const ready = await page.evaluate(() => {
+      const w = window as Window & { __view?: object; __world?: object }
+      return w.__view !== undefined && w.__world !== undefined
+    })
+    expect(ready).toBe(true)
+  }).toPass({ timeout: 30_000 })
 }
 
 export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: number }): Promise<void> {
   const params = new URLSearchParams()
   if (opts?.speed !== undefined) params.set('speed', String(opts.speed))
   params.set('start', opts?.unlock === true ? 'unlock' : 'now')
-  await page.goto(`/?${params.toString()}`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`/?${params.toString()}`, { waitUntil: 'load' })
   await waitPlay(page)
 }
 

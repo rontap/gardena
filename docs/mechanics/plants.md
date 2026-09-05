@@ -20,52 +20,43 @@ Identity, not a ladder. Set when the seed goes in the ground and never changes a
 
 ```
 VarietyTier = 'base' | 'variant' | 'heirloom'
-VarietyId   = 'base' | 'bintje' | 'russian-banana' | 'sonora' | 'red-fife'
-            | 'green-zebra' | 'san-marzano' | 'black-raspberry'
-            | 'concord' | 'thompson' | 'keknyelu'
-            | 'kingston-black' | 'pink-lady'
-            | 'moorpark' | 'klosterneuburger' | 'blenheim'
-            | 'kalamata' | 'arbequina' | 'montmorency' | 'bing'
-Rating      = 1 | 2 | 3 | 4 | 5
-Use         = { preserve: Rating | 'none'; fresh: Rating; alcohol: Rating | 'none' }
+VarietyId   = 'base' | 'bintje' | 'red-fife' | 'green-zebra' | 'san-marzano'
+            | 'black-raspberry' | 'concord' | 'keknyelu'
+            | 'kingston-black' | 'pink-lady' | 'blenheim' | 'klosterneuburger'
+            | 'arbequina' | 'bing'
+Purpose     = 'produce' | 'processed' | 'alcohol'
 ```
 
-`'base'` is legal on every `CropId`. Every other id belongs to exactly one crop. `VARIETY: Record<Exclude<VarietyId, 'base'>, { crop: CropId; tier: 'variant' | 'heirloom'; use: Use }>` and `VARIETIES: Record<CropId, readonly VarietyId[]>`, both complete maps, `defs/varieties.ts`. Carrot, vanilla and sugar-cane list `['base']` only.
+`'base'` is legal on every `CropId`. Every other id belongs to exactly one crop, and a crop carries **at most one** `variant` and **at most one** `heirloom`. `VARIETY: Record<Exclude<VarietyId, 'base'>, { crop: CropId; tier: 'variant' | 'heirloom'; purpose: Purpose }>` and `VARIETIES: Record<CropId, readonly VarietyId[]>`, both complete maps, `defs/varieties.ts`. Carrot, vanilla and sugar-cane list `['base']` only.
 
-`Plant.variety` required `VarietyId`. Illegal: optional `variety`. Illegal: a `variety` whose `VARIETY[v].crop` is not `Plant.crop`.
+`Plant.variety` required `VarietyId`. Illegal: optional `variety`. Illegal: a `variety` whose `VARIETY[v].crop` is not `Plant.crop`. Illegal: two varieties of one crop sharing a tier.
 
-`useOf(crop, variety)`: `'base'` is `3` wherever that crop has the path, `'none'` where it does not. Other ids read `VARIETY[v].use`. `'none'` means the crop has no such machine — not a bad rating, an absent one.
+### Purpose
 
-Preserve is the jam machine and the mill. Fresh is the fruit sold as it is. Alcohol is the still and the barrel.
+One axis, not three. Each named variety is good for exactly one of the three things a crop can become, and worse at the other two. `'base'` is neutral everywhere.
 
-`RATING_SALE: Record<Rating, number>` — preference. Neutral at 3, so a crop with no varieties is untouched by this section. It multiplies the sale of the good made on that path, and nothing else: not yield, not speed, not input count.
+**produce** is the fruit sold as it is. **processed** is the jam machine and the mill. **alcohol** is the still and the barrel. Which of those a crop can reach at all is not a variety property — `MILL_RECIPES` `JAM_CROPS` `STILL_CROPS` `BARREL_CROPS` in `sim/ids.ts` own that.
 
-| crop | `'base'` | variant | variant | heirloom |
-|---|---|---|---|---|
-| carrot | — / 3 / — | — | — | — |
-| potato | — / 3 / 3 | `bintje` — / 2 / 4 | — | `russian-banana` — / 5 / 1 |
-| wheat | 3 / 3 / 3 | `sonora` 2 / 3 / 4 | — | `red-fife` 5 / 2 / 1 |
-| tomato | 3 / 3 / — | `green-zebra` 2 / 4 / — | — | `san-marzano` 5 / 2 / — |
-| raspberry | 3 / 3 / — | — | — | `black-raspberry` 5 / 2 / — |
-| grape | 3 / 3 / 3 | `concord` 4 / 3 / 2 | `thompson` 3 / 4 / 2 | `keknyelu` 1 / 2 / 5 |
-| vanilla | 3 / 3 / — | — | — | — |
-| sugar-cane | 3 / 3 / — | — | — | — |
-| apple | — / 3 / 3 | `kingston-black` — / 2 / 4 | — | `pink-lady` — / 5 / 1 |
-| apricot | 3 / 3 / 3 | `moorpark` 3 / 4 / 2 | `klosterneuburger` 3 / 2 / 4 | `blenheim` 5 / 2 / 1 |
-| olive | 3 / 3 / — | `kalamata` 2 / 4 / — | `arbequina` 4 / 2 / — | — |
-| cherry | 3 / 3 / — | `montmorency` 4 / 2 / — | — | `bing` 2 / 5 / — |
+`purposeMul(variety, path)` — `1` for `'base'`; else `PURPOSE_MUL[tier].on` when `path` is that variety's purpose, `PURPOSE_MUL[tier].off` otherwise. `PURPOSE_MUL` `variant` 1.5 / 0.8, `heirloom` 2 / 0.7 — preference. It multiplies the sale of the good made on that path and nothing else: not yield, not speed, not input count.
 
-Read `preserve / fresh / alcohol`. Names and descriptions: [[agents/game-text-writer]].
+| crop | variant | heirloom |
+|---|---|---|
+| carrot | — | — |
+| potato | `bintje` alcohol | — |
+| wheat | `red-fife` processed | — |
+| tomato | `green-zebra` produce | `san-marzano` processed |
+| raspberry | — | `black-raspberry` processed |
+| grape | `concord` processed | `keknyelu` alcohol |
+| vanilla | — | — |
+| sugar-cane | — | — |
+| apple | `kingston-black` alcohol | `pink-lady` produce |
+| apricot | `blenheim` produce | `klosterneuburger` alcohol |
+| olive | `arbequina` processed | — |
+| cherry | — | `bing` produce |
+
+Six heirlooms, two per purpose. The starter annuals carry the fewest paths and push the player toward the machines; the later crops carry both a variant and an heirloom. Names and descriptions: [[agents/game-text-writer]].
 
 `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT` — `Record<VarietyTier, number>`. Tuned-to so a `'base'` plant grows, drinks, and rots as it does today. `variant` sits between `'base'` and `'heirloom'`.
-
-## Quality
-
-`quality: number`, 0..1, required on `Plant`, seeds, fruit, graft, spirit, cask, jam, oil, flour, extract and sugar. Illegal: optional `quality`. Grass extract and shop sugar are `0`. Tree fruit is `0`.
-
-`qualityMul(q) = 1 + (QUALITY_TOP − 1) × q`. `QUALITY_TOP` — tuned-to so `qualityMul(0)` is today's `'base'` sale.
-
-Bought seed is `0`.
 
 ### At ripen
 
@@ -97,7 +88,7 @@ At `maturity >= 1` the plot becomes `{ kind: 'untilled'; ground: 'soft'; cover: 
 
 `statsOf(crop, variety, quality, mods)`:
 
-- sale: `CROPS.sale × qualityMul(quality) × RATING_SALE[use.fresh] × Π saleMul` × (`CROPS.saleMul` or 1)
+- sale: `CROPS.sale × qualityMul(quality) × purposeMul(variety, 'produce') × Π saleMul` × (`CROPS.saleMul` or 1)
 - grow: `(CROPS.growSeconds × VARIETY_GROW[tier]) / growSpeed`
 - drink: `CROPS.waterUsePerSec × waterUseMul`
 - tols: `tolerance(base, tier) = max(TOL_MIN, base × VARIETY_TOL[tier])`
@@ -229,7 +220,9 @@ Assumption: shovel keeps the tree's variety on the seed.
 
 `quality.ripen` — No roll at ripen. Bought seed quality 0 stays 0 if happiness stays `HAPPY_START`. `betterGain` only if `better-{crop}` owned. Tree fruit quality is 0.
 
-`quality.sale` — Fruit sale is `CROPS.sale × qualityMul(quality) × RATING_SALE[use.fresh] × Π saleMul`. `qualityMul(0)` matches today's `'base'` sale.
+`quality.sale` — Fruit sale is `CROPS.sale × qualityMul(quality) × purposeMul(variety, 'produce') × Π saleMul`. `qualityMul(0)` matches today's `'base'` sale.
+
+`variety.purpose` — Every named Variety has exactly one `purpose`. `purposeMul(variety, path)` pays `PURPOSE_MUL[tier].on` on that purpose and `PURPOSE_MUL[tier].off` on the other two; `'base'` is 1 on all three. A crop carries at most one `variant` and at most one `heirloom`. Six heirlooms, two per purpose.
 
 `variety.identity` — `Plant.variety`, `Tree.variety`, and `variety` on seeds, fruit, grafts are required `VarietyId`. Illegal: optional `variety`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. `'base'` is legal on every `CropId`. Set at plant. Graft is the only later change.
 

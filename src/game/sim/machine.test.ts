@@ -31,7 +31,7 @@ import {
   SUGAR_MILL,
   SUGAR_SHOP,
 } from '../defs/items.ts'
-import { pathSale, qualityMul, RATING_SALE } from '../defs/varieties.ts'
+import { purposeMul, PURPOSE_MUL, qualityMul } from '../defs/varieties.ts'
 import { paid } from './market.ts'
 import {
   bakeCaskSale,
@@ -59,7 +59,7 @@ import {
   stationApply,
   stationWorking,
 } from './machine.ts'
-import { caskAgeOf, furnaceValue, mergeInto, type Item } from './item.ts'
+import { caskMulOf, furnaceValue, mergeInto, type Item } from './item.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE } from '../defs/items.ts'
 import { Plant } from './plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
@@ -104,20 +104,20 @@ describe('machines', () => {
     expect(bakeSpiritSale('vodka', 'base', 0)).toBe(72)
   })
 
-  test('10 heirloom potato fruit `marketGain` $210. One still batch of 10 heirloom potato is vodka `unitSale` $104.', () => {
+  test('10 variant potato fruit `marketGain` follows the off-purpose variant rate. A still batch of one variety bakes that variety purpose rate.', () => {
     const w = new World()
     w.seats[0].actor.x = PAD.col + 0.5
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'russian-banana', quality: 1, count: 10, unitSale: 21, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 21, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBe(378)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 378), 9)
-    expect(bakeSpiritSale('vodka', 'russian-banana', 1)).toBe(SPIRIT_SALE.vodka * RATING_SALE[1] * 3.5)
+    expect(w.marketQuote().clean).toBeCloseTo(168, 9)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 168), 9)
+    expect(bakeSpiritSale('vodka', 'bintje', 1)).toBe(SPIRIT_SALE.vodka * PURPOSE_MUL.variant.on * 3.5)
   })
 
   test('Mixed still `unitSale` = `MIXED_MUL` × that rarity’s spirit sale. Mixed common vodka < 10 common potato fruit $60.', () => {
@@ -641,7 +641,7 @@ describe('machines.variety-lock', () => {
     mill.recipe = 'wheat'
     mill.variety = 'base'
     mill.units = 5
-    expect(millAccept(mill, fruitOf('wheat', 'sonora', 5))).toBeUndefined()
+    expect(millAccept(mill, fruitOf('wheat', 'red-fife', 5))).toBeUndefined()
     expect(millAccept(mill, fruitOf('wheat', 'base', 5))).toEqual({ recipe: 'wheat', n: 5 })
 
     const jam = new JamMachine(CELL)
@@ -663,13 +663,13 @@ describe('machines.variety-lock', () => {
     grinder.crop = 'wheat'
     grinder.variety = 'base'
     grinder.units = 1
-    expect(grindAccept(grinder, fruitOf('wheat', 'sonora', 1))).toBeUndefined()
+    expect(grindAccept(grinder, fruitOf('wheat', 'red-fife', 1))).toBeUndefined()
     expect(grindAccept(grinder, fruitOf('wheat', 'base', 1))).toMatchObject({ n: 1 })
 
     const still = new PotStill(CELL)
-    expect(stillAccept(still, fruitOf('wheat', 'sonora', 3))).toBe(3)
-    still.feed = [{ crop: 'wheat', variety: 'sonora', quality: 0, count: 3 }]
     expect(stillAccept(still, fruitOf('wheat', 'red-fife', 3))).toBe(3)
+    still.feed = [{ crop: 'wheat', variety: 'red-fife', quality: 0, count: 3 }]
+    expect(stillAccept(still, fruitOf('wheat', 'base', 3))).toBe(3)
 
     const furnace = new Furnace(CELL)
     expect(furnaceAccept(furnace, fruitOf('wheat', 'red-fife', 1, 1))).toBe(furnaceAccept(furnace, fruitOf('wheat', 'base', 1, 0)))
@@ -688,10 +688,10 @@ describe('still.variety', () => {
     expect(
       spiritKind([
         { crop: 'potato', variety: 'bintje', count: 5 },
-        { crop: 'wheat', variety: 'sonora', count: 5 },
+        { crop: 'wheat', variety: 'red-fife', count: 5 },
       ]),
     ).toBe('mixed')
-    expect(bakeSpiritSale('vodka', 'bintje', 0)).toBe(SPIRIT_SALE.vodka * RATING_SALE[4])
+    expect(bakeSpiritSale('vodka', 'bintje', 0)).toBe(SPIRIT_SALE.vodka * PURPOSE_MUL.variant.on)
     expect(bakeSpiritSale('mixed', 'base', 0.5)).toBe(SPIRIT_SALE.vodka * MIXED_MUL * qualityMul(0.5))
   })
 })
@@ -701,17 +701,17 @@ describe('machines.quality-carry', () => {
     expect(meanQuality([{ quality: 0, count: 3 }, { quality: 1, count: 1 }])).toBe(0.25)
 
     const flour = millProduct('wheat', 'red-fife', 1)
-    expect(flour.kind === 'flour' && flour.unitSale).toBeCloseTo(FLOUR * RATING_SALE[5] * qualityMul(1), 9)
+    expect(flour.kind === 'flour' && flour.unitSale).toBeCloseTo(FLOUR * PURPOSE_MUL.variant.on * qualityMul(1), 9)
     expect(flour.kind === 'flour' && flour.quality).toBe(1)
     expect(millProduct('wheat', 'base', 0)).toMatchObject({ kind: 'flour', unitSale: FLOUR, quality: 0 })
 
-    expect(jamSale('tomato', 'san-marzano', 0.5)).toBeCloseTo(JAM_SALE.tomato * RATING_SALE[5] * qualityMul(0.5), 9)
+    expect(jamSale('tomato', 'san-marzano', 0.5)).toBeCloseTo(JAM_SALE.tomato * PURPOSE_MUL.heirloom.on * qualityMul(0.5), 9)
     expect(jamSale('tomato', 'base', 0)).toBe(JAM_SALE.tomato)
 
-    expect(bakeSpiritSale('brandy', 'klosterneuburger', 0)).toBe(SPIRIT_SALE.brandy * RATING_SALE[4])
+    expect(bakeSpiritSale('brandy', 'klosterneuburger', 0)).toBe(SPIRIT_SALE.brandy * PURPOSE_MUL.heirloom.on)
 
-    expect(bakeCaskSale('wine', 'keknyelu', 0, BARREL_MATURE)).toBe(CASK_SALE.wine * RATING_SALE[5])
-    expect(pathSale('grape', 'keknyelu', 'alcohol')).toBe(RATING_SALE[5])
+    expect(bakeCaskSale('wine', 'keknyelu', 0, BARREL_MATURE)).toBe(CASK_SALE.wine * PURPOSE_MUL.heirloom.on)
+    expect(purposeMul('keknyelu', 'alcohol')).toBe(PURPOSE_MUL.heirloom.on)
 
     const w = new World(1)
     const mill = new Mill(CELL)
@@ -729,22 +729,28 @@ describe('machines.quality-carry', () => {
 })
 
 describe('machines.barrel', () => {
-  test('`caskAgeTop(q)` lerps the cap over quality. `caskAgeOf` reads that multiplier back out of `unitSale`.', () => {
+  test('`caskAgeTop(q)` lerps the cap over quality. `caskMulOf` reads purpose and age back out of `unitSale` as one multiplier.', () => {
     expect(caskAgeTop(0)).toBe(CASK_AGE_MIN)
     expect(caskAgeTop(1)).toBe(CASK_AGE_MAX)
     expect(caskAgeTop(0.5)).toBe((CASK_AGE_MIN + CASK_AGE_MAX) / 2)
     expect(caskAgeMul(BARREL_MATURE, 1)).toBe(1)
     expect(caskAgeMul(BARREL_MATURE + BARREL_AGE, 1)).toBe(CASK_AGE_MAX)
     const age = BARREL_MATURE + BARREL_AGE / 2
-    const unitSale = bakeCaskSale('wine', 'keknyelu', 0.5, age)
-    expect(caskAgeOf({ cask: 'wine', variety: 'keknyelu', quality: 0.5, unitSale })).toBeCloseTo(caskAgeMul(age, 0.5), 9)
+    expect(caskMulOf({ cask: 'wine', quality: 0.5, unitSale: bakeCaskSale('wine', 'base', 0.5, age) })).toBeCloseTo(
+      caskAgeMul(age, 0.5),
+      9,
+    )
+    expect(caskMulOf({ cask: 'wine', quality: 0.5, unitSale: bakeCaskSale('wine', 'keknyelu', 0.5, age) })).toBeCloseTo(
+      PURPOSE_MUL.heirloom.on * caskAgeMul(age, 0.5),
+      9,
+    )
   })
 })
 
 describe('station.cut', () => {
   test('Fruit `cut: boolean` required, `false` from the field. Cut fruit is otherwise ordinary. Illegal: optional `cut`.', () => {
     const w = new World(1)
-    w.setCell(AT, { kind: 'ripe', soil: new Soil(SOIL_WATER_MID, 1, WEED_CHANCE), plant: new Plant('wheat', 'sonora', 0) })
+    w.setCell(AT, { kind: 'ripe', soil: new Soil(SOIL_WATER_MID, 1, WEED_CHANCE), plant: new Plant('wheat', 'red-fife', 0) })
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'harvest', at: AT })
@@ -789,24 +795,24 @@ describe('machines.barrel aging look', () => {
 describe('station.io', () => {
   test('Heirloom fruit only, `cut === false`. First dump locks crop + variety; later dumps must match. Room caps at `STATION_IN`.', () => {
     const st = new ResearchStation(CELL)
-    expect(stationAccept(st, fruitOf('wheat', 'base', 3))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('wheat', 'sonora', 3))).toBeUndefined()
-    const cut = fruitOf('wheat', 'red-fife', 3)
+    expect(stationAccept(st, fruitOf('tomato', 'base', 3))).toBeUndefined()
+    expect(stationAccept(st, fruitOf('tomato', 'green-zebra', 3))).toBeUndefined()
+    const cut = fruitOf('tomato', 'san-marzano', 3)
     cut.cut = true
     expect(stationAccept(st, cut)).toBeUndefined()
-    expect(stationAccept(st, fruitOf('wheat', 'red-fife', STATION_IN + 4))).toMatchObject({
-      crop: 'wheat',
-      variety: 'red-fife',
+    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', STATION_IN + 4))).toMatchObject({
+      crop: 'tomato',
+      variety: 'san-marzano',
       n: STATION_IN,
     })
 
-    stationApply(st, { crop: 'wheat', variety: 'red-fife', quality: 0.4, n: 1 })
-    expect(st.crop).toBe('wheat')
-    expect(stationAccept(st, fruitOf('wheat', 'san-marzano', 1))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('potato', 'russian-banana', 1))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('wheat', 'red-fife', 1))).toMatchObject({ n: 1 })
+    stationApply(st, { crop: 'tomato', variety: 'san-marzano', quality: 0.4, n: 1 })
+    expect(st.crop).toBe('tomato')
+    expect(stationAccept(st, fruitOf('tomato', 'green-zebra', 1))).toBeUndefined()
+    expect(stationAccept(st, fruitOf('raspberry', 'black-raspberry', 1))).toBeUndefined()
+    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', 1))).toMatchObject({ n: 1 })
 
-    stationApply(st, { crop: 'wheat', variety: 'red-fife', quality: 0, n: 1 })
+    stationApply(st, { crop: 'tomato', variety: 'san-marzano', quality: 0, n: 1 })
     expect(st.quality).toBeCloseTo(0.2, 9)
     expect(stationWorking(st)).toBe(false)
     st.units = STATION_IN

@@ -25,7 +25,7 @@ import {
   STILL_WATER,
 } from '../defs/items.ts'
 import type { CropClass } from '../defs/crops.ts'
-import { ratedVarieties, tierOf, VARIETIES, type Path, type VarietyId } from '../defs/varieties.ts'
+import { caskGroup, tierOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from './ids.ts'
 import {
   ANNUAL_IDS,
@@ -38,7 +38,7 @@ import {
   TREE_IDS,
 } from './ids.ts'
 import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from './building.ts'
-import type { Face, Item } from './item.ts'
+import { faceName, type Face, type Item } from './item.ts'
 import {
   bakeCaskSale,
   bakeSpiritSale,
@@ -138,8 +138,8 @@ function seedFace(crop: AnnualId, variety: VarietyId): Face {
 
 export type Pin<C> = { crop: C; variety: VarietyId }
 
-function pins<C extends CropId>(crops: readonly C[], path: Path): readonly Pin<C>[] {
-  return crops.flatMap(crop => ratedVarieties(crop, path).map(variety => ({ crop, variety })))
+function pins<C extends CropId>(crops: readonly C[]): readonly Pin<C>[] {
+  return crops.flatMap(crop => VARIETIES[crop].map(variety => ({ crop, variety })))
 }
 
 function units(n: number): Amount {
@@ -151,7 +151,7 @@ const WATER: Ingredient = { kind: 'one', face: { kind: 'water' }, amount: { kind
 export type MillPin = { recipe: MillRecipe; variety: VarietyId }
 
 export const MILL_PINS: readonly MillPin[] = MILL_RECIPES.flatMap((recipe): MillPin[] =>
-  recipe === 'grass' ? [{ recipe, variety: 'base' }] : ratedVarieties(recipe, 'preserve').map(variety => ({ recipe, variety })),
+  recipe === 'grass' ? [{ recipe, variety: 'base' }] : VARIETIES[recipe].map(variety => ({ recipe, variety })),
 )
 
 function millRecipe(pin: MillPin): Recipe {
@@ -397,9 +397,9 @@ function stationRecipe({ crop, variety }: Pin<CropId>): Recipe {
   }
 }
 
-export const JAM_PINS: readonly Pin<JamCrop>[] = pins(JAM_CROPS, 'preserve')
-export const STILL_PINS: readonly Pin<StillCrop>[] = pins(STILL_CROPS, 'alcohol')
-export const BARREL_PINS: readonly Pin<BarrelCrop>[] = pins(BARREL_CROPS, 'alcohol')
+export const JAM_PINS: readonly Pin<JamCrop>[] = pins(JAM_CROPS)
+export const STILL_PINS: readonly Pin<StillCrop>[] = pins(STILL_CROPS)
+export const BARREL_PINS: readonly Pin<BarrelCrop>[] = pins(BARREL_CROPS)
 
 const MILL_ROWS: readonly Recipe[] = MILL_PINS.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
@@ -408,14 +408,65 @@ const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
 const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD]
 const STATION_ROWS: readonly Recipe[] = STATION_PINS.map(stationRecipe)
 
+function yieldFace(y: Yield): Face {
+  return y.kind === 'exact' ? y.face : y.faces[0]
+}
+
+function outGroup(face: Face): string {
+  if (face.kind === 'cask') return caskGroup(face.variety)
+  if (face.kind === 'fruit' || face.kind === 'seeds' || face.kind === 'graft') return tierOf(face.variety)
+  return ''
+}
+
+export function sameProduct(a: Recipe, b: Recipe): boolean {
+  const fa = yieldFace(a.out)
+  const fb = yieldFace(b.out)
+  return fa.kind === fb.kind && faceName(fa) === faceName(fb) && outGroup(fa) === outGroup(fb)
+}
+
+function fruitOf(row: Recipe): Face | undefined {
+  const input = row.inputs.find(i => i.kind === 'one' && i.face.kind === 'fruit')
+  return input === undefined || input.kind !== 'one' ? undefined : input.face
+}
+
+function withFruitFaces(row: Recipe, faces: readonly Face[]): Recipe {
+  return {
+    ...row,
+    inputs: row.inputs.map(i =>
+      i.kind === 'one' && i.face.kind === 'fruit' ? { kind: 'any', faces, amount: i.amount } : i,
+    ),
+  }
+}
+
+function collapse(rows: readonly Recipe[]): readonly Recipe[] {
+  const groups: { head: Recipe; crop: CropId | 'none'; faces: Face[] }[] = []
+  rows.forEach(row => {
+    const face = fruitOf(row)
+    const crop = face === undefined || face.kind !== 'fruit' ? 'none' : face.crop
+    const hit = crop === 'none' ? undefined : groups.find(g => g.crop === crop && sameProduct(g.head, row))
+    if (hit === undefined) {
+      groups.push({ head: row, crop, faces: face === undefined ? [] : [face] })
+      return
+    }
+    hit.faces.push(face as Face)
+  })
+  return groups.map(g => (g.faces.length > 1 ? withFruitFaces(g.head, g.faces) : g.head))
+}
+
+const MILL_LIST = collapse(MILL_ROWS)
+const JAM_LIST = collapse(JAM_ROWS)
+const STILL_LIST = collapse(STILL_ROWS)
+const BARREL_LIST = collapse(BARREL_ROWS)
+const STATION_LIST = collapse(STATION_ROWS)
+
 export function recipesOf(m: MachineId): readonly Recipe[] {
-  if (m === 'mill') return MILL_ROWS
-  if (m === 'jam') return JAM_ROWS
-  if (m === 'still') return STILL_ROWS
-  if (m === 'barrel') return BARREL_ROWS
+  if (m === 'mill') return MILL_LIST
+  if (m === 'jam') return JAM_LIST
+  if (m === 'still') return STILL_LIST
+  if (m === 'barrel') return BARREL_LIST
   if (m === 'grinder') return [GRINDER]
   if (m === 'furnace') return FURNACE_ROWS
-  if (m === 'station') return STATION_ROWS
+  if (m === 'station') return STATION_LIST
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
 
@@ -431,10 +482,19 @@ function sameIdentity(a: Face, b: Face): boolean {
   return a.kind === b.kind
 }
 
+function oneCrop(faces: readonly Face[]): boolean {
+  const first = faces[0]
+  if (first.kind !== 'fruit') return false
+  return faces.every(f => f.kind === 'fruit' && f.crop === first.crop)
+}
+
+function takes(input: Ingredient, face: Face): boolean {
+  if (input.kind === 'one') return sameIdentity(input.face, face)
+  return oneCrop(input.faces) && input.faces.some(f => sameIdentity(f, face))
+}
+
 export function recipesUsing(face: Face): readonly Recipe[] {
-  return MACHINE_IDS.flatMap(id =>
-    recipesOf(id).filter(r => r.inputs.some(input => input.kind === 'one' && sameIdentity(input.face, face))),
-  )
+  return MACHINE_IDS.flatMap(id => recipesOf(id).filter(r => r.inputs.some(input => takes(input, face))))
 }
 
 export function clockText(seconds: number): string {

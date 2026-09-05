@@ -33,7 +33,7 @@ Legal cargo: fruit (incl. sugar-cane), sugar, spirit, cask (wine / cider), jam, 
 Fruit: stall takes count at
 
 ```
-worth += count × freshMul(freshness) × qualityMul(quality) × RATING_SALE[use.fresh]
+worth += count × freshMul(freshness) × qualityMul(quality) × purposeMul(variety, 'produce')
 ```
 
 — [[mechanics/plants]]. Hand empty after.
@@ -62,7 +62,7 @@ Legal only when `marketOpen`. Else closed copy.
 
 `stallX`: crop → `CROPS.sale ×` skill `saleMul` from player `better-*` (`Modifier.source === 'skill'`). Quality and path rating are already in `worth` at consign, not inside `stallX`. Sugar and machine goods skip `stallX` (already in `unitSale`). Sugar-cane fruit uses crop `stallX`.
 
-`worth` for fruit accumulated at consign as `count × freshMul × qualityMul × RATING_SALE[use.fresh]`. Above 80% freshness, full freshness factor; below, scales down. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
+`worth` for fruit accumulated at consign as `count × freshMul × qualityMul × purposeMul(variety, 'produce')`. Above 80% freshness, full freshness factor; below, scales down. A raspberry forgotten in a chest is worth less without ever sitting ripe in the field.
 
 Then at `marketGain`, not crop `Modifier`:
 
@@ -86,11 +86,11 @@ Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale
 
 `market.sell` — Market is Sell all iff `marketOpen`. Weather block: flood sunrise / drought midday unless `open-24`; `open-late` does not reopen. Then sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: flood “Stall closed this morning.” drought “Stall closed at midday.” else “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`, bio `(1 + 0.04 × tier)`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; clearance `{ kind: 'rotten' }` `$1`, sat exempt, saleswoman / heirloom / bio / weather do not apply. Crop stall stock/worth per variety×bio. Consign: fruit (incl. sugar-cane), sugar, spirit, cask, jam, oil, flour, extract; `{ kind: 'rotten' }` iff `clearance`. Without the skill: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. No berry. Sat last — [[mechanics/saturation]] [[mechanics/weather]].
 
-`market.quality` — Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `RATING_SALE[use.fresh]` into `worth`. Sell all uses `stallX` and sale skills; no second path multiplier.
+`market.quality` — Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `purposeMul(variety, 'produce')` into `worth`. Sell all uses `stallX` and sale skills; no second purpose multiplier.
 
 `market.vodka-common` — 10 `'base'` potato fruit at quality 0 `marketGain` vs one still batch of 10 `'base'` potato vodka at quality 0 `unitSale`: batch > fruit.
 
-`market.vodka-heirloom` — 10 `russian-banana` potato fruit at quality 1 `marketGain` vs one still batch of 10 `russian-banana` potato vodka at quality 1 `unitSale`: fruit > batch.
+`market.vodka-bintje` — 10 `bintje` potato fruit at quality 1 `marketGain` vs one still batch of 10 `bintje` potato vodka at quality 1 `unitSale`: the fruit pays the off-purpose rate, the batch the on-purpose one.
 
 `market.mixed` — Mixed still `unitSale` = `MIXED_MUL` × `SPIRIT_SALE.vodka` × `qualityMul(mean q)`, neutral rating. Mixed vodka at quality 0 < 10 `'base'` potato fruit.
 

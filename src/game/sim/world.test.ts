@@ -26,10 +26,10 @@ import {
   WEED_SPRAY_BAG,
   GRIND_WORK,
 } from '../defs/items.ts'
-import { BETTER_QUALITY, qualityMul, RATING_SALE, STARTER_TREE_GRAFTS, VARIETY, type VarietyId } from '../defs/varieties.ts'
+import { BETTER_QUALITY, purposeMul, qualityMul, STARTER_TREE_GRAFTS, VARIETY, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK, skillIds } from '../defs/skills.ts'
-import { packSku, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
+import { packSku, TREE_IDS, type AnnualId, type ResearchId, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
@@ -259,12 +259,12 @@ describe('beta-1 invariants', () => {
 
   test('walking up to the silo stores every seed you carry', () => {
     const w = new World()
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'wheat', variety: 'sonora', quality: 0, count: 3 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'wheat', variety: 'red-fife', quality: 0, count: 3 } }
     w.seats[0].inventory[5] = { kind: 'hold', item: { kind: 'seeds', crop: 'grape', variety: 'base', quality: 0, count: 4 } }
     w.click({ col: SILO_BASE.col, row: SILO_BASE.row })
     for (let n = 0; n < 60 && w.seats[0].queue.length > 0; n++) w.tick(1 / 15)
     expect(w.seats[0].hand.kind).toBe('empty')
-    expect(siloCount(w, 'wheat', 'sonora')).toBe(8)
+    expect(siloCount(w, 'wheat', 'red-fife')).toBe(8)
     expect(siloCount(w, 'grape', 'base')).toBe(4)
     expect(w.seats[0].cue.kind).toBe('silo')
   })
@@ -694,7 +694,7 @@ describe('beta-3 invariants', () => {
 })
 
 describe('beta-4 invariants', () => {
-  test("`inventory.slots` — House starter: four `'base'` tree seeds and one graft of every tree variety. Thirteen of sixteen.", () => {
+  test("`inventory.slots` — House starter: four `'base'` tree seeds and one graft of every tree variety. Ten of sixteen.", () => {
     const w = new World()
     const inv = w.seats[0].inventory
     const trees = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'tree-seed' ? [s.item] : []))
@@ -703,7 +703,7 @@ describe('beta-4 invariants', () => {
     const grafts = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'graft' ? [s.item] : []))
     expect(grafts.map(g => g.variety).sort()).toEqual([...STARTER_TREE_GRAFTS].sort())
     expect(grafts.every(g => g.count === 1 && g.quality === 0 && VARIETY[g.variety as Exclude<VarietyId, 'base'>].crop === g.crop)).toBe(true)
-    expect(inv.filter(s => s.kind === 'hold').length).toBe(13)
+    expect(inv.filter(s => s.kind === 'hold').length).toBe(TREE_IDS.length + STARTER_TREE_GRAFTS.length)
     expect(inv.length).toBe(16)
   })
 
@@ -744,7 +744,7 @@ describe('beta-4 invariants', () => {
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', variety: 'sonora', quality: 0, count: 1, unitSale: 28, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'red-fife', quality: 0, count: 1, unitSale: 28, freshness: 1, bio: true, cut: false },
     }
     w.click(AT)
     w.tick(DT_MAX)
@@ -754,7 +754,7 @@ describe('beta-4 invariants', () => {
     expect(g.kind).toBe('grinder')
     if (g.kind !== 'grinder') return
     expect(g.crop).toBe('wheat')
-    expect(g.variety).toBe('sonora')
+    expect(g.variety).toBe('red-fife')
     expect(g.units).toBe(1)
     const loaded = parse(JSON.stringify(dump(w)))
     expect(loaded.ok).toBe(true)
@@ -771,7 +771,7 @@ describe('beta-4 invariants', () => {
     const dropped = w.drops.filter(d => d.item.kind === 'seeds')
     expect(dropped).toHaveLength(1)
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.crop).toBe('wheat')
-    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.variety).toBe('sonora')
+    expect(dropped[0].item.kind === 'seeds' && dropped[0].item.variety).toBe('red-fife')
     expect(dropped[0].item.kind === 'seeds' && dropped[0].item.count).toBe(expectCount)
     expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
     expect(g.crop).toBe('none')
@@ -2977,7 +2977,7 @@ describe('quality.ripen', () => {
 })
 
 describe('market.quality', () => {
-  test('Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `RATING_SALE[use.fresh]` into `worth`. Sell all uses `stallX` and sale skills; no second path multiplier.', () => {
+  test('Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `purposeMul(variety, produce)` into `worth`. Sell all uses `stallX` and sale skills; no second purpose multiplier.', () => {
     const w = new World(1)
     w.seats[0].actor.x = PAD.col + 0.5
     w.seats[0].actor.y = PAD.row + 0.5
@@ -2999,7 +2999,7 @@ describe('market.quality', () => {
     w.tick(DT_MAX)
     expect(w.stall.potato.stock.bintje.organic).toBe(2)
     expect(w.stall.potato.stock.base.organic).toBe(0)
-    const unit = qualityMul(0) * RATING_SALE[2]
+    const unit = qualityMul(0) * purposeMul('bintje', 'produce')
     expect(w.stall.potato.worth.bintje.organic).toBeCloseTo(2 * unit, 9)
     expect(w.marketQuote().clean).toBeCloseTo(2 * unit * CROPS.potato.sale, 9)
   })
@@ -3090,7 +3090,7 @@ describe('graft.axe', () => {
       kind: 'on',
       daysLeft: 2,
     })
-    tree.variety = 'montmorency'
+    tree.variety = 'bing'
     w.setCell(AT, tree)
     w.setCell(below, tree)
     w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: 10, workSeconds: 0.1 } }
@@ -3100,12 +3100,12 @@ describe('graft.axe', () => {
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     const grafts = w.drops.flatMap(d => (d.item.kind === 'graft' ? [d.item] : []))
     expect(grafts.length).toBe(1)
-    expect(grafts[0]).toMatchObject({ crop: 'cherry', variety: 'montmorency', quality: 0, count: CHOP_GRAFTS })
+    expect(grafts[0]).toMatchObject({ crop: 'cherry', variety: 'bing', quality: 0, count: CHOP_GRAFTS })
     expect(w.drops.some(d => d.item.kind === 'wood')).toBe(true)
     expect(tree.trunk).toBe(true)
     expect(tree.juvenile).toBeLessThan(1)
     expect(tree.fruit).toBe(0)
-    expect(tree.variety).toBe('montmorency')
+    expect(tree.variety).toBe('bing')
   })
 })
 

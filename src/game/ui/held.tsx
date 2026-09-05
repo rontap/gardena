@@ -16,7 +16,7 @@ export function Held({ hand }: { hand: Hand }) {
         </div>
       </Tooltip.Trigger>
       <Tooltip.Portal>
-        <Tooltip.Content className="z-50 bg-ink px-2 py-1 text-sm text-house" sideOffset={6}>
+        <Tooltip.Content className="z-50 max-w-64 bg-ink px-2 py-1 text-sm whitespace-pre-line text-house" sideOffset={6}>
           {itemTip(hand.item)}
         </Tooltip.Content>
       </Tooltip.Portal>

@@ -19,8 +19,8 @@ import {
   STILL_WATER,
   SUGAR_BAG,
 } from '../defs/items.ts'
-import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop } from './ids.ts'
-import { ratedVarieties, tierOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
+import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop, type MillRecipe } from './ids.ts'
+import { tierOf, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import { barrelNeed, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from './building.ts'
 import {
@@ -48,40 +48,52 @@ function unitsOf(input: Ingredient): number {
   return input.amount.kind === 'units' ? input.amount.n : -1
 }
 
+function millRecipeOf(r: Recipe): MillRecipe | undefined {
+  const input = r.inputs[0]
+  const face = input.kind === 'one' ? input.face : input.faces[0]
+  if (face.kind === 'grass') return 'grass'
+  return face.kind === 'fruit' ? (face.crop as MillRecipe) : undefined
+}
+
 describe('recipes.table', () => {
   test('every machine enumerates at least one recipe', () => {
     MACHINE_IDS.forEach(m => expect(recipesOf(m).length).toBeGreaterThan(0))
   })
 
-  test('row counts follow the pinned varieties', () => {
-    const millPins = MILL_RECIPES.flatMap((r): readonly VarietyId[] =>
-      r === 'grass' ? ['base'] : ratedVarieties(r, 'preserve'),
-    )
-    expect(recipesOf('mill').length).toBe(millPins.length)
-    expect(recipesOf('jam').length).toBe(JAM_CROPS.flatMap(c => ratedVarieties(c, 'preserve')).length)
-    expect(recipesOf('still').length).toBe(STILL_CROPS.flatMap(c => ratedVarieties(c, 'alcohol')).length + 1)
-    expect(recipesOf('barrel').length).toBe(BARREL_CROPS.flatMap(c => ratedVarieties(c, 'alcohol')).length)
+  test('row counts follow the collapsed products, not the variety count', () => {
+    expect(recipesOf('mill').length).toBe(MILL_RECIPES.length)
+    expect(recipesOf('jam').length).toBe(8)
+    expect(recipesOf('still').length).toBe(STILL_CROPS.length + 2)
+    expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length * 2)
     expect(recipesOf('grinder').length).toBe(1)
     expect(recipesOf('compost-box').length).toBe(4)
     expect(recipesOf('furnace').length).toBe(6)
+    expect(recipesOf('station').length).toBe(
+      ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c => VARIETIES[c]).filter(v => tierOf(v) === 'heirloom').length,
+    )
   })
 
+  const millRow = (recipe: MillRecipe): Recipe => {
+    const row = recipesOf('mill').find(r => millRecipeOf(r) === recipe)
+    if (row === undefined) throw new Error(recipe)
+    return row
+  }
+
   test('mill inputs equal millNeed for every recipe', () => {
-    recipesOf('mill').forEach((r: Recipe, i) => {
-      expect(unitsOf(r.inputs[0])).toBe(millNeed(MILL_PINS[i].recipe))
+    MILL_RECIPES.forEach(recipe => {
+      const r = millRow(recipe)
+      expect(unitsOf(r.inputs[0])).toBe(millNeed(recipe))
       expect(r.duration).toEqual({ kind: 'work', seconds: MILL_WORK })
     })
   })
 
   test('mill yields sugar in liters and flour in units', () => {
-    const cane = recipesOf('mill')[MILL_PINS.findIndex(p => p.recipe === 'sugar-cane')]
-    expect(cane.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: SUGAR_BAG } })
-    const wheat = recipesOf('mill')[MILL_PINS.findIndex(p => p.recipe === 'wheat')]
-    expect(wheat.out).toMatchObject({ kind: 'exact', amount: { kind: 'units', n: 1 } })
+    expect(millRow('sugar-cane').out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: SUGAR_BAG } })
+    expect(millRow('wheat').out).toMatchObject({ kind: 'exact', amount: { kind: 'units', n: 1 } })
   })
 
   test('mill vanilla 2 fruit to 3 extract', () => {
-    const vanilla = recipesOf('mill')[MILL_PINS.findIndex(p => p.recipe === 'vanilla')]
+    const vanilla = millRow('vanilla')
     expect(unitsOf(vanilla.inputs[0])).toBe(MILL_VANILLA_IN)
     expect(vanilla.out).toMatchObject({
       kind: 'exact',
@@ -162,7 +174,12 @@ describe('recipes.table', () => {
 
   test('barrel ages rather than works', () => {
     expect(recipesOf('barrel')[0].duration).toEqual({ kind: 'age', seconds: BARREL_MATURE })
-    expect(recipesOf('barrel').map(r => unitsOf(r.inputs[0]))).toEqual(BARREL_PINS.map(p => barrelNeed(p.crop)))
+    expect(recipesOf('barrel').map(r => unitsOf(r.inputs[0]))).toEqual([
+      barrelNeed('grape'),
+      barrelNeed('grape'),
+      barrelNeed('apple'),
+      barrelNeed('apple'),
+    ])
     expect(barrelNeed('apple')).toBe(4)
     expect(barrelNeed('grape')).toBe(5)
   })
@@ -339,46 +356,53 @@ describe('machines.recipes-using', () => {
 })
 
 describe('machines.recipe-source', () => {
-  test('Mill rows pinned to each variety of `MILL_RECIPES` crops (grass: one); jam rows pinned to each variety of `JAM_CROPS`; still named rows pinned to each variety of `STILL_CROPS` + mixed `any`; barrel `BARREL_CROPS` varieties. Named jam titles on `concord` `black-raspberry` `montmorency` `blenheim` `san-marzano`; base tomato is Ketchup.', () => {
+  test('Mill, jam, still and barrel pin every variety of their crops (grass: one). Named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup.', () => {
     expect(MILL_PINS.filter(p => p.recipe === 'grass').length).toBe(1)
-    expect(MILL_PINS.filter(p => p.recipe === 'wheat').map(p => p.variety)).toEqual([...ratedVarieties('wheat', 'preserve')])
-    expect(JAM_PINS.filter(p => p.crop === 'tomato').map(p => p.variety)).toEqual([...ratedVarieties('tomato', 'preserve')])
-    expect(STILL_PINS.filter(p => p.crop === 'apricot').map(p => p.variety)).toEqual([...ratedVarieties('apricot', 'alcohol')])
-    expect(BARREL_PINS.filter(p => p.crop === 'grape').map(p => p.variety)).toEqual([...ratedVarieties('grape', 'alcohol')])
-
-    recipesOf('mill').forEach((r, i) => {
-      const input = r.inputs[0]
-      if (input.kind !== 'one' || input.face.kind !== 'fruit') return
-      expect(input.face.variety).toBe(MILL_PINS[i].variety)
-    })
-    recipesOf('jam').forEach((r, i) => {
-      const input = r.inputs[0]
-      expect(input.kind === 'one' && input.face.kind === 'fruit' && input.face.variety).toBe(JAM_PINS[i].variety)
-      expect(r.out.kind === 'exact' && r.out.face.kind === 'jam' && r.out.face.variety).toBe(JAM_PINS[i].variety)
-    })
+    expect(MILL_PINS.filter(p => p.recipe === 'wheat').map(p => p.variety)).toEqual([...VARIETIES.wheat])
+    expect(JAM_PINS.filter(p => p.crop === 'tomato').map(p => p.variety)).toEqual([...VARIETIES.tomato])
+    expect(STILL_PINS.filter(p => p.crop === 'apricot').map(p => p.variety)).toEqual([...VARIETIES.apricot])
+    expect(BARREL_PINS.filter(p => p.crop === 'grape').map(p => p.variety)).toEqual([...VARIETIES.grape])
     expect(recipesOf('still')[recipesOf('still').length - 1].inputs[0].kind).toBe('any')
 
     const jamName = (crop: JamCrop, variety: VarietyId): string =>
       faceName({ kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: 0 })
     expect(jamName('grape', 'concord')).toBe('Grape jelly')
     expect(jamName('raspberry', 'black-raspberry')).toBe('Black raspberry jam')
-    expect(jamName('cherry', 'montmorency')).toBe('Sour cherry preserve')
-    expect(jamName('apricot', 'blenheim')).toBe('Blenheim apricot jam')
     expect(jamName('tomato', 'san-marzano')).toBe('Passata')
     expect(jamName('tomato', 'base')).toBe('Ketchup')
-    expect(jamName('tomato', 'green-zebra')).not.toBe('Ketchup')
-    expect(jamName('grape', 'thompson')).toContain('jam')
+    expect(jamName('tomato', 'green-zebra')).toBe('Ketchup')
+    expect(jamName('apricot', 'blenheim')).toContain('jam')
+    expect(jamName('cherry', 'bing')).toContain('jam')
   })
 
-  test('`recipesUsing` matches `one` inputs on crop + variety.', () => {
-    const rye = recipesUsing({ kind: 'fruit', crop: 'wheat', variety: 'red-fife', quality: 0, count: 1, unitSale: 0, freshness: 1, bio: true, cut: false })
-    expect(rye.map(r => r.machine)).toEqual(['mill', 'still', 'station'])
-    rye.forEach(r => {
-      const input = r.inputs[0]
-      expect(input.kind === 'one' && input.face.kind === 'fruit' && input.face.variety).toBe('red-fife')
-    })
-    const zebra = recipesUsing({ kind: 'fruit', crop: 'tomato', variety: 'green-zebra', quality: 0, count: 1, unitSale: 0, freshness: 1, bio: true, cut: false })
-    expect(zebra.map(r => r.machine)).toEqual(['jam'])
-    expect(zebra[0].out.kind === 'exact' && zebra[0].out.face.kind === 'jam' && zebra[0].out.face.variety).toBe('green-zebra')
+  test('recipe.collapse -- rows of one machine and one crop whose product reads and draws the same merge into one row cycling the varieties. A product the player can tell apart keeps its own row.', () => {
+    const wine = recipesOf('barrel').filter(r => r.out.kind === 'exact' && r.out.face.kind === 'cask' && r.out.face.cask === 'wine')
+    expect(wine).toHaveLength(2)
+    const merged = wine[0].inputs[0]
+    expect(merged.kind === 'any' && merged.faces.map(f => (f.kind === 'fruit' ? f.variety : ''))).toEqual(['base', 'concord'])
+    const alone = wine[1].inputs[0]
+    expect(alone.kind === 'one' && alone.face.kind === 'fruit' && alone.face.variety).toBe('keknyelu')
+
+    const apricotJam = recipesOf('jam')[0].inputs[0]
+    expect(apricotJam.kind === 'any' && apricotJam.faces.map(f => (f.kind === 'fruit' ? f.variety : ''))).toEqual([
+      'base',
+      'blenheim',
+      'klosterneuburger',
+    ])
+    const brandy = recipesOf('still').filter(
+      r => r.out.kind === 'exact' && r.out.face.kind === 'spirit' && r.out.face.spirit === 'brandy',
+    )
+    expect(brandy).toHaveLength(2)
+    expect(recipesOf('station').every(r => r.inputs[0].kind === 'one')).toBe(true)
+  })
+
+  test('`recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop. It never matches the grinder, furnace or mixed-still rows, which take many crops.', () => {
+    const fruit = (crop: CropId, variety: VarietyId) =>
+      ({ kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: true, cut: false }) as const
+    expect(recipesUsing(fruit('wheat', 'red-fife')).map(r => r.machine)).toEqual(['mill', 'still'])
+    const marzano = recipesUsing(fruit('tomato', 'san-marzano'))
+    expect(marzano.map(r => r.machine)).toEqual(['jam', 'station'])
+    expect(marzano[0].out.kind === 'exact' && marzano[0].out.face.kind === 'jam' && marzano[0].out.face.variety).toBe('san-marzano')
+    expect(recipesUsing(fruit('tomato', 'green-zebra')).map(r => r.machine)).toEqual(['jam'])
   })
 })

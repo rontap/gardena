@@ -197,7 +197,7 @@
   "almanac_auto_c_p3_a": "Wires and sensors send on or off. Open ",
   "almanac_auto_c_p3_b": ". A wire can pause a mill, stop a sprinkler, or open a ",
   "almanac_auto_c_p3_c": ".",
-  "almanac_variety_p1": "Variety is what the plant is. Potato and Bintje are two Varieties of potato \u2014 siblings, not steps. Each Variety carries Preserving, Fresh, and Alcohol, each with a number from 1 to 5, or no number if that crop has no such path. Preserving is jam and the mill. Fresh is fruit sold as it is. Alcohol is the Pot still and the Barrel. The Market pays more for a high number on the path of the good you made.",
+  "almanac_variety_p1": "Variety is what the plant is. Potato and Bintje are two Varieties of potato — siblings, not steps. Each Variety is good for one of three things: Fresh, the fruit sold as it is; Preserving, the Jam machine and the Mill; or Alcohol, the Pot still and the Barrel. The Market pays more for a Variety used the way it is meant, and less for one used any other way. The plain crop is even at all three. A seed pack tells you what its Variety is best for before you plant it.",
   "almanac_quality_p1": "Quality is how well the plant was treated, shown as a percent. The Market pays more for higher Quality fruit of the same Variety. A seed you shovel keeps that plant's Quality, and a stack of the same Variety averages Quality. Seed you buy starts at 0%. Happiness while the plant grows is the live care; Quality is set when the fruit ripens. Tree fruit is 0%.",
   "almanac_variety_desc_carrot": "A sweet orange root. Sold as it is.",
   "almanac_variety_desc_potato": "An all-purpose tuber. Eaten as it is, or distilled.",

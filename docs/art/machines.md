@@ -49,7 +49,7 @@ No groups. Shop/hand/almanac face.
 | `item-wine.svg` | `common` `rare` `heirloom` | long-neck bottle. `common` grape; `rare` house; `heirloom` ripe |
 | `item-cider.svg` | `common` `rare` `heirloom` | squat bottle, ripe fill |
 
-Variety faces for wine, cider, and named jam (`concord` grape jelly, `black-raspberry` jam, `montmorency` preserve, `blenheim` jam, `san-marzano` passata) are Sprint 4. Do not redraw those SVGs in this sprint.
+Wine and cider carry two faces, `base` and `heirloom` — a variant cask draws the plain jar. Named jam (`concord` grape jelly, `black-raspberry` jam, `san-marzano` passata) is a name, not a face.
 
 ## Jams
 

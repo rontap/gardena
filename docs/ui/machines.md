@@ -14,7 +14,7 @@ Mill, jam, barrel, grinder lock crop + Variety. Still does not. Furnace and comp
 
 ## Mill
 
-Lock crop + Variety. Output sale `product × RATING_SALE[preserve] × qualityMul(mean q)`.
+Lock crop + Variety. Output sale `product × purposeMul(variety, 'processed') × qualityMul(mean q)`.
 
 | when | text |
 |---|---|
@@ -44,7 +44,7 @@ Prompt dump legal: **Grind**. `{ act: 'grind'; at }`.
 
 ## Pot still
 
-No lock. Mixes. On finish: every unit one crop **and** one Variety → that crop's named spirit at that Variety, sale `SPIRIT_SALE[spirit] × RATING_SALE[alcohol] × qualityMul(mean q)`. Else `mixed` at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)`, neutral rating. One Variety or mixed; no partial credit.
+No lock. Mixes. On finish: every unit one crop **and** one Variety → that crop's named spirit at that Variety, sale `SPIRIT_SALE[spirit] × purposeMul(variety, 'alcohol') × qualityMul(mean q)`. Klosterneuburger brandy reads under its own name. Else `mixed` at `SPIRIT_SALE.vodka × MIXED_MUL × qualityMul(mean q)`, neutral rate. One Variety or mixed; no partial credit.
 
 | when | text |
 |---|---|
@@ -60,7 +60,7 @@ Prompt dump legal: **Distill**. `{ act: 'still'; at }`.
 
 ## Barrel
 
-Lock crop + Variety. Output sale `CASK_SALE[cask] × RATING_SALE[alcohol] × qualityMul(q) × age`. `caskAgeTop(q)` lerps the top over Quality.
+Lock crop + Variety. Output sale `CASK_SALE[cask] × purposeMul(variety, 'alcohol') × qualityMul(q) × age`. The jar keeps one name per `CaskId` and shows `×{mul}` — `caskMulOf`, purpose and age in one number. `caskAgeTop(q)` lerps the top over Quality.
 
 | when | text |
 |---|---|
@@ -80,7 +80,7 @@ Prompt dump legal: **Fill barrel**. Prompt collect (mature, empty hand or merge 
 
 ## Jam machine
 
-Lock crop + Variety. Output sale `JAM_SALE[crop] × RATING_SALE[preserve] × qualityMul(mean q)`. Named jars [[ui/recipe]]. Base tomato keeps **Ketchup**.
+Lock crop + Variety. Output sale `JAM_SALE[crop] × purposeMul(variety, 'processed') × qualityMul(mean q)`. Named jars [[ui/recipe]]. Every tomato but San Marzano is **Ketchup**.
 
 | when | text |
 |---|---|
@@ -92,7 +92,7 @@ Lock crop + Variety. Output sale `JAM_SALE[crop] × RATING_SALE[preserve] × qua
 
 `{fruit}` vs `JAM_IN` 5. Buffer vs `JAM_BUFFER` 4 L. Buffer line while filling (with the fruit line). Working line alone.
 
-Prompt fruit dump: **Make jam** / **Make ketchup**. Named jar dump prompt: **Make grape jelly** / **Make black raspberry jam** / **Make sour cherry preserve** / **Make Blenheim apricot jam** / **Make Passata**. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`. Apple fruit is refuse. Dump illegal. Prompt stays the look line. Not **Make jam**.
+Prompt fruit dump: **Make jam** / **Make ketchup**. Named jar dump prompt: **Make grape jelly** / **Make black raspberry jam** / **Make Passata**. Prompt sugar dump: **Fill sugar**. `{ act: 'jam'; at }`. Apple fruit is refuse. Dump illegal. Prompt stays the look line. Not **Make jam**.
 
 ## Freezer
 

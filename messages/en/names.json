@@ -237,9 +237,6 @@
   "names_variety_cherry_uncommon": "Cherry",
   "names_variety_cherry_rare": "Sour cherry",
   "names_variety_cherry_heirloom": "Bing",
-  "names_path_preserve": "Preserving",
-  "names_path_fresh": "Fresh",
-  "names_path_alcohol": "Alcohol",
   "names_variety_bintje": "Bintje",
   "names_variety_russian_banana": "Russian Banana",
   "names_variety_sonora": "Sonora",
@@ -249,7 +246,7 @@
   "names_variety_black_raspberry": "Black raspberry",
   "names_variety_concord": "Concord",
   "names_variety_thompson": "Thompson Seedless",
-  "names_variety_keknyelu": "K\u00e9knyel\u0171",
+  "names_variety_keknyelu": "Kéknyelű",
   "names_variety_kingston_black": "Kingston Black",
   "names_variety_pink_lady": "Pink Lady",
   "names_variety_moorpark": "Moorpark",
@@ -266,5 +263,10 @@
   "names_jam_san_marzano": "Passata",
   "names_building_station": "Seed Variety Station",
   "names_sku_buy_research_station": "Seed Variety Station",
-  "names_item_graft": "graft"
+  "names_item_graft": "{name} graft",
+  "names_variety_pair": "{crop} ({variety})",
+  "names_spirit_klosterneuburger": "Apricot pálinka",
+  "names_purpose_produce": "Fresh",
+  "names_purpose_processed": "Preserving",
+  "names_purpose_alcohol": "Alcohol"
 }

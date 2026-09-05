@@ -68,12 +68,11 @@ import { CROPS, freshMul, HAPPY_DROWN_SECONDS, HAPPY_GAIN_SECONDS, HAPPY_MAX, HA
 import {
   qualityGain,
   needsNeighbour,
+  purposeMul,
   qualityMul,
-  RATING_SALE,
   STARTER_TREE_GRAFTS,
   STARTER_VARIETY_PACKS,
   tierOf,
-  useOf,
   VARIETY,
   VARIETY_IDS,
   type VarietyId,
@@ -5727,7 +5726,7 @@ export class World {
     if (this.act.hand.kind !== 'hold') return
     const item = this.act.hand.item
     if (item.kind === 'fruit') {
-      const unit = freshMul(item.freshness) * qualityMul(item.quality) * RATING_SALE[useOf(item.crop, item.variety).fresh]
+      const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
       this.splitConsign(item.crop, item.count, item.freshness === 0, rest => {
         this.stall[item.crop].take(item.variety, rest, unit, item.bio)
       })

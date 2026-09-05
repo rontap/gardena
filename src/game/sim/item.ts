@@ -51,10 +51,9 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
-import { pathSale, qualityMul, type VarietyId } from '../defs/varieties.ts'
+import { purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
-import { CROP_OF_CASK } from './ids.ts'
 import type {
   AnnualId,
   CaskId,
@@ -69,6 +68,7 @@ import type {
   TreeId,
 } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
+import { never } from './util.ts'
 
 export type FruitStack = {
   crop: CropId
@@ -218,14 +218,23 @@ export function cropName(id: CropId): string {
   return CROP_NAME[id]()
 }
 
+export type JamJar = { named: true; name: string } | { named: false; name: string }
+
+export function jamJar(crop: JamCrop, variety: VarietyId): JamJar {
+  if (variety === 'concord') return { named: true, name: m.names_jam_concord() }
+  if (variety === 'black-raspberry') return { named: true, name: m.names_jam_black_raspberry() }
+  if (variety === 'san-marzano') return { named: true, name: m.names_jam_san_marzano() }
+  if (crop === 'tomato') return { named: true, name: m.names_item_ketchup() }
+  return { named: false, name: m.hud_tool_jam({ name: cropName(crop) }) }
+}
+
 export function jamJarName(crop: JamCrop, variety: VarietyId): string {
-  if (variety === 'concord') return m.names_jam_concord()
-  if (variety === 'black-raspberry') return m.names_jam_black_raspberry()
-  if (variety === 'montmorency') return m.names_jam_montmorency()
-  if (variety === 'blenheim') return m.names_jam_blenheim()
-  if (variety === 'san-marzano') return m.names_jam_san_marzano()
-  if (crop === 'tomato' && variety === 'base') return m.names_item_ketchup()
-  return m.hud_tool_jam({ name: cropName(crop) })
+  return jamJar(crop, variety).name
+}
+
+export function spiritName(spirit: SpiritKind, variety: VarietyId): string {
+  if (spirit === 'brandy' && variety === 'klosterneuburger') return m.names_spirit_klosterneuburger()
+  return SPIRIT_NAME[spirit]()
 }
 
 export function fruitMoney(it: { unitSale: number; count: number; freshness: number }): number {
@@ -256,7 +265,7 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'grass-seeds') return m.names_item_grass_seed()
   if (it.kind === 'fruit') return cropVariety(it.crop, it.variety)
   if (it.kind === 'sugar') return m.names_item_sugar()
-  if (it.kind === 'spirit') return SPIRIT_NAME[it.spirit]()
+  if (it.kind === 'spirit') return spiritName(it.spirit, it.variety)
   if (it.kind === 'cask') return CASK_NAME[it.cask]()
   if (it.kind === 'jam') return jamJarName(it.crop, it.variety)
   if (it.kind === 'oil') return m.names_item_oil()
@@ -270,7 +279,9 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'axe') return m.names_item_axe()
   if (it.kind === 'wood') return m.names_item_wood()
   if (it.kind === 'ash') return m.names_item_ash()
-  return m.names_item_cut_grass()
+  if (it.kind === 'graft') return m.names_item_graft({ name: cropVariety(it.crop, it.variety) })
+  if (it.kind === 'grass') return m.names_item_cut_grass()
+  return never(it)
 }
 
 export const TILE_NAME: { readonly [K in TileId]: () => string } = {
@@ -374,9 +385,13 @@ export function faceName(face: Face): string {
   }
 }
 
-export function caskAgeOf(item: { cask: CaskId; variety: VarietyId; quality: number; unitSale: number }): number {
-  const rate = pathSale(CROP_OF_CASK[item.cask], item.variety, 'alcohol')
-  return item.unitSale / (CASK_SALE[item.cask] * rate * qualityMul(item.quality))
+export function countMul(name: string, mul: number, count: number): string {
+  const n = Number(mul.toFixed(2))
+  return n === 1 ? m.hud_line_count({ name, count }) : m.hud_line_count_mul({ name, mul: n, count })
+}
+
+export function caskMulOf(item: { cask: CaskId; quality: number; unitSale: number }): number {
+  return item.unitSale / (CASK_SALE[item.cask] * qualityMul(item.quality))
 }
 
 export const CASK_NAME: { readonly [K in CaskId]: () => string } = {
@@ -451,18 +466,16 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'spirit') {
-    return `${m.hud_line_count({ name: SPIRIT_NAME[item.spirit](), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+    const line = countMul(spiritName(item.spirit, item.variety), purposeMul(item.variety, 'alcohol'), item.count)
+    return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'cask') {
-    const mul = Number(caskAgeOf(item).toFixed(2))
-    const line =
-      mul > 1
-        ? m.hud_line_cask_aged({ name: CASK_NAME[item.cask](), mul, count: item.count })
-        : m.hud_line_count({ name: CASK_NAME[item.cask](), count: item.count })
+    const line = countMul(CASK_NAME[item.cask](), caskMulOf(item), item.count)
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'jam') {
-    return `${m.hud_line_count({ name: jamJarName(item.crop, item.variety), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+    const line = countMul(jamJarName(item.crop, item.variety), purposeMul(item.variety, 'processed'), item.count)
+    return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'oil') {
     return `${m.hud_line_count({ name: m.names_item_oil(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
@@ -498,7 +511,8 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   }
   if (item.kind === 'wood') return m.hud_line_count({ name: m.names_item_wood(), count: item.count })
   if (item.kind === 'ash') return m.hud_line_compost({ name: m.names_item_ash(), count: item.count })
-  return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
+  if (item.kind === 'grass') return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
+  return never(item)
 }
 
 export function heldText(hand: Hand, mods: readonly Modifier[]): string {
@@ -657,6 +671,8 @@ export function skuDesc(id: SkuId): string {
 }
 
 export function itemTip(item: Item): string {
+  if (item.kind === 'graft') return `${itemLine(item, [])}
+${m.catalog_graft()}`
   return itemLine(item, [])
 }
 

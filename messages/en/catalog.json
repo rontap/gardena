@@ -69,8 +69,13 @@
   "catalog_weed": "Takes over tilled soil left without seed. Full grown in {seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.",
   "catalog_rotten": [
     {
-      "declarations": ["input n", "local nPlural = n: plural"],
-      "selectors": ["nPlural"],
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
       "match": {
         "nPlural=one": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} unit in the compost box.",
         "nPlural=other": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} units in the compost box."
@@ -79,8 +84,13 @@
   ],
   "catalog_dead": [
     {
-      "declarations": ["input n", "local nPlural = n: plural"],
-      "selectors": ["nPlural"],
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
       "match": {
         "nPlural=one": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} unit in the compost box.",
         "nPlural=other": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} units in the compost box."
@@ -89,8 +99,13 @@
   ],
   "catalog_grass": [
     {
-      "declarations": ["input n", "local nPlural = n: plural"],
-      "selectors": ["nPlural"],
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
       "match": {
         "nPlural=one": "Cut from untilled ground. Worth {n} unit in the compost box.",
         "nPlural=other": "Cut from untilled ground. Worth {n} units in the compost box."
@@ -118,12 +133,18 @@
   "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
   "catalog_ash": [
     {
-      "declarations": ["input n", "local nPlural = n: plural"],
-      "selectors": ["nPlural"],
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
       "match": {
         "nPlural=one": "Left when a Furnace finishes a burn. Worth {n} unit in the Compost box.",
         "nPlural=other": "Left when a Furnace finishes a burn. Worth {n} units in the Compost box."
       }
     }
-  ]
+  ],
+  "catalog_graft": "Cut from a grown tree with the axe, or from heirloom fruit at the research station. Hold it against a young plant or a sapling to turn that plant into this variety."
 }

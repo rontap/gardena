@@ -5,62 +5,43 @@ export type VarietyTier = 'base' | 'variant' | 'heirloom'
 export type VarietyId =
   | 'base'
   | 'bintje'
-  | 'russian-banana'
-  | 'sonora'
   | 'red-fife'
   | 'green-zebra'
   | 'san-marzano'
   | 'black-raspberry'
   | 'concord'
-  | 'thompson'
   | 'keknyelu'
   | 'kingston-black'
   | 'pink-lady'
-  | 'moorpark'
   | 'klosterneuburger'
   | 'blenheim'
-  | 'kalamata'
   | 'arbequina'
-  | 'montmorency'
   | 'bing'
 
-export type Rating = 1 | 2 | 3 | 4 | 5
-
-export type Use = { preserve: Rating | 'none'; fresh: Rating; alcohol: Rating | 'none' }
-
-export type Path = 'preserve' | 'fresh' | 'alcohol'
-
-export const PATHS: readonly Path[] = ['preserve', 'fresh', 'alcohol']
+export type Purpose = 'produce' | 'processed' | 'alcohol'
 
 export const VARIETY_IDS: readonly VarietyId[] = [
   'base',
   'bintje',
-  'russian-banana',
-  'sonora',
   'red-fife',
   'green-zebra',
   'san-marzano',
   'black-raspberry',
   'concord',
-  'thompson',
   'keknyelu',
   'kingston-black',
   'pink-lady',
-  'moorpark',
   'klosterneuburger',
   'blenheim',
-  'kalamata',
   'arbequina',
-  'montmorency',
   'bing',
 ]
 
-export const RATING_SALE: { readonly [K in Rating]: number } = {
-  1: 0.6,
-  2: 0.8,
-  3: 1,
-  4: 1.3,
-  5: 1.8,
+export const PURPOSE_MUL: {
+  readonly [K in Exclude<VarietyTier, 'base'>]: { readonly on: number; readonly off: number }
+} = {
+  variant: { on: 1.5, off: 0.8 },
+  heirloom: { on: 2, off: 0.7 },
 }
 
 export const VARIETY_GROW: { readonly [K in VarietyTier]: number } = {
@@ -85,89 +66,60 @@ export const QUALITY_TOP = 3.5
 export const QUALITY_STEP = 0.25
 export const BETTER_QUALITY = 0.04
 export const TOL_MIN = 0.25
-export const NO_PATH_SALE = 1
-
-const none3none: Use = { preserve: 'none', fresh: 3, alcohol: 'none' }
-const none33: Use = { preserve: 'none', fresh: 3, alcohol: 3 }
-const u333: Use = { preserve: 3, fresh: 3, alcohol: 3 }
-const u33none: Use = { preserve: 3, fresh: 3, alcohol: 'none' }
-
-export const BASE_USE: { readonly [K in CropId]: Use } = {
-  carrot: none3none,
-  potato: none33,
-  wheat: u333,
-  tomato: u33none,
-  raspberry: u33none,
-  grape: u333,
-  vanilla: u33none,
-  'sugar-cane': u33none,
-  apple: none33,
-  apricot: u333,
-  olive: u33none,
-  cherry: u33none,
-}
 
 export const VARIETY: {
-  readonly [K in Exclude<VarietyId, 'base'>]: { crop: CropId; tier: 'variant' | 'heirloom'; use: Use }
+  readonly [K in Exclude<VarietyId, 'base'>]: {
+    crop: CropId
+    tier: Exclude<VarietyTier, 'base'>
+    purpose: Purpose
+  }
 } = {
-  bintje: { crop: 'potato', tier: 'variant', use: { preserve: 'none', fresh: 2, alcohol: 4 } },
-  'russian-banana': { crop: 'potato', tier: 'heirloom', use: { preserve: 'none', fresh: 5, alcohol: 1 } },
-  sonora: { crop: 'wheat', tier: 'variant', use: { preserve: 2, fresh: 3, alcohol: 4 } },
-  'red-fife': { crop: 'wheat', tier: 'heirloom', use: { preserve: 5, fresh: 2, alcohol: 1 } },
-  'green-zebra': { crop: 'tomato', tier: 'variant', use: { preserve: 2, fresh: 4, alcohol: 'none' } },
-  'san-marzano': { crop: 'tomato', tier: 'heirloom', use: { preserve: 5, fresh: 2, alcohol: 'none' } },
-  'black-raspberry': { crop: 'raspberry', tier: 'heirloom', use: { preserve: 5, fresh: 2, alcohol: 'none' } },
-  concord: { crop: 'grape', tier: 'variant', use: { preserve: 4, fresh: 3, alcohol: 2 } },
-  thompson: { crop: 'grape', tier: 'variant', use: { preserve: 3, fresh: 4, alcohol: 2 } },
-  keknyelu: { crop: 'grape', tier: 'heirloom', use: { preserve: 1, fresh: 2, alcohol: 5 } },
-  'kingston-black': { crop: 'apple', tier: 'variant', use: { preserve: 'none', fresh: 2, alcohol: 4 } },
-  'pink-lady': { crop: 'apple', tier: 'heirloom', use: { preserve: 'none', fresh: 5, alcohol: 1 } },
-  moorpark: { crop: 'apricot', tier: 'variant', use: { preserve: 3, fresh: 4, alcohol: 2 } },
-  klosterneuburger: { crop: 'apricot', tier: 'variant', use: { preserve: 3, fresh: 2, alcohol: 4 } },
-  blenheim: { crop: 'apricot', tier: 'heirloom', use: { preserve: 5, fresh: 2, alcohol: 1 } },
-  kalamata: { crop: 'olive', tier: 'variant', use: { preserve: 2, fresh: 4, alcohol: 'none' } },
-  arbequina: { crop: 'olive', tier: 'variant', use: { preserve: 4, fresh: 2, alcohol: 'none' } },
-  montmorency: { crop: 'cherry', tier: 'variant', use: { preserve: 4, fresh: 2, alcohol: 'none' } },
-  bing: { crop: 'cherry', tier: 'heirloom', use: { preserve: 2, fresh: 5, alcohol: 'none' } },
+  bintje: { crop: 'potato', tier: 'variant', purpose: 'alcohol' },
+  'red-fife': { crop: 'wheat', tier: 'variant', purpose: 'processed' },
+  'green-zebra': { crop: 'tomato', tier: 'variant', purpose: 'produce' },
+  'san-marzano': { crop: 'tomato', tier: 'heirloom', purpose: 'processed' },
+  'black-raspberry': { crop: 'raspberry', tier: 'heirloom', purpose: 'processed' },
+  concord: { crop: 'grape', tier: 'variant', purpose: 'processed' },
+  keknyelu: { crop: 'grape', tier: 'heirloom', purpose: 'alcohol' },
+  'kingston-black': { crop: 'apple', tier: 'variant', purpose: 'alcohol' },
+  'pink-lady': { crop: 'apple', tier: 'heirloom', purpose: 'produce' },
+  klosterneuburger: { crop: 'apricot', tier: 'heirloom', purpose: 'alcohol' },
+  blenheim: { crop: 'apricot', tier: 'variant', purpose: 'produce' },
+  arbequina: { crop: 'olive', tier: 'variant', purpose: 'processed' },
+  bing: { crop: 'cherry', tier: 'heirloom', purpose: 'produce' },
 }
 
 export const VARIETIES: { readonly [K in CropId]: readonly VarietyId[] } = {
   carrot: ['base'],
-  potato: ['base', 'bintje', 'russian-banana'],
-  wheat: ['base', 'sonora', 'red-fife'],
+  potato: ['base', 'bintje'],
+  wheat: ['base', 'red-fife'],
   tomato: ['base', 'green-zebra', 'san-marzano'],
   raspberry: ['base', 'black-raspberry'],
-  grape: ['base', 'concord', 'thompson', 'keknyelu'],
+  grape: ['base', 'concord', 'keknyelu'],
   vanilla: ['base'],
   'sugar-cane': ['base'],
   apple: ['base', 'kingston-black', 'pink-lady'],
-  apricot: ['base', 'moorpark', 'klosterneuburger', 'blenheim'],
-  olive: ['base', 'kalamata', 'arbequina'],
-  cherry: ['base', 'montmorency', 'bing'],
+  apricot: ['base', 'blenheim', 'klosterneuburger'],
+  olive: ['base', 'arbequina'],
+  cherry: ['base', 'bing'],
 }
 
 export const STARTER_VARIETY_PACKS: readonly Exclude<VarietyId, 'base'>[] = [
   'bintje',
-  'russian-banana',
-  'sonora',
   'red-fife',
   'green-zebra',
   'san-marzano',
   'black-raspberry',
   'concord',
-  'thompson',
   'keknyelu',
 ]
 
 export const STARTER_TREE_GRAFTS: readonly Exclude<VarietyId, 'base'>[] = [
   'kingston-black',
   'pink-lady',
-  'moorpark',
-  'klosterneuburger',
   'blenheim',
-  'kalamata',
+  'klosterneuburger',
   'arbequina',
-  'montmorency',
   'bing',
 ]
 
@@ -186,31 +138,27 @@ export function qualityGain(h: number, happyStart: number, happyMax: number): nu
   return (-QUALITY_STEP * (happyStart - h)) / happyStart
 }
 
-export function useOf(crop: CropId, variety: VarietyId): Use {
-  if (variety === 'base') return BASE_USE[crop]
-  return VARIETY[variety].use
-}
-
-export function ratingSale(rating: Rating | 'none'): number {
-  return rating === 'none' ? NO_PATH_SALE : RATING_SALE[rating]
-}
-
-export function pathSale(crop: CropId, variety: VarietyId, path: Path): number {
-  return ratingSale(useOf(crop, variety)[path])
-}
-
-export function ratedVarieties(crop: CropId, path: Path): readonly VarietyId[] {
-  return VARIETIES[crop].filter(v => useOf(crop, v)[path] !== 'none')
-}
-
 export function tierOf(variety: VarietyId): VarietyTier {
   if (variety === 'base') return 'base'
   return VARIETY[variety].tier
 }
 
-export function varietyCrop(variety: VarietyId): CropId | 'any' {
-  if (variety === 'base') return 'any'
-  return VARIETY[variety].crop
+export function purposeOf(variety: VarietyId): Purpose | 'base' {
+  if (variety === 'base') return 'base'
+  return VARIETY[variety].purpose
+}
+
+export type CaskGroup = 'base' | 'heirloom'
+
+export function caskGroup(variety: VarietyId): CaskGroup {
+  return tierOf(variety) === 'heirloom' ? 'heirloom' : 'base'
+}
+
+export function purposeMul(variety: VarietyId, path: Purpose): number {
+  if (variety === 'base') return 1
+  const { tier, purpose } = VARIETY[variety]
+  const mul = PURPOSE_MUL[tier]
+  return purpose === path ? mul.on : mul.off
 }
 
 export function isVarietyId(v: unknown): v is VarietyId {

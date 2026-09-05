@@ -1,13 +1,5 @@
 import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
-import {
-  qualityMul,
-  RATING_SALE,
-  tierOf,
-  useOf,
-  VARIETY_GROW,
-  VARIETY_ROT,
-  type VarietyId,
-} from '../defs/varieties.ts'
+import { purposeMul, qualityMul, tierOf, VARIETY_GROW, VARIETY_ROT, type VarietyId } from '../defs/varieties.ts'
 import type { CropId } from './ids.ts'
 
 export type Modifier = {
@@ -34,10 +26,9 @@ export function apply(def: CropDef, variety: VarietyId, quality: number, mods: r
   const growSpeed = mine.reduce((a, m) => a * m.growSpeed, 1)
   const waterUseMul = mine.reduce((a, m) => a * m.waterUseMul, 1)
   const tier = tierOf(variety)
-  const fresh = useOf(def.id, variety).fresh
   const cropSale = def.saleMul === undefined ? 1 : def.saleMul
   return {
-    sale: def.sale * qualityMul(quality) * RATING_SALE[fresh] * skillSale * cropSale,
+    sale: def.sale * qualityMul(quality) * purposeMul(variety, 'produce') * skillSale * cropSale,
     growSeconds: (def.growSeconds * VARIETY_GROW[tier]) / growSpeed,
     waterUsePerSec: def.waterUsePerSec * waterUseMul,
     waterTolerance: tolerance(def.waterTolerance, tier),

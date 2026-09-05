@@ -40,10 +40,12 @@ No crops to show at all: *Empty. Seeds you buy are delivered here.*
 
 | tip | title | body |
 |---|---|---|
-| stock cell | Variety name | **Quality {n}%**; pack price (`skuPrice`, per pack of 5) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × RATING_SALE[use.fresh]` |
+| stock cell | Variety name | **Quality {n}%**; **Best for {purpose}** and what it pays there, on a named Variety only; pack price (`skuPrice`, per pack of 5) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × purposeMul(variety, 'produce')` |
 | Buy cell | crop name | pack price, bulk `Coin`, `gateLine` when grey. Quality 0, Variety `'base'` |
 
 Empty cells hover too. What a Variety sells for at Quality 0 is worth knowing before you own any.
+
+This callout is the one place a purpose reaches the player, and it is where they choose: **Best for Fresh / Preserving / Alcohol**, with the multiplier that purpose pays. `'base'` shows no such line — it is even at all three. Words: [[standards/user-facing-text]]. The Almanac carries none of this — [[ui/almanac]].
 
 Shop seed cards use the same Variety + Quality words. Pack is `'base'` at Quality 0.
 

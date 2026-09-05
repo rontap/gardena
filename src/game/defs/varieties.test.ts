@@ -5,12 +5,14 @@ import { statsOf } from '../sim/modifiers.ts'
 import { Plant } from '../sim/plant.ts'
 import { Tree } from '../sim/building.ts'
 import {
-  BASE_USE,
+  PURPOSE_MUL,
+  purposeMul,
   qualityMul,
-  RATING_SALE,
+  tierOf,
   VARIETIES,
   VARIETY,
   varietyFits,
+  type Purpose,
   type VarietyId,
 } from './varieties.ts'
 
@@ -20,7 +22,8 @@ describe('variety.identity', () => {
     for (const crop of crops) {
       expect(varietyFits(crop, 'base')).toBe(true)
       expect(VARIETIES[crop][0]).toBe('base')
-      expect(BASE_USE[crop].fresh).toBe(3)
+      expect(VARIETIES[crop].filter(v => tierOf(v) === 'variant').length).toBeLessThanOrEqual(1)
+      expect(VARIETIES[crop].filter(v => tierOf(v) === 'heirloom').length).toBeLessThanOrEqual(1)
     }
     const named = Object.keys(VARIETY) as Exclude<VarietyId, 'base'>[]
     for (const v of named) {
@@ -51,10 +54,29 @@ describe('quality.sale', () => {
     expect(statsOf('potato', 'base', 0, []).sale).toBe(CROPS.potato.sale)
     const mods = [{ id: 'better-potato', source: 'skill' as const, crop: 'potato' as const, saleMul: 1.04, growSpeed: 1, waterUseMul: 1 }]
     expect(statsOf('potato', 'base', 0, mods).sale).toBe(CROPS.potato.sale * 1.04)
-    expect(statsOf('potato', 'russian-banana', 1, []).sale).toBe(
-      CROPS.potato.sale * qualityMul(1) * RATING_SALE[5],
+    expect(statsOf('tomato', 'san-marzano', 1, []).sale).toBe(
+      CROPS.tomato.sale * qualityMul(1) * PURPOSE_MUL.heirloom.off,
     )
+    expect(statsOf('cherry', 'bing', 1, []).sale).toBe(CROPS.cherry.sale * qualityMul(1) * PURPOSE_MUL.heirloom.on)
     expect(statsOf('vanilla', 'base', 0, []).sale).toBe(CROPS.vanilla.sale)
     expect(statsOf('vanilla', 'base', 0, []).sale).toBeLessThan(CROPS.raspberry.sale)
+  })
+})
+
+describe('variety.purpose', () => {
+  test("Every named Variety has exactly one `purpose`. `purposeMul` pays `PURPOSE_MUL[tier].on` on that purpose and `.off` on the other two; `'base'` is 1 everywhere. Six heirlooms, two per purpose.", () => {
+    const paths: Purpose[] = ['produce', 'processed', 'alcohol']
+    for (const path of paths) expect(purposeMul('base', path)).toBe(1)
+    const named = Object.keys(VARIETY) as Exclude<VarietyId, 'base'>[]
+    for (const v of named) {
+      const { tier, purpose } = VARIETY[v]
+      expect(purposeMul(v, purpose)).toBe(PURPOSE_MUL[tier].on)
+      for (const path of paths) {
+        if (path !== purpose) expect(purposeMul(v, path)).toBe(PURPOSE_MUL[tier].off)
+      }
+    }
+    const heirlooms = named.filter(v => VARIETY[v].tier === 'heirloom')
+    expect(heirlooms).toHaveLength(6)
+    for (const path of paths) expect(heirlooms.filter(v => VARIETY[v].purpose === path)).toHaveLength(2)
   })
 })

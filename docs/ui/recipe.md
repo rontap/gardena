@@ -53,7 +53,7 @@ Every mount is `pointer-events-none`. No tooltip, no `title`, no hover state, no
 
 Shop shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
 
-Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)` on that Variety's fruit, then `one` in the Overlay callout. `one` is that recipe's row, same three columns as `list`. Hover `Coin` bakes `unitSale` at Quality 0 × that path's `RATING_SALE`.
+Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)` on that Variety's fruit, then `one` in the Overlay callout. `one` is that recipe's row, same three columns as `list`. Hover `Coin` bakes `unitSale` at Quality 0 × that Variety's `purposeMul` on that path.
 
 ## List rows
 
@@ -65,10 +65,10 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 
 | machine | rows |
 |---|---|
-| mill | one `one` row per crop × Variety the mill accepts (`preserve` not `'none'`). Grass unchanged. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. |
-| jam | one `one` row per Variety the jam accepts (`preserve` not `'none'`). No apple. Named jars below. Base tomato keeps **Ketchup**. |
-| still | one `one` row per Variety with `alcohol` not `'none'`, plus mixed `any`. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
-| barrel | one `one` row per Variety with `alcohol` not `'none'` on grape / apple. Grape → wine `barrelNeed('grape')`, apple → cider `barrelNeed('apple')`. |
+| mill | one row per `MILL_RECIPES` entry — every Variety of that crop collapses onto it, five rows. Grass unchanged. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. |
+| jam | eight rows. A named jar keeps its own row; every other Variety of that crop collapses onto the plain jar. No apple. Named jars below. Every tomato but San Marzano is **Ketchup**. |
+| still | five rows: one per `STILL_CROPS` entry, Klosterneuburger apart under its own spirit name, plus mixed `any`. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
+| barrel | four rows: per crop, `'base'` and the variant collapse onto one jar, the heirloom keeps its own (its jar is drawn apart). Grape → wine `barrelNeed('grape')`, apple → cider `barrelNeed('apple')`. |
 | grinder | 1. `any` faces: annual fruit plus tree fruit. Yield seeds / tree-seed at `'base'` when the input `tier` is `heirloom` or the input is tree fruit; else same Variety. Quality carries. |
 | compost-box | 4: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5), then ash `one` → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Variety ignored. |
 | furnace | 6: green `any` (includes graft), fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`. All yield `FURNACE_ASH` ash. Duration `fixed` `FURNACE_SECONDS`. Mix; no recipe lock. Item counts `FURNACE_NEED / FURNACE_VALUE.*`. Variety and Quality ignored. |
@@ -81,8 +81,6 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 |---|---|
 | `concord` | **Grape jelly** |
 | `black-raspberry` | **Black raspberry jam** |
-| `montmorency` | **Sour cherry preserve** |
-| `blenheim` | **Blenheim apricot jam** |
 | `san-marzano` | **Passata** |
 | tomato `'base'` | **Ketchup** |
 | else | `{Crop} jam` |

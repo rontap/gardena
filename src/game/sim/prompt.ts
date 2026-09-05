@@ -18,7 +18,7 @@ import {
   STILL_CAP,
   FURNACE_NEED,
 } from '../defs/items.ts'
-import { countable, jamJarName, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
+import { countable, jamJar, jamJarName, organic, skuLabel, stackable, type Hand, type Item } from './item.ts'
 import {
   barrelAccept,
   barrelCropOf,
@@ -839,17 +839,9 @@ export function jamLook(jam: JamMachine, hand: Hand): string {
 
 function jamDumpPrompt(crop: JamCrop | undefined, variety: VarietyId): string {
   if (crop === undefined) return m.prompt_make_jam()
-  if (crop === 'tomato' && variety === 'base') return m.prompt_make({ name: m.names_item_ketchup().toLowerCase() })
-  if (
-    variety === 'concord' ||
-    variety === 'black-raspberry' ||
-    variety === 'montmorency' ||
-    variety === 'blenheim' ||
-    variety === 'san-marzano'
-  ) {
-    return m.prompt_make({ name: jamJarName(crop, variety) })
-  }
-  return m.prompt_make_jam()
+  const jar = jamJar(crop, variety)
+  if (!jar.named) return m.prompt_make_jam()
+  return m.prompt_make({ name: variety === 'base' || variety === 'green-zebra' ? jar.name.toLowerCase() : jar.name })
 }
 
 function jamFruitOk(jam: JamMachine, hand: Hand): boolean {

@@ -41,18 +41,23 @@ function fadeKey(col: number, row: number, g: number): AtlasKey {
 }
 
 function groundKey(col: number, row: number, cell: Cell, g: number): AtlasKey {
-  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return `tile-${cell.cover.tile}`
   if (cell.kind === 'untilled' && cell.ground === 'hard') return `hard-${hBand(g)}`
   if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') return `vh-${vhBand(g)}`
   return grassKey(col, row)
 }
 
 function token(col: number, row: number, cell: Cell, g: number): string {
-  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return `t:${cell.cover.tile}`
   if (cell.kind === 'untilled' && cell.ground === 'hard') return `h${hBand(g)}`
   if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') return `v${vhBand(g)}`
   return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`
 }
+
+const SIDES: readonly { dc: number; dr: number; rot: number }[] = [
+  { dc: 0, dr: -1, rot: 180 },
+  { dc: 1, dr: 0, rot: -90 },
+  { dc: 0, dr: 1, rot: 0 },
+  { dc: -1, dr: 0, rot: 90 },
+]
 
 type Chunk = { sig: string; root: Container; pool: SpritePool }
 
@@ -117,7 +122,10 @@ export class GroundLayer {
           sig += `${fadeKey(col, row, goodness(world.rng, col, row))}:${d <= 1 ? 0.65 : 0.35};`
           continue
         }
-        sig += `${token(col, row, world.cell({ col, row }), goodness(world.rng, col, row))};`
+        sig += `${token(col, row, world.cell({ col, row }), goodness(world.rng, col, row))}`
+        sig += `|${world.pavingAt({ col, row })}`
+        sig += SIDES.map(d => world.pavingAt({ col: col + d.dc, row: row + d.dr })).join(',')
+        sig += ';'
       }
     }
     return sig
@@ -149,6 +157,29 @@ export class GroundLayer {
         }
         const s = ch.pool.take(atlasTex(groundKey(col, row, world.cell(at), g)))
         s.position.set(col * TILE, row * TILE)
+      }
+    }
+    for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
+      for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
+        if (!keys.has(chunkKey(chunkOf({ col, row })))) continue
+        const tile = world.pavingAt({ col, row })
+        if (tile === 'none') continue
+        const s = ch.pool.take(atlasTex(`tile-${tile}`))
+        s.position.set(col * TILE, row * TILE)
+      }
+    }
+    for (let row = r0; row < r0 + GROUND_CHUNK; row++) {
+      for (let col = c0; col < c0 + GROUND_CHUNK; col++) {
+        if (!keys.has(chunkKey(chunkOf({ col, row })))) continue
+        const tile = world.pavingAt({ col, row })
+        if (tile === 'none') continue
+        SIDES.forEach(d => {
+          if (world.pavingAt({ col: col + d.dc, row: row + d.dr }) === tile) return
+          const sprite = ch.pool.take(atlasTex('tile-kerb'))
+          sprite.anchor.set(0.5)
+          sprite.position.set(col * TILE + TILE / 2, row * TILE + TILE / 2)
+          sprite.rotation = (d.rot * Math.PI) / 180
+        })
       }
     }
     ch.pool.end()

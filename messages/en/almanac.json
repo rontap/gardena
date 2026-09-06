@@ -229,5 +229,9 @@
   "almanac_variety_desc_kalamata": "A Greek table olive, eaten as it is.",
   "almanac_variety_desc_arbequina": "A Spanish olive grown for oil.",
   "almanac_variety_desc_montmorency": "A tart pie cherry, grown for jam.",
-  "almanac_variety_desc_bing": "A sweet eating cherry. Needs another cherry tree nearby that is not Heirloom."
+  "almanac_variety_desc_bing": "A sweet eating cherry. Needs another cherry tree nearby that is not Heirloom.",
+  "almanac_concept_luck": "Luck",
+  "almanac_concept_burrow": "Burrow",
+  "almanac_luck_p1": "Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the shop does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.",
+  "almanac_burrow_p1": "A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Hold treasure and click a plot you own: Open treasure. That adds the money it holds. The Market does not take treasure."
 }

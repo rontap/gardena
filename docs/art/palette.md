@@ -16,6 +16,7 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | blush | `#d4788c` | rare apricot |
 | ink | `#1c1710` | outlines; UI rails |
 | house | `#cfc6b0` | walls; panel fill |
+| slab | `#b7ae99` | the shaded half of a paving flagstone |
 | roof | `#8b3a2a` | house; UI header / corner |
 | fire | `#e04610` | furnace flame |
 | tier-1 | `#3d7ea6` | contract difficulty dot, 1 |
@@ -23,7 +24,9 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | tier-3 | `#e07b18` | contract difficulty dot, 3 |
 | tier-4 | `#e23b2e` | contract difficulty dot, 4 |
 
-`src/index.css` `@theme` `--color-*` matches these except `fruit-red` and `fire` (SVG only).
+`src/index.css` `@theme` `--color-*` matches these except `fruit-red`, `fire` and `slab` (SVG only).
+
+`slab` is the one paving tone that `house` cannot carry: a flagstone needs two faces to read as laid stone rather than a blank floor, and the second must sit close enough to `house` to stay one material. Paving art: [[items/tiles]].
 
 ## Industrial
 

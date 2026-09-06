@@ -43,6 +43,7 @@ import type {
   HarvestSlot,
   RouteId,
   SkuId,
+  TileId,
   TrailerId,
   TrailerKind,
   VehicleId,
@@ -193,6 +194,7 @@ import * as store from './store.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as tick from './tick.ts'
 import * as field from './feature-field/field.ts'
+import * as burrow from './feature-burrow/burrow.ts'
 import * as place from './feature-place/place.ts'
 
 export type * from './world.h.ts'
@@ -333,9 +335,9 @@ const STARTER_SEEDS: readonly { crop: AnnualId; variety: VarietyId; quality: num
 ]
 
 function groundSig(c: Cell): string {
-  if (c.kind === 'untilled' && c.cover.kind === 'tile') return `t:${c.cover.tile}`
   if (c.kind === 'untilled' && c.ground === 'hard') return 'h'
   if ((c.kind === 'untilled' && c.ground === 'very-hard') || c.kind === 'infertile') return 'vh'
+  if (c.kind === 'rock') return 'r'
   return 'g'
 }
 
@@ -379,6 +381,7 @@ export class World {
   readonly segments = new Map<string, Segment>()
   readonly wells: Well[] = []
   readonly fences = new Set<string>()
+  readonly paving = new Map<string, TileId>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
   readonly sprinklerTargetCache = new Map<string, Coord[]>()
@@ -427,6 +430,7 @@ export class World {
   readonly recover = new Map<string, Coord>()
   readonly empty = new Map<string, Coord>()
   readonly tilled = new Map<string, Coord>()
+  readonly burrows = new Map<string, Coord>()
   pumpLiters = 0
   private weatherTable: WeatherKind[] = []
   private readonly weatherPins = new Map<number, WeatherKind>()
@@ -514,6 +518,8 @@ export class World {
       h.sprinklers.forEach(s => this.sprinklers.set(vertexKey(s.at), s))
       this.fences.clear()
       h.fences.forEach(at => this.fences.add(`${at.col},${at.row}`))
+      this.paving.clear()
+      h.paving.forEach(p => this.paving.set(`${p.col},${p.row}`, p.tile))
       this.drops.length = 0
       h.drops.forEach(d => this.drops.push(d))
       this.modifiers.length = 0
@@ -763,6 +769,8 @@ export class World {
     else this.empty.delete(k)
     if (isTilled(cell)) this.tilled.set(k, here)
     else this.tilled.delete(k)
+    if (cell.kind === 'untilled' && cell.cover.kind === 'burrow') this.burrows.set(k, here)
+    else this.burrows.delete(k)
     if (cell.kind === 'untilled' && cell.cover.kind === 'grass') this.tufts.set(k, here)
     else this.tufts.delete(k)
     if (cell.kind === 'rock' && origin) this.rocks.set(k, here)
@@ -800,6 +808,7 @@ export class World {
     this.recover.clear()
     this.empty.clear()
     this.tilled.clear()
+    this.burrows.clear()
     this.tufts.clear()
     this.rocks.clear()
     this.dirtEdgeCache.clear()
@@ -1013,6 +1022,15 @@ export class World {
 
   hasFence(at: Coord): boolean {
     return this.fences.has(`${at.col},${at.row}`)
+  }
+
+  pavingAt(at: Coord): TileId | 'none' {
+    const t = this.paving.get(`${at.col},${at.row}`)
+    return t === undefined ? 'none' : t
+  }
+
+  bumpGround(): void {
+    this.groundRev += 1
   }
 
   fenceArms(at: Coord): { n: boolean; e: boolean; s: boolean; w: boolean } {
@@ -1407,8 +1425,9 @@ export class World {
 
   swapChestBody(at: Coord, i: number): void {
     const cell = this.cell(at)
-    if (cell.kind !== 'chest' && cell.kind !== 'freezer') return
+    if (cell.kind !== 'chest' && cell.kind !== 'freezer' && cell.kind !== 'silo-produce') return
     const held = this.act.hand
+    if (cell.kind === 'silo-produce' && held.kind === 'hold' && cell.accept(held.item) <= 0) return
     this.act.hand = cell.slots[i]
     cell.slots[i] = held
     compactSlots(cell.slots)
@@ -1732,8 +1751,8 @@ export class World {
     return store.putSilo(this, crop, variety, quality, count)
   }
 
-  takeSilo(crop: AnnualId, variety: VarietyId): void {
-    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', c: crop, r: variety })
+  takeSilo(at: Coord, crop: AnnualId, variety: VarietyId): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', s: [at.col, at.row], c: crop, r: variety })
   }
 
   
@@ -1747,12 +1766,12 @@ export class World {
     return putSugarInto(this.additives, liters, unitSale, quality)
   }
 
-  takeSugar(): void {
-    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'sugar', d: 'sugar' })
+  takeSugar(at: Coord): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'sugar', s: [at.col, at.row], d: 'sugar' })
   }
 
-  takeAdditive(id: AdditiveId): void {
-    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', d: id })
+  takeAdditive(at: Coord, id: AdditiveId): void {
+    this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', s: [at.col, at.row], d: id })
   }
 
   
@@ -1846,6 +1865,7 @@ export class World {
       const bill = this.pumpLiters * PUMP_COST_PER_L * pumpCostMul(this.weather(this.clock.day - 1))
       this.money -= bill
       this.pumpLiters = 0
+      burrow.mintSeam(this)
       field.tickTreesSeam(this)
       this.seam = {
         kind: 'recap',
@@ -1913,8 +1933,8 @@ export class World {
     return this.bursts.splice(0, this.bursts.length)
   }
 
-  dropSpot(at: Coord): Coord | undefined {
-    return machines.dropSpot(this, at)
+  dropSpot(base: RectBase): Coord | undefined {
+    return machines.dropSpot(this, base)
   }
 
   canTend(at: Coord): boolean {

@@ -11,6 +11,7 @@ import { chunkRect, occupiedCells, Tree, type Coord } from '../building.ts'
 import type { CropId } from '../ids.ts'
 import { fruitStack, mergeInto, type Item } from '../item.ts'
 import type { Modifier, Stats } from '../modifiers.ts'
+import { extractBurrow } from '../feature-burrow/burrow.ts'
 import { goodness } from '../noise.ts'
 import { Plant, Turf, type Doom } from '../plant.ts'
 import { bare, isPlot, isTilled, type Cell, type Plot } from '../plot.ts'
@@ -123,7 +124,8 @@ export function seedPair(w: World, at: Coord): Coord | undefined {
   const b = w.cell(above)
   if (a.kind !== 'untilled' || b.kind !== 'untilled') return undefined
   if (a.ground !== 'soft' || b.ground !== 'soft') return undefined
-  if (a.cover.kind === 'tile' || b.cover.kind === 'tile') return undefined
+  if (a.cover.kind !== 'bare' && a.cover.kind !== 'grass') return undefined
+  if (b.cover.kind !== 'bare' && b.cover.kind !== 'grass') return undefined
   return above
 }
 
@@ -151,6 +153,7 @@ export function canShovel(w: World, at: Coord): boolean {
   if (c.kind === 'tree') return true
   if (!isPlot(c)) return false
   if (c.kind === 'infertile') return false
+  if (c.kind === 'untilled' && c.cover.kind === 'burrow') return true
   if (c.kind === 'untilled' && c.ground === 'very-hard') return false
   if (c.kind === 'untilled' && c.ground === 'hard') return w.act.hand.item.usesLeft >= 2
   return true
@@ -161,10 +164,15 @@ export function doShovel(w: World, at: Coord): boolean {
   const c = w.cell(at)
   const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'shovel' }> }
   if (c.kind === 'tree') {
-    occupiedCells(c.base, w.owned).forEach(p => w.setCell(p, bare('soft')))
+    occupiedCells(c.base, w.owned).forEach(p => w.setCell(p, bare('soft', 0)))
     w.drops.push({ at: { ...at }, item: { kind: 'tree-seed', tree: c.species, variety: c.variety, quality: 0 } })
     s.item.usesLeft -= 1
     if (s.item.usesLeft <= 0) w.act.hand = { kind: 'empty' }
+    return true
+  }
+  if (c.kind === 'untilled' && c.cover.kind === 'burrow') {
+    extractBurrow(w, at)
+    w.burst('burrow-pop', at)
     return true
   }
   if (c.kind === 'growing' || c.kind === 'ripe') {
@@ -203,7 +211,7 @@ export function doMine(w: World, at: Coord): void {
   if (c.kind !== 'rock') return
   const n = occupiedCells(c.base, w.owned).length
   occupiedCells(c.base, w.owned).forEach(p => {
-    w.setCell(p, bare('soft'))
+    w.setCell(p, bare('soft', 0))
   })
   s.item.usesLeft -= n === 1 ? 1 : 2
   if (s.item.usesLeft <= 0) w.act.hand = { kind: 'empty' }
@@ -325,7 +333,7 @@ export function doChop(w: World, at: Coord): void {
   const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'axe' }> }
   s.item.usesLeft -= 1
   if (s.item.usesLeft <= 0) w.act.hand = { kind: 'empty' }
-  const spot = w.dropSpot(at)
+  const spot = w.dropSpot(c.base)
   if (spot !== undefined) {
     w.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
     w.drops.push({

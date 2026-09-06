@@ -1,8 +1,14 @@
+import { LUCK_CAP } from '../defs/burrow.ts'
 import { SKILLS, skillIds, type SkillDef } from '../defs/skills.ts'
 import type { MemberId, SkillId } from './ids.ts'
 import type { MemberState, SkillRef, World } from './world.ts'
 
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
+
+export function luckOf(w: World): number {
+  const n = w.skillTier('lucky')
+  return n < LUCK_CAP ? n : LUCK_CAP
+}
 
 export function emptyMember<Id extends SkillId>(): MemberState<Id> {
   return { pickCount: 0, owned: new Map(), offers: [] }

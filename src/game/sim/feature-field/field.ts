@@ -88,7 +88,7 @@ export function tickField(w: World, dt: number): void {
       c.soil.drink(GRASS_WATER_PER_SEC * dt)
       c.turf.maturity += dt / GRASS_GROW
       if (c.turf.maturity >= 1) {
-        w.setCell(at, { kind: 'untilled', ground: 'soft', cover: { kind: 'grass', variant: c.turf.variant } })
+        w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'grass', variant: c.turf.variant } })
         dirty = true
         continue
       }
@@ -295,7 +295,7 @@ export function sproutGrass(w: World): boolean {
     if (c.kind !== 'untilled' || c.ground === 'very-hard' || c.cover.kind !== 'bare') continue
     if (onCell(w.drops, at).length > 0) continue
     const variant = Math.floor(grass.at(col, row, w.bigTicks) * 3) as 0 | 1 | 2
-    w.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'grass', variant } })
+    w.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'grass', variant } })
     return true
   }
   return false

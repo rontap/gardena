@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.15 as const
+export const SAVE_VERSION = 2.16 as const
 
 export type {
   LoadFailReason,
@@ -123,6 +123,10 @@ export function dump(world: World): Save {
       const i = k.indexOf(',')
       return { col: Number(k.slice(0, i)), row: Number(k.slice(i + 1)) }
     }),
+    paving: [...world.paving].map(([k, tile]) => {
+      const i = k.indexOf(',')
+      return { col: Number(k.slice(0, i)), row: Number(k.slice(i + 1)), tile }
+    }),
     drops: world.drops.map(d => ({ at: { col: d.at.col, row: d.at.row }, item: d.item })),
   }
 }
@@ -219,7 +223,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
   }
   switch (c.kind) {
     case 'untilled':
-      return { kind: 'untilled', ground: c.ground, cover: c.cover }
+      return { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: c.cover }
     case 'empty':
       return { kind: 'empty', soil: dumpSoil(c.soil) }
     case 'infertile':
@@ -320,11 +324,11 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'hangar':
       return { kind: 'hangar', base: c.base }
     case 'silo-seed':
-      return { kind: 'silo-seed', base: c.base }
+      return { kind: 'silo-seed', base: c.base, seeds: c.seeds.map(st => ({ ...st })) }
     case 'silo-spray':
-      return { kind: 'silo-spray', base: c.base }
+      return { kind: 'silo-spray', base: c.base, held: c.held.map(h => ({ ...h })), sugar: { ...c.sugar } }
     case 'silo-produce':
-      return { kind: 'silo-produce', base: c.base }
+      return { kind: 'silo-produce', base: c.base, slots: c.slots.slice() }
     case 'truck':
       return { kind: 'truck', base: c.base }
     case 'lever':

@@ -41,6 +41,8 @@ type ConceptId =
   | 'family'
   | 'research'
   | 'automation'
+  | 'luck'
+  | 'burrow'
 
 type AlmanacNav = { tab: AlmanacTab; id: string }
 
@@ -140,6 +142,8 @@ const CONCEPT_IDS: ConceptId[] = [
   'family',
   'research',
   'automation',
+  'luck',
+  'burrow',
 ]
 
 const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
@@ -153,6 +157,8 @@ const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   family: () => m.family_title(),
   research: () => m.names_role_research(),
   automation: () => m.hud_research_automation(),
+  luck: () => m.almanac_concept_luck(),
+  burrow: () => m.almanac_concept_burrow(),
 }
 
 const TABS: { id: AlmanacTab; label: () => string }[] = [
@@ -548,6 +554,10 @@ function conceptBody(id: ConceptId) {
       return <ResearchConcept />
     case 'automation':
       return <AutomationConcept />
+    case 'luck':
+      return <LuckConcept />
+    case 'burrow':
+      return <BurrowConcept />
   }
 }
 
@@ -879,6 +889,36 @@ function ResearchConcept() {
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
         {m.almanac_and()}
         <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        {m.almanac_period()}
+      </div>
+    </>
+  )
+}
+
+function LuckConcept() {
+  return (
+    <>
+      <div>{m.almanac_luck_p1()}</div>
+      <div>
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'burrow' }}>{m.almanac_concept_burrow()}</AlmanacLink>
+        {m.almanac_period()}
+      </div>
+    </>
+  )
+}
+
+function BurrowConcept() {
+  return (
+    <>
+      <div>{m.almanac_burrow_p1()}</div>
+      <div>
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'luck' }}>{m.almanac_concept_luck()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>

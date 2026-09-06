@@ -2,14 +2,14 @@
 
 Rects. One concept per file. [[art/svg]] [[art/palette]]
 
-1×1 `0 0 24 24` except still `0 0 48 24` and furnace `0 0 24 48`. Occupancy stays 2×1 / 1×2. Drawn still is 1.5×1 (`36×24`) centered (`x=6`–`42`). Drawn furnace is 1×1.5 (`24×36`) south-aligned (`y=12`–`48`). Item face is the same machine as the prop, larger — do not shrink the item. Cottage machines: copper reads as roof. Cold / condenser / litre marks read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water. Furnace: iron / oil stone, roof brick, steel lip; opening on the south face of the south cell. Chimney on the north of that body, in the north cell. Chimney mouth `(12, 14)`.
+1×1 `0 0 24 24` except still `0 0 48 24`, furnace `0 0 24 48` and mill `0 0 48 48`. Occupancy stays 2×1 / 1×2 / 2×2. Drawn still is 1.5×1 (`36×24`) centered (`x=6`–`42`). Drawn furnace is 1×1.5 (`24×36`) south-aligned (`y=12`–`48`). Item face is the same machine as the prop, larger — do not shrink the item. Cottage machines: copper reads as roof. Cold / condenser / litre marks read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water. Furnace: iron / oil stone, roof brick, steel lip; opening on the south face of the south cell. Chimney on the north of that body, in the north cell. Chimney mouth `(12, 14)`.
 
 ## Buildings
 
 | file | depicts |
 |---|---|
-| `prop-mill.svg` | hopper crusher, two millstones, chute |
-| `item-mill.svg` | same, shop/hand |
+| `prop-mill.svg` | 2x2 `0 0 48 48`, four-course tapered `house` tower on a plinth, `roof` cap, hub and four-arm sail cross in front, door at the foot |
+| `item-mill.svg` | same windmill packed into 24x24, shop/hand |
 | `prop-still.svg` | 2×1 `0 0 48 24`, drawn 1.5×1 (`36×24`) centered `x=6`–`42`, steel onion + iron lyne, water condenser, litre marks |
 | `item-still.svg` | same machine, shop/hand, stays 24×24 |
 | `prop-barrel.svg` | barrel, dirt staves, grape bung |

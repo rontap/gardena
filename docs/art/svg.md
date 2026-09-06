@@ -24,7 +24,7 @@ Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac 
 | 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |
 | 1×2.5 windmill | `0 0 24 60` |
-| 2×2 generator | `0 0 48 48` |
+| 2×2 generator, mill | `0 0 48 48` |
 
 Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
 

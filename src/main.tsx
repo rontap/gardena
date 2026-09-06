@@ -46,6 +46,15 @@ if (location.hash === '#debug-techtree') {
       <DebugIconset />
     </StrictMode>,
   )
+} else if (location.hash === '#atlas') {
+  openScroll()
+  void import('./game/ui/atlas-view.tsx').then(m =>
+    createRoot(root).render(
+      <StrictMode>
+        <m.AtlasView />
+      </StrictMode>,
+    ),
+  )
 } else {
   const sink = new WorkerSink(new Worker(new URL('./game/sim/log.worker.ts', import.meta.url), { type: 'module' }))
   if (import.meta.hot !== undefined) import.meta.hot.dispose(() => sink.terminate())

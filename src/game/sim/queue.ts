@@ -1,5 +1,6 @@
+import { BURROW_WORK } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
-import { AXES, GRAFT_WORK } from '../defs/items.ts'
+import { AXES, DIG_HARD_SPAN, GRAFT_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
 import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type RainTank, type Tap, type Well } from './building.ts'
 import { TAP_RATE } from './water.ts'
@@ -10,6 +11,7 @@ import { topIndex } from './drop.ts'
 import { isPlot } from './plot.ts'
 import { HAND_FULL } from './prompt.ts'
 import * as field from './feature-field/field.ts'
+import * as burrow from './feature-burrow/burrow.ts'
 import * as machines from './feature-machines/machines.tick.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as store from './store.ts'
@@ -29,7 +31,7 @@ export function dest(i: Intent, world: World): Coord {
   }
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
-  if (i.act === 'toggle') return i.at
+  if (i.act === 'toggle' || i.act === 'open') return i.at
   if (i.act === 'vehicle' || i.act === 'embark') {
     const v = world.vehicles.find(x => x.id === i.id)
     if (v !== undefined && v.pose.kind === 'field') {
@@ -117,6 +119,8 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
+    case 'open':
+      return m.prompt_open_treasure()
   }
 }
 
@@ -245,28 +249,30 @@ export function begin(world: World, i: Intent): void {
       shiftHead(world)
       return
     case 'silo': {
-      if (world.cell(i.at).kind !== 'seed-silo') {
+      const c = world.cell(i.at)
+      if (c.kind !== 'seed-silo' && c.kind !== 'silo-seed') {
         shiftHead(world)
         return
       }
-      store.depositSilo(world)
+      store.depositSilo(world, i.at)
       world.act.cue = { kind: 'silo', at: { ...i.at } }
       shiftHead(world)
       return
     }
     case 'additives': {
-      if (world.cell(i.at).kind !== 'additive-store') {
+      const c = world.cell(i.at)
+      if (c.kind !== 'additive-store' && c.kind !== 'silo-spray') {
         shiftHead(world)
         return
       }
-      store.depositAdditives(world)
+      store.depositAdditives(world, i.at)
       world.act.cue = { kind: 'additives', at: { ...i.at } }
       shiftHead(world)
       return
     }
     case 'chest': {
       const c = world.cell(i.at)
-      if (c.kind !== 'chest' && c.kind !== 'freezer') {
+      if (c.kind !== 'chest' && c.kind !== 'freezer' && c.kind !== 'silo-produce') {
         shiftHead(world)
         return
       }
@@ -403,6 +409,13 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, GRAFT_WORK)
       return
+    case 'open':
+      if (world.act.hand.kind !== 'hold' || world.act.hand.item.kind !== 'treasure') {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0)
+      return
   }
 }
 
@@ -458,6 +471,7 @@ export function finishWork(world: World): void {
   if (i.act === 'weed-spray') field.doWeedSpray(world, i.at)
   if (i.act === 'chop') field.doChop(world, i.at)
   if (i.act === 'graft') field.doGraft(world, i.at)
+  if (i.act === 'open') burrow.doOpen(world)
   shiftHead(world)
 }
 
@@ -544,7 +558,7 @@ export function doPickup(world: World, at: Coord): void {
       c.soil.weedChance = 0
       world.setCell(at, { kind: 'empty', soil: c.soil })
     } else if (c.kind === 'untilled') {
-      world.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
+      world.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'bare' } })
     }
     if (held.kind === 'empty') world.act.hand = { kind: 'hold', item: { kind, count: 1 } }
       return
@@ -591,8 +605,9 @@ export function doValve(world: World, edge: Edge): void {
 function shovelTime(world: World, at: Coord): number {
   const s = (world.act.hand as { item: Extract<Item, { kind: 'shovel' }> }).item
   const c = world.cell(at)
-  if (c.kind === 'untilled' && c.ground === 'hard') return s.workSeconds * 2
-  return s.workSeconds
+  if (c.kind === 'untilled' && c.cover.kind === 'burrow') return BURROW_WORK
+  if (c.kind !== 'untilled') return s.workSeconds
+  return s.workSeconds * (1 + DIG_HARD_SPAN * c.hardness)
 }
 
 function mineTime(world: World, at: Coord): number {

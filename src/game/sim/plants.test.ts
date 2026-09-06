@@ -41,7 +41,7 @@ import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/tr
 import { dump, parse } from './feature-save/save.ts'
 import { makeShovel, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
-import { Rock, Tree } from './building.ts'
+import { ADDITIVE_BASE, Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng } from './rng.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
@@ -231,7 +231,7 @@ describe('0.8 plants and trees', () => {
   test('till grass does not bump groundRev', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0 } }
-    w.setCell(AT, bare('soft'))
+    w.setCell(AT, bare('soft', 0))
     const rev = w.groundRev
     w.seats[0].actor.x = 10.5
     w.seats[0].actor.y = 12.5
@@ -654,7 +654,7 @@ describe('1.5.2', () => {
     expect(w.seats[0].place.kind).toBe('none')
     expect(w.additives.litersOf('weed-spray')).toBe(WEED_SPRAY_BAG)
     expect(w.seats[0].inventory.some(s => s.kind === 'hold' && s.item.kind === 'weed-spray')).toBe(false)
-    w.takeAdditive('weed-spray')
+    w.takeAdditive(ADDITIVE_BASE, 'weed-spray')
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'weed-spray' && w.seats[0].hand.item.liters).toBe(WEED_SPRAY_BAG)
     const soil = bed()
     w.setCell(AT, { kind: 'empty', soil })

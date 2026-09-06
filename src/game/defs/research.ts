@@ -460,6 +460,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-rain-tank': {id: 'buy-rain-tank', price: 25, tab: 'automation', unlock: 'start', show: 'start', need: []},
     'buy-tap': {id: 'buy-tap', price: 10, tab: 'automation', unlock: 'unlock-irrigation', show: 'start', need: []},
     'buy-tile-cobble': {id: 'buy-tile-cobble', price: 5, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: []},
+    'buy-tile-asphalt': {id: 'buy-tile-asphalt', price: 2, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: []},
     'buy-tile-brick': {id: 'buy-tile-brick', price: 7, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: []},
     'buy-tile-paved': {id: 'buy-tile-paved', price: 11, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: []},
     'buy-fence': {id: 'buy-fence', price: 8, tab: 'building', unlock: 'unlock-landscaping', show: 'start', need: []},

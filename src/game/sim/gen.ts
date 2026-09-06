@@ -1,16 +1,11 @@
 import {
-  ADDITIVE_BASE,
   CHUNK,
   DOOR,
-  HOUSE_BASE,
-  SILO_BASE,
-  PUMP_BASE,
-  TRUCK_BASE,
-  YARD,
   Rock,
   Tree,
   chunkRect,
   inWorld,
+  isReserved,
   local,
   occupiedCells,
   type ChunkId,
@@ -21,23 +16,14 @@ import {
   type SeedSilo,
   type Truck,
 } from './building.ts'
-import { goodness, groundOf } from './noise.ts'
+import { mintStart } from './feature-burrow/burrow.ts'
+import { goodness, groundOf, hardnessOf } from './noise.ts'
 import { bare, type Cell } from './plot.ts'
 import type { Rng } from './rng.ts'
 
-const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
-
-const RESERVED = new Set(
-  [
-    ...occupiedCells(HOUSE_BASE, HOME),
-    ...occupiedCells(PUMP_BASE, HOME),
-    DOOR,
-    ...occupiedCells(TRUCK_BASE, HOME),
-    ...occupiedCells(SILO_BASE, HOME),
-    ...occupiedCells(ADDITIVE_BASE, HOME),
-    ...YARD,
-  ].map(a => `${a.col},${a.row}`),
-)
+const ROCK_BASE = 0.002
+const ROCK_EDGE = 0.004
+const ROCK_HARD = 0.03
 
 export function generateChunk(
   rng: Rng,
@@ -51,7 +37,7 @@ export function generateChunk(
   const cells: Cell[][] = []
   for (let row = 0; row < CHUNK; row++) {
     const line: Cell[] = []
-    for (let col = 0; col < CHUNK; col++) line.push(bare('soft'))
+    for (let col = 0; col < CHUNK; col++) line.push(bare('soft', 0))
     cells.push(line)
   }
   const rect = chunkRect(id)
@@ -60,16 +46,16 @@ export function generateChunk(
   for (let row = rect.row0; row < rect.row1; row++) {
     for (let col = rect.col0; col < rect.col1; col++) {
       const at = { col, row }
-      if (RESERVED.has(`${col},${row}`)) continue
+      if (isReserved(at)) continue
       if (atCell(cells, at).kind === 'rock') continue
       const r = Math.hypot(col + 0.5 - 16, row + 0.5 - 16)
-      const pRock = 0.014 + 0.01 * (r / 32)
+      const g = goodness(rng, col, row)
+      const pRock = ROCK_BASE + ROCK_EDGE * (r / 32) + ROCK_HARD * hardnessOf(g)
       if (gen.at(0, col, row) < pRock) {
         placeRock(cells, rng, id, at)
         continue
       }
-      const ground = groundOf(goodness(rng, col, row))
-      put(cells, at, bare(ground))
+      put(cells, at, bare(groundOf(g), hardnessOf(g)))
     }
   }
   clearBase(cells, id)
@@ -79,6 +65,7 @@ export function generateChunk(
   occupiedCells(truck.base, owned).forEach(at => put(cells, at, truck))
   occupiedCells(silo.base, owned).forEach(at => put(cells, at, silo))
   occupiedCells(additives.base, owned).forEach(at => put(cells, at, additives))
+  if (id.cx === 0 && id.cy === 0) mintStart(cells, rng)
   return cells
 }
 
@@ -133,15 +120,15 @@ function clearBase(cells: Cell[][], id: ChunkId): void {
   const rect = chunkRect(id)
   for (let row = rect.row0; row < rect.row1; row++) {
     for (let col = rect.col0; col < rect.col1; col++) {
-      if (RESERVED.has(`${col},${row}`)) continue
+      if (isReserved({ col, row })) continue
       if (!nearBase(col, row)) continue
       const cell = atCell(cells, { col, row })
       if (cell.kind === 'rock') {
-        occupiedCells(cell.base, [id]).forEach(at => put(cells, at, bare('soft')))
+        occupiedCells(cell.base, [id]).forEach(at => put(cells, at, bare('soft', 0)))
         continue
       }
       if (cell.kind === 'untilled' && cell.ground !== 'soft') {
-        put(cells, { col, row }, bare('soft'))
+        put(cells, { col, row }, bare('soft', 0))
       }
     }
   }
@@ -149,7 +136,7 @@ function clearBase(cells: Cell[][], id: ChunkId): void {
 
 function freeRock(cells: Cell[][], id: ChunkId, at: Coord): boolean {
   if (!inWorld(at, [id])) return false
-  if (RESERVED.has(`${at.col},${at.row}`)) return false
+  if (isReserved(at)) return false
   return atCell(cells, at).kind !== 'rock'
 }
 

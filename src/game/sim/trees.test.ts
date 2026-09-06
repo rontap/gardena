@@ -19,7 +19,7 @@ function plantTree(w: World, juvenile = 1, fruit = 0, y: Tree['yield'] = { kind:
     frontOf(origin).forEach(p => {
       if (!w.inWorld(p)) return
       if (w.cell(p).kind === 'tree') return
-      w.setCell(p, bare('soft'))
+      w.setCell(p, bare('soft', 0))
     })
   })
   return tree
@@ -38,7 +38,7 @@ describe('trees', () => {
     const tree = plantTree(w, 1, 0.6, { kind: 'on', daysLeft: 2 })
     tree.tended = true
     const stay = { col: AT.col + 1, row: AT.row }
-    w.setCell(stay, bare('soft'))
+    w.setCell(stay, bare('soft', 0))
     w.drops.push({ at: stay, item: { kind: 'weed', count: 1 } })
     w.seats[0].hand = { kind: 'hold', item: makeAxe() }
     w.seats[0].actor.x = AT.col + 0.5

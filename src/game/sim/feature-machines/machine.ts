@@ -343,6 +343,9 @@ export function furnaceWorking(c: Furnace): boolean {
   return c.units >= FURNACE_NEED && c.inn === 0 && c.progress < 1
 }
 
+export const MILL_DUST_X = 0.5
+export const MILL_DUST_Y = 1.65
+
 export function furnaceStateVfx(origin: Coord): readonly { id: 'furnace' | 'furnace-smoke'; col: number; row: number }[] {
   return [
     { id: 'furnace', col: origin.col, row: origin.row + 1 },
@@ -400,6 +403,14 @@ export function stationApply(st: ResearchStation, take: StationTake): void {
 
 export function stationWorking(c: ResearchStation): boolean {
   return c.inn !== 1 && c.crop !== 'none' && c.units >= STATION_IN
+}
+
+export function millDustAt(origin: Coord): Coord {
+  return { col: origin.col + MILL_DUST_X, row: origin.row + MILL_DUST_Y }
+}
+
+export function grinderWorking(c: Grinder): boolean {
+  return c.crop !== 'none' && c.units > 0 && c.progress < 1
 }
 
 export function millWorking(c: Mill): c is Mill & { recipe: MillRecipe } {

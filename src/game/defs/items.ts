@@ -1,8 +1,10 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
 
+export const DIG_HARD_SPAN = 1.25
+
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
-  shovel: { uses: 80, workSeconds: 1.1 },
+  shovel: { uses: 80, workSeconds: 1 },
   'better-shovel': { uses: 200, workSeconds: 0.7 },
   'rotary-shovel': { uses: 1000, workSeconds: 0.2 },
 }
@@ -141,6 +143,13 @@ export const QUAD_EMPTY_MUL = 0.1
 export const VEHICLE_SLOTS = 6
 export const HANGAR_W = 3
 export const HANGAR_H = 2
+export const SILO_FIELD_SEED_CAP = 300
+export const SILO_FIELD_ADDITIVE_CAP = 600
+export const PRODUCE_SLOTS = 16
+
+export const MILL_W = 2
+export const MILL_H = 2
+
 export const SILO_W = 2
 export const SILO_H = 3
 export const SURFACE_PAVED = 1.3

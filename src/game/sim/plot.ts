@@ -25,17 +25,30 @@ import {
   type Well,
   type Barrel,
 } from './building.ts'
-import type { CropId, TileId } from './ids.ts'
+import type { VarietyId } from '../defs/varieties.ts'
+import type { CropId, TreeId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
 import type { Sensor } from './sensor.ts'
 import type { Soil } from './soil.ts'
 
 export type Ground = 'soft' | 'hard' | 'very-hard'
 
-export type Cover = { kind: 'bare' } | { kind: 'grass'; variant: 0 | 1 | 2 } | { kind: 'tile'; tile: TileId }
+export type LootItem =
+  | { kind: 'treasure'; coins: number }
+  | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
+  | { kind: 'seeds'; crop: 'tomato' | 'raspberry' | 'grape' | 'vanilla'; variety: VarietyId; quality: number; count: number }
+  | { kind: 'fertilizer'; liters: number; capacityLiters: number }
+  | { kind: 'shovel'; id: 'better-shovel'; usesLeft: number; workSeconds: number }
+  | { kind: 'pickaxe'; id: 'better-pickaxe'; usesLeft: number; workSeconds: number }
+  | { kind: 'axe'; usesLeft: number; workSeconds: number }
+
+export type Cover =
+  | { kind: 'bare' }
+  | { kind: 'grass'; variant: 0 | 1 | 2 }
+  | { kind: 'burrow'; loot: LootItem }
 
 export type Plot =
-  | { kind: 'untilled'; ground: Ground; cover: Cover }
+  | { kind: 'untilled'; ground: Ground; hardness: number; cover: Cover }
   | { kind: 'empty'; soil: Soil }
   | { kind: 'infertile' }
   | { kind: 'weed'; soil: Soil; weed: Weed }
@@ -75,8 +88,8 @@ export type Cell =
   | AdditiveStore
   | Sensor
 
-export function bare(ground: Ground): Plot {
-  return { kind: 'untilled', ground, cover: { kind: 'bare' } }
+export function bare(ground: Ground, hardness: number): Plot {
+  return { kind: 'untilled', ground, hardness, cover: { kind: 'bare' } }
 }
 
 export function isPlot(c: Cell): c is Plot {
@@ -105,12 +118,8 @@ export function isTilled(c: Cell): c is Tilled {
   )
 }
 
-export function isTileSite(c: Cell): c is Extract<Plot, { kind: 'untilled' }> {
-  return c.kind === 'untilled' && (c.cover.kind === 'bare' || c.cover.kind === 'tile')
-}
-
 export function isFenceSite(c: Cell): c is Extract<Plot, { kind: 'untilled' }> {
-  return c.kind === 'untilled'
+  return c.kind === 'untilled' && c.cover.kind !== 'burrow'
 }
 
 export function isSolid(c: Cell): boolean {
@@ -144,4 +153,10 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'vehicle-detector' ||
     c.kind === 'traffic-light'
   )
+}
+
+export function isPavingSite(c: Cell): boolean {
+  if (c.kind === 'untilled') return c.cover.kind !== 'burrow'
+  if (c.kind === 'rock' || c.kind === 'tree') return false
+  return isSolid(c)
 }

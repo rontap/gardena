@@ -1,3 +1,40 @@
+# 2.4.4 Sails and Silos
+
+The Mill turns real sails, the three field silos finally hold what their names promise, and paving stays put under whatever you build on it.
+
+- 🎉 Added mechanic: Ground hardness. Every patch of untilled ground now carries its own hardness instead of falling into one of three steps, so digging gets slower the poorer the dirt is rather than doubling the moment you cross a line.
+  - The plain Shovel digs the softest ground a little faster than it used to.
+  - Hard ground still takes two uses off the shovel, and very hard ground still needs a pickaxe.
+- 🎉 Added item: Asphalt. The cheapest surface you can lay, and a Tractor crosses it as fast as Paving slab.
+- 🔧 Changed mechanic: Paving. previously, putting a building on a paved cell destroyed the paving under it, now paving stays under whatever you build and lifts only once nothing is standing on it.
+  - You can also pave a cell a building already occupies.
+  - Every paved area now draws a kerb where it meets anything else.
+- 🔧 Changed building: Mill. previously, it was a one-tile hopper, now it is a two-by-two windmill with a tapered stone tower and four sails.
+- 🔧 Changed building: Seeding silo. previously, walking up to it only told you its name, now it opens a seed store of its own that holds three hundred seeds.
+- 🔧 Changed building: Additive silo. previously, it was the Spraying silo and held nothing, now it is a six-hundred-litre store of fertilizer, compost, weed spray and sugar out on the field.
+- 🔧 Changed building: Produce silo. previously, it held nothing, now it has sixteen slots and takes fruit, pulled weeds and cut grass.
+- 🔧 Changed ui: Rock. previously, boulders were smooth loaves that turned up anywhere on the farm, now they are faceted, come in two shapes, and cluster in stony ground.
+- 🔧 Changed ui: Sprinkler. previously, the spray was a bright arc that snapped a quarter turn several times a second, now it is a fine translucent mist that drifts outward.
+- 🎉 Added ui: Working machines. A Mill turns its sails and throws flour dust at its door, a Seed grinder throws green chips while it grinds, a Seed Variety Station lights its trays in turn, a Tractor trails smoke while it drives, and a Pumpjack rocks its arm while you fill a bucket at it.
+- 🔧 Changed building: Well. previously, it read as a pale cabinet, now it is a coursed stone wellhead with water in its mouth under a tiled gable.
+- 🔧 Changed building: Rainwater tank. previously, it was a plain crate, now it is a hooped wooden butt with a downpipe into it, a sight gauge, and a tap at its foot.
+- 🔧 Changed building: Tap. previously, its handwheel sat beside the riser and read as a smudge, now the wheel is on top and the spout steps down into a puddle.
+- 🔧 Changed item: Bucket. previously, the two buckets were the same drawing at two sizes, now the small one is a tapered pail under a handle and the large one is a wide tub with grips at its sides.
+- 🔧 Changed ui: Paving slab. previously, it was four squares under a cross, now it is offset flagstones whose courses line up from cell to cell.
+- 🔧 Changed ui: Burrow. previously, it was a dirt mound with a gold block on it, now it is a thin crack in the ground that forks three ways with a glint deep inside, in one of two shapes, and it flashes when you dig it open.
+
+# 2.4.3 Burrows
+
+Holes in the ground hold treasure, seeds, and tools. Dig them with a shovel. Lucky on Family makes later holes better.
+
+- 🎉 Added mechanic: Burrow. A hole in untilled ground that you Dig with a shovel to drop what it holds, and digging it does not till the ground.
+  - Looking at a burrow does not say what it holds.
+  - A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room.
+  - You cannot place, pave, fence, or plant a tree on it. You can walk across it.
+- ✨ Added item: Treasure. You open it on a plot you own for the money it holds, and the Market does not take it.
+- ✨ Added mechanic: Lucky. A burrow that appears after you learn this gardener skill on Family, ranks I–III, holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the shop does not sell as a pack.
+  - Burrows already on the farm do not change.
+
 # 2.4.1 QoL VI
 
 Heirloom Varieties leave the barrel and the jam machine as products of their own, with names and containers to match, and the inspect panel reads Quality and Freshness off bars.

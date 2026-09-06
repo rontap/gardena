@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { atlasVb, treeAtlasStage } from './atlas.ts'
+import { atlasVb, faceKey, treeAtlasStage } from './atlas.ts'
 import { fruitGroup, graftSpecies, jamArt, ripeGroup, spiritArt, varietyGroup } from './svgs.ts'
 import { caskGroup, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
 import { ANNUAL_IDS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type CropId } from '../sim/ids.ts'
@@ -77,4 +77,7 @@ test('view.groups — every `<g id>` the atlas asks for exists in the file it re
     expect(groupIds(`items/item-graft-${tree}.svg`)).toEqual(want)
   }
   for (const cask of CASK_IDS) expect(groupIds(`items/item-${cask}.svg`)).toEqual(['base', 'heirloom'])
+  expect(groupIds('props/prop-burrow.svg')).toEqual([])
+  expect(groupIds('items/item-treasure.svg')).toEqual([])
+  expect(faceKey({ kind: 'treasure', coins: 1 })).toBe('treasure')
 })

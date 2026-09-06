@@ -29,6 +29,10 @@ export function goodness(rng: Rng, col: number, row: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v
 }
 
+export function hardnessOf(g: number): number {
+  return 1 - g
+}
+
 export function groundOf(g: number): 'soft' | 'hard' | 'very-hard' {
   if (g < VERY_HARD_MAX) return 'very-hard'
   if (g < HARD_MAX) return 'hard'

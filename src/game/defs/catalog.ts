@@ -59,6 +59,7 @@ export type CatalogEntry = {
 }
 
 const TILE_TITLE: { readonly [K in TileId]: () => string } = {
+  asphalt: () => m.names_tile_asphalt(),
   paved: () => m.names_tile_paved(),
   brick: () => m.names_tile_brick(),
   cobble: () => m.names_tile_cobble(),
@@ -236,7 +237,7 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'fence' },
       blurb: m.catalog_fence(),
     },
-    ...(['cobble', 'brick', 'paved'] as TileId[]).map(tile => ({
+    ...(['asphalt', 'cobble', 'brick', 'paved'] as TileId[]).map(tile => ({
       id: `tile-${tile}`,
       title: TILE_TITLE[tile](),
       icon: { kind: 'tile' as const, tile },

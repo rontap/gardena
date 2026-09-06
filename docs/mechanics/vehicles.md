@@ -1,6 +1,6 @@
 # Vehicles
 
-Quad + hangar + tractor + 3 trailers + boom + 3 inert silos + shared routes + traffic light. Shop gates [[mechanics/research]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Light [[mechanics/sensors]]. Numbers preference unless marked. Types `sim/vehicle.ts` / `sim/ids.ts`.
+Quad + hangar + tractor + 3 trailers + boom + 3 field silos + shared routes + traffic light. Shop gates [[mechanics/research]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Light [[mechanics/sensors]]. Numbers preference unless marked. Types `sim/vehicle.ts` / `sim/ids.ts`.
 
 Click-walk speed unchanged — [[items/tiles]]. WASD walk and dash cargo below. Dash cargo is driving overlay, not `HudTarget`.
 
@@ -58,7 +58,25 @@ Shop SKUs. Door south, no rotate, same instance all cells. Origin = clicked NW. 
 
 Starter 1×2 `seed-silo` stays. Not these SKUs.
 
-Inert: walk-up look name only. No dialog. No cue. No merge. Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows view-only. Not Dock.
+**They hold what their name says.** Each is a `Store`, and each reuses the panel its starter twin already has, so there is one seed grid and one additive list in the game rather than two of each.
+
+| silo | is | cap | panel |
+|---|---|---|---|
+| Seeding silo | `SeedStore`, the same base as the starter `seed-silo` | `SILO_FIELD_SEED_CAP` seeds | the seed grid, titled **Seeding silo** |
+| Additive silo | `AdditiveHolder`, the same base as `additive-store` | `SILO_FIELD_ADDITIVE_CAP` liters | the additive list, titled **Additive silo** |
+| Produce silo | `Store` with slots | `PRODUCE_SLOTS` slots | the chest grid, four wide, titled **Produce silo** |
+
+Produce silo `accept` is `fruit`, `weed` or `grass` and nothing else. Tree fruit is not a separate kind — both annual and tree harvests are `{ kind: 'fruit'; crop: CropId }`, so one arm covers both. Swapping an item it will not take into a slot is a no-op, not a swap.
+
+Walk-up reuses the existing intents: `silo` on a Seeding silo, `additives` on an Additive silo, `chest` on a Produce silo. No new `Act`, no new `Cue`, no new `Panel`. Walking up deposits first, exactly as the starter stores do.
+
+`Act.takeStore` carries the store cell (`s: XY`). It had none, so it always meant the starter store; a field silo needs the address to be replayable in lockstep. `seedStoreAt` / `additiveStoreAt` resolve the cell to the store.
+
+**No Buy row.** A field silo is a store, not a shop counter: `pack-*` and the additive SKUs deliver to the house stores. The Buy cells render only on `seed-silo` and `additive-store`.
+
+Ports and pads stay off (`ports` `[]`, `pads` `'none'`) — these are walk-up stores this update, not trailer stops.
+
+Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows view-only. Not Dock.
 
 ## Buy / deploy / store
 
@@ -188,7 +206,7 @@ Route load/unload stops: one transfer, same body, then next — [[#Dispatch]].
 
 ## Surfaces
 
-Mul applies to the cap, not accel, not walk. Same cell classes: paved `SURFACE_PAVED`; tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` `SURFACE_SLOW`; grass, untilled bare, cobble, brick, fence `SURFACE_NORMAL`. After integrate, `floor(x,y)` not owned → reject the step. Walk speed unchanged.
+Mul applies to the cap, not accel, not walk. Same cell classes: paved and asphalt `SURFACE_PAVED` from `World.paving`, read by `surfaceMul(world, at)`; tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` `SURFACE_SLOW`; grass, untilled bare, cobble, brick, fence `SURFACE_NORMAL`. After integrate, `floor(x,y)` not owned → reject the step. Walk speed unchanged.
 
 Fence is cosmetic: a paved cell with a fence still uses paved. Pose clamped to owned land. Fade tiles are not owned.
 
@@ -210,7 +228,7 @@ Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle 
 
 ## Parked
 
-Click / walk-up the floor cell of a parked or automated vehicle. Arrival: still field && `driver === 'none'` → `Seat.cue = { kind: 'vehicle'; id }`. Quad: `VEHICLE_SLOTS` + Embark. Tractor: trailer cargo if hitched + Embark. Tractor has no 6-slot. Hangar HUD is `Cue` `{ kind: 'hangar'; at }`. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`. Silo: look name only, no cue.
+Click / walk-up the floor cell of a parked or automated vehicle. Arrival: still field && `driver === 'none'` → `Seat.cue = { kind: 'vehicle'; id }`. Quad: `VEHICLE_SLOTS` + Embark. Tractor: trailer cargo if hitched + Embark. Tractor has no 6-slot. Hangar HUD is `Cue` `{ kind: 'hangar'; at }`. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`. Silo: walk-up store, cue as its starter twin.
 
 ## Slots
 
@@ -271,7 +289,7 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 
 `vehicles.buy` — Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `haggling` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (haggling applies).
 
-`vehicles.surface` — Surface mul applies to the cap, not accel, not walk. Same cell classes: paved; tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` slow; grass, untilled bare, cobble, brick, fence normal. After integrate, `floor(x,y)` not owned → reject the step. Walk speed unchanged.
+`vehicles.surface` — Surface mul applies to the cap, not accel, not walk. Same cell classes: paved and asphalt from `World.paving`; tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` slow; grass, untilled bare, cobble, brick, fence normal. After integrate, `floor(x,y)` not owned → reject the step. Walk speed unchanged.
 
 `vehicles.empty` — Seated empty fuel cap `QUAD_EMPTY_MUL × vMax × surfaceMul` (`vMax` already includes driving-classes). No auto-dismount. Can still `Act.embark`. Burn `dt / QUAD_FUEL_SECONDS × (1 − 0.05 × driving-classes tier)` while seated and (`throttle ≠ 0` || `steer ≠ 0`). Auto empty: Drive `{0,0}`, seek 0, no crawl, no advance, `running` stays true. `TRACTOR_VMAX = QUAD_VMAX × 0.67`, `TRACTOR_ACCEL = QUAD_ACCEL × 0.5`, `TRACTOR_YAW = TRACTOR_VMAX / TRACTOR_R`.
 
@@ -287,7 +305,7 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 
 `vehicles.away` — Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Recap freezes vehicle integrate and `tickDispatch` (boom does not run). Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim. Auto unmanned continues until recap.
 
-`vehicles.unrep` — Two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, stored tractor hitch, quad hitch, tractor slots, quad boom, boom other than `3 | 5`, two trailers on one tractor, attached + stored, trailer attached to missing tractor, harvest `slots.length ≠ HARVEST_SLOTS`, seed/spray hopper wrong item, `HudTarget` hangar, `HudTarget` vehicle: unrepresentable. `Act.setBoom { w: 3 | 5 }` legal while this seat drives that tractor (hitch optional). Latest same `t` wins. Guest may. `boomHits` takes width. Sim OBB `3 | 5` wide × 1 long. Boom fires iff seated **or** auto running, hitch present, `steer === 0`, `speed > 0`; after integrate; not a Cmd. Hangar HUD is `Cue` `{ kind: 'hangar'; at }`. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`. Silo: look name only, no cue.
+`vehicles.unrep` — Two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, stored tractor hitch, quad hitch, tractor slots, quad boom, boom other than `3 | 5`, two trailers on one tractor, attached + stored, trailer attached to missing tractor, harvest `slots.length ≠ HARVEST_SLOTS`, seed/spray hopper wrong item, `HudTarget` hangar, `HudTarget` vehicle: unrepresentable. `Act.setBoom { w: 3 | 5 }` legal while this seat drives that tractor (hitch optional). Latest same `t` wins. Guest may. `boomHits` takes width. Sim OBB `3 | 5` wide × 1 long. Boom fires iff seated **or** auto running, hitch present, `steer === 0`, `speed > 0`; after integrate; not a Cmd. Hangar HUD is `Cue` `{ kind: 'hangar'; at }`. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`. Silo: walk-up store, cue as its starter twin.
 
 `vehicles.dash` — Driving dash: occupied Face icons only. Quad occupied of `VEHICLE_SLOTS`; seed/spray hopper or none; harvest occupied of `HARVEST_SLOTS`; tractor no hitch none. Empty omitted. Parked unchanged. Automate chrome iff `unlock-dispatch` in `done`. Dash Automate / editor open: App-local, not logged.
 
@@ -296,3 +314,5 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 `vehicles.auto` — Auto running synthesizes Drive inside `tickVehicles` (not `Act.drive`, not `Seat.drive`). Always forward. Yaw in place until `|Δ| ≤ ROUTE_ALIGN`, then throttle 1. No auto reverse. vMax `× AUTO_VMAX_MUL`. Decel only `× AUTO_DECEL_MUL` (throttle 0). Burn when synthesized throttle or steer, same seated formula. Empty fuel: Drive `{0,0}`, seek 0, no crawl, no advance, `running` true. Hitch follows. Boom: seated or auto running, hitch, steer 0, speed > 0.
 
 `vehicles.route` — `World.routes` `World.nextRouteId`. Add appends. Cursor follows the current stop on remove/reorder. `n === 0` → cursor 0, `running` false. Assign `'none'` or a different id: cursor 0; `running` false if none or empty. Quad load/unload uses quad slots; tractor needs hitch (`vehicleCargo()`). Auto tick chest/freezer legal.
+
+`vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses. Seeding silo `SILO_FIELD_SEED_CAP` seeds, Additive silo `SILO_FIELD_ADDITIVE_CAP` liters, Produce silo `PRODUCE_SLOTS` slots of fruit, weed and grass only. `Act.takeStore` carries the store cell. No Buy row on a field silo.

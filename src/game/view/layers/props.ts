@@ -1,12 +1,13 @@
 import { Container, Texture } from 'pixi.js'
-import { HOUSE_BASE } from '../../sim/building.ts'
-import { furnaceWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
+import { HOUSE_BASE, type CircleBase, type RectBase } from '../../sim/building.ts'
+import { furnaceWorking, millWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
 import { isSensor } from '../../sim/sensor.ts'
 import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex, sensorKey, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
+import { vfxReduced } from '../vfx.ts'
 
 const WHITE = Texture.WHITE
 const WASH = 0xcfc6b0
@@ -16,16 +17,57 @@ const INK = 0x1c1710
 const PROP = {
   chest: 'chest',
   grinder: 'grinder',
-  mill: 'mill',
+  mill: 'mill-body',
   barrel: 'barrel',
   jam: 'jam',
   freezer: 'freezer',
   still: 'still',
 } as const satisfies Record<string, AtlasKey>
 
+const PUMP_STROKE = 1.6
+const PUMP_LIFT = 3
+
+const SAIL_REST = 45
+const SAIL_TURN = 2.4
+const SAIL_HUB_X = 24 / 48
+const SAIL_HUB_Y = 18 / 48
+
+function pumping(world: World, p: { base: RectBase | CircleBase }): boolean {
+  const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
+  const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
+  return world.seats.some(seat => {
+    const head = seat.queue[0]
+    return head?.act === 'fill' && head.at.col >= col && head.at.col <= col + 1 && head.at.row === row
+  })
+}
+
 export class PropsLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
   private readonly pool = new SpritePool(this.root)
+  private readonly arms = new SpritePool(this.root)
+
+  tick(world: World, now: number): void {
+    this.arms.begin()
+    const phase = (now / 1000 / PUMP_STROKE) % 1
+    const lift = vfxReduced() ? 0 : Math.round(Math.sin(phase * 2 * Math.PI) * PUMP_LIFT)
+    world.pumps.forEach(p => {
+      const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
+      const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
+      const s = this.arms.take(atlasTex('pump-arm'))
+      s.position.set(col * TILE, row * TILE + (pumping(world, p) ? lift : 0))
+    })
+    const turn = vfxReduced() ? 0 : ((now / 1000 / SAIL_TURN) % 1) * 360
+    for (const at of world.machines.values()) {
+      const cell = world.cell(at)
+      if (cell.kind !== 'mill') continue
+      if (cell.base.col !== at.col || cell.base.row !== at.row) continue
+      const s = this.arms.take(atlasTex('mill-sails'))
+      s.anchor.set(SAIL_HUB_X, SAIL_HUB_Y)
+      s.position.set((at.col + SAIL_HUB_X * 2) * TILE, (at.row + SAIL_HUB_Y * 2) * TILE)
+      s.rotation = ((SAIL_REST + (millWorking(cell) ? turn : 0)) * Math.PI) / 180
+    }
+    this.arms.end()
+  }
 
   patch(world: World): void {
     this.pool.begin()
@@ -36,7 +78,7 @@ export class PropsLayer {
     world.pumps.forEach(p => {
       const col = p.base.shape === 'rect' ? p.base.col : Math.floor(p.base.cx - p.base.r)
       const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
-      put('pump', col, row)
+      put('pump-body', col, row)
     })
     world.tanks.forEach(t => put('rain-tank', t.base.col, t.base.row))
     world.taps.forEach(t => put('tap', t.base.col, t.base.row))

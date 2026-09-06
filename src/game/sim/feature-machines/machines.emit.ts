@@ -1,15 +1,15 @@
 import { STILL_WATER } from '../../defs/items.ts'
-import { frontOf, type Coord, type RectBase } from '../building.ts'
+import { frontOfBase, type Coord, type RectBase } from '../building.ts'
 import { insertSlots, type Item, type Slot } from '../item.ts'
 import { isPlot } from '../plot.ts'
 import type { World } from '../world.ts'
 import { machineEast } from './machine.ts'
 
-export function dropSpot(w: World, at: Coord): Coord | undefined {
-  return frontOf(at).find(p => w.inWorld(p) && isPlot(w.cell(p)))
+export function dropSpot(w: World, base: RectBase): Coord | undefined {
+  return frontOfBase(base).find(p => w.inWorld(p) && isPlot(w.cell(p)))
 }
 
-export function emitPair(w: World, at: Coord, base: RectBase, a: Item, b: Item): boolean {
+export function emitPair(w: World, base: RectBase, a: Item, b: Item): boolean {
   const east = machineEast(base)
   if (w.inWorld(east)) {
     const store = w.cell(east)
@@ -21,10 +21,10 @@ export function emitPair(w: World, at: Coord, base: RectBase, a: Item, b: Item):
       if (!insertSlots(test, { ...b }, test.length, undefined)) return false
     }
   }
-  return emitProduct(w, at, base, a) && emitProduct(w, at, base, b)
+  return emitProduct(w, base, a) && emitProduct(w, base, b)
 }
 
-export function emitProduct(w: World, at: Coord, base: RectBase, item: Item): boolean {
+export function emitProduct(w: World, base: RectBase, item: Item): boolean {
   const east = machineEast(base)
   if (w.inWorld(east)) {
     const store = w.cell(east)
@@ -32,7 +32,7 @@ export function emitProduct(w: World, at: Coord, base: RectBase, item: Item): bo
       return insertSlots(store.slots, item, store.slots.length, undefined)
     }
   }
-  const spot = dropSpot(w, at)
+  const spot = dropSpot(w, base)
   if (spot === undefined) return false
   w.drops.push({ at: spot, item })
   return true

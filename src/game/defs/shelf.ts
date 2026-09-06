@@ -130,7 +130,7 @@ export const SHELVES: readonly Shelf[] = [
     line: () => m.hud_shelf_land_line(),
     cluster: 'none',
     groups: [
-      { label: 'Paving', skus: ['buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved'] },
+      { label: 'Paving', skus: ['buy-tile-asphalt', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved'] },
       { label: 'Fencing', skus: ['buy-fence'] },
     ],
   },

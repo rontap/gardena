@@ -9,6 +9,8 @@ import {
   BARREL_MATURE,
   HANGAR_H,
   HANGAR_W,
+  MILL_H,
+  MILL_W,
   SILO_H,
   SILO_W,
   JAM_BUFFER,
@@ -39,13 +41,13 @@ import {
 } from './feature-machines/machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
-import { isFenceSite, isPlot, isTilled, isTileSite, type Cell } from './plot.ts'
+import { isFenceSite, isPavingSite, isPlot, isTilled, type Cell } from './plot.ts'
 import { isSensor, isSeqIn, sameNode, wouldCycle, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { dest } from './queue.ts'
 import { fillable } from './nets.ts'
-import { waterable } from './feature-field/field.helpers.ts'
+import { seedPair, waterable } from './feature-field/field.helpers.ts'
 import type { Intent, TaskName, World } from './world.ts'
 
 export const NOT_OWNED = m.prompt_not_owned()
@@ -197,6 +199,8 @@ export function taskName(w: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
+    case 'open':
+      return m.prompt_open_treasure()
   }
 }
 
@@ -368,7 +372,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (w.hasFence(at)) {
     return { kind: 'place', text: m.prompt_delete({ name: m.names_building_fence().toLowerCase() }) }
   }
-  if (cell.kind === 'untilled' && cell.cover.kind === 'tile') return { kind: 'place', text: m.prompt_delete_paving() }
+
   if (cell.kind === 'grinder') return { kind: 'place', text: m.prompt_delete_grinder() }
   if (cell.kind === 'hangar') {
     const origin = { col: cell.base.col, row: cell.base.row }
@@ -476,7 +480,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       w.act.place.id === 'buy-tile-cobble'
     ) {
       if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
-      if (!isTileSite(w.cell(at))) return { kind: 'blocked', text: m.prompt_cannot_place() }
+      if (!isPavingSite(w.cell(at))) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
     if (w.act.place.id === 'buy-fence') {
@@ -498,13 +502,16 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!tallSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
+    if (w.act.place.id === 'buy-mill') {
+      if (!squareSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
+      return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
+    }
     if (
       w.act.place.id === 'buy-chest' ||
       w.act.place.id === 'buy-grinder' ||
       w.act.place.id === 'buy-compost-box' ||
       w.act.place.id === 'buy-tap' ||
       w.act.place.id === 'buy-well' ||
-      w.act.place.id === 'buy-mill' ||
       w.act.place.id === 'buy-jam' ||
       w.act.place.id === 'buy-barrel' ||
       w.act.place.id === 'buy-freezer' ||
@@ -544,9 +551,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     })
   }
   if (cell.kind === 'hangar') return intent(m.names_building_hangar(), { act: 'hangar', at })
-  if (cell.kind === 'silo-seed') return { kind: 'blocked', text: m.names_building_silo_seed() }
-  if (cell.kind === 'silo-spray') return { kind: 'blocked', text: m.names_building_silo_spray() }
-  if (cell.kind === 'silo-produce') return { kind: 'blocked', text: m.names_building_silo_produce() }
+  if (cell.kind === 'silo-seed') return intent(m.names_building_silo_seed(), { act: 'silo', at })
+  if (cell.kind === 'silo-spray') return intent(m.names_building_silo_spray(), { act: 'additives', at })
+  if (cell.kind === 'silo-produce') return intent(m.names_building_silo_produce(), { act: 'chest', at })
   if (cell.kind === 'house') return intent(m.prompt_inventory(), { act: 'inventory' })
   if (cell.kind === 'truck') {
     if (canConsign(w.act.hand)) return intent(m.prompt_drop_off(), { act: 'consign' })
@@ -666,6 +673,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'untilled' && cell.ground === 'very-hard') {
       return intent(m.prompt_mine(), { act: 'mine', at })
     }
+    if (cell.kind === 'untilled' && cell.cover.kind === 'burrow') {
+      return { kind: 'blocked', text: m.names_ground_burrow() }
+    }
     return needSeeds(cell)
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'shovel') {
@@ -673,6 +683,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
       return { kind: 'blocked', text: m.prompt_need_a({ name: m.names_pickaxe_pickaxe().toLowerCase() }) }
     }
     if (cell.kind === 'tree') return intent(m.prompt_dig(), { act: 'shovel', at })
+    if (cell.kind === 'untilled' && cell.cover.kind === 'burrow') {
+      return intent(m.prompt_dig(), { act: 'shovel', at })
+    }
     if (cell.kind === 'untilled' && cell.ground === 'hard' && w.act.hand.item.usesLeft < 2) {
       return { kind: 'blocked', text: m.prompt_cannot_dig() }
     }
@@ -695,18 +708,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return intent(m.prompt_graft(), { act: 'graft', at })
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'tree-seed') {
-    const above = { col: at.col, row: at.row - 1 }
-    const a = cell
-    const b = w.inWorld(above) ? w.cell(above) : undefined
-    if (
-      a.kind === 'untilled' &&
-      a.ground === 'soft' &&
-      a.cover.kind !== 'tile' &&
-      b !== undefined &&
-      b.kind === 'untilled' &&
-      b.ground === 'soft' &&
-      b.cover.kind !== 'tile'
-    ) {
+    if (seedPair(w, at) !== undefined) {
       return intent(m.prompt_plant({ name: cropLabel(w.act.hand.item.tree) }), { act: 'plant', at })
     }
   }
@@ -747,6 +749,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
   }
   if (w.canTend(at)) return intent(m.prompt_tend(), { act: 'tend', at })
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'treasure' && isPlot(cell)) {
+    return intent(m.prompt_open_treasure(), { act: 'open', at })
+  }
   if (w.act.hand.kind === 'empty') return intent(m.prompt_move_here(), { act: 'walk', at })
   if (isPlot(cell)) return intent(m.prompt_drop(), { act: 'drop', at })
   return needSeeds(cell)
@@ -756,6 +761,7 @@ export function placeSolidOk(w: World, at: Coord): boolean {
   if (!inWorld(at, w.owned)) return false
   if (onCell(w.drops, at).length > 0) return false
   const c = w.cell(at)
+  if (c.kind === 'untilled' && c.cover.kind === 'burrow') return false
   return isPlot(c) && (c.kind === 'untilled' || c.kind === 'empty')
 }
 
@@ -777,32 +783,21 @@ export function siloSiteOk(w: World, at: Coord): boolean {
   return true
 }
 
+export function squareSiteOk(w: World, at: Coord): boolean {
+  for (let row = 0; row < MILL_H; row++) {
+    for (let col = 0; col < MILL_W; col++) {
+      if (!placeSolidOk(w, { col: at.col + col, row: at.row + row })) return false
+    }
+  }
+  return true
+}
+
 export function wideSiteOk(w: World, at: Coord): boolean {
-  const b = { col: at.col + 1, row: at.row }
-  if (!inWorld(at, w.owned) || !inWorld(b, w.owned)) return false
-  if (onCell(w.drops, at).length > 0 || onCell(w.drops, b).length > 0) return false
-  const a = w.cell(at)
-  const c = w.cell(b)
-  return (
-    isPlot(a) &&
-    isPlot(c) &&
-    (a.kind === 'untilled' || a.kind === 'empty') &&
-    (c.kind === 'untilled' || c.kind === 'empty')
-  )
+  return placeSolidOk(w, at) && placeSolidOk(w, { col: at.col + 1, row: at.row })
 }
 
 export function tallSiteOk(w: World, at: Coord): boolean {
-  const b = { col: at.col, row: at.row + 1 }
-  if (!inWorld(at, w.owned) || !inWorld(b, w.owned)) return false
-  if (onCell(w.drops, at).length > 0 || onCell(w.drops, b).length > 0) return false
-  const a = w.cell(at)
-  const c = w.cell(b)
-  return (
-    isPlot(a) &&
-    isPlot(c) &&
-    (a.kind === 'untilled' || a.kind === 'empty') &&
-    (c.kind === 'untilled' || c.kind === 'empty')
-  )
+  return placeSolidOk(w, at) && placeSolidOk(w, { col: at.col, row: at.row + 1 })
 }
 
 function canHarvestHand(w: World, crop: CropId, variety: VarietyId): boolean {

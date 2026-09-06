@@ -35,7 +35,7 @@ viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, t
 `skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` · `skill-research-speed` `skill-contracts`
 `skill-forecast` `skill-tax` `skill-water-study` `skill-land-study` ·
 `skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-bio` `skill-industrial` `skill-open-late` `skill-open-24`
-`skill-jam` `skill-clearance` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
+`skill-jam` `skill-clearance` `skill-lucky` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
 
 Live sheet drops `skill-tool-contracts` `skill-machine-contracts` `skill-bulk-buying` (files may remain).
 
@@ -48,7 +48,11 @@ One copy of each shared symbol; icons composite it.
 - **Arrows** — up / down badge in the `ui-quality.svg` language: ink square, solid `leaf` fill, ink glyph cut out.
 - **Őstermelő** — `skill-heirloom.svg` is `ui-quality.svg` at 3× in heirloom gold. Not a new symbol.
 - **Money** — every coin is `ui-coin.svg` embedded verbatim under a `translate` (and `scale(2)` in
-  `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
-  `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom`.
+  `skill-saleswoman` `skill-lucky`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
+  `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom` `skill-lucky`.
+- **Lucky** — `skill-lucky.svg` is `ui-coin.svg` at `scale(2)` under a clover mark in the `ui-quality.svg`
+  language (`leaf` fill). One icon all tiers. Do not redraw the Coin.
 - `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
 - **Haggling** — `skill-contracts.svg`. Do not redraw.
+
+Assumption: clover glyph; prompt named a mark, not which.

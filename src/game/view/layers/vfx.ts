@@ -1,6 +1,16 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { vertexKey } from '../../sim/pipe.ts'
-import { millWorking, jamWorking, stillWorking, barrelWorking, furnaceWorking, furnaceStateVfx } from '../../sim/feature-machines/machine.ts'
+import {
+  millWorking,
+  jamWorking,
+  stillWorking,
+  barrelWorking,
+  furnaceWorking,
+  furnaceStateVfx,
+  millDustAt,
+  grinderWorking,
+  stationWorking,
+} from '../../sim/feature-machines/machine.ts'
 import { BARREL_MATURE } from '../../defs/items.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'
@@ -9,6 +19,9 @@ import { TILE, tileVariant } from '../camera.ts'
 import { atlasTex, vfxKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 import { VFX, vfxReduced } from '../vfx.ts'
+
+const SMOKE_SPEED = 0.15
+const SMOKE_BACK = 0.45
 
 export type VfxMount = { id: VfxId; col: number; row: number; rot: number; burst: boolean; seq?: number }
 
@@ -21,11 +34,20 @@ function sprayId(variant: 'basic' | 'large' | 'vert'): VfxId {
 }
 
 function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefined {
-  if (cell.kind !== 'mill' && cell.kind !== 'jam' && cell.kind !== 'still' && cell.kind !== 'barrel') return undefined
+  if (
+    cell.kind !== 'jam' &&
+    cell.kind !== 'still' &&
+    cell.kind !== 'barrel' &&
+    cell.kind !== 'grinder' &&
+    cell.kind !== 'station'
+  ) {
+    return undefined
+  }
   if (cell.base.col !== at.col || cell.base.row !== at.row) return undefined
-  if (cell.kind === 'mill') return millWorking(cell) ? 'dust' : undefined
   if (cell.kind === 'jam') return jamWorking(cell) ? 'dust' : undefined
   if (cell.kind === 'still') return stillWorking(cell) ? 'steam' : undefined
+  if (cell.kind === 'grinder') return grinderWorking(cell) ? 'grind' : undefined
+  if (cell.kind === 'station') return stationWorking(cell) ? 'station' : undefined
   if (!barrelWorking(cell)) return undefined
   return cell.age >= BARREL_MATURE ? 'age' : 'brew'
 }
@@ -116,6 +138,13 @@ export class VfxLayer {
         }
         continue
       }
+      if (cell.kind === 'mill') {
+        if (millWorking(cell) && cell.base.col === at.col && cell.base.row === at.row) {
+          const dust = millDustAt(at)
+          this.draw('dust', dust.col, dust.row, 0, false, now, undefined)
+        }
+        continue
+      }
       const id = busyVfx(cell, at)
       if (id === undefined) continue
       this.draw(id, at.col, at.row, 0, false, now, undefined)
@@ -124,6 +153,13 @@ export class VfxLayer {
       if (world.vfx.get(vertexKey(s.at)) !== true) return
       const rot = s.variant === 'vert' && s.facing === 'ns' ? 90 : 0
       this.draw(sprayId(s.variant), s.at.col, s.at.row, rot, false, now, undefined)
+    })
+    world.vehicles.forEach(v => {
+      if (v.kind !== 'tractor') return
+      if (v.pose.kind !== 'field') return
+      if (Math.abs(v.pose.speed) < SMOKE_SPEED) return
+      const back = { x: v.pose.x - Math.cos(v.pose.heading) * SMOKE_BACK, y: v.pose.y - Math.sin(v.pose.heading) * SMOKE_BACK }
+      this.draw('exhaust', back.x, back.y, 0, false, now, undefined)
     })
     this.bursts.forEach(b => {
       this.draw(b.id, b.at.col, b.at.row, 0, true, now, b.t0, b.seq)

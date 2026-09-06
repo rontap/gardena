@@ -32,6 +32,7 @@ import type { CompanyBook, ContractId, ContractOffer, Demand, HistoryEntry } fro
 import type { Edge, Segment, Sprinkler } from '../pipe.ts'
 import type { Wire } from '../sensor.ts'
 import type { Presence, SeatId, World } from '../world.ts'
+import type { PavedCell } from '../world.h.ts'
 import type { Route, SeedHopper, SprayHopper, TrailerPose } from '../feature-vehicles/vehicle.h.ts'
 
 export type LoadFailReason = 'unknown-format' | 'not-gardena' | 'version' | 'unusable'
@@ -72,7 +73,7 @@ export type SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean }
 export type SaveTurf = { variant: 0 | 1 | 2; maturity: number }
 
 export type SaveCell =
-  | { kind: 'untilled'; ground: Ground; cover: Cover }
+  | { kind: 'untilled'; ground: Ground; hardness: number; cover: Cover }
   | { kind: 'empty'; soil: SaveSoil }
   | { kind: 'infertile' }
   | { kind: 'weed'; soil: SaveSoil; weed: SaveWeed }
@@ -99,9 +100,9 @@ export type SaveCell =
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
-  | { kind: 'silo-seed'; base: RectBase }
-  | { kind: 'silo-spray'; base: RectBase }
-  | { kind: 'silo-produce'; base: RectBase }
+  | { kind: 'silo-seed'; base: RectBase; seeds: SiloStack[] }
+  | { kind: 'silo-spray'; base: RectBase; held: AdditiveHold[]; sugar: SugarBin }
+  | { kind: 'silo-produce'; base: RectBase; slots: Slot[] }
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; sugar: SugarBin; out: 0 | 1; hold: number }
   | { kind: 'truck'; base: RectBase }
@@ -236,6 +237,7 @@ export type Save = {
   wires: Wire[]
   valveHold: { e: Edge; level: 0 | 1; hold: number }[]
   fences: Coord[]
+  paving: PavedCell[]
   drops: { at: Coord; item: Item }[]
   contracts: SaveContracts
 }

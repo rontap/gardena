@@ -34,6 +34,7 @@ const FERT_WORD: { readonly [K in Band]: () => string } = {
 }
 
 const TILE_LABEL: { readonly [K in TileId]: () => string } = {
+  asphalt: () => m.names_tile_asphalt(),
   paved: m.names_tile_paved,
   brick: m.names_tile_brick,
   cobble: m.names_tile_cobble,
@@ -136,7 +137,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'jam') lines.push(jamLook(cell, hand))
   else if (cell.kind === 'tree') lines.push(treeLine(cell))
   else if (cell.kind === 'untilled') {
-    if (cell.cover.kind === 'tile') lines.push(tileName(cell.cover.tile))
+    const paving = world.pavingAt(at)
+    if (cell.cover.kind === 'burrow') lines.push(m.names_ground_burrow())
+    else if (paving !== 'none') lines.push(TILE_LABEL[paving]())
     else if (cell.ground === 'soft') lines.push(m.names_ground_grass())
     else if (cell.ground === 'hard') lines.push(m.names_ground_hard())
     else lines.push(m.names_ground_very_hard())
@@ -235,9 +238,6 @@ function barrelLine(c: Barrel): string {
   return `${line}\n${top}`
 }
 
-function tileName(id: TileId): string {
-  return TILE_LABEL[id]()
-}
 
 function soilLine(soil: Soil): string {
   const water = liters(soil.water)

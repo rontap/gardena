@@ -146,8 +146,10 @@ export function padCenter(base: RectBase): { x: number; y: number } {
   return { x: base.col + HANGAR_W / 2, y: base.row + HANGAR_H + 0.5 }
 }
 
-export function surfaceMul(c: Cell): number {
-  if (c.kind === 'untilled' && c.cover.kind === 'tile' && c.cover.tile === 'paved') return SURFACE_PAVED
+export function surfaceMul(w: World, at: Coord): number {
+  const paving = w.pavingAt(at)
+  if (paving === 'paved' || paving === 'asphalt') return SURFACE_PAVED
+  const c = w.cell(at)
   if (isTilled(c)) return SURFACE_SLOW
   if (c.kind === 'rock' || isSolid(c)) return SURFACE_SLOW
   return SURFACE_NORMAL
@@ -1098,7 +1100,7 @@ export function tickVehicles(w: World, dt: number): void {
         v.fuel = next < 0 ? 0 : next
       }
       const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
-      const surface = surfaceMul(w.cell(at))
+      const surface = surfaceMul(w, at)
       const drivingMul = 1 + 0.05 * driving
       const braking = drive.throttle === 0 && pose.speed !== 0
       integrateVehicle(
@@ -1129,7 +1131,7 @@ export function tickVehicles(w: World, dt: number): void {
         v.fuel = next < 0 ? 0 : next
       }
       const at = { col: Math.floor(pose.x), row: Math.floor(pose.y) }
-      const surface = surfaceMul(w.cell(at))
+      const surface = surfaceMul(w, at)
       const drivingMul = 1 + 0.05 * driving
       integrateVehicle(
         pose,

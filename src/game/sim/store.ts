@@ -3,7 +3,7 @@ import { freshMul } from '../defs/crops.ts'
 import { ADDITIVE_BAG } from './building.ts'
 import { purposeMul, qualityMul, tierOf, VARIETY_IDS } from '../defs/varieties.ts'
 import { WEATHER_FRUIT_SALE } from '../defs/weather.ts'
-import { frontOf, type AdditiveId, type Coord } from './building.ts'
+import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedStore } from './building.ts'
 import { isPlot } from './plot.ts'
 import type { AnnualId, StallGoodId } from './ids.ts'
 import type { Item } from './item.ts'
@@ -14,32 +14,39 @@ import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
 import type { SellAllQuote } from './feature-contracts/market.h.ts'
 
-export function putSilo(world: World, crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
-  const n = Math.min(count, world.silo.free)
-  if (n <= 0) return 0
-  const hit = world.silo.seeds.find(st => st.crop === crop && st.variety === variety)
-  if (hit !== undefined) {
-    hit.quality = (hit.quality * hit.count + quality * n) / (hit.count + n)
-    hit.count += n
-  } else world.silo.seeds.push({ crop, variety, quality, count: n })
-  return n
+export function seedStoreAt(world: World, at: Coord): SeedStore {
+  const c = world.cell(at)
+  if (c.kind === 'seed-silo' || c.kind === 'silo-seed') return c
+  return world.silo
 }
 
-export function takeSiloBody(world: World, crop: AnnualId, variety: VarietyId): void {
-  const i = world.silo.seeds.findIndex(st => st.crop === crop && st.variety === variety)
+export function additiveStoreAt(world: World, at: Coord): AdditiveHolder {
+  const c = world.cell(at)
+  if (c.kind === 'additive-store' || c.kind === 'silo-spray') return c
+  return world.additives
+}
+
+export function putSilo(world: World, crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
+  return world.silo.put(crop, variety, quality, count)
+}
+
+export function takeSiloBody(world: World, at: Coord, crop: AnnualId, variety: VarietyId): void {
+  const silo = seedStoreAt(world, at)
+  const i = silo.seeds.findIndex(st => st.crop === crop && st.variety === variety)
   if (i < 0) return
-  const st = world.silo.seeds[i]
+  const st = silo.seeds[i]
   if (st.count <= 0) return
   if (!freeHand(world)) return
-  world.silo.seeds.splice(i, 1)
+  silo.seeds.splice(i, 1)
   world.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, variety, quality: st.quality, count: st.count } }
   world.ping()
 }
 
-export function depositSilo(world: World): void {
+export function depositSilo(world: World, at: Coord): void {
+  const silo = seedStoreAt(world, at)
   const take = (it: Item): boolean => {
     if (it.kind !== 'seeds') return false
-    const n = putSilo(world, it.crop, it.variety, it.quality, it.count)
+    const n = silo.put(it.crop, it.variety, it.quality, it.count)
     it.count -= n
     return it.count <= 0
   }
@@ -51,16 +58,11 @@ export function depositSilo(world: World): void {
 }
 
 export function putAdditive(world: World, id: AdditiveId, liters: number): number {
-  const n = Math.min(liters, world.additives.free)
-  if (n <= 0) return 0
-  const hit = world.additives.held.find(h => h.id === id)
-  if (hit !== undefined) hit.liters += n
-  else world.additives.held.push({ id, liters: n })
-  return n
+  return world.additives.putAdditive(id, liters)
 }
 
-export function takeSugarBody(world: World): void {
-  const bin = world.additives.sugar
+export function takeSugarBody(world: World, at: Coord): void {
+  const bin = additiveStoreAt(world, at).sugar
   const liters = Math.min(SUGAR_BAG, bin.liters)
   if (liters <= 0) return
   if (!freeHand(world)) return
@@ -72,10 +74,11 @@ export function takeSugarBody(world: World): void {
   world.ping()
 }
 
-export function takeAdditiveBody(world: World, id: AdditiveId): void {
-  const i = world.additives.held.findIndex(h => h.id === id)
+export function takeAdditiveBody(world: World, at: Coord, id: AdditiveId): void {
+  const store = additiveStoreAt(world, at)
+  const i = store.held.findIndex(h => h.id === id)
   if (i < 0) return
-  const held = world.additives.held[i]
+  const held = store.held[i]
   const bag = ADDITIVE_BAG[id]
   const liters = Math.min(bag, held.liters)
   if (liters <= 0) return
@@ -86,14 +89,15 @@ export function takeAdditiveBody(world: World, id: AdditiveId): void {
   world.ping()
 }
 
-export function depositAdditives(world: World): void {
+export function depositAdditives(world: World, at: Coord): void {
+  const store = additiveStoreAt(world, at)
   const take = (it: Item): boolean => {
     if (it.kind === 'sugar') {
-      it.liters -= world.putSugar(it.liters, it.unitSale, it.quality)
+      it.liters -= store.putSugar(it.liters, it.unitSale, it.quality)
       return it.liters <= 0
     }
     if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
-    const n = putAdditive(world, it.kind, it.liters)
+    const n = store.putAdditive(it.kind, it.liters)
     it.liters -= n
     return it.liters <= 0
   }

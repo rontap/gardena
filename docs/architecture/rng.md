@@ -10,7 +10,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 
 ## Types
 
-`StreamId = SpatialId | SeqId`. Spatial: `gen` `weed` `grass` `tree` `skill` `grind` `contract` `weather`. Seq: `fruit`. Shape: `sim/rng.ts`.
+`StreamId = SpatialId | SeqId`. Spatial: `gen` `weed` `grass` `tree` `skill` `grind` `contract` `weather` `burrow`. Seq: `fruit`. Shape: `sim/rng.ts`.
 
 `streamSeed` = mixer u32 of `world.seed` and `StreamId`. `at(...ints)` mixes those ints onto `streamSeed` and returns `[0,1)`. `next()` mixes a per-stream monotonic seq starting at 0.
 
@@ -72,3 +72,7 @@ Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. R
 ### weather — `at(day, k)`
 
 Day kind walk. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, k)` only. `k` is 0 (special / severe) or 1 (rain vs dry; continue). Illegal: `next()`. `forecastWeather` [[mechanics/weather]].
+
+### burrow — `at(cx, cy, day, k)` / `at(col, row, salt)`
+
+Site pick and loot. Spatial, not `Seq`. Nothing consumed. Mix ints for site: `(cx, cy, day, k)` only. Mix ints for loot: `(col, row, salt)` only. Salt 0 lootRoll `u`; 1 row; 2 pool; 3 treasure coins `u` or tool used. Illegal: `next()`. [[mechanics/burrow]] `rng.burrow`

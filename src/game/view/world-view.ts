@@ -143,6 +143,7 @@ export class WorldView {
   private tick(): void {
     const world = this.world
     this.actors.tick(world)
+    this.props.tick(world, performance.now())
     this.vfx.tick(world, performance.now())
     this.overlay.flowTick(world, performance.now())
     const driven = world.driverVehicle(world.local)

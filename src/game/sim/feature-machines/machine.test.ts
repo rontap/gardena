@@ -61,10 +61,10 @@ import {
 } from './machine.ts'
 import { CASK_NAME, caskMulOf, caskName, furnaceValue, mergeInto, type Item } from '../item.ts'
 import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
-import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE } from '../../defs/items.ts'
+import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
-import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, PAD, PotStill, ResearchStation } from '../building.ts'
+import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, occupiedCells, PAD, PotStill, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
 import { Lamp, Lever } from '../sensor.ts'
 import { BIG_TICK } from '../soil.ts'
@@ -203,15 +203,15 @@ describe('machines', () => {
 
   test('West chest/freezer is input. East is output. Still: west of origin, east of east cell.', () => {
     const w = new World(1)
-    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
+    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
     const west = { col: AT.col - 1, row: AT.row }
-    const east = { col: AT.col + 1, row: AT.row }
-    w.setCell(AT, mill)
+    const east = { col: AT.col + MILL_W, row: AT.row }
+    occupiedCells(mill.base, w.owned).forEach(p => w.setCell(p, mill))
     w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
     w.setCell(east, new Freezer({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
     const links = w.machineLinks()
     expect(links.some(l => l.side === 'in' && l.x === AT.col - 0.5 && l.y === AT.row)).toBe(true)
-    expect(links.some(l => l.side === 'out' && l.x === AT.col + 0.5 && l.y === AT.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === AT.col + MILL_W - 0.5 && l.y === AT.row)).toBe(true)
     const stillAt = { col: AT.col, row: AT.row + 4 }
     const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
     w.setCell(stillAt, still)
@@ -283,11 +283,15 @@ describe('machines', () => {
 
   test('Produce inserts into the east store if present; else `frontOf`. East store full → wait.', () => {
     const w = new World(1)
-    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
-    mill.recipe = 'wheat'
-    mill.units = MILL_IN
-    const east = { col: AT.col + 1, row: AT.row }
-    w.setCell(AT, mill)
+    const put = (at: { col: number; row: number }) => {
+      const m = new Mill({ shape: 'rect', col: at.col, row: at.row, w: MILL_W, h: MILL_H })
+      m.recipe = 'wheat'
+      m.units = MILL_IN
+      occupiedCells(m.base, w.owned).forEach(p => w.setCell(p, m))
+      return m
+    }
+    const mill = put(AT)
+    const east = { col: AT.col + MILL_W, row: AT.row }
     w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
     ticks(w, MILL_WORK)
     const chest = w.cell(east)
@@ -295,12 +299,9 @@ describe('machines', () => {
     expect(chest.slots.some(s => s.kind === 'hold' && s.item.kind === 'flour')).toBe(true)
     expect(mill.units).toBe(0)
     expect(w.drops.filter(d => d.item.kind === 'flour')).toHaveLength(0)
-    const mill2At = { col: AT.col, row: AT.row + 3 }
-    const mill2 = new Mill({ shape: 'rect', col: mill2At.col, row: mill2At.row, w: 1, h: 1 })
-    mill2.recipe = 'wheat'
-    mill2.units = MILL_IN
-    const e2 = { col: mill2At.col + 1, row: mill2At.row }
-    w.setCell(mill2At, mill2)
+    const mill2At = { col: AT.col, row: AT.row + 4 }
+    const mill2 = put(mill2At)
+    const e2 = { col: mill2At.col + MILL_W, row: mill2At.row }
     const full = new Chest({ shape: 'rect', col: e2.col, row: e2.row, w: 1, h: 1 })
     full.slots.forEach((_, i) => {
       full.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
@@ -310,14 +311,13 @@ describe('machines', () => {
     ticks(w, MILL_WORK)
     expect(mill2.units).toBe(MILL_IN)
     expect(w.drops.filter(d => d.item.kind === 'flour').length).toBe(flour0)
-    const mill3At = { col: AT.col, row: AT.row + 6 }
-    const mill3 = new Mill({ shape: 'rect', col: mill3At.col, row: mill3At.row, w: 1, h: 1 })
-    mill3.recipe = 'wheat'
-    mill3.units = MILL_IN
-    w.setCell(mill3At, mill3)
+    const mill3At = { col: AT.col, row: AT.row + 8 }
+    const mill3 = put(mill3At)
     ticks(w, MILL_WORK)
     expect(mill3.units).toBe(0)
-    expect(w.drops.some(d => d.item.kind === 'flour' && d.at.col === mill3At.col && d.at.row === mill3At.row + 1)).toBe(true)
+    expect(w.drops.some(d => d.item.kind === 'flour' && d.at.col === mill3At.col && d.at.row === mill3At.row + MILL_H)).toBe(
+      true,
+    )
   })
 })
 

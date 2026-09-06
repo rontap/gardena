@@ -46,3 +46,7 @@ Apple thick whip. Apricot forked. Olive gnarled, house fleck leaf. Cherry slim, 
 ## Ash
 
 `item-ash.svg` — viewBox `0 0 24 24`. Pile. House / ink / dirt. Not a sack.
+
+## Treasure
+
+`item-treasure.svg` — viewBox `0 0 24 24`. Small chest, ripe metal, ink, `house` glint. Domed lid, vertical straps, lock on the body, feet. HUD / drop face. Atlas `treasure`. Not Coin. Not money. Not `item-chest`.

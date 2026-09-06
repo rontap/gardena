@@ -29,6 +29,7 @@
   "prompt_delete_grinder": "Delete seed grinder",
   "prompt_delete_wire": "Delete wire",
   "prompt_open": "Open {name}",
+  "prompt_open_treasure": "Open treasure",
   "prompt_close": "Close {name}",
   "prompt_tune": "Tune {name}",
   "prompt_flip": "Flip {name}",

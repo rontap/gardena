@@ -13,11 +13,12 @@
 | `varieties.ts` | `VarietyId`, `VarietyTier`, `Purpose`, `VARIETY`, `VARIETIES`, `PURPOSE_MUL`, `purposeMul`, `purposeOf`, `tierOf`, `caskGroup`, `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT`, `QUALITY_TOP`, `QUALITY_STEP`, `BETTER_QUALITY`, `NEIGHBOUR_IDS`, `NEIGHBOUR_REACH` |
 | `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` |
 | `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `buy-furnace`, `buy-axe`, `buy-research-station` |
-| `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS` |
-| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, station. Wood, ash, graft item rows |
+| `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS`. `lucky` |
+| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, station. Wood, ash, graft item rows. Game concepts Luck + Burrow are not `CatalogEntry` |
 | `shelf.ts` | `BuildShelfId`. Station on Processing |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
+| `burrow.ts` | `BURROW_WORK` `BURROW_START_N` loot-roll numbers `LUCK_CAP` — [[mechanics/burrow]] |
 
 ## sim
 
@@ -25,8 +26,8 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Intent `chop` `furnace` `graft` `station` |
-| `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Burrow mint / roll / extract live in `feature-burrow/`. Intent `chop` `furnace` `graft` `station` `open` |
+| `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. `lucky` is owned here; luck is derived, not a World field. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `feature-save/save.h.ts` | `Save` typedefs |
 | `feature-save/save.ts` | dump / parse — [[architecture/save]] |
@@ -35,7 +36,7 @@
 | `settings.ts` | `Settings`, `settings()` / `saveSettings` — [[ui/settings]] |
 | `log.ts` | `Act`, `Cmd` |
 | `log.worker.ts` | worker JSON sink |
-| `plot.ts` | `Cell`, `Plot` |
+| `plot.ts` | `Cell`, `Plot`. `Cover` += burrow |
 | `soil.ts` | `Soil` |
 | `plant.ts` | `Plant` (`variety`, `quality`), `Weed` |
 | `water.ts` | `Reservoir`, `pull()` |
@@ -46,14 +47,14 @@
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
-| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `wood` `ash` `graft`. Fruit `cut`. `furnaceValue`, `compostValue` ash |
-| `prompt.ts` | `Prompt`. Chop / furnace dump / graft / station |
-| `look.ts` | `lookText`. Furnace / trunk / grow. Covering haste line. Neighbour wait line |
+| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `wood` `ash` `graft` `treasure`. Fruit `cut`. `furnaceValue`, `compostValue` ash |
+| `prompt.ts` | `Prompt`. Chop / furnace dump / graft / station / burrow Dig / treasure open |
+| `look.ts` | `lookText`. Furnace / trunk / grow. Covering haste line. Neighbour wait line. Burrow look does not name loot |
 | `drop.ts` | `Drop` |
-| `gen.ts` | `generateChunk` |
+| `gen.ts` | `generateChunk`. `(0,0)` calls feature-burrow start mint |
 | `noise.ts` | `goodness` |
 | `modifiers.ts` | `Modifier`, `statsOf(crop, variety, quality, mods)` |
-| `rng.ts` | `Rng`, streams |
+| `rng.ts` | `Rng`, streams. Spatial `burrow` |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
 | `feature-machines/machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
 | `feature-machines/machines.tick.ts` | `tickMachines` `pullMachineStores` `workingFurnaces` `furnaceMulFor`. Snapshot `World.furnaceSnap` at start of `tickMachines`. Re-exports emit |
@@ -62,9 +63,10 @@
 | `feature-machines/recipe.h.ts` | `Recipe`, `Craft`, `MachineId` |
 | `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
 | `feature-field/field.ts` | grow / recover tick, tree seam, weeds, grass |
-| `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft |
+| `feature-burrow/` | start mint, seam mint, loot roll, extract. Types in `burrow.h.ts`, functions in `burrow.ts`. `World` indexes `burrows` and calls in |
+| `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft. Shovel on burrow cover calls feature-burrow extract |
 | `feature-place/place.ts` | `buyBody` `buyPacksBody` `clickBody` `clickValveBody` `rightClickBody` `expandBody` `faces` `placePipeBody` `deletePipeBody` `placeSprinklerBody` `deleteSprinklerBody` `armDeleteBody` `rotatePlaceBody` `cancelPlaceBody`. Public `buy` / `click` / `confirmPlace` stay World wrappers |
-| `feature-place/place.helpers.ts` | `confirmPlace` `deleteBuildingBody` `pruneVert` |
+| `feature-place/place.helpers.ts` | `confirmPlace` `deleteBuildingBody` `pruneVert`. Burrow refuses place / tile / fence |
 | `feature-vehicles/vehicle.h.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop` |
 | `feature-vehicles/vehicle.ts` | integrate |
 | `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light. Will: make table `{ [K in SensorKind]: { sku, make } }` next to the classes; `makeSensor` / `skuKind` lookups; ports on the device. `evalDag` stays a function. Not a `Machine` |
@@ -93,7 +95,7 @@
 | `market.tsx` | Stall \| Contracts overlay |
 | `inventory.tsx` | house slots |
 | `chest.tsx` | chest slots |
-| `almanac.tsx` | catalog |
+| `almanac.tsx` | catalog. Game concepts Luck + Burrow |
 | `objecthud.tsx` | sprinkler / sensor HUD |
 | `hangar.tsx` | hangar cue |
 | `vehicle.tsx` | parked cue |
@@ -120,7 +122,7 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | `hit.ts` | `clickHit` / `nearestEdge` / ghosts |
 | `outline.ts` | union footprint path |
 | `layers/ground.ts` | terrain chunks |
-| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts. Tree stage `trunk`. Crop groups base / variant / variant / heirloom |
+| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover. Tree stage `trunk`. Crop groups base / variant / variant / heirloom |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences |
 | `layers/props.ts` | buildings, sensors, house, truck, hangars, silos. Furnace `off`/`on`. Station `off`/`on`. Still / furnace native viewBox; art 1.5×1 / 1×1.5 inside |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |

@@ -80,7 +80,7 @@ const SILO_CROPS: readonly AnnualId[] = ['sugar-cane', ...ANNUAL_IDS.filter(c =>
 export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const [tip, setTip] = useState<Tip>(undefined)
   const cell = world.cell(at)
-  if (cell.kind !== 'seed-silo') return null
+  if (cell.kind !== 'seed-silo' && cell.kind !== 'silo-seed') return null
   const stackOf = (crop: AnnualId, variety: VarietyId) => cell.seeds.find(st => st.crop === crop && st.variety === variety)
   const held = (crop: AnnualId, variety: VarietyId): number => stackOf(crop, variety)?.count ?? 0
   const crops = SILO_CROPS.filter(crop => {
@@ -90,7 +90,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
   const rows = Math.max(0, ...crops.map(c => VARIETIES[c].length))
   return (
     <Shell
-      title={m.names_building_seed_silo()}
+      title={cell.kind === 'silo-seed' ? m.names_building_silo_seed() : m.names_building_seed_silo()}
       onClose={onClose}
       aside={
         tip === undefined ? undefined : tip.kind === 'buy' ? (
@@ -130,7 +130,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
               </tr>
             </thead>
             <tbody>
-              {crops.some(crop => packSku(crop) !== undefined) && (
+              {cell.kind === 'seed-silo' && crops.some(crop => packSku(crop) !== undefined) && (
                 <tr>
                   {crops.map(crop => {
                     const sku = packSku(crop)
@@ -166,7 +166,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                           onFocus={() => setTip({ kind: 'stock', crop, variety })}
                           onClick={() => {
                             if (n === 0) return
-                            world.takeSilo(crop, variety)
+                            world.takeSilo(at, crop, variety)
                           }}
                           className={`flex h-[5.5rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 px-1 ${
                             n === 0
@@ -360,10 +360,10 @@ function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (
 export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const [hot, setHot] = useState<StoreRowId | undefined>(undefined)
   const cell = world.cell(at)
-  if (cell.kind !== 'additive-store') return null
+  if (cell.kind !== 'additive-store' && cell.kind !== 'silo-spray') return null
   return (
     <Shell
-      title={m.names_building_additive_store()}
+      title={cell.kind === 'silo-spray' ? m.names_building_silo_spray() : m.names_building_additive_store()}
       onClose={onClose}
       className="w-[30rem]"
       aside={hot === undefined ? undefined : <AdditiveTip world={world} id={hot} />}
@@ -382,8 +382,8 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                 aria-disabled={off}
                 onClick={() => {
                   if (off) return
-                  if (id === 'sugar') world.takeSugar()
-                  else world.takeAdditive(id)
+                  if (id === 'sugar') world.takeSugar(at)
+                  else world.takeAdditive(at, id)
                 }}
                 className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left ${
                   off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
@@ -403,7 +403,9 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                 <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]()}</span>
                 <span className="shrink-0 text-base tabular-nums">{round(liters)} L</span>
               </button>
-              {sku !== 'none' && <BuyAdditive world={world} sku={sku} onHot={on => setHot(on ? id : undefined)} />}
+              {cell.kind === 'additive-store' && sku !== 'none' && (
+                <BuyAdditive world={world} sku={sku} onHot={on => setHot(on ? id : undefined)} />
+              )}
             </div>
           )
         })}

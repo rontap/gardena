@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import type { SkillId } from '../sim/ids.ts'
+import { luckOf } from '../sim/family.ts'
+import { World } from '../sim/world.ts'
+import { LUCK_CAP } from './burrow.ts'
 import { BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED } from './items.ts'
 import { BETTER_IDS, JAM_ROT, SKILLS, betterGain, skillBlurb } from './skills.ts'
 import { BETTER_QUALITY } from './varieties.ts'
@@ -64,6 +67,24 @@ describe('skills i18n', () => {
     expect(skillBlurb('bio', 3)).toBe(m.skills_bio_skillblurb({ pct: 4 * 3 }))
     expect(skillBlurb('tending', 1)).toBe(SKILLS.tending.blurb)
     expect(skillBlurb('better-potato', 1)).toBe(SKILLS['better-potato'].blurb)
+  })
+})
+
+describe('family.lucky', () => {
+  test("`PlayerSkillId` `lucky` maxTier 3, gate none, effect `{ kind: 'lucky' }`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip.", () => {
+    expect(SKILLS.lucky.member).toBe('player')
+    expect(SKILLS.lucky.maxTier).toBe(3)
+    expect(SKILLS.lucky.gate).toEqual({ kind: 'none' })
+    expect(SKILLS.lucky.effect).toEqual({ kind: 'lucky' })
+    const w = new World(1)
+    expect('luck' in w).toBe(false)
+    expect(luckOf(w)).toBe(0)
+    w.family.player.owned.set('lucky', 2)
+    expect(luckOf(w)).toBe(2)
+    w.family.player.owned.set('lucky', 3)
+    expect(luckOf(w)).toBe(LUCK_CAP < 3 ? LUCK_CAP : 3)
+    w.family.player.owned.set('lucky', 99)
+    expect(luckOf(w)).toBe(LUCK_CAP)
   })
 })
 

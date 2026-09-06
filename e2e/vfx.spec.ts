@@ -19,7 +19,7 @@ async function setCrop(page: Page, at: At, growing: boolean): Promise<void> {
       const w = (window as unknown as { __world: any }).__world
       const plot = await import('/src/game/sim/plot.ts')
       if (on !== true) {
-        w.setCell(a, plot.bare('soft'))
+        w.setCell(a, plot.bare('soft', 0))
         return
       }
       const plant = await import('/src/game/sim/plant.ts')

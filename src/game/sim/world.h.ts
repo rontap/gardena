@@ -25,6 +25,7 @@ import type {
   RouteId,
   SkillId,
   SkuId,
+  TileId,
   TrailerId,
   VehicleId,
   VfxId,
@@ -73,6 +74,7 @@ export type Intent =
   | { act: 'weed-spray'; at: Coord }
   | { act: 'chop'; at: Coord }
   | { act: 'graft'; at: Coord }
+  | { act: 'open'; at: Coord }
 
 export type TaskName = string
 
@@ -142,6 +144,8 @@ export type Seat = {
 }
 
 export type Burst = { id: VfxId; at: Coord; seq: number }
+
+export type PavedCell = { col: number; row: number; tile: TileId }
 
 export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
 
@@ -241,6 +245,7 @@ export type Hydrate = {
   wells: Well[]
   sprinklers: Sprinkler[]
   fences: Coord[]
+  paving: PavedCell[]
   drops: Drop[]
   clearance: number
 }

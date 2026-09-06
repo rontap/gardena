@@ -4,7 +4,7 @@
 import type { VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { SKILLS } from '../defs/skills.ts'
-import type { AdditiveId, ChunkId, Coord } from './building.ts'
+import { ADDITIVE_BASE, SILO_BASE, type AdditiveId, type ChunkId, type Coord } from './building.ts'
 import type {
   AnnualId,
   HarvestSlot,
@@ -18,7 +18,7 @@ import type {
   VehicleSlot,
 } from './ids.ts'
 import { cropName, heldText, skuLabel } from './item.ts'
-import { Act } from './log.ts'
+import { Act, type XY } from './log.ts'
 import type { ContractId } from './feature-contracts/market.h.ts'
 import { demandGood, filledOf, needOf, rollBoard } from './feature-contracts/market.ts'
 import type { Edge, Sprinkler, Vertex } from './pipe.ts'
@@ -489,11 +489,14 @@ function act(world: World, a: TurnAction): string {
     case 'swapChest':
       world.swapChest(a.at, a.i)
       return ''
-    case 'take':
-      if (a.from === 'silo') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'silo', c: a.crop, r: a.variety })
-      else if (a.from === 'sugar') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'sugar', d: 'sugar' })
-      else world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'additive', d: a.id })
+    case 'take': {
+      const seed: XY = [SILO_BASE.col, SILO_BASE.row]
+      const add: XY = [ADDITIVE_BASE.col, ADDITIVE_BASE.row]
+      if (a.from === 'silo') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'silo', s: seed, c: a.crop, r: a.variety })
+      else if (a.from === 'sugar') world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'sugar', s: add, d: 'sugar' })
+      else world.commit({ a: Act.takeStore, t: world.now, p: world.local, k: 'additive', s: add, d: a.id })
       return ''
+    }
     case 'vehicle':
       return vehicle(world, a)
   }

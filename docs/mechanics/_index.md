@@ -14,13 +14,14 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/saturation]]
 - [[mechanics/contracts]]
 - [[mechanics/research]]
-- [[mechanics/family]]
+- [[mechanics/family]] — luck
 - [[mechanics/expansion]]
-- [[mechanics/inventory]] — wood, ash, graft
+- [[mechanics/burrow]] — cover, loot roll, luck, treasure
+- [[mechanics/inventory]] — wood, ash, graft, treasure
 - [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
-- [[mechanics/rng]]
+- [[mechanics/rng]] — burrow
 - [[mechanics/tutorial]]
 - [[mechanics/multiplayer]]
 
@@ -36,9 +37,20 @@ See [[canon]].
 | day.end-day | [[mechanics/day]] |
 | expansion.tax | [[mechanics/expansion]] |
 | expansion.chunk | [[mechanics/expansion]] |
+| burrow.start | [[mechanics/burrow]] |
+| burrow.day | [[mechanics/burrow]] |
+| burrow.block | [[mechanics/burrow]] |
+| burrow.dig | [[mechanics/burrow]] |
+| burrow.loot | [[mechanics/burrow]] |
+| burrow.open | [[mechanics/burrow]] |
 | soil.till | [[mechanics/soil]] |
 | soil.instance | [[mechanics/soil]] |
 | soil.goodness | [[mechanics/soil]] |
+| soil.hardness | [[mechanics/soil]] |
+| soil.dig | [[mechanics/soil]] |
+| tiles.paving | [[items/tiles]] |
+| tiles.paving-site | [[items/tiles]] |
+| vehicles.silo-store | [[mechanics/vehicles]] |
 | plants.drink | [[mechanics/plants]] |
 | plants.happy | [[mechanics/plants]] |
 | plants.ripen | [[mechanics/plants]] |
@@ -119,6 +131,7 @@ See [[canon]].
 | family.jam-rot | [[mechanics/family]] |
 | family.hidden | [[mechanics/family]] |
 | family.unlockSkills | [[mechanics/family]] |
+| family.lucky | [[mechanics/family]] |
 | family.better-set | [[mechanics/family]] |
 | inventory.slots | [[mechanics/inventory]] |
 | inventory.compost | [[mechanics/inventory]] |
@@ -201,6 +214,7 @@ See [[canon]].
 | log.letters | [[mechanics/log]] |
 | rng.spatial | [[mechanics/rng]] |
 | rng.fail | [[mechanics/rng]] |
+| rng.burrow | [[mechanics/rng]] |
 | tutorial.on | [[mechanics/tutorial]] |
 | tutorial.session | [[mechanics/tutorial]] |
 | tutorial.tilled | [[mechanics/tutorial]] |

@@ -11,18 +11,18 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE`, `DROP_FACE`, `DROP_INSET`, `DROP_STEP`, `clampCam`, `tileVariant` |
-| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on `dirt-edge` / `dirt-inset`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, graft face |
+| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, graft face |
 | `app.ts` | `Application` create / resize / destroy `releaseGlobalResources` |
 | `world-view.ts` | scene graph, dirty patch, Pixi ticker motion, `QUAD_FOLLOW`, `CullerPlugin`, pending pipe run |
 | `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts |
 | `outline.ts` | union footprint path. Directed edges, reverse cancel, then walk |
-| `layers/ground.ts` | terrain + fade chunks |
-| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts |
+| `layers/ground.ts` | terrain + fade chunks, paving and its kerb |
+| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences. `pipe-source` |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Station `off`/`on` |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Station `off`/`on` |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads |
-| `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Furnace fire south + `furnace-smoke` origin while working |
+| `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
 | `motion.ts` | HUD-only binds (`paintMotion` clock / day / research / fps / dash / queue) |
@@ -38,13 +38,13 @@ Chrome SVG never enters the atlas. Map tiles never enter `svgs.ts`.
 Bottom → top, one container each:
 
 1. `ground` — owned terrain + fade. Chunk containers. `CullerPlugin`.
-2. `plots` — tilled / plant / weed / turf / rock / tree / tuft. Origin-only for multi-cell. Dirt lip / inset: 24-unit content fills the cell; pad paints onto the neighbour.
+2. `plots` — tilled / plant / weed / turf / rock / tree / tuft / burrow cover. Origin-only for multi-cell. Dirt lip / inset: 24-unit content fills the cell; pad paints onto the neighbour.
 3. `vfx.ground` — the dig patch only. Ground the sim has not tilled yet, so it paints above `plots` and below everything that stands on it.
 4. `pipes` — joints, valves, sprinklers, fences. Always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku. Wetness tint and sprinkler AoE wash still lens / tool. `pipe-source` on every `World.sources()` occupied cell only while that overlay is on. Not faint. Hidden otherwise.
 5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working.
 6. `actors` — in-seat gardeners, field vehicles / trailers, drops. Seated gardener hidden. Drops: 2×2 pack, `DROP_INSET` then `DROP_STEP`.
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`.
-8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `VFX_REDUCED`: state frame 0, bursts do not mount.
+8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
 
 HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
 
@@ -86,7 +86,7 @@ A product a Variety renames also carries its own face, and one selector says whi
 
 `faceKey` / `itemInner` take Variety, not a ladder. Graft face. Station prop `off` / `on`. Faces carry no Quality mark; Quality is copy — [[ui/inspect]].
 
-`EDGE_PAD` 4 — preference. Raster `dirt-edge` / `dirt-inset` with 4 viewBox units on every side (32×32 source, then 2×). Equal pad keeps the 24-unit cell at texture center. Other atlas keys stay viewBox-tight. `tile-dirt-edge.svg` / `tile-dirt-inset.svg` overhang the 24-unit grid (edge paths to y=26, inset from -3,-3); a viewBox-tight raster clips the lip. [[art/tilled-edges]]
+`EDGE_PAD` 4 — preference. `PADDED` is the list of keys that raster with 4 viewBox units on every side (32×32 source, then 2×): `dirt-edge` / `dirt-inset` and `tile-kerb`. Equal pad keeps the 24-unit cell at texture center. Other atlas keys stay viewBox-tight. Those files overhang the 24-unit grid on purpose; a viewBox-tight raster clips the lip. [[art/tilled-edges]] [[items/tiles]]
 
 ## Dirty
 
@@ -101,7 +101,7 @@ A product a Variety renames also carries its own face, and one selector says whi
 
 Patch uses existing `World` indexes and instance lists. Illegal on the tick or dirty path: `live`, `forEachCell`, `[...this.live.values()]`. First paint / `World` swap / `groundRev` rebuilds visible chunks the same way.
 
-Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Ground textures stay terrain. Station patches with `machines`.
+Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Ground textures stay terrain. Station patches with `machines`.
 
 `ping()` from tick only on discrete change. Continuous world chrome is the Pixi ticker (`QUAD_FOLLOW`, actor pose, speech follow, VFX cuts, burst drain). Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. FPS: [[ui/hud]]. Not a `DirtyReason`.
 
@@ -174,13 +174,16 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.flow` — The flow `Graphics` repaints on the Pixi ticker, never from a `DirtyReason`. It carries no frames and no sim state. Pipe dash direction is a view-local BFS from source vertices over conducting edges. Each half paints only while its own overlay is up: dashes with `pipesOverlay`, beads with the `sensors` lens. Faint pipe does not flow — nothing reads on a network you are not looking at.
 
-`view.edge` — Atlas rasters `dirt-edge` / `dirt-inset` with `EDGE_PAD` 4 viewBox units on every side (32×32 source). Other keys stay viewBox-tight. Equal pad keeps the 24-unit cell at texture center. Placement: 24-unit content fills the cell; lip/inset paint onto the neighbour.
+`view.edge` — Atlas rasters every key in `PADDED` with `EDGE_PAD` 4 viewBox units on every side (32x32 source): `dirt-edge` / `dirt-inset` and `tile-kerb`. Other keys stay viewBox-tight. Equal pad keeps the 24-unit cell at texture center. Placement: 24-unit content fills the cell; lip/inset paint onto the neighbour.
+
 
 `view.source` — `pipe-source` on pump / rain-tank occupied cells only while pipes overlay is on (`lens === 'pipes'` or place delete or a `PIPE_PLACE` sku). Not faint. Hidden otherwise. Joints stay always-on/faint.
 
 `view.drop` — Drop face scale `DROP_FACE / TILE` on a 24-unit atlas sprite. Pack `DROP_INSET` `DROP_STEP` 2×2. `dropHit` is that sprite rect; topmost wins; overflow into a neighbour still picks that drop. Constants next to `TILE` in `camera.ts`.
 
-`view.vfx.drain` — `VfxLayer.tick` drains `World.bursts` every frame. Do not wait for `DirtyReason` `'vfx'`. Vertex: sprite `anchor` 0.5 at the vertex (px). Cell: origin at the cell corner. `__view.vfxN` is visible VFX sprite count this frame. Locator `data-vfx` is not proof of paint. Working furnace mounts `furnace` at the south cell and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither.
+`view.vfx.drain` — `VfxLayer.tick` drains `World.bursts` every frame. Do not wait for `DirtyReason` `'vfx'`. Vertex: sprite `anchor` 0.5 at the vertex (px). Cell: origin at the cell corner. `__view.vfxN` is visible VFX sprite count this frame. Locator `data-vfx` is not proof of paint. Working furnace mounts `furnace` at the south cell and `furnace-smoke` at the origin cell (chimney). File `src/assets/vfx/vfx-furnace-smoke.svg`. Reduced motion: frame 0 both. Idle: neither. `col` / `row` may be fractional: a moving tractor mounts `exhaust` behind its live pose.
+
+`view.prop-motion` — `prop-pump.svg` splits into `body` and `arm`; `prop-mill.svg` into `body` and `sails`. `PropsLayer.tick` paints those moving parts, every Pixi frame, from a second `SpritePool` on the props container so they stay at prop depth. Mill sails carry `anchor` at the hub and turn by `rotation`, continuously while the mill works; they are the drawn sails transformed, never a second set of frames and never a stepped angle. The lift is a rounded sine of the ticker clock and runs only while a seat's head intent is `fill` on that pump. Reduced motion pins it at 0. Flow, not frames — [[art/vfx]].
 
 `view.variety` — Plant ripe, fruit, cask, tree ripe, and graft faces select the Variety's `tier` as its group. Never a ladder, never positional: one crop carries at most one `'variant'` and one `'heirloom'`. Unripe trees carry no Variety. `caskGroup` collapses `'variant'` onto `'base'`. HUD chrome uses the same selector in `svgs.ts`.
 
@@ -190,3 +193,4 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
 Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.
+Assumption: plots layer paints burrow cover from `World.burrows`; atlas key is later.

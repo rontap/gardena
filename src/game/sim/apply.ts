@@ -55,11 +55,13 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
     case Act.swap:
       w.swapBody(cmd.i)
       return
-    case Act.takeStore:
-      if (cmd.k === 'silo') store.takeSiloBody(w, cmd.c, cmd.r)
-      else if (cmd.k === 'sugar') store.takeSugarBody(w)
-      else store.takeAdditiveBody(w, cmd.d)
+    case Act.takeStore: {
+      const at = { col: cmd.s[0], row: cmd.s[1] }
+      if (cmd.k === 'silo') store.takeSiloBody(w, at, cmd.c, cmd.r)
+      else if (cmd.k === 'sugar') store.takeSugarBody(w, at)
+      else store.takeAdditiveBody(w, at, cmd.d)
       return
+    }
     case Act.swapChest:
       w.swapChestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.i)
       return

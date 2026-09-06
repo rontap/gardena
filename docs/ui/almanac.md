@@ -17,7 +17,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
-| `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation |
+| `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow |
 
 Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, label **Overview**, no icon. Tab-scoped id `'overview'`. Tab click on those three lands Overview.
 
@@ -93,9 +93,11 @@ ConceptId =
   | 'family'
   | 'research'
   | 'automation'
+  | 'luck'
+  | 'burrow'
 ```
 
-Labels: Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation.
+Labels: Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow.
 
 Left-list: SKU rows keep `itemInner`. Overview and concept rows: title only, no icon plate.
 
@@ -103,7 +105,7 @@ Right pane: SKU → existing Pane. Concept → concept pane. Overview → Overvi
 
 Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
 
-Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not.
+Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not. `{ tab: 'concepts', id: 'luck' | 'burrow' }` is legal.
 
 ## AlmanacLink
 
@@ -158,6 +160,12 @@ Automation here is the **concept page**, not a second copy of the SKU tab.
 **Variety** is what the plant is. Identity, not a ladder. Two Varieties of the same crop are siblings. Copy: **Variety is what the plant is. Potato and Bintje are two Varieties of potato — siblings, not steps. Each Variety is good for one of three things: Fresh, the fruit sold as it is; Preserving, the Jam machine and the Mill; or Alcohol, the Pot still and the Barrel. The Market pays more for a Variety used the way it is meant, and less for one used any other way. The plain crop is even at all three.**
 
 **Quality** is how well the plant was treated. A percent. Sale, seed carry, stack average. Bought seed starts at nothing. Copy: **Quality is how well the plant was treated, shown as a percent. The Market pays more for higher Quality fruit of the same Variety. A seed you shovel keeps that plant's Quality, and a stack of the same Variety averages Quality. Seed you buy starts at 0%. Happiness while the plant grows is the live care; Quality is set when the fruit ripens. Tree fruit is 0%.**
+
+**Luck** and **Burrow** are Game concepts, not SKU rows. Coin for money. Inspect does not name loot. No luck HUD chip. Doorway: Skills, each other. Not a roster of loot. [[mechanics/burrow]]
+
+**Luck** is what Lucky sets when a burrow appears. Copy: **Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the shop does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.**
+
+**Burrow** is a hole in untilled ground. Copy: **A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Hold treasure and click a plot you own: Open treasure. That adds the money it holds. The Market does not take treasure.**
 
 ## TreePane
 

@@ -23,6 +23,7 @@
   "hud_silo_quality": "Quality {n}%",
   "hud_shop_seed": "· Quality {n}%",
   "hud_line_compost": "{name} - {count}, compost it",
+  "hud_line_treasure": "Treasure - {coins}",
   "hud_clock_sec": "{secs} sec",
   "hud_shelf_seeds": "Seeds",
   "hud_shelf_seeds_line": "Sow on tilled soil.",

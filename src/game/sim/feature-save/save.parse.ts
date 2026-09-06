@@ -164,6 +164,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     wells: live.wells,
     sprinklers: save.sprinklers,
     fences: save.fences,
+    paving: save.paving,
     drops: save.drops,
   }
   return World.hydrate(h)
@@ -285,7 +286,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
 function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
   switch (cell.kind) {
     case 'untilled':
-      return { kind: 'untilled', ground: cell.ground, cover: cell.cover }
+      return { kind: 'untilled', ground: cell.ground, hardness: cell.hardness, cover: cell.cover }
     case 'empty':
       return { kind: 'empty', soil: makeSoil(cell.soil) }
     case 'infertile':
@@ -438,12 +439,22 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'hangar':
       return new Hangar(cell.base)
-    case 'silo-seed':
-      return new SiloSeed(cell.base)
-    case 'silo-spray':
-      return new SiloSpray(cell.base)
-    case 'silo-produce':
-      return new SiloProduce(cell.base)
+    case 'silo-seed': {
+      const made = new SiloSeed(cell.base)
+      cell.seeds.forEach(st => made.seeds.push({ ...st }))
+      return made
+    }
+    case 'silo-spray': {
+      const made = new SiloSpray(cell.base)
+      cell.held.forEach(h => made.held.push({ ...h }))
+      made.sugar = { ...cell.sugar }
+      return made
+    }
+    case 'silo-produce': {
+      const made = new SiloProduce(cell.base)
+      cell.slots.forEach((s, i) => (made.slots[i] = s))
+      return made
+    }
     case 'truck':
       return new Truck(cell.base)
     case 'lever': {

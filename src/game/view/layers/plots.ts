@@ -5,7 +5,7 @@ import { tierOf } from '../../defs/varieties.ts'
 import { fertBand, waterBand, SOIL_WATER_MAX } from '../../sim/soil.ts'
 import type { World } from '../../sim/world.ts'
 import { EDGE_PAD, TILE, tileVariant } from '../camera.ts'
-import { atlasTex, cropKey, ripeStage, treeAtlasStage } from '../atlas.ts'
+import { atlasTex, cropKey, ripeStage, treeAtlasStage, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 
 const WHITE = Texture.WHITE
@@ -52,6 +52,13 @@ export class PlotsLayer {
         s.position.set(at.col * TILE, at.row * TILE)
       }
     }
+    for (const at of world.burrows.values()) {
+      const cell = world.cell(at)
+      if (cell.kind === 'untilled' && cell.cover.kind === 'burrow') {
+        const s = this.pool.take(atlasTex(tileVariant(at.col, at.row, 2) === 0 ? 'burrow' : 'burrow-1'))
+        s.position.set(at.col * TILE, at.row * TILE)
+      }
+    }
     for (const at of world.rocks.values()) {
       const cell = world.cell(at)
       if (cell.kind !== 'rock') continue
@@ -61,7 +68,9 @@ export class PlotsLayer {
         s.rotation = Math.PI / 2
         continue
       }
-      const s = this.pool.take(atlasTex(cell.base.w === 2 && cell.base.h === 1 ? 'rock-long' : 'rock'))
+      const wide = cell.base.w === 2 && cell.base.h === 1
+      const key: AtlasKey = wide ? 'rock-long' : tileVariant(at.col, at.row, 2) === 0 ? 'rock' : 'rock-1'
+      const s = this.pool.take(atlasTex(key))
       s.position.set(at.col * TILE, at.row * TILE)
     }
     this.pool.end()

@@ -24,7 +24,7 @@ VarietyId    = base | bintje | red-fife | green-zebra | san-marzano | black-rasp
              | arbequina | bing
 ```
 
-`ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
+`ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
 
 Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`. Illegal: optional `quality`. Illegal: optional `cut`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
 
@@ -62,6 +62,16 @@ Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`
 
 Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `rotten` — `crop: CropId` only. Illegal: grass as a nullable index; it is a `Cover` arm. Illegal: `untilled` without `ground` and `cover`.
 
+```
+Cover =
+  | { kind: 'bare' }
+  | { kind: 'grass'; variant: 0 | 1 | 2 }
+  | { kind: 'tile'; tile: TileId }
+  | { kind: 'burrow'; loot: LootItem }
+```
+
+Burrow is untilled cover, not a `Cell` kind. `loot` required. Illegal: optional `loot`. `LootItem` shovel id is `'better-shovel'` only; pickaxe id is `'better-pickaxe'` only. Not solid. Walk ok. [[mechanics/burrow]]
+
 `Plant.tended: boolean` required, starts `false`, same instance through ripe / dead. `Plant.variety` `Plant.quality` required. `Tree.tended: boolean` required, starts `false`. `Tree.variety` required. [[architecture/family]] [[architecture/tree]].
 
 ## Place
@@ -78,7 +88,7 @@ Confirm: cell buildings and item drops set `none` except StayArmed sensor cells 
 
 `graft` is `{ act: 'graft'; at: Coord }`. `dest` = `at`. Hold a graft. Never plants.
 
-`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station)` = `at`. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
+`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station)` = `at`. `dest(open)` = `at`. `{ act: 'open'; at }`. Enqueue, no new `Act` letter. Work 0. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
 
 No `World.pulse`. No `Pulse` type. Last-action highlight gone. Not a cmd. Not Save. `say` / `grantPoint` stay.
 
@@ -96,7 +106,7 @@ Crop goods: stock and worth per variety × `bio`. Illegal: fruit consign that dr
 
 ## Hand / Item
 
-No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required.
+No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required. `{ kind: 'treasure'; coins: number }`. `coins` required. Illegal: `treasure.count`. Not countable.
 
 ```
 Spirit =
@@ -106,11 +116,13 @@ Spirit =
 
 ## Recap / Seam
 
-Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants `POINTS_PER_DAY` to `World.points`, then play. Seam bills pump then copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]] [[mechanics/weather]].
+Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants `POINTS_PER_DAY` to `World.points`, then play. Seam bills pump, mints burrows, then copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]].
 
 ## Family
 
 `World.family: Family` always. Offers, owned, pickCount per member. Shared `World.points`. [[architecture/family]].
+
+Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. Illegal: `World.luck`.
 
 `offers` length 0..3. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`, `'base'` quality 0. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier` including `haggling`, ignores gates, rebuilds modifiers, empties offers. `cheatFastResearch` multiplies job drain by 3 on top of Speedy research. `cheatMoney` `+200`. `cheatPoints` `+10` to the shared bank. End day sets `clock.t = DAY_SECONDS`.
 
@@ -146,6 +158,7 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 | recover | tilled with `weedChance < WEED_CHANCE` |
 | empty | empty plots |
 | tilled | `isTilled` |
+| burrows | untilled `cover.kind === 'burrow'` |
 
 `tickField` grow+recover. `tickMachines` machines (compost-box in the same loop). `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
 
@@ -184,7 +197,7 @@ Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the s
 
 No `World.ripenN`. No grow stream. [[architecture/rng]]
 
-Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only. `clock.t` or `money` as entropy.
+Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only. Burrow site `at(cx, cy, day, k)`. Burrow loot `at(col, row, salt)`. `clock.t` or `money` as entropy.
 
 ## Weather
 
@@ -198,7 +211,7 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 
 ## Invariants
 
-`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station)` is `at`.
+`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station)` is `at`. `dest(open)` is `at`.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
 

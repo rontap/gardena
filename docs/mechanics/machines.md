@@ -15,7 +15,7 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 
 ## Buildings
 
-1×1 except still, station and furnace. Place like chest. Still and station: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station`.
+1×1 except mill, still, station and furnace. Place like chest. Still and station: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Mill: `RectBase` `w = MILL_W` `h = MILL_H`, origin NW, no rotate, same instance all four cells, `squareSiteOk`, hover origin extends east and south; pads two cells wide. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station`.
 
 | class | `kind` | sku | unlock |
 |---|---|---|---|
@@ -94,7 +94,9 @@ A chest between two machines is A's output and B's input.
 
 **Pull** — each `BIG_TICK`, origin only: if west neighbor is chest/freezer, dump-all legal from its slots into the machine. Same accept as walk dump. Slot order `0..n-1`. Until hopper/cap full. Compost consumes the whole slot. Empty box cargo stays in the box. Then compact. `inn === 1` still fills.
 
-**Push** — on produce, not on big tick. If east neighbor is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `frontOf` / `dropSpot` (no plot → wait).
+**Push** — on produce, not on big tick. If east neighbor is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `dropSpot` (no plot → wait).
+
+`dropSpot(base)` walks `frontOfBase(base)`: the whole south row of the footprint, then the west column, then the east column, then the north row, and takes the first free plot. It is the footprint's ring, not the origin cell's four neighbours. A 2x2 mill or a 1x2 furnace would otherwise offer its own second cell as the first candidate and drop to the side instead of the front. Chopping a tree takes the same ring off `Tree.base`.
 
 Machines: mill, jam, still, compost-box, grinder, furnace, station. Not barrel.
 
@@ -386,7 +388,7 @@ Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is
 
 `machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
 
-`machines.io-push` — Produce inserts into the east store if present; else `frontOf`. East store full → wait.
+`machines.io-push` — Produce inserts into the east store if present; else `dropSpot(base)`, the first free plot on the footprint ring: south row, west column, east column, north row. East store full → wait. Never a cell the building itself occupies.
 
 `machines.grind-hopper` — Grinder is a hopper. Locks crop + variety. `GRIND_WORK` 12 — preference. Mill-like tick. Not actor work. Seeds do not merge into house.
 

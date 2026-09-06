@@ -39,6 +39,7 @@ import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
+import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
 import itemSpiritBrandy from '../../assets/items/item-spirit-brandy.svg?raw'
@@ -117,6 +118,7 @@ import fenceL from '../../assets/joints/fence-l.svg?raw'
 import fenceT from '../../assets/joints/fence-t.svg?raw'
 import fenceX from '../../assets/joints/fence-x.svg?raw'
 import itemPaved from '../../assets/items/item-paved.svg?raw'
+import itemAsphalt from '../../assets/items/item-asphalt.svg?raw'
 import itemBrick from '../../assets/items/item-brick.svg?raw'
 import itemCobble from '../../assets/items/item-cobble.svg?raw'
 import uiResearchLandscape from '../../assets/ui/ui-research-landscape.svg?raw'
@@ -216,6 +218,7 @@ import veryHard0 from '../../assets/tiles/tile-very-hard-0.svg?raw'
 import veryHard1 from '../../assets/tiles/tile-very-hard-1.svg?raw'
 import veryHard2 from '../../assets/tiles/tile-very-hard-2.svg?raw'
 import tilePaved from '../../assets/tiles/tile-paved.svg?raw'
+import tileAsphalt from '../../assets/tiles/tile-asphalt.svg?raw'
 import tileBrick from '../../assets/tiles/tile-brick.svg?raw'
 import tileCobble from '../../assets/tiles/tile-cobble.svg?raw'
 import uiBtn from '../../assets/ui/ui-btn.svg?raw'
@@ -256,6 +259,7 @@ import skillOpenLate from '../../assets/skills/skill-open-late.svg?raw'
 import skillOpen24 from '../../assets/skills/skill-open-24.svg?raw'
 import skillJam from '../../assets/skills/skill-jam.svg?raw'
 import skillClearance from '../../assets/skills/skill-clearance.svg?raw'
+import skillLucky from '../../assets/skills/skill-lucky.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
 import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
 import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
@@ -396,37 +400,37 @@ export function cropInner(id: CropId, stage: string): string {
 
 export function itemInner(item: Face): string {
   if (item.kind === 'tile') return TILE_ICON[item.tile]
-  if (item.kind === 'fence') return inner(itemFence)
-  if (item.kind === 'pumpjack') return `<g transform="translate(0,6) scale(0.5)">${inner(pump)}</g>`
-  if (item.kind === 'chest') return inner(itemChest)
-  if (item.kind === 'grinder') return inner(itemGrinder)
+  if (item.kind === 'fence') return svgInner(itemFence)
+  if (item.kind === 'pumpjack') return `<g transform="translate(0,6) scale(0.5)">${svgInner(pump)}</g>`
+  if (item.kind === 'chest') return svgInner(itemChest)
+  if (item.kind === 'grinder') return svgInner(itemGrinder)
   if (item.kind === 'compost-box') return COMPOST_BOX
-  if (item.kind === 'well') return inner(itemWell)
-  if (item.kind === 'pipe') return inner(itemPipe)
-  if (item.kind === 'sprinkler') return inner(itemSprinkler)
-  if (item.kind === 'sprinkler-vert') return inner(itemSprinklerVert)
-  if (item.kind === 'sprinkler-large') return inner(itemSprinklerLarge)
-  if (item.kind === 'valve') return inner(itemValve)
-  if (item.kind === 'rain-tank') return inner(itemRainTank)
-  if (item.kind === 'tap') return inner(itemTap)
-  if (item.kind === 'water') return inner(uiWater)
-  if (item.kind === 'mill') return inner(itemMill)
-  if (item.kind === 'jam-machine') return inner(itemJamMachine)
-  if (item.kind === 'still') return inner(itemStill)
-  if (item.kind === 'barrel') return inner(itemBarrel)
-  if (item.kind === 'freezer') return inner(itemFreezer)
-  if (item.kind === 'furnace') return inner(itemFurnace)
+  if (item.kind === 'well') return svgInner(itemWell)
+  if (item.kind === 'pipe') return svgInner(itemPipe)
+  if (item.kind === 'sprinkler') return svgInner(itemSprinkler)
+  if (item.kind === 'sprinkler-vert') return svgInner(itemSprinklerVert)
+  if (item.kind === 'sprinkler-large') return svgInner(itemSprinklerLarge)
+  if (item.kind === 'valve') return svgInner(itemValve)
+  if (item.kind === 'rain-tank') return svgInner(itemRainTank)
+  if (item.kind === 'tap') return svgInner(itemTap)
+  if (item.kind === 'water') return svgInner(uiWater)
+  if (item.kind === 'mill') return svgInner(itemMill)
+  if (item.kind === 'jam-machine') return svgInner(itemJamMachine)
+  if (item.kind === 'still') return svgInner(itemStill)
+  if (item.kind === 'barrel') return svgInner(itemBarrel)
+  if (item.kind === 'freezer') return svgInner(itemFreezer)
+  if (item.kind === 'furnace') return svgInner(itemFurnace)
   if (item.kind === 'station') return stageOnly(itemStation, 'off')
-  if (item.kind === 'hangar') return inner(itemHangar)
-  if (item.kind === 'silo-seed') return inner(itemSiloSeed)
-  if (item.kind === 'silo-spray') return inner(itemSiloSpray)
-  if (item.kind === 'silo-produce') return inner(itemSiloProduce)
+  if (item.kind === 'hangar') return svgInner(itemHangar)
+  if (item.kind === 'silo-seed') return svgInner(itemSiloSeed)
+  if (item.kind === 'silo-spray') return svgInner(itemSiloSpray)
+  if (item.kind === 'silo-produce') return svgInner(itemSiloProduce)
   if (item.kind === 'lever') return stageOnly(itemLever, 'off')
   if (item.kind === 'button') return stageOnly(itemButton, 'off')
   if (item.kind === 'lamp') return stageOnly(itemLamp, 'off')
-  if (item.kind === 'or') return inner(itemOr)
-  if (item.kind === 'and') return inner(itemAnd)
-  if (item.kind === 'not') return inner(itemNot)
+  if (item.kind === 'or') return svgInner(itemOr)
+  if (item.kind === 'and') return svgInner(itemAnd)
+  if (item.kind === 'not') return svgInner(itemNot)
   if (item.kind === 'pulser') return stageOnly(itemPulser, 'off')
   if (item.kind === 'counter') return stageOnly(itemCounter, 's0')
   if (item.kind === 'sensor-water') return stageOnly(itemSensorWater, 'blue')
@@ -436,46 +440,47 @@ export function itemInner(item: Face): string {
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
   if (item.kind === 'traffic-light') return stageOnly(itemTrafficLight, 'off')
-  if (item.kind === 'delete') return inner(itemDelete)
+  if (item.kind === 'delete') return svgInner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
-  if (item.kind === 'grass') return inner(itemGrass)
+  if (item.kind === 'grass') return svgInner(itemGrass)
   if (item.kind === 'grass-seeds') return turfInner('grow')
   if (item.kind === 'rotten') return rottenInner(item.cls)
   if (item.kind === 'dead') return deadInner(item.cls)
   if (item.kind === 'shovel') return SHOVEL_ART[item.id]
   if (item.kind === 'pickaxe') return PICKAXE_ART[item.id]
-  if (item.kind === 'axe') return inner(itemAxe)
+  if (item.kind === 'axe') return svgInner(itemAxe)
   if (item.kind === 'container') {
-    if (item.id === 'bucket') return inner(bucket)
-    return inner(largeBucket)
+    if (item.id === 'bucket') return svgInner(bucket)
+    return svgInner(largeBucket)
   }
-  if (item.kind === 'fertilizer') return inner(itemFertilizer)
-  if (item.kind === 'weed-spray') return inner(itemWeedSpray)
-  if (item.kind === 'synth') return inner(itemSynth)
-  if (item.kind === 'compost') return inner(itemCompost)
+  if (item.kind === 'fertilizer') return svgInner(itemFertilizer)
+  if (item.kind === 'weed-spray') return svgInner(itemWeedSpray)
+  if (item.kind === 'synth') return svgInner(itemSynth)
+  if (item.kind === 'compost') return svgInner(itemCompost)
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
-  if (item.kind === 'sugar') return inner(itemSugar)
+  if (item.kind === 'sugar') return svgInner(itemSugar)
   if (item.kind === 'spirit') return SPIRIT_ART[spiritArt(item.spirit, item.variety)]
   if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], caskGroup(item.variety))
-  if (item.kind === 'jam') return inner(JAM_ART[jamArt(item.crop, item.variety)])
-  if (item.kind === 'oil') return inner(itemOil)
-  if (item.kind === 'flour') return inner(itemFlour)
-  if (item.kind === 'extract') return inner(itemExtract)
+  if (item.kind === 'jam') return svgInner(JAM_ART[jamArt(item.crop, item.variety)])
+  if (item.kind === 'oil') return svgInner(itemOil)
+  if (item.kind === 'flour') return svgInner(itemFlour)
+  if (item.kind === 'extract') return svgInner(itemExtract)
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
   if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.variety))
-  if (item.kind === 'wood') return inner(itemWood)
-  if (item.kind === 'ash') return inner(itemAsh)
+  if (item.kind === 'wood') return svgInner(itemWood)
+  if (item.kind === 'ash') return svgInner(itemAsh)
+  if (item.kind === 'treasure') return svgInner(itemTreasure)
   const _x: never = item
   return _x
 }
 
 const SPIRIT_ART: { readonly [K in SpiritArt]: string } = {
-  'spirit-vodka': inner(itemSpiritVodka),
-  'spirit-beer': inner(itemSpiritBeer),
-  'spirit-brandy': inner(itemSpiritBrandy),
-  'spirit-mixed': inner(itemSpiritMixed),
-  'spirit-palinka': inner(itemSpiritPalinka),
+  'spirit-vodka': svgInner(itemSpiritVodka),
+  'spirit-beer': svgInner(itemSpiritBeer),
+  'spirit-brandy': svgInner(itemSpiritBrandy),
+  'spirit-mixed': svgInner(itemSpiritMixed),
+  'spirit-palinka': svgInner(itemSpiritPalinka),
 }
 
 const JAM_ART: { readonly [K in JamArt]: string } = {
@@ -517,39 +522,41 @@ export function skuInner(id: SkuId): string {
 }
 
 export const BUILDING_TILES: { readonly [K in TileId]: string } = {
-  paved: inner(tilePaved),
-  brick: inner(tileBrick),
-  cobble: inner(tileCobble),
+  asphalt: svgInner(tileAsphalt),
+  paved: svgInner(tilePaved),
+  brick: svgInner(tileBrick),
+  cobble: svgInner(tileCobble),
 }
 
 export const TILE_ICON: { readonly [K in TileId]: string } = {
-  paved: inner(itemPaved),
-  brick: inner(itemBrick),
-  cobble: inner(itemCobble),
+  asphalt: svgInner(itemAsphalt),
+  paved: svgInner(itemPaved),
+  brick: svgInner(itemBrick),
+  cobble: svgInner(itemCobble),
 }
 
 const SHOVEL_ART: { readonly [K in ShovelId]: string } = {
-  shovel: inner(shovel),
-  'better-shovel': inner(better),
-  'rotary-shovel': inner(rotaryShovel),
+  shovel: svgInner(shovel),
+  'better-shovel': svgInner(better),
+  'rotary-shovel': svgInner(rotaryShovel),
 }
 
 const PICKAXE_ART: { readonly [K in PickaxeId]: string } = {
-  pickaxe: inner(pickaxe),
-  'better-pickaxe': inner(betterPickaxe),
-  'diamond-pickaxe': inner(diamondPickaxe),
+  pickaxe: svgInner(pickaxe),
+  'better-pickaxe': svgInner(betterPickaxe),
+  'diamond-pickaxe': svgInner(diamondPickaxe),
 }
 
 export function turfInner(stage: 'sprout' | 'grow'): string {
   return stageOnly(cropGrass, stage)
 }
 
-export const FENCE_POST = inner(fencePost)
-export const FENCE_STUB = inner(fenceStub)
-export const FENCE_I = inner(fenceI)
-export const FENCE_L = inner(fenceL)
-export const FENCE_T = inner(fenceT)
-export const FENCE_X = inner(fenceX)
+export const FENCE_POST = svgInner(fencePost)
+export const FENCE_STUB = svgInner(fenceStub)
+export const FENCE_I = svgInner(fenceI)
+export const FENCE_L = svgInner(fenceL)
+export const FENCE_T = svgInner(fenceT)
+export const FENCE_X = svgInner(fenceX)
 
 export function fenceFit(n: boolean, e: boolean, s: boolean, w: boolean): { html: string; rot: number } {
   const d = Number(n) + Number(e) + Number(s) + Number(w)
@@ -584,11 +591,11 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-raspberry':
       return stageOnly(FRUIT.raspberry, 'base')
     case 'unlock-fermentation':
-      return inner(itemStill)
+      return svgInner(itemStill)
     case 'unlock-preservatives':
-      return inner(itemJamMachine)
+      return svgInner(itemJamMachine)
     case 'unlock-heirloom':
-      return inner(skillHeirloom)
+      return svgInner(skillHeirloom)
     case 'unlock-irrigation':
       return itemInner({ kind: 'tap' })
     case 'unlock-water-storage':
@@ -600,37 +607,37 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-grinder':
       return itemInner({ kind: 'grinder' })
     case 'unlock-pickaxe':
-      return inner(pickaxe)
+      return svgInner(pickaxe)
     case 'unlock-fertilizer':
-      return inner(uiResearchFertilizer)
+      return svgInner(uiResearchFertilizer)
     case 'unlock-crop-variants':
-      return inner(uiResearchCropVariants)
+      return svgInner(uiResearchCropVariants)
     case 'unlock-better-tools':
-      return inner(uiResearchTools)
+      return svgInner(uiResearchTools)
     case 'unlock-auto-irrigation':
-      return inner(uiResearchAuto)
+      return svgInner(uiResearchAuto)
     case 'unlock-adv-irrigation':
-      return inner(uiResearchAdv)
+      return svgInner(uiResearchAdv)
     case 'unlock-expand':
     case 'expand-land':
     case 'eminent-domain':
-      return inner(uiResearchExpand)
+      return svgInner(uiResearchExpand)
     case 'unlock-landscaping':
-      return inner(uiResearchLandscape)
+      return svgInner(uiResearchLandscape)
     case 'unlock-vehicles':
-      return inner(itemHangar)
+      return svgInner(itemHangar)
     case 'unlock-dispatch':
       return stageOnly(itemTrafficLight, 'off')
     case 'unlock-sensors':
       return stageOnly(itemLever, 'off')
     case 'unlock-advanced-sensors':
-      return inner(itemAnd)
+      return svgInner(itemAnd)
     case 'unlock-smart-irrigation':
-      return inner(uiResearchSmart)
+      return svgInner(uiResearchSmart)
     case 'unlock-contracts':
-      return inner(skillContracts)
+      return svgInner(skillContracts)
     case 'unlock-furnace':
-      return inner(itemFurnace)
+      return svgInner(itemFurnace)
   }
 }
 
@@ -674,20 +681,20 @@ export function pipeFit(
   return { html: PIPE_L, rot: 270 }
 }
 
-export const ACTOR = inner(actor)
-export const HOUSE = inner(house)
-export const PUMP = inner(pump)
-export const WELL = inner(propWell)
-export const TRUCK = inner(propTruck)
-export const CHEST = inner(chest)
-export const GRINDER = inner(grinder)
-export const LINK_IN = inner(propLinkIn)
-export const LINK_OUT = inner(propLinkOut)
-export const MILL = inner(propMill)
-export const STILL = inner(propStill)
-export const BARREL = inner(propBarrel)
-export const JAM = inner(propJam)
-export const FREEZER = inner(propFreezer)
+export const ACTOR = svgInner(actor)
+export const HOUSE = svgInner(house)
+export const PUMP = svgInner(pump)
+export const WELL = svgInner(propWell)
+export const TRUCK = svgInner(propTruck)
+export const CHEST = svgInner(chest)
+export const GRINDER = svgInner(grinder)
+export const LINK_IN = svgInner(propLinkIn)
+export const LINK_OUT = svgInner(propLinkOut)
+export const MILL = svgInner(propMill)
+export const STILL = svgInner(propStill)
+export const BARREL = svgInner(propBarrel)
+export const JAM = svgInner(propJam)
+export const FREEZER = svgInner(propFreezer)
 export function furnaceArt(on: boolean): string {
   return stageOnly(propFurnace, on ? 'on' : 'off')
 }
@@ -696,50 +703,50 @@ export function stationArt(on: boolean): string {
   return stageOnly(propStation, on ? 'on' : 'off')
 }
 export const STATION = stationArt(false)
-export const HANGAR = inner(propHangar)
-export const QUAD = inner(propQuad)
-export const TRACTOR = inner(propTractor)
-export const TRAILER_SEED = inner(propTrailerSeed)
-export const TRAILER_SPRAY = inner(propTrailerSpray)
-export const TRAILER_HARVEST = inner(propTrailerHarvest)
-export const TRAILER_RAKE = inner(propTrailerRake)
-export const SILO_SEED = inner(propSiloSeed)
-export const SILO_SPRAY = inner(propSiloSpray)
-export const SILO_PRODUCE = inner(propSiloProduce)
-export const ITEM_TRACTOR = inner(itemTractor)
-export const ITEM_TRAILER_SEED = inner(itemTrailerSeed)
-export const ITEM_TRAILER_SPRAY = inner(itemTrailerSpray)
-export const ITEM_TRAILER_HARVEST = inner(itemTrailerHarvest)
-export const HANGAR_RETURN = inner(uiHangarReturn)
-export const PAD_DROP = inner(uiPadDrop)
-export const PAD_TAKE = inner(uiPadTake)
+export const HANGAR = svgInner(propHangar)
+export const QUAD = svgInner(propQuad)
+export const TRACTOR = svgInner(propTractor)
+export const TRAILER_SEED = svgInner(propTrailerSeed)
+export const TRAILER_SPRAY = svgInner(propTrailerSpray)
+export const TRAILER_HARVEST = svgInner(propTrailerHarvest)
+export const TRAILER_RAKE = svgInner(propTrailerRake)
+export const SILO_SEED = svgInner(propSiloSeed)
+export const SILO_SPRAY = svgInner(propSiloSpray)
+export const SILO_PRODUCE = svgInner(propSiloProduce)
+export const ITEM_TRACTOR = svgInner(itemTractor)
+export const ITEM_TRAILER_SEED = svgInner(itemTrailerSeed)
+export const ITEM_TRAILER_SPRAY = svgInner(itemTrailerSpray)
+export const ITEM_TRAILER_HARVEST = svgInner(itemTrailerHarvest)
+export const HANGAR_RETURN = svgInner(uiHangarReturn)
+export const PAD_DROP = svgInner(uiPadDrop)
+export const PAD_TAKE = svgInner(uiPadTake)
 export const UI_DASH_QUAD = uiDashQuad
 export const UI_DASH_TRACTOR = uiDashTractor
-export const UI_SLOT_DOWN = inner(uiSlotDown)
+export const UI_SLOT_DOWN = svgInner(uiSlotDown)
 export const UI_ARROW_INK = groupInner(uiArrowRight, 'ink')
 export const UI_ARROW_FILL = groupInner(uiArrowRight, 'fill')
-export const SEED_SILO = inner(propSeedSilo)
-export const ADDITIVE_STORE = inner(propAdditiveStore)
-export const SPRINKLER = inner(propSprinkler)
-export const SPRINKLER_VERT = inner(propSprinklerVert)
-export const SPRINKLER_LARGE = inner(propSprinklerLarge)
-export const PIPE_STUB = inner(pipeStub)
-export const PIPE_I = inner(pipeI)
-export const PIPE_L = inner(pipeL)
-export const PIPE_T = inner(pipeT)
-export const PIPE_X = inner(pipeX)
-export const PIPE_SOURCE = inner(pipeSource)
-export const RAIN_TANK = inner(propRainTank)
-export const TAP = inner(propTap)
+export const SEED_SILO = svgInner(propSeedSilo)
+export const ADDITIVE_STORE = svgInner(propAdditiveStore)
+export const SPRINKLER = svgInner(propSprinkler)
+export const SPRINKLER_VERT = svgInner(propSprinklerVert)
+export const SPRINKLER_LARGE = svgInner(propSprinklerLarge)
+export const PIPE_STUB = svgInner(pipeStub)
+export const PIPE_I = svgInner(pipeI)
+export const PIPE_L = svgInner(pipeL)
+export const PIPE_T = svgInner(pipeT)
+export const PIPE_X = svgInner(pipeX)
+export const PIPE_SOURCE = svgInner(pipeSource)
+export const RAIN_TANK = svgInner(propRainTank)
+export const TAP = svgInner(propTap)
 export function valveArt(open: boolean): string {
   return stageOnly(pipeValve, open ? 'open' : 'closed')
 }
 export const PROP_LEVER = propLever
 export const PROP_BUTTON = propButton
 export const PROP_LAMP = propLamp
-export const PROP_OR = inner(propOr)
-export const PROP_AND = inner(propAnd)
-export const PROP_NOT = inner(propNot)
+export const PROP_OR = svgInner(propOr)
+export const PROP_AND = svgInner(propAnd)
+export const PROP_NOT = svgInner(propNot)
 export function leverArt(on: boolean): string {
   return stageOnly(propLever, on ? 'on' : 'off')
 }
@@ -776,21 +783,21 @@ export function vehicleDetectorArt(on: boolean): string {
 export function trafficLightArt(on: boolean): string {
   return stageOnly(propTrafficLight, on ? 'on' : 'off')
 }
-export const OVERLAY_WATER = inner(overlayWater)
-export const ITEM_CHEST = inner(itemChest)
-export const ITEM_GRINDER = inner(itemGrinder)
-export const ROCK = inner(rock)
-export const ROCK_LONG = inner(rockLong)
+export const OVERLAY_WATER = svgInner(overlayWater)
+export const ITEM_CHEST = svgInner(itemChest)
+export const ITEM_GRINDER = svgInner(itemGrinder)
+export const ROCK = svgInner(rock)
+export const ROCK_LONG = svgInner(rockLong)
 const CASK_ART: { readonly [K in CaskId]: string } = {
   wine: itemWine,
   cider: itemCider,
 }
 
 export const TREE_SEED_ART: { readonly [K in TreeId]: string } = {
-  apple: inner(itemSeedApple),
-  apricot: inner(itemSeedApricot),
-  olive: inner(itemSeedOlive),
-  cherry: inner(itemSeedCherry),
+  apple: svgInner(itemSeedApple),
+  apricot: svgInner(itemSeedApricot),
+  olive: svgInner(itemSeedOlive),
+  cherry: svgInner(itemSeedCherry),
 }
 
 export const GRAFT_ART: { readonly [K in TreeId]: string } = {
@@ -800,7 +807,7 @@ export const GRAFT_ART: { readonly [K in TreeId]: string } = {
   cherry: itemGraftCherry,
 }
 
-export const APPLE_TREE = inner(appleTree)
+export const APPLE_TREE = svgInner(appleTree)
 export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe', variety: VarietyId): string {
   if (stage !== 'ripe') return stageOnly(TREE_PROP[id], stage)
   const g = tierOf(variety)
@@ -809,13 +816,13 @@ export function treeStage(id: TreeId, stage: 'trunk' | 'grow' | 'unripe' | 'ripe
 export function appleTreeStage(ripe: boolean): string {
   return treeStage('apple', ripe ? 'ripe' : 'unripe', 'base')
 }
-export const CROP_ROTTEN = inner(cropRotten)
+export const CROP_ROTTEN = svgInner(cropRotten)
 const WEED = [weed0, weed1] as const
 export function weedInner(variant: 0 | 1, stage: 'sprout' | 'grow'): string {
   return stageOnly(WEED[variant], stage)
 }
-export const GRASS_TUFT = [inner(propGrass0), inner(propGrass1), inner(propGrass2)] as const
-export const COMPOST_BOX = inner(propCompostBox)
+export const GRASS_TUFT = [svgInner(propGrass0), svgInner(propGrass1), svgInner(propGrass2)] as const
+export const COMPOST_BOX = svgInner(propCompostBox)
 export function rottenInner(cls: CropClass): string {
   return stageOnly(itemRotten, cls)
 }
@@ -823,25 +830,25 @@ export function deadInner(cls: CropClass): string {
   return stageOnly(itemDead, cls)
 }
 export const GRASS = [
-  inner(grass0),
-  inner(grass1),
-  inner(grass2),
-  inner(grass3),
-  inner(grass4),
-  inner(grass5),
-  inner(grass6),
-  inner(grass7),
+  svgInner(grass0),
+  svgInner(grass1),
+  svgInner(grass2),
+  svgInner(grass3),
+  svgInner(grass4),
+  svgInner(grass5),
+  svgInner(grass6),
+  svgInner(grass7),
 ] as const
-export const DIRT = [inner(dirt0), inner(dirt1)] as const
-export const DIRT_EDGE = inner(dirtEdge)
-export const DIRT_INSET = inner(dirtInset)
-export const HARD = [inner(hard0), inner(hard1), inner(hard2)] as const
-export const VERY_HARD = [inner(veryHard0), inner(veryHard1), inner(veryHard2)] as const
+export const DIRT = [svgInner(dirt0), svgInner(dirt1)] as const
+export const DIRT_EDGE = svgInner(dirtEdge)
+export const DIRT_INSET = svgInner(dirtInset)
+export const HARD = [svgInner(hard0), svgInner(hard1), svgInner(hard2)] as const
+export const VERY_HARD = [svgInner(veryHard0), svgInner(veryHard1), svgInner(veryHard2)] as const
 export const UI_BTN_IDLE = groupInner(uiBtn, 'idle')
 export const UI_BTN_HOVER = groupInner(uiBtn, 'hover')
 export const UI_BTN_DISABLED = groupInner(uiBtn, 'disabled')
-export const UI_COIN = inner(uiCoin)
-export const UI_COIN_SILVER = inner(uiCoinSilver)
+export const UI_COIN = svgInner(uiCoin)
+export const UI_COIN_SILVER = svgInner(uiCoinSilver)
 export const UI_METER = uiMeter
 export const UI_BTN_SHOP = uiBtnShop
 export const UI_BTN_BUILD = uiBtnBuild
@@ -858,47 +865,48 @@ export const UI_BTN_GEAR = uiBtnGear
 export const UI_BTN_PAUSE = uiBtnPause
 export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
-export const UI_MENU = inner(uiMenu)
-export const SKILL_POINT = inner(skillPoint)
+export const UI_MENU = svgInner(uiMenu)
+export const SKILL_POINT = svgInner(skillPoint)
 
-export const EXPAND_LAND = inner(uiResearchExpand)
+export const EXPAND_LAND = svgInner(uiResearchExpand)
 export const PORTRAIT: { readonly [K in MemberId]: string } = {
-  player: inner(portraitPlayer),
-  husband: inner(portraitHusband),
-  daughter: inner(portraitDaughter),
+  player: svgInner(portraitPlayer),
+  husband: svgInner(portraitHusband),
+  daughter: svgInner(portraitDaughter),
 }
 
 const SKILL_ART: { readonly [K in SkillId]: string } = {
-  boots: inner(skillBoots),
-  'bulk-up': inner(skillBulkUp),
-  'driving-classes': inner(skillDrivingClasses),
-  machinery: inner(skillMachinery),
-  tending: inner(skillTending),
-  'research-speed': inner(skillResearchSpeed),
-  haggling: inner(skillContracts),
-  broker: inner(skillBroker),
-  forecast: inner(skillForecast),
-  tax: inner(skillTax),
-  'water-study': inner(skillWaterStudy),
-  'land-study': inner(skillLandStudy),
-  'inherit-land': inner(uiResearchExpand),
-  saleswoman: inner(skillSaleswoman),
-  heirloom: inner(skillHeirloom),
-  'better-potato': inner(skillBetter),
-  'better-wheat': inner(skillBetter),
-  'better-tomato': inner(skillBetter),
-  'better-raspberry': inner(skillBetter),
-  'better-grape': inner(skillBetter),
-  'better-apple': inner(skillBetter),
-  'better-apricot': inner(skillBetter),
-  'better-olive': inner(skillBetter),
-  'better-cherry': inner(skillBetter),
-  bio: inner(skillBio),
-  industrial: inner(skillIndustrial),
-  'open-late': inner(skillOpenLate),
-  'open-24': inner(skillOpen24),
-  jam: inner(skillJam),
-  clearance: inner(skillClearance),
+  boots: svgInner(skillBoots),
+  'bulk-up': svgInner(skillBulkUp),
+  'driving-classes': svgInner(skillDrivingClasses),
+  machinery: svgInner(skillMachinery),
+  tending: svgInner(skillTending),
+  'research-speed': svgInner(skillResearchSpeed),
+  haggling: svgInner(skillContracts),
+  broker: svgInner(skillBroker),
+  forecast: svgInner(skillForecast),
+  tax: svgInner(skillTax),
+  'water-study': svgInner(skillWaterStudy),
+  'land-study': svgInner(skillLandStudy),
+  'inherit-land': svgInner(uiResearchExpand),
+  saleswoman: svgInner(skillSaleswoman),
+  heirloom: svgInner(skillHeirloom),
+  'better-potato': svgInner(skillBetter),
+  'better-wheat': svgInner(skillBetter),
+  'better-tomato': svgInner(skillBetter),
+  'better-raspberry': svgInner(skillBetter),
+  'better-grape': svgInner(skillBetter),
+  'better-apple': svgInner(skillBetter),
+  'better-apricot': svgInner(skillBetter),
+  'better-olive': svgInner(skillBetter),
+  'better-cherry': svgInner(skillBetter),
+  bio: svgInner(skillBio),
+  industrial: svgInner(skillIndustrial),
+  'open-late': svgInner(skillOpenLate),
+  'open-24': svgInner(skillOpen24),
+  jam: svgInner(skillJam),
+  clearance: svgInner(skillClearance),
+  lucky: svgInner(skillLucky),
 }
 
 export function fruitInner(crop: CropId): string {
@@ -918,31 +926,31 @@ const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: CropI
 }
 
 export function skillInner(id: SkillId): string {
-  if (id in BETTER_CROP) return `${fruitInner(BETTER_CROP[id as keyof typeof BETTER_CROP])}${inner(skillBetter)}`
+  if (id in BETTER_CROP) return `${fruitInner(BETTER_CROP[id as keyof typeof BETTER_CROP])}${svgInner(skillBetter)}`
   return SKILL_ART[id]
 }
 export const UI_MARKET_STALL = uiMarketStall
 export const COMPANY: { readonly [K in CompanyId]: string } = {
-  'whole-cart': inner(companyWholeCart),
-  'trade-jo': inner(companyTradeJo),
-  'halbert-eijn': inner(companyHalbertEijn),
-  'little-lid': inner(companyLittleLid),
-  mercanova: inner(companyMercanova),
-  intercrop: inner(companyIntercrop),
+  'whole-cart': svgInner(companyWholeCart),
+  'trade-jo': svgInner(companyTradeJo),
+  'halbert-eijn': svgInner(companyHalbertEijn),
+  'little-lid': svgInner(companyLittleLid),
+  mercanova: svgInner(companyMercanova),
+  intercrop: svgInner(companyIntercrop),
 }
-export const UI_RECAP_NIGHT = inner(uiRecapNight)
+export const UI_RECAP_NIGHT = svgInner(uiRecapNight)
 export const UI_PHASE: { readonly [K in DayPhase]: string } = {
-  sunrise: inner(uiPhaseSunrise),
-  day: inner(uiPhaseDay),
-  sunset: inner(uiPhaseSunset),
-  twilight: inner(uiPhaseTwilight),
+  sunrise: svgInner(uiPhaseSunrise),
+  day: svgInner(uiPhaseDay),
+  sunset: svgInner(uiPhaseSunset),
+  twilight: svgInner(uiPhaseTwilight),
 }
 export const UI_WEATHER: { readonly [K in WeatherKind]: string } = {
-  clear: inner(uiWeatherClear),
-  rain: inner(uiWeatherRain),
-  dry: inner(uiWeatherDry),
-  flood: inner(uiWeatherFlood),
-  drought: inner(uiWeatherDrought),
+  clear: svgInner(uiWeatherClear),
+  rain: svgInner(uiWeatherRain),
+  dry: svgInner(uiWeatherDry),
+  flood: svgInner(uiWeatherFlood),
+  drought: svgInner(uiWeatherDrought),
 }
 
 export type BtnState = 'idle' | 'hover' | 'selected' | 'disabled'
@@ -961,7 +969,7 @@ export function meterInner(filled: number, token: 'dirt' | 'leaf'): string {
   for (let i = 0; i < filled; i++) {
     raw = raw.replace(`id="fill-${i}" fill="#cfc6b0"`, `id="fill-${i}" fill="${color}"`)
   }
-  return inner(raw)
+  return svgInner(raw)
 }
 export const UI_HEADER = uiHeader
 export const UI_RAIL = uiRail
@@ -970,7 +978,7 @@ export const UI_CORNER_TR = uiCornerTr
 export const UI_CORNER_BR = uiCornerBr
 export const UI_CORNER_BL = uiCornerBl
 
-function inner(raw: string): string {
+export function svgInner(raw: string): string {
   return raw.replace(/^[\s\S]*?<svg[^>]*>/i, '').replace(/<\/svg>[\s\S]*$/i, '')
 }
 
@@ -991,7 +999,7 @@ export function svgViewBox(raw: string): string {
 }
 
 function stageOnly(raw: string, stage: string): string {
-  const body = inner(raw)
+  const body = svgInner(raw)
   return body.replace(/<g id="([^"]+)"/g, (_m, id: string) =>
     id === stage ? `<g id="${id}"` : `<g id="${id}" display="none"`,
   )

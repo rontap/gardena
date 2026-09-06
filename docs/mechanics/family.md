@@ -2,7 +2,7 @@
 
 Skill screen. Roles stay: player gardens, husband research, daughter stall. No Family class. No XP. `World.family` always.
 
-Ids: `player` | `husband` | `daughter`. Id unions: `sim/ids.ts`. Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)` — jam names the owned tier’s slower rot.
+Ids: `player` | `husband` | `daughter`. Id unions: `sim/ids.ts`. Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)` — jam names the owned tier’s slower rot. `lucky` name **Lucky**. Blurb: A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the shop does not sell as a pack. Each rank raises both. Burrows already on the farm do not change.
 
 Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. Owned maps are per member.
 
@@ -18,7 +18,7 @@ World.points — one shared bank, not per member
 
 Start: `World.points` 0, per member `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
 
-`bulk-up` max 3. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max.
+`bulk-up` max 3. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. `lucky` max 3. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max.
 
 Percent and money add per owned tier (`5+5+5`), they do not multiply. Jam uses `JAM_ROT` per owned tier.
 
@@ -69,6 +69,7 @@ Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: another 
 | `better-olive` | none |
 | `better-cherry` | none |
 | `bulk-up` | none |
+| `lucky` | none |
 | `driving-classes` | research `unlock-vehicles` done |
 | `broker` | research `unlock-contracts` done |
 | else | none |
@@ -138,8 +139,9 @@ Crop stall bins: stock + worth per variety × bio. Illegal: consign that drops `
 - broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5. Broker slots are always cash — the two prize slots are drawn from the base six — [[mechanics/contracts]]
 - industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
 - forecast: `{ kind: 'forecast' }`. HUD tomorrow iff owned. Blurb locked on [[mechanics/weather]]
+- lucky: `{ kind: 'lucky' }`. Luck `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. Loot roll: [[mechanics/burrow]]
 
-Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` `{ kind: 'better'; crop }` on husband / player. No `{ kind: 'dummy' }`. `vanilla-tending` is not a skill.
+Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` `{ kind: 'lucky' }` `{ kind: 'better'; crop }` on husband / player. No `{ kind: 'dummy' }`. `vanilla-tending` is not a skill.
 
 ## Invariants
 
@@ -147,7 +149,7 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 
 `family.lens` — Water lens only if husband owns `water-study`. Land lens if husband owns `land-study`. Vehicle interactions lens if `unlock-vehicles` done.
 
-`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per owned tier on `World.stackMax`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active. Daughter `heirloom` pays on variety tier `heirloom` of crop fruit, spirit, wine.
+`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per owned tier on `World.stackMax`. `lucky` max 3, gate none, `{ kind: 'lucky' }`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active. Daughter `heirloom` pays on variety tier `heirloom` of crop fruit, spirit, wine.
 
 `family.better-set` — `better-*` exists for potato wheat tomato raspberry grape apple apricot olive cherry. `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)`. Tree `better-*` is `saleMul` only.
 
@@ -156,3 +158,5 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 `family.hidden` — `haggling` gate `hidden`. Never in the offer pool. Effect still applies if owned. `unlockAllSkills` grants it at `maxTier`.
 
 `family.unlockSkills` — `unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.
+
+`family.lucky` — `PlayerSkillId` `lucky` maxTier 3, gate none, effect `{ kind: 'lucky' }`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. [[mechanics/burrow]]

@@ -1,6 +1,6 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
-import { hash, Rng } from './rng.ts'
+import { hash, Rng, Spatial } from './rng.ts'
 
 describe('0.9 rng', () => {
   test('Spatial.at / hash: same args, any call order → same u', () => {
@@ -16,5 +16,20 @@ describe('0.9 rng', () => {
     expect(b.stream('gen').at(0, 8, 9)).toBe(gen)
     expect(b.stream('grind').at(10, 12, 1, 0)).toBe(grind)
     expect(a.stream('grind').at(10, 12, 1, 1)).not.toBe(grind)
+  })
+})
+
+describe('rng.burrow', () => {
+  test('Spatial `burrow`. Site pick `at(cx, cy, day, k)`. Loot `at(col, row, salt)`. Not seq. Not `fruit.next()`.', () => {
+    const a = new Rng(7)
+    expect(a.stream('burrow').at(0, 0, 1, 0)).toBe(hash(7, 'burrow', 0, 0, 1, 0))
+    expect(a.stream('burrow').at(10, 12, 3)).toBe(hash(7, 'burrow', 10, 12, 3))
+    const fruit0 = a.consumed('fruit')
+    a.stream('burrow').at(1, 2, 3, 4)
+    expect(a.consumed('fruit')).toBe(fruit0)
+    expect(a.stream('burrow')).toBeInstanceOf(Spatial)
+    const b = new Rng(7)
+    expect(b.stream('burrow').at(0, 0, 1, 0)).toBe(a.stream('burrow').at(0, 0, 1, 0))
+    expect(b.stream('burrow').at(10, 12, 3)).toBe(a.stream('burrow').at(10, 12, 3))
   })
 })

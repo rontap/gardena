@@ -38,7 +38,7 @@ export function packSku(crop: AnnualId): SkuId | undefined {
   return crop === 'vanilla' ? undefined : (`pack-${crop}` as SkuId)
 }
 
-export type TileId = 'paved' | 'brick' | 'cobble'
+export type TileId = 'paved' | 'brick' | 'cobble' | 'asphalt'
 
 export type SpiritKind = 'vodka' | 'beer' | 'brandy' | 'mixed'
 
@@ -97,6 +97,7 @@ export type MemberId = 'player' | 'husband' | 'daughter'
 export type PlayerSkillId =
   | 'boots'
   | 'bulk-up'
+  | 'lucky'
   | 'driving-classes'
   | 'tending'
   | 'better-potato'
@@ -194,6 +195,7 @@ export type SkuId =
   | 'buy-tile-paved'
   | 'buy-tile-brick'
   | 'buy-tile-cobble'
+  | 'buy-tile-asphalt'
   | 'buy-fence'
   | 'pack-grass'
   | 'buy-mill'
@@ -305,3 +307,7 @@ export type VfxId =
   | 'furnace-smoke'
   | 'graft'
   | 'age'
+  | 'grind'
+  | 'station'
+  | 'exhaust'
+  | 'burrow-pop'

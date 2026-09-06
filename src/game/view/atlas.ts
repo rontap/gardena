@@ -39,6 +39,8 @@ import veryHard0 from '../../assets/tiles/tile-very-hard-0.svg?raw'
 import veryHard1 from '../../assets/tiles/tile-very-hard-1.svg?raw'
 import veryHard2 from '../../assets/tiles/tile-very-hard-2.svg?raw'
 import tilePaved from '../../assets/tiles/tile-paved.svg?raw'
+import tileAsphalt from '../../assets/tiles/tile-asphalt.svg?raw'
+import tileKerb from '../../assets/tiles/tile-kerb.svg?raw'
 import tileBrick from '../../assets/tiles/tile-brick.svg?raw'
 import tileCobble from '../../assets/tiles/tile-cobble.svg?raw'
 import carrot from '../../assets/crops/crop-carrot.svg?raw'
@@ -112,6 +114,7 @@ import propSeedSilo from '../../assets/props/prop-seed-silo.svg?raw'
 import propAdditiveStore from '../../assets/props/prop-additive-store.svg?raw'
 import propCompostBox from '../../assets/props/prop-compost-box.svg?raw'
 import rock from '../../assets/props/prop-rock.svg?raw'
+import rock1 from '../../assets/props/prop-rock-1.svg?raw'
 import rockLong from '../../assets/props/prop-rock-long.svg?raw'
 import propGrass0 from '../../assets/props/prop-grass-0.svg?raw'
 import propGrass1 from '../../assets/props/prop-grass-1.svg?raw'
@@ -186,6 +189,9 @@ import itemExtract from '../../assets/items/item-extract.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
+import itemTreasure from '../../assets/items/item-treasure.svg?raw'
+import propBurrow from '../../assets/props/prop-burrow.svg?raw'
+import propBurrow1 from '../../assets/props/prop-burrow-1.svg?raw'
 import spray from '../../assets/vfx/vfx-spray.svg?raw'
 import sprayLarge from '../../assets/vfx/vfx-spray-large.svg?raw'
 import sprayVert from '../../assets/vfx/vfx-spray-vert.svg?raw'
@@ -199,6 +205,10 @@ import furnaceVfx from '../../assets/vfx/vfx-furnace.svg?raw'
 import furnaceSmokeVfx from '../../assets/vfx/vfx-furnace-smoke.svg?raw'
 import graftVfx from '../../assets/vfx/vfx-graft.svg?raw'
 import ageVfx from '../../assets/vfx/vfx-age.svg?raw'
+import grindVfx from '../../assets/vfx/vfx-grind.svg?raw'
+import stationVfx from '../../assets/vfx/vfx-station.svg?raw'
+import exhaustVfx from '../../assets/vfx/vfx-exhaust.svg?raw'
+import burrowPopVfx from '../../assets/vfx/vfx-burrow-pop.svg?raw'
 
 const SCALE = 2
 
@@ -212,15 +222,20 @@ export type AtlasKey =
   | 'dirt-1'
   | 'dirt-edge'
   | 'dirt-inset'
+  | 'tile-kerb'
   | `hard-${0 | 1 | 2}`
   | `vh-${0 | 1 | 2}`
   | `tile-${TileId}`
   | 'rotten'
   | `tuft-${0 | 1 | 2}`
+  | 'burrow'
+  | 'burrow-1'
   | 'rock'
+  | 'rock-1'
   | 'rock-long'
   | 'house'
-  | 'pump'
+  | 'pump-body'
+  | 'pump-arm'
   | 'truck'
   | 'chest'
   | 'grinder'
@@ -232,7 +247,8 @@ export type AtlasKey =
   | 'sprinkler'
   | 'sprinkler-vert'
   | 'sprinkler-large'
-  | 'mill'
+  | 'mill-body'
+  | 'mill-sails'
   | 'still'
   | 'barrel'
   | 'jam'
@@ -315,6 +331,7 @@ export type AtlasKey =
   | 'axe'
   | 'wood'
   | 'ash'
+  | 'treasure'
   | ContainerId
   | 'fertilizer'
   | 'weed-spray'
@@ -401,16 +418,22 @@ async function raster(svg: string, w: number, h: number): Promise<Texture> {
   return t
 }
 
-export function atlasVb(key: 'dirt-edge' | 'dirt-inset' | 'dirt-0'): { w: number; h: number } {
-  if (key === 'dirt-edge' || key === 'dirt-inset') return { w: 24 + EDGE_PAD * 2, h: 24 + EDGE_PAD * 2 }
+const PADDED: readonly AtlasKey[] = [
+  'dirt-edge',
+  'dirt-inset',
+  'tile-kerb',
+]
+
+export function atlasVb(key: AtlasKey): { w: number; h: number } {
+  if (PADDED.includes(key)) return { w: 24 + EDGE_PAD * 2, h: 24 + EDGE_PAD * 2 }
   return { w: 24, h: 24 }
 }
 
 async function add(key: AtlasKey, raw: string, group?: string, mutate?: (s: string) => string): Promise<void> {
   const sliced = group === undefined ? innerOf(raw) : groupOf(raw, group)
   const body = mutate === undefined ? sliced : mutate(sliced)
-  const pad = key === 'dirt-edge' || key === 'dirt-inset'
-  const size = key === 'dirt-edge' || key === 'dirt-inset' || key === 'dirt-0' ? atlasVb(key) : vb(raw)
+  const pad = PADDED.includes(key)
+  const size = pad || key === 'dirt-0' ? atlasVb(key) : vb(raw)
   const box = pad ? `${-EDGE_PAD} ${-EDGE_PAD} ${size.w} ${size.h}` : `0 0 ${size.w} ${size.h}`
   html.set(key, body)
   dim.set(key, size)
@@ -509,16 +532,22 @@ async function load(): Promise<void> {
   put('vh-1', veryHard1)
   put('vh-2', veryHard2)
   put('tile-paved', tilePaved)
+  put('tile-asphalt', tileAsphalt)
+  put('tile-kerb', tileKerb)
   put('tile-brick', tileBrick)
   put('tile-cobble', tileCobble)
   put('rotten', cropRotten)
   put('tuft-0', propGrass0)
   put('tuft-1', propGrass1)
   put('tuft-2', propGrass2)
+  put('burrow', propBurrow)
+  put('burrow-1', propBurrow1)
   put('rock', rock)
+  put('rock-1', rock1)
   put('rock-long', rockLong)
   put('house', house)
-  put('pump', pump)
+  put('pump-body', pump, 'body')
+  put('pump-arm', pump, 'arm')
   put('truck', propTruck)
   put('chest', chest)
   put('grinder', grinder)
@@ -530,7 +559,8 @@ async function load(): Promise<void> {
   put('sprinkler', propSprinkler)
   put('sprinkler-vert', propSprinklerVert)
   put('sprinkler-large', propSprinklerLarge)
-  put('mill', propMill)
+  put('mill-body', propMill, 'body')
+  put('mill-sails', propMill, 'sails')
   put('still', propStill)
   put('barrel', propBarrel)
   put('jam', propJam)
@@ -676,6 +706,7 @@ async function load(): Promise<void> {
   put('axe', itemAxe)
   put('wood', itemWood)
   put('ash', itemAsh)
+  put('treasure', itemTreasure)
   ;([
     ['sprinkler-spray', spray, 4],
     ['sprinkler-spray-large', sprayLarge, 4],
@@ -690,6 +721,10 @@ async function load(): Promise<void> {
     ['furnace-smoke', furnaceSmokeVfx, 4],
     ['graft', graftVfx, 4],
     ['age', ageVfx, 4],
+    ['grind', grindVfx, 4],
+    ['station', stationVfx, 4],
+    ['exhaust', exhaustVfx, 4],
+    ['burrow-pop', burrowPopVfx, 3],
   ] as const).forEach(([id, raw, n]) => {
     const frames = [0, 1, 2, 3] as const
     for (const i of frames) {
@@ -840,6 +875,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'axe') return 'axe'
   if (item.kind === 'wood') return 'wood'
   if (item.kind === 'ash') return 'ash'
+  if (item.kind === 'treasure') return 'treasure'
   const _: never = item
   throw new Error(String(_))
 }

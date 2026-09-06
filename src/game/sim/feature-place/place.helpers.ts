@@ -1,4 +1,4 @@
-import { FREEZER_LARGE_SLOTS, HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../../defs/items.ts'
+import { FREEZER_LARGE_SLOTS, HANGAR_H, HANGAR_W, MILL_H, MILL_W, SILO_H, SILO_W } from '../../defs/items.ts'
 import {
   Barrel,
   Chest,
@@ -23,13 +23,14 @@ import {
   type Coord,
 } from '../building.ts'
 import { SENSOR_CELL_SKUS } from '../ids.ts'
-import { skuItem } from '../item.ts'
+import { skuItem, tileOfSku } from '../item.ts'
 import { edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../pipe.ts'
-import { isFenceSite, isPlot, isTileSite } from '../plot.ts'
+import { isFenceSite, isPavingSite, isPlot } from '../plot.ts'
 import {
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
+  squareSiteOk,
   tallSiteOk,
   wideSiteOk,
 } from '../prompt.ts'
@@ -53,12 +54,6 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   if (w.hasFence(at)) {
     if (w.act.id !== 0) return
     w.fences.delete(`${at.col},${at.row}`)
-    w.ping()
-    return
-  }
-  if (c.kind === 'untilled' && c.cover.kind === 'tile') {
-    if (w.act.id !== 0) return
-    w.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'bare' } })
     w.ping()
     return
   }
@@ -113,8 +108,10 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   }
   if (c.kind === 'mill') {
     stripPadStops(w, c)
-    w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    occupiedCells(c.base, w.owned).forEach(p => {
+      w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
+      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+    })
     w.ping()
     return
   }
@@ -200,8 +197,15 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     w.ping()
     return
   }
-  if (c.kind !== 'grinder') return
-  w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+  if (c.kind === 'grinder') {
+    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.ping()
+    return
+  }
+  if (w.pavingAt(at) === 'none') return
+  if (w.act.id !== 0) return
+  w.paving.delete(`${at.col},${at.row}`)
+  w.bumpGround()
   w.ping()
 }
 
@@ -225,15 +229,15 @@ export function confirmPlace(w: World, at: Coord): void {
   if (
     w.act.place.id === 'buy-tile-paved' ||
     w.act.place.id === 'buy-tile-brick' ||
-    w.act.place.id === 'buy-tile-cobble'
+    w.act.place.id === 'buy-tile-cobble' ||
+    w.act.place.id === 'buy-tile-asphalt'
   ) {
     if (w.act.id !== 0) return
     if (!inWorld(at, w.owned)) return
-    const c = w.cell(at)
-    if (!isTileSite(c)) return
-    const tile = w.act.place.id === 'buy-tile-paved' ? 'paved' : w.act.place.id === 'buy-tile-brick' ? 'brick' : 'cobble'
+    if (!isPavingSite(w.cell(at))) return
     w.money -= price
-    w.setCell(at, { kind: 'untilled', ground: c.ground, cover: { kind: 'tile', tile } })
+    w.paving.set(`${at.col},${at.row}`, tileOfSku(w.act.place.id))
+    w.bumpGround()
     w.ping()
     return
   }
@@ -320,6 +324,15 @@ export function confirmPlace(w: World, at: Coord): void {
       w.ping()
       return
     }
+    if (w.act.place.id === 'buy-mill') {
+      if (!squareSiteOk(w, at)) return
+      w.money -= price
+      const made = new Mill({ shape: 'rect', col: at.col, row: at.row, w: MILL_W, h: MILL_H })
+      occupiedCells(made.base, w.owned).forEach(p => w.setCell(p, made))
+      w.act.place = { kind: 'none' }
+      w.ping()
+      return
+    }
     if (
       w.act.place.id === 'buy-silo-seed' ||
       w.act.place.id === 'buy-silo-spray' ||
@@ -363,7 +376,6 @@ export function confirmPlace(w: World, at: Coord): void {
     if (w.act.place.id === 'buy-chest') w.setCell(at, new Chest(base))
     else if (w.act.place.id === 'buy-grinder') w.setCell(at, new Grinder(base))
     else if (w.act.place.id === 'buy-compost-box') w.setCell(at, new CompostBox(base))
-    else if (w.act.place.id === 'buy-mill') w.setCell(at, new Mill(base))
     else if (w.act.place.id === 'buy-jam') w.setCell(at, new JamMachine(base))
     else if (w.act.place.id === 'buy-barrel') w.setCell(at, new Barrel(base))
     else if (w.act.place.id === 'buy-freezer') w.setCell(at, new Freezer(base))

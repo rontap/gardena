@@ -41,7 +41,7 @@
   "research_unlock_dispatch_name": "Automated dispatch",
   "research_unlock_dispatch_blurb": "A Quad or Tractor can run automated on a route, so you garden while it sows, sprays, or unloads. Automate starts that run from the Vehicle hangar. A Traffic light holds a vehicle only while that light is a stop on the route.",
   "research_unlock_silos_name": "Field silos",
-  "research_unlock_silos_blurb": "Place a Seeding silo, Spraying silo, or Produce silo on the field so a Tractor on a route can load and unload there instead of driving back to the House. Walking up shows the name only.",
+  "research_unlock_silos_blurb": "Place a Seeding silo, Additive silo, or Produce silo out on the field, then walk up to it to take what it holds without crossing back to the House.",
   "research_unlock_contracts_name": "Contracts",
   "research_unlock_contracts_blurb": "The Market shows a Contracts tab. Accept a contract and Drop off what it named; completed contracts pay more money than the market. Missed contracts and days with none taken lower Reputation, and higher Reputation makes later contracts harder.",
   "research_unlock_better_tools_name": "Better gardening tools",

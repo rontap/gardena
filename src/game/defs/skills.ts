@@ -17,6 +17,7 @@ export const TEND_WORK = 0.7
 export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'boots',
     'bulk-up',
+    'lucky',
     'driving-classes',
     'tending',
     'better-potato',
@@ -111,6 +112,7 @@ export type SkillEffect =
     | { kind: 'jam' }
     | { kind: 'clearance' }
     | { kind: 'forecast' }
+    | { kind: 'lucky' }
 
 export type SkillDef<Id extends SkillId = SkillId> = {
     id: Id
@@ -159,6 +161,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         3,
         {kind: 'bulk-up'},
     ),
+    lucky: row('lucky', 'player', m.skills_lucky_name(), m.skills_lucky_blurb(), 3, {kind: 'lucky'}),
     'driving-classes': row(
         'driving-classes',
         'player',

@@ -30,7 +30,7 @@
   "catalog_rain_tank": "Gathers {rate} L/s into a {cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.",
   "catalog_tap": "Fills a bucket at {rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.",
   "catalog_hangar": "{w}×{h} industrial shed. Buy Quads and tractors at a hangar.",
-  "catalog_silo": "{w}×{h} field tank. Look only.",
+  "catalog_silo": "{w}×{h} field store. Walk up to take what it holds.",
   "catalog_lever": "A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.",
   "catalog_button": "Press it to send one short signal that stops on its own.",
   "catalog_lamp": "Lights up while the wire feeding it is on. It does nothing else: it is there to show you what your wiring is doing.",

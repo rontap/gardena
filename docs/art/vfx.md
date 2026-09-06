@@ -30,7 +30,7 @@ Frames are sibling `<g id="f0" … "fN">` in one file, same convention as [[art/
 
 Quick cuts, not tweens. `crispEdges` pixel art smears under interpolation. Exactly one frame paints at a time; sprite `alpha` is the only animated property.
 
-Supported frame counts are **2** and **4**. `VfxDef.frames.length` is that count. `VfxDef.slots` may include rest (empty) so the cycle matches today’s brew / dust / steam hold. A third painted count means a third cut; do not fake it.
+Supported frame counts are **2**, **3** and **4** — the members of the `frames` union in `def`. `VfxDef.frames.length` is that count. `VfxDef.slots` may include rest (empty) so the cycle matches today’s brew / dust / steam hold. `burrow-pop` is the 3: spark, flash, fade. Any other count means adding a member to that union and drawing the matching `<g id>` in the file; do not approximate it with a count that is already there.
 
 ## Contract
 
@@ -42,17 +42,25 @@ Farm sprites have no DOM. Locator: HTML overlay `data-vfx={id}` while mounted, `
 
 ## Off
 
-`prefers-reduced-motion: reduce`. No setting, no toggle, no `Save` field. `flow` paints its zero phase. Wet ground still paints.
+`prefers-reduced-motion: reduce`, or the player's reduced-motion setting. `vfxReduced()` reads both live on every call — it is not captured once at module load. No `Save` field. `flow` paints its zero phase. Wet ground still paints.
 
-State VFX keeps frame 0 painted and stops animating — the readability signal survives, the motion does not. Bursts do not mount at all. `VFX_REDUCED` is read once at module load. Overlay `data-vfx` still present for state frame 0; bursts: no overlay.
+State VFX keeps frame 0 painted and stops animating — the readability signal survives, the motion does not. Bursts do not mount at all.  Overlay `data-vfx` still present for state frame 0; bursts: no overlay.
 
 ## Assets
 
 | file | viewBox | frames | is |
 |---|---|---|---|
-| `vfx-spray.svg` | `0 0 48 48` | `f0`–`f3` | arc sweeping clockwise, reaching ±1 tile |
-| `vfx-spray-large.svg` | `0 0 96 96` | `f0`–`f3` | same sweep, more droplets, ±2 tiles |
-| `vfx-spray-vert.svg` | `0 0 96 48` | `f0`–`f1` | bar spray marching out both ways |
+| `vfx-spray.svg` | `0 0 48 48` | `f0`–`f3` | fine mist on ten rays, droplets marching outward, reaching ±1 tile |
+| `vfx-spray-large.svg` | `0 0 96 96` | `f0`–`f3` | same mist on fourteen rays, ±2 tiles |
+| `vfx-spray-vert.svg` | `0 0 96 48` | `f0`–`f1` | three-row bar mist marching out both ways |
+| `vfx-brew.svg` | `0 0 24 24` | `f0`–`f3` | bubbles off a filling cask |
+| `vfx-dust.svg` | `0 0 24 24` | `f0`–`f1` | crush dust at the mill and the jam pot |
+| `vfx-steam.svg` | `0 0 48 24` | `f0`–`f3` | steam off the still |
+| `vfx-dig.svg` | `0 0 24 24` | `f0`–`f3` | clods off the spade |
+| `vfx-grind.svg` | `0 0 24 24` | `f0`–`f3` | `leaf` / `grass-dark` chips flicking off the grinder drum, east side |
+| `vfx-station.svg` | `0 0 24 24` | `f0`–`f3` | the station's two seed-tray bars lighting in turn, `leaf` and `ripe`, with a lamp pulse |
+| `vfx-exhaust.svg` | `0 0 24 24` | `f0`–`f3` | `oil` / `steel` / `house` puffs thinning as they rise, behind a moving tractor |
+| `vfx-burrow-pop.svg` | `0 0 24 24` | `f0`–`f2` | `ripe` rays bursting from a `house` core: a tight spark, a full star reaching the cell edge, then a faded ring |
 | `vfx-tend.svg` | `0 0 24 24` | `f0`–`f1` | leaf ticks rising |
 | `vfx-pour.svg` | `0 0 24 24` | `f0`–`f1` | splash landing |
 | `vfx-furnace.svg` | `0 0 24 24` | `f0`–`f3` | fire at the furnace opening |
@@ -61,6 +69,10 @@ State VFX keeps frame 0 painted and stops animating — the readability signal s
 | `vfx-age.svg` | `0 0 24 24` | `f0`–`f3` | bubbles rising off an aging cask, denser than `vfx-brew` |
 
 `vfx-spray-large` is its own file, not `vfx-spray` at `scale(2)` — a scaled copy doubles the pixel grid.
+
+**The spray does not sweep.** Four frames cannot turn an arc without strobing; the old rotating arc jumped 90° every `dur / 4` and was the loudest thing on the farm. It is a mist instead: droplets on fixed rays, each frame advancing them one step outward, so the motion reads as spraying and the shape never moves. Droplets are 1 unit past the head (2 near it), carry `fill-opacity` falling from 0.6 to 0.3 with distance, and the far tip is `house` at 0.35. `dur` is roughly double the old value on all three.
+
+`fill-opacity` in a VFX asset is allowed — `vfx-furnace-smoke.svg` established it. It stays out of props and tiles.
 
 `vfx-spray-vert` is drawn `ew` and rotated 90° for `ns`, same expression as the body art.
 
@@ -80,6 +92,42 @@ Dry, sourceless, unreachable, or nothing growing in the AoE: no VFX.
 
 Working furnace: `vfx-furnace` mounts at the south cell — the opening. `vfx-furnace-smoke` mounts at the north cell — the chimney. Prop groups `off` / `on` light that opening; fire VFX is the fire; smoke VFX is the chimney. Chimney mouth `(12, 14)` in `prop-furnace` and in north-cell local. Smoke viewBox `0 0 24 24`, `cell` origin at the north cell corner, puffs leave that mouth toward y=0. Reduced motion: frame 0 on both. Fire: `fire` / `ripe` / `fruit-red` / `roof`. Smoke: `steel` / `house` / `oil` / `ink`. No `fire` on the smoke.
 
+## Flow: mill sails
+
+`prop-mill.svg` carries `body` and `sails`. Atlas keys `mill-body` / `mill-sails`. `PropsLayer.patch` paints the body; `PropsLayer.tick` paints the sails, every Pixi frame, from the same second `SpritePool` the pump arm uses.
+
+The sails are **the drawn sails, turned** — not a second set of frames. They are authored upright and the sprite carries `anchor` at the hub `(24, 18)` of the 48-unit box, so `rotation` turns about the shaft. `SAIL_REST` 45° is where they sit. While the mill works they turn **continuously**, a full revolution every `SAIL_TURN` — preference. Reduced motion holds them at rest.
+
+Continuous, not stepped. A stepped angle holds still between jumps, and at any step count that reads as a stutter rather than a turn. Both forms cost the same one `rotation` write per frame, so there is no reason to step it.
+
+Rotating one sprite costs one texture and no new art. Redrawing the sails once per angle costs a file per angle and, at this size, sampling a rotation per pixel gives ragged clusters rather than sails.
+
+A working mill also mounts `dust` at `millDustAt(origin)` — `MILL_DUST_X` / `MILL_DUST_Y`, preference — at the door in the plinth. A 1×1 mill used to put it at the origin corner; on a 2×2 that corner is the roof.
+
+## State: grinder, station
+
+`busyVfx` gained two arms beside mill / jam / still / barrel. `grinderWorking(c)` is `crop !== 'none' && units > 0 && progress < 1`; `stationWorking` already existed. Both are base-cell guarded like the rest, so the 2×1 station mounts once.
+
+The station's `off` / `on` prop groups are the state; `vfx-station` is the motion. `PropsLayer` repaints only on dirty, so nothing inside a prop file can flicker on its own — a bar that changes every frame is a VFX over the prop, never a third prop group.
+
+## State: tractor exhaust
+
+A tractor mounts `exhaust` while `Math.abs(pose.speed) >= SMOKE_SPEED`, at `pose` offset `SMOKE_BACK` behind the heading so the puff leaves the exhaust rather than the middle. Quads do not smoke.
+
+`VfxLayer.draw` already multiplied `col` / `row` by `TILE`, so a fractional cell coordinate needed no signature change: the pool, the frame cutter, reduced motion, the `data-vfx` locator and `__view.vfxN` all come along. Read live from `World.vehicles` on the ticker — no sim field, no `World.vfx` entry.
+
+## Flow: pump arm
+
+`prop-pump.svg` carries two groups: `body` and `arm` (the walking beam and its rod). Atlas keys `pump-body` / `pump-arm`.
+
+`PropsLayer.tick(world, now)` runs on the Pixi ticker beside `actors` and `vfx`, and paints only the arm, from a second `SpritePool` on the same container so it stays at prop depth — under the gardener, not over. `PropsLayer.patch` still paints `pump-body` on dirty.
+
+The arm rides `Math.sin(((now / 1000 / PUMP_STROKE) % 1) × 2π) × PUMP_LIFT`, rounded to whole units so the pixel grid holds. `PUMP_STROKE` and `PUMP_LIFT` — preference.
+
+It moves only while a seat's head intent is `fill` on one of the pump's cells. A pump gathers every second of every day, so an arm tied to gathering would never stop and would say nothing. Reduced motion pins the lift at 0.
+
+This is `flow`: a rigid transform of a sub-sprite on the ticker, no frames, no frame index, no sim state.
+
 ## State: barrel
 
 A working barrel paints one of two: `brew` while `age < BARREL_MATURE`, `age` after it. Maturing is the fruit fermenting, aging is the cask sitting. One at a time, never both – [[mechanics/machines]].
@@ -96,8 +144,11 @@ View ticker drains the queue every frame. `'vfx'` ping is not the burst path.
 |---|---|
 | `tend` | `tend` |
 | `water` | `pour` |
+| `shovel` on a burrow | `burrow-pop` |
 
 Everything else: none yet. Add a line at the outcome, not a listener.
+
+`burrow-pop` fires from `doShovel` where the burrow is extracted, beside `extractBurrow` — the outcome, not a watcher on the cover. Three frames: the ground gives, the light comes out, it fades.
 
 ## State: work
 

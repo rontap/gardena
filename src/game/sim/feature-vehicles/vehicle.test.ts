@@ -17,6 +17,7 @@ import {
   HITCH_BACK,
   SILO_SEED_PRICE,
   SURFACE_NORMAL,
+  MILL_H,
   SURFACE_PAVED,
   SURFACE_SLOW,
   TRACTOR_ACCEL,
@@ -149,15 +150,26 @@ describe('vehicles I', () => {
     expect(SURFACE_PAVED).toBe(1.3)
     expect(SURFACE_SLOW).toBe(0.4)
     expect(SURFACE_NORMAL).toBe(1.0)
-    expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'tile', tile: 'paved' } })).toBe(SURFACE_PAVED)
-    expect(surfaceMul({ kind: 'empty', soil: new Soil(1, 1, 0.03) })).toBe(SURFACE_SLOW)
-    expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'bare' } })).toBe(SURFACE_NORMAL)
-    expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'tile', tile: 'cobble' } })).toBe(SURFACE_NORMAL)
-    expect(surfaceMul({ kind: 'untilled', ground: 'soft', cover: { kind: 'grass', variant: 0 } })).toBe(SURFACE_NORMAL)
-    expect(surfaceMul({ kind: 'infertile' })).toBe(SURFACE_NORMAL)
+    const s = farm()
+    const bare = { col: 9, row: 20 }
+    const tilled = { col: 9, row: 21 }
+    const grass = { col: 10, row: 20 }
+    s.setCell(bare, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    s.setCell(tilled, { kind: 'empty', soil: new Soil(1, 1, 0.03) })
+    s.setCell(grass, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'grass', variant: 0 } })
+    s.paving.set(`${bare.col},${bare.row}`, 'paved')
+    expect(surfaceMul(s, bare)).toBe(SURFACE_PAVED)
+    s.paving.set(`${bare.col},${bare.row}`, 'asphalt')
+    expect(surfaceMul(s, bare)).toBe(SURFACE_PAVED)
+    s.paving.set(`${bare.col},${bare.row}`, 'cobble')
+    expect(surfaceMul(s, bare)).toBe(SURFACE_NORMAL)
+    s.paving.delete(`${bare.col},${bare.row}`)
+    expect(surfaceMul(s, bare)).toBe(SURFACE_NORMAL)
+    expect(surfaceMul(s, tilled)).toBe(SURFACE_SLOW)
+    expect(surfaceMul(s, grass)).toBe(SURFACE_NORMAL)
     const w = farm()
     expect(isSolid(w.cell(AT))).toBe(true)
-    expect(surfaceMul(w.cell(AT))).toBe(SURFACE_SLOW)
+    expect(surfaceMul(w, AT)).toBe(SURFACE_SLOW)
     w.buyVehicle(AT, 'quad')
     w.deploy(1, AT, 'none')
     const v = w.vehicles[0]
@@ -682,7 +694,7 @@ describe('vehicles II', () => {
     expect(w.trailers[0].slots[0]).toEqual({ kind: 'hold', item: fruit })
   })
 
-  test('Silo look-only. Cannot delete hangar storing trailer. Hangar-buys not skuPrice.', () => {
+  test('Field silos are walk-up stores. Cannot delete hangar storing trailer. Hangar-buys not skuPrice.', () => {
     const w = farm()
     const before = w.money
     w.buyVehicle(AT, 'tractor')
@@ -720,9 +732,8 @@ describe('vehicles II', () => {
     expect(TRAILER_LEN).toBe(1)
     expect(TRAILER_WIDE).toBe(1)
     expect(HITCH_BACK).toBe(0.5)
-    expect(w.prompt(siloAt)).toEqual({ kind: 'blocked', text: 'Seeding silo' })
+    expect(w.prompt(siloAt).text).toBe('Seeding silo')
     expect(lookText(w, { kind: 'cell', at: siloAt }, false)).toBe('Seeding silo')
-    expect(w.seats[0].cue.kind).toBe('none')
     expect(TRACTOR_VMAX).toBeCloseTo(QUAD_VMAX * 0.67)
     expect(TRACTOR_ACCEL).toBe(QUAD_ACCEL * 0.5)
     expect(FERT_PLOT_MAX).toBe(1)
@@ -773,7 +784,7 @@ describe('vehicles II', () => {
     const at = { col: 17, row: 8 }
     expect(w.cell(at).kind).toBe('house')
     expect(isSolid(w.cell(at))).toBe(true)
-    expect(surfaceMul(w.cell(at))).toBe(SURFACE_SLOW)
+    expect(surfaceMul(w, at)).toBe(SURFACE_SLOW)
   })
 
   test('Quad on mill dropoff: Unload cane into mill.', () => {
@@ -811,9 +822,9 @@ describe('vehicles II', () => {
     expect(v.pose.kind).toBe('field')
     if (v.pose.kind !== 'field') return
     v.pose.x = 16.5
-    v.pose.y = 13.5
+    v.pose.y = millAt.row + MILL_H + 0.5
     w.drops.push({
-      at: { col: 16, row: 13 },
+      at: { col: 16, row: millAt.row + MILL_H },
       item: { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 5, quality: 0 },
     })
     w.load()

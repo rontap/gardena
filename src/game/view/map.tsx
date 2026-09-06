@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type WheelEvent as ReactWheelEvent } from 'react'
 import { m } from '../../paraglide/messages.js'
-import { HANGAR_H, HANGAR_W, SILO_H, SILO_W } from '../defs/items.ts'
+import { HANGAR_H, HANGAR_W, MILL_H, MILL_W, SILO_H, SILO_W } from '../defs/items.ts'
 import { FADE, occupiedCells } from '../sim/building.ts'
 import { onCell } from '../sim/drop.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -40,7 +40,7 @@ import {
 import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
 import { STAT_COLOR } from '../ui/status.tsx'
-import { FURNACE, HANGAR, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
+import { FURNACE, HANGAR, MILL, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
@@ -118,12 +118,20 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const furnacePlace = placeId === 'buy-furnace'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
+  const millPlace = placeId === 'buy-mill'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
   const skuStroke = placing && !edgeTool && !deleteTool && !sprinklerTool
   const followSku =
-    placeId !== undefined && !pumpjack && !furnacePlace && !hangarPlace && !siloPlace && !edgeTool && !sprinklerTool
+    placeId !== undefined &&
+    !pumpjack &&
+    !furnacePlace &&
+    !hangarPlace &&
+    !siloPlace &&
+    !millPlace &&
+    !edgeTool &&
+    !sprinklerTool
   const edgeHit = worldPtr !== undefined ? nearestEdge(worldPtr.x, worldPtr.y) : undefined
   const vertexHit = worldPtr !== undefined ? nearestVertex(worldPtr.x, worldPtr.y, VERTEX_HIT) : undefined
   const snapVertex =
@@ -154,7 +162,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     (tipDrop.item.kind === 'shovel' || tipDrop.item.kind === 'pickaxe' || tipDrop.item.kind === 'container')
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
-  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, furnacePlace, hangarPlace, siloPlace)
+  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, furnacePlace, hangarPlace, siloPlace, millPlace)
   const hoverOutline = footOutline(hoverFoot)
   const coverOutline = footOutline(coverFoot(world, strokeCell, place))
   const neighbourWatch =
@@ -557,6 +565,17 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             style={{ left: s.at.col * TILE - 2, top: s.at.row * TILE - 2, width: 4, height: 4 }}
           />
         ))}
+        {millPlace && strokeCell !== undefined && (
+          <svg
+            className="absolute overflow-visible"
+            width={MILL_W * TILE}
+            height={MILL_H * TILE}
+            viewBox="0 0 48 48"
+            style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
+          >
+            <Use art={MILL} />
+          </svg>
+        )}
         {(hangarPlace || siloPlace) && placeId !== undefined && strokeCell !== undefined && (
           <svg
             className="absolute overflow-visible"
@@ -665,6 +684,14 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           style={{ left: ptr.x + 14, top: ptr.y - 28 }}
         >
           {tip}
+        </div>
+      )}
+      {millPlace && placeId !== undefined && hoverCell === undefined && (
+        <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
+          <svg className="h-20 w-20" viewBox="0 0 48 48">
+            <Use art={MILL} />
+          </svg>
+          <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
       {(hangarPlace || siloPlace) && placeId !== undefined && hoverCell === undefined && (
@@ -800,6 +827,7 @@ function strokeFoot(
   furnacePlace: boolean,
   hangarPlace: boolean,
   siloPlace: boolean,
+  millPlace: boolean,
 ): { col: number; row: number }[] {
   if (stroke === undefined) return []
   if (place.kind === 'none') {
@@ -814,6 +842,13 @@ function strokeFoot(
     const cells: { col: number; row: number }[] = []
     for (let row = 0; row < HANGAR_H; row++) {
       for (let col = 0; col < HANGAR_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
+    }
+    return cells
+  }
+  if (millPlace) {
+    const cells: { col: number; row: number }[] = []
+    for (let row = 0; row < MILL_H; row++) {
+      for (let col = 0; col < MILL_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
     }
     return cells
   }

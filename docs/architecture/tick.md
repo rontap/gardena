@@ -26,8 +26,9 @@ Maps, same `Coord` values as `live`. Origin-only for multi-cell. `live` is not a
 | recover | tilled with `weedChance < WEED_CHANCE` |
 | empty | empty plots |
 | tilled | `isTilled` |
+| burrows | untilled `cover.kind === 'burrow'` |
 
-Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase.
+Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase. Not a tick walk. Seam mint walks each owned chunk's cells once, not `forEachCell` on `live`.
 
 | walk | index |
 |---|---|
@@ -39,7 +40,7 @@ Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase.
 | `sproutWeeds` | empty |
 | weather soak | tilled. `tickBig` walks it |
 | `padBuildings` | machines + stores (+ `silo` / `additives` / `seedSilos`) |
-| View dirty | those plus `segments` / `sprinklers` / `fences`. Not `forEachCell` |
+| View dirty | those plus `segments` / `sprinklers` / `fences` / `burrows`. Not `forEachCell` |
 
 A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Review enforces this. Do not invent a test that spies on `forEachCell`.
 
@@ -51,7 +52,7 @@ Assumption: `evalSensors` storeRaw and `padBuildings` also walk existing World s
 
 ## Seam hold
 
-The day seam pauses solo play. App sees `seam.kind` go `play` → `recap`, writes the slot, closes the panel, and pauses. `World.tick` already returns early on a recap, so the pause is what the player meets *after* dismissing the end-of-day summary — the farm waits on Resume. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. [[ui/settings]] [[architecture/net]]
+The day seam pauses solo play. App sees `seam.kind` go `play` → `recap`, writes the slot, closes the panel, and pauses. `World.tick` already returns early on a recap, so the pause is what the player meets *after* dismissing the end-of-day summary — the farm waits on Resume. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Seam, after stipend and tax, before that early return: burrow mint — [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[architecture/net]]
 
 ## Nets
 
@@ -86,7 +87,7 @@ Water-system sensors: `netOfCell` + cached demand, not `grid().find`.
 
 ## Invariants
 
-`tick.scan` — `forEachCell` is forbidden on the tick path. A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Iterate maps directly; no live-array copy. Review enforces. Do not spy on `forEachCell`.
+`tick.scan` — `forEachCell` is forbidden on the tick path. A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Iterate maps directly; no live-array copy. Review enforces. Do not spy on `forEachCell`. Burrow seam mint walks each owned chunk once; it is not a `dt` walk.
 
 `tick.nets` — `dirtyNets()` only when `conducts(e)` actually flips or topology changes (place / delete pipe / valve / smart, or a source cell). Not every tick because `smartHold.size > 0`.
 

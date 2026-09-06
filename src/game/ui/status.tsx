@@ -249,7 +249,8 @@ export function Status({
           <div className="h-12 w-12 shrink-0 bg-dirt-dark" />
         )}
         <div className="min-w-0 truncate font-display text-sm leading-tight whitespace-nowrap">
-          {hand.kind === 'hold' && (hand.item.kind === 'fruit' || hand.item.kind === 'sugar') ? (
+          {hand.kind === 'hold' &&
+          (hand.item.kind === 'fruit' || hand.item.kind === 'sugar' || hand.item.kind === 'treasure') ? (
             <ItemLineView item={hand.item} />
           ) : (
             heldText(hand, world.modifiers)

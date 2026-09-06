@@ -32,6 +32,7 @@ Vault for this game. Agents read this first.
 
 - [[mechanics/_index]]
 - [[mechanics/weather]]
+- [[mechanics/burrow]] — luck, treasure
 
 ## Items
 

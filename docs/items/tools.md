@@ -26,4 +26,6 @@ Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 
 Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their owned tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 
-Hand, house, uses, fill, stacks: [[mechanics/inventory]].
+Burrow loot may mint `better-shovel` / `better-pickaxe` / `axe`. Equal among those three. Then 50% used `usesLeft = floor(max / 2)`, else full. `workSeconds` from `SHOVELS` / `PICKAXES` / `AXES` at mint. Not rotary. Not diamond. Not starter shovel / pickaxe. Any shovel id extracts a burrow — [[mechanics/burrow]] `burrow.loot` `burrow.dig`.
+
+Hand, house, uses, fill, stacks: [[mechanics/inventory]]. Treasure: [[mechanics/burrow]] `burrow.open`.

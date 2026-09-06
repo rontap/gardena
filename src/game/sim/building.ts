@@ -18,7 +18,12 @@ import {
   JAM_BUFFER,
   JAM_IN,
   JAM_SECONDS,
+  MILL_H,
+  MILL_W,
   MILL_WORK,
+  PRODUCE_SLOTS,
+  SILO_FIELD_ADDITIVE_CAP,
+  SILO_FIELD_SEED_CAP,
   SILO_SEED_CAP,
   STATION_GRAFT_MAX,
   STATION_GRAFT_MIN,
@@ -222,6 +227,24 @@ export const PAD: Coord = { col: 12, row: 9 }
 export const SILO_BASE: RectBase = { shape: 'rect', col: 17, row: 9, w: 1, h: 2 }
 export const ADDITIVE_BASE: RectBase = { shape: 'rect', col: 18, row: 9, w: 1, h: 2 }
 
+const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
+
+const RESERVED = new Set(
+  [
+    ...occupiedCells(HOUSE_BASE, HOME),
+    ...occupiedCells(PUMP_BASE, HOME),
+    DOOR,
+    ...occupiedCells(TRUCK_BASE, HOME),
+    ...occupiedCells(SILO_BASE, HOME),
+    ...occupiedCells(ADDITIVE_BASE, HOME),
+    ...YARD,
+  ].map(a => `${a.col},${a.row}`),
+)
+
+export function isReserved(at: Coord): boolean {
+  return RESERVED.has(`${at.col},${at.row}`)
+}
+
 export class House {
   readonly kind = 'house' as const
   readonly base: RectBase
@@ -403,7 +426,7 @@ export class Grinder extends BaseBuilding {
     const u = w.rng.stream('grind').at(at.col, at.row, w.clock.day, this.n)
     const floor = grindMinAt(this.quality)
     const count = floor + Math.floor(u * (GRIND_MAX - floor + 1))
-    if (!emitProduct(w, at, this.base, grindProduct(this, count))) return false
+    if (!emitProduct(w, this.base, grindProduct(this, count))) return false
     this.progress = 0
     this.units -= 1
     this.n += 1
@@ -434,7 +457,7 @@ export class CompostBox extends BaseBuilding {
     if (this.units < COMPOST_NEED) return false
     this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / COMPOST_SECONDS
     if (this.progress < 1) return false
-    if (!emitProduct(w, at, this.base, makeCompost())) return false
+    if (!emitProduct(w, this.base, makeCompost())) return false
     this.progress = 0
     this.units -= COMPOST_NEED
     w.track(at, this)
@@ -460,7 +483,7 @@ export class Mill extends Machine {
   units = 0
   progress = 0
   constructor(base: RectBase) {
-    super(base)
+    super({ shape: 'rect', col: base.col, row: base.row, w: MILL_W, h: MILL_H })
   }
   override accept(item: Item): number {
     const recipe = millRecipeOf(item)
@@ -490,7 +513,7 @@ export class Mill extends Machine {
     const need = millNeed(this.recipe)
     this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / MILL_WORK
     if (this.progress < 1) return false
-    if (!emitProduct(w, at, this.base, millProduct(this.recipe, this.variety, this.quality))) return false
+    if (!emitProduct(w, this.base, millProduct(this.recipe, this.variety, this.quality))) return false
     this.progress = 0
     this.units -= need
     if (this.units === 0) {
@@ -560,7 +583,7 @@ export class JamMachine extends Machine {
     this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / JAM_SECONDS
     if (this.progress < 1) return false
     if (
-      !emitProduct(w, at, this.base, {
+      !emitProduct(w, this.base, {
         kind: 'jam',
         crop: this.crop,
         variety: this.variety,
@@ -619,7 +642,7 @@ export class PotStill extends Machine {
     const quality = meanQuality(this.feed)
     const variety = kind === 'mixed' ? 'base' : feedVariety(this.feed)
     if (
-      !emitProduct(w, at, this.base, {
+      !emitProduct(w, this.base, {
         kind: 'spirit',
         spirit: kind,
         variety,
@@ -675,7 +698,7 @@ export class Furnace extends Machine {
     if (this.units < FURNACE_NEED) return false
     if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / FURNACE_SECONDS
     if (this.progress < 1) return false
-    if (!emitProduct(w, at, this.base, { kind: 'ash', count: FURNACE_ASH })) return false
+    if (!emitProduct(w, this.base, { kind: 'ash', count: FURNACE_ASH })) return false
     this.progress = 0
     this.units -= FURNACE_NEED
     w.track(at, this)
@@ -731,7 +754,7 @@ export class ResearchStation extends Machine {
       ...fruitStack(this.crop, this.variety, this.quality, STATION_IN, sale, 1, false, true),
     }
     const grafts: Item = { kind: 'graft', crop: this.crop, variety: this.variety, quality: this.quality, count }
-    if (!emitPair(w, at, this.base, cut, grafts)) return false
+    if (!emitPair(w, this.base, cut, grafts)) return false
     this.progress = 0
     this.units -= STATION_IN
     if (this.units === 0) this.crop = 'none'
@@ -791,36 +814,12 @@ export class Hangar {
   }
 }
 
-export class SiloSeed {
-  readonly kind = 'silo-seed' as const
-  readonly base: RectBase
-  constructor(base: RectBase) {
-    this.base = base
-  }
-}
-
-export class SiloSpray {
-  readonly kind = 'silo-spray' as const
-  readonly base: RectBase
-  constructor(base: RectBase) {
-    this.base = base
-  }
-}
-
-export class SiloProduce {
-  readonly kind = 'silo-produce' as const
-  readonly base: RectBase
-  constructor(base: RectBase) {
-    this.base = base
-  }
-}
-
 
 export abstract class Store extends BaseBuilding {
   readonly cap: number
   useDefault: boolean
-  override readonly pads = 'both'
-  override readonly ports = ['out'] as const
+  override readonly pads: 'none' | 'both' = 'both'
+  override readonly ports: readonly ('out' | 'in' | 'in-l' | 'in-r')[] = ['out']
   constructor(base: RectBase, cap: number, useDefault = true) {
     super(base)
     this.cap = cap
@@ -835,14 +834,8 @@ export abstract class Store extends BaseBuilding {
 
 export type SiloStack = { crop: AnnualId; variety: VarietyId; quality: number; count: number }
 
-export class SeedSilo extends Store {
-  readonly kind = 'seed-silo' as const
+export abstract class SeedStore extends Store {
   readonly seeds: SiloStack[] = []
-  out: Signal = 0
-  hold = 0
-  constructor(base: RectBase, useDefault = true) {
-    super(base, SILO_SEED_CAP, useDefault)
-  }
   get used(): number {
     return this.seeds.reduce((n, s) => n + s.count, 0)
   }
@@ -867,6 +860,25 @@ export class SeedSilo extends Store {
   }
 }
 
+export class SeedSilo extends SeedStore {
+  readonly kind = 'seed-silo' as const
+  override readonly pads = 'both' as const
+  out: Signal = 0
+  hold = 0
+  constructor(base: RectBase, useDefault = true) {
+    super(base, SILO_SEED_CAP, useDefault)
+  }
+}
+
+export class SiloSeed extends SeedStore {
+  readonly kind = 'silo-seed' as const
+  override readonly ports = []
+  override readonly pads = 'none' as const
+  constructor(base: RectBase) {
+    super(base, SILO_FIELD_SEED_CAP)
+  }
+}
+
 export const ADDITIVE_IDS = ['fertilizer', 'synth', 'compost', 'weed-spray'] as const
 export type AdditiveId = (typeof ADDITIVE_IDS)[number]
 
@@ -881,15 +893,9 @@ export type AdditiveHold = { id: AdditiveId; liters: number }
 
 export type SugarBin = { liters: number; unitSale: number; quality: number }
 
-export class AdditiveStore extends Store {
-  readonly kind = 'additive-store' as const
+export abstract class AdditiveHolder extends Store {
   readonly held: AdditiveHold[] = []
   sugar: SugarBin = { liters: 0, unitSale: SUGAR_SHOP, quality: 0 }
-  out: Signal = 0
-  hold = 0
-  constructor(base: RectBase, useDefault = true) {
-    super(base, ADDITIVE_CAP_LITERS, useDefault)
-  }
   get used(): number {
     return this.held.reduce((n, h) => n + h.liters, this.sugar.liters)
   }
@@ -934,12 +940,63 @@ export class AdditiveStore extends Store {
   }
 }
 
+export class AdditiveStore extends AdditiveHolder {
+  readonly kind = 'additive-store' as const
+  override readonly pads = 'both' as const
+  out: Signal = 0
+  hold = 0
+  constructor(base: RectBase, useDefault = true) {
+    super(base, ADDITIVE_CAP_LITERS, useDefault)
+  }
+}
+
+export class SiloSpray extends AdditiveHolder {
+  readonly kind = 'silo-spray' as const
+  override readonly ports = []
+  override readonly pads = 'none' as const
+  constructor(base: RectBase) {
+    super(base, SILO_FIELD_ADDITIVE_CAP)
+  }
+}
+
+export class SiloProduce extends Store {
+  readonly kind = 'silo-produce' as const
+  readonly slots: Slot[] = Array.from({ length: PRODUCE_SLOTS }, () => ({ kind: 'empty' as const }))
+  override readonly ports = []
+  override readonly pads = 'none' as const
+  override readonly takeAll: boolean = true
+  constructor(base: RectBase) {
+    super(base, PRODUCE_SLOTS)
+  }
+  get used(): number {
+    return this.slots.filter(s => s.kind === 'hold').length
+  }
+  override accept(item: Item): number {
+    if (item.kind !== 'fruit' && item.kind !== 'weed' && item.kind !== 'grass') return 0
+    return slotsCouldTake(this.slots, item, this.slots.length, undefined) ? 1 : 0
+  }
+  override apply(item: Item, _n: number): void {
+    giveSlots(this.slots, item, this.slots.length, undefined)
+  }
+}
+
 export function frontOf(at: Coord): Coord[] {
   return [
     { col: at.col, row: at.row + 1 },
     { col: at.col - 1, row: at.row },
     { col: at.col + 1, row: at.row },
     { col: at.col, row: at.row - 1 },
+  ]
+}
+
+export function frontOfBase(base: RectBase): Coord[] {
+  const cols = Array.from({ length: base.w }, (_, i) => base.col + i)
+  const rows = Array.from({ length: base.h }, (_, i) => base.row + i)
+  return [
+    ...cols.map(col => ({ col, row: base.row + base.h })),
+    ...rows.map(row => ({ col: base.col - 1, row })),
+    ...rows.map(row => ({ col: base.col + base.w, row })),
+    ...cols.map(col => ({ col, row: base.row - 1 })),
   ]
 }
 

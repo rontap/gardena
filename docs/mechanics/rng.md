@@ -15,8 +15,9 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `grind` | grind units; station graft count | `at(col, row, day[, i])` |
 | `contract` | board slot | `at(day, slot, k)` |
 | `weather` | day kind | `at(day, k)` |
+| `burrow` | site pick, loot | `at(cx, cy, day, k)` / `at(col, row, salt)` |
 
-No grow stream. No `World.ripenN`. Shop packs do not roll. Still and barrel do not roll.
+No grow stream. No `World.ripenN`. Shop packs do not roll. Still and barrel do not roll. Burrow is not seq.
 
 Failed buy / bulk / drop consumes 0 `next()`.
 
@@ -29,3 +30,5 @@ Assumption: station graft count 1–2 uses `grind.at(col, row, day)` on finish.
 `rng.spatial` — `Spatial.at` / `hash`: same args, any call order → same `u`.
 
 `rng.fail` — Failed `buy` / `buyPacks` (closed, cannot afford, cannot fit) consumes 0 seq `next()`. Failed tree drop consumes 0 `fruit.next()`; a successful one consumes 1. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`, all `'base'` quality 0. Success: 0 seq draws.
+
+`rng.burrow` — Spatial `burrow`. Site pick `at(cx, cy, day, k)`. Loot `at(col, row, salt)`. Not seq. Not `fruit.next()`. [[mechanics/burrow]]

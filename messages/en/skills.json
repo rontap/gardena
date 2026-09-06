@@ -82,5 +82,7 @@
   "skills_jam_blurb": "Fruit below half freshness rots slower. Each rank adds {pct}%.",
   "skills_jam_skillblurb": "Fruit below half freshness rots {pct}% slower.",
   "skills_clearance_name": "Clearance sale",
-  "skills_clearance_blurb": "Rotten produce sells for {price} apiece."
+  "skills_clearance_blurb": "Rotten produce sells for {price} apiece.",
+  "skills_lucky_name": "Lucky",
+  "skills_lucky_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the shop does not sell as a pack. Each rank raises both. Burrows already on the farm do not change."
 }

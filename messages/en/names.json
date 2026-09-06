@@ -90,7 +90,7 @@
   "names_sku_buy_sugar": "Sugar",
   "names_sku_buy_hangar": "Vehicle hangar",
   "names_sku_buy_silo_seed": "Seeding silo",
-  "names_sku_buy_silo_spray": "Spraying silo",
+  "names_sku_buy_silo_spray": "Additive silo",
   "names_sku_buy_silo_produce": "Produce silo",
   "names_sku_buy_lever": "Lever",
   "names_sku_buy_button": "Button",
@@ -118,6 +118,7 @@
   "names_item_axe": "Axe",
   "names_item_wood": "Wood",
   "names_item_ash": "Ash",
+  "names_item_treasure": "Treasure",
   "names_item_oil": "Olive oil",
   "names_item_flour": "Flour",
   "names_item_extract": "Extract",
@@ -153,7 +154,7 @@
   "names_building_jam": "Jam machine",
   "names_building_hangar": "Vehicle hangar",
   "names_building_silo_seed": "Seeding silo",
-  "names_building_silo_spray": "Spraying silo",
+  "names_building_silo_spray": "Additive silo",
   "names_building_silo_produce": "Produce silo",
   "names_building_pipe": "Pipe",
   "names_building_sprinkler": "Sprinkler",
@@ -167,6 +168,7 @@
   "names_ground_infertile": "Infertile soil",
   "names_ground_tilled": "Tilled soil",
   "names_ground_weed": "Weed",
+  "names_ground_burrow": "Burrow",
   "names_member_player": "You",
   "names_member_husband": "Husband",
   "names_member_daughter": "Daughter",
@@ -269,5 +271,7 @@
   "names_spirit_klosterneuburger": "Barackpálinka",
   "names_purpose_produce": "Fresh",
   "names_purpose_processed": "Preserving",
-  "names_purpose_alcohol": "Alcohol"
+  "names_purpose_alcohol": "Alcohol",
+  "names_tile_asphalt": "Asphalt",
+  "names_sku_buy_tile_asphalt": "Asphalt"
 }

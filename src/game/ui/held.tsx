@@ -1,7 +1,9 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
+import { m } from '../../paraglide/messages.js'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemLine, itemTip } from '../sim/item.ts'
 import { faceGfx } from '../view/svgs.ts'
+import { Coin } from './frame.tsx'
 
 export function Held({ hand }: { hand: Hand }) {
   if (hand.kind === 'empty') {
@@ -92,6 +94,14 @@ export function ItemLineView({ item }: { item: Item }) {
       </span>
     )
   }
+  if (item.kind === 'treasure') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        {m.names_item_treasure()}
+        <Coin n={item.coins} />
+      </span>
+    )
+  }
   return null
 }
 
@@ -103,5 +113,6 @@ function heldNumber(item: Item): string {
   }
   if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
   if (item.kind === 'tree-seed') return ''
+  if (item.kind === 'treasure') return String(item.coins)
   return String(item.count)
 }

@@ -80,7 +80,7 @@ A fruit item lying on the hovered cell draws the same `FruitStats` block, from t
 
 A ripe plot carrying a dropped fruit draws both blocks, plant first, drop second — the same order the two look lines are in. They are two different things and neither replaces the other.
 
-Weed / dead / rotten / turf / untilled: no bars.
+Weed / dead / rotten / turf / untilled: no bars. Burrow is untilled cover: no bars. Look names the burrow, not loot: **Burrow**. Not Grass. Not Hard soil.
 
 ## Empty
 
@@ -122,9 +122,13 @@ Blue plant FillBar (`#4b91c2` / `#8b887d`), label **Growth**: `juvenile` 0..1 wh
 
 ## Prompts
 
-Tree seed in hand (`{ kind: 'tree-seed'; tree; variety; quality }`), hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op — [[mechanics/plants]].
+Tree seed in hand (`{ kind: 'tree-seed'; tree; variety; quality }`), hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op. Burrow: no-op — [[mechanics/plants]] [[mechanics/burrow]] `burrow.block`.
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees.
+
+Shovel on burrow: **Dig**. `{ act: 'shovel' }`. Work `BURROW_WORK`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`
+
+Held `{ kind: 'treasure'; coins }`, hovered owned plot: **Open treasure**. `{ act: 'open'; at }`. `dest` = `at`. Work 0. Left-click is open, not drop.
 
 Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. `{ act: 'chop'; at }`. Either cell. Axe on grow / trunk: no-op. Prompt is the look line. Chop yields 1 wood and 2 grafts of that tree's Variety, then `trunk = true`, `juvenile = 0`, fruit lost.
 
@@ -170,6 +174,7 @@ Covering haste is a `lookText` line in that same `Status` block, after the machi
 | wood | **Wood - {count}** |
 | ash | **Ash - {count}, compost it** |
 | axe | **Axe - {left}/{uses} uses left** |
+| treasure | **Treasure - {coins}** — Coin for `coins`. Money, not gold |
 
 `cut` on fruit is not a HUD flag. Tooltip is `itemTip`: same Variety + Quality words as the held line.
 

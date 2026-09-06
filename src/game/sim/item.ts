@@ -107,6 +107,7 @@ export type Item =
   | { kind: 'axe'; usesLeft: number; workSeconds: number }
   | { kind: 'wood'; count: number }
   | { kind: 'ash'; count: number }
+  | { kind: 'treasure'; coins: number }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
@@ -280,10 +281,19 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'ash') return m.names_item_ash()
   if (it.kind === 'graft') return m.names_item_graft({ name: cropVariety(it.crop, it.variety) })
   if (it.kind === 'grass') return m.names_item_cut_grass()
+  if (it.kind === 'treasure') return m.names_item_treasure()
   return never(it)
 }
 
+export function tileOfSku(id: 'buy-tile-paved' | 'buy-tile-brick' | 'buy-tile-cobble' | 'buy-tile-asphalt'): TileId {
+  if (id === 'buy-tile-paved') return 'paved'
+  if (id === 'buy-tile-brick') return 'brick'
+  if (id === 'buy-tile-cobble') return 'cobble'
+  return 'asphalt'
+}
+
 export const TILE_NAME: { readonly [K in TileId]: () => string } = {
+  asphalt: () => m.names_tile_asphalt(),
   paved: () => m.names_tile_paved(),
   brick: () => m.names_tile_brick(),
   cobble: () => m.names_tile_cobble(),
@@ -516,6 +526,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'wood') return m.hud_line_count({ name: m.names_item_wood(), count: item.count })
   if (item.kind === 'ash') return m.hud_line_compost({ name: m.names_item_ash(), count: item.count })
   if (item.kind === 'grass') return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
+  if (item.kind === 'treasure') return m.hud_line_treasure({ coins: item.coins })
   return never(item)
 }
 
@@ -556,6 +567,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-tile-paved': () => m.names_sku_buy_tile_paved(),
   'buy-tile-brick': () => m.names_sku_buy_tile_brick(),
   'buy-tile-cobble': () => m.names_sku_buy_tile_cobble(),
+  'buy-tile-asphalt': () => m.names_sku_buy_tile_asphalt(),
   'buy-fence': () => m.names_sku_buy_fence(),
   'pack-grass': () => m.names_sku_pack_grass(),
   'buy-mill': () => m.names_sku_buy_mill(),
@@ -629,6 +641,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-tile-paved': () => m.catalog_sku_buy_tile(),
   'buy-tile-brick': () => m.catalog_sku_buy_tile(),
   'buy-tile-cobble': () => m.catalog_sku_buy_tile(),
+  'buy-tile-asphalt': () => m.catalog_sku_buy_tile(),
   'buy-fence': () => m.catalog_sku_buy_fence(),
   'pack-grass': () => m.catalog_sku_pack_grass({ n: GRASS_PACK }),
   'buy-mill': () =>
@@ -780,6 +793,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'tile', tile: 'brick' }
     case 'buy-tile-cobble':
       return { kind: 'tile', tile: 'cobble' }
+    case 'buy-tile-asphalt':
+      return { kind: 'tile', tile: 'asphalt' }
     case 'buy-fence':
       return { kind: 'fence' }
     case 'pack-grass':
@@ -946,6 +961,7 @@ function copyItem(item: Item): Item {
     case 'axe':
     case 'wood':
     case 'ash':
+    case 'treasure':
       return { ...item }
   }
 }

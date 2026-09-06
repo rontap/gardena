@@ -8,8 +8,8 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/settings]]
 - [[ui/multiplayer]]
 - [[ui/tutorial]]
-- [[ui/place]] — furnace 1×2 south. Station 1×1
-- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft
+- [[ui/place]] — furnace 1×2 south. Station 1×1. Burrow refuses place / tile / fence
+- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft. Burrow Dig. Treasure open
 - [[ui/machines]] — mill / jam / barrel / grinder lock Variety. Still mixed
 - [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace. `recipesUsing` crop + Variety
 - [[ui/vehicles]]
@@ -20,8 +20,8 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather` `#debug-iconset`
 - [[ui/market]]
 - [[ui/contracts]]
-- [[ui/almanac]] — Variety row. Ingredients `recipesUsing`. Concepts Variety Quality
-- [[ui/family]]
+- [[ui/almanac]] — Ingredients `recipesUsing`. Concepts Variety Quality Luck Burrow
+- [[ui/family]] — luck
 - [[ui/callout-hover]]
 - [[ui/docks]]
 - [[ui/lens]]

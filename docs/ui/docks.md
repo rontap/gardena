@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
+Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
 
 ## Left docks
 
@@ -70,10 +70,10 @@ Rule, then ledger **Stipend** `+` coin, **Tax** `−` coin, **Water** `−` `rec
 
 ## Object HUD
 
-Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day sensor config. No new chrome. [[ui/sensors]]
+Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day / logic / variety / weather / pressure sensor config. Sensor rows: `Checkbox` / `Radio` from `frame.tsx`. No new chrome. [[ui/sensors]]
 
 Sprinklers, only after **Smart irrigation** (`unlock-smart-irrigation`) — the same row that grants the signal input. Anchored at the vertex. Title **Sprinkler output**.
 
-**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest / counter / day hit. Guest: no sprinkler HUD.
+**Full flow** (`SPRINKLER_TILE_DAY` L/day per tile) plus one row per drinking crop (`waterUsePerSec > 0`), L/day per tile at common stats. Pick sets `tune` and closes. **×** `closeHud`. Map click elsewhere also closes unless it is another sprinkler-hud / water / harvest / counter / day / logic / variety / weather / pressure hit. Guest: no sprinkler HUD.
 
-Water / harvest / counter / day: remote, no walk. Anchored at the cell. Titles **Water sensor** / **Harvest sensor** / **Counter** / **Day sensor**. Checkboxes **Wilting** **Overwatered** (default both on) / **Any** **All** (default Any) / **Sunrise** **Day** **Sunset** **Twilight** (default **Day** on). Counter: live count, **Count to** + `Field` **n**, **Reset**. Not a crop list. Apply immediately and stays open. Guest: yes. While water / harvest HUD is open, that sensor’s 3×3 `fill-water` 0.35. Counter / day: no wash. Traffic light: no HUD, no wash.
+Water / harvest / counter / day / logic / variety / weather / pressure: remote, no walk. Centered above the cell. Rows: muted **Send signal when...** then the ticks. Titles **Water sensor** / **Harvest sensor** / **Counter** / **Day sensor** / **Logic gate** / **Variety sensor** / **Weather sensor** / **Pressure plate**. Check: **Wilting** **Overwatered** (default both on) / **Sunrise** **Day** **Sunset** **Twilight** (default **Day** on) / variety **Plain** **Named** **Heirloom** (default Plain on) / weather **Clear** **Rain** **Dry** **Flood** **Drought** (default **Clear** on) / pressure **Vehicle** **You** **On the ground** (default Vehicle on). Radio: **Any** / **All** (default Any) / logic **OR** / **AND** (default OR). Counter: live count, **Count to** + `Field` **n**, **Reset**. Not a crop list. Apply immediately and stays open. Guest: yes. While water / harvest / variety / pressure HUD is open, that sensor’s watched set `fill-water` 0.35. Counter / day / logic / weather: no wash. Unarmed hover of a range-reader (water, fertilizer, harvest, variety, pressure plate) and an armed range-reader SKU: watched set. Fertilizer: no HUD. Traffic light: no HUD, no wash. Map click another of those hits retargets. Guest: no sprinkler HUD.

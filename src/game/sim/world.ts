@@ -196,6 +196,7 @@ import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as tick from './tick.ts'
 import * as field from './feature-field/field.ts'
 import * as burrow from './feature-burrow/burrow.ts'
+import * as enclosure from './feature-enclosure/enclosure.ts'
 import * as place from './feature-place/place.ts'
 
 export type * from './world.h.ts'
@@ -203,6 +204,8 @@ import type {
   Burst,
   BuyFail,
   DayTally,
+  Enclosure,
+  EnclosureId,
   ExpandFace,
   Family,
   HudTarget,
@@ -382,6 +385,9 @@ export class World {
   readonly segments = new Map<string, Segment>()
   readonly wells: Well[] = []
   readonly fences = new Set<string>()
+  readonly enclosures = new Map<EnclosureId, Enclosure>()
+  readonly fenceEnclosures = new Map<string, EnclosureId[]>()
+  readonly plotEnclosures = new Map<string, EnclosureId[]>()
   readonly paving = new Map<string, TileId>()
   readonly sprinklers = new Map<string, Sprinkler>()
   readonly netVerts = new Set<string>()
@@ -815,6 +821,7 @@ export class World {
     this.dirtEdgeCache.clear()
     this.forEachCell((at, c) => this.track(at, c))
     this.rebuildWired()
+    enclosure.rebuild(this)
   }
 
   statsCached(crop: CropId, variety: VarietyId): Stats {
@@ -1006,6 +1013,7 @@ export class World {
   }
 
   skuShown(id: SkuId): boolean {
+    if (id === 'buy-water-system' || id === 'buy-or' || id === 'buy-and') return false
     if (SKUS[id].need === 'prize') return this.prizeStock(id) > 0
     const s = SKUS[id].show
     return s === 'start' || this.done.has(s)
@@ -1270,6 +1278,80 @@ export class World {
     c.day = day
     c.sunset = sunset
     c.twilight = twilight
+    this.ping()
+  }
+
+  tuneSensor(
+    spec:
+      | { k: 'logic'; at: Coord; mode: 'or' | 'and' }
+      | { k: 'variety'; at: Coord; base: boolean; variant: boolean; heirloom: boolean }
+      | { k: 'weather'; at: Coord; clear: boolean; rain: boolean; dry: boolean; flood: boolean; drought: boolean }
+      | { k: 'pressure'; at: Coord; vehicle: boolean; player: boolean; item: boolean },
+  ): void {
+    const c: [number, number] = [spec.at.col, spec.at.row]
+    if (spec.k === 'logic') this.commit({ a: Act.tuneSensor, t: this.now, p: this.local, k: 'logic', c, mode: spec.mode })
+    else if (spec.k === 'variety') {
+      this.commit({
+        a: Act.tuneSensor,
+        t: this.now,
+        p: this.local,
+        k: 'variety',
+        c,
+        base: spec.base,
+        variant: spec.variant,
+        heirloom: spec.heirloom,
+      })
+    } else if (spec.k === 'weather') {
+      this.commit({
+        a: Act.tuneSensor,
+        t: this.now,
+        p: this.local,
+        k: 'weather',
+        c,
+        clear: spec.clear,
+        rain: spec.rain,
+        dry: spec.dry,
+        flood: spec.flood,
+        drought: spec.drought,
+      })
+    } else {
+      this.commit({
+        a: Act.tuneSensor,
+        t: this.now,
+        p: this.local,
+        k: 'pressure',
+        c,
+        vehicle: spec.vehicle,
+        player: spec.player,
+        item: spec.item,
+      })
+    }
+  }
+
+  tuneSensorBody(cmd: Extract<Cmd, { a: typeof Act.tuneSensor }>): void {
+    const at = { col: cmd.c[0], row: cmd.c[1] }
+    const cell = this.cell(at)
+    if (cmd.k === 'logic') {
+      if (cell.kind !== 'logic') return
+      cell.mode = cmd.mode
+    } else if (cmd.k === 'variety') {
+      if (cell.kind !== 'sensor-variety') return
+      cell.baseOn = cmd.base
+      cell.variant = cmd.variant
+      cell.heirloom = cmd.heirloom
+    } else if (cmd.k === 'weather') {
+      if (cell.kind !== 'sensor-weather') return
+      cell.clear = cmd.clear
+      cell.rain = cmd.rain
+      cell.dry = cmd.dry
+      cell.flood = cmd.flood
+      cell.drought = cmd.drought
+    } else {
+      if (cell.kind !== 'vehicle-detector') return
+      cell.vehicle = cmd.vehicle
+      cell.player = cmd.player
+      cell.item = cmd.item
+    }
     this.ping()
   }
 

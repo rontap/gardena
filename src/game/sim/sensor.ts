@@ -1,5 +1,6 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
-import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, RectBase, ResearchStation, SeedSilo } from './building.ts'
+import { tierOf, type VarietyId } from '../defs/varieties.ts'
+import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, Pump, RectBase, ResearchStation, SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal, SkuId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -7,6 +8,7 @@ import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pi
 import type { Cell } from './plot.ts'
 import { fertBand, waterBand } from './soil.ts'
 import type { Vehicle } from './feature-vehicles/vehicle.ts'
+import type { WeatherKind } from './weather.ts'
 
 export type PortId = 'out' | 'in' | 'in-l' | 'in-r'
 
@@ -20,9 +22,19 @@ export type Wire = { from: WireEnd; to: WireEnd }
 abstract class SensorBase {
   readonly base: RectBase
   readonly ports: readonly PortId[] = []
+  readonly fenceable: boolean = false
   constructor(base: RectBase) {
     this.base = base
   }
+}
+
+export function fenceable<T extends SensorBase>(
+  Ctor: abstract new (base: RectBase) => T,
+): abstract new (base: RectBase) => T {
+  abstract class Fenced extends Ctor {
+    override readonly fenceable = true
+  }
+  return Fenced
 }
 
 abstract class HeldSensor extends SensorBase {
@@ -77,21 +89,13 @@ export class NotGate extends SensorBase {
   }
 }
 
-export class AndGate extends SensorBase {
-  readonly kind = 'and' as const
+export class LogicGate extends SensorBase {
+  readonly kind = 'logic' as const
   override readonly ports: readonly PortId[] = ['in-l', 'in-r', 'out']
+  mode: 'or' | 'and' = 'or'
   out: Signal = 0
   eval(l: Signal, r: Signal): void {
-    this.out = l === 1 && r === 1 ? 1 : 0
-  }
-}
-
-export class OrGate extends SensorBase {
-  readonly kind = 'or' as const
-  override readonly ports: readonly PortId[] = ['in-l', 'in-r', 'out']
-  out: Signal = 0
-  eval(l: Signal, r: Signal): void {
-    this.out = l === 1 || r === 1 ? 1 : 0
+    this.out = this.mode === 'and' ? (l === 1 && r === 1 ? 1 : 0) : l === 1 || r === 1 ? 1 : 0
   }
 }
 
@@ -129,19 +133,19 @@ export class Counter extends SensorBase {
   }
 }
 
-export class WaterSensor extends HeldSensor {
+export class WaterSensor extends fenceable(HeldSensor) {
   readonly kind = 'sensor-water' as const
   override readonly ports: readonly PortId[] = ['out']
   wilt = true
   over = true
 }
 
-export class FertSensor extends HeldSensor {
+export class FertSensor extends fenceable(HeldSensor) {
   readonly kind = 'sensor-fert' as const
   override readonly ports: readonly PortId[] = ['out']
 }
 
-export class HarvestSensor extends HeldSensor {
+export class HarvestSensor extends fenceable(HeldSensor) {
   readonly kind = 'sensor-harvest' as const
   override readonly ports: readonly PortId[] = ['out']
   mode: 'any' | 'all' = 'any'
@@ -156,14 +160,35 @@ export class DaySensor extends HeldSensor {
   twilight = false
 }
 
+export class VarietySensor extends fenceable(HeldSensor) {
+  readonly kind = 'sensor-variety' as const
+  override readonly ports: readonly PortId[] = ['out']
+  baseOn = true
+  variant = false
+  heirloom = false
+}
+
+export class WeatherSensor extends HeldSensor {
+  readonly kind = 'sensor-weather' as const
+  override readonly ports: readonly PortId[] = ['out']
+  clear = true
+  rain = false
+  dry = false
+  flood = false
+  drought = false
+}
+
 export class WaterSystem extends HeldSensor {
   readonly kind = 'water-system' as const
   override readonly ports: readonly PortId[] = ['out']
 }
 
-export class VehicleSensor extends HeldSensor {
+export class VehicleSensor extends fenceable(HeldSensor) {
   readonly kind = 'vehicle-detector' as const
   override readonly ports: readonly PortId[] = ['out']
+  vehicle = true
+  player = false
+  item = false
 }
 
 export class TrafficLight extends HeldSensor {
@@ -180,14 +205,15 @@ export type Sensor =
   | Button
   | Lamp
   | NotGate
-  | AndGate
-  | OrGate
+  | LogicGate
   | Pulser
   | Counter
   | WaterSensor
   | FertSensor
   | HarvestSensor
   | DaySensor
+  | VarietySensor
+  | WeatherSensor
   | WaterSystem
   | VehicleSensor
   | TrafficLight
@@ -196,8 +222,7 @@ const MAKE: { [K in SensorKind]: { sku: SkuId; make: (base: RectBase) => Sensor 
   lever: { sku: 'buy-lever', make: base => new Lever(base) },
   button: { sku: 'buy-button', make: base => new Button(base) },
   lamp: { sku: 'buy-lamp', make: base => new Lamp(base) },
-  or: { sku: 'buy-or', make: base => new OrGate(base) },
-  and: { sku: 'buy-and', make: base => new AndGate(base) },
+  logic: { sku: 'buy-logic', make: base => new LogicGate(base) },
   not: { sku: 'buy-not', make: base => new NotGate(base) },
   pulser: { sku: 'buy-pulser', make: base => new Pulser(base) },
   counter: { sku: 'buy-counter', make: base => new Counter(base) },
@@ -205,6 +230,8 @@ const MAKE: { [K in SensorKind]: { sku: SkuId; make: (base: RectBase) => Sensor 
   'sensor-fert': { sku: 'buy-sensor-fert', make: base => new FertSensor(base) },
   'sensor-harvest': { sku: 'buy-sensor-harvest', make: base => new HarvestSensor(base) },
   'sensor-day': { sku: 'buy-sensor-day', make: base => new DaySensor(base) },
+  'sensor-variety': { sku: 'buy-sensor-variety', make: base => new VarietySensor(base) },
+  'sensor-weather': { sku: 'buy-sensor-weather', make: base => new WeatherSensor(base) },
   'water-system': { sku: 'buy-water-system', make: base => new WaterSystem(base) },
   'vehicle-detector': { sku: 'buy-vehicle-detector', make: base => new VehicleSensor(base) },
   'traffic-light': { sku: 'buy-traffic-light', make: base => new TrafficLight(base) },
@@ -256,6 +283,7 @@ export type PortDevice =
   | 'freezer'
   | 'seed-silo'
   | 'additive-store'
+  | 'pump'
 
 export function portDevice(c: Cell): PortDevice {
   if (isSensor(c) || ('ports' in c && c.ports.length > 0)) return c.kind as PortDevice
@@ -308,22 +336,45 @@ export function area3(at: Coord): Coord[] {
   return [-1, 0, 1].flatMap(dr => [-1, 0, 1].map(dc => ({ col: at.col + dc, row: at.row + dr })))
 }
 
+export function watchedCoords(
+  origin: Coord,
+  onFence: boolean,
+  interiors: readonly Coord[],
+  includeOrigin: boolean,
+): Coord[] | undefined {
+  if (onFence) {
+    if (interiors.length === 0) return undefined
+    return [...interiors]
+  }
+  if (includeOrigin) return area3(origin)
+  return area3(origin).filter(c => c.col !== origin.col || c.row !== origin.row)
+}
+
 export function readerRaw(
-  s: WaterSensor | FertSensor | HarvestSensor,
+  s: WaterSensor | FertSensor | HarvestSensor | VarietySensor,
+  watched: readonly Coord[],
   cellAt: (at: Coord) => Cell | undefined,
   mods: readonly Modifier[],
 ): Signal {
-  const origin = { col: s.base.col, row: s.base.row }
-  const around = area3(origin).flatMap(at => {
-    if (at.col === origin.col && at.row === origin.row) return []
+  const around = watched.flatMap(at => {
     const c = cellAt(at)
     if (c === undefined) return []
-    if (c.kind === 'tree') return []
     return [c]
   })
+  if (s.kind === 'sensor-variety') {
+    if (!s.baseOn && !s.variant && !s.heirloom) return 0
+    return around.some(c => {
+      if (c.kind === 'tree') return !c.trunk && varietyTicked(s, c.variety)
+      if (c.kind === 'growing' || c.kind === 'ripe') return varietyTicked(s, c.plant.variety)
+      return false
+    })
+      ? 1
+      : 0
+  }
+  const plants = around.filter(c => c.kind !== 'tree')
   if (s.kind === 'sensor-water') {
     if (!s.wilt && !s.over) return 0
-    return around.some(c => {
+    return plants.some(c => {
       if (c.kind !== 'growing') return false
       if (waterBand(c.soil.water, c.plant.stats(mods).waterTolerance) !== 'red') return false
       return c.soil.drowning ? s.over : s.wilt
@@ -332,16 +383,23 @@ export function readerRaw(
       : 0
   }
   if (s.kind === 'sensor-fert') {
-    return around.some(
+    return plants.some(
       c => c.kind === 'growing' && fertBand(c.soil.fertilizer, c.plant.stats(mods).fertTolerance) === 'red',
     )
       ? 1
       : 0
   }
-  const crop = around.filter(c => c.kind === 'growing' || c.kind === 'ripe')
+  const crop = plants.filter(c => c.kind === 'growing' || c.kind === 'ripe')
   if (s.mode === 'any') return crop.some(c => c.kind === 'ripe') ? 1 : 0
   if (crop.length === 0) return 0
   return crop.every(c => c.kind === 'ripe') ? 1 : 0
+}
+
+function varietyTicked(s: VarietySensor, variety: VarietyId): boolean {
+  const t = tierOf(variety)
+  if (t === 'base') return s.baseOn
+  if (t === 'variant') return s.variant
+  return s.heirloom
 }
 
 export function dayRaw(s: DaySensor, phase: DayPhase): Signal {
@@ -349,6 +407,14 @@ export function dayRaw(s: DaySensor, phase: DayPhase): Signal {
   if (phase === 'day') return s.day ? 1 : 0
   if (phase === 'sunset') return s.sunset ? 1 : 0
   return s.twilight ? 1 : 0
+}
+
+export function weatherRaw(s: WeatherSensor, kind: WeatherKind): Signal {
+  if (kind === 'clear') return s.clear ? 1 : 0
+  if (kind === 'rain') return s.rain ? 1 : 0
+  if (kind === 'dry') return s.dry ? 1 : 0
+  if (kind === 'flood') return s.flood ? 1 : 0
+  return s.drought ? 1 : 0
 }
 
 export type CounterDial = 's0' | 's1' | 's2' | 's3' | 's4'
@@ -363,12 +429,24 @@ export function counterDial(c: Counter): CounterDial {
   return 's4'
 }
 
-export function vehicleRaw(at: Coord, vehicles: readonly Vehicle[]): Signal {
-  return vehicles.some(
-    v => v.pose.kind === 'field' && Math.floor(v.pose.x) === at.col && Math.floor(v.pose.y) === at.row,
-  )
-    ? 1
-    : 0
+export function pressureRaw(
+  s: VehicleSensor,
+  watched: readonly Coord[],
+  vehicles: readonly Vehicle[],
+  players: readonly { x: number; y: number }[],
+  drops: readonly { at: Coord }[],
+): Signal {
+  if (!s.vehicle && !s.player && !s.item) return 0
+  const keys = new Set(watched.map(c => `${c.col},${c.row}`))
+  if (
+    s.vehicle &&
+    vehicles.some(v => v.pose.kind === 'field' && keys.has(`${Math.floor(v.pose.x)},${Math.floor(v.pose.y)}`))
+  ) {
+    return 1
+  }
+  if (s.player && players.some(p => keys.has(`${Math.floor(p.x)},${Math.floor(p.y)}`))) return 1
+  if (s.item && drops.some(d => keys.has(`${d.at.col},${d.at.row}`))) return 1
+  return 0
 }
 
 export function stepHold(cur: Signal, hold: number, raw: Signal): { out: Signal; hold: number } {
@@ -454,10 +532,11 @@ export type EvalIn = {
   raw: Raw
   machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>
   stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>
+  pumps: ReadonlyMap<string, Pump>
 }
 
 export function evalDag(input: EvalIn): void {
-  const { sensors, wires, valves, sprinklers, raw, machines, stores } = input
+  const { sensors, wires, valves, sprinklers, raw, machines, stores, pumps } = input
   const byTo = new Map<string, Wire[]>()
   wires.forEach(w => {
     const k = endKey(w.to)
@@ -497,6 +576,8 @@ export function evalDag(input: EvalIn): void {
       s.kind === 'sensor-fert' ||
       s.kind === 'sensor-harvest' ||
       s.kind === 'sensor-day' ||
+      s.kind === 'sensor-variety' ||
+      s.kind === 'sensor-weather' ||
       s.kind === 'water-system' ||
       s.kind === 'vehicle-detector'
     ) {
@@ -511,7 +592,7 @@ export function evalDag(input: EvalIn): void {
   })
   const nodes: string[] = []
   sensors.forEach((s, k) => {
-    if (s.kind === 'not' || s.kind === 'and' || s.kind === 'or' || s.kind === 'lamp') nodes.push(k)
+    if (s.kind === 'not' || s.kind === 'logic' || s.kind === 'lamp') nodes.push(k)
   })
   const indeg = new Map<string, number>()
   const adj = new Map<string, string[]>()
@@ -549,10 +630,13 @@ export function evalDag(input: EvalIn): void {
     if (s === undefined) return
     const at = { col: s.base.col, row: s.base.row }
     if (s.kind === 'lamp' || s.kind === 'not') s.eval(innOf(at, 'in'))
-    else if (s.kind === 'and' || s.kind === 'or') s.eval(innOf(at, 'in-l'), innOf(at, 'in-r'))
+    else if (s.kind === 'logic') s.eval(innOf(at, 'in-l'), innOf(at, 'in-r'))
   })
   machines.forEach(m => {
     m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
+  })
+  pumps.forEach(p => {
+    p.inn = innOf({ col: p.base.col, row: p.base.row }, 'in')
   })
   sensors.forEach(s => {
     if (s.kind === 'traffic-light') s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))

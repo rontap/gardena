@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.16 as const
+export const SAVE_VERSION = 2.17 as const
 
 export type {
   LoadFailReason,
@@ -337,10 +337,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'button', base: c.base, left: c.left, out: c.out }
     case 'lamp':
       return { kind: 'lamp', base: c.base, inn: c.inn }
-    case 'or':
-      return { kind: 'or', base: c.base, out: c.out }
-    case 'and':
-      return { kind: 'and', base: c.base, out: c.out }
+    case 'logic':
+      return { kind: 'logic', base: c.base, mode: c.mode, out: c.out }
     case 'not':
       return { kind: 'not', base: c.base, out: c.out }
     case 'pulser':
@@ -364,10 +362,40 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         out: c.out,
         hold: c.hold,
       }
+    case 'sensor-variety':
+      return {
+        kind: 'sensor-variety',
+        base: c.base,
+        baseOn: c.baseOn,
+        variant: c.variant,
+        heirloom: c.heirloom,
+        out: c.out,
+        hold: c.hold,
+      }
+    case 'sensor-weather':
+      return {
+        kind: 'sensor-weather',
+        base: c.base,
+        clear: c.clear,
+        rain: c.rain,
+        dry: c.dry,
+        flood: c.flood,
+        drought: c.drought,
+        out: c.out,
+        hold: c.hold,
+      }
     case 'water-system':
       return { kind: 'water-system', base: c.base, out: c.out, hold: c.hold }
     case 'vehicle-detector':
-      return { kind: 'vehicle-detector', base: c.base, out: c.out, hold: c.hold }
+      return {
+        kind: 'vehicle-detector',
+        base: c.base,
+        vehicle: c.vehicle,
+        player: c.player,
+        item: c.item,
+        out: c.out,
+        hold: c.hold,
+      }
     case 'traffic-light':
       return { kind: 'traffic-light', base: c.base, inn: c.inn, out: c.out, hold: c.hold }
   }

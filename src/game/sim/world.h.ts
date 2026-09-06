@@ -40,6 +40,9 @@ import type { Reservoir } from './water.ts'
 import type { Drive, Route, Trailer, Vehicle } from './feature-vehicles/vehicle.h.ts'
 import type { StallMap } from './stall.ts'
 import type { ValveHold, WaterSystem, Wire, WireEnd } from './sensor.ts'
+import type { Enclosure, EnclosureId } from './feature-enclosure/enclosure.h.ts'
+
+export type { Enclosure, EnclosureId }
 
 export type Intent =
   | { act: 'walk'; at: Coord }
@@ -105,8 +108,7 @@ export type StayArmed =
   | 'buy-lever'
   | 'buy-button'
   | 'buy-lamp'
-  | 'buy-or'
-  | 'buy-and'
+  | 'buy-logic'
   | 'buy-not'
   | 'buy-pulser'
   | 'buy-counter'
@@ -114,6 +116,8 @@ export type StayArmed =
   | 'buy-sensor-fert'
   | 'buy-sensor-harvest'
   | 'buy-sensor-day'
+  | 'buy-sensor-variety'
+  | 'buy-sensor-weather'
   | 'buy-water-system'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
@@ -163,6 +167,10 @@ export type HudTarget =
   | { kind: 'harvest'; at: Coord }
   | { kind: 'counter'; at: Coord }
   | { kind: 'day'; at: Coord }
+  | { kind: 'logic'; at: Coord }
+  | { kind: 'variety'; at: Coord }
+  | { kind: 'weather'; at: Coord }
+  | { kind: 'pressure'; at: Coord }
 
 export type DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
 

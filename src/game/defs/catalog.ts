@@ -465,6 +465,12 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_and(),
     },
     {
+      id: 'logic',
+      title: m.names_sensor_logic(),
+      icon: { kind: 'logic' },
+      blurb: m.catalog_logic(),
+    },
+    {
       id: 'not',
       title: m.names_sensor_not(),
       icon: { kind: 'not' },
@@ -505,6 +511,18 @@ export function catalogEntries(): CatalogEntry[] {
       title: m.names_sensor_day(),
       icon: { kind: 'sensor-day' },
       blurb: m.catalog_sensor_day(),
+    },
+    {
+      id: 'sensor-variety',
+      title: m.names_sensor_variety(),
+      icon: { kind: 'sensor-variety' },
+      blurb: m.catalog_sensor_variety(),
+    },
+    {
+      id: 'sensor-weather',
+      title: m.names_sensor_weather(),
+      icon: { kind: 'sensor-weather' },
+      blurb: m.catalog_sensor_weather(),
     },
     {
       id: 'water-system',

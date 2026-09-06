@@ -2,8 +2,22 @@ import { SPRINKLER_TILE_RATE } from '../defs/items.ts'
 import { occupiedCells, type Base, type Coord } from './building.ts'
 import { statsOf } from './modifiers.ts'
 import { aoe, edgeKey, corners, incident, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
-import { pourEligible, cellKey, dayRaw, evalDag, isSensor, readerRaw, rawMap, storeRaw, vehicleRaw, type Sensor } from './sensor.ts'
-import type { Chest, Freezer, Furnace, JamMachine, Mill, PotStill, ResearchStation, SeedSilo, AdditiveStore } from './building.ts'
+import { lookup } from './feature-enclosure/enclosure.ts'
+import {
+  pourEligible,
+  cellKey,
+  dayRaw,
+  evalDag,
+  isSensor,
+  pressureRaw,
+  readerRaw,
+  rawMap,
+  storeRaw,
+  watchedCoords,
+  weatherRaw,
+  type Sensor,
+} from './sensor.ts'
+import type { Chest, Freezer, Furnace, JamMachine, Mill, PotStill, Pump, ResearchStation, SeedSilo, AdditiveStore } from './building.ts'
 import type { Net, World } from './world.ts'
 import { tickVfx } from './tick.ts'
 
@@ -220,6 +234,10 @@ export function evalSensors(world: World, dt: number): void {
   const sensors = new Map<string, Sensor>()
   const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>()
   const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
+  const pumps = new Map<string, Pump>()
+  world.pumps.forEach(p => {
+    pumps.set(cellKey({ col: p.base.col, row: p.base.row }), p)
+  })
   for (const at of world.sensors.values()) {
     const c = world.cell(at)
     if (isSensor(c)) sensors.set(cellKey(at), c)
@@ -238,11 +256,36 @@ export function evalSensors(world: World, dt: number): void {
   stores.set(cellKey({ col: world.silo.base.col, row: world.silo.base.row }), world.silo)
   stores.set(cellKey({ col: world.additives.base.col, row: world.additives.base.row }), world.additives)
   const raw = new Map<string, 0 | 1>()
+  const cellAt = (at: { col: number; row: number }) => (world.inWorld(at) ? world.cell(at) : undefined)
   sensors.forEach((s, k) => {
-    if (s.kind === 'sensor-water' || s.kind === 'sensor-fert' || s.kind === 'sensor-harvest') {
-      raw.set(k, readerRaw(s, at => (world.inWorld(at) ? world.cell(at) : undefined), world.modifiers))
+    if (
+      s.kind === 'sensor-water' ||
+      s.kind === 'sensor-fert' ||
+      s.kind === 'sensor-harvest' ||
+      s.kind === 'sensor-variety' ||
+      s.kind === 'vehicle-detector'
+    ) {
+      const origin = { col: s.base.col, row: s.base.row }
+      const onFence = world.hasFence(origin)
+      const interiors = onFence ? lookup(world, origin) : []
+      const watched = watchedCoords(origin, onFence, interiors, s.kind === 'vehicle-detector')
+      if (watched === undefined) raw.set(k, 0)
+      else if (s.kind === 'vehicle-detector') {
+        raw.set(
+          k,
+          pressureRaw(
+            s,
+            watched,
+            world.vehicles,
+            world.seats.filter(seat => seat.presence === 'in').map(seat => seat.actor),
+            world.drops,
+          ),
+        )
+      } else raw.set(k, readerRaw(s, watched, cellAt, world.modifiers))
     } else if (s.kind === 'sensor-day') {
       raw.set(k, dayRaw(s, world.clock.phase()))
+    } else if (s.kind === 'sensor-weather') {
+      raw.set(k, weatherRaw(s, world.weather(world.clock.day)))
     } else if (s.kind === 'water-system') {
       grid(world)
       const hit = corners(occupiedCells(s.base, world.owned)).find(
@@ -256,8 +299,6 @@ export function evalSensors(world: World, dt: number): void {
       const stored = net.sources.reduce((a, r) => a + r.stored, 0)
       const want = net.sprinklers.reduce((a, spr) => a + (mayPour(world, spr) ? demand(world, spr) * dt : 0), 0)
       raw.set(k, want > stored ? 1 : 0)
-    } else if (s.kind === 'vehicle-detector') {
-      raw.set(k, vehicleRaw({ col: s.base.col, row: s.base.row }, world.vehicles))
     }
   })
   stores.forEach((s, k) => {
@@ -265,7 +306,16 @@ export function evalSensors(world: World, dt: number): void {
   })
   const prevLevels = new Map<string, 0 | 1>()
   world.valveHold.forEach((h, k) => prevLevels.set(k, h.level))
-  evalDag({ sensors, wires: world.wires, valves: world.valveHold, sprinklers: world.sprinklers, raw: rawMap(raw), machines, stores })
+  evalDag({
+    sensors,
+    wires: world.wires,
+    valves: world.valveHold,
+    sprinklers: world.sprinklers,
+    raw: rawMap(raw),
+    machines,
+    stores,
+    pumps,
+  })
   let flipped = false
   world.valveHold.forEach((h, k) => {
     if (prevLevels.get(k) !== h.level) flipped = true
@@ -274,5 +324,10 @@ export function evalSensors(world: World, dt: number): void {
 }
 
 export function gatherWater(world: World, dt: number): void {
-  world.sources().forEach(s => s.water.gather(dt))
+  world.pumps.forEach(p => {
+    if (p.inn === 1) return
+    p.water.gather(dt)
+  })
+  world.tanks.forEach(t => t.water.gather(dt))
+  world.wells.forEach(w => w.water.gather(dt))
 }

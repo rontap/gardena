@@ -144,6 +144,7 @@ export type Face =
   | { kind: 'lamp' }
   | { kind: 'or' }
   | { kind: 'and' }
+  | { kind: 'logic' }
   | { kind: 'not' }
   | { kind: 'pulser' }
   | { kind: 'counter' }
@@ -151,6 +152,8 @@ export type Face =
   | { kind: 'sensor-fert' }
   | { kind: 'sensor-harvest' }
   | { kind: 'sensor-day' }
+  | { kind: 'sensor-variety' }
+  | { kind: 'sensor-weather' }
   | { kind: 'water-system' }
   | { kind: 'vehicle-detector' }
   | { kind: 'traffic-light' }
@@ -330,6 +333,7 @@ const PLACE_NAME = {
   lamp: () => m.names_sensor_lamp(),
   or: () => m.names_sensor_or(),
   and: () => m.names_sensor_and(),
+  logic: () => m.names_sensor_logic(),
   not: () => m.names_sensor_not(),
   pulser: () => m.names_sensor_pulser(),
   counter: () => m.names_sensor_counter(),
@@ -337,6 +341,8 @@ const PLACE_NAME = {
   'sensor-fert': () => m.names_sensor_fert(),
   'sensor-harvest': () => m.names_sensor_harvest(),
   'sensor-day': () => m.names_sensor_day(),
+  'sensor-variety': () => m.names_sensor_variety(),
+  'sensor-weather': () => m.names_sensor_weather(),
   'water-system': () => m.names_sensor_water_system(),
   'vehicle-detector': () => m.names_sensor_vehicle_detector(),
   'traffic-light': () => m.names_sensor_traffic_light(),
@@ -377,6 +383,7 @@ export function faceName(face: Face): string {
     case 'lamp':
     case 'or':
     case 'and':
+    case 'logic':
     case 'not':
     case 'pulser':
     case 'counter':
@@ -384,6 +391,8 @@ export function faceName(face: Face): string {
     case 'sensor-fert':
     case 'sensor-harvest':
     case 'sensor-day':
+    case 'sensor-variety':
+    case 'sensor-weather':
     case 'water-system':
     case 'vehicle-detector':
     case 'traffic-light':
@@ -587,6 +596,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-lamp': () => m.names_sku_buy_lamp(),
   'buy-or': () => m.names_sku_buy_or(),
   'buy-and': () => m.names_sku_buy_and(),
+  'buy-logic': () => m.names_sku_buy_logic(),
   'buy-not': () => m.names_sku_buy_not(),
   'buy-pulser': () => m.names_sku_buy_pulser(),
   'buy-counter': () => m.names_sku_buy_counter(),
@@ -594,6 +604,8 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-sensor-fert': () => m.names_sku_buy_sensor_fert(),
   'buy-sensor-harvest': () => m.names_sku_buy_sensor_harvest(),
   'buy-sensor-day': () => m.names_sku_buy_sensor_day(),
+  'buy-sensor-variety': () => m.names_sku_buy_sensor_variety(),
+  'buy-sensor-weather': () => m.names_sku_buy_sensor_weather(),
   'buy-water-system': () => m.names_sku_buy_water_system(),
   'buy-vehicle-detector': () => m.names_sku_buy_vehicle_detector(),
   'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
@@ -662,6 +674,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-lamp': () => m.catalog_lamp(),
   'buy-or': () => m.catalog_or(),
   'buy-and': () => m.catalog_and(),
+  'buy-logic': () => m.catalog_logic(),
   'buy-not': () => m.catalog_not(),
   'buy-pulser': () => m.catalog_pulser(),
   'buy-counter': () => m.catalog_counter(),
@@ -669,6 +682,8 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-sensor-fert': () => m.catalog_sensor_fert(),
   'buy-sensor-harvest': () => m.catalog_sensor_harvest(),
   'buy-sensor-day': () => m.catalog_sensor_day(),
+  'buy-sensor-variety': () => m.catalog_sensor_variety(),
+  'buy-sensor-weather': () => m.catalog_sensor_weather(),
   'buy-water-system': () => m.catalog_water_system(),
   'buy-vehicle-detector': () => m.catalog_vehicle_detector(),
   'buy-traffic-light': () => m.catalog_traffic_light(),
@@ -836,6 +851,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'or' }
     case 'buy-and':
       return { kind: 'and' }
+    case 'buy-logic':
+      return { kind: 'logic' }
     case 'buy-not':
       return { kind: 'not' }
     case 'buy-pulser':
@@ -850,6 +867,10 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'sensor-harvest' }
     case 'buy-sensor-day':
       return { kind: 'sensor-day' }
+    case 'buy-sensor-variety':
+      return { kind: 'sensor-variety' }
+    case 'buy-sensor-weather':
+      return { kind: 'sensor-weather' }
     case 'buy-water-system':
       return { kind: 'water-system' }
     case 'buy-vehicle-detector':

@@ -128,12 +128,15 @@ import itemButton from '../../assets/items/item-button.svg?raw'
 import itemLamp from '../../assets/items/item-lamp.svg?raw'
 import itemOr from '../../assets/items/item-or.svg?raw'
 import itemAnd from '../../assets/items/item-and.svg?raw'
+import itemLogic from '../../assets/items/item-logic.svg?raw'
 import itemNot from '../../assets/items/item-not.svg?raw'
 import itemPulser from '../../assets/items/item-pulser.svg?raw'
 import itemCounter from '../../assets/items/item-counter.svg?raw'
 import itemSensorWater from '../../assets/items/item-sensor-water.svg?raw'
 import itemSensorFert from '../../assets/items/item-sensor-fert.svg?raw'
 import itemSensorHarvest from '../../assets/items/item-sensor-harvest.svg?raw'
+import itemSensorVariety from '../../assets/items/item-sensor-variety.svg?raw'
+import itemSensorWeather from '../../assets/items/item-sensor-weather.svg?raw'
 import itemSensorDay from '../../assets/items/item-sensor-day.svg?raw'
 import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
 import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
@@ -143,12 +146,15 @@ import propButton from '../../assets/props/prop-button.svg?raw'
 import propLamp from '../../assets/props/prop-lamp.svg?raw'
 import propOr from '../../assets/props/prop-or.svg?raw'
 import propAnd from '../../assets/props/prop-and.svg?raw'
+import propLogic from '../../assets/props/prop-logic.svg?raw'
 import propNot from '../../assets/props/prop-not.svg?raw'
 import propPulser from '../../assets/props/prop-pulser.svg?raw'
 import propCounter from '../../assets/props/prop-counter.svg?raw'
 import propSensorWater from '../../assets/props/prop-sensor-water.svg?raw'
 import propSensorFert from '../../assets/props/prop-sensor-fert.svg?raw'
 import propSensorHarvest from '../../assets/props/prop-sensor-harvest.svg?raw'
+import propSensorVariety from '../../assets/props/prop-sensor-variety.svg?raw'
+import propSensorWeather from '../../assets/props/prop-sensor-weather.svg?raw'
 import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
@@ -430,6 +436,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'lamp') return stageOnly(itemLamp, 'off')
   if (item.kind === 'or') return svgInner(itemOr)
   if (item.kind === 'and') return svgInner(itemAnd)
+  if (item.kind === 'logic') return stageOnly(itemLogic, 'or')
   if (item.kind === 'not') return svgInner(itemNot)
   if (item.kind === 'pulser') return stageOnly(itemPulser, 'off')
   if (item.kind === 'counter') return stageOnly(itemCounter, 's0')
@@ -437,6 +444,8 @@ export function itemInner(item: Face): string {
   if (item.kind === 'sensor-fert') return stageOnly(itemSensorFert, 'ok')
   if (item.kind === 'sensor-harvest') return stageOnly(itemSensorHarvest, 'off')
   if (item.kind === 'sensor-day') return stageOnly(itemSensorDay, 'off')
+  if (item.kind === 'sensor-variety') return stageOnly(itemSensorVariety, 'off')
+  if (item.kind === 'sensor-weather') return stageOnly(itemSensorWeather, 'off')
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
   if (item.kind === 'traffic-light') return stageOnly(itemTrafficLight, 'off')
@@ -747,6 +756,15 @@ export const PROP_LAMP = propLamp
 export const PROP_OR = svgInner(propOr)
 export const PROP_AND = svgInner(propAnd)
 export const PROP_NOT = svgInner(propNot)
+export function logicArt(mode: 'or' | 'and'): string {
+  return stageOnly(propLogic, mode)
+}
+export function varietySensorArt(on: boolean): string {
+  return stageOnly(propSensorVariety, on ? 'on' : 'off')
+}
+export function weatherSensorArt(on: boolean): string {
+  return stageOnly(propSensorWeather, on ? 'on' : 'off')
+}
 export function leverArt(on: boolean): string {
   return stageOnly(propLever, on ? 'on' : 'off')
 }
@@ -1133,6 +1151,12 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   PROP_OR,
   PROP_AND,
   PROP_NOT,
+  logicArt('or'),
+  logicArt('and'),
+  varietySensorArt(true),
+  varietySensorArt(false),
+  weatherSensorArt(true),
+  weatherSensorArt(false),
   waterSensorArt(true),
   waterSensorArt(false),
   fertSensorArt(true),

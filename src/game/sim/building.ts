@@ -260,6 +260,8 @@ export class Pump {
   readonly form: 'starter' | 'jack'
   readonly base: Base
   readonly water: Reservoir
+  readonly ports = ['in'] as const
+  inn: Signal = 0
   constructor(base: Base, form: 'starter' | 'jack') {
     this.base = base
     this.form = form

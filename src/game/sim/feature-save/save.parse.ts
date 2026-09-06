@@ -37,7 +37,6 @@ import type { SkillId } from '../ids.ts'
 import type { Bins, Contracts } from '../feature-contracts/market.h.ts'
 import { MemorySink, type LogSink } from '../log.ts'
 import {
-  AndGate,
   Button,
   Counter,
   DaySensor,
@@ -45,13 +44,15 @@ import {
   HarvestSensor,
   Lamp,
   Lever,
+  LogicGate,
   NotGate,
-  OrGate,
   Pulser,
   TrafficLight,
+  VarietySensor,
   VehicleSensor,
   WaterSensor,
   WaterSystem,
+  WeatherSensor,
 } from '../sensor.ts'
 import { Plant, Turf, Weed } from '../plant.ts'
 import { Rng } from '../rng.ts'
@@ -477,12 +478,20 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       return made
     }
     case 'or': {
-      const made = new OrGate(cell.base)
+      const made = new LogicGate(cell.base)
+      made.mode = 'or'
       made.out = cell.out
       return made
     }
     case 'and': {
-      const made = new AndGate(cell.base)
+      const made = new LogicGate(cell.base)
+      made.mode = 'and'
+      made.out = cell.out
+      return made
+    }
+    case 'logic': {
+      const made = new LogicGate(cell.base)
+      made.mode = cell.mode
       made.out = cell.out
       return made
     }
@@ -537,6 +546,26 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       made.hold = cell.hold
       return made
     }
+    case 'sensor-variety': {
+      const made = new VarietySensor(cell.base)
+      made.baseOn = cell.baseOn
+      made.variant = cell.variant
+      made.heirloom = cell.heirloom
+      made.out = cell.out
+      made.hold = cell.hold
+      return made
+    }
+    case 'sensor-weather': {
+      const made = new WeatherSensor(cell.base)
+      made.clear = cell.clear
+      made.rain = cell.rain
+      made.dry = cell.dry
+      made.flood = cell.flood
+      made.drought = cell.drought
+      made.out = cell.out
+      made.hold = cell.hold
+      return made
+    }
     case 'water-system': {
       const made = new WaterSystem(cell.base)
       made.out = cell.out
@@ -545,6 +574,9 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'vehicle-detector': {
       const made = new VehicleSensor(cell.base)
+      made.vehicle = cell.vehicle
+      made.player = cell.player
+      made.item = cell.item
       made.out = cell.out
       made.hold = cell.hold
       return made

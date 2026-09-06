@@ -2,7 +2,7 @@
 
 Types as they run. Illegal states are unrepresentable. Coders do not runtime-check these.
 
-Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `SensorKind`, `VarietyId`). Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`. Routes: `sim/vehicle.ts`. Light: `sim/sensor.ts`.
+Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `SensorKind`, `VarietyId`, `EnclosureId`). Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`. Routes: `sim/vehicle.ts`. Light: `sim/sensor.ts`. Fenced area: `sim/feature-enclosure/`.
 
 ## Unrepresentable
 
@@ -34,7 +34,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `House`, starter pump (`form: 'starter'`), `Truck` are not delete targets.
 
-`Pump.water` and `RainTank.water` are required `Reservoir`. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
+`Pump.water` and `RainTank.water` are required `Reservoir`. `Pump.ports = ['in']`. `Pump.inn: Signal`. Combinational, no hold, not saved. `inn === 1` → `gatherWater` skips that reservoir. Unwired 0 gathers. Stored still fills a bucket and still feeds the water network. Origin cell owns the port; Pumpjack east cell does not. Starter is wireable. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
 
 ## Same instance
 
@@ -42,7 +42,7 @@ Multi-cell buildings store **the same instance** in every occupied cell: `House`
 
 `World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
 
-Mill/jam/still/station `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/sensors]] [[mechanics/inventory]].
+Mill/jam/still/station/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/sensors]] [[mechanics/inventory]].
 
 Still `base.w = 2` `base.h = 1` and prop `48×24` occupying both cells.
 
@@ -80,7 +80,7 @@ Burrow is untilled cover, not a `Cell` kind. `loot` required. Illegal: optional 
 
 Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `buy` merges seeds into the silo as `'base'` quality 0.
 
-Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light). Pipe, valve, sprinkler, tile, sensor cells, and delete do not.
+Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light, logic, variety, weather, pressure plate). Pipe, valve, sprinkler, tile, sensor cells, and delete do not.
 
 ## Intent
 
@@ -162,7 +162,17 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 | tilled | `isTilled` |
 | burrows | untilled `cover.kind === 'burrow'` |
 
-`tickField` grow+recover. `tickMachines` machines (compost-box in the same loop). `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
+Fenced-area maps, not `track()`:
+
+| name | key | value |
+|---|---|---|
+| enclosures | `EnclosureId` | `Enclosure` |
+| fenceEnclosures | `"col,row"` | `EnclosureId[]` |
+| plotEnclosures | `"col,row"` | `EnclosureId[]` |
+
+Rebuild on fence add / fence remove / `indexAll`. Never on tick. Not Save. [[mechanics/enclosure]]
+
+`tickField` grow+recover. `tickMachines` machines (compost-box in the same loop). `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores+`World.pumps`. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
 
 `forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. View dirty walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`. [[architecture/view]] `view.scan`.
 
@@ -189,9 +199,25 @@ Cheats are cmds.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still/station `inn` hold. Pad as a `Cell`. AND/OR/NOT buyable on `unlock-sensors` alone. Traffic-light `inn` combinationally driving `out`.
+Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still/station/pump `inn` hold. Pad as a `Cell`. Logic gate / NOT buyable on `unlock-sensors` alone. Live `SensorKind` `'or'` `'and'`. Traffic-light `inn` combinationally driving `out`. `HudTarget` hangar. `HudTarget` vehicle. Enclosure on tick. `plotEnclosures` as a field on `Plot`.
 
 `World.routes: Route[]`. `World.nextRouteId` starts 1. Vehicle holds `route: RouteId | 'none'`, `cursor`, `running`. `RouteStop` is a closed union. Rules: [[mechanics/vehicles]] `vehicles.dispatch`.
+
+```
+HudTarget =
+  | { kind: 'sprinkler'; at: Vertex }
+  | { kind: 'water'; at: Coord }
+  | { kind: 'harvest'; at: Coord }
+  | { kind: 'counter'; at: Coord }
+  | { kind: 'day'; at: Coord }
+  | { kind: 'logic'; at: Coord }
+  | { kind: 'variety'; at: Coord }
+  | { kind: 'weather'; at: Coord }
+  | { kind: 'pressure'; at: Coord }
+
+EnclosureId = number
+Enclosure = { id: EnclosureId; interior: Coord[]; fences: Coord[] }
+```
 
 ## Rng
 

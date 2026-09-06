@@ -9,5 +9,14 @@
   "sensors_all": "All",
   "sensors_day": "Day",
   "sensors_count_to": "Count to",
-  "sensors_reset": "Reset to {n}"
+  "sensors_reset": "Reset to {n}",
+  "sensors_or": "OR",
+  "sensors_and": "AND",
+  "sensors_base": "Plain",
+  "sensors_variant": "Named",
+  "sensors_heirloom": "Heirloom",
+  "sensors_vehicle": "Vehicle",
+  "sensors_player": "You",
+  "sensors_item": "On the ground",
+  "sensors_send_when": "Send signal when..."
 }

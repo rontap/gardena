@@ -6,13 +6,13 @@ Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`.
 
 Truck is not a Place SKU. Unarmed click.
 
-Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + fifteen sensor-cell SKUs. Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
+Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + fifteen sensor-cell SKUs (`buy-logic` `buy-sensor-variety` `buy-sensor-weather` in place of `buy-or` `buy-and` `buy-water-system`). Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
 
 Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
 Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-furnace` `buy-barrel` `buy-freezer` `buy-research-station` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
-Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan). While armed, `readPrompt` is place or blocked only.
+Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
 
 Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Processing, Storage, Vehicles, and Sensors shelves — [[ui/build]] [[ui/sensors]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). No rotatable sensor SKU. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
@@ -22,7 +22,7 @@ Esc / dock **×** / a rail toggle that closes **Shop** or **Build** / leaving th
 
 ## Pointer
 
-Canvas host. Pan / zoom / `clickHit` as now, except armed `buy-pipe` left-drag is the pending run, **not pan**. Other arms / unarmed: pan unchanged. Wheel zoom stays. Expand plates take pointer — [[ui/hud]].
+Canvas host. Pan / zoom / `clickHit` as now, except armed `buy-pipe` left-drag and armed `buy-fence` left-drag from a fence site are the pending run, **not pan**. Other arms / unarmed: pan unchanged. Wheel zoom stays. Expand plates take pointer — [[ui/hud]].
 
 | pointer | when `place.kind === 'sku'` or `'delete'` or `'wire'` | ui |
 |---|---|---|
@@ -30,7 +30,9 @@ Canvas host. Pan / zoom / `clickHit` as now, except armed `buy-pipe` left-drag i
 | hover valid, can pay | `prompt.kind === 'place'` | Map `cursor-pointer` |
 | hover else | blocked or off-map | Map `cursor-crosshair` |
 | left-drag from an edge | `place.id === 'buy-pipe'` | routed run, **not pan**. Press in the tile centre pans instead. View-local `pendingPipe: Edge[]` from `routeEdges`. Ghost those edges (`data-pipe-ghost`) |
+| left-drag from a fence site | `place.id === 'buy-fence'` | routed cell run, **not pan**. View-local `pendingFence: Coord[]` from `routeCells`. Ghost in the pipes layer |
 | left up | `buy-pipe` | `placePipe` per pending edge, log order, whole run or nothing. Stay armed. Empty run: place the one edge under the pointer and re-anchor |
+| left up | `buy-fence` | `confirmPlace` per pending cell, whole run or nothing. Stay armed. Empty run: place the cell under the pointer if it takes a fence and re-anchor |
 | left valid, can pay | confirm (not `buy-pipe` drag) | StayArmed / valve / tiles / sensors: stay. Else ghost off |
 | left valid input, `kind === 'wire'` | `placeWire` | fan-out ok; fan-in stacks (many wires on one input; second finalize does **not** replace) |
 | press an `out` disc, release on an `in` disc | `armWire` then `placeWire` | drag wiring. Release anywhere else keeps the arm, so click-click is unchanged |
@@ -124,6 +126,19 @@ Anchor is the vertex nearest the press.
 
 Chip while a run is pending: segment count and total. Total over `money` → the whole run is blocked, **Cannot afford**, no partial commit. Mid-run truncation is gone.
 
+## Fence run
+
+Armed `buy-fence`. Same L-path as the pipe run, on cells: `routeCells` / `fenceOk`. Press on a fence site or an already fenced cell starts the run. Press anywhere else pans. `pendingFence` ghosts in the pipes layer with `fenceFit` joins.
+
+| pointer | result |
+|---|---|
+| up, pending non-empty | commit `confirmPlace` per cell. Anchor drops. Stay armed |
+| up, pending empty | place the cell under the pointer if `fenceOk`, re-anchor there |
+| move with an anchor and no button | preview the route from the anchor |
+| right-click / Esc / Cancel | drop anchor and preview, nothing paid |
+
+Whole run or nothing. Total over `money` → **Cannot afford**.
+
 Pipes always drawn (joints, valves, sprinklers, fences). Faint (`opacity` 0.35, preference) when the effective lens is not `pipes` and place is not delete / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
 
 `PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-rain-tank` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
@@ -173,7 +188,7 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 | hangar, stores no vehicle or trailer | **Delete vehicle hangar** | six cells → empty |
 | hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** | no-op |
 | silo-seed / silo-spray / silo-produce | **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** | six cells → empty |
-| lever / button / lamp / or / and / not / pulser / counter / sensor-water / sensor-fert / sensor-harvest / water-system / vehicle-detector / sensor-day / traffic-light | **Delete lever** / **Delete button** / **Delete lamp** / **Delete OR gate** / **Delete AND gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete water-system sensor** / **Delete vehicle detector** / **Delete day sensor** / **Delete traffic light** | cell → empty; incident wires drop. Traffic-light delete also strips wait stops targeting that cell |
+| lever / button / lamp / logic / not / pulser / counter / sensor-water / sensor-fert / sensor-harvest / sensor-variety / sensor-weather / water-system / vehicle-detector / sensor-day / traffic-light | **Delete lever** / **Delete button** / **Delete lamp** / **Delete logic gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete variety sensor** / **Delete weather sensor** / **Delete water-system sensor** / **Delete pressure plate** / **Delete day sensor** / **Delete traffic light** | cell → empty; incident wires drop. Fenceable + `hasFence`: sensor and wires go, fence remains. Traffic-light delete also strips wait stops targeting that cell |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
 
 `deletePipe` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
@@ -182,7 +197,7 @@ Delete pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU. Burrow: shovel **Dig**, pickaxe no-op, place / tile / fence / tree-seed refuse — [[mechanics/burrow]] `burrow.block`.
 
-`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]]. Burrow place / tile / fence / tree-seed: **Cannot place here**, not **Fences need untilled ground**.
+`placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]]. Fenceable sensor on a fenced cell: **Place {skuLabel}**. Non-fenceable on a fence: **Cannot place here**. Fence on a fenceable sensor: **Place Wooden fence**. Burrow place / tile / fence / tree-seed: **Cannot place here**, not **Fences need untilled ground**.
 
 Pipe / delete follow copy: HTML chip under the pointer, same `bg-house` `px-2` `py-0.5` `text-base` `text-ink`, no `skuInner`.
 

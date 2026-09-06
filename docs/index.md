@@ -33,6 +33,8 @@ Vault for this game. Agents read this first.
 - [[mechanics/_index]]
 - [[mechanics/weather]]
 - [[mechanics/burrow]] — luck, treasure
+- [[mechanics/sensors]]
+- [[mechanics/enclosure]] — fenced area, fenceable sensor range
 
 ## Items
 

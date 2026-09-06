@@ -28,7 +28,7 @@ import {
 import type { VarietyId } from '../defs/varieties.ts'
 import type { CropId, TreeId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
-import type { Sensor } from './sensor.ts'
+import { isSensor, type Sensor } from './sensor.ts'
 import type { Soil } from './soil.ts'
 
 export type Ground = 'soft' | 'hard' | 'very-hard'
@@ -118,8 +118,9 @@ export function isTilled(c: Cell): c is Tilled {
   )
 }
 
-export function isFenceSite(c: Cell): c is Extract<Plot, { kind: 'untilled' }> {
-  return c.kind === 'untilled' && c.cover.kind !== 'burrow'
+export function isFenceSite(c: Cell): boolean {
+  if (c.kind === 'untilled') return c.cover.kind !== 'burrow'
+  return isSensor(c) && c.fenceable
 }
 
 export function isSolid(c: Cell): boolean {
@@ -137,21 +138,7 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'silo-seed' ||
     c.kind === 'silo-spray' ||
     c.kind === 'silo-produce' ||
-    c.kind === 'lever' ||
-    c.kind === 'button' ||
-    c.kind === 'lamp' ||
-    c.kind === 'or' ||
-    c.kind === 'and' ||
-    c.kind === 'not' ||
-    c.kind === 'pulser' ||
-    c.kind === 'counter' ||
-    c.kind === 'sensor-water' ||
-    c.kind === 'sensor-fert' ||
-    c.kind === 'sensor-harvest' ||
-    c.kind === 'sensor-day' ||
-    c.kind === 'water-system' ||
-    c.kind === 'vehicle-detector' ||
-    c.kind === 'traffic-light'
+    isSensor(c)
   )
 }
 

@@ -11,17 +11,17 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE`, `DROP_FACE`, `DROP_INSET`, `DROP_STEP`, `clampCam`, `tileVariant` |
-| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, graft face |
+| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, graft face. Logic `or`/`and`. Variety / weather `off`/`on` |
 | `app.ts` | `Application` create / resize / destroy `releaseGlobalResources` |
 | `world-view.ts` | scene graph, dirty patch, Pixi ticker motion, `QUAD_FOLLOW`, `CullerPlugin`, pending pipe run |
-| `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts |
+| `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts. Pump origin `in`. HUD hits: water / harvest / counter / day / logic / variety / weather / pressure |
 | `outline.ts` | union footprint path. Directed edges, reverse cancel, then walk |
 | `layers/ground.ts` | terrain + fade chunks, paving and its kerb |
 | `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences. `pipe-source` |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Station `off`/`on` |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Station `off`/`on`. Logic `or`/`and`. Variety / weather `off`/`on` |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
-| `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads |
+| `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
@@ -40,10 +40,10 @@ Bottom → top, one container each:
 1. `ground` — owned terrain + fade. Chunk containers. `CullerPlugin`.
 2. `plots` — tilled / plant / weed / turf / rock / tree / tuft / burrow cover. Origin-only for multi-cell. Dirt lip / inset: 24-unit content fills the cell; pad paints onto the neighbour.
 3. `vfx.ground` — the dig patch only. Ground the sim has not tilled yet, so it paints above `plots` and below everything that stands on it.
-4. `pipes` — joints, valves, sprinklers, fences. Always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku. Wetness tint and sprinkler AoE wash still lens / tool. `pipe-source` on every `World.sources()` occupied cell only while that overlay is on. Not faint. Hidden otherwise.
-5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working.
+4. `pipes` — joints, valves, sprinklers, fences. Always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku. Wetness tint and sprinkler AoE wash still lens / tool. `pipe-source` on every `World.sources()` occupied cell only while that overlay is on. Not faint. Hidden otherwise. A fenceable sensor on a fenced cell does **not** hide the fence: `World.fences` still paints `fenceFit` joins for that cell. Fence alpha base is 1 while pipes overlay or `buy-fence` is armed, else 0.35. Unconnected (not in `fenceEnclosures`) ×0.75. Closed ring ×1.25, capped at 1. Pending fence cells ghost in this layer as unconnected.
+5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working. Sensor sprite sits on top of that fence. Two sprites, not one composite. Do not bake the sensor into the fence atlas.
 6. `actors` — in-seat gardeners, field vehicles / trailers, drops. Seated gardener hidden. Drops: 2×2 pack, `DROP_INSET` then `DROP_STEP`.
-7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`.
+7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, fenceable sensor wash from the watched set (HUD, lens, unarmed hover, or armed range-reader SKU at the ghost cell), the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`. Pump origin `in`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
 
 HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
@@ -101,7 +101,7 @@ A product a Variety renames also carries its own face, and one selector says whi
 
 Patch uses existing `World` indexes and instance lists. Illegal on the tick or dirty path: `live`, `forEachCell`, `[...this.live.values()]`. First paint / `World` swap / `groundRev` rebuilds visible chunks the same way.
 
-Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Ground textures stay terrain. Station patches with `machines`.
+Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Fenced-area maps `enclosures` `fenceEnclosures` `plotEnclosures` — wash lookup, not a dirty walk. Ground textures stay terrain. Station patches with `machines`.
 
 `ping()` from tick only on discrete change. Continuous world chrome is the Pixi ticker (`QUAD_FOLLOW`, actor pose, speech follow, VFX cuts, burst drain). Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. FPS: [[ui/hud]]. Not a `DirtyReason`.
 
@@ -127,7 +127,11 @@ View may cull: `CullerPlugin` on chunk containers. Sim does not cull.
 
 `dropHit(world, wx, wy)` is the painted drop sprite rect in world space: origin `DROP_INSET` + 2×2 `DROP_STEP`, size `DROP_FACE` (CSS px at scale 1, then `/ TILE`). Topmost drop wins. Overflow into a neighbour still picks that drop. `clickHit` uses it.
 
-Pipe drag-to-draw is view-local. Armed `buy-pipe` only, and only when the press lands within `EDGE_HIT` of an edge: left-drag builds `pendingPipe = routeEdges(anchor, roundVertex(ptr), shift).filter(pipeOk)`, recomputed each move, never accumulated. Ghost those edges. Pointer up commits `placePipe` per edge in log order, whole run or nothing. An empty run on release places the one edge under the pointer and re-anchors at its far vertex, so clicks chain. No new `Act`. No new `Place` arm. Right-click / `cancelPlace` drops the run and the anchor.
+Paint drag is view-local. Same L-path, two lattices: `routeEdges` (pipe vertices) and `routeCells` (fence cells). Recomputed each move, never accumulated. No new `Act`. No new `Place` arm. Right-click / `cancelPlace` drops the run and the anchor.
+
+Armed `buy-pipe` only, and only when the press lands within `EDGE_HIT` of an edge: left-drag builds `pendingPipe = routeEdges(anchor, roundVertex(ptr), shift).filter(pipeOk)`. Ghost those edges. Pointer up commits `placePipe` per edge in log order, whole run or nothing. An empty run on release places the one edge under the pointer and re-anchors at its far vertex, so clicks chain.
+
+Armed `buy-fence`: press on an owned fence site or an already fenced cell starts the run (the cell *is* the site, so the tile centre does not pan). `pendingFence = routeCells(anchor, floor(ptr), shift).filter(fenceOk)`. Ghost those cells in the pipes layer with `fenceFit` joins to live fences and the pending set. Pointer up commits `confirmPlace` per cell, whole run or nothing. An empty run places the cell under the pointer if `fenceOk` and re-anchors there.
 
 A press in the tile centre pans, exactly as unarmed — the centre of a tile is not a pipe site, so it keeps the pan.
 
@@ -164,7 +168,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.ticker` — Sim is not interpolated. View vehicles keep `QUAD_FOLLOW`. App owns the `DT_MAX` accumulator. Pixi ticker paints. `ping` is discrete dirty only.
 
-`view.route` — `routeEdges` is pure: an L path along the lattice, long axis first, `flip` turning the corner the other way, unique edges, endpoints joined. Same start and end is an empty run.
+`view.route` — `routeEdges` is pure: an L path along the lattice, long axis first, `flip` turning the corner the other way, unique edges, endpoints joined. Same start and end is an empty run. `routeCells` is the same L on cells: both ends included; same cell is that one cell.
 
 `view.lens` — Effective lens = `toolLens` when a sku forces one, else `lens`. `toolLens` lives exactly as long as the arming and never overwrites the picked lens. An unlocked lens dies when the Lens dock closes; a locked one survives. `leaveShop` does not touch the lens.
 

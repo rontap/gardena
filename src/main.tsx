@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { WorkerSink } from './game/sim/log.ts'
+import { DebugBalance } from './game/ui/debug-balance.tsx'
 import { DebugContracts } from './game/ui/debug-contracts.tsx'
 import { DebugIconset } from './game/ui/debug-iconset.tsx'
 import { DebugWeather } from './game/ui/debug-weather.tsx'
@@ -44,6 +45,13 @@ if (location.hash === '#debug-techtree') {
   createRoot(root).render(
     <StrictMode>
       <DebugIconset />
+    </StrictMode>,
+  )
+} else if (location.hash === '#debug-balance') {
+  openScroll()
+  createRoot(root).render(
+    <StrictMode>
+      <DebugBalance />
     </StrictMode>,
   )
 } else if (location.hash === '#atlas') {

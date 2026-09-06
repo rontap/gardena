@@ -137,14 +137,15 @@ import actor from '../../assets/actor.svg?raw'
 import propLever from '../../assets/props/prop-lever.svg?raw'
 import propButton from '../../assets/props/prop-button.svg?raw'
 import propLamp from '../../assets/props/prop-lamp.svg?raw'
-import propOr from '../../assets/props/prop-or.svg?raw'
-import propAnd from '../../assets/props/prop-and.svg?raw'
+import propLogic from '../../assets/props/prop-logic.svg?raw'
 import propNot from '../../assets/props/prop-not.svg?raw'
 import propPulser from '../../assets/props/prop-pulser.svg?raw'
 import propCounter from '../../assets/props/prop-counter.svg?raw'
 import propSensorWater from '../../assets/props/prop-sensor-water.svg?raw'
 import propSensorFert from '../../assets/props/prop-sensor-fert.svg?raw'
 import propSensorHarvest from '../../assets/props/prop-sensor-harvest.svg?raw'
+import propSensorVariety from '../../assets/props/prop-sensor-variety.svg?raw'
+import propSensorWeather from '../../assets/props/prop-sensor-weather.svg?raw'
 import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
@@ -274,6 +275,10 @@ export type AtlasKey =
   | 'or'
   | 'and'
   | 'not'
+  | 'variety-on'
+  | 'variety-off'
+  | 'weather-on'
+  | 'weather-off'
   | 'pipe-stub'
   | 'pipe-i'
   | 'pipe-l'
@@ -586,8 +591,8 @@ async function load(): Promise<void> {
   put('hangar-return', uiHangarReturn)
   put('pad-drop', uiPadDrop)
   put('pad-take', uiPadTake)
-  put('or', propOr)
-  put('and', propAnd)
+  put('or', propLogic, 'or')
+  put('and', propLogic, 'and')
   put('not', propNot)
   const pipes = [
     ['pipe-stub', pipeStub],
@@ -624,6 +629,10 @@ async function load(): Promise<void> {
   put('fert-red', propSensorFert, 'red')
   put('harvest-on', propSensorHarvest, 'on')
   put('harvest-off', propSensorHarvest, 'off')
+  put('variety-on', propSensorVariety, 'on')
+  put('variety-off', propSensorVariety, 'off')
+  put('weather-on', propSensorWeather, 'on')
+  put('weather-off', propSensorWeather, 'off')
   put('day-on', propSensorDay, 'on')
   put('day-off', propSensorDay, 'off')
   put('water-system-on', propWaterSystem, 'on')
@@ -825,8 +834,7 @@ export function sensorKey(cell: Sensor): AtlasKey {
   if (cell.kind === 'lever') return cell.on ? 'lever-on' : 'lever-off'
   if (cell.kind === 'button') return cell.out === 1 ? 'button-on' : 'button-off'
   if (cell.kind === 'lamp') return cell.inn === 1 ? 'lamp-on' : 'lamp-off'
-  if (cell.kind === 'or') return 'or'
-  if (cell.kind === 'and') return 'and'
+  if (cell.kind === 'logic') return cell.mode === 'and' ? 'and' : 'or'
   if (cell.kind === 'not') return 'not'
   if (cell.kind === 'pulser') return cell.out === 1 ? 'pulser-on' : 'pulser-off'
   if (cell.kind === 'counter') return `counter-${counterDial(cell)}`
@@ -834,6 +842,8 @@ export function sensorKey(cell: Sensor): AtlasKey {
   if (cell.kind === 'sensor-fert') return cell.out === 0 ? 'fert-red' : 'fert-ok'
   if (cell.kind === 'sensor-harvest') return cell.out === 1 ? 'harvest-on' : 'harvest-off'
   if (cell.kind === 'sensor-day') return cell.out === 1 ? 'day-on' : 'day-off'
+  if (cell.kind === 'sensor-variety') return cell.out === 1 ? 'variety-on' : 'variety-off'
+  if (cell.kind === 'sensor-weather') return cell.out === 1 ? 'weather-on' : 'weather-off'
   if (cell.kind === 'water-system') return cell.out === 1 ? 'water-system-on' : 'water-system-off'
   if (cell.kind === 'traffic-light') return cell.inn === 1 ? 'traffic-on' : 'traffic-off'
   if (cell.kind === 'vehicle-detector') return cell.out === 1 ? 'vehicle-detector-on' : 'vehicle-detector-off'

@@ -34,10 +34,22 @@ import {
   tallSiteOk,
   wideSiteOk,
 } from '../prompt.ts'
-import { hitsCell, isSensor, makeSensor, skuKind } from '../sensor.ts'
+import { hitsCell, isSensor, makeSensor, skuKind, type Sensor } from '../sensor.ts'
 import { freshSoil } from '../feature-field/field.ts'
 import { stripPadStops, stripStops } from '../feature-vehicles/vehicle.ts'
+import { rebuild } from '../feature-enclosure/enclosure.ts'
 import type { World } from '../world.ts'
+
+function deleteSensorAt(w: World, at: Coord, c: Sensor): void {
+  if (c.kind === 'traffic-light') {
+    stripStops(w, s => s.kind === 'wait' && s.at.col === at.col && s.at.row === at.row)
+  }
+  w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
+  if (c.kind === 'water-system') w.waterSystems.splice(w.waterSystems.indexOf(c), 1)
+  w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+  if (c.kind === 'water-system') w.dirtyNets()
+  w.ping()
+}
 
 export function pruneVert(w: World, e: Edge | Vertex): void {
   const verts = 'axis' in e ? vertsOf(e) : [e]
@@ -51,9 +63,14 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   if (w.act.place.kind !== 'delete') return
   if (!inWorld(at, w.owned)) return
   const c = w.cell(at)
+  if (isSensor(c) && c.fenceable && w.hasFence(at)) {
+    deleteSensorAt(w, at, c)
+    return
+  }
   if (w.hasFence(at)) {
     if (w.act.id !== 0) return
     w.fences.delete(`${at.col},${at.row}`)
+    rebuild(w)
     w.ping()
     return
   }
@@ -187,14 +204,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (isSensor(c)) {
-    if (c.kind === 'traffic-light') {
-      stripStops(w, s => s.kind === 'wait' && s.at.col === at.col && s.at.row === at.row)
-    }
-    w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
-    if (c.kind === 'water-system') w.waterSystems.splice(w.waterSystems.indexOf(c), 1)
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
-    if (c.kind === 'water-system') w.dirtyNets()
-    w.ping()
+    deleteSensorAt(w, at, c)
     return
   }
   if (c.kind === 'grinder') {
@@ -248,6 +258,7 @@ export function confirmPlace(w: World, at: Coord): void {
     if (w.hasFence(at)) return
     w.money -= price
     w.fences.add(`${at.col},${at.row}`)
+    rebuild(w)
     w.ping()
     return
   }
@@ -359,9 +370,10 @@ export function confirmPlace(w: World, at: Coord): void {
     const kind = skuKind(w.act.place.id)
     if (kind !== undefined) {
       if (!placeSolidOk(w, at)) return
-      w.money -= price
       const base = { shape: 'rect' as const, col: at.col, row: at.row, w: 1, h: 1 }
       const made = makeSensor(kind, base)
+      if (w.hasFence(at) && !made.fenceable) return
+      w.money -= price
       w.setCell(at, made)
       if (made.kind === 'water-system') {
         w.waterSystems.push(made)
@@ -434,6 +446,7 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'lamp' ||
     made.kind === 'or' ||
     made.kind === 'and' ||
+    made.kind === 'logic' ||
     made.kind === 'not' ||
     made.kind === 'pulser' ||
     made.kind === 'counter' ||
@@ -441,6 +454,8 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'sensor-fert' ||
     made.kind === 'sensor-harvest' ||
     made.kind === 'sensor-day' ||
+    made.kind === 'sensor-variety' ||
+    made.kind === 'sensor-weather' ||
     made.kind === 'water-system' ||
     made.kind === 'vehicle-detector' ||
     made.kind === 'traffic-light' ||

@@ -55,7 +55,11 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       hit.kind === 'water-hud' ||
       hit.kind === 'harvest-hud' ||
       hit.kind === 'counter-hud' ||
-      hit.kind === 'day-hud')
+      hit.kind === 'day-hud' ||
+      hit.kind === 'logic-hud' ||
+      hit.kind === 'variety-hud' ||
+      hit.kind === 'weather-hud' ||
+      hit.kind === 'pressure-hud')
   ) {
     return world.promptHit(hit).text
   }
@@ -179,6 +183,8 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       )
       if (!around) lines.push(labeled(m.names_sensor_water_system(), m.prompt_no_pipes()))
       else lines.push(labeled(m.names_sensor_water_system(), cell.out === 1 ? m.prompt_on() : m.prompt_off()))
+    } else if (cell.fenceable && world.hasFence(at) && world.fenceEnclosures.get(`${at.col},${at.row}`) === undefined) {
+      lines.push(labeled(sensorName(cell.kind), m.prompt_not_enclosed()))
     } else {
       const on =
         cell.kind === 'lever'

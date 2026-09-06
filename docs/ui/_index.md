@@ -17,7 +17,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/build]]
 - [[ui/store]] — silo by Variety
 - [[ui/station]] — walk-up panel
-- [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather` `#debug-iconset`
+- [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
 - [[ui/market]]
 - [[ui/contracts]]
 - [[ui/almanac]] — Ingredients `recipesUsing`. Concepts Variety Quality Luck Burrow
@@ -25,7 +25,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/callout-hover]]
 - [[ui/docks]]
 - [[ui/lens]]
-- [[ui/sensors]]
+- [[ui/sensors]] — Logic gate, Variety sensor, Weather sensor, Pressure plate. Fenced-area wash. `Checkbox` / `Radio`
 - [[ui/type]]
 
 See [[canon]] and [[stack]].

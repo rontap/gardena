@@ -69,11 +69,7 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       w.tuneSprinklerBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.u)
       return
     case Act.openHud:
-      if (cmd.k === 'sprinkler') w.openHudBody({ kind: 'sprinkler', at: { col: cmd.c[0], row: cmd.c[1] } })
-      else if (cmd.k === 'water') w.openHudBody({ kind: 'water', at: { col: cmd.c[0], row: cmd.c[1] } })
-      else if (cmd.k === 'harvest') w.openHudBody({ kind: 'harvest', at: { col: cmd.c[0], row: cmd.c[1] } })
-      else if (cmd.k === 'counter') w.openHudBody({ kind: 'counter', at: { col: cmd.c[0], row: cmd.c[1] } })
-      else w.openHudBody({ kind: 'day', at: { col: cmd.c[0], row: cmd.c[1] } })
+      w.openHudBody({ kind: cmd.k, at: { col: cmd.c[0], row: cmd.c[1] } })
       return
     case Act.closeHud:
       w.closeHudBody()
@@ -161,6 +157,9 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       return
     case Act.tuneDay:
       w.tuneDayBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.sunrise, cmd.day, cmd.sunset, cmd.twilight)
+      return
+    case Act.tuneSensor:
+      w.tuneSensorBody(cmd)
       return
     case Act.load:
       vehicles.loadBody(w)

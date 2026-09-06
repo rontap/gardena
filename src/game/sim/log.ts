@@ -66,6 +66,7 @@ export const Act = {
   tuneCounter: 'M',
   resetCounter: 'X',
   tuneDay: 'O',
+  tuneSensor: 'e',
   load: 'L',
   unload: 'U',
   acceptContract: 'J',
@@ -103,7 +104,13 @@ export type Cmd =
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; s: XY; d: AdditiveId }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'sugar'; s: XY; d: 'sugar' }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
-  | { a: typeof Act.openHud; t: number; p: SeatId; k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day'; c: XY }
+  | {
+      a: typeof Act.openHud
+      t: number
+      p: SeatId
+      k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day' | 'logic' | 'variety' | 'weather' | 'pressure'
+      c: XY
+    }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
   | { a: typeof Act.armDelete; t: number; p: SeatId }
   | { a: typeof Act.cancelPlace; t: number; p: SeatId }
@@ -137,6 +144,21 @@ export type Cmd =
   | { a: typeof Act.tuneCounter; t: number; p: SeatId; c: XY; n: number }
   | { a: typeof Act.resetCounter; t: number; p: SeatId; c: XY }
   | { a: typeof Act.tuneDay; t: number; p: SeatId; c: XY; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean }
+  | { a: typeof Act.tuneSensor; t: number; p: SeatId; k: 'logic'; c: XY; mode: 'or' | 'and' }
+  | { a: typeof Act.tuneSensor; t: number; p: SeatId; k: 'variety'; c: XY; base: boolean; variant: boolean; heirloom: boolean }
+  | {
+      a: typeof Act.tuneSensor
+      t: number
+      p: SeatId
+      k: 'weather'
+      c: XY
+      clear: boolean
+      rain: boolean
+      dry: boolean
+      flood: boolean
+      drought: boolean
+    }
+  | { a: typeof Act.tuneSensor; t: number; p: SeatId; k: 'pressure'; c: XY; vehicle: boolean; player: boolean; item: boolean }
   | { a: typeof Act.load; t: number; p: SeatId }
   | { a: typeof Act.unload; t: number; p: SeatId }
   | { a: typeof Act.acceptContract; t: number; p: SeatId; c: ContractId }

@@ -1,14 +1,14 @@
 import { Container, Graphics, Text } from 'pixi.js'
-import { FADE, chunkKey, chunkOf } from '../../sim/building.ts'
+import { FADE, chunkKey, chunkOf, occupiedCells, type Pump } from '../../sim/building.ts'
 import { hangarPad, siloPad, stopXY } from '../../sim/feature-vehicles/vehicle.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
-import { occupiedCells } from '../../sim/building.ts'
 import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'
-import { area3, drivesOut, isSensor, ownsPort, portXY, sameEnd, wireControls, type PortId, type WireEnd } from '../../sim/sensor.ts'
+import { lookup } from '../../sim/feature-enclosure/enclosure.ts'
+import { drivesOut, isSensor, ownsPort, portXY, sameEnd, watchedCoords, wireControls, type PortId, type WireEnd } from '../../sim/sensor.ts'
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
 import { goodness } from '../../sim/noise.ts'
-import type { CropId } from '../../sim/ids.ts'
+import { RANGE_SENSOR_SKUS, type CropId } from '../../sim/ids.ts'
 import { VARIETY, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
@@ -171,6 +171,31 @@ function lensFill(
   return { fill: hit, op: 0.72, hard: true }
 }
 
+function pumpOrigin(p: Pump): { col: number; row: number } {
+  const b = p.base
+  if (b.shape === 'rect') return { col: b.col, row: b.row }
+  return { col: Math.floor(b.cx - b.r), row: Math.floor(b.cy - b.r) }
+}
+
+export function sensorWashCells(world: World, at: { col: number; row: number }, includeOrigin: boolean): { col: number; row: number }[] {
+  const onFence = world.hasFence(at)
+  const interiors = onFence ? lookup(world, at) : []
+  const watched = watchedCoords(at, onFence, interiors, includeOrigin)
+  if (watched === undefined) return []
+  return watched.filter(c => world.inWorld(c))
+}
+
+function addReaderWash(
+  world: World,
+  at: { col: number; row: number },
+  includeOrigin: boolean,
+  into: Set<string>,
+): void {
+  sensorWashCells(world, at, includeOrigin).forEach(c => {
+    into.add(`${c.col},${c.row}`)
+  })
+}
+
 function portHigh(world: World, end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind === 'sprinkler') {
     const s = world.sprinklerAt(end.at)
@@ -328,18 +353,28 @@ export class OverlayLayer {
       })
     }
     const sensorWash = new Set<string>()
-    const addReader = (at: { col: number; row: number }) => {
-      area3(at).forEach(c => {
-        if (world.inWorld(c)) sensorWash.add(`${c.col},${c.row}`)
-      })
-    }
     const hud = world.hud
-    if (hud !== undefined && (hud.kind === 'water' || hud.kind === 'harvest')) addReader(hud.at)
+    if (hud !== undefined && (hud.kind === 'water' || hud.kind === 'harvest' || hud.kind === 'variety' || hud.kind === 'pressure')) {
+      addReaderWash(world, hud.at, hud.kind === 'pressure', sensorWash)
+    }
     if (lens === 'sensors') {
       for (const at of world.sensors.values()) {
         const cell = world.cell(at)
-        if (cell.kind === 'sensor-water' || cell.kind === 'sensor-fert' || cell.kind === 'sensor-harvest') {
-          addReader(at)
+        if (isSensor(cell) && cell.fenceable) {
+          addReaderWash(world, at, cell.kind === 'vehicle-detector', sensorWash)
+        }
+      }
+    }
+    if (ptr !== undefined) {
+      const hoverAt = { col: Math.floor(ptr.x), row: Math.floor(ptr.y) }
+      if (world.inWorld(hoverAt)) {
+        if (place.kind === 'none') {
+          const cell = world.cell(hoverAt)
+          if (isSensor(cell) && cell.fenceable) {
+            addReaderWash(world, hoverAt, cell.kind === 'vehicle-detector', sensorWash)
+          }
+        } else if (place.kind === 'sku' && RANGE_SENSOR_SKUS.includes(place.id)) {
+          addReaderWash(world, hoverAt, place.id === 'buy-vehicle-detector', sensorWash)
         }
       }
     }
@@ -447,6 +482,10 @@ export class OverlayLayer {
     for (const at of world.stores.values()) pushCell(at, world.cell(at))
     pushCell({ col: world.silo.base.col, row: world.silo.base.row }, world.silo)
     pushCell({ col: world.additives.base.col, row: world.additives.base.row }, world.additives)
+    world.pumps.forEach(p => {
+      const at = pumpOrigin(p)
+      pushCell(at, p)
+    })
     if (world.done.has('unlock-smart-irrigation')) {
       world.sprinklers.forEach(s => {
         const end: WireEnd = { kind: 'sprinkler', at: s.at, port: 'in' }

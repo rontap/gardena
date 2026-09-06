@@ -912,7 +912,11 @@ export default function App({ sink }: { sink: WorkerSink }) {
                 hit.kind !== 'water-hud' &&
                 hit.kind !== 'harvest-hud' &&
                 hit.kind !== 'counter-hud' &&
-                hit.kind !== 'day-hud'
+                hit.kind !== 'day-hud' &&
+                hit.kind !== 'logic-hud' &&
+                hit.kind !== 'variety-hud' &&
+                hit.kind !== 'weather-hud' &&
+                hit.kind !== 'pressure-hud'
               ) {
                 world.closeHud()
               }
@@ -1372,6 +1376,22 @@ function dispatchClick(world: World, hit: MapClick): void {
   }
   if (hit.kind === 'day-hud') {
     world.openHud({ kind: 'day', at: hit.at })
+    return
+  }
+  if (hit.kind === 'logic-hud') {
+    world.openHud({ kind: 'logic', at: hit.at })
+    return
+  }
+  if (hit.kind === 'variety-hud') {
+    world.openHud({ kind: 'variety', at: hit.at })
+    return
+  }
+  if (hit.kind === 'weather-hud') {
+    world.openHud({ kind: 'weather', at: hit.at })
+    return
+  }
+  if (hit.kind === 'pressure-hud') {
+    world.openHud({ kind: 'pressure', at: hit.at })
     return
   }
   if (hit.kind === 'sprinkler') {

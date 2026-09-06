@@ -36,11 +36,11 @@ Filled by `track()` from `setCell`. `indexAll` on hydrate / rebase. Not a tick w
 | `tickMachines` | machines. Snapshot working furnaces at start; compost-box ticks in the same loop |
 | `tickFreshness` | stores (+ seats / drops / vehicles, not grow). Freezer slots still skip |
 | `tickButtons` | buttons |
-| `evalSensors` | sensors + machines + stores. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell. Station `inn` combinational |
+| `evalSensors` | sensors + machines + stores + `World.pumps`. Not `forEachCell`. Furnace `inn` combinational; furnace `out` world-reader from that cell. Station `inn` combinational. Pump `inn` combinational |
 | `sproutWeeds` | empty |
 | weather soak | tilled. `tickBig` walks it |
 | `padBuildings` | machines + stores (+ `silo` / `additives` / `seedSilos`) |
-| View dirty | those plus `segments` / `sprinklers` / `fences` / `burrows`. Not `forEachCell` |
+| View dirty | those plus `segments` / `sprinklers` / `fences` / `burrows`. Not `forEachCell`. Wash reads `fenceEnclosures`, does not rebuild |
 
 A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Review enforces this. Do not invent a test that spies on `forEachCell`.
 
@@ -85,9 +85,13 @@ Wired vertices: `Set` rebuilt on wire change, not `wires.some` per head per tick
 
 Water-system sensors: `netOfCell` + cached demand, not `grid().find`.
 
+`gatherWater` skips a `Pump` whose `inn === 1`. `inn` is set in `evalDag`. Tick order stays gather then eval then pour.
+
+Enclosure rebuild is not a tick walk. Call after fence add / fence remove and from `indexAll`. [[mechanics/enclosure]] `enclosure.static`.
+
 ## Invariants
 
-`tick.scan` — `forEachCell` is forbidden on the tick path. A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Iterate maps directly; no live-array copy. Review enforces. Do not spy on `forEachCell`. Burrow seam mint walks each owned chunk once; it is not a `dt` walk.
+`tick.scan` — `forEachCell` is forbidden on the tick path. A new per-tick cell kind gets a list in `track()`. Scanning the whole farm from `tick` is a defect. Iterate maps directly; no live-array copy. Review enforces. Do not spy on `forEachCell`. Burrow seam mint walks each owned chunk once; it is not a `dt` walk. Enclosure rebuild is not a tick walk.
 
 `tick.nets` — `dirtyNets()` only when `conducts(e)` actually flips or topology changes (place / delete pipe / valve / smart, or a source cell). Not every tick because `smartHold.size > 0`.
 

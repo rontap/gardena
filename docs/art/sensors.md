@@ -2,11 +2,13 @@
 
 Industrial sunk 1×1. Dark body, bright identifier. Active status on the prop. Ink mass first, fill inset — [[art/svg]] [[art/palette]]. Item is the same object, larger.
 
+On a fence: the fence tile still draws, with `fenceFit` joins to its neighbours. The sensor prop draws on top of it. Two sprites. Not a combined SVG. [[architecture/view]]
+
 Not electricity. Do not reuse [[art/electricity]] windmill, generator, battery, power-line, power-switch. Not cottage tap. Not `item-valve` / `pipe-valve`.
 
 Body `oil` `#2c322c` / `iron` `#4c4844` / `steel` `#8a9198`. Outlines `ink` `#1c1710`. Sunk collar `dirt` / `dirt-dark`. No unnamed hex.
 
-AND/OR are compact IEEE-ish pixel glyphs, output down. AND: flat back, D front. OR: pointed/curved back, pointed front. Not a tall slotted box. Collar is a pad, not empty dirt. Side steel nubs + bottom out nub. No port-marker circles/squares in the SVG.
+Logic gate is one body; IEEE-ish glyph swaps with `mode`. AND: flat back, D front. OR: pointed/curved back, pointed front. Output down. Not a tall slotted box. Collar is a pad, not empty dirt. Side steel nubs + bottom out nub. No port-marker circles/squares in the SVG. `item-and` / `item-or` / `prop-and` / `prop-or` stay on disk, unused by shop.
 
 Lamp jack is the top nub (NOT `in` language). Housing sits low so the nub reads. No out. Globe is the mass at map scale: `off` oil + `fruit-red` window, `on` `ripe` + steel window. Jack stays steel.
 
@@ -17,8 +19,11 @@ Traffic light: two stacked ovals, visor as a hood on the housing, not a street p
 | `item-lever.svg` `prop-lever.svg` | `0 0 24 24` | `off` `on` | throw lever, grip, top in, bottom out |
 | `item-button.svg` `prop-button.svg` | `0 0 24 24` | `off` `on` | pad, bottom out |
 | `item-lamp.svg` `prop-lamp.svg` | `0 0 24 24` | `off` `on` | large globe, low housing, jack on top, no out |
-| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | IEEE-ish, pointed/curved back, pointed front, side ins, bottom out |
-| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | IEEE-ish, flat back, D front, side ins, bottom out |
+| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | unused by shop. IEEE-ish, pointed/curved back, pointed front, side ins, bottom out |
+| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | unused by shop. IEEE-ish, flat back, D front, side ins, bottom out |
+| `item-logic.svg` `prop-logic.svg` | `0 0 24 24` | `or` `and` | one body, IEEE glyph swaps with mode. Side ins, bottom out |
+| `item-sensor-variety.svg` `prop-sensor-variety.svg` | `0 0 24 24` | `off` `on` | out only, bottom nub |
+| `item-sensor-weather.svg` `prop-sensor-weather.svg` | `0 0 24 24` | `off` `on` | out only, bottom nub |
 | `item-not.svg` `prop-not.svg` | `0 0 24 24` | — | stepped body, bubble, top in, bottom out |
 | `item-pulser.svg` `prop-pulser.svg` | `0 0 24 24` | `off` `on` | square pulse, top in, bottom out |
 | `item-counter.svg` `prop-counter.svg` | `0 0 24 24` | `s0` `s1` `s2` `s3` `s4` | circular dial, top in, bottom out |
@@ -27,7 +32,7 @@ Traffic light: two stacked ovals, visor as a hood on the housing, not a street p
 | `item-sensor-harvest.svg` `prop-sensor-harvest.svg` | `0 0 24 24` | `off` `on` | three heads, bottom out |
 | `item-sensor-day.svg` `prop-sensor-day.svg` | `0 0 24 24` | `off` `on` | sun, bottom out |
 | `item-water-system.svg` `prop-water-system.svg` | `0 0 24 24` | `off` `on` | cistern + house pipe waist, not a tap, bottom out |
-| `item-vehicle-detector.svg` `prop-vehicle-detector.svg` | `0 0 24 24` | `off` `on` | flush floor plate, sunk grout, bottom out |
+| `item-vehicle-detector.svg` `prop-vehicle-detector.svg` | `0 0 24 24` | `off` `on` | flush floor plate, sunk grout, bottom out. Pressure plate. Keep these files |
 | `item-traffic-light.svg` `prop-traffic-light.svg` | `0 0 24 24` | `off` `on` | two stacked ovals, top in, bottom out |
 | `pipe-valve-jack.svg` | `0 0 24 24` | `jack` | edge. Steel socket bolted to the valve body, drawn over `pipe-valve.svg` when that valve owns a port |
 
@@ -35,7 +40,7 @@ Items `src/assets/items/`. Props `src/assets/props/`. Edge `src/assets/joints/pi
 
 ## Ports
 
-Steel nubs, readable at 24×24. AND/OR `in-l` left + `in-r` right + `out` bottom. NOT / pulser / counter / lever / traffic-light `in` top + `out` bottom. Lamp `in` top of housing, no out. Output-only `out` bottom. Valve jack on the body, `pipe-valve-jack.svg`, only after `unlock-smart-irrigation`.
+Steel nubs, readable at 24×24. Logic `in-l` left + `in-r` right + `out` bottom. NOT / pulser / counter / lever / traffic-light `in` top + `out` bottom. Lamp `in` top of housing, no out. Output-only `out` bottom. Valve jack on the body, `pipe-valve-jack.svg`, only after `unlock-smart-irrigation`. Pump origin `in` overlay only, no prop nub.
 
 Port chrome (circle on out, square on in) is a view overlay. Not baked into these SVGs.
 
@@ -60,4 +65,4 @@ c2.y = to.y - dy * 0.12 + 0.16
 
 `+0.16` is downward droop in tiles (y-down). Was `dy * 0.05` and no droop — horizontal runs sat on top of each other.
 
-Assumption: harvest / water-system / vehicle-detector / pulser / day / traffic-light groups `off` `on`. Counter `s0`–`s4` pie clockwise from 12. Lever on-throw grip sits under the top in nub. Lamp `in` portXY at the top nub. Wire sag numbers preference; hit-test follows view. Unlit oval is oil with ink frame; visor hoods the housing. Lit top fruit-red, lit bottom leaf.
+Assumption: harvest / water-system / vehicle-detector / pulser / day / traffic-light / variety / weather groups `off` `on`. Logic `or` `and`. Counter `s0`–`s4` pie clockwise from 12. Lever on-throw grip sits under the top in nub. Lamp `in` portXY at the top nub. Wire sag numbers preference; hit-test follows view. Unlit oval is oil with ink frame; visor hoods the housing. Lit top fruit-red, lit bottom leaf.

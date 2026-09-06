@@ -130,4 +130,4 @@ Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears in
 
 `e2e/buildings.spec.ts`: `#unlockall`, place every cell Build sku, `e2e/shots/buildings.png`.
 
-Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]].
+Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]]. Sensor Object HUD: `Checkbox` / `Radio` in `frame.tsx` — [[ui/sensors]] [[ui/docks]].

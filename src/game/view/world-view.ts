@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js'
 import { FADE } from '../sim/building.ts'
 import type { Place, World } from '../sim/world.ts'
+import type { Coord } from '../sim/building.ts'
 import type { Edge } from '../sim/pipe.ts'
 import { vertsOf } from '../sim/pipe.ts'
 import { TILE, clampCam, type Camera } from './camera.ts'
@@ -38,6 +39,7 @@ export class WorldView {
   lens: Lens
   editor: boolean
   pendingPipe: Edge[] = []
+  pendingFence: Coord[] = []
   private hideVerts: { col: number; row: number }[] = []
   private hoverAoe: ReturnType<typeof hoverSprinkler>
   private ptr: { x: number; y: number } | undefined
@@ -117,6 +119,11 @@ export class WorldView {
     this.patch('pipes')
   }
 
+  setPendingFence(cells: Coord[]): void {
+    this.pendingFence = cells
+    this.patch('pipes')
+  }
+
   setHover(wx: number, wy: number, place: Place): void {
     this.ptr = { x: wx, y: wy }
     this.hoverAoe = place.kind === 'none' ? hoverSprinkler(this.world, wx, wy) : undefined
@@ -189,13 +196,13 @@ export class WorldView {
       }
       this.plots.patch(world)
       this.props.patch(world)
-      this.pipes.patch(world, this.lens, place, this.hideVerts)
+      this.pipes.patch(world, this.lens, place, this.hideVerts, this.pendingFence)
       this.overlay.patch(world, this.lens, this.editor, place, this.hoverAoe, this.ptr)
       this.actors.patch(world)
       this.onPipeLoc?.()
     }
     if (kind === 'pipes') {
-      this.pipes.patch(world, this.lens, place, this.hideVerts)
+      this.pipes.patch(world, this.lens, place, this.hideVerts, this.pendingFence)
     }
     if (kind === 'overlay') {
       this.overlay.patch(world, this.lens, this.editor, place, this.hoverAoe, this.ptr)

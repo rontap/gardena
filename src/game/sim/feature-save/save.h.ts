@@ -111,6 +111,7 @@ export type SaveCell =
   | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }
   | { kind: 'or'; base: RectBase; out: 0 | 1 }
   | { kind: 'and'; base: RectBase; out: 0 | 1 }
+  | { kind: 'logic'; base: RectBase; mode: 'or' | 'and'; out: 0 | 1 }
   | { kind: 'not'; base: RectBase; out: 0 | 1 }
   | { kind: 'pulser'; base: RectBase; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'counter'; base: RectBase; inn: 0 | 1; n: number; count: number; out: 0 | 1 }
@@ -118,8 +119,20 @@ export type SaveCell =
   | { kind: 'sensor-fert'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'sensor-harvest'; base: RectBase; mode: 'any' | 'all'; out: 0 | 1; hold: number }
   | { kind: 'sensor-day'; base: RectBase; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean; out: 0 | 1; hold: number }
+  | { kind: 'sensor-variety'; base: RectBase; baseOn: boolean; variant: boolean; heirloom: boolean; out: 0 | 1; hold: number }
+  | {
+      kind: 'sensor-weather'
+      base: RectBase
+      clear: boolean
+      rain: boolean
+      dry: boolean
+      flood: boolean
+      drought: boolean
+      out: 0 | 1
+      hold: number
+    }
   | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
-  | { kind: 'vehicle-detector'; base: RectBase; out: 0 | 1; hold: number }
+  | { kind: 'vehicle-detector'; base: RectBase; vehicle: boolean; player: boolean; item: boolean; out: 0 | 1; hold: number }
   | { kind: 'traffic-light'; base: RectBase; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'occ'; of: Coord }
 

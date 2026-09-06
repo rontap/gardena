@@ -13,7 +13,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
-| `sensors` | Sensors | **Overview**, then lever button lamp or and not pulser counter sensor-water sensor-fert sensor-harvest water-system vehicle-detector traffic-light sensor-day |
+| `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
@@ -41,7 +41,7 @@ Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not t
 
 Olive is `TreeId`: TreePane only.
 
-Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light panes. Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
+Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, blurb. Titles match look names [[ui/sensors]]. Pulser, Counter, Day sensor, Traffic light, Logic gate, Variety sensor, Weather sensor, Pressure plate panes. Water-system pane stays (sku hidden from Build). Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs.
 
 SKU panes stay generic / crop / tree / pipe. Station pane is generic Automation chrome — title, one plate, blurb. No Recipes block.
 

@@ -1,5 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { forwardRef, type MouseEvent, type ReactNode } from 'react'
+import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
 import * as Progress from '@radix-ui/react-progress'
 import {
   symHref,
@@ -233,6 +234,68 @@ export function SearchField({
         onChange('')
       }}
     />
+  )
+}
+
+const BOX =
+  'mt-0.5 size-4 shrink-0 cursor-pointer border-2 border-ink/30 bg-parch shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none focus-visible:border-ink data-[state=checked]:border-ink data-[state=checked]:bg-ink'
+
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+}) {
+  return (
+    <CheckboxPrimitive.Root
+      checked={checked}
+      aria-label={label}
+      onCheckedChange={v => onChange(v === true)}
+      className={BOX}
+    >
+      <CheckboxPrimitive.Indicator className="flex items-center justify-center text-house">
+        <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true">
+          <path d="M2 6.5 L4.75 9 L10 3" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </CheckboxPrimitive.Indicator>
+    </CheckboxPrimitive.Root>
+  )
+}
+
+export function Radio({
+  name,
+  value,
+  checked,
+  onChange,
+  label,
+}: {
+  name: string
+  value: string
+  checked: boolean
+  onChange: (v: string) => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      name={name}
+      value={value}
+      aria-label={label}
+      aria-checked={checked}
+      data-state={checked ? 'checked' : 'unchecked'}
+      className={`${BOX} rounded-full`}
+      onClick={() => onChange(value)}
+    >
+      {checked ? (
+        <span className="flex items-center justify-center">
+          <span className="size-1.5 rounded-full bg-house" />
+        </span>
+      ) : null}
+    </button>
   )
 }
 

@@ -1,7 +1,7 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { BUTTON_PULSE, COUNTER_MAX, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
-import { Tree } from './building.ts'
+import { PUMP_BASE, Tree } from './building.ts'
 import { Act } from './log.ts'
 import { digestHex, permit } from './mp.ts'
 import { statsOf } from './modifiers.ts'
@@ -34,14 +34,15 @@ function put(
     | 'buy-button'
     | 'buy-lamp'
     | 'buy-not'
-    | 'buy-and'
-    | 'buy-or'
+    | 'buy-logic'
     | 'buy-pulser'
     | 'buy-counter'
     | 'buy-sensor-water'
     | 'buy-sensor-fert'
     | 'buy-sensor-harvest'
     | 'buy-sensor-day'
+    | 'buy-sensor-variety'
+    | 'buy-sensor-weather'
     | 'buy-water-system'
     | 'buy-vehicle-detector'
     | 'buy-traffic-light',
@@ -49,6 +50,11 @@ function put(
 ): void {
   w.buy(id)
   w.confirmPlace(at)
+}
+
+function putLogic(w: World, at: { col: number; row: number }, mode: 'or' | 'and' = 'or'): void {
+  put(w, 'buy-logic', at)
+  if (mode === 'and') w.tuneSensor({ k: 'logic', at, mode: 'and' })
 }
 
 function grow(
@@ -117,7 +123,7 @@ describe('1.6 sensors', () => {
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
-    put(w, 'buy-and', B)
+    putLogic(w, B, 'and')
     w.armWire({ kind: 'cell', at: A, port: 'out' })
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
     w.armWire({ kind: 'cell', at: B, port: 'out' })
@@ -153,8 +159,8 @@ describe('1.6 sensors', () => {
     })
     const andOr = new World(1)
     ready(andOr)
-    put(andOr, 'buy-and', A)
-    put(andOr, 'buy-or', B)
+    putLogic(andOr, A, 'and')
+    put(andOr, 'buy-logic', B)
     andOr.armWire({ kind: 'cell', at: A, port: 'out' })
     andOr.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
     andOr.armWire({ kind: 'cell', at: B, port: 'out' })
@@ -218,10 +224,10 @@ describe('1.6 sensors', () => {
     put(w, 'buy-lever', clk)
     put(w, 'buy-not', n1)
     put(w, 'buy-not', n2)
-    put(w, 'buy-and', a01)
-    put(w, 'buy-and', a23)
-    put(w, 'buy-and', is9)
-    put(w, 'buy-and', wrap)
+    putLogic(w, a01, 'and')
+    putLogic(w, a23, 'and')
+    putLogic(w, is9, 'and')
+    putLogic(w, wrap, 'and')
     const wire = (from: { col: number; row: number }, fp: 'out', to: { col: number; row: number }, tp: 'in' | 'in-l' | 'in-r') => {
       w.armWire({ kind: 'cell', at: from, port: fp })
       w.placeWire({ kind: 'cell', at: from, port: fp }, { kind: 'cell', at: to, port: tp })
@@ -304,6 +310,7 @@ describe('1.6 sensors', () => {
       raw: rawMap(new Map()),
       machines: new Map(),
       stores: new Map(),
+      pumps: new Map(),
     })
     expect(lever.out).toBe(1)
     expect(lamp.inn).toBe(1)
@@ -393,7 +400,7 @@ describe('1.6 sensors', () => {
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
-    put(w, 'buy-and', B)
+    putLogic(w, B, 'and')
     w.armWire({ kind: 'cell', at: A, port: 'out' })
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: B, port: 'in-l' })
     expect(w.wires).toHaveLength(1)
@@ -447,9 +454,19 @@ describe('1.6 sensors', () => {
       ],
     ])
     const at = (c: { col: number; row: number }) => cells.get(`${c.col},${c.row}`)
-    expect(readerRaw(s, at, [])).toBe(0)
+    const around = [
+      { col: 4, row: 4 },
+      { col: 5, row: 4 },
+      { col: 6, row: 4 },
+      { col: 4, row: 5 },
+      { col: 6, row: 5 },
+      { col: 4, row: 6 },
+      { col: 5, row: 6 },
+      { col: 6, row: 6 },
+    ]
+    expect(readerRaw(s, around, at, [])).toBe(0)
     cells.set('7,5', { kind: 'growing', soil: new Soil(0, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
-    expect(readerRaw(s, at, [])).toBe(0)
+    expect(readerRaw(s, around, at, [])).toBe(0)
     const w = new World(1)
     ready(w)
     put(w, 'buy-sensor-water', A)
@@ -575,7 +592,7 @@ describe('1.6 sensors', () => {
     expect(a6.out).toBe(0)
     const s = new HarvestSensor({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
     s.mode = 'any'
-    expect(readerRaw(s, () => undefined, [])).toBe(0)
+    expect(readerRaw(s, [], () => undefined, [])).toBe(0)
   })
 
   test('Water sensor hold: output edge then hold SENSOR_HOLD ticks.', () => {
@@ -1175,15 +1192,14 @@ describe('1.6 sensors', () => {
     const w = new World(1)
     w.done.add('unlock-sensors')
     w.money = 999
-    expect(w.skuShown('buy-and')).toBe(true)
-    expect(w.skuShown('buy-or')).toBe(true)
+    expect(w.skuShown('buy-logic')).toBe(true)
     expect(w.skuShown('buy-not')).toBe(true)
-    expect(w.skuOpen('buy-and')).toBe(false)
-    expect(w.skuOpen('buy-or')).toBe(false)
+    expect(w.skuShown('buy-and')).toBe(false)
+    expect(w.skuShown('buy-or')).toBe(false)
+    expect(w.skuOpen('buy-logic')).toBe(false)
     expect(w.skuOpen('buy-not')).toBe(false)
     w.done.add('unlock-advanced-sensors')
-    expect(w.skuOpen('buy-and')).toBe(true)
-    expect(w.skuOpen('buy-or')).toBe(true)
+    expect(w.skuOpen('buy-logic')).toBe(true)
     expect(w.skuOpen('buy-not')).toBe(true)
   })
 
@@ -1252,5 +1268,357 @@ describe('1.6 sensors', () => {
     lev.out = 1
     w.tick(DT_MAX)
     expect(v.cursor).toBe(1)
+  })
+})
+
+describe('sensors.fence-place', () => {
+  test('fence then sensor and sensor then fence are the same cell: sensor + `hasFence`.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-landscaping')
+    const a = { col: 10, row: 12 }
+    const b = { col: 10, row: 14 }
+    w.setCell(a, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    w.setCell(b, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    w.buy('buy-fence')
+    w.confirmPlace(a)
+    put(w, 'buy-sensor-water', a)
+    expect(w.cell(a).kind).toBe('sensor-water')
+    expect(w.hasFence(a)).toBe(true)
+    const onFence = w.cell(a)
+    if (onFence.kind !== 'sensor-water') throw new Error('water')
+    expect(onFence.fenceable).toBe(true)
+    put(w, 'buy-sensor-water', b)
+    w.buy('buy-fence')
+    w.confirmPlace(b)
+    expect(w.cell(b).kind).toBe('sensor-water')
+    expect(w.hasFence(b)).toBe(true)
+  })
+})
+
+describe('sensors.fence-delete', () => {
+  test('first delete drops the sensor and wires; fence remains.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-landscaping')
+    const a = { col: 10, row: 12 }
+    const b = { col: 10, row: 13 }
+    w.setCell(a, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    w.setCell(b, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    put(w, 'buy-sensor-water', a)
+    w.buy('buy-fence')
+    w.confirmPlace(a)
+    put(w, 'buy-lamp', b)
+    w.armWire({ kind: 'cell', at: a, port: 'out' })
+    w.placeWire({ kind: 'cell', at: a, port: 'out' }, { kind: 'cell', at: b, port: 'in' })
+    expect(w.wires).toHaveLength(1)
+    w.armDelete()
+    w.deleteBuilding(a)
+    expect(w.cell(a).kind).not.toBe('sensor-water')
+    expect(w.hasFence(a)).toBe(true)
+    expect(w.wires).toHaveLength(0)
+    expect(w.cell(b).kind).toBe('lamp')
+  })
+})
+
+describe('sensors.logic', () => {
+  test('mode `or` / `and` matches old OR / AND. Default `or`.', () => {
+    const orW = new World(1)
+    ready(orW)
+    put(orW, 'buy-logic', A)
+    const g = orW.cell(A)
+    expect(g.kind).toBe('logic')
+    if (g.kind !== 'logic') return
+    expect(g.mode).toBe('or')
+    put(orW, 'buy-lever', B)
+    put(orW, 'buy-lever', C)
+    orW.armWire({ kind: 'cell', at: B, port: 'out' })
+    orW.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in-l' })
+    orW.armWire({ kind: 'cell', at: C, port: 'out' })
+    orW.placeWire({ kind: 'cell', at: C, port: 'out' }, { kind: 'cell', at: A, port: 'in-r' })
+    const lb = orW.cell(B)
+    const lc = orW.cell(C)
+    if (lb.kind !== 'lever' || lc.kind !== 'lever') throw new Error('lever')
+    lb.on = true
+    lb.out = 1
+    orW.tick(DT_MAX)
+    expect(g.out).toBe(1)
+    const andW = new World(1)
+    ready(andW)
+    putLogic(andW, A, 'and')
+    put(andW, 'buy-lever', B)
+    put(andW, 'buy-lever', C)
+    andW.armWire({ kind: 'cell', at: B, port: 'out' })
+    andW.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: A, port: 'in-l' })
+    andW.armWire({ kind: 'cell', at: C, port: 'out' })
+    andW.placeWire({ kind: 'cell', at: C, port: 'out' }, { kind: 'cell', at: A, port: 'in-r' })
+    const gate = andW.cell(A)
+    const aL = andW.cell(B)
+    const aR = andW.cell(C)
+    if (gate.kind !== 'logic' || aL.kind !== 'lever' || aR.kind !== 'lever') throw new Error('and')
+    expect(gate.mode).toBe('and')
+    aL.on = true
+    aL.out = 1
+    andW.tick(DT_MAX)
+    expect(gate.out).toBe(0)
+    aR.on = true
+    aR.out = 1
+    andW.tick(DT_MAX)
+    expect(gate.out).toBe(1)
+    const dumped = dump(orW)
+    let found = false
+    dumped.chunks.forEach(ch => {
+      ch.cells.forEach(row => {
+        row.forEach(c => {
+          if (c.kind === 'logic') {
+            found = true
+            expect(c.mode).toBe('or')
+          }
+        })
+      })
+    })
+    expect(found).toBe(true)
+    const raw = JSON.parse(JSON.stringify(dumped))
+    raw.chunks.forEach((ch: { cells: { kind: string }[][] }) => {
+      ch.cells.forEach(row => {
+        row.forEach(c => {
+          if (c.kind === 'logic') c.kind = 'or'
+        })
+      })
+    })
+    const loaded = parse(JSON.stringify(raw))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    const parsed = loaded.world.cell(A)
+    expect(parsed.kind).toBe('logic')
+    if (parsed.kind !== 'logic') return
+    expect(parsed.mode).toBe('or')
+    expect(permit({ a: Act.tuneSensor, t: 0, p: 1, k: 'logic', c: [A.col, A.row], mode: 'and' })).toBe(true)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'logic', c: [A.col, A.row] })).toBe(true)
+    orW.cancelPlace()
+    expect(orW.prompt({ col: A.col, row: A.row }).text).toBe('Tune Logic gate')
+  })
+})
+
+describe('sensors.pressure', () => {
+  test('flags; 3×3 includes origin; all off → 0.', () => {
+    const hangar = { col: 10, row: 12 }
+    const on = { col: 16, row: 16 }
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-vehicles')
+    w.buy('buy-hangar')
+    w.confirmPlace(hangar)
+    put(w, 'buy-vehicle-detector', on)
+    const plate = w.cell(on)
+    expect(plate.kind).toBe('vehicle-detector')
+    if (plate.kind !== 'vehicle-detector') return
+    expect(plate.fenceable).toBe(true)
+    expect(plate.vehicle).toBe(true)
+    expect(plate.player).toBe(false)
+    expect(plate.item).toBe(false)
+    w.buyVehicle(hangar, 'quad')
+    w.deploy(1, hangar, 'none')
+    const q = w.vehicles[0]
+    if (q.pose.kind !== 'field') throw new Error('field')
+    q.pose.x = on.col + 0.5
+    q.pose.y = on.row + 0.5
+    w.tick(DT_MAX)
+    expect(plate.out).toBe(1)
+    w.tuneSensor({ k: 'pressure', at: on, vehicle: false, player: false, item: false })
+    plate.hold = 0
+    w.tick(DT_MAX)
+    expect(plate.out).toBe(0)
+    w.tuneSensor({ k: 'pressure', at: on, vehicle: false, player: true, item: false })
+    w.seats[0].actor.x = on.col + 1.5
+    w.seats[0].actor.y = on.row + 0.5
+    plate.hold = 0
+    w.tick(DT_MAX)
+    expect(plate.out).toBe(1)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'pressure', c: [on.col, on.row] })).toBe(true)
+  })
+})
+
+describe('sensors.variety', () => {
+  test('default base only; trees counted; all off → 0.', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-crop-variants')
+    put(w, 'buy-sensor-variety', A)
+    const s = w.cell(A)
+    expect(s.kind).toBe('sensor-variety')
+    if (s.kind !== 'sensor-variety') return
+    expect(s.fenceable).toBe(true)
+    expect(s.baseOn).toBe(true)
+    expect(s.variant).toBe(false)
+    expect(s.heirloom).toBe(false)
+    w.setCell(B, new Tree('apple', { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 1 }))
+    w.tick(DT_MAX)
+    expect(s.out).toBe(1)
+    w.tuneSensor({ k: 'variety', at: A, base: false, variant: false, heirloom: false })
+    s.hold = 0
+    w.tick(DT_MAX)
+    expect(s.out).toBe(0)
+    const v = new World(1)
+    ready(v)
+    v.done.add('unlock-crop-variants')
+    put(v, 'buy-sensor-variety', A)
+    v.setCell(B, { kind: 'growing', soil: new Soil(1, 1, WEED_CHANCE), plant: new Plant('potato', 'bintje', 0) })
+    v.tuneSensor({ k: 'variety', at: A, base: false, variant: true, heirloom: false })
+    v.tick(DT_MAX)
+    const vs = v.cell(A)
+    if (vs.kind !== 'sensor-variety') throw new Error('variety')
+    expect(vs.out).toBe(1)
+  })
+})
+
+describe('sensors.weather', () => {
+  test('current day kind; default Clear on; all off → 0.', () => {
+    const w = new World(1)
+    ready(w)
+    put(w, 'buy-sensor-weather', A)
+    const s = w.cell(A)
+    expect(s.kind).toBe('sensor-weather')
+    if (s.kind !== 'sensor-weather') return
+    expect(s.fenceable).toBe(false)
+    expect(s.clear).toBe(true)
+    expect(s.rain).toBe(false)
+    expect(s.dry).toBe(false)
+    expect(s.flood).toBe(false)
+    expect(s.drought).toBe(false)
+    const kind = w.weather(w.clock.day)
+    w.tick(DT_MAX)
+    expect(s.out).toBe(kind === 'clear' ? 1 : 0)
+    w.tuneSensor({
+      k: 'weather',
+      at: A,
+      clear: true,
+      rain: true,
+      dry: true,
+      flood: true,
+      drought: true,
+    })
+    s.hold = 0
+    w.tick(DT_MAX)
+    expect(s.out).toBe(1)
+    w.tuneSensor({
+      k: 'weather',
+      at: A,
+      clear: false,
+      rain: false,
+      dry: false,
+      flood: false,
+      drought: false,
+    })
+    s.hold = 0
+    w.tick(DT_MAX)
+    expect(s.out).toBe(0)
+  })
+})
+
+describe('sensors.pump', () => {
+  test('unwired gather; wired on skips gather; stored still fills.', () => {
+    const w = new World(1)
+    ready(w)
+    const p = w.pumps[0]
+    const origin = { col: PUMP_BASE.col, row: PUMP_BASE.row }
+    p.water.stored = 10
+    w.tick(DT_MAX)
+    expect(p.water.stored).toBeGreaterThan(10)
+    const held = p.water.stored
+    expect(p.water.take(1)).toBe(1)
+    expect(p.water.stored).toBe(held - 1)
+    put(w, 'buy-lever', A)
+    w.armWire({ kind: 'cell', at: A, port: 'out' })
+    w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'cell', at: origin, port: 'in' })
+    expect(w.wires).toHaveLength(1)
+    const lev = w.cell(A)
+    if (lev.kind !== 'lever') throw new Error('lever')
+    lev.on = true
+    lev.out = 1
+    w.tick(DT_MAX)
+    expect(p.inn).toBe(1)
+    p.water.stored = 10
+    w.tick(DT_MAX)
+    expect(p.water.stored).toBe(10)
+    expect(p.water.take(2)).toBe(2)
+    expect(p.water.stored).toBe(8)
+  })
+})
+
+describe('sensors.fence-range', () => {
+  test('fenceable on a closed ring reads interiors, not `area3`. On an open fence: raw 0. Inside a ring but not on a fence: `area3`.', () => {
+    const col0 = 8
+    const row0 = 16
+    function clear(world: World): void {
+      for (let row = row0 - 1; row < row0 + 6; row++) {
+        for (let col = col0 - 1; col < col0 + 6; col++) {
+          world.setCell({ col, row }, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+        }
+      }
+    }
+    function ring(world: World, skip?: { col: number; row: number }): void {
+      world.done.add('unlock-landscaping')
+      world.buy('buy-fence')
+      for (let c = 0; c < 5; c++) {
+        const n = { col: col0 + c, row: row0 }
+        const s = { col: col0 + c, row: row0 + 4 }
+        if (skip === undefined || skip.col !== n.col || skip.row !== n.row) world.confirmPlace(n)
+        world.buy('buy-fence')
+        if (skip === undefined || skip.col !== s.col || skip.row !== s.row) world.confirmPlace(s)
+        world.buy('buy-fence')
+      }
+      for (let r = 1; r < 4; r++) {
+        const west = { col: col0, row: row0 + r }
+        const east = { col: col0 + 4, row: row0 + r }
+        if (skip === undefined || skip.col !== west.col || skip.row !== west.row) world.confirmPlace(west)
+        world.buy('buy-fence')
+        if (skip === undefined || skip.col !== east.col || skip.row !== east.row) world.confirmPlace(east)
+        world.buy('buy-fence')
+      }
+    }
+    const west = { col: col0, row: row0 + 2 }
+    const far = { col: col0 + 3, row: row0 + 2 }
+    const outside = { col: col0 - 1, row: row0 + 2 }
+    const closed = new World(1)
+    ready(closed)
+    clear(closed)
+    ring(closed)
+    put(closed, 'buy-sensor-water', west)
+    grow(closed, far, 'growing', 0)
+    closed.tick(DT_MAX)
+    const onRing = closed.cell(west)
+    if (onRing.kind !== 'sensor-water') throw new Error('water')
+    expect(onRing.out).toBe(1)
+    closed.setCell(far, { kind: 'empty', soil: new Soil(1, 1, WEED_CHANCE) })
+    grow(closed, outside, 'growing', 0)
+    onRing.hold = 0
+    closed.tick(DT_MAX)
+    expect(onRing.out).toBe(0)
+    const open = new World(1)
+    ready(open)
+    clear(open)
+    ring(open, { col: col0 + 2, row: row0 + 4 })
+    put(open, 'buy-sensor-water', west)
+    grow(open, far, 'growing', 0)
+    open.tick(DT_MAX)
+    const leaked = open.cell(west)
+    if (leaked.kind !== 'sensor-water') throw new Error('water')
+    expect(leaked.out).toBe(0)
+    const inside = new World(1)
+    ready(inside)
+    clear(inside)
+    ring(inside)
+    const mid = { col: col0 + 1, row: row0 + 1 }
+    put(inside, 'buy-sensor-water', mid)
+    grow(inside, far, 'growing', 0)
+    inside.tick(DT_MAX)
+    const inner = inside.cell(mid)
+    if (inner.kind !== 'sensor-water') throw new Error('water')
+    expect(inner.out).toBe(0)
+    grow(inside, { col: col0 + 2, row: row0 + 1 }, 'growing', 0)
+    inner.hold = 0
+    inside.tick(DT_MAX)
+    expect(inner.out).toBe(1)
   })
 })

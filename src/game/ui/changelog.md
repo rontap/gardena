@@ -1,3 +1,16 @@
+# 2.5.0 Sensor Update III
+
+One Logic gate does the work of the old OR and AND, a Variety sensor and a Weather sensor join Sensors, and the Pressure plate (once the Vehicle detector) can watch You and things on the ground, and can sit on a Wooden fence.
+
+- ✨ Added building: Logic gate. Two incoming signals: set OR so it turns on if either is on, or AND so it turns on only while both are on.
+- 🚫 Removed building: OR gate. Buy a Logic gate and set OR.
+- 🚫 Removed building: AND gate. Buy a Logic gate and set AND.
+- ✨ Added building: Variety sensor. Turns on when a growing or ripe plant or tree around it matches the plain crop, a named Variety, or Heirloom, as you tick.
+- ✨ Added building: Weather sensor. Turns on while today's weather is one you tick.
+- 🔧 Changed building: Pressure plate. previously, it was the Vehicle detector and turned on only while a Quad or Tractor sat on its tile, now it is a Pressure plate, you tick Vehicle, You, or On the ground, and it watches the ground around it.
+- 🔧 Changed building: Pump. previously, it always drew water, now a signal on its input stops it drawing until the signal goes off.
+- 🎉 Added mechanic: Fenced sensors. A Water sensor, Fertilizer sensor, Harvest sensor, Variety sensor, or Pressure plate on a Wooden fence watches the plots inside that fence. An open fence looks as open fence, close it to turn the sensor on.
+
 # 2.4.5 Errands
 
 The gardener keeps twelve Digs in mind, a Better shovel opens a burrow faster, and litres on Recipes and Inspect round to the nearest half.

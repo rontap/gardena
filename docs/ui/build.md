@@ -14,10 +14,10 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 | Processing | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Compost compost-box | Machines that make goods. |
 | Storage | chest, freezer | Keep what you picked. |
 | Vehicles | Hangar `buy-hangar` · Silos seed, spray, produce | Hangar and the field silos that load trailers. |
-| Sensors | lever, button, lamp, OR, AND, NOT, pulser, counter, traffic-light, water, fert, harvest, water-system, vehicle-detector, day | Signal, gates, readers. |
+| Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | Signal, gates, readers. |
 | Land | Paving cobble → brick → paved · Fencing fence | Paving and fencing. Click as many tiles as you like, Escape when done. |
 
-Labels **Mill** **Pot still** **Barrel** **Jam machine** **Freezer** **Vehicle hangar** **Seeding silo** **Spraying silo** **Produce silo** **Lever** **Button** **Lamp** **OR gate** **AND gate** **NOT gate** **Pulser** **Counter** **Water sensor** **Fertilizer sensor** **Harvest sensor** **Day sensor** **Water-system sensor** **Vehicle detector** **Traffic light** — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shop SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Vehicle detector is Sensors. Traffic light is Sensors, Signal group, not readers. Pulser / counter / day: Sensors. Shelf id `logic`. [[ui/sensors]]
+Labels **Mill** **Pot still** **Barrel** **Jam machine** **Freezer** **Vehicle hangar** **Seeding silo** **Spraying silo** **Produce silo** **Lever** **Button** **Lamp** **Logic gate** **NOT gate** **Pulser** **Counter** **Water sensor** **Fertilizer sensor** **Harvest sensor** **Variety sensor** **Weather sensor** **Day sensor** **Pressure plate** **Traffic light** — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shop SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Pressure plate is Sensors (`buy-vehicle-detector`). Traffic light is Sensors, Signal group, not readers. Pulser / counter / day / variety / weather: Sensors. `buy-water-system` not on the shelf. Parse aliases `and` / `or` are identifiers, not shop SKUs. Shelf id `logic`. [[ui/sensors]]
 
 ## Cluster
 

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js'
-import { occupiedCells } from '../../sim/building.ts'
+import { occupiedCells, type Coord } from '../../sim/building.ts'
 import type { Edge } from '../../sim/pipe.ts'
 import type { CropId } from '../../sim/ids.ts'
 import type { World } from '../../sim/world.ts'
@@ -14,24 +14,45 @@ export class PipesLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
   private readonly pool = new SpritePool(this.root)
 
-  patch(world: World, lens: Lens, place: Place, hide: readonly { col: number; row: number }[]): void {
+  patch(
+    world: World,
+    lens: Lens,
+    place: Place,
+    hide: readonly { col: number; row: number }[],
+    pendingFence: readonly Coord[] = [],
+  ): void {
     const hideSet = new Set(hide.map(v => `${v.col},${v.row}`))
     const overlay = pipesOverlay(lens, place)
     const alpha = overlay ? 1 : 0.35
+    const fenceShow = overlay || (place.kind === 'sku' && place.id === 'buy-fence')
+    const fenceBase = fenceShow ? 1 : 0.35
+    const extra = new Set(pendingFence.map(at => `${at.col},${at.row}`))
     const port = world.done.has('unlock-smart-irrigation')
     this.pool.begin()
-    world.fences.forEach(k => {
-      const comma = k.indexOf(',')
-      const col = Number(k.slice(0, comma))
-      const row = Number(k.slice(comma + 1))
-      const a = world.fenceArms({ col, row })
+    const drawn = new Set<string>()
+    const drawFence = (col: number, row: number, pending: boolean): void => {
+      const k = `${col},${row}`
+      if (drawn.has(k)) return
+      drawn.add(k)
+      const a = {
+        n: world.hasFence({ col, row: row - 1 }) || extra.has(`${col},${row - 1}`),
+        e: world.hasFence({ col: col + 1, row }) || extra.has(`${col + 1},${row}`),
+        s: world.hasFence({ col, row: row + 1 }) || extra.has(`${col},${row + 1}`),
+        w: world.hasFence({ col: col - 1, row }) || extra.has(`${col - 1},${row}`),
+      }
       const fit = fenceFit(a.n, a.e, a.s, a.w)
       const s = this.pool.take(atlasTex(fit.key))
       s.anchor.set(0.5)
       s.position.set(col * TILE + TILE / 2, row * TILE + TILE / 2)
       s.rotation = (fit.rot * Math.PI) / 180
-      s.alpha = alpha
+      const closed = !pending && world.fenceEnclosures.has(k)
+      s.alpha = closed ? Math.min(1, fenceBase * 1.25) : fenceBase * 0.75
+    }
+    world.fences.forEach(k => {
+      const comma = k.indexOf(',')
+      drawFence(Number(k.slice(0, comma)), Number(k.slice(comma + 1)), extra.has(k))
     })
+    pendingFence.forEach(at => drawFence(at.col, at.row, true))
     if (overlay) {
       world.sources().forEach(src => {
         occupiedCells(src.base, world.owned).forEach(at => {

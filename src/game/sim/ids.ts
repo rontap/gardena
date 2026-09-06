@@ -214,6 +214,7 @@ export type SkuId =
   | 'buy-lamp'
   | 'buy-or'
   | 'buy-and'
+  | 'buy-logic'
   | 'buy-not'
   | 'buy-pulser'
   | 'buy-counter'
@@ -221,6 +222,8 @@ export type SkuId =
   | 'buy-sensor-fert'
   | 'buy-sensor-harvest'
   | 'buy-sensor-day'
+  | 'buy-sensor-variety'
+  | 'buy-sensor-weather'
   | 'buy-water-system'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
@@ -232,8 +235,7 @@ export type SensorKind =
   | 'lever'
   | 'button'
   | 'lamp'
-  | 'or'
-  | 'and'
+  | 'logic'
   | 'not'
   | 'pulser'
   | 'counter'
@@ -241,6 +243,8 @@ export type SensorKind =
   | 'sensor-fert'
   | 'sensor-harvest'
   | 'sensor-day'
+  | 'sensor-variety'
+  | 'sensor-weather'
   | 'water-system'
   | 'vehicle-detector'
   | 'traffic-light'
@@ -251,8 +255,7 @@ export const SENSOR_KINDS: readonly SensorKind[] = [
   'lever',
   'button',
   'lamp',
-  'or',
-  'and',
+  'logic',
   'not',
   'pulser',
   'counter',
@@ -260,6 +263,8 @@ export const SENSOR_KINDS: readonly SensorKind[] = [
   'sensor-fert',
   'sensor-harvest',
   'sensor-day',
+  'sensor-variety',
+  'sensor-weather',
   'water-system',
   'vehicle-detector',
   'traffic-light',
@@ -269,8 +274,7 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-lever',
   'buy-button',
   'buy-lamp',
-  'buy-or',
-  'buy-and',
+  'buy-logic',
   'buy-not',
   'buy-pulser',
   'buy-counter',
@@ -278,12 +282,22 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-sensor-fert',
   'buy-sensor-harvest',
   'buy-sensor-day',
+  'buy-sensor-variety',
+  'buy-sensor-weather',
   'buy-water-system',
   'buy-vehicle-detector',
   'buy-traffic-light',
 ]
 
 export const SENSOR_LENS_SKUS: readonly SkuId[] = SENSOR_CELL_SKUS
+
+export const RANGE_SENSOR_SKUS: readonly SkuId[] = [
+  'buy-sensor-water',
+  'buy-sensor-fert',
+  'buy-sensor-harvest',
+  'buy-sensor-variety',
+  'buy-vehicle-detector',
+]
 
 export type VehicleKind = 'quad' | 'tractor'
 export type VehicleId = number

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type WheelEvent as ReactWheelEvent } from 'react'
 import { m } from '../../paraglide/messages.js'
 import { HANGAR_H, HANGAR_W, MILL_H, MILL_W, SILO_H, SILO_W } from '../defs/items.ts'
-import { FADE, occupiedCells } from '../sim/building.ts'
+import { FADE, occupiedCells, type Coord } from '../sim/building.ts'
+import { isFenceSite } from '../sim/plot.ts'
 import { onCell } from '../sim/drop.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
 import type { SkuId } from '../sim/ids.ts'
@@ -29,8 +30,10 @@ import {
   SPRINKLER_HIT,
   VERTEX_HIT,
   onEdgeBand,
+  fenceOk,
   pipeOk,
   roundVertex,
+  routeCells,
   routeEdges,
   stayOk,
   arms,
@@ -92,7 +95,7 @@ function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: nu
 export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick, onReady }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<WorldView | undefined>(undefined)
-  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; wireFrom?: WireEnd } | undefined>(undefined)
+  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; fence: boolean; wireFrom?: WireEnd } | undefined>(undefined)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
   const pendingMove = useRef<{ x: number; y: number; buttons: number; shift: boolean } | undefined>(undefined)
   const camRef = useRef(cam)
@@ -101,11 +104,15 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const [ptr, setPtr] = useState({ x: 0, y: 0 })
   const [worldPtr, setWorldPtr] = useState<{ x: number; y: number } | undefined>(undefined)
   const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
+  const [pendingFence, setPendingFence] = useState<Coord[]>([])
   const anchorRef = useRef<Vertex | undefined>(undefined)
+  const fenceAnchorRef = useRef<Coord | undefined>(undefined)
   const pendingRef = useRef<Edge[]>([])
+  const pendingFenceRef = useRef<Coord[]>([])
   const onReadyRef = useRef(onReady)
   camRef.current = cam
   pendingRef.current = pendingPipe
+  pendingFenceRef.current = pendingFence
   onReadyRef.current = onReady
   const place = world.seats[world.local].place
   const placing = place.kind === 'sku' || place.kind === 'delete'
@@ -252,7 +259,15 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         viewRef.current?.setPending([])
       }
     }
-  }, [place.kind, place.kind === 'sku' ? place.id : '', pendingPipe.length])
+    if (place.kind !== 'sku' || place.id !== 'buy-fence') {
+      fenceAnchorRef.current = undefined
+      if (pendingFence.length > 0) {
+        pendingFenceRef.current = []
+        setPendingFence([])
+        viewRef.current?.setPendingFence([])
+      }
+    }
+  }, [place.kind, place.kind === 'sku' ? place.id : '', pendingPipe.length, pendingFence.length])
 
   useEffect(() => {
     const el = hostRef.current
@@ -289,8 +304,10 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       setWorldPtr(prev => (prev !== undefined && prev.x === w.x && prev.y === w.y ? prev : w))
       const d = drag.current
       const anchor = anchorRef.current
+      const fenceAnchor = fenceAnchorRef.current
       const pipeDrag = d !== undefined && d.pipe && (p.buttons & 1) === 1
-      if (anchor !== undefined && (pipeDrag || d === undefined)) {
+      const fenceDrag = d !== undefined && d.fence && (p.buttons & 1) === 1
+      if (placeId === 'buy-pipe' && anchor !== undefined && (pipeDrag || d === undefined)) {
         const next: Edge[] = routeEdges(anchor, roundVertex(w.x, w.y), p.shift).filter(e => pipeOk(world, 'buy-pipe', e))
         if (next.length !== pendingRef.current.length || next.some((e, i) => edgeKey(e) !== edgeKey(pendingRef.current[i]))) {
           pendingRef.current = next
@@ -299,7 +316,20 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         }
         return
       }
-      if (pipeDrag) return
+      if (placeId === 'buy-fence' && fenceAnchor !== undefined && (fenceDrag || d === undefined)) {
+        const hoverAt = { col: Math.floor(w.x), row: Math.floor(w.y) }
+        const next = routeCells(fenceAnchor, hoverAt, p.shift).filter(c => fenceOk(world, c))
+        if (
+          next.length !== pendingFenceRef.current.length ||
+          next.some((c, i) => c.col !== pendingFenceRef.current[i].col || c.row !== pendingFenceRef.current[i].row)
+        ) {
+          pendingFenceRef.current = next
+          setPendingFence(next)
+          viewRef.current?.setPendingFence(next)
+        }
+        return
+      }
+      if (pipeDrag || fenceDrag) return
       if (d !== undefined && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
         if (Math.hypot(p.x - d.x, p.y - d.y) > 3) {
           pushCam({
@@ -346,11 +376,16 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             ? { kind: 'delete-wire', from: deleteTarget.from, to: deleteTarget.to }
             : undefined
   const runCost = pendingPipe.length * world.skuPrice('buy-pipe')
+  const fenceRunCost = pendingFence.length * world.skuPrice('buy-fence')
   const followText =
     pendingPipe.length > 0
       ? world.money < runCost
         ? m.prompt_cannot_afford()
         : m.prompt_pipe_run({ n: pendingPipe.length, cost: runCost })
+      : pendingFence.length > 0
+        ? world.money < fenceRunCost
+          ? m.prompt_cannot_afford()
+          : m.prompt_fence_run({ n: pendingFence.length, cost: fenceRunCost })
       : edgeTool || sprinklerTool || deleteTool
         ? world.promptHit(stayHit).text
         : placeId !== undefined
@@ -376,20 +411,32 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         e.preventDefault()
         const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
         anchorRef.current = undefined
+        fenceAnchorRef.current = undefined
         pendingRef.current = []
+        pendingFenceRef.current = []
         setPendingPipe([])
+        setPendingFence([])
         viewRef.current?.setPending([])
+        viewRef.current?.setPendingFence([])
         world.rightClick({ col: Math.floor(wpt.x), row: Math.floor(wpt.y) })
       }}
       onPointerDown={e => {
         if (e.button === 2) return
         const wpt = worldAt(cam, boxRef.current, e.clientX, e.clientY)
         const pipe = place.kind === 'sku' && place.id === 'buy-pipe' && onEdgeBand(wpt.x, wpt.y)
-        const down = pipe ? undefined : clickHit(world, wpt.x, wpt.y, lens)
+        const fenceAt = { col: Math.floor(wpt.x), row: Math.floor(wpt.y) }
+        const fence =
+          !pipe &&
+          place.kind === 'sku' &&
+          place.id === 'buy-fence' &&
+          world.inWorld(fenceAt) &&
+          (world.hasFence(fenceAt) || isFenceSite(world.cell(fenceAt)))
+        const down = pipe || fence ? undefined : clickHit(world, wpt.x, wpt.y, lens)
         const wireFrom = down !== undefined && down.kind === 'port' && place.kind === 'none' ? down.end : undefined
-        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe, wireFrom }
+        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe, fence, wireFrom }
         e.currentTarget.setPointerCapture(e.pointerId)
         if (pipe && anchorRef.current === undefined) anchorRef.current = roundVertex(wpt.x, wpt.y)
+        if (fence && fenceAnchorRef.current === undefined) fenceAnchorRef.current = fenceAt
       }}
       onPointerMove={e => {
         pendingMove.current = { x: e.clientX, y: e.clientY, buttons: e.buttons, shift: e.shiftKey }
@@ -416,6 +463,22 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           const [va, vb] = vertsOf(one)
           const far = Math.hypot(va.col - wpt.x, va.row - wpt.y) > Math.hypot(vb.col - wpt.x, vb.row - wpt.y) ? va : vb
           anchorRef.current = far
+          return
+        }
+        if (d.fence) {
+          const run = pendingFenceRef.current
+          if (run.length > 0) {
+            if (world.money >= run.length * world.skuPrice('buy-fence')) run.forEach(at => world.confirmPlace(at))
+            fenceAnchorRef.current = undefined
+            pendingFenceRef.current = []
+            setPendingFence([])
+            viewRef.current?.setPendingFence([])
+            return
+          }
+          const at = { col: Math.floor(wpt.x), row: Math.floor(wpt.y) }
+          if (!fenceOk(world, at)) return
+          world.confirmPlace(at)
+          fenceAnchorRef.current = at
           return
         }
         if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) {

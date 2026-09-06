@@ -11,10 +11,14 @@
             "id": "8be52ee30d7dde7c",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "docs/mechanics/enclosure.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "enclosure"
             }
           }
         ]
@@ -75,8 +79,7 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -185,21 +188,26 @@
       "bases:Create new base": false
     }
   },
-  "active": "f43054b0fe2ef66d",
+  "active": "8be52ee30d7dde7c",
   "lastOpenFiles": [
-    "coverage/coverage-final.json",
-    "coverage/clover.xml",
-    "coverage/view/svgs.ts.html",
-    "coverage/view/index.html",
-    "coverage/view",
-    "coverage/ui/changelog.ts.html",
-    "coverage/ui/techtree.ts.html",
-    "coverage/ui/index.html",
-    "coverage/ui/changelog.md.html",
-    "coverage/ui",
-    "coverage/sim/world.ts.html",
+    "docs/mechanics/saturation.md",
+    "docs/mechanics/sensors.md",
+    "docs/architecture/ai-gameplay-api.md",
+    "src/game/ui/debug-balance.tsx",
+    "src/game/ui/debug-balance.ts",
+    "scripts/crop-stats.csv",
+    "scripts/crop-stats.mjs",
+    "src/paraglide/messages/en.d.ts",
+    "src/paraglide/messages/en.js",
+    "src/paraglide/messages/tutorial_6.d.ts",
+    "src/paraglide/messages/tutorial_4.d.ts",
+    "src/paraglide/messages/tutorial_5.d.ts",
+    "src/paraglide/messages/skills_water_study_name.d.ts",
+    "docs/plans/2.6.0.md",
     "coverage/sort-arrow-sprite.png",
     "coverage/favicon.png",
+    "docs/standards/user-facing-text.md",
+    "docs/agents/game-text-writer.md",
     "src/assets/props/prop-link-out.svg",
     "src/assets/props/prop-link-in.svg",
     "src/assets/crop-watermelon.svg",
@@ -227,11 +235,6 @@
     "docs/mechanics/beta-1.md",
     "docs/changelog.md",
     "docs/ui/place.md",
-    "docs/ui/beta-2.md",
-    "docs/mechanics/beta-2.md",
-    "docs/art/beta-2.md",
-    "node_modules/@radix-ui/react-focus-scope/README.md",
-    "node_modules/use-callback-ref/README.md",
-    "node_modules/react-remove-scroll-bar/README.md"
+    "docs/ui/beta-2.md"
   ]
 }

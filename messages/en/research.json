@@ -33,7 +33,7 @@
   "research_unlock_sensors_name": "Sensors",
   "research_unlock_sensors_blurb": "Open Sensors in the Lens menu to run a wire. Flip a Lever to send a signal by hand, or let a sensor watch a plot, so a Sprinkler or a Valve can act while you garden.",
   "research_unlock_advanced_sensors_name": "Advanced sensors",
-  "research_unlock_advanced_sensors_blurb": "AND gate, OR gate, and NOT gate combine signals so a Sprinkler or a Valve can wait on more than one signal, or run only while another signal is off.",
+  "research_unlock_advanced_sensors_blurb": "A Logic gate turns on from two signals: set OR if either is on, AND only while both are on. A NOT gate turns on while its input is off. Wire them so a Sprinkler or a Valve can wait on more than one sensor, or run only while another signal is off.",
   "research_unlock_smart_irrigation_name": "Smart irrigation",
   "research_unlock_smart_irrigation_blurb": "Tune sprinkler to a crop so it pours only what that crop consumes, not Full flow, which stops drowning plants. Wire a signal into a Sprinkler to turn the pour on and off, or into a Valve so the click reads Valve - wired and the signal opens and closes that Pipe.",
   "research_unlock_vehicles_name": "Vehicles",

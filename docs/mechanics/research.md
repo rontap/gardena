@@ -82,7 +82,7 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 `unlock-dispatch` `effect` `feature`. Automate chrome iff `unlock-dispatch` in `done`. Card **Automated dispatch**. Blurb: vehicles follow a shared stop list; the traffic light holds a vehicle only if that light is a stop. Cost 100, seconds 80 — preference. `Act.route` no-op unless this row is in `done`.
 
-`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` / `unlock-crop-variants` `effect` `feature`. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
+`unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` / `unlock-crop-variants` `effect` `feature`. Advanced sensors SKUs: Logic gate + NOT. Card blurb: A Logic gate turns on from two signals: set OR if either is on, AND only while both are on. A NOT gate turns on while its input is off. Wire them so a Sprinkler or a Valve can wait on more than one sensor, or run only while another signal is off. Contracts board visible iff `unlock-contracts` is in `done`. Tab gating is UI. `effect` is `unlock-sku` | `expand` | `feature`. Better crop is player skills — [[mechanics/family]].
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
@@ -126,22 +126,22 @@ Rainwater tank is not research. It is on the shelf from the start.
 
 ### Sensors
 
-Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unlock-sensors`. Dual-lock `need` on the capability they read — [[mechanics/sensors]].
+Sensors shelf (`logic`) after `unlock-sensors`. Every sensor sku shows on `unlock-sensors` except `buy-water-system` (`skuShown` false). Dual-lock `need` on the capability they read — [[mechanics/sensors]].
 
 | sku | unlock | need |
 |---|---|---|
 | buy-lever, buy-button, buy-lamp, buy-pulser, buy-counter | unlock-sensors | — |
-| buy-sensor-harvest, buy-sensor-day | unlock-sensors | — |
-| buy-and, buy-or, buy-not | unlock-advanced-sensors | — |
+| buy-sensor-harvest, buy-sensor-day, buy-sensor-weather | unlock-sensors | — |
+| buy-logic, buy-not | unlock-advanced-sensors | — |
 | buy-sensor-water | unlock-sensors | unlock-irrigation |
 | buy-sensor-fert | unlock-sensors | unlock-fertilizer |
-| buy-water-system | unlock-sensors | unlock-adv-irrigation |
+| buy-sensor-variety | unlock-sensors | unlock-crop-variants |
 | buy-vehicle-detector | unlock-sensors | unlock-vehicles |
 | buy-traffic-light | unlock-sensors | unlock-dispatch |
 
-AND / OR / NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`.
+Logic gate + NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` requires `unlock-sensors`. `buy-water-system` `skuShown` false, not on the shelf, not buyable.
 
-`buy-vehicle-detector` Sensors. `buy-traffic-light` Sensors.
+`buy-vehicle-detector` Sensors. Player **Pressure plate**. `buy-traffic-light` Sensors. `buy-logic` Sensors. `buy-or` `buy-and` unused.
 
 ### Land
 

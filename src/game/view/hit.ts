@@ -1,7 +1,8 @@
 import { SENSOR_CELL_SKUS, type SkuId } from '../sim/ids.ts'
+import type { Coord } from '../sim/building.ts'
+import { isFenceSite, type Cell } from '../sim/plot.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
 import { drivesOut, nearestWire, portXY, type PortId, type WireEnd } from '../sim/sensor.ts'
-import type { Cell } from '../sim/plot.ts'
 import type { Place, World } from '../sim/world.ts'
 import type { PromptHit } from '../sim/prompt.ts'
 import { DROP_FACE, DROP_INSET, DROP_STEP, TILE } from './camera.ts'
@@ -140,6 +141,36 @@ export function routeEdges(a: Vertex, b: Vertex, flip: boolean): Edge[] {
   return out
 }
 
+export function routeCells(a: Coord, b: Coord, flip: boolean): Coord[] {
+  if (a.col === b.col && a.row === b.row) return [{ col: a.col, row: a.row }]
+  const dx = b.col - a.col
+  const dy = b.row - a.row
+  const horizFirst = flip ? Math.abs(dx) < Math.abs(dy) : Math.abs(dx) >= Math.abs(dy)
+  const out: Coord[] = [{ col: a.col, row: a.row }]
+  const walk = (from: Coord, to: Coord): Coord => {
+    if (from.col !== to.col) {
+      const step = to.col > from.col ? 1 : -1
+      for (let c = from.col + step; c !== to.col + step; c += step) out.push({ col: c, row: from.row })
+      return { col: to.col, row: from.row }
+    }
+    if (from.row !== to.row) {
+      const step = to.row > from.row ? 1 : -1
+      for (let r = from.row + step; r !== to.row + step; r += step) out.push({ col: from.col, row: r })
+    }
+    return { col: from.col, row: to.row }
+  }
+  const corner = horizFirst ? { col: b.col, row: a.row } : { col: a.col, row: b.row }
+  const mid = walk(a, corner)
+  walk(mid, b)
+  return out
+}
+
+export function fenceOk(world: World, at: Coord): boolean {
+  if (!world.inWorld(at)) return false
+  if (world.hasFence(at)) return false
+  return isFenceSite(world.cell(at))
+}
+
 export function pipeOk(world: World, id: SkuId, e: Edge): boolean {
   if (!world.edgeOwned(e)) return false
   if (id === 'buy-valve') return world.hasPipe(e) && !world.hasValve(e)
@@ -170,11 +201,11 @@ const WHOLE_CELL_PORT: Record<string, PortId> = {
   lamp: 'in',
   'sensor-fert': 'out',
   'water-system': 'out',
-  'vehicle-detector': 'out',
   chest: 'out',
   freezer: 'out',
   'seed-silo': 'out',
   'additive-store': 'out',
+  pump: 'in',
 }
 
 function originOk(c: Cell, at: { col: number; row: number }): boolean {
@@ -325,6 +356,10 @@ export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapC
       if (c.kind === 'sensor-harvest') return { kind: 'harvest-hud', at: cellAt }
       if (c.kind === 'counter') return { kind: 'counter-hud', at: cellAt }
       if (c.kind === 'sensor-day') return { kind: 'day-hud', at: cellAt }
+      if (c.kind === 'logic') return { kind: 'logic-hud', at: cellAt }
+      if (c.kind === 'sensor-variety') return { kind: 'variety-hud', at: cellAt }
+      if (c.kind === 'sensor-weather') return { kind: 'weather-hud', at: cellAt }
+      if (c.kind === 'vehicle-detector') return { kind: 'pressure-hud', at: cellAt }
     }
   }
   const drop = dropHit(world, wx, wy)

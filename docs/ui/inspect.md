@@ -190,4 +190,6 @@ Sensor cells and valves: look names [[ui/sensors]]. Not plots. No Growth / Happi
 
 Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**.
 
-Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day HUD: **Tune water sensor** / **Tune harvest sensor** / **Tune counter** / **Tune day sensor** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / vehicle detector / pulser / gates / lamp / traffic light: look only. Pulser **Pulser**. Counter **Counter**. Day **Day sensor**. Traffic light **Traffic light**. [[ui/sensors]]
+Fenceable reader on a fence that closes nothing: **open fence, close it to turn the sensor on**. Exact. No **on** / **off** on that line.
+
+Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day / logic / variety / weather / pressure HUD: **Tune {skuLabel}** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / pulser / lamp / traffic light: look only. Pulser **Pulser**. Counter **Counter**. Day **Day sensor**. Logic gate **Logic gate**. Variety sensor **Variety sensor**. Weather sensor **Weather sensor**. Pressure plate **Pressure plate**. Traffic light **Traffic light**. [[ui/sensors]]

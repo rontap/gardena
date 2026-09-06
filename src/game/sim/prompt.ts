@@ -42,7 +42,7 @@ import {
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPavingSite, isPlot, isTilled, type Cell } from './plot.ts'
-import { isSensor, isSeqIn, sameNode, wouldCycle, type WireEnd } from './sensor.ts'
+import { isSensor, isSeqIn, makeSensor, sameNode, skuKind, wouldCycle, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { dest } from './queue.ts'
@@ -73,6 +73,10 @@ export type PromptHit =
   | { kind: 'harvest-hud'; at: Coord }
   | { kind: 'counter-hud'; at: Coord }
   | { kind: 'day-hud'; at: Coord }
+  | { kind: 'logic-hud'; at: Coord }
+  | { kind: 'variety-hud'; at: Coord }
+  | { kind: 'weather-hud'; at: Coord }
+  | { kind: 'pressure-hud'; at: Coord }
 
 const CROP_LABEL: { readonly [K in CropId]: () => string } = {
   carrot: m.names_crop_carrot,
@@ -93,8 +97,7 @@ const SENSOR_LABEL: { readonly [K in SensorKind]: () => string } = {
   lever: m.names_sensor_lever,
   button: m.names_sensor_button,
   lamp: m.names_sensor_lamp,
-  or: m.names_sensor_or,
-  and: m.names_sensor_and,
+  logic: m.names_sensor_logic,
   not: m.names_sensor_not,
   pulser: m.names_sensor_pulser,
   counter: m.names_sensor_counter,
@@ -102,6 +105,8 @@ const SENSOR_LABEL: { readonly [K in SensorKind]: () => string } = {
   'sensor-fert': m.names_sensor_fert,
   'sensor-harvest': m.names_sensor_harvest,
   'sensor-day': m.names_sensor_day,
+  'sensor-variety': m.names_sensor_variety,
+  'sensor-weather': m.names_sensor_weather,
   'water-system': m.names_sensor_water_system,
   'vehicle-detector': m.names_sensor_vehicle_detector,
   'traffic-light': m.names_sensor_traffic_light,
@@ -350,8 +355,7 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   lever: m.names_sensor_lever,
   button: m.names_sensor_button,
   lamp: m.names_sensor_lamp,
-  or: m.names_sensor_or,
-  and: m.names_sensor_and,
+  logic: m.names_sensor_logic,
   not: m.names_sensor_not,
   pulser: m.names_sensor_pulser,
   counter: m.names_sensor_counter,
@@ -359,8 +363,11 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   'sensor-fert': m.names_sensor_fert,
   'sensor-harvest': m.names_sensor_harvest,
   'sensor-day': m.names_sensor_day,
+  'sensor-variety': m.names_sensor_variety,
+  'sensor-weather': m.names_sensor_weather,
   'water-system': m.names_sensor_water_system,
   'vehicle-detector': m.names_sensor_vehicle_detector,
+  'traffic-light': m.names_sensor_traffic_light,
 }
 
 export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
@@ -369,6 +376,11 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   const cell = w.cell(at)
   if (cell.kind === 'pump' && cell.form === 'jack') {
     return { kind: 'place', text: m.prompt_delete({ name: m.names_face_pumpjack().toLowerCase() }) }
+  }
+  if (isSensor(cell) && cell.fenceable && w.hasFence(at)) {
+    const nameFn = DELETE_NAME[cell.kind]
+    if (nameFn === undefined) return { kind: 'blocked', text: m.prompt_cannot_delete() }
+    return { kind: 'place', text: m.prompt_delete({ name: nameFn().toLowerCase() }) }
   }
   if (w.hasFence(at)) {
     return { kind: 'place', text: m.prompt_delete({ name: m.names_building_fence().toLowerCase() }) }
@@ -384,7 +396,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   const name = nameFn()
   return {
     kind: 'place',
-    text: m.prompt_delete({ name: cell.kind === 'or' || cell.kind === 'and' || cell.kind === 'not' ? name : name.toLowerCase() }),
+    text: m.prompt_delete({ name: cell.kind === 'not' ? name : name.toLowerCase() }),
   }
 }
 
@@ -427,6 +439,18 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'day-hud') {
     return { kind: 'place', text: m.prompt_tune({ name: m.names_sensor_day().toLowerCase() }) }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'logic-hud') {
+    return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-logic') }) }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'variety-hud') {
+    return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-sensor-variety') }) }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'weather-hud') {
+    return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-sensor-weather') }) }
+  }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'pressure-hud') {
+    return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-vehicle-detector') }) }
   }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'port') {
     return { kind: 'place', text: m.prompt_place_bare() }
@@ -536,6 +560,14 @@ export function readPrompt(w: World, at: Coord): Prompt {
         return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
       }
       if (!placeSolidOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
+      const kind = skuKind(w.act.place.id)
+      if (
+        kind !== undefined &&
+        w.hasFence(at) &&
+        !makeSensor(kind, { shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 }).fenceable
+      ) {
+        return { kind: 'blocked', text: m.prompt_cannot_place() }
+      }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
     if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
@@ -653,6 +685,18 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (cell.kind === 'sensor-day') {
       return { kind: 'place', text: m.prompt_tune({ name: m.names_sensor_day().toLowerCase() }) }
+    }
+    if (cell.kind === 'logic') {
+      return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-logic') }) }
+    }
+    if (cell.kind === 'sensor-variety') {
+      return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-sensor-variety') }) }
+    }
+    if (cell.kind === 'sensor-weather') {
+      return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-sensor-weather') }) }
+    }
+    if (cell.kind === 'vehicle-detector') {
+      return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-vehicle-detector') }) }
     }
     return { kind: 'blocked', text: sensorName(cell.kind) }
   }

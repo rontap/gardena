@@ -6,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.16
+export const PROTOCOL = 2.17
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -61,8 +61,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-lever',
   'buy-button',
   'buy-lamp',
-  'buy-or',
-  'buy-and',
+  'buy-logic',
   'buy-not',
   'buy-pulser',
   'buy-counter',
@@ -70,7 +69,8 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-sensor-fert',
   'buy-sensor-harvest',
   'buy-sensor-day',
-  'buy-water-system',
+  'buy-sensor-variety',
+  'buy-sensor-weather',
   'buy-vehicle-detector',
   'buy-traffic-light',
 ])
@@ -276,7 +276,16 @@ export function permit(cmd: Cmd): boolean {
     case Act.reorderContract:
       return false
     case Act.openHud:
-      return cmd.k === 'water' || cmd.k === 'harvest' || cmd.k === 'counter' || cmd.k === 'day'
+      return (
+        cmd.k === 'water' ||
+        cmd.k === 'harvest' ||
+        cmd.k === 'counter' ||
+        cmd.k === 'day' ||
+        cmd.k === 'logic' ||
+        cmd.k === 'variety' ||
+        cmd.k === 'weather' ||
+        cmd.k === 'pressure'
+      )
     case Act.buy:
       if (GUEST_PIPE.has(cmd.s)) return false
       if (SKUS[cmd.s].tab === 'seeds' || SKUS[cmd.s].tab === 'utility') return true
@@ -335,7 +344,7 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
-    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still') s += `:inn${c.inn}`
+    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`

@@ -9,6 +9,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/water]]
 - [[mechanics/weather]]
 - [[mechanics/sensors]]
+- [[mechanics/enclosure]] — fenced area, fenceable sensor range
 - [[mechanics/weeds]]
 - [[mechanics/market]]
 - [[mechanics/saturation]]
@@ -207,6 +208,19 @@ See [[canon]].
 | sensors.day | [[mechanics/sensors]] |
 | sensors.lever | [[mechanics/sensors]] |
 | sensors.light | [[mechanics/sensors]] |
+| enclosure.close | [[mechanics/enclosure]] |
+| enclosure.leak | [[mechanics/enclosure]] |
+| enclosure.grid | [[mechanics/enclosure]] |
+| enclosure.nest | [[mechanics/enclosure]] |
+| enclosure.static | [[mechanics/enclosure]] |
+| sensors.fence-range | [[mechanics/sensors]] |
+| sensors.fence-place | [[mechanics/sensors]] |
+| sensors.fence-delete | [[mechanics/sensors]] |
+| sensors.logic | [[mechanics/sensors]] |
+| sensors.pressure | [[mechanics/sensors]] |
+| sensors.variety | [[mechanics/sensors]] |
+| sensors.weather | [[mechanics/sensors]] |
+| sensors.pump | [[mechanics/sensors]] |
 | log.now | [[mechanics/log]] |
 | log.dispatch | [[mechanics/log]] |
 | log.cmds | [[mechanics/log]] |

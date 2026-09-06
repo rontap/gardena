@@ -81,6 +81,19 @@ Every arm has required `t: number` and `p: SeatId`. Solo and tests: `p = 0`.
 
 Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Latest `Act.route` `assign` / `start` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Auto load/unload/wait/motion are tick, not cmds. Load/unload no coord; floor of driven vehicle. Cycle `placeWire` no-op. Board generation is not a cmd.
 
+`Act.openHud` `k` is a closed union: `sprinkler` | `water` | `harvest` | `counter` | `day` | `logic` | `variety` | `weather` | `pressure`.
+
+`Act.tuneSensor` `'e'`. Inner `k` closed union:
+
+```
+| { a: Act.tuneSensor; t; p; k: 'logic'; c: XY; mode: 'or' | 'and' }
+| { a: Act.tuneSensor; t; p; k: 'variety'; c: XY; base: boolean; variant: boolean; heirloom: boolean }
+| { a: Act.tuneSensor; t; p; k: 'weather'; c: XY; clear: boolean; rain: boolean; dry: boolean; flood: boolean; drought: boolean }
+| { a: Act.tuneSensor; t; p; k: 'pressure'; c: XY; vehicle: boolean; player: boolean; item: boolean }
+```
+
+`log.letters` += `Act.tuneSensor` `'e'`. New cmds → orchestrator bumps `PROTOCOL` with [[GLOBAL_VERSION]].
+
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart.
 
 `Act.cheat` inner `k` is a closed union:

@@ -1,13 +1,14 @@
 # Sensors
 
-Lever, button, lamp, OR, AND, NOT, pulser, counter, water / fertilizer / harvest / water-system / day sensors, vehicle detector, traffic light. The valve signal input is Water (flow), not this shelf — [[items/irrigation]].
+Lever, button, lamp, Logic gate, NOT, pulser, counter, water / fertilizer / harvest / variety / weather / day sensors, pressure plate, traffic light. Water-system sensor exists on old farms, not on the shelf. The valve signal input is Water (flow), not this shelf — [[items/irrigation]].
 
-Rules: [[mechanics/sensors]]. Research: [[mechanics/research]].
+Rules: [[mechanics/sensors]]. Fenced area: [[mechanics/enclosure]]. Research: [[mechanics/research]].
 
-SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-or` `buy-and` `buy-not` `buy-pulser` `buy-counter` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-sensor-day` `buy-water-system` `buy-vehicle-detector` `buy-traffic-light`.
+SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-logic` `buy-not` `buy-pulser` `buy-counter` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-sensor-variety` `buy-sensor-weather` `buy-sensor-day` `buy-vehicle-detector` `buy-traffic-light`.
 
+`buy-or` `buy-and` unused, not shown. `buy-water-system` `skuShown` false, not buyable.
 
-Build shelf **Sensors**, id `logic`. Filing: signal → Sensors (lever, button, lamp, or, and, not, pulser, counter, traffic-light). Readers: water, fert, harvest, water-system, vehicle-detector, day.
+Build shelf **Sensors**, id `logic`. Filing: signal → Sensors (lever, button, lamp, logic, not, pulser, counter, traffic-light). Readers: water, fert, harvest, variety, weather, vehicle-detector, day.
 
 | sku | label | place | delete |
 |---|---|---|---|
@@ -15,10 +16,14 @@ Build shelf **Sensors**, id `logic`. Filing: signal → Sensors (lever, button, 
 | `buy-counter` | Counter | Place Counter | Delete counter |
 | `buy-sensor-day` | Day sensor | Place Day sensor | Delete day sensor |
 | `buy-traffic-light` | Traffic light | Place Traffic light | Delete traffic light |
+| `buy-logic` | Logic gate | Place Logic gate | Delete logic gate |
+| `buy-sensor-variety` | Variety sensor | Place Variety sensor | Delete variety sensor |
+| `buy-sensor-weather` | Weather sensor | Place Weather sensor | Delete weather sensor |
+| `buy-vehicle-detector` | Pressure plate | Place Pressure plate | Delete pressure plate |
 
-Tune prompts: **Tune counter** / **Tune day sensor**.
+Tune prompts: **Tune {skuLabel}**.
 
-`PULSER_PRICE` `COUNTER_PRICE` `SENSOR_DAY_PRICE` `TRAFFIC_LIGHT_PRICE`. AND / OR / NOT: `unlock-advanced-sensors`. Pulser / counter / day: `unlock-sensors`. Traffic light: `show` `unlock-sensors`, `need` `unlock-dispatch`.
+`PULSER_PRICE` `COUNTER_PRICE` `SENSOR_DAY_PRICE` `TRAFFIC_LIGHT_PRICE` `LOGIC_PRICE` `SENSOR_VARIETY_PRICE` `SENSOR_WEATHER_PRICE`. Logic gate + NOT: `unlock-advanced-sensors`. Pulser / counter / day / weather: `unlock-sensors`. Variety: `show` `unlock-sensors`, `need` `unlock-crop-variants`. Traffic light: `show` `unlock-sensors`, `need` `unlock-dispatch`. Pressure plate: `show` `unlock-sensors`, `need` `unlock-vehicles`.
 
 `buy-traffic-light` blurb: holds a vehicle until the input is green; output is on while a vehicle waits here. Look **Traffic light**.
 

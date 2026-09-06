@@ -191,6 +191,8 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.named-face` — `jamArt` and `spiritArt` are the only statement of which face a named product draws. A Variety that renames a jar or a bottle draws its own file; every other Variety of that crop falls back to the crop face. `faceKey` and `itemInner` both call them, so the atlas key and the HUD chrome can never disagree.
 
+`view.round` — Litres and recipe amounts a person reads use `Math.visualRound` (nearest half). Percents stay `floor(* 100)`. [[ui/inspect]] [[ui/recipe]]
+
 Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
 Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.
 Assumption: plots layer paints burrow cover from `World.burrows`; atlas key is later.

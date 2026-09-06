@@ -1,4 +1,4 @@
-export const BURROW_WORK = 3
+export const BURROW_MUL = 3
 export const BURROW_START_N = 3
 export const BURROW_START_R = 8
 export const LUCK_CAP = 10

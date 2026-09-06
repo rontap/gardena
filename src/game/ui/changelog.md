@@ -1,3 +1,13 @@
+# 2.4.5 Errands
+
+The gardener keeps twelve Digs in mind, a Better shovel opens a burrow faster, and litres on Recipes and Inspect round to the nearest half.
+
+- 🔧 Changed mechanic: previously, the gardener kept eight Dig and Plant clicks in mind and dropped the rest with no word, now they keep twelve and say I can't remember more errands than that! when you click another.
+- 🔧 Changed mechanic: Burrow. previously, every shovel took the same time to Dig a burrow, now that time is three times that shovel's Dig time.
+- 🔧 Changed item: Rotary shovel. previously, a Dig was faster than it is now, now each Dig takes a third of a second.
+- 🔧 Changed ui: Recipes. previously, litre amounts printed two decimals, now they round to the nearest half litre.
+- 🔧 Changed ui: Inspect. previously, plot water printed two decimals, now it rounds to the nearest half litre.
+
 # 2.4.4 Sails and Silos
 
 The Mill turns real sails, the three field silos finally hold what their names promise, and paving stays put under whatever you build on it.

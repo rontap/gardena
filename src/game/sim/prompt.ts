@@ -52,6 +52,7 @@ import type { Intent, TaskName, World } from './world.ts'
 
 export const NOT_OWNED = m.prompt_not_owned()
 export const HAND_FULL = m.prompt_hand_full()
+export const QUEUE_FULL = m.prompt_queue_full()
 
 export type Prompt =
   | { kind: 'intent'; text: string; intent: Intent }

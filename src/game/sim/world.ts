@@ -152,6 +152,7 @@ import {
 } from './water.ts'
 import { forecastWeather, pumpCostMul, sourceRateMul, type WeatherKind } from './weather.ts'
 import {
+  QUEUE_FULL,
   readPrompt,
   readPromptHit,
   type Prompt,
@@ -224,7 +225,7 @@ export const POINTS_PER_DAY = 3
 export const DAY_STIPEND = 10
 export const MP_ID_KEY = 'gardena-mp-id'
 
-export const QUEUE_CAP = 8
+export const QUEUE_CAP = 12
 
 export const DT_MAX = 1 / 15
 const INV = 16
@@ -1373,7 +1374,10 @@ export class World {
   }
 
   enqueueOn(seat: Seat, i: Intent): void {
-    if (seat.queue.length >= QUEUE_CAP) return
+    if (seat.queue.length >= QUEUE_CAP) {
+      this.say(QUEUE_FULL)
+      return
+    }
     const start = seat.queue.length === 0
     seat.queue.push(i)
     if (start) {

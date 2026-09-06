@@ -90,6 +90,8 @@ Confirm: cell buildings and item drops set `none` except StayArmed sensor cells 
 
 `dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station)` = `at`. `dest(open)` = `at`. `{ act: 'open'; at }`. Enqueue, no new `Act` letter. Work 0. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
 
+`QUEUE_CAP` — preference. `enqueueOn` past that length is a no-op and `say(prompt_queue_full)`. Not Save.
+
 No `World.pulse`. No `Pulse` type. Last-action highlight gone. Not a cmd. Not Save. `say` / `grantPoint` stay.
 
 Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
@@ -210,6 +212,8 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 `World.modGen` increments when `modifiers` change. Cache `statsOf(crop, variety)` for that generation. `qualityMul` applies at sale, not in the cache key. Plants do not re-filter modifiers every tick.
 
 ## Invariants
+
+`world.queue` — `Seat.queue` length ≤ `QUEUE_CAP`. Further `enqueueOn` is a no-op and `say(prompt_queue_full)`. Not Save.
 
 `world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station)` is `at`. `dest(open)` is `at`.
 

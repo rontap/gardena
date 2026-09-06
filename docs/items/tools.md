@@ -4,7 +4,7 @@
 
 Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
-`workSeconds` is baked on the Item at mint. New games / new buys use `SHOVELS.*.workSeconds`. Rotary unchanged.
+`workSeconds` is baked on the Item at mint. New games / new buys use `SHOVELS.*.workSeconds`.
 
 | id | SKU | unlock |
 |---|---|---|

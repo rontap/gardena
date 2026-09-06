@@ -2,6 +2,7 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "prompt_not_owned": "I don't own this land!",
   "prompt_hand_full": "My hand is full!",
+  "prompt_queue_full": "I can't remember more errands than that!",
   "prompt_cannot_place": "Cannot place here",
   "prompt_cannot_afford": "Cannot afford",
   "prompt_cannot_delete": "Cannot delete here",

@@ -1,4 +1,5 @@
 import { m } from '../../../paraglide/messages.js'
+import '../../defs/math.ts'
 import {
   BARREL_MATURE,
   COMPOST_LITERS,
@@ -504,7 +505,7 @@ export function recipesUsing(face: Face): readonly Recipe[] {
 }
 
 export function clockText(seconds: number): string {
-  return m.hud_clock_sec({ secs: Math.round(seconds) })
+  return m.hud_clock_sec({ secs: Math.visualRound(seconds) })
 }
 
 function recipeSeconds(d: Duration, mul: number, haste: number): number {

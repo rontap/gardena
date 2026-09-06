@@ -3,7 +3,7 @@ import { m } from '../../../paraglide/messages.js'
 import {
   BURROW_START_N,
   BURROW_START_R,
-  BURROW_WORK,
+  BURROW_MUL,
   LOOT_GATE_BASE,
   LOOT_GATE_FERT,
   LOOT_GATE_HEIRLOOM,
@@ -169,7 +169,7 @@ describe('burrow.block', () => {
 })
 
 describe('burrow.dig', () => {
-  test('Shovel extract: work `BURROW_WORK`, not `workSeconds`, not hardness, 1 use, any shovel id, does not till. Cover → bare, same `ground` / `hardness`. Drop stored item on the cell. Prompt **Dig**. Pickaxe no-op. Inspect does not name loot.', () => {
+  test('Shovel extract: work `workSeconds × BURROW_MUL`, not hardness, 1 use, any shovel id, does not till. Cover → bare, same `ground` / `hardness`. Drop stored item on the cell. Prompt **Dig**. Pickaxe no-op. Inspect does not name loot.', () => {
     const w = new World(1)
     const loot = { kind: 'treasure' as const, coins: 9 }
     const named = {
@@ -197,7 +197,7 @@ describe('burrow.dig', () => {
     w.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'burrow', loot } })
     w.click(AT)
     w.tick(DT_MAX)
-    expect(w.seats[0].workTotal).toBe(BURROW_WORK)
+    expect(w.seats[0].workTotal).toBe(SHOVELS.shovel.workSeconds * BURROW_MUL)
     expect(w.seats[0].workTotal).not.toBe(SHOVELS.shovel.workSeconds)
     for (let i = 0; i < 50; i++) w.tick(DT_MAX)
     const after = w.cell(AT)
@@ -209,7 +209,7 @@ describe('burrow.dig', () => {
 
     const one = new World(1)
     one.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 1, cover: { kind: 'burrow', loot } })
-    one.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'rotary-shovel', usesLeft: 1, workSeconds: 0.2 } }
+    one.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'rotary-shovel', usesLeft: 1, workSeconds: SHOVELS['rotary-shovel'].workSeconds } }
     one.seats[0].actor.x = AT.col + 0.5
     one.seats[0].actor.y = AT.row + 0.5
     one.click(AT)

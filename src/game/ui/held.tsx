@@ -1,5 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { m } from '../../paraglide/messages.js'
+import '../defs/math.ts'
 import type { Hand, Item } from '../sim/item.ts'
 import { itemLine, itemTip } from '../sim/item.ts'
 import { faceGfx } from '../view/svgs.ts'
@@ -54,9 +55,9 @@ function Badge({ item }: { item: Item }) {
 
 function badge(item: Item): string | undefined {
   if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
-  if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
+  if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
   if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
-    return `${Number(item.liters.toFixed(1))}L`
+    return `${Math.visualRound(item.liters)}L`
   }
   if (
     item.kind === 'seeds' ||
@@ -107,11 +108,11 @@ export function ItemLineView({ item }: { item: Item }) {
 
 function heldNumber(item: Item): string {
   if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
-  if (item.kind === 'container') return `${Number(item.liters.toFixed(1))}L`
+  if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
   if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
-    return `${Number(item.liters.toFixed(1))}L`
+    return `${Math.visualRound(item.liters)}L`
   }
-  if (item.kind === 'sugar') return `${Number(item.liters.toFixed(1))}L`
+  if (item.kind === 'sugar') return `${Math.visualRound(item.liters)}L`
   if (item.kind === 'tree-seed') return ''
   if (item.kind === 'treasure') return String(item.coins)
   return String(item.count)

@@ -1,4 +1,5 @@
 import { m } from '../../paraglide/messages.js'
+import '../defs/math.ts'
 import { inFade, inWorld, occupiedCells } from './building.ts'
 import {
   NOT_OWNED,
@@ -228,12 +229,12 @@ function barrelLine(c: Barrel): string {
   if (c.age < BARREL_MATURE) return labeled(name, m.prompt_maturing_pct({ n: Math.floor((c.age / BARREL_MATURE) * 100) }))
   const quality = meanQuality(c.feed)
   const mul = caskAgeMul(c.age, quality)
-  const line = labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Number(mul.toFixed(2)) }))
+  const line = labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Math.visualRound(mul) }))
   const top = m.prompt_aging_max({
     cask: caskName(CASK_OF[c.crop], feedVariety(c.feed)),
     name: cropVariety(c.crop, feedVariety(c.feed)),
     days: Math.round(BARREL_AGE / DAY_SECONDS),
-    mul: Number(caskAgeTop(quality).toFixed(2)),
+    mul: Math.visualRound(caskAgeTop(quality)),
   })
   return `${line}\n${top}`
 }
@@ -246,7 +247,7 @@ function soilLine(soil: Soil): string {
 }
 
 function liters(n: number): string {
-  return m.prompt_liters({ n: Number(n.toFixed(2)) })
+  return m.prompt_liters({ n: Math.visualRound(n) })
 }
 
 function waterWord(soil: Soil, tol: number): string {

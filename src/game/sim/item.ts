@@ -1,4 +1,5 @@
 import { m } from '../../paraglide/messages.js'
+import '../defs/math.ts'
 import {
   BARREL_AGE,
   BARREL_MATURE,
@@ -395,7 +396,7 @@ export function faceName(face: Face): string {
 }
 
 export function countMul(name: string, mul: number, count: number): string {
-  const n = Number(mul.toFixed(2))
+  const n = Math.visualRound(mul)
   return n === 1 ? m.hud_line_count({ name, count }) : m.hud_line_count_mul({ name, mul: n, count })
 }
 
@@ -438,28 +439,28 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'container') {
     return m.hud_line_liters({
       name: CONTAINER_NAME[item.id](),
-      liters: item.liters,
+      liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
   }
   if (item.kind === 'fertilizer') {
     return m.hud_line_liters({
       name: m.names_item_fertilizer(),
-      liters: Number(item.liters.toFixed(2)),
+      liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
   }
   if (item.kind === 'synth') {
     return m.hud_line_liters({
       name: m.names_item_synth(),
-      liters: Number(item.liters.toFixed(2)),
+      liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
   }
   if (item.kind === 'compost') {
     return m.hud_line_liters({
       name: m.names_item_compost(),
-      liters: Number(item.liters.toFixed(2)),
+      liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
   }
@@ -477,7 +478,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'sugar') {
-    return `${m.hud_line_sugar({ name: m.names_item_sugar(), liters: item.liters })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+    return `${m.hud_line_sugar({ name: m.names_item_sugar(), liters: Math.visualRound(item.liters) })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'spirit') {
     const line = countMul(spiritName(item.spirit, item.variety), purposeMul(item.variety, 'alcohol'), item.count)
@@ -516,7 +517,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'weed-spray') {
     return m.hud_line_liters({
       name: m.names_item_weed_spray(),
-      liters: Number(item.liters.toFixed(2)),
+      liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
   }

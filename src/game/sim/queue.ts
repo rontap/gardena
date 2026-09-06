@@ -1,4 +1,4 @@
-import { BURROW_WORK } from '../defs/burrow.ts'
+import { BURROW_MUL } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
 import { AXES, DIG_HARD_SPAN, GRAFT_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
@@ -605,7 +605,7 @@ export function doValve(world: World, edge: Edge): void {
 function shovelTime(world: World, at: Coord): number {
   const s = (world.act.hand as { item: Extract<Item, { kind: 'shovel' }> }).item
   const c = world.cell(at)
-  if (c.kind === 'untilled' && c.cover.kind === 'burrow') return BURROW_WORK
+  if (c.kind === 'untilled' && c.cover.kind === 'burrow') return s.workSeconds * BURROW_MUL
   if (c.kind !== 'untilled') return s.workSeconds
   return s.workSeconds * (1 + DIG_HARD_SPAN * c.hardness)
 }

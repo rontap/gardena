@@ -53,7 +53,7 @@ Shop `pack-*` are five seeds, `'base'`, quality 0.
 
 ## Tools
 
-Shovel, better shovel, pickaxe, hardened pickaxe, axe, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.axe.workSeconds`. Rotary unchanged. No better-axe. Burrow extract: any shovel id, work `BURROW_WORK`, 1 use, not `workSeconds` — [[mechanics/burrow]] `burrow.dig`.
+Shovel, better shovel, pickaxe, hardened pickaxe, axe, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.axe.workSeconds`. No better-axe. Burrow extract: any shovel id, work `workSeconds × BURROW_MUL`, 1 use, not hardness — [[mechanics/burrow]] `burrow.dig`.
 
 `{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. SKU `buy-axe`. Chop: [[mechanics/trees]] `trees.chop`.
 

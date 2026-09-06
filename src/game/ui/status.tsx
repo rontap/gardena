@@ -1,4 +1,5 @@
 import { m } from '../../paraglide/messages.js'
+import '../defs/math.ts'
 import { useEffect } from 'react'
 import { heldText } from '../sim/item.ts'
 import { lookText } from '../sim/look.ts'
@@ -129,7 +130,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
         </div>
         <StatRow label={m.hud_happiness()} value={cell.plant.happiness} text={`${Math.floor(cell.plant.happiness * 100)}%`} segments={[{ from: 0, to: HAPPY_START / 2, color: 'red' }, { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' }, { from: HAPPY_START, to: 1, color: 'green' }]} />
         <StatRow label={m.hud_fertilizer()} value={cell.soil.fertilizer} text={`${Math.floor(cell.soil.fertilizer * 100)}%`} segments={[{ from: 0, to: fertFloor / 2, color: 'red' }, { from: fertFloor / 2, to: fertFloor, color: 'orange' }, { from: fertFloor, to: 1, color: 'green' }]} />
-        <StatRow label={m.names_face_water()} value={cell.soil.water / SOIL_WATER_MAX} text={`${Number(cell.soil.water.toFixed(2))}L`} segments={[{ from: 0, to: waterRed, color: 'red' }, { from: waterRed, to: waterGreenStart, color: 'orange' }, { from: waterGreenStart, to: waterGreenEnd, color: 'green' }, { from: waterGreenEnd, to: waterRedEnd, color: 'orange' }, { from: waterRedEnd, to: 1, color: 'red' }]} />
+        <StatRow label={m.names_face_water()} value={cell.soil.water / SOIL_WATER_MAX} text={`${Math.visualRound(cell.soil.water)}L`} segments={[{ from: 0, to: waterRed, color: 'red' }, { from: waterRed, to: waterGreenStart, color: 'orange' }, { from: waterGreenStart, to: waterGreenEnd, color: 'green' }, { from: waterGreenEnd, to: waterRedEnd, color: 'orange' }, { from: waterRedEnd, to: 1, color: 'red' }]} />
       </div>
     )
   }
@@ -148,7 +149,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
         <div className="flex items-center gap-2 text-sm">
           <span className="w-32 shrink-0 font-semibold text-ink/70">{m.names_face_water()}</span>
           <FillBar value={cell.soil.water / SOIL_WATER_MAX} />
-          <span className="w-12 shrink-0 text-right tabular-nums">{Number(cell.soil.water.toFixed(2))}L</span>
+          <span className="w-12 shrink-0 text-right tabular-nums">{Math.visualRound(cell.soil.water)}L</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <span className="w-32 shrink-0 font-semibold text-ink/70">{m.hud_weed_resistance()}</span>
@@ -189,7 +190,7 @@ function BarrelAge({ world, hover }: { world: World; hover: PromptHit }) {
       <div className="flex items-center gap-2 text-sm">
         <span className="w-20 shrink-0 font-semibold text-ink/70">{m.hud_aging()}</span>
         <FillBar value={Math.min(1, (cell.age - BARREL_MATURE) / BARREL_AGE)} />
-        <span className="w-12 shrink-0 text-right tabular-nums">×{Number(mul.toFixed(2))}</span>
+        <span className="w-12 shrink-0 text-right tabular-nums">×{Math.visualRound(mul)}</span>
       </div>
     </div>
   )

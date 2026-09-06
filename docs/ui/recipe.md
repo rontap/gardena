@@ -36,7 +36,7 @@ A `one` fruit / seed / jam face carries `variety`. `recipesUsing(face)` matches 
 | 2 | arrow, duration under it |
 | 3 | the yield, face + amount |
 
-Each slot is face + **name** + amount. Name is `faceName` — the same words as the held line, not an id. Amount: `units` bare digits, `liters` `{n}L` two decimals trimmed, `waste` `{n} waste`, `range` `{min}-{max}`.
+Each slot is face + **name** + amount. Name is `faceName` — the same words as the held line, not an id. Amount: `units` bare digits, `liters` `{n}L` `Math.visualRound`, `waste` `{n} waste`, `range` `{min}-{max}`. Duration caption `clockText` uses `Math.visualRound`.
 
 Type: `sm` `text-sm`, `md` `text-base`. Time caption matches. Not `text-xs`.
 

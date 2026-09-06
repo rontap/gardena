@@ -6,7 +6,7 @@ export const DIG_HARD_SPAN = 1.25
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
   shovel: { uses: 80, workSeconds: 1 },
   'better-shovel': { uses: 200, workSeconds: 0.7 },
-  'rotary-shovel': { uses: 1000, workSeconds: 0.2 },
+  'rotary-shovel': { uses: 1000, workSeconds: 0.3 },
 }
 
 export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds: number } } = {

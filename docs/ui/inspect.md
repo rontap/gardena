@@ -1,6 +1,8 @@
 # Inspect
 
-Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is `font-display` `text-sm` `truncate` — rustic, a step up from body, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof (`bg-roof/20`).
+Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is `font-display` `text-sm` `truncate` — rustic, a step up from body, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof (`bg-roof/20`). Litres and × multipliers a person reads here use `Math.visualRound` — [[architecture/view]] `view.round`.
+
+`Seat.queue` cap `QUEUE_CAP`. A further click `say`s **I can't remember more errands than that!**. [[architecture/world]] `world.queue`
 
 Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
 
@@ -17,7 +19,7 @@ Look names the Variety, not the crop alone. Copy: **{Variety}**. Growth % stays 
 | Growth | fill bar | `floor(maturity * 100)%` |
 | Happiness | segmented + notch | `floor(happiness * 100)%` |
 | Fertilizer | segmented + notch | `floor(fertilizer * 100)%` |
-| Water | segmented + notch | `{water}L` two decimals |
+| Water | segmented + notch | `{water}L` `Math.visualRound` |
 
 Growth is a fill, not a banded bar. Blue `#4b91c2` vs empty `#8b887d`.
 
@@ -61,7 +63,7 @@ Hovering a `chest` or `freezer` that holds anything adds one block under the loo
 
 ## Barrel aging
 
-Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `caskMulOf` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskMulOf` reads purpose and age back out of `unitSale` as one multiplier. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
+Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `Math.visualRound(caskMulOf)` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskMulOf` reads purpose and age back out of `unitSale` as one multiplier. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
 
 ## Ripe
 
@@ -126,7 +128,7 @@ Tree seed in hand (`{ kind: 'tree-seed'; tree; variety; quality }`), hovered cel
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees.
 
-Shovel on burrow: **Dig**. `{ act: 'shovel' }`. Work `BURROW_WORK`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`
+Shovel on burrow: **Dig**. `{ act: 'shovel' }`. Work `workSeconds × BURROW_MUL`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`
 
 Held `{ kind: 'treasure'; coins }`, hovered owned plot: **Open treasure**. `{ act: 'open'; at }`. `dest` = `at`. Work 0. Left-click is open, not drop.
 

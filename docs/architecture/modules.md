@@ -18,7 +18,8 @@
 | `shelf.ts` | `BuildShelfId`. Station on Processing |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
-| `burrow.ts` | `BURROW_WORK` `BURROW_START_N` loot-roll numbers `LUCK_CAP` — [[mechanics/burrow]] |
+| `burrow.ts` | `BURROW_MUL` `BURROW_START_N` loot-roll numbers `LUCK_CAP` — [[mechanics/burrow]] |
+| `math.ts` | `Math.visualRound` — [[architecture/view]] `view.round` |
 
 ## sim
 

@@ -1,4 +1,5 @@
 import { m } from '../../paraglide/messages.js'
+import '../defs/math.ts'
 import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/feature-machines/recipe.ts'
 import { clockText, craftMachine, recipesOf } from '../sim/feature-machines/recipe.ts'
 import type { Face } from '../sim/item.ts'
@@ -19,7 +20,7 @@ const ARROW: { readonly [K in Size]: string } = { sm: 'h-5 w-10', md: 'h-6 w-12'
 const TYPE: { readonly [K in Size]: string } = { sm: 'text-sm', md: 'text-base' }
 
 function num(n: number): string {
-  return String(Number(n.toFixed(2)))
+  return String(Math.visualRound(n))
 }
 
 function amountText(a: Amount): string {

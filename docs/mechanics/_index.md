@@ -244,6 +244,8 @@ See [[canon]].
 | view.vfx.drain | [[architecture/view]] |
 | view.furnace-cover | [[architecture/view]] |
 | view.named-face | [[architecture/view]] |
+| view.round | [[architecture/view]] |
+| world.queue | [[architecture/world]] |
 | world.dest | [[architecture/world]] |
 | world.pulse | [[architecture/world]] |
 | world.pause | [[architecture/world]] |

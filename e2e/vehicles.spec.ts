@@ -221,8 +221,8 @@ test('Enter embark/disembark; boom toggle paints rake width', async ({ page }) =
     ).__world
     const v = w.vehicles[0].pose
     if (v.kind !== 'field') return
-    const soil = await import('/src/game/sim/soil.ts')
-    const bed = new soil.Soil(1, 1, 0.03)
+    const e = (window as unknown as { __e2e: { Soil: new (a: number, b: number, c: number) => unknown } }).__e2e
+    const bed = new e.Soil(1, 1, 0.03)
     for (let col = 8; col <= 14; col++) {
       for (let row = 15; row <= 18; row++) {
         w.setCell({ col, row }, { kind: 'empty', soil: bed })

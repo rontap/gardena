@@ -152,18 +152,25 @@ test('ripen bakes quality: happy plant quality > seed; neglected walks down', as
   const happyQ = await readWorld<number>(page, PLOT_A, 'w.cell(at).plant.quality')
   expect(happyQ).toBeGreaterThan(seedQ)
 
-  await page.evaluate(async ([at, dt]) => {
+  await page.evaluate(([at, dt]) => {
     const w = (
       window as unknown as {
         __world: { setCell: (a: At, c: unknown) => void; tick: (d: number) => void }
       }
     ).__world
-    const { Plant } = await import('/src/game/sim/plant.ts')
-    const { Soil } = await import('/src/game/sim/soil.ts')
-    const plant = new Plant('potato', 'base', 0.5)
+    const e = (
+      window as unknown as {
+        __e2e?: {
+          Plant: new (crop: string, variety: string, quality: number) => { happiness: number; maturity: number }
+          Soil: new (water: number, fertilizer: number, weed: number) => unknown
+        }
+      }
+    ).__e2e
+    if (e === undefined) throw new Error('no __e2e')
+    const plant = new e.Plant('potato', 'base', 0.5)
     plant.happiness = 0
     plant.maturity = 1
-    w.setCell(at, { kind: 'growing', soil: new Soil(1, 1, 0.03), plant })
+    w.setCell(at, { kind: 'growing', soil: new e.Soil(1, 1, 0.03), plant })
     w.tick(dt)
   }, [PLOT_B, DT_MAX] as const)
   await expect.poll(async () => cellKind(page, PLOT_B)).toBe('ripe')

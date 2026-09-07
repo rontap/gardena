@@ -41,14 +41,12 @@ async function setCrop(page: Page, at: At, growing: boolean): Promise<void> {
   await page.evaluate(
     async ([a, on]) => {
       const w = (window as unknown as { __world: any }).__world
-      const plot = await import('/src/game/sim/plot.ts')
+      const e = (window as unknown as { __e2e: any }).__e2e
       if (on !== true) {
-        w.setCell(a, plot.bare('soft', 0))
+        w.setCell(a, e.bare('soft', 0))
         return
       }
-      const plant = await import('/src/game/sim/plant.ts')
-      const soil = await import('/src/game/sim/soil.ts')
-      w.setCell(a, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'base', 0) })
+      w.setCell(a, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
     },
     [at, growing] as const,
   )
@@ -93,15 +91,13 @@ test('vertical spray is oriented like its AoE, both facings', async ({ page }) =
       w.buy('buy-sprinkler-vert')
       if (turn === true) w.rotatePlace()
       w.placeSprinkler({ variant: 'vert', at: { col: 19, row: 7 }, facing: 'ns', tune: { kind: 'flat' }, inn: 0, hold: 0 })
-      const pipe = await import('/src/game/sim/pipe.ts')
-      const plant = await import('/src/game/sim/plant.ts')
-      const soil = await import('/src/game/sim/soil.ts')
+      const e = (window as unknown as { __e2e: any }).__e2e
       const s = w.sprinklerAt({ col: 19, row: 7 })
-      const cells = pipe.aoe(s)
+      const cells = e.aoe(s)
       cells.forEach((c: { col: number; row: number }) => {
         const kind = w.cell(c).kind
         if (w.inWorld(c) && kind !== 'pump' && kind !== 'house' && kind !== 'truck')
-          w.setCell(c, { kind: 'growing', soil: new soil.Soil(0.2, 1), plant: new plant.Plant('carrot', 'base', 0) })
+          w.setCell(c, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
       })
       ;(window as unknown as { __aoe: unknown }).__aoe = cells
     }, rotate)
@@ -187,14 +183,14 @@ test('a wired-off mill shows nothing', async ({ page }) => {
 })
 
 test('a barrel bubbles while it ages and stops when it is done', async ({ page }) => {
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
-    const items = await import('/src/game/defs/items.ts')
+    const e = (window as unknown as { __e2e: any }).__e2e
     w.buy('buy-barrel')
     w.confirmPlace({ col: 18, row: 6 })
     const c = w.cell({ col: 18, row: 6 })
     c.crop = 'grape'
-    c.feed = [{ variety: 'base', quality: 0, count: items.BARREL_CAP }]
+    c.feed = [{ variety: 'base', quality: 0, count: e.BARREL_CAP }]
     c.age = 0
     w.ping()
   })
@@ -204,23 +200,26 @@ test('a barrel bubbles while it ages and stops when it is done', async ({ page }
     page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),
   ).toBeGreaterThan(0)
 
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
-    const items = await import('/src/game/defs/items.ts')
-    w.cell({ col: 18, row: 6 }).age = items.BARREL_AGE
+    const e = (window as unknown as { __e2e: any }).__e2e
+    w.cell({ col: 18, row: 6 }).age = e.BARREL_AGE
     w.ping()
   })
   await expect(page.locator('[data-vfx="brew"]')).toHaveCount(0)
 })
 
 test('a still with no water shows no steam; steam follows progress', async ({ page }) => {
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const w = (window as unknown as { __world: any }).__world
-    const items = await import('/src/game/defs/items.ts')
+    const e = (window as unknown as { __e2e: any }).__e2e
+    const at = { col: 24, row: 14 }
+    w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    w.setCell({ col: at.col + 1, row: at.row }, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     w.buy('buy-still')
-    w.confirmPlace({ col: 24, row: 14 })
-    const c = w.cell({ col: 24, row: 14 })
-    c.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: items.STILL_CAP }]
+    w.confirmPlace(at)
+    const c = w.cell(at)
+    c.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: e.STILL_CAP }]
     c.progress = 0
     w.ping()
   })

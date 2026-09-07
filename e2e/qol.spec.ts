@@ -121,7 +121,7 @@ test('placing a sensor cell locks the Sensors lens', async ({ page }) => {
 
 test('ripe plot and ground fruit show Quality and Freshness bars', async ({ page }) => {
   await gotoPlay(page)
-  await page.evaluate(async ([plot, drop]) => {
+  await page.evaluate(([plot, drop]) => {
     const w = (
       window as unknown as {
         __world?: {
@@ -131,11 +131,18 @@ test('ripe plot and ground fruit show Quality and Freshness bars', async ({ page
       }
     ).__world
     if (w === undefined) throw new Error('no __world')
-    const { Plant } = await import('/src/game/sim/plant.ts')
-    const { Soil } = await import('/src/game/sim/soil.ts')
-    const plant = new Plant('carrot', 'base', 0.4)
+    const e = (
+      window as unknown as {
+        __e2e?: {
+          Plant: new (crop: string, variety: string, quality: number) => { freshness: number }
+          Soil: new (water: number, fertilizer: number, weed: number) => unknown
+        }
+      }
+    ).__e2e
+    if (e === undefined) throw new Error('no __e2e')
+    const plant = new e.Plant('carrot', 'base', 0.4)
     plant.freshness = 0.9
-    w.setCell(plot, { kind: 'ripe', soil: new Soil(1, 1, 0.03), plant })
+    w.setCell(plot, { kind: 'ripe', soil: new e.Soil(1, 1, 0.03), plant })
     w.setCell(drop, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     w.drops.push({
       at: drop,
@@ -192,10 +199,15 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
   await armSku(page, 'Seed Variety Station 60', 'Processing')
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
   await expect(page.getByText('Place Seed Variety Station', { exact: true })).toBeVisible()
-  const art = await page.evaluate(async () => {
-    const { STATION, STILL, symHref } = await import('/src/game/view/svgs.ts')
+  const art = await page.evaluate(() => {
+    const e = (
+      window as unknown as {
+        __e2e?: { STATION: string; STILL: string; symHref: (html: string) => string }
+      }
+    ).__e2e
+    if (e === undefined) throw new Error('no __e2e')
     const hrefs = [...document.querySelectorAll('svg[viewBox="0 0 48 24"] use')].map(u => u.getAttribute('href'))
-    return { hrefs, station: symHref(STATION), still: symHref(STILL) }
+    return { hrefs, station: e.symHref(e.STATION), still: e.symHref(e.STILL) }
   })
   expect(art.hrefs).toContain(art.station)
   expect(art.hrefs).not.toContain(art.still)

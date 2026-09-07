@@ -105,7 +105,7 @@ test('connected sprinkler waters', async ({ page }) => {
   await tapWorld(page, 19, 7)
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
   await page.keyboard.press('Escape')
-  const water0 = await page.evaluate(async () => {
+  const water0 = await page.evaluate(() => {
     const w = (
       window as unknown as {
         __world: {
@@ -114,9 +114,16 @@ test('connected sprinkler waters', async ({ page }) => {
         }
       }
     ).__world
-    const plant = await import('/src/game/sim/plant.ts')
-    const soil = await import('/src/game/sim/soil.ts')
-    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new soil.Soil(0.2, 1, 0.03), plant: new plant.Plant('carrot', 'base', 0) })
+    const e = (
+      window as unknown as {
+        __e2e?: {
+          Plant: new (crop: string, variety: string, quality: number) => unknown
+          Soil: new (water: number, fertilizer: number, weed: number) => unknown
+        }
+      }
+    ).__e2e
+    if (e === undefined) throw new Error('no __e2e')
+    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
     const c = w.cell({ col: 18, row: 6 })
     if (c.kind !== 'growing' || c.soil === undefined) throw new Error('growing')
     return c.soil.water

@@ -188,11 +188,11 @@ test('closed-ring wash', async ({ page }) => {
   await untilled(page, [HOLE, ...fences])
   for (const at of fences) await place(page, 'buy-fence', at)
   await place(page, 'buy-sensor-water', fences[0])
-  const n = await page.evaluate(async at => {
-    const { sensorWashCells } = await import('/src/game/view/layers/overlay.ts')
+  const n = await page.evaluate(at => {
     const w = (window as unknown as { __world?: unknown }).__world
-    if (w === undefined) throw new Error('no __world')
-    return sensorWashCells(w as never, at, false).length
+    const e = (window as unknown as { __e2e?: { sensorWashCells: (w: unknown, at: At, o: boolean) => unknown[] } }).__e2e
+    if (w === undefined || e === undefined) throw new Error('no __world')
+    return e.sensorWashCells(w, at, false).length
   }, fences[0])
   expect(n).toBe(1)
 })
@@ -202,19 +202,21 @@ test('open-fence look', async ({ page }) => {
   await untilled(page, [HOLE, ...fences])
   for (const at of fences) await place(page, 'buy-fence', at)
   await place(page, 'buy-sensor-water', fences[0])
-  const wash = await page.evaluate(async at => {
-    const { sensorWashCells } = await import('/src/game/view/layers/overlay.ts')
+  const wash = await page.evaluate(at => {
     const w = (window as unknown as { __world?: unknown }).__world
-    if (w === undefined) throw new Error('no __world')
-    return sensorWashCells(w as never, at, false).length
+    const e = (window as unknown as { __e2e?: { sensorWashCells: (w: unknown, at: At, o: boolean) => unknown[] } }).__e2e
+    if (w === undefined || e === undefined) throw new Error('no __world')
+    return e.sensorWashCells(w, at, false).length
   }, fences[0])
   expect(wash).toBe(0)
   await hoverWorld(page, fences[0].col + 0.5, fences[0].row + 0.5)
-  const first = await page.evaluate(async at => {
-    const { lookText } = await import('/src/game/sim/look.ts')
+  const first = await page.evaluate(at => {
     const w = (window as unknown as { __world?: unknown }).__world
-    if (w === undefined) throw new Error('no __world')
-    return (lookText(w, { kind: 'cell', at }, false) as string).split('\n')[0]
+    const e = (
+      window as unknown as { __e2e?: { lookText: (w: unknown, hit: { kind: string; at: At }, armed: boolean) => string } }
+    ).__e2e
+    if (w === undefined || e === undefined) throw new Error('no __world')
+    return e.lookText(w, { kind: 'cell', at }, false).split('\n')[0]
   }, fences[0])
   expect(/ - (on|off)$/.test(first)).toBe(false)
   await expect(page.locator('[data-look]')).toBeVisible()

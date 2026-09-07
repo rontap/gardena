@@ -309,11 +309,13 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
 })
 
 async function lookAt(page: Page, at: At): Promise<string> {
-  return page.evaluate(async a => {
-    const { lookText } = await import('/src/game/sim/look.ts')
+  return page.evaluate(a => {
     const w = (window as unknown as { __world?: unknown }).__world
-    if (w === undefined) throw new Error('no __world')
-    return lookText(w, { kind: 'cell', at: a }, false) as string
+    const e = (
+      window as unknown as { __e2e?: { lookText: (w: unknown, hit: { kind: string; at: At }, armed: boolean) => string } }
+    ).__e2e
+    if (w === undefined || e === undefined) throw new Error('no __world')
+    return e.lookText(w, { kind: 'cell', at: a }, false)
   }, at)
 }
 

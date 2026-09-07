@@ -34,8 +34,14 @@ import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { PIPE_PLACE } from './game/view/hit.ts'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
-import { QUAD_SHOW_MUL, TRAILER_CAP } from './game/defs/items.ts'
-import { UI_DASH_QUAD, UI_DASH_TRACTOR } from './game/view/svgs.ts'
+import { BARREL_AGE, BARREL_CAP, QUAD_SHOW_MUL, STILL_CAP, TRAILER_CAP } from './game/defs/items.ts'
+import { STATION, STILL, UI_DASH_QUAD, UI_DASH_TRACTOR, symHref } from './game/view/svgs.ts'
+import { Plant } from './game/sim/plant.ts'
+import { Soil } from './game/sim/soil.ts'
+import { lookText } from './game/sim/look.ts'
+import { aoe } from './game/sim/pipe.ts'
+import { bare } from './game/sim/plot.ts'
+import { sensorWashCells } from './game/view/layers/overlay.ts'
 import { SENSOR_LENS_SKUS, type RouteId, type TrailerId, type VehicleId } from './game/sim/ids.ts'
 import type { Item } from './game/sim/item.ts'
 import { trailerUsed } from './game/sim/feature-vehicles/vehicle.ts'
@@ -151,8 +157,24 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     ;(window as unknown as { __world?: World }).__world = world
+    const e2e = {
+      Plant,
+      Soil,
+      lookText,
+      aoe,
+      bare,
+      sensorWashCells,
+      BARREL_AGE,
+      BARREL_CAP,
+      STILL_CAP,
+      STATION,
+      STILL,
+      symHref,
+    }
+    ;(window as unknown as { __e2e?: typeof e2e }).__e2e = e2e
     return () => {
       delete (window as unknown as { __world?: World }).__world
+      delete (window as unknown as { __e2e?: typeof e2e }).__e2e
     }
   }, [world])
 

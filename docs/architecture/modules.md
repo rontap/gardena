@@ -93,7 +93,7 @@
 | `status.tsx` | look line |
 | `held.tsx` | hand / item face |
 | `queue.tsx` | intent queue |
-| `shop.tsx` | `World.buy` |
+| `build.tsx` | `World.buy` |
 | `cheat.tsx` | `unlockAll` / `unlockAllSkills` / `cheatFastResearch` / `cheatSpeed` / end day / weather pins |
 | `research.tsx` | `World.startResearch` |
 | `market.tsx` | Stall \| Contracts overlay |
@@ -107,7 +107,7 @@
 | `family.tsx` | family overlay |
 | `station.tsx` | station panel — [[ui/station]] |
 
-Panel open/close is App-local. Solo family / market / almanac / recap-popup overlay pause, the day-increment pause (`settings.solo`), and the tab pause are App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, parked vehicle, or station. Silo cells are look name only. Recap popup is App `recapDay`. `goNotice` takes `NoticeGo`.
+Panel open/close is App-local. Solo family / market / almanac / recap-popup overlay pause and the tab pause (`pauseWhenHidden`) are App-local. The day increment does not pause. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, parked vehicle, or station. Silo cells are look name only. Recap popup is App `recapDay`. `goNotice` takes `NoticeGo`.
 
 ## view
 
@@ -115,7 +115,7 @@ PixiJS v8 canvas world. No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for til
 
 Camera and `Lens` are view-local, not `World` fields. Camera follow is view-local. Water lens requires husband `water-study`; `land` requires `land-study`. `sensors` unhidden after `unlock-sensors`. `vehicles` unhidden after `unlock-vehicles`. Wires sim-state always; paint and port hit view-gated on `sensors`.
 
-Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / almanac / shop fragments only.
+Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / almanac / Build fragments only.
 
 | file | owner |
 |---|---|
@@ -133,7 +133,7 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE. Sensor wash from watched set; pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, shop). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces. Chainsaw face. `researchInner`: `unlock-advanced-sensors` is the Logic gate, not AND; `unlock-grinder` is `skill-machinery.svg` 1-1, no new research SVG |
+| `svgs.ts` | chrome-only (HUD, almanac, Build). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces. Chainsaw face. `researchInner`: `unlock-advanced-sensors` is the Logic gate, not AND; `unlock-grinder` is `skill-machinery.svg` 1-1, no new research SVG |
 | `motion.ts` | HUD-only binds. Live craft `left` uses `furnaceMul` |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes always drawn (faint when lens off). Wetness + AoE still lens / tool. Sprinkler AoE on hover is view. Pipe drag-to-draw is view-local pending run; commit existing `placePipe` per edge; no new cmd.

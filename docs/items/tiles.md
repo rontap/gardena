@@ -1,6 +1,6 @@
 # Paving and fencing
 
-Cosmetic building. Both keep `ground` and both stay armed while placing — click as many cells as money allows, Esc or **Cancel** to stop. Shop tab **Building**. Delete tool removes them.
+Cosmetic building. Both keep `ground` and both stay armed while placing — click as many cells as money allows, Esc or **Cancel** to stop. `Sku.tab` **Building**; Build shelf **Land** — [[ui/build]]. Delete tool removes them.
 
 ## Paving
 
@@ -12,7 +12,7 @@ Cosmetic building. Both keep `ground` and both stay armed while placing — clic
 
 Site: `isPavingSite` — any `untilled` cell, **or** a solid building cell. Paving over paving replaces it. Refused on tilled or planted soil, on a burrow, on a rock and on a tree: you pave under what you built, and around what was already there.
 
-Ground art is `BUILDING_TILES` (`groundSig` no longer carries it; `World.bumpGround` marks the ground dirty on lay and lift). The held / shop / almanac face is `TILE_ICON` (`item-{tile}.svg`).
+Ground art is `BUILDING_TILES` (`groundSig` no longer carries it; `World.bumpGround` marks the ground dirty on lay and lift). The held / card / almanac face is `TILE_ICON` (`item-{tile}.svg`).
 
 Delete order on one cell: fenceable sensor + fence → sensor (and its wires), then fence, then paving. Else fence, then building, then paving. The thing standing on the cell goes first and a second click lifts the slab. Prompt **Delete paving**. Fenceable sensors: [[mechanics/sensors]].
 

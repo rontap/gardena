@@ -4,7 +4,7 @@ Seed silo and additive store panels. Dialogs, not docks — [[ui/docks]]. Opened
 
 `src/game/ui/store.tsx` owns both stores. One `Shell` (Radix dialog + `Frame`) with an optional width.
 
-Walking up deposits first, then the panel opens. The panel is a withdraw screen; there is no deposit control.
+Walking up deposits first, then the panel opens. The panel is a withdraw screen; there is no deposit control. The two field silos carry one checkbox — see below.
 
 ## Capacity line
 
@@ -30,9 +30,25 @@ Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any Variet
 
 `bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average.
 
-Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy, same as shop. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/shop]].
+Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`, the same states a [[ui/build]] card shows. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/build]].
 
 No crops to show at all: *Empty. Seeds you buy are delivered here.*
+
+## Auto-restock
+
+A `Checkbox` row at the foot of the **Seeding silo** and **Additive silo** panels, above the walk-up line, on a hairline rule. **Field silos only.** The house Seed silo and Additive store do not have it: the house pair is where the player shops, and a store that re-buys behind you is a field convenience, not a shop.
+
+`restock` is a saved field on `SiloSeed` and `SiloSpray`, not on the `SeedStore` / `AdditiveHolder` bases — `world.silo` and `world.additives` cannot represent the state, so no panel has to decide whether to show the row from anything but the cell kind.
+
+The row is the checkbox and the words **Auto-restock**, nothing else. The sentence explaining it is the [[ui/callout-hover]] `aside`, the same slot the stock and Buy cells use. A full sentence under a `w-fit` panel sets that panel's width; the seed grid is what should.
+
+Toggling is `Act.setRestock` (`c: XY`, `on`), so it replays in lockstep and is in the [[mechanics/multiplayer]] digest. Guests may toggle it — they may already buy `seeds` and `utility` skus, which is all a restock buys.
+
+Rule, on [[mechanics/inventory]] `inventory.restock`: take the silo's `levels()` **before** the removal, run the removal, then buy whole packs or bags back until each row reaches the level it held. Buying stops the moment one `buy` fails, so no money, a closed sku and a full silo all end it the same way. `Math.ceil(missing / pack)` bounds the loop, so a 7-seed stack comes back as two packs of five.
+
+`Act.takeStore` is the only removal that reaches it. Field silos are not pad cells, so no trailer loads from one — [[mechanics/vehicles]].
+
+A named Variety restocks nothing: `packSku` covers `'base'` only, and no shelf sells a named Variety. Compost restocks nothing either — `ROW_SKU.compost` is `'none'`; it is made in a compost box, not bought.
 
 ## Hover
 
@@ -47,7 +63,7 @@ Empty cells hover too. What a Variety sells for at Quality 0 is worth knowing be
 
 This callout is the one place a purpose reaches the player, and it is where they choose: **Best for Fresh / Preserving / Alcohol**, with the multiplier that purpose pays. `'base'` shows no such line — it is even at all three. Words: [[standards/user-facing-text]]. The Almanac carries none of this — [[ui/almanac]].
 
-Shop seed cards use the same Variety + Quality words. Pack is `'base'` at Quality 0.
+The Seed silo is the only place seed packs are sold; the Additive store is the only place fertilizer, synthetic fertilizer, weed spray and sugar are sold. There is no General store — [[ui/build]].
 
 ## Additive store
 
@@ -55,7 +71,7 @@ Title **Additive store**. `w-[30rem]` — five rows, nothing to grow into. Capac
 
 One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all five, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
 
-Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/shop]].
+Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/build]].
 
 Footer names the delivery rule while the store is empty, then *Walking up empties any bag you were carrying back into the tanks.*
 

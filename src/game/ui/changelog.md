@@ -1,3 +1,18 @@
+# 2.6.4 One build menu
+
+The General store is gone. Every tool and everything you place is in the Build menu; seeds stay at the Seed silo and bags at the Additive store. Almanac and Cheat moved to the top bar, Hold Shift keeps a tool in hand, and Family shows Reputation and Luck.
+
+- 🚫 Removed ui: General store. Seeds are bought at the Seed silo and bags at the Additive store, so the store only repeated what those two panels already sell.
+- 🔧 Changed ui: Build. previously, its tabs were Water, Processing, Storage, Vehicles, Sensors and Land, now they are Tools, Water, Automation, Storage, Sensors and Land: shovels, pickaxes, axes and buckets open the menu, the Vehicle hangar sits under Automation, the field silos under Storage, and Grass seeds under Land.
+- 🎉 Added mechanic: Hold Shift. Holding Shift as you click keeps what you are placing in hand, so a row of chests is one pick and many clicks instead of a trip back to the Build menu for each one.
+- 🔧 Changed ui: Almanac. previously, it opened from the left rail, now it opens from a button on the top bar beside Pause.
+- 🔧 Changed ui: Cheat. previously, it opened from the left rail, now it opens from a button on the top bar beside Pause.
+- 🎉 Added ui: Reputation. A gold star on Family shows what the companies think of your farm; point at it to read what raises it, what it does to tomorrow's contracts, and the exact number.
+- 🎉 Added ui: Luck. A four-leaf clover on Family shows your Luck; point at it to read what it changes about a burrow that has not appeared yet, and the exact number.
+- 🔧 Changed ui: Market. previously, it opened on Stall every time, now it opens on the tab you last read.
+- 🎉 Added mechanic: Auto-restock. A Seeding silo and an Additive silo each gain a tick box; with it on, whatever you take out of that silo is bought back, up to the amount it held, as long as there is money for it, so a silo out in the field keeps itself stocked without a walk home. A named Variety and Compost have nothing to buy, so they are left as they are.
+- 🔧 Changed mechanic: end of day. previously, a new day paused the farm, now the farm keeps running and only opening the end-of-day summary from Day {n} Finished pauses it.
+
 # 2.6.3 Research rebalance
 
 Hardened tools sells the Hardened pickaxe and a Chainsaw. Gardening tools and Synthetic additives take their new names. Seed Variety Station waits on Crop variants.

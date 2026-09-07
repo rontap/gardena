@@ -6,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.19
+export const PROTOCOL = 2.2
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -340,6 +340,7 @@ export function digestParts(world: World): Record<string, unknown> {
       s += `:${c.plant.crop}:${c.plant.variety}:${q(c.plant.quality)}:${q(c.plant.maturity)}`
     }
     if (c.kind === 'tree') s += `:${c.variety}`
+    if (c.kind === 'silo-seed' || c.kind === 'silo-spray') s += `:re${c.restock ? 1 : 0}`
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`

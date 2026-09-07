@@ -37,4 +37,4 @@ Solo only. Guard is `hostRef` / `guestRef` both undefined, the same rule as the 
 
 `settings.draft` — Revert to default writes nothing. Only Save writes. Back and × discard.
 
-`settings.solo` — `pauseWhenHidden` and the end-of-day pause act only while `hostRef` and `guestRef` are both undefined.
+`settings.solo` — `pauseWhenHidden` acts only while `hostRef` and `guestRef` are both undefined. There is no end-of-day pause — [[mechanics/day]].

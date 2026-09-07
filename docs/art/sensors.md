@@ -8,7 +8,7 @@ Not electricity. Do not reuse [[art/electricity]] windmill, generator, battery, 
 
 Body `oil` `#2c322c` / `iron` `#4c4844` / `steel` `#8a9198`. Outlines `ink` `#1c1710`. Sunk collar `dirt` / `dirt-dark`. No unnamed hex.
 
-Logic gate is one body; IEEE-ish glyph swaps with `mode`. AND: flat back, D front. OR: pointed/curved back, pointed front. Output down. Not a tall slotted box. Collar is a pad, not empty dirt. Side steel nubs + bottom out nub. No port-marker circles/squares in the SVG. `item-and` / `item-or` / `prop-and` / `prop-or` stay on disk, unused by shop.
+Logic gate is one body; IEEE-ish glyph swaps with `mode`. AND: flat back, D front. OR: pointed/curved back, pointed front. Output down. Not a tall slotted box. Collar is a pad, not empty dirt. Side steel nubs + bottom out nub. No port-marker circles/squares in the SVG. `item-and` / `item-or` / `prop-and` / `prop-or` stay on disk, not on a shelf.
 
 Lamp jack is the top nub (NOT `in` language). Housing sits low so the nub reads. No out. Globe is the mass at map scale: `off` oil + `fruit-red` window, `on` `ripe` + steel window. Jack stays steel.
 
@@ -19,8 +19,8 @@ Traffic light: two stacked ovals, visor as a hood on the housing, not a street p
 | `item-lever.svg` `prop-lever.svg` | `0 0 24 24` | `off` `on` | throw lever, grip, top in, bottom out |
 | `item-button.svg` `prop-button.svg` | `0 0 24 24` | `off` `on` | pad, bottom out |
 | `item-lamp.svg` `prop-lamp.svg` | `0 0 24 24` | `off` `on` | large globe, low housing, jack on top, no out |
-| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | unused by shop. IEEE-ish, pointed/curved back, pointed front, side ins, bottom out |
-| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | unused by shop. IEEE-ish, flat back, D front, side ins, bottom out |
+| `item-or.svg` `prop-or.svg` | `0 0 24 24` | — | not on a shelf. IEEE-ish, pointed/curved back, pointed front, side ins, bottom out |
+| `item-and.svg` `prop-and.svg` | `0 0 24 24` | — | not on a shelf. IEEE-ish, flat back, D front, side ins, bottom out |
 | `item-logic.svg` `prop-logic.svg` | `0 0 24 24` | `or` `and` | one body, IEEE glyph swaps with mode. Side ins, bottom out |
 | `item-sensor-variety.svg` `prop-sensor-variety.svg` | `0 0 24 24` | `off` `on` | out only, bottom nub |
 | `item-sensor-weather.svg` `prop-sensor-weather.svg` | `0 0 24 24` | `off` `on` | out only, bottom nub |

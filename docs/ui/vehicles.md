@@ -1,6 +1,6 @@
 # Vehicles
 
-Hangar dialog, parked Quad / tractor, dashboard, Automate, stops Window, route overlay, follow-cam, WASD, return arrows. Rules [[mechanics/vehicles]]. Light [[ui/sensors]]. Types [[architecture/world]]. Chrome [[ui/store]] [[ui/docks]]. Place [[ui/place]]. Look [[ui/inspect]]. Shop [[ui/shop]]. Hats [[ui/multiplayer]]. Type [[ui/type]]. Art [[art/vehicles]].
+Hangar dialog, parked Quad / tractor, dashboard, Automate, stops Window, route overlay, follow-cam, WASD, return arrows. Rules [[mechanics/vehicles]]. Light [[ui/sensors]]. Types [[architecture/world]]. Chrome [[ui/store]] [[ui/docks]]. Place [[ui/place]]. Look [[ui/inspect]]. Shop [[ui/build]]. Hats [[ui/multiplayer]]. Type [[ui/type]]. Art [[art/vehicles]].
 
 `HudTarget` stays sprinkler-only.
 
@@ -21,7 +21,7 @@ List **all** `World.vehicles`, array order. Each row: icon Quad vs Tractor, fuel
 | `field` && `driver` is a `SeatId` | **Driven** |
 | `field` && `driver === 'none'` && `running` | **Automated** |
 
-Click row selects `VehicleId`. Select is App-local. Not `World`. Not logged. Selected face `bg-ink` like an armed shop row. No select until a click.
+Click row selects `VehicleId`. Select is App-local. Not `World`. Not logged. Selected face `bg-ink` like an armed Build card. No select until a click.
 
 List **all** `World.trailers`, array order. Each row: icon by kind, status **Stored** / **Attached**, `used/100`. Click selects `TrailerId` iff the selected vehicle is a stored tractor. Else not selectable. Selected face `bg-ink`.
 
@@ -32,7 +32,7 @@ List **all** `World.trailers`, array order. Each row: icon by kind, status **Sto
 
 ### Buy rows
 
-Not shop SKUs. Not `skuPrice`. `haggling` does not discount. Click hangar XY. Poor / not researched: sim no-op. No toast.
+Not shelf SKUs. Not `skuPrice`. `haggling` does not discount. Click hangar XY. Poor / not researched: sim no-op. No toast.
 
 | label | icon | `Coin` |
 |---|---|---|
@@ -81,7 +81,7 @@ Quad: `ui-dash-quad`. Tractor: `ui-dash-tractor`.
 
 ### Cargo
 
-Driving overlay only. Not parked cue. Not hangar. Not `HudTarget`. Occupied `ItemFace` only (almanac/shop faces). Empty omitted. Reuse Face SVGs. No new item art. Not clickable. No swap. Smaller than shop `skuInner`. `pointer-events-none` on the strip.
+Driving overlay only. Not parked cue. Not hangar. Not `HudTarget`. Occupied `ItemFace` only (almanac / Build faces). Empty omitted. Reuse Face SVGs. No new item art. Not clickable. No swap. Smaller than shop `skuInner`. `pointer-events-none` on the strip.
 
 | driven | icons |
 |---|---|
@@ -123,7 +123,7 @@ Dashboard `Btn`s, not the parked dialog. `pointer-events-auto`. Cottage dirt fac
 
 Boom label is the current width: **Boom 3** or **Boom 5**. Cycles `3 ↔ 5`. Persist on the tractor. Guest may.
 
-**Dock** off: shop-row locked face, `aria-disabled`, guarded click — not the `disabled` attribute. Hover: **Dock at the hangar arrows.** Boom has no off face.
+**Dock** off: locked card face, `aria-disabled`, guarded click — not the `disabled` attribute. Hover: **Dock at the hangar arrows.** Boom has no off face.
 
 **Load** / **Unload** same row. Shown+inactive: Dock-off face, `aria-disabled` guarded click. Copy **Load** **Unload**.
 
@@ -240,7 +240,7 @@ Not plots. No soil bars. No Object HUD.
 
 Silo: look name only. No prompt act. No dialog. No cue.
 
-## Shop / place
+## Shelf / place
 
 Three automation SKUs via `SKUS`. Guest `GUEST_BUILD`. Place path. Disarm on confirm. `skuPrice` (haggling).
 

@@ -84,7 +84,7 @@ type Props = {
   hover: PromptHit | undefined
   onHover: (c: PromptHit | undefined) => void
   onCam: (c: Camera) => void
-  onClick: (hit: MapClick, xy: { x: number; y: number }) => void
+  onClick: (hit: MapClick, xy: { x: number; y: number }, shift: boolean) => void
   onReady?: () => void
   highlight: readonly Coord[]
 }
@@ -525,12 +525,12 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           if (d.wireFrom === undefined) return
           const drop = clickHit(world, wpt.x, wpt.y, lens)
           if (drop?.kind !== 'port') return
-          onClick({ kind: 'port', end: d.wireFrom }, { x: wpt.x, y: wpt.y })
-          onClick(drop, { x: wpt.x, y: wpt.y })
+          onClick({ kind: 'port', end: d.wireFrom }, { x: wpt.x, y: wpt.y }, e.shiftKey)
+          onClick(drop, { x: wpt.x, y: wpt.y }, e.shiftKey)
           return
         }
         const hit = clickHit(world, wpt.x, wpt.y, lens)
-        if (hit !== undefined) onClick(hit, { x: wpt.x, y: wpt.y })
+        if (hit !== undefined) onClick(hit, { x: wpt.x, y: wpt.y }, e.shiftKey)
       }}
       onPointerLeave={() => {
         pendingMove.current = undefined

@@ -64,7 +64,7 @@ Identifiers in `defs/weather.ts`. Do not copy digits.
 | pump rate | 1× | 1× | 1× | 1× | 1× |
 | pump $/L | base | base | ×`PUMP_COST_DRY` | base | ×`PUMP_COST_DROUGHT` |
 | fruit sale | 1× | 1× | 1× | ×`WEATHER_FRUIT_SALE` | ×`WEATHER_FRUIT_SALE` |
-| shop seeds+utility | 1× | 1× | 1× | 1× | ×2 |
+| `seeds` + `utility` tab | 1× | 1× | 1× | 1× | ×2 |
 | market | hours | hours | hours | no sunrise unless `open-24` | no midday unless `open-24` |
 
 Soak/evaporate on `BIG_TICK` only, every `isTilled` cell. Index `tilled` in `track()`. `tickBig` walks it. Not `forEachCell`. Not every `dt`. Clamp `0..SOIL_WATER_MAX` — [[mechanics/soil]]. Clear: no write.

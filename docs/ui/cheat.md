@@ -1,8 +1,8 @@
 # Cheat
 
-Debug left [[ui/docks]] `Dock`. Title **Cheat**. Shop-width `w-80`. Shop row chrome (`bg-dirt`, selected `bg-ink`).
+Debug left [[ui/docks]] `Dock`. Title **Cheat**. `w-80`. Card chrome (`bg-dirt`, selected `bg-ink`).
 
-Left ribbon **Cheat** after Almanac. Toggle. Esc / × close. Guest: Cheat hidden. Host only.
+Top ribbon **Cheat**, between **Almanac** and **Pause** — [[ui/hud]]. Face only, no label. Toggle. Esc / × close. Guest: Cheat hidden. Host only.
 
 | row | act |
 |---|---|
@@ -16,7 +16,7 @@ Left ribbon **Cheat** after Almanac. Toggle. Esc / × close. Guest: Cheat hidden
 
 1× / 3× is world time, not a research-drain arm. Same field as `?speed=`. — [[architecture/world]] `world.cheatSpeed`
 
-Assumption: 1× / 3× buttons use the same shop row chrome.
+Assumption: 1× / 3× buttons use the same card chrome.
 
 Weather pins after End day. Wrap the five kind rows in `grid grid-cols-2 gap-1.5`. Not `grid-cols-4`. Selected = that kind is pinned as tomorrow. Click pins tomorrow and rebuilds the table. One selected at a time; selecting another replaces the pin. Click the selected row: leave selected. No clear-pin row. Pins not Save. Not `Cmd`. [[mechanics/weather]]
 

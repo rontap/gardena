@@ -24,7 +24,7 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, shop). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
+| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
 | `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue / banner). Not notices — that column is React, [[ui/notices]] |
 
 `TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2.

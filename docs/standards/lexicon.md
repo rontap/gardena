@@ -10,7 +10,7 @@ Words that leave the code. Agents obey this. They do not restate it.
 |---|---|
 | Text to the user. Player copy. Every `docs/**/*.md`. Commit, PR, and review text. | Identifiers, locals, and test fixtures in `src/`. |
 
-Chat with the developer, update notes, HUD, prompts, callouts, almanac, shop, inspect: exact word from [[standards/user-facing-text]]. Vault notes stay this file's developer register.
+Chat with the developer, update notes, HUD, prompts, callouts, almanac, build, inspect: exact word from [[standards/user-facing-text]]. Vault notes stay this file's developer register.
 
 Code names itself. `blurb`, `thirsty`, `smartHold` are the codebase's business and nobody reads them as sentences. A word is bound the moment it leaves `src/` and enters something a person reads.
 

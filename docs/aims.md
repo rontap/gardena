@@ -20,4 +20,4 @@ Chunks of `CHUNK`. Soft / hard / very-hard dirt from goodness; hard dirt is poor
 
 ## Economy
 
-Shop buys tools, seeds, pipes, buildings, tiles. Research unlocks rows. Market is **Sell all** at the truck: one number, freshness and rarity already in it. Contracts are a second stall tab.
+Build buys tools, pipes, buildings, tiles; the Seed silo buys seeds and the Additive store buys bags. Research unlocks rows. Market is **Sell all** at the truck: one number, freshness and rarity already in it. Contracts are a second stall tab.

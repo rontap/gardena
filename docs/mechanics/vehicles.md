@@ -1,12 +1,12 @@
 # Vehicles
 
-Quad + hangar + tractor + 3 trailers + boom + 3 field silos + shared routes + traffic light. Shop gates [[mechanics/research]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Light [[mechanics/sensors]]. Numbers preference unless marked. Types `sim/vehicle.ts` / `sim/ids.ts`.
+Quad + hangar + tractor + 3 trailers + boom + 3 field silos + shared routes + traffic light. Shelf gates [[mechanics/research]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Light [[mechanics/sensors]]. Numbers preference unless marked. Types `sim/vehicle.ts` / `sim/ids.ts`.
 
 Click-walk speed unchanged — [[items/tiles]]. WASD walk and dash cargo below. Dash cargo is driving overlay, not `HudTarget`.
 
 ## Lens
 
-`Lens` += `vehicles` on `src/game/view/map.tsx`. View-local, not `World`. Unhidden after `unlock-vehicles` in `done`. Not a family-study row. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens.
+`Lens` += `vehicles` on `src/game/view/map.tsx`. View-local, not `World`. Unhidden after `unlock-vehicles` in `done`. Not a family-study row. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A Pipes lens the player picked stays. `leaveShop` does not touch the lens.
 
 Paint hangar-return + machine pad arrows (`HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`) iff local seat is a driver OR `lens === 'vehicles'`. Driving still paints with this lens off. Pad opacity 0.5; 1 iff that pad action legal. Not sim. Not logged.
 
@@ -32,7 +32,7 @@ Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACT
 
 `unlock-vehicles` automation, `effect` `unlock-sku` `buy-hangar`. Reveals after `unlock-expand` — ground to cross, not pipework. A tractor does not need a land permit. The three silos are `unlock-silos`, a storage decision after the driving one.
 
-Quad / tractor / trailers are hangar-buy only. No `Place` ghost. No shop SKU.
+Quad / tractor / trailers are hangar-buy only. No `Place` ghost. No shelf SKU.
 
 ## Hangar
 
@@ -54,7 +54,7 @@ Pad arrows: view-only. `Act.dock` reads hangar `hangarPad` only. Silo pad click 
 
 ## Silos
 
-Shop SKUs. Door south, no rotate, same instance all cells. Origin = clicked NW. `siloSiteOk` like hangarSiteOk but silo size. Pad: `siloPad`. Automation, `unlock-silos`, `haggling`.
+Build SKUs. Door south, no rotate, same instance all cells. Origin = clicked NW. `siloSiteOk` like hangarSiteOk but silo size. Pad: `siloPad`. Automation, `unlock-silos`, `haggling`.
 
 Starter 1×2 `seed-silo` stays. Not these SKUs.
 

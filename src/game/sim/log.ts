@@ -37,6 +37,7 @@ export const Act = {
   swap: 'w',
   swapChest: 'h',
   takeStore: 'S',
+  setRestock: 'I',
   tuneSprinkler: 't',
   openHud: 'j',
   closeHud: 'l',
@@ -103,6 +104,7 @@ export type Cmd =
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'silo'; s: XY; c: AnnualId; r: VarietyId }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'additive'; s: XY; d: AdditiveId }
   | { a: typeof Act.takeStore; t: number; p: SeatId; k: 'sugar'; s: XY; d: 'sugar' }
+  | { a: typeof Act.setRestock; t: number; p: SeatId; c: XY; on: boolean }
   | { a: typeof Act.tuneSprinkler; t: number; p: SeatId; c: XY; u: Tune }
   | {
       a: typeof Act.openHud

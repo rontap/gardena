@@ -1,6 +1,6 @@
 # Sensors
 
-Place, wires, ports, object HUDs, copy. Rules [[mechanics/sensors]]. Fenced area [[mechanics/enclosure]]. Items [[items/sensors]]. Chrome [[ui/hud]] [[ui/docks]]. Lens [[ui/lens]]. Place [[ui/place]]. Shop [[ui/shop]] [[ui/build]]. Look [[ui/inspect]]. Almanac [[ui/almanac]]. Type [[ui/type]]. Palette [[art/palette]].
+Place, wires, ports, object HUDs, copy. Rules [[mechanics/sensors]]. Fenced area [[mechanics/enclosure]]. Items [[items/sensors]]. Chrome [[ui/hud]] [[ui/docks]]. Lens [[ui/lens]]. Place [[ui/place]]. Shop [[ui/build]] [[ui/build]]. Look [[ui/inspect]]. Almanac [[ui/almanac]]. Type [[ui/type]]. Palette [[art/palette]].
 
 No new chrome shell. No wire SKU. No new `@theme` color.
 
@@ -14,7 +14,7 @@ Wires are sim-state always. Paint and port hits iff the effective lens is `senso
 
 Selecting Build shelf `logic` (**Sensors**) peeks `lens = 'sensors'` with no lock. Does not arm a SKU. [[ui/build]]
 
-Esc / Shop **×** / Build close / leaving the shop system: `cancelPlace` and restore an unlocked peek. A locked `sensors` survives. An unlocked peek dies with Build, not the Lens dock.
+Esc / Build **×** / Build close / opening another panel: `cancelPlace` and restore an unlocked peek. A locked `sensors` survives. An unlocked peek dies with Build, not the Lens dock.
 
 ## Fade
 
@@ -77,7 +77,7 @@ Fill: idle `fruit-red`, high `water`. Stroke `ink`. A solid 3 px mark inside a `
 
 ## Place
 
-StayArmed: fifteen cell SKUs. Stamp many. Pay on confirm. Guest `GUEST_BUILD` for the fifteen cells. `buy-water-system` is not a shop SKU.
+StayArmed: fifteen cell SKUs. Stamp many. Pay on confirm. Guest `GUEST_BUILD` for the fifteen cells. `buy-water-system` is not a shelf SKU.
 
 Sensor cells: 1×1, `skuInner` like chest. `placeSolidOk`. Fenceable SKU on a fenced untilled cell: legal. Non-fenceable on a fenced cell: **Cannot place here**. Copy **Place {skuLabel}**. Hover valid `stroke-ink`, blocked `stroke-roof`.
 
@@ -150,7 +150,7 @@ May append **on** / **off** from signal: lever `on`, lamp `inn`, traffic-light `
 
 `skuLabel` = look name. Place **Place {skuLabel}**. Unarmed **Flip lever** / **Press button**. Tune **Tune {skuLabel}**. Wire **Cannot wire here** / **Cannot loop** / **Remove wire**. Delete **Delete {look}**. Place **Place Traffic light**. Delete **Delete traffic light**.
 
-## Shop / almanac / research
+## Shelf / almanac / research
 
 Build shelf **Sensors**, id `logic`, `cluster: 'build'`. Filing: signal → Sensors: lever, button, lamp, logic, not, pulser, counter, traffic-light. Readers: water, fert, harvest, variety, weather, vehicle-detector, day. Traffic light with lever / button, not readers. Water-system not on the shelf.
 

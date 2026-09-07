@@ -4,7 +4,6 @@ import type { VehicleId } from '../sim/ids.ts'
 export type Panel =
   | { kind: 'none' }
   | { kind: 'family' }
-  | { kind: 'shop' }
   | { kind: 'build' }
   | { kind: 'research' }
   | { kind: 'market' }
@@ -37,5 +36,5 @@ export function cued(kind: PanelKind): boolean {
 
 /** Panels that can leave a placement ghost armed on the map. */
 export function arming(kind: PanelKind): boolean {
-  return kind === 'shop' || kind === 'build'
+  return kind === 'build'
 }

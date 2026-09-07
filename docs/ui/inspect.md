@@ -8,7 +8,7 @@ Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill
 
 Player words on this HUD: **Variety** as `{Crop} ({Variety})`, **Quality** as `floor(quality * 100)%`. `tier` and `purpose` are vault-only; a purpose reaches the player as **Fresh** / **Preserving** / **Alcohol** on the seed callout — [[ui/store]] — and as the `×{mul}` on a cask, spirit or jam line.
 
-Held, tooltip, silo cell, shop seed card: Variety name, Quality as that percent. Shop pack is `'base'` at Quality 0. Faces carry no mark — the Variety group is the face. [[architecture/view]] [[ui/store]]
+Held, tooltip, silo cell, silo Buy cell: Variety name, Quality as that percent. A seed pack is `'base'` at Quality 0. Faces carry no mark — the Variety group is the face. [[architecture/view]] [[ui/store]]
 
 ## Growing
 

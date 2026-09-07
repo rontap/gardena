@@ -37,6 +37,16 @@ viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, t
 `skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-bio` `skill-industrial` `skill-open-late` `skill-open-24`
 `skill-jam` `skill-clearance` `skill-lucky` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
 
+## Standing icons
+
+`stat-reputation.svg` `stat-luck.svg` — viewBox `0 0 24 24`, the Family standing band, not a skill — [[ui/family]]. Drawn shapes, **not** a glyph inside a badge: the badge form is what a skill chip wears, and these two are the farm's standing.
+
+`stat-reputation` is a five-point star filling the box: `ink` outline, `ripe` body, a `dirt` inner rim for depth, a two-pixel `house` glint on the upper-left arm — the same four tones and the same order as the coin inside `skill-lucky`.
+
+`stat-luck` is a four-leaf clover: four lobes, each a disc with the outer corner notched, `ink` seams down and across the middle so the four read as four, `leaf` body, and a `grass-dark` stem leaving the centre and bending right below the leaves.
+
+Both are scanline `rect` rows like `ui-cursor.svg`, not paths.
+
 Live sheet drops `skill-tool-contracts` `skill-machine-contracts` `skill-bulk-buying` (files may remain).
 
 ## Reuse, not redraw
@@ -55,4 +65,4 @@ One copy of each shared symbol; icons composite it.
 - `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
 - **Haggling** — `skill-contracts.svg`. Do not redraw.
 
-Assumption: clover glyph; prompt named a mark, not which.
+Assumption: clover glyph; prompt named a mark, not which. `stat-reputation` star is new; the clover in `stat-luck` is copied from `skill-lucky`, not redrawn.

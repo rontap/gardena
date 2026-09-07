@@ -36,7 +36,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
 import {
@@ -841,10 +841,20 @@ export abstract class Store extends BaseBuilding {
 
 export type SiloStack = { crop: AnnualId; variety: VarietyId; quality: number; count: number }
 
+export type SeedLevel = readonly [AnnualId, number]
+
 export abstract class SeedStore extends Store {
   readonly seeds: SiloStack[] = []
   get used(): number {
     return this.seeds.reduce((n, s) => n + s.count, 0)
+  }
+  /** Counts of the buyable `'base'` stacks, to compare against after something is taken out. */
+  levels(): SeedLevel[] {
+    return this.seeds.filter(st => st.variety === 'base').map(st => [st.crop, st.count] as const)
+  }
+  baseCount(crop: AnnualId): number {
+    const st = this.seeds.find(s => s.crop === crop && s.variety === 'base')
+    return st === undefined ? 0 : st.count
   }
   override accept(item: Item): number {
     if (item.kind !== 'seeds') return 0
@@ -879,6 +889,7 @@ export class SeedSilo extends SeedStore {
 
 export class SiloSeed extends SeedStore {
   readonly kind = 'silo-seed' as const
+  restock = false
   override readonly ports = []
   override readonly pads = 'none' as const
   constructor(base: RectBase) {
@@ -900,6 +911,21 @@ export type AdditiveHold = { id: AdditiveId; liters: number }
 
 export type SugarBin = { liters: number; unitSale: number; quality: number }
 
+export type StoreRowId = AdditiveId | 'sugar'
+
+export const STORE_ROW_IDS: readonly StoreRowId[] = [...ADDITIVE_IDS, 'sugar']
+
+export type AdditiveLevel = readonly [StoreRowId, number]
+
+/** The sku each Additive store row is refilled from. Compost has none: it is made, not sold. */
+export const ROW_SKU: { readonly [K in StoreRowId]: SkuId | 'none' } = {
+  fertilizer: 'buy-fertilizer',
+  synth: 'buy-synth-fertilizer',
+  compost: 'none',
+  'weed-spray': 'buy-weed-spray',
+  sugar: 'buy-sugar',
+}
+
 export abstract class AdditiveHolder extends Store {
   readonly held: AdditiveHold[] = []
   sugar: SugarBin = { liters: 0, unitSale: SUGAR_SHOP, quality: 0 }
@@ -908,6 +934,13 @@ export abstract class AdditiveHolder extends Store {
   }
   litersOf(id: AdditiveId): number {
     return this.held.find(h => h.id === id)?.liters ?? 0
+  }
+  rowLiters(id: StoreRowId): number {
+    return id === 'sugar' ? this.sugar.liters : this.litersOf(id)
+  }
+  /** Liters per row, to compare against after something is taken out. */
+  levels(): AdditiveLevel[] {
+    return STORE_ROW_IDS.map(id => [id, this.rowLiters(id)] as const)
   }
   override accept(item: Item): number {
     if (item.kind === 'sugar') {
@@ -959,6 +992,7 @@ export class AdditiveStore extends AdditiveHolder {
 
 export class SiloSpray extends AdditiveHolder {
   readonly kind = 'silo-spray' as const
+  restock = false
   override readonly ports = []
   override readonly pads = 'none' as const
   constructor(base: RectBase) {

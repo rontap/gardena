@@ -229,7 +229,6 @@ import tileAsphalt from '../../assets/tiles/tile-asphalt.svg?raw'
 import tileBrick from '../../assets/tiles/tile-brick.svg?raw'
 import tileCobble from '../../assets/tiles/tile-cobble.svg?raw'
 import uiBtn from '../../assets/ui/ui-btn.svg?raw'
-import uiBtnShop from '../../assets/ui/ui-btn-shop.svg?raw'
 import uiBtnBuild from '../../assets/ui/ui-btn-build.svg?raw'
 import uiBtnCheat from '../../assets/ui/ui-btn-cheat.svg?raw'
 import uiBtnResearch from '../../assets/ui/ui-btn-research.svg?raw'
@@ -268,6 +267,8 @@ import skillJam from '../../assets/skills/skill-jam.svg?raw'
 import skillClearance from '../../assets/skills/skill-clearance.svg?raw'
 import skillLucky from '../../assets/skills/skill-lucky.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
+import statReputation from '../../assets/skills/stat-reputation.svg?raw'
+import statLuck from '../../assets/skills/stat-luck.svg?raw'
 import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
 import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
 import portraitDaughter from '../../assets/skills/portrait-daughter.svg?raw'
@@ -873,7 +874,6 @@ export const UI_BTN_DISABLED = groupInner(uiBtn, 'disabled')
 export const UI_COIN = svgInner(uiCoin)
 export const UI_COIN_SILVER = svgInner(uiCoinSilver)
 export const UI_METER = uiMeter
-export const UI_BTN_SHOP = uiBtnShop
 export const UI_BTN_BUILD = uiBtnBuild
 export const UI_BTN_CHEAT = uiBtnCheat
 export const UI_BTN_RESEARCH = uiBtnResearch
@@ -890,6 +890,8 @@ export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
 export const UI_MENU = svgInner(uiMenu)
 export const SKILL_POINT = svgInner(skillPoint)
+export const STAT_REPUTATION = svgInner(statReputation)
+export const STAT_LUCK = svgInner(statLuck)
 
 export const EXPAND_LAND = svgInner(uiResearchExpand)
 export const PORTRAIT: { readonly [K in MemberId]: string } = {
@@ -1194,7 +1196,6 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   ...Object.values(UI_PHASE),
   ...Object.values(UI_WEATHER),
   ...[
-    UI_BTN_SHOP,
     UI_BTN_BUILD,
     UI_BTN_CHEAT,
     UI_BTN_RESEARCH,

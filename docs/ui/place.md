@@ -2,7 +2,7 @@
 
 Types [[architecture/world]]. Chrome [[ui/hud]]. Look [[ui/inspect]]. `Place` / `StayArmed` live on `sim/world.ts`.
 
-Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`. Not a shop SKU. `buy` never arms delete. Packs never arm — `buy` merges seeds into inventory.
+Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`. Not a shelf SKU. `buy` never arms delete. Packs never arm — `buy` merges seeds into inventory.
 
 Truck is not a Place SKU. Unarmed click.
 
@@ -10,15 +10,17 @@ Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + thr
 
 Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
+Shift held on the confirming click keeps every other sku armed too: App reads `Seat.place` before `world.click(at)`, and when the click disarmed a sku it re-arms the same one through `world.buy(id)`. `buy` on a place sku only writes `Seat.place`; the money is spent by the confirm that already happened, so nothing is paid twice. `onClick` on `MapView` carries the modifier — `onClick(hit, xy, shift)`. Multiplayer replays it as the `Act.buy` it is.
+
 Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-furnace` `buy-barrel` `buy-freezer` `buy-research-station` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Processing, Storage, Vehicles, and Sensors shelves — [[ui/build]] [[ui/sensors]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). No rotatable sensor SKU. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
+Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Automation, Storage, and Sensors shelves — [[ui/build]] [[ui/sensors]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). No rotatable sensor SKU. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
-Shop and Build docks `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. Both docks can arm: a search result acts where it lives, whichever dock is open — [[ui/shop]].
+The Build dock sits `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. It is the only panel that arms — [[ui/build]].
 
-Esc / dock **×** / a rail toggle that closes **Shop** or **Build** / leaving the shop system → `leaveShop`: `cancelPlace`, clear the search box, restore an unlocked Build peek. `toolLens` ends with the arming — [[ui/lens]]. Selecting Build Water / Vehicles / Sensors peeks that lens with no lock and does not arm. A locked lens is not touched. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
+Esc / dock **×** / the rail toggle that closes **Build** / opening another panel → `leaveBuild`: `cancelPlace`, clear the search box, restore an unlocked Build peek. `toolLens` ends with the arming — [[ui/lens]]. Selecting Build Water / Automation / Storage / Sensors peeks that lens with no lock and does not arm. A locked lens is not touched. Esc inside a non-empty search box clears the box and nothing else. Right-click / left-ribbon **Cancel** → `cancelPlace` only.
 
 ## Pointer
 
@@ -34,18 +36,19 @@ Canvas host. Pan / zoom / `clickHit` as now, except armed `buy-pipe` left-drag a
 | left up | `buy-pipe` | `placePipe` per pending edge, log order, whole run or nothing. Stay armed. Empty run: place the one edge under the pointer and re-anchor |
 | left up | `buy-fence` | `confirmPlace` per pending cell, whole run or nothing. Stay armed. Empty run: place the cell under the pointer if it takes a fence and re-anchor |
 | left valid, can pay | confirm (not `buy-pipe` drag) | StayArmed / valve / tiles / sensors: stay. Else ghost off |
+| Shift + left valid, can pay | confirm | the same sku is re-armed. Ghost stays for every sku |
 | left valid input, `kind === 'wire'` | `placeWire` | fan-out ok; fan-in stacks (many wires on one input; second finalize does **not** replace) |
 | press an `out` disc, release on an `in` disc | `armWire` then `placeWire` | drag wiring. Release anywhere else keeps the arm, so click-click is unchanged |
 | left, that A→B already exists | drop that wire | **Remove wire**. `place none` |
 | left cycle | no-op | **Cannot loop**. Place stays |
 | left blocked | no-op | look already has the string. Wire: **Cannot wire here** |
 | right | `cancelPlace` | ghost off. Pending pipe run dropped uncommitted. Lens untouched |
-| Esc / shop **×** / Shop close / leave shop | `cancelPlace` | ghost off. Pending run and anchor dropped. Lens untouched |
+| Esc / dock **×** / Build close | `cancelPlace` | ghost off. Pending run and anchor dropped. Lens untouched |
 | left-ribbon Cancel | `cancelPlace` | ghost off. Pending run dropped. Lens untouched |
 
 Valve stays click-per-edge. Pan while it is armed.
 
-Armed shop row (`place.kind === 'sku' && place.id === id`): selected. Label `skuLabel` + coin + price.
+Armed Build card (`place.kind === 'sku' && place.id === id`): selected. Label `skuLabel` + coin + price.
 
 Look: `lookText`. Armed with no cell still place / delete copy, not **—**. Status uses roof tint while armed.
 

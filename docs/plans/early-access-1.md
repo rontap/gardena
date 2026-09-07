@@ -2,7 +2,7 @@
 
 Wrap-up and polish. **No new gameplay.** Menu, save/load, a short tutorial, two UI fixes.
 
-Next agent: read [[canon]], [[pipeline]], [[aims]], [[ui/hud]], [[ui/shop]], [[ui/almanac]], [[architecture/log]]. Do not invent a second save format. Do not build multiplayer or a replay viewer.
+Next agent: read [[canon]], [[pipeline]], [[aims]], [[ui/hud]], [[ui/build]], [[ui/almanac]], [[architecture/log]]. Do not invent a second save format. Do not build multiplayer or a replay viewer.
 
 ---
 

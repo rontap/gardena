@@ -21,7 +21,21 @@ import { useCycle } from './cycle.ts'
 
 type Tip = { title: string; description: ReactNode } | undefined
 
-export function Market({ world, guest, onClose }: { world: World; guest: boolean; onClose: () => void }) {
+export type MarketTab = 'stall' | 'contracts'
+
+export function Market({
+  world,
+  guest,
+  tab,
+  onTab,
+  onClose,
+}: {
+  world: World
+  guest: boolean
+  tab: MarketTab
+  onTab: (tab: MarketTab) => void
+  onClose: () => void
+}) {
   const [tip, setTip] = useState<Tip>(undefined)
   const quote = world.marketQuote()
   const open = world.marketOpen()
@@ -51,7 +65,11 @@ export function Market({ world, guest, onClose }: { world: World; guest: boolean
       className="max-h-[calc(100%-4rem)] w-[72rem]"
       aside={tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} /> : undefined}
     >
-      <Tabs.Root defaultValue="stall" className="relative z-20 flex min-h-0 flex-1 flex-col">
+      <Tabs.Root
+        value={contracts ? tab : 'stall'}
+        onValueChange={v => onTab(v as MarketTab)}
+        className="relative z-20 flex min-h-0 flex-1 flex-col"
+      >
         <Tabs.List className="flex shrink-0 flex-wrap gap-1 border-b border-ink/20 bg-house px-4">
           <Tabs.Trigger value="stall" className={tabTriggerClass}>
             {m.market_stall()}

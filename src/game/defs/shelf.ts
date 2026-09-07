@@ -1,43 +1,24 @@
 import { m } from '../../paraglide/messages.js'
 import type { SkuId } from '../sim/ids.ts'
 
-export type ShopShelfId = 'seeds' | 'tools' | 'supplies'
-export type BuildShelfId = 'water' | 'processing' | 'storage' | 'vehicles' | 'logic' | 'land'
-export type ShelfId = ShopShelfId | BuildShelfId
+export type ShelfId = 'tools' | 'water' | 'automation' | 'storage' | 'logic' | 'land'
 
 export type Group = { label: string; skus: SkuId[] }
 
-export type Shelf =
-  | { panel: 'shop'; id: ShopShelfId; label: () => string; line: () => string; groups: Group[] }
-  | { panel: 'build'; id: BuildShelfId; label: () => string; line: () => string; cluster: 'build' | 'none'; groups: Group[] }
+export type Shelf = {
+  id: ShelfId
+  label: () => string
+  line: () => string
+  cluster: 'build' | 'none'
+  groups: Group[]
+}
 
 export const SHELVES: readonly Shelf[] = [
   {
-    panel: 'shop',
-    id: 'seeds',
-    label: () => m.hud_shelf_seeds(),
-    line: () => m.hud_shelf_seeds_line(),
-    groups: [
-      {
-        label: 'Crops',
-        skus: [
-          'pack-carrot',
-          'pack-potato',
-          'pack-wheat',
-          'pack-tomato',
-          'pack-grape',
-          'pack-raspberry',
-          'pack-sugar-cane',
-        ],
-      },
-      { label: 'Ground cover', skus: ['pack-grass'] },
-    ],
-  },
-  {
-    panel: 'shop',
     id: 'tools',
     label: () => m.hud_shelf_tools(),
     line: () => m.hud_shelf_tools_line(),
+    cluster: 'none',
     groups: [
       { label: 'Digging', skus: ['buy-shovel', 'buy-better-shovel'] },
       { label: 'Mining', skus: ['buy-pickaxe', 'buy-better-pickaxe', 'buy-axe', 'buy-chainsaw'] },
@@ -45,17 +26,6 @@ export const SHELVES: readonly Shelf[] = [
     ],
   },
   {
-    panel: 'shop',
-    id: 'supplies',
-    label: () => m.hud_shelf_supplies(),
-    line: () => m.hud_shelf_supplies_line(),
-    groups: [
-      { label: 'Feeds', skus: ['buy-fertilizer', 'buy-synth-fertilizer', 'buy-weed-spray'] },
-      { label: 'Pantry', skus: ['buy-sugar'] },
-    ],
-  },
-  {
-    panel: 'build',
     id: 'water',
     label: () => m.hud_shelf_water(),
     line: () => m.hud_shelf_water_line(),
@@ -67,10 +37,9 @@ export const SHELVES: readonly Shelf[] = [
     ],
   },
   {
-    panel: 'build',
-    id: 'processing',
-    label: () => m.hud_shelf_processing(),
-    line: () => m.hud_shelf_processing_line(),
+    id: 'automation',
+    label: () => m.hud_shelf_automation(),
+    line: () => m.hud_shelf_automation_line(),
     cluster: 'build',
     groups: [
       { label: 'Grinding', skus: ['buy-grinder', 'buy-mill'] },
@@ -78,29 +47,20 @@ export const SHELVES: readonly Shelf[] = [
       { label: 'Preserving', skus: ['buy-jam'] },
       { label: 'Compost', skus: ['buy-compost-box', 'buy-furnace'] },
       { label: 'Grafting', skus: ['buy-research-station'] },
+      { label: 'Hangar', skus: ['buy-hangar'] },
     ],
   },
   {
-    panel: 'build',
     id: 'storage',
     label: () => m.hud_shelf_storage(),
     line: () => m.hud_shelf_storage_line(),
     cluster: 'build',
-    groups: [{ label: 'Boxes', skus: ['buy-chest', 'buy-freezer', 'buy-freezer-large'] }],
-  },
-  {
-    panel: 'build',
-    id: 'vehicles',
-    label: () => m.hud_shelf_vehicles(),
-    line: () => m.hud_shelf_vehicles_line(),
-    cluster: 'build',
     groups: [
-      { label: 'Hangar', skus: ['buy-hangar'] },
+      { label: 'Boxes', skus: ['buy-chest', 'buy-freezer', 'buy-freezer-large'] },
       { label: 'Silos', skus: ['buy-silo-seed', 'buy-silo-spray', 'buy-silo-produce'] },
     ],
   },
   {
-    panel: 'build',
     id: 'logic',
     label: () => m.hud_shelf_logic(),
     line: () => m.hud_shelf_logic_line(),
@@ -134,7 +94,6 @@ export const SHELVES: readonly Shelf[] = [
     ],
   },
   {
-    panel: 'build',
     id: 'land',
     label: () => m.hud_shelf_land(),
     line: () => m.hud_shelf_land_line(),
@@ -142,6 +101,7 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       { label: 'Paving', skus: ['buy-tile-asphalt', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved'] },
       { label: 'Fencing', skus: ['buy-fence'] },
+      { label: 'Ground cover', skus: ['pack-grass'] },
     ],
   },
 ]
@@ -150,11 +110,8 @@ function skusOf(shelves: readonly Shelf[]): SkuId[] {
   return shelves.flatMap(s => s.groups.flatMap(g => g.skus))
 }
 
-export const SHOP_SHELVES = SHELVES.filter(s => s.panel === 'shop')
-export const BUILD_SHELVES = SHELVES.filter(s => s.panel === 'build')
-export const SHOP_SKUS = skusOf(SHOP_SHELVES)
-export const BUILD_SKUS = skusOf(BUILD_SHELVES)
-export const GHOST_SKUS = skusOf(BUILD_SHELVES.filter(s => s.panel === 'build' && s.cluster === 'build'))
+export const SHELF_SKUS = skusOf(SHELVES)
+export const GHOST_SKUS = skusOf(SHELVES.filter(s => s.cluster === 'build'))
 
 const HOME = new Map<SkuId, Shelf>(SHELVES.flatMap(s => s.groups.flatMap(g => g.skus.map(id => [id, s] as const))))
 

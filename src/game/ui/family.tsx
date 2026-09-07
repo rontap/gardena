@@ -2,10 +2,12 @@ import { m } from '../../paraglide/messages.js'
 import { useState } from 'react'
 import { SKILLS, roman, skillBlurb, skillLabel } from '../defs/skills.ts'
 import type { MemberId, SkillId } from '../sim/ids.ts'
+import { luckOf } from '../sim/family.ts'
+import { REP_MAX } from '../sim/feature-contracts/market.ts'
 import type { World } from '../sim/world.ts'
-import { PORTRAIT, SKILL_POINT, skillInner } from '../view/svgs.ts'
+import { PORTRAIT, SKILL_POINT, STAT_LUCK, STAT_REPUTATION, skillInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Label, Overlay } from './frame.tsx'
+import { Bar, Label, Overlay } from './frame.tsx'
 
 const NAMES: { readonly [K in MemberId]: () => string } = {
   player: () => m.names_member_player(),
@@ -28,7 +30,9 @@ const BLURBS: { readonly [K in MemberId]: () => string } = {
 const MEMBERS: MemberId[] = ['player', 'husband', 'daughter']
 const SLOTS = [0, 1, 2] as const
 
-type Tip = { title: string; description: string; why?: string } | undefined
+type Note = { title: string; description: string; why?: string }
+
+type Tip = Note | undefined
 
 export function Family({ world, onClose }: { world: World; onClose: () => void }) {
   const [tip, setTip] = useState<Tip>(undefined)
@@ -53,6 +57,7 @@ export function Family({ world, onClose }: { world: World; onClose: () => void }
     >
       <div className="flex flex-col gap-3">
         <PointBank world={world} />
+        <Standing world={world} onTip={setTip} />
         <div className="grid grid-cols-3 items-start gap-3">
           {MEMBERS.map(m => (
             <MemberCol key={m} member={m} world={world} onTip={setTip} />
@@ -75,6 +80,65 @@ function PointBank({ world }: { world: World }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
       <span className="tabular-nums">{n}</span>
       <span>{n === 1 ? m.family_point_one() : m.family_point_many()}</span>
+    </div>
+  )
+}
+
+function Standing({ world, onTip }: { world: World; onTip: (tip: Tip) => void }) {
+  const rep = Math.round(world.contracts.rep * 10) / 10
+  const luck = luckOf(world)
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <StatCard
+        art={STAT_REPUTATION}
+        label={m.family_reputation()}
+        value={rep / REP_MAX}
+        onTip={onTip}
+        tip={{
+          title: m.family_reputation(),
+          description: m.family_reputation_body(),
+          why: m.family_reputation_value({ n: rep, max: REP_MAX }),
+        }}
+      />
+      <StatCard
+        art={STAT_LUCK}
+        label={m.family_luck()}
+        value={luck / SKILLS.lucky.maxTier}
+        onTip={onTip}
+        tip={{
+          title: m.family_luck(),
+          description: m.family_luck_body(),
+          why: m.family_luck_value({ n: luck, max: SKILLS.lucky.maxTier }),
+        }}
+      />
+    </div>
+  )
+}
+
+function StatCard({
+  art,
+  label,
+  value,
+  tip,
+  onTip,
+}: {
+  art: string
+  label: string
+  value: number
+  tip: Note
+  onTip: (tip: Tip) => void
+}) {
+  return (
+    <div
+      className="flex items-center gap-2 bg-ink/6 px-3 py-2"
+      onPointerEnter={() => onTip(tip)}
+      onPointerLeave={() => onTip(undefined)}
+    >
+      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: art }} />
+      <span className="shrink-0 text-sm font-semibold">{label}</span>
+      <span className="ml-auto w-24">
+        <Bar value={value} color="bg-ripe" />
+      </span>
     </div>
   )
 }

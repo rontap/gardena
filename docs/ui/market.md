@@ -8,7 +8,7 @@ Solo (`role === 'off'`): open pauses the sim clock. Close restores the previous 
 
 Underline tabs, same chrome as [[ui/almanac]]:
 
-- `Tabs.Root` `relative z-20 flex min-h-0 flex-1 flex-col`. Default `stall`.
+- `Tabs.Root` `relative z-20 flex min-h-0 flex-1 flex-col`. Controlled, not `defaultValue`.
 - `Tabs.List` `shrink-0` wrap: `flex flex-wrap gap-1 border-b border-ink/20 bg-house px-4`.
 - Triggers `tabTriggerClass` (`whitespace-nowrap`). Do not `overflow-x-auto`. Do not shrink type.
 
@@ -18,6 +18,10 @@ Underline tabs, same chrome as [[ui/almanac]]:
 | `contracts` | **Contracts** |
 
 **Contracts** trigger omitted iff `!world.done.has('unlock-contracts')`. [[ui/contracts]]. **Stall** always.
+
+## Which tab opens
+
+The tab the player last chose. `MarketTab` = `'stall' | 'contracts'`, App state beside `panel`, passed in as `tab` with `onTab`. Closing the overlay and opening it again lands on the same tab; a player checking a running contract does not re-pick Contracts every time. `value` is `contracts ? tab : 'stall'` — with the Contracts trigger absent there is no panel to show, so a remembered `contracts` reads as Stall until the research lands. Not Save, not a `Cmd`: it dies with the session, like the search box.
 
 ## Stall
 

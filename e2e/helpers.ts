@@ -6,7 +6,7 @@ export const CAM_Y = 9.5
 
 export async function waitPlay(page: Page): Promise<void> {
   await expect(async () => {
-    await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('button', { name: 'Build', exact: true })).toBeVisible({ timeout: 5_000 })
     const ready = await page.evaluate(() => {
       const w = window as Window & { __view?: object; __world?: object }
       return w.__view !== undefined && w.__world !== undefined
@@ -81,14 +81,6 @@ export async function closeDock(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Close' }).click()
 }
 
-export async function openShop(page: Page): Promise<void> {
-  await dismissRecap(page)
-  const seeds = page.getByRole('tab', { name: 'Seeds' })
-  if (await seeds.isVisible()) return
-  await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(seeds).toBeVisible({ timeout: 10_000 })
-}
-
 export async function openBuild(page: Page): Promise<void> {
   await dismissRecap(page)
   const water = page.getByRole('tab', { name: 'Water' })
@@ -100,7 +92,7 @@ export async function openBuild(page: Page): Promise<void> {
 export async function armSku(
   page: Page,
   sku: string,
-  tab: 'Water' | 'Vehicles' | 'Processing' | 'Sensors' | 'Storage' | 'Land' = 'Water',
+  tab: 'Tools' | 'Water' | 'Automation' | 'Sensors' | 'Storage' | 'Land' = 'Water',
 ): Promise<void> {
   await openBuild(page)
   await page.getByRole('tab', { name: tab }).click()

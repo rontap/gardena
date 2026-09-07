@@ -9,21 +9,21 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | file | depicts |
 |---|---|
 | `prop-mill.svg` | 2x2 `0 0 48 48`, four-course tapered `house` tower on a plinth, `roof` cap, hub and four-arm sail cross in front, door at the foot |
-| `item-mill.svg` | same windmill packed into 24x24, shop/hand |
+| `item-mill.svg` | same windmill packed into 24x24, card/hand |
 | `prop-still.svg` | 2×1 `0 0 48 24`, drawn 1.5×1 (`36×24`) centered `x=6`–`42`, steel onion + iron lyne, water condenser, litre marks |
-| `item-still.svg` | same machine, shop/hand, stays 24×24 |
+| `item-still.svg` | same machine, card/hand, stays 24×24 |
 | `prop-barrel.svg` | barrel, dirt staves, grape bung |
-| `item-barrel.svg` | same, shop/hand |
+| `item-barrel.svg` | same, card/hand |
 | `prop-jam.svg` | jam cooker, fruit-red pot on house stove |
 | `prop-link-in.svg` | blue west chute, mouth on the chest |
 | `prop-link-out.svg` | green east chute, mouth on the chest |
-| `item-jam-machine.svg` | same, shop/hand |
+| `item-jam-machine.svg` | same, card/hand |
 | `prop-freezer.svg` | chest-like freezer, house body, water lid and latch |
-| `item-freezer.svg` | same, shop/hand |
+| `item-freezer.svg` | same, card/hand |
 | `prop-furnace.svg` | 1×2 `0 0 24 48`, drawn 1×1.5 (`24×36`) south-aligned `y=12`–`48`, iron / oil body, roof brick, steel lip, opening south, chimney north; groups `off` `on`; chimney mouth `(12, 14)` |
-| `item-furnace.svg` | same machine, shop/hand, stays 24×24 |
+| `item-furnace.svg` | same machine, card/hand, stays 24×24 |
 | `prop-research-station.svg` | 2×1 `0 0 48 24`, cottage seed-tray cabinet west, potting bench with three cuttings east, roof lamp; groups `off` `on`. Iron lamp face is the only metal |
-| `item-research-station.svg` | same machine at 1×1 `0 0 24 24`, cabinet and one potted cutting, shop/hand; groups `off` `on` |
+| `item-research-station.svg` | same machine at 1×1 `0 0 24 24`, cabinet and one potted cutting, card/hand; groups `off` `on` |
 
 ## Fruit
 
@@ -33,7 +33,7 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 
 ## Spirits
 
-No groups. Shop/hand/almanac face.
+No groups. Card/hand/almanac face.
 
 | file | depicts |
 |---|---|

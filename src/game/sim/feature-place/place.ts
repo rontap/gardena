@@ -1,6 +1,19 @@
-import { CHUNK, chunkKey, chunkRect, inFade, inWorld, type ChunkId, type Coord } from '../building.ts'
+import { SUGAR_BAG } from '../../defs/items.ts'
+import {
+  ADDITIVE_BAG,
+  CHUNK,
+  chunkKey,
+  chunkRect,
+  inFade,
+  inWorld,
+  type AdditiveLevel,
+  type ChunkId,
+  type Coord,
+  ROW_SKU,
+  type SeedLevel,
+} from '../building.ts'
 import { generateChunk } from '../gen.ts'
-import type { SkuId } from '../ids.ts'
+import { packSku, type SkuId } from '../ids.ts'
 import { skuItem } from '../item.ts'
 import { aoe, edgeKey, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from '../pipe.ts'
 import { isPlot } from '../plot.ts'
@@ -228,6 +241,42 @@ export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
   else w.act.place = { kind: 'sku', id }
   w.ping()
   return undefined
+}
+
+/**
+ * Buys back what left a store, up to the level it held before, one pack or bag at a time. Stops on
+ * the first buy that fails, so an empty purse and a full store both end it the same way. A named
+ * Variety restocks nothing — no shelf sells one.
+ */
+export function restockSeedsBody(w: World, at: Coord, before: readonly SeedLevel[]): void {
+  const silo = w.cell(at)
+  if (silo.kind !== 'silo-seed' || !silo.restock) return
+  before.forEach(([crop, was]) => {
+    const sku = packSku(crop)
+    if (sku === undefined || !w.skuOpen(sku)) return
+    const made = skuItem(sku)
+    if (made.kind !== 'seeds') return
+    for (let i = packsFor(was - silo.baseCount(crop), made.count); i > 0; i--) {
+      if (buyBody(w, sku, at) !== undefined) return
+    }
+  })
+}
+
+export function restockAdditivesBody(w: World, at: Coord, before: readonly AdditiveLevel[]): void {
+  const store = w.cell(at)
+  if (store.kind !== 'silo-spray' || !store.restock) return
+  before.forEach(([id, was]) => {
+    const sku = ROW_SKU[id]
+    if (sku === 'none' || !w.skuOpen(sku)) return
+    const bag = id === 'sugar' ? SUGAR_BAG : ADDITIVE_BAG[id]
+    for (let i = packsFor(was - store.rowLiters(id), bag); i > 0; i--) {
+      if (buyBody(w, sku, at) !== undefined) return
+    }
+  })
+}
+
+function packsFor(missing: number, per: number): number {
+  return missing <= 0 ? 0 : Math.ceil(missing / per)
 }
 
 export function cancelPlaceBody(w: World): void {

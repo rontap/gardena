@@ -6,7 +6,6 @@ import {
   hoverWorld,
   hudMoney,
   moneyValue,
-  openShop,
   tapWorld,
 } from './helpers.ts'
 
@@ -58,13 +57,11 @@ test('shop close exits pipe layer', async ({ page }) => {
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
   await armSku(page, 'Pipe 3')
   await expect.poll(() => placeKind(page)).toBe('sku')
-  await openShop(page)
-  await page.getByRole('button', { name: 'Shop', exact: true }).click()
-  await expect(page.getByRole('tab', { name: 'Seeds' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Build', exact: true }).click()
+  await expect(page.getByRole('tab', { name: 'Water' })).toHaveCount(0)
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
   await armSku(page, 'Pipe 3')
-  await openShop(page)
   await page.keyboard.press('Escape')
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()

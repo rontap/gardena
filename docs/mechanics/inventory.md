@@ -16,7 +16,7 @@ Trailer cargo: `TRAILER_CAP`. Seed hopper one seeds stack. Spray hopper one fert
 
 Seeds and additives do not live in the house. Each has a store building, placed at world start, 1 wide × 2 tall, not a SKU, not researchable, not deletable, no almanac entry — [[items/buildings]].
 
-`Store` is the shared base: a `cap` and `useDefault`. `useDefault` marks the instance a shop purchase flows into. One default per kind today; nothing else is buyable. The flag is the seam multiple stores will hang off, not a feature yet.
+`Store` is the shared base: a `cap` and `useDefault`. `useDefault` marks the instance a purchase flows into. One default per kind today; nothing else is buyable. The flag is the seam multiple stores will hang off, not a feature yet.
 
 | store | holds |
 |---|---|
@@ -35,9 +35,9 @@ Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-f
 
 Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the four additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
 
-Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same bodies as shop. No pack (vanilla): no Buy. — [[ui/store]]
+Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. The Seed silo is the only place a pack is sold. No pack (vanilla): no Buy. — [[ui/store]]
 
-`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is shop and seed-silo Buy gesture. — [[mechanics/family]]
+`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. — [[mechanics/family]]
 
 ## Starter
 
@@ -49,7 +49,7 @@ Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's start
 
 House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0, and one graft of every tree variety: `kingston-black` `pink-lady` `blenheim` `klosterneuburger` `arbequina` `bing`. Ten of sixteen. Graft quality 0.
 
-Shop `pack-*` are five seeds, `'base'`, quality 0.
+`pack-*` are five seeds, `'base'`, quality 0.
 
 ## Tools
 
@@ -75,7 +75,7 @@ Same variety at different quality merges and averages, weighted by count — by 
 
 ## Fertilizer / compost
 
-Ordinary bag `FERT_BAG_LITERS`, always in the shop. Synthetic `SYNTH_BAG_LITERS`, research. Compost `COMPOST_LITERS`, organic feed.
+Ordinary bag `FERT_BAG_LITERS`, always at the Additive store. Synthetic `SYNTH_BAG_LITERS`, research. Compost `COMPOST_LITERS`, organic feed.
 
 Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
@@ -91,7 +91,7 @@ Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` �
 
 Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Fruit including sugar-cane and tree fruit → seeds or tree-seed. `GRIND_WORK` 12 per fruit tick — preference. A held fruit stack dumps all of it. Sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper` `machines.grind-tree`.
 
-Mill / jam / still / barrel / freezer / furnace / shop sugar / station: [[mechanics/machines]].
+Mill / jam / still / barrel / freezer / furnace / bought sugar / station: [[mechanics/machines]].
 
 ## Tiles
 
@@ -109,6 +109,8 @@ Mill / jam / still / barrel / freezer / furnace / shop sugar / station: [[mechan
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 
-`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same fail / merge as shop. Packs `'base'` quality 0. No pack: no Buy.
+`inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
+
+`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy.
 
 `inventory.ash` — 1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.

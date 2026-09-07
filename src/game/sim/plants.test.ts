@@ -36,12 +36,12 @@ import {
   PotStill,
   chunkRect,
 } from './building.ts'
-import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
+import { FREEZER_ROT_MUL, SILO_H, SILO_W, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { makeShovel, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
-import { ADDITIVE_BASE, Rock, Tree } from './building.ts'
+import { ADDITIVE_BAG, ADDITIVE_BASE, Rock, SiloSeed, SiloSpray, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng } from './rng.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
@@ -51,7 +51,7 @@ import { statsOf } from './modifiers.ts'
 import { grindAccept, grindApply, grindProduct } from './feature-machines/machine.ts'
 import { footOutline } from '../view/outline.ts'
 import { DT_MAX, POINTS_PER_DAY, World } from './world.ts'
-import { SHOP_SKUS } from '../defs/shelf.ts'
+import { SHELF_SKUS } from '../defs/shelf.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -1223,7 +1223,7 @@ describe('1.9 stacks', () => {
     expect(Object.keys(SKUS).includes('buy-box')).toBe(false)
     expect(Object.keys(SKUS).includes('buy-box-large')).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-large-box')).toBe(false)
-    expect(SHOP_SKUS.includes('buy-box' as SkuId)).toBe(false)
+    expect(SHELF_SKUS.includes('buy-box' as SkuId)).toBe(false)
   })
 })
 
@@ -1251,6 +1251,75 @@ describe('inventory.silo-buy', () => {
     expect(full.buy(sku)).toBe('Seed silo full')
     full.buyPacks(sku)
     expect(siloCount(full, 'carrot', 'base')).toBe(SILO_SEED_CAP)
+  })
+})
+
+describe('inventory.restock', () => {
+  const SILO = { col: AT.col, row: AT.row }
+
+  function seedSilo(w: World): SiloSeed {
+    const made = new SiloSeed({ shape: 'rect', col: SILO.col, row: SILO.row, w: SILO_W, h: SILO_H })
+    w.setCell(SILO, made)
+    return made
+  }
+
+  test('Only a field silo has the flag; the house Seed silo and Additive store do not.', () => {
+    const w = new World(1)
+    expect('restock' in w.silo).toBe(false)
+    expect('restock' in w.additives).toBe(false)
+    expect(seedSilo(w).restock).toBe(false)
+  })
+
+  test('On, a take buys whole packs back to the level held, stops when money runs out, and leaves a named Variety alone.', () => {
+    const w = new World(1)
+    const silo = seedSilo(w)
+    w.money = 100
+    silo.put('carrot', 'base', 0, 7)
+    w.takeSilo(SILO, 'carrot', 'base')
+    expect(silo.baseCount('carrot')).toBe(0)
+    expect(w.money).toBe(100)
+
+    w.setRestock(SILO, true)
+    expect(silo.restock).toBe(true)
+    silo.put('carrot', 'base', 0, 7)
+    const price = w.skuPrice('pack-carrot')
+    w.takeSilo(SILO, 'carrot', 'base')
+    expect(silo.baseCount('carrot')).toBe(10)
+    expect(w.money).toBe(100 - 2 * price)
+
+    silo.put('potato', 'bintje', 0, 5)
+    const before = w.money
+    w.takeSilo(SILO, 'potato', 'bintje')
+    expect(silo.seeds.filter(st => st.variety === 'bintje')).toHaveLength(0)
+    expect(w.money).toBe(before)
+
+    w.money = 0
+    silo.put('carrot', 'base', 0, 5)
+    w.takeSilo(SILO, 'carrot', 'base')
+    expect(w.money).toBe(0)
+    expect(silo.baseCount('carrot')).toBe(0)
+  })
+
+  test('Additive silo rows restock a bag at a time; compost has no sku to buy.', () => {
+    const w = new World(1)
+    const made = new SiloSpray({ shape: 'rect', col: SILO.col, row: SILO.row, w: SILO_W, h: SILO_H })
+    w.setCell(SILO, made)
+    w.money = 500
+    w.setRestock(SILO, true)
+    expect(made.restock).toBe(true)
+
+    made.putAdditive('fertilizer', ADDITIVE_BAG.fertilizer * 2)
+    const held = made.litersOf('fertilizer')
+    const price = w.skuPrice('buy-fertilizer')
+    w.takeAdditive(SILO, 'fertilizer')
+    expect(made.litersOf('fertilizer')).toBe(held)
+    expect(w.money).toBe(500 - price)
+
+    made.putAdditive('compost', ADDITIVE_BAG.compost)
+    const paid = w.money
+    w.takeAdditive(SILO, 'compost')
+    expect(w.money).toBe(paid)
+    expect(made.litersOf('compost')).toBe(0)
   })
 })
 

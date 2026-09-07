@@ -11,7 +11,7 @@ Cottage + industrial metal. Ink outlines `#1c1710`. No unnamed hex. No text. No 
 | file | viewBox | depicts |
 |---|---|---|
 | `prop-hangar.svg` | `0 0 72 48` | 3×2 industrial shed, south door |
-| `item-hangar.svg` | `0 0 24 24` | same, shop/almanac |
+| `item-hangar.svg` | `0 0 24 24` | same, card/almanac |
 
 Flat corrugated steel roof, iron ribs, oil eave. Iron vent stack east, no window. Steel walls, iron corrugation. Roller bay south: iron slats, steel tracks, oil handle. No cottage windows. No tiled `#8b3a2a` roof. No cupola. Ink outlines. No text.
 
@@ -61,7 +61,7 @@ Steel body, iron chassis / hitch, oil underbody. Seed hopper leaf lid. Spray tan
 | `prop-silo-seed.svg` | `0 0 48 72` | seeding silo, leaf band, south door |
 | `prop-silo-spray.svg` | `0 0 48 72` | spraying silo, water band, south door |
 | `prop-silo-produce.svg` | `0 0 48 72` | produce silo, fruit-red band, south door |
-| `item-silo-seed.svg` | `0 0 24 24` | shop/almanac |
+| `item-silo-seed.svg` | `0 0 24 24` | card/almanac |
 | `item-silo-spray.svg` | `0 0 24 24` | |
 | `item-silo-produce.svg` | `0 0 24 24` | |
 

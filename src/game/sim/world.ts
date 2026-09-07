@@ -1493,6 +1493,18 @@ export class World {
     place.confirmPlace(this, at)
   }
 
+  setRestock(at: Coord, on: boolean): void {
+    this.commit({ a: Act.setRestock, t: this.now, p: this.local, c: [at.col, at.row], on })
+  }
+
+  setRestockBody(at: Coord, on: boolean): void {
+    const c = this.cell(at)
+    if (c.kind === 'silo-seed' || c.kind === 'silo-spray') {
+      c.restock = on
+      this.ping()
+    }
+  }
+
   cancelPlace(): void {
     this.commit({ a: Act.cancelPlace, t: this.now, p: this.local })
   }

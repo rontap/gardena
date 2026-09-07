@@ -45,17 +45,20 @@ function lensBtn(page: Page, name: RegExp) {
   return page.getByRole('button', { name })
 }
 
-test('Build Water / Vehicles / Sensors peek the matching lens, unlocked; close restores', async ({ page }) => {
+test('Build Water / Automation / Sensors peek the matching lens, unlocked; close restores', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
   await expect(lensBtn(page, /^Lens$/)).toBeVisible()
   await expect(lensBtn(page, /^Lens pipes$/i)).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Clear lens' })).toHaveCount(0)
 
   await openBuild(page)
+  await expect(lensBtn(page, /^Lens pipes$/i)).toHaveCount(0)
+
+  await page.getByRole('tab', { name: 'Water' }).click()
   await expect(lensBtn(page, /^Lens pipes$/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear lens' })).toHaveCount(0)
 
-  await page.getByRole('tab', { name: 'Vehicles' }).click()
+  await page.getByRole('tab', { name: 'Automation' }).click()
   await expect(lensBtn(page, /^Lens vehicle interactions$/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear lens' })).toHaveCount(0)
 
@@ -63,7 +66,7 @@ test('Build Water / Vehicles / Sensors peek the matching lens, unlocked; close r
   await expect(lensBtn(page, /^Lens sensors$/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear lens' })).toHaveCount(0)
 
-  await page.getByRole('tab', { name: 'Processing' }).click()
+  await page.getByRole('tab', { name: 'Land' }).click()
   await expect(lensBtn(page, /^Lens pipes$/i)).toHaveCount(0)
   await expect(lensBtn(page, /^Lens sensors$/i)).toHaveCount(0)
   await expect(lensBtn(page, /^Lens vehicle interactions$/i)).toHaveCount(0)
@@ -85,7 +88,7 @@ test('Lock view keeps the picked lens through a Build peek', async ({ page }) =>
   await page.getByRole('button', { name: 'Close', exact: true }).click()
 
   await openBuild(page)
-  await page.getByRole('tab', { name: 'Vehicles' }).click()
+  await page.getByRole('tab', { name: 'Automation' }).click()
   await expect(lensBtn(page, /^Lens pipes locked$/i)).toBeVisible()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(lensBtn(page, /^Lens pipes locked$/i)).toBeVisible()
@@ -196,7 +199,7 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
     w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     w.setCell({ col: at.col + 1, row: at.row }, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
   }, STATION)
-  await armSku(page, 'Seed Variety Station 60', 'Processing')
+  await armSku(page, 'Seed Variety Station 60', 'Automation')
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
   await expect(page.getByText('Place Seed Variety Station', { exact: true })).toBeVisible()
   const art = await page.evaluate(() => {

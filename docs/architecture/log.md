@@ -71,7 +71,7 @@ Live tick is `DT_MAX` only. App host accumulator `frameDt * World.cheatSpeed`. N
 
 ## JSON
 
-`Cmd` is JSON. Classes forbidden in the log. Field names are one letter. Closed discriminated union on `a`. Each `a` has exactly one meaning. Arms: `sim/log.ts`.
+`Cmd` is JSON. Classes forbidden in the log. Field names are one letter. Closed discriminated union on `a`. Each `a` has exactly one meaning. Arms: `sim/log.ts`. Every lowercase letter and all but one uppercase are taken; `setRestock` is `'I'`, the last free one. The next `Act` needs a second character, not a hunt.
 
 Letters for `a` live only in `Act`. Call sites use `Act.click`, never the letter. JSON still stores the letter.
 

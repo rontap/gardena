@@ -63,7 +63,7 @@ import {goodness, groundOf, hardnessOf, HARD_MAX} from './noise.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
 import {DAY_STIPEND, DT_MAX, POINTS_PER_DAY, World} from './world.ts'
-import {BUILD_SKUS, SHELVES, SHOP_SKUS} from '../defs/shelf.ts'
+import {SHELF_SKUS, SHELVES} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
 const AT = {col: 10, row: 12}
@@ -1567,20 +1567,37 @@ describe('beta-6 invariants', () => {
 
     test('buy-delete is not a SkuId; the build shelf has no Delete', () => {
         expect((Object.keys(SKUS) as string[]).includes('buy-delete')).toBe(false)
-        expect(BUILD_SKUS.includes('buy-delete' as SkuId)).toBe(false)
-        expect(BUILD_SKUS.some(id => skuLabel(id) === 'Delete')).toBe(false)
+        expect(SHELF_SKUS.includes('buy-delete' as SkuId)).toBe(false)
+        expect(SHELF_SKUS.some((id: SkuId) => skuLabel(id) === 'Delete')).toBe(false)
     })
 
-    test('every sku sits in exactly one shelf group, except buy-and buy-or buy-water-system which sit in none', () => {
+    test('every sku sits in exactly one Build shelf group, or is sold at a store, or is hidden', () => {
         const hidden: readonly SkuId[] = ['buy-and', 'buy-or', 'buy-water-system']
+        const store: readonly SkuId[] = [
+            'pack-carrot',
+            'pack-potato',
+            'pack-wheat',
+            'pack-tomato',
+            'pack-grape',
+            'pack-raspberry',
+            'pack-sugar-cane',
+            'buy-fertilizer',
+            'buy-synth-fertilizer',
+            'buy-weed-spray',
+            'buy-sugar',
+        ]
         const shelved = SHELVES.flatMap(s => s.groups.flatMap(g => g.skus))
         expect(shelved.filter(id => hidden.includes(id))).toEqual([])
-        expect([...shelved].sort()).toEqual((Object.keys(SKUS) as SkuId[]).filter(id => !hidden.includes(id)).sort())
+        expect(shelved.filter(id => store.includes(id))).toEqual([])
+        expect([...shelved].sort()).toEqual(
+            (Object.keys(SKUS) as SkuId[]).filter(id => !hidden.includes(id) && !store.includes(id)).sort(),
+        )
+        expect(SHELF_SKUS.length + store.length + hidden.length).toBe(Object.keys(SKUS).length)
     })
 
-    test('build shelves hold no seeds tab sku', () => {
-        expect(BUILD_SKUS.filter(id => SKUS[id].tab === 'seeds')).toEqual([])
-        expect(SHOP_SKUS.length + BUILD_SKUS.length + 3).toBe(Object.keys(SKUS).length)
+    test('pack-grass is the only seeds-tab sku on a shelf, and it sits on Land', () => {
+        expect(SHELF_SKUS.filter((id: SkuId) => SKUS[id].tab === 'seeds')).toEqual(['pack-grass'])
+        expect(SHELVES.find(s => s.id === 'land')?.groups.some(g => g.skus.includes('pack-grass'))).toBe(true)
     })
 
     test('delete pumpjack money unchanged both empty starter remains', () => {

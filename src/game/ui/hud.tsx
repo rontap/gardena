@@ -23,7 +23,6 @@ import {
   UI_BTN_PLAY,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
-  UI_BTN_SHOP,
   UI_WEATHER,
   type BtnState,
 } from '../view/svgs.ts'
@@ -49,7 +48,6 @@ export function Hud({
   lens,
   paused,
   onFamily,
-  onShop,
   onBuild,
   onResearch,
   onMarket,
@@ -68,7 +66,6 @@ export function Hud({
   lens: Lens
   paused: boolean
   onFamily: () => void
-  onShop: () => void
   onBuild: () => void
   onResearch: () => void
   onMarket: () => void
@@ -158,6 +155,10 @@ export function Hud({
               </span>
             )}
             <IconButton art={UI_BTN_MULTIPLAYER} label={m.hud_multiplayer()} selected={panel === 'multiplayer'} onClick={onMultiplayer} />
+            <IconButton art={UI_BTN_ALMANAC} label={m.hud_almanac()} selected={panel === 'almanac'} onClick={onAlmanac} />
+            {!guest && (
+              <IconButton art={UI_BTN_CHEAT} label={m.hud_cheat()} selected={panel === 'cheat'} onClick={onCheat} />
+            )}
             <PauseBtn selected={paused} onClick={onPause} />
             <GearBtn selected={panel === 'menu'} onClick={onGear} />
           </div>
@@ -165,7 +166,6 @@ export function Hud({
       </Chrome>
       <Chrome className="pointer-events-none absolute top-20 left-4 z-20 w-24">
         <div className="relative z-20 flex flex-col py-1.5">
-          <FaceBtn art={UI_BTN_SHOP} label={m.hud_shop()} selected={panel === 'shop'} onClick={onShop} />
           <FaceBtn art={UI_BTN_BUILD} label={m.hud_build()} selected={panel === 'build'} onClick={onBuild} />
           <FaceBtn art={UI_BTN_RESEARCH} label={m.names_role_research()} selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label={m.names_role_market()} selected={panel === 'market'} onClick={onMarket} />
@@ -189,8 +189,6 @@ export function Hud({
             )}
           </div>
           <FaceBtn art={UI_BTN_FAMILY} label={m.family_title()} selected={panel === 'family'} onClick={onFamily} />
-          <FaceBtn art={UI_BTN_ALMANAC} label={m.hud_almanac()} selected={panel === 'almanac'} onClick={onAlmanac} />
-          {!guest && <FaceBtn art={UI_BTN_CHEAT} label={m.hud_cheat()} selected={panel === 'cheat'} onClick={onCheat} />}
           {trio && (
             <>
               <div className="mx-3 my-1.5 border-t border-ink/20" />

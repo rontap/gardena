@@ -14,12 +14,12 @@ import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
 import { ObjectHud } from './game/ui/objecthud.tsx'
-import { Market } from './game/ui/market.tsx'
+import { Market, type MarketTab } from './game/ui/market.tsx'
 import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Research } from './game/ui/research.tsx'
 import { Cheat } from './game/ui/cheat.tsx'
-import { Build, Shop } from './game/ui/shop.tsx'
+import { Build } from './game/ui/build.tsx'
 import { Family } from './game/ui/family.tsx'
 import { LensPanel } from './game/ui/lens.tsx'
 import { Menu } from './game/ui/menu.tsx'
@@ -72,7 +72,7 @@ const RECONNECT_DELAY_MS = 1500
 
 function ignoreHover(_h: PromptHit | undefined): void {}
 function ignoreCam(_c: Camera): void {}
-function ignoreClick(_h: MapClick, _xy: { x: number; y: number }): void {}
+function ignoreClick(_h: MapClick, _xy: { x: number; y: number }, _shift: boolean): void {}
 
 export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
@@ -103,6 +103,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const panelRef = useRef(panel)
   panelRef.current = panel
   const [query, setQuery] = useState('')
+  const [marketTab, setMarketTab] = useState<MarketTab>('stall')
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
   const [hangarTrailer, setHangarTrailer] = useState<TrailerId | undefined>(undefined)
@@ -254,7 +255,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     prevDay.current = world.clock.day
     if (world.local === 0) writeSlot(dump(world))
     setPanel({ kind: 'none' })
-    soloPause(true)
   }, [hudN, world])
 
   useEffect(() => {
@@ -576,7 +576,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     endPeek()
   }
 
-  function leaveShop(): void {
+  function leaveBuild(): void {
     if (world === undefined) return
     world.cancelPlace()
     setQuery('')
@@ -604,7 +604,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     updatePanel(p => {
       const to = p.kind === next.kind ? { kind: 'none' as const } : next
       if (p.kind === 'lens' && to.kind !== 'lens' && !lensLock) setLens('off')
-      if (arming(p.kind) && !arming(to.kind)) leaveShop()
+      if (arming(p.kind) && !arming(to.kind)) leaveBuild()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
       return to
@@ -639,7 +639,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (recapDayRef.current !== undefined) return
     updatePanel(p => {
-      if (arming(p.kind)) leaveShop()
+      if (arming(p.kind)) leaveBuild()
       if (cued(p.kind)) world.ackCue()
       if (p.kind === 'multiplayer') setMpPanel(false)
       return p.kind === 'menu' ? { kind: 'none' } : { kind: 'menu' }
@@ -750,7 +750,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (role === 'off') startHost()
     let open = false
     updatePanel(p => {
-      if (arming(p.kind)) leaveShop()
+      if (arming(p.kind)) leaveBuild()
       if (cued(p.kind)) world.ackCue()
       open = p.kind !== 'multiplayer'
       return open ? { kind: 'multiplayer' } : { kind: 'none' }
@@ -966,7 +966,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             hover={hover}
             onHover={setHover}
             onCam={setCam}
-            onClick={(hit, xy) => {
+            onClick={(hit, xy, shift) => {
               if (hit.kind === 'cell' && sensorArmed(world)) {
                 setLens('sensors')
                 setLensLock(true)
@@ -998,7 +998,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
                 }
                 if (driven !== undefined && driven.route === 'none' && hit.kind === 'cell') return
               }
-              dispatchClick(world, hit)
+              dispatchClick(world, hit, shift)
             }}
             highlight={noticeCells}
           />
@@ -1008,7 +1008,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
             panel={panel.kind}
             lens={lens}
             onFamily={() => open({ kind: 'family' })}
-            onShop={() => open({ kind: 'shop' })}
             onBuild={() => open({ kind: 'build' })}
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
@@ -1042,35 +1041,29 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'lens' && (
             <LensPanel world={world} lens={lens} lock={lensLock} onPick={pickLens} onLock={setLensLock} onClose={closeLens} />
           )}
-          {panel.kind === 'shop' && (
-            <Shop
-              world={world}
-              query={query}
-              setQuery={setQuery}
-              onGo={p => setPanel({ kind: p })}
-              onShelf={applyShelfLens}
-              onClose={() => {
-                leaveShop()
-                setPanel({ kind: 'none' })
-              }}
-            />
-          )}
           {panel.kind === 'build' && (
             <Build
               world={world}
               query={query}
               setQuery={setQuery}
-              onGo={p => setPanel({ kind: p })}
               onShelf={applyShelfLens}
               onClose={() => {
-                leaveShop()
+                leaveBuild()
                 setPanel({ kind: 'none' })
               }}
             />
           )}
           {panel.kind === 'research' && <Research world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
-          {panel.kind === 'market' && <Market world={world} guest={guest} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'market' && (
+            <Market
+              world={world}
+              guest={guest}
+              tab={marketTab}
+              onTab={setMarketTab}
+              onClose={() => setPanel({ kind: 'none' })}
+            />
+          )}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (
@@ -1404,7 +1397,8 @@ function Dash({
 
 const BUILD_LENS: Partial<Record<ShelfId, Lens>> = {
   water: 'pipes',
-  vehicles: 'vehicles',
+  automation: 'vehicles',
+  storage: 'vehicles',
   logic: 'sensors',
 }
 
@@ -1421,7 +1415,7 @@ function toolLensOf(world: World): Lens | undefined {
   return undefined
 }
 
-function dispatchClick(world: World, hit: MapClick): void {
+function dispatchClick(world: World, hit: MapClick, shift: boolean): void {
   if (hit.kind === 'edge') {
     world.placePipe(hit.edge)
     return
@@ -1491,7 +1485,9 @@ function dispatchClick(world: World, hit: MapClick): void {
     world.openHud({ kind: 'sprinkler', at: hit.at })
     return
   }
+  const armed = world.seats[world.local].place
   world.click(hit.at)
+  if (shift && armed.kind === 'sku' && world.seats[world.local].place.kind === 'none') world.buy(armed.id)
 }
 
 function addStopHint(world: World, hover: PromptHit | undefined): string | undefined {

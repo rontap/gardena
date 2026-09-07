@@ -100,8 +100,8 @@ export type SaveCell =
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
-  | { kind: 'silo-seed'; base: RectBase; seeds: SiloStack[] }
-  | { kind: 'silo-spray'; base: RectBase; held: AdditiveHold[]; sugar: SugarBin }
+  | { kind: 'silo-seed'; base: RectBase; restock: boolean; seeds: SiloStack[] }
+  | { kind: 'silo-spray'; base: RectBase; restock: boolean; held: AdditiveHold[]; sugar: SugarBin }
   | { kind: 'silo-produce'; base: RectBase; slots: Slot[] }
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; sugar: SugarBin; out: 0 | 1; hold: number }

@@ -18,7 +18,7 @@ Left → right, separated by `w-px bg-ink/20` rules:
 2. `Coin` (`world.money`), `text-lg` semibold.
 3. Phase glyph, then **Day {n} · {phase name}** over a `w-28` `bg-ripe` day bar (`clock.t / DAY_SECONDS`).
 4. Weather. After the day block: `w-px bg-ink/20` divider, current glyph, then tomorrow glyph iff husband owns `forecast`. No kind names in the row.
-5. Far right, left of Multiplayer: **Multiplayer** then **Pause** then **Gear**.
+5. Far right, left of Multiplayer: **Multiplayer** then **Almanac** then **Cheat** then **Pause** then **Gear**.
 
 The research job, the expansion chip, and the points chip are not here. They are notices on the Command Center — [[ui/notices]]. One place, not two.
 
@@ -44,7 +44,13 @@ Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump
 
 ### Buttons
 
-`ml-auto` cluster: **Multiplayer** **Pause** **Gear**. Not a `Panel`. Not logged. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. App `recapDay` blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. App `recapDay` blocks the open, same as other panels. Pause stays live while the recap popup is open. Overlay pause does not replace this toggle.
+`ml-auto` cluster: **Multiplayer** **Almanac** **Cheat** **Pause** **Gear**. Not a `Panel`. Not logged. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) leftmost.
+
+Multiplayer: guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. App `recapDay` blocks the open, same as Gear.
+
+Almanac (`ui-btn-almanac.svg`) and Cheat (`ui-btn-cheat.svg`) sit here, face only, no label: the two panels that answer a question stand beside the two controls that stop the day, and the left ribbon keeps only what acts on the farm. Selected while that panel is open. Click toggles it. App `recapDay` blocks the open, same as Gear. Guest: Cheat is not rendered and the cluster closes up — [[ui/multiplayer]].
+
+Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. App `recapDay` blocks the open, same as other panels. Pause stays live while the recap popup is open. Overlay pause does not replace this toggle.
 
 ### Overlay pause
 
@@ -54,9 +60,9 @@ Rising edge (enter `family` | `market` | `almanac` | recap popup from anything e
 
 Host or guest: these overlays do not auto-pause. Pause button still toggles user pause.
 
-Shop / Research / Build / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate.
+Build / Research / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate.
 
-Solo end-of-day pause (`settings.solo`): on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. The recap popup is not this pause. [[ui/settings]] [[mechanics/day]]
+The day seam does not pause. On `clock.day` increment App only `writeSlot`s and closes the open panel — a new day is not an interruption, and a player watering a bed keeps watering. The **Day {n} Finished** notice is how the day is noticed, and opening the recap popup from it pauses under the same overlay rule as Family / Market / Almanac. [[ui/settings]] [[mechanics/day]] [[ui/notices]]
 
 The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-banner]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]].
 
@@ -72,23 +78,23 @@ Three spans at the right end of the top ribbon, before the net chip. Play only, 
 
 `Chrome` `absolute top-20 left-4 z-20` `w-24`. Icon `h-11 w-11` above, `text-sm` semibold label below.
 
-Order: **Shop** **Build** **Research** **Market** **Lens** **Family** **Almanac** **Cheat**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then if build cluster: divider, **Delete** **Rotate** **Cancel**. Guest: **Cheat** hidden. Hidden ≠ disabled. [[ui/multiplayer]]
+Order: **Build** **Research** **Market** **Lens** **Family**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then if build cluster: divider, **Delete** **Rotate** **Cancel**. Almanac and Cheat are top-ribbon buttons — see above. [[ui/multiplayer]]
 
 Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family face `ui-btn-family`. Cheat face `ui-btn-cheat`.
 
 | button | act | selected |
 |---|---|---|
-| Shop / Research / Market / Family / Almanac / Cheat | panel toggle | that panel open |
+| Build / Research / Market / Family | panel toggle | that panel open |
 | Lens | dock toggle | `panel === 'lens'` |
 | Delete | `armDelete()` | `place.kind === 'delete'` |
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Processing, Storage, Vehicles, and Sensors. Paving and `buy-fence` are out: they are paint tools. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
+Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Automation, Storage, and Sensors. Tools, paving, fencing and `pack-grass` are out: those go to hand or paint. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Shop close (toggle, dock **×**), leaving the shop system: `leaveShop` = `cancelPlace` and restores an unlocked Build peek. Close Shop / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water / Vehicles / Sensors peek the matching lens with no lock — [[ui/lens]] [[ui/build]].
+Cancel does not change lens. Build close (toggle, dock **×**), opening another panel: `leaveBuild` = `cancelPlace` and restores an unlocked Build peek. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water / Automation / Storage / Sensors peek the matching lens with no lock — [[ui/lens]] [[ui/build]].
 
 ## Lenses
 
@@ -122,7 +128,7 @@ Command Center claims that anchor at `w-72` while the editor is off — [[ui/not
 
 `clock.banner > 0` starts it. `font-display` `text-4xl` `text-white`. Top of the play field, below the ribbon (`pt-24`). `pointer-events-none`. Copy **Day {n}**. Fade in 0.5s ease-in opacity 0 → 0.7, hold, fade out 0.5s ease-out to 0. Total `banner = 4` s. New farm already `banner = 4`. Seam sets it. `data-banner`. `paintMotion` writes the day string. Not Pixi. [[ui/type]] [[mechanics/day]]
 
-`e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
+`e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `build.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
 
 `e2e/buildings.spec.ts`: `#unlockall`, place every cell Build sku, `e2e/shots/buildings.png`.
 

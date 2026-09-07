@@ -10,7 +10,7 @@ Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertToler
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. Shop pack is `'base'` at quality 0. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Olive is `TreeId`. Trees have no pack.
+Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. A bought pack is `'base'` at quality 0. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Olive is `TreeId`. Trees have no pack.
 
 Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the four starting `'base'` seeds and the one wild apple are the only ones not won from a contract.
 
@@ -76,7 +76,7 @@ quality = clamp(seed.quality + qualityGain(happiness) + betterGain, 0, 1)
 
 Lawn, not a crop. No `CropId`, no variety, no quality, no `Plant`, no market value.
 
-Item `{ kind: 'grass-seeds'; count }`. `pack-grass` unlock `unlock-landscaping`. Buying merges into one house slot like seeds do.
+Item `{ kind: 'grass-seeds'; count }`. `pack-grass` unlock `unlock-landscaping`, Build **Land** shelf — [[ui/build]]. Buying merges into one house slot like seeds do.
 
 Sow on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. `Turf` holds `maturity` and `variant` 0–2 picked by `gen.at(3, col, row)` — [[mechanics/rng]]. Prompt **Sow grass**.
 
@@ -234,7 +234,7 @@ Assumption: shovel keeps the tree's variety on the seed.
 
 `plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, plant `variety` and `quality`, `cut: false`, `unitSale = stats.sale`, plot `empty` same soil. Same crop+variety in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed, same variety, plant quality. Shovel dead, rotten, weed, or grass: no drop.
 
-`plants.packs` — Crop stats are `CROPS`. Shop packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). No tree pack. No olive pack.
+`plants.packs` — Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). No tree pack. No olive pack.
 
 `plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`. Trees: [[mechanics/trees]] `trees.tend`.
 

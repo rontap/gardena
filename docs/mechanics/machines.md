@@ -1,6 +1,6 @@
 # Machines
 
-Secondary goods. Shop gates [[mechanics/research]]. Consign [[mechanics/market]]. Water [[mechanics/water]]. Dump permissions [[mechanics/multiplayer]]. Numbers preference unless marked. Variety and quality: [[mechanics/plants]].
+Secondary goods. Shelf gates [[mechanics/research]]. Consign [[mechanics/market]]. Water [[mechanics/water]]. Dump permissions [[mechanics/multiplayer]]. Numbers preference unless marked. Variety and quality: [[mechanics/plants]].
 
 Ids: `SpiritKind` `JamCrop` `StillCrop` `MillRecipe` `JamId` `StallGoodId` `VarietyId` — `sim/ids.ts`.
 
@@ -27,7 +27,7 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 | `Freezer` | `freezer` | `buy-freezer` | `unlock-preservatives` |
 | `ResearchStation` | `station` | `buy-research-station` | `unlock-crop-variants` |
 
-`buy-research-station`: Processing shelf, unlock and show `unlock-crop-variants`, `need: []`. No research row of its own. `haggling`. Guest may shop, place, delete and dump. `dest(station)` = `at`.
+`buy-research-station`: Automation shelf, unlock and show `unlock-crop-variants`, `need: []`. No research row of its own. `haggling`. Guest may shop, place, delete and dump. `dest(station)` = `at`.
 
 `World.stills` holds the same `PotStill` instances as their cells. Join a water net like `Tap` — [[mechanics/water]]. Furnace and station are cell-only, not a water join.
 
@@ -106,9 +106,9 @@ Blue chute west, green chute east. Always painted, under the machine and chest. 
 
 `{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `count` on sugar. Merge: weighted `unitSale` and `quality` by liters; `liters` sums; `capacityLiters` sums. Shop sugar quality 0.
 
-`SUGAR_BAG`. Mill output `unitSale` `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Shop `buy-sugar` `SUGAR_SHOP` for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
+`SUGAR_BAG`. Mill output `unitSale` `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Additive store `buy-sugar` `SUGAR_SHOP` for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
 
-Growing + milling cane is cheaper per liter than shop (`SUGAR_MILL < SUGAR_SHOP`). Cane fruit also sells as fruit.
+Growing + milling cane is cheaper per liter than the Additive store (`SUGAR_MILL < SUGAR_SHOP`). Cane fruit also sells as fruit.
 
 Compost: `liters × COMPOST_VALUE.fruit`.
 

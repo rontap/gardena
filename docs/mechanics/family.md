@@ -136,7 +136,7 @@ Crop stall bins: stock + worth per variety × bio. Illegal: consign that drops `
 - land-study: unlocks land lens
 - Vehicle interactions lens (`vehicles`) is `unlock-vehicles` in `done`, not a family-study row — [[mechanics/vehicles]]
 - inherit-land: `+1` expansion permit per tier, max 2. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
-- `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is shop and seed-silo Buy gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
+- `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - broker: T1 `+1` offered. T2 `+1` offered and `+1` active. Board size `CONTRACT_OFFERS +` offered bonus. Cap `CONTRACT_ACTIVE +` active bonus. Mid-day pick does not move slots 0..5. Broker slots are always cash — the two prize slots are drawn from the base six — [[mechanics/contracts]]
 - industrial: complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Miss / cancel not. A prize contract pays no money, so industrial does not touch it
 - forecast: `{ kind: 'forecast' }`. HUD tomorrow iff owned. Blurb locked on [[mechanics/weather]]

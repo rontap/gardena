@@ -17,7 +17,7 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `weather` | day kind | `at(day, k)` |
 | `burrow` | site pick, loot | `at(cx, cy, day, k)` / `at(col, row, salt)` |
 
-No grow stream. No `World.ripenN`. Shop packs do not roll. Still and barrel do not roll. Burrow is not seq.
+No grow stream. No `World.ripenN`. Bought packs do not roll. Still and barrel do not roll. Burrow is not seq.
 
 Failed buy / bulk / drop consumes 0 `next()`.
 

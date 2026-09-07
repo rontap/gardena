@@ -97,6 +97,7 @@ test('research furnace, place 1×2, dump mixed feedstock, ash, compost', async (
       }
     ).__world
     if (w === undefined) throw new Error('no __world')
+    w.done.add('unlock-grinder')
     w.done.add('unlock-fermentation')
     w.cheatMoney()
     spots.forEach(at => w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } }))
@@ -112,7 +113,7 @@ test('research furnace, place 1×2, dump mixed feedstock, ash, compost', async (
   expect(await readWorld<boolean>(page, null, 'w.done.has("unlock-furnace")')).toBe(true)
   await page.getByRole('button', { name: 'Close' }).click()
 
-  await armSku(page, 'Furnace 55', 'Processing')
+  await armSku(page, 'Furnace 55', 'Automation')
   await expect
     .poll(async () => {
       const kind = await readWorld<string>(page, FURNACE_AT, 'w.cell(at).kind')
@@ -347,7 +348,7 @@ test('covering stroke on buy-furnace place and unarmed hover of a placed furnace
   const cover = page.locator('[data-furnace-cover]')
   await hoverWorld(page, FURNACE_AT.col + 0.5, FURNACE_AT.row + 0.5)
   await expect(cover).toHaveCount(0)
-  await armSku(page, 'Furnace 55', 'Processing')
+  await armSku(page, 'Furnace 55', 'Automation')
   await hoverWorld(page, FURNACE_AT.col + 0.5, FURNACE_AT.row + 0.5)
   await expect(cover).toHaveCount(1)
   await expect(cover).toHaveAttribute('fill', 'none')

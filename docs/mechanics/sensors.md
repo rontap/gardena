@@ -1,6 +1,6 @@
 # Sensors
 
-Types [[architecture/world]]. Shop [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Fenced area [[mechanics/enclosure]]. Numbers preference unless marked. Classes `sim/sensor.ts`. Ids `sim/ids.ts`.
+Types [[architecture/world]]. Shelf [[mechanics/research]]. Water [[mechanics/water]]. Cmds [[architecture/log]]. Seats [[mechanics/multiplayer]]. Fenced area [[mechanics/enclosure]]. Numbers preference unless marked. Classes `sim/sensor.ts`. Ids `sim/ids.ts`.
 
 Combinational loops stay illegal. Sequential feedback through lever / pulser / counter / traffic-light `in` is legal.
 
@@ -234,7 +234,7 @@ Valve `in`: `unlock-smart-irrigation` gives every valve one input on the body. T
 
 Guest may wire a valve. Guest still cannot place or click one.
 
-## Research / shop
+## Research / shelf
 
 | id | effect | unlocks |
 |---|---|---|

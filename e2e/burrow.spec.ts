@@ -78,7 +78,7 @@ test('start farm has burrows; shovel extract drops beside the hole; treasure pay
   test.setTimeout(120_000)
   await gotoPlay(page, { speed: 3 })
   await viewReady(page)
-  await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Build', exact: true })).toBeVisible()
   await expect(hudMoney(page)).toBeVisible()
 
   const n = await readWorld<number>(page, null, 'w.burrows.size')

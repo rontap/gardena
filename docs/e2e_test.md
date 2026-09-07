@@ -146,10 +146,10 @@ Market hours - MATCH
 
 Forecast skill - MATCH
 
-### Drought shop prices
+### Drought prices
 
 - [x] On drought, only seed packs and utility tools cost double. Buildings, automation, hangar buys do not. The HUD should not say “Shop goods cost double.” — weather price rule, tests, code (the prices)
-- [ ] Everything in the shop costs double, and the HUD sentence is right. — HUD callout copy (weather note + HUD note + the string in the game)
+- [ ] Everything on a shelf costs double, and the HUD sentence is right. — HUD callout copy (weather note + HUD note + the string in the game)
 
 ---
 
@@ -185,7 +185,7 @@ Vodka vs potato - MATCH
 
 Mixed spirit - MATCH
 
-Sugar mill vs shop - MATCH
+Sugar mill vs Additive store - MATCH
 
 Saturation - MATCH
 
@@ -331,15 +331,15 @@ Pay on confirm. Cancel free. Delete does not refund. Pipes, valves, sprinklers, 
 
 Place / stay armed - MATCH
 
-### Closing Shop vs the Pipes overlay
+### Closing Build vs the Pipes overlay
 
-- [x] Closing Shop puts the **held pipe** away. A Pipes lens you **picked** stays. — newer place / docks / lens notes, code
-- [ ] Closing Shop or Escape always turns Pipes and Sensors off, even if you picked them. — older HUD / Build / vehicles notes, the click-through
+- [x] Closing Build puts the **held pipe** away. A Pipes lens you **picked** stays. — newer place / docks / lens notes, code
+- [ ] Closing Build or Escape always turns Pipes and Sensors off, even if you picked them. — older HUD / Build / vehicles notes, the click-through
 
 ### Is there a Smart valve for sale?
 
 - [x] No. One valve. Smart irrigation gives every valve a wire. — water / sensors / research notes, tests (they only place the ordinary valve), code
-- [ ] Yes. Shop sells a Smart valve, and guests / AI place it as its own command. — shop note, guest note, AI note
+- [ ] Yes. Build sells a Smart valve, and guests / AI place it as its own command. — build note, guest note, AI note
 
 ### Hover ring on a tile
 
@@ -354,7 +354,7 @@ Place / stay armed - MATCH
 
 ### HUD panels open
 
-- [ ] Shop, Research, and Almanac open from the rail. A smoke that they open is allowed. It is not play. — docs (HUD smoke only), code
+- [ ] Build and Research open from the left rail, Almanac from the top ribbon. A smoke that they open is allowed. It is not play. — docs (HUD smoke only), code
 - [ ] Four screenshots of those panels are the check. — the click-through
 - [ ] this is fucking ridiculusly not understandable
 
@@ -375,7 +375,7 @@ Landscape - MATCH
 
 ## Other people on the farm
 
-Guest may shop, place most buildings, drive, wire, consign. Guest may not lay pipes, click valves, expand, research, pick skills, or open chests. Away pockets stop rotting; the field still rots. Four seats then the door is full.
+Guest may buy, place most buildings, drive, wire, consign. Guest may not lay pipes, click valves, expand, research, pick skills, or open chests. Away pockets stop rotting; the field still rots. Four seats then the door is full.
 
 Multiplayer - MATCH except the leftover Smart valve sentence under placing.
 

@@ -24,7 +24,7 @@ Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one
 
 Tops a plot to full, spends only the gap. Empty bag leaves the hand.
 
-Ordinary bag always in shop. Synthetic is [[mechanics/research]] `unlock-fertilizer`. Weed spray gates on the same research id — [[mechanics/weeds]].
+Ordinary bag always at the Additive store. Synthetic is [[mechanics/research]] `unlock-fertilizer`. Weed spray gates on the same research id — [[mechanics/weeds]].
 
 ## Goodness / ground
 

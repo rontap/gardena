@@ -3,7 +3,7 @@
 User-facing text must be standardized and use consistent, useful and understandable names. This document contains law regarding to game concepts that are usable as words, words that are forbidden, and specific examples of bad text with specific ways in which it can be improved.
 This file MUST be read IN FULL, never just grepped or sliced. 
 
-`lex.user` — Chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, shop, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
+`lex.user` — Chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, build, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
 
 Authorship: [[agents/game-text-writer]]. Coder prefixes new or changed player strings with `<needs-game-text-writer>`. This agent rewrites them and strips the marker.
 
@@ -34,7 +34,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | empty tilled                               | Tilled soil                                                                                                  | dirt, bed                                                 |
 | grass being sown                           | Grass - rooting                                                                                              | turf                                                      |
 | grass in hand                              | Cut grass                                                                                                    | hay                                                       |
-| shop pack of grass                         | Grass seeds                                                                                                  | turf seeds                                                |
+| Land shelf pack of grass                   | Grass seeds                                                                                                  | turf seeds                                                |
 | grass in hand, singular                    | Grass seed                                                                                                   |                                                           |
 | growing plant drinking its plot            | consumes water                                                                                               | pulls (machines pull)                                     |
 | plant water green                          | happy                                                                                                        | fine, ok                                                  |
@@ -131,7 +131,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | field seed tank                            | Seeding silo                                                                                                 | hopper, seed tank                                         |
 | field spray tank                           | Additive silo                                                                                                |                                                           |
 | field produce tank                         | Produce silo                                                                                                 |                                                           |
-| 2×1 paid source, shop / place / delete     | Pumpjack                                                                                                     | pump, well                                                |
+| 2×1 paid source, build / place / delete    | Pumpjack                                                                                                     | pump, well                                                |
 | look on a pump cell                        | Pump                                                                                                         |                                                           |
 | free source                                | Well                                                                                                         | borehole                                                  |
 | rain gatherer                              | Rainwater tank                                                                                               | cistern, rain barrel                                      |
@@ -188,7 +188,11 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | husband role                               | Research                                                                                                     |                                                           |
 | daughter member                            | Daughter                                                                                                     | trader                                                    |
 | daughter role                              | Market                                                                                                       | stall                                                     |
-| shared spendable                           | Skill points                                                                                                 | XP, points                                                |
+| shared spendable                           | Skill points                                                                                                 |
+| store buys its own stock back              | Auto-restock                                                                                                 |
+| contract standing                          | Reputation                                                                                                   |
+| what Lucky sets on a new burrow             | Luck                                                                                                         |
+| keep the armed tool after a click          | Hold Shift                                                                                                   | XP, points                                                |
 | expansion chip                             | Expansion                                                                                                    | land token                                                |
 | expansion body                             | farm expansion opportunities                                                                                 | permits (plate: **No permit left**)                       |
 | expand plate                               | Expand                                                                                                       | Buy land                                                  |
@@ -196,7 +200,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | research shelves                           | Plants / Land / Automation / Trade                                                                           |                                                           |
 | almanac                                    | Almanac                                                                                                      | encyclopedia, help, wiki                                  |
 | almanac tabs                               | Seeds / Trees / Utility / Sensors / Automation / Water systems / Building / Game concepts                    |                                                           |
-| shop                                       | Shop                                                                                                         | store (store is Seed silo / Additive store)               |
+| build tabs                                 | Tools / Water / Automation / Storage / Sensors / Land                                                        | store (store is Seed silo / Additive store)               |
 | build                                      | Build                                                                                                        | construction                                              |
 | lens dock                                  | Lens                                                                                                         | overlay, filter, view mode                                |
 | no lens                                    | No lens                                                                                                      | off                                                       |
@@ -228,7 +232,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | tree names                                 | Apple / Apricot / Cherry / Olive                                                                             | lemon                                                     |
 | crop names                                 | Carrot / Potato / Wheat / Tomato / Raspberry / Grape / Vanilla / Sugar cane                                  | berry, shrub                                              |
 | annual seed in hand                        | {Crop} seed                                                                                                  | packet                                                    |
-| shop pack                                  | {Crop} seeds                                                                                                 |                                                           |
+| seed pack                                  | {Crop} seeds                                                                                                 |                                                           |
 | tree seed                                  | {Name} seed                                                                                                  | sapling                                                   |
 | weed on a plot                             | Weed                                                                                                         | pest, invasive                                            |
 | weed in hand                               | Pulled weed                                                                                                  |                                                           |
@@ -328,9 +332,9 @@ Why this is better: Explains WHY the player should want to research this, and gi
 
 ## Chrome
 
-Rail left: **Shop** **Build** **Research** **Market** **Lens** **Family** **Almanac** **Cheat**. Build cluster: **Delete** **Rotate** **Cancel**.
+Rail left: **Build** **Research** **Market** **Lens** **Family**. Build cluster: **Delete** **Rotate** **Cancel**.
 
-Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Pause**/**Resume**, **Gear**.
+Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Almanac**, **Cheat**, **Pause**/**Resume**, **Gear**.
 
 Command Center, right: **Day {n} Finished**, **Researching {name}**, **Researched {name}**, **Contract**, **Contract completed**, **{Quad|Tractor} is out of fuel**, **{Crop} is wilting**, **{Crop} is drowning**, **{Crop} is starving for fertilizer**, **{Crop} is losing freshness**, **Dead plant**, **Rotten produce**, **Water network is running low**, **{n} skill points to spend**, **{n} farm expansion opportunities**, **and {n} more**, **Hide** / **Show**. Title **Command Center**. Recap footer **Close**. Map boot **Loading...**.
 

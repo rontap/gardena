@@ -57,11 +57,21 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       return
     case Act.takeStore: {
       const at = { col: cmd.s[0], row: cmd.s[1] }
-      if (cmd.k === 'silo') store.takeSiloBody(w, at, cmd.c, cmd.r)
-      else if (cmd.k === 'sugar') store.takeSugarBody(w, at)
+      if (cmd.k === 'silo') {
+        const before = store.seedStoreAt(w, at).levels()
+        store.takeSiloBody(w, at, cmd.c, cmd.r)
+        place.restockSeedsBody(w, at, before)
+        return
+      }
+      const before = store.additiveStoreAt(w, at).levels()
+      if (cmd.k === 'sugar') store.takeSugarBody(w, at)
       else store.takeAdditiveBody(w, at, cmd.d)
+      place.restockAdditivesBody(w, at, before)
       return
     }
+    case Act.setRestock:
+      w.setRestockBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.on)
+      return
     case Act.swapChest:
       w.swapChestBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.i)
       return

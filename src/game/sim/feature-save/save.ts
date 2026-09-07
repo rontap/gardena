@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.19 as const
+export const SAVE_VERSION = 2.2 as const
 
 export type {
   LoadFailReason,
@@ -321,9 +321,9 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'hangar':
       return { kind: 'hangar', base: c.base }
     case 'silo-seed':
-      return { kind: 'silo-seed', base: c.base, seeds: c.seeds.map(st => ({ ...st })) }
+      return { kind: 'silo-seed', base: c.base, restock: c.restock, seeds: c.seeds.map(st => ({ ...st })) }
     case 'silo-spray':
-      return { kind: 'silo-spray', base: c.base, held: c.held.map(h => ({ ...h })), sugar: { ...c.sugar } }
+      return { kind: 'silo-spray', base: c.base, restock: c.restock, held: c.held.map(h => ({ ...h })), sugar: { ...c.sugar } }
     case 'silo-produce':
       return { kind: 'silo-produce', base: c.base, slots: c.slots.slice() }
     case 'truck':

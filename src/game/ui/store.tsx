@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { CROPS, cropVariety } from '../defs/crops.ts'
 import { purposeMul, purposeOf, qualityMul, VARIETIES, type Purpose, type VarietyId } from '../defs/varieties.ts'
-import { ADDITIVE_BAG, ADDITIVE_IDS, type AdditiveId, type Coord } from '../sim/building.ts'
+import { ADDITIVE_BAG, ROW_SKU, STORE_ROW_IDS, type Coord, type StoreRowId } from '../sim/building.ts'
 import { SUGAR_BAG } from '../defs/items.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
 import { cropName, skuLabel } from '../sim/item.ts'
@@ -11,9 +11,9 @@ import type { World } from '../sim/world.ts'
 import { cropInner, faceGfx, ripeGroup } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { gateLine, rowState } from './sku-card.tsx'
-import { Bar, Coin, Frame } from './frame.tsx'
+import { Bar, Checkbox, Coin, Frame } from './frame.tsx'
 
-const ADDITIVE_LABEL: { readonly [K in AdditiveId | 'sugar']: () => string } = {
+const ADDITIVE_LABEL: { readonly [K in StoreRowId]: () => string } = {
   fertilizer: () => m.hud_fertilizer(),
   synth: () => m.names_item_synth(),
   compost: () => m.names_item_compost(),
@@ -73,6 +73,7 @@ function Capacity({ hint, used, cap, unit }: { hint: string; used: number; cap: 
 type Tip =
   | { kind: 'stock'; crop: AnnualId; variety: VarietyId }
   | { kind: 'buy'; crop: AnnualId; sku: SkuId }
+  | { kind: 'restock' }
   | undefined
 
 const SILO_CROPS: readonly AnnualId[] = ['sugar-cane', ...ANNUAL_IDS.filter(c => c !== 'sugar-cane')]
@@ -93,7 +94,9 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
       title={cell.kind === 'silo-seed' ? m.names_building_silo_seed() : m.names_building_seed_silo()}
       onClose={onClose}
       aside={
-        tip === undefined ? undefined : tip.kind === 'buy' ? (
+        tip === undefined ? undefined : tip.kind === 'restock' ? (
+          <CalloutHover title={m.hud_restock()} description={m.hud_restock_seeds()} />
+        ) : tip.kind === 'buy' ? (
           <SeedTip world={world} at={at} crop={tip.crop} variety="base" quality={0} sku={tip.sku} />
         ) : (
           <SeedTip
@@ -195,6 +198,9 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
           </table>
         </div>
       )}
+      {cell.kind === 'silo-seed' && (
+        <Restock world={world} at={at} on={cell.restock} onHot={on => setTip(on ? { kind: 'restock' } : undefined)} />
+      )}
       <div className="mt-2 text-sm text-ink/55">{m.hud_silo_walk()}</div>
     </Shell>
   )
@@ -271,20 +277,8 @@ function PurposeLine({ variety }: { variety: VarietyId }) {
   )
 }
 
-type StoreRowId = AdditiveId | 'sugar'
-
-const STORE_ROW_IDS: readonly StoreRowId[] = [...ADDITIVE_IDS, 'sugar']
-
-const ADDITIVE_SKU: { readonly [K in StoreRowId]: SkuId | 'none' } = {
-  fertilizer: 'buy-fertilizer',
-  synth: 'buy-synth-fertilizer',
-  compost: 'none',
-  'weed-spray': 'buy-weed-spray',
-  sugar: 'buy-sugar',
-}
-
 function AdditiveTip({ world, at, id }: { world: World; at: Coord; id: StoreRowId }) {
-  const sku = ADDITIVE_SKU[id]
+  const sku = ROW_SKU[id]
   if (sku === 'none') return null
   const state = rowState(world, sku, at)
   return (
@@ -365,7 +359,7 @@ function BuyAdditive({ world, at, sku, onHot }: { world: World; at: Coord; sku: 
 }
 
 export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
-  const [hot, setHot] = useState<StoreRowId | undefined>(undefined)
+  const [hot, setHot] = useState<StoreRowId | 'restock' | undefined>(undefined)
   const cell = world.cell(at)
   if (cell.kind !== 'additive-store' && cell.kind !== 'silo-spray') return null
   return (
@@ -373,14 +367,20 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
       title={cell.kind === 'silo-spray' ? m.names_building_silo_spray() : m.names_building_additive_store()}
       onClose={onClose}
       className="w-[30rem]"
-      aside={hot === undefined ? undefined : <AdditiveTip world={world} at={at} id={hot} />}
+      aside={
+        hot === undefined ? undefined : hot === 'restock' ? (
+          <CalloutHover title={m.hud_restock()} description={m.hud_restock_additives()} />
+        ) : (
+          <AdditiveTip world={world} at={at} id={hot} />
+        )
+      }
     >
       <Capacity hint={m.hud_fill_bag()} used={round(cell.used)} cap={cell.cap} unit="L" />
       <div className="flex flex-col gap-1.5">
         {STORE_ROW_IDS.map(id => {
           const liters = id === 'sugar' ? cell.sugar.liters : cell.litersOf(id)
           const off = liters <= 0
-          const sku = ADDITIVE_SKU[id]
+          const sku = ROW_SKU[id]
           const bag = id === 'sugar' ? SUGAR_BAG : ADDITIVE_BAG[id]
           return (
             <div key={id} className="flex items-stretch gap-1.5">
@@ -417,11 +417,43 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
           )
         })}
       </div>
+      {cell.kind === 'silo-spray' && (
+        <Restock world={world} at={at} on={cell.restock} onHot={on => setHot(on ? 'restock' : undefined)} />
+      )}
       <div className="mt-2 text-sm text-ink/55">
         {cell.used > 0 ? '' : m.hud_additive_empty()}
         {m.hud_additive_walk()}
       </div>
     </Shell>
+  )
+}
+
+/**
+ * Field silos only. The label stays short and the sentence lives in the hover callout: a full
+ * sentence under a `w-fit` panel sets the panel's width, and the grid is what should.
+ */
+function Restock({
+  world,
+  at,
+  on,
+  onHot,
+}: {
+  world: World
+  at: Coord
+  on: boolean
+  onHot: (on: boolean) => void
+}) {
+  return (
+    <div className="mt-3 border-t border-ink/15 pt-2">
+      <label
+        className="flex w-fit cursor-pointer items-center gap-2"
+        onPointerEnter={() => onHot(true)}
+        onPointerLeave={() => onHot(false)}
+      >
+        <Checkbox checked={on} onChange={v => world.setRestock(at, v)} label={m.hud_restock()} />
+        <span className="text-base leading-none font-semibold">{m.hud_restock()}</span>
+      </label>
+    </div>
   )
 }
 

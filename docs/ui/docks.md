@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Shop, build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
+Build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
 
 ## Left docks
 
@@ -8,7 +8,6 @@ Shop, build, research, lens, and cheat are left docks. Family, market, and alman
 
 | panel | title | width |
 |---|---|---|
-| shop | General store | `w-[28rem]` |
 | build | Build | `w-[28rem]` |
 | research | Research | `w-[28rem]` |
 | lens | Lens | `w-80` |
@@ -18,13 +17,13 @@ Shop, build, research, lens, and cheat are left docks. Family, market, and alman
 
 ## The rail
 
-Shop, Build, and Research all pick a category the same way: a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`.
+Build and Research pick a category the same way: a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`.
 
 Cards under it share one anatomy: icon `h-10` centred, `skuLabel` / research name `text-sm` `line-clamp-2 min-h-8`, then the meta line. A constant `auto-rows-*` per panel, never `fr`, so no card changes size as content changes.
 
 [[ui/almanac]] is a centred overlay and keeps the underline `tabTriggerClass`.
 
-[[ui/shop]]. [[ui/build]]. [[ui/lens]]. [[ui/cheat]].
+[[ui/build]]. [[ui/lens]]. [[ui/cheat]].
 
 Research: trees **Plants** **Land** **Automation** **Trade** on the rail, in that order. 2-col cards on `auto-rows-[8.5rem]` — two columns, not three, because the progress bar needs the width. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the `why` sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
 
@@ -32,13 +31,13 @@ A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A
 
 Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants start shelf: **Synthetic fertilizer**, **Tomato seeds**, **Grape seeds**. Grape seeds on the shelf from the first day. **Crop variants** after tomato, grape, or irrigation. **Raspberry seeds** after tomato or grape. **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla, no olive, no watermelon research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Chest**, **Machinery**; **Fermentation** after the grinder.
 
-**×** / a rail toggle that closes **Shop** or **Build**: `leaveShop` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Vehicles / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
+**×** / the rail toggle that closes **Build**: `leaveBuild` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Automation / Storage / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
 
 ## Overlays
 
 [[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
 
-Solo (`role === 'off'`): these three and the recap popup pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Shop / Research / Build / Cheat / Lens do not auto-pause. [[ui/hud]]
+Solo (`role === 'off'`): these three and the recap popup pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Build / Research / Cheat / Lens do not auto-pause. [[ui/hud]]
 
 Every dialog and overlay closes on backdrop. Recap Close / Esc / backdrop is live for guest. Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 

@@ -475,11 +475,13 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       return new Hangar(cell.base)
     case 'silo-seed': {
       const made = new SiloSeed(cell.base)
+      made.restock = cell.restock
       cell.seeds.forEach(st => made.seeds.push({ ...st }))
       return made
     }
     case 'silo-spray': {
       const made = new SiloSpray(cell.base)
+      made.restock = cell.restock
       cell.held.forEach(h => made.held.push({ ...h }))
       made.sugar = { ...cell.sugar }
       return made

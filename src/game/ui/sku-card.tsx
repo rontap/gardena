@@ -81,8 +81,7 @@ export function matches(id: SkuId, q: string): boolean {
 }
 
 export function crumbOf(id: SkuId): string {
-  const shelf = shelfOf(id)
-  return m.hud_crumb({ panel: shelf.panel === 'shop' ? m.hud_store() : m.hud_build(), shelf: shelf.label() })
+  return shelfOf(id).label()
 }
 
 function buyFailText(fail: BuyFail): string {

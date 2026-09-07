@@ -103,7 +103,7 @@ Left-list: SKU rows keep `itemInner`. Overview and concept rows: title only, no 
 
 Right pane: SKU → existing Pane. Concept → concept pane. Overview → Overview pane.
 
-Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
+Opened by the top-ribbon **Almanac** button — [[ui/hud]]. Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
 
 Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not. `{ tab: 'concepts', id: 'luck' | 'burrow' }` is legal.
 
@@ -163,7 +163,7 @@ Automation here is the **concept page**, not a second copy of the SKU tab.
 
 **Luck** and **Burrow** are Game concepts, not SKU rows. Coin for money. Inspect does not name loot. No luck HUD chip. Doorway: Skills, each other. Not a roster of loot. [[mechanics/burrow]]
 
-**Luck** is what Lucky sets when a burrow appears. Copy: **Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the shop does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.**
+**Luck** is what Lucky sets when a burrow appears. Copy: **Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety no shelf does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.**
 
 **Burrow** is a hole in untilled ground. Copy: **A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Hold treasure and click a plot you own: Open treasure. That adds the money it holds. The Market does not take treasure.**
 
@@ -187,4 +187,4 @@ Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `set
 
 The seven machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]]. Station does not.
 
-Assumption: Haggling knocks $1 per owned haggling off utility and automation shop goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.
+Assumption: Haggling knocks $1 per owned haggling off `utility` and `automation` tab goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.

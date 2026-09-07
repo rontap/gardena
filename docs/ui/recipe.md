@@ -46,12 +46,12 @@ Every mount is `pointer-events-none`. No tooltip, no `title`, no hover state, no
 
 | where | view | size |
 |---|---|---|
-| Shop / Build callout — [[ui/shop]] | `list`, `machineOfSku(id)` | `sm` |
+| Build callout — [[ui/build]] | `list`, `machineOfSku(id)` | `sm` |
 | Almanac Automation pane — [[ui/almanac]] | `list` | `md` |
 | Almanac Overlay Ingredients callout — [[ui/almanac]] | `one` | `sm` |
 | Bottom-right `Status` — [[ui/inspect]] | `live` | `md` |
 
-Shop shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
+Build shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
 
 Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)` on that Variety's fruit, then `one` in the Overlay callout. `one` is that recipe's row, same three columns as `list`. Hover `Coin` bakes `unitSale` at Quality 0 × that Variety's `purposeMul` on that path.
 

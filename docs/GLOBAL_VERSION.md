@@ -1,6 +1,6 @@
 # Version
 
-2.6.3
+2.6.4
 
 The only version number in `docs/`. Every other note `[[GLOBAL_VERSION]]`. Never write another version literal.
 

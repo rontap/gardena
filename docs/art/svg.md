@@ -2,7 +2,7 @@
 
 `src/assets/*.svg`. Clean paths. One concept per file. Hex from [[art/palette]] (cottage, or industrial metal on vehicle/machine assets).
 
-Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac / shop: React chrome SVG (`svgs.ts`). Not an SVG camera. Not a DOM world. Mermaid stays the `#debug-techtree` exception — [[stack]].
+Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac / Build: React chrome SVG (`svgs.ts`). Not an SVG camera. Not a DOM world. Mermaid stays the `#debug-techtree` exception — [[stack]].
 
 ## Root
 

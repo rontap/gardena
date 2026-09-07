@@ -25,7 +25,7 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
-| `motion.ts` | HUD-only binds (`paintMotion` clock / day / research / fps / dash / queue) |
+| `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue). Not notices — that column is React, [[ui/notices]] |
 
 `TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2.
 
@@ -46,7 +46,7 @@ Bottom → top, one container each:
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, fenceable sensor wash from the watched set (HUD, lens, unarmed hover, or armed range-reader SKU at the ghost cell), the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`. Pump origin `in`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
 
-HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
+HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-notice-cells` (one hovered-notice outline path — [[ui/notices]]) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
 
 ## Atlas
 

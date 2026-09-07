@@ -297,6 +297,7 @@ import uiResearchSmart from '../../assets/ui/ui-research-smart.svg?raw'
 import uiResearchExpand from '../../assets/ui/ui-research-expand.svg?raw'
 import uiHeader from '../../assets/ui/ui-header.svg'
 import uiRail from '../../assets/ui/ui-rail.svg'
+import uiNoticeRail from '../../assets/ui/ui-notice-rail.svg'
 import uiCornerTl from '../../assets/ui/ui-corner-tl.svg'
 import uiCornerTr from '../../assets/ui/ui-corner-tr.svg'
 import uiCornerBr from '../../assets/ui/ui-corner-br.svg'
@@ -991,6 +992,7 @@ export function meterInner(filled: number, token: 'dirt' | 'leaf'): string {
 }
 export const UI_HEADER = uiHeader
 export const UI_RAIL = uiRail
+export const UI_NOTICE_RAIL = uiNoticeRail
 export const UI_CORNER_TL = uiCornerTl
 export const UI_CORNER_TR = uiCornerTr
 export const UI_CORNER_BR = uiCornerBr

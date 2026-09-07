@@ -1,4 +1,4 @@
-# 2.5.0 Sensor Update III
+# 2.5.0 Automation update V
 
 One Logic gate does the work of the old OR and AND, a Variety sensor and a Weather sensor join Sensors, and the Pressure plate (once the Vehicle detector) can watch You and things on the ground, and can sit on a Wooden fence.
 
@@ -58,7 +58,7 @@ Holes in the ground hold treasure, seeds, and tools. Dig them with a shovel. Luc
 - ✨ Added mechanic: Lucky. A burrow that appears after you learn this gardener skill on Family, ranks I–III, holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the shop does not sell as a pack.
   - Burrows already on the farm do not change.
 
-# 2.4.1 QoL VI
+# 2.4.1 QoL V
 
 Heirloom Varieties leave the barrel and the jam machine as products of their own, with names and containers to match, and the inspect panel reads Quality and Freshness off bars.
 
@@ -78,7 +78,7 @@ Heirloom Varieties leave the barrel and the jam machine as products of their own
 - 🔧 Changed ui: Seed silo. previously, sugar cane sat in the last column, now it sits in the first, and still only appears once you have researched it.
 - 🔧 Changed ui: Inspect. previously, a ripe plant printed its Quality in the title and a fruit on the ground printed its Quality and freshness in text, now both read them off a blue Quality bar and a red-to-green Freshness bar.
 
-# 2.4.0 Variety
+# 2.4.0 Variety overhaul
 
 Every plant now carries a Variety it was sown with and a Quality it earned, grafts move a Variety onto a plant already growing, and the machines pass both into what they make.
 
@@ -108,7 +108,7 @@ Every plant now carries a Variety it was sown with and a Quality it earned, graf
 - 🚫 Removed mechanic: Trusted seed bank. Seed packs bought from a shop no longer arrive better than the plain pack.
 - 🚫 Removed mechanic: Experienced carrot, vanilla and sugar cane growers. Those three crops have one Variety each, so there was nothing left for the skill to raise.
 
-# 2.3.0 Furnace
+# 2.3.0 Machine update II
 
 A Furnace burns mixed waste into Ash and speeds nearby machines, and an Axe chops a mature tree for Wood.
 
@@ -131,7 +131,7 @@ A Settings page behind the gear, a way back to the startup screen, and a farm th
 - 🔧 Changed mechanic: End of day. previously, the farm started running again the moment you closed the end-of-day summary, now it waits until you press Resume.
 - 🐛 Fixed bug mechanic: Time spent in another tab piled up and the farm raced through it on your return, sometimes past midnight; the farm now carries on from where you left it.
 
-# 2.1.3 QoL Patch V
+# 2.1.3 QoL Patch IV
 
 The Almanac shows what a crop turns into, the seed silo sells seeds, and the weed spray can gets a nozzle.
 
@@ -139,7 +139,7 @@ The Almanac shows what a crop turns into, the seed silo sells seeds, and the wee
 - 🎉 Added ui: Seed buying. A buy button under each crop column in the Seed silo stocks seeds without a trip to the shop.
 - 🔧 Changed item: Weed spray. previously, the can had no nozzle, now it shows a hose and spray nozzle.
 
-# 2.1.2 QoL Patch IV
+# 2.1.2 QoL Patch III
 
 Wells become buildings, barrels show their age, and a run of small fixes across the farm.
 
@@ -288,7 +288,7 @@ Fruit, seeds, and weeds stack in your hand. Fruit boxes are gone.
 - 🚫 Removed item: Fruit box. You no longer buy a crate to carry a haul.
 - 🚫 Removed item: Large fruit box. The large crate and its research project are gone.
 
-# 1.9.0 Automated Dispatch I
+# 1.9.0 Vehicle update III
 
 Quad and tractor can run a shared loop of stops. A traffic light holds a truck only when that light is on the list.
 
@@ -301,7 +301,7 @@ Quad and tractor can run a shared loop of stops. A traffic light holds a truck o
 - ✨ Added item: Traffic light. A truck waits here only if this light is a stop, until the input is green, and the output is on while one waits.
 - ✨ Added ui: Automate. It opens the stop list from the dash, paints the purple path with numbered dots, and names Add stop, load, unload, or wait under the cursor.
 
-# 1.8.3 Side chests
+# 1.8.3 Automation update IV
 
 A chest or freezer beside a machine now feeds it and takes what it makes.
 
@@ -408,7 +408,7 @@ A pulser, a counter, and a day sensor join the Sensors shelf. A wire can throw a
 - 🔧 Changed building: Compost box. previously, it finished a bag slower, now it finishes a bag faster.
 - 🔧 Changed mechanic: Trees. previously, they dropped fruit slower in season, now they drop fruit faster in season.
 
-# 1.7 Sight lines
+# 1.7 Irrigation update III
 
 Working machines show what they are doing, and five props are easier to read.
 

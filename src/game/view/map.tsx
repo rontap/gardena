@@ -68,6 +68,7 @@ type Props = {
   onCam: (c: Camera) => void
   onClick: (hit: MapClick, xy: { x: number; y: number }) => void
   onReady?: () => void
+  highlight: readonly Coord[]
 }
 
 function Use({ art }: { art: string }) {
@@ -92,7 +93,7 @@ function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: nu
   }
 }
 
-export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick, onReady }: Props) {
+export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick, onReady, highlight }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<WorldView | undefined>(undefined)
   const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; fence: boolean; wireFrom?: WireEnd } | undefined>(undefined)
@@ -178,6 +179,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       : undefined
   const neighbourOutline =
     neighbourWatch === undefined ? undefined : footOutline(neighbourWatch.reach.filter(c => world.inWorld(c)))
+  const noticeOutline = footOutline(highlight.filter(c => world.inWorld(c)))
 
   function pushCam(next: Camera): void {
     const b = world.bounds()
@@ -549,6 +551,24 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
               d={neighbourOutline.d}
               fill="none"
               stroke={neighbourWatch.ok ? STAT_COLOR.green : STAT_COLOR.red}
+              strokeWidth={2}
+              strokeLinejoin="miter"
+              shapeRendering="crispEdges"
+            />
+          </svg>
+        )}
+        {noticeOutline !== undefined && (
+          <svg
+            className="pointer-events-none absolute overflow-visible"
+            width={noticeOutline.w}
+            height={noticeOutline.h}
+            style={{ left: noticeOutline.x, top: noticeOutline.y }}
+          >
+            <path
+              data-notice-cells=""
+              d={noticeOutline.d}
+              fill="none"
+              stroke={STAT_COLOR.orange}
               strokeWidth={2}
               strokeLinejoin="miter"
               shapeRendering="crispEdges"

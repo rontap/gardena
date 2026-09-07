@@ -30,7 +30,7 @@ Live `kind: 'logic'`. Parse `kind: 'and' | 'or'` → `LogicGate` with that `mode
 
 ## Fenceable
 
-`SensorBase.fenceable = false`. Factory `fenceable(Ctor)` sets `true`. One implementation. Callers ask `s.fenceable`, never a kind list.
+`SensorBase.fenceable = false`. Water / fertilizer / harvest / variety / pressure plate override `true`. Callers ask `s.fenceable`, never a kind list.
 
 Fenceable: water, fertilizer, harvest, variety, pressure plate.
 

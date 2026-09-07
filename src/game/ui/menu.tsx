@@ -88,7 +88,7 @@ export function Menu(props: MenuProps) {
         setPage(page.kind === 'changelog' ? { kind: 'home' } : { kind: 'changelog' })
       }}
     >
-      2.5.0
+      2.6.1
     </button>
   )
   return (
@@ -102,7 +102,7 @@ export function Menu(props: MenuProps) {
           : undefined
       }
     >
-      <Chrome className={changelog ? 'relative w-[36rem]' : mode === 'play' ? 'relative w-[30rem]' : 'relative w-[26rem]'}>
+      <Chrome className={changelog ? 'relative w-[48rem]' : mode === 'play' ? 'relative w-[30rem]' : 'relative w-[26rem]'}>
         {showX && (
           <button
             type="button"

@@ -57,9 +57,8 @@ export function footOutline(cells: readonly { col: number; row: number }[]): Out
     let at = start
     for (;;) {
       const outs = next.get(at)
-      if (outs === undefined || outs.length === 0) throw new Error('outline')
-      const to = outs[outs.length - 1]
-      outs.pop()
+      const to = outs?.pop()
+      if (to === undefined || outs === undefined) throw new Error('outline')
       if (outs.length === 0) next.delete(at)
       if (to === start) break
       loop.push(to)

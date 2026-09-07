@@ -1,7 +1,31 @@
 import { expect, test, type Page } from '@playwright/test'
+import { MILL_H, MILL_W } from '../src/game/defs/items.ts'
 import { gotoPlay, tapWorld, waitPlay } from './helpers.ts'
 
 type At = { col: number; row: number }
+
+const MILL: At = { col: 8, row: 12 }
+const LEVER: At = { col: 11, row: 12 }
+
+function millFoot(at: At): At[] {
+  return Array.from({ length: MILL_H }, (_, r) => Array.from({ length: MILL_W }, (_, c) => ({ col: at.col + c, row: at.row + r }))).flat()
+}
+
+async function placeMill(page: Page, units: number): Promise<void> {
+  await page.evaluate(
+    ([spots, mill, n]) => {
+      const w = (window as unknown as { __world: any }).__world
+      spots.forEach((at: At) => w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } }))
+      w.buy('buy-mill')
+      w.confirmPlace(mill)
+      const c = w.cell(mill)
+      c.recipe = 'olive'
+      c.units = n
+      w.ping()
+    },
+    [millFoot(MILL), MILL, units] as const,
+  )
+}
 
 async function fedSprinkler(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -123,45 +147,42 @@ test('burst mounts, then removes itself when its animation ends', async ({ page 
 })
 
 test('mill dust mounts while it grinds and unmounts when it stops', async ({ page }) => {
-  await page.evaluate(() => {
-    const w = (window as unknown as { __world: any }).__world
-    w.buy('buy-mill')
-    w.confirmPlace({ col: 18, row: 6 })
-    const c = w.cell({ col: 18, row: 6 })
-    c.recipe = 'olive'
-    c.units = 5
-    w.ping()
-  })
+  await placeMill(page, 5)
   const dust = page.locator('[data-vfx="dust"]')
   await expect(dust).toHaveCount(1)
   await expect.poll(async () =>
     page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),
   ).toBeGreaterThan(0)
 
-  await page.evaluate(() => {
+  await page.evaluate(mill => {
     const w = (window as unknown as { __world: any }).__world
-    w.cell({ col: 18, row: 6 }).units = 0
+    w.cell(mill).units = 0
     w.ping()
-  })
+  }, MILL)
   await expect(page.locator('[data-vfx="dust"]')).toHaveCount(0)
 })
 
 test('a wired-off mill shows nothing', async ({ page }) => {
-  await page.evaluate(() => {
-    const w = (window as unknown as { __world: any }).__world
-    w.buy('buy-mill')
-    w.confirmPlace({ col: 18, row: 6 })
-    w.buy('buy-lever')
-    w.confirmPlace({ col: 20, row: 6 })
-    w.armWire({ kind: 'cell', at: { col: 20, row: 6 }, port: 'out' })
-    w.placeWire({ kind: 'cell', at: { col: 20, row: 6 }, port: 'out' }, { kind: 'cell', at: { col: 18, row: 6 }, port: 'in' })
-    w.cell({ col: 20, row: 6 }).on = true
-    const c = w.cell({ col: 18, row: 6 })
-    c.recipe = 'olive'
-    c.units = 5
-    w.ping()
-  })
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __world: any }).__world.cell({ col: 18, row: 6 }).inn)).toBe(1)
+  await page.evaluate(
+    ([spots, mill, lever]) => {
+      const w = (window as unknown as { __world: any }).__world
+      spots.forEach((at: At) => w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } }))
+      w.setCell(lever, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+      w.buy('buy-mill')
+      w.confirmPlace(mill)
+      w.buy('buy-lever')
+      w.confirmPlace(lever)
+      w.armWire({ kind: 'cell', at: lever, port: 'out' })
+      w.placeWire({ kind: 'cell', at: lever, port: 'out' }, { kind: 'cell', at: mill, port: 'in' })
+      w.cell(lever).on = true
+      const c = w.cell(mill)
+      c.recipe = 'olive'
+      c.units = 5
+      w.ping()
+    },
+    [millFoot(MILL), MILL, LEVER] as const,
+  )
+  await expect.poll(() => page.evaluate(mill => (window as unknown as { __world: any }).__world.cell(mill).inn, MILL)).toBe(1)
   await expect(page.locator('[data-vfx="dust"]')).toHaveCount(0)
 })
 
@@ -218,15 +239,7 @@ test('a still with no water shows no steam; steam follows progress', async ({ pa
 })
 
 test('rest slots leave a gap: every frame is off for the back half of the cycle', async ({ page }) => {
-  await page.evaluate(() => {
-    const w = (window as unknown as { __world: any }).__world
-    w.buy('buy-mill')
-    w.confirmPlace({ col: 18, row: 6 })
-    const c = w.cell({ col: 18, row: 6 })
-    c.recipe = 'olive'
-    c.units = 5
-    w.ping()
-  })
+  await placeMill(page, 5)
   await expect(page.locator('[data-vfx="dust"]')).toHaveCount(1)
   await expect.poll(async () =>
     page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),

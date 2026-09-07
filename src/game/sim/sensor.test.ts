@@ -1563,17 +1563,17 @@ describe('sensors.fence-range', () => {
       for (let c = 0; c < 5; c++) {
         const n = { col: col0 + c, row: row0 }
         const s = { col: col0 + c, row: row0 + 4 }
-        if (skip === undefined || skip.col !== n.col || skip.row !== n.row) world.confirmPlace(n)
+        if (skip?.col !== n.col || skip?.row !== n.row) world.confirmPlace(n)
         world.buy('buy-fence')
-        if (skip === undefined || skip.col !== s.col || skip.row !== s.row) world.confirmPlace(s)
+        if (skip?.col !== s.col || skip?.row !== s.row) world.confirmPlace(s)
         world.buy('buy-fence')
       }
       for (let r = 1; r < 4; r++) {
         const west = { col: col0, row: row0 + r }
         const east = { col: col0 + 4, row: row0 + r }
-        if (skip === undefined || skip.col !== west.col || skip.row !== west.row) world.confirmPlace(west)
+        if (skip?.col !== west.col || skip?.row !== west.row) world.confirmPlace(west)
         world.buy('buy-fence')
-        if (skip === undefined || skip.col !== east.col || skip.row !== east.row) world.confirmPlace(east)
+        if (skip?.col !== east.col || skip?.row !== east.row) world.confirmPlace(east)
         world.buy('buy-fence')
       }
     }

@@ -1,3 +1,4 @@
+import { FRESH_FULL } from '../../defs/crops.ts'
 import { GRASS_GROW, GRASS_WATER_PER_SEC } from '../../defs/items.ts'
 import { jamRotMul } from '../../defs/skills.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../../defs/trees.ts'
@@ -139,14 +140,14 @@ export function tickField(w: World, dt: number): void {
       }
     }
     if (c.kind === 'ripe') {
-      const bar0Fresh = c.plant.freshness < 0.8
+      const bar0Fresh = c.plant.freshness < FRESH_FULL
       c.plant.freshness -= dt / (st.rotSeconds * jamRotMul(w.skillTier('jam'), c.plant.freshness))
       if (c.plant.freshness <= 0) {
         w.setCell(at, { kind: 'rotten', soil: c.soil, crop: c.plant.crop })
         dirty = true
         continue
       }
-      if (c.plant.freshness < 0.8 !== bar0Fresh) dirty = true
+      if (c.plant.freshness < FRESH_FULL !== bar0Fresh) dirty = true
     }
     const now = w.cell(at)
     if (now.kind !== 'growing' && now.kind !== 'ripe') continue

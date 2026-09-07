@@ -14,7 +14,6 @@ import {
   SKILLS
 } from '../defs/skills.ts'
 import {
-  PUMP_COST_PER_L,
   WEATHER_THROUGH_DAY
 } from '../defs/weather.ts'
 import {
@@ -108,11 +107,7 @@ import * as machines from './feature-machines/machines.tick.ts'
 import {
   CONTRACT_ACTIVE,
   CONTRACT_OFFERS,
-  recover,
   emptyContracts,
-  addRep,
-  tickContracts as tickContractsFn,
-  REP_IDLE
 } from './feature-contracts/market.ts'
 import type {
   ContractId,
@@ -150,7 +145,7 @@ import {
   pull,
   Reservoir
 } from './water.ts'
-import { forecastWeather, pumpCostMul, sourceRateMul, type WeatherKind } from './weather.ts'
+import { forecastWeather, sourceRateMul, type WeatherKind } from './weather.ts'
 import {
   QUEUE_FULL,
   readPrompt,
@@ -195,7 +190,6 @@ import * as store from './store.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as tick from './tick.ts'
 import * as field from './feature-field/field.ts'
-import * as burrow from './feature-burrow/burrow.ts'
 import * as enclosure from './feature-enclosure/enclosure.ts'
 import * as place from './feature-place/place.ts'
 
@@ -1936,78 +1930,7 @@ export class World {
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
     if (this.seam.kind === 'recap') return
     this.applyWeatherRates()
-    const beforeDay = this.nowDay()
-    const seam = this.clock.advance(dt) === 'seam'
-    if (seam) {
-      this.seats.forEach(s => {
-        s.workLeft = 0
-        s.workTotal = 0
-        s.filling = false
-      })
-      tickContractsFn(this, beforeDay, this.nowDay())
-      this.money += DAY_STIPEND
-      const tax = this.tax()
-      this.money -= tax
-      const bill = this.pumpLiters * PUMP_COST_PER_L * pumpCostMul(this.weather(this.clock.day - 1))
-      this.money -= bill
-      this.pumpLiters = 0
-      burrow.mintSeam(this)
-      field.tickTreesSeam(this)
-      this.seam = {
-        kind: 'recap',
-        recap: {
-          day: this.clock.day - 1,
-          money: this.money,
-          stipend: DAY_STIPEND,
-          died: this.tally.died,
-          harvests: this.tally.harvests,
-          research: this.tally.research,
-          tax,
-          water: bill,
-          contracts: this.tally.contracts,
-        },
-      }
-      this.tally = { died: 0, harvests: 0, research: [], contracts: [] }
-      if (this.done.has('unlock-contracts') && this.contracts.takenToday.length === 0) addRep(this, -REP_IDLE)
-      this.contracts.takenToday = []
-      this.contracts.repDay = this.contracts.rep
-      this.ping()
-      return
-    }
-    tick.tickSpeech(this, dt)
-    tick.tickJob(this, dt)
-    tick.tickButtons(this)
-    this.seats.forEach(s => {
-      if (s.presence !== 'in') return
-      if (this.driverVehicle(s.id) !== undefined) return
-      this.act = s
-      if (s.stride.x !== 0 || s.stride.y !== 0) {
-        s.queue.length = 0
-        s.workLeft = 0
-        s.workTotal = 0
-        s.filling = false
-        const hypot = Math.hypot(s.stride.x, s.stride.y)
-        const step = this.walkSpeed() * dt
-        s.actor.x += (s.stride.x / hypot) * step
-        s.actor.y += (s.stride.y / hypot) * step
-        return
-      }
-      queue.tickQueue(this, dt)
-    })
-    this.act = this.seats[0]
-    vehicles.tickVehicles(this, dt)
-    field.tickField(this, dt)
-    nets.gatherWater(this, dt)
-    nets.evalSensors(this, dt)
-    vehicles.tickDispatch(this, dt)
-    machines.tickMachines(this, dt)
-    nets.tickWater(this, dt)
-    tick.tickFreshness(this, dt)
-    tick.tickBig(this, dt)
-    tickContractsFn(this, beforeDay, this.nowDay())
-    STALL_IDS.forEach(id => {
-      this.stall[id].sat = recover(this.stall[id].sat, dt)
-    })
+    tick.tickWorld(this, dt)
   }
 
   burst(id: VfxId, at: Coord): void {

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "notices_contract": [
+    {
+      "declarations": [
+        "input days",
+        "local daysPlural = days: plural"
+      ],
+      "selectors": [
+        "daysPlural"
+      ],
+      "match": {
+        "daysPlural=one": "Contract · {days} day left",
+        "daysPlural=other": "Contract · {days} days left"
+      }
+    }
+  ],
+  "notices_contract_today": "Contract · due today",
+  "notices_contract_done": "Contract completed",
+  "notices_fuel": "{vehicle} is out of fuel",
+  "notices_wilting": "{crop} is wilting",
+  "notices_drowning": "{crop} is drowning",
+  "notices_starving": "{crop} is starving for fertilizer",
+  "notices_freshness": "{crop} is losing freshness",
+  "notices_dead": "Dead plant",
+  "notices_rotten": "Rotten produce",
+  "notices_research": "Researching {name}",
+  "notices_research_done": "Researched {name}",
+  "notices_points": [
+    {
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
+      "match": {
+        "nPlural=one": "{n} skill point to spend",
+        "nPlural=other": "{n} skill points to spend"
+      }
+    }
+  ],
+  "notices_expansion": [
+    {
+      "declarations": [
+        "input n",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
+      "match": {
+        "nPlural=one": "{n} farm expansion opportunity",
+        "nPlural=other": "{n} farm expansion opportunities"
+      }
+    }
+  ],
+  "notices_water_low": "Water network is running low",
+  "notices_more": "and {n} more",
+  "notices_hide": "Hide",
+  "notices_show": "Show"
+}

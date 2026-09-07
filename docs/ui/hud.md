@@ -16,8 +16,9 @@ Left → right, separated by `w-px bg-ink/20` rules:
 2. `Coin` (`world.money`), `text-lg` semibold.
 3. Phase glyph, then **Day {n} · {phase name}** over a `w-28` `bg-ripe` day bar (`clock.t / DAY_SECONDS`).
 4. Weather. After the day block: `w-px bg-ink/20` divider, current glyph, then tomorrow glyph iff husband owns `forecast`. No kind names in the row.
-5. Research job when `job.kind === 'run'`: *Researching* **{name}** · **{n}s** over a `bg-leaf` bar. Hidden when idle.
-6. Far right, left of Multiplayer: expand chip then points chip then **Multiplayer** then **Pause** then **Gear**.
+5. Far right, left of Multiplayer: **Multiplayer** then **Pause** then **Gear**.
+
+The research job, the expansion chip, and the points chip are not here. They are notices — [[ui/notices]]. One place, not two.
 
 ### Weather
 
@@ -39,24 +40,9 @@ Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump
 
 `#debug-weather` — forecast table, not the HUD. [[ui/cheat]]
 
-### Consumables
+### Buttons
 
-`ml-auto` cluster. Expand then points then the three icon buttons. Not a `Panel`. Not logged. Guest sees the same counts. `expandLeft()` and `World.points` — derived, not new state. [[mechanics/expansion]] [[mechanics/family]]
-
-Chip hidden at 0. Group hidden if both 0.
-
-Each chip: `relative` `pointer-events-auto`. 24×24 (`h-6 w-6` `viewBox="0 0 24 24"`) `EXPAND_LAND` / `SKILL_POINT` + count `text-sm font-semibold tabular-nums`.
-
-[[ui/callout-hover]] `placement="below"`:
-
-| chip | show | title | body |
-|---|---|---|---|
-| expand | `expandLeft() > 0` | Expansion | You have {n} farm expansion opportunities. |
-| points | `points > 0` | Skill points | You have {n} unspent skill points. Assign them to a family member! |
-
-`n` is that count.
-
-Then **Multiplayer** **Pause** **Gear**. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. Recap blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway). Overlay pause does not replace this toggle.
+`ml-auto` cluster: **Multiplayer** **Pause** **Gear**. Not a `Panel`. Not logged. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. Recap blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway). Overlay pause does not replace this toggle.
 
 ### Overlay pause
 
@@ -68,7 +54,7 @@ Host or guest: these three overlays do not auto-pause. Pause button still toggle
 
 Shop / Research / Build / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate.
 
-The clock text, the day bar, the research name and its seconds are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-research-left]` `[data-research-secs]` `[data-research-bar]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump.
+The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]].
 
 The hovered machine's recipe arrow and its countdown are on the same contract: `[data-craft-fill]` `[data-craft-time]`, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
 
@@ -121,6 +107,8 @@ HTML overlay, `data-speech`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-i
 ## Right column
 
 Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears inspect. Same width. [[ui/vehicles]]
+
+Notices claim that anchor at `w-72` while the editor is off — [[ui/notices]]. Never both.
 
 ## Bottom-right
 

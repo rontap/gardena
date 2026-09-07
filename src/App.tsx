@@ -25,8 +25,11 @@ import { Menu } from './game/ui/menu.tsx'
 import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
+import { Notices } from './game/ui/notices.tsx'
+import type { NoticeGo } from './game/ui/notices.ts'
 import type { ShelfId } from './game/defs/shelf.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
+import type { Coord } from './game/sim/building.ts'
 import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { PIPE_PLACE } from './game/view/hit.ts'
@@ -56,6 +59,7 @@ function bootCheat(w: World): void {
 }
 
 const BOOT_CAM: Camera = { x: 15.5, y: 9.5, scale: 1 }
+const NO_CELLS: readonly Coord[] = []
 const DIAL_TIMEOUT_MS = 20000
 const RECONNECT_DELAY_MS = 1500
 
@@ -101,6 +105,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const peekLens = useRef<Lens | undefined>(undefined)
   const toolLens = world === undefined ? undefined : toolLensOf(world)
   const [editor, setEditor] = useState(false)
+  const [noticeCells, setNoticeCells] = useState<readonly Coord[]>(NO_CELLS)
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
   const [prefs, setPrefs] = useState<Settings>(() => settings())
@@ -576,6 +581,13 @@ export default function App({ sink }: { sink: WorkerSink }) {
     })
   }
 
+  function goNotice(go: NoticeGo): void {
+    if (go === 'none') return
+    if (go === 'market') open({ kind: 'market' })
+    if (go === 'research') open({ kind: 'research' })
+    if (go === 'family') open({ kind: 'family' })
+  }
+
   function closeMp(): void {
     setMpPanel(false)
     setPanel({ kind: 'none' })
@@ -862,6 +874,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
                   onCam={ignoreCam}
                   onClick={ignoreClick}
                   onReady={() => setMenuCanvasIn(true)}
+                  highlight={NO_CELLS}
                 />
               </div>
             </div>
@@ -936,6 +949,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }
               dispatchClick(world, hit)
             }}
+            highlight={noticeCells}
           />
         </div>
           <Hud
@@ -957,6 +971,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
             paused={paused}
             onPause={onPause}
             net={netLine}
+          />
+          <Notices
+            world={world}
+            off={editor || world.seam.kind === 'recap'}
+            onHighlight={setNoticeCells}
+            onGo={goNotice}
           />
           {editor && <StopsWindow world={world} onClose={() => {
             setEditor(false)

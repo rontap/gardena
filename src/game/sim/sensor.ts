@@ -1,6 +1,6 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import type { AdditiveStore, Chest, Coord, Freezer, Furnace, JamMachine, Mill, PotStill, Pump, RectBase, ResearchStation, SeedSilo } from './building.ts'
+import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal, SkuId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -26,15 +26,6 @@ abstract class SensorBase {
   constructor(base: RectBase) {
     this.base = base
   }
-}
-
-export function fenceable<T extends SensorBase>(
-  Ctor: abstract new (base: RectBase) => T,
-): abstract new (base: RectBase) => T {
-  abstract class Fenced extends Ctor {
-    override readonly fenceable = true
-  }
-  return Fenced
 }
 
 abstract class HeldSensor extends SensorBase {
@@ -133,20 +124,23 @@ export class Counter extends SensorBase {
   }
 }
 
-export class WaterSensor extends fenceable(HeldSensor) {
+export class WaterSensor extends HeldSensor {
   readonly kind = 'sensor-water' as const
+  override readonly fenceable = true
   override readonly ports: readonly PortId[] = ['out']
   wilt = true
   over = true
 }
 
-export class FertSensor extends fenceable(HeldSensor) {
+export class FertSensor extends HeldSensor {
   readonly kind = 'sensor-fert' as const
+  override readonly fenceable = true
   override readonly ports: readonly PortId[] = ['out']
 }
 
-export class HarvestSensor extends fenceable(HeldSensor) {
+export class HarvestSensor extends HeldSensor {
   readonly kind = 'sensor-harvest' as const
+  override readonly fenceable = true
   override readonly ports: readonly PortId[] = ['out']
   mode: 'any' | 'all' = 'any'
 }
@@ -160,8 +154,9 @@ export class DaySensor extends HeldSensor {
   twilight = false
 }
 
-export class VarietySensor extends fenceable(HeldSensor) {
+export class VarietySensor extends HeldSensor {
   readonly kind = 'sensor-variety' as const
+  override readonly fenceable = true
   override readonly ports: readonly PortId[] = ['out']
   baseOn = true
   variant = false
@@ -183,8 +178,9 @@ export class WaterSystem extends HeldSensor {
   override readonly ports: readonly PortId[] = ['out']
 }
 
-export class VehicleSensor extends fenceable(HeldSensor) {
+export class VehicleSensor extends HeldSensor {
   readonly kind = 'vehicle-detector' as const
+  override readonly fenceable = true
   override readonly ports: readonly PortId[] = ['out']
   vehicle = true
   player = false
@@ -250,7 +246,8 @@ export function isSensor(c: { kind: string }): c is Sensor {
 export function ownsPort(c: Cell, at: Coord, port: PortId): boolean {
   if (isSensor(c)) return c.base.col === at.col && c.base.row === at.row && c.ports.includes(port)
   if ('ports' in c) {
-    return c.base.col === at.col && c.base.row === at.row && c.ports.some(p => p === port)
+    const o = originCell(c.base)
+    return o.col === at.col && o.row === at.row && c.ports.some(p => p === port)
   }
   return false
 }
@@ -636,7 +633,7 @@ export function evalDag(input: EvalIn): void {
     m.inn = innOf({ col: m.base.col, row: m.base.row }, 'in')
   })
   pumps.forEach(p => {
-    p.inn = innOf({ col: p.base.col, row: p.base.row }, 'in')
+    p.inn = innOf(originCell(p.base), 'in')
   })
   sensors.forEach(s => {
     if (s.kind === 'traffic-light') s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))

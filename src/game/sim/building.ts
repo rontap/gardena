@@ -80,6 +80,11 @@ export type RectBase = { shape: 'rect'; col: number; row: number; w: number; h: 
 export type CircleBase = { shape: 'circle'; cx: number; cy: number; r: number }
 export type Base = RectBase | CircleBase
 
+export function originCell(base: Base): Coord {
+  if (base.shape === 'rect') return { col: base.col, row: base.row }
+  return { col: Math.floor(base.cx - base.r), row: Math.floor(base.cy - base.r) }
+}
+
 export const CHUNK = 32
 
 export function chunkOf(at: Coord): ChunkId {

@@ -14,7 +14,7 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 ## Filing
 
-`SHELVES` in `src/game/defs/shelf.ts` is the only source of panel membership, category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. Every sku sits in exactly one shelf group, and no build shelf holds a `seeds`-tab sku.
+`SHELVES` in `src/game/defs/shelf.ts` is the only source of panel membership, category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. Every sku sits in exactly one shelf group, except `buy-and` `buy-or` `buy-water-system` which sit in none — [[items/sensors]]. No build shelf holds a `seeds`-tab sku.
 
 **One axis per level, and file by primary output.** The top level splits by verb: a store you buy from, a build menu you place from. The second splits by what a thing emits — signal → Sensors, water → Water, goods → Processing, ground → Land. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water.
 

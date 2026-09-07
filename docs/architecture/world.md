@@ -34,7 +34,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `House`, starter pump (`form: 'starter'`), `Truck` are not delete targets.
 
-`Pump.water` and `RainTank.water` are required `Reservoir`. `Pump.ports = ['in']`. `Pump.inn: Signal`. Combinational, no hold, not saved. `inn === 1` → `gatherWater` skips that reservoir. Unwired 0 gathers. Stored still fills a bucket and still feeds the water network. Origin cell owns the port; Pumpjack east cell does not. Starter is wireable. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
+`Pump.water` and `RainTank.water` are required `Reservoir`. `Pump.ports = ['in']`. `Pump.inn: Signal`. Combinational, no hold, not saved. `inn === 1` → `gatherWater` skips that reservoir. Unwired 0 gathers. Stored still fills a bucket and still feeds the water network. Origin cell owns the port (`originCell` on `Base`); Pumpjack east cell does not. Starter is wireable. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
 
 ## Same instance
 
@@ -152,7 +152,7 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 
 | name | members |
 |---|---|
-| grow | growing, ripe, weed, turf, tree origin |
+| grow | growing, ripe, dead, rotten, weed, turf, tree origin |
 | machines | mill, jam, still, barrel, grinder, compost, furnace, station origin |
 | stores | chest, freezer |
 | sensors | sunk sensor cells |

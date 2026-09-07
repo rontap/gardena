@@ -322,7 +322,7 @@ function demandFace(demand: Demand, count: number) {
   return face
 }
 
-function demandItem(demand: Demand, count: number): Item {
+export function demandItem(demand: Demand, count: number): Item {
   if (demand.kind === 'group' && demand.group === 'spirit') {
     return { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count, unitSale: 1 }
   }

@@ -1,7 +1,5 @@
 import { m } from '../../paraglide/messages.js'
 import { memo, useState } from 'react'
-import * as Progress from '@radix-ui/react-progress'
-import { RESEARCH } from '../defs/research.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
 import { PHASE_NAME } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
@@ -10,8 +8,6 @@ import type { Lens } from '../view/map.tsx'
 import { bindHud } from '../view/motion.ts'
 import {
   btnFace,
-  EXPAND_LAND,
-  SKILL_POINT,
   symHref,
   UI_BTN_ALMANAC,
   UI_BTN_BUILD,
@@ -86,17 +82,12 @@ export function Hud({
   onMultiplayer: () => void
   net: string | undefined
 }) {
-  const job = world.job
-  const def = job.kind === 'run' ? RESEARCH[job.id] : undefined
-  const pct = def !== undefined && job.kind === 'run' ? ((def.seconds - job.left) / def.seconds) * 100 : 0
   const phase = world.clock.phase()
   const place = world.seats[world.local].place
   const trio =
     place.kind === 'delete' || (place.kind === 'sku' && (GHOST_SKUS as readonly string[]).includes(place.id))
   const canRotate = place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(place.id)
   const guest = world.local !== 0
-  const expandLeft = world.expandLeft()
-  const points = world.points
   return (
     <>
       <Chrome className="pointer-events-none absolute top-4 left-4 right-4 z-20 h-14">
@@ -139,29 +130,6 @@ export function Hud({
               />
             )}
           </div>
-          <div className="h-7 w-px shrink-0 bg-ink/20" />
-          <div
-            ref={el => bindHud('research', el)}
-            data-research
-            className="flex min-w-0 flex-1 flex-col justify-center gap-1"
-            hidden={job.kind !== 'run'}
-          >
-            {def !== undefined && job.kind === 'run' && (
-              <>
-                <span className="truncate text-sm leading-none">
-                  <span className="text-ink/50">{m.hud_researching()}</span>
-                  <span data-research-left>{def.name}</span>
-                  <span className="text-ink/50">{m.hud_dot()}</span>
-                  <span data-research-secs className="text-ink/50 tabular-nums">
-                    {m.hud_secs({ secs: Math.ceil(job.left) })}
-                  </span>
-                </span>
-                <Progress.Root className="relative h-1.5 max-w-96 overflow-hidden bg-ink/20" value={pct}>
-                  <Progress.Indicator data-research-bar className="h-full bg-leaf" style={{ width: `${pct}%` }} />
-                </Progress.Root>
-              </>
-            )}
-          </div>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
             <span
               ref={el => bindHud('fps', el)}
@@ -188,26 +156,6 @@ export function Hud({
                 <span aria-hidden className="size-2 shrink-0 animate-pulse bg-ripe" />
                 {net}
               </span>
-            )}
-            {(expandLeft > 0 || points > 0) && (
-              <>
-                {expandLeft > 0 && (
-                  <ConsumableChip
-                    art={EXPAND_LAND}
-                    n={expandLeft}
-                    title={m.hud_expansion()}
-                    body={m.hud_expansion_body({ n: expandLeft })}
-                  />
-                )}
-                {points > 0 && (
-                  <ConsumableChip
-                    art={SKILL_POINT}
-                    n={points}
-                    title={m.hud_skill_points()}
-                    body={m.hud_skill_points_body({ n: points })}
-                  />
-                )}
-              </>
             )}
             <IconButton art={UI_BTN_MULTIPLAYER} label={m.hud_multiplayer()} selected={panel === 'multiplayer'} onClick={onMultiplayer} />
             <PauseBtn selected={paused} onClick={onPause} />
@@ -335,31 +283,6 @@ function WeatherGlyph({ kind, title }: { kind: WeatherKind; title?: string }) {
       {hot && (
         <CalloutHover placement="below" title={title !== undefined ? title : callout.title} description={callout.body} />
       )}
-    </div>
-  )
-}
-
-function ConsumableChip({
-  art,
-  n,
-  title,
-  body,
-}: {
-  art: string
-  n: number
-  title: string
-  body: string
-}) {
-  const [hot, setHot] = useState(false)
-  return (
-    <div
-      className="relative pointer-events-auto flex items-center gap-1"
-      onPointerEnter={() => setHot(true)}
-      onPointerLeave={() => setHot(false)}
-    >
-      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" dangerouslySetInnerHTML={{ __html: art }} />
-      <span className="text-sm font-semibold tabular-nums">{n}</span>
-      {hot && <CalloutHover placement="below" title={title} description={body} />}
     </div>
   )
 }

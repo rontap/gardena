@@ -71,7 +71,7 @@
 | `feature-place/place.helpers.ts` | `confirmPlace` `deleteBuildingBody` `pruneVert`. Burrow refuses place / tile / fence. Fenceable sensor site; sensor-then-fence delete |
 | `feature-vehicles/vehicle.h.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop` |
 | `feature-vehicles/vehicle.ts` | integrate |
-| `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light. `SensorBase.fenceable` `fenceable()`. `readerRaw` range argument. `LogicGate` `mode`. Variety / weather / pressure eval. Will: make table `{ [K in SensorKind]: { sku, make } }` next to the classes; `makeSensor` / `skuKind` lookups; ports on the device. `evalDag` stays a function. Not a `Machine` |
+| `sensor.ts` | `Sensor`, `Wire`, `evalDag`, traffic light. `SensorBase.fenceable`. `readerRaw` range argument. `LogicGate` `mode`. Variety / weather / pressure eval. Will: make table `{ [K in SensorKind]: { sku, make } }` next to the classes; `makeSensor` / `skuKind` lookups; ports on the device. `evalDag` stays a function. Not a `Machine` |
 
 ## ui
 
@@ -80,6 +80,8 @@
 | `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`, `Checkbox`, `Radio` |
 | `callout-hover.tsx` | `CalloutHover` |
 | `hud.tsx` | clock, ribbon, docks, pause, gear |
+| `notices.ts` | `noticeRows(world)` — pure read, no writes. `Notice`, `NOTICE_*` — [[ui/notices]] |
+| `notices.tsx` | the notices column, its two-pass state, its bars — [[ui/notices]] |
 | `menu.tsx` | startup / gear shell, `MenuPage` |
 | `settings.tsx` | `SettingsPage` body — [[ui/settings]] |
 | `changelog.md` | player copy. Shipped. Not `docs/` |

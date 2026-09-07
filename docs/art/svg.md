@@ -26,7 +26,7 @@ Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac 
 | 1×2.5 windmill | `0 0 24 60` |
 | 2×2 generator, mill | `0 0 48 48` |
 
-Chrome strips (`ui-header`, `ui-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height.
+Chrome strips (`ui-header`, `ui-rail`, `ui-notice-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height. `ui-notice-rail` is `ui-rail` at 3px for a one-line row — [[ui/notices]].
 
 ## Groups
 

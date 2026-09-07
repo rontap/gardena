@@ -225,6 +225,8 @@ export function cropVariety(id: CropId, variety: VarietyId): string {
   return m.names_variety_pair({ crop: CROP_NAME[id](), variety: NAMED[variety]() })
 }
 
+export const FRESH_FULL = 0.8
+
 export function freshMul(f: number): number {
-  return f >= 0.8 ? 1 : f / 0.8
+  return f >= FRESH_FULL ? 1 : f / FRESH_FULL
 }

@@ -3,6 +3,7 @@
 HUD, docks, inspect, place, copy. As the game runs.
 
 - [[ui/hud]]
+- [[ui/notices]] — the right-hand column of one-line notices. Pure read of `World`
 - [[ui/menu]]
 - [[ui/changelog]]
 - [[ui/settings]]

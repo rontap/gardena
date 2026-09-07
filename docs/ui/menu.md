@@ -2,7 +2,7 @@
 
 Startup and in-play gear share one Chrome shell. Type [[ui/type]]. Chrome tokens. Buttons are `Btn` `w-full`. [[architecture/save]] [[mechanics/tutorial]]
 
-Chrome home and join narrower than changelog. Inner column padded.
+Chrome home and join narrower than changelog. Changelog `w-[48rem]`. Inner column padded.
 
 Top of the column: `ui-menu.svg` (illustration only — no text in the SVG). Then `h1` **Gardena**. Then wordmark — [[ui/changelog]] [[GLOBAL_VERSION]]. Then the body. Then fail copy if any (home only).
 

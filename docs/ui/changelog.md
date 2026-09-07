@@ -37,11 +37,15 @@ Click toggles home ↔ changelog. While boot `joining`: no-op. `joining` true �
 
 ## Body
 
-Scroll pane. Column already padded — do not pad again.
+Left list + right pane, same scroll chain as [[ui/almanac]]: row fills a definite height, each side `scroll-pane` `overflow-y-auto` of its own. Bleed `mx-[-1rem]` to the Chrome edge. List `w-44` `border-r border-ink/20`. Height `h-[min(32rem,calc(100vh-14rem))]`.
 
-Array order is render order.
+Chrome changelog wider than home — `w-[48rem]`.
 
-Per release, body face only (not Press Start):
+Left list: one button per `RELEASES` row, `{id} {name}`, `truncate`, `text-sm`, `px-2 py-1`. Selected `bg-dirt text-house`. Else `text-ink hover:bg-dirt/30`. No icon. Click selects and `scrollIntoView` `{ behavior: 'auto', block: 'start' }` on that release in the right pane. Instant. Open on `RELEASES[0]`.
+
+Scrolling the right pane selects the release whose heading is at the top of the pane. Scrolled to the end: last release. Selected row `scrollIntoView` `{ block: 'nearest' }` in the left list.
+
+Right pane: existing release body. Array order is render order. Per release, body face only (not Press Start). Heading `text-base`. Summary and bullets `text-sm`.
 
 1. `{id} {name}`
 2. `summary`

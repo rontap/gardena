@@ -1,15 +1,24 @@
 import { FREEZER_ROT_MUL } from '../defs/items.ts'
 import { jamRotMul } from '../defs/skills.ts'
 import { CROPS } from '../defs/crops.ts'
+import { PUMP_COST_PER_L } from '../defs/weather.ts'
 import { statsOf } from './modifiers.ts'
 import { tickButton } from './sensor.ts'
 import { BIG_TICK } from './soil.ts'
 import { isTilled } from './plot.ts'
-import { soakDelta } from './weather.ts'
+import { soakDelta, pumpCostMul } from './weather.ts'
 import { pullMachineStores } from './feature-machines/machines.tick.ts'
+import * as machines from './feature-machines/machines.tick.ts'
 import { sproutWeeds, sproutGrass } from './feature-field/field.ts'
+import * as field from './feature-field/field.ts'
+import * as burrow from './feature-burrow/burrow.ts'
+import * as vehicles from './feature-vehicles/vehicle.ts'
+import * as queue from './queue.ts'
+import * as nets from './nets.ts'
+import { addRep, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
+import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
-import type { World } from './world.ts'
+import { DAY_STIPEND, type World } from './world.ts'
 
 export function tickSpeech(world: World, dt: number): void {
   if (world.speech.kind !== 'say') return
@@ -115,4 +124,79 @@ export function tickVfx(world: World, pouring: ReadonlySet<string>): boolean {
     }
   })
   return changed
+}
+
+export function tickWorld(world: World, dt: number): void {
+  const beforeDay = world.nowDay()
+  const seam = world.clock.advance(dt) === 'seam'
+  if (seam) {
+    world.seats.forEach(s => {
+      s.workLeft = 0
+      s.workTotal = 0
+      s.filling = false
+    })
+    tickContracts(world, beforeDay, world.nowDay())
+    world.money += DAY_STIPEND
+    const tax = world.tax()
+    world.money -= tax
+    const bill = world.pumpLiters * PUMP_COST_PER_L * pumpCostMul(world.weather(world.clock.day - 1))
+    world.money -= bill
+    world.pumpLiters = 0
+    burrow.mintSeam(world)
+    field.tickTreesSeam(world)
+    world.seam = {
+      kind: 'recap',
+      recap: {
+        day: world.clock.day - 1,
+        money: world.money,
+        stipend: DAY_STIPEND,
+        died: world.tally.died,
+        harvests: world.tally.harvests,
+        research: world.tally.research,
+        tax,
+        water: bill,
+        contracts: world.tally.contracts,
+      },
+    }
+    world.tally = { died: 0, harvests: 0, research: [], contracts: [] }
+    if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -REP_IDLE)
+    world.contracts.takenToday = []
+    world.contracts.repDay = world.contracts.rep
+    world.ping()
+    return
+  }
+  tickSpeech(world, dt)
+  tickJob(world, dt)
+  tickButtons(world)
+  world.seats.forEach(s => {
+    if (s.presence !== 'in') return
+    if (world.driverVehicle(s.id) !== undefined) return
+    world.act = s
+    if (s.stride.x !== 0 || s.stride.y !== 0) {
+      s.queue.length = 0
+      s.workLeft = 0
+      s.workTotal = 0
+      s.filling = false
+      const hypot = Math.hypot(s.stride.x, s.stride.y)
+      const step = world.walkSpeed() * dt
+      s.actor.x += (s.stride.x / hypot) * step
+      s.actor.y += (s.stride.y / hypot) * step
+      return
+    }
+    queue.tickQueue(world, dt)
+  })
+  world.act = world.seats[0]
+  vehicles.tickVehicles(world, dt)
+  field.tickField(world, dt)
+  nets.gatherWater(world, dt)
+  nets.evalSensors(world, dt)
+  vehicles.tickDispatch(world, dt)
+  machines.tickMachines(world, dt)
+  nets.tickWater(world, dt)
+  tickFreshness(world, dt)
+  tickBig(world, dt)
+  tickContracts(world, beforeDay, world.nowDay())
+  STALL_IDS.forEach(id => {
+    world.stall[id].sat = recover(world.stall[id].sat, dt)
+  })
 }

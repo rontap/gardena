@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { SILO_BASE } from '../src/game/sim/building.ts'
 import { armSku, dismissRecap, gotoPlay, screenOf, tapWorld, unlockWorld } from './helpers.ts'
 
 type At = { col: number; row: number }
@@ -26,7 +27,7 @@ async function worldTrue(page: Page, arg: unknown, body: string, timeout = 60_00
 
 test.beforeEach(async ({ page }, info) => {
   if (info.title === 'ripe fruit rots' || info.title === 'weeds sprout on fallow tilled soil') {
-    await gotoPlay(page, { speed: 10 })
+    await gotoPlay(page, { speed: 3 })
     return
   }
   await gotoPlay(page)
@@ -173,16 +174,19 @@ test('ripe fruit rots', async ({ page }) => {
     .toBe('empty')
   await worldTrue(page, at, 'w.cell(at).kind === "empty" && w.seats[0].queue.length === 0')
 
-  await page.evaluate(() => {
+  await page.evaluate(silo => {
     const w = (
       window as unknown as {
-        __world?: { seats: { hand: { kind: string } }[]; takeSilo: (crop: string, variety: string) => void }
+        __world?: {
+          seats: { hand: { kind: string } }[]
+          takeSilo: (at: { col: number; row: number }, crop: string, variety: string) => void
+        }
       }
     ).__world
     if (w === undefined) throw new Error('no __world')
     w.seats[0].hand = { kind: 'empty' }
-    w.takeSilo('carrot', 'base')
-  })
+    w.takeSilo(silo, 'carrot', 'base')
+  }, SILO_BASE)
   await worldTrue(
     page,
     null,

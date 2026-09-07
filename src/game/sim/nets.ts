@@ -1,5 +1,5 @@
 import { SPRINKLER_TILE_RATE } from '../defs/items.ts'
-import { occupiedCells, type Base, type Coord } from './building.ts'
+import { occupiedCells, originCell, type Base, type Coord } from './building.ts'
 import { statsOf } from './modifiers.ts'
 import { aoe, edgeKey, corners, incident, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { lookup } from './feature-enclosure/enclosure.ts'
@@ -236,7 +236,7 @@ export function evalSensors(world: World, dt: number): void {
   const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
   const pumps = new Map<string, Pump>()
   world.pumps.forEach(p => {
-    pumps.set(cellKey({ col: p.base.col, row: p.base.row }), p)
+    pumps.set(cellKey(originCell(p.base)), p)
   })
   for (const at of world.sensors.values()) {
     const c = world.cell(at)

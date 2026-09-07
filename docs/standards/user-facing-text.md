@@ -323,7 +323,9 @@ Why this is better: Explains WHY the player should want to research this, and gi
 
 Rail left: **Shop** **Build** **Research** **Market** **Lens** **Family** **Almanac** **Cheat**. Build cluster: **Delete** **Rotate** **Cancel**.
 
-Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Researching**, **Expansion**, **Skill points**, **Multiplayer**, **Pause**/**Resume**, **Gear**.
+Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Pause**/**Resume**, **Gear**.
+
+Notices column, right: **Researching {name}**, **Researched {name}**, **Contract**, **Contract completed**, **{Quad|Tractor} is out of fuel**, **{Crop} is wilting**, **{Crop} is drowning**, **{Crop} is starving for fertilizer**, **{Crop} is losing freshness**, **Dead plant**, **Rotten produce**, **Water network is running low**, **{n} skill points to spend**, **{n} farm expansion opportunities**, **and {n} more**, **Hide** / **Show**.
 
 Almanac Overview pages may define a word on first use. They still may not say: gem, pip, overlay, HUD, ribbon, dock, SKU, stall (link **Market**), rolled, RNG, tick, DAG, node, dump, seam, Cmd, hash.
 

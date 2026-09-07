@@ -1,5 +1,4 @@
 import { m } from '../../paraglide/messages.js'
-import { RESEARCH } from '../defs/research.ts'
 import { QUAD_SHOW_MUL, TRAILER_CAP } from '../defs/items.ts'
 import { DAY_SECONDS, PHASE_NAME } from '../sim/clock.ts'
 import { kindVMax, trailerUsed } from '../sim/feature-vehicles/vehicle.ts'
@@ -12,7 +11,6 @@ type HudKind =
   | 'clock'
   | 'day-bar'
   | 'phase'
-  | 'research'
   | 'queue-bar'
   | 'banner'
   | 'fps'
@@ -39,7 +37,7 @@ let dashSpeedReadout: Element | undefined
 let dashUsedReadout: Element | undefined
 const lastNeedle = { fuel: '', speed: '', steer: '' }
 const lastDash = { fuel: '', speed: '', used: '' }
-const last = { clockT: '', dayWidth: '', phase: '', secs: '', bar: '', queue: '', fps: '', render: '', mem: '', counter: '', craftFill: '', craftTime: '' }
+const last = { clockT: '', dayWidth: '', phase: '', queue: '', fps: '', render: '', mem: '', counter: '', craftFill: '', craftTime: '' }
 
 let craftCell: CraftCell | undefined
 
@@ -161,32 +159,6 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
   if (phaseUse !== undefined && last.phase !== phaseHtml) {
     last.phase = phaseHtml
     phaseUse.setAttribute('href', symHref(phaseHtml))
-  }
-  const job = world.job
-  const research = hud.get('research')
-  if (research instanceof HTMLElement) {
-    if (job.kind === 'run') {
-      research.hidden = false
-      const def = RESEARCH[job.id]
-      const left = research.querySelector('[data-research-left]')
-      if (left !== null) left.textContent = def.name
-      const secs = research.querySelector('[data-research-secs]')
-      const secsText = m.hud_secs({ secs: Math.ceil(job.left) })
-      if (secs !== null && last.secs !== secsText) {
-        last.secs = secsText
-        secs.textContent = secsText
-      }
-      const bar = research.querySelector('[data-research-bar]')
-      if (bar instanceof HTMLElement) {
-        const w = `${((def.seconds - job.left) / def.seconds) * 100}%`
-        if (last.bar !== w) {
-          last.bar = w
-          bar.style.width = w
-        }
-      }
-    } else {
-      research.hidden = true
-    }
   }
   const qbar = hud.get('queue-bar')
   if (qbar instanceof HTMLElement) {

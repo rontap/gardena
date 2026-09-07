@@ -20,7 +20,8 @@
       "./messages/{locale}/vehicles.json",
       "./messages/{locale}/sensors.json",
       "./messages/{locale}/menu.json",
-      "./messages/{locale}/tutorial.json"
+      "./messages/{locale}/tutorial.json",
+      "./messages/{locale}/notices.json"
     ]
   }
 }

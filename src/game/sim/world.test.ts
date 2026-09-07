@@ -1510,14 +1510,16 @@ describe('beta-6 invariants', () => {
         expect(BUILD_SKUS.some(id => skuLabel(id) === 'Delete')).toBe(false)
     })
 
-    test('every sku sits in exactly one shelf group', () => {
+    test('every sku sits in exactly one shelf group, except buy-and buy-or buy-water-system which sit in none', () => {
+        const hidden: readonly SkuId[] = ['buy-and', 'buy-or', 'buy-water-system']
         const shelved = SHELVES.flatMap(s => s.groups.flatMap(g => g.skus))
-        expect([...shelved].sort()).toEqual((Object.keys(SKUS) as SkuId[]).sort())
+        expect(shelved.filter(id => hidden.includes(id))).toEqual([])
+        expect([...shelved].sort()).toEqual((Object.keys(SKUS) as SkuId[]).filter(id => !hidden.includes(id)).sort())
     })
 
     test('build shelves hold no seeds tab sku', () => {
         expect(BUILD_SKUS.filter(id => SKUS[id].tab === 'seeds')).toEqual([])
-        expect(SHOP_SKUS.length + BUILD_SKUS.length).toBe(Object.keys(SKUS).length)
+        expect(SHOP_SKUS.length + BUILD_SKUS.length + 3).toBe(Object.keys(SKUS).length)
     })
 
     test('delete pumpjack money unchanged both empty starter remains', () => {

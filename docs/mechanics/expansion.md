@@ -34,7 +34,7 @@ Then `× (1 − 0.02 × tax tier)`. Then min $1 — [[mechanics/family]].
 
 ## Start chunk
 
-House, starter pump, truck, door, yard reserved. Rocks, one wild apple tree — [[mechanics/trees]]. Soft / hard / very-hard from goodness — [[mechanics/soil]].
+House, starter pump, truck, door, yard reserved. Rocks, one wild apple tree — [[mechanics/trees]]. Soft / hard / very-hard from goodness — [[mechanics/soil]]. Pickaxe SKUs and Hardened tools: [[mechanics/research]] Land. [[items/tools]].
 
 ## Invariants
 

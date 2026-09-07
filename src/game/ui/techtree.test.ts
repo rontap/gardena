@@ -1,11 +1,20 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { SKILLS } from '../defs/skills.ts'
 import type { ResearchId, SkillId, SkuId } from '../sim/ids.ts'
 import { buildTree, keyFromDomId, keyOfGrant, keyOfResearch, researchIds } from './techtree.ts'
 
 const tree = buildTree()
+
+describe('research.techtree', () => {
+  test('#debug-techtree omits SKUs `skuShown` false: `buy-or` `buy-and` `buy-water-system`.', () => {
+    const ids = [...tree.nodes.values()].flatMap(n => n.leaves.filter(l => l.kind === 'sku').map(l => l.id))
+    expect(ids).not.toContain('buy-or')
+    expect(ids).not.toContain('buy-and')
+    expect(ids).not.toContain('buy-water-system')
+  })
+})
 
 describe('techtree', () => {
   it('holds every research exactly once', () => {
@@ -41,6 +50,7 @@ describe('techtree', () => {
 
   it('attaches every research-gated sku to its unlock research', () => {
     for (const id of Object.keys(SKUS) as SkuId[]) {
+      if (id === 'buy-or' || id === 'buy-and' || id === 'buy-water-system') continue
       const sku = SKUS[id]
       const hits = [...tree.nodes.values()].flatMap(n =>
         n.leaves.filter(l => l.kind === 'sku' && l.id === id).map(l => ({ n, l })),

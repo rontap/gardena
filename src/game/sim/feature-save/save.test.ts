@@ -1,10 +1,27 @@
 import { describe, expect, test } from 'vitest'
+import { AXES } from '../../defs/items.ts'
 import { DAY_SECONDS } from '../clock.ts'
+import { makeChainsaw } from '../item.ts'
 import { POINTS_PER_DAY, World } from '../world.ts'
 import { dump, parse } from './save.ts'
 
+describe('save.nomigrate', () => {
+  test("`Item` `chainsaw` `usesLeft`+`workSeconds`", () => {
+    const w = new World(1)
+    w.seats[0].hand = { kind: 'hold', item: makeChainsaw() }
+    const loaded = parse(JSON.stringify(dump(w)))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.seats[0].hand).toEqual({
+      kind: 'hold',
+      item: { kind: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds },
+    })
+  })
+})
+
+
 describe('save.recaps', () => {
-  test('Dump always writes `recaps: Recap[]` and `recapUnseen: number[]`. `SaveRecap` includes `contracts: HistoryEntry[]`. Parse missing `recaps` / `recapUnseen` as `[]`. Old `seam.kind === \'recap\'`: append that recap (`contracts` `[]` if omitted), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 2`. Not a migrate.', () => {
+  test('Dump always writes `recaps: Recap[]` and `recapUnseen: number[]`. `SaveRecap` includes `contracts: HistoryEntry[]`. Parse missing `recaps` / `recapUnseen` as `[]`. Old `seam.kind === \'recap\'`: append that recap (`contracts` `[]` if omitted), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 4`. Not a migrate.', () => {
     const w = new World(1)
     w.clock.t = DAY_SECONDS - 0.001
     w.tick(1)
@@ -57,6 +74,6 @@ describe('save.recaps', () => {
     expect(hydrated.world.recapAt(1).contracts).toEqual([])
     expect(hydrated.world.recapUnseen).toEqual([1])
     expect(hydrated.world.points).toBe(POINTS_PER_DAY)
-    expect(hydrated.world.clock.banner).toBe(2)
+    expect(hydrated.world.clock.banner).toBe(4)
   })
 })

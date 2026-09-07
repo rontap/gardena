@@ -40,7 +40,7 @@ export const SHELVES: readonly Shelf[] = [
     line: () => m.hud_shelf_tools_line(),
     groups: [
       { label: 'Digging', skus: ['buy-shovel', 'buy-better-shovel'] },
-      { label: 'Mining', skus: ['buy-pickaxe', 'buy-better-pickaxe', 'buy-axe'] },
+      { label: 'Mining', skus: ['buy-pickaxe', 'buy-better-pickaxe', 'buy-axe', 'buy-chainsaw'] },
       { label: 'Carry', skus: ['buy-bucket', 'buy-bucket-large'] },
     ],
   },

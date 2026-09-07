@@ -28,6 +28,17 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 
 `slab` is the one paving tone that `house` cannot carry: a flagstone needs two faces to read as laid stone rather than a blank floor, and the second must sit close enough to `house` to stay one material. Paving art: [[items/tiles]].
 
+## Cobble
+
+`tile-cobble` / `item-cobble` stone fills. Extra hexes, allowed. Not cottage dirt. Joints stay `ink`.
+
+| token | hex |
+|---|---|
+| cobble-lit | `#d4d0c4` |
+| cobble | `#c4c0b4` |
+| cobble-mid | `#a8a394` |
+| cobble-dark | `#8a867c` |
+
 ## Industrial
 
 Vehicle / machine metal only. Not cottage. Do not replace cottage tokens. Ink outlines stay `#1c1710`. Not inspect bars.

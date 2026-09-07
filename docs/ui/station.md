@@ -25,7 +25,7 @@ ResearchStation = {
 
 `dest(station)` = `at`. 2×1, origin NW, no rotate, same instance both cells, hover origin extends east — place like the still, [[ui/place]]. Pads, west pull, east push, `inn` port: still. Dropoff north Unload, takeup south Load. Lens [[ui/sensors]].
 
-SKU `buy-research-station`. Processing shelf. `show: 'start'`. `need: []`. `haggling`. Guest may shop, place, delete, dump, and open this panel.
+SKU `buy-research-station`. Processing shelf. Unlock and show `unlock-crop-variants`. `need: []`. `haggling`. Guest may shop, place, delete, dump, and open this panel. Not on the shelf until Crop variants is done.
 
 Accepts `tier` `heirloom` fruit only, `cut === false`. First dump locks crop + Variety; later dumps must match. `STATION_IN` `STATION_SECONDS` `STATION_GRAFT_MIN` `STATION_GRAFT_MAX`. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` **and** a rolled 1–2 grafts of that Variety, both at the input Quality. East store else `frontOf`; no room → wait.
 

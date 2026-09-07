@@ -12,7 +12,7 @@ Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player o
 
 `SKILLS` in `defs/skills.ts`. Not on `World`. `maxTier` 1 = one-shot. `forecast` max 1. `driving-classes` max 3. `haggling` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. `bio` max 3. `forecast` is live — [[mechanics/weather]].
 
-Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. `better-potato` `better-wheat` need `unlock-crop-variants`. Crop `better-*` for researched crops need the matching research. `better-grape` needs `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` none. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. `haggling` is `hidden`. Else none.
+Gates: `open-24` needs `open-late`. `heirloom` needs `unlock-heirloom`. `better-potato` `better-wheat` need `unlock-crop-variants`. Crop `better-*` for researched crops need the matching research. `better-grape` needs `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` none. `driving-classes` needs `unlock-vehicles`. `broker` needs `unlock-contracts`. `machinery` needs `unlock-grinder`. `haggling` is `hidden`. Else none.
 
 Potato / wheat better: always eligible until owned, once Crop variants is done.
 
@@ -44,7 +44,7 @@ Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared. Grant is the
 
 `grantPoints(n)`: `World.points += n`.
 
-`Act.dismissRecap` / `dismissRecapBody`: no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. `banner = 2` is the seam. No member pick. [[mechanics/day]]
+`Act.dismissRecap` / `dismissRecapBody`: no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. `banner = 4` is the seam. No member pick. [[mechanics/day]]
 
 `unlockAll`: research rows unchanged (every id done, `money += 999`, job idle) **and** `World.points = 99`. Does not pick skills. Does not reroll offers.
 
@@ -74,7 +74,7 @@ Other sale skills at `marketGain`, not crop `Modifier` — [[mechanics/family]].
 
 - Boots: walk step `WALK × (1 + 0.05 × tier)`
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Yaw not. Boots not. — [[mechanics/vehicles]]
-- Machinery (husband): `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel / station not work jobs. Pipe place stays 0
+- Machinery (husband): gate `unlock-grinder`. `GRIND_WORK`, valve 0.3s, mill tick, jam tick durations ÷ `(1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel / station not work jobs. Pipe place stays 0
 - Research speed: `job.left -= dt × (1 + 0.05 × tier) × (cheatFastResearch ? 3 : 1)`
 - `skuPrice(id)`: `SKUS[id].price`, then `− tier` if `haggling` and `Sku.tab === 'utility' | 'automation'`; min $1. Drought then ×2 if `tab === 'seeds' | 'utility'`. Hangar-buys still not `skuPrice`. — [[mechanics/weather]]
 - `buyPacks(id)` always legal: five seed packs at `5 * skuPrice(id) * 0.95`, `'base'` quality 0. Ctrl is shop and seed-silo Buy.

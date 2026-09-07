@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.18 as const
+export const SAVE_VERSION = 2.19 as const
 
 export type {
   LoadFailReason,

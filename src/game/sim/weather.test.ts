@@ -190,7 +190,7 @@ describe('weather', () => {
     expect(w.skuPrice('pack-carrot')).toBe(6)
     expect(w.skuPrice('buy-shovel')).toBe(20)
     expect(w.skuPrice('buy-pipe')).toBe(3)
-    expect(w.skuPrice('buy-tile-cobble')).toBe(5)
+    expect(w.skuPrice('buy-tile-cobble')).toBe(4)
     expect(w.skuPrice('buy-hangar')).toBe(80)
     w.family.husband.owned.set('haggling', 2)
     expect(w.skuPrice('buy-shovel')).toBe(16)

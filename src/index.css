@@ -35,6 +35,10 @@
   --text-2xl--line-height: 1.25;
   --text-3xl: 28px;
   --text-3xl--line-height: 1.2;
+  --text-4xl: 32px;
+  --text-4xl--line-height: 1.2;
+  --text-5xl: 48px;
+  --text-5xl--line-height: 1.2;
 }
 
 html,
@@ -88,6 +92,70 @@ body,
 
 .plant-rarity:hover .plant-quality-pip {
   opacity: 1;
+}
+
+@keyframes farm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+@keyframes farm-fade-out {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.farm-banner,
+.farm-fade-in {
+  opacity: 0;
+  animation: farm-fade-in 0.5s ease-in forwards;
+}
+
+.farm-banner {
+  animation:
+    farm-fade-in 0.5s ease-in forwards,
+    farm-fade-out 0.5s ease-out 3.5s forwards;
+}
+
+.farm-fade-out {
+  animation: farm-fade-out 0.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-banner,
+  .farm-fade-in,
+  .farm-fade-out {
+    animation: none;
+  }
+  .farm-banner,
+  .farm-fade-in {
+    opacity: 0.7;
+  }
+  .farm-fade-out {
+    opacity: 0;
+  }
+}
+
+[data-reduced-motion] .farm-banner,
+[data-reduced-motion] .farm-fade-in,
+[data-reduced-motion] .farm-fade-out {
+  animation: none;
+}
+
+[data-reduced-motion] .farm-banner,
+[data-reduced-motion] .farm-fade-in {
+  opacity: 0.7;
+}
+
+[data-reduced-motion] .farm-fade-out {
+  opacity: 0;
 }
 
 .vfx {

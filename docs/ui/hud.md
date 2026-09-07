@@ -4,7 +4,7 @@ Map full-bleed **PixiJS canvas** under the React HUD. Ribbons and docks sit on t
 
 Canvas host: pan / zoom / `clickHit` as now. Farm sprites have no DOM. `data-cell-stroke` and ghost hooks: HTML overlays over the canvas — [[ui/place]]. No Pixi HUD. No `@pixi/react`. `paintMotion` HUD binds stay.
 
-Map boot: until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `text-white/70`, body face `text-lg`. Play and menu. Menu canvas fade-in still runs after `onReady`; Loading unmounts then. Not Pixi. Not a `DirtyReason`. [[architecture/view]] `view.boot`
+Map boot: until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `font-display` `text-5xl` `text-white`, fade in 0.5s ease-in opacity 0 → 0.7, fade out 0.5s ease-out to 0, then unmount. Play and menu. Menu canvas fade-in still runs after `onReady`. Not Pixi. Not a `DirtyReason`. [[architecture/view]] `view.boot`
 
 Type scale: [[ui/type]].
 
@@ -120,7 +120,7 @@ Command Center claims that anchor at `w-72` while the editor is off — [[ui/not
 
 ## Day banner
 
-`clock.banner > 0`. `font-display`, token `text-4xl` (32px, line-height 1.2). `text-white/70`. Top of the play field, below the ribbon (`pt-24` or equivalent). `pointer-events-none`. Copy **Day {n}**. Duration `banner = 2` s. New farm already `banner = 2`. Seam sets it. `data-banner`. `paintMotion` bind. Not Pixi. [[ui/type]] [[mechanics/day]]
+`clock.banner > 0` starts it. `font-display` `text-4xl` `text-white`. Top of the play field, below the ribbon (`pt-24`). `pointer-events-none`. Copy **Day {n}**. Fade in 0.5s ease-in opacity 0 → 0.7, hold, fade out 0.5s ease-out to 0. Total `banner = 4` s. New farm already `banner = 4`. Seam sets it. `data-banner`. `paintMotion` writes the day string. Not Pixi. [[ui/type]] [[mechanics/day]]
 
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
 

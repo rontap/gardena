@@ -48,7 +48,7 @@ mermaid.initialize({
   },
 })
 
-const esc = (s: string): string => s.replace(/"/g, '#quot;')
+const esc = (s: string): string => s.replace(/"/g, '#quot;').replace(/</g, '#lt;').replace(/>/g, '#gt;')
 
 function title(s: string): string {
   if (s === 'plants') return m.hud_research_plants()

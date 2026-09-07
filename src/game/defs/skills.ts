@@ -171,10 +171,18 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'driving-classes'},
         {kind: 'research', id: 'unlock-vehicles'},
     ),
-    machinery: row('machinery', 'husband', m.skills_machinery_name(), m.skills_machinery_blurb({pct: MACHINE_PCT}), 3, {
-        kind: 'machine',
-        mul: 1.05,
-    }),
+    machinery: row(
+        'machinery',
+        'husband',
+        m.skills_machinery_name(),
+        m.skills_machinery_blurb({pct: MACHINE_PCT}),
+        3,
+        {
+            kind: 'machine',
+            mul: 1.05,
+        },
+        {kind: 'research', id: 'unlock-grinder'},
+    ),
     tending: row(
         'tending',
         'player',

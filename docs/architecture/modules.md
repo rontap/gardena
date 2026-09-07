@@ -2,7 +2,7 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, App `recapDay`, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `SkuId` += `buy-furnace` `buy-axe` `buy-research-station` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` (`feature-machines/recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-hardened-tools`. `SkuId` += `buy-furnace` `buy-axe` `buy-chainsaw` `buy-research-station` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` (`feature-machines/recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
 
 ## defs
 
@@ -11,10 +11,10 @@
 | `crops.ts` | `CROPS`, `HAPPY_*` |
 | `trees.ts` | `TREES`, `TREE_YIELD_*` |
 | `varieties.ts` | `VarietyId`, `VarietyTier`, `Purpose`, `VARIETY`, `VARIETIES`, `PURPOSE_MUL`, `purposeMul`, `purposeOf`, `tierOf`, `caskGroup`, `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT`, `QUALITY_TOP`, `QUALITY_STEP`, `BETTER_QUALITY`, `NEIGHBOUR_IDS`, `NEIGHBOUR_REACH` |
-| `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` |
-| `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `buy-furnace`, `buy-axe`, `buy-research-station` |
-| `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS`. `lucky` |
-| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, station. Wood, ash, graft item rows. Game concepts Luck + Burrow are not `CatalogEntry` |
+| `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES.axe` `AXES.chainsaw` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` |
+| `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `unlock-hardened-tools`, `buy-furnace`, `buy-axe`, `buy-chainsaw`, `buy-research-station` |
+| `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS`. `lucky`. `machinery` gate `unlock-grinder` |
+| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, chainsaw, station. Wood, ash, graft item rows. Game concepts Luck + Burrow are not `CatalogEntry` |
 | `shelf.ts` | `BuildShelfId`. Station on Processing |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
@@ -48,8 +48,8 @@
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
-| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `wood` `ash` `graft` `treasure`. Fruit `cut`. `furnaceValue`, `compostValue` ash |
-| `prompt.ts` | `Prompt`. Chop / furnace dump / graft / station / burrow Dig / treasure open |
+| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `chainsaw` `wood` `ash` `graft` `treasure`. Fruit `cut`. `furnaceValue`, `compostValue` ash |
+| `prompt.ts` | `Prompt`. Chop (axe or chainsaw) / furnace dump / graft / station / burrow Dig / treasure open |
 | `look.ts` | `lookText`. Furnace / trunk / grow. Covering haste line. Neighbour wait line. Burrow look does not name loot |
 | `drop.ts` | `Drop` |
 | `gen.ts` | `generateChunk`. `(0,0)` calls feature-burrow start mint |
@@ -66,7 +66,7 @@
 | `feature-field/field.ts` | grow / recover tick, tree seam, weeds, grass |
 | `feature-burrow/` | start mint, seam mint, loot roll, extract. Types in `burrow.h.ts`, functions in `burrow.ts`. `World` indexes `burrows` and calls in |
 | `feature-enclosure/` | `Enclosure`, rebuild, lookup. Types in `enclosure.h.ts`, functions `(w, …)` in `enclosure.ts`. `World` indexes; it does not own. Rebuild on fence add/remove and `indexAll` |
-| `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft. Shovel on burrow cover calls feature-burrow extract |
+| `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft. Chop accepts axe or chainsaw; work is the held item's `workSeconds`. Shovel on burrow cover calls feature-burrow extract |
 | `feature-place/place.ts` | `buyBody` `buyPacksBody` `clickBody` `clickValveBody` `rightClickBody` `expandBody` `faces` `placePipeBody` `deletePipeBody` `placeSprinklerBody` `deleteSprinklerBody` `armDeleteBody` `rotatePlaceBody` `cancelPlaceBody`. Public `buy` / `click` / `confirmPlace` stay World wrappers |
 | `feature-place/place.helpers.ts` | `confirmPlace` `deleteBuildingBody` `pruneVert`. Burrow refuses place / tile / fence. Fenceable sensor site; sensor-then-fence delete |
 | `feature-vehicles/vehicle.h.ts` | `Vehicle`, `Trailer`, `Route`, `RouteStop` |
@@ -133,7 +133,7 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE. Sensor wash from watched set; pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, shop). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces |
+| `svgs.ts` | chrome-only (HUD, almanac, shop). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces. Chainsaw face. `researchInner`: `unlock-advanced-sensors` is the Logic gate, not AND; `unlock-grinder` is `skill-machinery.svg` 1-1, no new research SVG |
 | `motion.ts` | HUD-only binds. Live craft `left` uses `furnaceMul` |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes always drawn (faint when lens off). Wetness + AoE still lens / tool. Sprinkler AoE on hover is view. Pipe drag-to-draw is view-local pending run; commit existing `placePipe` per edge; no new cmd.

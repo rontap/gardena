@@ -188,6 +188,7 @@ import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
+import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
@@ -334,6 +335,7 @@ export type AtlasKey =
   | ShovelId
   | PickaxeId
   | 'axe'
+  | 'chainsaw'
   | 'wood'
   | 'ash'
   | 'treasure'
@@ -713,6 +715,7 @@ async function load(): Promise<void> {
   put('flour', itemFlour)
   put('extract', itemExtract)
   put('axe', itemAxe)
+  put('chainsaw', itemChainsaw)
   put('wood', itemWood)
   put('ash', itemAsh)
   put('treasure', itemTreasure)
@@ -883,6 +886,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'flour') return 'flour'
   if (item.kind === 'extract') return 'extract'
   if (item.kind === 'axe') return 'axe'
+  if (item.kind === 'chainsaw') return 'chainsaw'
   if (item.kind === 'wood') return 'wood'
   if (item.kind === 'ash') return 'ash'
   if (item.kind === 'treasure') return 'treasure'

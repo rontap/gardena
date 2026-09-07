@@ -65,6 +65,7 @@ export function buildTree(): Tree {
   }
 
   for (const id of Object.keys(SKUS) as SkuId[]) {
+    if (id === 'buy-or' || id === 'buy-and' || id === 'buy-water-system') continue
     const sku = SKUS[id]
     const label = skuLabel(id)
     if (sku.unlock !== 'start') {

@@ -276,3 +276,76 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
   expect(dug.south).toBe('untilled')
   expect(dug.seed).toBe(true)
 })
+
+test('chop with Chainsaw', async ({ page }) => {
+  test.setTimeout(120_000)
+  await gotoPlay(page, { speed: 3 })
+  await viewReady(page)
+
+  const at = await readWorld<At>(page, null, `(() => {
+    for (let row = 0; row < 32; row++) {
+      for (let col = 0; col < 32; col++) {
+        const c = w.cell({ col, row })
+        if (c.kind === 'tree' && c.base.col === col && c.base.row === row) return { col, row }
+      }
+    }
+    throw new Error('tree')
+  })()`)
+  await page.evaluate(
+    ([at, uses, work]) => {
+      const w = (
+        window as unknown as {
+          __world?: {
+            seats: { actor: { x: number; y: number }; hand: unknown }[]
+            cell: (c: { col: number; row: number }) => { kind: string; juvenile: number }
+          }
+        }
+      ).__world
+      if (w === undefined) throw new Error('no __world')
+      w.seats[0].actor.x = at.col + 0.5
+      w.seats[0].actor.y = at.row + 0.5
+      w.seats[0].hand = { kind: 'hold', item: { kind: 'chainsaw', usesLeft: uses, workSeconds: work } }
+      const c = w.cell(at)
+      if (c.kind === 'tree' && c.juvenile < 1) c.juvenile = 1
+    },
+    [at, AXES.chainsaw.uses, AXES.chainsaw.workSeconds],
+  )
+  await ticks(page, TREES.apple.juvenileSeconds + 1)
+  await page.evaluate(at => {
+    const w = (
+      window as unknown as {
+        __world?: {
+          seam: { kind: string }
+          dismissRecap: () => void
+          enqueue: (i: { act: string; at: { col: number; row: number } }) => void
+          cell: (c: { col: number; row: number }) => { juvenile: number }
+        }
+      }
+    ).__world
+    if (w === undefined) throw new Error('no __world')
+    if (w.seam.kind === 'recap') w.dismissRecap()
+    const c = w.cell(at)
+    if (c.juvenile < 1) c.juvenile = 1
+    w.enqueue({ act: 'chop', at })
+  }, at)
+  await drain(page)
+  const chopped = await readWorld<{ trunk: boolean; wood: number; uses: number; kind: string }>(
+    page,
+    at,
+    `(() => {
+      const c = w.cell(at)
+      const wood = w.drops.filter(d => d.item.kind === 'wood').reduce((n, d) => n + d.item.count, 0)
+      const hand = w.seats[0].hand
+      return {
+        trunk: c.trunk,
+        wood,
+        kind: hand.kind === 'hold' ? hand.item.kind : 'empty',
+        uses: hand.kind === 'hold' && hand.item.kind === 'chainsaw' ? hand.item.usesLeft : 0,
+      }
+    })()`,
+  )
+  expect(chopped.trunk).toBe(true)
+  expect(chopped.wood).toBe(1)
+  expect(chopped.kind).toBe('chainsaw')
+  expect(chopped.uses).toBe(AXES.chainsaw.uses - 1)
+})

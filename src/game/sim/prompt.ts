@@ -741,7 +741,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (cell.kind === 'dead') return intent(m.prompt_dig_out_dead(), { act: 'shovel', at })
     return needSeeds(cell)
   }
-  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'axe') {
+  if (
+    w.act.hand.kind === 'hold' &&
+    (w.act.hand.item.kind === 'axe' || w.act.hand.item.kind === 'chainsaw')
+  ) {
     if (cell.kind === 'tree' && cell.juvenile >= 1 && !cell.trunk) {
       return intent(m.prompt_chop(), { act: 'chop', at })
     }

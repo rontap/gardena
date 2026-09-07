@@ -24,6 +24,10 @@ Ink silhouette, water fill, house highlight. Same droplet language as `overlay-w
 
 `item-axe.svg` — viewBox `0 0 24 24`. Wood haft, iron head, one-sided blade. Not the pickaxe T.
 
+## Chainsaw
+
+`item-chainsaw.svg` — viewBox `0 0 24 24`. Wood haft, iron housing, iron bar, oil chain. Not the axe blade. Not a pickaxe T. Not `skill-machinery`.
+
 ## Wood
 
 `item-wood.svg` — viewBox `0 0 24 24`. Cut log. Dirt bark, dirt cut face with rings.

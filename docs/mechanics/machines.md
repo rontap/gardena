@@ -25,9 +25,9 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 | `Furnace` | `furnace` | `buy-furnace` | `unlock-furnace` |
 | `Barrel` | `barrel` | `buy-barrel` | `unlock-fermentation` |
 | `Freezer` | `freezer` | `buy-freezer` | `unlock-preservatives` |
-| `ResearchStation` | `station` | `buy-research-station` | `start` |
+| `ResearchStation` | `station` | `buy-research-station` | `unlock-crop-variants` |
 
-`buy-research-station`: Processing shelf, `show: 'start'`, `need: []`. No research row this update. `haggling`. Guest may shop, place, delete and dump. `dest(station)` = `at`.
+`buy-research-station`: Processing shelf, unlock and show `unlock-crop-variants`, `need: []`. No research row of its own. `haggling`. Guest may shop, place, delete and dump. `dest(station)` = `at`.
 
 `World.stills` holds the same `PotStill` instances as their cells. Join a water net like `Tap` — [[mechanics/water]]. Furnace and station are cell-only, not a water join.
 

@@ -106,6 +106,7 @@ export type Item =
   | { kind: 'grass'; count: number }
   | { kind: 'weed-spray'; liters: number; capacityLiters: number }
   | { kind: 'axe'; usesLeft: number; workSeconds: number }
+  | { kind: 'chainsaw'; usesLeft: number; workSeconds: number }
   | { kind: 'wood'; count: number }
   | { kind: 'ash'; count: number }
   | { kind: 'treasure'; coins: number }
@@ -281,6 +282,7 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'weed') return m.names_item_weed()
   if (it.kind === 'weed-spray') return m.names_item_weed_spray()
   if (it.kind === 'axe') return m.names_item_axe()
+  if (it.kind === 'chainsaw') return m.names_item_chainsaw()
   if (it.kind === 'wood') return m.names_item_wood()
   if (it.kind === 'ash') return m.names_item_ash()
   if (it.kind === 'graft') return m.names_item_graft({ name: cropVariety(it.crop, it.variety) })
@@ -533,6 +535,9 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'axe') {
     return m.hud_line_uses({ name: m.names_item_axe(), left: item.usesLeft, uses: AXES.axe.uses })
   }
+  if (item.kind === 'chainsaw') {
+    return m.hud_line_uses({ name: m.names_item_chainsaw(), left: item.usesLeft, uses: AXES.chainsaw.uses })
+  }
   if (item.kind === 'wood') return m.hud_line_count({ name: m.names_item_wood(), count: item.count })
   if (item.kind === 'ash') return m.hud_line_compost({ name: m.names_item_ash(), count: item.count })
   if (item.kind === 'grass') return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
@@ -611,6 +616,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
   'buy-furnace': () => m.names_sku_buy_furnace(),
   'buy-axe': () => m.names_sku_buy_axe(),
+  'buy-chainsaw': () => m.names_sku_buy_chainsaw(),
   'buy-research-station': () => m.names_sku_buy_research_station(),
 }
 
@@ -690,6 +696,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-furnace': () =>
     m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH, cap: FURNACE_CAP }),
   'buy-axe': () => m.catalog_axe(AXES.axe),
+  'buy-chainsaw': () => m.catalog_chainsaw(AXES.chainsaw),
   'buy-research-station': () =>
     m.catalog_sku_buy_research_station({
       need: STATION_IN,
@@ -721,6 +728,10 @@ export function makePickaxe(id: PickaxeId): Item {
 
 export function makeAxe(): Item {
   return { kind: 'axe', usesLeft: AXES.axe.uses, workSeconds: AXES.axe.workSeconds }
+}
+
+export function makeChainsaw(): Item {
+  return { kind: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds }
 }
 
 export function makeContainer(id: ContainerId, liters: number): Item {
@@ -769,6 +780,8 @@ export function skuItem(id: SkuId): Face {
       return makePickaxe('better-pickaxe')
     case 'buy-axe':
       return makeAxe()
+    case 'buy-chainsaw':
+      return makeChainsaw()
     case 'buy-bucket':
       return makeContainer('bucket', CONTAINERS.bucket.capacityLiters)
     case 'buy-bucket-large':
@@ -981,6 +994,7 @@ function copyItem(item: Item): Item {
     case 'grass':
     case 'weed-spray':
     case 'axe':
+    case 'chainsaw':
     case 'wood':
     case 'ash':
     case 'treasure':

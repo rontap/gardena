@@ -377,6 +377,12 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_axe(AXES.axe),
     },
     {
+      id: 'chainsaw',
+      title: m.names_item_chainsaw(),
+      icon: { kind: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds },
+      blurb: m.catalog_chainsaw(AXES.chainsaw),
+    },
+    {
       id: 'wood',
       title: m.names_item_wood(),
       icon: { kind: 'wood', count: 1 },

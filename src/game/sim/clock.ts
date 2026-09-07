@@ -18,7 +18,7 @@ export function days(s: number): number {
 export class Clock {
   day = 1
   t = 0
-  banner = 2
+  banner = 4
 
   get remaining(): number {
     return DAY_SECONDS - this.t

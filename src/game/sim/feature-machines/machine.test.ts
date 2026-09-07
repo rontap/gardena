@@ -328,7 +328,8 @@ describe('machines.furnace-feed', () => {
   test('Accept compost feedstock + oil + spirit + wood + tree-seed. Values as `FURNACE_VALUE`. Mix. Cap `FURNACE_CAP`. Refuse jam/cask/flour/extract/ash/tools.', () => {
     expect(FURNACE_CAP).toBe(100)
     expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 25, spirit: 36, wood: 40 })
-    expect(AXES.axe).toEqual({ uses: 40, workSeconds: 5 })
+    expect(AXES.axe).toEqual({ uses: 30, workSeconds: 5 })
+    expect(AXES.chainsaw).toEqual({ uses: 90, workSeconds: 3 })
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 12 }
     const f = putFurnace(w, at)
@@ -344,6 +345,7 @@ describe('machines.furnace-feed', () => {
     expect(furnaceValue({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'ash', count: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'chainsaw', usesLeft: 3, workSeconds: 1 })).toBe(0)
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 2.5
     w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }

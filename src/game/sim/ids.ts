@@ -147,6 +147,7 @@ export type ResearchId =
   | 'expand-land'
   | 'eminent-domain'
   | 'unlock-pickaxe'
+  | 'unlock-hardened-tools'
   | 'unlock-chest'
   | 'unlock-grinder'
   | 'unlock-fertilizer'
@@ -229,6 +230,7 @@ export type SkuId =
   | 'buy-traffic-light'
   | 'buy-furnace'
   | 'buy-axe'
+  | 'buy-chainsaw'
   | 'buy-research-station'
 
 export type SensorKind =

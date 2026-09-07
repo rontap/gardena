@@ -74,6 +74,7 @@ const UTIL_IDS = [
   'pickaxe',
   'better-pickaxe',
   'axe',
+  'chainsaw',
   'bucket',
   'large-bucket',
   'fertilizer',

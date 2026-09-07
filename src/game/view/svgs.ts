@@ -37,6 +37,7 @@ import itemFreezer from '../../assets/items/item-freezer.svg?raw'
 import itemFurnace from '../../assets/items/item-furnace.svg?raw'
 import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
+import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
@@ -459,6 +460,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'shovel') return SHOVEL_ART[item.id]
   if (item.kind === 'pickaxe') return PICKAXE_ART[item.id]
   if (item.kind === 'axe') return svgInner(itemAxe)
+  if (item.kind === 'chainsaw') return svgInner(itemChainsaw)
   if (item.kind === 'container') {
     if (item.id === 'bucket') return svgInner(bucket)
     return svgInner(largeBucket)
@@ -615,9 +617,11 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-chest':
       return itemInner({ kind: 'chest' })
     case 'unlock-grinder':
-      return itemInner({ kind: 'grinder' })
+      return svgInner(skillMachinery)
     case 'unlock-pickaxe':
       return svgInner(pickaxe)
+    case 'unlock-hardened-tools':
+      return svgInner(betterPickaxe)
     case 'unlock-fertilizer':
       return svgInner(uiResearchFertilizer)
     case 'unlock-crop-variants':
@@ -641,7 +645,7 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-sensors':
       return stageOnly(itemLever, 'off')
     case 'unlock-advanced-sensors':
-      return svgInner(itemAnd)
+      return stageOnly(itemLogic, 'or')
     case 'unlock-smart-irrigation':
       return svgInner(uiResearchSmart)
     case 'unlock-contracts':

@@ -166,7 +166,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.hud` — HUD / docks / panels are React. Not in Pixi. No `@pixi/react`. No Pixi HUD.
 
-`view.boot` — Until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `text-white/70`, body face `text-lg`. Play and menu. Menu canvas fade-in still runs after `onReady`; Loading unmounts then. Not Pixi. Not a `DirtyReason`.
+`view.boot` — Until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `font-display` `text-5xl` `text-white`, fade in 0.5s ease-in opacity 0 → 0.7, fade out 0.5s ease-out to 0, then unmount. Play and menu. Menu canvas fade-in still runs after `onReady`. Not Pixi. Not a `DirtyReason`.
 
 `view.ticker` — Sim is not interpolated. View vehicles keep `QUAD_FOLLOW`. App owns the `DT_MAX` accumulator. Pixi ticker paints. `ping` is discrete dirty only.
 

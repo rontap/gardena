@@ -105,7 +105,7 @@ Not a wash. A wash means a new parameter through `WorldView.patch` → `OverlayL
 
 Hidden while the vehicle editor is on — the Stops Window claims that exact anchor ([[ui/vehicles]]). Recap is not a seam. The column stays up while the recap popup is open.
 
-Title on the column, same plate as Hide: **Command Center**.
+Title on the column: **Command Center**. Not on the Hide plate.
 
 ### Block
 
@@ -130,7 +130,7 @@ A contract's subjects are its unfilled demand lines. A jam demand expands to one
 
 Row text is `text-base`, the body and row-label step; the overflow line is `text-sm` as secondary — [[ui/type]]. Both icons are `h-5 w-5`, the ribbon's glyph size. One line, dense, and readable at arm's length.
 
-Every row takes `cursor-pointer` and a hover fill, whether or not it clicks through. Hovering is itself the interaction — it outlines that block's cells on the map — and a row that reacts to the pointer must say so.
+Every row takes `cursor-pointer` and a hover fill, whether or not it clicks through. Hover covers the whole notice cell — full block width and the row's padded area. Not an inset. Pad sits inside the hover target. Hovering is itself the interaction — it outlines that block's cells on the map — and a row that reacts to the pointer must say so.
 
 A bar is `h-[2px]`, and its colour is its news: `STAT_COLOR.red` for a `noticeBad` kind — a clock draining toward a loss — and `STAT_COLOR.green` for a contract filling or research advancing. A green bar under a dying plant reads as progress toward something wanted.
 
@@ -140,7 +140,7 @@ Dead plants and rotten produce have no bar. They do not worsen and they do not c
 
 ### Controls
 
-Hide is one small control at the head of the column, on the same plate as the title. Hidden, the column translates off the right edge over 300ms and a tab at `right-0` brings it back. Both carry a hit area — a bare glyph at this size is not clickable. App-local. Not a `Setting` — nothing behind the gear, nothing in `localStorage`.
+Hide is one small control at the head of the column. That plate is only Hide. Hidden, the column translates off the right edge over 300ms and a tab at `right-0` brings it back. Both carry a hit area — a bare glyph at this size is not clickable. App-local. Not a `Setting` — nothing behind the gear, nothing in `localStorage`.
 
 Click is per row, not per block. Left click runs that row's `go`. Recap `go` opens that day's recap popup (App `recapDay`, not `World.seam`).
 

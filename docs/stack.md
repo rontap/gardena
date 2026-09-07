@@ -13,7 +13,7 @@ Locked for this game.
 
 Do not add Vue, CSS-in-JS, a second bundler, or a CSS framework.
 
-One exception: `mermaid`, for the `#debug-techtree` unlock graph only — [[ui/cheat]]. Dynamically imported in `main.tsx`, so it lands in its own chunk and never in the game bundle. Vite `optimizeDeps.exclude` lists it: a lockfile change otherwise re-bundles every mermaid diagram at `npm run dev` and the server looks hung. Do not reach for it in game UI.
+One exception: `mermaid`, for the `#debug-techtree` unlock graph only — [[ui/cheat]]. Dynamically imported in `main.tsx`, so it lands in its own chunk and never in the game bundle. Vite `optimizeDeps.exclude` lists it: a lockfile change otherwise re-bundles every mermaid diagram at `npm run dev` and the server looks hung. Package entry is `mermaid.core.mjs`, which imports CJS (`dayjs`, `@braintree/sanitize-url`) with no ESM named export. `resolve.alias` points `mermaid` at `mermaid/dist/mermaid.esm.min.mjs`, the bundled build that inlines those. Do not reach for mermaid in game UI.
 
 Renderer: **PixiJS v8 canvas world**. HUD/panels are React + Tailwind, not Pixi. No `@pixi/react`. Chrome SVGs stay in React. Contract: [[architecture/view]].
 

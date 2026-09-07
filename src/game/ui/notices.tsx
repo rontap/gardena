@@ -116,11 +116,11 @@ function Block({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
-      <div className="flex min-w-0 flex-col gap-1 px-2 py-2">
+      <div className="flex min-w-0 flex-col">
         {shown.map(r => (
           <div
             key={r.id}
-            className="cursor-pointer rounded-sm hover:bg-parch"
+            className="cursor-pointer px-2 py-1 first:pt-2 last:pb-2 hover:bg-parch"
             onClick={() => onGo(r)}
             onContextMenu={e => {
               e.preventDefault()
@@ -130,7 +130,9 @@ function Block({
             <Row row={r} />
           </div>
         ))}
-        {rest > 0 && <span className="truncate text-sm leading-tight text-ink/60">{m.notices_more({ n: rest })}</span>}
+        {rest > 0 && (
+          <span className="truncate px-2 pb-2 pt-1 text-sm leading-tight text-ink/60">{m.notices_more({ n: rest })}</span>
+        )}
       </div>
     </div>
   )
@@ -205,19 +207,23 @@ export function Notices({
           hidden ? 'translate-x-[120%]' : 'translate-x-0'
         }`}
       >
-        <div className="pointer-events-auto relative flex w-full items-center justify-between border-x border-ink bg-house px-2 py-0.5">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
-          <span className="text-sm leading-none text-ink">{m.notices_title()}</span>
+        <div className="flex w-full items-center gap-1">
+          <div className="pointer-events-none relative min-w-0 flex-1 border-x border-ink bg-house px-2 py-0.5">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
+            <span className="truncate text-sm leading-none text-ink">{m.notices_title()}</span>
+          </div>
           <button
             type="button"
             aria-label={m.notices_hide()}
-            className="cursor-pointer px-1 py-0.5 text-sm leading-none text-ink/60 hover:text-ink"
+            className="pointer-events-auto relative shrink-0 cursor-pointer border-x border-ink bg-house px-2 py-0.5 text-sm leading-none text-ink/60 hover:text-ink"
             onClick={() => {
               onHighlight([])
               setHidden(true)
             }}
           >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
             {'›'}
           </button>
         </div>

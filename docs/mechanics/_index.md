@@ -5,7 +5,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center
 - [[mechanics/soil]]
 - [[mechanics/plants]] — variety, quality, graft attach, neighbour
-- [[mechanics/trees]] — axe, wood, trunk, grafts
+- [[mechanics/trees]] — axe, chainsaw, wood, trunk, grafts
 - [[mechanics/water]]
 - [[mechanics/weather]]
 - [[mechanics/sensors]]
@@ -14,7 +14,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/market]]
 - [[mechanics/saturation]]
 - [[mechanics/contracts]]
-- [[mechanics/research]]
+- [[mechanics/research]] — `unlock-hardened-tools`. `research.hardened` `research.techtree`
 - [[mechanics/family]] — luck
 - [[mechanics/expansion]]
 - [[mechanics/burrow]] — cover, loot roll, luck, treasure
@@ -128,6 +128,8 @@ See [[canon]].
 | research.furnace | [[mechanics/research]] |
 | research.variants | [[mechanics/research]] |
 | research.start | [[mechanics/research]] |
+| research.hardened | [[mechanics/research]] |
+| research.techtree | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
 | family.lens | [[mechanics/family]] |
 | family.skills | [[mechanics/family]] |

@@ -1209,12 +1209,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
           )}
           <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
+            key={world.clock.day}
             ref={el => bindHud('banner', el)}
             data-banner
-            hidden={world.clock.banner <= 0}
-            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-24 font-display text-4xl leading-[1.2] text-white/70"
+            className={`pointer-events-none absolute inset-0 flex items-start justify-center pt-24 font-display text-4xl leading-[1.2] text-white ${
+              world.clock.banner > 0 ? 'farm-banner' : 'opacity-0'
+            }`}
           >
-            {world.clock.banner > 0 ? m.hud_day({ day: world.clock.day }) : ''}
+            {m.hud_day({ day: world.clock.day })}
           </div>
       </div>
     </Tooltip.Provider>

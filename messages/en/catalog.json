@@ -133,6 +133,7 @@
   "catalog_station": "Cuts grafts from Heirloom fruit. {need} fruit take {seconds}s and come back cut, beside {min} to {max} grafts of that Variety at the Quality that went in. A graft is how a Variety moves onto a plant already in the ground. A chest on the right takes what comes out, else it drops in front.",
   "catalog_sku_buy_research_station": "Cuts grafts from Heirloom fruit. {need} fruit take {seconds}s and come back cut, beside {min} to {max} grafts of that Variety at the Quality that went in. A graft is how a Variety moves onto a plant already in the ground. A chest on the right takes what comes out, else it drops in front.",
   "catalog_axe": "Chops a mature tree into Wood. The tree then grows a trunk and grows again before it fruits. {uses} uses, {workSeconds}s per chop.",
+  "catalog_chainsaw": "Chops a mature tree into Wood. Lasts for more uses and each Chop takes fewer seconds than an Axe. {uses} uses, {workSeconds}s per chop.",
   "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
   "catalog_ash": [
     {

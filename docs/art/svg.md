@@ -47,9 +47,9 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `pipe-valve-jack` | `jack` |
-| `ui-cursor.svg` | `walk` `dig` `water` `gather` `tune` `wire` |
+| `ui-cursor.svg` | `walk` `dig` `water` `gather` `tune` `bright` `wire` |
 
-Chrome cursor: `python scripts/gen-cursor.py` writes `src/assets/ui/ui-cursor.svg`. Same triangle as the pointer silhouette. House fills the interior (negative space); rim is ripe / water / leaf. Stem two units left. `wire` fruit-red left / water right. `dig` is a pick. `tune` is house fill with a ripe edge — hover on a machine that has an Object HUD.
+Chrome cursor is hand-drawn `src/assets/ui/ui-cursor.svg`. CSS face is 32×32 (`cursor.ts` `SIZE`), hotspot 1,1. Same pointer in every group. Inner edge bends in toward the stem. Stem centerline through the tip. Ink outline. Stem steps +1 x every 2 rows; trunk end is a 3×2 ink cap on that diagonal (`y=20..21`, `x=10` width 3). Fill is 2–4 named shades of that pointer's primary, light left / dark right — not dirt on gold. `walk` house + ripe + tier-3. `dig` dirt + dirt-dark + roof. `water` steel + water + tier-2. `gather` leaf + grass + grass-dark. `tune` steel + iron + oil. `bright` is `walk`'s layout one step lighter (house + ripe); ink unchanged. `wire` fill is even fruit-red left / water right.
 
 One face per Variety, no more and no fewer. Crop ripe: `ripe` (base), `ripe-variant`, `ripe-heirloom`. Fruit: `base`, `variant`, `heirloom`. A crop with fewer Varieties carries fewer groups — a spare group is art nobody can reach, and a copy of `base` is a Variety the player cannot see. Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). `atlas.test.ts` `view.groups` holds the files and the code to the same set.
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { AXES } from '../defs/items.ts'
 import { TREES } from '../defs/trees.ts'
 import { Tree, frontOf } from './building.ts'
-import { makeAxe } from './item.ts'
+import { makeAxe, makeChainsaw } from './item.ts'
 import { treeLine } from './prompt.ts'
 import { bare } from './plot.ts'
 import { dump, parse } from './feature-save/save.ts'
@@ -29,8 +29,8 @@ function drain(w: World): void {
   while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
 }
 
-describe('trees', () => {
-  test('Axe, mature not trunk, `AXES.axe.workSeconds`, `AXES.axe.uses`, 1 wood, fruit progress lost.', () => {
+describe('trees.chop', () => {
+  test('Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and 2 grafts of that tree\'s variety, fruit progress lost.', () => {
     const w = new World()
     const tree = plantTree(w, 1, 0.6, { kind: 'on', daysLeft: 2 })
     tree.tended = true
@@ -63,6 +63,9 @@ describe('trees', () => {
     const wood = w.drops.filter(d => d.item.kind === 'wood')
     expect(wood).toHaveLength(1)
     expect(wood[0].item).toEqual({ kind: 'wood', count: 1 })
+    const grafts = w.drops.filter(d => d.item.kind === 'graft')
+    expect(grafts).toHaveLength(1)
+    expect(grafts[0].item).toEqual({ kind: 'graft', crop: 'apple', variety: 'base', quality: 0, count: 2 })
     expect(w.drops.some(d => d.item.kind === 'weed' && d.at.col === stay.col && d.at.row === stay.row)).toBe(true)
     expect(w.cell(AT)).toBe(tree)
     expect(w.cell(below)).toBe(tree)
@@ -105,8 +108,26 @@ describe('trees', () => {
     expect(w.drops.filter(d => d.item.kind === 'wood')).toHaveLength(woods)
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'axe' && w.seats[0].hand.item.usesLeft).toBe(uses)
     expect(w.seats[0].queue).toHaveLength(0)
-  })
 
+    expect(AXES.axe.uses).toBe(30)
+    expect(AXES.chainsaw).toEqual({ uses: 90, workSeconds: 3 })
+    tree.trunk = false
+    tree.juvenile = 1
+    tree.fruit = 0.3
+    w.seats[0].hand = { kind: 'hold', item: makeChainsaw() }
+    w.enqueue({ act: 'chop', at: AT })
+    w.tick(DT_MAX)
+    expect(w.seats[0].workTotal).toBe(AXES.chainsaw.workSeconds)
+    drain(w)
+    expect(tree.trunk).toBe(true)
+    expect(w.seats[0].hand).toEqual({
+      kind: 'hold',
+      item: { kind: 'chainsaw', usesLeft: AXES.chainsaw.uses - 1, workSeconds: AXES.chainsaw.workSeconds },
+    })
+  })
+})
+
+describe('trees', () => {
   test('Chop → trunk `juvenileSeconds` → sapling `juvenileSeconds` → pending. `trunk` required boolean. Stage `grow` is that sapling.', () => {
     const w = new World()
     const tree = plantTree(w, 1, 0.5, { kind: 'on', daysLeft: 1 })

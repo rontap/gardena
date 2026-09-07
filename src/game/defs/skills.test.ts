@@ -25,6 +25,7 @@ describe('skills i18n', () => {
     expect(SKILLS.tending.blurb).toBe(m.skills_tending_blurb())
     expect(SKILLS['research-speed'].blurb).toBe(m.skills_research_speed_blurb({ pct: 5 }))
     expect(SKILLS.machinery.blurb).toBe(m.skills_machinery_blurb({ pct: 5 }))
+    expect(SKILLS.machinery.gate).toEqual({ kind: 'research', id: 'unlock-grinder' })
     expect(SKILLS.haggling.blurb).toBe(m.skills_haggling_blurb({ off: 1 }))
     expect(SKILLS.forecast.blurb).toBe(m.skills_forecast_blurb())
     expect(SKILLS.tax.blurb).toBe(m.skills_tax_blurb({ pct: 2 }))

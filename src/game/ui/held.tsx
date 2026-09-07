@@ -54,7 +54,9 @@ function Badge({ item }: { item: Item }) {
 }
 
 function badge(item: Item): string | undefined {
-  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe' || item.kind === 'chainsaw') {
+    return String(item.usesLeft)
+  }
   if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
   if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Math.visualRound(item.liters)}L`
@@ -107,7 +109,9 @@ export function ItemLineView({ item }: { item: Item }) {
 }
 
 function heldNumber(item: Item): string {
-  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe') return String(item.usesLeft)
+  if (item.kind === 'shovel' || item.kind === 'pickaxe' || item.kind === 'axe' || item.kind === 'chainsaw') {
+    return String(item.usesLeft)
+  }
   if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
   if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Math.visualRound(item.liters)}L`

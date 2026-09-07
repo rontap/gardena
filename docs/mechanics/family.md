@@ -72,6 +72,7 @@ Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: another 
 | `lucky` | none |
 | `driving-classes` | research `unlock-vehicles` done |
 | `broker` | research `unlock-contracts` done |
+| `machinery` | research `unlock-grinder` done |
 | else | none |
 
 Potato / wheat Experienced growers: gated on Crop variants. Tree `better-*`: no research gate.
@@ -126,7 +127,7 @@ Crop stall bins: stock + worth per variety × bio. Illegal: consign that drops `
 - boots: `WALK × (1 + 0.05 × tier)`
 - bulk-up: hand stack cap `STACK_MAX + BULK_UP_STEP × tier`, `STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP × tier` for spirit / wine / jam / oil / flour / extract. Additive owned tiers. Liters not — [[mechanics/inventory]] `inventory.stack`
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Additive owned tiers. Yaw not. Boots not. — [[mechanics/vehicles]]
-- machinery: valve 0.3s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel / station not work jobs. Pipe place stays 0
+- machinery: gate `unlock-grinder`. valve 0.3s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel / station not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`
 - haggling: utility AND automation tab `skuPrice` `− $tier` then min $1. Hangar-buys still not `skuPrice`
 - drought `skuPrice`: `tab === 'seeds' | 'utility'`, after haggling min $1, then ×2. Automation / building / hangar-buys untouched — [[mechanics/weather]]
@@ -149,7 +150,7 @@ Assumption: `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: '
 
 `family.lens` — Water lens only if husband owns `water-study`. Land lens if husband owns `land-study`. Vehicle interactions lens if `unlock-vehicles` done.
 
-`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per owned tier on `World.stackMax`. `lucky` max 3, gate none, `{ kind: 'lucky' }`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active. Daughter `heirloom` pays on variety tier `heirloom` of crop fruit, spirit, wine.
+`family.skills` — `PlayerSkillId`: `bulk-up` max 3, no gate, `+BULK_UP_STEP` / `+BULK_UP_CRAFTED_STEP` per owned tier on `World.stackMax`. `lucky` max 3, gate none, `{ kind: 'lucky' }`. `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `better-grape` gate `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `machinery` gate `unlock-grinder`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active. Daughter `heirloom` pays on variety tier `heirloom` of crop fruit, spirit, wine.
 
 `family.better-set` — `better-*` exists for potato wheat tomato raspberry grape apple apricot olive cherry. `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)`. Tree `better-*` is `saleMul` only.
 

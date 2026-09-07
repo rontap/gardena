@@ -24,7 +24,7 @@ VarietyId    = base | bintje | red-fife | green-zebra | san-marzano | black-rasp
              | arbequina | bing
 ```
 
-`ResearchId` has no `unlock-watermelon`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
+`ResearchId` has no `unlock-watermelon`. `ResearchId` += `unlock-hardened-tools`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station` `buy-chainsaw`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
 
 Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`. Illegal: optional `quality`. Illegal: optional `cut`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
 
@@ -111,6 +111,14 @@ Crop goods: stock and worth per variety × `bio`. Illegal: fruit consign that dr
 No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required. `{ kind: 'treasure'; coins: number }`. `coins` required. Illegal: `treasure.count`. Not countable.
 
 ```
+ChopItem =
+  | { kind: 'axe'; usesLeft: number; workSeconds: number }
+  | { kind: 'chainsaw'; usesLeft: number; workSeconds: number }
+```
+
+No `id` on either. Illegal: `{ kind: 'better-axe' }`. Chop legal hand is `ChopItem`. Work is the held item's `workSeconds`.
+
+```
 Spirit =
   | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId; quality: number; count: number; unitSale: number }
   | { kind: 'spirit'; spirit: 'mixed'; quality: number; count: number; unitSale: number }
@@ -142,7 +150,7 @@ Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). 
 
 `Act.dismissRecap` / `dismissRecapBody`: no-op. Log letter unchanged.
 
-Seam, before any field tick of the new day: stipend, tax, pump bill, burrow mint, tree seam, append `Recap` to `World.recaps`, push that day onto `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `clock.banner = 2`, `seam` stays play, tally reset, `contracts.takenToday`, ping. `World.tick` does not return early. Recap popup is App `recapDay`, not `World.seam`. [[architecture/family]] [[mechanics/day]] [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]] [[ui/notices]].
+Seam, before any field tick of the new day: stipend, tax, pump bill, burrow mint, tree seam, append `Recap` to `World.recaps`, push that day onto `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `clock.banner = 4`, `seam` stays play, tally reset, `contracts.takenToday`, ping. `World.tick` does not return early. Recap popup is App `recapDay`, not `World.seam`. [[architecture/family]] [[mechanics/day]] [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]] [[ui/notices]].
 
 ## Family
 

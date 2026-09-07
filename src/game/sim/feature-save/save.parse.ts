@@ -170,7 +170,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
   const world = World.hydrate(h)
   if (save.seam.kind === 'recap') {
     world.grantPoints(POINTS_PER_DAY)
-    world.clock.banner = 2
+    world.clock.banner = 4
   }
   return world
 }

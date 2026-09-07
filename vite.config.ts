@@ -14,6 +14,9 @@ export default defineConfig({
       strategy: ['baseLocale'],
     }),
   ],
+  resolve: {
+    alias: [{ find: /^mermaid$/, replacement: 'mermaid/dist/mermaid.esm.min.mjs' }],
+  },
   optimizeDeps: {
     exclude: ['mermaid'],
   },

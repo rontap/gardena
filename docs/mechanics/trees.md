@@ -64,11 +64,19 @@ Witness `Tree.tended` — [[architecture/ai-gameplay-api]]. Plants unchanged: [[
 
 ## Chop
 
-`AXES.axe` `{ uses; workSeconds }` — preference. Item `{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. No better-axe. 0 uses: hand empty.
+`AXES.axe` `{ uses: 30; workSeconds }` — uses 30 preference; workSeconds preference. `AXES.chainsaw` `{ uses: 90; workSeconds: 3 }` — preference.
 
-`Intent` `{ act: 'chop'; at: Coord }`. `dest` = `at`. Either cell of the 1×2. Work `AXES.axe.workSeconds`. Prompt **Chop**. Enqueue, no new `Act` letter.
+```
+ChopItem =
+  | { kind: 'axe'; usesLeft; workSeconds }
+  | { kind: 'chainsaw'; usesLeft; workSeconds }
+```
 
-Legal: hand axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`. Not grow. Not trunk. Axe on grow / trunk: no-op.
+No `id`. No better-axe. 0 uses: hand empty.
+
+`Intent` `{ act: 'chop'; at: Coord }`. `dest` = `at`. Either cell of the 1×2. Work is the held item's `workSeconds`. Prompt **Chop**. Enqueue, no new `Act` letter.
+
+Legal: hand axe or chainsaw, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`. Not grow. Not trunk. Axe or chainsaw on grow / trunk: no-op.
 
 Complete: `usesLeft -= 1`, drop `{ kind: 'wood'; count: 1 }` `frontOf`, drop `{ kind: 'graft'; crop: species; variety: Tree.variety; quality: 0; count: 2 }` `frontOf`, then `trunk = true`, `juvenile = 0`, `fruit = 0`, `yield = pending`, `tended = false`. Pending fruit is lost. Ground drops around the tree stay. Chop always completes. Variety on the trunk is unchanged.
 
@@ -94,7 +102,7 @@ Assumption: wood and grafts use `frontOf` / `dropSpot`; no plot does not undo th
 
 `trees.tend` — Tend once per off-season: player owns `tending`, empty hand, `cell.kind === 'tree'`, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`, `trunk === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Seam `on` → `off`: `tended = false`, then `chance = -0.2`. Not pending. Not `{ on }`. Not juvenile. Not trunk. Not grow. Prompt **Tend**. Witness `Tree.tended`.
 
-`trees.chop` — Axe, mature not trunk, `AXES.axe.workSeconds`, `AXES.axe.uses`, 1 wood and 2 grafts of that tree's variety, fruit progress lost.
+`trees.chop` — Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and 2 grafts of that tree's variety, fruit progress lost.
 
 `graft.axe` — Chop complete drops 2 grafts of `Tree.variety` at quality 0, then the trunk result.
 

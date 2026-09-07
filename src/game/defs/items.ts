@@ -16,7 +16,8 @@ export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds:
 }
 
 export const AXES = {
-  axe: { uses: 40, workSeconds: 5 },
+  axe: { uses: 30, workSeconds: 5 },
+  chainsaw: { uses: 90, workSeconds: 3 },
 } as const
 
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {

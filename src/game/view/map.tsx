@@ -50,11 +50,19 @@ import { VFX } from './vfx.ts'
 
 export type { Lens, MapClick }
 
-export function BootOverlay({ show }: { show: boolean }) {
-  if (!show) return undefined
+export function BootOverlay({ show, onOut }: { show: boolean; onOut?: () => void }) {
+  if (!show && onOut === undefined) return undefined
+  const fade = show ? 'farm-fade-in' : 'farm-fade-out'
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <span className="text-lg text-white/70">{m.hud_loading()}</span>
+      <span
+        className={`font-display text-5xl leading-[1.2] text-white ${fade}`}
+        onAnimationEnd={() => {
+          if (!show) onOut?.()
+        }}
+      >
+        {m.hud_loading()}
+      </span>
     </div>
   )
 }
@@ -117,11 +125,19 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
   const [pendingFence, setPendingFence] = useState<Coord[]>([])
   const [booted, setBooted] = useState(false)
+  const [bootHold, setBootHold] = useState(true)
   const anchorRef = useRef<Vertex | undefined>(undefined)
   const fenceAnchorRef = useRef<Coord | undefined>(undefined)
   const pendingRef = useRef<Edge[]>([])
   const pendingFenceRef = useRef<Coord[]>([])
   const onReadyRef = useRef(onReady)
+  useEffect(() => {
+    if (!booted) return
+    const reduce =
+      document.documentElement.hasAttribute('data-reduced-motion') ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) setBootHold(false)
+  }, [booted])
   camRef.current = cam
   pendingRef.current = pendingPipe
   pendingFenceRef.current = pendingFence
@@ -181,7 +197,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     ? canPlace
       ? 'pointer'
       : 'crosshair'
-    : cursorCss(cursorFor(hover, prompt, fruitUnder, place.kind === 'wire'))
+    : cursorCss(cursorFor(hover, prompt, fruitUnder, place.kind === 'wire', world.hud !== undefined))
   const tipDrop = hoverCell !== undefined ? onCell(world.drops, hoverCell).at(-1) : undefined
   const tip =
     tipDrop !== undefined &&
@@ -256,6 +272,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     return () => {
       dead = true
       setBooted(false)
+      setBootHold(true)
       viewRef.current = undefined
       mounted?.htmlLayer?.remove()
       mounted?.destroy()
@@ -828,7 +845,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
-      <BootOverlay show={!booted} />
+      {bootHold && <BootOverlay show={!booted} onOut={() => setBootHold(false)} />}
     </div>
   )
 }

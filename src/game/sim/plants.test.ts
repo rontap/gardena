@@ -162,7 +162,7 @@ describe('0.8 plants and trees', () => {
   })
 
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 45, seconds: 85, reveal: ['unlock-grinder'] })
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 45, seconds: 70, reveal: ['unlock-grinder'] })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
     expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
@@ -842,10 +842,10 @@ describe('1.5.2', () => {
     expect(w.contractCap()).toBe(4)
   })
 
-  test('`unlock-crop-variants` plants, cost 5, 40s, reveal tomato | grape | irrigation, effect feature. Without it: ripen identity, shop packs common, silo hides uncommon/rare unless stock. unlock-heirloom requires it.', () => {
+  test("`unlock-crop-variants` plants, cost 16, 40s, `reveal` tomato | grape | irrigation, `effect` `feature`. Ladder effects die: shop packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` `requires` it. Both rows stay.", () => {
     expect(RESEARCH['unlock-crop-variants']).toMatchObject({
       tree: 'plants',
-      cost: 5,
+      cost: 16,
       seconds: 40,
       reveal: ['unlock-tomato', 'unlock-grape', 'unlock-irrigation'],
       requires: [],

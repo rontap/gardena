@@ -52,7 +52,7 @@ Assumption: `evalSensors` storeRaw and `padBuildings` also walk existing World s
 
 ## Seam hold
 
-The day seam does not hold `World.tick`. Live `seam` stays `{ kind: 'play' }`. Solo App (`settings.solo`): on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Recap popup uses the same overlay pause as Family / Market / Almanac; that is not this pause. Seam, after stipend and tax: burrow mint, tree seam, append `Recap`, `recapUnseen`, `grantPoints`, `banner = 2` — [[mechanics/day]] [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[ui/hud]] [[architecture/net]]
+The day seam does not hold `World.tick`. Live `seam` stays `{ kind: 'play' }`. Solo App (`settings.solo`): on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Recap popup uses the same overlay pause as Family / Market / Almanac; that is not this pause. Seam, after stipend and tax: burrow mint, tree seam, append `Recap`, `recapUnseen`, `grantPoints`, `banner = 4` — [[mechanics/day]] [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[ui/hud]] [[architecture/net]]
 
 ## Nets
 

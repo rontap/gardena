@@ -1,3 +1,20 @@
+# 2.6.3 Research rebalance
+
+Hardened tools sells the Hardened pickaxe and a Chainsaw. Gardening tools and Synthetic additives take their new names. Seed Variety Station waits on Crop variants.
+
+- ✨ Added item: Chainsaw. Chops a mature tree into Wood in fewer seconds than an Axe, and lasts for more uses.
+- 🎉 Added mechanic: Hardened tools. A Hardened pickaxe lasts for more uses and mines faster than a Pickaxe, and a Chainsaw chops a mature tree in fewer seconds than an Axe and lasts for more uses.
+- 🔧 Changed item: Hardened pickaxe. previously, Pickaxes sold it with the Pickaxe, now Hardened tools sells it.
+- 🔧 Changed item: Axe. previously, it lasted for more uses, now it lasts for fewer.
+- 🔧 Changed mechanic: Synthetic additives. previously, this research was named Synthetic fertilizer, now it is named Synthetic additives, and the bag in the Shop is still Synthetic fertilizer.
+- 🔧 Changed mechanic: Gardening tools. previously, this research was named Better gardening tools and sat in Trade, now it is named Gardening tools and sits in Plants.
+- 🔧 Changed building: Seed Variety Station. previously, it sat on Processing from the first day, now it shows after Crop variants.
+- 🔧 Changed item: Cobblestone. previously, the cobbles read as brown courses, now they read as stone.
+- 🔧 Changed mechanic: Landscape architecture. previously, Expansion had to show first, now it sits on Land from the start.
+- 🔧 Changed building: Pot still. previously, it sat on Processing from the first day, now it shows after Machinery.
+- 🔧 Changed building: Furnace. previously, it sat on Processing from the first day, now it shows after Machinery.
+- 🔧 Changed mechanic: Machinery. previously, Husband could learn it from the first day, now it is offered after Machinery research.
+
 # 2.6.2 Command center update II
 
 The right-hand column is titled Command Center. Ending a day no longer holds the farm; Day {n} Finished opens the end-of-day summary, Day {n} sits on the field when a day starts, and Loading... sits in the middle of the farm while the map is still coming up.

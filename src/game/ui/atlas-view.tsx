@@ -248,6 +248,23 @@ export function AtlasView() {
                 <span className="text-sm">VFX</span>
               </label>
             </div>
+            {ASSETS.some(a => a.name === 'ui-cursor') && (
+              <Shelf title="cursors">
+                {cellsOf(ASSETS.find(a => a.name === 'ui-cursor')!).map(c => (
+                  <div key={`${c.file}:${c.id}`} className="flex w-56 flex-col items-center gap-2 bg-dirt/25 px-3 py-3">
+                    <div className="flex h-56 w-full items-center justify-center bg-ink/40">
+                      <svg
+                        viewBox={c.vb}
+                        className="h-48 w-48"
+                        shapeRendering="crispEdges"
+                        dangerouslySetInnerHTML={{ __html: c.body }}
+                      />
+                    </div>
+                    <span className="text-center text-xs font-semibold">{c.id}</span>
+                  </div>
+                ))}
+              </Shelf>
+            )}
             {vfxOn && (
               <Shelf title="vfx on props">
                 {PAIRS.map(p => (

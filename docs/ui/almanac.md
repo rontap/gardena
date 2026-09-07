@@ -12,7 +12,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 |---|---|---|
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
-| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
+| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
@@ -59,7 +59,7 @@ Reuse existing faces. No new SVG. Plate is `h-20 w-20`, no caption.
 | Utility / Building / Seeds non-crop SKU | `bg-dirt-dark` |
 | Machine goods — sugar, spirit, cask, jam, oil, flour, extract, ash | `bg-water` |
 
-Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Wood** **Ash** **Furnace**. Station plate `bg-grass`.
+Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Chainsaw** **Wood** **Ash** **Furnace**. Station plate `bg-grass`. Chainsaw plate `bg-dirt-dark` with tools.
 
 `Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives' | 'unlock-furnace')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
 

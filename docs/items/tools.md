@@ -1,10 +1,10 @@
 # Tools
 
-`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `AXES.axe`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`.
+`SHOVELS`: `shovel` `better-shovel` `rotary-shovel`. `PICKAXES`: `pickaxe` `better-pickaxe` `diamond-pickaxe`. `AXES.axe` `AXES.chainsaw`. `CONTAINERS`: `bucket` `large-bucket` — `CONTAINERS.bucket` / `CONTAINERS['large-bucket']`.
 
 Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 
-`workSeconds` is baked on the Item at mint. New games / new buys use `SHOVELS.*.workSeconds`.
+`workSeconds` is baked on the Item at mint. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.*.workSeconds`.
 
 | id | SKU | unlock |
 |---|---|---|
@@ -12,11 +12,12 @@ Names are `SHOVEL_NAME` / `PICKAXE_NAME`. Do not re-derive a name from the id.
 | better-shovel | buy-better-shovel | unlock-better-tools |
 | rotary-shovel | — | four-star contract prize |
 | pickaxe | buy-pickaxe | unlock-pickaxe |
-| better-pickaxe | buy-better-pickaxe | unlock-pickaxe |
+| better-pickaxe | buy-better-pickaxe | unlock-hardened-tools |
 | diamond-pickaxe | — | four-star contract prize |
 | axe | buy-axe | unlock-pickaxe |
+| chainsaw | buy-chainsaw | unlock-hardened-tools |
 
-`{ kind: 'axe'; usesLeft; workSeconds }`. No `id`. No better-axe. `AXES.axe` uses / workSeconds — preference. Unlock and show `unlock-pickaxe`. `unlock-pickaxe` effect stays `buy-pickaxe`. Price preference versus `buy-pickaxe`. `skuLabel` **Axe**. Chop: 1 wood and 2 grafts, then trunk — [[mechanics/trees]] `trees.chop` `graft.axe`.
+`{ kind: 'axe'; usesLeft; workSeconds }`. `{ kind: 'chainsaw'; usesLeft; workSeconds }`. No `id`. No better-axe. `AXES.axe` uses 30, workSeconds preference. `AXES.chainsaw` uses 90, workSeconds 3 — preference. `buy-axe` unlock and show `unlock-pickaxe`. `buy-chainsaw` unlock and show `unlock-hardened-tools`, price 60 — preference. `buy-better-pickaxe` unlock and show `unlock-hardened-tools`, price 44 — preference. `unlock-pickaxe` effect stays `buy-pickaxe`. `unlock-hardened-tools` effect `buy-better-pickaxe`. `skuLabel` **Axe**. `skuLabel` **Chainsaw**. Chop accepts axe or chainsaw; work is the held item's `workSeconds`. Chop: 1 wood and 2 grafts, then trunk — [[mechanics/trees]] `trees.chop` `graft.axe`.
 
 `{ kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }`. Not a tool SKU. Not planted. Attaches — [[mechanics/plants]] `graft.attach`. Furnace green rate. Not compost.
 
@@ -26,6 +27,6 @@ Other SKUs: `buy-bucket` `buy-bucket-large` `buy-weed-spray`.
 
 Rotary and diamond are end-game rewards, not sinks. They dig and mine exactly what their owned tier does — no new sites, no new rules, just uses and speed. Neither has a sku or a research row: one or the other is rolled as the band-3 prize from Whole Cart and Little Lid — [[mechanics/contracts]].
 
-Burrow loot may mint `better-shovel` / `better-pickaxe` / `axe`. Equal among those three. Then 50% used `usesLeft = floor(max / 2)`, else full. `workSeconds` from `SHOVELS` / `PICKAXES` / `AXES` at mint. Not rotary. Not diamond. Not starter shovel / pickaxe. Any shovel id extracts a burrow — [[mechanics/burrow]] `burrow.loot` `burrow.dig`.
+Burrow loot may mint `better-shovel` / `better-pickaxe` / `axe`. Equal among those three. Then 50% used `usesLeft = floor(max / 2)`, else full. `workSeconds` from `SHOVELS` / `PICKAXES` / `AXES.axe` at mint. Not rotary. Not diamond. Not starter shovel / pickaxe. Not chainsaw. Any shovel id extracts a burrow — [[mechanics/burrow]] `burrow.loot` `burrow.dig`.
 
 Hand, house, uses, fill, stacks: [[mechanics/inventory]]. Treasure: [[mechanics/burrow]] `burrow.open`.

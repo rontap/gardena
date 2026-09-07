@@ -29,7 +29,7 @@ On seam, before any field tick of the new day:
 6. Append `Recap` to `World.recaps` (ended day as key; one per ended day).
 7. Push that day onto `World.recapUnseen`.
 8. `grantPoints(POINTS_PER_DAY)`.
-9. `clock.banner = 2`.
+9. `clock.banner = 4`.
 10. `seam` stays `{ kind: 'play' }`.
 11. Tally reset, `contracts.takenToday`, ping.
 
@@ -45,9 +45,9 @@ The recap popup is App `recapDay`, opened from a Command Center recap notice. Cl
 
 Solo App: on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. Recap popup uses the same overlay pause as Family / Market / Almanac. [[ui/hud]] [[ui/settings]]
 
-Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]` if the dump omitted them), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 2`. Not a migrate. Total hydrate. [[architecture/save]]
+Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]` if the dump omitted them), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 4`. Not a migrate. Total hydrate. [[architecture/save]]
 
-`banner = 2` s — preference. New farm already `banner = 2`. Seam sets it.
+`banner = 4` s — preference. New farm already `banner = 4`. Seam sets it.
 
 ## End day
 
@@ -55,7 +55,7 @@ Cheat `Act.cheat` `{ k: 'day' }`. Sets `clock.t = DAY_SECONDS`. Does not tick th
 
 ## Invariants
 
-`day.seam` — Seam at `t >= DAY_SECONDS` runs stipend, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 2`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.
+`day.seam` — Seam at `t >= DAY_SECONDS` runs stipend, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 4`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.
 
 `day.phases` — Phases: sunrise, day, sunset, twilight by share of `DAY_SECONDS`. `'night'` is not a `DayPhase`.
 

@@ -8,7 +8,7 @@ Cosmetic building. Both keep `ground` and both stay armed while placing — clic
 
 **Paving is its own layer, not a `Cover`.** `World.paving` is a `Map<"col,row", TileId>`, the same shape `World.fences` already has. It was a `Cover` on the plot, which meant `setCell` destroyed it the moment a building landed on the cell and deleting that building left bare soil. A slab you laid is yours until you lift it.
 
-`buy-tile-asphalt` $2, `buy-tile-cobble` $5, `buy-tile-brick` $7, `buy-tile-paved` $11. All unlock `unlock-landscaping` — [[mechanics/research]].
+`buy-tile-asphalt` $3, `buy-tile-cobble` $4, `buy-tile-brick` $6, `buy-tile-paved` $5. All unlock `unlock-landscaping` — [[mechanics/research]].
 
 Site: `isPavingSite` — any `untilled` cell, **or** a solid building cell. Paving over paving replaces it. Refused on tilled or planted soil, on a burrow, on a rock and on a tree: you pave under what you built, and around what was already there.
 
@@ -28,14 +28,14 @@ Every paved cell paints `tile-kerb` on each side whose neighbour is not the same
 |---|---|
 | `tile-paved` | offset flagstones in `house` and `slab`, ink joints, `dirt` grit; the courses line up across cells so a yard reads as one pavement |
 | `tile-asphalt` | `iron` tarmac, `oil` patches, `steel` aggregate, ink chips |
-| `tile-cobble` | irregular cobbles, `dirt-dark` joints |
+| `tile-cobble` | irregular cobbles, `ink` joints, cobble stone fills — [[art/palette]] |
 | `tile-brick` | running-bond `roof` brick |
 
 Asphalt is the one ground that takes industrial metal — it is a road surface, not a cottage floor. [[art/palette]]
 
 ## Wooden fence
 
-`buy-fence` $8, unlock `unlock-landscaping`.
+`buy-fence` $2, unlock `unlock-landscaping`.
 
 Not a `Cover`. `World.fences` is a `Set` of `"col,row"`, like `segments` / `sprinklers`. Fence sits in the **middle** of a tile, not on an edge.
 

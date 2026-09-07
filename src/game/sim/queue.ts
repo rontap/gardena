@@ -1,6 +1,6 @@
 import { BURROW_MUL } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
-import { AXES, DIG_HARD_SPAN, GRAFT_WORK } from '../defs/items.ts'
+import { DIG_HARD_SPAN, GRAFT_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
 import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type RainTank, type Tap, type Well } from './building.ts'
 import { TAP_RATE } from './water.ts'
@@ -397,7 +397,7 @@ export function begin(world: World, i: Intent): void {
         shiftHead(world)
         return
       }
-      arm(world, AXES.axe.workSeconds)
+      arm(world, (world.act.hand as { item: Extract<Item, { kind: 'axe' | 'chainsaw' }> }).item.workSeconds)
       return
     case 'graft':
       if (!field.canGraft(world, i.at)) {

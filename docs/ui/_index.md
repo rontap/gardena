@@ -10,18 +10,18 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/multiplayer]]
 - [[ui/tutorial]]
 - [[ui/place]] — furnace 1×2 south. Station 1×1. Burrow refuses place / tile / fence
-- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft. Burrow Dig. Treasure pays on pick up
+- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft. Chop axe or chainsaw. Burrow Dig. Treasure pays on pick up
 - [[ui/machines]] — mill / jam / barrel / grinder lock Variety. Still mixed
 - [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace. `recipesUsing` crop + Variety
 - [[ui/vehicles]]
-- [[ui/shop]]
+- [[ui/shop]] — `buy-better-pickaxe` `buy-chainsaw` on `unlock-hardened-tools`. `buy-research-station` on `unlock-crop-variants`
 - [[ui/build]]
 - [[ui/store]] — silo by Variety
 - [[ui/station]] — walk-up panel
-- [[ui/cheat]] — `#debug-techtree` `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
+- [[ui/cheat]] — `#debug-techtree` omits `buy-or` `buy-and` `buy-water-system`. `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
 - [[ui/market]]
 - [[ui/contracts]]
-- [[ui/almanac]] — Ingredients `recipesUsing`. Concepts Variety Quality Luck Burrow
+- [[ui/almanac]] — Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow
 - [[ui/family]] — luck
 - [[ui/callout-hover]]
 - [[ui/docks]] — Recap popup is App `recapDay`, not a seam

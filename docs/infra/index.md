@@ -6,7 +6,7 @@ Site: `https://rontap.github.io/gardena/`. Pages source must be **GitHub Actions
 
 ## Push
 
-Every push: `npm test` and `npm run e2e` in parallel. Chromium only for e2e.
+Every push: `npm test` and `npm run e2e` in parallel. Chromium only for e2e. CI e2e runs `npm run build` then `vite preview`. `build` compiles paraglide, then `tsc -b`. `src/paraglide` is not in git.
 
 Default branch, both green:
 

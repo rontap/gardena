@@ -26,10 +26,7 @@ function plantTree(w: World, juvenile = 1, fruit = 0, y: Tree['yield'] = { kind:
 }
 
 function drain(w: World): void {
-  while (w.seats[0].queue.length > 0) {
-    if (w.seam.kind === 'recap') w.dismissRecap()
-    w.tick(DT_MAX)
-  }
+  while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
 }
 
 describe('trees', () => {

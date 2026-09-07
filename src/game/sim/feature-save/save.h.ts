@@ -203,6 +203,7 @@ export type SaveRecap = {
   research: ResearchId[]
   tax: number
   water: number
+  contracts: HistoryEntry[]
 }
 
 export type SaveContracts = {
@@ -244,6 +245,8 @@ export type Save = {
   stall: { [K in StallGoodId]: SaveStallGood }
   tally: { died: number; harvests: number; research: ResearchId[] }
   seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
+  recaps: SaveRecap[]
+  recapUnseen: number[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
   sprinklers: Sprinkler[]

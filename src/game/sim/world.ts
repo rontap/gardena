@@ -69,6 +69,7 @@ import {
   chunkRect,
   inWorld,
   local,
+  originCell,
   type AdditiveId,
   type Base,
   type ChunkId,
@@ -209,6 +210,7 @@ import type {
   Net,
   PlayerId,
   Presence,
+  Recap,
   Seat,
   SeatId,
   Seam,
@@ -414,6 +416,8 @@ export class World {
   tally: DayTally = { died: 0, harvests: 0, research: [], contracts: [] }
   readonly contracts: Contracts = emptyContracts()
   seam: Seam = { kind: 'play' }
+  recaps: Recap[] = []
+  recapUnseen: number[] = []
   groundRev = 0
   bigTicks = 0
   cheatFastResearch = false
@@ -511,7 +515,9 @@ export class World {
       h.done.forEach(id => this.done.add(id))
       this.job = h.job
       this.tally = h.tally
-      this.seam = h.seam
+      this.seam = { kind: 'play' }
+      this.recaps = h.recaps
+      this.recapUnseen = h.recapUnseen
       this.segments.clear()
       h.segments.forEach(s => this.segments.set(edgeKey(s.at), s))
       this.wells = h.wells
@@ -1472,7 +1478,15 @@ export class World {
   }
 
   buy(id: SkuId): BuyFail | undefined {
-    return this.commit({ a: Act.buy, t: this.now, p: this.local, s: id })
+    return this.buyInto(this.houseCell(), id)
+  }
+
+  buyInto(at: Coord, id: SkuId): BuyFail | undefined {
+    return this.commit({ a: Act.buy, t: this.now, p: this.local, s: id, c: [at.col, at.row] })
+  }
+
+  houseCell(): Coord {
+    return originCell(this.silo.base)
   }
 
   confirmPlace(at: Coord): void {
@@ -1809,21 +1823,24 @@ export class World {
   }
 
   endDayBody(): void {
-    if (this.seam.kind === 'recap') return
     this.clock.t = DAY_SECONDS
     this.ping()
   }
 
   buyPacks(id: SkuId): void {
-    this.commit({ a: Act.buyPacks, t: this.now, p: this.local, s: id })
+    this.buyPacksInto(this.houseCell(), id)
+  }
+
+  buyPacksInto(at: Coord, id: SkuId): void {
+    this.commit({ a: Act.buyPacks, t: this.now, p: this.local, s: id, c: [at.col, at.row] })
   }
 
   packsPrice(id: SkuId): number {
     return place.packsPrice(this, id)
   }
 
-  buyPacksFail(id: SkuId): BuyFail | 'Locked' | undefined {
-    return place.buyPacksFail(this, id)
+  buyPacksFail(id: SkuId, at: Coord): BuyFail | 'Locked' | undefined {
+    return place.buyPacksFail(this, id, at)
   }
 
   
@@ -1913,22 +1930,28 @@ export class World {
     this.ping()
   }
 
+  recapAt(day: number): Recap {
+    const recap = this.recaps.find(r => r.day === day)
+    if (recap === undefined) throw new Error('recap')
+    return recap
+  }
+
+  seeRecap(day: number): void {
+    const i = this.recapUnseen.indexOf(day)
+    if (i < 0) return
+    this.recapUnseen.splice(i, 1)
+    this.ping()
+  }
+
   dismissRecap(): void {
     this.commit({ a: Act.dismissRecap, t: this.now, p: this.local })
   }
 
-  dismissRecapBody(): void {
-    if (this.seam.kind !== 'recap') return
-    this.grantPoints(POINTS_PER_DAY)
-    this.seam = { kind: 'play' }
-    this.clock.banner = 2
-    this.ping()
-  }
+  dismissRecapBody(): void {}
 
   tick(rawDt: number): void {
     this.now += 1
     const dt = rawDt > DT_MAX ? DT_MAX : rawDt
-    if (this.seam.kind === 'recap') return
     this.applyWeatherRates()
     tick.tickWorld(this, dt)
   }

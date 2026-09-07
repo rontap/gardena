@@ -24,13 +24,13 @@ Percent and money add per owned tier (`5+5+5`), they do not multiply. Jam uses `
 
 ## Points
 
-One shared bank on `World`, not three. Each seam it gets `POINTS_PER_DAY`, and any point buys any member's offer.
+One shared bank on `World`, not three. Each seam it gets `POINTS_PER_DAY`, and any point buys any member's offer. Grant is the seam step, not Close.
 
 `grantPoints(n)`: `World.points += n`. `pickSkill(member, slot)` spends 1 from the same bank.
 
 HUD remaining-points count is `World.points`. Derived. Not a second field.
 
-`dismissRecap()` is the only recap exit — [[mechanics/day]]. Grants `POINTS_PER_DAY`, then `seam = play`, `banner = 2`. No pick.
+`Act.dismissRecap` / `dismissRecapBody` is a no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. [[mechanics/day]]
 
 Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop — [[mechanics/contracts]].
 

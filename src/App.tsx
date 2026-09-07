@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { m } from './paraglide/messages.js'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Peer } from 'peerjs'
 import { installPlay } from './game/sim/play.ts'
@@ -26,7 +27,7 @@ import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
 import { Notices } from './game/ui/notices.tsx'
-import type { NoticeGo } from './game/ui/notices.ts'
+import type { Notice, NoticeGo } from './game/ui/notices.ts'
 import type { ShelfId } from './game/defs/shelf.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Coord } from './game/sim/building.ts'
@@ -76,7 +77,7 @@ function ignoreClick(_h: MapClick, _xy: { x: number; y: number }): void {}
 export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
   const consignRevision = useRef(0)
-  const prevSeam = useRef<'play' | 'recap'>('play')
+  const prevDay = useRef<number | undefined>(undefined)
   const [hudN, setHudN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
   const [menuCanvasIn, setMenuCanvasIn] = useState(false)
@@ -112,6 +113,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const toolLens = world === undefined ? undefined : toolLensOf(world)
   const [editor, setEditor] = useState(false)
   const [noticeCells, setNoticeCells] = useState<readonly Coord[]>(NO_CELLS)
+  const [recapDay, setRecapDay] = useState<number | undefined>(undefined)
+  const recapDayRef = useRef<number | undefined>(undefined)
+  recapDayRef.current = recapDay
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
   const [prefs, setPrefs] = useState<Settings>(() => settings())
@@ -216,7 +220,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world === undefined) return
     if (world.consignRevision === consignRevision.current) return
     consignRevision.current = world.consignRevision
-    if (world.seam.kind !== 'recap') setPanel({ kind: 'market' })
+    setPanel({ kind: 'market' })
   }, [hudN, world])
 
   useEffect(() => {
@@ -242,14 +246,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     if (world === undefined) return
-    const kind = world.seam.kind
-    if (kind === 'recap' && prevSeam.current === 'play') {
-      if (world.local === 0) writeSlot(dump(world))
-      setPanel({ kind: 'none' })
-      soloPause(true)
+    if (prevDay.current === undefined) {
+      prevDay.current = world.clock.day
+      return
     }
-    if (kind === 'play' && prevSeam.current === 'recap') soloPause(false)
-    prevSeam.current = kind
+    if (prevDay.current === world.clock.day) return
+    prevDay.current = world.clock.day
+    if (world.local === 0) writeSlot(dump(world))
+    setPanel({ kind: 'none' })
+    soloPause(true)
   }, [hudN, world])
 
   useEffect(() => {
@@ -346,8 +351,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
       world.cancelPlace()
       world.closeHud()
       setQuery('')
-      if (world.seam.kind === 'recap') {
-        if (world.local === 0) world.dismissRecap()
+      if (recapDayRef.current !== undefined) {
+        world.seeRecap(recapDayRef.current)
+        closeRecap()
         return
       }
       updatePanel(p => {
@@ -440,7 +446,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }, [])
 
   function session(next: World, tut: Tutorial): void {
-    prevSeam.current = next.seam.kind
+    prevDay.current = next.clock.day
+    recapDayRef.current = undefined
+    setRecapDay(undefined)
     consignRevision.current = next.consignRevision
     if (next.local === 0) bootCheat(next)
     setWorld(next)
@@ -592,7 +600,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   function open(next: Panel): void {
     if (world === undefined) return
-    if (world.seam.kind === 'recap') return
+    if (recapDayRef.current !== undefined) return
     updatePanel(p => {
       const to = p.kind === next.kind ? { kind: 'none' as const } : next
       if (p.kind === 'lens' && to.kind !== 'lens' && !lensLock) setLens('off')
@@ -604,10 +612,20 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function goNotice(go: NoticeGo): void {
-    if (go === 'none') return
-    if (go === 'market') open({ kind: 'market' })
-    if (go === 'research') open({ kind: 'research' })
-    if (go === 'family') open({ kind: 'family' })
+    if (go.kind === 'none') return
+    if (go.kind === 'popup') {
+      if (go.popup.kind === 'recap') openRecap(go.popup.day)
+      return
+    }
+    if (guest) return
+    open({ kind: go.panel })
+  }
+
+  function dismissNotice(row: Notice): void {
+    if (world === undefined) return
+    if (row.go.kind !== 'popup' || row.go.popup.kind !== 'recap') return
+    world.seeRecap(row.go.popup.day)
+    if (recapDayRef.current === row.go.popup.day) closeRecap()
   }
 
   function closeMp(): void {
@@ -619,7 +637,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   function toggleMenu(): void {
     if (world === undefined) return
-    if (world.seam.kind === 'recap') return
+    if (recapDayRef.current !== undefined) return
     updatePanel(p => {
       if (arming(p.kind)) leaveShop()
       if (cued(p.kind)) world.ackCue()
@@ -664,21 +682,19 @@ export default function App({ sink }: { sink: WorkerSink }) {
       })
   }
 
-  function overlayHold(kind: Panel['kind']): boolean {
-    return kind === 'family' || kind === 'market' || kind === 'almanac' || kind === 'menu'
+  function overlayHold(kind: Panel['kind'], recap: number | undefined): boolean {
+    return recap !== undefined || kind === 'family' || kind === 'market' || kind === 'almanac' || kind === 'menu'
   }
 
-  function overlayPause(from: Panel['kind'], to: Panel['kind']): void {
+  function overlayPause(from: boolean, to: boolean): void {
     if (role !== 'off') return
-    const a = overlayHold(from)
-    const b = overlayHold(to)
-    if (!a && b) {
+    if (!from && to) {
       resumeRef.current = !pausedRef.current
       pausedRef.current = true
       setPaused(true)
       return
     }
-    if (a && !b) {
+    if (from && !to) {
       if (!resumeRef.current) return
       resumeRef.current = false
       pausedRef.current = false
@@ -687,10 +703,24 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function setPanel(next: Panel): void {
-    const from = panelRef.current.kind
+    const from = overlayHold(panelRef.current.kind, recapDayRef.current)
     panelRef.current = next
     setPanelState(next)
-    overlayPause(from, next.kind)
+    overlayPause(from, overlayHold(next.kind, recapDayRef.current))
+  }
+
+  function openRecap(day: number): void {
+    const from = overlayHold(panelRef.current.kind, recapDayRef.current)
+    recapDayRef.current = day
+    setRecapDay(day)
+    overlayPause(from, overlayHold(panelRef.current.kind, day))
+  }
+
+  function closeRecap(): void {
+    const from = overlayHold(panelRef.current.kind, recapDayRef.current)
+    recapDayRef.current = undefined
+    setRecapDay(undefined)
+    overlayPause(from, overlayHold(panelRef.current.kind, undefined))
   }
 
   function updatePanel(fn: (p: Panel) => Panel): void {
@@ -716,7 +746,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   function toggleMp(): void {
     if (world === undefined) return
-    if (world.seam.kind === 'recap') return
+    if (recapDayRef.current !== undefined) return
     if (role === 'off') startHost()
     let open = false
     updatePanel(p => {
@@ -937,7 +967,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onHover={setHover}
             onCam={setCam}
             onClick={(hit, xy) => {
-              if (world.seam.kind === 'recap') return
               if (hit.kind === 'cell' && sensorArmed(world)) {
                 setLens('sensors')
                 setLensLock(true)
@@ -996,9 +1025,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
           />
           <Notices
             world={world}
-            off={editor || world.seam.kind === 'recap'}
+            off={editor}
             onHighlight={setNoticeCells}
             onGo={goNotice}
+            onDismiss={dismissNotice}
           />
           {editor && <StopsWindow world={world} onClose={() => {
             setEditor(false)
@@ -1129,7 +1159,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }}
             />
           )}
-          {panel.kind === 'menu' && world.seam.kind !== 'recap' && (
+          {panel.kind === 'menu' && recapDay === undefined && (
             <Menu
               mode="play"
               fail={fail}
@@ -1145,7 +1175,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               onClose={() => setPanel({ kind: 'none' })}
             />
           )}
-          {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && !guest && (
+          {panel.kind === 'multiplayer' && recapDay === undefined && !guest && (
             <HostDialog
               roomKey={roomKey}
               world={world}
@@ -1156,7 +1186,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               onClose={closeMp}
             />
           )}
-          {panel.kind === 'multiplayer' && world.seam.kind !== 'recap' && guest && (
+          {panel.kind === 'multiplayer' && recapDay === undefined && guest && (
             <GuestDialog
               world={world}
               local={world.local}
@@ -1167,22 +1197,25 @@ export default function App({ sink }: { sink: WorkerSink }) {
             />
           )}
           <ObjectHud world={world} cam={cam} onClose={() => world.closeHud()} />
-          {world.seam.kind === 'recap' && (
+          {recapDay !== undefined && (
             <Recap
-              recap={world.seam.recap}
-              nextDay={world.clock.day}
-              guest={guest}
+              recap={world.recapAt(recapDay)}
               showContracts={world.done.has('unlock-contracts')}
-              onDismiss={() => world.dismissRecap()}
+              onDismiss={() => {
+                world.seeRecap(recapDay)
+                closeRecap()
+              }}
             />
           )}
           <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
             ref={el => bindHud('banner', el)}
             data-banner
-            hidden
-            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-8 text-lg text-ink"
-          />
+            hidden={world.clock.banner <= 0}
+            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-24 font-display text-4xl leading-[1.2] text-white/70"
+          >
+            {world.clock.banner > 0 ? m.hud_day({ day: world.clock.day }) : ''}
+          </div>
       </div>
     </Tooltip.Provider>
   )

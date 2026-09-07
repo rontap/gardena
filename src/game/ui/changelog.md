@@ -1,3 +1,22 @@
+# 2.6.2 Command center update II
+
+The right-hand column is titled Command Center. Ending a day no longer holds the farm; Day {n} Finished opens the end-of-day summary, Day {n} sits on the field when a day starts, and Loading... sits in the middle of the farm while the map is still coming up.
+
+- 🔧 Changed ui: Command Center. previously, the right-hand column of clocks and things waiting to be spent had no title, now it is titled Command Center.
+- 🔧 Changed ui: end-of-day summary. previously, ending a day held the farm on a screen you had to dismiss before the next day would play, now the farm keeps playing, a Command Center line reads Day {n} Finished, and you open the end-of-day summary from that line. Close takes Day {n} Finished off Command Center.
+- 🔧 Changed ui: Day {n}. previously, a new day did not write its number on the field, now Day {n} sits at the top of the field when the day starts, then it goes.
+- 🎉 Added ui: Loading.... While the map is still coming up, Loading... sits in the middle of the farm.
+
+# 2.6.0 Command Center
+
+A column down the right of the screen carries a line for each thing on the farm running out of time and each thing waiting to be spent, and three counts leave the top of the screen to live in it.
+
+- 🎉 Added ui: Notices. A column down the right of the screen carries one line for each thing on the farm running out of time and each thing waiting to be spent, so you read a plot going red or a contract coming due without going looking for it. Point at a line to outline the plots it covers, click one to open the page that answers it, and Hide slides the column off the right edge.
+- 🔧 Changed ui: Researching. previously, the research you had running showed along the top of the screen with the seconds left beside it, now it is a notice that opens Research when you click it, and the seconds left are read on the Research page.
+- 🔧 Changed ui: Skill points. previously, unspent skill points showed as a small count at the top of the screen, now they are a notice that opens Family when you click it.
+- 🔧 Changed ui: Expansion. previously, farm expansion opportunities showed as a small count at the top of the screen, now they are a notice.
+- 🔧 Changed ui: Changelog. previously, every release ran down one scrolling page, now a list of releases sits down the left and clicking one jumps the page to it.
+
 # 2.5.0 Automation update V
 
 One Logic gate does the work of the old OR and AND, a Variety sensor and a Weather sensor join Sensors, and the Pressure plate (once the Vehicle detector) can watch You and things on the ground, and can sit on a Wooden fence.

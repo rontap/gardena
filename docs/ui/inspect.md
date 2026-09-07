@@ -130,7 +130,7 @@ Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on tre
 
 Shovel on burrow: **Dig**. `{ act: 'shovel' }`. Work `workSeconds × BURROW_MUL`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`
 
-Held `{ kind: 'treasure'; coins }`, hovered owned plot: **Open treasure**. `{ act: 'open'; at }`. `dest` = `at`. Work 0. Left-click is open, not drop.
+Treasure on the ground: **Pick up**, `{ act: 'pickup'; at }`. Picking it up pays `coins` and clears the drop. It is never held, so there is no **Open treasure**.
 
 Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. `{ act: 'chop'; at }`. Either cell. Axe on grow / trunk: no-op. Prompt is the look line. Chop yields 1 wood and 2 grafts of that tree's Variety, then `trunk = true`, `juvenile = 0`, fruit lost.
 

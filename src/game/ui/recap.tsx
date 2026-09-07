@@ -16,14 +16,10 @@ export function recapOutcome(kind: HistoryEntry['outcome']['kind']): string {
 
 export function Recap({
   recap,
-  nextDay,
-  guest,
   showContracts,
   onDismiss,
 }: {
   recap: RecapData
-  nextDay: number
-  guest: boolean
   showContracts: boolean
   onDismiss: () => void
 }) {
@@ -31,7 +27,7 @@ export function Recap({
     <Dialog.Root
       open
       onOpenChange={o => {
-        if (!o && !guest) onDismiss()
+        if (!o) onDismiss()
       }}
     >
       <Dialog.Portal>
@@ -78,8 +74,8 @@ export function Recap({
                   <Coin n={recap.money} />
                 </span>
               </div>
-              <Btn className="mt-4 w-full text-center" disabled={guest} onClick={guest ? undefined : onDismiss}>
-                {m.hud_day({ day: nextDay })}
+              <Btn className="mt-4 w-full text-center" onClick={onDismiss}>
+                {m.recap_close()}
               </Btn>
             </div>
           </Chrome>

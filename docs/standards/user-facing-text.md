@@ -110,7 +110,10 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | recap contracts closer                     | A new board is up.                                                                                           | new quests                                                |
 | recap contract outcomes                    | Completed / Missed / Cancelled                                                                               | success, failed                                           |
 | recap title                                | Day {n} turned in                                                                                            |                                                           |
-| recap dismiss                              | Day {n}                                                                                                      | Continue, Next                                            |
+| recap dismiss                              | Close                                                                                                        | Continue, Next, Day {n}                                   |
+| recap notice                               | Day {n} Finished                                                                                             | Day {n} turned in                                         |
+| the right-hand column                      | Command Center                                                                                               | notices (as a title), dashboard, notification, infobox, alert |
+| map boot                                   | Loading...                                                                                                   | skeleton                                                  |
 | rail overlay Market                        | Market                                                                                                       | stall (stall is the sell tab)                             |
 | Market sell tab                            | Stall                                                                                                        | shop                                                      |
 | Market contracts tab                       | Contracts                                                                                                    | quests, orders, jobs                                      |
@@ -325,7 +328,7 @@ Rail left: **Shop** **Build** **Research** **Market** **Lens** **Family** **Alma
 
 Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Pause**/**Resume**, **Gear**.
 
-Notices column, right: **Researching {name}**, **Researched {name}**, **Contract**, **Contract completed**, **{Quad|Tractor} is out of fuel**, **{Crop} is wilting**, **{Crop} is drowning**, **{Crop} is starving for fertilizer**, **{Crop} is losing freshness**, **Dead plant**, **Rotten produce**, **Water network is running low**, **{n} skill points to spend**, **{n} farm expansion opportunities**, **and {n} more**, **Hide** / **Show**.
+Command Center, right: **Day {n} Finished**, **Researching {name}**, **Researched {name}**, **Contract**, **Contract completed**, **{Quad|Tractor} is out of fuel**, **{Crop} is wilting**, **{Crop} is drowning**, **{Crop} is starving for fertilizer**, **{Crop} is losing freshness**, **Dead plant**, **Rotten produce**, **Water network is running low**, **{n} skill points to spend**, **{n} farm expansion opportunities**, **and {n} more**, **Hide** / **Show**. Title **Command Center**. Recap footer **Close**. Map boot **Loading...**.
 
 Almanac Overview pages may define a word on first use. They still may not say: gem, pip, overlay, HUD, ribbon, dock, SKU, stall (link **Market**), rolled, RNG, tick, DAG, node, dump, seam, Cmd, hash.
 

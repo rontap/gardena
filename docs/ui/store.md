@@ -24,13 +24,13 @@ There is no shared row ladder and no row-head `tier` label — Variety is identi
 
 A `'base'` cell carries no name — the crop head already names it. Every other cell names its Variety.
 
-Cells are `4.25rem` wide and `5.5rem` tall, with a `shrink-0` `h-8` icon, the Variety name, and the count under it. Height is set by the tallest cell a Variety name can make — two lines — so the icon keeps its size and its inset in every cell instead of being squeezed against the top edge. Face is that Variety's group. No extra mark.
+Cells are `5.5rem` square, with a `shrink-0` `h-8` icon, the Variety name, and the count under it. The side is set by the tallest cell a Variety name can make — two lines — so the icon keeps its size and its inset in every cell instead of being squeezed against the top edge. `CELL` and `CELL_W` in `store.tsx` carry it; the crop head and the Buy cell read the same width, so a column is one width from top to bottom. The `<td>` is `p-0` and the `<button>` fills it, so every painted pixel of a cell is inside its button — icon and count included. Face is that Variety's group. No extra mark.
 
 Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any Variety of that crop. Shown cells: `'base'` always on a shown crop. Any other Variety: stock of that Variety. Stock is never hidden by a gate.
 
 `bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average.
 
-Buy row directly under the crop head, above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`4.25rem`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`. Click → `world.buy(packSku)`. Ctrl+click → `world.buyPacks(packSku)` when `buyPacksFail` is not `'Locked'`; else plain `buy`, same as shop. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/shop]].
+Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy, same as shop. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/shop]].
 
 No crops to show at all: *Empty. Seeds you buy are delivered here.*
 
@@ -55,9 +55,19 @@ Title **Additive store**. `w-[30rem]` — five rows, nothing to grow into. Capac
 
 One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all five, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
 
-Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buy(sku)`, which delivers straight to these tanks. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/shop]].
+Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/shop]].
 
 Footer names the delivery rule while the store is empty, then *Walking up empties any bag you were carrying back into the tanks.*
+
+## Where a buy lands
+
+`Act.buy` and `Act.buyPacks` carry `c: XY`, the store cell the buy was made from — the same address `Act.takeStore` carries, and for the same reason: a field silo has to be replayable in lockstep. `World.buy` / `World.buyPacks` are the Shop's and pass `houseCell()`, the Seed silo's origin; `buyInto` / `buyPacksInto` are a panel's and pass its own cell.
+
+`buyBody` resolves the target with `seedStoreAt` / `additiveStoreAt` (`sim/store.ts`), which read the cell kind and fall back to the house store. `houseCell()` is a `seed-silo`, so a seed buy finds the house Seed silo and an additive buy falls through to `world.additives` — one address, both stores, no optional.
+
+Full names the store it means: `'Seed silo full'` / `'Additive store full'` at the house, `'Seeding silo full'` / `'Additive silo full'` on a field silo. `rowState` mirrors that with `'field-silo-full'` / `'field-store-full'` and reads the store at `at`, never `world.silo` / `world.additives`.
+
+`PROTOCOL` moved for the two new `Cmd` fields.
 
 ## Cue
 

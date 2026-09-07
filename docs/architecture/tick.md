@@ -4,7 +4,7 @@ Developer law. Not player mechanics. [[architecture/world]] [[architecture/modul
 
 Sim stays on the main thread. View paints via the Pixi ticker. App host accumulator `min(frameDt * World.cheatSpeed, DT_MAX * 2)`, then `tick(DT_MAX)` only, at most two ticks per frame. The clamp is what the frame can actually spend, so a throttled or hidden tab banks no debt and never fast-forwards on return. `cheatSpeed` is `1 | 3`. World.tick does not multiply `dt` again. `cheatFastResearch` is job drain, not a tick mul. Do not raise `DT_MAX`. Do not interpolate sim. View vehicles keep `QUAD_FOLLOW`. Do not move `World` to a worker. Sim does not camera-cull. View may (`CullerPlugin` on chunks). [[architecture/view]] [[architecture/world]] `world.cheatSpeed` `world.cheatFastResearch`
 
-Owner: `sim/world.ts`. `World.tick` clamps `dt`, returns on recap, applies weather rates, then `tickWorld` in `sim/tick.ts`. Indexes live on `World`. `track()` stays on `World`. Do not add `sim/index.ts`. Tick order stays. Extracting functions `World` calls is legal. A new mechanic is a new `sim/<name>.ts`. Do not append it onto `World`.
+Owner: `sim/world.ts`. `World.tick` clamps `dt`, applies weather rates, then `tickWorld` in `sim/tick.ts`. Does not return early on recap. Live `Seam` is `{ kind: 'play' }`. Indexes live on `World`. `track()` stays on `World`. Do not add `sim/index.ts`. Tick order stays. Extracting functions `World` calls is legal. A new mechanic is a new `sim/<name>.ts`. Do not append it onto `World`.
 
 ## Cadence
 
@@ -52,7 +52,7 @@ Assumption: `evalSensors` storeRaw and `padBuildings` also walk existing World s
 
 ## Seam hold
 
-The day seam pauses solo play. App sees `seam.kind` go `play` → `recap`, writes the slot, closes the panel, and pauses. `World.tick` already returns early on a recap, so the pause is what the player meets *after* dismissing the end-of-day summary — the farm waits on Resume. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Seam, after stipend and tax, before that early return: burrow mint — [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[architecture/net]]
+The day seam does not hold `World.tick`. Live `seam` stays `{ kind: 'play' }`. Solo App (`settings.solo`): on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. Bounds an unattended tab to one day. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Recap popup uses the same overlay pause as Family / Market / Almanac; that is not this pause. Seam, after stipend and tax: burrow mint, tree seam, append `Recap`, `recapUnseen`, `grantPoints`, `banner = 2` — [[mechanics/day]] [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[ui/hud]] [[architecture/net]]
 
 ## Nets
 

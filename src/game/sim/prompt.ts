@@ -205,8 +205,6 @@ export function taskName(w: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
-    case 'open':
-      return m.prompt_open_treasure()
   }
 }
 
@@ -794,9 +792,6 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
   }
   if (w.canTend(at)) return intent(m.prompt_tend(), { act: 'tend', at })
-  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'treasure' && isPlot(cell)) {
-    return intent(m.prompt_open_treasure(), { act: 'open', at })
-  }
   if (w.act.hand.kind === 'empty') return intent(m.prompt_move_here(), { act: 'walk', at })
   if (isPlot(cell)) return intent(m.prompt_drop(), { act: 'drop', at })
   return needSeeds(cell)

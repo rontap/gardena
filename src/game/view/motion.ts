@@ -227,7 +227,7 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
   }
   const banner = hud.get('banner')
   if (banner instanceof HTMLElement) {
-    const on = world.clock.banner > 0 && world.seam.kind === 'play'
+    const on = world.clock.banner > 0
     const text = on ? m.hud_day({ day: world.clock.day }) : ''
     if (banner.hidden !== !on) banner.hidden = !on
     if (on && banner.textContent !== text) banner.textContent = text

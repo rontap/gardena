@@ -72,7 +72,7 @@ Walk-up reuses the existing intents: `silo` on a Seeding silo, `additives` on an
 
 `Act.takeStore` carries the store cell (`s: XY`). It had none, so it always meant the starter store; a field silo needs the address to be replayable in lockstep. `seedStoreAt` / `additiveStoreAt` resolve the cell to the store.
 
-**No Buy row.** A field silo is a store, not a shop counter: `pack-*` and the additive SKUs deliver to the house stores. The Buy cells render only on `seed-silo` and `additive-store`.
+**Buy row, as the house stores have.** `world.buyInto(at, sku)` puts the pack or bag in the silo the panel is open on, not in the house. The Buy cells render on all four store panels — [[ui/store]].
 
 Ports and pads stay off (`ports` `[]`, `pads` `'none'`) — these are walk-up stores this update, not trailer stops.
 
@@ -121,7 +121,7 @@ Not tank. W north (−y), S south (+y), A west (−x), D east (+x). Both of an a
 
 `Act.stride` `'K'`. Send on key change / blur / become-not-driver, same as `Act.drive`. Latest same `t` wins. Ignored while this seat is a driver. Load `{0,0}` — not in Save.
 
-Tick (`presence === 'in'`, not recap): if `stride !== {0,0}` and not driver: clear queue + work, `actor.x/y += dir * walkSpeed() * dt`. Boots apply. Surfaces not. Away skips.
+Tick (`presence === 'in'`): if `stride !== {0,0}` and not driver: clear queue + work, `actor.x/y += dir * walkSpeed() * dt`. Boots apply. Surfaces not. Away skips.
 
 Click while stride held still enqueues; next tick stride wins until keys up.
 
@@ -268,16 +268,16 @@ Start: this seat drives that vehicle, route assigned, `n ≥ 1` → disembark, `
 
 Hangar Automate: `k: 'automate'; v; c` hangar XY. Vehicle stored, that hangar, route assigned, `n ≥ 1`. Spawn `padCenter`, `HEADING_SOUTH`, speed 0, driver `'none'`, `i = 0`, `running` true. Does not seat. Pad-center `inWorld`. This seat may already drive another vehicle.
 
-Two-phase tick. Recap skips both. Vehicle array order.
+Two-phase tick. Vehicle array order.
 
 1. Motion in `tickVehicles`. Goto arrive → next, same phase. Arrived wait: synthesized Drive `{0,0}` until resolve.
 2. After `evalDag`, `tickDispatch`: wait uses this tick’s light `inn`; load/unload one transfer then next, even if 0 items moved. Empty fuel: do not transfer, do not advance. 1-tick-late wait is wrong for a button pulse.
 
 Several waiters on one light: all hold on 0, all leave on 1. No collision.
 
-## Away / recap / view
+## Away / view
 
-Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Does not set `running` (already false). Recap freezes vehicle integrate and `tickDispatch` (boom does not run). Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim. Auto unmanned continues until recap.
+Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Does not set `running` (already false). Recap does not freeze vehicle integrate or `tickDispatch`. Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim. Auto unmanned continues through the seam. Overlay pause while the recap popup is open is App-local.
 
 Not logged: integrate, follow hitch, boom, burn, stride integrate, synthesized auto drive, wait / load / unload resolve, camera follow, hide gardener, hangar select, pad arrows, dash faces, Dash Automate, editor open. Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload` `Act.stride` `Act.route`. Store is not a tick. Place light is buy + `confirmPlace` inside `click`.
 
@@ -303,7 +303,7 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 
 `vehicles.slots` — Quad slots: any Item, chest swap + compact, `tickFreshness` (not freezer). `Act.swapVehicle` legal iff parked (`!running`). Tractor has no 6-slot. Trailer cargo parked only: `Act.swapTrailer` iff attached to a tractor that is field && `driver === 'none'` && `!running`. Seed/spray hopper wrong kind unrepresentable. Harvest slots chest merge+compact, `tickFreshness`. Hangar HUD has no cargo. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`.
 
-`vehicles.away` — Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Recap freezes vehicle integrate and `tickDispatch` (boom does not run). Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim. Auto unmanned continues until recap.
+`vehicles.away` — Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Recap does not freeze vehicle integrate or `tickDispatch`. Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim. Auto unmanned continues through the seam. Overlay pause while the recap popup is open is App-local.
 
 `vehicles.unrep` — Two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, stored tractor hitch, quad hitch, tractor slots, quad boom, boom other than `3 | 5`, two trailers on one tractor, attached + stored, trailer attached to missing tractor, harvest `slots.length ≠ HARVEST_SLOTS`, seed/spray hopper wrong item, `HudTarget` hangar, `HudTarget` vehicle: unrepresentable. `Act.setBoom { w: 3 | 5 }` legal while this seat drives that tractor (hitch optional). Latest same `t` wins. Guest may. `boomHits` takes width. Sim OBB `3 | 5` wide × 1 long. Boom fires iff seated **or** auto running, hitch present, `steer === 0`, `speed > 0`; after integrate; not a Cmd. Hangar HUD is `Cue` `{ kind: 'hangar'; at }`. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`. Silo: walk-up store, cue as its starter twin.
 

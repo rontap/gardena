@@ -11,7 +11,6 @@ import { topIndex } from './drop.ts'
 import { isPlot } from './plot.ts'
 import { HAND_FULL } from './prompt.ts'
 import * as field from './feature-field/field.ts'
-import * as burrow from './feature-burrow/burrow.ts'
 import * as machines from './feature-machines/machines.tick.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as store from './store.ts'
@@ -31,7 +30,7 @@ export function dest(i: Intent, world: World): Coord {
   }
   if (i.act === 'consign') return { ...PAD }
   if (i.act === 'inventory') return { ...DOOR }
-  if (i.act === 'toggle' || i.act === 'open') return i.at
+  if (i.act === 'toggle') return i.at
   if (i.act === 'vehicle' || i.act === 'embark') {
     const v = world.vehicles.find(x => x.id === i.id)
     if (v !== undefined && v.pose.kind === 'field') {
@@ -119,8 +118,6 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
-    case 'open':
-      return m.prompt_open_treasure()
   }
 }
 
@@ -409,13 +406,6 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, GRAFT_WORK)
       return
-    case 'open':
-      if (world.act.hand.kind !== 'hold' || world.act.hand.item.kind !== 'treasure') {
-        shiftHead(world)
-        return
-      }
-      arm(world, 0)
-      return
   }
 }
 
@@ -471,7 +461,6 @@ export function finishWork(world: World): void {
   if (i.act === 'weed-spray') field.doWeedSpray(world, i.at)
   if (i.act === 'chop') field.doChop(world, i.at)
   if (i.act === 'graft') field.doGraft(world, i.at)
-  if (i.act === 'open') burrow.doOpen(world)
   shiftHead(world)
 }
 
@@ -564,6 +553,11 @@ export function doPickup(world: World, at: Coord): void {
       return
   }
   const taken = world.drops[i].item
+  if (taken.kind === 'treasure') {
+    world.drops.splice(i, 1)
+    world.money += taken.coins
+    return
+  }
   const held = world.act.hand
   if (held.kind === 'hold' && countable(held.item) && countable(taken) && stackable(held.item, taken)) {
     const room = world.stackMax(held.item) - held.item.count

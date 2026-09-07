@@ -6,6 +6,7 @@ import { aoe, edgeKey, vertexKey, vertsOf, type Edge, type Sprinkler, type Verte
 import { isPlot } from '../plot.ts'
 import { maybeSay, NOT_OWNED, readPrompt, valvePrompt } from '../prompt.ts'
 import { hitsEdge, hitsVertex } from '../sensor.ts'
+import { additiveStoreAt, seedStoreAt } from '../store.ts'
 import type { BuyFail, ExpandFace, World } from '../world.ts'
 import { confirmPlace, deleteBuildingBody, pruneVert } from './place.helpers.ts'
 
@@ -179,9 +180,10 @@ export function clickValveBody(w: World, e: Edge): void {
   w.enqueueOn(w.act, p.intent)
 }
 
-export function buyBody(w: World, id: SkuId): BuyFail | undefined {
+export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
   if (!w.skuOpen(id)) return undefined
   const made = skuItem(id)
+  const field = isFieldSilo(w, at)
   if (made.kind === 'grass-seeds') {
     const price = w.skuPrice(id)
     if (w.money < price) return 'Cannot afford'
@@ -194,28 +196,31 @@ export function buyBody(w: World, id: SkuId): BuyFail | undefined {
   }
   if (made.kind === 'sugar') {
     const price = w.skuPrice(id)
+    const store = additiveStoreAt(w, at)
     if (w.money < price) return 'Cannot afford'
-    if (w.additives.free < made.liters) return 'Additive store full'
+    if (store.free < made.liters) return field ? 'Additive silo full' : 'Additive store full'
     w.money -= price
-    w.putSugar(made.liters, made.unitSale, made.quality)
+    store.putSugar(made.liters, made.unitSale, made.quality)
     w.ping()
     return undefined
   }
   if (made.kind === 'seeds') {
     const price = w.skuPrice(id)
+    const silo = seedStoreAt(w, at)
     if (w.money < price) return 'Cannot afford'
-    if (w.silo.free < made.count) return 'Seed silo full'
+    if (silo.free < made.count) return field ? 'Seeding silo full' : 'Seed silo full'
     w.money -= price
-    w.putSilo(made.crop, 'base', 0, made.count)
+    silo.put(made.crop, 'base', 0, made.count)
     w.ping()
     return undefined
   }
   if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
     const price = w.skuPrice(id)
+    const store = additiveStoreAt(w, at)
     if (w.money < price) return 'Cannot afford'
-    if (w.additives.free < made.liters) return 'Additive store full'
+    if (store.free < made.liters) return field ? 'Additive silo full' : 'Additive store full'
     w.money -= price
-    w.putAdditive(made.kind, made.liters)
+    store.putAdditive(made.kind, made.liters)
     w.ping()
     return undefined
   }
@@ -242,12 +247,12 @@ export function rightClickBody(w: World, at: Coord): void {
   w.enqueueOn(w.act, { act: 'drop', at: { ...at } })
 }
 
-export function buyPacksBody(w: World, id: SkuId): void {
-  if (buyPacksFail(w, id) !== undefined) return
+export function buyPacksBody(w: World, id: SkuId, at: Coord): void {
+  if (buyPacksFail(w, id, at) !== undefined) return
   const made = skuItem(id)
   if (made.kind !== 'seeds') return
   w.money -= packsPrice(w, id)
-  w.putSilo(made.crop, 'base', 0, 5 * made.count)
+  seedStoreAt(w, at).put(made.crop, 'base', 0, 5 * made.count)
   w.ping()
 }
 
@@ -255,13 +260,18 @@ export function packsPrice(w: World, id: SkuId): number {
   return 5 * w.skuPrice(id) * 0.95
 }
 
-export function buyPacksFail(w: World, id: SkuId): BuyFail | 'Locked' | undefined {
+export function buyPacksFail(w: World, id: SkuId, at: Coord): BuyFail | 'Locked' | undefined {
   if (!w.skuOpen(id)) return 'Locked'
   const made = skuItem(id)
   if (made.kind !== 'seeds') return 'Locked'
   if (w.money < packsPrice(w, id)) return 'Cannot afford'
-  if (w.silo.free < 5 * made.count) return 'Seed silo full'
+  if (seedStoreAt(w, at).free < 5 * made.count) return isFieldSilo(w, at) ? 'Seeding silo full' : 'Seed silo full'
   return undefined
+}
+
+function isFieldSilo(w: World, at: Coord): boolean {
+  const c = w.cell(at)
+  return c.kind === 'silo-seed' || c.kind === 'silo-spray'
 }
 
 function sprinklerSku(s: Sprinkler): SkuId {

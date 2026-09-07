@@ -74,7 +74,7 @@ async function standAndEnqueue(page: Page, at: At, act: string): Promise<void> {
   await drain(page)
 }
 
-test('start farm has burrows; shovel extract; open treasure', async ({ page }) => {
+test('start farm has burrows; shovel extract drops beside the hole; treasure pays on pick up', async ({ page }) => {
   test.setTimeout(120_000)
   await gotoPlay(page, { speed: 3 })
   await viewReady(page)
@@ -95,19 +95,29 @@ test('start farm has burrows; shovel extract; open treasure', async ({ page }) =
   )
   await standAndEnqueue(page, startAt, 'shovel')
 
-  const dug = await readWorld<{ cover: string; dropKind: string }>(
+  const dug = await readWorld<{ cover: string; onCell: string; dropKind: string; dropAt: At }>(
     page,
     startAt,
     `(() => {
       const c = w.cell(at)
-      const drop = w.drops.find(d => d.at.col === at.col && d.at.row === at.row)
+      const near = [
+        { col: at.col, row: at.row + 1 },
+        { col: at.col - 1, row: at.row },
+        { col: at.col + 1, row: at.row },
+        { col: at.col, row: at.row - 1 },
+      ]
+      const here = w.drops.find(d => d.at.col === at.col && d.at.row === at.row)
+      const drop = w.drops.find(d => near.some(p => p.col === d.at.col && p.row === d.at.row))
       return {
         cover: c.kind === 'untilled' ? c.cover.kind : c.kind,
+        onCell: here === undefined ? '' : here.item.kind,
         dropKind: drop === undefined ? '' : drop.item.kind,
+        dropAt: drop === undefined ? at : drop.at,
       }
     })()`,
   )
   expect(dug.cover).toBe('bare')
+  expect(dug.onCell).toBe('')
   expect(dug.dropKind.length).toBeGreaterThan(0)
 
   let holdAt = startAt
@@ -139,44 +149,39 @@ test('start farm has burrows; shovel extract; open treasure', async ({ page }) =
     await standAndEnqueue(page, holdAt, 'shovel')
   }
 
-  await standAndEnqueue(page, holdAt, 'pickup')
-  const held = await readWorld<{ kind: string; coins: number }>(
-    page,
-    null,
-    `(() => {
-      const h = w.seats[0].hand
-      return h.kind === 'hold' && h.item.kind === 'treasure'
-        ? { kind: h.item.kind, coins: h.item.coins }
-        : { kind: h.kind, coins: 0 }
-    })()`,
-  )
-  expect(held.kind).toBe('treasure')
-  expect(held.coins).toBeGreaterThan(0)
-
-  const money0 = await readWorld<number>(page, null, 'w.money')
-  const openAt = await readWorld<At>(
+  const lying = await readWorld<{ at: At; coins: number }>(
     page,
     holdAt,
     `(() => {
-      const c = w.cell(at)
-      if (c.kind === 'untilled' || c.kind === 'empty') return at
-      for (let row = 0; row < 32; row++) {
-        for (let col = 0; col < 32; col++) {
-          const p = { col, row }
-          const cell = w.cell(p)
-          if (cell.kind === 'untilled' || cell.kind === 'empty') return p
-        }
-      }
-      throw new Error('plot')
+      const near = [
+        { col: at.col, row: at.row + 1 },
+        { col: at.col - 1, row: at.row },
+        { col: at.col + 1, row: at.row },
+        { col: at.col, row: at.row - 1 },
+      ]
+      const d = w.drops.find(
+        x => x.item.kind === 'treasure' && near.some(p => p.col === x.at.col && p.row === x.at.row),
+      )
+      if (d === undefined) throw new Error('treasure')
+      return { at: d.at, coins: d.item.coins }
     })()`,
   )
-  await standAndEnqueue(page, openAt, 'open')
-  const after = await readWorld<{ money: number; hand: string }>(
+  expect(lying.coins).toBeGreaterThan(0)
+
+  const money0 = await readWorld<number>(page, null, 'w.money')
+  const hand0 = await readWorld<string>(page, null, 'w.seats[0].hand.kind')
+  await standAndEnqueue(page, lying.at, 'pickup')
+  const after = await readWorld<{ money: number; hand: string; left: number }>(
     page,
-    held.coins,
-    `(() => ({ money: w.money, hand: w.seats[0].hand.kind }))()`,
+    lying.at,
+    `(() => ({
+      money: w.money,
+      hand: w.seats[0].hand.kind,
+      left: w.drops.filter(d => d.at.col === at.col && d.at.row === at.row && d.item.kind === 'treasure').length,
+    }))()`,
   )
-  expect(after.money).toBe(money0 + held.coins)
-  expect(after.hand).toBe('empty')
+  expect(after.money).toBe(money0 + lying.coins)
+  expect(after.hand).toBe(hand0)
+  expect(after.left).toBe(0)
   await expect(hudMoney(page)).toBeVisible()
 })

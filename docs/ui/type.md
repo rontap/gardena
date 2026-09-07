@@ -9,10 +9,11 @@ One scale, one body face. Set in `src/index.css` under `@theme`. Do not hand-rol
 | `text-base` | 15 | body default, row labels, buttons |
 | `text-lg` | 17 | money in the top ribbon, close glyph |
 | `text-xl` / `text-2xl` / `text-3xl` | 20 / 24 / 28 | reserved |
+| `text-4xl` | 32 | day banner. Line-height 1.2. The XXL step; `text-xl`–`text-3xl` stay reserved |
 
 Faces:
 
-- `--font-display` **Press Start 2P**. Window titles, the **Gardena** wordmark, family member names, dash fuel and speed readouts, tractor hitch `{used}/100`, the held name and the first look line in bottom-right `Status`. Nothing else. Never body copy — it does not wrap or scan.
+- `--font-display` **Press Start 2P**. Window titles, the **Gardena** wordmark, family member names, dash fuel and speed readouts, tractor hitch `{used}/100`, the held name and the first look line in bottom-right `Status`, the day banner on the play field. Nothing else. Never body copy — it does not wrap or scan.
 - `--font-body` **Nunito**, set on `html, body, #root`. Everything else. Weights 400 / 600 / 700; `font-semibold` carries emphasis, colour opacity (`text-ink/55`, `/45`) carries de-emphasis.
 
 Display text sits one or two steps *below* the body size it heads — `text-sm` Press Start 2P reads larger than `text-base` Nunito.

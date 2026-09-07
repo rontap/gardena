@@ -63,7 +63,7 @@ Cheats are cmds.
 
 ## Time
 
-`World.now: number` — integer count of `tick()` entries. Starts 0. Each `tick()` entry increments by 1, including recap early return.
+`World.now: number` — integer count of `tick()` entries. Starts 0. Each `tick()` entry increments by 1. No recap early return.
 
 `Cmd.t` is `now` after last completed tick, before apply.
 

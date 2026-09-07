@@ -2,7 +2,7 @@
 
 Rules as the game runs. Named invariants live on the owning note. Numbers: preference / tuned-to / derived — [[standards/docs]].
 
-- [[mechanics/day]]
+- [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center
 - [[mechanics/soil]]
 - [[mechanics/plants]] — variety, quality, graft attach, neighbour
 - [[mechanics/trees]] — axe, wood, trunk, grafts
@@ -36,6 +36,8 @@ See [[canon]].
 | day.phases | [[mechanics/day]] |
 | day.recap | [[mechanics/day]] |
 | day.end-day | [[mechanics/day]] |
+| notices.popup | [[ui/notices]] |
+| notices.dismiss | [[ui/notices]] |
 | expansion.tax | [[mechanics/expansion]] |
 | expansion.chunk | [[mechanics/expansion]] |
 | burrow.start | [[mechanics/burrow]] |
@@ -251,6 +253,7 @@ See [[canon]].
 | view.scan | [[architecture/view]] |
 | view.hit | [[architecture/view]] |
 | view.hud | [[architecture/view]] |
+| view.boot | [[architecture/view]] |
 | view.ticker | [[architecture/view]] |
 | view.edge | [[architecture/view]] |
 | view.source | [[architecture/view]] |
@@ -267,6 +270,7 @@ See [[canon]].
 | world.cheatFastResearch | [[architecture/world]] |
 | save.parse | [[architecture/save]] |
 | save.nomigrate | [[architecture/save]] |
+| save.recaps | [[architecture/save]] |
 | net.digest | [[architecture/net]] |
 | net.bundle | [[architecture/net]] |
 | net.full | [[architecture/net]] |

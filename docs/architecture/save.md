@@ -33,12 +33,12 @@ DOWNLOAD_NAME = 'gardena.json'
 
 `writeSlot(dump(world))`:
 
-- end-of-day recap (`seam` becomes recap)
+- `clock.day` increment (solo App, same moment as the seam)
 - Save game
 - successful upload (the reconstructed `Save`)
 - host leave (MP)
 
-Host leave and recap still `writeSlot`. Guest never `writeSlot` for a hosted farm.
+Host leave and day increment still `writeSlot`. Guest never `writeSlot` for a hosted farm.
 
 Download Save writes `gardena.json`. It may also `writeSlot`.
 
@@ -72,11 +72,15 @@ parse(text: string, sink?: LogSink): LoadResult
 
 `ok: true` is a reconstructed `World`. Illegal to play a farm from a fail. Illegal to `new World(seed)` as a new farm and overlay. Hydrate from `Save` is total.
 
-After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `hud` absent. No `World.pulse`. `cheatSpeed` 1. `cheatFastResearch` false. `clock.banner` 0. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally / recap `contracts` arrays hydrate empty.
+After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `hud` absent. No `World.pulse`. `cheatSpeed` 1. `cheatFastResearch` false. `clock.banner` 0 except the old `seam.kind === 'recap'` path. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally `contracts` hydrates empty. `recaps` / `recapUnseen` from the file; missing → `[]`.
+
+Dump always writes `recaps: Recap[]` (full `Recap` including `contracts`) and `recapUnseen: number[]`. `SaveRecap` += `contracts: HistoryEntry[]`. Dump `seam` is always `{ kind: 'play' }`.
+
+Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]` if the dump omitted them), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, live seam play, `banner = 2`. Not a migrate. Total hydrate. [[mechanics/day]]
 
 Join / resync: `parse` then stamp `World.now` from the wire. Same `Save`. Not a second snapshot.
 
-Camera, panels, hover, `Lens`, App overlay pause: not in the file. New session. Pause net flag not in the file.
+Camera, panels, hover, `Lens`, App overlay pause, App `recapDay`: not in the file. New session. Pause net flag not in the file.
 
 ## Now
 
@@ -104,7 +108,7 @@ Multi-cell: one instance. Origin is rect `{ col: base.col, row: base.row }`. A l
 
 `modifiers` not in the file. Rebuild from owned `better-*` (`source: 'skill'`). `netVerts`, nets, `live`, indexes: rebuild (`indexAll`). `purchases` is in the file.
 
-Closed. No `Partial`. No optional that means unsure. Dump always writes `game` and `version`. Parse does not refuse a hydrating file whose `version` differs. Dump writes `seats`, `vehicles`, `trailers`, `routes`, `wires`, `smartHold`.
+Closed. No `Partial`. No optional that means unsure. Dump always writes `game` and `version`. Parse does not refuse a hydrating file whose `version` differs. Dump writes `seats`, `vehicles`, `trailers`, `routes`, `wires`, `smartHold`, `recaps`, `recapUnseen`. Dump `seam` is always `{ kind: 'play' }`.
 
 `seats` length ≥ 1. Seat 0 = host / solo. Each `inventory` length 16. `place` and `queue` not in the file. Chest `slots` length `CHEST_SLOTS`. Freezer `slots` length `FREEZER_SLOTS`. Quad `slots` length `VEHICLE_SLOTS`. Harvest trailer `slots` length `HARVEST_SLOTS`. Each `chunks[].cells` is `CHUNK` × `CHUNK`, local `[row][col]`. `chunks` order is `World.owned` order. `stall` is a complete `StallGoodId` map. Crop stall bins per variety × bio. `vehicles` is every live `Vehicle` including `route` / `cursor` / `running`. `nextVehicleId` is the next id to mint. `trailers` is every live `Trailer`. `nextTrailerId` is the next id to mint. `routes` is every live `Route`. `nextRouteId` is the next id to mint.
 
@@ -122,6 +126,8 @@ Working notes never write version digits; they [[GLOBAL_VERSION]].
 
 `save.parse` — `parse(text)`: `JSON.parse` as `Save`. No `unknown` walk. No `obj`/`arr`/`num`/`bool`. `JSON.parse` throw → `{ ok: false, reason: 'unknown-format' }`. `game !== "gardena"` → `reason: 'not-gardena'`. Hydrate from `Save` is total. Reconstruct → `{ ok: true, world }` even if file `version` ≠ dump `version`. Hydrate fail: file `version` ≠ dump `version` (absent included) → `reason: 'version'`; else `reason: 'unusable'`. No migrate. No version gate. Peek `game` then, after fail only, `version`. `LoadFailReason` is `'unknown-format' | 'not-gardena' | 'version' | 'unusable'`.
 
-`save.nomigrate` — Parse identity: `game === "gardena"`. No migrate. No version gate. File `version` ≠ dump `version` that hydrates is `{ ok: true }`. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, `routes`, `nextRouteId`, hangar/silo cells, `wires`, sensor cells, mill/jam/still/station `inn`, mill `recipe`/`variety`/`quality`, jam `crop`/`variety`/`quality`, furnace `units`/`progress`/`inn`/`out`/`hold`, grinder `crop`/`variety`/`quality`/`units`/`progress`/`n`, station `crop`/`variety`/`quality`/`units`/`progress`, still feed `{ crop, variety, quality, count }`, barrel `crop`/`variety`/`quality`/`age`, chest/freezer/seed-silo/additive-store `out` `hold`, additive-store `sugar` `{ liters, unitSale, quality }`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, traffic-light `inn`/`out`/`hold`, logic `kind` `'logic'` + `mode` (parse `'and'`/`'or'`), variety flags, weather flags, pressure flags, per vehicle `route`/`cursor`/`running`/`dwell`, `Plot` untilled `hardness`, `World.paving`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Tree.tended`, `Tree.trunk`, `Tree.variety`, `Plant.variety` `Plant.quality`, `Item` `weed-spray` `liters` (not `usesLeft`), `Item` `axe` `usesLeft`+`workSeconds`, `Item` `wood` `count`, `Item` `ash` `count`, `Item` `graft`, fruit `cut` `variety` `quality`, Cover `{ kind: 'burrow'; loot }`, `Item` `treasure` `coins`, `World.clearance`, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`, recap `water` when seam is recap. Weather table not in the file. Pins not in the file. `pumpLiters` not in the file. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file. `cheatSpeed` not in the file (load 1). `cheatFastResearch` not in the file (load false). Illegal: `{ kind: 'box' }`.
+`save.nomigrate` — Parse identity: `game === "gardena"`. No migrate. No version gate. File `version` ≠ dump `version` that hydrates is `{ ok: true }`. Dump identity is [[GLOBAL_VERSION]]. Dump persists: `seats`, `vehicles`, `trailers`, `routes`, `nextRouteId`, hangar/silo cells, `wires`, sensor cells, mill/jam/still/station `inn`, mill `recipe`/`variety`/`quality`, jam `crop`/`variety`/`quality`, furnace `units`/`progress`/`inn`/`out`/`hold`, grinder `crop`/`variety`/`quality`/`units`/`progress`/`n`, station `crop`/`variety`/`quality`/`units`/`progress`, still feed `{ crop, variety, quality, count }`, barrel `crop`/`variety`/`quality`/`age`, chest/freezer/seed-silo/additive-store `out` `hold`, additive-store `sugar` `{ liters, unitSale, quality }`, pulser `prev`/`out`, counter `n`/`count`/`out`, day flags/`out`/`hold`, lever `inn`/`prev`/`on`/`out`, traffic-light `inn`/`out`/`hold`, logic `kind` `'logic'` + `mode` (parse `'and'`/`'or'`), variety flags, weather flags, pressure flags, per vehicle `route`/`cursor`/`running`/`dwell`, `Plot` untilled `hardness`, `World.paving`, `Soil.weedChance`, `Weed.spread`, tractor `boom`, `Tree.tended`, `Tree.trunk`, `Tree.variety`, `Plant.variety` `Plant.quality`, `Item` `weed-spray` `liters` (not `usesLeft`), `Item` `axe` `usesLeft`+`workSeconds`, `Item` `wood` `count`, `Item` `ash` `count`, `Item` `graft`, fruit `cut` `variety` `quality`, Cover `{ kind: 'burrow'; loot }`, `Item` `treasure` `coins`, `World.clearance`, `contracts` (`active`, `takenToday`, `history`, `book`) plus `rep` / `repDay`, `recaps` (full `Recap` including `contracts`), `recapUnseen`. Dump `seam` is always `{ kind: 'play' }`. Missing `recaps` / `recapUnseen` → `[]`. Weather table not in the file. Pins not in the file. `pumpLiters` not in the file. `Seat.stride` not in the file. Board not in the file. Machine chest links are not in the file. `cheatSpeed` not in the file (load 1). `cheatFastResearch` not in the file (load false). Illegal: `{ kind: 'box' }`.
+
+`save.recaps` — Dump always writes `recaps: Recap[]` and `recapUnseen: number[]`. `SaveRecap` includes `contracts: HistoryEntry[]`. Parse missing `recaps` / `recapUnseen` as `[]`. Old `seam.kind === 'recap'`: append that recap (`contracts` `[]` if omitted), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 2`. Not a migrate.
 
 Assumption: a [[GLOBAL_VERSION]] farm whose dump lacks `routes` / vehicle `route` / traffic-light / `Tree.trunk` / furnace / `variety` / `quality` / `cut` / station / additive-store `sugar` fields fails hydrate (`unusable`). No migrate. Missing logic `mode` / variety / weather / pressure flags hydrate as the place defaults. `'and'`/`'or'` cells hydrate as `LogicGate`. Pump `inn` absent is eval, not fail.

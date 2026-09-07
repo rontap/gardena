@@ -2,16 +2,20 @@ import { m } from '../../paraglide/messages.js'
 import { useEffect, useRef, useState } from 'react'
 import type { Coord } from '../sim/building.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL } from '../view/svgs.ts'
+import { COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { STAT_COLOR } from './status.tsx'
 import { useCycle } from './cycle.ts'
 import { demandItem } from './market.tsx'
 import {
   doneRows,
+  dropNotice,
   groupNotices,
   noticeBad,
   noticeRows,
   passOf,
+  recapRows,
+  trackPass,
+  visibleRows,
   NOTICE_GROUP_MAX,
   NOTICE_SECONDS,
   type Notice,
@@ -20,11 +24,11 @@ import {
   type NoticeGo,
   type NoticeSubject,
   type Pass,
+  type Tracked,
 } from './notices.ts'
 
-type Tracked = { row: Notice; armed: boolean; grace: boolean }
-
 function faceInner(face: NoticeFace): string {
+  if (face.kind === 'recap') return UI_RECAP_NIGHT
   if (face.kind === 'company') return COMPANY[face.id]
   if (face.kind === 'oil') return itemInner({ kind: 'oil', quality: 0, count: 1, unitSale: 0 })
   if (face.kind === 'water') return itemInner({ kind: 'water' })
@@ -93,30 +97,38 @@ function Block({
   pulse,
   onHover,
   onGo,
+  onDismiss,
 }: {
   block: NoticeBlock
   pulse: boolean
   onHover: (cells: readonly Coord[]) => void
-  onGo: (go: NoticeGo, kind: string) => void
+  onGo: (row: Notice) => void
+  onDismiss: (row: Notice) => void
 }) {
   const shown = block.rows.slice(0, NOTICE_GROUP_MAX)
   const rest = block.rows.length - shown.length
   const cells = block.rows.flatMap(r => r.cells)
-  const go = block.rows[0].go
   return (
     <div
-      className={`pointer-events-auto relative w-full cursor-pointer border-x border-ink bg-house transition-colors hover:bg-parch ${
-        pulse ? 'animate-pulse' : ''
-      }`}
+      className={`pointer-events-auto relative w-full border-x border-ink bg-house ${pulse ? 'animate-pulse' : ''}`}
       onPointerEnter={() => onHover(cells)}
       onPointerLeave={() => onHover([])}
-      onClick={() => onGo(go, block.kind)}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
       <div className="flex min-w-0 flex-col gap-1 px-2 py-2">
         {shown.map(r => (
-          <Row key={r.id} row={r} />
+          <div
+            key={r.id}
+            className="cursor-pointer rounded-sm hover:bg-parch"
+            onClick={() => onGo(r)}
+            onContextMenu={e => {
+              e.preventDefault()
+              onDismiss(r)
+            }}
+          >
+            <Row row={r} />
+          </div>
         ))}
         {rest > 0 && <span className="truncate text-sm leading-tight text-ink/60">{m.notices_more({ n: rest })}</span>}
       </div>
@@ -129,39 +141,43 @@ export function Notices({
   off,
   onHighlight,
   onGo,
+  onDismiss,
 }: {
   world: World
   off: boolean
   onHighlight: (cells: readonly Coord[]) => void
   onGo: (go: NoticeGo) => void
+  onDismiss: (row: Notice) => void
 }) {
   const tracked = useRef(new Map<string, Tracked>())
   const once = useRef<Notice[]>([])
   const before = useRef<Pass>(passOf(world))
-  const seam = useRef(world.seam.kind)
   const signature = useRef(new Map<string, string>())
   const changed = useRef(new Map<string, number>())
   const counter = useRef(0)
+  const [farm, setFarm] = useState(world)
   const [passN, setPassN] = useState(0)
   const [rows, setRows] = useState<readonly Notice[]>([])
   const [hidden, setHidden] = useState(false)
+  if (farm !== world) {
+    setFarm(world)
+    setRows([])
+    setPassN(0)
+    tracked.current = new Map()
+    once.current = []
+    before.current = passOf(world)
+    signature.current = new Map()
+    changed.current = new Map()
+    counter.current = 0
+  }
 
   useEffect(() => {
     const run = (): void => {
-      if (seam.current === 'recap' && world.seam.kind === 'play') once.current = []
-      seam.current = world.seam.kind
       once.current = [...once.current, ...doneRows(world, before.current)]
       before.current = passOf(world)
       const now = noticeRows(world)
-      const live = new Set(now.map(r => r.id))
-      const next = new Map<string, Tracked>()
-      now.forEach(r => next.set(r.id, { row: r, armed: tracked.current.has(r.id), grace: false }))
-      tracked.current.forEach((t, id) => {
-        if (live.has(id) || !t.armed || t.grace) return
-        next.set(id, { row: t.row, armed: true, grace: true })
-      })
-      tracked.current = next
-      const visible = [...once.current, ...[...next.values()].filter(t => t.armed).map(t => t.row)]
+      tracked.current = trackPass(tracked.current, now)
+      const visible = visibleRows(tracked.current, once.current)
       const n = counter.current + 1
       counter.current = n
       groupNotices(visible).forEach(g => {
@@ -178,7 +194,7 @@ export function Notices({
     return () => window.clearInterval(t)
   }, [world])
 
-  const blocks = groupNotices(rows)
+  const blocks = groupNotices([...recapRows(world), ...rows.filter(r => r.kind !== 'recap')])
 
   if (off) return undefined
 
@@ -189,26 +205,43 @@ export function Notices({
           hidden ? 'translate-x-[120%]' : 'translate-x-0'
         }`}
       >
-        <button
-          type="button"
-          aria-label={m.notices_hide()}
-          className="pointer-events-auto cursor-pointer self-end border border-ink bg-house px-2 py-0.5 text-sm leading-none text-ink/60 hover:bg-parch hover:text-ink"
-          onClick={() => {
-            onHighlight([])
-            setHidden(true)
-          }}
-        >
-          {'›'}
-        </button>
+        <div className="pointer-events-auto relative flex w-full items-center justify-between border-x border-ink bg-house px-2 py-0.5">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={RAIL} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={RAIL} />
+          <span className="text-sm leading-none text-ink">{m.notices_title()}</span>
+          <button
+            type="button"
+            aria-label={m.notices_hide()}
+            className="cursor-pointer px-1 py-0.5 text-sm leading-none text-ink/60 hover:text-ink"
+            onClick={() => {
+              onHighlight([])
+              setHidden(true)
+            }}
+          >
+            {'›'}
+          </button>
+        </div>
         {blocks.map(block => (
           <Block
             key={block.kind}
             block={block}
             pulse={changed.current.get(block.kind) === passN}
             onHover={onHighlight}
-            onGo={(go, kind) => {
-              once.current = once.current.filter(r => r.kind !== kind)
-              onGo(go)
+            onGo={row => {
+              const next = dropNotice(tracked.current, once.current, row.id)
+              if (row.kind === 'contract-done' || row.kind === 'research-done') {
+                tracked.current = next.tracked
+                once.current = next.once
+                setRows(visibleRows(tracked.current, once.current))
+              }
+              onGo(row.go)
+            }}
+            onDismiss={row => {
+              const next = dropNotice(tracked.current, once.current, row.id)
+              tracked.current = next.tracked
+              once.current = next.once
+              setRows(visibleRows(tracked.current, once.current))
+              onDismiss(row)
             }}
           />
         ))}

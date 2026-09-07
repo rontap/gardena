@@ -16,6 +16,7 @@ export const NOTICE_GROUP_MAX = 3
 export const NOTICE_WATER_LOW = 0.2
 
 export type NoticeKind =
+  | 'recap'
   | 'contract'
   | 'contract-done'
   | 'fuel'
@@ -32,6 +33,7 @@ export type NoticeKind =
   | 'water-low'
 
 export const NOTICE_ORDER: readonly NoticeKind[] = [
+  'recap',
   'contract-done',
   'research-done',
   'fuel',
@@ -64,6 +66,7 @@ export function noticeBad(kind: NoticeKind): boolean {
 }
 
 export type NoticeFace =
+  | { kind: 'recap' }
   | { kind: 'company'; id: CompanyId }
   | { kind: 'oil' }
   | { kind: 'water' }
@@ -81,7 +84,12 @@ export type NoticeSubject =
   | { kind: 'research'; id: ResearchId }
   | { kind: 'demand'; demand: Demand }
 
-export type NoticeGo = 'none' | 'market' | 'research' | 'family'
+export type NoticePopup = { kind: 'recap'; day: number }
+
+export type NoticeGo =
+  | { kind: 'none' }
+  | { kind: 'panel'; panel: 'market' | 'research' | 'family' }
+  | { kind: 'popup'; popup: NoticePopup }
 
 export type Notice = {
   id: string
@@ -127,7 +135,7 @@ function plantRows(world: World): Notice[] {
         subjects: [{ kind: 'crop', crop: c.plant.crop }],
         cells,
         bar: undefined,
-        go: 'none',
+        go: { kind: 'none' },
       })
       continue
     }
@@ -140,7 +148,7 @@ function plantRows(world: World): Notice[] {
         subjects: [{ kind: 'crop', crop: c.crop }],
         cells,
         bar: undefined,
-        go: 'none',
+        go: { kind: 'none' },
       })
       continue
     }
@@ -154,7 +162,7 @@ function plantRows(world: World): Notice[] {
         subjects: [{ kind: 'crop', crop: c.plant.crop }],
         cells,
         bar: c.plant.freshness,
-        go: 'none',
+        go: { kind: 'none' },
       })
       continue
     }
@@ -173,7 +181,7 @@ function plantRows(world: World): Notice[] {
         subjects,
         cells,
         bar,
-        go: 'none',
+        go: { kind: 'none' },
       })
     }
     if (fertBand(c.soil.fertilizer, st.fertTolerance) === 'red') {
@@ -185,7 +193,7 @@ function plantRows(world: World): Notice[] {
         subjects,
         cells,
         bar,
-        go: 'none',
+        go: { kind: 'none' },
       })
     }
   }
@@ -203,7 +211,7 @@ function fuelRows(world: World): Notice[] {
       subjects: [],
       cells: v.pose.kind === 'field' ? [{ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }] : [v.pose.hangar],
       bar: undefined,
-      go: 'none' as const,
+      go: { kind: 'none' as const },
     }))
 }
 
@@ -232,7 +240,7 @@ function contractRows(world: World): Notice[] {
     subjects: a.bins.filter(b => b.filled < b.demand.amount).flatMap(b => demandSubjects(b.demand)),
     cells: [],
     bar: filledOf(a) / needOf(a),
-    go: 'market' as const,
+    go: { kind: 'panel' as const, panel: 'market' as const },
   }))
 }
 
@@ -252,7 +260,7 @@ function waterRows(world: World): Notice[] {
       subjects: [],
       cells: [],
       bar: n.stored / n.capacity,
-      go: 'none' as const,
+      go: { kind: 'none' as const },
     }))
 }
 
@@ -269,7 +277,7 @@ function standingRows(world: World): Notice[] {
       subjects: [{ kind: 'research', id: job.id }],
       cells: [],
       bar: (def.seconds - job.left) / def.seconds,
-      go: 'research',
+      go: { kind: 'panel', panel: 'research' },
     })
   }
   if (world.points > 0) {
@@ -281,7 +289,7 @@ function standingRows(world: World): Notice[] {
       subjects: [],
       cells: [],
       bar: undefined,
-      go: 'family',
+      go: { kind: 'panel', panel: 'family' },
     })
   }
   const left = world.expandLeft()
@@ -294,14 +302,34 @@ function standingRows(world: World): Notice[] {
       subjects: [],
       cells: [],
       bar: undefined,
-      go: 'none',
+      go: { kind: 'none' },
     })
   }
   return rows
 }
 
+export function recapRows(world: World): Notice[] {
+  return world.recapUnseen.map(day => ({
+    id: `recap:${day}`,
+    kind: 'recap' as const,
+    text: m.notices_recap({ n: day }),
+    face: { kind: 'recap' as const },
+    subjects: [],
+    cells: [],
+    bar: undefined,
+    go: { kind: 'popup' as const, popup: { kind: 'recap' as const, day } },
+  }))
+}
+
 export function noticeRows(world: World): Notice[] {
-  return [...contractRows(world), ...fuelRows(world), ...plantRows(world), ...standingRows(world), ...waterRows(world)]
+  return [
+    ...recapRows(world),
+    ...contractRows(world),
+    ...fuelRows(world),
+    ...plantRows(world),
+    ...standingRows(world),
+    ...waterRows(world),
+  ]
 }
 
 export function passOf(world: World): Pass {
@@ -327,7 +355,7 @@ export function doneRows(world: World, before: Pass): Notice[] {
           subjects: [],
           cells: [],
           bar: undefined,
-          go: 'market' as const,
+          go: { kind: 'panel' as const, panel: 'market' as const },
         },
       ]
     })
@@ -343,11 +371,41 @@ export function doneRows(world: World, before: Pass): Notice[] {
             subjects: [{ kind: 'research' as const, id: was }],
             cells: [],
             bar: undefined,
-            go: 'research' as const,
+            go: { kind: 'panel' as const, panel: 'research' as const },
           },
         ]
       : []
   return [...closed, ...research]
+}
+
+export type Tracked = { row: Notice; armed: boolean; grace: boolean }
+
+export function trackPass(prev: ReadonlyMap<string, Tracked>, now: readonly Notice[]): Map<string, Tracked> {
+  const live = new Set(now.map(r => r.id))
+  const next = new Map<string, Tracked>()
+  now.forEach(r =>
+    next.set(r.id, {
+      row: r,
+      armed: r.kind === 'recap' || prev.has(r.id),
+      grace: false,
+    }),
+  )
+  prev.forEach((t, id) => {
+    if (live.has(id) || !t.armed || t.grace) return
+    if (t.row.kind === 'recap') return
+    next.set(id, { row: t.row, armed: true, grace: true })
+  })
+  return next
+}
+
+export function visibleRows(tracked: ReadonlyMap<string, Tracked>, once: readonly Notice[]): Notice[] {
+  return [...once, ...[...tracked.values()].filter(t => t.armed).map(t => t.row)]
+}
+
+export function dropNotice(tracked: Map<string, Tracked>, once: readonly Notice[], id: string): { tracked: Map<string, Tracked>; once: Notice[] } {
+  const next = new Map(tracked)
+  next.delete(id)
+  return { tracked: next, once: once.filter(r => r.id !== id) }
 }
 
 export type NoticeBlock = { kind: NoticeKind; rows: readonly Notice[] }

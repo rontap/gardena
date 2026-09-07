@@ -86,8 +86,8 @@ export type Cmd =
   | { a: typeof Act.click; t: number; p: SeatId; c: XY }
   | { a: typeof Act.clickValve; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.enqueue; t: number; p: SeatId; i: Intent }
-  | { a: typeof Act.buy; t: number; p: SeatId; s: SkuId }
-  | { a: typeof Act.buyPacks; t: number; p: SeatId; s: SkuId }
+  | { a: typeof Act.buy; t: number; p: SeatId; s: SkuId; c: XY }
+  | { a: typeof Act.buyPacks; t: number; p: SeatId; s: SkuId; c: XY }
   | { a: typeof Act.placePipe; t: number; p: SeatId; e: Edge }
   | { a: typeof Act.placeSprinkler; t: number; p: SeatId; s: Sprinkler }
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'pipe'; e: Edge }

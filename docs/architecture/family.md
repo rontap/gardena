@@ -2,7 +2,7 @@
 
 HUD panel + `World` fields. Not XP. No “has family” flag. No `Family` class.
 
-Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Offers, pick, and skill-modifier rebuild live in `sim/family.ts`: `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` after `family` exists. Hydrate rebuilds modifiers; it does not reroll. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (point). Art: [[art/skills]]. Rules: [[mechanics/family]].
+Ids: `sim/ids.ts`. Table: `defs/skills.ts`. Offers, pick, and skill-modifier rebuild live in `sim/family.ts`: `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. New-farm constructor calls `initFamily(this)` after `family` exists. Hydrate rebuilds modifiers; it does not reroll. Chrome: `ui/family.tsx` (panel), `ui/recap.tsx` (App `recapDay` popup). Art: [[art/skills]]. Rules: [[mechanics/family]].
 
 Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player owns `saleswoman` — owned maps are per member, each id set closed. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`.
 
@@ -40,11 +40,11 @@ Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: pick ano
 
 ## Points / recap
 
-Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared.
+Each seam, `World.points += POINTS_PER_DAY`. Unused bank is shared. Grant is the seam step, not Close.
 
 `grantPoints(n)`: `World.points += n`.
 
-`dismissRecap()` is the only recap exit. Grants `POINTS_PER_DAY`, then `seam = play`, `banner = 2`. No member pick.
+`Act.dismissRecap` / `dismissRecapBody`: no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. `banner = 2` is the seam. No member pick. [[mechanics/day]]
 
 `unlockAll`: research rows unchanged (every id done, `money += 999`, job idle) **and** `World.points = 99`. Does not pick skills. Does not reroll offers.
 

@@ -6,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.17
+export const PROTOCOL = 2.18
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30

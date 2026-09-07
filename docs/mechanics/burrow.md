@@ -98,14 +98,13 @@ Treasure skips the pool draw. Tool uses salt 3 for used/full. Spatial, not seq. 
 
 ```
 Item += { kind: 'treasure'; coins: number }
-Intent += { act: 'open'; at: Coord }
 ```
 
-`coins` required. Not countable. `compostValue` 0. `furnaceValue` 0. Not a `StallGoodId`. Seed silo / additive store do not take it. House / chest / vehicle slots may. Consign refused.
+`coins` required. Not countable. `compostValue` 0. `furnaceValue` 0. Not a `StallGoodId`. No store, slot, or vehicle takes it, because it never reaches a hand. Consign refused.
 
-Hold treasure, click an owned plot: prompt **Open treasure**. `{ act: 'open'; at }`. `dest` = `at`. Work 0. Enqueue, no new `Act` letter. Left-click is open, not drop. Right-click drop unchanged.
+Treasure lies on the ground and is picked up like anything else: prompt **Pick up**, `{ act: 'pickup'; at }`. `doPickup` adds `coins` to `money` and splices the drop. There is no second click and no `open` intent.
 
-Complete: `money += coins`, hand empty. Illegal: open empty hand. Illegal: open a different kind.
+The hand is untouched, so a full hand does not block it and `HAND_FULL` never fires on treasure.
 
 Coin glyph for the amount. Money, not gold. [[mechanics/inventory]] [[ui/inspect]]
 
@@ -115,7 +114,7 @@ Derived `min(LUCK_CAP, skillTier('lucky'))`. `LUCK_CAP` — preference. Not a Wo
 
 `PlayerSkillId` += `lucky`. `maxTier` 3. Gate none. `SkillEffect` `{ kind: 'lucky' }`. Player offers. `unlockAllSkills` grants it. [[mechanics/family]] `family.lucky`
 
-Almanac Game concepts **Luck** + **Burrow**. Copy: **Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the shop does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.** **A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Hold treasure and click a plot you own: Open treasure. That adds the money it holds. The Market does not take treasure.** [[ui/almanac]]
+Almanac Game concepts **Luck** + **Burrow**. Copy: **Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the shop does not sell as a pack. You raise it by learning Lucky on Family, on You the Gardener, ranks I–III. Each rank raises both compared to a burrow that appeared without Lucky. Luck is set when the burrow appears. A burrow already on the farm stays as it is if you learn Lucky later.** **A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Picking up treasure adds the money it holds. The Market does not take treasure.** [[ui/almanac]]
 
 ## Index / module
 
@@ -133,10 +132,10 @@ Save: Cover arm + treasure on Item. Fields added, no migrate. [[architecture/sav
 
 `burrow.block` — Burrow is untilled cover `{ kind: 'burrow'; loot }`, loot required. Not solid. Walk ok. Place / tile / fence / tree-seed refuse.
 
-`burrow.dig` — Shovel extract: work `workSeconds × BURROW_MUL`, not hardness, 1 use, any shovel id, does not till. Cover → bare, same `ground` / `hardness`. Drop stored item on the cell. Prompt **Dig**. Pickaxe no-op. Inspect does not name loot.
+`burrow.dig` — Shovel extract: work `workSeconds × BURROW_MUL`, not hardness, 1 use, any shovel id, does not till. Cover → bare, same `ground` / `hardness`. Drop stored item on `nearSite(w, at)` — the first of S, W, E, N that is `inWorld` and `isPlot`, else the dug cell. Prompt **Dig**. Pickaxe no-op. Inspect does not name loot.
 
 `burrow.loot` — `lootRoll` as `defs/burrow.ts`. Nine rows, filter by gate + non-empty pool, then equal chance. Treasure always. Second roll uniform in that row's listed pool. Quality 0. Spatial `burrow.at(col, row, salt)`. Stored at spawn.
 
-`burrow.open` — `{ kind: 'treasure'; coins }`. Not countable, not compost, not furnace, not stall, not silo. `{ act: 'open'; at }` via `Act.enqueue`, work 0: `money += coins`, hand empty.
+`burrow.treasure` — `{ kind: 'treasure'; coins }`. Not countable, not compost, not furnace, not stall, not silo. Never enters a hand: `doPickup` adds `coins` to `money` and removes the drop. No `open` intent.
 
 Assumption: site pick without replacement, eligible sorted `(row, col)`; start `day = 1`; seam `k = 0` after `clock.day` increments; loot salts 0 lootRoll `u`, 1 row, 2 pool, 3 coins or tool used; no research filter on rows; seam does not test fence; left-click held treasure on a plot is open, not drop.

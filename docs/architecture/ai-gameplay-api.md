@@ -25,7 +25,7 @@ A turn with no `wait` still advances the world. Walking to a tile, digging, and 
 
 `DRAIN_MAX` — preference. Bounds the drain. `drained` is `idle` or `cap`.
 
-Seam inside a turn: the recap is captured into `days` and `dismissRecap()` runs. `tick` freezes while `seam.kind === 'recap'`, so a turn that did not dismiss would deadlock at the first rollover — [[mechanics/day]].
+Seam inside a turn: on day increment, push the new recap into `days`. Do not call `dismissRecap`. A turn never holds at sundown — [[mechanics/day]].
 
 **Instant beats queued.** `buy`, `take`, `swap` and the rest fire during dispatch, while queued acts are still walking. A `take` mid-list swaps the hand out from under a queued `shovel` and the sim drops it. Put hand changes in their own turn.
 
@@ -85,7 +85,7 @@ An action that fails does not stop the list. Every remaining action still runs.
 
 `play.drain` — A turn dispatches in list order, then ticks until the local seat is idle. `wait` adds idle time on top. Bounded by `DRAIN_MAX`; `drained` is `idle` or `cap`.
 
-`play.seam` — A seam inside a turn is captured into `days` and dismissed. A turn never returns while `seam.kind === 'recap'`.
+`play.seam` — A seam inside a turn is captured into `days`. Do not call `dismissRecap`. A turn never holds at sundown.
 
 `play.logged` — Every action commits a `Cmd`. Never `World.enqueue`, which is not logged and does not reach guests.
 

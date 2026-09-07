@@ -84,7 +84,7 @@ export function takeAdditiveBody(world: World, at: Coord, id: AdditiveId): void 
   if (liters <= 0) return
   if (!freeHand(world)) return
   held.liters -= liters
-  if (held.liters <= 0) world.additives.held.splice(i, 1)
+  if (held.liters <= 0) store.held.splice(i, 1)
   world.act.hand = { kind: 'hold', item: { kind: id, liters, capacityLiters: bag } }
   world.ping()
 }
@@ -115,6 +115,11 @@ export function freeHand(world: World): boolean {
   world.drops.push({ at, item: world.act.hand.item })
   world.act.hand = { kind: 'empty' }
   return true
+}
+
+export function nearSite(world: World, at: Coord): Coord {
+  const near = frontOf(at).find(p => world.inWorld(p) && isPlot(world.cell(p)))
+  return near === undefined ? { ...at } : { ...near }
 }
 
 export function dropSite(world: World): Coord | undefined {

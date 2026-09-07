@@ -529,12 +529,10 @@ describe('saturation', () => {
     seam.stall.potato.sat = 0.9
     seam.clock.t = DAY_SECONDS - 0.001
     seam.tick(1)
-    expect(seam.seam.kind).toBe('recap')
+    expect(seam.seam.kind).toBe('play')
     expect(seam.stall.potato.sat).toBe(0.9)
     seam.tick(DT_MAX)
-    expect(seam.stall.potato.sat).toBe(0.9)
-    seam.dismissRecap()
-    expect(seam.stall.potato.sat).toBe(0.9)
+    expect(seam.stall.potato.sat).toBeCloseTo(0.9 - SAT_RECOVER_PER_DAY * DT_MAX / DAY_SECONDS, 9)
     const dump = new World(1)
     dump.stall.potato.take('base', 200, 1, false)
     dump.sellAll()

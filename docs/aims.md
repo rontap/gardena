@@ -6,7 +6,7 @@ You are the gardener. Husband is research. Daughter is the market stall. Family 
 
 ## Loop
 
-Till → plant → water → harvest → sell at the truck → buy tools, pipes, and seeds. Days run `DAY_SECONDS`. Sunrise / day / sunset / twilight, then recap with tax.
+Till → plant → water → harvest → sell at the truck → buy tools, pipes, and seeds. Days run `DAY_SECONDS`. Sunrise / day / sunset / twilight, then tax at the seam. Recap is a Command Center notice.
 
 ## Care is not solved by pipes alone
 

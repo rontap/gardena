@@ -35,6 +35,7 @@ import { luckOf } from '../family.ts'
 import type { TreeId } from '../ids.ts'
 import type { Cell, LootItem } from '../plot.ts'
 import type { Rng } from '../rng.ts'
+import { nearSite } from '../store.ts'
 import type { World } from '../world.ts'
 
 type SeedCrop = 'tomato' | 'raspberry' | 'grape' | 'vanilla'
@@ -275,12 +276,6 @@ export function extractBurrow(w: World, at: Coord): void {
   s.item.usesLeft -= 1
   if (s.item.usesLeft <= 0) w.act.hand = { kind: 'empty' }
   w.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'bare' } })
-  w.drops.push({ at: { ...at }, item: loot })
+  w.drops.push({ at: nearSite(w, at), item: loot })
 }
 
-export function doOpen(w: World): void {
-  const h = w.act.hand
-  if (h.kind !== 'hold' || h.item.kind !== 'treasure') throw new Error('treasure')
-  w.money += h.item.coins
-  w.act.hand = { kind: 'empty' }
-}

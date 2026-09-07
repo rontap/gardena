@@ -8,7 +8,7 @@ Each heading is a mechanic. If docs, tests, and code all say the same rule: **MA
 
 ## Day
 
-Sundown pays the stipend, takes tax and the pump bill, opens recap. Money may go negative. Phases are sunrise, day, sunset, twilight. Recap is how a player continues; it grants skill points.
+Sundown pays the stipend, takes tax and the pump bill, appends recap, grants skill points, stays play. Money may go negative. Phases are sunrise, day, sunset, twilight. Recap popup opens from a Command Center recap notice. Close is `seeRecap`, not a grant.
 
 Day seam - MATCH
 

@@ -80,10 +80,7 @@ function play(seed: number, cmds: Cmd[], dt = 1 / 15): World {
 
 function stepBig(w: World): void {
   const n = w.bigTicks
-  while (w.bigTicks === n) {
-    if (w.seam.kind === 'recap') w.dismissRecap()
-    w.tick(DT_MAX)
-  }
+  while (w.bigTicks === n) w.tick(DT_MAX)
 }
 
 function grassCount(w: World): number {
@@ -206,7 +203,8 @@ describe('0.8 plants and trees', () => {
     w.setCell(below, tree)
     expect(tree.yield.kind).toBe('pending')
     w.clock.t = 239.9
-    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    const d0 = w.clock.day
+    for (let i = 0; i < 20 && w.clock.day === d0; i++) w.tick(1)
     expect(tree.yield.kind).toBe('on')
     if (tree.yield.kind === 'on') expect(tree.yield.daysLeft).toBe(2)
   })
@@ -417,7 +415,8 @@ describe('0.9 log and rng', () => {
     expect(w.log).toHaveLength(2)
     w.clock.t = 239.999
     w.tick(1)
-    expect(w.seam.kind).toBe('recap')
+    expect(w.seam.kind).toBe('play')
+    expect(w.recaps).toHaveLength(1)
     const n = w.now
     w.tick(1 / 15)
     expect(w.now).toBe(n + 1)
@@ -447,7 +446,8 @@ describe('0.9 log and rng', () => {
     expect(w.cell(AT).kind).toBe('ripe')
     expect(w.log).toEqual([])
     w.buy('pack-carrot')
-    expect(w.log).toEqual([{ a: Act.buy, t: 1, p: 0, s: 'pack-carrot' }])
+    const house = w.houseCell()
+    expect(w.log).toEqual([{ a: Act.buy, t: 1, p: 0, s: 'pack-carrot', c: [house.col, house.row] }])
   })
 
   test('Same seed + same Cmd[] applied at those t with dt = 1/15 → equal digest: money, clock.day, clock.t, hand, inventory, cell kinds, plant crop/rarity/maturity, drop count, done, family owned, stall stock.', () => {
@@ -955,20 +955,20 @@ describe('1.5.2', () => {
     w.setCell(AT, tree)
     w.setCell(below, tree)
     w.clock.t = 239.9
-    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(DT_MAX)
+    const d1 = w.clock.day
+    for (let i = 0; i < 20 && w.clock.day === d1; i++) w.tick(DT_MAX)
     expect(tree.yield).toEqual({ kind: 'on', daysLeft: TREE_YIELD_DAYS })
     expect(tree.juvenile).toBe(1)
-    if (w.seam.kind === 'recap') w.dismissRecap()
     tree.fruit = 0
     w.tick(DT_MAX)
     expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_YIELD_MUL), 8)
     tree.yield = { kind: 'on', daysLeft: 1 }
     tree.tended = true
     w.clock.t = 239.9
-    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(DT_MAX)
+    const d2 = w.clock.day
+    for (let i = 0; i < 20 && w.clock.day === d2; i++) w.tick(DT_MAX)
     expect(tree.tended).toBe(false)
     expect(tree.yield).toEqual({ kind: 'off', chance: -0.2 })
-    if (w.seam.kind === 'recap') w.dismissRecap()
     tree.fruit = 0
     w.tick(DT_MAX)
     expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_OFF_MUL), 8)
@@ -1574,10 +1574,10 @@ describe('variety.neighbour', () => {
     tree.fruit = 0
     tree.yield = { kind: 'pending' }
     w.clock.t = 239.9
-    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    const d3 = w.clock.day
+    for (let i = 0; i < 20 && w.clock.day === d3; i++) w.tick(1)
     expect(tree.yield.kind).toBe('pending')
     expect(tree.fruit).toBe(0)
-    if (w.seam.kind === 'recap') w.dismissRecap()
 
     const sibAt = { col: AT.col + NEIGHBOUR_REACH, row: AT.row }
     const sib = new Tree('apple', { shape: 'rect', col: sibAt.col, row: sibAt.row, w: 1, h: 2 }, 1, 0, {
@@ -1586,7 +1586,8 @@ describe('variety.neighbour', () => {
     w.setCell(sibAt, sib)
     w.setCell({ col: sibAt.col, row: sibAt.row + 1 }, sib)
     w.clock.t = 239.9
-    for (let i = 0; i < 20 && w.seam.kind !== 'recap'; i++) w.tick(1)
+    const d4 = w.clock.day
+    for (let i = 0; i < 20 && w.clock.day === d4; i++) w.tick(1)
     expect(tree.yield.kind).toBe('on')
   })
 })

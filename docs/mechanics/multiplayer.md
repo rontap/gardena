@@ -68,4 +68,4 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. Two mismatches within two digest periods → that guest `bye: kicked`. Host continues. Host `rebase()`s before every snapshot, so the resync converges — [[architecture/net]] `net.snapshot`.
 
-`mp.stride` — `Seat.stride`. Not driver, `presence === 'in'`, not recap: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.
+`mp.stride` — `Seat.stride`. Not driver, `presence === 'in'`: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.

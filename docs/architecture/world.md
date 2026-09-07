@@ -118,7 +118,31 @@ Spirit =
 
 ## Recap / Seam
 
-Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Play frozen while `kind === 'recap'`. Only exit: `dismissRecap()` — grants `POINTS_PER_DAY` to `World.points`, then play. Seam bills pump, mints burrows, then copies `tally.contracts` into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. [[architecture/family]] [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]].
+```
+Recap = {
+  day: number
+  money: number
+  stipend: number
+  died: number
+  harvests: number
+  research: ResearchId[]
+  tax: number
+  water: number
+  contracts: HistoryEntry[]
+}
+
+Seam = { kind: 'play' }
+```
+
+Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Illegal: live `seam.kind === 'recap'`. Live `World.seam` is always `{ kind: 'play' }`. Dump `Seam` is always `{ kind: 'play' }`.
+
+`World.recaps: Recap[]` — one per ended day; `Recap.day` is the key. `World.recapUnseen: number[]`.
+
+`World.recapAt(day): Recap` — total; missing day throws. `World.seeRecap(day)` removes `day` from `recapUnseen`; no-op if absent. Not a `Cmd`. Ping.
+
+`Act.dismissRecap` / `dismissRecapBody`: no-op. Log letter unchanged.
+
+Seam, before any field tick of the new day: stipend, tax, pump bill, burrow mint, tree seam, append `Recap` to `World.recaps`, push that day onto `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `clock.banner = 2`, `seam` stays play, tally reset, `contracts.takenToday`, ping. `World.tick` does not return early. Recap popup is App `recapDay`, not `World.seam`. [[architecture/family]] [[mechanics/day]] [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]] [[ui/notices]].
 
 ## Family
 
@@ -140,7 +164,7 @@ World.cheatSpeed         = 1 | 3
 
 Tick law: [[architecture/tick]].
 
-`World.now: number` — integer count of `tick()` entries. Starts 0. Increments by 1 at every `tick()` entry, including recap return.
+`World.now: number` — integer count of `tick()` entries. Starts 0. Increments by 1 at every `tick()` entry.
 
 `Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
 

@@ -80,11 +80,7 @@ function wheat(n: number) {
 
 function ticks(w: World, seconds: number): void {
   const n = Math.ceil(seconds / DT_MAX) + 1
-  for (let i = 0; i < n; i++) {
-    if (w.seam.kind === 'recap') w.dismissRecap()
-    w.tick(DT_MAX)
-  }
-  if (w.seam.kind === 'recap') w.dismissRecap()
+  for (let i = 0; i < n; i++) w.tick(DT_MAX)
 }
 
 describe('machines', () => {

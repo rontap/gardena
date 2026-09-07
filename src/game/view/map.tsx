@@ -42,12 +42,22 @@ import {
 } from './hit.ts'
 import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
+import { cursorCss, cursorFor } from './cursor.ts'
 import { STAT_COLOR } from '../ui/status.tsx'
 import { FURNACE, HANGAR, MILL, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
 export type { Lens, MapClick }
+
+export function BootOverlay({ show }: { show: boolean }) {
+  if (!show) return undefined
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <span className="text-lg text-white/70">{m.hud_loading()}</span>
+    </div>
+  )
+}
 
 const QUEUE_MARK = 5
 
@@ -106,6 +116,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const [worldPtr, setWorldPtr] = useState<{ x: number; y: number } | undefined>(undefined)
   const [pendingPipe, setPendingPipe] = useState<Edge[]>([])
   const [pendingFence, setPendingFence] = useState<Coord[]>([])
+  const [booted, setBooted] = useState(false)
   const anchorRef = useRef<Vertex | undefined>(undefined)
   const fenceAnchorRef = useRef<Coord | undefined>(undefined)
   const pendingRef = useRef<Edge[]>([])
@@ -164,6 +175,13 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       ? stayOk(world, placeId, edgeHit, ghostSprinkler, deleteTarget)
       : prompt?.kind === 'place'
   const canPlace = placing && hitOk
+  const fruitUnder =
+    hoverCell !== undefined && onCell(world.drops, hoverCell).at(-1)?.item.kind === 'fruit'
+  const cursor = placing
+    ? canPlace
+      ? 'pointer'
+      : 'crosshair'
+    : cursorCss(cursorFor(hover, prompt, fruitUnder, place.kind === 'wire'))
   const tipDrop = hoverCell !== undefined ? onCell(world.drops, hoverCell).at(-1) : undefined
   const tip =
     tipDrop !== undefined &&
@@ -218,6 +236,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       v.onPipeLoc = () => paintPipeLocators(pipeHost, world)
       v.onPipeLoc()
       v.layout()
+      setBooted(true)
       const ready = onReadyRef.current
       if (ready !== undefined) ready()
       const hook: ViewHooks = {
@@ -236,6 +255,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     })
     return () => {
       dead = true
+      setBooted(false)
       viewRef.current = undefined
       mounted?.htmlLayer?.remove()
       mounted?.destroy()
@@ -407,7 +427,8 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   return (
     <div
       ref={hostRef}
-      className={`absolute inset-0 overflow-hidden bg-grass ${canPlace ? 'cursor-pointer' : 'cursor-crosshair'}`}
+      className="absolute inset-0 overflow-hidden bg-grass"
+      style={{ cursor }}
       onWheel={onWheel}
       onContextMenu={e => {
         e.preventDefault()
@@ -807,6 +828,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>
       )}
+      <BootOverlay show={!booted} />
     </div>
   )
 }

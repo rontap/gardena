@@ -62,7 +62,7 @@ import {SOURCE} from './water.ts'
 import {goodness, groundOf, hardnessOf, HARD_MAX} from './noise.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
-import {DT_MAX, World} from './world.ts'
+import {DAY_STIPEND, DT_MAX, POINTS_PER_DAY, World} from './world.ts'
 import {BUILD_SKUS, SHELVES, SHOP_SKUS} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
@@ -156,7 +156,6 @@ describe('beta-1 invariants', () => {
         const g = new Plant('carrot', 'base', 0)
         w.setCell(AT, {kind: 'growing', soil: bed(0, 0), plant: g})
         for (let n = 0; n < 2000 && w.cell(AT).kind === 'growing'; n++) {
-            if (w.seam.kind === 'recap') w.dismissRecap()
             w.tick(1)
         }
         expect(w.cell(AT).kind).toBe('dead')
@@ -165,7 +164,6 @@ describe('beta-1 invariants', () => {
         const ripe = {col: 11, row: 12}
         w.setCell(ripe, {kind: 'ripe', soil: bed(0, 0), plant: r})
         for (let n = 0; n < 5; n++) {
-            if (w.seam.kind === 'recap') w.dismissRecap()
             w.tick(1)
         }
         expect(w.cell(ripe).kind).toBe('ripe')
@@ -289,6 +287,69 @@ describe('beta-1 invariants', () => {
         expect(siloCount(w, 'carrot', 'base')).toBe(12)
     })
 
+    test('store.buy — a buy lands in the store cell it was made from, and names that store when it is full', () => {
+        const w = new World()
+        w.unlockAll()
+        w.money = 9999
+        w.buy('buy-silo-seed')
+        const siloAt = {col: 16, row: 12}
+        w.confirmPlace(siloAt)
+        const silo = w.cell(siloAt)
+        expect(silo.kind).toBe('silo-seed')
+        if (silo.kind !== 'silo-seed') return
+
+        const house = siloCount(w, 'carrot', 'base')
+        expect(w.buyInto(siloAt, 'pack-carrot')).toBeUndefined()
+        expect(siloCount(w, 'carrot', 'base')).toBe(house)
+        expect(silo.seeds.find(s => s.crop === 'carrot' && s.variety === 'base')?.count).toBe(5)
+
+        expect(w.buy('pack-carrot')).toBeUndefined()
+        expect(siloCount(w, 'carrot', 'base')).toBe(house + 5)
+
+        w.buyPacksInto(siloAt, 'pack-wheat')
+        expect(silo.seeds.find(s => s.crop === 'wheat' && s.variety === 'base')?.count).toBe(25)
+
+        silo.seeds.length = 0
+        silo.seeds.push({crop: 'carrot', variety: 'base', quality: 0, count: silo.cap})
+        expect(w.buyInto(siloAt, 'pack-wheat')).toBe('Seeding silo full')
+        expect(w.buy('pack-wheat')).toBeUndefined()
+
+        w.buy('buy-silo-spray')
+        const sprayAt = {col: 20, row: 12}
+        w.confirmPlace(sprayAt)
+        const spray = w.cell(sprayAt)
+        expect(spray.kind).toBe('silo-spray')
+        if (spray.kind !== 'silo-spray') return
+        const store = w.additives.litersOf('fertilizer')
+        expect(w.buyInto(sprayAt, 'buy-fertilizer')).toBeUndefined()
+        expect(spray.litersOf('fertilizer')).toBeGreaterThan(0)
+        expect(w.additives.litersOf('fertilizer')).toBe(store)
+    })
+
+    test('store.take — the last bag off a field silo leaves the house store alone', () => {
+        const w = new World()
+        w.unlockAll()
+        w.money = 9999
+        w.buy('buy-silo-spray')
+        const sprayAt = {col: 20, row: 12}
+        w.confirmPlace(sprayAt)
+        const spray = w.cell(sprayAt)
+        if (spray.kind !== 'silo-spray') throw new Error('kind')
+        w.putAdditive('fertilizer', 40)
+        const houseBags = w.additives.held.length
+        const houseLiters = w.additives.litersOf('fertilizer')
+        expect(houseBags).toBeGreaterThan(0)
+        spray.putAdditive('weed-spray', 1)
+        w.seats[0].hand = {kind: 'empty'}
+        w.seats[0].actor.x = sprayAt.col + 0.5
+        w.seats[0].actor.y = sprayAt.row + 3.5
+        w.takeAdditive(sprayAt, 'weed-spray')
+        expect(spray.litersOf('weed-spray')).toBe(0)
+        expect(spray.held.some(h => h.id === 'weed-spray')).toBe(false)
+        expect(w.additives.held).toHaveLength(houseBags)
+        expect(w.additives.litersOf('fertilizer')).toBe(houseLiters)
+    })
+
     test('silo take puts the whole stack in hand and refuses past the cap', () => {
         const w = new World()
         w.seats[0].hand = {kind: 'empty'}
@@ -388,12 +449,10 @@ describe('beta-2 invariants', () => {
         w.clock.t = 239.999
         w.tick(1)
         expect(w.money).toBe(58)
-        expect(w.seam.kind).toBe('recap')
-        if (w.seam.kind === 'recap') {
-            expect(w.seam.recap.money).toBe(58)
-            expect(w.seam.recap.tax).toBe(2)
-            expect(w.seam.recap.water).toBe(0)
-        }
+        expect(w.seam.kind).toBe('play')
+        expect(w.recapAt(1).money).toBe(58)
+        expect(w.recapAt(1).tax).toBe(2)
+        expect(w.recapAt(1).water).toBe(0)
     })
 
     test('bucket 5L large-bucket 10L no can ids', () => {
@@ -1424,7 +1483,6 @@ describe('beta-6 invariants', () => {
         expect(p.freshness).toBe(1)
         const rot = CROPS.raspberry.rotSeconds
         for (let t = 0; t < rot && w.cell(AT).kind === 'ripe'; t += 1 / 15) {
-            if (w.seam.kind === 'recap') w.dismissRecap()
             w.tick(1 / 15)
         }
         expect(w.cell(AT).kind).toBe('rotten')
@@ -1748,8 +1806,71 @@ describe('family.unlockSkills', () => {
     })
 })
 
+describe('day.seam', () => {
+    test('Seam at `t >= DAY_SECONDS` runs stipend, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 2`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.', () => {
+        const w = new World(1)
+        const p = new Plant('carrot', 'base', 0)
+        p.maturity = 0.4
+        w.setCell(AT, {kind: 'growing', soil: bed(), plant: p})
+        w.tally.died = 2
+        w.tally.harvests = 5
+        const money = w.money
+        const burrows = w.burrows.size
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(1)
+        expect(w.clock.day).toBe(2)
+        expect(w.seam.kind).toBe('play')
+        const recap = w.recapAt(1)
+        expect(w.money).toBe(money + DAY_STIPEND - recap.tax - recap.water)
+        expect(recap.day).toBe(1)
+        expect(recap.died).toBe(2)
+        expect(recap.harvests).toBe(5)
+        expect(recap.stipend).toBe(DAY_STIPEND)
+        expect(recap.water).toBe(0)
+        expect(w.recaps).toHaveLength(1)
+        expect(w.recapUnseen).toEqual([1])
+        expect(w.points).toBe(POINTS_PER_DAY)
+        expect(w.clock.banner).toBe(2)
+        expect(w.tally).toEqual({died: 0, harvests: 0, research: [], contracts: []})
+        expect(p.maturity).toBe(0.4)
+        expect(w.burrows.size).toBe(burrows + 1)
+        const n = w.now
+        w.tick(DT_MAX)
+        expect(w.now).toBe(n + 1)
+        expect(p.maturity).toBeGreaterThan(0.4)
+        expect(w.seam.kind).toBe('play')
+    })
+})
+
+describe('day.recap', () => {
+    test('Recap persists on `World.recaps` (one per ended day). Grant is the seam, not Close. Popup opens from a Command Center recap notice (App `recapDay`, not `World.seam`). Close / Esc / backdrop is `seeRecap(day)`. `Act.dismissRecap` is a no-op.', () => {
+        const w = new World(1)
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(1)
+        expect(w.recaps).toHaveLength(1)
+        expect(w.recapUnseen).toEqual([1])
+        expect(w.points).toBe(POINTS_PER_DAY)
+        expect(w.seam.kind).toBe('play')
+        w.dismissRecap()
+        expect(w.points).toBe(POINTS_PER_DAY)
+        expect(w.recapUnseen).toEqual([1])
+        expect(w.seam.kind).toBe('play')
+        expect(w.log).toEqual([{a: Act.dismissRecap, t: 1, p: 0}])
+        w.seeRecap(1)
+        expect(w.recapUnseen).toEqual([])
+        expect(w.recaps).toHaveLength(1)
+        expect(w.recapAt(1).day).toBe(1)
+        w.seeRecap(1)
+        expect(w.recapUnseen).toEqual([])
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(1)
+        expect(w.recaps.map(r => r.day)).toEqual([1, 2])
+        expect(w.recapUnseen).toEqual([2])
+    })
+})
+
 describe('day.end-day', () => {
-    test('End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams. Recap: no-op.', () => {
+    test('End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams.', () => {
         const w = new World(1)
         const p = new Plant('carrot', 'base', 0)
         p.maturity = 0.4
@@ -1761,17 +1882,9 @@ describe('day.end-day', () => {
         expect(w.seam.kind).toBe('play')
         expect(w.log).toEqual([{a: Act.cheat, t: 0, p: 0, k: 'day'}])
         w.tick(DT_MAX)
-        expect(w.seam.kind).toBe('recap')
+        expect(w.seam.kind).toBe('play')
+        expect(w.recaps).toHaveLength(1)
         expect(p.maturity).toBe(0.4)
-
-        const r = new World(1)
-        r.clock.t = DAY_SECONDS - 0.001
-        r.tick(DT_MAX)
-        expect(r.seam.kind).toBe('recap')
-        const t = r.clock.t
-        r.endDay()
-        expect(r.clock.t).toBe(t)
-        expect(r.seam.kind).toBe('recap')
     })
 })
 

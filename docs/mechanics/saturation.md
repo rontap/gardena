@@ -57,7 +57,7 @@ Linear. Not a seam reset.
 sat -= SAT_RECOVER_PER_DAY * dt / DAY_SECONDS      clamp at 0
 ```
 
-`SAT_RECOVER_PER_DAY` — preference. Every play `dt`, every `StallGoodId`, stocked or empty. Recap freezes the tick, so sat is frozen too. Seam does not write `sat`.
+`SAT_RECOVER_PER_DAY` — preference. Every play `dt`, every `StallGoodId`, stocked or empty. Recap does not freeze the tick. Overlay pause while the recap popup is open is App-local. Seam does not write `sat`.
 
 `recoverDays` on a quote is `sat / SAT_RECOVER_PER_DAY`. Derived.
 

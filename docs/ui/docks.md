@@ -38,9 +38,9 @@ Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants start shelf: 
 
 [[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
 
-Solo (`role === 'off'`): these three pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Shop / Research / Build / Cheat / Lens do not auto-pause. [[ui/hud]]
+Solo (`role === 'off'`): these three and the recap popup pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Shop / Research / Build / Cheat / Lens do not auto-pause. [[ui/hud]]
 
-Every dialog and overlay closes on backdrop, except recap until a member is picked, and except guest recap (no dismiss). Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
+Every dialog and overlay closes on backdrop. Recap Close / Esc / backdrop is live for guest. Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 
 ## Inventory
 
@@ -60,13 +60,13 @@ Walk-up hangar or parked / automated Quad / tractor → cue → dialog. Not dock
 
 ## Recap
 
-Seam dialog, `w-[26rem]`. `ui-recap-night` strip on top ([[art/recap-night]]). Title **Day {ended}**.
+Not a seam dialog. App opens it from a recap notice. Hidden unless App has a `recapDay`. `w-[26rem]`. `ui-recap-night` strip on top ([[art/recap-night]]). Title **Day {ended}**. Subtitle **turned in** unchanged.
 
 Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). When `unlock-contracts` done: that day's `Recap.contracts` as one-line history (company, stars, day, completed / missed / cancelled, `Coin` paid / penalty / fee) then **A new board is up.** Omit the block when not unlocked. [[ui/contracts]] [[mechanics/contracts]]
 
 Rule, then ledger **Stipend** `+` coin, **Tax** `−` coin, **Water** `−` `recap.water` coin. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]]
 
-**Day {next}**. Backdrop / Esc also `dismissRecap()`. Play frozen until that call. Each dismiss grants +1 skill point to every member — not shown on this screen. Guest: no dismiss. **Day {next}**, backdrop, and Esc do not `dismissRecap()`. [[mechanics/day]] [[mechanics/family]] [[ui/multiplayer]]
+Footer **Close**. Backdrop / Esc: same as Close. Close runs `World.seeRecap(day)` and closes the popup. Guest Close live (chrome, not a gate). `seeRecap` is not a `Cmd`. `Act.dismissRecap` is a no-op. Points already granted at the seam — not shown on this screen. Recap popup uses the same overlay pause as Family / Market / Almanac. [[mechanics/day]] [[mechanics/family]] [[ui/notices]] [[ui/hud]] [[ui/multiplayer]]
 
 ## Object HUD
 

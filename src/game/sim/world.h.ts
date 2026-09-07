@@ -77,7 +77,6 @@ export type Intent =
   | { act: 'weed-spray'; at: Coord }
   | { act: 'chop'; at: Coord }
   | { act: 'graft'; at: Coord }
-  | { act: 'open'; at: Coord }
 
 export type TaskName = string
 
@@ -151,7 +150,13 @@ export type Burst = { id: VfxId; at: Coord; seq: number }
 
 export type PavedCell = { col: number; row: number; tile: TileId }
 
-export type BuyFail = 'Cannot afford' | 'Inventory full' | 'Seed silo full' | 'Additive store full'
+export type BuyFail =
+  | 'Cannot afford'
+  | 'Inventory full'
+  | 'Seed silo full'
+  | 'Additive store full'
+  | 'Seeding silo full'
+  | 'Additive silo full'
 
 export type Net = {
   sources: Reservoir[]
@@ -186,7 +191,7 @@ export type Recap = {
   contracts: HistoryEntry[]
 }
 
-export type Seam = { kind: 'play' } | { kind: 'recap'; recap: Recap }
+export type Seam = { kind: 'play' }
 
 export type SkillRef<Id extends SkillId = SkillId> = { id: Id; tier: number }
 
@@ -249,6 +254,8 @@ export type Hydrate = {
   job: Job
   tally: DayTally
   seam: Seam
+  recaps: Recap[]
+  recapUnseen: number[]
   segments: Segment[]
   wells: Well[]
   sprinklers: Sprinkler[]

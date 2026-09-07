@@ -1,6 +1,6 @@
 # Modules
 
-`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
+`src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, App `recapDay`, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
 `defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `SkuId` += `buy-furnace` `buy-axe` `buy-research-station` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` (`feature-machines/recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
 
@@ -80,8 +80,8 @@
 | `frame.tsx` | `Dock`, `Chrome`, `Coin`, `Btn`, `Checkbox`, `Radio` |
 | `callout-hover.tsx` | `CalloutHover` |
 | `hud.tsx` | clock, ribbon, docks, pause, gear |
-| `notices.ts` | `noticeRows(world)` — pure read, no writes. `Notice`, `NOTICE_*` — [[ui/notices]] |
-| `notices.tsx` | the notices column, its two-pass state, its bars — [[ui/notices]] |
+| `notices.ts` | `noticeRows(world)` — pure read, no writes. `Notice`, `NoticeGo`, `NOTICE_*` — [[ui/notices]] |
+| `notices.tsx` | Command Center, per-row click, dismiss, two-pass state, bars — [[ui/notices]] |
 | `menu.tsx` | startup / gear shell, `MenuPage` |
 | `settings.tsx` | `SettingsPage` body — [[ui/settings]] |
 | `changelog.md` | player copy. Shipped. Not `docs/` |
@@ -103,11 +103,11 @@
 | `objecthud.tsx` | sprinkler / sensor HUD. Sensor `HudSpec.rows` `HudRow` check / radio |
 | `hangar.tsx` | hangar cue |
 | `vehicle.tsx` | parked cue |
-| `recap.tsx` | end-of-day |
+| `recap.tsx` | end-of-day summary. App `recapDay`, not `World.seam` |
 | `family.tsx` | family overlay |
 | `station.tsx` | station panel — [[ui/station]] |
 
-Panel open/close is App-local. Solo family / market / almanac overlay pause, the day-seam pause, and the tab pause are App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, parked vehicle, or station. Silo cells are look name only.
+Panel open/close is App-local. Solo family / market / almanac / recap-popup overlay pause, the day-increment pause (`settings.solo`), and the tab pause are App-local. World has no pause field. MP pause is the net flag — [[architecture/net]]. Changelog open/close is Menu-local, not a `Panel` arm. `Seat.cue` opens inventory, chest, store, hangar, parked vehicle, or station. Silo cells are look name only. Recap popup is App `recapDay`. `goNotice` takes `NoticeGo`.
 
 ## view
 
@@ -132,7 +132,7 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE. Sensor wash from watched set; pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst. Furnace fire south + `furnace-smoke` origin while working |
-| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. `data-furnace-cover` |
+| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Loading overlay until `onReady`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces |
 | `motion.ts` | HUD-only binds. Live craft `left` uses `furnaceMul` |
 

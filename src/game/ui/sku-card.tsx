@@ -5,6 +5,8 @@ import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import { cropVariety } from '../defs/crops.ts'
 import { guestBlockedSku } from '../sim/mp.ts'
+import type { Coord } from '../sim/building.ts'
+import { additiveStoreAt, seedStoreAt } from '../sim/store.ts'
 import type { BuyFail, World } from '../sim/world.ts'
 import { skuInner } from '../view/svgs.ts'
 import { machineOfSku } from '../sim/feature-machines/recipe.ts'
@@ -12,7 +14,16 @@ import { CalloutHover } from './callout-hover.tsx'
 import { Recipes } from './recipe.tsx'
 import { Coin } from './frame.tsx'
 
-export type RowState = 'not-researched' | 'need-skill' | 'cannot-afford' | 'inventory-full' | 'silo-full' | 'store-full' | 'ok'
+export type RowState =
+  | 'not-researched'
+  | 'need-skill'
+  | 'cannot-afford'
+  | 'inventory-full'
+  | 'silo-full'
+  | 'store-full'
+  | 'field-silo-full'
+  | 'field-store-full'
+  | 'ok'
 
 const REASON: { readonly [K in RowState]: () => string } = {
   'not-researched': () => m.hud_locked_research(),
@@ -21,18 +32,24 @@ const REASON: { readonly [K in RowState]: () => string } = {
   'inventory-full': () => m.hud_inventory_full(),
   'silo-full': () => m.hud_silo_full(),
   'store-full': () => m.hud_store_full(),
+  'field-silo-full': () => m.hud_field_silo_full(),
+  'field-store-full': () => m.hud_field_store_full(),
   ok: () => '',
 }
 
-export function rowState(world: World, id: SkuId): RowState {
+export function rowState(world: World, id: SkuId, at: Coord): RowState {
   if (!world.skuOpen(id)) return 'not-researched'
   if (world.money < world.skuPrice(id)) return 'cannot-afford'
   const made = skuItem(id)
+  const kind = world.cell(at).kind
+  const field = kind === 'silo-seed' || kind === 'silo-spray'
   if (made.kind === 'seeds') {
-    return world.silo.free < made.count ? 'silo-full' : 'ok'
+    if (seedStoreAt(world, at).free >= made.count) return 'ok'
+    return field ? 'field-silo-full' : 'silo-full'
   }
   if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
-    return world.additives.free < made.liters ? 'store-full' : 'ok'
+    if (additiveStoreAt(world, at).free >= made.liters) return 'ok'
+    return field ? 'field-store-full' : 'store-full'
   }
   const inv = world.seats[world.local].inventory
   if (made.kind === 'grass-seeds' || made.kind === 'sugar') {
@@ -72,13 +89,15 @@ function buyFailText(fail: BuyFail): string {
   if (fail === 'Cannot afford') return m.prompt_cannot_afford()
   if (fail === 'Inventory full') return m.hud_inventory_full()
   if (fail === 'Seed silo full') return m.hud_silo_full()
+  if (fail === 'Seeding silo full') return m.hud_field_silo_full()
+  if (fail === 'Additive silo full') return m.hud_field_store_full()
   return m.hud_store_full()
 }
 
 export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
-  const state = rowState(world, id)
+  const state = rowState(world, id, world.houseCell())
   const crumb = crumbOf(id)
-  const bulkFail = world.buyPacksFail(id)
+  const bulkFail = world.buyPacksFail(id, world.houseCell())
   const bulk = bulkFail === 'Locked' ? undefined : world.packsPrice(id)
   const guestOff = world.local !== 0 && guestBlockedSku(id)
   const machine = machineOfSku(id)
@@ -125,7 +144,7 @@ export function SkuCard({
   onHot: (id: SkuId | undefined) => void
   onAct: (id: SkuId) => void
 }) {
-  const state = rowState(world, id)
+  const state = rowState(world, id, world.houseCell())
   const place = world.seats[world.local].place
   const armed = place.kind === 'sku' && place.id === id
   const guestOff = world.local !== 0 && guestBlockedSku(id)
@@ -144,7 +163,7 @@ export function SkuCard({
       onFocus={() => onHot(id)}
       onClick={e => {
         if (off) return
-        if (e.ctrlKey && world.buyPacksFail(id) === undefined) {
+        if (e.ctrlKey && world.buyPacksFail(id, world.houseCell()) === undefined) {
           world.buyPacks(id)
           return
         }

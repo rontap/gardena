@@ -430,7 +430,7 @@ function act(world: World, a: TurnAction): string {
     case 'buy': {
       if (!world.skuOpen(a.sku)) return 'Locked'
       if (a.packs === true) {
-        const fail = world.buyPacksFail(a.sku)
+        const fail = world.buyPacksFail(a.sku, world.houseCell())
         if (fail !== undefined) return fail
         world.buyPacks(a.sku)
         return ''
@@ -532,10 +532,10 @@ function landed(world: World, w: Witness): boolean {
 }
 
 function step(world: World, days: Recap[]): void {
+  const day = world.clock.day
   world.tick(DT_MAX)
-  if (world.seam.kind !== 'recap') return
-  days.push(world.seam.recap)
-  world.dismissRecap()
+  if (world.clock.day === day) return
+  days.push(world.recapAt(day))
 }
 
 function busy(world: World): boolean {

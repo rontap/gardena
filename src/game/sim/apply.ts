@@ -24,9 +24,9 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       w.enqueueOn(w.act, cmd.i)
       return
     case Act.buy:
-      return place.buyBody(w, cmd.s)
+      return place.buyBody(w, cmd.s, { col: cmd.c[0], row: cmd.c[1] })
     case Act.buyPacks:
-      place.buyPacksBody(w, cmd.s)
+      place.buyPacksBody(w, cmd.s, { col: cmd.c[0], row: cmd.c[1] })
       return
     case Act.placePipe:
       place.placePipeBody(w, cmd.e)

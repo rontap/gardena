@@ -131,7 +131,7 @@ describe('vehicles I', () => {
   })
 
   test('Guests: hangar cue HUD, `buy-hangar` in `GUEST_BUILD`, buy Quad, refill, `swapVehicle`, embark, disembark, dock, drive, delete empty hangar. Guest `swapChest` still not.', () => {
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar' })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buyVehicle, t: 0, p: 1, c: [0, 0], k: 'quad' })).toBe(true)
     expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.swapVehicle, t: 0, p: 1, v: 1, i: 0 })).toBe(true)
@@ -418,7 +418,8 @@ describe('vehicles I', () => {
     w.clock.t = 239.999
     const pose = { ...v.pose }
     w.tick(1)
-    expect(w.seam.kind).toBe('recap')
+    expect(w.seam.kind).toBe('play')
+    expect(w.recaps).toHaveLength(1)
     expect(w.vehicles[0].pose).toEqual(pose)
   })
 

@@ -20,7 +20,7 @@ import {
   LUCK_CAP,
 } from '../../defs/burrow.ts'
 import { AXES, FERT_BAG_LITERS, PICKAXES, SHOVELS } from '../../defs/items.ts'
-import { chunkOf, chunkRect, isReserved } from '../building.ts'
+import { chunkOf, chunkRect, frontOf, isReserved } from '../building.ts'
 import { onCell } from '../drop.ts'
 import { luckOf } from '../family.ts'
 import { dump, parse } from '../feature-save/save.ts'
@@ -29,7 +29,6 @@ import { compostValue, furnaceValue, makePickaxe, makeShovel, toolName } from '.
 import { lookText } from '../look.ts'
 import { isFenceSite, isSolid, isPavingSite } from '../plot.ts'
 import { placeSolidOk, readPrompt } from '../prompt.ts'
-import { dest } from '../queue.ts'
 import { Rng } from '../rng.ts'
 import { DT_MAX, World } from '../world.ts'
 import { doorR, lootRoll, rollLoot } from './burrow.ts'
@@ -81,7 +80,8 @@ describe('burrow.day', () => {
     const n0 = w.burrows.size
     w.endDay()
     w.tick(DT_MAX)
-    expect(w.seam.kind).toBe('recap')
+    expect(w.seam.kind).toBe('play')
+    expect(w.recaps).toHaveLength(1)
     expect(w.burrows.size).toBe(n0 + 1)
 
     const two = new World(1)
@@ -202,7 +202,10 @@ describe('burrow.dig', () => {
     for (let i = 0; i < 50; i++) w.tick(DT_MAX)
     const after = w.cell(AT)
     expect(after).toEqual({ kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'bare' } })
-    expect(onCell(w.drops, AT).some(d => d.item.kind === 'treasure' && d.item.coins === 9)).toBe(true)
+    expect(onCell(w.drops, AT).some(d => d.item.kind === 'treasure')).toBe(false)
+    expect(frontOf(AT).some(p => onCell(w.drops, p).some(d => d.item.kind === 'treasure' && d.item.coins === 9))).toBe(
+      true,
+    )
     expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'shovel' && w.seats[0].hand.item.usesLeft).toBe(
       SHOVELS.shovel.uses - 1,
     )
@@ -284,8 +287,8 @@ describe('burrow.loot', () => {
   })
 })
 
-describe('burrow.open', () => {
-  test("`{ kind: 'treasure'; coins }`. Not countable, not compost, not furnace, not stall, not silo. `{ act: 'open'; at }` via `Act.enqueue`, work 0: `money += coins`, hand empty.", () => {
+describe('burrow.treasure', () => {
+  test("`{ kind: 'treasure'; coins }`. Not countable, not compost, not furnace, not stall, not silo. Never enters a hand: picking it up adds `coins` to `money` and removes the drop. No open intent.", () => {
     const w = new World(1)
     const coins = 12
     const item = { kind: 'treasure' as const, coins }
@@ -295,30 +298,45 @@ describe('burrow.open', () => {
     expect(w.additives.accept(item)).toBe(0)
     expect('count' in item).toBe(false)
     w.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
-    w.seats[0].hand = { kind: 'hold', item }
+    w.drops.push({ at: { ...AT }, item })
+    w.seats[0].hand = { kind: 'empty' }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
     w.act = w.seats[0]
     const p = readPrompt(w, AT)
     expect(p.kind).toBe('intent')
     if (p.kind === 'intent') {
-      expect(p.text).toBe(m.prompt_open_treasure())
-      expect(p.intent).toEqual({ act: 'open', at: AT })
+      expect(p.text).toBe(m.prompt_pick_up())
+      expect(p.intent).toEqual({ act: 'pickup', at: AT })
     }
-    expect(dest({ act: 'open', at: AT }, w)).toEqual(AT)
     const money = w.money
     w.click(AT)
     w.tick(DT_MAX)
     expect(w.money).toBe(money + coins)
     expect(w.seats[0].hand.kind).toBe('empty')
+    expect(onCell(w.drops, AT).length).toBe(0)
 
-    const held = new World(1)
-    held.seats[0].hand = { kind: 'hold', item: { kind: 'treasure', coins: 4 } }
-    const snap = dump(held)
+    const full = new World(1)
+    full.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    full.drops.push({ at: { ...AT }, item: { kind: 'treasure', coins: 7 } })
+    full.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    full.seats[0].actor.x = AT.col + 0.5
+    full.seats[0].actor.y = AT.row + 0.5
+    full.act = full.seats[0]
+    const before = full.money
+    full.click(AT)
+    full.tick(DT_MAX)
+    expect(full.money).toBe(before + 7)
+    expect(full.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'wood', count: 1 } })
+
+    const lying = new World(1)
+    lying.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
+    lying.drops.push({ at: { ...AT }, item: { kind: 'treasure', coins: 4 } })
+    const snap = dump(lying)
     const loaded = parse(JSON.stringify(snap))
     expect(loaded.ok).toBe(true)
     if (!loaded.ok) return
-    expect(loaded.world.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'treasure', coins: 4 } })
+    expect(onCell(loaded.world.drops, AT)).toEqual([{ at: AT, item: { kind: 'treasure', coins: 4 } }])
   })
 })
 

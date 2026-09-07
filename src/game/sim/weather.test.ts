@@ -27,17 +27,13 @@ function bed(water = SOIL_WATER_MID): Soil {
 
 function stepBig(w: World): void {
   const n = w.bigTicks
-  while (w.bigTicks === n) {
-    if (w.seam.kind === 'recap') w.dismissRecap()
-    w.tick(DT_MAX)
-  }
+  while (w.bigTicks === n) w.tick(DT_MAX)
 }
 
 function toDay(w: World, kind: WeatherKind): void {
   w.pinTomorrow(kind)
   w.clock.t = DAY_SECONDS - 0.001
   w.tick(1)
-  if (w.seam.kind === 'recap') w.dismissRecap()
 }
 
 describe('weather', () => {
@@ -113,11 +109,9 @@ describe('weather', () => {
     w.tick(1)
     const ended = w.weather(w.clock.day - 1)
     const bill = 100 * PUMP_COST_PER_L * pumpCostMul(ended)
-    expect(w.seam.kind).toBe('recap')
-    if (w.seam.kind === 'recap') {
-      expect(w.seam.recap.water).toBeCloseTo(bill, 10)
-      expect(w.seam.recap.money).toBeCloseTo(mid + DAY_STIPEND - w.seam.recap.tax - bill, 10)
-    }
+    expect(w.seam.kind).toBe('play')
+    expect(w.recapAt(1).water).toBeCloseTo(bill, 10)
+    expect(w.recapAt(1).money).toBeCloseTo(mid + DAY_STIPEND - w.recapAt(1).tax - bill, 10)
     expect(w.pumpLiters).toBe(0)
     const dry = new World(1)
     toDay(dry, 'dry')
@@ -126,18 +120,16 @@ describe('weather', () => {
     dry.clock.t = DAY_SECONDS - 0.001
     dry.tick(1)
     const dryBill = 50 * PUMP_COST_PER_L * pumpCostMul('dry')
-    expect(dry.seam.kind).toBe('recap')
-    if (dry.seam.kind === 'recap') {
-      expect(dry.seam.recap.water).toBeCloseTo(dryBill, 10)
-      expect(dry.money).toBeCloseTo(before + DAY_STIPEND - dry.seam.recap.tax - dryBill, 8)
-    }
+    expect(dry.seam.kind).toBe('play')
+    expect(dry.recapAt(dry.clock.day - 1).water).toBeCloseTo(dryBill, 10)
+    expect(dry.money).toBeCloseTo(before + DAY_STIPEND - dry.recapAt(dry.clock.day - 1).tax - dryBill, 8)
     const broke = new World(1)
     broke.pumpLiters = 10000
     broke.clock.t = DAY_SECONDS - 0.001
     broke.tick(1)
     expect(broke.money).toBeLessThan(0)
-    expect(broke.seam.kind).toBe('recap')
-    if (broke.seam.kind === 'recap') expect(broke.seam.recap.water).toBeGreaterThan(0)
+    expect(broke.seam.kind).toBe('play')
+    expect(broke.recapAt(1).water).toBeGreaterThan(0)
   })
 
   test('Soak/evap on `BIG_TICK` only, `tilled` index, not `forEachCell`, not every `dt`. Full day sums to `*_DAY`.', () => {

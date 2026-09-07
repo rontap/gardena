@@ -47,6 +47,9 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |
 | `item-sensor-fert` `prop-sensor-fert` | `red` `ok` |
 | `pipe-valve-jack` | `jack` |
+| `ui-cursor.svg` | `walk` `dig` `water` `gather` `tune` `wire` |
+
+Chrome cursor: `python scripts/gen-cursor.py` writes `src/assets/ui/ui-cursor.svg`. Same triangle as the pointer silhouette. House fills the interior (negative space); rim is ripe / water / leaf. Stem two units left. `wire` fruit-red left / water right. `dig` is a pick. `tune` is house fill with a ripe edge — hover on a machine that has an Object HUD.
 
 One face per Variety, no more and no fewer. Crop ripe: `ripe` (base), `ripe-variant`, `ripe-heirloom`. Fruit: `base`, `variant`, `heirloom`. A crop with fewer Varieties carries fewer groups — a spare group is art nobody can reach, and a copy of `base` is a Variety the player cannot see. Select by id (`ripeGroup`, `fruitGroup`, `Plant.stage`, `treeStage`). `atlas.test.ts` `view.groups` holds the files and the code to the same set.
 

@@ -24,11 +24,6 @@ export async function gotoPlay(page: Page, opts?: { unlock?: boolean; speed?: nu
 }
 
 export async function dismissRecap(page: Page): Promise<void> {
-  const recap = page.getByRole('button', { name: /^Day \d+$/ })
-  if (await recap.isVisible({ timeout: 0 })) {
-    await recap.click()
-    await expect(recap).toHaveCount(0)
-  }
   const resume = page.getByRole('button', { name: 'Resume' })
   if (await resume.isVisible({ timeout: 0 })) await resume.click()
 }

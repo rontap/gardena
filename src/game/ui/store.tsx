@@ -94,10 +94,11 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
       onClose={onClose}
       aside={
         tip === undefined ? undefined : tip.kind === 'buy' ? (
-          <SeedTip world={world} crop={tip.crop} variety="base" quality={0} sku={tip.sku} />
+          <SeedTip world={world} at={at} crop={tip.crop} variety="base" quality={0} sku={tip.sku} />
         ) : (
           <SeedTip
             world={world}
+            at={at}
             crop={tip.crop}
             variety={tip.variety}
             quality={stackOf(tip.crop, tip.variety)?.quality ?? 0}
@@ -115,13 +116,13 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
               <tr>
                 {crops.map(crop => (
                   <th key={crop} className="pb-1 align-bottom">
-                    <div className="flex w-[4.25rem] flex-col items-center gap-0.5">
+                    <div className={`flex ${CELL_W} flex-col items-center gap-0.5`}>
                       <svg
                         viewBox="0 0 24 24"
                         className="h-9 w-9"
                         dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup('base')) }}
                       />
-                      <span className="w-[4.25rem] text-center text-[11px] leading-tight text-ink/60">
+                      <span className={`${CELL_W} text-center text-[11px] leading-tight text-ink/60`}>
                         {cropName(crop)}
                       </span>
                     </div>
@@ -130,15 +131,16 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
               </tr>
             </thead>
             <tbody>
-              {cell.kind === 'seed-silo' && crops.some(crop => packSku(crop) !== undefined) && (
+              {crops.some(crop => packSku(crop) !== undefined) && (
                 <tr>
                   {crops.map(crop => {
                     const sku = packSku(crop)
                     if (sku === undefined) return <td key={crop} />
                     return (
-                      <td key={crop}>
+                      <td key={crop} className="p-0">
                         <BuyPack
                           world={world}
+                          at={at}
                           sku={sku}
                           onHot={on => setTip(on ? { kind: 'buy', crop, sku } : undefined)}
                         />
@@ -156,7 +158,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                     const show = variety === 'base' || n > 0
                     if (!show) return <td key={crop} />
                     return (
-                      <td key={crop}>
+                      <td key={crop} className="p-0">
                         <button
                           type="button"
                           aria-disabled={n === 0}
@@ -168,7 +170,7 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                             if (n === 0) return
                             world.takeSilo(at, crop, variety)
                           }}
-                          className={`flex h-[5.5rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 px-1 ${
+                          className={`flex ${CELL} flex-col items-center justify-center gap-0.5 px-1 ${
                             n === 0
                               ? 'cursor-default bg-ink/6 text-ink/25'
                               : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
@@ -200,12 +202,14 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
 
 function SeedTip({
   world,
+  at,
   crop,
   variety,
   quality,
   sku,
 }: {
   world: World
+  at: Coord
   crop: AnnualId
   variety: VarietyId
   quality: number
@@ -220,8 +224,8 @@ function SeedTip({
         ? world.skuPrice(packSkuId)
         : undefined
   const sale = d.sale * qualityMul(quality) * purposeMul(variety, 'produce')
-  const state = sku !== undefined ? rowState(world, sku) : 'ok'
-  const bulk = sku !== undefined && world.buyPacksFail(sku) === undefined ? world.packsPrice(sku) : undefined
+  const state = sku !== undefined ? rowState(world, sku, at) : 'ok'
+  const bulk = sku !== undefined && world.buyPacksFail(sku, at) === undefined ? world.packsPrice(sku) : undefined
   return (
     <CalloutHover
       title={cropVariety(crop, variety)}
@@ -279,10 +283,10 @@ const ADDITIVE_SKU: { readonly [K in StoreRowId]: SkuId | 'none' } = {
   sugar: 'buy-sugar',
 }
 
-function AdditiveTip({ world, id }: { world: World; id: StoreRowId }) {
+function AdditiveTip({ world, at, id }: { world: World; at: Coord; id: StoreRowId }) {
   const sku = ADDITIVE_SKU[id]
   if (sku === 'none') return null
-  const state = rowState(world, sku)
+  const state = rowState(world, sku, at)
   return (
     <CalloutHover
       title={ADDITIVE_LABEL[id]()}
@@ -299,8 +303,11 @@ function AdditiveTip({ world, id }: { world: World; id: StoreRowId }) {
   )
 }
 
-function BuyPack({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: boolean) => void }) {
-  const off = rowState(world, sku) !== 'ok'
+const CELL = 'h-[5.5rem] w-[5.5rem]'
+const CELL_W = 'w-[5.5rem]'
+
+function BuyPack({ world, at, sku, onHot }: { world: World; at: Coord; sku: SkuId; onHot: (on: boolean) => void }) {
+  const off = rowState(world, sku, at) !== 'ok'
   return (
     <button
       type="button"
@@ -311,14 +318,14 @@ function BuyPack({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: 
       onFocus={() => onHot(true)}
       onBlur={() => onHot(false)}
       onClick={e => {
-        if (e.ctrlKey && world.buyPacksFail(sku) !== 'Locked') {
-          world.buyPacks(sku)
+        if (e.ctrlKey && world.buyPacksFail(sku, at) !== 'Locked') {
+          world.buyPacksInto(at, sku)
           return
         }
         if (off) return
-        world.buy(sku)
+        world.buyInto(at, sku)
       }}
-      className={`flex h-[5.5rem] w-[4.25rem] flex-col items-center justify-center gap-0.5 ${
+      className={`flex ${CELL} flex-col items-center justify-center gap-0.5 ${
         off ? 'cursor-default bg-ink/6 text-ink/35' : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
       }`}
     >
@@ -330,8 +337,8 @@ function BuyPack({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: 
   )
 }
 
-function BuyAdditive({ world, sku, onHot }: { world: World; sku: SkuId; onHot: (on: boolean) => void }) {
-  const off = rowState(world, sku) !== 'ok'
+function BuyAdditive({ world, at, sku, onHot }: { world: World; at: Coord; sku: SkuId; onHot: (on: boolean) => void }) {
+  const off = rowState(world, sku, at) !== 'ok'
   return (
     <button
       type="button"
@@ -366,7 +373,7 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
       title={cell.kind === 'silo-spray' ? m.names_building_silo_spray() : m.names_building_additive_store()}
       onClose={onClose}
       className="w-[30rem]"
-      aside={hot === undefined ? undefined : <AdditiveTip world={world} id={hot} />}
+      aside={hot === undefined ? undefined : <AdditiveTip world={world} at={at} id={hot} />}
     >
       <Capacity hint={m.hud_fill_bag()} used={round(cell.used)} cap={cell.cap} unit="L" />
       <div className="flex flex-col gap-1.5">
@@ -403,8 +410,8 @@ export function AdditivesUi({ world, at, onClose }: { world: World; at: Coord; o
                 <span className="min-w-0 flex-1 truncate text-base font-semibold">{ADDITIVE_LABEL[id]()}</span>
                 <span className="shrink-0 text-base tabular-nums">{round(liters)} L</span>
               </button>
-              {cell.kind === 'additive-store' && sku !== 'none' && (
-                <BuyAdditive world={world} sku={sku} onHot={on => setHot(on ? id : undefined)} />
+              {sku !== 'none' && (
+                <BuyAdditive world={world} at={at} sku={sku} onHot={on => setHot(on ? id : undefined)} />
               )}
             </div>
           )

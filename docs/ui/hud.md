@@ -4,6 +4,8 @@ Map full-bleed **PixiJS canvas** under the React HUD. Ribbons and docks sit on t
 
 Canvas host: pan / zoom / `clickHit` as now. Farm sprites have no DOM. `data-cell-stroke` and ghost hooks: HTML overlays over the canvas — [[ui/place]]. No Pixi HUD. No `@pixi/react`. `paintMotion` HUD binds stay.
 
+Map boot: until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `text-white/70`, body face `text-lg`. Play and menu. Menu canvas fade-in still runs after `onReady`; Loading unmounts then. Not Pixi. Not a `DirtyReason`. [[architecture/view]] `view.boot`
+
 Type scale: [[ui/type]].
 
 ## Top ribbon
@@ -18,7 +20,7 @@ Left → right, separated by `w-px bg-ink/20` rules:
 4. Weather. After the day block: `w-px bg-ink/20` divider, current glyph, then tomorrow glyph iff husband owns `forecast`. No kind names in the row.
 5. Far right, left of Multiplayer: **Multiplayer** then **Pause** then **Gear**.
 
-The research job, the expansion chip, and the points chip are not here. They are notices — [[ui/notices]]. One place, not two.
+The research job, the expansion chip, and the points chip are not here. They are notices on the Command Center — [[ui/notices]]. One place, not two.
 
 ### Weather
 
@@ -42,19 +44,21 @@ Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump
 
 ### Buttons
 
-`ml-auto` cluster: **Multiplayer** **Pause** **Gear**. Not a `Panel`. Not logged. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. Recap blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. Recap blocks the open, same as other panels. Pause stays live during recap (the sim is not ticking anyway). Overlay pause does not replace this toggle.
+`ml-auto` cluster: **Multiplayer** **Pause** **Gear**. Not a `Panel`. Not logged. All `ui-btn-*.svg` faces `idle` / `hover` / `selected` / `disabled` via `btnFace`, icon `h-11 w-11` in the `h-14` row, no label. Do not mint a third icon size. `pointer-events-auto` (the ribbon Chrome stays `pointer-events-none`). Multiplayer (`ui-btn-multiplayer.svg`) left of Pause. Guest and host both show the face. Selected while the in-play [[ui/multiplayer]] dialog is open. Click toggles that dialog. App `recapDay` blocks the open, same as Gear. Pause (`ui-btn-pause.svg`) toggles user pause on the sim clock; selected while paused, aria-label swaps **Pause**/**Resume**. Gear (`ui-btn-gear.svg`). Gear selected while the in-play [[ui/menu]] is open. Click toggles that shell. App `recapDay` blocks the open, same as other panels. Pause stays live while the recap popup is open. Overlay pause does not replace this toggle.
 
 ### Overlay pause
 
-Family / Market / Almanac open and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause.
+Family / Market / Almanac open, or App `recapDay` set, and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause.
 
-Rising edge (enter `family` | `market` | `almanac` from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those three): if `resumeRef.current`, unpause and clear it. Switching among the three is not a falling edge.
+Rising edge (enter `family` | `market` | `almanac` | recap popup from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those four): if `resumeRef.current`, unpause and clear it. Switching among the four is not a falling edge.
 
-Host or guest: these three overlays do not auto-pause. Pause button still toggles user pause.
+Host or guest: these overlays do not auto-pause. Pause button still toggles user pause.
 
 Shop / Research / Build / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate.
 
-The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]].
+Solo end-of-day pause (`settings.solo`): on `clock.day` increment, `writeSlot`, close panel, `soloPause(true)`. Resume still unpauses. The recap popup is not this pause. [[ui/settings]] [[mechanics/day]]
+
+The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too: `[data-clock]` `[data-day-bar]` `[data-banner]`. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]].
 
 The hovered machine's recipe arrow and its countdown are on the same contract: `[data-craft-fill]` `[data-craft-time]`, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
 
@@ -108,14 +112,18 @@ HTML overlay, `data-speech`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-i
 
 Stops Window (editor on): `absolute top-20 right-4 z-20 w-80`. `max-h` clears inspect. Same width. [[ui/vehicles]]
 
-Notices claim that anchor at `w-72` while the editor is off — [[ui/notices]]. Never both.
+Command Center claims that anchor at `w-72` while the editor is off — [[ui/notices]]. Never both.
 
 ## Bottom-right
 
 `absolute right-4 bottom-4 z-20` `w-80`. Queue (if any) then [[ui/inspect]]. Held name and the first look line: `font-display` `text-sm` — [[ui/type]].
 
+## Day banner
+
+`clock.banner > 0`. `font-display`, token `text-4xl` (32px, line-height 1.2). `text-white/70`. Top of the play field, below the ribbon (`pt-24` or equivalent). `pointer-events-none`. Copy **Day {n}**. Duration `banner = 2` s. New farm already `banner = 2`. Seam sets it. `data-banner`. `paintMotion` bind. Not Pixi. [[ui/type]] [[mechanics/day]]
+
 `e2e/hud.spec.ts` shots: `e2e/shots/hud.png` `shop.png` `research.png` `almanac.png`, plus `family.png` (Family overlay open) and `recap.png`. Screenshot only.
 
 `e2e/buildings.spec.ts`: `#unlockall`, place every cell Build sku, `e2e/shots/buildings.png`.
 
-Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]]. Sensor Object HUD: `Checkbox` / `Radio` in `frame.tsx` — [[ui/sensors]] [[ui/docks]].
+Assumption: digs/mines HUD counters are gone with the research gates. Overlay pause snapshots `resumeRef` only on entering family/market/almanac/recap popup; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]]. Sensor Object HUD: `Checkbox` / `Radio` in `frame.tsx` — [[ui/sensors]] [[ui/docks]].

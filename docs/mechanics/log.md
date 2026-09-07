@@ -12,7 +12,7 @@ Tests replay `dt = DT_MAX`. Same-`t` cmds apply in log order.
 
 ## Invariants
 
-`log.now` — `World.now` starts 0. Each `tick()` entry, including recap return, `now += 1`. `dispatch` stamps `Cmd.t = now`. Same-`t` cmds apply in log order. Ticks are not cmds.
+`log.now` — `World.now` starts 0. Each `tick()` entry, `now += 1`. `dispatch` stamps `Cmd.t = now`. Same-`t` cmds apply in log order. Ticks are not cmds.
 
 `log.dispatch` — `dispatch` appends to `World.log` and `sink`, then `apply`. `apply` does not log. Replay is `apply` only. `enqueue` does not `dispatch`.
 

@@ -77,7 +77,7 @@ While connected (host or guest of an MP session): **New Game** **Load Save** **U
 
 Gear selected while this shell is open. Click gear again toggles it shut. Opening any other panel replaces this one.
 
-While `seam.kind === 'recap'`: do not open, do not show. Recap stays exclusive. [[ui/docks]]
+App `recapDay` blocks the open, same as other panels. Recap popup is not exclusive of the Command Center. [[ui/hud]] [[ui/docks]] [[ui/notices]]
 
 ## Fail
 

@@ -59,10 +59,12 @@ import { Rng } from '../rng.ts'
 import { Soil } from '../soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from '../stall.ts'
 import {
+  POINTS_PER_DAY,
   World,
   type Family,
   type Hydrate,
   type MemberState,
+  type Recap,
   type Seat,
   type SeatId,
 } from '../world.ts'
@@ -74,6 +76,7 @@ import {
   type SaveContracts,
   type SaveMember,
   type SavePlant,
+  type SaveRecap,
   type SaveSoil,
   type SaveTrailer,
   type SaveVehicle,
@@ -154,13 +157,9 @@ function worldFromSave(save: Save, sink: LogSink): World {
     done: save.done,
     job: save.job,
     tally: { died: save.tally.died, harvests: save.tally.harvests, research: save.tally.research, contracts: [] },
-    seam:
-      save.seam.kind === 'play'
-        ? { kind: 'play' }
-        : {
-            kind: 'recap',
-            recap: { ...save.seam.recap, contracts: [] },
-          },
+    seam: { kind: 'play' },
+    recaps: recapsFrom(save),
+    recapUnseen: unseenFrom(save),
     segments: save.segments,
     wells: live.wells,
     sprinklers: save.sprinklers,
@@ -168,7 +167,41 @@ function worldFromSave(save: Save, sink: LogSink): World {
     paving: save.paving,
     drops: save.drops,
   }
-  return World.hydrate(h)
+  const world = World.hydrate(h)
+  if (save.seam.kind === 'recap') {
+    world.grantPoints(POINTS_PER_DAY)
+    world.clock.banner = 2
+  }
+  return world
+}
+
+function liveRecap(r: SaveRecap): Recap {
+  return {
+    day: r.day,
+    money: r.money,
+    stipend: r.stipend,
+    died: r.died,
+    harvests: r.harvests,
+    research: r.research,
+    tax: r.tax,
+    water: r.water,
+    contracts: r.contracts === undefined ? [] : r.contracts,
+  }
+}
+
+function recapsFrom(save: Save): Recap[] {
+  const listed = save.recaps === undefined ? [] : save.recaps.map(liveRecap)
+  if (save.seam.kind !== 'recap') return listed
+  const extra = liveRecap(save.seam.recap)
+  if (listed.some(r => r.day === extra.day)) return listed
+  return [...listed, extra]
+}
+
+function unseenFrom(save: Save): number[] {
+  const listed = save.recapUnseen === undefined ? [] : save.recapUnseen.slice()
+  if (save.seam.kind !== 'recap') return listed
+  if (listed.includes(save.seam.recap.day)) return listed
+  return [...listed, save.seam.recap.day]
 }
 
 function makeFamily(f: Save['family']): Family {

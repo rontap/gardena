@@ -18,7 +18,7 @@ import * as nets from './nets.ts'
 import { addRep, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
-import { DAY_STIPEND, type World } from './world.ts'
+import { DAY_STIPEND, POINTS_PER_DAY, type World } from './world.ts'
 
 export function tickSpeech(world: World, dt: number): void {
   if (world.speech.kind !== 'say') return
@@ -144,20 +144,22 @@ export function tickWorld(world: World, dt: number): void {
     world.pumpLiters = 0
     burrow.mintSeam(world)
     field.tickTreesSeam(world)
-    world.seam = {
-      kind: 'recap',
-      recap: {
-        day: world.clock.day - 1,
-        money: world.money,
-        stipend: DAY_STIPEND,
-        died: world.tally.died,
-        harvests: world.tally.harvests,
-        research: world.tally.research,
-        tax,
-        water: bill,
-        contracts: world.tally.contracts,
-      },
+    const recap = {
+      day: world.clock.day - 1,
+      money: world.money,
+      stipend: DAY_STIPEND,
+      died: world.tally.died,
+      harvests: world.tally.harvests,
+      research: world.tally.research,
+      tax,
+      water: bill,
+      contracts: world.tally.contracts,
     }
+    world.recaps.push(recap)
+    world.recapUnseen.push(recap.day)
+    world.grantPoints(POINTS_PER_DAY)
+    world.clock.banner = 2
+    world.seam = { kind: 'play' }
     world.tally = { died: 0, harvests: 0, research: [], contracts: [] }
     if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -REP_IDLE)
     world.contracts.takenToday = []

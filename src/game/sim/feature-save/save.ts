@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.17 as const
+export const SAVE_VERSION = 2.18 as const
 
 export type {
   LoadFailReason,
@@ -87,22 +87,19 @@ export function dump(world: World): Save {
       harvests: world.tally.harvests,
       research: world.tally.research.slice(),
     },
-    seam:
-      world.seam.kind === 'play'
-        ? { kind: 'play' }
-        : {
-            kind: 'recap',
-            recap: {
-              day: world.seam.recap.day,
-              money: world.seam.recap.money,
-              stipend: world.seam.recap.stipend,
-              died: world.seam.recap.died,
-              harvests: world.seam.recap.harvests,
-              research: world.seam.recap.research,
-              tax: world.seam.recap.tax,
-              water: world.seam.recap.water,
-            },
-          },
+    seam: { kind: 'play' },
+    recaps: world.recaps.map(r => ({
+      day: r.day,
+      money: r.money,
+      stipend: r.stipend,
+      died: r.died,
+      harvests: r.harvests,
+      research: r.research.slice(),
+      tax: r.tax,
+      water: r.water,
+      contracts: r.contracts.slice(),
+    })),
+    recapUnseen: world.recapUnseen.slice(),
     chunks: world.owned.map(id => {
       const { col0, row0 } = chunkRect(id)
       const cells: SaveCell[][] = []

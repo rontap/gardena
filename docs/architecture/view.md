@@ -23,9 +23,9 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
-| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. `data-furnace-cover` |
+| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. Loading overlay until `onReady`. `data-furnace-cover` |
 | `svgs.ts` | chrome-only (HUD, almanac, shop). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
-| `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue). Not notices — that column is React, [[ui/notices]] |
+| `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue / banner). Not notices — that column is React, [[ui/notices]] |
 
 `TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2.
 
@@ -165,6 +165,8 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 `view.hit` — Farm sprites `eventMode` `'none'`. Hits are `hit.ts` world-space math. Overlay Graphics do not take pointer.
 
 `view.hud` — HUD / docks / panels are React. Not in Pixi. No `@pixi/react`. No Pixi HUD.
+
+`view.boot` — Until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `text-white/70`, body face `text-lg`. Play and menu. Menu canvas fade-in still runs after `onReady`; Loading unmounts then. Not Pixi. Not a `DirtyReason`.
 
 `view.ticker` — Sim is not interpolated. View vehicles keep `QUAD_FOLLOW`. App owns the `DT_MAX` accumulator. Pixi ticker paints. `ping` is discrete dirty only.
 

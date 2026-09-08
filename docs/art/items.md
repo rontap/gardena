@@ -20,6 +20,20 @@ Assumption: unnamed synth dark is water on the research face.
 
 Ink silhouette, water fill, house highlight. Same droplet language as `overlay-water`, item-slot size. Face `{ kind: 'water' }`. Chrome only.
 
+## Infusion
+
+`overlay-infused.svg` — viewBox `0 0 24 24`. Small + mark, ink + ripe, house glint, top-right. Draw-over. Not centered. Not `ui-quality`.
+
+`ui-research-infusion.svg` — viewBox `0 0 24 24`. Hollow flask, roof cap, fruit-red liquid `fill-opacity`, ripe + mark right. Infusion research face.
+
+`item-chilli-flakes.svg` — viewBox `0 0 24 24`. Corked glass jar, dirt cork, ink rim, house glint, fruit-red flakes visible through empty glass. Not a jam jar. Not a dish.
+
+`item-vanilla-extract.svg` — viewBox `0 0 24 24`. Tall thin vial, fruit-red / roof crimson to the neck. Not oil. Not grass extract.
+
+`item-bread.svg` — viewBox `0 0 24 24`. Loaf, ripe crust, house crumb in the split. Not the flour sack.
+
+`item-infuser.svg` — viewBox `0 0 24 24`. Same machine as `prop-infuser`, card/hand; groups `off` `on`. [[art/machines]]
+
 ## Axe
 
 `item-axe.svg` — viewBox `0 0 24 24`. Wood haft, iron head, one-sided blade. Not the pickaxe T.

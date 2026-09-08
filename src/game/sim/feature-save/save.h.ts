@@ -15,7 +15,9 @@ import type {
   BarrelCrop,
   CropId,
   DaughterSkillId,
+  FurnaceRecipe,
   HusbandSkillId,
+  Infusable,
   JamCrop,
   MillRecipe,
   PlayerSkillId,
@@ -95,7 +97,8 @@ export type SaveCell =
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
-  | { kind: 'furnace'; base: RectBase; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
+  | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
+  | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
   | { kind: 'station'; base: RectBase; crop: CropId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
@@ -207,7 +210,7 @@ export type SaveRecap = {
 }
 
 export type SaveContracts = {
-  active: { offer: ContractOffer; dueDay: number; bins: { demand: Demand; filled: number }[] }[]
+  active: { offer: ContractOffer; dueDay: number; bins: { demand: Demand; filled: number; infusedFilled: number }[] }[]
   takenToday: ContractId[]
   history: HistoryEntry[]
   book: CompanyBook

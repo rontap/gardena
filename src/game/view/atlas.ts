@@ -51,6 +51,7 @@ import raspberry from '../../assets/crops/crop-raspberry.svg?raw'
 import apple from '../../assets/crops/crop-apple.svg?raw'
 import grape from '../../assets/crops/crop-grape.svg?raw'
 import vanilla from '../../assets/crops/crop-vanilla.svg?raw'
+import chilli from '../../assets/crops/crop-chilli.svg?raw'
 import sugarCane from '../../assets/crops/crop-sugar-cane.svg?raw'
 import cropRotten from '../../assets/crops/crop-rotten.svg?raw'
 import cropGrass from '../../assets/crops/crop-grass.svg?raw'
@@ -65,6 +66,7 @@ import fruitApple from '../../assets/fruits/fruit-apple.svg?raw'
 import fruitOlive from '../../assets/fruits/fruit-olive.svg?raw'
 import fruitGrape from '../../assets/fruits/fruit-grape.svg?raw'
 import fruitVanilla from '../../assets/fruits/fruit-vanilla.svg?raw'
+import fruitChilli from '../../assets/fruits/fruit-chilli.svg?raw'
 import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
@@ -99,6 +101,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propInfuser from '../../assets/props/prop-infuser.svg?raw'
 import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
@@ -187,6 +190,9 @@ import itemSpiritPalinka from '../../assets/items/item-spirit-palinka.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
+import itemVanillaExtract from '../../assets/items/item-vanilla-extract.svg?raw'
+import itemFlakes from '../../assets/items/item-chilli-flakes.svg?raw'
+import itemBread from '../../assets/items/item-bread.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
@@ -194,6 +200,7 @@ import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import propBurrow from '../../assets/props/prop-burrow.svg?raw'
 import propBurrow1 from '../../assets/props/prop-burrow-1.svg?raw'
+import overlayInfused from '../../assets/overlay-infused.svg?raw'
 import spray from '../../assets/vfx/vfx-spray.svg?raw'
 import sprayLarge from '../../assets/vfx/vfx-spray-large.svg?raw'
 import sprayVert from '../../assets/vfx/vfx-spray-vert.svg?raw'
@@ -259,6 +266,9 @@ export type AtlasKey =
   | 'furnace-on'
   | 'station-off'
   | 'station-on'
+  | 'infuser-off'
+  | 'infuser-on'
+  | 'overlay-infused'
   | 'hangar'
   | 'quad'
   | 'tractor'
@@ -354,6 +364,9 @@ export type AtlasKey =
   | 'oil'
   | 'flour'
   | 'extract'
+  | 'vanilla-extract'
+  | 'flakes'
+  | 'bread'
   | `vfx-${VfxId}:f${0 | 1 | 2 | 3}`
 
 type PipeFitKey = 'pipe-stub' | 'pipe-i' | 'pipe-l' | 'pipe-t' | 'pipe-x'
@@ -460,6 +473,7 @@ const CROP: { readonly [K in CropId]: string } = {
   apple,
   grape,
   vanilla,
+  chilli,
   'sugar-cane': sugarCane,
   apricot: apple,
   olive: apple,
@@ -475,6 +489,7 @@ const FRUIT: { readonly [K in CropId]: string } = {
   apple: fruitApple,
   grape: fruitGrape,
   vanilla: fruitVanilla,
+  chilli: fruitChilli,
   'sugar-cane': fruitSugarCane,
   apricot: fruitApricot,
   olive: fruitOlive,
@@ -576,6 +591,9 @@ async function load(): Promise<void> {
   put('furnace-on', propFurnace, 'on')
   put('station-off', propStation, 'off')
   put('station-on', propStation, 'on')
+  put('infuser-off', propInfuser, 'off')
+  put('infuser-on', propInfuser, 'on')
+  put('overlay-infused', overlayInfused)
   put('hangar', propHangar)
   put('quad', propQuad)
   put('tractor', propTractor)
@@ -714,6 +732,9 @@ async function load(): Promise<void> {
   put('oil', itemOil)
   put('flour', itemFlour)
   put('extract', itemExtract)
+  put('vanilla-extract', itemVanillaExtract)
+  put('flakes', itemFlakes)
+  put('bread', itemBread)
   put('axe', itemAxe)
   put('chainsaw', itemChainsaw)
   put('wood', itemWood)
@@ -884,7 +905,10 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'jam') return jamArt(item.crop, item.variety)
   if (item.kind === 'oil') return 'oil'
   if (item.kind === 'flour') return 'flour'
+  if (item.kind === 'bread') return 'bread'
   if (item.kind === 'extract') return 'extract'
+  if (item.kind === 'flakes') return 'flakes'
+  if (item.kind === 'vanilla-extract') return 'vanilla-extract'
   if (item.kind === 'axe') return 'axe'
   if (item.kind === 'chainsaw') return 'chainsaw'
   if (item.kind === 'wood') return 'wood'

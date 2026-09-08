@@ -4,7 +4,7 @@
 
 `chest` — `buy-chest`. `grinder` — `buy-grinder`. `compost-box` — `buy-compost-box`.
 
-`mill` — `buy-mill`. 2x2, origin NW, no rotate; `squareSiteOk`, pads two cells wide. `jam` — `buy-jam`. `still` — `buy-still`. `furnace` — `buy-furnace`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `automation`. Almanac **Automation**. `unlock-furnace`, `haggling`. Guest shop + place + delete + dump. `skuLabel` **Furnace**. Rules: [[mechanics/machines]]. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`.
+`mill` — `buy-mill`. 2x2, origin NW, no rotate; `squareSiteOk`, pads two cells wide. `infuser` — `buy-infuser`. 2×2, mill I/O, `squareSiteOk`, pads two cells wide. Automation shelf, show `unlock-preservatives`, buy `unlock-infusion`, `haggling`. Guest shop + place + delete + dump. `skuLabel` **Infuser**. Rules: [[mechanics/infusion]] `infusion.machine`. `jam` — `buy-jam`. `still` — `buy-still`. `furnace` — `buy-furnace`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `automation`. Almanac **Automation**. `unlock-furnace`, `haggling`. Guest shop + place + delete + dump. `skuLabel` **Furnace**. Rules: [[mechanics/machines]]. `barrel` — `buy-barrel`. `freezer` — `buy-freezer`.
 
 `station` — `buy-research-station`. 2×1, place like the still. Automation shelf, unlock and show `unlock-crop-variants`, `need: []`. No research row of its own. `haggling`. Guest shop + place + delete + dump. `dest(station)` = `at`. Pads, west pull, east push, `inn`, like the still. Heirloom fruit in, cut fruit and grafts out. Panel [[ui/station]]. Rules: [[mechanics/machines]] `station.io`.
 

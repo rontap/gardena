@@ -19,7 +19,8 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/expansion]]
 - [[mechanics/burrow]] — cover, loot roll, luck, treasure
 - [[mechanics/inventory]] — wood, ash, graft, treasure
-- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station
+- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station infuser
+- [[mechanics/infusion]] — Infusion, chilli, flakes, vanilla-extract, infused jam / cask / spirit / oil, Infuser, overlay-infused, furnace bread
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
 - [[mechanics/rng]] — burrow
@@ -62,6 +63,7 @@ See [[canon]].
 | plants.packs | [[mechanics/plants]] |
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
+| plants.chilli | [[mechanics/plants]] |
 | plants.annual | [[mechanics/plants]] |
 | plants.tree-foot | [[mechanics/plants]] |
 | plants.kinds | [[mechanics/plants]] |
@@ -105,9 +107,11 @@ See [[canon]].
 | market.vodka-heirloom | [[mechanics/market]] |
 | market.mixed | [[mechanics/market]] |
 | market.sugar | [[mechanics/market]] |
+| market.infused | [[mechanics/market]] |
 | sat.recover | [[mechanics/saturation]] |
 | sat.trapezoid | [[mechanics/saturation]] |
 | sat.last | [[mechanics/saturation]] |
+| sat.infused | [[mechanics/saturation]] |
 | contracts.board | [[mechanics/contracts]] |
 | contracts.id | [[mechanics/contracts]] |
 | contracts.not-cmd | [[mechanics/contracts]] |
@@ -118,6 +122,7 @@ See [[canon]].
 | contracts.miss | [[mechanics/contracts]] |
 | contracts.cancel | [[mechanics/contracts]] |
 | contracts.consign | [[mechanics/contracts]] |
+| contracts.infused | [[mechanics/contracts]] |
 | research.job | [[mechanics/research]] |
 | research.tiles | [[mechanics/research]] |
 | research.better | [[mechanics/research]] |
@@ -130,6 +135,7 @@ See [[canon]].
 | research.start | [[mechanics/research]] |
 | research.hardened | [[mechanics/research]] |
 | research.techtree | [[mechanics/research]] |
+| research.infusion | [[mechanics/research]] |
 | family.pick | [[mechanics/family]] |
 | family.lens | [[mechanics/family]] |
 | family.skills | [[mechanics/family]] |
@@ -145,6 +151,7 @@ See [[canon]].
 | inventory.containers | [[mechanics/inventory]] |
 | inventory.silo-buy | [[mechanics/inventory]] |
 | inventory.ash | [[mechanics/inventory]] |
+| inventory.infused | [[mechanics/inventory]] |
 | machines.sugar | [[mechanics/machines]] |
 | machines.barrel | [[mechanics/machines]] |
 | machines.still-foot | [[mechanics/machines]] |
@@ -172,6 +179,9 @@ See [[canon]].
 | machines.recipe-compost | [[mechanics/machines]] |
 | machines.recipe-haste | [[mechanics/machines]] |
 | machines.mill-vanilla | [[mechanics/machines]] |
+| machines.mill-chilli | [[mechanics/machines]] |
+| machines.infuser | [[mechanics/machines]] |
+| machines.furnace-lock | [[mechanics/machines]] |
 | machines.recipes-using | [[mechanics/machines]] |
 | machines.furnace-feed | [[mechanics/machines]] |
 | machines.furnace-burn | [[mechanics/machines]] |
@@ -181,6 +191,14 @@ See [[canon]].
 | machines.furnace-smoke | [[mechanics/machines]] |
 | machines.furnace-cover | [[mechanics/machines]] |
 | machines.furnace-haste-look | [[mechanics/machines]] |
+| infusion.chilli | [[mechanics/infusion]] |
+| infusion.extract | [[mechanics/infusion]] |
+| infusion.item | [[mechanics/infusion]] |
+| infusion.machine | [[mechanics/infusion]] |
+| infusion.overlay | [[mechanics/infusion]] |
+| infusion.stall | [[mechanics/infusion]] |
+| infusion.rep | [[mechanics/infusion]] |
+| infusion.furnace | [[mechanics/infusion]] |
 | vehicles.kind | [[mechanics/vehicles]] |
 | vehicles.buy | [[mechanics/vehicles]] |
 | vehicles.surface | [[mechanics/vehicles]] |
@@ -263,6 +281,7 @@ See [[canon]].
 | view.vfx.drain | [[architecture/view]] |
 | view.furnace-cover | [[architecture/view]] |
 | view.named-face | [[architecture/view]] |
+| view.infused-overlay | [[architecture/view]] |
 | view.round | [[architecture/view]] |
 | world.queue | [[architecture/world]] |
 | world.dest | [[architecture/world]] |

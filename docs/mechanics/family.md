@@ -114,18 +114,18 @@ Closed copy: flood “Stall closed this morning.” drought “Stall closed at m
 At `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
-- heirloom: variety tier `heirloom` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider. Not sugar / jam / oil / flour / extract
+- heirloom: variety tier `heirloom` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider. Not sugar / jam / oil / flour / extract / bread
 - bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
 - jam: fruit freshness `< JAM_ROT_FRESH` uses `rotSeconds × (1 + JAM_ROT × tier)` on ripe plants and `tickFreshness`. Not a sale floor. Not the jam machine
 - clearance: `{ kind: 'rotten' }` `$1` apiece. Sat exempt. Saleswoman / heirloom / bio / weather do not apply. Sugar and machine goods do not rot. Without the skill: compost only, consign refused. `SKILLS.clearance` blurb: rotten produce sells for $1 apiece.
-- flood or drought: fruit stall goods only (annual including sugar-cane, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract — [[mechanics/weather]]
+- flood or drought: fruit stall goods only (annual including sugar-cane and chilli, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract / bread — [[mechanics/weather]]
 
 Crop stall bins: stock + worth per variety × bio. Illegal: consign that drops `fruit.bio`.
 
 ## Other effects
 
 - boots: `WALK × (1 + 0.05 × tier)`
-- bulk-up: hand stack cap `STACK_MAX + BULK_UP_STEP × tier`, `STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP × tier` for spirit / wine / jam / oil / flour / extract. Additive owned tiers. Liters not — [[mechanics/inventory]] `inventory.stack`
+- bulk-up: hand stack cap `STACK_MAX + BULK_UP_STEP × tier`, `STACK_MAX_CRAFTED + BULK_UP_CRAFTED_STEP × tier` for spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread. Additive owned tiers. Liters not — [[mechanics/inventory]] `inventory.stack`
 - driving-classes: burn `× (1 − 0.05 × tier)`, Quad/Tractor `vMax` and accel `× (1 + 0.05 × tier)`. Additive owned tiers. Yaw not. Boots not. — [[mechanics/vehicles]]
 - machinery: gate `unlock-grinder`. valve 0.3s, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × tier)` only. Not Quad/Tractor vMax/accel. Still / barrel / station not work jobs. Pipe place stays 0
 - research-speed: `job.left -= dt × (1 + 0.05 × tier)`

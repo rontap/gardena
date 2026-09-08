@@ -10,14 +10,14 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 
 | tab id | label | list |
 |---|---|---|
-| `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla sugar-cane soil weed grass-seeds grass rotten dead |
+| `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
-| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station hangar silo-seed silo-produce silo-spray |
+| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station infuser hangar silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
-| `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow |
+| `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow, Infusion |
 
 Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, label **Overview**, no icon. Tab-scoped id `'overview'`. Tab click on those three lands Overview.
 
@@ -37,7 +37,7 @@ Illegal: a Variety row. Illegal: a ladder. Illegal: a rating number.
 
 Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshness. Leaf meter 1–5. Coin on Sell and Seed price. Crop Freshness stat row stays plain text — not an AlmanacLink. Numbers: `statsOf(crop, 'base', 0, [])` so Sell is `CROPS.sale` at Quality 0. Seed price is the pack of `'base'` only.
 
-Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Extract, flour, brandy, mill sugar sit in Ingredients. [[ui/recipe]]
+Sugar-cane is a CropPane. Product face is cane fruit (`fruit-sugar-cane`), not the sugar bag. Line under desc: **Mill 5 cane into 2 L sugar.** Vanilla: no CropPane mill line. Chilli: no CropPane mill line. Extract, flour, brandy, mill sugar, flakes, vanilla-extract, infused goods sit in Ingredients, not as extra product panes. Infused goods do not get their own pane — one Game concepts **Infusion** page. [[ui/recipe]] [[mechanics/infusion]] `infusion.overlay`
 
 Olive is `TreeId`: TreePane only.
 
@@ -57,17 +57,17 @@ Reuse existing faces. No new SVG. Plate is `h-20 w-20`, no caption.
 | Tree 24×48 prop | `bg-grass` |
 | Sensors / Automation / Water systems SKU — buildings, pipe | `bg-grass` |
 | Utility / Building / Seeds non-crop SKU | `bg-dirt-dark` |
-| Machine goods — sugar, spirit, cask, jam, oil, flour, extract, ash | `bg-water` |
+| Machine goods — sugar, spirit, cask, jam, oil, flour, extract, flakes, vanilla-extract, bread, ash | `bg-water` |
 
 Utility sugar is a machine good: `bg-water`. Ash is a machine good: `bg-water`. Compost, wood, and tools stay `bg-dirt-dark`. Fence and tiles stay Building, `bg-dirt-dark`. Titles **Axe** **Chainsaw** **Wood** **Ash** **Furnace**. Station plate `bg-grass`. Chainsaw plate `bg-dirt-dark` with tools.
 
-`Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives' | 'unlock-furnace')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`.
+`Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` `infusion` from `world.done.has('unlock-fermentation' | 'unlock-grinder' | 'unlock-preservatives' | 'unlock-furnace' | 'unlock-infusion')`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill `bg-grass`. Infuser plate `bg-grass`.
 
 ## Ingredients
 
 Hardcoded product plates do not sit on the fruit row. Fruit row is fruit face + plant/tree prop only.
 
-`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipe-collapse`. CropPane / TreePane pass the `'base'` fruit face. `recipesUsing` matches a `one` input on crop + Variety, and a collapsed `any` input whose faces are all one crop. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`. Empty → no section. Furnace, grinder and mixed-still rows take many crops — skipped. A crop no machine accepts has no row, so it does not appear.
+`recipesUsing(face)` in `sim/recipe.ts` — [[mechanics/machines]] `machines.recipe-collapse`. CropPane / TreePane pass the `'base'` fruit face. `recipesUsing` matches a `one` input on crop + Variety, and a collapsed `any` input whose faces are all one crop. UI keeps a recipe whose machine unlock is in `done`: mill `unlock-grinder`, jam `unlock-preservatives`, still / barrel `unlock-fermentation`, furnace `unlock-furnace`, infuser `unlock-infusion`. Empty → no section. Furnace, grinder, mixed-still and infuser jam / spirit / cask rows take many crops — skipped. Infuser oil `one` matches. A crop no machine accepts has no row, so it does not appear. Infused yield faces draw overlay-infused. No extra infused product plates.
 
 Section under the stats, last in the pane. `mt-3 border-t border-ink/20 pt-3` divider above it — same rule as [[ui/recap]] / [[ui/lens]] section breaks. Heading **Recipes** — reused key `m.hud_recipes()`, same word as the Automation recipe block. Plates: yield face, `h-20 w-20` `bg-water`, same wrap row. No caption. Derived, not a crop table. Named jam, mill good, spirit, cask show when the recipe matches. No hardcoded plate list.
 
@@ -95,9 +95,10 @@ ConceptId =
   | 'automation'
   | 'luck'
   | 'burrow'
+  | 'infusion'
 ```
 
-Labels: Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow.
+Labels: Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow, Infusion.
 
 Left-list: SKU rows keep `itemInner`. Overview and concept rows: title only, no icon plate.
 
@@ -105,7 +106,7 @@ Right pane: SKU → existing Pane. Concept → concept pane. Overview → Overvi
 
 Opened by the top-ribbon **Almanac** button — [[ui/hud]]. Almanac Overlay passes `aside` for the Ingredients callout. Same `CalloutHover` `right` as Market.
 
-Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not. `{ tab: 'concepts', id: 'luck' | 'burrow' }` is legal.
+Underline tab click (no link): select that tab and its first list row. First ids: seeds `overview`, trees `apple`, utility `shovel`, sensors `overview`, automation `overview`, water `pumpjack`, building `fence`, concepts `variety`. `AlmanacLink` sets both `tab` and `id`. Deep-link must land the pane, not only the tab. A link’s `{ tab, id }` is a pair that exists on that tab’s list. `{ tab: 'seeds' | 'sensors' | 'automation', id: 'overview' }` is legal. `{ tab: 'trees' | 'utility' | 'water' | 'building' | 'concepts', id: 'overview' }` is not. `{ tab: 'concepts', id: 'luck' | 'burrow' | 'infusion' }` is legal.
 
 ## AlmanacLink
 
@@ -167,6 +168,8 @@ Automation here is the **concept page**, not a second copy of the SKU tab.
 
 **Burrow** is a hole in untilled ground. Copy: **A burrow is a hole in untilled ground. You need it because digging one drops what it holds: treasure you open for money, or something you can use on the farm. Looking at it does not say which. Dig it with a shovel — the prompt is Dig, the same Dig as a tree or a weed. Digging a burrow does not till the ground. A pickaxe does nothing. You cannot place, pave, fence, or plant a tree on it. You can walk across it. A few sit on the farm when you start. When a day begins, one more can appear on untilled ground in each piece of land you own, if there is room. Grass there is gone. Hold treasure and click a plot you own: Open treasure. That adds the money it holds. The Market does not take treasure.**
 
+**Infusion** is one Game concepts page. Not a pane per infused jam, cask, spirit, or oil. Copy: **Infusion is putting Flakes or Vanilla extract into jam, wine, cider, spirits, or Olive oil at the Infuser. One of those two, not both. The good keeps its name, its Quality, and the money the Market pays for it, and shows a plus. Infused goods sell at Market at the percent shown for that good. Selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them. Flakes come from crushing Chilli at a Mill. Vanilla extract comes from crushing Vanilla at a Mill.** Doorway: Market, Automation. Not a roster of infused products. [[mechanics/infusion]]
+
 ## TreePane
 
 Same shell as CropPane: fruit face + 24×48 prop at `'base'`, then `Stat` rows with leaf meters 1–5. Meters compare among the four trees (`TREE_IDS`: apple apricot olive cherry). No lemon. No Variety row. Name is the species. Prop cycles `trunk` / `grow` / `unripe` / `ripe`. Tree prop sits on `bg-grass`. Fruit face stays `bg-dirt-dark`. Ingredients: same section as CropPane, `recipesUsing` on that Variety's fruit.
@@ -185,6 +188,6 @@ Cycle join art the way CropPane cycles `sprout` / `grow` / ripe: `useCycle(PIPE_
 
 Pipe, crop and tree panes share `useCycle`. One cadence, one hook. No local `setInterval`. Variety row does not cycle.
 
-The seven machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]]. Station does not.
+The machine ids (`mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace` `infuser`) add a **Recipes** block under the blurb, `size="md"` — [[ui/recipe]]. Station does not. Infuser yield faces draw overlay-infused.
 
 Assumption: Haggling knocks $1 per owned haggling off `utility` and `automation` tab goods, min $1. Almanac Day & Night / Skills strings still describe per-member +1; live is shared `World.points`.

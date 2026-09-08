@@ -9,10 +9,10 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/settings]]
 - [[ui/multiplayer]]
 - [[ui/tutorial]]
-- [[ui/place]] — furnace 1×2 south. Station 1×1. Burrow refuses place / tile / fence
-- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft. Chop axe or chainsaw. Burrow Dig. Treasure pays on pick up
-- [[ui/machines]] — mill / jam / barrel / grinder lock Variety. Still mixed
-- [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace. `recipesUsing` crop + Variety
+- [[ui/place]] — furnace 1×2 south. Station 1×1. Infuser 2×2. Burrow refuses place / tile / fence
+- [[ui/inspect]] — Variety, Quality percent, neighbour look, Graft. Chop axe or chainsaw. Burrow Dig. Treasure pays on pick up. Infused overlay-infused
+- [[ui/machines]] — mill / jam / barrel / grinder lock Variety. Still mixed. Infuser. Furnace bread
+- [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace infuser. `recipesUsing` crop + Variety
 - [[ui/vehicles]]
 - [[ui/build]] — the only catalogue. Tools, Water, Automation, Storage, Sensors, Land. Shift keeps the tool in hand
 - [[ui/store]] — silo by Variety
@@ -20,7 +20,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/cheat]] — top-ribbon button. `#debug-techtree` omits `buy-or` `buy-and` `buy-water-system`. `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
 - [[ui/market]] — the tab you left it on comes back
 - [[ui/contracts]]
-- [[ui/almanac]] — top-ribbon button. Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow
+- [[ui/almanac]] — top-ribbon button. Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow Infusion. chilli. One Infusion page, not infused product panes. overlay-infused
 - [[ui/family]] — Reputation and Luck band over the three cards
 - [[ui/callout-hover]]
 - [[ui/docks]] — Recap popup is App `recapDay`, not a seam

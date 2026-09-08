@@ -2,20 +2,20 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, App `recapDay`, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-hardened-tools`. `SkuId` += `buy-furnace` `buy-axe` `buy-chainsaw` `buy-research-station` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` (`feature-machines/recipe.ts`). `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-hardened-tools` `unlock-infusion`. `SkuId` += `buy-furnace` `buy-axe` `buy-chainsaw` `buy-research-station` `buy-infuser` `pack-chilli` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` `infuser` (`feature-machines/recipe.ts`). `AnnualId` += `chilli`. `MillRecipe` += `chilli`. `VfxId` += `furnace-smoke`. Player strings: [[architecture/i18n]].
 
 ## defs
 
 | file | owner |
 |---|---|
-| `crops.ts` | `CROPS`, `HAPPY_*` |
+| `crops.ts` | `CROPS`, `HAPPY_*`. `chilli` |
 | `trees.ts` | `TREES`, `TREE_YIELD_*` |
 | `varieties.ts` | `VarietyId`, `VarietyTier`, `Purpose`, `VARIETY`, `VARIETIES`, `PURPOSE_MUL`, `purposeMul`, `purposeOf`, `tierOf`, `caskGroup`, `VARIETY_GROW`, `VARIETY_TOL`, `VARIETY_ROT`, `QUALITY_TOP`, `QUALITY_STEP`, `BETTER_QUALITY`, `NEIGHBOUR_IDS`, `NEIGHBOUR_REACH` |
-| `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES.axe` `AXES.chainsaw` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` |
-| `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `unlock-hardened-tools`, `buy-furnace`, `buy-axe`, `buy-chainsaw`, `buy-research-station` |
+| `items.ts` | tool / container / machine / vehicle / sensor hold constants. `FURNACE_*` `AXES.axe` `AXES.chainsaw` `FURNACE_VALUE` `COMPOST_VALUE.ash` `STATION_*` `GRAFT_WORK` `GRIND_MIN_AT` `MILL_VANILLA_IN` `MILL_VANILLA_OUT` `MILL_CHILLI_*` `INFUSE_*` `BREAD` `FURNACE_BREAD_IN` |
+| `research.ts` | `RESEARCH`, `SKUS`. `unlock-furnace`, `unlock-hardened-tools`, `unlock-infusion`, `buy-furnace`, `buy-axe`, `buy-chainsaw`, `buy-research-station`, `buy-infuser`, `pack-chilli` |
 | `skills.ts` | `SKILLS`. `BetterCrop`, `BETTER_IDS`. `lucky`. `machinery` gate `unlock-grinder` |
-| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, chainsaw, station. Wood, ash, graft item rows. Game concepts Luck + Burrow are not `CatalogEntry` |
-| `shelf.ts` | `BuildShelfId`. Station on Processing |
+| `catalog.ts` | almanac SKU `CatalogEntry`. Furnace, axe, chainsaw, station, infuser. Wood, ash, graft, flakes, vanilla-extract, bread item rows. Game concepts Luck + Burrow + Infusion are not `CatalogEntry` |
+| `shelf.ts` | `BuildShelfId`. Station on Grafting. Infuser on Infusing |
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
 | `burrow.ts` | `BURROW_MUL` `BURROW_START_N` loot-roll numbers `LUCK_CAP` — [[mechanics/burrow]] |
@@ -27,7 +27,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Indexes `enclosures` `fenceEnclosures` `plotEnclosures` — filled by feature-enclosure, not `track()`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Burrow mint / roll / extract live in `feature-burrow/`. Intent `chop` `furnace` `graft` `station` `open` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Indexes `enclosures` `fenceEnclosures` `plotEnclosures` — filled by feature-enclosure, not `track()`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Burrow mint / roll / extract live in `feature-burrow/`. Intent `chop` `furnace` `graft` `station` `open` `infuse` |
 | `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. `lucky` is owned here; luck is derived, not a World field. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `feature-save/save.h.ts` | `Save` typedefs |
@@ -41,28 +41,28 @@
 | `soil.ts` | `Soil` |
 | `plant.ts` | `Plant` (`variety`, `quality`), `Weed` |
 | `water.ts` | `Reservoir`, `pull()` |
-| `stall.ts` | `StallGood`. Crop bins per variety × bio |
-| `feature-contracts/market.h.ts` | sat / contract typedefs. `Demand` plain or group |
+| `stall.ts` | `StallGood`. Crop bins per variety × bio. Infusable bins per variety × `InfusedKey` |
+| `feature-contracts/market.h.ts` | sat / contract typedefs. `Demand` plain or group. `Bin.infusedFilled`. `InfusedKey` |
 | `feature-contracts/market.ts` | sat helpers, `rollBoard` |
-| `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace`, `ResearchStation`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality. `BaseBuilding` `Machine`; `Store` extends `BaseBuilding`. `Pump.ports` `['in']` `Pump.inn` |
+| `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace` (`recipe`), `ResearchStation`, `Infuser`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality. `BaseBuilding` `Machine`; `Store` extends `BaseBuilding`. `Pump.ports` `['in']` `Pump.inn` |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
 | `clock.ts` | `Clock` |
-| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `chainsaw` `wood` `ash` `graft` `treasure`. Fruit `cut`. `furnaceValue`, `compostValue` ash |
-| `prompt.ts` | `Prompt`. Chop (axe or chainsaw) / furnace dump / graft / station / burrow Dig / treasure open |
-| `look.ts` | `lookText`. Furnace / trunk / grow. Covering haste line. Neighbour wait line. Burrow look does not name loot |
+| `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `chainsaw` `wood` `ash` `graft` `treasure` `flakes` `vanilla-extract` `bread`. Fruit `cut`. Jam / cask / spirit / oil `infused`. `furnaceValue`, `compostValue` ash |
+| `prompt.ts` | `Prompt`. Chop (axe or chainsaw) / furnace dump / graft / station / infuse / burrow Dig / treasure open |
+| `look.ts` | `lookText`. Furnace / trunk / grow / infuser. Covering haste line. Neighbour wait line. Burrow look does not name loot |
 | `drop.ts` | `Drop` |
 | `gen.ts` | `generateChunk`. `(0,0)` calls feature-burrow start mint |
 | `noise.ts` | `goodness` |
 | `modifiers.ts` | `Modifier`, `statsOf(crop, variety, quality, mods)` |
 | `rng.ts` | `Rng`, streams. Spatial `burrow` |
 | `weather.ts` | `WeatherKind`, `forecastWeather` |
-| `feature-machines/machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, machine west/east, `qualityMul`, `caskAgeTop` |
+| `feature-machines/machine.ts` | mill recipes, sale bake, grind hopper accept, furnace feedstock, infuser accept, machine west/east, `qualityMul`, `caskAgeTop` |
 | `feature-machines/machines.tick.ts` | `tickMachines` `pullMachineStores` `workingFurnaces` `furnaceMulFor`. Snapshot `World.furnaceSnap` at start of `tickMachines`. Re-exports emit |
 | `feature-machines/machines.emit.ts` | `emitProduct` `emitPair` `dropSpot` `pullStillWater`. Called from `BaseBuilding.tick` |
-| `feature-machines/machines.helpers.ts` | `canMill`/`doMill` `canJam`/`doJam` `canStill`/`doStill` `canFurnace`/`doFurnace` `canStation`/`doStation` `canGrind`/`doGrind` `canBarrel`/`doBarrel`/`canBarrelCollect` `canCompost`/`doCompost`. Public `canStation` / `dropSpot` / `furnaceMulFor` stay World wrappers |
-| `feature-machines/recipe.h.ts` | `Recipe`, `Craft`, `MachineId` |
-| `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 6, station, still water face. `MachineId` += `furnace` `station` |
+| `feature-machines/machines.helpers.ts` | `canMill`/`doMill` `canJam`/`doJam` `canStill`/`doStill` `canFurnace`/`doFurnace` `canStation`/`doStation` `canGrind`/`doGrind` `canBarrel`/`doBarrel`/`canBarrelCollect` `canCompost`/`doCompost` `canInfuse`/`doInfuse`. Public `canStation` / `dropSpot` / `furnaceMulFor` stay World wrappers |
+| `feature-machines/recipe.h.ts` | `Recipe`, `Craft`, `MachineId`. `MachineId` += `infuser`. `CraftCell` += `Infuser` |
+| `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 7, station, infuser 4, still water face. `MachineId` += `furnace` `station` `infuser` |
 | `feature-field/field.ts` | grow / recover tick, tree seam, weeds, grass |
 | `feature-burrow/` | start mint, seam mint, loot roll, extract. Types in `burrow.h.ts`, functions in `burrow.ts`. `World` indexes `burrows` and calls in |
 | `feature-enclosure/` | `Enclosure`, rebuild, lookup. Types in `enclosure.h.ts`, functions `(w, …)` in `enclosure.ts`. `World` indexes; it does not own. Rebuild on fence add/remove and `indexAll` |
@@ -99,7 +99,7 @@
 | `market.tsx` | Stall \| Contracts overlay |
 | `inventory.tsx` | house slots |
 | `chest.tsx` | chest slots |
-| `almanac.tsx` | catalog. Game concepts Luck + Burrow |
+| `almanac.tsx` | catalog. Game concepts Luck + Burrow + Infusion |
 | `objecthud.tsx` | sprinkler / sensor HUD. Sensor `HudSpec.rows` `HudRow` check / radio |
 | `hangar.tsx` | hangar cue |
 | `vehicle.tsx` | parked cue |
@@ -126,14 +126,14 @@ Map-atlas vs chrome SVG: `atlas.ts` owns farm textures. `svgs.ts` owns HUD / alm
 | `hit.ts` | `clickHit` / `nearestEdge` / ghosts |
 | `outline.ts` | union footprint path |
 | `layers/ground.ts` | terrain chunks |
-| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover. Tree stage `trunk`. Crop groups base / variant / variant / heirloom |
+| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover. Tree stage `trunk`. Crop groups base / variant / variant / heirloom. Chilli `'base'` |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos. Furnace `off`/`on`. Station `off`/`on`. Still / furnace native viewBox; art 1.5×1 / 1×1.5 inside |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos. Furnace `off`/`on`. Station `off`/`on`. Infuser `off`/`on`. Still / furnace native viewBox; art 1.5×1 / 1×1.5 inside. Mill / infuser `48×48` |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE. Sensor wash from watched set; pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, Build). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces. Chainsaw face. `researchInner`: `unlock-advanced-sensors` is the Logic gate, not AND; `unlock-grinder` is `skill-machinery.svg` 1-1, no new research SVG |
+| `svgs.ts` | chrome-only (HUD, almanac, Build). `treeStage` += `trunk`. Furnace faces. Graft face. Station faces. Infuser faces. Chainsaw face. `overlay-infused.svg`. `researchInner`: `unlock-advanced-sensors` is the Logic gate, not AND; `unlock-grinder` is `skill-machinery.svg` 1-1, no new research SVG |
 | `motion.ts` | HUD-only binds. Live craft `left` uses `furnaceMul` |
 
 Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes always drawn (faint when lens off). Wetness + AoE still lens / tool. Sprinkler AoE on hover is view. Pipe drag-to-draw is view-local pending run; commit existing `placePipe` per edge; no new cmd.
@@ -153,8 +153,9 @@ Pipes and sprinklers are not cells. Map hits `Edge` / `Vertex` separately. Pipes
 | `Soil` | `sim/soil.ts`. Required on every `Tilled` plot |
 | `Plant` | `sim/plant.ts`. `crop: AnnualId`. `variety` `quality` required |
 | `Tree` | `sim/building.ts`. Same instance in both 1×2 cells. `trunk` `variety` required |
-| `Furnace` | `sim/building.ts`. Same instance in both 1×2 cells. Tick origin. Not a `World.furnaces` list |
+| `Furnace` | `sim/building.ts`. Same instance in both 1×2 cells. Tick origin. `recipe: FurnaceRecipe` required. Not a `World.furnaces` list |
 | `ResearchStation` | `sim/building.ts`. 1×1. Tick origin. Not a `World.stations` list |
+| `Infuser` | `sim/building.ts`. Same instance in all four 2×2 cells. Tick origin. Not a `World.infusers` list |
 | `Reservoir` | `sim/water.ts`. `Pump.water`, `RainTank.water`. `rate` × weather mul |
 | `WeatherKind` | `sim/weather.ts`. `World.weather(day)` |
 | `Stall` | `sim/stall.ts`. `World.stall` complete `StallGoodId` map. Crop bins per variety × bio |
@@ -189,19 +190,19 @@ Machine extends BaseBuilding
 
 `Store` extends `BaseBuilding`.
 
-`Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`.
+`Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`, `Infuser`.
 
 `BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`, `ticks`, `hasted`. Grinder `ticks` `hasted`, pads `'none'`. Barrel `ticks`, pads `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
 
 `Store`: `SeedSilo`, `AdditiveStore`. Override `pads` `'both'`, `ports` `['out']`.
 
-A building that wants the default writes nothing. `solid` every `BaseBuilding`. `ticks` mill jam still grinder barrel furnace station compost-box — `World.machines`. `hasted` mill jam still grinder furnace compost-box — furnace haste look. Station and barrel tick; they are not `hasted`. `BaseBuilding.tick(w, at, dt)` returns whether it changed anything. `tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine. Compost-box ticks in that loop. `emitProduct` / `emitPair` / `dropSpot` / `pullStillWater` stay free functions in `machines.emit.ts`; the machine calls them.
+A building that wants the default writes nothing. `solid` every `BaseBuilding`. `ticks` mill jam still grinder barrel furnace station compost-box infuser — `World.machines`. `hasted` mill jam still grinder furnace compost-box infuser — furnace haste look. Station and barrel tick; they are not `hasted`. `BaseBuilding.tick(w, at, dt)` returns whether it changed anything. `tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine. Compost-box ticks in that loop. `emitProduct` / `emitPair` / `dropSpot` / `pullStillWater` stay free functions in `machines.emit.ts`; the machine calls them.
 
 House / hangar / field silos unchanged this pass. `Pump.ports` `['in']`. `Pump.inn` combinational, no hold, not saved. `gatherWater` skips that reservoir when `inn === 1`.
 
-Override only when the body is real logic. Do not put mill / jam / furnace specifics on `Machine`. Mill / jam / still / station `ports` `['in']`. Furnace `['in','out']`.
+Override only when the body is real logic. Do not put mill / jam / furnace specifics on `Machine`. Mill / jam / still / station / infuser `ports` `['in']`. Furnace `['in','out']`.
 
-Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / chest / freezer / seed-silo / additive-store / pump: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. Pumpjack east cell: no port. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Keep `isIoCell` as its own predicate, not a flag alias. Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`. `isSolid` uses `solid` for the `BaseBuilding` half; house / rock / tree / truck / pump stay kind arms; sensors via `isSensor`.
+Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / infuser / chest / freezer / seed-silo / additive-store / pump: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. Pumpjack east cell: no port. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Keep `isIoCell` as its own predicate, not a flag alias. Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`. `isSolid` uses `solid` for the `BaseBuilding` half; house / rock / tree / truck / pump stay kind arms; sensors via `isSensor`.
 
 Sensors are not `Machine` and not `BaseBuilding`. They carry the same readonly `ports`. Make table and ports: [[mechanics/sensors]].
 

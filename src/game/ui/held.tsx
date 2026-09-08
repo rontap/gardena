@@ -70,6 +70,9 @@ function badge(item: Item): string | undefined {
     item.kind === 'oil' ||
     item.kind === 'flour' ||
     item.kind === 'extract' ||
+    item.kind === 'flakes' ||
+    item.kind === 'vanilla-extract' ||
+    item.kind === 'bread' ||
     item.kind === 'rotten' ||
     item.kind === 'dead' ||
     item.kind === 'weed' ||

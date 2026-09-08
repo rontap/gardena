@@ -4,7 +4,6 @@ import {
   BARREL_MATURE,
   CASK_AGE_MAX,
   CASK_AGE_MIN,
-  EXTRACT,
   FERT_BAG_LITERS,
   FLOUR,
   JAM_IN,
@@ -12,9 +11,9 @@ import {
   JAM_SECONDS,
   JAM_SUGAR,
   KETCHUP_SUGAR,
+  MILL_CHILLI_IN,
   MILL_IN,
   MILL_VANILLA_IN,
-  MILL_VANILLA_OUT,
   MILL_WORK,
   OIL,
   CASK_SALE,
@@ -209,7 +208,7 @@ function jamOf(id: CropId): JamCrop | null {
 }
 
 function millOf(id: CropId): Exclude<MillRecipe, 'grass'> | null {
-  if (id === 'sugar-cane' || id === 'olive' || id === 'wheat' || id === 'vanilla') return id
+  if (id === 'sugar-cane' || id === 'olive' || id === 'wheat' || id === 'vanilla' || id === 'chilli') return id
   return null
 }
 
@@ -227,7 +226,7 @@ function millBase(id: Exclude<MillRecipe, 'grass'>): number {
   if (id === 'sugar-cane') return SUGAR_BAG * SUGAR_MILL
   if (id === 'olive') return OIL
   if (id === 'wheat') return FLOUR
-  return EXTRACT * MILL_VANILLA_OUT
+  return 0
 }
 
 function packOf(id: CropId): { price: number; units: number } | null {
@@ -393,6 +392,7 @@ function jamSugarAt(crop: JamCrop, variety: VarietyId, g: Globals): number {
 
 function millInAt(recipe: Exclude<MillRecipe, 'grass'>, g: Globals): number {
   if (recipe === 'vanilla') return g.millVanillaIn
+  if (recipe === 'chilli') return MILL_CHILLI_IN
   return g.millIn
 }
 

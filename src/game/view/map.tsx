@@ -44,7 +44,7 @@ import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
 import { cursorCss, cursorFor } from './cursor.ts'
 import { STAT_COLOR } from '../ui/status.tsx'
-import { FURNACE, HANGAR, MILL, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
+import { FURNACE, HANGAR, INFUSER, MILL, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
@@ -153,7 +153,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const furnacePlace = placeId === 'buy-furnace'
   const hangarPlace = placeId === 'buy-hangar'
   const siloPlace = placeId === 'buy-silo-seed' || placeId === 'buy-silo-spray' || placeId === 'buy-silo-produce'
-  const millPlace = placeId === 'buy-mill'
+  const millPlace = placeId === 'buy-mill' || placeId === 'buy-infuser'
   const edgeTool = placeId === 'buy-pipe' || placeId === 'buy-valve'
   const deleteTool = place.kind === 'delete'
   const sprinklerTool = placeId !== undefined && SPRINKLER_SKU.includes(placeId)
@@ -694,7 +694,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             viewBox="0 0 48 48"
             style={{ left: strokeCell.col * TILE, top: strokeCell.row * TILE }}
           >
-            <Use art={MILL} />
+            <Use art={placeId === 'buy-infuser' ? INFUSER : MILL} />
           </svg>
         )}
         {(hangarPlace || siloPlace) && placeId !== undefined && strokeCell !== undefined && (
@@ -810,7 +810,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
       {millPlace && placeId !== undefined && hoverCell === undefined && (
         <div className="pointer-events-none fixed z-30" style={{ left: ptr.x + 16, top: ptr.y + 16 }}>
           <svg className="h-20 w-20" viewBox="0 0 48 48">
-            <Use art={MILL} />
+            <Use art={placeId === 'buy-infuser' ? INFUSER : MILL} />
           </svg>
           <div className="mt-1 bg-house px-2 py-0.5 text-base text-ink">{placeLine(placeId)}</div>
         </div>

@@ -10,6 +10,7 @@ import {
   type CropId,
   type StallGoodId,
 } from './ids.ts'
+import type { InfusedKey } from './feature-contracts/market.h.ts'
 import type { Modifier } from './modifiers.ts'
 import type { Rng } from './rng.ts'
 
@@ -23,14 +24,29 @@ export const STALL_IDS: StallGoodId[] = [
   'oil',
   'flour',
   'extract',
+  'bread',
 ]
+
+export const INFUSED_KEYS: readonly InfusedKey[] = ['plain', 'infused']
+
+export function infusedKey(infused: boolean): InfusedKey {
+  return infused ? 'infused' : 'plain'
+}
+
+function infusedBin(k: InfusedKey): BioKey {
+  return k === 'infused' ? 'synth' : 'organic'
+}
 
 export function isCropStall(id: StallGoodId): id is CropId {
   return (ANNUAL_IDS as readonly string[]).includes(id) || (TREE_IDS as readonly string[]).includes(id)
 }
 
 export function isBakedStall(id: StallGoodId): boolean {
-  return id === 'sugar' || id === 'oil' || id === 'flour' || id === 'extract' || id.startsWith('jam-')
+  return id === 'sugar' || id === 'flour' || id === 'extract' || id === 'bread'
+}
+
+export function isInfusedStall(id: StallGoodId): boolean {
+  return id === 'oil' || id.startsWith('jam-') || isSpiritStall(id)
 }
 
 export function isSpiritStall(id: StallGoodId): boolean {
@@ -92,9 +108,10 @@ export class StallGood {
     this.worth.base.organic += count * unitSale
   }
 
-  takeSpirit(variety: VarietyId, count: number, unitSale: number): void {
-    this.stock[variety].organic += count
-    this.worth[variety].organic += count * unitSale
+  takeSpirit(variety: VarietyId, count: number, unitSale: number, infused: boolean): void {
+    const k = infusedBin(infusedKey(infused))
+    this.stock[variety][k] += count
+    this.worth[variety][k] += count * unitSale
   }
 }
 

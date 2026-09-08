@@ -74,7 +74,7 @@ Each line then spends `GOOD_COST[good]`. Candidates are filtered to `GOOD_TIER[g
 
 `GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read. Grammar no longer spends on a floor.
 
-Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `plain`. Sugar / oil / flour / extract → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit' }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them).
+Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `plain`. Sugar / oil / flour / extract / bread → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit' }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them). Flakes and vanilla-extract are not `StallGoodId`. Infused is not a demand; `Accepts` ignores `infused`.
 
 ### Money pool and amount
 
@@ -174,7 +174,7 @@ Drops at the door, the way a shovelled-up tree seed drops. Store prizes clamp to
 | `plain` spirit | `SPIRIT_SALE[spirit]` |
 | `plain` sugar | `SUGAR_MILL` |
 | `plain` jam | `JAM_SALE[crop]` |
-| `plain` oil / flour / extract | `OIL` / `FLOUR` / `EXTRACT` |
+| `plain` oil / flour / extract / bread | `OIL` / `FLOUR` / `EXTRACT` / `BREAD` |
 | group jam | `min JAM_SALE` (`cherry`) |
 | group spirit | `SPIRIT_SALE.vodka` |
 
@@ -192,11 +192,13 @@ Accepts(demand, good) → boolean
 | group jam | `good` is `JamId` |
 | group spirit | `good` is `SpiritKind` |
 
-A match is a match. No overage bonus. Freshness, variety, and quality are not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick.
+A match is a match. No overage bonus. Freshness, variety, quality, and `infused` are not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick. Flakes and vanilla-extract never `Accepts`.
 
 ## State
 
 `World.contracts: Contracts = { active, takenToday, history, book, rep, repDay }`.
+
+`Bin = { demand; filled; infusedFilled }`. `infusedFilled` starts 0.
 
 New farm → empty. Load restores what was saved, including part-filled bins. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX`.
 
@@ -212,7 +214,7 @@ Deadline runs from acceptance, not publication.
 
 Legal iff `unlock-contracts` done, `active.length < CONTRACT_ACTIVE +` broker active bonus, the id is on today's board (`rollBoard` at current `slots`, not in `takenToday`). Else no-op.
 
-Creates `Active` with `dueDay = nowDay + offer.days` and one `Bin` per line at `filled: 0`. Pushes `offer.id` onto `takenToday`.
+Creates `Active` with `dueDay = nowDay + offer.days` and one `Bin` per line at `filled: 0`, `infusedFilled: 0`. Pushes `offer.id` onto `takenToday`.
 
 ## Deliver
 
@@ -220,15 +222,20 @@ Existing consign at the truck. Logged as `enqueue`. `consignBody` fills `contrac
 
 `Act.reorderContract` `'Z'` `{ c: ContractId; d: 1 | -1 }` swaps that entry with its neighbour. `d = 1` toward the end. No-op at ends or unknown id. Fill priority **is** array order. No lookahead.
 
-A bin takes a unit iff `Accepts` and `filled < amount`. `{ kind: 'rotten' }` never counts. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract fill in count.
+A bin takes a unit iff `Accepts` and `filled < amount`. `{ kind: 'rotten' }` never counts. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract / bread fill in count. Jam / cask / spirit / oil with `infused === true` also increment `infusedFilled`. `infusedFilled <= filled`.
 
 ## Complete
 
 Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. History `{ kind: 'done'; paid; prize }`. Slot freed. Those units never hit the stall.
 
+```
+fraction = sum(bin.infusedFilled) / sum(bin.demand.amount)
+addRep(REP_DONE[stars] × (1 + 0.25 × fraction))     // clamp [0, REP_MAX]
+```
+
 Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier (0 if absent), and `paid` is that number.
 
-Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply.
+Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply. Prize complete still takes the infused fraction.
 
 ## Miss
 
@@ -241,7 +248,7 @@ penalty = offer.penalty * max(PENALTY_FLOOR, 1 - filled / need)
 
 `need` = sum of line amounts. `filled` = sum of `bin.filled`. `filled === need` is completion, never a miss.
 
-Remainders consign into stall (stock + worth) and raise `sat` by that clean `V / SAT_DEPTH`. `money += sold - penalty`. `sold` is those units at the current saturated rate. `book[company].missed += 1`. History `{ kind: 'missed'; sold; penalty }`. Slot freed.
+Remainders consign into stall (stock + worth). Plain remainders raise `sat` by that clean `V / SAT_DEPTH`. Infused remainders enter infused worth and do not raise `sat`. `money += sold - penalty`. `sold` is those units at the current saturated rate (infused at `mul(sat)`). `book[company].missed += 1`. History `{ kind: 'missed'; sold; penalty }`. Slot freed. Miss does not take the infused reputation mul.
 
 ## Cancel
 
@@ -262,7 +269,7 @@ At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at
 
 Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. Header `CompanyId` is this union.
 
-`GoodClass` covers every pool member. `FruitAnnualId` = tomato | raspberry | grape | vanilla. Not root/grain, not `sugar-cane`. Olive is `TreeId`. Trees are `TreeId`. `SpiritKind` is not in any pool. `JamId` from `JAM_CROPS` 5. No apple jam.
+`GoodClass` covers every pool member. `FruitAnnualId` = tomato | raspberry | grape | vanilla | chilli. Not root/grain, not `sugar-cane`. Olive is `TreeId`. Trees are `TreeId`. `SpiritKind` is not in any pool. `JamId` from `JAM_CROPS` 5. No apple jam.
 
 `defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods or difficulty. Sector = `region`.
 
@@ -274,11 +281,11 @@ Daughter `broker` max `BROKER_MAX_TIER`. Gate research `unlock-contracts`. T1 `+
 
 Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Max 3. Miss and cancel do not take it.
 
-`FEASIBLE_PER_DAY` complete `{ [K in StallGoodId]: number }`. Tuned-to `CROPS.growSeconds` / `BARREL_AGE` / `STILL_SECONDS` / mill and jam batch. `FEASIBLE_PLOTS` preference — mature-farm crop plots; `scale(day)` is the early-farm fraction.
+`FEASIBLE_PER_DAY` complete `{ [K in StallGoodId]: number }`. Tuned-to `CROPS.growSeconds` / `BARREL_AGE` / `STILL_SECONDS` / mill and jam batch / furnace bread. `FEASIBLE_PLOTS` preference — mature-farm crop plots; `scale(day)` is the early-farm fraction.
 
 Crop: `round(FEASIBLE_PLOTS * DAY_SECONDS / CROPS[id].growSeconds)`.
 
-Spirit: `DAY_SECONDS / STILL_SECONDS` (one still). Jam: `DAY_SECONDS / JAM_SECONDS` (one jam). Oil / flour / extract: `DAY_SECONDS / MILL_WORK` (one mill). Sugar: that mill rate × `SUGAR_BAG`. Wine stock-only: 1.
+Spirit: `DAY_SECONDS / STILL_SECONDS` (one still). Jam: `DAY_SECONDS / JAM_SECONDS` (one jam). Oil / flour / extract: `DAY_SECONDS / MILL_WORK` (one mill). Sugar: that mill rate × `SUGAR_BAG`. Bread: `DAY_SECONDS / FURNACE_SECONDS` (one furnace). Wine stock-only: 1. Flakes and vanilla-extract have no row.
 
 Constants valued in `market.ts`. Header stays `declare const`.
 
@@ -292,7 +299,7 @@ Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; j
 
 `contracts.not-cmd` — Board generation is not a `Cmd`.
 
-`contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel remainders do both.
+`contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel plain remainders do both. Infused remainders enter infused worth and raise no `sat`.
 
 `contracts.demand` — A `Demand` is a plain good match or a group. No minimum. `Lines` never nests.
 
@@ -305,3 +312,5 @@ Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; j
 `contracts.cancel` — Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.
 
 `contracts.consign` — Consign fills `active` in array order, then the stall. A full bin passes through. Guest cmds: [[mechanics/multiplayer]] `mp.guest`.
+
+`contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`. `Bin.infusedFilled` counts infused jam / cask / spirit / oil only. `Accepts` ignores `infused`. Miss and cancel do not take the mul.

@@ -31,6 +31,7 @@ import {
   FREEZER_ROT_MUL,
   HANGAR_H,
   HANGAR_W,
+  INFUSE_SECONDS,
   MILL_IN,
   MILL_VANILLA_IN,
   MILL_WORK,
@@ -346,6 +347,24 @@ export function catalogEntries(): CatalogEntry[] {
         vanilla: MILL_VANILLA_IN,
         work: MILL_WORK,
       }),
+    },
+    {
+      id: 'infuser',
+      title: m.names_building_infuser(),
+      icon: { kind: 'infuser' },
+      blurb: m.catalog_infuser({ seconds: INFUSE_SECONDS }),
+    },
+    {
+      id: 'flakes',
+      title: m.names_item_flakes(),
+      icon: { kind: 'flakes', quality: 0, count: 1 },
+      blurb: m.catalog_flakes(),
+    },
+    {
+      id: 'vanilla-extract',
+      title: m.names_item_vanilla_extract(),
+      icon: { kind: 'vanilla-extract', quality: 0, count: 1 },
+      blurb: m.catalog_vanilla_extract(),
     },
     {
       id: 'still',

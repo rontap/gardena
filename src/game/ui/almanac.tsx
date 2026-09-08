@@ -43,6 +43,7 @@ type ConceptId =
   | 'automation'
   | 'luck'
   | 'burrow'
+  | 'infusion'
 
 type AlmanacNav = { tab: AlmanacTab; id: string }
 
@@ -59,6 +60,7 @@ const SEED_IDS = [
   'raspberry',
   'grape',
   'vanilla',
+  'chilli',
   'sugar-cane',
   'soil',
   'weed',
@@ -111,15 +113,16 @@ const AUTO_IDS = [
   'compost-box',
   'mill',
   'furnace',
-  'station',
   'still',
   'barrel',
   'jam',
   'freezer',
+  'station',
+  'infuser',
   'hangar',
   'silo-seed',
-  'silo-spray',
   'silo-produce',
+  'silo-spray',
 ]
 const WATER_IDS = [
   'pumpjack',
@@ -133,7 +136,7 @@ const WATER_IDS = [
   'sprinkler-large',
 ]
 const BUILD_IDS = ['fence', 'tile-cobble', 'tile-brick', 'tile-paved']
-const CONCEPT_IDS: ConceptId[] = [
+export const CONCEPT_IDS: ConceptId[] = [
   'variety',
   'quality',
   'freshness',
@@ -146,6 +149,7 @@ const CONCEPT_IDS: ConceptId[] = [
   'automation',
   'luck',
   'burrow',
+  'infusion',
 ]
 
 const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
@@ -161,6 +165,7 @@ const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   automation: () => m.hud_research_automation(),
   luck: () => m.almanac_concept_luck(),
   burrow: () => m.almanac_concept_burrow(),
+  infusion: () => m.almanac_concept_infusion(),
 }
 
 const TABS: { id: AlmanacTab; label: () => string }[] = [
@@ -365,6 +370,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                   grinder: world.done.has('unlock-grinder'),
                   preservatives: world.done.has('unlock-preservatives'),
                   furnace: world.done.has('unlock-furnace'),
+                  infusion: world.done.has('unlock-infusion'),
                 }}
                 tab={tab}
               />
@@ -377,7 +383,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
   )
 }
 
-type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boolean; furnace: boolean }
+type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boolean; furnace: boolean; infusion: boolean }
 
 function RowPane({
   row,
@@ -560,6 +566,8 @@ function conceptBody(id: ConceptId) {
       return <LuckConcept />
     case 'burrow':
       return <BurrowConcept />
+    case 'infusion':
+      return <InfusionConcept />
   }
 }
 
@@ -927,6 +935,21 @@ function BurrowConcept() {
   )
 }
 
+function InfusionConcept() {
+  return (
+    <>
+      <div>{m.almanac_infusion_p1()}</div>
+      <div>
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        {m.almanac_period()}
+      </div>
+    </>
+  )
+}
+
 function AutomationConcept() {
   return (
     <>
@@ -975,7 +998,7 @@ function AutomationConcept() {
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
 function skuFill(tab: AlmanacTab, id: string): string {
-  if (id === 'sugar' || id === 'ash') return 'bg-water'
+  if (id === 'sugar' || id === 'ash' || id === 'flakes' || id === 'vanilla-extract' || id === 'bread') return 'bg-water'
   if (tab === 'sensors' || tab === 'automation' || tab === 'water') return 'bg-grass'
   return 'bg-dirt-dark'
 }
@@ -1184,6 +1207,8 @@ function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
       return done.furnace
     case 'station':
       return true
+    case 'infuser':
+      return done.infusion
   }
 }
 

@@ -1,6 +1,6 @@
 import { Container, Texture } from 'pixi.js'
 import { HOUSE_BASE, type CircleBase, type RectBase } from '../../sim/building.ts'
-import { furnaceWorking, millWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
+import { furnaceWorking, infuserWorking, millWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
 import { isSensor } from '../../sim/sensor.ts'
 import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'
@@ -118,6 +118,10 @@ export class PropsLayer {
       }
       if (cell.kind === 'furnace') {
         put(furnaceWorking(cell) ? 'furnace-on' : 'furnace-off', at.col, at.row)
+        continue
+      }
+      if (cell.kind === 'infuser') {
+        put(infuserWorking(cell) ? 'infuser-on' : 'infuser-off', at.col, at.row)
         continue
       }
       if (

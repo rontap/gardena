@@ -1,3 +1,17 @@
+# 2.7.0 Infusion
+
+Place an Infuser and Infuse jam, wine, cider, spirits, or Olive oil with Flakes or Vanilla extract. Infused goods sell at Market without changing that good's percent, and finishing a contract with them raises Reputation more than the same contract without them. The Mill crushes Chilli into Flakes. The Furnace Bakes flour into Bread.
+
+- 🎉 Added mechanic: Infusion. Infuse jam, wine, cider, spirits, or Olive oil at an Infuser with Flakes or Vanilla extract, one of those two, not both. Infused goods sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them.
+  - Flakes come from crushing Chilli at a Mill. Vanilla extract comes from crushing Vanilla at a Mill.
+- ✨ Added building: Infuser. The good keeps its name and Quality and shows a plus, instead of becoming a new good.
+- ✨ Added item: Chilli seeds. Sow Chilli on tilled soil. It ripens sooner than Vanilla and later than Potato, and the fruit keeps longer than Potato. Crush at a Mill into Flakes.
+- ✨ Added item: Vanilla extract. Crushed Vanilla, used at an Infuser. Extract from Cut grass is a different good the Market buys.
+- ✨ Added item: Bread. Bake flour at a Furnace.
+- 🔧 Changed building: Furnace. previously, flour burned into Ash, now flour Bakes into Bread, and a Furnace locked on ash will not take flour.
+- 🔧 Changed building: Mill. previously, it did not crush Chilli, now Crush into flakes.
+- 🔧 Changed ui: Market. previously, selling a good raised that good's percent, now Infused goods sell at the percent shown and do not change it.
+
 # 2.6.4 One build menu
 
 The General store is gone. Every tool and everything you place is in the Build menu; seeds stay at the Seed silo and bags at the Additive store. Almanac and Cheat moved to the top bar, Hold Shift keeps a tool in hand, and Family shows Reputation and Luck.

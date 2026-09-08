@@ -9,9 +9,14 @@ import {
   FERT_BAG_LITERS,
   FREEZER_SLOTS,
   FURNACE_ASH,
+  FURNACE_BREAD_IN,
   FURNACE_CAP,
   FURNACE_NEED,
   FURNACE_SECONDS,
+  INFUSE_EXTRACT,
+  INFUSE_FLAKES,
+  INFUSE_IN,
+  INFUSE_SECONDS,
   GRIND_MAX,
   grindMinAt,
   GRIND_WORK,
@@ -36,11 +41,12 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CropId, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
-import { compostValue, fruitStack, giveSlots, makeCompost, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import type { AnnualId, BarrelCrop, CropId, FurnaceRecipe, Infusable, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
+import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
 import {
   addStillFeed,
+  bakeBreadSale,
   bakeSpiritSale,
   barrelNeed,
   feedUnits,
@@ -53,6 +59,9 @@ import {
   furnaceMul,
   furnaceUnit,
   grindProduct,
+  infusableOf,
+  infusedProduct,
+  infuserWorking,
   jamCropOf,
   jamSale,
   jamSugar,
@@ -64,6 +73,7 @@ import {
   millRecipeOf,
   millWorking,
   mixQuality,
+  sameInfusable,
   spiritKind,
   stillCropOf,
   stillReady,
@@ -597,6 +607,7 @@ export class JamMachine extends Machine {
         quality: this.quality,
         count: 1,
         unitSale: jamSale(this.crop, this.variety, this.quality),
+        infused: false,
       })
     ) {
       return false
@@ -656,6 +667,7 @@ export class PotStill extends Machine {
         quality,
         count: 1,
         unitSale: bakeSpiritSale(kind, variety, quality),
+        infused: false,
       })
     ) {
       return dirty
@@ -672,6 +684,8 @@ export class Furnace extends Machine {
   readonly kind = 'furnace' as const
   override readonly ports = ['in', 'out'] as const
   override readonly hasted = true
+  recipe: FurnaceRecipe = 'none'
+  quality = 0
   units = 0
   progress = 0
   out: Signal = 0
@@ -680,8 +694,15 @@ export class Furnace extends Machine {
     super({ shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 })
   }
   override accept(item: Item): number {
+    if (item.kind === 'flour') {
+      if (this.recipe === 'ash') return 0
+      const room = FURNACE_CAP - this.units
+      if (room <= 0 || item.count <= 0) return 0
+      return item.count < room ? item.count : room
+    }
     const unit = furnaceUnit(item)
     if (unit <= 0) return 0
+    if (this.recipe === 'bread') return 0
     const room = FURNACE_CAP - this.units
     if (room <= 0) return 0
     if (item.kind === 'tree-seed') return unit <= room ? 1 : 0
@@ -698,16 +719,103 @@ export class Furnace extends Machine {
   }
   override apply(item: Item, n: number): void {
     if (n <= 0) return
+    if (item.kind === 'flour') {
+      if (this.recipe === 'none') {
+        this.recipe = 'bread'
+        this.quality = item.quality
+        this.units = n
+        return
+      }
+      this.quality = mixQuality(this.quality, this.units, item.quality, n)
+      this.units += n
+      return
+    }
+    if (this.recipe === 'none') this.recipe = 'ash'
     this.units += furnaceUnit(item) * n
   }
   override tick(w: World, at: Coord, dt: number): boolean {
     if (this.inn === 1) return false
-    if (this.units < FURNACE_NEED) return false
+    if (this.recipe === 'none') return false
+    const need = this.recipe === 'bread' ? FURNACE_BREAD_IN : FURNACE_NEED
+    if (this.units < need) return false
     if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / FURNACE_SECONDS
     if (this.progress < 1) return false
-    if (!emitProduct(w, this.base, { kind: 'ash', count: FURNACE_ASH })) return false
+    const out: Item =
+      this.recipe === 'bread'
+        ? { kind: 'bread', quality: this.quality, count: 1, unitSale: bakeBreadSale(this.quality) }
+        : { kind: 'ash', count: FURNACE_ASH }
+    if (!emitProduct(w, this.base, out)) return false
     this.progress = 0
-    this.units -= FURNACE_NEED
+    this.units -= need
+    if (this.units === 0) {
+      this.recipe = 'none'
+      this.quality = 0
+    }
+    w.track(at, this)
+    return true
+  }
+}
+
+export class Infuser extends Machine {
+  readonly kind = 'infuser' as const
+  override readonly ports = ['in'] as const
+  override readonly hasted = true
+  lock: Infusable | 'none' = 'none'
+  quality = 0
+  unitSale = 0
+  units = 0
+  flakes = 0
+  extract = 0
+  progress = 0
+  constructor(base: RectBase) {
+    super({ shape: 'rect', col: base.col, row: base.row, w: MILL_W, h: MILL_H })
+  }
+  override accept(item: Item): number {
+    if (item.kind === 'flakes' || item.kind === 'vanilla-extract') return item.count
+    const lock = infusableOf(item)
+    if (lock === undefined) return 0
+    if (this.lock !== 'none' && !sameInfusable(this.lock, lock)) return 0
+    if (item.count <= 0) return 0
+    return item.count
+  }
+  override apply(item: Item, n: number): void {
+    if (n <= 0) return
+    if (item.kind === 'flakes') {
+      this.flakes += n
+      return
+    }
+    if (item.kind === 'vanilla-extract') {
+      this.extract += n
+      return
+    }
+    const lock = infusableOf(item)
+    if (lock === undefined) return
+    if (item.kind !== 'jam' && item.kind !== 'cask' && item.kind !== 'spirit' && item.kind !== 'oil') return
+    if (this.lock === 'none') {
+      this.lock = lock
+      this.quality = item.quality
+      this.unitSale = item.unitSale
+      this.units = n
+      return
+    }
+    this.quality = mixQuality(this.quality, this.units, item.quality, n)
+    this.unitSale = mergeUnitSale({ unitSale: this.unitSale, count: this.units }, { unitSale: item.unitSale, count: n })
+    this.units += n
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (!infuserWorking(this)) return false
+    if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / INFUSE_SECONDS
+    if (this.progress < 1) return false
+    if (!emitProduct(w, this.base, infusedProduct(this))) return false
+    this.progress = 0
+    this.units -= INFUSE_IN
+    if (this.flakes >= INFUSE_FLAKES) this.flakes -= INFUSE_FLAKES
+    else this.extract -= INFUSE_EXTRACT
+    if (this.units === 0) {
+      this.lock = 'none'
+      this.quality = 0
+      this.unitSale = 0
+    }
     w.track(at, this)
     return true
   }

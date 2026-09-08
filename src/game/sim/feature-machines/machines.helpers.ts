@@ -133,6 +133,7 @@ export function doBarrel(w: World, at: Coord): void {
       quality,
       count: 1,
       unitSale: bakeCaskSale(CASK_OF[barrel.crop], variety, quality, barrel.age),
+      infused: false,
     }
     if (w.act.hand.kind === 'empty') w.act.hand = { kind: 'hold', item: cask }
     else if (w.act.hand.item.kind === 'cask') {
@@ -203,6 +204,25 @@ export function canCompost(w: World, at: Coord): boolean {
   const c = w.cell(at)
   if (c.kind !== 'compost-box') return false
   return c.accept(w.act.hand.item) > 0
+}
+
+export function canInfuse(w: World, at: Coord): boolean {
+  if (w.act.hand.kind !== 'hold') return false
+  const c = w.cell(at)
+  if (c.kind !== 'infuser') return false
+  return c.accept(w.act.hand.item) > 0
+}
+
+export function doInfuse(w: World, at: Coord): void {
+  if (!canInfuse(w, at)) return
+  if (w.act.hand.kind !== 'hold') return
+  const infuser = w.cell(at)
+  if (infuser.kind !== 'infuser') return
+  const n = infuser.accept(w.act.hand.item)
+  if (n <= 0) return
+  infuser.apply(w.act.hand.item, n)
+  takeHandCount(w, n)
+  w.track(at, infuser)
 }
 
 export function doCompost(w: World, at: Coord): void {

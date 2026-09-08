@@ -9,7 +9,7 @@ import type { AnnualId, StallGoodId } from './ids.ts'
 import type { Item } from './item.ts'
 import { Accepts, SAT_DEPTH, SAT_RECOVER_PER_DAY, mul, paid } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
-import { BIO_KEYS, binCount, isBakedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
+import { BIO_KEYS, binCount, isBakedStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
 import type { SellAllQuote } from './feature-contracts/market.h.ts'
@@ -136,7 +136,7 @@ export function doConsign(world: World): void {
     const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
     splitConsign(world, item.crop, item.count, item.freshness === 0, rest => {
       world.stall[item.crop].take(item.variety, rest, unit, item.bio)
-    })
+    }, false)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
@@ -144,39 +144,47 @@ export function doConsign(world: World): void {
   if (item.kind === 'sugar') {
     splitConsign(world, 'sugar', item.liters, false, rest => {
       world.stall.sugar.takeSugar(rest, item.unitSale)
-    })
+    }, false)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
   }
   if (item.kind === 'spirit') {
     splitConsign(world, item.spirit, item.count, false, rest => {
-      world.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale)
-    })
+      world.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale, item.infused)
+    }, item.infused)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
   }
   if (item.kind === 'cask') {
     splitConsign(world, item.cask, item.count, false, rest => {
-      world.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale)
-    })
+      world.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale, item.infused)
+    }, item.infused)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
   }
   if (item.kind === 'jam') {
     splitConsign(world, `jam-${item.crop}`, item.count, false, rest => {
-      world.stall[`jam-${item.crop}`].takeBaked(rest, item.unitSale)
-    })
+      world.stall[`jam-${item.crop}`].takeSpirit(item.variety, rest, item.unitSale, item.infused)
+    }, item.infused)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
   }
-  if (item.kind === 'oil' || item.kind === 'flour' || item.kind === 'extract') {
+  if (item.kind === 'oil') {
+    splitConsign(world, item.kind, item.count, false, rest => {
+      world.stall[item.kind].takeSpirit('base', rest, item.unitSale, item.infused)
+    }, item.infused)
+    world.act.hand = { kind: 'empty' }
+    completeConsign(world)
+    return
+  }
+  if (item.kind === 'flour' || item.kind === 'extract' || item.kind === 'bread') {
     splitConsign(world, item.kind, item.count, false, rest => {
       world.stall[item.kind].takeBaked(rest, item.unitSale)
-    })
+    }, false)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
     return
@@ -195,13 +203,20 @@ export function completeConsign(world: World): void {
   market.finishFull(world)
 }
 
-export function splitConsign(world: World, good: StallGoodId, n: number, skip: boolean, restToStall: (rest: number) => void): void {
-  const bound = skip ? 0 : fillContracts(world, good, n)
+export function splitConsign(
+  world: World,
+  good: StallGoodId,
+  n: number,
+  skip: boolean,
+  restToStall: (rest: number) => void,
+  infused: boolean,
+): void {
+  const bound = skip ? 0 : fillContracts(world, good, n, infused)
   const rest = n - bound
   if (rest > 0) restToStall(rest)
 }
 
-export function fillContracts(world: World, good: StallGoodId, n: number): number {
+export function fillContracts(world: World, good: StallGoodId, n: number, infused: boolean): number {
   let left = n
   world.contracts.active.forEach(a => {
     a.bins.forEach(bin => {
@@ -211,6 +226,7 @@ export function fillContracts(world: World, good: StallGoodId, n: number): numbe
       if (room <= 0) return
       const take = left < room ? left : room
       bin.filled += take
+      if (infused) bin.infusedFilled += take
       left -= take
     })
   })
@@ -222,7 +238,8 @@ export function sellAllBody(world: World): void {
   const quote = marketQuote(world)
   if (quote.paid === 0) return
   quote.rows.forEach(row => {
-    world.stall[row.good].sat = Math.min(1, row.sat + row.clean / SAT_DEPTH)
+    const { clean, infused } = stallClean(world, row.good)
+    world.stall[row.good].sat = Math.min(1, row.sat + (clean - infused) / SAT_DEPTH)
   })
   STALL_IDS.forEach(id => {
     VARIETY_IDS.forEach(variety => {
@@ -235,26 +252,26 @@ export function sellAllBody(world: World): void {
   world.emit('sold')
 }
 
-export function stallClean(world: World, id: StallGoodId): { clean: number; clearance: number } {
+export function stallClean(world: World, id: StallGoodId): { clean: number; infused: number; clearance: number } {
   const saleX = 1 + 0.02 * world.skillTier('saleswoman')
   const heirX = 1 + 0.05 * world.skillTier('heirloom')
   const bioX = 1 + 0.04 * world.skillTier('bio')
+  if (isInfusedStall(id)) {
+    return VARIETY_IDS.reduce(
+      (acc, variety) => {
+        const heir = isSpiritStall(id) && id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
+        const x = saleX * heir
+        const plain = world.stall[id].worth[variety].organic * x
+        const inf = world.stall[id].worth[variety].synth * x
+        return { clean: acc.clean + plain + inf, infused: acc.infused + inf, clearance: 0 }
+      },
+      { clean: 0, infused: 0, clearance: 0 },
+    )
+  }
   if (isBakedStall(id)) {
     const count = world.stall[id].stock.base.organic
-    if (count === 0) return { clean: 0, clearance: 0 }
-    return { clean: world.stall[id].worth.base.organic * saleX, clearance: 0 }
-  }
-  if (isSpiritStall(id)) {
-    return {
-      clean: VARIETY_IDS.reduce((goodTotal, variety) => {
-        const count = world.stall[id].stock[variety].organic
-        if (count === 0) return goodTotal
-        const worth = world.stall[id].worth[variety].organic
-        const heir = id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
-        return goodTotal + worth * saleX * heir
-      }, 0),
-      clearance: 0,
-    }
+    if (count === 0) return { clean: 0, infused: 0, clearance: 0 }
+    return { clean: world.stall[id].worth.base.organic * saleX, infused: 0, clearance: 0 }
   }
   const x = stallX(id, world.modifiers)
   const w = world.weather(world.clock.day)
@@ -268,25 +285,30 @@ export function stallClean(world: World, id: StallGoodId): { clean: number; clea
         const worth = world.stall[id].worth[variety][k]
         const avg = worth / count
         const organicMul = k === 'organic' ? bioX : 1
-        return { clean: bioAcc.clean + count * avg * x * heir * saleX * organicMul * wx, clearance: bioAcc.clearance }
+        return {
+          clean: bioAcc.clean + count * avg * x * heir * saleX * organicMul * wx,
+          infused: bioAcc.infused,
+          clearance: bioAcc.clearance,
+        }
       }, acc)
     },
-    { clean: 0, clearance: 0 },
+    { clean: 0, infused: 0, clearance: 0 },
   )
 }
 
 export function marketQuote(world: World): SellAllQuote {
   const rows = STALL_IDS.flatMap(id => {
     if (binCount(world.stall[id]) <= 0) return []
-    const { clean } = stallClean(world, id)
+    const { clean, infused } = stallClean(world, id)
     const sat = world.stall[id].sat
+    const plain = clean - infused
     return [
       {
         good: id,
         sat,
         mul: mul(sat, id),
         clean,
-        paid: paid(sat, id, clean),
+        paid: paid(sat, id, plain) + infused * mul(sat, id),
         recoverDays: sat / SAT_RECOVER_PER_DAY,
       },
     ]

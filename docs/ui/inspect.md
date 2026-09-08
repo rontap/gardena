@@ -149,15 +149,15 @@ Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; 
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder, furnace: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
+Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
 
-Mill, jam, still, barrel, grinder, compost-box, furnace hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Still / furnace: either cell, one row.
+Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Still / furnace: either cell, one row. Infuser: any of four cells, one row. Infused yield face draws overlay-infused.
 
 Covering haste is a `lookText` line in that same `Status` block, after the machine look, before the prompt. Not the recipe row. Not ObjectHud. Not a new dock.
 
 | when | line |
 |---|---|
-| mill / jam / still / grinder / compost-box / furnace, covering working `n > 0` | **Finishes {pct}% faster with {n} working Furnace than without a Furnace.** / **Finishes {pct}% faster with {n} working Furnaces than without a Furnace.** |
+| mill / jam / still / grinder / compost-box / furnace / infuser, covering working `n > 0` | **Finishes {pct}% faster with {n} working Furnace than without a Furnace.** / **Finishes {pct}% faster with {n} working Furnaces than without a Furnace.** |
 | those, `n === 0` | (no line) |
 | barrel | never |
 | station | never |
@@ -172,7 +172,7 @@ Covering haste is a `lookText` line in that same `Status` block, after the machi
 | seeds | **{Variety} seed - {count}, plant it · Quality {n}%** |
 | tree-seed | **{Variety} seed - plant it on soft ground · Quality {n}%** |
 | graft | **{Variety} graft - {count} · Quality {n}%** |
-| spirit / cask / jam / oil / flour / extract / sugar | Quality as percent with the existing name line. Named jam and **Premium** casks from [[ui/recipe]]. Sugar **Sugar - {n}L** |
+| spirit / cask / jam / oil / flour / extract / sugar / flakes / vanilla-extract / bread | Quality as percent with the existing name line. Named jam and **Premium** casks from [[ui/recipe]]. Sugar **Sugar - {n}L**. Infused: **Infused {name}** plus overlay-infused. Flakes: **Flakes - {count}**. Vanilla-extract: **Vanilla extract - {count}**. Bread: **Bread - {count}** |
 | wood | **Wood - {count}** |
 | ash | **Ash - {count}, compost it** |
 | axe | **Axe - {left}/{uses} uses left** |

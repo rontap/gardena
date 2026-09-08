@@ -260,7 +260,7 @@ Containers - MATCH
 
 ## Machines
 
-Cane mill, vanilla extract, barrel wine/cider, still needs piped water, wire pauses mill/jam/still, west chest in / east chest out, grinder hopper. Machinery skill does not haste the still or barrel.
+Cane mill, vanilla-extract, barrel wine/cider, still needs piped water, wire pauses mill/jam/still, west chest in / east chest out, grinder hopper. Machinery skill does not haste the still or barrel.
 
 Sugar mill - MATCH
 

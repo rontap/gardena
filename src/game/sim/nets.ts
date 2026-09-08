@@ -17,7 +17,7 @@ import {
   weatherRaw,
   type Sensor,
 } from './sensor.ts'
-import type { Chest, Freezer, Furnace, JamMachine, Mill, PotStill, Pump, ResearchStation, SeedSilo, AdditiveStore } from './building.ts'
+import type { Chest, Freezer, Furnace, Infuser, JamMachine, Mill, PotStill, Pump, ResearchStation, SeedSilo, AdditiveStore } from './building.ts'
 import type { Net, World } from './world.ts'
 import { tickVfx } from './tick.ts'
 
@@ -232,7 +232,7 @@ export function tickWater(world: World, dt: number): void {
 
 export function evalSensors(world: World, dt: number): void {
   const sensors = new Map<string, Sensor>()
-  const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>()
+  const machines = new Map<string, Mill | JamMachine | PotStill | Furnace | ResearchStation | Infuser>()
   const stores = new Map<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>()
   const pumps = new Map<string, Pump>()
   world.pumps.forEach(p => {
@@ -244,7 +244,7 @@ export function evalSensors(world: World, dt: number): void {
   }
   for (const at of world.machines.values()) {
     const c = world.cell(at)
-    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace' || c.kind === 'station') {
+    if (c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'furnace' || c.kind === 'station' || c.kind === 'infuser') {
       machines.set(cellKey(at), c)
     }
     if (c.kind === 'furnace') stores.set(cellKey(at), c)

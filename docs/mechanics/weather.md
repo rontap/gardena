@@ -79,7 +79,7 @@ Pump: `World.pumpLiters +=` pump-kind `take()` litres during the day. At seam, b
 
 `marketOpen`: weather block `(flood ∧ sunrise) ∨ (drought ∧ day)` unless `open-24`; then existing phase hours. `open-late` does not reopen. Consign always. Closed copy: flood “Stall closed this morning.” drought “Stall closed at midday.” Hours copy unchanged otherwise. — [[mechanics/market]]
 
-`marketGain`: flood or drought, fruit stall goods only (annual including sugar-cane, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract.
+`marketGain`: flood or drought, fruit stall goods only (annual including sugar-cane and chilli, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract / bread.
 
 ## Forecast
 

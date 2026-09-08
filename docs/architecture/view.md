@@ -11,7 +11,7 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | file | owner |
 |---|---|
 | `camera.ts` | `Camera`, `TILE`, `DROP_FACE`, `DROP_INSET`, `DROP_STEP`, `clampCam`, `tileVariant` |
-| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, graft face. Logic `or`/`and`. Variety / weather `off`/`on` |
+| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, infuser `off`/`on`, graft face. Logic `or`/`and`. Variety / weather `off`/`on`. `overlay-infused` |
 | `app.ts` | `Application` create / resize / destroy `releaseGlobalResources` |
 | `world-view.ts` | scene graph, dirty patch, Pixi ticker motion, `QUAD_FOLLOW`, `CullerPlugin`, pending pipe run |
 | `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts. Pump origin `in`. HUD hits: water / harvest / counter / day / logic / variety / weather / pressure |
@@ -19,15 +19,15 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | `layers/ground.ts` | terrain + fade chunks, paving and its kerb |
 | `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover |
 | `layers/pipes.ts` | pipes, valves, sprinklers, fences. `pipe-source` |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Station `off`/`on`. Logic `or`/`and`. Variety / weather `off`/`on` |
+| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station, infuser. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Mill / infuser viewBox `48×48`. Station `off`/`on`. Infuser `off`/`on`. Logic `or`/`and`. Variety / weather `off`/`on` |
 | `layers/actors.ts` | seats, vehicles, trailers, drops |
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder |
+| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder. `overlay-infused.svg` composites on infused faces, plus at top-right |
 | `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue / banner). Not notices — that column is React, [[ui/notices]] |
 
-`TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2.
+`TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Mill / infuser viewBox `48×48`. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2 / 2×2.
 
 `DROP_FACE` 33 — preference (pre-Pixi DropGfx). `DROP_INSET` 4 `DROP_STEP` 6 — preference. Live next to `TILE` in `camera.ts`. Drop sprite scale `DROP_FACE / TILE` on a 24-unit atlas sprite.
 
@@ -41,7 +41,7 @@ Bottom → top, one container each:
 2. `plots` — tilled / plant / weed / turf / rock / tree / tuft / burrow cover. Origin-only for multi-cell. Dirt lip / inset: 24-unit content fills the cell; pad paints onto the neighbour.
 3. `vfx.ground` — the dig patch only. Ground the sim has not tilled yet, so it paints above `plots` and below everything that stands on it.
 4. `pipes` — joints, valves, sprinklers, fences. Always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku. Wetness tint and sprinkler AoE wash still lens / tool. `pipe-source` on every `World.sources()` occupied cell only while that overlay is on. Not faint. Hidden otherwise. A fenceable sensor on a fenced cell does **not** hide the fence: `World.fences` still paints `fenceFit` joins for that cell. Fence alpha base is 1 while pipes overlay or `buy-fence` is armed, else 0.35. Unconnected (not in `fenceEnclosures`) ×0.75. Closed ring ×1.25, capped at 1. Pending fence cells ghost in this layer as unconnected.
-5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working. Sensor sprite sits on top of that fence. Two sprites, not one composite. Do not bake the sensor into the fence atlas.
+5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, infuser, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working. Infuser `off` / `on` from working. Sensor sprite sits on top of that fence. Two sprites, not one composite. Do not bake the sensor into the fence atlas.
 6. `actors` — in-seat gardeners, field vehicles / trailers, drops. Seated gardener hidden. Drops: 2×2 pack, `DROP_INSET` then `DROP_STEP`.
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, fenceable sensor wash from the watched set (HUD, lens, unarmed hover, or armed range-reader SKU at the ghost cell), the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`. Pump origin `in`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
@@ -80,11 +80,14 @@ AtlasKey +=
   | `graft-${CropId}:${VarietyGroup}`
   | 'station-off'
   | 'station-on'
+  | 'infuser-off'
+  | 'infuser-on'
+  | 'overlay-infused'
 ```
 
 A product a Variety renames also carries its own face, and one selector says which: `jamArt(crop, variety)` and `spiritArt(spirit, variety)` in `svgs.ts`, read by both the HUD chrome and `faceKey`. `jamArt` adds `'jam-concord'` `'jam-black-raspberry'` `'passata'` beside the per-crop jars and `'ketchup'`; `spiritArt` adds `'spirit-palinka'` for `klosterneuburger` brandy. Whole files, not `<g id>` groups — a named product is a different container, not a tint of the same one.
 
-`faceKey` / `itemInner` take Variety, not a ladder. Graft face. Station prop `off` / `on`. Faces carry no Quality mark; Quality is copy — [[ui/inspect]].
+`faceKey` / `itemInner` take Variety, not a ladder. Graft face. Station prop `off` / `on`. Infuser prop `off` / `on`. Faces carry no Quality mark; Quality is copy — [[ui/inspect]]. Infused jam / cask / spirit / oil: `itemInner` draws the plain face then one `overlay-infused.svg`. One SVG. Not a named face. Not a second file per product.
 
 `EDGE_PAD` 4 — preference. `PADDED` is the list of keys that raster with 4 viewBox units on every side (32×32 source, then 2×): `dirt-edge` / `dirt-inset` and `tile-kerb`. Equal pad keeps the 24-unit cell at texture center. Other atlas keys stay viewBox-tight. Those files overhang the 24-unit grid on purpose; a viewBox-tight raster clips the lip. [[art/tilled-edges]] [[items/tiles]]
 
@@ -101,7 +104,7 @@ A product a Variety renames also carries its own face, and one selector says whi
 
 Patch uses existing `World` indexes and instance lists. Illegal on the tick or dirty path: `live`, `forEachCell`, `[...this.live.values()]`. First paint / `World` swap / `groundRev` rebuilds visible chunks the same way.
 
-Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Fenced-area maps `enclosures` `fenceEnclosures` `plotEnclosures` — wash lookup, not a dirty walk. Ground textures stay terrain. Station patches with `machines`.
+Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Fenced-area maps `enclosures` `fenceEnclosures` `plotEnclosures` — wash lookup, not a dirty walk. Ground textures stay terrain. Station and infuser patch with `machines`.
 
 `ping()` from tick only on discrete change. Continuous world chrome is the Pixi ticker (`QUAD_FOLLOW`, actor pose, speech follow, VFX cuts, burst drain). Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. FPS: [[ui/hud]]. Not a `DirtyReason`.
 
@@ -196,6 +199,8 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 `view.groups` — Every `<g id>` the atlas asks for exists in the file it reads, and the file carries no group the atlas never asks for.
 
 `view.named-face` — `jamArt` and `spiritArt` are the only statement of which face a named product draws. A Variety that renames a jar or a bottle draws its own file; every other Variety of that crop falls back to the crop face. `faceKey` and `itemInner` both call them, so the atlas key and the HUD chrome can never disagree.
+
+`view.infused-overlay` — Infused face is the plain face plus one `overlay-infused.svg`. Plus sits top-right. HUD `itemInner`, drop, recipe yield, Stall row. Not a lens. Not Pixi wash. Not a pane per infused good. — [[mechanics/infusion]] `infusion.overlay`
 
 `view.round` — Litres and recipe amounts a person reads use `Math.visualRound` (nearest half). Percents stay `floor(* 100)`. [[ui/inspect]] [[ui/recipe]]
 

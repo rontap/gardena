@@ -1,9 +1,9 @@
 import type { VarietyId } from '../../defs/varieties.ts'
 import type { MillRecipe } from '../ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
 import type { Face } from '../item.ts'
 
-export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'station'
+export type MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'station' | 'infuser'
 
 export type Amount = { kind: 'units'; n: number } | { kind: 'liters'; l: number } | { kind: 'waste'; n: number }
 
@@ -35,7 +35,7 @@ export type Craft =
   | { kind: 'working'; recipe: Recipe; progress: number; left: number }
   | { kind: 'ready'; recipe: Recipe }
 
-export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace | ResearchStation
+export type CraftCell = Mill | JamMachine | PotStill | Barrel | Grinder | CompostBox | Furnace | ResearchStation | Infuser
 
 export type Pin<C> = { crop: C; variety: VarietyId }
 

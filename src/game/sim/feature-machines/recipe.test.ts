@@ -8,10 +8,10 @@ import {
   COMPOST_VALUE,
   GRIND_MAX,
   GRIND_MIN,
-  EXTRACT,
   JAM_IN,
   JAM_SUGAR,
   KETCHUP_SUGAR,
+  MILL_CHILLI_OUT,
   MILL_VANILLA_IN,
   MILL_VANILLA_OUT,
   MILL_WORK,
@@ -70,7 +70,8 @@ describe('recipes.table', () => {
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length * 2)
     expect(recipesOf('grinder').length).toBe(2)
     expect(recipesOf('compost-box').length).toBe(4)
-    expect(recipesOf('furnace').length).toBe(6)
+    expect(recipesOf('furnace').length).toBe(7)
+    expect(recipesOf('infuser').length).toBe(4)
     expect(recipesOf('station').length).toBe(
       ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c => VARIETIES[c]).filter(v => tierOf(v) === 'heirloom').length,
     )
@@ -95,13 +96,23 @@ describe('recipes.table', () => {
     expect(millRow('wheat').out).toMatchObject({ kind: 'exact', amount: { kind: 'units', n: 1 } })
   })
 
-  test('mill vanilla 2 fruit to 3 extract', () => {
+  test('mill vanilla 1 fruit to 4 vanilla-extract', () => {
     const vanilla = millRow('vanilla')
     expect(unitsOf(vanilla.inputs[0])).toBe(MILL_VANILLA_IN)
     expect(vanilla.out).toMatchObject({
       kind: 'exact',
-      face: { kind: 'extract', count: MILL_VANILLA_OUT, unitSale: EXTRACT },
+      face: { kind: 'vanilla-extract', count: MILL_VANILLA_OUT },
       amount: { kind: 'units', n: MILL_VANILLA_OUT },
+    })
+  })
+
+  test('mill chilli 3 fruit to 2 flakes', () => {
+    const chilli = millRow('chilli')
+    expect(unitsOf(chilli.inputs[0])).toBe(millNeed('chilli'))
+    expect(chilli.out).toMatchObject({
+      kind: 'exact',
+      face: { kind: 'flakes', count: MILL_CHILLI_OUT },
+      amount: { kind: 'units', n: MILL_CHILLI_OUT },
     })
   })
 
@@ -327,7 +338,7 @@ describe('recipes.state', () => {
 })
 
 describe('recipes.haste', () => {
-  test('`work` durations divide by `machineMul`; `fixed` and `age` do not. `furnaceMul` multiplies mill, jam, grinder, still, compost-box, furnace progress; not barrel. Catalog `clockText` stays nominal.', () => {
+  test('`work` durations divide by `machineMul`; `fixed` and `age` do not. `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace progress; not barrel, not station. Infuser is `fixed`, not `work`. Catalog `clockText` stays nominal.', () => {
     const mill = new Mill(BASE)
     mill.recipe = 'wheat'
     mill.units = millNeed('wheat')
@@ -373,7 +384,8 @@ describe('machines.recipes-using', () => {
       ['jam', 'jam'],
       ['still', 'brandy'],
     ])
-    expect(recipesUsing(fruit('vanilla')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'extract']])
+    expect(recipesUsing(fruit('vanilla')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'vanilla-extract']])
+    expect(recipesUsing(fruit('chilli')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'flakes']])
     expect(recipesUsing(fruit('sugar-cane')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'sugar']])
     expect(recipesUsing(fruit('apple')).map(r => [r.machine, outKind(r)])).toEqual([['barrel', 'cider']])
     expect(recipesUsing(fruit('olive')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'oil']])
@@ -392,7 +404,13 @@ describe('machines.recipes-using', () => {
       ...sugarJams.map(() => 'jam'),
       'furnace',
     ])
-    expect(recipesUsing({ kind: 'oil', quality: 0, count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false }).map(r => r.machine)).toEqual([
+      'furnace',
+      'infuser',
+    ])
+    expect(recipesUsing({ kind: 'flour', quality: 0, count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'flakes', quality: 0, count: 1 }).every(r => r.machine === 'infuser')).toBe(true)
+    expect(recipesUsing({ kind: 'vanilla-extract', quality: 0, count: 1 }).every(r => r.machine === 'infuser')).toBe(true)
     expect(recipesUsing({ kind: 'wood', count: 1 }).map(r => r.machine)).toEqual(['furnace'])
     expect(recipesUsing({ kind: 'ash', count: 1 }).map(r => r.machine)).toEqual(['compost-box'])
   })
@@ -408,7 +426,7 @@ describe('machines.recipe-source', () => {
     expect(recipesOf('still')[recipesOf('still').length - 1].inputs[0].kind).toBe('any')
 
     const jamName = (crop: JamCrop, variety: VarietyId): string =>
-      faceName({ kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: 0 })
+      faceName({ kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: 0, infused: false })
     expect(jamName('grape', 'concord')).toBe('Grape jelly')
     expect(jamName('raspberry', 'black-raspberry')).toBe('Black raspberry jam')
     expect(jamName('tomato', 'san-marzano')).toBe('Passata')

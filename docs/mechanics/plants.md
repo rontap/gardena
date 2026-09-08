@@ -4,15 +4,17 @@ Crop table is `CROPS`. Tree juvenile / fruit intervals are `TREES`. Variety tabl
 
 `AnnualId`, `TreeId`, `CropId` — `sim/ids.ts`. `Plant.crop` is `AnnualId` only.
 
-Classes: carrot potato root; wheat sugar-cane grain; else fruit.
+Classes: carrot potato root; wheat sugar-cane grain; else fruit. Chilli fruit.
 
 Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1.
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-Packs of 5: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. A bought pack is `'base'` at quality 0. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Olive is `TreeId`. Trees have no pack.
+`PACK_N` packs: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` in `sim/ids.ts`. A bought pack is `'base'` at quality 0. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Chilli `unlock-infusion`; ripe chilli is fruit; mill for flakes — [[mechanics/infusion]]. Olive is `TreeId`. Trees have no pack.
 
 Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the four starting `'base'` seeds and the one wild apple are the only ones not won from a contract.
+
+Chilli has a pack. No chilli research row. `pack-chilli` show and buy `unlock-infusion`, `PACK_N` at 10, `'base'` quality 0. `growSeconds` 190, slower than potato, faster than vanilla. `rotSeconds` longer than potato. Mill for flakes — [[mechanics/infusion]] `infusion.chilli`.
 
 ## Variety
 
@@ -27,7 +29,7 @@ VarietyId   = 'base' | 'bintje' | 'red-fife' | 'green-zebra' | 'san-marzano'
 Purpose     = 'produce' | 'processed' | 'alcohol'
 ```
 
-`'base'` is legal on every `CropId`. Every other id belongs to exactly one crop, and a crop carries **at most one** `variant` and **at most one** `heirloom`. `VARIETY: Record<Exclude<VarietyId, 'base'>, { crop: CropId; tier: 'variant' | 'heirloom'; purpose: Purpose }>` and `VARIETIES: Record<CropId, readonly VarietyId[]>`, both complete maps, `defs/varieties.ts`. Carrot, vanilla and sugar-cane list `['base']` only.
+`'base'` is legal on every `CropId`. Every other id belongs to exactly one crop, and a crop carries **at most one** `variant` and **at most one** `heirloom`. `VARIETY: Record<Exclude<VarietyId, 'base'>, { crop: CropId; tier: 'variant' | 'heirloom'; purpose: Purpose }>` and `VARIETIES: Record<CropId, readonly VarietyId[]>`, both complete maps, `defs/varieties.ts`. Carrot, vanilla, sugar-cane and chilli list `['base']` only.
 
 `Plant.variety` required `VarietyId`. Illegal: optional `variety`. Illegal: a `variety` whose `VARIETY[v].crop` is not `Plant.crop`. Illegal: two varieties of one crop sharing a tier.
 
@@ -48,6 +50,7 @@ One axis, not three. Each named variety is good for exactly one of the three thi
 | raspberry | — | `black-raspberry` processed |
 | grape | `concord` processed | `keknyelu` alcohol |
 | vanilla | — | — |
+| chilli | — | — |
 | sugar-cane | — | — |
 | apple | `kingston-black` alcohol | `pink-lady` produce |
 | apricot | `blenheim` produce | `klosterneuburger` alcohol |
@@ -68,7 +71,7 @@ quality = clamp(seed.quality + qualityGain(happiness) + betterGain, 0, 1)
 
 `qualityGain(h)` is piecewise linear: `+QUALITY_STEP` at `HAPPY_MAX`, `0` at `HAPPY_START`, `−QUALITY_STEP` at `0`. `QUALITY_STEP` 0.25 — preference. A plant left at the happiness it was planted with hands its seed exactly what it was given; four clean generations reach the top, and a neglected one walks back down.
 
-`betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)` when the player owns `better-{crop}`, else 0. `better-*` maxTier 1. No `better-carrot` `better-vanilla` `better-sugar-cane`. Tree `better-*` does not run here — trees have no happiness — [[mechanics/family]] `family.better-set`.
+`betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)` when the player owns `better-{crop}`, else 0. `better-*` maxTier 1. No `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli`. Tree `better-*` does not run here — trees have no happiness — [[mechanics/family]] `family.better-set`.
 
 `freshness = 1`. Variety unchanged.
 
@@ -234,13 +237,15 @@ Assumption: shovel keeps the tree's variety on the seed.
 
 `plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, plant `variety` and `quality`, `cut: false`, `unitSale = stats.sale`, plot `empty` same soil. Same crop+variety in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed, same variety, plant quality. Shovel dead, rotten, weed, or grass: no drop.
 
-`plants.packs` — Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). No tree pack. No olive pack.
+`plants.packs` — Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). `pack-chilli` exists. No tree pack. No olive pack. No vanilla pack.
 
 `plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`. Trees: [[mechanics/trees]] `trees.tend`.
 
-`plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, a flat number. One variety. Base vanilla sale < raspberry.
+`plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, a flat number. One variety. Base vanilla sale < raspberry. Mill yields vanilla-extract, not stall extract — [[mechanics/infusion]] `infusion.extract`.
 
-`plants.annual` — `Plant.crop` is `AnnualId`. `AnnualId` is carrot potato wheat tomato raspberry grape vanilla sugar-cane. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.
+`plants.chilli` — Chilli `growSeconds` 190, slower than potato, faster than vanilla. `rotSeconds` longer than potato. One Variety `'base'`. No `unlock-chilli`. `pack-chilli` show and buy `unlock-infusion`, `PACK_N` at 10. Mill yields flakes — [[mechanics/infusion]] `infusion.chilli`.
+
+`plants.annual` — `Plant.crop` is `AnnualId`. `AnnualId` is carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.
 
 `plants.tree-foot` — Planting a tree seed at `at` puts the tree's foot on `at` and its `base` on `{ col: at.col, row: at.row - 1 }`. `at.row + 1` is untouched.
 

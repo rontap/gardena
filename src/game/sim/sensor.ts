@@ -1,6 +1,6 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
+import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type Infuser, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal, SkuId } from './ids.ts'
 import type { Modifier } from './modifiers.ts'
@@ -276,6 +276,7 @@ export type PortDevice =
   | 'still'
   | 'furnace'
   | 'station'
+  | 'infuser'
   | 'chest'
   | 'freezer'
   | 'seed-silo'
@@ -527,7 +528,7 @@ export type EvalIn = {
   valves: Map<string, ValveHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
   raw: Raw
-  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation>
+  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation | Infuser>
   stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>
   pumps: ReadonlyMap<string, Pump>
 }

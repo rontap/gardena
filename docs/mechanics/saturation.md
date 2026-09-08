@@ -2,7 +2,7 @@
 
 Stall pressure. Types `src/game/sim/market.h.ts`. Spec [[plans/1.8.0]] Part 1. Sell all [[mechanics/market]]. Board [[mechanics/contracts]].
 
-Live on Sell all. Not consign. Not contract delivery. Miss and cancel remainders raise `sat`.
+Live on Sell all. Not consign. Not contract delivery. Miss and cancel plain remainders raise `sat`. Infused stall and infused miss / cancel remainders do not — [[mechanics/infusion]] `infusion.stall`.
 
 ## Model
 
@@ -18,7 +18,7 @@ Selling `V` clean dollars raises `sat` by `V / SAT_DEPTH`, clamp 1, after the sa
 
 ## Floor
 
-`SAT_FLOOR` is a complete `{ [K in StallGoodId]: number }`. Values from groups, preference: starter crops higher floor; other `CropId` mid; sugar / jam / oil / flour / extract lower; `SpiritKind` / wine lowest.
+`SAT_FLOOR` is a complete `{ [K in StallGoodId]: number }`. Values from groups, preference: starter crops higher floor; other `CropId` mid; sugar / jam / oil / flour / extract / bread lower; `SpiritKind` / wine lowest. Flakes and vanilla-extract are not keys.
 
 ## Trapezoid
 
@@ -82,3 +82,5 @@ Assumption: clearance `$1` is excluded from `V`. Dummy dump values are 0. Subjec
 `sat.trapezoid` — Sell all of clean value `V` at `sat` pays the trapezoid, clamped piecewise at `SAT_FLOOR[good]`. Ten sales of `V/10` pay the same total as one sale of `V`.
 
 `sat.last` — Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance `{ kind: 'rotten' }` `$1` is exempt.
+
+`sat.infused` — Infused clean `V_inf` pays `V_inf × mul(sat, good)` at sat at the start of that good and does not raise `sat`. Plain trapezoid from that same sat still raises `sat` by `V / SAT_DEPTH`. Infused miss / cancel remainders do not raise `sat`.

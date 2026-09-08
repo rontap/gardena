@@ -44,7 +44,7 @@ Direction from `row.sat` only. No sat history. No second store.
 
 `Nd`: integer when `recoverDays` is whole, else one decimal. Suffix `d`.
 
-[[ui/callout-hover]] on the row. Overlay `aside` (Family host). Hover sets the tip, leave clears it. Title: that good’s existing name — `cropName` / **Sugar** / `SPIRIT_NAME` / **Wine** / **Ketchup** / `{cropName} jam` / **Olive oil** / **Flour** / **Extract**. Description names floor `{SAT_FLOOR[good] * 100}%` and days to clean (`Nd` from `row.recoverDays`). No `why`. Sell-all blocked copy stays under the button.
+[[ui/callout-hover]] on the row. Overlay `aside` (Family host). Hover sets the tip, leave clears it. Title: that good’s existing name — `cropName` / **Sugar** / `SPIRIT_NAME` / **Wine** / **Ketchup** / `{cropName} jam` / **Olive oil** / **Flour** / **Extract** / **Bread**. Infused stock draws overlay-infused on the face. Description names floor `{SAT_FLOOR[good] * 100}%` and days to clean (`Nd` from `row.recoverDays`). Infused: **Infused goods sell at this percent. Selling them does not change this percent.** No `why`. Sell-all blocked copy stays under the button. Flakes and vanilla-extract have no row.
 
 **Sell all - {Coin n=quote.paid}**. When `quote.paid !== quote.clean`, also `{Coin n=quote.clean}` in `text-ink/55`. `Btn` `w-full` `data-sell-all`. Disabled when `quote.paid === 0` or `!marketOpen`. Click `sellAll()` then close.
 

@@ -7,6 +7,7 @@ import raspberry from '../../assets/crops/crop-raspberry.svg?raw'
 import apple from '../../assets/crops/crop-apple.svg?raw'
 import grape from '../../assets/crops/crop-grape.svg?raw'
 import vanilla from '../../assets/crops/crop-vanilla.svg?raw'
+import chilli from '../../assets/crops/crop-chilli.svg?raw'
 import sugarCane from '../../assets/crops/crop-sugar-cane.svg?raw'
 import fruitCarrot from '../../assets/fruits/fruit-carrot.svg?raw'
 import fruitPotato from '../../assets/fruits/fruit-potato.svg?raw'
@@ -17,6 +18,7 @@ import fruitApple from '../../assets/fruits/fruit-apple.svg?raw'
 import fruitOlive from '../../assets/fruits/fruit-olive.svg?raw'
 import fruitGrape from '../../assets/fruits/fruit-grape.svg?raw'
 import fruitVanilla from '../../assets/fruits/fruit-vanilla.svg?raw'
+import fruitChilli from '../../assets/fruits/fruit-chilli.svg?raw'
 import fruitApricot from '../../assets/fruits/fruit-apricot.svg?raw'
 import fruitCherry from '../../assets/fruits/fruit-cherry.svg?raw'
 import fruitSugarCane from '../../assets/fruits/fruit-sugar-cane.svg?raw'
@@ -30,6 +32,7 @@ import itemSeedOlive from '../../assets/items/item-seed-olive.svg?raw'
 import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
 import itemSugar from '../../assets/items/item-sugar.svg?raw'
 import itemMill from '../../assets/items/item-mill.svg?raw'
+import itemInfuser from '../../assets/items/item-infuser.svg?raw'
 import itemStill from '../../assets/items/item-still.svg?raw'
 import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
@@ -59,12 +62,16 @@ import itemSpiritPalinka from '../../assets/items/item-spirit-palinka.svg?raw'
 import itemOil from '../../assets/items/item-oil.svg?raw'
 import itemFlour from '../../assets/items/item-flour.svg?raw'
 import itemExtract from '../../assets/items/item-extract.svg?raw'
+import itemVanillaExtract from '../../assets/items/item-vanilla-extract.svg?raw'
+import itemFlakes from '../../assets/items/item-chilli-flakes.svg?raw'
+import itemBread from '../../assets/items/item-bread.svg?raw'
 import propMill from '../../assets/props/prop-mill.svg?raw'
 import propStill from '../../assets/props/prop-still.svg?raw'
 import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propInfuser from '../../assets/props/prop-infuser.svg?raw'
 import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
@@ -194,6 +201,7 @@ import pipeX from '../../assets/joints/pipe-x.svg?raw'
 import pipeSource from '../../assets/joints/pipe-source.svg?raw'
 import pipeValve from '../../assets/joints/pipe-valve.svg?raw'
 import overlayWater from '../../assets/overlay-water.svg?raw'
+import overlayInfused from '../../assets/overlay-infused.svg?raw'
 import rock from '../../assets/props/prop-rock.svg?raw'
 import rockLong from '../../assets/props/prop-rock-long.svg?raw'
 import appleTree from '../../assets/props/prop-apple-tree.svg?raw'
@@ -297,6 +305,7 @@ import uiResearchAuto from '../../assets/ui/ui-research-auto.svg?raw'
 import uiResearchAdv from '../../assets/ui/ui-research-adv.svg?raw'
 import uiResearchSmart from '../../assets/ui/ui-research-smart.svg?raw'
 import uiResearchExpand from '../../assets/ui/ui-research-expand.svg?raw'
+import uiResearchInfusion from '../../assets/ui/ui-research-infusion.svg?raw'
 import uiHeader from '../../assets/ui/ui-header.svg'
 import uiRail from '../../assets/ui/ui-rail.svg'
 import uiNoticeRail from '../../assets/ui/ui-notice-rail.svg'
@@ -321,6 +330,7 @@ export const CROPS: { readonly [K in CropId]: string } = {
   apple,
   grape,
   vanilla,
+  chilli,
   'sugar-cane': sugarCane,
   apricot: apple,
   olive: apple,
@@ -336,6 +346,7 @@ export const FRUIT: { readonly [K in CropId]: string } = {
   apple: fruitApple,
   grape: fruitGrape,
   vanilla: fruitVanilla,
+  chilli: fruitChilli,
   'sugar-cane': fruitSugarCane,
   apricot: fruitApricot,
   olive: fruitOlive,
@@ -371,6 +382,7 @@ export const GRAFT_CUTTING: { readonly [K in CropId]: TreeId } = {
   raspberry: 'apple',
   grape: 'apple',
   vanilla: 'apple',
+  chilli: 'apple',
   'sugar-cane': 'apple',
 }
 
@@ -473,12 +485,16 @@ export function itemInner(item: Face): string {
   if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
   if (item.kind === 'sugar') return svgInner(itemSugar)
-  if (item.kind === 'spirit') return SPIRIT_ART[spiritArt(item.spirit, item.variety)]
-  if (item.kind === 'cask') return stageOnly(CASK_ART[item.cask], caskGroup(item.variety))
-  if (item.kind === 'jam') return svgInner(JAM_ART[jamArt(item.crop, item.variety)])
-  if (item.kind === 'oil') return svgInner(itemOil)
+  if (item.kind === 'spirit') return withInfused(item, SPIRIT_ART[spiritArt(item.spirit, item.variety)])
+  if (item.kind === 'cask') return withInfused(item, stageOnly(CASK_ART[item.cask], caskGroup(item.variety)))
+  if (item.kind === 'jam') return withInfused(item, svgInner(JAM_ART[jamArt(item.crop, item.variety)]))
+  if (item.kind === 'oil') return withInfused(item, svgInner(itemOil))
   if (item.kind === 'flour') return svgInner(itemFlour)
+  if (item.kind === 'bread') return svgInner(itemBread)
   if (item.kind === 'extract') return svgInner(itemExtract)
+  if (item.kind === 'flakes') return svgInner(itemFlakes)
+  if (item.kind === 'vanilla-extract') return svgInner(itemVanillaExtract)
+  if (item.kind === 'infuser') return stageOnly(itemInfuser, 'off')
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
   if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.variety))
   if (item.kind === 'wood') return svgInner(itemWood)
@@ -521,6 +537,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-rain-tank') return itemInner({ kind: 'rain-tank' })
   if (id === 'buy-tap') return itemInner({ kind: 'tap' })
   if (id === 'buy-mill') return itemInner({ kind: 'mill' })
+  if (id === 'buy-infuser') return itemInner({ kind: 'infuser' })
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
@@ -653,6 +670,8 @@ export function researchInner(id: ResearchId): string {
       return svgInner(skillContracts)
     case 'unlock-furnace':
       return svgInner(itemFurnace)
+    case 'unlock-infusion':
+      return svgInner(uiResearchInfusion)
   }
 }
 
@@ -718,6 +737,10 @@ export function stationArt(on: boolean): string {
   return stageOnly(propStation, on ? 'on' : 'off')
 }
 export const STATION = stationArt(false)
+export function infuserArt(on: boolean): string {
+  return stageOnly(propInfuser, on ? 'on' : 'off')
+}
+export const INFUSER = infuserArt(false)
 export const HANGAR = svgInner(propHangar)
 export const QUAD = svgInner(propQuad)
 export const TRACTOR = svgInner(propTractor)
@@ -808,6 +831,15 @@ export function trafficLightArt(on: boolean): string {
   return stageOnly(propTrafficLight, on ? 'on' : 'off')
 }
 export const OVERLAY_WATER = svgInner(overlayWater)
+export const OVERLAY_INFUSED = svgInner(overlayInfused)
+
+export function faceInfused(item: Face): boolean {
+  return (item.kind === 'jam' || item.kind === 'cask' || item.kind === 'spirit' || item.kind === 'oil') && item.infused
+}
+
+function withInfused(item: Face, inner: string): string {
+  return faceInfused(item) ? `${inner}${OVERLAY_INFUSED}` : inner
+}
 export const ITEM_CHEST = svgInner(itemChest)
 export const ITEM_GRINDER = svgInner(itemGrinder)
 export const ROCK = svgInner(rock)
@@ -1119,6 +1151,8 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   furnaceArt(true),
   stationArt(false),
   stationArt(true),
+  infuserArt(false),
+  infuserArt(true),
   HANGAR,
   QUAD,
   TRACTOR,

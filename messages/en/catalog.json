@@ -8,6 +8,7 @@
   "catalog_crop_apple": "The tree feeds itself - no water, no fertilizer. Slow to set fruit, then keeps for days.",
   "catalog_crop_grape": "A mid fruit. Softer than a raspberry, and the path to one.",
   "catalog_crop_vanilla": "Expensive seed, slow, and picky about water and feed. Common pods fetch less than raspberries; rare and heirloom do not.",
+  "catalog_crop_chilli": "A hot fruit. Ripens sooner than Vanilla and later than Potato. Fruit keeps longer than Potato. Crush at a Mill into Flakes.",
   "catalog_crop_sugar_cane": "Water hungry and sells poorly. Ripe cane is fruit. Mill {cane} cane into {bag} L sugar.",
   "catalog_crop_apricot": "A fecund tree. Many cheap fruits, no water, no feed.",
   "catalog_crop_olive": "A slow tree. No water, no feed. Keeps well, and the only way to oil.",
@@ -150,5 +151,9 @@
       }
     }
   ],
-  "catalog_graft": "Cut from a grown tree with the axe, or from heirloom fruit at the research station. Hold it against a young plant or a sapling to turn that plant into this variety."
+  "catalog_graft": "Cut from a grown tree with the axe, or from heirloom fruit at the research station. Hold it against a young plant or a sapling to turn that plant into this variety.",
+  "catalog_infuser": "Infuse jam, wine, cider, spirits, or Olive oil with Flakes or Vanilla extract in {seconds}s. One of those two, not both. The good keeps its name, its Quality, and the money the Market pays for it, and shows a plus. Infused goods sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them.",
+  "catalog_sku_buy_infuser": "Infuse jam, wine, cider, spirits, or Olive oil with Flakes or Vanilla extract in {seconds}s. One of those two, not both. The good keeps its name, its Quality, and the money the Market pays for it, and shows a plus. Infused goods sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them.",
+  "catalog_flakes": "Crushed Chilli. Infuse jam, wine, cider, spirits, or Olive oil with it at an Infuser.",
+  "catalog_vanilla_extract": "Crushed Vanilla. Infuse jam, wine, cider, spirits, or Olive oil with it at an Infuser. Extract from Cut grass is a different good the Market buys."
 }

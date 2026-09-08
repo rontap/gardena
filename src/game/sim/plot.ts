@@ -13,6 +13,7 @@ import {
   type JamMachine,
   type Mill,
   type Furnace,
+  type Infuser,
   type PotStill,
   type Pump,
   type ResearchStation,
@@ -77,6 +78,7 @@ export type Cell =
   | JamMachine
   | PotStill
   | Furnace
+  | Infuser
   | ResearchStation
   | Barrel
   | Freezer

@@ -106,7 +106,7 @@ describe('research.furnace', () => {
 })
 
 describe('research.gates', () => {
-  test('`better-grape` gated on `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane`. No `unlock-olive`. `machinery` gated on `unlock-grinder`.', () => {
+  test('`better-grape` gated on `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli`. No `unlock-olive`. No `unlock-chilli`. `machinery` gated on `unlock-grinder`.', () => {
     expect(SKILLS['better-grape'].gate).toEqual({ kind: 'research', id: 'unlock-grape' })
     expect(SKILLS['better-apple'].gate).toEqual({ kind: 'none' })
     expect(SKILLS['better-apricot'].gate).toEqual({ kind: 'none' })
@@ -115,7 +115,46 @@ describe('research.gates', () => {
     expect('better-carrot' in SKILLS).toBe(false)
     expect('better-vanilla' in SKILLS).toBe(false)
     expect('better-sugar-cane' in SKILLS).toBe(false)
+    expect('better-chilli' in SKILLS).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-olive')).toBe(false)
+    expect(Object.keys(RESEARCH).includes('unlock-chilli')).toBe(false)
     expect(SKILLS.machinery.gate).toEqual({ kind: 'research', id: 'unlock-grinder' })
+  })
+})
+
+describe('research.infusion', () => {
+  test('`unlock-infusion` trade, `reveal` and `requires` `unlock-preservatives`, `effect` `unlock-sku` `buy-infuser`. `buy-infuser` show `unlock-preservatives`, buy that row. `pack-chilli` show + buy that row, `PACK_N` at 10. No chilli research row.', () => {
+    expect(RESEARCH['unlock-infusion']).toMatchObject({
+      tree: 'trade',
+      reveal: ['unlock-preservatives'],
+      requires: ['unlock-preservatives'],
+      effect: { kind: 'unlock-sku', sku: 'buy-infuser' },
+    })
+    expect(SKUS['buy-infuser']).toMatchObject({
+      unlock: 'unlock-infusion',
+      show: 'unlock-preservatives',
+      tab: 'automation',
+    })
+    expect(SKUS['pack-chilli']).toMatchObject({
+      unlock: 'unlock-infusion',
+      show: 'unlock-infusion',
+      price: 10,
+      tab: 'seeds',
+    })
+    expect(Object.keys(RESEARCH).includes('unlock-chilli')).toBe(false)
+    const w = new World(1)
+    expect(w.skuShown('buy-infuser')).toBe(false)
+    expect(w.skuOpen('buy-infuser')).toBe(false)
+    expect(w.skuShown('pack-chilli')).toBe(false)
+    expect(w.skuOpen('pack-chilli')).toBe(false)
+    w.done.add('unlock-preservatives')
+    expect(w.researchShown('unlock-infusion')).toBe(true)
+    expect(w.researchOpen('unlock-infusion')).toBe(true)
+    expect(w.skuShown('buy-infuser')).toBe(true)
+    expect(w.skuOpen('buy-infuser')).toBe(false)
+    w.done.add('unlock-infusion')
+    expect(w.skuOpen('buy-infuser')).toBe(true)
+    expect(w.skuShown('pack-chilli')).toBe(true)
+    expect(w.skuOpen('pack-chilli')).toBe(true)
   })
 })

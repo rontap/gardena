@@ -6,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.2
+export const PROTOCOL = 2.3
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -51,6 +51,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-still',
   'buy-furnace',
   'buy-research-station',
+  'buy-infuser',
   'buy-barrel',
   'buy-freezer',
   'buy-freezer-large',
@@ -342,10 +343,12 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'tree') s += `:${c.variety}`
     if (c.kind === 'silo-seed' || c.kind === 'silo-spray') s += `:re${c.restock ? 1 : 0}`
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
+    if (c.kind === 'infuser') s += `:${c.lock === 'none' ? 'none' : c.lock.kind}:u${c.units}`
+    if (c.kind === 'furnace') s += `:${c.recipe}`
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
-    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump') s += `:inn${c.inn}`
+    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump' || c.kind === 'infuser') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`

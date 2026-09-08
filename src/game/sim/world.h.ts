@@ -65,6 +65,7 @@ export type Intent =
   | { act: 'still'; at: Coord }
   | { act: 'furnace'; at: Coord }
   | { act: 'station'; at: Coord }
+  | { act: 'infuse'; at: Coord }
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }

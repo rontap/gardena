@@ -2,6 +2,7 @@ import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.t
 import { CROPS } from '../../defs/crops.ts'
 import { SKUS } from '../../defs/research.ts'
 import {
+  BREAD,
   EXTRACT,
   FERT_BAG_LITERS,
   FLOUR,
@@ -32,7 +33,7 @@ import type {
   Prize,
   Stars,
 } from './market.h.ts'
-import { isCropStall, isSpiritStall, STALL_IDS } from '../stall.ts'
+import { isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
 import type { Rng, Spatial } from '../rng.ts'
 import type { World } from '../world.ts'
 
@@ -49,6 +50,7 @@ export const SAT_FLOOR: { readonly [K in StallGoodId]: number } = {
   olive: 0.4,
   grape: 0.4,
   vanilla: 0.4,
+  chilli: 0.4,
   'sugar-cane': 0.4,
   apple: 0.4,
   apricot: 0.4,
@@ -62,6 +64,7 @@ export const SAT_FLOOR: { readonly [K in StallGoodId]: number } = {
   oil: 0.35,
   flour: 0.35,
   extract: 0.35,
+  bread: 0.35,
   vodka: 0.25,
   beer: 0.25,
   brandy: 0.25,
@@ -210,6 +213,7 @@ export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   cherry: 6,
   'sugar-cane': 4,
   vanilla: 14,
+  chilli: 7,
   sugar: 3,
   'jam-apricot': 6,
   'jam-grape': 6,
@@ -219,6 +223,7 @@ export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   oil: 5,
   flour: 4,
   extract: 8,
+  bread: 4,
   vodka: 8,
   beer: 7,
   brandy: 10,
@@ -236,6 +241,7 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
   olive: 3,
   grape: 1,
   vanilla: 1,
+  chilli: 1,
   'sugar-cane': 1,
   apple: 3,
   apricot: 3,
@@ -247,6 +253,7 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
   'jam-cherry': 3,
   oil: 2,
   flour: 2,
+  bread: 2,
   wine: 2,
   cider: 3,
   vodka: 2,
@@ -268,6 +275,7 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   olive: 4,
   grape: 6,
   vanilla: 4,
+  chilli: 8,
   'sugar-cane': 10,
   apple: 3,
   apricot: 4,
@@ -284,6 +292,7 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   oil: 80,
   flour: 80,
   extract: 80,
+  bread: 1,
   sugar: 160,
   wine: 1,
   cider: 0.6,
@@ -363,6 +372,7 @@ function unitOf(good: StallGoodId): number {
   if (good === 'oil') return OIL
   if (good === 'flour') return FLOUR
   if (good === 'extract') return EXTRACT
+  if (good === 'bread') return BREAD
   if (isCaskClass(good)) return CASK_SALE[good]
   if (isSpiritClass(good)) return bakeSpiritSale(good, 'base', 0)
   return CROPS[good].sale
@@ -636,32 +646,51 @@ function pushHistory(w: World, e: HistoryEntry): void {
   w.tally.contracts.push(e)
 }
 
-function consignDemand(w: World, d: Demand, n: number): void {
+function consignDemand(w: World, d: Demand, n: number, infused: boolean): void {
   if (d.kind === 'plain') {
     if (isCropStall(d.good)) w.stall[d.good].take('base', n, 1, false)
-    else if (isSpiritStall(d.good)) w.stall[d.good].takeSpirit('base', n, cleanUnit(d))
+    else if (isInfusedStall(d.good)) w.stall[d.good].takeSpirit('base', n, cleanUnit(d), infused)
     else if (d.good === 'sugar') w.stall.sugar.takeSugar(n, SUGAR_MILL)
     else w.stall[d.good].takeBaked(n, cleanUnit(d))
     return
   }
-  if (d.group === 'jam') w.stall['jam-cherry'].takeBaked(n, JAM_SALE.cherry)
-  else w.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0))
+  if (d.group === 'jam') w.stall['jam-cherry'].takeSpirit('base', n, JAM_SALE.cherry, infused)
+  else w.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0), infused)
+}
+
+function addV(map: Map<StallGoodId, number>, good: StallGoodId, V: number): void {
+  const cur = map.get(good)
+  map.set(good, cur === undefined ? V : cur + V)
 }
 
 function dumpFilled(w: World, a: Active): number {
-  const add = new Map<StallGoodId, number>()
+  const plainAdd = new Map<StallGoodId, number>()
+  const infAdd = new Map<StallGoodId, number>()
   a.bins.forEach(bin => {
     if (bin.filled <= 0) return
     const good = demandGood(bin.demand)
-    const V = bin.filled * cleanUnit(bin.demand)
-    const cur = add.get(good)
-    add.set(good, cur === undefined ? V : cur + V)
-    consignDemand(w, bin.demand, bin.filled)
+    const unit = cleanUnit(bin.demand)
+    const infN = bin.infusedFilled
+    const plainN = bin.filled - infN
+    if (plainN > 0) {
+      addV(plainAdd, good, plainN * unit)
+      consignDemand(w, bin.demand, plainN, false)
+    }
+    if (infN > 0) {
+      addV(infAdd, good, infN * unit)
+      consignDemand(w, bin.demand, infN, true)
+    }
   })
+  const goods = new Set<StallGoodId>([...plainAdd.keys(), ...infAdd.keys()])
   let sold = 0
-  add.forEach((V, good) => {
-    sold += paid(w.stall[good].sat, good, V)
-    w.stall[good].sat = Math.min(1, w.stall[good].sat + V / SAT_DEPTH)
+  goods.forEach(good => {
+    const p = plainAdd.get(good)
+    const i = infAdd.get(good)
+    const plainV = p === undefined ? 0 : p
+    const infV = i === undefined ? 0 : i
+    const sat = w.stall[good].sat
+    sold += paid(sat, good, plainV) + infV * mul(sat, good)
+    w.stall[good].sat = Math.min(1, sat + plainV / SAT_DEPTH)
   })
   return sold
 }
@@ -703,7 +732,9 @@ function resolveDone(w: World, a: Active): void {
   if (prize.kind === 'cash') w.money += paidN
   else payPrize(w, prize, a.offer.reward)
   w.contracts.book[a.offer.company].done += 1
-  addRep(w, REP_DONE[a.offer.stars])
+  const need = a.bins.reduce((n, b) => n + b.demand.amount, 0)
+  const infused = a.bins.reduce((n, b) => n + b.infusedFilled, 0)
+  addRep(w, REP_DONE[a.offer.stars] * (1 + 0.25 * infused / need))
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,
@@ -757,8 +788,11 @@ export function acceptContractBody(w: World, c: ContractId): void {
   if (offer === undefined) return
   const bins: Bins =
     offer.lines.length === 1
-      ? [{ demand: offer.lines[0], filled: 0 }]
-      : [{ demand: offer.lines[0], filled: 0 }, { demand: offer.lines[1], filled: 0 }]
+      ? [{ demand: offer.lines[0], filled: 0, infusedFilled: 0 }]
+      : [
+          { demand: offer.lines[0], filled: 0, infusedFilled: 0 },
+          { demand: offer.lines[1], filled: 0, infusedFilled: 0 },
+        ]
   w.contracts.active.push({ offer, dueDay: w.nowDay() + offer.days, bins })
   w.contracts.takenToday.push(c)
   w.ping()

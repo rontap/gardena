@@ -42,6 +42,8 @@ A vault term used outside its owner is as wrong as an invented one. `starve` is 
 | **net** | overloaded | `Net` in `sim/world.ts` is water; [[architecture/net]] is multiplayer | player copy, ever. The player reads **water network** |
 | **signal** | [[mechanics/sensors]] | what a wire carries, on or off | power, current, juice, a "high output" to the player |
 | **blurb** | none | nothing. `CatalogEntry.blurb` is a field, cite it backticked | the word for written text — that is a **description** |
+| **infuse** | [[mechanics/infusion]] `infusion.machine` | the Infuser consuming flakes or vanilla-extract to set `infused` true on jam, cask, spirit, or oil | mill, jam, still, stall, furnace |
+| **infused** | [[mechanics/infusion]] `infusion.item` | the required boolean on jam, cask, spirit, oil; stall `InfusedKey` | a second SKU, a stall good of its own, flavour |
 
 Trade words from streams, queues, functional programming, and distributed systems — fold, backpressure, flush, buffer, throttle, starvation, poll — name nothing in this game. In bound text they are legal only backticked, naming the `src/` thing that carries the name.
 

@@ -7,9 +7,14 @@ import {
   COMPOST_SECONDS,
   COMPOST_VALUE,
   FURNACE_ASH,
+  FURNACE_BREAD_IN,
   FURNACE_NEED,
   FURNACE_SECONDS,
   FURNACE_VALUE,
+  INFUSE_EXTRACT,
+  INFUSE_FLAKES,
+  INFUSE_IN,
+  INFUSE_SECONDS,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
@@ -38,9 +43,10 @@ import {
   STILL_CROPS,
   TREE_IDS,
 } from '../ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
 import { faceName, type Face, type Item } from '../item.ts'
 import {
+  bakeBreadSale,
   bakeCaskSale,
   bakeSpiritSale,
   barrelNeed,
@@ -48,6 +54,7 @@ import {
   feedUnits,
   feedVariety,
   grindProduct,
+  infuserWorking,
   jamSale,
   jamSugar,
   jamWorking,
@@ -93,6 +100,7 @@ export const MACHINE_IDS: readonly MachineId[] = [
   'compost-box',
   'furnace',
   'station',
+  'infuser',
 ]
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
@@ -108,6 +116,7 @@ export function machineOfSku(id: SkuId): MachineId | undefined {
   if (id === 'buy-compost-box') return 'compost-box'
   if (id === 'buy-furnace') return 'furnace'
   if (id === 'buy-research-station') return 'station'
+  if (id === 'buy-infuser') return 'infuser'
   return undefined
 }
 
@@ -172,7 +181,7 @@ function jamRecipe({ crop, variety }: Pin<JamCrop>): Recipe {
     ],
     out: {
       kind: 'exact',
-      face: { kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: jamSale(crop, variety, 0) },
+      face: { kind: 'jam', crop, variety, quality: 0, count: 1, unitSale: jamSale(crop, variety, 0), infused: false },
       amount: units(1),
     },
     duration: { kind: 'work', seconds: JAM_SECONDS },
@@ -180,7 +189,7 @@ function jamRecipe({ crop, variety }: Pin<JamCrop>): Recipe {
 }
 
 function spiritFace(spirit: SpiritKind, variety: VarietyId): Face {
-  return { kind: 'spirit', spirit, variety, quality: 0, count: 1, unitSale: bakeSpiritSale(spirit, variety, 0) }
+  return { kind: 'spirit', spirit, variety, quality: 0, count: 1, unitSale: bakeSpiritSale(spirit, variety, 0), infused: false }
 }
 
 function stillRecipe({ crop, variety }: Pin<StillCrop>): Recipe {
@@ -213,6 +222,7 @@ function barrelRecipe({ crop, variety }: Pin<BarrelCrop>): Recipe {
         quality: 0,
         count: 1,
         unitSale: bakeCaskSale(CASK_OF[crop], variety, 0, BARREL_MATURE),
+        infused: false,
       },
       amount: units(1),
     },
@@ -325,6 +335,7 @@ const FURNACE_GREEN: Recipe = {
         { kind: 'weed', count: 1 },
         { kind: 'grass', count: 1 },
         ...CROP_CLASSES.map(cls => ({ kind: 'dead' as const, cls, count: 1 })),
+        ...[...ANNUAL_IDS, ...TREE_IDS].map(c => ({ kind: 'graft' as const, crop: c, variety: 'base' as const, quality: 0, count: 1 })),
       ],
       amount: units(FURNACE_NEED / FURNACE_VALUE.green),
     },
@@ -361,7 +372,7 @@ const FURNACE_SUGAR: Recipe = {
 
 const FURNACE_OIL: Recipe = {
   machine: 'furnace',
-  inputs: [{ kind: 'one', face: { kind: 'oil', quality: 0, count: 1, unitSale: 0 }, amount: units(FURNACE_NEED / FURNACE_VALUE.oil) }],
+  inputs: [{ kind: 'one', face: { kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false }, amount: units(FURNACE_NEED / FURNACE_VALUE.oil) }],
   out: FURNACE_OUT,
   duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
 }
@@ -384,6 +395,101 @@ const FURNACE_WOOD: Recipe = {
   inputs: [{ kind: 'one', face: { kind: 'wood', count: 1 }, amount: units(FURNACE_NEED / FURNACE_VALUE.wood) }],
   out: FURNACE_OUT,
   duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const FURNACE_BREAD: Recipe = {
+  machine: 'furnace',
+  inputs: [{ kind: 'one', face: { kind: 'flour', quality: 0, count: 1, unitSale: 0 }, amount: units(FURNACE_BREAD_IN) }],
+  out: {
+    kind: 'exact',
+    face: { kind: 'bread', quality: 0, count: 1, unitSale: bakeBreadSale(0) },
+    amount: units(1),
+  },
+  duration: { kind: 'fixed', seconds: FURNACE_SECONDS },
+}
+
+const REAGENT: Ingredient = {
+  kind: 'any',
+  faces: [
+    { kind: 'flakes', quality: 0, count: 1 },
+    { kind: 'vanilla-extract', quality: 0, count: 1 },
+  ],
+  amount: units(1),
+}
+
+function infuserJam(): Recipe {
+  return {
+    machine: 'infuser',
+    inputs: [
+      {
+        kind: 'any',
+        faces: JAM_PINS.map(p => ({
+          kind: 'jam' as const,
+          crop: p.crop,
+          variety: p.variety,
+          quality: 0,
+          count: 1,
+          unitSale: jamSale(p.crop, p.variety, 0),
+          infused: false,
+        })),
+        amount: units(INFUSE_IN),
+      },
+      REAGENT,
+    ],
+    out: {
+      kind: 'exact',
+      face: {
+        kind: 'jam',
+        crop: JAM_PINS[0].crop,
+        variety: JAM_PINS[0].variety,
+        quality: 0,
+        count: 1,
+        unitSale: jamSale(JAM_PINS[0].crop, JAM_PINS[0].variety, 0),
+        infused: true,
+      },
+      amount: units(1),
+    },
+    duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
+  }
+}
+
+function infuserSpirit(): Recipe {
+  const faces = [...STILL_PINS.map(p => spiritFace(spiritKind([{ crop: p.crop, variety: p.variety, count: STILL_CAP }]), p.variety)), spiritFace('mixed', 'base')]
+  return {
+    machine: 'infuser',
+    inputs: [{ kind: 'any', faces, amount: units(INFUSE_IN) }, REAGENT],
+    out: { kind: 'exact', face: { ...faces[0], infused: true }, amount: units(1) },
+    duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
+  }
+}
+
+function infuserCask(): Recipe {
+  const faces = BARREL_PINS.map(p => ({
+    kind: 'cask' as const,
+    cask: CASK_OF[p.crop],
+    variety: p.variety,
+    quality: 0,
+    count: 1,
+    unitSale: bakeCaskSale(CASK_OF[p.crop], p.variety, 0, BARREL_MATURE),
+    infused: false,
+  }))
+  return {
+    machine: 'infuser',
+    inputs: [{ kind: 'any', faces, amount: units(INFUSE_IN) }, REAGENT],
+    out: { kind: 'exact', face: { ...faces[0], infused: true }, amount: units(1) },
+    duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
+  }
+}
+
+const INFUSER_OIL: Recipe = {
+  machine: 'infuser',
+  inputs: [{ kind: 'one', face: { kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false }, amount: units(INFUSE_IN) }, REAGENT],
+  out: {
+    kind: 'exact',
+    face: { kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: true },
+    amount: units(1),
+  },
+  duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
 }
 
 export const STATION_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop =>
@@ -412,8 +518,9 @@ const MILL_ROWS: readonly Recipe[] = MILL_PINS.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL]
 const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
-const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD]
+const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD, FURNACE_BREAD]
 const STATION_ROWS: readonly Recipe[] = STATION_PINS.map(stationRecipe)
+const INFUSER_ROWS: readonly Recipe[] = [infuserJam(), infuserSpirit(), infuserCask(), INFUSER_OIL]
 
 function yieldFace(y: Yield): Face {
   return y.kind === 'exact' ? y.face : y.faces[0]
@@ -474,18 +581,20 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'grinder') return [GRINDER, GRINDER_VARIANT]
   if (m === 'furnace') return FURNACE_ROWS
   if (m === 'station') return STATION_LIST
+  if (m === 'infuser') return INFUSER_ROWS
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
 
 function sameIdentity(a: Face, b: Face): boolean {
   if (a.kind === 'fruit' && b.kind === 'fruit') return a.crop === b.crop && a.variety === b.variety
-  if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop && a.variety === b.variety
+  if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop && a.variety === b.variety && a.infused === b.infused
   if (a.kind === 'seeds' && b.kind === 'seeds') return a.crop === b.crop && a.variety === b.variety
   if (a.kind === 'graft' && b.kind === 'graft') return a.crop === b.crop && a.variety === b.variety
   if (a.kind === 'spirit' && b.kind === 'spirit') {
-    return a.spirit === b.spirit && (a.spirit === 'mixed' || a.variety === b.variety)
+    return a.spirit === b.spirit && (a.spirit === 'mixed' || a.variety === b.variety) && a.infused === b.infused
   }
-  if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask && a.variety === b.variety
+  if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask && a.variety === b.variety && a.infused === b.infused
+  if (a.kind === 'oil' && b.kind === 'oil') return a.infused === b.infused
   return a.kind === b.kind
 }
 
@@ -495,8 +604,13 @@ function oneCrop(faces: readonly Face[]): boolean {
   return faces.every(f => f.kind === 'fruit' && f.crop === first.crop)
 }
 
+function reagentAny(faces: readonly Face[]): boolean {
+  return faces.length > 0 && faces.every(f => f.kind === 'flakes' || f.kind === 'vanilla-extract')
+}
+
 function takes(input: Ingredient, face: Face): boolean {
   if (input.kind === 'one') return sameIdentity(input.face, face)
+  if (reagentAny(input.faces)) return input.faces.some(f => f.kind === face.kind)
   return oneCrop(input.faces) && input.faces.some(f => sameIdentity(f, face))
 }
 
@@ -585,11 +699,86 @@ function compostCraft(c: CompostBox, mul: number, haste: number): Craft {
 
 function furnaceCraft(c: Furnace, mul: number, haste: number): Craft {
   if (c.units === 0) return { kind: 'idle', machine: 'furnace' }
-  const recipe = FURNACE_ROWS[0]
+  const recipe = c.recipe === 'bread' ? FURNACE_BREAD : FURNACE_ROWS[0]
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (c.progress >= 1) return { kind: 'ready', recipe }
-  if (c.units < FURNACE_NEED) return { kind: 'filling', recipe, at: 0, have: c.units, need: FURNACE_NEED }
+  const need = c.recipe === 'bread' ? FURNACE_BREAD_IN : FURNACE_NEED
+  if (c.units < need) return { kind: 'filling', recipe, at: 0, have: c.units, need }
   return stage(recipe, c.progress, mul, haste)
+}
+
+function infuserGoodFace(c: Infuser): Face {
+  const lock = c.lock
+  if (lock === 'none') throw new Error('infuse')
+  if (lock.kind === 'jam') {
+    return {
+      kind: 'jam',
+      crop: lock.crop,
+      variety: lock.variety,
+      quality: c.quality,
+      count: 1,
+      unitSale: c.unitSale,
+      infused: false,
+    }
+  }
+  if (lock.kind === 'cask') {
+    return {
+      kind: 'cask',
+      cask: lock.cask,
+      variety: lock.variety,
+      quality: c.quality,
+      count: 1,
+      unitSale: c.unitSale,
+      infused: false,
+    }
+  }
+  if (lock.kind === 'oil') return { kind: 'oil', quality: c.quality, count: 1, unitSale: c.unitSale, infused: false }
+  if (lock.spirit === 'mixed') {
+    return { kind: 'spirit', spirit: 'mixed', variety: 'base', quality: c.quality, count: 1, unitSale: c.unitSale, infused: false }
+  }
+  return {
+    kind: 'spirit',
+    spirit: lock.spirit,
+    variety: lock.variety,
+    quality: c.quality,
+    count: 1,
+    unitSale: c.unitSale,
+    infused: false,
+  }
+}
+
+function infuserLive(c: Infuser): Recipe {
+  const lock = c.lock
+  const catalog =
+    lock === 'none'
+      ? INFUSER_ROWS[0]
+      : lock.kind === 'jam'
+        ? INFUSER_ROWS[0]
+        : lock.kind === 'spirit'
+          ? INFUSER_ROWS[1]
+          : lock.kind === 'cask'
+            ? INFUSER_ROWS[2]
+            : INFUSER_ROWS[3]
+  if (lock === 'none') return catalog
+  const good = infuserGoodFace(c)
+  return {
+    ...catalog,
+    inputs: [{ kind: 'one', face: good, amount: units(INFUSE_IN) }, REAGENT],
+    out: { kind: 'exact', face: { ...good, infused: true }, amount: units(1) },
+  }
+}
+
+function infuserCraft(c: Infuser, haste: number): Craft {
+  if (c.lock === 'none') return { kind: 'idle', machine: 'infuser' }
+  const recipe = infuserLive(c)
+  if (c.inn === 1) return { kind: 'paused', recipe }
+  if (c.progress >= 1) return { kind: 'ready', recipe }
+  if (infuserWorking(c)) return stage(recipe, c.progress, 1, haste)
+  if (c.units < INFUSE_IN) return { kind: 'filling', recipe, at: 0, have: c.units, need: INFUSE_IN }
+  if (c.flakes < INFUSE_FLAKES && (c.extract === 0 || c.flakes > 0)) {
+    return { kind: 'filling', recipe, at: 1, have: c.flakes, need: INFUSE_FLAKES }
+  }
+  return { kind: 'filling', recipe, at: 1, have: c.extract, need: INFUSE_EXTRACT }
 }
 
 function stationCraft(c: ResearchStation, haste: number): Craft {
@@ -609,6 +798,7 @@ export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'grinder') return grinderCraft(cell, mul, haste)
   if (cell.kind === 'furnace') return furnaceCraft(cell, mul, haste)
   if (cell.kind === 'station') return stationCraft(cell, 1)
+  if (cell.kind === 'infuser') return infuserCraft(cell, haste)
   return compostCraft(cell, mul, haste)
 }
 

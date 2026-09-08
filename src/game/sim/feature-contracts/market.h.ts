@@ -21,6 +21,8 @@ export type MarketQuote = {
 
 export type SellAllQuote = { rows: readonly MarketQuote[]; clean: number; paid: number }
 
+export type InfusedKey = 'plain' | 'infused'
+
 export type CompanyId =
   | 'whole-cart'
   | 'trade-jo'
@@ -29,7 +31,7 @@ export type CompanyId =
   | 'mercanova'
   | 'intercrop'
 
-export type FruitAnnualId = 'tomato' | 'raspberry' | 'olive' | 'grape' | 'vanilla'
+export type FruitAnnualId = 'tomato' | 'raspberry' | 'grape' | 'vanilla' | 'chilli'
 
 export type GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | CaskId
 
@@ -91,7 +93,7 @@ export type ContractOffer = {
   penalty: number
 }
 
-export type Bin = { demand: Demand; filled: number }
+export type Bin = { demand: Demand; filled: number; infusedFilled: number }
 
 export type Bins = readonly [Bin] | readonly [Bin, Bin]
 

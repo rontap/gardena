@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import { cropVariety } from '../defs/crops.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { inWorld, type Barrel, type Coord, type Furnace, type Grinder, type JamMachine, type Mill, type PotStill, type ResearchStation, type Tree } from './building.ts'
+import { inWorld, type Barrel, type Coord, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type ResearchStation, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
 import type { CropId, JamCrop, MillRecipe, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
@@ -17,9 +17,13 @@ import {
   JAM_IN,
   STATION_IN,
   STILL_CAP,
+  FURNACE_BREAD_IN,
   FURNACE_NEED,
+  INFUSE_EXTRACT,
+  INFUSE_FLAKES,
+  INFUSE_IN,
 } from '../defs/items.ts'
-import { caskName, countable, jamJar, jamJarName, skuLabel, stackable, toolName, type Hand, type Item } from './item.ts'
+import { caskName, countable, jamJar, jamJarName, skuLabel, spiritName, stackable, toolName, type Hand, type Item } from './item.ts'
 import {
   barrelAccept,
   barrelCropOf,
@@ -36,11 +40,13 @@ import {
   millRecipeOf,
   furnaceAccept,
   furnaceUnit,
+  infusableOf,
+  sameInfusable,
   stationAccept,
   stillCropOf,
 } from './feature-machines/machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
-import { CASK_OF, SENSOR_CELL_SKUS } from './ids.ts'
+import { CASK_OF, CROP_OF_CASK, CROP_OF_SPIRIT, SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPavingSite, isPlot, isTilled, type Cell } from './plot.ts'
 import { isSensor, isSeqIn, makeSensor, sameNode, skuKind, wouldCycle, type WireEnd } from './sensor.ts'
 import { FERT_PLOT_MAX } from './soil.ts'
@@ -86,6 +92,7 @@ const CROP_LABEL: { readonly [K in CropId]: () => string } = {
   raspberry: m.names_crop_raspberry,
   grape: m.names_crop_grape,
   vanilla: m.names_crop_vanilla,
+  chilli: m.names_crop_chilli,
   'sugar-cane': m.names_crop_sugar_cane,
   apple: m.names_crop_apple,
   apricot: m.names_crop_apricot,
@@ -125,6 +132,7 @@ export function millProductName(recipe: MillRecipe): string {
   if (recipe === 'olive') return m.names_item_oil()
   if (recipe === 'wheat') return m.names_item_flour()
   if (recipe === 'vanilla') return m.names_item_vanilla_extract()
+  if (recipe === 'chilli') return m.names_item_flakes()
   return m.names_item_extract()
 }
 
@@ -205,6 +213,8 @@ export function taskName(w: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
+    case 'infuse':
+      return m.names_building_infuser()
   }
 }
 
@@ -341,6 +351,7 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   chest: m.names_building_chest,
   'compost-box': m.names_building_compost_box,
   mill: m.names_building_mill,
+  infuser: m.names_building_infuser,
   still: m.names_building_still,
   furnace: m.names_building_furnace,
   barrel: m.names_building_barrel,
@@ -385,6 +396,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   }
 
   if (cell.kind === 'grinder') return { kind: 'place', text: m.prompt_delete_grinder() }
+  if (cell.kind === 'infuser') return { kind: 'place', text: m.prompt_delete_infuser() }
   if (cell.kind === 'hangar') {
     const origin = { col: cell.base.col, row: cell.base.row }
     if (w.hangarStores(origin)) return { kind: 'blocked', text: m.prompt_cannot_delete_stores() }
@@ -525,7 +537,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!tallSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
-    if (w.act.place.id === 'buy-mill') {
+    if (w.act.place.id === 'buy-mill' || w.act.place.id === 'buy-infuser') {
       if (!squareSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
@@ -610,6 +622,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
       const recipe = millRecipeOf(w.act.hand.item)
       if (recipe !== undefined) {
+        if (recipe === 'chilli') return intent(m.prompt_crush_flakes(), { act: 'mill', at })
         const name = millProductName(recipe)
         return intent(m.prompt_crush_into({ name }), { act: 'mill', at })
       }
@@ -626,7 +639,15 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'furnace') {
     const look = furnaceLook(cell, w.act.hand)
     if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
+      if (w.act.hand.item.kind === 'flour') return intent(m.prompt_bake(), { act: 'furnace', at })
       return intent(m.prompt_burn(), { act: 'furnace', at })
+    }
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'infuser') {
+    const look = infuserLook(cell, w.act.hand)
+    if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
+      return intent(m.prompt_infuse(), { act: 'infuse', at })
     }
     return { kind: 'blocked', text: look }
   }
@@ -867,7 +888,15 @@ function canConsign(hand: Hand): boolean {
   const it = hand.item
   if (it.kind === 'fruit') return it.count >= 1
   if (it.kind === 'sugar') return it.liters > 0
-  if (it.kind === 'spirit' || it.kind === 'cask' || it.kind === 'jam' || it.kind === 'oil' || it.kind === 'flour' || it.kind === 'extract') {
+  if (
+    it.kind === 'spirit' ||
+    it.kind === 'cask' ||
+    it.kind === 'jam' ||
+    it.kind === 'oil' ||
+    it.kind === 'flour' ||
+    it.kind === 'extract' ||
+    it.kind === 'bread'
+  ) {
     return it.count >= 1
   }
   return false
@@ -1030,14 +1059,69 @@ export function stationLook(st: ResearchStation, hand: Hand): string {
 export function furnaceLook(furnace: Furnace, hand: Hand): string {
   const name = m.names_building_furnace()
   if (hand.kind === 'hold') {
-    if (furnaceUnit(hand.item) <= 0) return labeled(name, m.prompt_will_not_burn())
-    if (furnaceAccept(furnace, hand.item) === 0) return labeled(name, m.prompt_full())
+    if (hand.item.kind === 'flour') {
+      if (furnace.recipe === 'ash') return m.prompt_furnace_lock()
+      if (furnaceAccept(furnace, hand.item) === 0) return labeled(name, m.prompt_full())
+    } else if (furnaceUnit(hand.item) > 0) {
+      if (furnace.recipe === 'bread') return m.prompt_furnace_lock()
+      if (furnaceAccept(furnace, hand.item) === 0) return labeled(name, m.prompt_full())
+    } else {
+      return labeled(name, m.prompt_will_not_burn())
+    }
   }
   if (furnace.progress >= 1) return labeled(name, m.hud_craft_blocked())
   if (furnace.inn === 1 && furnace.units > 0) return labeled(name, m.hud_craft_paused())
+  if (furnace.recipe === 'bread') {
+    if (furnace.units >= FURNACE_BREAD_IN) return labeled(name, m.prompt_working_pct({ n: Math.floor(furnace.progress * 100) }))
+    return m.prompt_furnace_bread({ n: furnace.units, need: FURNACE_BREAD_IN })
+  }
   if (furnace.units >= FURNACE_NEED) return labeled(name, m.prompt_working_pct({ n: Math.floor(furnace.progress * 100) }))
   if (furnace.units === 0) return name
   return labeled(name, m.prompt_n_cap_units({ n: furnace.units, cap: FURNACE_NEED }))
+}
+
+function infuserGoodName(lock: Exclude<Infuser['lock'], 'none'>): string {
+  if (lock.kind === 'jam') return jamJarName(lock.crop, lock.variety)
+  if (lock.kind === 'cask') return caskName(lock.cask, lock.variety)
+  if (lock.kind === 'oil') return m.names_item_oil()
+  if (lock.spirit === 'mixed') return spiritName('mixed', 'base')
+  return spiritName(lock.spirit, lock.variety)
+}
+
+export function infuserLook(inf: Infuser, hand: Hand): string {
+  if (hand.kind === 'hold') {
+    if (
+      (hand.item.kind === 'jam' || hand.item.kind === 'cask' || hand.item.kind === 'spirit' || hand.item.kind === 'oil') &&
+      hand.item.infused
+    ) {
+      return m.prompt_already_infused()
+    }
+    const lock = infusableOf(hand.item)
+    if (lock !== undefined && inf.lock !== 'none' && !sameInfusable(inf.lock, lock)) {
+      if (inf.lock.kind === 'oil') return m.prompt_oil_only()
+      if (inf.lock.kind === 'spirit' && inf.lock.spirit === 'mixed') return m.prompt_mixed_only()
+      if (inf.lock.kind === 'jam') {
+        return labeled(m.names_building_infuser(), m.prompt_only({ product: cropVariety(inf.lock.crop, inf.lock.variety) }))
+      }
+      if (inf.lock.kind === 'cask') {
+        return labeled(m.names_building_infuser(), m.prompt_only({ product: cropVariety(CROP_OF_CASK[inf.lock.cask], inf.lock.variety) }))
+      }
+      return labeled(m.names_building_infuser(), m.prompt_only({ product: cropVariety(CROP_OF_SPIRIT[inf.lock.spirit], inf.lock.variety) }))
+    }
+  }
+  if (inf.progress >= 1) return m.hud_craft_blocked()
+  if (inf.inn === 1 && inf.units > 0) return m.hud_craft_paused()
+  if (inf.lock !== 'none' && inf.units >= INFUSE_IN && (inf.flakes >= INFUSE_FLAKES || inf.extract >= INFUSE_EXTRACT)) {
+    return m.prompt_infuse_working({ n: Math.floor(inf.progress * 100) })
+  }
+  if (inf.lock === 'none') return m.names_building_infuser()
+  if (inf.units < INFUSE_IN) {
+    return m.prompt_infuse_arrow({ have: inf.units, need: INFUSE_IN, name: infuserGoodName(inf.lock) })
+  }
+  if (inf.flakes > 0 || inf.extract === 0) {
+    return m.prompt_infuse_flakes({ have: inf.flakes, need: INFUSE_FLAKES })
+  }
+  return m.prompt_infuse_extract({ have: inf.extract, need: INFUSE_EXTRACT })
 }
 
 export function treeLine(cell: Tree): string {

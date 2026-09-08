@@ -4,7 +4,7 @@ Crafting shown as a picture. One component, four mounts. Rules [[mechanics/machi
 
 **Recipe** is a player-facing word. Defined here, used in the almanac heading.
 
-No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]. Station is not a `MachineId` and has no mount here — [[ui/station]].
+No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]. Station is not a `MachineId` and has no mount here — [[ui/station]]. Infuser is a `MachineId`. Infused yield faces draw overlay-infused — [[mechanics/infusion]] `infusion.overlay`.
 
 ## Shape
 
@@ -16,7 +16,7 @@ RecipeView =
   | { kind: 'one'; recipe: Recipe }
   | { kind: 'live'; craft: Craft }
 
-MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace'
+MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'infuser'
 
 Recipe = {
   machine: MachineId
@@ -65,13 +65,14 @@ Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that V
 
 | machine | rows |
 |---|---|
-| mill | one row per `MILL_RECIPES` entry — every Variety of that crop collapses onto it, five rows. Grass unchanged. Vanilla: `MILL_VANILLA_IN` fruit → `MILL_VANILLA_OUT` extract. `millProductName('vanilla')` is **vanilla extract**. |
+| mill | one row per `MILL_RECIPES` entry — every Variety of that crop collapses onto it, six rows. Grass unchanged. Vanilla: `MILL_VANILLA_IN` 1 fruit → `MILL_VANILLA_OUT` 4 vanilla-extract. `millProductName('vanilla')` is **vanilla extract**. Chilli: `MILL_CHILLI_IN` 3 fruit → `MILL_CHILLI_OUT` 2 flakes. `millProductName('chilli')` is **Flakes**. |
 | jam | eight rows. Sugar per jar, `jamSugar`: the Passata row is one input, the Ketchup row twice a jam. A named jar keeps its own row; every other Variety of that crop collapses onto the plain jar. No apple. Named jars below. Every tomato but San Marzano is **Ketchup**. |
 | still | five rows: one per `STILL_CROPS` entry, Klosterneuburger apart under its own spirit name, plus mixed `any`. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
 | barrel | four rows: per crop, `'base'` and the variant collapse onto one jar, the heirloom keeps its own (its jar is drawn apart). Grape → wine `barrelNeed('grape')`, apple → cider `barrelNeed('apple')`. |
 | grinder | 2. First `any`: `'base'` and `heirloom` annuals plus every tree fruit. Yield seeds / tree-seed at `'base'` when the input `tier` is `heirloom` or the input is tree fruit; else same Variety. Second `any`: annual `variant` fruit only, yield that Variety's seeds. Trees stay on the first row. Quality carries. |
 | compost-box | 4: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5), then ash `one` → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Variety ignored. |
-| furnace | 6: green `any` (includes graft), fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`. All yield `FURNACE_ASH` ash. Duration `fixed` `FURNACE_SECONDS`. Mix; no recipe lock. Item counts `FURNACE_NEED / FURNACE_VALUE.*`. Variety and Quality ignored. |
+| furnace | 7: green `any` (includes graft), fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`, flour `one` bread. Ash rows yield `FURNACE_ASH` ash. Bread row yields `{ kind: 'bread' }`. Duration `fixed` `FURNACE_SECONDS`. Lock ash vs bread. Item counts `FURNACE_NEED / FURNACE_VALUE.*` on ash; bread `FURNACE_BREAD_IN`. Variety and Quality ignored on ash. |
+| infuser | 4: jam `any`, spirit `any`, cask `any`, oil `one`. Each carries reagent `any` flakes \| vanilla-extract amount 1. Yield the same good `infused: true`. Duration `fixed` `INFUSE_SECONDS`. Face overlay-infused. One reagent, not both. |
 
 ### Named jam
 
@@ -95,7 +96,9 @@ Live barrel pins the locked crop + Variety row. Empty barrel (`crop === 'none'`)
 
 Live mill / jam / grinder pin the locked Variety. Empty (`'none'`) cycles.
 
-Live furnace empty (`units === 0`) cycles all list rows. Filling / working / ready pin the first list row; `have` / `need` stay furnace units (`FURNACE_NEED`). No `thirsty`. `inn === 1` and `units > 0` → **Paused by wire**.
+Live furnace empty (`units === 0`) cycles all list rows. Filling / working / ready pin the locked recipe; ash `have` / `need` stay furnace units (`FURNACE_NEED`); bread uses `FURNACE_BREAD_IN`. No `thirsty`. `inn === 1` and `units > 0` → **Paused by wire**.
+
+Live infuser empty (`lock === 'none'`) cycles all list rows. Filling / working / ready pin the locked good. `filling.at` good, then the reagent. No `thirsty`. Yield face draws overlay-infused.
 
 | `Craft` | row | line under |
 |---|---|---|
@@ -126,7 +129,7 @@ No keyframes, no transition. Reduced motion is not a concern for the arrow.
 
 `idle` is not painted imperatively — the cycle is React's.
 
-The still holds one instance in two cells, so hovering either half binds the same machine and shows one row. Furnace: either cell of the 1×2, one row.
+The still holds one instance in two cells, so hovering either half binds the same machine and shows one row. Furnace: either cell of the 1×2, one row. Infuser: any of four cells of the 2×2, one row.
 
 ## Cycle
 

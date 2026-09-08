@@ -6,27 +6,29 @@ Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `Se
 
 ## Unrepresentable
 
-`Plant.crop` is `AnnualId`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. `Plant.variety` `Tree.variety` required `VarietyId`. `quality` required on `Plant`, seeds, fruit, graft, spirit, cask, jam, oil, flour, extract, sugar. Fruit `cut: boolean` required.
+`Plant.crop` is `AnnualId`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. `Plant.variety` `Tree.variety` required `VarietyId`. `quality` required on `Plant`, seeds, fruit, graft, spirit, cask, jam, oil, flour, extract, sugar, flakes, vanilla-extract, bread. Fruit `cut: boolean` required. `infused: boolean` required on jam, cask, spirit, oil.
 
 ```
-AnnualId     = carrot | potato | wheat | tomato | raspberry | grape | vanilla | sugar-cane
+AnnualId     = carrot | potato | wheat | tomato | raspberry | grape | vanilla | chilli | sugar-cane
 TreeId       = apple | apricot | olive | cherry
 CropId       = AnnualId | TreeId
 BetterCrop   = potato | wheat | tomato | raspberry | grape | apple | apricot | olive | cherry
-MillRecipe   = sugar-cane | olive | wheat | grass | vanilla
+MillRecipe   = sugar-cane | olive | wheat | grass | vanilla | chilli
 JamCrop      = apricot | grape | raspberry | cherry | tomato
 BarrelCrop   = grape | apple
 CaskId       = wine | cider
-FruitAnnualId = tomato | raspberry | grape | vanilla
+FruitAnnualId = tomato | raspberry | grape | vanilla | chilli
+FurnaceRecipe = none | ash | bread
+InfusedKey   = plain | infused
 VarietyTier  = base | variant | heirloom
 VarietyId    = base | bintje | red-fife | green-zebra | san-marzano | black-raspberry
              | concord | keknyelu | kingston-black | pink-lady | blenheim | klosterneuburger
              | arbequina | bing
 ```
 
-`ResearchId` has no `unlock-watermelon`. `ResearchId` += `unlock-hardened-tools`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station` `buy-chainsaw`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
+`ResearchId` has no `unlock-watermelon`. `ResearchId` has no `unlock-chilli`. `ResearchId` += `unlock-hardened-tools` `unlock-infusion`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station` `buy-chainsaw` `buy-infuser` `pack-chilli`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
 
-Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`. Illegal: optional `quality`. Illegal: optional `cut`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
+Illegal: olive as `AnnualId`. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`. Illegal: optional `quality`. Illegal: optional `cut`. Illegal: optional `infused`. Illegal: flakes or vanilla-extract as `StallGoodId`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
 
 `isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
@@ -38,11 +40,11 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 ## Same instance
 
-Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar `HANGAR_W × HANGAR_H`. Vehicle silos `SILO_W × SILO_H`. Still 2×1, prop `48×24` occupying both cells. House seed silo / additive-store 1×2. Station 1×1.
+Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `Mill`, `Infuser`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar `HANGAR_W × HANGAR_H`. Vehicle silos `SILO_W × SILO_H`. Still 2×1, prop `48×24` occupying both cells. Mill / Infuser 2×2, prop `48×48` occupying four cells. House seed silo / additive-store 1×2. Station 1×1.
 
 `World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
 
-Mill/jam/still/station/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/sensors]] [[mechanics/inventory]].
+Mill/jam/still/station/infuser/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/infusion]] [[mechanics/sensors]] [[mechanics/inventory]].
 
 Still `base.w = 2` `base.h = 1` and prop `48×24` occupying both cells.
 
@@ -88,7 +90,7 @@ Confirm: cell buildings and item drops set `none` except StayArmed sensor cells 
 
 `graft` is `{ act: 'graft'; at: Coord }`. `dest` = `at`. Hold a graft. Never plants.
 
-`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station)` = `at`. `dest(open)` = `at`. `{ act: 'open'; at }`. Enqueue, no new `Act` letter. Work 0. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
+`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station | infuser)` = `at`. `dest(open)` = `at`. `{ act: 'open'; at }`. `{ act: 'infuse'; at }`. Enqueue, no new `Act` letter. Work 0. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
 
 `QUEUE_CAP` — preference. `enqueueOn` past that length is a no-op and `say(prompt_queue_full)`. Not Save.
 
@@ -98,17 +100,17 @@ Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 
 ## Stall
 
-`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Illegal: whisky. `JamId` is `jam-${JamCrop}`. One `extract`. Olive fruit is a stall good (`TreeId`). `{ kind: 'rotten' }` is not a `StallGoodId`. Assumption: consigned rotten is `World.clearance: number`.
+`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Chilli fruit is a stall good. Bread is a stall good. Illegal: whisky. Illegal: flakes or vanilla-extract as `StallGoodId`. `JamId` is `jam-${JamCrop}`. One `extract` (grass mill). Olive fruit is a stall good (`TreeId`). `{ kind: 'rotten' }` is not a `StallGoodId`. Assumption: consigned rotten is `World.clearance: number`.
 
-Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract. [[architecture/family]].
+Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract / bread. Infused jam / cask / spirit / oil: stock per `InfusedKey`. Flakes and vanilla-extract are not `StallGoodId`. [[architecture/family]] [[mechanics/infusion]].
 
-Crop goods: stock and worth per variety × `bio`. Illegal: fruit consign that drops `fruit.bio`.
+Crop goods: stock and worth per variety × `bio`. Illegal: fruit consign that drops `fruit.bio`. Infusable goods: stock and worth per variety × `InfusedKey`.
 
 `World.contracts: Contracts`. Dump persists `active` with fills, `takenToday`, `history`, `book`, plus `rep` / `repDay`. Board is not in the file. New farm empty. Consign fills `active` in array order, then stall. Miss on the tick `nowDay` crosses `dueDay`. [[mechanics/contracts]] [[architecture/save]]
 
 ## Hand / Item
 
-No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required. `{ kind: 'treasure'; coins: number }`. `coins` required. Illegal: `treasure.count`. Not countable.
+No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Chilli harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required. `{ kind: 'flakes'; quality; count }`. `{ kind: 'vanilla-extract'; quality; count }`. `{ kind: 'bread'; quality; count; unitSale }`. Illegal: `unitSale` on flakes or vanilla-extract. `{ kind: 'treasure'; coins: number }`. `coins` required. Illegal: `treasure.count`. Not countable.
 
 ```
 ChopItem =
@@ -120,9 +122,11 @@ No `id` on either. Illegal: `{ kind: 'better-axe' }`. Chop legal hand is `ChopIt
 
 ```
 Spirit =
-  | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId; quality: number; count: number; unitSale: number }
-  | { kind: 'spirit'; spirit: 'mixed'; quality: number; count: number; unitSale: number }
+  | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
+  | { kind: 'spirit'; spirit: 'mixed'; quality: number; count: number; unitSale: number; infused: boolean }
 ```
+
+Illegal: optional `infused` on jam, cask, spirit, oil.
 
 ## Recap / Seam
 
@@ -185,7 +189,7 @@ Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `tra
 | name | members |
 |---|---|
 | grow | growing, ripe, dead, rotten, weed, turf, tree origin |
-| machines | mill, jam, still, barrel, grinder, compost, furnace, station origin |
+| machines | mill, jam, still, barrel, grinder, compost, furnace, station, infuser origin |
 | stores | chest, freezer |
 | sensors | sunk sensor cells |
 | buttons | button cells |
@@ -231,7 +235,7 @@ Cheats are cmds.
 
 Cmd table: [[architecture/log]]. Do not restate it here.
 
-Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still/station/pump `inn` hold. Pad as a `Cell`. Logic gate / NOT buyable on `unlock-sensors` alone. Live `SensorKind` `'or'` `'and'`. Traffic-light `inn` combinationally driving `out`. `HudTarget` hangar. `HudTarget` vehicle. Enclosure on tick. `plotEnclosures` as a field on `Plot`.
+Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still/station/infuser/pump `inn` hold. Pad as a `Cell`. Logic gate / NOT buyable on `unlock-sensors` alone. Live `SensorKind` `'or'` `'and'`. Traffic-light `inn` combinationally driving `out`. `HudTarget` hangar. `HudTarget` vehicle. Enclosure on tick. `plotEnclosures` as a field on `Plot`. Infuser 1×1. Optional `infused`. Flakes or vanilla-extract as `StallGoodId`. `unlock-chilli`.
 
 `World.routes: Route[]`. `World.nextRouteId` starts 1. Vehicle holds `route: RouteId | 'none'`, `cursor`, `running`. `RouteStop` is a closed union. Rules: [[mechanics/vehicles]] `vehicles.dispatch`.
 
@@ -273,7 +277,7 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 
 `world.queue` — `Seat.queue` length ≤ `QUEUE_CAP`. Further `enqueueOn` is a no-op and `say(prompt_queue_full)`. Not Save.
 
-`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station)` is `at`. `dest(open)` is `at`.
+`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station | infuser)` is `at`. `dest(open)` is `at`.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
 

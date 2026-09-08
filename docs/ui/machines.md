@@ -1,16 +1,16 @@
 # Machines
 
-Look and prompt for mill, jam, still, barrel, freezer, grinder, furnace. Station [[ui/station]]. Rules [[mechanics/machines]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
+Look and prompt for mill, jam, still, barrel, freezer, grinder, furnace, infuser. Station [[ui/station]]. Rules [[mechanics/machines]] [[mechanics/infusion]]. Place [[ui/place]]. Inspect [[ui/inspect]] points here. Chest chrome [[ui/docks]].
 
 No ObjectHud. No pop-up GUI. Nothing attaches to the machine. Progress is look text here; the bottom-right `Status` also draws one recipe row — [[ui/recipe]]. Station has no recipe row; its walk-up is a panel.
 
-Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder / furnace / station). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`. Furnace look below; dump prompt **Burn**. `{ act: 'furnace'; at }`. Either cell, one look. Prop `off` / `on` from working. Two state VFX while working: `furnace` at the south opening, `furnace-smoke` at the origin chimney. Reduced motion: frame 0 both.
+Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder / furnace / station / infuser). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`. Furnace look below; ash dump prompt **Burn**; flour dump prompt **Bake**. `{ act: 'furnace'; at }`. Either cell, one look. Prop `off` / `on` from working. Two state VFX while working: `furnace` at the south opening, `furnace-smoke` at the origin chimney. Reduced motion: frame 0 both. Infuser dump prompt **Infuse**. `{ act: 'infuse'; at }`. Any of four cells, one look.
 
 West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. `pointer-events-none`. Not lens. Not a cell hit. Furnace: origin row only. Station: mill.
 
-Still 2×1. Furnace 1×2. Hit, ghost footprint, I/O, ports, pads stay those sizes. viewBox still `48×24` / furnace `24×48`. Prop art occupies 1.5×1 centered (still) and 1×1.5 south-aligned (furnace) inside those viewBoxes. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer / furnace / station: dropoff north Unload, takeup south Load. Furnace takeup south of the south cell. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still / station `in` origin top; freezer `out` origin bottom; furnace `in` origin top and `out` origin bottom. Lens [[ui/sensors]].
+Still 2×1. Furnace 1×2. Mill / infuser 2×2. Hit, ghost footprint, I/O, ports, pads stay those sizes. viewBox still `48×24` / furnace `24×48` / mill and infuser `48×48`. Prop art occupies 1.5×1 centered (still) and 1×1.5 south-aligned (furnace) inside those viewBoxes. Ghost [[ui/place]]. Pads mill / still / jam / compost-box / freezer / furnace / station / infuser: dropoff north Unload, takeup south Load. Furnace takeup south of the south cell. Chrome [[ui/vehicles]]. Barrel, grinder: not. Ports mill / jam / still / station / infuser `in` origin top; freezer `out` origin bottom; furnace `in` origin top and `out` origin bottom. Lens [[ui/sensors]].
 
-Mill, jam, barrel, grinder lock crop + Variety. Still does not. Furnace and compost ignore Variety and Quality.
+Mill, jam, barrel, grinder lock crop + Variety. Infuser locks the good. Still does not. Furnace locks ash vs bread. Compost ignore Variety and Quality.
 
 ## Mill
 
@@ -23,9 +23,9 @@ Lock crop + Variety. Output sale `product × purposeMul(variety, 'processed') ×
 | wrong locked | **{Variety} only** |
 | full (`units >= need`) | **Mill - full** |
 
-`need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15; vanilla `MILL_VANILLA_IN`. `{product}`: sugar, olive oil, flour, extract, vanilla extract. `millProductName('vanilla')` is **vanilla extract**. Grass name unchanged.
+`need` cane / olive / wheat `MILL_IN` 5; grass `MILL_GRASS` 15; vanilla `MILL_VANILLA_IN` 1; chilli `MILL_CHILLI_IN` 3. `{product}`: sugar, olive oil, flour, extract, vanilla extract, flakes. `millProductName('vanilla')` is **vanilla extract**. `millProductName('chilli')` is **Flakes**. Grass name unchanged. Vanilla mill out `MILL_VANILLA_OUT` 4. Chilli mill out `MILL_CHILLI_OUT` 2.
 
-Prompt dump legal: **Crush into sugar** | **Crush into olive oil** | **Crush into flour** | **Crush into extract** | **Crush into vanilla extract**. `{ act: 'mill'; at }`.
+Prompt dump legal: **Crush into sugar** | **Crush into olive oil** | **Crush into flour** | **Crush into extract** | **Crush into vanilla extract** | **Crush into flakes**. `{ act: 'mill'; at }`.
 
 ## Seed grinder
 
@@ -102,25 +102,44 @@ Overlay: chest chrome, title **Freezer**, `FREEZER_SLOTS` 6 cells, 3 columns × 
 
 ## Furnace
 
-Variety and Quality ignored. Flat ash rate.
+Variety and Quality ignored on ash. First dump locks ash vs bread.
 
 | when | text |
 |---|---|
 | empty (`units === 0`) | **Furnace** |
-| filling (`units < FURNACE_NEED`) | **Furnace - {n}/{need} units** |
+| filling ash (`units < FURNACE_NEED`) | **Furnace - {n}/{need} units** |
+| filling bread | **Furnace - {n}/{need} flour** |
 | working | **Furnace - working {pct}%** |
 | paused (`inn === 1`) | **Furnace - Paused by wire** |
 | ready (`progress >= 1`) | **Furnace - Output blocked** |
+| refuse wrong lock | **Furnace - ash or bread** |
 | refuse | **Furnace - will not burn this** |
 | full (`units >= FURNACE_CAP`) | **Furnace - full** |
 
-`{n}` hopper units. Cap `FURNACE_CAP`. Need `FURNACE_NEED`. Mix; no recipe lock. `pct` = `floor(progress * 100)`. Graft burns at the green rate. Not compost.
+`{n}` hopper units. Cap `FURNACE_CAP`. Ash need `FURNACE_NEED`. Bread need `FURNACE_BREAD_IN`. `pct` = `floor(progress * 100)`. Graft burns at the green rate. Not compost.
 
-Prompt dump legal: **Burn**. `{ act: 'furnace'; at }`. Either cell.
+Prompt dump legal ash: **Burn**. Prompt dump legal flour: **Bake**. `{ act: 'furnace'; at }`. Either cell.
+
+## Infuser
+
+Lock `Infusable`. Oil is infusable. Output `infused: true`. Face is the good plus overlay-infused.
+
+| when | text |
+|---|---|
+| empty (`lock` `'none'`) | **Infuser** |
+| filling good | **{have}/{need} → Infused {name}** |
+| filling reagent | **{have}/{need} Flakes** / **{have}/{need} Vanilla extract** |
+| wrong locked | **{Variety} only** / **Olive oil only** / **Mixed spirit only** |
+| refuse infused | **Already infused** |
+| working | **Infuser - working {pct}%** |
+| ready | **Output blocked** |
+| paused (`inn === 1`) | **Paused by wire** |
+
+`need` `INFUSE_IN`. Prompt dump legal: **Infuse**. `{ act: 'infuse'; at }`. Any of four cells, one look.
 
 ## Covering haste
 
-Hover mill / jam / still / grinder / compost-box / furnace. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Live covering count `n`, not `furnaceSnap`. Neighbour wait on a plant uses this same insertion — [[ui/inspect]].
+Hover mill / jam / still / grinder / compost-box / furnace / infuser. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Infuser: any of four cells, one line. Live covering count `n`, not `furnaceSnap`. Neighbour wait on a plant uses this same insertion — [[ui/inspect]].
 
 | when | line |
 |---|---|

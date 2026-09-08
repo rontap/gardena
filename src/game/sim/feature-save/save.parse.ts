@@ -17,6 +17,7 @@ import {
   JamMachine,
   Mill,
   Furnace,
+  Infuser,
   PotStill,
   Pump,
   RainTank,
@@ -35,6 +36,7 @@ import {
 import type { Cell } from '../plot.ts'
 import type { SkillId } from '../ids.ts'
 import type { Bins, Contracts } from '../feature-contracts/market.h.ts'
+import type { Hand, Item, Slot } from '../item.ts'
 import { MemorySink, type LogSink } from '../log.ts'
 import {
   Button,
@@ -120,8 +122,8 @@ function worldFromSave(save: Save, sink: LogSink): World {
       napping: false,
       cue: { kind: 'none' },
       actor: new Actor(s.actor.x, s.actor.y),
-      hand: s.hand,
-      inventory: s.inventory.slice(),
+      hand: liveHand(s.hand),
+      inventory: s.inventory.map(liveSlot),
       queue: [],
       place: { kind: 'none' },
       workLeft: 0,
@@ -165,7 +167,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     sprinklers: save.sprinklers,
     fences: save.fences,
     paving: save.paving,
-    drops: save.drops,
+    drops: save.drops.map(d => ({ at: { col: d.at.col, row: d.at.row }, item: liveItem(d.item) })),
   }
   const world = World.hydrate(h)
   if (save.seam.kind === 'recap') {
@@ -372,7 +374,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'chest': {
       const chest = new Chest(cell.base)
-      for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = cell.slots[i]
+      for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = liveSlot(cell.slots[i])
       chest.out = cell.out
       chest.hold = cell.hold
       return chest
@@ -439,12 +441,27 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'furnace': {
       const furnace = new Furnace(cell.base)
+      const recipe = cell.recipe
+      furnace.recipe = recipe === 'none' || recipe === 'ash' || recipe === 'bread' ? recipe : cell.units === 0 ? 'none' : 'ash'
+      furnace.quality = cell.quality === undefined ? 0 : cell.quality
       furnace.units = cell.units
       furnace.progress = cell.progress
       furnace.inn = cell.inn
       furnace.out = cell.out
       furnace.hold = cell.hold
       return furnace
+    }
+    case 'infuser': {
+      const inf = new Infuser(cell.base)
+      inf.lock = cell.lock
+      inf.quality = cell.quality
+      inf.unitSale = cell.unitSale === undefined ? 0 : cell.unitSale
+      inf.units = cell.units
+      inf.flakes = cell.flakes
+      inf.extract = cell.extract
+      inf.progress = cell.progress
+      inf.inn = cell.inn
+      return inf
     }
     case 'station': {
       const station = new ResearchStation(cell.base)
@@ -466,7 +483,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'freezer': {
       const freezer = new Freezer(cell.base, cell.slots.length)
-      for (let i = 0; i < cell.slots.length; i++) freezer.slots[i] = cell.slots[i]
+      for (let i = 0; i < cell.slots.length; i++) freezer.slots[i] = liveSlot(cell.slots[i])
       freezer.out = cell.out
       freezer.hold = cell.hold
       return freezer
@@ -488,7 +505,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'silo-produce': {
       const made = new SiloProduce(cell.base)
-      cell.slots.forEach((s, i) => (made.slots[i] = s))
+      cell.slots.forEach((s, i) => (made.slots[i] = liveSlot(s)))
       return made
     }
     case 'truck':
@@ -642,9 +659,24 @@ function makePlant(p: SavePlant): Plant {
   return plant
 }
 
+function liveItem(it: Item): Item {
+  if (it.kind === 'jam' || it.kind === 'cask' || it.kind === 'spirit' || it.kind === 'oil') {
+    return { ...it, infused: it.infused === true }
+  }
+  return it
+}
+
+function liveHand(h: Hand): Hand {
+  return h.kind === 'hold' ? { kind: 'hold', item: liveItem(h.item) } : h
+}
+
+function liveSlot(s: Slot): Slot {
+  return s.kind === 'hold' ? { kind: 'hold', item: liveItem(s.item) } : s
+}
+
 function liveVehicle(v: SaveVehicle): Vehicle {
   const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
-  const made = v.kind === 'quad' ? makeQuad(v.id, v.fuel, v.slots.slice(), pose) : makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
+  const made = v.kind === 'quad' ? makeQuad(v.id, v.fuel, v.slots.map(liveSlot), pose) : makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
   made.route = v.route
   made.cursor = v.cursor
   made.running = v.running
@@ -656,7 +688,7 @@ function liveTrailer(t: SaveTrailer): Trailer {
   const pose = t.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...t.pose.hangar } } : { ...t.pose }
   if (t.kind === 'seed') return { kind: 'seed', id: t.id, pose, hopper: t.hopper }
   if (t.kind === 'spray') return { kind: 'spray', id: t.id, pose, hopper: t.hopper }
-  return { kind: 'harvest', id: t.id, pose, slots: t.slots.slice() }
+  return { kind: 'harvest', id: t.id, pose, slots: t.slots.map(liveSlot) }
 }
 
 function liveContracts(s: SaveContracts, rep: number, repDay: number): Contracts {
@@ -664,7 +696,11 @@ function liveContracts(s: SaveContracts, rep: number, repDay: number): Contracts
     active: s.active.map(a => ({
       offer: a.offer,
       dueDay: a.dueDay,
-      bins: a.bins as unknown as Bins,
+      bins: a.bins.map(b => ({
+        demand: b.demand,
+        filled: b.filled,
+        infusedFilled: b.infusedFilled === undefined ? 0 : b.infusedFilled,
+      })) as unknown as Bins,
     })),
     takenToday: s.takenToday.slice(),
     history: s.history.slice(),

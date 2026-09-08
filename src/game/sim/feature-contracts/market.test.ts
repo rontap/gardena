@@ -39,6 +39,7 @@ import {
   cleanUnit,
   demandGood,
   missPenalty,
+  mul,
   paid,
   recover,
   rollBoard,
@@ -105,7 +106,7 @@ describe('contracts', () => {
     expect(w.log).toEqual([])
   })
 
-  test('Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel remainders do both.', () => {
+  test('Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel plain remainders do both. Infused remainders enter infused worth and raise no `sat`.', () => {
     const w = new World(1)
     w.contracts.active.push(carrotActive(0, 10))
     dropFruit(w, 'carrot', 2)
@@ -124,6 +125,17 @@ describe('contracts', () => {
     miss.tick(DT_MAX)
     expect(worthOf(miss, 'carrot')).toBeGreaterThan(0)
     expect(miss.stall.carrot.sat).toBeGreaterThan(0)
+    const inf = new World(1)
+    const jamDemand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    inf.contracts.active.push({
+      offer: { ...carrotOffer(4), lines: [jamDemand], clean: 4 * cleanUnit(jamDemand), reward: 1, penalty: 1 },
+      dueDay: 10,
+      bins: [{ demand: jamDemand, filled: 2, infusedFilled: 2 }],
+    })
+    inf.contracts.active[0].dueDay = inf.nowDay() + 1e-12
+    inf.tick(DT_MAX)
+    expect(inf.stall['jam-grape'].worth.base.synth).toBeGreaterThan(0)
+    expect(inf.stall['jam-grape'].sat).toBe(0)
     const loaded = dump(miss)
     expect('sat' in loaded.stall.carrot).toBe(false)
     const parsed = parse(JSON.stringify(loaded))
@@ -198,7 +210,7 @@ describe('contracts', () => {
     const live: Active = {
       offer,
       dueDay: 10,
-      bins: offer.lines.map(d => ({ demand: d, filled: 0 })) as unknown as Active['bins'],
+      bins: offer.lines.map(d => ({ demand: d, filled: 0, infusedFilled: 0 })) as unknown as Active['bins'],
     }
     w.contracts.active.push(live)
     live.bins.forEach(b => {
@@ -418,8 +430,8 @@ describe('contracts', () => {
       offer: { ...carrotOffer(1), id: 1, lines: [carrot, potato] },
       dueDay: 10,
       bins: [
-        { demand: carrot, filled: 0 },
-        { demand: potato, filled: 0 },
+        { demand: carrot, filled: 0, infusedFilled: 0 },
+        { demand: potato, filled: 0, infusedFilled: 0 },
       ],
     }
     const second = carrotActive(0, 10)
@@ -456,6 +468,38 @@ describe('contracts', () => {
     expect(w.contracts.active[0].bins[0].filled).toBe(2)
     expect(worthOf(w, 'carrot')).toBe(0)
   })
+
+  test('Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`. `Bin.infusedFilled` counts infused jam / cask / spirit / oil only. `Accepts` ignores `infused`. Miss and cancel do not take the mul.', () => {
+    const demand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    const offer: ContractOffer = {
+      id: 0,
+      slot: 0,
+      company: 'whole-cart',
+      difficulty: 1,
+      stars: 1,
+      band: 'long',
+      days: 4,
+      lines: [demand],
+      prize: { kind: 'cash' },
+      clean: 4,
+      markup: 0.2,
+      reward: 5,
+      penalty: 1,
+    }
+    const w = new World(1)
+    w.seats[0].actor.x = PAD.col + 0.5
+    w.seats[0].actor.y = PAD.row + 0.5
+    w.contracts.active.push({ offer, dueDay: 10, bins: [{ demand, filled: 0, infusedFilled: 0 }] })
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 4, unitSale: 72, infused: true },
+    }
+    w.enqueue({ act: 'consign' })
+    w.tick(DT_MAX)
+    expect(w.contracts.active).toHaveLength(0)
+    expect(w.contracts.rep).toBeCloseTo(REP_DONE[1] * 1.25, 9)
+    expect(Accepts(demand, 'jam-grape')).toBe(true)
+  })
 })
 
 function carrotOffer(amount = 4): ContractOffer {
@@ -484,7 +528,7 @@ function carrotActive(filled: number, dueDay: number): Active {
   return {
     offer,
     dueDay,
-    bins: [{ demand: offer.lines[0], filled }],
+    bins: [{ demand: offer.lines[0], filled, infusedFilled: 0 }],
   }
 }
 
@@ -623,12 +667,22 @@ describe('saturation', () => {
   test("heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider.", () => {
     const wine = new World(1)
     wine.family.daughter.owned.set('heirloom', 1)
-    wine.stall.wine.takeSpirit('keknyelu', 1, 100)
+    wine.stall.wine.takeSpirit('keknyelu', 1, 100, false)
     const cider = new World(1)
     cider.family.daughter.owned.set('heirloom', 1)
-    cider.stall.cider.takeSpirit('base', 1, 100)
+    cider.stall.cider.takeSpirit('base', 1, 100, false)
     expect(wine.marketQuote().clean).toBe(105)
     expect(cider.marketQuote().clean).toBe(100)
+  })
+
+  test('Infused clean `V_inf` pays `V_inf × mul(sat, good)` at sat at the start of that good and does not raise `sat`. Plain trapezoid from that same sat still raises `sat` by `V / SAT_DEPTH`. Infused miss / cancel remainders do not raise `sat`.', () => {
+    const w = new World(1)
+    w.stall.oil.takeSpirit('base', 1, 100, false)
+    w.stall.oil.takeSpirit('base', 2, 100, true)
+    w.stall.oil.sat = 0.5
+    expect(w.marketGain()).toBeCloseTo(paid(0.5, 'oil', 100) + 200 * mul(0.5, 'oil'), 9)
+    w.sellAll()
+    expect(w.stall.oil.sat).toBeCloseTo(Math.min(1, 0.5 + 100 / SAT_DEPTH), 9)
   })
 })
 

@@ -118,6 +118,8 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.prompt_chop()
     case 'graft':
       return m.prompt_graft()
+    case 'infuse':
+      return m.names_building_infuser()
   }
 }
 
@@ -406,6 +408,13 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, GRAFT_WORK)
       return
+    case 'infuse':
+      if (!machines.canInfuse(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
   }
 }
 
@@ -461,6 +470,7 @@ export function finishWork(world: World): void {
   if (i.act === 'weed-spray') field.doWeedSpray(world, i.at)
   if (i.act === 'chop') field.doChop(world, i.at)
   if (i.act === 'graft') field.doGraft(world, i.at)
+  if (i.act === 'infuse') machines.doInfuse(world, i.at)
   shiftHead(world)
 }
 

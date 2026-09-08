@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.2 as const
+export const SAVE_VERSION = 2.3 as const
 
 export type {
   LoadFailReason,
@@ -197,6 +197,7 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
     c.kind === 'jam' ||
     c.kind === 'still' ||
     c.kind === 'furnace' ||
+    c.kind === 'infuser' ||
     c.kind === 'station' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
@@ -302,7 +303,30 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'still':
       return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
     case 'furnace':
-      return { kind: 'furnace', base: c.base, units: c.units, progress: c.progress, inn: c.inn, out: c.out, hold: c.hold }
+      return {
+        kind: 'furnace',
+        base: c.base,
+        recipe: c.recipe,
+        quality: c.quality,
+        units: c.units,
+        progress: c.progress,
+        inn: c.inn,
+        out: c.out,
+        hold: c.hold,
+      }
+    case 'infuser':
+      return {
+        kind: 'infuser',
+        base: c.base,
+        lock: c.lock,
+        quality: c.quality,
+        unitSale: c.unitSale,
+        units: c.units,
+        flakes: c.flakes,
+        extract: c.extract,
+        progress: c.progress,
+        inn: c.inn,
+      }
     case 'station':
       return {
         kind: 'station',
@@ -449,7 +473,7 @@ function dumpContracts(c: Contracts): SaveContracts {
     active: c.active.map(a => ({
       offer: a.offer,
       dueDay: a.dueDay,
-      bins: a.bins.map(b => ({ demand: b.demand, filled: b.filled })),
+      bins: a.bins.map(b => ({ demand: b.demand, filled: b.filled, infusedFilled: b.infusedFilled })),
     })),
     takenToday: c.takenToday.slice(),
     history: c.history.slice(),

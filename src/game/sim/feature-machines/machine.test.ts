@@ -187,7 +187,7 @@ describe('machines', () => {
     barrel.age = BARREL_MATURE
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'cask', cask: 'cider', variety: 'base', quality: 0, count: 1, unitSale: CASK_SALE.cider },
+      item: { kind: 'cask', cask: 'cider', variety: 'base', quality: 0, count: 1, unitSale: CASK_SALE.cider, infused: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -325,7 +325,7 @@ function putFurnace(w: World, at: { col: number; row: number }): Furnace {
 }
 
 describe('machines.furnace-feed', () => {
-  test('Accept compost feedstock + oil + spirit + wood + tree-seed. Values as `FURNACE_VALUE`. Mix. Cap `FURNACE_CAP`. Refuse jam/cask/flour/extract/ash/tools.', () => {
+  test('Ash lock: compost feedstock + oil + spirit + wood + tree-seed + graft. Values as `FURNACE_VALUE`. Mix ash. Cap `FURNACE_CAP`. Refuse jam/cask/extract/vanilla-extract/flakes/bread/ash/tools. Flour is bread lock, not ash. Variety, quality, `infused` ignored on ash.', () => {
     expect(FURNACE_CAP).toBe(100)
     expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 25, spirit: 36, wood: 40 })
     expect(AXES.axe).toEqual({ uses: 30, workSeconds: 5 })
@@ -339,10 +339,14 @@ describe('machines.furnace-feed', () => {
       FURNACE_VALUE.fruit * 2,
     )
     expect(furnaceValue({ kind: 'sugar', liters: 3, capacityLiters: 3, unitSale: 1, quality: 0 })).toBe(FURNACE_VALUE.fruit * 3)
-    expect(furnaceValue({ kind: 'oil', quality: 0, count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.oil)
-    expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(FURNACE_VALUE.spirit)
+    expect(furnaceValue({ kind: 'oil', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(FURNACE_VALUE.oil)
+    expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(FURNACE_VALUE.spirit)
     expect(furnaceValue({ kind: 'wood', count: 1 })).toBe(FURNACE_VALUE.wood)
-    expect(furnaceValue({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(0)
+    expect(furnaceValue({ kind: 'flour', quality: 0, count: 1, unitSale: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'flakes', quality: 0, count: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'vanilla-extract', quality: 0, count: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'bread', quality: 0, count: 1, unitSale: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'ash', count: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'chainsaw', usesLeft: 3, workSeconds: 1 })).toBe(0)
@@ -356,7 +360,7 @@ describe('machines.furnace-feed', () => {
     w.enqueue({ act: 'furnace', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false } }
     w.enqueue({ act: 'furnace', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(f.units).toBe(FURNACE_VALUE.wood + FURNACE_VALUE.green * 2)
@@ -374,6 +378,7 @@ describe('machines.furnace-burn', () => {
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 12 }
     const f = putFurnace(w, at)
+    f.recipe = 'ash'
     f.units = FURNACE_NEED + 4
     ticks(w, FURNACE_SECONDS)
     expect(f.units).toBe(4)
@@ -402,6 +407,7 @@ describe('machines.furnace-haste', () => {
     const w = new World(1)
     const at = { col: 8, row: 14 }
     const f = putFurnace(w, at)
+    f.recipe = 'ash'
     f.units = FURNACE_NEED
     expect(furnaceWorking(f)).toBe(true)
     expect(furnaceMul([f], f.base)).toBe(1 + FURNACE_HASTE)
@@ -471,6 +477,7 @@ describe('machines.furnace-haste-look', () => {
     const mill0 = lookText(w, { kind: 'cell', at: millAt }, false)
     expect(mill0.split('\n')).not.toContain(one)
     const f1 = putFurnace(w, f1At)
+    f1.recipe = 'ash'
     f1.units = FURNACE_NEED
     const mill1 = lookText(w, { kind: 'cell', at: millAt }, false).split('\n')
     expect(mill1[0]).toBe('Mill')
@@ -490,6 +497,7 @@ describe('machines.furnace-haste-look', () => {
     expect(furnaceSouth.filter(l => l === one)).toHaveLength(1)
     expect(lookText(w, { kind: 'cell', at: barrelAt }, false).split('\n')).not.toContain(one)
     const f2 = putFurnace(w, f2At)
+    f2.recipe = 'ash'
     f2.units = FURNACE_NEED
     const mill2 = lookText(w, { kind: 'cell', at: millAt }, false).split('\n')
     expect(mill2[1]).toBe(two)
@@ -552,6 +560,7 @@ describe('machines.furnace-smoke', () => {
       { id: 'furnace', col: origin.col, row: origin.row + 1 },
       { id: 'furnace-smoke', col: origin.col, row: origin.row },
     ])
+    f.recipe = 'ash'
     f.units = FURNACE_NEED
     expect(furnaceWorking(f)).toBe(true)
     f.inn = 1

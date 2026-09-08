@@ -56,7 +56,7 @@ A named Variety restocks nothing: `packSku` covers `'base'` only, and no shelf s
 
 | tip | title | body |
 |---|---|---|
-| stock cell | Variety name | **Quality {n}%**; **Best for {purpose}** and what it pays there, on a named Variety only; pack price (`skuPrice`, per pack of 5) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × purposeMul(variety, 'produce')` |
+| stock cell | Variety name | **Quality {n}%**; **Best for {purpose}** and what it pays there, on a named Variety only; pack price (`skuPrice`, per `PACK_N`) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × purposeMul(variety, 'produce')` |
 | Buy cell | crop name | pack price, bulk `Coin`, `gateLine` when grey. Quality 0, Variety `'base'` |
 
 Empty cells hover too. What a Variety sells for at Quality 0 is worth knowing before you own any.

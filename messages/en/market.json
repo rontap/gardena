@@ -41,5 +41,6 @@
   "market_any_spirit": "Any spirit",
   "market_jam": "{crop} jam",
   "market_floor": "Floor {n}%. {days} to clean.",
+  "market_infused": "Infused goods sell at this percent. Selling them does not change this percent.",
   "market_recover": "{n}d"
 }

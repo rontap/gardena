@@ -24,7 +24,7 @@ Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac 
 | 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |
 | 1×2.5 windmill | `0 0 24 60` |
-| 2×2 generator, mill | `0 0 48 48` |
+| 2×2 generator, mill, infuser | `0 0 48 48` |
 
 Chrome strips (`ui-header`, `ui-rail`, `ui-notice-rail`, `ui-corner-*`) and panel art (`ui-market-stall`, `ui-recap-night`, `ui-menu`) are not tiles. Own viewBox. Still no width/height. `ui-notice-rail` is `ui-rail` at 3px for a one-line row — [[ui/notices]].
 
@@ -41,7 +41,7 @@ Stages are sibling `<g id>` in one file. Atlas rasterizes one named group per te
 | `item-graft-*.svg` | one per Variety group that species is asked for; `item-graft-apple.svg` carries all three because every annual routes to it |
 | `item-research-station` `prop-research-station` | `off` `on` |
 | `crop-weed-*.svg` | `sprout` `grow` |
-| `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` `prop-furnace` | `off` `on` |
+| `item-lever` `prop-lever` `item-button` `prop-button` `item-lamp` `prop-lamp` `item-pulser` `prop-pulser` `item-sensor-harvest` `prop-sensor-harvest` `item-sensor-day` `prop-sensor-day` `item-water-system` `prop-water-system` `item-vehicle-detector` `prop-vehicle-detector` `item-traffic-light` `prop-traffic-light` `prop-furnace` `item-infuser` `prop-infuser` | `off` `on` |
 | `item-counter` `prop-counter` | `s0` `s1` `s2` `s3` `s4` |
 | `ui-arrow-right.svg` | `ink` `fill` |
 | `item-sensor-water` `prop-sensor-water` | `red` `blue` |

@@ -7,6 +7,7 @@ import {
   Furnace,
   Grinder,
   Hangar,
+  Infuser,
   inWorld,
   JamMachine,
   Mill,
@@ -123,7 +124,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     w.ping()
     return
   }
-  if (c.kind === 'mill') {
+  if (c.kind === 'mill' || c.kind === 'infuser') {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
       w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
@@ -310,6 +311,7 @@ export function confirmPlace(w: World, at: Coord): void {
     w.act.place.id === 'buy-tap' ||
     w.act.place.id === 'buy-well' ||
     w.act.place.id === 'buy-mill' ||
+    w.act.place.id === 'buy-infuser' ||
     w.act.place.id === 'buy-jam' ||
     w.act.place.id === 'buy-barrel' ||
     w.act.place.id === 'buy-freezer' ||
@@ -335,10 +337,13 @@ export function confirmPlace(w: World, at: Coord): void {
       w.ping()
       return
     }
-    if (w.act.place.id === 'buy-mill') {
+    if (w.act.place.id === 'buy-mill' || w.act.place.id === 'buy-infuser') {
       if (!squareSiteOk(w, at)) return
       w.money -= price
-      const made = new Mill({ shape: 'rect', col: at.col, row: at.row, w: MILL_W, h: MILL_H })
+      const made =
+        w.act.place.id === 'buy-mill'
+          ? new Mill({ shape: 'rect', col: at.col, row: at.row, w: MILL_W, h: MILL_H })
+          : new Infuser({ shape: 'rect', col: at.col, row: at.row, w: MILL_W, h: MILL_H })
       occupiedCells(made.base, w.owned).forEach(p => w.setCell(p, made))
       w.act.place = { kind: 'none' }
       w.ping()
@@ -434,6 +439,7 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'still' ||
     made.kind === 'furnace' ||
     made.kind === 'station' ||
+    made.kind === 'infuser' ||
     made.kind === 'barrel' ||
     made.kind === 'freezer' ||
     made.kind === 'hangar' ||

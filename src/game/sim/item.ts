@@ -46,6 +46,7 @@ import {
   STATION_GRAFT_MIN,
   STATION_IN,
   STATION_SECONDS,
+  INFUSE_SECONDS,
   SUGAR_SHOP,
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
@@ -94,12 +95,15 @@ export type Item =
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
   | { kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
-  | { kind: 'spirit'; spirit: SpiritKind; variety: VarietyId; quality: number; count: number; unitSale: number }
-  | { kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count: number; unitSale: number }
-  | { kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count: number; unitSale: number }
-  | { kind: 'oil'; quality: number; count: number; unitSale: number }
+  | { kind: 'spirit'; spirit: SpiritKind; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
+  | { kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
+  | { kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
+  | { kind: 'oil'; quality: number; count: number; unitSale: number; infused: boolean }
   | { kind: 'flour'; quality: number; count: number; unitSale: number }
   | { kind: 'extract'; quality: number; count: number; unitSale: number }
+  | { kind: 'flakes'; quality: number; count: number }
+  | { kind: 'vanilla-extract'; quality: number; count: number }
+  | { kind: 'bread'; quality: number; count: number; unitSale: number }
   | { kind: 'rotten'; cls: CropClass; count: number }
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
@@ -134,6 +138,7 @@ export type Face =
   | { kind: 'still' }
   | { kind: 'furnace' }
   | { kind: 'station' }
+  | { kind: 'infuser' }
   | { kind: 'barrel' }
   | { kind: 'freezer'; slots: number }
   | { kind: 'hangar' }
@@ -237,6 +242,10 @@ export function jamJarName(crop: JamCrop, variety: VarietyId): string {
   return jamJar(crop, variety).name
 }
 
+function infusedName(name: string, infused: boolean): string {
+  return infused ? m.names_item_infused({ name }) : name
+}
+
 export function spiritName(spirit: SpiritKind, variety: VarietyId): string {
   if (spirit === 'brandy' && variety === 'klosterneuburger') return m.names_spirit_klosterneuburger()
   return SPIRIT_NAME[spirit]()
@@ -270,12 +279,15 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'grass-seeds') return m.names_item_grass_seed()
   if (it.kind === 'fruit') return cropVariety(it.crop, it.variety)
   if (it.kind === 'sugar') return m.names_item_sugar()
-  if (it.kind === 'spirit') return spiritName(it.spirit, it.variety)
-  if (it.kind === 'cask') return caskName(it.cask, it.variety)
-  if (it.kind === 'jam') return jamJarName(it.crop, it.variety)
-  if (it.kind === 'oil') return m.names_item_oil()
+  if (it.kind === 'spirit') return infusedName(spiritName(it.spirit, it.variety), it.infused)
+  if (it.kind === 'cask') return infusedName(caskName(it.cask, it.variety), it.infused)
+  if (it.kind === 'jam') return infusedName(jamJarName(it.crop, it.variety), it.infused)
+  if (it.kind === 'oil') return infusedName(m.names_item_oil(), it.infused)
   if (it.kind === 'flour') return m.names_item_flour()
+  if (it.kind === 'bread') return m.names_item_bread()
   if (it.kind === 'extract') return m.names_item_extract()
+  if (it.kind === 'flakes') return m.names_item_flakes()
+  if (it.kind === 'vanilla-extract') return m.names_item_vanilla_extract()
   if (it.kind === 'tree-seed') return m.hud_tool_seed({ name: cropVariety(it.tree, it.variety) })
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
@@ -324,6 +336,7 @@ const PLACE_NAME = {
   still: () => m.names_building_still(),
   furnace: () => m.names_building_furnace(),
   station: () => m.names_building_station(),
+  infuser: () => m.names_building_infuser(),
   barrel: () => m.names_building_barrel(),
   freezer: () => m.names_building_freezer(),
   hangar: () => m.names_building_hangar(),
@@ -374,6 +387,7 @@ export function faceName(face: Face): string {
     case 'still':
     case 'furnace':
     case 'station':
+    case 'infuser':
     case 'barrel':
     case 'freezer':
     case 'hangar':
@@ -492,25 +506,34 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${m.hud_line_sugar({ name: m.names_item_sugar(), liters: Math.visualRound(item.liters) })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'spirit') {
-    const line = countMul(spiritName(item.spirit, item.variety), purposeMul(item.variety, 'alcohol'), item.count)
+    const line = countMul(infusedName(spiritName(item.spirit, item.variety), item.infused), purposeMul(item.variety, 'alcohol'), item.count)
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'cask') {
-    const line = countMul(caskName(item.cask, item.variety), caskMulOf(item), item.count)
+    const line = countMul(infusedName(caskName(item.cask, item.variety), item.infused), caskMulOf(item), item.count)
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'jam') {
-    const line = countMul(jamJarName(item.crop, item.variety), purposeMul(item.variety, 'processed'), item.count)
+    const line = countMul(infusedName(jamJarName(item.crop, item.variety), item.infused), purposeMul(item.variety, 'processed'), item.count)
     return `${line} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'oil') {
-    return `${m.hud_line_count({ name: m.names_item_oil(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+    return `${m.hud_line_count({ name: infusedName(m.names_item_oil(), item.infused), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'flour') {
     return `${m.hud_line_count({ name: m.names_item_flour(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
+  if (item.kind === 'bread') {
+    return `${m.hud_line_count({ name: m.names_item_bread(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
   if (item.kind === 'extract') {
     return `${m.hud_line_count({ name: m.names_item_extract(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'flakes') {
+    return `${m.hud_line_count({ name: m.names_item_flakes(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+  }
+  if (item.kind === 'vanilla-extract') {
+    return `${m.hud_line_count({ name: m.names_item_vanilla_extract(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'tree-seed') {
     return `${m.hud_line_tree_seed({ name: cropVariety(item.tree, item.variety) })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
@@ -558,6 +581,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'pack-raspberry': () => m.names_sku_pack_raspberry(),
   'pack-grape': () => m.names_sku_pack_grape(),
   'pack-sugar-cane': () => m.names_sku_pack_sugar_cane(),
+  'pack-chilli': () => m.names_sku_pack_chilli(),
   'buy-shovel': () => m.names_sku_buy_shovel(),
   'buy-better-shovel': () => m.names_sku_buy_better_shovel(),
   'buy-pickaxe': () => m.names_sku_buy_pickaxe(),
@@ -618,6 +642,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-axe': () => m.names_sku_buy_axe(),
   'buy-chainsaw': () => m.names_sku_buy_chainsaw(),
   'buy-research-station': () => m.names_sku_buy_research_station(),
+  'buy-infuser': () => m.names_sku_buy_infuser(),
 }
 
 export function skuLabel(id: SkuId): string {
@@ -635,6 +660,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'pack-raspberry': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('raspberry') }),
   'pack-grape': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('grape') }),
   'pack-sugar-cane': () => m.catalog_sku_pack_sugar_cane({ n: PACK_N, name: cropName('sugar-cane') }),
+  'pack-chilli': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('chilli') }),
   'buy-shovel': () => m.catalog_shovel(SHOVELS.shovel),
   'buy-better-shovel': () => m.catalog_better_shovel(SHOVELS['better-shovel']),
   'buy-pickaxe': () => m.catalog_pickaxe(PICKAXES.pickaxe),
@@ -704,6 +730,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
       min: STATION_GRAFT_MIN,
       max: STATION_GRAFT_MAX,
     }),
+  'buy-infuser': () => m.catalog_sku_buy_infuser({ seconds: INFUSE_SECONDS }),
 }
 
 export function skuDesc(id: SkuId): string {
@@ -770,6 +797,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'seeds', crop: 'grape', variety: 'base', quality: 0, count: 5 }
     case 'pack-sugar-cane':
       return { kind: 'seeds', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5 }
+    case 'pack-chilli':
+      return { kind: 'seeds', crop: 'chilli', variety: 'base', quality: 0, count: 5 }
     case 'buy-shovel':
       return makeShovel('shovel')
     case 'buy-better-shovel':
@@ -838,6 +867,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'furnace' }
     case 'buy-research-station':
       return { kind: 'station' }
+    case 'buy-infuser':
+      return { kind: 'infuser' }
     case 'buy-barrel':
       return { kind: 'barrel' }
     case 'buy-freezer':
@@ -926,7 +957,10 @@ export function crafted(item: Countable): boolean {
     item.kind === 'jam' ||
     item.kind === 'oil' ||
     item.kind === 'flour' ||
-    item.kind === 'extract'
+    item.kind === 'extract' ||
+    item.kind === 'flakes' ||
+    item.kind === 'vanilla-extract' ||
+    item.kind === 'bread'
   )
 }
 
@@ -936,9 +970,16 @@ export function stackable(a: Countable, b: Countable): boolean {
     const o = b as Extract<Countable, { crop: CropId | AnnualId; variety: VarietyId }>
     return a.crop === o.crop && a.variety === o.variety
   }
-  if (a.kind === 'spirit') return a.spirit === (b as typeof a).spirit && a.variety === (b as typeof a).variety
-  if (a.kind === 'cask') return a.cask === (b as typeof a).cask && a.variety === (b as typeof a).variety
-  if (a.kind === 'jam') return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety
+  if (a.kind === 'spirit') {
+    return a.spirit === (b as typeof a).spirit && a.variety === (b as typeof a).variety && a.infused === (b as typeof a).infused
+  }
+  if (a.kind === 'cask') {
+    return a.cask === (b as typeof a).cask && a.variety === (b as typeof a).variety && a.infused === (b as typeof a).infused
+  }
+  if (a.kind === 'jam') {
+    return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety && a.infused === (b as typeof a).infused
+  }
+  if (a.kind === 'oil') return a.infused === (b as typeof a).infused
   if (a.kind === 'graft') return a.crop === (b as typeof a).crop && a.variety === (b as typeof a).variety
   if (a.kind === 'rotten' || a.kind === 'dead') return a.cls === (b as typeof a).cls
   return true
@@ -988,6 +1029,9 @@ function copyItem(item: Item): Item {
     case 'oil':
     case 'flour':
     case 'extract':
+    case 'flakes':
+    case 'vanilla-extract':
+    case 'bread':
     case 'rotten':
     case 'dead':
     case 'weed':
@@ -1102,16 +1146,26 @@ export function compactSlots(slots: Slot[]): void {
       slot.item.kind === 'jam' ||
       slot.item.kind === 'oil' ||
       slot.item.kind === 'flour' ||
-      slot.item.kind === 'extract'
+      slot.item.kind === 'extract' ||
+      slot.item.kind === 'flakes' ||
+      slot.item.kind === 'vanilla-extract' ||
+      slot.item.kind === 'bread'
     ) {
       const it = slot.item
       const hit = kept.find(
         s =>
           s.kind === 'hold' &&
           s.item.kind === it.kind &&
-          (it.kind !== 'spirit' || (s.item.kind === 'spirit' && s.item.spirit === it.spirit && s.item.variety === it.variety)) &&
-          (it.kind !== 'cask' || (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.variety === it.variety)) &&
-          (it.kind !== 'jam' || (s.item.kind === 'jam' && s.item.crop === it.crop && s.item.variety === it.variety)),
+          (it.kind !== 'spirit' ||
+            (s.item.kind === 'spirit' &&
+              s.item.spirit === it.spirit &&
+              s.item.variety === it.variety &&
+              s.item.infused === it.infused)) &&
+          (it.kind !== 'cask' ||
+            (s.item.kind === 'cask' && s.item.cask === it.cask && s.item.variety === it.variety && s.item.infused === it.infused)) &&
+          (it.kind !== 'jam' ||
+            (s.item.kind === 'jam' && s.item.crop === it.crop && s.item.variety === it.variety && s.item.infused === it.infused)) &&
+          (it.kind !== 'oil' || (s.item.kind === 'oil' && s.item.infused === it.infused)),
       )
       if (hit !== undefined && hit.kind === 'hold' && countable(hit.item) && countable(it) && stackable(hit.item, it)) {
         mergeInto(hit.item, it, it.count)

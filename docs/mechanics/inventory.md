@@ -35,7 +35,7 @@ Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-f
 
 Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the four additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
 
-Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. The Seed silo is the only place a pack is sold. No pack (vanilla): no Buy. — [[ui/store]]
+Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. The Seed silo is the only place a pack is sold. No pack (vanilla): no Buy. `pack-chilli` Buy when `skuShown`. — [[ui/store]]
 
 `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. — [[mechanics/family]]
 
@@ -45,11 +45,11 @@ Shovel in hand. Bucket on the doorstep (full `CONTAINERS.bucket`). Money `MONEY_
 
 House: four `base` tree seeds, one graft of every tree variety, and `STARTER_FRUIT_N` fruit of every `STARTER_FRUIT` Variety — `keknyelu` and `san-marzano`, Quality 0, fresh, organic. Twelve of sixteen slots. That is one barrel of Premium wine and one Passata without waiting on a first crop.
 
-Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one pack of 5 of each annual variety: `bintje` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `keknyelu`. Seven packs. Total under `SILO_SEED_CAP`.
+Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one `PACK_N` pack of each annual variety: `bintje` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `keknyelu`. Seven packs. Total under `SILO_SEED_CAP`.
 
 House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0, and one graft of every tree variety: `kingston-black` `pink-lady` `blenheim` `klosterneuburger` `arbequina` `bing`. Ten of sixteen. Graft quality 0.
 
-`pack-*` are five seeds, `'base'`, quality 0.
+`pack-*` are `PACK_N` seeds, `'base'`, quality 0.
 
 ## Tools
 
@@ -61,9 +61,9 @@ Weed spray: `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 3
 
 ## Stacks
 
-Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+variety, graft by crop+variety, spirit by kind+variety (mixed by kind alone), wine by variety, jam by crop+variety, rotten / dead by `CropClass`, weed, grass, wood, ash by kind alone.
+Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+variety, graft by crop+variety, spirit by kind+variety+`infused` (mixed by kind+`infused`), wine by variety+`infused`, jam by crop+variety+`infused`, oil by `infused`, flakes / vanilla-extract / bread by kind, rotten / dead by `CropClass`, weed, grass, wood, ash by kind alone.
 
-Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract — preference. `bulk-up` adds `BULK_UP_STEP` per owned tier, `BULK_UP_CRAFTED_STEP` on the crafted cap — [[mechanics/family]]. `World.stackMax(item)` is derived, not a field.
+Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread — preference. `bulk-up` adds `BULK_UP_STEP` per owned tier, `BULK_UP_CRAFTED_STEP` on the crafted cap — [[mechanics/family]]. `World.stackMax(item)` is derived, not a field.
 
 The cap is on growth, not possession. Harvest, pickup, weed pull, and barrel collect stop at it. A stack handed over whole — silo take, house / chest / vehicle swap — may exceed it; those containers keep their own caps and merge freely.
 
@@ -79,9 +79,9 @@ Ordinary bag `FERT_BAG_LITERS`, always at the Additive store. Synthetic `SYNTH_B
 
 Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
-`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Ash composts as `count × COMPOST_VALUE.ash`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Fruit composts at `COMPOST_VALUE.fruit` regardless of variety. Spirit / wine / jam / oil / flour / extract / wood / graft / treasure: not compost.
+`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Ash composts as `count × COMPOST_VALUE.ash`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Fruit composts at `COMPOST_VALUE.fruit` regardless of variety. Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread / wood / graft / treasure: not compost.
 
-`FURNACE_CAP` `FURNACE_NEED` — preference. `furnaceValue` — [[mechanics/machines]] `machines.furnace-feed`. Wood `{ kind: 'wood'; count }`. Ash `{ kind: 'ash'; count }`. Graft at the green rate. Not stall goods. `STACK_MAX`. Treasure not furnace.
+`FURNACE_CAP` `FURNACE_NEED` — preference. `furnaceValue` — [[mechanics/machines]] `machines.furnace-feed`. Wood `{ kind: 'wood'; count }`. Ash `{ kind: 'ash'; count }`. Graft at the green rate. Not stall goods. `STACK_MAX`. Treasure not furnace. Flour is bread lock, not ash — [[mechanics/infusion]] `infusion.furnace`. Flakes and vanilla-extract refuse.
 
 ## Treasure
 
@@ -91,7 +91,7 @@ Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` �
 
 Seed grinder 1×1, `unlock-grinder`. Hopper machine, not actor work. Fruit including sugar-cane and tree fruit → seeds or tree-seed. `GRIND_WORK` 12 per fruit tick — preference. A held fruit stack dumps all of it. Sugar: refuse. Rules: [[mechanics/machines]] `machines.grind-hopper` `machines.grind-tree`.
 
-Mill / jam / still / barrel / freezer / furnace / bought sugar / station: [[mechanics/machines]].
+Mill / jam / still / barrel / freezer / furnace / infuser / bought sugar / station: [[mechanics/machines]] [[mechanics/infusion]].
 
 ## Tiles
 
@@ -103,14 +103,16 @@ Mill / jam / still / barrel / freezer / furnace / bought sugar / station: [[mech
 
 `inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. `buy-compost-box` unlock `start`. Graft not compost. Treasure not compost.
 
-`inventory.stack` — Countable items merge in hand by kind and identity only. `variety` is in the identity key. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per owned tier. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`. Illegal: `{ kind: 'treasure'; count }`.
+`inventory.stack` — Countable items merge in hand by kind and identity only. `variety` is in the identity key. `infused` is in the identity key on jam, cask, spirit, oil. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per owned tier. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`. Illegal: `{ kind: 'treasure'; count }`.
 
-`variety.stack` — Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar. Fruit `cut` is not in the identity key; a merged stack is cut when either side was — [[mechanics/machines]] `station.cut`.
+`variety.stack` — Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar. Fruit `cut` is not in the identity key; a merged stack is cut when either side was — [[mechanics/machines]] `station.cut`. Infused never merges with plain.
+
+`inventory.infused` — `infused: boolean` required on jam, cask, spirit, oil. Flakes and vanilla-extract countable, no `unitSale`, not stall. Bread countable, stall. — [[mechanics/infusion]] `infusion.item`
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 
 `inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
 
-`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy.
+`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy. `pack-chilli` after `unlock-infusion`.
 
 `inventory.ash` — 1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.

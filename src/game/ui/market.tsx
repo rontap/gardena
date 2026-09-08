@@ -3,15 +3,15 @@ import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS } from '../defs/crops.ts'
-
 import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
+import { VARIETY_IDS } from '../defs/varieties.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
 import { CASK_NAME, cropName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR } from '../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
-import { binCount, isCropStall } from '../sim/stall.ts'
+import { binCount, isCropStall, isInfusedStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
 import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, UI_MARKET_STALL } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
@@ -327,7 +327,7 @@ function demandName(demand: Demand): string {
 
 function AnyJamFace({ count }: { count: number }) {
   const stage = useCycle(JAM_CROPS.length)
-  return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], variety: 'base', quality: 0, count, unitSale: 1 }} />
+  return <ItemFace item={{ kind: 'jam', crop: JAM_CROPS[stage], variety: 'base', quality: 0, count, unitSale: 1, infused: false }} />
 }
 
 function demandFace(demand: Demand, count: number) {
@@ -342,21 +342,24 @@ function demandFace(demand: Demand, count: number) {
 
 export function demandItem(demand: Demand, count: number): Item {
   if (demand.kind === 'group' && demand.group === 'spirit') {
-    return { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count, unitSale: 1 }
+    return { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count, unitSale: 1, infused: false }
   }
   if (demand.kind === 'plain') {
     if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL, quality: 0 }
-    if (demand.good === 'oil' || demand.good === 'flour' || demand.good === 'extract') {
+    if (demand.good === 'flour' || demand.good === 'extract' || demand.good === 'bread') {
       return { kind: demand.good, quality: 0, count, unitSale: 1 }
     }
+    if (demand.good === 'oil') {
+      return { kind: 'oil', quality: 0, count, unitSale: 1, infused: false }
+    }
     if (demand.good === 'wine' || demand.good === 'cider') {
-      return { kind: 'cask', cask: demand.good, variety: 'base', quality: 0, count, unitSale: 1 }
+      return { kind: 'cask', cask: demand.good, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
     }
     if (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed') {
-      return { kind: 'spirit', spirit: demand.good, variety: 'base', quality: 0, count, unitSale: 1 }
+      return { kind: 'spirit', spirit: demand.good, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
     }
     if (demand.good.startsWith('jam-')) {
-      return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, variety: 'base', quality: 0, count, unitSale: 1 }
+      return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
     }
     if (!isCropStall(demand.good)) throw new Error('demandItem')
     return {
@@ -529,6 +532,8 @@ function StallRow({
   world: World
   onTip: (tip: Tip) => void
 }) {
+  const infused = stallInfused(world, row.good)
+  const floor = m.market_floor({ n: SAT_FLOOR[row.good] * 100, days: nd(row.recoverDays) })
   return (
     <div
       data-stall-box={row.good}
@@ -536,12 +541,12 @@ function StallRow({
       onPointerEnter={() =>
         onTip({
           title: stallName(row.good),
-          description: m.market_floor({ n: SAT_FLOOR[row.good] * 100, days: nd(row.recoverDays) }),
+          description: infused ? `${floor} ${m.market_infused()}` : floor,
         })
       }
       onPointerLeave={() => onTip(undefined)}
     >
-      <ItemFace item={boxFace(row.good)} />
+      <ItemFace item={boxFace(row.good, infused)} />
       <span>{binCount(world.stall[row.good])}</span>
       <div className="ml-auto flex items-center gap-3 text-sm tabular-nums">
         <span>{Math.round(row.mul * 100)}%</span>
@@ -563,6 +568,7 @@ function stallName(id: StallGoodId): string {
   if (id === 'oil') return m.names_item_oil()
   if (id === 'flour') return m.names_item_flour()
   if (id === 'extract') return m.names_item_extract()
+  if (id === 'bread') return m.names_item_bread()
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]()
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
@@ -572,17 +578,23 @@ function stallName(id: StallGoodId): string {
   return cropName(id)
 }
 
-function boxFace(id: StallGoodId): Item {
+function stallInfused(world: World, id: StallGoodId): boolean {
+  if (!isInfusedStall(id)) return false
+  return VARIETY_IDS.some(v => world.stall[id].stock[v].synth > 0)
+}
+
+function boxFace(id: StallGoodId, infused: boolean): Item {
   if (id === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL, quality: 0 }
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') {
-    return { kind: 'spirit', spirit: id, variety: 'base', quality: 0, count: 1, unitSale: 1 }
+    return { kind: 'spirit', spirit: id, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
   }
-  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, variety: 'base', quality: 0, count: 1, unitSale: 1 }
+  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
-    return { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: 1 }
+    return { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
   }
-  if (id === 'oil' || id === 'flour' || id === 'extract') return { kind: id, quality: 0, count: 1, unitSale: 1 }
+  if (id === 'flour' || id === 'extract' || id === 'bread') return { kind: id, quality: 0, count: 1, unitSale: 1 }
+  if (id === 'oil') return { kind: 'oil', quality: 0, count: 1, unitSale: 1, infused }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
   return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true, cut: false }
 }

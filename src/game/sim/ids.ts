@@ -1,3 +1,5 @@
+import type { VarietyId } from '../defs/varieties.ts'
+
 export type AnnualId =
   | 'carrot'
   | 'potato'
@@ -6,6 +8,7 @@ export type AnnualId =
   | 'raspberry'
   | 'grape'
   | 'vanilla'
+  | 'chilli'
   | 'sugar-cane'
 
 export type TreeId = 'apple' | 'apricot' | 'olive' | 'cherry'
@@ -20,6 +23,7 @@ export const ANNUAL_IDS: readonly AnnualId[] = [
   'raspberry',
   'grape',
   'vanilla',
+  'chilli',
   'sugar-cane',
 ]
 
@@ -70,7 +74,16 @@ export const CROP_OF_SPIRIT: { readonly [K in Exclude<SpiritKind, 'mixed'>]: Sti
   brandy: 'apricot',
 }
 
-export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla'
+export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla' | 'chilli'
+
+export type FurnaceRecipe = 'none' | 'ash' | 'bread'
+
+export type Infusable =
+  | { kind: 'jam'; crop: JamCrop; variety: VarietyId }
+  | { kind: 'cask'; cask: CaskId; variety: VarietyId }
+  | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId }
+  | { kind: 'spirit'; spirit: 'mixed' }
+  | { kind: 'oil' }
 
 export type JamId = `jam-${JamCrop}`
 
@@ -82,9 +95,9 @@ export const JAM_IDS: readonly JamId[] = JAM_CROPS.map(c => `jam-${c}` as JamId)
 
 export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
 
-export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla']
+export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli']
 
-export type StallGoodId = CropId | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract'
+export type StallGoodId = CropId | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract' | 'bread'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 
@@ -163,6 +176,7 @@ export type ResearchId =
   | 'unlock-smart-irrigation'
   | 'unlock-contracts'
   | 'unlock-furnace'
+  | 'unlock-infusion'
 
 export type SkuId =
   | 'pack-carrot'
@@ -172,6 +186,7 @@ export type SkuId =
   | 'pack-raspberry'
   | 'pack-grape'
   | 'pack-sugar-cane'
+  | 'pack-chilli'
   | 'buy-shovel'
   | 'buy-better-shovel'
   | 'buy-pickaxe'
@@ -232,6 +247,7 @@ export type SkuId =
   | 'buy-axe'
   | 'buy-chainsaw'
   | 'buy-research-station'
+  | 'buy-infuser'
 
 export type SensorKind =
   | 'lever'

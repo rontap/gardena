@@ -22,10 +22,10 @@ import {
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import { BETTER_QUALITY, purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
+import { BETTER_QUALITY, purposeMul, qualityMul, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
-import { packSku, type AnnualId, type SkuId } from './ids.ts'
+import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
@@ -39,7 +39,7 @@ import {
 import { FREEZER_ROT_MUL, SILO_H, SILO_W, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
 import { dump, parse } from './feature-save/save.ts'
-import { makeShovel, type Hand, type Item } from './item.ts'
+import { makeShovel, skuItem, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { ADDITIVE_BAG, ADDITIVE_BASE, Rock, SiloSeed, SiloSpray, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
@@ -328,7 +328,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 72 },
+      item: { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 72, infused: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
@@ -1161,9 +1161,9 @@ describe('1.9 stacks', () => {
 
   test('Bottled and jarred goods cap at `STACK_MAX_CRAFTED`.', () => {
     const w = new World(1)
-    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'cask', cask: 'wine', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'cask', cask: 'wine', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
+    expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(STACK_MAX)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
   })
@@ -1176,7 +1176,7 @@ describe('1.9 stacks', () => {
     expect(PLAYER_SKILL_IDS.includes('bulk-up')).toBe(true)
     w.family.player.owned.set('bulk-up', 2)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX + 2 * BULK_UP_STEP)
-    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1 })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
+    expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
   })
 
   test('Pick up merges what fits and leaves the remainder on the ground.', () => {
@@ -1698,6 +1698,48 @@ describe('machines.grind-tree', () => {
     expect(grindMinAt(0)).toBe(GRIND_MIN)
     expect(grindMinAt(1)).toBe(GRIND_MAX)
     expect(grindMinAt(0.5)).toBe(GRIND_MIN + Math.round((GRIND_MAX - GRIND_MIN) * 0.5))
+  })
+})
+
+describe('plants.chilli', () => {
+  test("Chilli `growSeconds` 190, slower than potato, faster than vanilla. `rotSeconds` longer than potato. One Variety `'base'`. No `unlock-chilli`. `pack-chilli` show and buy `unlock-infusion`, `PACK_N` at 10. Mill yields flakes.", () => {
+    expect(CROPS.chilli.growSeconds).toBe(190)
+    expect(CROPS.chilli.growSeconds).toBeLessThan(CROPS.vanilla.growSeconds)
+    expect(CROPS.chilli.growSeconds).toBeGreaterThan(CROPS.potato.growSeconds)
+    expect(CROPS.chilli.rotSeconds).toBeGreaterThan(CROPS.potato.rotSeconds)
+    expect(VARIETIES.chilli).toEqual(['base'])
+    expect(Object.keys(RESEARCH).includes('unlock-chilli')).toBe(false)
+    expect(SKUS['pack-chilli']).toMatchObject({ unlock: 'unlock-infusion', show: 'unlock-infusion', price: 10 })
+    expect(packSku('chilli')).toBe('pack-chilli')
+  })
+})
+
+describe('plants.annual', () => {
+  test('`Plant.crop` is `AnnualId`. `AnnualId` is carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.', () => {
+    expect(ANNUAL_IDS).toEqual([
+      'carrot',
+      'potato',
+      'wheat',
+      'tomato',
+      'raspberry',
+      'grape',
+      'vanilla',
+      'chilli',
+      'sugar-cane',
+    ])
+    expect(CROPS.olive.id).toBe('olive')
+    expect(CROPS.chilli.cls).toBe('fruit')
+  })
+})
+
+describe('plants.packs', () => {
+  test("Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). `pack-chilli` exists. No tree pack. No olive pack. No vanilla pack.", () => {
+    expect(packSku('vanilla')).toBeUndefined()
+    expect(packSku('chilli')).toBe('pack-chilli')
+    expect(packSku('carrot')).toBe('pack-carrot')
+    expect(Object.keys(SKUS).includes('pack-olive')).toBe(false)
+    expect(Object.keys(SKUS).includes('pack-vanilla')).toBe(false)
+    expect(skuItem('pack-chilli')).toEqual({ kind: 'seeds', crop: 'chilli', variety: 'base', quality: 0, count: 5 })
   })
 })
 

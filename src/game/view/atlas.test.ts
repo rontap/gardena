@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
 import { atlasVb, faceKey, treeAtlasStage } from './atlas.ts'
-import { fruitGroup, graftSpecies, jamArt, ripeGroup, spiritArt, varietyGroup } from './svgs.ts'
+import { faceInfused, fruitGroup, graftSpecies, itemInner, jamArt, OVERLAY_INFUSED, ripeGroup, spiritArt, varietyGroup } from './svgs.ts'
+import { CONCEPT_IDS } from '../ui/almanac.tsx'
+import { catalogEntries } from '../defs/catalog.ts'
 import { caskGroup, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
 import { ANNUAL_IDS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type CropId } from '../sim/ids.ts'
 
@@ -86,5 +88,23 @@ test('view.groups — every `<g id>` the atlas asks for exists in the file it re
   expect(groupIds('props/prop-sensor-weather.svg')).toEqual(['off', 'on'])
   expect(groupIds('items/item-sensor-weather.svg')).toEqual(['off', 'on'])
   expect(groupIds('props/prop-vehicle-detector.svg')).toEqual(['off', 'on'])
+  expect(groupIds('props/prop-infuser.svg')).toEqual(['off', 'on'])
+  expect(groupIds('items/item-infuser.svg')).toEqual(['off', 'on'])
+  expect(groupIds('overlay-infused.svg')).toEqual([])
   expect(faceKey({ kind: 'treasure', coins: 1 })).toBe('treasure')
+  expect(faceKey({ kind: 'flakes', quality: 0, count: 1 })).toBe('flakes')
+  expect(faceKey({ kind: 'vanilla-extract', quality: 0, count: 1 })).toBe('vanilla-extract')
+  expect(faceKey({ kind: 'bread', quality: 0, count: 1, unitSale: 1 })).toBe('bread')
+})
+
+test('view.infused-overlay — Infused face is the plain face plus one `overlay-infused.svg`. HUD `itemInner`, drop, recipe yield, Stall row. Not a lens. Not Pixi wash. Not a pane per infused good.', () => {
+  const oil = { kind: 'oil' as const, quality: 0, count: 1, unitSale: 1, infused: false }
+  const plain = itemInner(oil)
+  const infused = itemInner({ ...oil, infused: true })
+  expect(faceInfused(oil)).toBe(false)
+  expect(faceInfused({ ...oil, infused: true })).toBe(true)
+  expect(infused).toBe(`${plain}${OVERLAY_INFUSED}`)
+  expect(Object.keys(ASSETS).filter(f => f.includes('infused'))).toEqual(['../../assets/overlay-infused.svg'])
+  expect(catalogEntries().some(e => e.id === 'infusion')).toBe(false)
+  expect(CONCEPT_IDS).toContain('infusion')
 })

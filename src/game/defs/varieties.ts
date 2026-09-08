@@ -97,6 +97,7 @@ export const VARIETIES: { readonly [K in CropId]: readonly VarietyId[] } = {
   raspberry: ['base', 'black-raspberry'],
   grape: ['base', 'concord', 'keknyelu'],
   vanilla: ['base'],
+  chilli: ['base'],
   'sugar-cane': ['base'],
   apple: ['base', 'kingston-black', 'pink-lady'],
   apricot: ['base', 'blenheim', 'klosterneuburger'],

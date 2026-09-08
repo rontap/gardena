@@ -1581,6 +1581,7 @@ describe('beta-6 invariants', () => {
             'pack-grape',
             'pack-raspberry',
             'pack-sugar-cane',
+            'pack-chilli',
             'buy-fertilizer',
             'buy-synth-fertilizer',
             'buy-weed-spray',

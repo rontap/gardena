@@ -35,6 +35,7 @@ Vault for this game. Agents read this first.
 - [[mechanics/burrow]] — luck, treasure
 - [[mechanics/sensors]]
 - [[mechanics/enclosure]] — fenced area, fenceable sensor range
+- [[mechanics/infusion]] — Infusion, chilli, Infuser, overlay-infused
 
 ## Items
 

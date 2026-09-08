@@ -388,6 +388,18 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: m.research_unlock_furnace_blurb(),
         effect: {kind: 'unlock-sku', sku: 'buy-furnace'},
     },
+    'unlock-infusion': {
+        id: 'unlock-infusion',
+        name: m.research_unlock_infusion_name(),
+        tree: 'trade',
+        cost: 48,
+        seconds: 80,
+        reveal: ['unlock-preservatives'],
+        requires: ['unlock-preservatives'],
+        grants: [],
+        blurb: m.research_unlock_infusion_blurb(),
+        effect: {kind: 'unlock-sku', sku: 'buy-infuser'},
+    },
 }
 
 
@@ -417,6 +429,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'pack-grape': {id: 'pack-grape', price: 16, tab: 'seeds', unlock: 'unlock-grape', show: 'start', need: []},
     'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'unlock-grape', need: []},
     'pack-sugar-cane': {id: 'pack-sugar-cane', price: 8, tab: 'seeds', unlock: 'unlock-fermentation', show: 'unlock-fermentation', need: []},
+    'pack-chilli': {id: 'pack-chilli', price: 10, tab: 'seeds', unlock: 'unlock-infusion', show: 'unlock-infusion', need: []},
     'buy-shovel': {id: 'buy-shovel', price: 10, tab: 'utility', unlock: 'start', show: 'start', need: []},
     'buy-better-shovel': {id: 'buy-better-shovel', price: 30, tab: 'utility', unlock: 'unlock-better-tools', show: 'start', need: []},
     'buy-pickaxe': {id: 'buy-pickaxe', price: 18, tab: 'utility', unlock: 'unlock-pickaxe', show: 'start', need: []},
@@ -492,6 +505,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-jam': {id: 'buy-jam', price: 45, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'unlock-grinder', need: []},
     'buy-furnace': {id: 'buy-furnace', price: 55, tab: 'automation', unlock: 'unlock-furnace', show: 'unlock-grinder', need: []},
+    'buy-infuser': {id: 'buy-infuser', price: 50, tab: 'automation', unlock: 'unlock-infusion', show: 'unlock-preservatives', need: []},
     'buy-research-station': {id: 'buy-research-station', price: 60, tab: 'automation', unlock: 'unlock-crop-variants', show: 'unlock-crop-variants', need: []},
     'buy-barrel': {id: 'buy-barrel', price: 18, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},

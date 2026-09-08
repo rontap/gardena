@@ -12,7 +12,7 @@ Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-ti
 
 Shift held on the confirming click keeps every other sku armed too: App reads `Seat.place` before `world.click(at)`, and when the click disarmed a sku it re-arms the same one through `world.buy(id)`. `buy` on a place sku only writes `Seat.place`; the money is spent by the confirm that already happened, so nothing is paid twice. `onClick` on `MapView` carries the modifier — `onClick(hit, xy, shift)`. Multiplayer replays it as the `Act.buy` it is.
 
-Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-jam` `buy-still` `buy-furnace` `buy-barrel` `buy-freezer` `buy-research-station` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
+Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-infuser` `buy-jam` `buy-still` `buy-furnace` `buy-barrel` `buy-freezer` `buy-research-station` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
 Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
 
@@ -60,9 +60,9 @@ One HTML overlay SVG `path` over the canvas (`fill-none` `strokeWidth` 2): the b
 
 Unarmed, and while pipe / valve / sprinkler / delete / sensor-cell / wire armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not a black bar.
 
-Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Place ghosts for pumpjack / still / station / furnace / hangar / silo already cover footprint — keep. Pumpjack, rain-tank, still, station: both occupied cells. Furnace: both occupied cells, 24×48. Hangar and field silos: all six. Outline stays and matches.
+Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Place ghosts for pumpjack / still / station / furnace / mill / infuser / hangar / silo already cover footprint — keep. Pumpjack, rain-tank, still, station: both occupied cells. Furnace: both occupied cells, 24×48. Mill / infuser: all four, 48×48. Hangar and field silos: all six. Outline stays and matches.
 
-Unarmed hover of a multi-cell building (house, hangar, field silo, still, station, furnace, pumpjack, rain-tank, tree, seed-silo, additive-store): one outline around **the whole instance**, no internal edges. Same `stroke-ink`. Ghost footprints (pumpjack, rain-tank, still, station, furnace, hangar, the three field silos) are the same one outline.
+Unarmed hover of a multi-cell building (house, hangar, field silo, still, station, furnace, mill, infuser, pumpjack, rain-tank, tree, seed-silo, additive-store): one outline around **the whole instance**, no internal edges. Same `stroke-ink`. Ghost footprints (pumpjack, rain-tank, still, station, furnace, mill, infuser, hangar, the three field silos) are the same one outline.
 
 ## Covering
 
@@ -84,7 +84,9 @@ Gone. No gold cell. No pulse label on the map. Look line + ghost remain the conf
 
 HTML overlays over the canvas. Tokens [[art/palette]] / `@theme`. No unnamed hex. Farm sprites have no DOM.
 
-Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-mill` `buy-jam` `buy-barrel` `buy-freezer` and the fifteen sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Screen-fixed, `ptr + 16,16`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. `pointer-events-none`. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Burrow is not a tile site, not a fence site, not `placeSolidOk`. Compost-box, mill, jam, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
+Item SKUs and 1-cell buildings (`buy-chest` `buy-grinder` `buy-tap` `buy-compost-box` `buy-jam` `buy-barrel` `buy-freezer` and the fifteen sensor cells) and tiles: 64px `skuInner` + **Place {skuLabel}** under the pointer. Screen-fixed, `ptr + 16,16`. Chip `bg-house` `px-2` `py-0.5` `text-base` `text-ink`. `pointer-events-none`. Drop items on a Plot. Buildings replace a plot (`placeSolidOk`). Tiles: `isTileSite` — untilled bare or existing tile, keep `ground`. Grass is not a tile site. Burrow is not a tile site, not a fence site, not `placeSolidOk`. Compost-box, jam, barrel, freezer disarm. Sensor cells stay armed. Tiles stay armed.
+
+`buy-mill` `buy-infuser`: 2×2 ghost (`MILL_W` × `MILL_H`), origin = hovered NW cell, extends east and south, `squareSiteOk`. Confirm occupies the four cells. Disarm. No rotate. Hover valid: all four `stroke-ink`. Blocked: all four `stroke-roof`. Copy **Place Mill** / **Place Infuser**. `skuLabel` mill **Mill**; infuser **Infuser**. Pads two cells wide. [[mechanics/infusion]] `infusion.machine`
 
 `buy-pumpjack` `buy-rain-tank`: 2-tile ghost (48×24 jack+trough / tank). Confirm occupies both cells. Disarm. Hover valid: both cells `stroke-ink`. Blocked: both `stroke-roof`.
 
@@ -182,7 +184,8 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 | research station | **Delete {skuLabel}** | cell → empty |
 | grinder | **Delete grinder** | cell → empty |
 | compost-box | **Delete compost box** | cell → empty |
-| mill | **Delete mill** | cell → empty |
+| mill | **Delete mill** | four cells → empty |
+| infuser | **Delete Infuser** | four cells → empty |
 | still | **Delete pot still** | cell → empty |
 | furnace | **Delete {skuLabel}** | both cells → empty |
 | barrel | **Delete wine barrel** | cell → empty |

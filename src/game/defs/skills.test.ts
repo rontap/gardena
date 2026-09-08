@@ -97,6 +97,7 @@ describe('family.better-set', () => {
     expect('better-carrot' in SKILLS).toBe(false)
     expect('better-vanilla' in SKILLS).toBe(false)
     expect('better-sugar-cane' in SKILLS).toBe(false)
+    expect('better-chilli' in SKILLS).toBe(false)
     expect(SKILLS['better-apple'].gate).toEqual({ kind: 'none' })
     expect(SKILLS['better-apricot'].gate).toEqual({ kind: 'none' })
     expect(SKILLS['better-olive'].gate).toEqual({ kind: 'none' })

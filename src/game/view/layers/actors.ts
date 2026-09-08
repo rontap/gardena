@@ -3,8 +3,10 @@ import { TRAILER_LEN } from '../../defs/items.ts'
 import { hitchP, trailerCenter, wrapHeading } from '../../sim/feature-vehicles/vehicle.ts'
 import type { SeatId, World } from '../../sim/world.ts'
 import type { VehicleId } from '../../sim/ids.ts'
+import type { Item } from '../../sim/item.ts'
 import { DROP_FACE, TILE } from '../camera.ts'
-import { atlasTex, faceKey, HAT, type AtlasKey } from '../atlas.ts'
+import { atlasTex, faceKey, HAT } from '../atlas.ts'
+import { faceInfused } from '../svgs.ts'
 import { SpritePool } from '../app.ts'
 import { dropRect } from '../hit.ts'
 
@@ -97,6 +99,11 @@ export class ActorsLayer {
       const s = this.pool.take(atlasTex(faceKey(d.item)))
       s.position.set(r.x * TILE, r.y * TILE)
       s.scale.set(DROP_FACE / TILE)
+      if (faceInfused(d.item)) {
+        const o = this.pool.take(atlasTex('overlay-infused'))
+        o.position.set(r.x * TILE, r.y * TILE)
+        o.scale.set(DROP_FACE / TILE)
+      }
     })
     world.vehicles.forEach(v => {
       if (v.pose.kind !== 'field') return
@@ -138,12 +145,12 @@ export class ActorsLayer {
     world.seats.forEach(s => {
       const seated = world.driverVehicle(s.id) !== undefined
       if (s.presence !== 'in' || seated) return
-      this.actor(s.id, s.actor.x, s.actor.y, s.napping, s.hand.kind === 'hold' ? faceKey(s.hand.item) : undefined)
+      this.actor(s.id, s.actor.x, s.actor.y, s.napping, s.hand.kind === 'hold' ? s.hand.item : undefined)
     })
     this.pool.end()
   }
 
-  private actor(id: SeatId, x: number, y: number, napping: boolean, item: AtlasKey | undefined): void {
+  private actor(id: SeatId, x: number, y: number, napping: boolean, item: Item | undefined): void {
     const ox = (x - 0.5) * TILE
     const oy = (y - 0.5) * TILE + (napping ? 0 : this.bob(id, x, y))
     const body = this.pool.take(atlasTex('actor-body'))
@@ -165,9 +172,14 @@ export class ActorsLayer {
       hat.position.set(ox, oy)
     }
     if (!napping && item !== undefined) {
-      const held = this.pool.take(atlasTex(item))
+      const held = this.pool.take(atlasTex(faceKey(item)))
       held.position.set(ox + (15 * TILE) / 24, oy + (13 * TILE) / 24)
       held.scale.set(8 / 24)
+      if (faceInfused(item)) {
+        const o = this.pool.take(atlasTex('overlay-infused'))
+        o.position.set(ox + (15 * TILE) / 24, oy + (13 * TILE) / 24)
+        o.scale.set(8 / 24)
+      }
     }
   }
 }

@@ -30,7 +30,7 @@ import {
 function faceInner(face: NoticeFace): string {
   if (face.kind === 'recap') return UI_RECAP_NIGHT
   if (face.kind === 'company') return COMPANY[face.id]
-  if (face.kind === 'oil') return itemInner({ kind: 'oil', quality: 0, count: 1, unitSale: 0 })
+  if (face.kind === 'oil') return itemInner({ kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false })
   if (face.kind === 'water') return itemInner({ kind: 'water' })
   if (face.kind === 'fertilizer') return itemInner({ kind: 'fertilizer', liters: 0, capacityLiters: 1 })
   if (face.kind === 'harvest') return itemInner({ kind: 'sensor-harvest' })

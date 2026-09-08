@@ -58,6 +58,8 @@
   "research_unlock_hardened_tools_blurb": "A Hardened pickaxe lasts for more uses and mines faster than a Pickaxe. A Chainsaw chops a mature tree in fewer seconds than an Axe and lasts for more uses.",
   "research_unlock_furnace_name": "Furnace",
   "research_unlock_furnace_blurb": "Burn a mixed load into Ash. A working Furnace makes nearby machines finish faster than they do without one.",
+  "research_unlock_infusion_name": "Infusion",
+  "research_unlock_infusion_blurb": "Place an Infuser. Crush Chilli into Flakes at a Mill, or crush Vanilla into Vanilla extract. Infuse jam, wine, cider, spirits, or Olive oil so they sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them.",
   "research_grant_rarity_rolls": "Happy plants can ripen a different rarity than the seed",
   "research_grant_silo_rows": "Uncommon and Rare rows in the Seed silo",
   "research_grant_heirloom_column": "Heirloom row in the Seed silo and the Shop",

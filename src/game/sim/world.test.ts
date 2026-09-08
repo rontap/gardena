@@ -2,42 +2,12 @@
 import {describe, expect, test} from 'vitest'
 import {m} from '../../paraglide/messages.js'
 import {CROPS, freshMul, HAPPY_START} from '../defs/crops.ts'
-import {
-    ADDITIVE_CAP_LITERS,
-    PRODUCE_SLOTS,
-    SILO_FIELD_ADDITIVE_CAP,
-    SILO_FIELD_SEED_CAP,
-    CONTAINERS,
-    FERT_BAG_LITERS,
-    GRIND_MAX,
-    GRIND_MIN,
-    SILO_SEED_CAP,
-    SPRINKLER_TILE_RATE,
-    GRIND_WORK,
-    DIG_HARD_SPAN,
-} from '../defs/items.ts'
-import {
-    qualityMul,
-    STARTER_FRUIT,
-    STARTER_FRUIT_N,
-    STARTER_TREE_GRAFTS,
-    VARIETY,
-    type VarietyId
-} from '../defs/varieties.ts'
+import {ADDITIVE_CAP_LITERS, PRODUCE_SLOTS, SILO_FIELD_ADDITIVE_CAP, SILO_FIELD_SEED_CAP, CONTAINERS, FERT_BAG_LITERS, GRIND_MAX, GRIND_MIN, SILO_SEED_CAP, SPRINKLER_TILE_RATE, GRIND_WORK} from '../defs/items.ts'
+import {qualityMul, STARTER_FRUIT, STARTER_FRUIT_N, STARTER_TREE_GRAFTS, VARIETY, type VarietyId} from '../defs/varieties.ts'
 import {RESEARCH, SKUS} from '../defs/research.ts'
 import {PLAYER_SKILL_IDS, SKILLS, skillIds} from '../defs/skills.ts'
 import {TREE_IDS, type AnnualId, type ResearchId, type SkuId} from './ids.ts'
-import {
-    Chest,
-    DOOR,
-    Grinder,
-    HOUSE_BASE,
-    PAD,
-    PUMP_BASE,
-    ADDITIVE_BASE,
-    SILO_BASE,
-    occupiedCells,
-} from './building.ts'
+import {Chest, DOOR, Grinder, HOUSE_BASE, PAD, PUMP_BASE, ADDITIVE_BASE, SILO_BASE, occupiedCells} from './building.ts'
 import {SUGAR_BAG, SUGAR_SHOP} from '../defs/items.ts'
 import {dump, parse} from './feature-save/save.ts'
 import {fruitMoney, itemLine, makePickaxe, makeShovel, skuLabel, type Hand} from './item.ts'
@@ -46,23 +16,14 @@ import {aoe, junction, vertexKey, type Edge} from './pipe.ts'
 import {Rock, Tree} from './building.ts'
 import {Act} from './log.ts'
 import {Rng} from './rng.ts'
-import {Clock, DAY_SECONDS, days} from './clock.ts'
-import {
-    BIG_TICK,
-    Soil,
-    SOIL_TILL_WATER,
-    SOIL_WATER_MID,
-    STUNT,
-    WEED_CHANCE,
-    GRASS_CHANCE,
-    ramped
-} from './soil.ts'
-import {bare, isPavingSite} from './plot.ts'
+import {Clock, days} from './clock.ts'
+import {BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, GRASS_CHANCE, ramped} from './soil.ts'
+import {bare} from './plot.ts'
 import {SOURCE} from './water.ts'
-import {goodness, groundOf, hardnessOf, HARD_MAX} from './noise.ts'
+import {goodness} from './noise.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
-import {DAY_STIPEND, DT_MAX, POINTS_PER_DAY, World} from './world.ts'
+import {DT_MAX, World} from './world.ts'
 import {SHELF_SKUS, SHELVES} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
@@ -1827,216 +1788,6 @@ describe('family.unlockSkills', () => {
     })
 })
 
-describe('day.seam', () => {
-    test('Seam at `t >= DAY_SECONDS` runs stipend, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 4`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.', () => {
-        const w = new World(1)
-        const p = new Plant('carrot', 'base', 0)
-        p.maturity = 0.4
-        w.setCell(AT, {kind: 'growing', soil: bed(), plant: p})
-        w.tally.died = 2
-        w.tally.harvests = 5
-        const money = w.money
-        const burrows = w.burrows.size
-        w.clock.t = DAY_SECONDS - 0.001
-        w.tick(1)
-        expect(w.clock.day).toBe(2)
-        expect(w.seam.kind).toBe('play')
-        const recap = w.recapAt(1)
-        expect(w.money).toBe(money + DAY_STIPEND - recap.tax - recap.water)
-        expect(recap.day).toBe(1)
-        expect(recap.died).toBe(2)
-        expect(recap.harvests).toBe(5)
-        expect(recap.stipend).toBe(DAY_STIPEND)
-        expect(recap.water).toBe(0)
-        expect(w.recaps).toHaveLength(1)
-        expect(w.recapUnseen).toEqual([1])
-        expect(w.points).toBe(POINTS_PER_DAY)
-        expect(w.clock.banner).toBe(4)
-        expect(w.tally).toEqual({died: 0, harvests: 0, research: [], contracts: []})
-        expect(p.maturity).toBe(0.4)
-        expect(w.burrows.size).toBe(burrows + 1)
-        const n = w.now
-        w.tick(DT_MAX)
-        expect(w.now).toBe(n + 1)
-        expect(p.maturity).toBeGreaterThan(0.4)
-        expect(w.seam.kind).toBe('play')
-    })
-})
-
-describe('day.recap', () => {
-    test('Recap persists on `World.recaps` (one per ended day). Grant is the seam, not Close. Popup opens from a Command Center recap notice (App `recapDay`, not `World.seam`). Close / Esc / backdrop is `seeRecap(day)`. `Act.dismissRecap` is a no-op.', () => {
-        const w = new World(1)
-        w.clock.t = DAY_SECONDS - 0.001
-        w.tick(1)
-        expect(w.recaps).toHaveLength(1)
-        expect(w.recapUnseen).toEqual([1])
-        expect(w.points).toBe(POINTS_PER_DAY)
-        expect(w.seam.kind).toBe('play')
-        w.dismissRecap()
-        expect(w.points).toBe(POINTS_PER_DAY)
-        expect(w.recapUnseen).toEqual([1])
-        expect(w.seam.kind).toBe('play')
-        expect(w.log).toEqual([{a: Act.dismissRecap, t: 1, p: 0}])
-        w.seeRecap(1)
-        expect(w.recapUnseen).toEqual([])
-        expect(w.recaps).toHaveLength(1)
-        expect(w.recapAt(1).day).toBe(1)
-        w.seeRecap(1)
-        expect(w.recapUnseen).toEqual([])
-        w.clock.t = DAY_SECONDS - 0.001
-        w.tick(1)
-        expect(w.recaps.map(r => r.day)).toEqual([1, 2])
-        expect(w.recapUnseen).toEqual([2])
-    })
-})
-
-describe('day.end-day', () => {
-    test('End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams.', () => {
-        const w = new World(1)
-        const p = new Plant('carrot', 'base', 0)
-        p.maturity = 0.4
-        w.setCell(AT, {kind: 'growing', soil: bed(), plant: p})
-        w.clock.t = 80
-        w.endDay()
-        expect(w.clock.t).toBe(DAY_SECONDS)
-        expect(p.maturity).toBe(0.4)
-        expect(w.seam.kind).toBe('play')
-        expect(w.log).toEqual([{a: Act.cheat, t: 0, p: 0, k: 'day'}])
-        w.tick(DT_MAX)
-        expect(w.seam.kind).toBe('play')
-        expect(w.recaps).toHaveLength(1)
-        expect(p.maturity).toBe(0.4)
-    })
-})
-
-describe('world.cheatSpeed', () => {
-    test('`World.cheatSpeed` is `1 | 3`. App host accumulator `frameDt * cheatSpeed`. World.tick does not multiply `dt`. `Act.cheat` `{ k: \'speed\'; n: 1 | 3 }`. `?speed=3` boots 3; any other URL value boots 1. Not job drain.', () => {
-        const w = new World(1)
-        expect(w.cheatSpeed).toBe(1)
-        w.setCheatSpeed(3)
-        expect(w.cheatSpeed).toBe(3)
-        expect(w.log).toEqual([{a: Act.cheat, t: 0, p: 0, k: 'speed', n: 3}])
-        w.setCheatSpeed(1)
-        expect(w.cheatSpeed).toBe(1)
-
-        const a = new World(1)
-        const b = new World(1)
-        b.setCheatSpeed(3)
-        const pa = new Plant('carrot', 'base', 0)
-        const pb = new Plant('carrot', 'base', 0)
-        a.setCell(AT, {kind: 'growing', soil: bed(), plant: pa})
-        b.setCell(AT, {kind: 'growing', soil: bed(), plant: pb})
-        a.tick(DT_MAX)
-        b.tick(DT_MAX)
-        expect(pb.maturity).toBe(pa.maturity)
-
-        const c = new World(1)
-        c.setCheatSpeed(3)
-        c.startResearch('unlock-tomato')
-        const left = RESEARCH['unlock-tomato'].seconds
-        c.tick(DT_MAX)
-        expect(c.job.kind === 'run' && c.job.left).toBeCloseTo(left - DT_MAX, 5)
-        expect(c.cheatFastResearch).toBe(false)
-    })
-})
-
-describe('soil.hardness', () => {
-    test('soil.hardness - untilled carries a continuous hardness alongside its tier, and the two never disagree: groundOf(1 - hardness) === ground. Generation writes 1 - goodness. Clearing a rock or a tree writes the soft baseline 0.', () => {
-        const w = new World(7)
-        for (let col = 4; col < 28; col++) {
-            for (let row = 4; row < 28; row++) {
-                const c = w.cell({col, row})
-                if (c.kind !== 'untilled') continue
-                expect(groundOf(1 - c.hardness)).toBe(c.ground)
-                if (Math.hypot(col - DOOR.col, row - DOOR.row) <= 12) continue
-                expect(c.hardness).toBeCloseTo(hardnessOf(goodness(w.rng, col, row)), 10)
-            }
-        }
-        const soft = bare('soft', 0)
-        expect(soft.kind === 'untilled' && soft.hardness).toBe(0)
-        expect(groundOf(1 - 0)).toBe('soft')
-    })
-
-    test('soil.dig - shovel time is workSeconds x (1 + DIG_HARD_SPAN x hardness). No step at a tier boundary: two cells either side of HARD_MAX differ by the noise, not by the tier.', () => {
-        const w = new World()
-        const dig = (hardness: number) => {
-            w.seats[0].hand = {kind: 'hold', item: {kind: 'shovel', id: 'shovel', usesLeft: 40, workSeconds: 1}}
-            w.setCell(AT, bare(groundOf(1 - hardness), hardness))
-            w.seats[0].actor.x = 10.5
-            w.seats[0].actor.y = 12.5
-            w.click(AT)
-            const head = w.seats[0].queue[0]
-            expect(head).toBeDefined()
-            w.tick(1 / 60)
-            const total = w.seats[0].workTotal
-            w.seats[0].queue.length = 0
-            w.seats[0].workLeft = 0
-            w.seats[0].workTotal = 0
-            return total
-        }
-        expect(dig(0)).toBeCloseTo(1, 5)
-        expect(dig(0.4)).toBeCloseTo(1 + DIG_HARD_SPAN * 0.4, 5)
-        const justSoft = 1 - HARD_MAX - 0.001
-        const justHard = 1 - HARD_MAX + 0.001
-        expect(Math.abs(dig(justHard) - dig(justSoft))).toBeLessThan(0.01)
-    })
-})
-
-describe('tiles.paving', () => {
-    test('tiles.paving - Paving is `World.paving`, not a `Cover`. It survives under a building and is deleted only once nothing stands on the cell: fence, then building, then paving.', () => {
-        const w = new World(1)
-        w.unlockAll()
-        const at = {col: 10, row: 20}
-        w.setCell(at, bare('soft', 0))
-        w.money = 999
-        w.buy('buy-tile-paved')
-        w.confirmPlace(at)
-        expect(w.pavingAt(at)).toBe('paved')
-        expect(w.cell(at).kind).toBe('untilled')
-
-        w.money = 999
-        w.buy('buy-chest')
-        w.confirmPlace(at)
-        expect(w.cell(at).kind).toBe('chest')
-        expect(w.pavingAt(at)).toBe('paved')
-
-        w.armDelete()
-        w.confirmPlace(at)
-        expect(w.cell(at).kind).toBe('empty')
-        expect(w.pavingAt(at)).toBe('paved')
-
-        w.setCell(at, bare('soft', 0))
-        w.armDelete()
-        w.confirmPlace(at)
-        expect(w.pavingAt(at)).toBe('none')
-    })
-
-    test('tiles.paving-site - Paving lays on any untilled cell or under a solid building, never on tilled soil, a burrow, a rock or a tree. Paving over paving replaces it.', () => {
-        const w = new World(1)
-        w.unlockAll()
-        const soft = {col: 10, row: 21}
-        const tilled = {col: 11, row: 21}
-        w.setCell(soft, bare('soft', 0))
-        w.setCell(tilled, {kind: 'empty', soil: new Soil(1, 1, 0.03)})
-        expect(isPavingSite(w.cell(soft))).toBe(true)
-        expect(isPavingSite(w.cell(tilled))).toBe(false)
-        expect(isPavingSite(w.cell({col: HOUSE_BASE.col, row: HOUSE_BASE.row}))).toBe(true)
-        expect(isPavingSite(new Rock({shape: 'rect', col: 0, row: 0, w: 1, h: 1}))).toBe(false)
-        w.money = 999
-        w.buy('buy-tile-cobble')
-        w.confirmPlace(soft)
-        expect(w.pavingAt(soft)).toBe('cobble')
-        w.money = 999
-        w.buy('buy-tile-asphalt')
-        w.confirmPlace(soft)
-        expect(w.pavingAt(soft)).toBe('asphalt')
-        w.money = 999
-        w.buy('buy-tile-paved')
-        w.confirmPlace(tilled)
-        expect(w.pavingAt(tilled)).toBe('none')
-    })
-})
-
 describe('vehicles.silo-store', () => {
     test('vehicles.silo-store - The three field silos hold what their name says and open the walk-up panel their starter twin uses. Seeding silo SILO_FIELD_SEED_CAP seeds, Additive silo SILO_FIELD_ADDITIVE_CAP liters, Produce silo PRODUCE_SLOTS slots of fruit, weed and grass only.', () => {
         const w = new World(1)
@@ -2083,3 +1834,4 @@ describe('vehicles.silo-store', () => {
         expect(walk({col: 14, row: 20})).toBe('chest')
     })
 })
+

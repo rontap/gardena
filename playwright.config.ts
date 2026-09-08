@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: 'e2e',
   timeout: 90_000,
-  workers: process.env.CI ? 1 : 4,
+  workers: process.env.CI ? 1 : 2,
   fullyParallel: !process.env.CI,
   use: {
     baseURL: 'http://localhost:5173',

@@ -27,7 +27,7 @@
 
 | file | owner |
 |---|---|
-| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Indexes `enclosures` `fenceEnclosures` `plotEnclosures` — filled by feature-enclosure, not `track()`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Burrow mint / roll / extract live in `feature-burrow/`. Intent `chop` `furnace` `graft` `station` `open` `infuse` |
+| `world.ts` | coordinator: `cell` / `setCell` / `track`, apply dispatch, tick order, seats. Seat construction is `seat.ts`, local-player identity is `player.ts`, and `world.ts` re-exports both so the old import path still reads. `World`, `Seat`, `Place`, `StayArmed`, `cheatSpeed`, `cheatFastResearch`. Holds `furnaceSnap`. Indexes `enclosures` `fenceEnclosures` `plotEnclosures` — filled by feature-enclosure, not `track()`. Machine tick / walk-dump live in `feature-machines/`. Field tick / till / plant / harvest / tend / chop / graft live in `feature-field/`. Place / buy / delete / expand / pipe-place live in `feature-place/`. Burrow mint / roll / extract live in `feature-burrow/`. Intent `chop` `furnace` `graft` `station` `open` `infuse` |
 | `family.ts` | Offers, pick, skill-modifier rebuild. `initFamily` `rerollOffers` `skillEligible` `pickSkillBody` `rebuildSkillModifiers` `unlockAllSkillsBody`. State stays `World.family` / `World.points`. `lucky` is owned here; luck is derived, not a World field. New-farm constructor calls `initFamily(this)` |
 | `mp.ts` | `PROTOCOL`, sequencer, digest — [[architecture/net]] |
 | `feature-save/save.h.ts` | `Save` typedefs |
@@ -47,6 +47,8 @@
 | `building.ts` | buildings, `Tree` (`tended`, `trunk`, `variety`), `Furnace` (`recipe`), `ResearchStation`, `Infuser`, `Hangar`, stores, `AdditiveId` (includes `weed-spray`). `SiloStack` crop+variety+quality. `BaseBuilding` `Machine`; `Store` extends `BaseBuilding`. `Pump.ports` `['in']` `Pump.inn` |
 | `pipe.ts` | `Edge`, `Sprinkler`, `Gate` |
 | `actor.ts` | `Actor` |
+| `seat.ts` | how a `Seat` is built: `joinKit` `soloSeat` `defaultSeatName` `STARTER_SEEDS`. Types live on `world.h.ts`, so this never imports `world.ts` |
+| `player.ts` | the local player's identity in `localStorage`: `localPlayerId` `localPlayerName` `setLocalPlayerName` `cleanName` `MP_ID_KEY` `MP_NAME_KEY` `NAME_MAX`. Browser state, not world state |
 | `clock.ts` | `Clock` |
 | `item.ts` | `Item`, `Hand`, `Face`. `weed-spray` bag `liters`+`capacityLiters`. `axe` `chainsaw` `wood` `ash` `graft` `treasure` `flakes` `vanilla-extract` `bread`. Fruit `cut`. Jam / cask / spirit / oil `infused`. `furnaceValue`, `compostValue` ash |
 | `prompt.ts` | `Prompt`. Chop (axe or chainsaw) / furnace dump / graft / station / infuse / burrow Dig / treasure open |

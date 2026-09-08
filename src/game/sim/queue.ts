@@ -1,6 +1,6 @@
 import { BURROW_MUL } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
-import { DIG_HARD_SPAN, GRAFT_WORK } from '../defs/items.ts'
+import { DIG_HARD_SPAN, GRAFT_WORK, SPRAY_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
 import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type RainTank, type Tap, type Well } from './building.ts'
 import { TAP_RATE } from './water.ts'
@@ -391,8 +391,11 @@ export function begin(world: World, i: Intent): void {
       arm(world, TEND_WORK)
       return
     case 'weed-spray':
-      field.doWeedSpray(world, i.at)
-      shiftHead(world)
+      if (!field.canWeedSpray(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, SPRAY_WORK)
       return
     case 'chop':
       if (!field.canChop(world, i.at)) {

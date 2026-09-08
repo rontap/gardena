@@ -27,12 +27,15 @@ The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReas
 | `points` | `World.points > 0` | — | — | Family |
 | `expansion` | `World.expandLeft() > 0` | — | — | none |
 | `water-low` | `stored / capacity < NOTICE_WATER_LOW` | `nets.grid(world)` | `stored / capacity` | none |
+| `weed` | any `weed` cell on the farm | `grow` → `weed` | — | none |
 
 `grow` covers six rows in one walk. It already holds `dead` and `rotten` — [[architecture/tick]] [[architecture/world]].
 
 `notices.red` — only a red band is a notice. Orange is the warning the plot itself already paints; a second one in the column would fire on most of a healthy farm.
 
 A starving plant that is also wilting produces both rows. They are different clocks on the same plot and both are true.
+
+`notices.weed` — weeds are **one** row for the whole farm, not one per plot. Every other plot row names a plant the player chose to grow and lost; a weed is the farm's own state, and a fallow week would fill the column with identical lines. The row carries every weed cell, so hovering it paints them all at once. Its face is the pulled-weed item art. No bar: there is no clock on it, only a count the map already shows.
 
 `FRESH_FULL` — the cut inside `freshMul` ([`defs/crops.ts`](../../src/game/defs/crops.ts)), named there and read by both `freshMul` and the pass. The notice and the sale multiplier must not be able to disagree about when fruit starts losing money. Tuned-to `freshMul`.
 

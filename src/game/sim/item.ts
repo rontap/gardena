@@ -118,6 +118,8 @@ export type Item =
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
 
+export type InfusedItem = Extract<Item, { infused: boolean }>
+
 export type Face =
   | Item
   | { kind: 'pumpjack' }

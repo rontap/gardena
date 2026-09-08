@@ -772,6 +772,7 @@ export class Infuser extends Machine {
   }
   override accept(item: Item): number {
     if (item.kind === 'flakes' || item.kind === 'vanilla-extract') return item.count
+    if (item.kind !== 'jam' && item.kind !== 'cask' && item.kind !== 'spirit' && item.kind !== 'oil') return 0
     const lock = infusableOf(item)
     if (lock === undefined) return 0
     if (this.lock !== 'none' && !sameInfusable(this.lock, lock)) return 0

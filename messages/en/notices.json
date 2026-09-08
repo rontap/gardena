@@ -57,6 +57,7 @@
     }
   ],
   "notices_water_low": "Water network is running low",
+  "notices_weed": "Weed infestation",
   "notices_more": "and {n} more",
   "notices_hide": "Hide",
   "notices_show": "Show",

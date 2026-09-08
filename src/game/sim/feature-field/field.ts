@@ -42,6 +42,7 @@ export {
   canShovel,
   canTend,
   canWater,
+  canWeedSpray,
   doChop,
   doFertilize,
   doGraft,

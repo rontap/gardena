@@ -28,7 +28,7 @@ Cells are `5.5rem` square, with a `shrink-0` `h-8` icon, the Variety name, and t
 
 Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any Variety of that crop. Shown cells: `'base'` always on a shown crop. Any other Variety: stock of that Variety. Stock is never hidden by a gate.
 
-`bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average.
+`bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average. What is already in hand goes back in first — [[mechanics/inventory]] `inventory.swap`.
 
 Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`, the same states a [[ui/build]] card shows. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/build]].
 
@@ -69,7 +69,7 @@ The Seed silo is the only place seed packs are sold; the Additive store is the o
 
 Title **Additive store**. `w-[30rem]` — five rows, nothing to grow into. Capacity line reads **Click to fill a bag.** and `{used} / {cap} L`.
 
-One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all five, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
+One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all five, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. The row already in hand tops that bag up instead; another row swaps — [[mechanics/inventory]] `inventory.swap`. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
 
 Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/build]].
 

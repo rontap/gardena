@@ -254,5 +254,6 @@
   "hud_debug_start_node": "Start",
   "hud_debug_secs": "{n}s",
   "hud_debug_min_secs": "{m}m {s}s",
-  "hud_best_for": "Best for {purpose} - sells for {mul}x on that path"
+  "hud_best_for": "Best for {purpose} - sells for {mul}x on that path",
+  "hud_queue_more": "and {n} more"
 }

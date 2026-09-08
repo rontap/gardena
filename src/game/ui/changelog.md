@@ -11,6 +11,12 @@ Place an Infuser and Infuse jam, wine, cider, spirits, or Olive oil with Flakes 
 - 🔧 Changed building: Furnace. previously, flour burned into Ash, now flour Bakes into Bread, and a Furnace locked on ash will not take flour.
 - 🔧 Changed building: Mill. previously, it did not crush Chilli, now Crush into flakes.
 - 🔧 Changed ui: Market. previously, selling a good raised that good's percent, now Infused goods sell at the percent shown and do not change it.
+- 🔧 Changed ui: Seed silo. previously, taking a second crop while your hand was full put the first one on the ground, now the seeds in your hand go back on the shelf and the crop you clicked comes out, and clicking the crop you are already holding adds the two together.
+- 🔧 Changed ui: Additive store. previously, taking a second bag while your hand was full put the first one on the ground, now the bag in your hand is poured back and the one you clicked comes out, and clicking the bag you are already holding fills it back to the brim.
+- 🔧 Changed mechanic: Weed spray. previously, a plot was sprayed the moment you clicked it, now the gardener takes a third of a second over it, the same way tending takes its time.
+- 🔧 Changed ui: end of day. previously, a new day closed whatever panel you had open, now it leaves it open and you carry on reading it.
+- 🔧 Changed ui: errands. previously, the whole list of errands filled the corner of the screen, now it shows the next five and says how many more are waiting.
+- 🎉 Added ui: Weed infestation. A Command Center notice while weeds are standing anywhere on the farm; point at it and every weeded plot lights up on the map.
 
 # 2.6.4 One build menu
 

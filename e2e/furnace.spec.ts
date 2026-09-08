@@ -386,7 +386,7 @@ test('working furnace mounts furnace and furnace-smoke vfx', async ({ page }) =>
             setCell: (at: { col: number; row: number }, cell: unknown) => void
             buy: (id: string) => void
             confirmPlace: (at: { col: number; row: number }) => void
-            cell: (at: { col: number; row: number }) => { units: number; progress: number; inn?: number }
+            cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number }
           }
         }
       ).__world
@@ -409,12 +409,13 @@ test('working furnace mounts furnace and furnace-smoke vfx', async ({ page }) =>
     ([at, need]) => {
       const w = (
         window as unknown as {
-          __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; inn?: number } }
+          __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number } }
         }
       ).__world
       if (w === undefined) throw new Error('no __world')
       const f = w.cell(at)
       f.units = need
+      f.recipe = 'ash'
       f.progress = 0
       if (f.inn !== undefined) f.inn = 0
     },
@@ -460,7 +461,7 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
             setCell: (at: { col: number; row: number }, cell: unknown) => void
             buy: (id: string) => void
             confirmPlace: (at: { col: number; row: number }) => void
-            cell: (at: { col: number; row: number }) => { units: number; progress: number; inn?: number }
+            cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number }
           }
         }
       ).__world
@@ -515,12 +516,13 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
     ([at, need]) => {
       const w = (
         window as unknown as {
-          __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; inn?: number } }
+          __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number } }
         }
       ).__world
       if (w === undefined) throw new Error('no __world')
       const f = w.cell(at)
       f.units = need
+      f.recipe = 'ash'
       f.progress = 0
       if (f.inn !== undefined) f.inn = 0
     },

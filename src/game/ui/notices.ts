@@ -31,6 +31,7 @@ export type NoticeKind =
   | 'points'
   | 'expansion'
   | 'water-low'
+  | 'weed'
 
 export const NOTICE_ORDER: readonly NoticeKind[] = [
   'recap',
@@ -43,6 +44,7 @@ export const NOTICE_ORDER: readonly NoticeKind[] = [
   'freshness',
   'rotten',
   'dead',
+  'weed',
   'contract',
   'research',
   'water-low',
@@ -59,6 +61,7 @@ const BAD: readonly NoticeKind[] = [
   'rotten',
   'dead',
   'water-low',
+  'weed',
 ]
 
 export function noticeBad(kind: NoticeKind): boolean {
@@ -78,6 +81,7 @@ export type NoticeFace =
   | { kind: 'research' }
   | { kind: 'points' }
   | { kind: 'expansion' }
+  | { kind: 'weed' }
 
 export type NoticeSubject =
   | { kind: 'crop'; crop: CropId }
@@ -123,9 +127,14 @@ function statsFor(world: World, cache: Map<string, Stats>, crop: CropId, variety
 function plantRows(world: World): Notice[] {
   const cache = new Map<string, Stats>()
   const rows: Notice[] = []
+  const weeds: Coord[] = []
   for (const at of world.grow.values()) {
     const c = world.cell(at)
     const cells = [at]
+    if (c.kind === 'weed') {
+      weeds.push(at)
+      continue
+    }
     if (c.kind === 'dead') {
       rows.push({
         id: `dead:${key(at)}`,
@@ -196,6 +205,18 @@ function plantRows(world: World): Notice[] {
         go: { kind: 'none' },
       })
     }
+  }
+  if (weeds.length > 0) {
+    rows.push({
+      id: 'weed',
+      kind: 'weed',
+      text: m.notices_weed(),
+      face: { kind: 'weed' },
+      subjects: [],
+      cells: weeds,
+      bar: undefined,
+      go: { kind: 'none' },
+    })
   }
   return rows
 }

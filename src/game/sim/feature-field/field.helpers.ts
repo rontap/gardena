@@ -395,15 +395,21 @@ export function doHarvest(w: World, at: Coord): void {
   if (w.act.hand.item.kind === 'fruit') mergeInto(w.act.hand.item, { kind: 'fruit', ...picked }, 1)
 }
 
+export function canWeedSpray(w: World, at: Coord): boolean {
+  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'weed-spray') return false
+  if (w.act.hand.item.liters < 1) return false
+  if (!w.inWorld(at)) return false
+  return isTilled(w.cell(at))
+}
+
 export function doWeedSpray(w: World, at: Coord): void {
-  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'weed-spray') return
-  if (w.act.hand.item.liters < 1) return
-  if (!w.inWorld(at)) return
+  if (!canWeedSpray(w, at)) return
   const c = w.cell(at)
   if (!isTilled(c)) return
+  const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'weed-spray' }> }
   c.soil.weedChance = -1
   if (c.kind === 'weed') w.setCell(at, { kind: 'empty', soil: c.soil })
   else w.track(at, c)
-  w.act.hand.item.liters -= 1
-  if (w.act.hand.item.liters < 1) w.act.hand = { kind: 'empty' }
+  s.item.liters -= 1
+  if (s.item.liters < 1) w.act.hand = { kind: 'empty' }
 }

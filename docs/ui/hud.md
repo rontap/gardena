@@ -124,6 +124,8 @@ Command Center claims that anchor at `w-72` while the editor is off — [[ui/not
 
 `absolute right-4 bottom-4 z-20` `w-80`. Queue (if any) then [[ui/inspect]]. Held name and the first look line: `font-display` `text-sm` — [[ui/type]].
 
+The queue lists the first `QUEUE_SHOWN` errands, then one dimmer line reading **and {n} more** for the rest, the same shape a Command Center block uses past `NOTICE_GROUP_MAX` — [[ui/notices]]. `QUEUE_CAP` is 12, so the whole queue would otherwise be twelve lines tall over the map. The progress bar stays under the list.
+
 ## Day banner
 
 `clock.banner > 0` starts it. `font-display` `text-4xl` `text-white`. Top of the play field, below the ribbon (`pt-24`). `pointer-events-none`. Copy **Day {n}**. Fade in 0.5s ease-in opacity 0 → 0.7, hold, fade out 0.5s ease-out to 0. Total `banner = 4` s. New farm already `banner = 4`. Seam sets it. `data-banner`. `paintMotion` writes the day string. Not Pixi. [[ui/type]] [[mechanics/day]]

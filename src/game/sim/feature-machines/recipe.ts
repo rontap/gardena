@@ -44,7 +44,7 @@ import {
   TREE_IDS,
 } from '../ids.ts'
 import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
-import { faceName, type Face, type Item } from '../item.ts'
+import { faceName, type Face, type InfusedItem, type Item } from '../item.ts'
 import {
   bakeBreadSale,
   bakeCaskSale,
@@ -188,7 +188,7 @@ function jamRecipe({ crop, variety }: Pin<JamCrop>): Recipe {
   }
 }
 
-function spiritFace(spirit: SpiritKind, variety: VarietyId): Face {
+function spiritFace(spirit: SpiritKind, variety: VarietyId): Extract<Item, { kind: 'spirit' }> {
   return { kind: 'spirit', spirit, variety, quality: 0, count: 1, unitSale: bakeSpiritSale(spirit, variety, 0), infused: false }
 }
 
@@ -707,7 +707,7 @@ function furnaceCraft(c: Furnace, mul: number, haste: number): Craft {
   return stage(recipe, c.progress, mul, haste)
 }
 
-function infuserGoodFace(c: Infuser): Face {
+function infuserGoodFace(c: Infuser): InfusedItem {
   const lock = c.lock
   if (lock === 'none') throw new Error('infuse')
   if (lock.kind === 'jam') {

@@ -46,7 +46,7 @@ export function cursorFor(
   const hudHit = hover !== undefined && TUNE_HITS.has(hover.kind)
   if (hudHit && hudOpen) return 'tune'
   if (hudHit) return 'bright'
-  if (prompt === undefined || prompt.kind !== 'intent') return 'walk'
+  if (prompt?.kind !== 'intent') return 'walk'
   const act = prompt.intent.act
   if (act === 'shovel' || act === 'mine' || act === 'chop') return 'dig'
   if (act === 'water' || act === 'fill') return 'water'

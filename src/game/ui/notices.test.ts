@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { HAPPY_MAX } from '../defs/crops.ts'
-import { Plant } from '../sim/plant.ts'
+import { Plant, Weed } from '../sim/plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
 import { World } from '../sim/world.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
@@ -109,6 +109,18 @@ describe('notices.red', () => {
       .forEach(r => {
         expect(r.bar).toBeUndefined()
       })
+  })
+
+  test('weeds are one row for the whole farm, carrying every weed plot, and no row when there are none', () => {
+    const w = new World()
+    expect(kinds(noticeRows(w))).not.toContain('weed')
+    w.setCell(AT, { kind: 'weed', soil: bed(), weed: new Weed(0) })
+    w.setCell({ col: 10, row: 13 }, { kind: 'weed', soil: bed(), weed: new Weed(1) })
+    const rows = noticeRows(w).filter(r => r.kind === 'weed')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].cells).toHaveLength(2)
+    expect(rows[0].bar).toBeUndefined()
+    expect(rows[0].go.kind).toBe('none')
   })
 })
 

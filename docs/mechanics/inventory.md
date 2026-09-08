@@ -29,7 +29,7 @@ Walk up → the store takes back everything it keeps, from hand and from the 16 
 
 Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`. Port `out` origin bottom. Load: silo seeds until cargo full; additive bags `min(ADDITIVE_BAG, stored)`. Unload until that cap.
 
-Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. If the hand already holds something the store would not take back, that item is set down on the nearest plot first — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
+Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. A full hand joins or swaps first, `inventory.swap` below. Only what the store will not take back is set down on the nearest plot — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
 Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds still go to the house.
 
@@ -112,6 +112,8 @@ Mill / jam / still / barrel / freezer / furnace / infuser / bought sugar / stati
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 
 `inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
+
+`inventory.swap` — Taking from a Seed silo or an Additive store with a full hand never spills what the store itself holds. The same row as the hand joins it: seed counts add and Quality averages by count; a bag tops up to its `capacityLiters` and no further, sugar averaging `unitSale` and `quality` by liters. Any other row is a swap — the held item goes back into that store, then the new stack comes out. Only what the store has no room for, and anything the store does not take, goes to `freeHand`. — [[ui/store]]
 
 `inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy. `pack-chilli` after `unlock-infusion`.
 

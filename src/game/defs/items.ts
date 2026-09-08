@@ -52,6 +52,7 @@ export const FERT_BAG_LITERS = 10
 export const SYNTH_BAG_LITERS = 16
 export const COMPOST_LITERS = 5
 export const WEED_SPRAY_BAG = 30
+export const SPRAY_WORK = 0.33
 export const COMPOST_NEED = 10
 export const COMPOST_SECONDS = 60
 export const COMPOST_VALUE = {

@@ -39,6 +39,7 @@ function faceInner(face: NoticeFace): string {
   if (face.kind === 'rotten') return itemInner({ kind: 'rotten', cls: face.cls, count: 1 })
   if (face.kind === 'research') return itemInner({ kind: 'station' })
   if (face.kind === 'points') return SKILL_POINT
+  if (face.kind === 'weed') return itemInner({ kind: 'weed', count: 1 })
   return EXPAND_LAND
 }
 

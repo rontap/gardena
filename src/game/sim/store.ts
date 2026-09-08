@@ -36,10 +36,30 @@ export function takeSiloBody(world: World, at: Coord, crop: AnnualId, variety: V
   if (i < 0) return
   const st = silo.seeds[i]
   if (st.count <= 0) return
-  if (!freeHand(world)) return
+  const hand = world.act.hand
+  if (hand.kind === 'hold' && hand.item.kind === 'seeds' && hand.item.crop === crop && hand.item.variety === variety) {
+    const it = hand.item
+    it.quality = (it.quality * it.count + st.quality * st.count) / (it.count + st.count)
+    it.count += st.count
+    silo.seeds.splice(i, 1)
+    world.ping()
+    return
+  }
+  if (!handToSilo(world, silo)) return
   silo.seeds.splice(i, 1)
   world.act.hand = { kind: 'hold', item: { kind: 'seeds', crop, variety, quality: st.quality, count: st.count } }
   world.ping()
+}
+
+function handToSilo(world: World, silo: SeedStore): boolean {
+  const hand = world.act.hand
+  if (hand.kind !== 'hold') return true
+  const it = hand.item
+  if (it.kind !== 'seeds') return freeHand(world)
+  it.count -= silo.put(it.crop, it.variety, it.quality, it.count)
+  if (it.count > 0) return freeHand(world)
+  world.act.hand = { kind: 'empty' }
+  return true
 }
 
 export function depositSilo(world: World, at: Coord): void {
@@ -62,10 +82,24 @@ export function putAdditive(world: World, id: AdditiveId, liters: number): numbe
 }
 
 export function takeSugarBody(world: World, at: Coord): void {
-  const bin = additiveStoreAt(world, at).sugar
+  const store = additiveStoreAt(world, at)
+  const bin = store.sugar
+  const hand = world.act.hand
+  if (hand.kind === 'hold' && hand.item.kind === 'sugar') {
+    const it = hand.item
+    const n = Math.min(it.capacityLiters - it.liters, bin.liters)
+    if (n <= 0) return
+    const total = it.liters + n
+    it.unitSale = (it.unitSale * it.liters + bin.unitSale * n) / total
+    it.quality = (it.quality * it.liters + bin.quality * n) / total
+    it.liters = total
+    bin.liters -= n
+    world.ping()
+    return
+  }
   const liters = Math.min(SUGAR_BAG, bin.liters)
   if (liters <= 0) return
-  if (!freeHand(world)) return
+  if (!handToAdditives(world, store)) return
   bin.liters -= liters
   world.act.hand = {
     kind: 'hold',
@@ -80,13 +114,37 @@ export function takeAdditiveBody(world: World, at: Coord, id: AdditiveId): void 
   if (i < 0) return
   const held = store.held[i]
   const bag = ADDITIVE_BAG[id]
+  const hand = world.act.hand
+  if (hand.kind === 'hold' && hand.item.kind === id) {
+    const it = hand.item
+    const n = Math.min(it.capacityLiters - it.liters, held.liters)
+    if (n <= 0) return
+    it.liters += n
+    held.liters -= n
+    if (held.liters <= 0) store.held.splice(i, 1)
+    world.ping()
+    return
+  }
   const liters = Math.min(bag, held.liters)
   if (liters <= 0) return
-  if (!freeHand(world)) return
+  if (!handToAdditives(world, store)) return
   held.liters -= liters
   if (held.liters <= 0) store.held.splice(i, 1)
   world.act.hand = { kind: 'hold', item: { kind: id, liters, capacityLiters: bag } }
   world.ping()
+}
+
+function handToAdditives(world: World, store: AdditiveHolder): boolean {
+  const hand = world.act.hand
+  if (hand.kind !== 'hold') return true
+  const it = hand.item
+  if (it.kind === 'sugar') it.liters -= store.putSugar(it.liters, it.unitSale, it.quality)
+  else if (it.kind === 'fertilizer' || it.kind === 'synth' || it.kind === 'compost' || it.kind === 'weed-spray') {
+    it.liters -= store.putAdditive(it.kind, it.liters)
+  } else return freeHand(world)
+  if (it.liters > 0) return freeHand(world)
+  world.act.hand = { kind: 'empty' }
+  return true
 }
 
 export function depositAdditives(world: World, at: Coord): void {

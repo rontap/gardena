@@ -16,6 +16,7 @@ import {
   NEIGHBOUR_REACH,
   SILO_SEED_CAP,
   SPEECH_S,
+  SPRAY_WORK,
   STACK_MAX,
   STACK_MAX_CRAFTED,
   STILL_WATER,
@@ -644,7 +645,7 @@ describe('1.5.2', () => {
     expect(adj.weedChance).toBe(again)
   })
 
-  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not untilled. Not spray-trailer.", () => {
+  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Work `SPRAY_WORK`. Not untilled. Not spray-trailer.", () => {
     expect(WEED_SPRAY_BAG).toBe(30)
     expect(SKUS['buy-weed-spray'].price).toBe(12)
     const w = new World()
@@ -663,6 +664,9 @@ describe('1.5.2', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'weed-spray', at: AT })
     w.tick(DT_MAX)
+    expect(soil.weedChance).toBe(0.03)
+    expect(w.seats[0].workTotal).toBe(SPRAY_WORK)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(soil.weedChance).toBeCloseTo(-1 + (0.15 * DT_MAX) / 240, 8)
     expect(w.seats[0].hand.kind).toBe('empty')
     const dumped = dump(w)
@@ -683,7 +687,7 @@ describe('1.5.2', () => {
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'weed-spray', at: AT })
-    w.tick(DT_MAX)
+    for (let i = 0; i < Math.ceil(SPRAY_WORK / DT_MAX) + 1; i++) w.tick(DT_MAX)
     const cell = w.cell(AT)
     expect(cell.kind).toBe('empty')
     expect(cell.kind === 'empty' && cell.soil).toBe(soil)
@@ -1320,6 +1324,124 @@ describe('inventory.restock', () => {
     w.takeAdditive(SILO, 'compost')
     expect(w.money).toBe(paid)
     expect(made.litersOf('compost')).toBe(0)
+  })
+})
+
+describe('inventory.swap', () => {
+  const SILO = { col: AT.col, row: AT.row }
+
+  function held(w: World): Item {
+    const h = w.seats[0].hand
+    if (h.kind !== 'hold') throw new Error('hand')
+    return h.item
+  }
+
+  function seedSilo(w: World): SiloSeed {
+    const made = new SiloSeed({ shape: 'rect', col: SILO.col, row: SILO.row, w: SILO_W, h: SILO_H })
+    w.setCell(SILO, made)
+    w.seats[0].hand = { kind: 'empty' }
+    return made
+  }
+
+  function spraySilo(w: World): SiloSpray {
+    const made = new SiloSpray({ shape: 'rect', col: SILO.col, row: SILO.row, w: SILO_W, h: SILO_H })
+    w.setCell(SILO, made)
+    w.seats[0].hand = { kind: 'empty' }
+    return made
+  }
+
+  test('Taking the row already in hand joins it: the counts add, quality averages by count, and the row goes.', () => {
+    const w = new World(1)
+    const silo = seedSilo(w)
+    const dropped = w.drops.length
+    silo.put('carrot', 'base', 0, 4)
+    w.takeSilo(SILO, 'carrot', 'base')
+    silo.put('carrot', 'base', 1, 4)
+    w.takeSilo(SILO, 'carrot', 'base')
+    const it = held(w)
+    expect(it.kind === 'seeds' && it.count).toBe(8)
+    expect(it.kind === 'seeds' && it.quality).toBe(0.5)
+    expect(silo.baseCount('carrot')).toBe(0)
+    expect(w.drops).toHaveLength(dropped)
+  })
+
+  test('Taking a different row puts the held seeds back in that store instead of on the ground.', () => {
+    const w = new World(1)
+    const silo = seedSilo(w)
+    const dropped = w.drops.length
+    silo.put('carrot', 'base', 0, 4)
+    silo.put('potato', 'base', 0, 3)
+    w.takeSilo(SILO, 'carrot', 'base')
+    w.takeSilo(SILO, 'potato', 'base')
+    const it = held(w)
+    expect(it.kind === 'seeds' && it.crop).toBe('potato')
+    expect(it.kind === 'seeds' && it.count).toBe(3)
+    expect(silo.baseCount('carrot')).toBe(4)
+    expect(w.drops).toHaveLength(dropped)
+  })
+
+  test('An item the store has no room for still goes on the ground.', () => {
+    const w = new World(1)
+    const silo = seedSilo(w)
+    const dropped = w.drops.length
+    silo.put('carrot', 'base', 0, silo.cap - 1)
+    w.setCell({ col: AT.col + 3, row: AT.row }, { kind: 'empty', soil: bed() })
+    w.seats[0].actor.x = AT.col + 3.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'potato', variety: 'base', quality: 0, count: 4 } }
+    w.takeSilo(SILO, 'carrot', 'base')
+    expect(w.drops).toHaveLength(dropped + 1)
+    const spill = w.drops[dropped].item
+    expect(spill.kind === 'seeds' && spill.count).toBe(3)
+    expect(silo.baseCount('potato')).toBe(1)
+  })
+
+  test('An Additive store row already in hand tops the bag up to its capacity and no further.', () => {
+    const w = new World(1)
+    const store = spraySilo(w)
+    store.putAdditive('fertilizer', ADDITIVE_BAG.fertilizer * 2)
+    w.takeAdditive(SILO, 'fertilizer')
+    const first = held(w)
+    expect(first.kind === 'fertilizer' && first.liters).toBe(ADDITIVE_BAG.fertilizer)
+    w.takeAdditive(SILO, 'fertilizer')
+    const again = held(w)
+    expect(again.kind === 'fertilizer' && again.liters).toBe(ADDITIVE_BAG.fertilizer)
+    expect(store.litersOf('fertilizer')).toBe(ADDITIVE_BAG.fertilizer)
+    if (again.kind === 'fertilizer') again.liters = 2
+    w.takeAdditive(SILO, 'fertilizer')
+    const topped = held(w)
+    expect(topped.kind === 'fertilizer' && topped.liters).toBe(ADDITIVE_BAG.fertilizer)
+    expect(store.litersOf('fertilizer')).toBe(2)
+  })
+
+  test('A different Additive store row swaps: the held bag pours back in and the new one comes out.', () => {
+    const w = new World(1)
+    const store = spraySilo(w)
+    const dropped = w.drops.length
+    store.putAdditive('fertilizer', ADDITIVE_BAG.fertilizer)
+    store.putAdditive('weed-spray', ADDITIVE_BAG['weed-spray'])
+    w.takeAdditive(SILO, 'fertilizer')
+    w.takeAdditive(SILO, 'weed-spray')
+    expect(held(w).kind).toBe('weed-spray')
+    expect(store.litersOf('fertilizer')).toBe(ADDITIVE_BAG.fertilizer)
+    expect(store.litersOf('weed-spray')).toBe(0)
+    expect(w.drops).toHaveLength(dropped)
+  })
+
+  test('Sugar in hand tops up from the bin and averages unit sale and quality by liters.', () => {
+    const w = new World(1)
+    const store = spraySilo(w)
+    store.putSugar(SUGAR_BAG, 4, 0)
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'sugar', liters: SUGAR_BAG / 2, capacityLiters: SUGAR_BAG, unitSale: 8, quality: 1 },
+    }
+    w.takeSugar(SILO)
+    const it = held(w)
+    expect(it.kind === 'sugar' && it.liters).toBe(SUGAR_BAG)
+    expect(it.kind === 'sugar' && it.unitSale).toBe(6)
+    expect(it.kind === 'sugar' && it.quality).toBe(0.5)
+    expect(store.sugar.liters).toBe(SUGAR_BAG / 2)
   })
 })
 

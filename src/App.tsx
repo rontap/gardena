@@ -254,7 +254,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (prevDay.current === world.clock.day) return
     prevDay.current = world.clock.day
     if (world.local === 0) writeSlot(dump(world))
-    setPanel({ kind: 'none' })
   }, [hudN, world])
 
   useEffect(() => {

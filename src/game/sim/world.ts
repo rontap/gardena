@@ -22,14 +22,8 @@ import {
 } from '../defs/crops.ts'
 import {
   qualityGain,
-  STARTER_FRUIT,
-  STARTER_FRUIT_N,
-  STARTER_TREE_GRAFTS,
-  STARTER_VARIETY_PACKS,
-  VARIETY,
   type VarietyId
 } from '../defs/varieties.ts'
-import { TREE_IDS } from './ids.ts'
 import type {
   AnnualId,
   CropId,
@@ -50,7 +44,9 @@ import type {
   VehicleSlot,
   VfxId
 } from './ids.ts'
-import { Actor, WALK } from './actor.ts'
+import { WALK } from './actor.ts'
+import { defaultSeatName, joinKit, soloSeat, STARTER_SEEDS } from './seat.ts'
+import { localPlayerId, localPlayerName } from './player.ts'
 import {
   ADDITIVE_BASE,
   AdditiveStore,
@@ -93,11 +89,7 @@ import { generateChunk } from './gen.ts'
 import {
   crafted,
   makeContainer,
-  makeShovel,
-  type Countable,
-  type Hand,
-  type Item,
-  type Slot
+  type Countable
 } from './item.ts'
 import {
   isIoCell,
@@ -209,7 +201,6 @@ import type {
   Job,
   Net,
   PlayerId,
-  Presence,
   Recap,
   Seat,
   SeatId,
@@ -222,117 +213,12 @@ import type {
 export const POINTS_PER_DAY = 3
 
 export const DAY_STIPEND = 10
-export const MP_ID_KEY = 'gardena-mp-id'
-
 export const QUEUE_CAP = 12
 
 export const DT_MAX = 1 / 15
-const INV = 16
 
-export const MP_NAME_KEY = 'gardena-mp-name'
-export const NAME_MAX = 16
-
-export function cleanName(raw: string): string {
-  return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
-}
-
-export function localPlayerName(): string {
-  return cleanName(localStorage.getItem(MP_NAME_KEY) ?? '')
-}
-
-export function setLocalPlayerName(raw: string): void {
-  localStorage.setItem(MP_NAME_KEY, cleanName(raw))
-}
-
-export function localPlayerId(): PlayerId {
-  const have = localStorage.getItem(MP_ID_KEY)
-  if (have !== null) return have
-  const id = crypto.randomUUID()
-  localStorage.setItem(MP_ID_KEY, id)
-  return id
-}
-
-function emptyInv(): Slot[] {
-  return Array.from({ length: INV }, (): Slot => ({ kind: 'empty' }))
-}
-
-export function defaultSeatName(id: SeatId): string {
-  return `P${id + 1}`
-}
-
-function liveSeat(
-  id: SeatId,
-  playerId: PlayerId,
-  name: string,
-  actor: Actor,
-  hand: Hand,
-  inventory: Slot[],
-  presence: Presence,
-): Seat {
-  return {
-    id,
-    playerId,
-    name: name === '' ? defaultSeatName(id) : name,
-    actor,
-    hand,
-    inventory,
-    queue: [],
-    presence,
-    napping: false,
-    cue: { kind: 'none' },
-    place: { kind: 'none' },
-    drive: { throttle: 0, steer: 0 },
-    stride: { x: 0, y: 0 },
-    workLeft: 0,
-    workTotal: 0,
-    filling: false,
-    legStart: { x: actor.x, y: actor.y },
-  }
-}
-
-export function joinKit(id: SeatId, playerId: PlayerId, name: string): Seat {
-  const x = DOOR.col + 0.5 + id * 0.6
-  const y = DOOR.row + 0.5
-  return liveSeat(id, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, emptyInv(), 'in')
-}
-
-function soloSeat(playerId: PlayerId, name: string): Seat {
-  const inventory = emptyInv()
-  const stock: Item[] = [
-    ...TREE_IDS.map(tree => ({ kind: 'tree-seed' as const, tree, variety: 'base' as const, quality: 0 })),
-    ...STARTER_TREE_GRAFTS.map(v => ({
-      kind: 'graft' as const,
-      crop: VARIETY[v].crop,
-      variety: v,
-      quality: 0,
-      count: 1,
-    })),
-    ...STARTER_FRUIT.map(v => ({
-      kind: 'fruit' as const,
-      crop: VARIETY[v].crop,
-      variety: v as VarietyId,
-      quality: 0,
-      count: STARTER_FRUIT_N,
-      unitSale: statsOf(VARIETY[v].crop, v, 0, []).sale,
-      freshness: 1,
-      bio: true,
-      cut: false,
-    })),
-  ]
-  stock.forEach((item, i) => {
-    inventory[i] = { kind: 'hold', item }
-  })
-  const x = DOOR.col + 0.5
-  const y = DOOR.row + 0.5
-  return liveSeat(0, playerId, name, new Actor(x, y), { kind: 'hold', item: makeShovel('shovel') }, inventory, 'in')
-}
-
-const STARTER_SEEDS: readonly { crop: AnnualId; variety: VarietyId; quality: number; count: number }[] = [
-  { crop: 'carrot', variety: 'base', quality: 0, count: 7 },
-  { crop: 'tomato', variety: 'base', quality: 0, count: 2 },
-  { crop: 'potato', variety: 'base', quality: 0, count: 2 },
-  ...STARTER_VARIETY_PACKS.map(v => ({ crop: VARIETY[v].crop as AnnualId, variety: v, quality: 0, count: 5 })),
-]
+export * from './player.ts'
+export { defaultSeatName, joinKit } from './seat.ts'
 
 function groundSig(c: Cell): string {
   if (c.kind === 'untilled' && c.ground === 'hard') return 'h'

@@ -254,7 +254,7 @@ Accepts **heirloom fruit only**, `cut === false`. First dump locks crop + variet
 
 Panel on walk-up like the store — [[ui/store]] for the shape. Shows the locked variety, quality in, grafts out, progress. [[ui/station]]. Copy **Seed Variety Station**.
 
-The station's second face — feeding it seed to earn a variety you do not own — is the next update. This update ships the cutting side only.
+The station's second face — feeding it seed to earn a variety you do not own — is [[plans/next-variant]]. This update ships the cutting side only.
 
 Assumption: station graft count uses `grind.at(col, row, day)` on finish, same roll all day on that cell.
 
@@ -362,7 +362,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 ## Pads
 
-Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station / infuser: `'both'`.
+Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station / infuser: `'both'`. Grinder pads and `inn`, Compost box `inn`: [[plans/next-automation]]. Barrel stays `'none'`.
 
 `IoCell` is west-pull (mill, jam, still, compost-box, grinder, furnace, station, infuser). Not the same set as `PadCell`.
 

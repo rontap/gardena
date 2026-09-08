@@ -7,7 +7,7 @@ Module map and types for the game as it runs.
 - [[architecture/tick]] — furnace origin, station origin. Burrow seam mint. Enclosure rebuild not on tick. Pump gather skip. No recap early return
 - [[architecture/view]] — burrow cover. Sensor wash from watched set. Pump origin port. `view.boot`. Notice cell outline. overlay-infused
 - [[architecture/log]]
-- [[architecture/net]] — plant crop/variety/quality
+- [[architecture/net]] — plant crop/variety/quality. `net.order`
 - [[architecture/rng]] — no grow stream. Spatial `burrow`
 - [[architecture/family]] — `BetterCrop`. luck
 - [[architecture/tree]] — trunk, variety

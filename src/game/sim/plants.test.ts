@@ -425,7 +425,7 @@ describe('0.9 log and rng', () => {
     expect(w.log).toHaveLength(2)
   })
 
-  test('dispatch appends to World.log and sink, then apply. apply does not log. Replay is apply only. enqueue does not dispatch.', () => {
+  test('dispatch appends to World.log and sink, then apply. apply does not log. Replay is apply only. enqueue does not dispatch. Map fence run commits `world.click` per cell. Not `confirmPlace`. `confirmPlace` stays a mutator for `apply` and tests.', () => {
     const w = new World(1)
     w.apply({ a: Act.cheat, t: 0, p: 0, k: 'money' })
     expect(w.log).toEqual([])
@@ -436,6 +436,21 @@ describe('0.9 log and rng', () => {
     w.enqueue({ act: 'walk', at: AT })
     expect(w.log).toHaveLength(1)
     expect(w.seats[0].queue[0]).toEqual({ act: 'walk', at: AT })
+    w.done.add('unlock-landscaping')
+    w.money = 999
+    w.buy('buy-fence')
+    const a = { col: 4, row: 18 }
+    const b = { col: 5, row: 18 }
+    w.setCell(a, bare('soft', 0))
+    w.setCell(b, bare('soft', 0))
+    const n = w.log.length
+    w.confirmPlace(a)
+    expect(w.hasFence(a)).toBe(true)
+    expect(w.log).toHaveLength(n)
+    w.click(b)
+    expect(w.hasFence(b)).toBe(true)
+    expect(w.log).toHaveLength(n + 1)
+    expect(w.log[n]).toEqual({ a: Act.click, t: w.now, p: 0, c: [b.col, b.row] })
   })
 
   test('Log is player Cmds only. Not sips, rot, weed sprout, ripen, tree drop, grass, stall ticks, research drain, walk, panel, camera, hover, lens.', () => {

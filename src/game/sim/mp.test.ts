@@ -16,6 +16,7 @@ import {
   MpHost,
   PROTOCOL,
   RETRY_MAX,
+  STALL_MS,
   AWAY_MS,
   NAP_MS,
   DROP_MS,
@@ -24,6 +25,8 @@ import {
   type MpMsg,
   type MpWire,
 } from './mp.ts'
+import { originCell } from './building.ts'
+import { originOrder } from './util.ts'
 import { DT_MAX, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }
@@ -255,6 +258,29 @@ describe('1.1 multiplayer', () => {
     expect(w.now).toBe(n + 1)
   })
 
+  test('a forced one-section mismatch names that section', () => {
+    const a = new World(1)
+    const b = new World(1)
+    expect(digestDiff(a, b)).toEqual([])
+    b.money += 1
+    expect(digestDiff(a, b)).toEqual(['money'])
+  })
+
+  test('mismatch hello carries the section names', () => {
+    const w = new World(1)
+    const { host, guest } = pair(w)
+    const named: string[][] = []
+    host.onDesync = names => {
+      named.push(names)
+    }
+    for (let i = 0; i < 29; i++) host.pump()
+    const gw = guest.world
+    if (gw === undefined) return
+    gw.money += 1
+    host.pump()
+    expect(named).toEqual([['money']])
+  })
+
   test('Digest mismatch hello still counts after later pumps. Second mismatch kicks. 5s-style hello without digestWait does not.', () => {
     const w = new World(1)
     const host = new MpHost(w)
@@ -350,7 +376,7 @@ describe('1.1 multiplayer', () => {
     expect(catching).toBe(true)
     guest.pumpGap(100 + 5001)
     expect(hellos).toBe(1)
-    expect(guest.catching).toBe(true)
+    expect(guest.catching).toBe(false)
     hellos = 0
     guest.paused = true
     guest.pumpGap(100 + 5001 + 5001)
@@ -472,6 +498,77 @@ describe('1.1 multiplayer', () => {
     applyRoster(mirror, rows)
     expect(mirror.seats[1].name).toBe('Ada')
     expect(mirror.seats[1].presence).toBe('away')
+  })
+
+  test('readMpMsg copies leave iff drop or kicked. Absent stays absent. rosterOf has no leave.', () => {
+    const w = new World(1)
+    w.join('g1', 'Ada')
+    expect(rosterOf(w)[1]).toEqual({ id: 1, name: 'Ada', presence: 'in', napping: false })
+    const drop = rosterOf(w, [{ id: 1, leave: 'drop' }])
+    expect(drop[1]).toEqual({ id: 1, name: 'Ada', presence: 'in', napping: false, leave: 'drop' })
+    expect(readMpMsg({ a: 'roster', seats: drop })).toEqual({ a: 'roster', seats: drop })
+    const kicked = rosterOf(w, [{ id: 1, leave: 'kicked' }])
+    expect(readMpMsg({ a: 'roster', seats: kicked })).toEqual({ a: 'roster', seats: kicked })
+    expect(
+      readMpMsg({
+        a: 'roster',
+        seats: [{ id: 1, name: 'Ada', presence: 'away', napping: false, leave: 'nope' }],
+      }),
+    ).toEqual({ a: 'roster', seats: [{ id: 1, name: 'Ada', presence: 'away', napping: false }] })
+  })
+
+  test('Host sets leave drop on drop and kicked on kick; silence roster omits leave.', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const pushes: ReturnType<typeof rosterOf>[] = []
+    host.onRoster = seats => {
+      pushes.push(seats)
+    }
+    let wall = 0
+    host.wall = () => wall
+    const [a, b] = loopback()
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1', 'Ada')
+    guest.hello()
+    wall = AWAY_MS
+    host.sweep()
+    expect(pushes[pushes.length - 1].find(s => s.id === 1)).toEqual({
+      id: 1,
+      name: 'Ada',
+      presence: 'away',
+      napping: false,
+    })
+    wall = NAP_MS
+    host.sweep()
+    expect(pushes[pushes.length - 1].every(s => !('leave' in s))).toBe(true)
+    const w2 = new World(1)
+    const host2 = new MpHost(w2)
+    const seen: ReturnType<typeof rosterOf>[] = []
+    host2.onRoster = seats => {
+      seen.push(seats)
+    }
+    const [a1, b1] = loopback()
+    host2.attach(a1)
+    new MpGuest(b1, 'a', 'Ada').hello()
+    const [a2, b2] = loopback()
+    host2.attach(a2)
+    new MpGuest(b2, 'b', 'Bea').hello()
+    host2.drop(a2, 'drop')
+    expect(seen[seen.length - 1].find(s => s.id === 2)).toEqual({
+      id: 2,
+      name: 'Bea',
+      presence: 'away',
+      napping: false,
+      leave: 'drop',
+    })
+    host2.drop(a1, 'kicked')
+    expect(seen[seen.length - 1].find(s => s.id === 1)).toEqual({
+      id: 1,
+      name: 'Ada',
+      presence: 'away',
+      napping: false,
+      leave: 'kicked',
+    })
   })
 
   test(`a stalled guest retries ${RETRY_MAX} times, then byes with 'lost'. A live host resets the budget.`, () => {
@@ -738,6 +835,144 @@ describe('1.1 multiplayer', () => {
     // A clamped slice would re-apply hundreds of already-applied commands.
     expect(digestDiff(guest.world as World, w)).toEqual([])
     expect(guest.world?.money).toBe(money)
+  })
+
+  test('a missed bundle is a gap: later bundles stay queued, catching holds, lastWall does not move, a lost hello still stalls and resyncs', () => {
+    const w = new World(1)
+    const host = new MpHost(w)
+    const [a, b] = loopback()
+    let armed = false
+    let dropHello = true
+    const sendA = a.send.bind(a)
+    a.send = (msg: MpMsg) => {
+      if (msg.a === 'bundle' && msg.t === 3) {
+        armed = true
+        return
+      }
+      sendA(msg)
+    }
+    const sendB = b.send.bind(b)
+    b.send = (msg: MpMsg) => {
+      if (msg.a === 'hello' && armed && dropHello) {
+        dropHello = false
+        return
+      }
+      sendB(msg)
+    }
+    host.attach(a)
+    const guest = new MpGuest(b, 'g1')
+    let t = 1000
+    guest.wall = () => t
+    guest.hello()
+    expect(guest.world).not.toBe(undefined)
+    for (let i = 0; i < 20; i++) host.pump()
+    expect(w.now).toBe(20)
+    expect(guest.world?.now).toBe(2)
+    expect(guest.catching).toBe(true)
+    t += 100
+    guest.pumpGap(t)
+    expect(guest.world?.now).toBe(2)
+    t += STALL_MS + 1
+    guest.pumpGap(t)
+    expect(guest.world?.now).toBe(w.now)
+    expect(guest.catching).toBe(false)
+  })
+
+  test('World.pumps tanks wells taps stills waterSystems are purchase order on the host. Dump writes no arrays for them; parse walks cells, so those lists are chunk then row/col after hydrate. pull shares by array order, so stored and pumpLiters diverge after join. rebase() sorts those lists by originCell row then col (comparator in sim/util.ts, same shape as boomHits: a.row === b.row ? a.col - b.col : a.row - b.row). Not per tick. Not per push. World.pump and generateChunk\'s starter argument find form === \'starter\'; sort must not be required to keep index 0. Parse does not unshift the starter pump. Do not sort hangars, silos, or modifiers — those are not in pull.', () => {
+    expect(originOrder({ row: 1, col: 2 }, { row: 1, col: 3 })).toBe(-1)
+    expect(originOrder({ row: 2, col: 0 }, { row: 1, col: 9 })).toBeGreaterThan(0)
+    const w = new World(1)
+    w.unlockAll()
+    w.money = 9999
+    const jackAt = { col: 4, row: 4 }
+    w.setCell(jackAt, { kind: 'empty', soil: bed() })
+    w.setCell({ col: 5, row: 4 }, { kind: 'empty', soil: bed() })
+    w.buy('buy-pumpjack')
+    w.confirmPlace(jackAt)
+    expect(w.pumps[0].form).toBe('starter')
+    expect(w.pumps[1].form).toBe('jack')
+    expect(originOrder(originCell(w.pumps[1].base), originCell(w.pump.base))).toBeLessThan(0)
+    w.tick(DT_MAX)
+    expect(w.pumps[0].form).toBe('starter')
+    const hangarA = { col: 10, row: 16 }
+    const hangarB = { col: 4, row: 8 }
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 3; col++) {
+        w.setCell({ col: hangarA.col + col, row: hangarA.row + row }, { kind: 'empty', soil: bed() })
+        w.setCell({ col: hangarB.col + col, row: hangarB.row + row }, { kind: 'empty', soil: bed() })
+      }
+    }
+    w.buy('buy-hangar')
+    w.confirmPlace(hangarA)
+    w.buy('buy-hangar')
+    w.confirmPlace(hangarB)
+    expect(w.hangars[0].base.col).toBe(hangarA.col)
+    expect(w.hangars[1].base.col).toBe(hangarB.col)
+    const parsedBefore = parse(JSON.stringify(dump(w)))
+    expect(parsedBefore.ok).toBe(true)
+    if (!parsedBefore.ok) return
+    expect(parsedBefore.world.pumps[0].form).toBe('jack')
+    expect(parsedBefore.world.pump.form).toBe('starter')
+    expect(w.pumps[0].form).toBe('starter')
+    w.rebase()
+    expect(w.pumps[0].form).toBe('jack')
+    expect(w.pump.form).toBe('starter')
+    expect(w.hangars[0].base.col).toBe(hangarA.col)
+    expect(w.hangars[1].base.col).toBe(hangarB.col)
+    const parsed = parse(JSON.stringify(dump(w)))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.world.pumps.map(p => originCell(p.base))).toEqual(w.pumps.map(p => originCell(p.base)))
+    expect(parsed.world.pump.form).toBe('starter')
+  })
+
+  test('Host `rebase()` before every `dump` on the wire. `rebase()` clears every seat, so a dump to one link leaves the others on old `place`. One `rebaseAndSnapshotAll(except?)` for underflow, seated hello, and new join. `logSince` below `logBase` → `undefined` → resync, never a clamped replay.', () => {
+    const w = new World(1)
+    w.done.add('unlock-irrigation')
+    w.money = 999
+    w.pumpLiters = 40
+    w.stall.carrot.sat = 0.5
+    const host = new MpHost(w)
+    const [a1, b1] = loopback()
+    host.attach(a1)
+    const guestA = new MpGuest(b1, 'a')
+    guestA.hello()
+    expect(w.pumpLiters).toBe(0)
+    expect(guestA.world?.pumpLiters).toBe(0)
+    expect(w.stall.carrot.sat).toBe(0)
+    expect(guestA.world?.stall.carrot.sat).toBe(0)
+    w.buy('buy-pipe')
+    host.pump()
+    expect(w.seats[0].place.kind).toBe('sku')
+    expect(guestA.world?.seats[0].place.kind).toBe('sku')
+    const [a2, b2] = loopback()
+    host.attach(a2)
+    const guestB = new MpGuest(b2, 'b')
+    guestB.hello()
+    expect(w.seats[0].place.kind).toBe('none')
+    expect(guestA.world?.seats[0].place.kind).toBe('none')
+    expect(guestB.world?.seats[0].place.kind).toBe('none')
+    expect(guestA.world?.seats).toHaveLength(3)
+    expect(digestDiff(guestA.world as World, w)).toEqual([])
+    expect(digestDiff(guestB.world as World, w)).toEqual([])
+    w.buy('buy-pipe')
+    expect(w.seats[0].place.kind).toBe('sku')
+    guestA.hello()
+    expect(w.seats[0].place.kind).toBe('none')
+    expect(guestA.world?.seats[0].place.kind).toBe('none')
+    expect(guestB.world?.seats[0].place.kind).toBe('none')
+    w.buy('buy-pipe')
+    host.setPaused(true)
+    for (let i = 0; i < 600; i++) w.dispatch({ a: Act.closeHud, t: 0, p: 0 })
+    expect(w.logSince(0)).toBe(undefined)
+    expect(w.seats[0].place.kind).toBe('sku')
+    host.setPaused(false)
+    host.pump()
+    expect(w.seats[0].place.kind).toBe('none')
+    expect(guestA.world?.seats[0].place.kind).toBe('none')
+    expect(guestB.world?.seats[0].place.kind).toBe('none')
+    expect(digestDiff(guestA.world as World, w)).toEqual([])
+    expect(digestDiff(guestB.world as World, w)).toEqual([])
   })
 })
 

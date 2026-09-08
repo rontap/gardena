@@ -685,8 +685,8 @@ export function embarkBody(w: World, id: VehicleId): void {
     v.running = false
     v.pose.speed = 0
   }
-  const floor = { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-  if (w.act.actor.inside(floor)) {
+  const reach = Math.hypot(w.act.actor.x - v.pose.x, w.act.actor.y - v.pose.y)
+  if (reach <= 1.5) {
     board(w, v)
     w.ping()
     return

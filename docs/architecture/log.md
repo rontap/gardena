@@ -41,7 +41,7 @@ Replay calls `apply` only.
 
 Public UI methods wrap `dispatch` so call sites stay. `enqueue` is a mutator. Tests call it. `apply` of `click` / `clickValve` / `rightClick` (drop) calls `enqueue`. It does not wrap `dispatch`.
 
-`confirmPlace` is a mutator. Not a cmd. `apply(click)` calls it when prompt is place. Tests may call it. Unlogged.
+`confirmPlace` is a mutator. Not a cmd. `apply(click)` calls it when prompt is place. Tests may call it. Unlogged. Map fence run commits `world.click` per cell — pending run and empty-run cell. Not `confirmPlace`. `money` is in the digest; an unlogged fence run diverges every guest.
 
 `toggleValve` is actor work from a valve intent. Not a cmd.
 
@@ -63,7 +63,7 @@ Cheats are cmds.
 
 ## Time
 
-`World.now: number` — integer count of `tick()` entries. Starts 0. Each `tick()` entry increments by 1. No recap early return.
+`World.now: number` — integer count of `tick()` entries. Starts 0. Each `tick()` entry increments by 1. `World.tick` does not return early on recap. Seam recap early-return is `tickWorld`.
 
 `Cmd.t` is `now` after last completed tick, before apply.
 

@@ -758,7 +758,7 @@ describe('vehicles II', () => {
     expect(v.boom).toBe(3)
   })
 
-  test('Enter: if this seat is a driver → `Act.disembark`. Else closest parked field vehicle, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }` instant. Several: min dist, then `World.vehicles` order. Stored / driven: skip. None in range: no-op.', () => {
+  test('Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle with `driver === \'none\'`, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }`. Several: min dist, then `World.vehicles` order. Stored / driven: skip. `enter()` does not write `actor.x`/`actor.y`. Snap and 1.5-tile reach live in `embarkBody`, so click-to-board uses the same reach. Running auto: pause, board, speed 0, cursor stays. Dash Disembark / parked Embark stay. No walk-to-embark on Enter. Seated `Act.click` field acts no-op. No coast-walk. `Act.disembark` while driver: speed 0, `driver \'none\'`, actor at vehicle `x,y`, drive `{0,0}`, queue `[]`, hitch stays. Always legal while driving. `Act.dock` else no-op. Guest may disembark and dock.', () => {
     const w = farm()
     w.buyVehicle(AT, 'quad')
     w.deploy(1, AT, 'none')
@@ -768,15 +768,47 @@ describe('vehicles II', () => {
     expect(v.pose.driver).toBe(0)
     w.enter()
     expect(v.pose.driver).toBe('none')
+    expect(v.pose.speed).toBe(0)
+    expect(w.seats[0].drive).toEqual({ throttle: 0, steer: 0 })
+    expect(w.seats[0].queue).toEqual([])
+    w.seats[0].actor.x = v.pose.x + 1
+    w.seats[0].actor.y = v.pose.y
+    w.embark(1)
+    expect(v.pose.driver).toBe(0)
+    expect(w.seats[0].actor.x).toBe(v.pose.x)
+    expect(w.seats[0].actor.y).toBe(v.pose.y)
+    w.disembark()
+    w.seats[0].actor.x = v.pose.x + 3
+    w.seats[0].actor.y = v.pose.y
+    w.embark(1)
+    expect(v.pose.driver).toBe('none')
+    expect(w.seats[0].queue).toEqual([{ act: 'embark', id: 1 }])
+    w.seats[0].queue.length = 0
+    w.enter()
+    expect(v.pose.driver).toBe('none')
+    expect(w.seats[0].queue).toEqual([])
     w.seats[0].actor.x = v.pose.x + 1
     w.seats[0].actor.y = v.pose.y
     w.enter()
     expect(v.pose.driver).toBe(0)
+    expect(w.seats[0].actor.x).toBe(v.pose.x)
     w.disembark()
-    w.seats[0].actor.x = v.pose.x + 3
+    w.createRoute()
+    w.addStop(1, { kind: 'goto', x: 11.5, y: 20.5 })
+    w.assignRoute(1, 1)
+    v.running = true
+    v.cursor = 0
+    v.pose.speed = 3
+    const cursor = v.cursor
+    w.seats[0].actor.x = v.pose.x + 1
     w.seats[0].actor.y = v.pose.y
     w.enter()
-    expect(v.pose.driver).toBe('none')
+    expect(v.running).toBe(false)
+    expect(v.pose.driver).toBe(0)
+    expect(v.pose.speed).toBe(0)
+    expect(v.cursor).toBe(cursor)
+    expect(permit({ a: Act.disembark, t: 0, p: 1 })).toBe(true)
+    expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
   })
 
   test('assumption: dropoff is (17,8). Seed-silo dropoff is house SE; drive onto it isSolid SURFACE_SLOW.', () => {

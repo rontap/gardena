@@ -281,10 +281,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
         if (made.kind === 'truck') truck = made
         if (made.kind === 'seed-silo' && made.useDefault) silo = made
         if (made.kind === 'additive-store' && made.useDefault) additives = made
-        if (made.kind === 'pump') {
-          if (made.form === 'starter') pumps.unshift(made)
-          else pumps.push(made)
-        }
+        if (made.kind === 'pump') pumps.push(made)
         if (made.kind === 'rain-tank') tanks.push(made)
         if (made.kind === 'tap') taps.push(made)
         if (made.kind === 'well') wells.push(made)

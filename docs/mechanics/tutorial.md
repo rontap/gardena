@@ -93,7 +93,7 @@ Player tasks (not copy):
 
 1. Shovel grass / untilled → till.
 2. Till four more. Five distinct `isTilled` cells.
-3. House door, seeds in hand.
+3. House door, seeds in hand. Copy and this line: [[plans/next-tutorial-patch]].
 4. Plant those seeds on tilled (`empty` → `growing`). Hand is one item.
 5. `startResearch` any id.
 6. Bucket at `DOOR`. Fill at the pump is the existing fill. Pour on the plant. Bucket starts full; fill is not a completion predicate.

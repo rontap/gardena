@@ -82,7 +82,7 @@ Cost preference: `unlock-auto-irrigation` 16, `unlock-crop-variants` 16, `unlock
 
 `unlock-hardened-tools` `effect` `unlock-sku` `buy-better-pickaxe`.
 
-`unlock-crop-variants` and `unlock-heirloom` keep their rows. Ladder effects die: they do not change grow, seed packs, or silo columns. Seed packs are `'base'` at quality 0 with or without those rows. Skills still gate on them — [[mechanics/family]]. `buy-research-station` unlock and show `unlock-crop-variants`. How varieties are earned from seed is the next update.
+`unlock-crop-variants` and `unlock-heirloom` keep their rows. Ladder effects die: they do not change grow, seed packs, or silo columns. Seed packs are `'base'` at quality 0 with or without those rows. Skills still gate on them — [[mechanics/family]]. `buy-research-station` unlock and show `unlock-crop-variants`. How varieties are earned from seed: [[plans/next-variant]].
 
 Synthetic is research; compost box is a start SKU. Synthetic is instant, costs a bag forever and sets `bio = false`; compost needs a box and feeding, and restores bio at `BIO_RESTORE` — [[mechanics/soil]]. Start plants shelf is four: `unlock-fertilizer`, `unlock-tomato`, `unlock-grape`, `unlock-better-tools`. `unlock-grape` cost 12, seconds 40 — preference. `unlock-crop-variants` reveals after tomato, grape, or irrigation. `unlock-heirloom` requires Crop variants and also reveals on land or vehicles. Land start shelf is `unlock-expand` and `unlock-landscaping`.
 
@@ -165,7 +165,7 @@ Logic gate + NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` 
 
 `research.better` — Better crop is player `better-*` `saleMul` and ripen `betterGain`. Potato / wheat gated on `unlock-crop-variants`. Őstermelő gated on `unlock-heirloom`. Tree `better-*` gate none.
 
-`research.variants` — `unlock-crop-variants` plants, cost 16, 40s, `reveal` tomato | grape | irrigation, `effect` `feature`. Ladder effects die: seed packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` `requires` it. Both rows stay.
+`research.variants` — `unlock-crop-variants` plants, cost 16, 40s, `reveal` tomato | grape | irrigation, `effect` `feature`. Ladder effects die: seed packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` `requires` it. Both rows stay. Earn path: [[plans/next-variant]].
 
 `research.unlockAll` — `unlockAll`: every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll. Job drain ×3 is `cheatFastResearch`, not this.
 

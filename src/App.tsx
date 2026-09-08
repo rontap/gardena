@@ -3,7 +3,7 @@ import { m } from './paraglide/messages.js'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { Peer } from 'peerjs'
 import { installPlay } from './game/sim/play.ts'
-import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World } from './game/sim/world.ts'
+import { DT_MAX, localPlayerId, localPlayerName, setLocalPlayerName, World, type SeatId } from './game/sim/world.ts'
 import { Almanac } from './game/ui/almanac.tsx'
 import { ChestUi } from './game/ui/chest.tsx'
 import { HangarUi } from './game/ui/hangar.tsx'
@@ -27,7 +27,7 @@ import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { TutorialCard } from './game/ui/tutorial.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
 import { Notices } from './game/ui/notices.tsx'
-import type { Notice, NoticeGo } from './game/ui/notices.ts'
+import { rosterNotices, type Notice, type NoticeGo } from './game/ui/notices.ts'
 import type { ShelfId } from './game/defs/shelf.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Coord } from './game/sim/building.ts'
@@ -49,7 +49,7 @@ import { trailerUsed } from './game/sim/feature-vehicles/vehicle.ts'
 import { Btn, Field, Window } from './game/ui/frame.tsx'
 import { DashFace } from './game/ui/held.tsx'
 import { type WorkerSink } from './game/sim/log.ts'
-import { MpGuest, MpHost, RETRY_MAX } from './game/sim/mp.ts'
+import { MpGuest, MpHost, RETRY_MAX, rosterOf, type RosterSeat } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/feature-save/save.ts'
 import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
@@ -114,6 +114,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const toolLens = world === undefined ? undefined : toolLensOf(world)
   const [editor, setEditor] = useState(false)
   const [noticeCells, setNoticeCells] = useState<readonly Coord[]>(NO_CELLS)
+  const [rosterRows, setRosterRows] = useState<readonly Notice[]>([])
+  const rosterPrev = useRef<RosterSeat[]>([])
+  const rosterSeq = useRef(0)
+  const localRef = useRef<SeatId>(0)
   const [recapDay, setRecapDay] = useState<number | undefined>(undefined)
   const recapDayRef = useRef<number | undefined>(undefined)
   recapDayRef.current = recapDay
@@ -449,6 +453,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     recapDayRef.current = undefined
     setRecapDay(undefined)
     consignRevision.current = next.consignRevision
+    localRef.current = next.local
+    rosterPrev.current = rosterOf(next)
+    rosterSeq.current = 0
+    setRosterRows([])
     if (next.local === 0) bootCheat(next)
     setWorld(next)
     setTutorial(tut)
@@ -482,6 +490,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
     killPeer()
     setRole('off')
+    localRef.current = 0
+    rosterPrev.current = []
+    rosterSeq.current = 0
+    setRosterRows([])
     setRoomKey('')
     setCatching(false)
     setJoining(false)
@@ -620,7 +632,20 @@ export default function App({ sink }: { sink: WorkerSink }) {
     open({ kind: go.panel })
   }
 
+  function stampRoster(seats: RosterSeat[]): void {
+    const sessionOn = hostRef.current !== undefined || guestRef.current !== undefined
+    const { rows, n } = rosterNotices(rosterPrev.current, seats, localRef.current, sessionOn, rosterSeq.current)
+    rosterSeq.current = n
+    rosterPrev.current = seats
+    if (rows.length > 0) setRosterRows(cur => [...cur, ...rows])
+    setHudN(x => x + 1)
+  }
+
   function dismissNotice(row: Notice): void {
+    if (row.kind === 'joined' || row.kind === 'quit' || row.kind === 'desynced') {
+      setRosterRows(rs => rs.filter(r => r.id !== row.id))
+      return
+    }
     if (world === undefined) return
     if (row.go.kind !== 'popup' || row.go.popup.kind !== 'recap') return
     world.seeRecap(row.go.popup.day)
@@ -662,7 +687,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
         hostRef.current = host
         host.onPause = on => setPaused(on)
         host.onCatching = on => setCatching(on)
-        host.onRoster = () => setHudN(x => x + 1)
+        host.onDesync = names => {
+          console.log(names)
+        }
+        host.onRoster = stampRoster
         // startHost resolves after the lobby opened, so re-apply the hold the panel asked for.
         if (mpOpenRef.current) host.setPaused(true)
         const endHost = () => {
@@ -672,8 +700,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
         peer.on('close', endHost)
         listen(peer, (wire, conn) => {
           host.attach(wire)
-          conn.on('close', () => host.drop(wire))
-          conn.on('error', () => host.drop(wire))
+          conn.on('close', () => host.drop(wire, 'drop'))
+          conn.on('error', () => host.drop(wire, 'drop'))
         })
       })
       .catch(() => {
@@ -778,6 +806,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setRetry(n)
     }
     g.onPause = on => setPaused(on)
+    g.onRoster = stampRoster
     g.onReject = reason => {
       stop()
       setConnecting(false)
@@ -1024,6 +1053,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
           <Notices
             world={world}
             off={editor}
+            roster={rosterRows}
             onHighlight={setNoticeCells}
             onGo={goNotice}
             onDismiss={dismissNotice}

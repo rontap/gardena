@@ -32,6 +32,10 @@ export function wrapConn(conn: DataConnection): MpWire {
   })
   return {
     send(msg) {
+      if (!conn.open) {
+        emit({ a: 'bye', why: 'lost' })
+        return
+      }
       conn.send(msg)
     },
     onRecv(fn) {

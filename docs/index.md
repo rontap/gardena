@@ -62,4 +62,8 @@ Vault for this game. Agents read this first.
 
 - [[art/_index]]
 
+## Plans
+
+- [[plans/_index]] — next work. Not rules.
+
 

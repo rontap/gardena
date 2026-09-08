@@ -1,6 +1,8 @@
 import { SKUS } from '../defs/research.ts'
+import { originCell } from './building.ts'
 import type { SkuId } from './ids.ts'
 import { Act, type Cmd } from './log.ts'
+import { isTilled } from './plot.ts'
 import { drivesOut } from './sensor.ts'
 import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
@@ -14,7 +16,7 @@ export const DIGEST_EVERY = 30
 export type MpMsg =
   // `desyncT` marks a hello sent because a digest mismatched, and names the digest `t` it failed
   // on. Absent means an ordinary join or a stall retry. Keyed on `t` so it survives any RTT.
-  | { a: 'hello'; protocol: number; playerId: PlayerId; name: string; desyncT?: number }
+  | { a: 'hello'; protocol: number; playerId: PlayerId; name: string; desyncT?: number; diff?: string[] }
   | { a: 'welcome'; protocol: number; seat: SeatId; save: Save; now: number; paused: boolean }
   | { a: 'reject'; reason: 'version' | 'full' | 'busy' }
   | { a: 'ready' }
@@ -22,7 +24,7 @@ export type MpMsg =
   | { a: 'bundle'; t: number; cmds: Cmd[] }
   | { a: 'intent'; cmd: Cmd }
   | { a: 'pause'; on: boolean }
-  | { a: 'digest'; t: number; hex: string }
+  | { a: 'digest'; t: number; hex: string; sections?: Record<string, string> }
   | { a: 'resync'; save: Save; now: number }
   | { a: 'roster'; seats: RosterSeat[] }
   // 'lost' is the transport dropping under us; only 'host-left' means the host meant it.
@@ -36,7 +38,9 @@ export type MpWire = {
 
 export type RejectReason = 'version' | 'full' | 'busy'
 
-export type RosterSeat = { id: SeatId; name: string; presence: Presence; napping: boolean }
+export type RosterSeat =
+  | { id: SeatId; name: string; presence: Presence; napping: boolean }
+  | { id: SeatId; name: string; presence: Presence; napping: boolean; leave: 'drop' | 'kicked' }
 
 const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-pumpjack',
@@ -93,7 +97,14 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
   const msg = data as MpMsg
   switch (msg.a) {
     case 'hello':
-      return { a: 'hello', protocol: msg.protocol, playerId: msg.playerId, name: cleanName(msg.name), desyncT: msg.desyncT }
+      return {
+        a: 'hello',
+        protocol: msg.protocol,
+        playerId: msg.playerId,
+        name: cleanName(msg.name),
+        desyncT: msg.desyncT,
+        diff: msg.diff,
+      }
     case 'welcome':
       return msg
     case 'reject':
@@ -116,7 +127,11 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
     case 'roster':
       return {
         a: 'roster',
-        seats: msg.seats.map(s => ({ id: s.id, name: cleanName(s.name), presence: s.presence, napping: s.napping })),
+        seats: msg.seats.map(s => {
+          const row = { id: s.id, name: cleanName(s.name), presence: s.presence, napping: s.napping }
+          if ('leave' in s && (s.leave === 'drop' || s.leave === 'kicked')) return { ...row, leave: s.leave }
+          return row
+        }),
       }
     case 'bye':
       if (msg.why !== 'host-left' && msg.why !== 'kicked' && msg.why !== 'lost') return undefined
@@ -126,8 +141,12 @@ export function readMpMsg(data: unknown): MpMsg | undefined {
   }
 }
 
-export function rosterOf(world: World): RosterSeat[] {
-  return world.seats.map(s => ({ id: s.id, name: s.name, presence: s.presence, napping: s.napping }))
+export function rosterOf(world: World, leaves: readonly { id: SeatId; leave: 'drop' | 'kicked' }[] = []): RosterSeat[] {
+  return world.seats.map(s => {
+    const hit = leaves.find(l => l.id === s.id)
+    if (hit === undefined) return { id: s.id, name: s.name, presence: s.presence, napping: s.napping }
+    return { id: s.id, name: s.name, presence: s.presence, napping: s.napping, leave: hit.leave }
+  })
 }
 
 /** Presence and names never ride the command log, so the host pushes them directly. */
@@ -335,11 +354,15 @@ function qTrailerPose(pose: TrailerPose): unknown {
  * human *which* part drifted, which one 32-bit number never can. */
 export function digestParts(world: World): Record<string, unknown> {
   const cells: string[] = []
+  const soil: string[] = []
+  const happiness: string[] = []
   world.forEachCell((at, c) => {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
       s += `:${c.plant.crop}:${c.plant.variety}:${q(c.plant.quality)}:${q(c.plant.maturity)}`
+      happiness.push(`${at.col},${at.row}:${c.plant.happiness}`)
     }
+    if (isTilled(c)) soil.push(`${at.col},${at.row}:${c.soil.water}:${c.soil.fertilizer}`)
     if (c.kind === 'tree') s += `:${c.variety}`
     if (c.kind === 'silo-seed' || c.kind === 'silo-spray') s += `:re${c.restock ? 1 : 0}`
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
@@ -426,6 +449,21 @@ export function digestParts(world: World): Record<string, unknown> {
         filled: a.bins.map(b => b.filled),
       })),
     },
+    bigAcc: world.bigAcc,
+    soil,
+    happiness,
+    stored: world
+      .sources()
+      .map(s => {
+        const o = originCell(s.base)
+        return `${o.col},${o.row}:${s.water.stored}`
+      })
+      .sort(),
+    pumpLiters: world.pumpLiters,
+    job: world.job,
+    points: world.points,
+    nextVehicleId: world.nextVehicleId,
+    nextTrailerId: world.nextTrailerId,
   }
 }
 
@@ -442,18 +480,22 @@ export function digestHex(world: World): string {
   return fnv(JSON.stringify(digestParts(world)))
 }
 
-/** One hash per section, so a mismatch can name what drifted instead of just that something did. */
-export function digestSections(world: World): Record<string, string> {
+function hashParts(parts: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const [k, v] of Object.entries(digestParts(world))) out[k] = fnv(JSON.stringify(v))
+  for (const [k, v] of Object.entries(parts)) out[k] = fnv(JSON.stringify(v))
   return out
 }
 
-/** The sections that differ between two worlds, most useful first. Empty means they agree. */
+export function digestSections(world: World): Record<string, string> {
+  return hashParts(digestParts(world))
+}
+
+export function sectionDiff(x: Record<string, string>, y: Record<string, string>): string[] {
+  return Object.keys({ ...x, ...y }).filter(k => x[k] !== y[k])
+}
+
 export function digestDiff(a: World, b: World): string[] {
-  const x = digestSections(a)
-  const y = digestSections(b)
-  return Object.keys(x).filter(k => x[k] !== y[k])
+  return sectionDiff(digestSections(a), digestSections(b))
 }
 
 type Link = {
@@ -475,7 +517,8 @@ export class MpHost {
   private readonly guests: Link[] = []
   onPause: ((on: boolean) => void) | undefined
   onCatching: ((on: boolean) => void) | undefined
-  onRoster: (() => void) | undefined
+  onDesync: ((names: string[]) => void) | undefined
+  onRoster: ((seats: RosterSeat[]) => void) | undefined
   constructor(world: World) {
     this.world = world
   }
@@ -493,14 +536,14 @@ export class MpHost {
     this.guests.push(link)
     wire.onRecv(msg => this.recv(link, msg))
   }
-  drop(wire: MpWire): void {
+  drop(wire: MpWire, leave: 'drop' | 'kicked'): void {
     const i = this.guests.findIndex(g => g.wire === wire)
     if (i < 0) return
     const g = this.guests[i]
     this.guests.splice(i, 1)
     if (g.seat !== undefined && g.seat !== 0) {
       this.world.away(g.seat)
-      this.pushRoster()
+      this.pushRoster([{ id: g.seat, leave }])
     }
     if (this.joining && !g.ready) {
       this.joining = false
@@ -517,6 +560,7 @@ export class MpHost {
    */
   sweep(nowMs = this.wall()): void {
     let changed = false
+    const leaves: { id: SeatId; leave: 'drop' | 'kicked' }[] = []
     for (let i = this.guests.length - 1; i >= 0; i--) {
       const g = this.guests[i]
       if (g.seat === undefined || g.seat === 0) continue
@@ -526,6 +570,7 @@ export class MpHost {
         g.wire.close()
         if (this.world.seats[g.seat].presence !== 'away') this.world.away(g.seat)
         this.world.seats[g.seat].napping = true
+        leaves.push({ id: g.seat, leave: 'drop' })
         changed = true
         continue
       }
@@ -539,7 +584,7 @@ export class MpHost {
         changed = true
       }
     }
-    if (changed) this.pushRoster()
+    if (changed) this.pushRoster(leaves)
   }
   pump(): void {
     this.sweep()
@@ -547,28 +592,28 @@ export class MpHost {
     this.world.tick(DT_MAX)
     const t = this.world.now
     const sendDigest = t > 0 && t % DIGEST_EVERY === 0
-    const hex = sendDigest ? digestHex(this.world) : ''
+    const parts = sendDigest ? digestParts(this.world) : undefined
+    const hex = parts === undefined ? '' : fnv(JSON.stringify(parts))
+    const sections = parts === undefined ? undefined : hashParts(parts)
+    if (this.guests.some(g => g.seat !== undefined && this.world.logSince(g.n) === undefined)) {
+      this.joining = true
+      this.setPaused(true)
+      this.rebaseAndSnapshotAll()
+      return
+    }
     this.guests.forEach(g => {
       if (g.seat === undefined) return
       const cmds = this.world.logSince(g.n)
-      // Underflow means the ring buffer ate commands this link never saw; a bundle built from
-      // what is left would replay already-applied commands. Only a fresh snapshot is correct.
-      if (cmds === undefined) {
-        // Pause before snapshotting: the guest's `ready` can come straight back.
-        this.joining = true
-        this.setPaused(true)
-        this.world.rebase()
-        this.snapshot(g)
-        return
-      }
+      if (cmds === undefined) return
       g.n = this.world.logEnd
       g.wire.send({ a: 'bundle', t, cmds })
-      if (sendDigest) g.wire.send({ a: 'digest', t, hex })
+      if (sections !== undefined) g.wire.send({ a: 'digest', t, hex, sections })
     })
   }
-  pushRoster(): void {
-    this.broadcast({ a: 'roster', seats: rosterOf(this.world) })
-    if (this.onRoster !== undefined) this.onRoster()
+  pushRoster(leaves: readonly { id: SeatId; leave: 'drop' | 'kicked' }[] = []): void {
+    const seats = rosterOf(this.world, leaves)
+    this.broadcast({ a: 'roster', seats })
+    if (this.onRoster !== undefined) this.onRoster(seats)
   }
   setPaused(on: boolean): void {
     this.paused = on
@@ -629,11 +674,17 @@ export class MpHost {
     link.desyncT = desyncT
     return link.fails >= 2
   }
-  /** Snapshot for one link. `rebase` first, or the guest is born diverged. */
   private snapshot(link: Link): void {
     link.ready = false
     link.n = this.world.logEnd
     link.wire.send({ a: 'resync', save: dump(this.world), now: this.world.now })
+  }
+  private rebaseAndSnapshotAll(except?: Link): void {
+    this.world.rebase()
+    this.guests.forEach(g => {
+      if (g.seat === undefined || g === except) return
+      this.snapshot(g)
+    })
   }
   private onHello(link: Link, msg: Extract<MpMsg, { a: 'hello' }>): void {
     if (msg.protocol !== PROTOCOL) {
@@ -641,18 +692,18 @@ export class MpHost {
       return
     }
     if (link.seat !== undefined) {
+      if (msg.diff !== undefined && this.onDesync !== undefined) this.onDesync(msg.diff)
       // A hello carrying the digest t it failed on is a desync report; a bare one is a stall.
       if (msg.desyncT !== undefined && this.consecutive(link, msg.desyncT)) {
         link.wire.send({ a: 'bye', why: 'kicked' })
-        this.drop(link.wire)
+        this.drop(link.wire, 'kicked')
         return
       }
       this.joining = true
       this.setPaused(true)
       if (this.onCatching !== undefined) this.onCatching(true)
       this.world.join(msg.playerId, msg.name)
-      this.world.rebase()
-      this.snapshot(link)
+      this.rebaseAndSnapshotAll()
       this.pushRoster()
       return
     }
@@ -660,7 +711,6 @@ export class MpHost {
       link.wire.send({ a: 'reject', reason: 'busy' })
       return
     }
-    const before = this.world.seats.length
     const seat = this.world.join(msg.playerId, msg.name)
     if (seat === 'full') {
       link.wire.send({ a: 'reject', reason: 'full' })
@@ -672,7 +722,7 @@ export class MpHost {
     this.joining = true
     this.setPaused(true)
     if (this.onCatching !== undefined) this.onCatching(true)
-    this.world.rebase()
+    this.rebaseAndSnapshotAll(link)
     link.n = this.world.logEnd
     link.wire.send({
       a: 'welcome',
@@ -682,14 +732,6 @@ export class MpHost {
       now: this.world.now,
       paused: true,
     })
-    // A new seat never rides the command log, and `roster` cannot create one, so every guest
-    // already connected would keep the old, shorter `seats` forever. Re-snapshot them.
-    if (this.world.seats.length > before) {
-      this.guests.forEach(g => {
-        if (g === link || g.seat === undefined) return
-        this.snapshot(g)
-      })
-    }
     this.pushRoster()
   }
 }
@@ -723,6 +765,9 @@ export class MpGuest {
   private readonly queued: Extract<MpMsg, { a: 'bundle' }>[] = []
   private lastWall = 0
   private lastPing = 0
+  wall(): number {
+    return performance.now()
+  }
   /** One snapshot request per gap, not one per bundle that lands in it. */
   private gapAsked = false
   onWorld: ((world: World, seat: SeatId) => void) | undefined
@@ -731,6 +776,7 @@ export class MpGuest {
   onPause: ((on: boolean) => void) | undefined
   onBye: ((why: 'host-left' | 'kicked' | 'lost') => void) | undefined
   onReject: ((reason: RejectReason | 'unusable') => void) | undefined
+  onRoster: ((seats: RosterSeat[]) => void) | undefined
   constructor(wire: MpWire, playerId: PlayerId, name = '') {
     this.wire = wire
     this.playerId = playerId
@@ -739,8 +785,8 @@ export class MpGuest {
   }
   /** `desyncT` names the digest `t` that mismatched, so the host can count consecutive failures
    * without guessing from wall time. Omit it for an ordinary join or a stall retry. */
-  hello(desyncT?: number): void {
-    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name, desyncT })
+  hello(desyncT?: number, diff?: string[]): void {
+    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name, desyncT, diff })
   }
   intent(cmd: Cmd): void {
     // TODO 1.1 multiplayer client prediction
@@ -779,8 +825,8 @@ export class MpGuest {
       this.world = undefined
       return
     }
-    this.hello()
     this.catchUp(true)
+    this.hello()
     this.lastWall = now
   }
   /**
@@ -829,16 +875,16 @@ export class MpGuest {
     if (msg.a !== 'bye') this.settle()
     if (msg.a === 'roster') {
       applyRoster(this.world, msg.seats)
+      if (this.onRoster !== undefined) this.onRoster(msg.seats)
       return
     }
     if (msg.a === 'bundle') {
-      this.lastWall = performance.now()
-      if (this.world === undefined || this.catching) {
+      if (this.world === undefined) {
         this.queued.push(msg)
-        this.flush()
         return
       }
-      this.take(msg)
+      this.queued.push(msg)
+      this.flush()
       return
     }
     if (msg.a === 'digest') {
@@ -851,7 +897,9 @@ export class MpGuest {
         return
       }
       if (digestHex(this.world) !== msg.hex) {
-        this.hello(msg.t)
+        const diff =
+          msg.sections === undefined ? undefined : sectionDiff(digestSections(this.world), msg.sections)
+        this.hello(msg.t, diff)
         this.catchUp(true)
       }
       return
@@ -890,26 +938,30 @@ export class MpGuest {
    * tick. A repeat is stale. A gap means one was missed or the transport reordered them, and
    * applying it anyway diverges silently -- ask for a snapshot instead.
    */
-  private take(msg: Extract<MpMsg, { a: 'bundle' }>): void {
-    if (this.world === undefined) return
-    if (msg.t <= this.world.now) return
+  private take(msg: Extract<MpMsg, { a: 'bundle' }>): 'applied' | 'stale' | 'gap' {
+    if (this.world === undefined) return 'stale'
+    if (msg.t <= this.world.now) return 'stale'
     if (msg.t > this.world.now + 1) {
       if (!this.gapAsked) {
         this.gapAsked = true
         this.hello()
       }
       this.catchUp(true)
-      return
+      return 'gap'
     }
     applyBundle(this.world, msg.cmds)
+    this.lastWall = this.wall()
+    this.gapAsked = false
+    return 'applied'
   }
   private flush(): void {
     if (this.world === undefined) return
+    this.queued.sort((a, b) => a.t - b.t)
     while (this.queued.length > 0) {
-      const b = this.queued.shift()
-      if (b === undefined) return
-      this.take(b)
+      const r = this.take(this.queued[0])
+      if (r === 'gap') break
+      this.queued.shift()
     }
-    if (this.catching) this.catchUp(false)
+    if (this.catching && this.queued.length === 0) this.catchUp(false)
   }
 }

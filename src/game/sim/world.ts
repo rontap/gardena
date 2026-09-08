@@ -185,6 +185,7 @@ import * as tick from './tick.ts'
 import * as field from './feature-field/field.ts'
 import * as enclosure from './feature-enclosure/enclosure.ts'
 import * as place from './feature-place/place.ts'
+import { originOrder } from './util.ts'
 
 export type * from './world.h.ts'
 import type {
@@ -427,7 +428,6 @@ export class World {
       this.groundRev = 0
       this.sink.reset(this.rng.seed)
       this.rebase()
-      this.pumpLiters = 0
       this.rebuildWeather()
       this.applyWeatherRates()
       return
@@ -449,7 +449,7 @@ export class World {
     initFamily(this)
     this.chunks.set(
       chunkKey(this.owned[0]),
-      generateChunk(this.rng, this.owned[0], this.house, this.pumps[0], this.truck, this.silo, this.additives),
+      generateChunk(this.rng, this.owned[0], this.house, this.pump, this.truck, this.silo, this.additives),
     )
     this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
@@ -483,15 +483,21 @@ export class World {
   }
 
   get pump(): Pump {
-    return this.pumps[0]
+    const starter = this.pumps.find(p => p.form === 'starter')
+    if (starter === undefined) throw new Error('starter')
+    return starter
   }
 
   
   rebase(): void {
     this.bigAcc = 0
+    this.pumpLiters = 0
     this.cheatFastResearch = false
     this.cheatSpeed = 1
     this.nets = undefined
+    STALL_IDS.forEach(id => {
+      this.stall[id].sat = 0
+    })
     this.seats.forEach(s => {
       s.queue.length = 0
       s.cue = { kind: 'none' }
@@ -509,6 +515,13 @@ export class World {
       }
       s.legStart = { x: s.actor.x, y: s.actor.y }
     })
+    const byOrigin = (a: { base: Base }, b: { base: Base }) => originOrder(originCell(a.base), originCell(b.base))
+    this.pumps.sort(byOrigin)
+    this.tanks.sort(byOrigin)
+    this.wells.sort(byOrigin)
+    this.taps.sort(byOrigin)
+    this.stills.sort(byOrigin)
+    this.waterSystems.sort(byOrigin)
     this.indexAll()
   }
 
@@ -1559,9 +1572,7 @@ export class World {
         bestD = d
       }
     })
-    if (best?.pose.kind !== 'field') return
-    this.seats[this.local].actor.x = best.pose.x
-    this.seats[this.local].actor.y = best.pose.y
+    if (best === undefined) return
     this.embark(best.id)
   }
 

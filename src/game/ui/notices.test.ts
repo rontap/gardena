@@ -2,6 +2,18 @@ import { describe, expect, test } from 'vitest'
 import { HAPPY_MAX } from '../defs/crops.ts'
 import { Plant, Weed } from '../sim/plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
+import {
+  applyRoster,
+  AWAY_MS,
+  DROP_MS,
+  loopback,
+  MpGuest,
+  MpHost,
+  NAP_MS,
+  readMpMsg,
+  rosterOf,
+  type RosterSeat,
+} from '../sim/mp.ts'
 import { World } from '../sim/world.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import {
@@ -10,6 +22,7 @@ import {
   groupNotices,
   noticeRows,
   passOf,
+  rosterNotices,
   trackPass,
   visibleRows,
   NOTICE_ORDER,
@@ -164,6 +177,13 @@ describe('notices.once', () => {
     w.done.add('unlock-fertilizer')
     expect(doneRows(w, passOf(w))).toEqual([])
   })
+
+  test('Roster kinds share dismiss and drop-on-swap; they are not recovered from World — notices.roster.', () => {
+    const w = new World()
+    w.join('g1', 'Ada')
+    expect(doneRows(w, passOf(w)).some(r => r.kind === 'joined' || r.kind === 'quit' || r.kind === 'desynced')).toBe(false)
+    expect(kinds(noticeRows(w)).some(k => k === 'joined' || k === 'quit' || k === 'desynced')).toBe(false)
+  })
 })
 
 describe('notices.group', () => {
@@ -216,7 +236,7 @@ describe('notices.popup', () => {
 })
 
 describe('notices.dismiss', () => {
-  test('Right-click a row: `preventDefault`, discard that row, do not run `go`. Event rows `recap` / `contract-done` / `research-done` are gone; recap also `seeRecap(day)`. Condition rows dismissed while the condition holds leave the pass and drop the id; return is two-pass as new. Recap popup Close / Esc / backdrop: `seeRecap(day)` and close. Guest Close live.', () => {
+  test('Right-click a row: `preventDefault`, discard that row, do not run `go`. Event rows `recap` / `joined` / `quit` / `desynced` / `contract-done` / `research-done` are gone; recap also `seeRecap(day)`. Condition rows dismissed while the condition holds leave the pass and drop the id; return is two-pass as new. Recap popup Close / Esc / backdrop: `seeRecap(day)` and close. Guest Close live.', () => {
     const w = new World(1)
     w.clock.t = DAY_SECONDS - 0.001
     w.tick(1)
@@ -246,5 +266,154 @@ describe('notices.dismiss', () => {
     expect(visibleRows(again, []).some(r => r.id === wilt.id)).toBe(false)
     const back = trackPass(again, now)
     expect(visibleRows(back, []).some(r => r.id === wilt.id)).toBe(true)
+
+    const hostSeat: RosterSeat = { id: 0, name: 'Host', presence: 'in', napping: false }
+    const guestSeat: RosterSeat = { id: 1, name: 'Ada', presence: 'in', napping: false }
+    const minted = rosterNotices([hostSeat], [hostSeat, guestSeat], 0, true, 0)
+    expect(minted.rows).toHaveLength(1)
+    const joined = minted.rows[0]
+    const held = trackPass(new Map(), [joined])
+    expect(visibleRows(held, []).some(r => r.id === joined.id)).toBe(true)
+    const goneJoin = dropNotice(held, [joined], joined.id)
+    expect(visibleRows(goneJoin.tracked, goneJoin.once).some(r => r.id === joined.id)).toBe(false)
+  })
+})
+
+describe('notices.roster', () => {
+  test('Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. They skip two-pass. Right-click dismiss; left click `go: none`. Reload or `World` swap drops them, same cost as `notices.once`. No cells. No bar. Face `{ kind: \'hat\'; seat }` → `actor-hat` tint `HAT[seat]`. Do not mint for `App.local`. Do not mint for `presence: \'away\'` from silence (`AWAY_MS` / nap). Quit is the link released (`drop` / leave / `lost`). Desynced is `bye: kicked` then drop. Joined is a new seat or `away` → `in`. Solo (`seats.length === 1`, no session) never mints. Host sets `RosterSeat.leave` `\'drop\' | \'kicked\'` on that roster push; silence roster omits `leave`. Other peers recover join from seats; quit vs kick from `leave` surviving `readMpMsg`. Additive JSON; do not bump `PROTOCOL`.', () => {
+    const w = new World(1)
+    expect(kinds(noticeRows(w))).not.toContain('joined')
+    expect(kinds(noticeRows(w))).not.toContain('quit')
+    expect(kinds(noticeRows(w))).not.toContain('desynced')
+    w.join('g1', 'Ada')
+    expect(kinds(noticeRows(w))).not.toContain('joined')
+    expect(doneRows(w, passOf(w)).every(r => r.kind !== 'joined' && r.kind !== 'quit' && r.kind !== 'desynced')).toBe(true)
+
+    const host: RosterSeat = { id: 0, name: 'Host', presence: 'in', napping: false }
+    const ada: RosterSeat = { id: 1, name: 'Ada', presence: 'in', napping: false }
+    const adaAway: RosterSeat = { id: 1, name: 'Ada', presence: 'away', napping: false }
+    const adaNap: RosterSeat = { id: 1, name: 'Ada', presence: 'away', napping: true }
+    const adaDrop: RosterSeat = { id: 1, name: 'Ada', presence: 'away', napping: false, leave: 'drop' }
+    const adaKick: RosterSeat = { id: 1, name: 'Ada', presence: 'away', napping: false, leave: 'kicked' }
+
+    expect(rosterNotices([], [host], 0, false, 0).rows).toEqual([])
+    expect(rosterNotices([host], [host], 0, true, 0).rows).toEqual([])
+    expect(rosterNotices([host], [host, ada], 0, false, 0).rows).toEqual([])
+    expect(rosterNotices([host], [host, ada], 1, true, 0).rows).toEqual([])
+
+    const joined = rosterNotices([host], [host, ada], 0, true, 0)
+    expect(joined.rows).toHaveLength(1)
+    expect(joined.rows[0].kind).toBe('joined')
+    expect(joined.rows[0].id).toBe('joined:1:1')
+    expect(joined.rows[0].face).toEqual({ kind: 'hat', seat: 1 })
+    expect(joined.rows[0].subjects).toEqual([])
+    expect(joined.rows[0].cells).toEqual([])
+    expect(joined.rows[0].bar).toBeUndefined()
+    expect(joined.rows[0].go).toEqual({ kind: 'none' })
+
+    const back = rosterNotices([host, adaAway], [host, ada], 0, true, joined.n)
+    expect(back.rows).toHaveLength(1)
+    expect(back.rows[0].kind).toBe('joined')
+    expect(back.rows[0].id).toBe('joined:1:2')
+
+    expect(rosterNotices([host, ada], [host, adaAway], 0, true, 0).rows).toEqual([])
+    expect(rosterNotices([host, adaAway], [host, adaNap], 0, true, 0).rows).toEqual([])
+
+    const quit = rosterNotices([host, ada], [host, adaDrop], 0, true, 0)
+    expect(quit.rows.map(r => r.kind)).toEqual(['quit'])
+    expect(quit.rows[0].face).toEqual({ kind: 'hat', seat: 1 })
+    expect(quit.rows[0].bar).toBeUndefined()
+    expect(quit.rows[0].go).toEqual({ kind: 'none' })
+
+    const kicked = rosterNotices([host, ada], [host, adaKick], 0, true, 0)
+    expect(kicked.rows.map(r => r.kind)).toEqual(['desynced'])
+    expect(kicked.rows[0].go).toEqual({ kind: 'none' })
+
+    const pending = trackPass(new Map(), joined.rows)
+    expect(visibleRows(pending, []).map(r => r.id)).toEqual([joined.rows[0].id])
+    const dropped = dropNotice(pending, joined.rows, joined.rows[0].id)
+    expect(visibleRows(dropped.tracked, dropped.once)).toEqual([])
+
+    expect(NOTICE_ORDER.slice(0, 6)).toEqual(['recap', 'joined', 'quit', 'desynced', 'contract-done', 'research-done'])
+
+    const wireDrop = { a: 'roster' as const, seats: [host, adaDrop] }
+    expect(readMpMsg(wireDrop)).toEqual(wireDrop)
+    const wireKick = { a: 'roster' as const, seats: [host, adaKick] }
+    expect(readMpMsg(wireKick)).toEqual(wireKick)
+    expect(readMpMsg({ a: 'roster', seats: [host, { ...adaAway, leave: 'nope' }] })).toEqual({
+      a: 'roster',
+      seats: [host, adaAway],
+    })
+    expect(readMpMsg({ a: 'roster', seats: [host, adaAway] })).toEqual({ a: 'roster', seats: [host, adaAway] })
+
+    const farm = new World(1)
+    const hostNet = new MpHost(farm)
+    const pushes: RosterSeat[][] = []
+    hostNet.onRoster = seats => {
+      pushes.push(seats)
+    }
+    let wall = 0
+    hostNet.wall = () => wall
+    const [a, b] = loopback()
+    hostNet.attach(a)
+    const guest = new MpGuest(b, 'g1', 'Ada')
+    const peer: RosterSeat[][] = []
+    guest.onRoster = seats => {
+      peer.push(seats)
+    }
+    guest.hello()
+    const afterJoin = pushes[pushes.length - 1]
+    expect(afterJoin.some(s => s.id === 1 && !('leave' in s) && s.presence === 'in')).toBe(true)
+    expect(rosterOf(farm).every(s => !('leave' in s))).toBe(true)
+
+    wall = AWAY_MS
+    hostNet.sweep()
+    const silent = pushes[pushes.length - 1]
+    expect(silent.find(s => s.id === 1)).toEqual({ id: 1, name: 'Ada', presence: 'away', napping: false })
+    wall = NAP_MS
+    hostNet.sweep()
+    const nap = pushes[pushes.length - 1]
+    expect(nap.find(s => s.id === 1)).toEqual({ id: 1, name: 'Ada', presence: 'away', napping: true })
+    expect(nap.every(s => !('leave' in s))).toBe(true)
+
+    wall = DROP_MS
+    hostNet.sweep()
+    const droppedLink = pushes[pushes.length - 1].find(s => s.id === 1)
+    expect(droppedLink).toEqual({ id: 1, name: 'Ada', presence: 'away', napping: true, leave: 'drop' })
+
+    const farm2 = new World(1)
+    const host2 = new MpHost(farm2)
+    const seen: RosterSeat[][] = []
+    host2.onRoster = seats => {
+      seen.push(seats)
+    }
+    const [a1, b1] = loopback()
+    host2.attach(a1)
+    const gA = new MpGuest(b1, 'a', 'Ada')
+    const peerA: RosterSeat[][] = []
+    gA.onRoster = seats => {
+      peerA.push(seats)
+    }
+    gA.hello()
+    const [a2, b2] = loopback()
+    host2.attach(a2)
+    const gB = new MpGuest(b2, 'b', 'Bea')
+    gB.hello()
+    host2.drop(a2, 'kicked')
+    const kickPush = seen[seen.length - 1].find(s => s.id === 2)
+    expect(kickPush).toEqual({ id: 2, name: 'Bea', presence: 'away', napping: false, leave: 'kicked' })
+    const peerSaw = peerA[peerA.length - 1].find(s => s.id === 2)
+    expect(peerSaw).toEqual({ id: 2, name: 'Bea', presence: 'away', napping: false, leave: 'kicked' })
+    expect(readMpMsg({ a: 'roster', seats: peerA[peerA.length - 1] })).toEqual({
+      a: 'roster',
+      seats: peerA[peerA.length - 1],
+    })
+
+    const mirror = new World(1)
+    mirror.join('a', 'stale')
+    mirror.join('b', 'stale')
+    applyRoster(mirror, peerA[peerA.length - 1])
+    expect(mirror.seats[2].presence).toBe('away')
+    expect(mirror.seats[2].name).toBe('Bea')
   })
 })

@@ -3,7 +3,7 @@
 HUD, docks, inspect, place, copy. As the game runs.
 
 - [[ui/hud]] — research / expansion / points live on Command Center. Recap popup overlay pause
-- [[ui/notices]] — Command Center: the right-hand column of one-line notices. Recap popup from a recap row. Pure read of `World`
+- [[ui/notices]] — Command Center: the right-hand column of one-line notices. Recap popup from a recap row. Roster `joined` / `quit` / `desynced` stamped at the net, not `noticeRows`. Pure read of `World`
 - [[ui/menu]]
 - [[ui/changelog]]
 - [[ui/settings]]

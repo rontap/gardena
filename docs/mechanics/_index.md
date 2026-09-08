@@ -39,6 +39,7 @@ See [[canon]].
 | day.end-day | [[mechanics/day]] |
 | notices.popup | [[ui/notices]] |
 | notices.dismiss | [[ui/notices]] |
+| notices.roster | [[ui/notices]] |
 | expansion.tax | [[mechanics/expansion]] |
 | expansion.chunk | [[mechanics/expansion]] |
 | burrow.start | [[mechanics/burrow]] |
@@ -296,6 +297,7 @@ See [[canon]].
 | net.bundle | [[architecture/net]] |
 | net.full | [[architecture/net]] |
 | net.kick | [[architecture/net]] |
+| net.order | [[architecture/net]] |
 | play.hold | [[architecture/ai-gameplay-api]] |
 | play.drain | [[architecture/ai-gameplay-api]] |
 | play.seam | [[architecture/ai-gameplay-api]] |

@@ -1,7 +1,9 @@
 import { m } from '../../paraglide/messages.js'
 import { useEffect, useRef, useState } from 'react'
+import actorSvg from '../../assets/actor.svg?raw'
 import type { Coord } from '../sim/building.ts'
 import type { World } from '../sim/world.ts'
+import { HAT } from '../view/map.tsx'
 import { COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { STAT_COLOR } from './status.tsx'
 import { useCycle } from './cycle.ts'
@@ -27,8 +29,18 @@ import {
   type Tracked,
 } from './notices.ts'
 
+function hatInner(raw: string): string {
+  const tag = raw.indexOf('<g id="hat"')
+  const start = raw.indexOf('>', tag) + 1
+  const end = raw.indexOf('</g>', start)
+  return raw.slice(start, end).replace(/var\(--hat, #d4a017\)/g, 'currentColor')
+}
+
+const HAT_INNER = hatInner(actorSvg)
+
 function faceInner(face: NoticeFace): string {
   if (face.kind === 'recap') return UI_RECAP_NIGHT
+  if (face.kind === 'hat') return HAT_INNER
   if (face.kind === 'company') return COMPANY[face.id]
   if (face.kind === 'oil') return itemInner({ kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false })
   if (face.kind === 'water') return itemInner({ kind: 'water' })
@@ -49,8 +61,15 @@ function subjectInner(subject: NoticeSubject): string {
   return itemInner(demandItem(subject.demand, 1))
 }
 
-function Glyph({ art }: { art: string }) {
-  return <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: art }} />
+function Glyph({ art, tint }: { art: string; tint: string | undefined }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5 shrink-0"
+      style={tint === undefined ? undefined : { color: tint }}
+      dangerouslySetInnerHTML={{ __html: art }}
+    />
+  )
 }
 
 const RAIL = {
@@ -61,7 +80,7 @@ const RAIL = {
 
 function Subject({ subjects }: { subjects: readonly NoticeSubject[] }) {
   const stage = useCycle(subjects.length)
-  return <Glyph art={subjectInner(subjects[stage])} />
+  return <Glyph art={subjectInner(subjects[stage])} tint={undefined} />
 }
 
 function NoticeBar({ value, bad }: { value: number; bad: boolean }) {
@@ -81,10 +100,11 @@ function NoticeBar({ value, bad }: { value: number; bad: boolean }) {
 }
 
 function Row({ row }: { row: Notice }) {
+  const tint = row.face.kind === 'hat' ? HAT[row.face.seat] : undefined
   return (
     <div className="flex min-w-0 flex-col">
       <div className="flex min-w-0 items-center gap-1.5">
-        <Glyph art={faceInner(row.face)} />
+        <Glyph art={faceInner(row.face)} tint={tint} />
         {row.subjects.length > 0 && <Subject subjects={row.subjects} />}
         <span className="min-w-0 flex-1 truncate text-base leading-tight">{row.text}</span>
       </div>
@@ -142,12 +162,14 @@ function Block({
 export function Notices({
   world,
   off,
+  roster,
   onHighlight,
   onGo,
   onDismiss,
 }: {
   world: World
   off: boolean
+  roster: readonly Notice[]
   onHighlight: (cells: readonly Coord[]) => void
   onGo: (go: NoticeGo) => void
   onDismiss: (row: Notice) => void
@@ -197,7 +219,7 @@ export function Notices({
     return () => window.clearInterval(t)
   }, [world])
 
-  const blocks = groupNotices([...recapRows(world), ...rows.filter(r => r.kind !== 'recap')])
+  const blocks = groupNotices([...recapRows(world), ...roster, ...rows.filter(r => r.kind !== 'recap')])
 
   if (off) return undefined
 

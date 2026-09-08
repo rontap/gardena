@@ -29,7 +29,7 @@ SKU `buy-research-station`. Automation shelf. Unlock and show `unlock-crop-varia
 
 Accepts `tier` `heirloom` fruit only, `cut === false`. First dump locks crop + Variety; later dumps must match. `STATION_IN` `STATION_SECONDS` `STATION_GRAFT_MIN` `STATION_GRAFT_MAX`. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` **and** a rolled 1–2 grafts of that Variety, both at the input Quality. East store else `frontOf`; no room → wait.
 
-The second face — feeding seed to earn a Variety — is not this panel.
+The second face — feeding seed to earn a Variety — is [[plans/next-variant]]. Not this panel.
 
 Prop `off` / `on` from working. Reduced motion: frame 0. Atlas [[architecture/view]].
 

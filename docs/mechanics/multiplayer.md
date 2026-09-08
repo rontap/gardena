@@ -16,7 +16,7 @@ P2P lockstep. Host sequences. Types: [[architecture/net]] [[architecture/world]]
 
 ## Join kit
 
-P2–P4, first time only: shovel in hand, 16 empty slots, queue empty, `place: none`. Spawn at `DOOR` offset by `id` (`+ (id * 0.6)` along x). Rejoin same `playerId` does not re-kit. Restores that seat. `presence: 'in'`. Host pauses for the snapshot again.
+P2–P4, first time only: shovel in hand, 16 empty slots, queue empty, `place: none`. Spawn at `DOOR` offset by `id` (`+ (id * 0.6)` along x). Rejoin same `playerId` does not re-kit. Restores that seat. `presence: 'in'`. Host pauses for the snapshot again. A new seat or `away` → `in` stamps `joined` at the net/App boundary, not for this page's seat — [[ui/notices]] `notices.roster`.
 
 Seat 0 starter kit is the solo kit — [[mechanics/inventory]].
 
@@ -24,11 +24,13 @@ Seat 0 starter kit is the solo kit — [[mechanics/inventory]].
 
 Guest drop → `presence: 'away'`. Seat stays in `seats`. World keeps ticking. That actor vanishes.
 
+Silence (`AWAY_MS` / nap) also sets `away` and pushes `roster` with no `leave`. That is not a Command Center row. Link release (`drop` / leave / `lost` / `DROP_MS`) and `bye: kicked` stamp at the net/App boundary — [[ui/notices]] `notices.roster` [[architecture/net]].
+
 `tick` skips that actor's walk/work and that seat's hand/inventory freshness. Field / chest / ground / vehicle-slot rot continues. Freezer slots never tick freshness. Away while driving: that vehicle `driver = 'none'`, field pose kept, speed coasts to 0.
 
 Away occupies a slot. `hello` when `seats.length === 4` → `reject: full`. Rejoin is the same `playerId`.
 
-A new seat resyncs every guest already connected: `join` never rides the log and `roster` cannot create a seat.
+A new seat resyncs every guest already connected: `join` never rides the log and `roster` cannot create a seat. `rebase()` clears every seat, so underflow, seated hello, and new join all dump through `rebaseAndSnapshotAll(except?)` — [[architecture/net]] `net.snapshot`. `net.order` sorts on that rebase.
 
 ## Permissions
 
@@ -44,13 +46,13 @@ Guest never `writeSlot` for a hosted farm.
 
 Pause is a net flag. Host stops bundling. Any player may toggle. Join/resync forces pause until `ready`.
 
-A join or resync cancels the host's own in-flight walk, work and placement ghost -- that is `rebase`, and it is what makes the snapshot match. Unpause waits for every seated guest to be Ready, not just the first.
+A join or resync cancels in-flight walk, work and placement ghost on every seat — that is `rebase`, and it is what makes the snapshot match. Unpause waits for every seated guest to be Ready, not just the first.
 
 Host leave: `writeSlot(dump(world))`. Peers `bye: 'host-left'`. Back to startup. Guest slot not written. No migration.
 
 ## Clock
 
-Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pumps bundles. Guests pump from received bundles. Recap still `now += 1` then return.
+Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pumps bundles. Guests pump from received bundles. `World.tick` always `now += 1` then `tickWorld`. Seam recap early-return is `tickWorld`.
 
 ## Invariants
 
@@ -60,12 +62,12 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.drop` — Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.
 
-`mp.guest` — Guest may: buy + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce, lever, button, lamp, Logic gate, NOT, pulser, counter, water/fert/harvest/variety/weather/day sensors, pressure plate, traffic light; dump mill/jam/still/barrel/grinder like compost; `load`/`unload` mill/jam/still/compost/seed-silo/additive-store; wires (`armWire` `placeWire` delete wire) — guest may wire a valve and a pump `in`; place and click stay host-only; toggle lever/button, water/harvest/counter/day/logic/variety/weather/pressure HUD, stride; hangar cue HUD, `buy-hangar` + three silo SKUs + `buy-traffic-light` `buy-logic` `buy-sensor-variety` `buy-sensor-weather` in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, `Act.route` (create/assign/add/remove/reorder/rename/delete, Start, hangar Automate), delete empty hangar. Guest consign fills contract bins. Guest `placeWire` permitted. Guest may not: chest/freezer `swapChest`, chest/freezer `load`/`unload`, pipes, `placePipe`, manual valves, sprinklers, tiles, fences, expand, research start, family pick, `acceptContract` `cancelContract` `reorderContract`, cheat. Guest Unload chest no-op. Guest Load chest no-op. Guest contract cmds never enter a bundle. Auto tick chest/freezer load/unload is not a guest cmd. `buy-or` `buy-and` `buy-water-system` not in `GUEST_BUILD`.
+`mp.guest` — Guest may: buy + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce, lever, button, lamp, Logic gate, NOT, pulser, counter, water/fert/harvest/variety/weather/day sensors, pressure plate, traffic light; dump mill/jam/still/barrel/grinder like compost; `load`/`unload` mill/jam/still/compost/seed-silo/additive-store; wires (`armWire` `placeWire` delete wire) — guest may wire a valve and a pump `in`; place and click stay host-only; toggle lever/button, water/harvest/counter/day/logic/variety/weather/pressure HUD, stride; hangar cue HUD, `buy-hangar` + three silo SKUs + `buy-traffic-light` `buy-logic` `buy-sensor-variety` `buy-sensor-weather` in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, `Act.route` (create/assign/add/remove/reorder/rename/delete, Start, hangar Automate), delete empty hangar. Guest consign fills contract bins. Guest `placeWire` permitted. Guest may not: chest/freezer `swapChest`, chest/freezer `load`/`unload`, pipes, `placePipe`, manual valves, sprinklers, tiles, fences, expand, research start, family pick, `acceptContract` `cancelContract` `reorderContract`, cheat. Guest Pipe / Valve / Sprinkler / paving / fence / Chest: [[plans/next-mp]]. Guest Unload chest no-op. Guest Load chest no-op. Guest contract cmds never enter a bundle. Auto tick chest/freezer load/unload is not a guest cmd. `buy-or` `buy-and` `buy-water-system` not in `GUEST_BUILD`.
 
 `mp.away` — `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness. Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.
 
 `mp.hello` — `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 
-`mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. Two mismatches within two digest periods → that guest `bye: kicked`. Host continues. Host `rebase()`s before every snapshot, so the resync converges — [[architecture/net]] `net.snapshot`.
+`mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. Two mismatches within two digest periods → that guest `bye: kicked`. Host continues. Host `rebaseAndSnapshotAll(except?)` before every snapshot, so the resync converges for every seated guest — [[architecture/net]] `net.snapshot`.
 
 `mp.stride` — `Seat.stride`. Not driver, `presence === 'in'`: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.

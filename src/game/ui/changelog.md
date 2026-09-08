@@ -1,3 +1,12 @@
+# 2.7.1 Catching up
+
+Guests who miss what the host already did show Catching up instead of an unmoving farm. A Wooden fence run keeps money and fence together. Enter Embarks both gardeners. Extra Pumpjacks share water in the same order after join.
+
+- 🐛 Fixed bug multiplayer: Catching up. Missing what the host already did used to leave the guest's farm unmoving, with no Catching up and no return to the main menu, now what the host does next waits, Catching up can show, and the guest tries again if they stay behind.
+- 🐛 Fixed bug multiplayer: Wooden fence. The host dragging Wooden fence used to spend money only on the host, so the guest's farm drifted and they were sent back to the main menu, now both farms keep the same money and the same Wooden fence.
+- 🐛 Fixed bug multiplayer: Enter. Pressing Enter beside a Quad or Tractor used to put one gardener in the seat and leave the other walking, now both Embark when they stand next to it.
+- 🐛 Fixed bug multiplayer: Pumpjack. Extra Pumpjacks used to share water in a different order after a guest joined, so the farms drifted, now they share water in the same order.
+
 # 2.7.0 Infusion
 
 Place an Infuser and Infuse jam, wine, cider, spirits, or Olive oil with Flakes or Vanilla extract. Infused goods sell at Market without changing that good's percent, and finishing a contract with them raises Reputation more than the same contract without them. The Mill crushes Chilli into Flakes. The Furnace Bakes flour into Bread.

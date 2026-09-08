@@ -14,7 +14,7 @@ Tests replay `dt = DT_MAX`. Same-`t` cmds apply in log order.
 
 `log.now` — `World.now` starts 0. Each `tick()` entry, `now += 1`. `dispatch` stamps `Cmd.t = now`. Same-`t` cmds apply in log order. Ticks are not cmds.
 
-`log.dispatch` — `dispatch` appends to `World.log` and `sink`, then `apply`. `apply` does not log. Replay is `apply` only. `enqueue` does not `dispatch`.
+`log.dispatch` — `dispatch` appends to `World.log` and `sink`, then `apply`. `apply` does not log. Replay is `apply` only. `enqueue` does not `dispatch`. Map fence run commits `world.click` per cell. Not `confirmPlace`. `confirmPlace` stays a mutator for `apply` and tests.
 
 `log.cmds` — Log is player `Cmd`s only. Not sips, rot, weed sprout, outbreak, recover, ripen, tree drop, grass, stall ticks, research drain, mill / jam / still / barrel ticks, vehicle integrate / burn / follow hitch / boom, synthesized auto drive, wait / load / unload resolve, walk, stride integrate, panel, camera, hover, lens, pad paint, dash faces, Dash Automate, editor open. `Act.setBoom` `Act.load` `Act.unload` `Act.stride` `Act.route` are cmds. Auto load/unload/wait/motion are tick, not cmds.
 

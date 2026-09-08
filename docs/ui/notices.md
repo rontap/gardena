@@ -2,9 +2,9 @@
 
 The right-hand column is the **Command Center**. Identifiers stay `notices`. A row is a notice. Illegal: notification, infobox, alert, dashboard.
 
-A notice is one line saying a clock is running out, that something is waiting to be spent, or that an ended day's recap is unseen. `noticeRows` reads `World` and writes nothing. [[ui/hud]] [[architecture/view]] [[architecture/modules]]
+A notice is one line saying a clock is running out, that something is waiting to be spent, that an ended day's recap is unseen, or that another gardener `joined`, `quit`, or `desynced`. `noticeRows` reads `World` and writes nothing. Roster kinds are stamped at the net/App boundary, not that read. [[ui/hud]] [[architecture/view]] [[architecture/modules]] [[architecture/net]]
 
-The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. Recap dismiss is App → `World.seeRecap`, not the pass. Delete `src/game/ui/notices.ts` and `src/game/ui/notices.tsx` and the sim still ticks; unseen recaps sit on `World`.
+The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. Recap dismiss is App → `World.seeRecap`, not the pass. Roster rows live on App, not `World`. Delete `src/game/ui/notices.ts` and `src/game/ui/notices.tsx` and the sim still ticks; unseen recaps sit on `World`; stamped roster rows drop on reload or `World` swap.
 
 `Notice` in `ui/multiplayer.tsx` is an unrelated identifier. These files do not reuse that name.
 
@@ -13,6 +13,9 @@ The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReas
 | kind | condition | reads | bar | click |
 |---|---|---|---|---|
 | `recap` | `World.recapUnseen` contains that ended day | `World.recaps` / `World.recapUnseen` | — | popup recap |
+| `joined` | stamped: new seat or `away` → `in`, not `App.local` | App list, `Seat.name` | — | none |
+| `quit` | stamped: link released (`drop` / leave / `lost`) | App list, `Seat.name` | — | none |
+| `desynced` | stamped: `bye: kicked` then drop | App list, `Seat.name` | — | none |
 | `contract` | `contracts.active` entry | `dueDay - nowDay`, `sum(bin.filled) / need` | fill | Market |
 | `contract-done` | one-time, below | `contracts.history` | — | Market |
 | `fuel` | `fuel === 0` | `World.vehicles` | — | none |
@@ -43,7 +46,7 @@ A starving plant that is also wilting produces both rows. They are different clo
 
 ## Derivation
 
-One pure function, `noticeRows(world): Notice[]`, in `src/game/ui/notices.ts`. Not `sim/` — `sim/` is the game, and this is not.
+One pure function, `noticeRows(world): Notice[]`, in `src/game/ui/notices.ts`. Not `sim/` — `sim/` is the game, and this is not. It does not mint `joined` `quit` `desynced`. App holds that `Notice[]` and `Notices` concatenates it with the pass. `doneRows` does not mint them.
 
 It runs every `NOTICE_SECONDS` — preference, 1s. A timer, not a ping: the Hud only re-renders on `act` ([App.tsx](../../src/App.tsx)), and no ping fires at the moment a band goes red. Continuous world chrome does not get a `DirtyReason` — [[architecture/tick]]. `seeRecap` pings, so a recap row can leave on that Hud render.
 
@@ -51,7 +54,7 @@ Each `Notice` carries its own cells. That is what the map paints and what the co
 
 `Notice.id` is stable across passes for the same condition on the same subject, so the two-pass sets, the hover, and React keys all address the same row. Recap id is that ended day.
 
-`Notice.subjects` is what the second icon draws: a crop, a research id, or a contract demand. A `Notice` carries several only when the thing itself is several — a contract with two demand lines. A row with none draws its kind icon alone. Recap has none.
+`Notice.subjects` is what the second icon draws: a crop, a research id, or a contract demand. A `Notice` carries several only when the thing itself is several — a contract with two demand lines. A row with none draws its kind icon alone. Recap has none. Roster kinds have none.
 
 ### Two-pass listing
 
@@ -59,7 +62,7 @@ A condition enters the pending set on the first pass it holds, and becomes visib
 
 Pending and visible sets are React state in the hook. Not `World`.
 
-Recap skips two-pass. Contract-done and research-done skip two-pass.
+Recap skips two-pass. Contract-done, research-done, `joined`, `quit`, and `desynced` skip two-pass.
 
 ### Recap rows
 
@@ -82,7 +85,34 @@ They skip the two-pass delay — delaying an event is wrong.
 
 They clear on left click (and run `go`) and on right-click dismiss. Recap Close does not clear them. The recap popup is not a seam, and play is not held for it.
 
-Cost of taking nothing from the sim: a completion that lands between the last pass and a reload or a `World` swap is never shown. Accepted. Recap is not this: it lives on `World.recapUnseen` and is saved — [[architecture/save]] `save.recaps`.
+Cost of taking nothing from the sim: a completion that lands between the last pass and a reload or a `World` swap is never shown. Accepted. Recap is not this: it lives on `World.recapUnseen` and is saved — [[architecture/save]] `save.recaps`. Roster kinds share that cost; they are not recovered from `World` — `notices.roster`.
+
+### Roster rows
+
+Kinds `joined` `quit` `desynced`. Events, not conditions.
+
+```
+NoticeKind += 'joined' | 'quit' | 'desynced'
+NoticeFace += { kind: 'hat'; seat: SeatId }
+```
+
+`noticeRows` cannot tell a drop from silence (`AWAY_MS` / nap): both are `presence: 'away'`. Host knows kick vs drop. Other peers: join is a new `SeatId` or `away` → `in` on that `roster` push; quit vs kick is `RosterSeat.leave` `'drop' | 'kicked'` surviving `readMpMsg`. Silence roster omits `leave`. Additive JSON. Do not bump `PROTOCOL`. [[architecture/net]]
+
+App stamps at the net boundary. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. Solo (`seats.length === 1`, no session) never mints. Do not mint for this page's seat.
+
+`go` is `{ kind: 'none' }`. No cells. No bar. Right-click dismiss, same as other event rows. Left click runs `go`. Reload or `World` swap (`session`) drops the App list, same cost as `notices.once`.
+
+Face: atlas `actor-hat` tinted with that seat's hex — [[ui/multiplayer]] Hat. No new SVG.
+
+`Notice.id` is session-local, unique per mint (`{kind}:{seat}:{n}`). The same seat may mint again.
+
+Copy: one line, `{name}` plus the verb. `{name}` is `Seat.name`. Player copy must not say desync. Overlay already uses drifted / left — [[ui/multiplayer]] Fail.
+
+| kind | copy |
+|---|---|
+| `joined` | `<needs-game-text-writer>{name} joined` |
+| `quit` | `<needs-game-text-writer>{name} left` |
+| `desynced` | `<needs-game-text-writer>{name} drifted` |
 
 ## Highlight
 
@@ -114,7 +144,7 @@ Title on the column: **Command Center**. Not on the Hide plate.
 
 Rows of a kind group into one bordered block, up to `NOTICE_GROUP_MAX` — preference, 3 — each row with its own bar. Past that, one more line saying how many are not shown.
 
-Block order is `NOTICE_ORDER`: `recap` first, then the current one-time rows, then the losses in the order they cost the player — fuel, drowning, wilting, starving, freshness, rotten, dead — then the running clocks, then what is waiting to be spent. Not the Rows table order.
+Block order is `NOTICE_ORDER`: `recap` first, then the one-time rows — `joined` `quit` `desynced` `contract-done` `research-done` — then the losses in the order they cost the player — fuel, drowning, wilting, starving, freshness, rotten, dead — then the running clocks, then what is waiting to be spent. Not the Rows table order.
 
 ### Row
 
@@ -125,7 +155,7 @@ Block order is `NOTICE_ORDER`: `recap` first, then the current one-time rows, th
 
 Kind icon is the notice: recap, research, no fuel, wilting. Subject icon is the thing: the row being researched, the crop wilting, the good a contract still wants. A row whose subject is several things cycles them with `useCycle` at `CYCLE_MS` — the interval `AnyJamFace` already uses ([[ui/contracts]]). Do not mint a second one.
 
-`Notice.face` is a total union the view maps 1:1 to existing art. No new SVG. Recap takes `ui-recap-night`. Contract and contract-completed take the company glyph — there is no generic contract glyph, and the company is what names that contract anyway. Research takes the research station. Wilting and drowning share `ui-water`: both are the water band gone red, and the text is what separates them. Fuel takes `item-oil`, starving `item-fertilizer`, ready-to-harvest the Harvest sensor, low water the Water system, dead and rotten their own art at that crop's class.
+`Notice.face` is a total union the view maps 1:1 to existing art. No new SVG. Recap takes `ui-recap-night`. Roster kinds take atlas `actor-hat` tinted with `HAT[seat]` — [[ui/multiplayer]] Hat. Contract and contract-completed take the company glyph — there is no generic contract glyph, and the company is what names that contract anyway. Research takes the research station. Wilting and drowning share `ui-water`: both are the water band gone red, and the text is what separates them. Fuel takes `item-oil`, starving `item-fertilizer`, ready-to-harvest the Harvest sensor, low water the Water system, dead and rotten their own art at that crop's class.
 
 A contract's subjects are its unfilled demand lines. A jam demand expands to one subject per jam crop, so the same one cycle shows what `AnyJamFace` shows in [[ui/contracts]] without a second timer inside it. `demandItem` moves to an export of `market.tsx` and both call sites read it.
 
@@ -139,7 +169,7 @@ A bar is `h-[2px]`, and its colour is its news: `STAT_COLOR.red` for a `noticeBa
 
 The column is React. Not Pixi, not `paintMotion` — that file is a fixed `HudKind` registry with one element per kind, and notices are N bars that come and go. A notice bar is its own element in `notices.tsx`: each pass sets its width once and a CSS transition of `NOTICE_SECONDS` carries it to the next pass. No per-frame React render, nothing reads `World` between passes, and the two files stay deletable. Not `Bar` from `frame.tsx` — that one has no hook for the transition.
 
-Dead plants and rotten produce have no bar. They do not worsen and they do not clear themselves, so there is no clock to draw. The row stands until the plot is dug. Recap has no bar.
+Dead plants and rotten produce have no bar. They do not worsen and they do not clear themselves, so there is no clock to draw. The row stands until the plot is dug. Recap has no bar. Roster kinds have no bar.
 
 ### Controls
 
@@ -162,7 +192,7 @@ NoticePopup = { kind: 'recap'; day: number }
 
 `notices.dismiss` — Right-click a row: `preventDefault`, discard that row, do not run `go`. The column sits above the canvas, so the click never reaches map cancel-place-or-drop.
 
-- Event rows (`recap`, `contract-done`, `research-done`): gone. Recap also `World.seeRecap(day)`.
+- Event rows (`recap`, `joined`, `quit`, `desynced`, `contract-done`, `research-done`): gone. Recap also `World.seeRecap(day)`.
 - Condition rows: dismissed while the condition still holds; leave the pass → drop the id; return → two-pass as new.
 
 Close on the recap popup: `seeRecap(day)` and close the popup. Esc / backdrop: same. Guest: Close is live (chrome, not a gate). `seeRecap` is not a `Cmd`. Assumption: guest Close / right-click is local chrome; host `seeRecap` is what the dump keeps.
@@ -173,32 +203,34 @@ Close on the recap popup: `seeRecap(day)` and close the popup. Esc / backdrop: s
 
 ## Multiplayer
 
-A guest may not accept contracts, start research, pick a skill, or expand ([[mechanics/multiplayer]] `mp.guest`). Those four rows show for a guest and do not click through. Refill is guest-legal, so the fuel row is live for both. Recap is live for both: left click opens the popup; Close is live.
+A guest may not accept contracts, start research, pick a skill, or expand ([[mechanics/multiplayer]] `mp.guest`). Those four rows show for a guest and do not click through. Refill is guest-legal, so the fuel row is live for both. Recap is live for both: left click opens the popup; Close is live. Roster rows show for host and guest. `go: none`. Dismiss is local chrome.
 
 ## Copy
 
-`messages/en/notices.json`, prefix `notices_` — [[architecture/i18n]]. Words are fixed by [[standards/user-facing-text]] and are not open: **wilting**, **drowning**, **starving for fertilizer**, **freshness**, **Dead plant**, **Rotten produce**, **Researching {name}**, **Skill points**, **Expansion**, **water network**, **Quad**, **Tractor**, **fuel**, **Harvest**, **contract**, **Command Center**, **Day {n} Finished**.
+`messages/en/notices.json`, prefix `notices_` — [[architecture/i18n]]. Words are fixed by [[standards/user-facing-text]] and are not open: **wilting**, **drowning**, **starving for fertilizer**, **freshness**, **Dead plant**, **Rotten produce**, **Researching {name}**, **Skill points**, **Expansion**, **water network**, **Quad**, **Tractor**, **fuel**, **Harvest**, **contract**, **Command Center**, **Day {n} Finished**. Roster slots: Roster rows.
 
 ## Not this update
 
-A settings row. Any second highlight that is not a cell outline. Any notice that reads a state the sim does not already keep.
+A settings row. Any second highlight that is not a cell outline. Any notice that reads a state the sim does not already keep — except roster kinds stamped at the net/App boundary. Those are not a `World` field. `noticeRows` still does not read them.
 
 ## Invariants
 
-`notices.pure` — `noticeRows(world)` reads `World` (including `recaps` / `recapUnseen`) and writes nothing. Plant stats are folded into a `Map` local to the pass, never `World.statsCached`. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. `seeRecap` is App click → `World`, not the pass. Deleting `ui/notices.ts` and `ui/notices.tsx` leaves the sim ticking.
+`notices.pure` — `noticeRows(world)` reads `World` (including `recaps` / `recapUnseen`) and writes nothing. It does not mint `joined` `quit` `desynced`. Plant stats are folded into a `Map` local to the pass, never `World.statsCached`. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. `seeRecap` is App click → `World`, not the pass. Deleting `ui/notices.ts` and `ui/notices.tsx` leaves the sim ticking.
 
 `notices.pass` — The pass runs every `NOTICE_SECONDS` off a timer, never off a ping. A condition becomes visible on the second consecutive pass it holds and leaves on the second it does not.
 
-`notices.once` — Contract and research completion are recovered by comparing the previous pass to this one, against `contracts.history` and `World.done`. They skip the two-pass delay and clear on left click or right-click dismiss. Recap Close does not clear them. A completion spanning a reload or a `World` swap is not shown.
+`notices.once` — Contract and research completion are recovered by comparing the previous pass to this one, against `contracts.history` and `World.done`. They skip the two-pass delay and clear on left click or right-click dismiss. Recap Close does not clear them. A completion spanning a reload or a `World` swap is not shown. Roster kinds share dismiss and drop-on-swap; they are not recovered from `World` — `notices.roster`.
+
+`notices.roster` — Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. They skip two-pass. Right-click dismiss; left click `go: none`. Reload or `World` swap drops them, same cost as `notices.once`. No cells. No bar. Face `{ kind: 'hat'; seat }` → `actor-hat` tint `HAT[seat]`. Do not mint for `App.local`. Do not mint for `presence: 'away'` from silence (`AWAY_MS` / nap). Quit is the link released (`drop` / leave / `lost`). Desynced is `bye: kicked` then drop. Joined is a new seat or `away` → `in`. Solo (`seats.length === 1`, no session) never mints. Host sets `RosterSeat.leave` `'drop' | 'kicked'` on that roster push; silence roster omits `leave`. Other peers recover join from seats; quit vs kick from `leave` surviving `readMpMsg`. Additive JSON; do not bump `PROTOCOL`.
 
 `notices.popup` — `NoticeGo` is `{ kind: 'none' } | { kind: 'panel'; panel } | { kind: 'popup'; popup }`. Left click on a row runs that row's `go`. Recap `go` sets App `recapDay` to that ended day. Not `World.seam`. Opening does not `seeRecap`.
 
-`notices.dismiss` — Right-click a row: `preventDefault`, discard that row, do not run `go`. Event rows `recap` / `contract-done` / `research-done` are gone; recap also `seeRecap(day)`. Condition rows dismissed while the condition holds leave the pass and drop the id; return is two-pass as new. Recap popup Close / Esc / backdrop: `seeRecap(day)` and close. Guest Close live.
+`notices.dismiss` — Right-click a row: `preventDefault`, discard that row, do not run `go`. Event rows `recap` / `joined` / `quit` / `desynced` / `contract-done` / `research-done` are gone; recap also `seeRecap(day)`. Condition rows dismissed while the condition holds leave the pass and drop the id; return is two-pass as new. Recap popup Close / Esc / backdrop: `seeRecap(day)` and close. Guest Close live.
 
 `notices.highlight` — `MapView` takes cells, never a rule. The hovered block's cells paint one `footOutline` path. Not a wash, not a `WorldView.patch` argument, not a Pixi change. A vehicle highlights the cell under `floor(x, y)`.
 
 `notices.red` — Only a red band is a notice. Orange is not.
 
-`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line. `NOTICE_ORDER` starts with `recap`.
+`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line. `NOTICE_ORDER` starts with `recap`, then one-time `joined` `quit` `desynced` `contract-done` `research-done`.
 
 `notices.bar` — A bar is drawn only for a row with a clock, and its colour is `noticeBad(kind)`: red for a draining loss, green for a filling contract or research job.

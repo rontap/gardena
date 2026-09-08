@@ -7,9 +7,10 @@ import { filledOf, needOf } from '../sim/feature-contracts/market.ts'
 import type { CompanyId, ContractId, Demand } from '../sim/feature-contracts/market.h.ts'
 import { JAM_CROPS, type CropId, type ResearchId } from '../sim/ids.ts'
 import { statsOf, type Stats } from '../sim/modifiers.ts'
+import type { RosterSeat } from '../sim/mp.ts'
 import { grid } from '../sim/nets.ts'
 import { fertBand, waterBand } from '../sim/soil.ts'
-import type { World } from '../sim/world.ts'
+import type { SeatId, World } from '../sim/world.ts'
 
 export const NOTICE_SECONDS = 1
 export const NOTICE_GROUP_MAX = 3
@@ -17,6 +18,9 @@ export const NOTICE_WATER_LOW = 0.2
 
 export type NoticeKind =
   | 'recap'
+  | 'joined'
+  | 'quit'
+  | 'desynced'
   | 'contract'
   | 'contract-done'
   | 'fuel'
@@ -35,6 +39,9 @@ export type NoticeKind =
 
 export const NOTICE_ORDER: readonly NoticeKind[] = [
   'recap',
+  'joined',
+  'quit',
+  'desynced',
   'contract-done',
   'research-done',
   'fuel',
@@ -70,6 +77,7 @@ export function noticeBad(kind: NoticeKind): boolean {
 
 export type NoticeFace =
   | { kind: 'recap' }
+  | { kind: 'hat'; seat: SeatId }
   | { kind: 'company'; id: CompanyId }
   | { kind: 'oil' }
   | { kind: 'water' }
@@ -399,6 +407,61 @@ export function doneRows(world: World, before: Pass): Notice[] {
   return [...closed, ...research]
 }
 
+function skipDelay(kind: NoticeKind): boolean {
+  return kind === 'recap' || kind === 'joined' || kind === 'quit' || kind === 'desynced'
+}
+
+function rosterText(kind: 'joined' | 'quit' | 'desynced', name: string): string {
+  if (kind === 'joined') return m.notices_joined({ name })
+  if (kind === 'quit') return m.notices_quit({ name })
+  return m.notices_desynced({ name })
+}
+
+function mintRoster(kind: 'joined' | 'quit' | 'desynced', seat: SeatId, name: string, n: number): Notice {
+  return {
+    id: `${kind}:${seat}:${n}`,
+    kind,
+    text: rosterText(kind, name),
+    face: { kind: 'hat', seat },
+    subjects: [],
+    cells: [],
+    bar: undefined,
+    go: { kind: 'none' },
+  }
+}
+
+export function rosterNotices(
+  prev: readonly RosterSeat[],
+  next: readonly RosterSeat[],
+  local: SeatId,
+  session: boolean,
+  n0: number,
+): { rows: Notice[]; n: number } {
+  if (!session) return { rows: [], n: n0 }
+  const before = new Map(prev.map(s => [s.id, s]))
+  let n = n0
+  const rows: Notice[] = []
+  next.forEach(s => {
+    if (s.id === local) return
+    const was = before.get(s.id)
+    if ('leave' in s && s.leave === 'kicked') {
+      n += 1
+      rows.push(mintRoster('desynced', s.id, s.name, n))
+      return
+    }
+    if ('leave' in s && s.leave === 'drop') {
+      n += 1
+      rows.push(mintRoster('quit', s.id, s.name, n))
+      return
+    }
+    if (was === undefined || (was.presence === 'away' && s.presence === 'in')) {
+      n += 1
+      rows.push(mintRoster('joined', s.id, s.name, n))
+    }
+  })
+  return { rows, n }
+}
+
 export type Tracked = { row: Notice; armed: boolean; grace: boolean }
 
 export function trackPass(prev: ReadonlyMap<string, Tracked>, now: readonly Notice[]): Map<string, Tracked> {
@@ -407,13 +470,13 @@ export function trackPass(prev: ReadonlyMap<string, Tracked>, now: readonly Noti
   now.forEach(r =>
     next.set(r.id, {
       row: r,
-      armed: r.kind === 'recap' || prev.has(r.id),
+      armed: skipDelay(r.kind) || prev.has(r.id),
       grace: false,
     }),
   )
   prev.forEach((t, id) => {
     if (live.has(id) || !t.armed || t.grace) return
-    if (t.row.kind === 'recap') return
+    if (skipDelay(t.row.kind)) return
     next.set(id, { row: t.row, armed: true, grace: true })
   })
   return next

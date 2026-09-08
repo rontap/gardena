@@ -508,7 +508,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         if (d.fence) {
           const run = pendingFenceRef.current
           if (run.length > 0) {
-            if (world.money >= run.length * world.skuPrice('buy-fence')) run.forEach(at => world.confirmPlace(at))
+            if (world.money >= run.length * world.skuPrice('buy-fence')) run.forEach(at => world.click(at))
             fenceAnchorRef.current = undefined
             pendingFenceRef.current = []
             setPendingFence([])
@@ -517,7 +517,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           }
           const at = { col: Math.floor(wpt.x), row: Math.floor(wpt.y) }
           if (!fenceOk(world, at)) return
-          world.confirmPlace(at)
+          world.click(at)
           fenceAnchorRef.current = at
           return
         }

@@ -74,7 +74,7 @@ Walk-up reuses the existing intents: `silo` on a Seeding silo, `additives` on an
 
 **Buy row, as the house stores have.** `world.buyInto(at, sku)` puts the pack or bag in the silo the panel is open on, not in the house. The Buy cells render on all four store panels — [[ui/store]].
 
-Ports and pads stay off (`ports` `[]`, `pads` `'none'`) — these are walk-up stores this update, not trailer stops.
+Ports and pads stay off (`ports` `[]`, `pads` `'none'`) — walk-up stores, not trailer stops. Load / Unload on field silos: [[plans/next-vehicle]].
 
 Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows view-only. Not Dock.
 
@@ -86,7 +86,7 @@ Delete always. Guest `GUEST_BUILD` += the three SKUs. South pad arrows view-only
 
 `Act.deploy { id, hangar XY, hitch }`: vehicle exists, `pose.kind === 'stored'`. XY is hangar B. This seat is not a driver. Pad-center `inWorld`. Quad: `hitch` must be `'none'`. Tractor: `hitch === 'none'` or that trailer stored. Spawn field at B `padCenter`, `heading: HEADING_SOUTH`, `speed` 0, `driver` this seat. Tractor `boom` unchanged. Deploy from hangar B of a vehicle stored at A spawns on B’s pad. Seats immediately. Trailer hitch optional.
 
-`Act.embark { id }`: from parked / automated cue HUD, or same cmd. Vehicle field && `driver === 'none'`, this seat not a driver. If actor is on `floor(x,y)`, board now. Else enqueue `{ act: 'embark'; id }`. Empty fuel: still board. Running: pause (`running` false), speed 0, cursor stays. Stored: no-op. Driven: no-op. Hitch stays. Boom stays.
+`Act.embark { id }`: from parked / automated cue HUD, or same cmd. Vehicle field && `driver === 'none'`, this seat not a driver. If actor is on `floor(x,y)` or Euclidean actor→pose ≤ 1.5, snap actor to vehicle pose and board now. Else enqueue `{ act: 'embark'; id }`. Empty fuel: still board. Running: pause (`running` false), speed 0, cursor stays. Stored: no-op. Driven: no-op. Hitch stays. Boom stays.
 
 No auto-store. Store is not on tick when center enters pad. Store is `Act.dock`.
 
@@ -222,7 +222,7 @@ Tank on the vehicle. Not an item. Seated empty: crawl `QUAD_EMPTY_MUL × vMax ×
 
 `Act.dock`: this seat is a driver AND `floor(x,y)` is a hangar pad cell (not a silo pad). Store into that hangar. Tractor hitch stores with it. Tractor `boom` kept. Keep route, `running` false, cursor kept. Guest may. No dock-stop.
 
-Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle with `driver === 'none'`, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }` instant. Several: min dist, then `World.vehicles` order. Stored / driven: skip. Running auto is field + no driver: Embark / Enter pauses (`running` false), board, speed 0, cursor stays. Dash Disembark / parked Embark stay. No walk-to-embark on Enter. Seated `Act.click` field acts no-op. No coast-walk.
+Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle with `driver === 'none'`, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }`. Several: min dist, then `World.vehicles` order. Stored / driven: skip. `enter()` does not write `actor.x`/`actor.y`. Snap and 1.5-tile reach live in `embarkBody`, so click-to-board uses the same reach. Running auto is field + no driver: Embark / Enter pauses (`running` false), board, speed 0, cursor stays. Dash Disembark / parked Embark stay. No walk-to-embark on Enter. Seated `Act.click` field acts no-op. No coast-walk.
 
 `Act.embark` on running: same pause, board, speed 0, cursor stays. Start from that seat resumes.
 
@@ -299,7 +299,7 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 
 `vehicles.hangar` — Hangar `HANGAR_W × HANGAR_H`, door south, no rotate. Pad `row = base.row + 2`, `col .. col + HANGAR_W - 1`, stay plots. Silos `SILO_W × SILO_H`, `siloPad` two cells south of the drum. Store is `Act.dock` while driver and `floor(x,y)` is a hangar pad cell; that hangar; tractor hitch stores with it; tractor `boom` kept; keep route, `running` false, cursor kept. Not on tick. Silo pad is not Dock. Buy from A stores at A. Deploy from B of stored-at-A spawns on B pad, heading `HEADING_SOUTH`, seats immediately; tractor hitch optional. Hangar Automate from B of stored-at-A: spawn B pad, `HEADING_SOUTH`, driver `'none'`, `i = 0`, `running` true, does not seat. Cannot delete a hangar that stores a vehicle or a trailer. Field vehicles do not block delete. Silos delete always. Hangar row Automated when field, no driver, `running`.
 
-`vehicles.enter` — Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle with `driver === 'none'`, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }` instant. Several: min dist, then `World.vehicles` order. Stored / driven: skip. Running auto: pause, board, speed 0, cursor stays. Dash Disembark / parked Embark stay. No walk-to-embark on Enter. Seated `Act.click` field acts no-op. No coast-walk. `Act.disembark` while driver: speed 0, `driver 'none'`, actor at vehicle `x,y`, drive `{0,0}`, queue `[]`, hitch stays. Always legal while driving. `Act.dock` else no-op. Guest may disembark and dock.
+`vehicles.enter` — Enter: if this seat is a driver → `Act.disembark`. Else closest field vehicle with `driver === 'none'`, Euclidean actor→pose ≤ 1.5 → `Act.embark { id }`. Several: min dist, then `World.vehicles` order. Stored / driven: skip. `enter()` does not write `actor.x`/`actor.y`. Snap and 1.5-tile reach live in `embarkBody`, so click-to-board uses the same reach. Running auto: pause, board, speed 0, cursor stays. Dash Disembark / parked Embark stay. No walk-to-embark on Enter. Seated `Act.click` field acts no-op. No coast-walk. `Act.disembark` while driver: speed 0, `driver 'none'`, actor at vehicle `x,y`, drive `{0,0}`, queue `[]`, hitch stays. Always legal while driving. `Act.dock` else no-op. Guest may disembark and dock.
 
 `vehicles.slots` — Quad slots: any Item, chest swap + compact, `tickFreshness` (not freezer). `Act.swapVehicle` legal iff parked (`!running`). Tractor has no 6-slot. Trailer cargo parked only: `Act.swapTrailer` iff attached to a tractor that is field && `driver === 'none'` && `!running`. Seed/spray hopper wrong kind unrepresentable. Harvest slots chest merge+compact, `tickFreshness`. Hangar HUD has no cargo. Parked HUD is `Cue` `{ kind: 'vehicle'; id }`.
 

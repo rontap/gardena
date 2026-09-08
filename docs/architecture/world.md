@@ -42,7 +42,7 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `Mill`, `Infuser`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar `HANGAR_W × HANGAR_H`. Vehicle silos `SILO_W × SILO_H`. Still 2×1, prop `48×24` occupying both cells. Mill / Infuser 2×2, prop `48×48` occupying four cells. House seed silo / additive-store 1×2. Station 1×1.
 
-`World.pumps` / `World.tanks` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
+`World.pumps` / `World.tanks` / `World.wells` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). Host live order is purchase order until `rebase()` sorts by `originCell` row then col — [[architecture/net]] `net.order`. `World.pump` and `generateChunk`'s starter argument find `form === 'starter'`; sort must not be required to keep index 0. `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
 
 Mill/jam/still/station/infuser/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Rules: [[mechanics/machines]] [[mechanics/infusion]] [[mechanics/sensors]] [[mechanics/inventory]].
 
@@ -227,7 +227,7 @@ No silent flag. Replay calls `apply` only.
 
 Ping consumption: `speech` HTML bind + ticker pose; `vfx` not Hud; `field` / `big` world-view patch not whole chrome; `act` Hud + patch. A new `DirtyReason` must have a view that filters it. Unused reason is a defect. [[architecture/tick]] [[architecture/view]]
 
-Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map `rightClick` is a cmd.
+Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map fence run is `click` per cell, not `confirmPlace`. Map `rightClick` is a cmd.
 
 `Seat.place` / `World.hud` / `Seat.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens / hangar select / camera follow / Dash Automate / editor open are not. Camera follow is view-local, not `World`, not sim.
 
@@ -265,7 +265,7 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 
 ## Weather
 
-`WeatherKind` on `sim/weather.ts`. Table from `forecastWeather(seed, throughDay, pins?)`. `World.weather(day)` indexes it. Current = `weather(clock.day)`. `World.pumpLiters` 0 at init, load, and after the seam bill. Pins: `Map<day, WeatherKind>`, not Save, not `Cmd`, host only. [[mechanics/weather]]
+`WeatherKind` on `sim/weather.ts`. Table from `forecastWeather(seed, throughDay, pins?)`. `World.weather(day)` indexes it. Current = `weather(clock.day)`. `World.pumpLiters` 0 at init, load, `rebase()`, and after the seam bill. Pins: `Map<day, WeatherKind>`, not Save, not `Cmd`, host only. [[mechanics/weather]]
 
 ## Modifier
 

@@ -4,9 +4,10 @@ import type { DataConnection } from 'peerjs'
 import { wrapConn } from './peer.ts'
 import type { MpMsg } from '../sim/mp.ts'
 
-function fakeConn() {
+function fakeConn(open = true) {
   const handlers = new Map<string, ((arg?: unknown) => void)[]>()
   return {
+    open,
     on(ev: string, fn: (arg?: unknown) => void) {
       const list = handlers.get(ev)
       if (list === undefined) handlers.set(ev, [fn])
@@ -52,5 +53,16 @@ describe('wrapConn', () => {
     })
     wire2.close()
     expect(got2).toEqual([])
+  })
+
+  test('send on a closed channel is bye lost, not a silent drop', () => {
+    const conn = fakeConn(false)
+    const wire = wrapConn(conn as unknown as DataConnection)
+    const got: MpMsg[] = []
+    wire.onRecv(msg => {
+      got.push(msg)
+    })
+    wire.send({ a: 'ping' })
+    expect(got).toEqual([{ a: 'bye', why: 'lost' }])
   })
 })

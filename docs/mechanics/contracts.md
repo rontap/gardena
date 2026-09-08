@@ -4,7 +4,7 @@ Daily buyer board, generator, accept / deliver / complete / miss / cancel / reor
 
 `World.contracts` is saved: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`.
 
-The board does not ask for a variety or a quality floor. Quality minimums and a specialty roll are the next update.
+Offers match a plain good only. No Variety. No Quality floor. Those fields: [[plans/next-variant-patch]].
 
 ## Board
 

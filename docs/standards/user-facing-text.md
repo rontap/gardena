@@ -344,7 +344,7 @@ Why this is better: Explains WHY the player should want to research this, and gi
 
 ## Chrome
 
-Rail left: **Build** **Research** **Market** **Lens** **Family**. Then **Demolish**, always. **Rotate** and **Cancel** only while something is on the cursor.
+Rail left: **Build** **Research** **Market** **Lens** **Family**. Then **Demolish** while Build is open or something is armed, and **Cancel** only while something is on the cursor.
 
 Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Almanac**, **Cheat**, **Pause**/**Resume**, **Gear**.
 

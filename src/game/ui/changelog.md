@@ -1,8 +1,8 @@
 # 2.7.3 Better build
 
-Delete is now Demolish, and it sits on the left rail whether or not you picked something in Build. Cancel appears whenever something is on the cursor. Taking a building down leaves plain untilled ground instead of watered, fertilized soil. Demolish reaches the Seed Variety Station and paving, which used to read Cannot demolish here and do nothing. Placing a machine shows the sides a Chest connects to, and the pads a Quad or Tractor loads at.
+Delete is now Demolish, and opening Build is enough to reach it — you no longer have to pick a building first. Cancel appears whenever something is on the cursor. Taking a building down leaves plain untilled ground instead of watered, fertilized soil. Demolish reaches the Seed Variety Station and paving, which used to read Cannot demolish here and do nothing. Placing a machine shows the sides a Chest connects to, and the pads a Quad or Tractor loads at.
 
-- 🔧 Changed ui: Demolish. previously, the button read Delete and showed up only after you picked a building in Build, now it reads Demolish and stays on the left rail.
+- 🔧 Changed ui: Demolish. previously, the button read Delete and showed up only after you picked a building in Build, now it reads Demolish and opening Build is enough to show it.
 - 🔧 Changed ui: Cancel. previously, it showed up only with some Build items, now it is there whenever something is on the cursor, paving and fencing included.
 - 🔧 Changed mechanic: Demolish. previously, taking a building down left tilled soil already holding water and fertilizer, now it leaves untilled ground you can till, pave, or fence.
 - 🐛 Fixed bug ui: Seed Variety Station. Pointing Demolish at it read Cannot demolish here and the click did nothing, now it reads Demolish Seed Variety Station and both cells come down.

@@ -78,7 +78,7 @@ Three spans at the right end of the top ribbon, before the net chip. Play only, 
 
 `Chrome` `absolute top-20 left-4 z-20` `w-24`. Icon `h-11 w-11` above, `text-sm` semibold label below.
 
-Order: **Build** **Research** **Market** **Lens** **Family**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then a divider and **Demolish**, always. **Rotate** and **Cancel** join it while something is armed. Almanac and Cheat are top-ribbon buttons — see above. [[ui/multiplayer]]
+Order: **Build** **Research** **Market** **Lens** **Family**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then, while **Build** is open or something is armed: a divider, **Demolish**, and **Cancel** once there is something to cancel. Almanac and Cheat are top-ribbon buttons — see above. [[ui/multiplayer]]
 
 Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family face `ui-btn-family`. Cheat face `ui-btn-cheat`.
 
@@ -90,7 +90,7 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Divider and **Demolish** always render. A player who wants a building gone reaches for one button, not for a shelf sku first. **Cancel** renders iff `place.kind !== 'none'` — there is something on the cursor to cancel, and that now covers paving and fencing too. `GHOST_SKUS` no longer gates any of the three. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]] [[ui/place]]
+Divider and **Demolish** render iff `panel === 'build' || place.kind !== 'none'`. Opening Build is enough — a player who wants a building gone should not have to arm an unrelated shelf sku first — and an armed ghost keeps the cluster after Build closes. **Cancel** renders iff `place.kind !== 'none'`, which now covers paving and fencing too. `GHOST_SKUS` gates none of the three. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]] [[ui/place]]
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 

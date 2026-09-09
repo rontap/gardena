@@ -81,7 +81,7 @@ Escape in the field clears the query and goes no further. Escape with the field 
 
 `GHOST_SKUS` is derived from the shelves: every category whose `cluster` is `'build'`. That is Water, Automation, Storage, and Sensors. Tools and Land are `'none'` — tools go to hand, and paving and fencing are paint tools.
 
-It no longer gates the left-ribbon buttons. **Demolish** is always on the rail and **Cancel** follows `place.kind !== 'none'`, so a player painting paving can cancel and a player who wants a chest gone does not arm an unrelated sku first — [[ui/hud]] [[ui/place]].
+It no longer gates the left-ribbon buttons. Opening this dock is enough to show **Demolish**, and **Cancel** follows `place.kind !== 'none'`, so a player painting paving can cancel and a player who wants a chest gone does not arm an unrelated sku first — [[ui/hud]] [[ui/place]].
 
 ## Arming
 

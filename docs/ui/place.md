@@ -16,7 +16,7 @@ Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-gri
 
 Pay on confirm only. No charge on cancel. No refund on demolish. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not in a dock. **Demolish** is always there. **Cancel** is there iff `place.kind !== 'none'`, so paving and fencing carry it too. **Rotate** only for `buy-sprinkler-vert` (`ns` ↔ `ew`); no rotatable sensor SKU. `GHOST_SKUS` gates none of the three — [[ui/hud]] [[ui/build]] [[ui/sensors]]. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
+Build cluster on the left ribbon, not in a dock. **Demolish** shows while Build is open or something is armed. **Cancel** shows iff `place.kind !== 'none'`, so paving and fencing carry it too. **Rotate** only for `buy-sprinkler-vert` (`ns` ↔ `ew`); no rotatable sensor SKU. `GHOST_SKUS` gates none of the three — [[ui/hud]] [[ui/build]] [[ui/sensors]]. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
 The Build dock sits `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. It is the only panel that arms — [[ui/build]].
 

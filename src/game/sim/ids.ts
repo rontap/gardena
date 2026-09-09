@@ -10,10 +10,15 @@ export type AnnualId =
   | 'vanilla'
   | 'chilli'
   | 'sugar-cane'
+  | 'grass'
+
+export type PlantCrop = Exclude<AnnualId, 'grass'>
 
 export type TreeId = 'apple' | 'apricot' | 'olive' | 'cherry'
 
 export type CropId = AnnualId | TreeId
+
+export type GrownCrop = Exclude<CropId, 'grass'>
 
 export const ANNUAL_IDS: readonly AnnualId[] = [
   'carrot',
@@ -25,7 +30,10 @@ export const ANNUAL_IDS: readonly AnnualId[] = [
   'vanilla',
   'chilli',
   'sugar-cane',
+  'grass',
 ]
+
+export const PLANT_CROPS: readonly PlantCrop[] = ANNUAL_IDS.filter((c): c is PlantCrop => c !== 'grass')
 
 export const TREE_IDS: readonly TreeId[] = ['apple', 'apricot', 'olive', 'cherry']
 
@@ -97,7 +105,7 @@ export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
 
 export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli']
 
-export type StallGoodId = CropId | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract' | 'bread'
+export type StallGoodId = GrownCrop | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract' | 'bread'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 

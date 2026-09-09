@@ -28,7 +28,7 @@ export type HudSpec = {
   pick: (id: string) => void
 } & ({ chrome: 'btns'; options: HudOption[] } | { chrome: 'rows'; rows: HudRow[] })
 
-const TUNABLE = (Object.keys(CROPS) as CropId[]).filter(id => CROPS[id].waterUsePerSec > 0)
+const TUNABLE = (Object.keys(CROPS) as (keyof typeof CROPS)[]).filter(id => CROPS[id].waterUsePerSec > 0)
 
 function perDay(n: number): string {
   return m.sensors_per_tile({ n: Number((n * DAY_SECONDS).toFixed(2)) })

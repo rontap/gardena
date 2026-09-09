@@ -11,9 +11,9 @@ import type {
 } from '../building.ts'
 import type { Cover, Ground } from '../plot.ts'
 import type {
-  AnnualId,
+  PlantCrop,
   BarrelCrop,
-  CropId,
+  GrownCrop,
   DaughterSkillId,
   FurnaceRecipe,
   HusbandSkillId,
@@ -61,7 +61,7 @@ export type SaveStallGood = {
 export type SaveSoil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
 
 export type SavePlant = {
-  crop: AnnualId
+  crop: PlantCrop
   variety: VarietyId
   quality: number
   maturity: number
@@ -83,7 +83,7 @@ export type SaveCell =
   | { kind: 'growing'; soil: SaveSoil; plant: SavePlant }
   | { kind: 'ripe'; soil: SaveSoil; plant: SavePlant }
   | { kind: 'dead'; soil: SaveSoil; plant: SavePlant }
-  | { kind: 'rotten'; soil: SaveSoil; crop: CropId }
+  | { kind: 'rotten'; soil: SaveSoil; crop: GrownCrop }
   | { kind: 'house'; base: RectBase }
   | { kind: 'pump'; form: 'starter' | 'jack'; base: Base; stored: number }
   | { kind: 'rain-tank'; base: RectBase; stored: number }
@@ -92,14 +92,14 @@ export type SaveCell =
   | { kind: 'rock'; base: RectBase }
   | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
-  | { kind: 'grinder'; base: RectBase; crop: CropId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
+  | { kind: 'grinder'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
-  | { kind: 'station'; base: RectBase; crop: CropId | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
+  | { kind: 'station'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }

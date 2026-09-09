@@ -4,7 +4,7 @@ import { faceInfused, fruitGroup, graftSpecies, itemInner, jamArt, OVERLAY_INFUS
 import { CONCEPT_IDS } from '../ui/almanac.tsx'
 import { catalogEntries } from '../defs/catalog.ts'
 import { caskGroup, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
-import { ANNUAL_IDS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type CropId } from '../sim/ids.ts'
+import { PLANT_CROPS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type GrownCrop } from '../sim/ids.ts'
 
 const ASSETS = import.meta.glob('../../assets/**/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<
   string,
@@ -59,10 +59,10 @@ function groupIds(file: string): string[] {
 }
 
 test('view.groups — every `<g id>` the atlas asks for exists in the file it reads, and the file carries no group the atlas never asks for. Missing group is a permanent atlas boot failure; a spare one is art nobody can reach.', () => {
-  for (const crop of [...ANNUAL_IDS, ...TREE_IDS] as CropId[]) {
+  for (const crop of [...PLANT_CROPS, ...TREE_IDS] as GrownCrop[]) {
     expect(groupIds(`fruits/fruit-${crop}.svg`)).toEqual(VARIETIES[crop].map(fruitGroup))
   }
-  for (const crop of ANNUAL_IDS) {
+  for (const crop of PLANT_CROPS) {
     expect(groupIds(`crops/crop-${crop}.svg`)).toEqual(['sprout', 'grow', ...VARIETIES[crop].map(ripeGroup), 'dead'])
   }
   for (const tree of TREE_IDS) {
@@ -72,7 +72,7 @@ test('view.groups — every `<g id>` the atlas asks for exists in the file it re
       'unripe',
       ...VARIETIES[tree].map(v => treeAtlasStage('ripe', v)),
     ])
-    const served = ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).filter(c => graftSpecies(c) === tree)
+    const served = ([...PLANT_CROPS, ...TREE_IDS] as GrownCrop[]).filter(c => graftSpecies(c) === tree)
     const want = (['base', 'variant', 'heirloom'] as const).filter(g =>
       served.some(c => VARIETIES[c].map(fruitGroup).includes(g)),
     )

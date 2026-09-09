@@ -23,7 +23,7 @@ import {SOURCE} from './water.ts'
 import {goodness} from './noise.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
-import {DT_MAX, World} from './world.ts'
+import {DT_MAX, stipendOf, World} from './world.ts'
 import {SHELF_SKUS, SHELVES} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
@@ -409,9 +409,9 @@ describe('beta-2 invariants', () => {
         expect(w.money).toBe(50)
         w.clock.t = 239.999
         w.tick(1)
-        expect(w.money).toBe(58)
+        expect(w.money).toBe(50 + stipendOf(1) - 2)
         expect(w.seam.kind).toBe('play')
-        expect(w.recapAt(1).money).toBe(58)
+        expect(w.recapAt(1).money).toBe(50 + stipendOf(1) - 2)
         expect(w.recapAt(1).tax).toBe(2)
         expect(w.recapAt(1).water).toBe(0)
     })
@@ -592,7 +592,7 @@ describe('beta-3 invariants', () => {
         expect(w.money).toBe(0)
         w.clock.t = 239.999
         w.tick(1)
-        expect(w.money).toBe(2)
+        expect(w.money).toBe(stipendOf(1) - 8)
         w.money = -5
         w.seam = {kind: 'play'}
         w.clock.t = 239.999
@@ -1543,6 +1543,7 @@ describe('beta-6 invariants', () => {
             'pack-raspberry',
             'pack-sugar-cane',
             'pack-chilli',
+            'pack-grass',
             'buy-fertilizer',
             'buy-synth-fertilizer',
             'buy-weed-spray',
@@ -1557,9 +1558,10 @@ describe('beta-6 invariants', () => {
         expect(SHELF_SKUS.length + store.length + hidden.length).toBe(Object.keys(SKUS).length)
     })
 
-    test('pack-grass is the only seeds-tab sku on a shelf, and it sits on Land', () => {
-        expect(SHELF_SKUS.filter((id: SkuId) => SKUS[id].tab === 'seeds')).toEqual(['pack-grass'])
-        expect(SHELVES.find(s => s.id === 'land')?.groups.some(g => g.skus.includes('pack-grass'))).toBe(true)
+    test('pack-grass is not on Build; seed packs sit at the Seed silo', () => {
+        expect(SHELF_SKUS.filter((id: SkuId) => SKUS[id].tab === 'seeds')).toEqual([])
+        expect(SHELVES.find(s => s.id === 'land')?.groups.some(g => g.skus.includes('pack-grass'))).toBe(false)
+        expect(SHELF_SKUS.includes('pack-grass')).toBe(false)
     })
 
     test('delete pumpjack money unchanged both empty starter remains', () => {
@@ -1809,7 +1811,8 @@ describe('vehicles.silo-store', () => {
         expect(produce.slots).toHaveLength(PRODUCE_SLOTS)
 
         expect(seed.put('carrot', 'base', 0.5, 40)).toBe(40)
-        expect(seed.used).toBe(40)
+        expect(seed.put('grass', 'base', 0, 5)).toBe(5)
+        expect(seed.used).toBe(45)
         expect(spray.putAdditive('fertilizer', 90)).toBe(90)
         expect(spray.used).toBe(90)
 

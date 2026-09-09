@@ -94,6 +94,7 @@ const CROP_LABEL: { readonly [K in CropId]: () => string } = {
   vanilla: m.names_crop_vanilla,
   chilli: m.names_crop_chilli,
   'sugar-cane': m.names_crop_sugar_cane,
+  grass: m.names_sku_pack_grass,
   apple: m.names_crop_apple,
   apricot: m.names_crop_apricot,
   olive: m.names_crop_olive,
@@ -780,12 +781,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'seeds') {
-    if (cell.kind === 'empty') return intent(m.prompt_plant({ name: cropLabel(w.act.hand.item.crop) }), { act: 'plant', at })
-    return needSeeds(cell)
-  }
-  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'grass-seeds') {
     if (cell.kind === 'empty') {
-      return intent(m.prompt_sow({ name: m.names_ground_grass().toLowerCase() }), { act: 'plant', at })
+      if (w.act.hand.item.crop === 'grass') {
+        return intent(m.prompt_sow({ name: m.names_ground_grass().toLowerCase() }), { act: 'plant', at })
+      }
+      return intent(m.prompt_plant({ name: cropLabel(w.act.hand.item.crop) }), { act: 'plant', at })
     }
     return needSeeds(cell)
   }

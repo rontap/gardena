@@ -110,9 +110,9 @@ Copy: one line, `{name}` plus the verb. `{name}` is `Seat.name`. Player copy mus
 
 | kind | copy |
 |---|---|
-| `joined` | `<needs-game-text-writer>{name} joined` |
-| `quit` | `<needs-game-text-writer>{name} left` |
-| `desynced` | `<needs-game-text-writer>{name} drifted` |
+| `joined` | **{name} joined** |
+| `quit` | **{name} left** |
+| `desynced` | **{name} drifted** |
 
 ## Highlight
 

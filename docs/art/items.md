@@ -22,13 +22,13 @@ Ink silhouette, water fill, house highlight. Same droplet language as `overlay-w
 
 ## Infusion
 
-`overlay-infused.svg` — viewBox `0 0 24 24`. Small + mark, ink + ripe, house glint, top-right. Draw-over. Not centered. Not `ui-quality`.
+`overlay-infused.svg` — viewBox `0 0 24 24`. Small + mark, ink + ripe, house glint, flush top-right border (`x=19`–`24`, `y=0`–`5`). Draw-over. Not centered. Not `ui-quality`.
 
 `ui-research-infusion.svg` — viewBox `0 0 24 24`. Hollow flask, roof cap, fruit-red liquid `fill-opacity`, ripe + mark right. Infusion research face.
 
 `item-chilli-flakes.svg` — viewBox `0 0 24 24`. Corked glass jar, dirt cork, ink rim, house glint, fruit-red flakes visible through empty glass. Not a jam jar. Not a dish.
 
-`item-vanilla-extract.svg` — viewBox `0 0 24 24`. Tall thin vial, fruit-red / roof crimson to the neck. Not oil. Not grass extract.
+`item-vanilla-extract.svg` — viewBox `0 0 24 24`. Tall thin dropper vial, house bulb, house label, roof crimson fill to the neck, fruit-red left edge. Not oil. Not grass extract. Not a gold cap.
 
 `item-bread.svg` — viewBox `0 0 24 24`. Loaf, ripe crust, house crumb in the split. Not the flour sack.
 

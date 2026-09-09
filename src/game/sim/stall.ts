@@ -2,12 +2,12 @@ import { CROPS } from '../defs/crops.ts'
 import { VARIETY_IDS, type VarietyId } from '../defs/varieties.ts'
 import { YARD, type Coord } from './building.ts'
 import {
-  ANNUAL_IDS,
   CASK_IDS,
   JAM_IDS,
+  PLANT_CROPS,
   SPIRIT_KINDS,
   TREE_IDS,
-  type CropId,
+  type GrownCrop,
   type StallGoodId,
 } from './ids.ts'
 import type { InfusedKey } from './feature-contracts/market.h.ts'
@@ -15,7 +15,7 @@ import type { Modifier } from './modifiers.ts'
 import type { Rng } from './rng.ts'
 
 export const STALL_IDS: StallGoodId[] = [
-  ...ANNUAL_IDS,
+  ...PLANT_CROPS,
   ...TREE_IDS,
   'sugar',
   ...SPIRIT_KINDS,
@@ -37,8 +37,8 @@ function infusedBin(k: InfusedKey): BioKey {
   return k === 'infused' ? 'synth' : 'organic'
 }
 
-export function isCropStall(id: StallGoodId): id is CropId {
-  return (ANNUAL_IDS as readonly string[]).includes(id) || (TREE_IDS as readonly string[]).includes(id)
+export function isCropStall(id: StallGoodId): id is GrownCrop {
+  return (PLANT_CROPS as readonly string[]).includes(id) || (TREE_IDS as readonly string[]).includes(id)
 }
 
 export function isBakedStall(id: StallGoodId): boolean {
@@ -66,7 +66,7 @@ export function goodIx(id: StallGoodId): number {
   return STALL_IDS.indexOf(id)
 }
 
-function saleMul(id: CropId, mods: readonly Modifier[]): number {
+function saleMul(id: GrownCrop, mods: readonly Modifier[]): number {
   return mods.filter(m => m.crop === undefined || m.crop === id).reduce((a, m) => a * m.saleMul, 1)
 }
 

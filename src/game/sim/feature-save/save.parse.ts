@@ -82,6 +82,7 @@ import {
   type SaveSoil,
   type SaveTrailer,
   type SaveVehicle,
+  SAVE_VERSION,
 } from './save.ts'
 
 export function parse(text: string, sink: LogSink = new MemorySink()): LoadResult {
@@ -92,7 +93,11 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
     return { ok: false, reason: 'unknown-format' }
   }
   if (save?.game !== 'gardena') return { ok: false, reason: 'not-gardena' }
-  return { ok: true, world: worldFromSave(save, sink) }
+  try {
+    return { ok: true, world: worldFromSave(save, sink) }
+  } catch {
+    return { ok: false, reason: save.version !== SAVE_VERSION ? 'version' : 'unusable' }
+  }
 }
 
 function worldFromSave(save: Save, sink: LogSink): World {
@@ -377,6 +382,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       return chest
     }
     case 'seed-silo': {
+      refuseGrassStore(cell)
       const silo = new SeedSilo(cell.base, cell.useDefault)
       cell.seeds.forEach(st => silo.seeds.push({ ...st }))
       silo.out = cell.out
@@ -462,6 +468,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'station': {
       const station = new ResearchStation(cell.base)
+      if ((cell as { crop: string }).crop === 'grass') throw new Error('unusable')
       station.crop = cell.crop
       station.variety = cell.variety
       station.quality = cell.quality
@@ -488,6 +495,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     case 'hangar':
       return new Hangar(cell.base)
     case 'silo-seed': {
+      refuseGrassStore(cell)
       const made = new SiloSeed(cell.base)
       made.restock = cell.restock
       cell.seeds.forEach(st => made.seeds.push({ ...st }))
@@ -646,7 +654,12 @@ function makeSoil(s: SaveSoil): Soil {
   return soil
 }
 
+function refuseGrassStore(cell: SaveCell): void {
+  if ('grass' in cell) throw new Error('unusable')
+}
+
 function makePlant(p: SavePlant): Plant {
+  if ((p as { crop: string }).crop === 'grass') throw new Error('unusable')
   const plant = new Plant(p.crop, p.variety, p.quality)
   plant.maturity = p.maturity
   plant.freshness = p.freshness
@@ -657,6 +670,7 @@ function makePlant(p: SavePlant): Plant {
 }
 
 function liveItem(it: Item): Item {
+  if ((it as { kind: string }).kind === 'grass-seeds') throw new Error('unusable')
   if (it.kind === 'jam' || it.kind === 'cask' || it.kind === 'spirit' || it.kind === 'oil') {
     return { ...it, infused: it.infused === true }
   }

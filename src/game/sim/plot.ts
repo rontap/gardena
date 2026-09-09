@@ -27,7 +27,7 @@ import {
   type Barrel,
 } from './building.ts'
 import type { VarietyId } from '../defs/varieties.ts'
-import type { CropId, TreeId } from './ids.ts'
+import type { GrownCrop, TreeId } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
 import { isSensor, type Sensor } from './sensor.ts'
 import type { Soil } from './soil.ts'
@@ -57,7 +57,7 @@ export type Plot =
   | { kind: 'growing'; soil: Soil; plant: Plant }
   | { kind: 'ripe'; soil: Soil; plant: Plant }
   | { kind: 'dead'; soil: Soil; plant: Plant }
-  | { kind: 'rotten'; soil: Soil; crop: CropId }
+  | { kind: 'rotten'; soil: Soil; crop: GrownCrop }
 
 export type Tilled = Extract<Plot, { soil: Soil }>
 

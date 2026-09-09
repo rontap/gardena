@@ -34,7 +34,7 @@ import {
 } from '../../defs/items.ts'
 import { purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
 import { STATION_IN } from '../../defs/items.ts'
-import type { BarrelCrop, CaskId, CropId, Infusable, JamCrop, MillRecipe, SpiritKind, StillCrop } from '../ids.ts'
+import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SpiritKind, StillCrop } from '../ids.ts'
 import { isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
   Barrel,
@@ -67,11 +67,11 @@ export function isIoCell(c: { kind: string }): c is IoCell {
 }
 
 export function machineWest(base: RectBase): Coord {
-  return { col: base.col - 1, row: base.row }
+  return { col: base.col - 1, row: base.row + base.h - 1 }
 }
 
 export function machineEast(base: RectBase): Coord {
-  return { col: base.col + base.w, row: base.row }
+  return { col: base.col + base.w, row: base.row + base.h - 1 }
 }
 
 export function millNeed(recipe: MillRecipe): number {
@@ -98,7 +98,7 @@ export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: num
   return { kind: 'extract', count: 1, unitSale: EXTRACT * mul, quality }
 }
 
-export function fruitCrop(item: Item): CropId | undefined {
+export function fruitCrop(item: Item): GrownCrop | undefined {
   if (item.kind === 'fruit') return item.crop
   return undefined
 }
@@ -152,7 +152,7 @@ export function millAccept(mill: Mill, item: Item): MillTake | undefined {
   return { recipe, n }
 }
 
-export type GrindTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
+export type GrindTake = { crop: GrownCrop; variety: VarietyId; quality: number; n: number }
 
 export function grindAccept(g: Grinder, item: Item): GrindTake | undefined {
   const n = g.accept(item)
@@ -168,7 +168,7 @@ export function grindApply(g: Grinder, take: GrindTake): void {
 }
 
 export function grindProduct(
-  g: { crop: CropId | 'none'; variety: VarietyId; quality: number },
+  g: { crop: GrownCrop | 'none'; variety: VarietyId; quality: number },
   count: number,
 ): Extract<Item, { kind: 'seeds' | 'tree-seed' }> {
   if (g.crop === 'none') throw new Error('grind')
@@ -473,7 +473,7 @@ export function furnaceMul(working: readonly Furnace[], target: RectBase): numbe
   return 1 + FURNACE_HASTE * working.filter(f => furnaceCovers(f, target)).length
 }
 
-export type StationTake = { crop: CropId; variety: VarietyId; quality: number; n: number }
+export type StationTake = { crop: GrownCrop; variety: VarietyId; quality: number; n: number }
 
 export function stationAccept(st: ResearchStation, item: Item): StationTake | undefined {
   const n = st.accept(item)

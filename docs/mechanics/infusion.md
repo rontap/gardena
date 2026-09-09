@@ -108,7 +108,7 @@ Intent `{ act: 'infuse'; at }`. Enqueue, no new `Act` letter.
 
 ## Overlay
 
-One SVG `overlay-infused.svg`, viewBox `0 0 24 24`. Plus sits in the top-right of that box. Drawn on the existing jam / cask / spirit / oil face when `infused === true`. HUD `itemInner`, drop, recipe yield, Stall row. Not a second file per product. Not a lens. Not Pixi wash. Almanac does not grow a pane per infused good — one Game concepts **Infusion** page — [[ui/almanac]] [[art/items]].
+One SVG `overlay-infused.svg`, viewBox `0 0 24 24`. Plus sits flush on the top-right border of that box. Drawn on the existing jam / cask / spirit / oil face when `infused === true`. HUD `itemInner`, drop, recipe yield, Stall row. Not a second file per product. Not a lens. Not Pixi wash. Almanac does not grow a pane per infused good — one Game concepts **Infusion** page — [[ui/almanac]] [[art/items]].
 
 ## Stall
 

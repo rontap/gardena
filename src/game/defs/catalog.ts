@@ -49,7 +49,7 @@ import {
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
 import { BIO_RESTORE, FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import type { CropId, TileId } from '../sim/ids.ts'
+import type { GrownCrop, TileId } from '../sim/ids.ts'
 import type { Face } from '../sim/item.ts'
 
 export type CatalogEntry = {
@@ -69,7 +69,7 @@ const TILE_TITLE: { readonly [K in TileId]: () => string } = {
 const FREEZER_PCT = (1 - FREEZER_ROT_MUL) * 100
 
 export function catalogEntries(): CatalogEntry[] {
-  const crops: CatalogEntry[] = (Object.keys(CROPS) as CropId[]).map(id => {
+  const crops: CatalogEntry[] = (Object.keys(CROPS) as GrownCrop[]).map(id => {
     const d = CROPS[id]
     return {
       id,
@@ -225,7 +225,7 @@ export function catalogEntries(): CatalogEntry[] {
     {
       id: 'grass-seeds',
       title: m.names_sku_pack_grass(),
-      icon: { kind: 'grass-seeds', count: GRASS_PACK },
+      icon: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK },
       blurb: m.catalog_grass_seeds({
         pack: GRASS_PACK,
         seconds: GRASS_GROW,

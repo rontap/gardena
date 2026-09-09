@@ -1,5 +1,5 @@
 import type { Coord } from './building.ts'
-import type { CropId, Signal } from './ids.ts'
+import type { GrownCrop, Signal } from './ids.ts'
 
 export type Edge =
   | { axis: 'h'; col: number; row: number }
@@ -13,7 +13,7 @@ export type Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }
 
 export type Segment = { at: Edge; gate: Gate }
 
-export type Tune = { kind: 'flat' } | { kind: 'crop'; crop: CropId }
+export type Tune = { kind: 'flat' } | { kind: 'crop'; crop: GrownCrop }
 
 export type Sprinkler =
   | { variant: 'basic'; at: Vertex; tune: Tune; inn: Signal; hold: number }

@@ -18,7 +18,7 @@ Title **Seed silo**. Footer *Walking up stores every seed you were carrying.*
 
 Width is `w-fit` inside `min-w-80 max-w-[min(calc(92vw-17rem),72rem)] max-h-[min(88vh,48rem)]`, so the panel grows with what is unlocked instead of carrying a width per shelf. The `17rem` subtracted from the viewport is the callout gutter: the panel may never grow so wide that the hover callout falls off screen. Past the max the grid scrolls inside `overflow-x-auto`, never the page.
 
-Table with a crop head row. Columns are crops, `SILO_CROPS`: sugar cane first, then `ANNUAL_IDS` order. The gate is unchanged — the column appears when `pack-sugar-cane` is shown, not before. Only the silo reorders; `ANNUAL_IDS` itself is the market and grinder order and does not move. The `thead` cell carries the crop's `'base'` ripe face at `h-9` over the crop name in `text-[11px] text-ink/60`, so a column is read by its crop before anything under it.
+Table with a crop head row. Columns are crops, `SILO_CROPS`: sugar cane first, then `ANNUAL_IDS` order. Grass is in `ANNUAL_IDS`, last. The gate is unchanged — the column appears when `pack-{crop}` is shown, not before. Grass column when `skuShown('pack-grass')` **or** the silo holds `crop: 'grass'`. Only the silo reorders; `ANNUAL_IDS` itself is the market and grinder order and does not move. The `thead` cell carries the crop's `'base'` ripe face at `h-9` over the crop name in `text-[11px] text-ink/60`, so a column is read by its crop before anything under it. Grass head is Grass seeds, seed / cover face, not a ripe fruit face.
 
 There is no shared row ladder and no row-head `tier` label — Variety is identity, not a ladder, so nothing labels a row. Each column stacks `VARIETIES[crop]` in list order. Row 0 is `'base'` on every shown crop. Later rows are that crop's later ids; a crop with fewer Varieties leaves the cell empty, not a dummy. Rows therefore mix tiers across columns, which is correct: row 1 is one crop's variant and another's heirloom.
 
@@ -26,13 +26,15 @@ A `'base'` cell carries no name — the crop head already names it. Every other 
 
 Cells are `5.5rem` square, with a `shrink-0` `h-8` icon, the Variety name, and the count under it. The side is set by the tallest cell a Variety name can make — two lines — so the icon keeps its size and its inset in every cell instead of being squeezed against the top edge. `CELL` and `CELL_W` in `store.tsx` carry it; the crop head and the Buy cell read the same width, so a column is one width from top to bottom. The `<td>` is `p-0` and the `<button>` fills it, so every painted pixel of a cell is inside its button — icon and count included. Face is that Variety's group. No extra mark.
 
-Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any Variety of that crop. Shown cells: `'base'` always on a shown crop. Any other Variety: stock of that Variety. Stock is never hidden by a gate.
+Shown columns: `world.skuShown('pack-{crop}')`, **or** the silo holds any Variety of that crop. Shown cells: `'base'` always on a shown crop. Any other Variety: stock of that Variety. Stock is never hidden by a gate. Grass: `'base'` only, one stock cell.
 
-`bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average. What is already in hand goes back in first — [[mechanics/inventory]] `inventory.swap`.
+`bg-dirt` with stock, `bg-ink/6` at zero and `aria-disabled`. Click → `takeSilo(crop, variety)`, whole stack to hand. Identity is crop + Variety; Quality is the stack average. Grass take is `takeSilo('grass', 'base')` → `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality; count }`. What is already in hand goes back in first — [[mechanics/inventory]] `inventory.swap`.
 
-Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`, the same states a [[ui/build]] card shows. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/build]].
+Buy row on all four panels, directly under the crop head and above the Variety stacks — the price to restock a column sits with the column's name, not at the far end of a grid that grows every time a Variety is earned. One cell per shown crop that has a `pack-*` SKU. `packSku('grass')` is `pack-grass`. Cell width matches the column (`CELL_W`). Face: same three-state as additive **Buy** — `rowState` / `gateLine`, the same states a [[ui/build]] card shows. Click → `world.buyInto(at, packSku)`. Ctrl+click → `world.buyPacksInto(at, packSku)` when `buyPacksFail(sku, at)` is not `'Locked'`; else plain buy. Failed afford / fit / closed: no-op. Vanilla has no pack: no Buy. Bought seed is `'base'`, Quality 0, grass included. Hover / focus of a Buy cell renders the crop `SeedTip` plus the bulk `Coin` from `packsPrice` when bulk is legal, and `gateLine` in `text-roof` when grey — [[ui/callout-hover]] [[ui/build]]. Grass Buy: Grass seeds, pack price, bulk `Coin`, `gateLine` when grey. No purpose. No **Sells for**.
 
 No crops to show at all: *Empty. Seeds you buy are delivered here.*
+
+Field Seeding silos use this same grid, grass column included.
 
 ## Auto-restock
 
@@ -44,7 +46,7 @@ The row is the checkbox and the words **Auto-restock**, nothing else. The senten
 
 Toggling is `Act.setRestock` (`c: XY`, `on`), so it replays in lockstep and is in the [[mechanics/multiplayer]] digest. Guests may toggle it — they may already buy `seeds` and `utility` skus, which is all a restock buys.
 
-Rule, on [[mechanics/inventory]] `inventory.restock`: take the silo's `levels()` **before** the removal, run the removal, then buy whole packs or bags back until each row reaches the level it held. Buying stops the moment one `buy` fails, so no money, a closed sku and a full silo all end it the same way. `Math.ceil(missing / pack)` bounds the loop, so a 7-seed stack comes back as two packs of five.
+Rule, on [[mechanics/inventory]] `inventory.restock`: take the silo's `levels()` **before** the removal, run the removal, then buy whole packs or bags back until each row reaches the level it held. Buying stops the moment one `buy` fails, so no money, a closed sku and a full silo all end it the same way. `Math.ceil(missing / pack)` bounds the loop, so a 7-seed stack comes back as two packs of five. Grass `'base'` restocks with `packSku('grass')` / `GRASS_PACK` the same way.
 
 `Act.takeStore` is the only removal that reaches it. Field silos are not pad cells, so no trailer loads from one — [[mechanics/vehicles]].
 
@@ -56,14 +58,14 @@ A named Variety restocks nothing: `packSku` covers `'base'` only, and no shelf s
 
 | tip | title | body |
 |---|---|---|
-| stock cell | Variety name | **Quality {n}%**; **Best for {purpose}** and what it pays there, on a named Variety only; pack price (`skuPrice`, per `PACK_N`) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × purposeMul(variety, 'produce')` |
+| stock cell | Variety name | **Quality {n}%**; **Best for {purpose}** and what it pays there, on a named Variety only; pack price (`skuPrice`, per `PACK_N` / `GRASS_PACK` on grass) when a pack exists; **Sells for** `{Coin}` **each** at `CROPS[crop].sale × qualityMul(quality) × purposeMul(variety, 'produce')` — omit **Sells for** and purpose on grass |
 | Buy cell | crop name | pack price, bulk `Coin`, `gateLine` when grey. Quality 0, Variety `'base'` |
 
 Empty cells hover too. What a Variety sells for at Quality 0 is worth knowing before you own any.
 
 This callout is the one place a purpose reaches the player, and it is where they choose: **Best for Fresh / Preserving / Alcohol**, with the multiplier that purpose pays. `'base'` shows no such line — it is even at all three. Words: [[standards/user-facing-text]]. The Almanac carries none of this — [[ui/almanac]].
 
-The Seed silo is the only place seed packs are sold; the Additive store is the only place fertilizer, synthetic fertilizer, weed spray and sugar are sold. There is no General store — [[ui/build]].
+The Seed silo is the only place seed packs are sold, `pack-grass` included; the Additive store is the only place fertilizer, synthetic fertilizer, weed spray and sugar are sold. There is no General store. `pack-grass` is not on Build — [[ui/build]].
 
 ## Additive store
 
@@ -79,7 +81,7 @@ Footer names the delivery rule while the store is empty, then *Walking up emptie
 
 `Act.buy` and `Act.buyPacks` carry `c: XY`, the store cell the buy was made from — the same address `Act.takeStore` carries, and for the same reason: a field silo has to be replayable in lockstep. `World.buy` / `World.buyPacks` are the Shop's and pass `houseCell()`, the Seed silo's origin; `buyInto` / `buyPacksInto` are a panel's and pass its own cell.
 
-`buyBody` resolves the target with `seedStoreAt` / `additiveStoreAt` (`sim/store.ts`), which read the cell kind and fall back to the house store. `houseCell()` is a `seed-silo`, so a seed buy finds the house Seed silo and an additive buy falls through to `world.additives` — one address, both stores, no optional.
+`buyBody` resolves the target with `seedStoreAt` / `additiveStoreAt`, which read the cell kind and fall back to the house store. `houseCell()` is a `seed-silo`, so a seed buy — annual `pack-*` including `pack-grass` — finds the house Seed silo and an additive buy falls through to `world.additives` — one address, both stores, no optional. `pack-grass` writes a `'base'` `SiloStack` `crop: 'grass'`.
 
 Full names the store it means: `'Seed silo full'` / `'Additive store full'` at the house, `'Seeding silo full'` / `'Additive silo full'` on a field silo. `rowState` mirrors that with `'field-silo-full'` / `'field-store-full'` and reads the store at `at`, never `world.silo` / `world.additives`.
 

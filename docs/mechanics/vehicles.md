@@ -154,7 +154,7 @@ Fires iff that tractor is seated **or** auto running, hitch present, synthesized
 
 `Act.setBoom { w: 3 | 5 }`: legal while this seat drives that tractor (hitch optional). Writes `boom`. Quad: no-op. Latest same `t` wins. Guest may.
 
-Seeding: empty tilled only. Hopper one seeds stack. Consume 1/plot. Plant same as hand.
+Seeding: empty tilled only. Hopper one seeds stack, grass included (`crop: 'grass'`). Consume 1/plot. Grass sows turf; every other annual plants as hand — [[mechanics/plants]] `plants.grass`.
 
 Spraying: `isTilled && fertilizer < FERT_PLOT_MAX`. Hopper one bag. Spend the gap, same as hand. `weed-spray` in the hopper is unrepresentable.
 
@@ -315,4 +315,6 @@ Assumption: `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference; add appends; auto chest/f
 
 `vehicles.route` — `World.routes` `World.nextRouteId`. Add appends. Cursor follows the current stop on remove/reorder. `n === 0` → cursor 0, `running` false. Assign `'none'` or a different id: cursor 0; `running` false if none or empty. Quad load/unload uses quad slots; tractor needs hitch (`vehicleCargo()`). Auto tick chest/freezer legal.
 
-`vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses. Seeding silo `SILO_FIELD_SEED_CAP` seeds, Additive silo `SILO_FIELD_ADDITIVE_CAP` liters, Produce silo `PRODUCE_SLOTS` slots of fruit, weed and grass only. `Act.takeStore` carries the store cell. No Buy row on a field silo.
+`vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses. Seeding silo `SILO_FIELD_SEED_CAP` seeds, grass `'base'` stack included, Additive silo `SILO_FIELD_ADDITIVE_CAP` liters, Produce silo `PRODUCE_SLOTS` slots of fruit, weed and grass only. `Act.takeStore` carries the store cell. Buy row as the house stores — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`.
+
+`vehicles.seeder` — Seeder hopper is one `{ kind: 'seeds' }` stack, `crop: 'grass'` legal. Boom on empty tilled: grass sows turf; every other annual plants as hand. Consume 1/plot.

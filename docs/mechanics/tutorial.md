@@ -59,7 +59,7 @@ Owned cells only.
 
 Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not increment.
 
-`holdingSeeds` = `hand.kind === 'hold'` and `hand.item.kind === 'seeds'`. Not `grass-seeds`. Not `tree-seed`.
+`holdingSeeds` = `hand.kind === 'hold'` and `hand.item.kind === 'seeds'`. `{ kind: 'seeds'; crop: 'grass' }` is seeds. Not `tree-seed`.
 
 `planted` = a cell `kind` is `growing` | `ripe` | `dead` | `rotten`.
 

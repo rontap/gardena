@@ -24,7 +24,7 @@ No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventM
 | `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
 | `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
 | `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder. `overlay-infused.svg` composites on infused faces, plus at top-right |
+| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder. `overlay-infused.svg` composites on infused faces, plus flush top-right border |
 | `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue / banner). Not notices — that column is React, [[ui/notices]] |
 
 `TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Mill / infuser viewBox `48×48`. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2 / 2×2.
@@ -200,7 +200,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.named-face` — `jamArt` and `spiritArt` are the only statement of which face a named product draws. A Variety that renames a jar or a bottle draws its own file; every other Variety of that crop falls back to the crop face. `faceKey` and `itemInner` both call them, so the atlas key and the HUD chrome can never disagree.
 
-`view.infused-overlay` — Infused face is the plain face plus one `overlay-infused.svg`. Plus sits top-right. HUD `itemInner`, drop, recipe yield, Stall row. Not a lens. Not Pixi wash. Not a pane per infused good. — [[mechanics/infusion]] `infusion.overlay`
+`view.infused-overlay` — Infused face is the plain face plus one `overlay-infused.svg`. Plus sits flush top-right border. HUD `itemInner`, drop, recipe yield, Stall row. Not a lens. Not Pixi wash. Not a pane per infused good. — [[mechanics/infusion]] `infusion.overlay`
 
 `view.round` — Litres and recipe amounts a person reads use `Math.visualRound` (nearest half). Percents stay `floor(* 100)`. [[ui/inspect]] [[ui/recipe]]
 

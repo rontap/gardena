@@ -41,7 +41,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CropId, FurnaceRecipe, Infusable, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
+import type { AnnualId, BarrelCrop, FurnaceRecipe, GrownCrop, Infusable, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
 import {
@@ -401,7 +401,7 @@ export class Grinder extends BaseBuilding {
   readonly kind = 'grinder' as const
   override readonly ticks = true
   override readonly hasted = true
-  crop: CropId | 'none' = 'none'
+  crop: GrownCrop | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   units = 0
@@ -425,7 +425,7 @@ export class Grinder extends BaseBuilding {
     if (crop === undefined || variety === undefined) return
     this.applyTake(crop, variety, fruitQuality(item), n)
   }
-  applyTake(crop: CropId, variety: VarietyId, quality: number, n: number): void {
+  applyTake(crop: GrownCrop, variety: VarietyId, quality: number, n: number): void {
     if (this.crop === 'none') {
       this.crop = crop
       this.variety = variety
@@ -825,7 +825,7 @@ export class Infuser extends Machine {
 export class ResearchStation extends Machine {
   readonly kind = 'station' as const
   override readonly ports = ['in'] as const
-  crop: CropId | 'none' = 'none'
+  crop: GrownCrop | 'none' = 'none'
   variety: VarietyId = 'base'
   quality = 0
   units = 0
@@ -845,7 +845,7 @@ export class ResearchStation extends Machine {
     if (item.kind !== 'fruit') return
     this.applyTake(item.crop, item.variety, item.quality, n)
   }
-  applyTake(crop: CropId, variety: VarietyId, quality: number, n: number): void {
+  applyTake(crop: GrownCrop, variety: VarietyId, quality: number, n: number): void {
     if (n <= 0) return
     if (this.crop === 'none') {
       this.crop = crop

@@ -58,7 +58,7 @@ import {
 import type { Drop } from '../drop.ts'
 import { Act, type Cmd } from '../log.ts'
 import { statsOf } from '../modifiers.ts'
-import { Plant } from '../plant.ts'
+import { Plant, Turf } from '../plant.ts'
 import { isSolid, isTilled, type Cell } from '../plot.ts'
 import { FERT_PLOT_MAX } from '../soil.ts'
 import { stepHold, type Sensor } from '../sensor.ts'
@@ -1036,7 +1036,12 @@ function boomCell(w: World, t: Trailer, at: Coord): void {
     if (t.hopper.kind === 'empty') return
     if (c.kind !== 'empty') return
     const seeds = t.hopper.item
-    w.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.variety, seeds.quality) })
+    if (seeds.crop === 'grass') {
+      const variant = Math.floor(w.rng.stream('gen').at(3, at.col, at.row) * 3) as 0 | 1 | 2
+      w.setCell(at, { kind: 'turf', soil: c.soil, turf: new Turf(variant) })
+    } else {
+      w.setCell(at, { kind: 'growing', soil: c.soil, plant: new Plant(seeds.crop, seeds.variety, seeds.quality) })
+    }
     seeds.count -= 1
     if (seeds.count === 0) t.hopper = { kind: 'empty' }
     return

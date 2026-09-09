@@ -31,7 +31,7 @@ import {
 } from '../../defs/items.ts'
 import type { CropClass } from '../../defs/crops.ts'
 import { caskGroup, tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, CropId, JamCrop, SkuId, SpiritKind, StillCrop } from '../ids.ts'
+import type { AnnualId, BarrelCrop, CropId, GrownCrop, JamCrop, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import {
   ANNUAL_IDS,
   BARREL_CROPS,
@@ -39,6 +39,7 @@ import {
   isAnnualId,
   JAM_CROPS,
   MILL_RECIPES,
+  PLANT_CROPS,
   SPIRIT_KINDS,
   STILL_CROPS,
   TREE_IDS,
@@ -126,11 +127,11 @@ function amountOf(item: Item): Amount {
   return { kind: 'units', n: 1 }
 }
 
-function fruitFace(crop: CropId, variety: VarietyId): Face {
+function fruitFace(crop: GrownCrop, variety: VarietyId): Face {
   return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: false, cut: false }
 }
 
-function baseFruit(crop: CropId): Face {
+function baseFruit(crop: GrownCrop): Face {
   return fruitFace(crop, 'base')
 }
 
@@ -230,19 +231,19 @@ function barrelRecipe({ crop, variety }: Pin<BarrelCrop>): Recipe {
   }
 }
 
-export const GRIND_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop =>
+export const GRIND_PINS: readonly Pin<GrownCrop>[] = [...PLANT_CROPS, ...TREE_IDS].flatMap(crop =>
   VARIETIES[crop].map(variety => ({ crop, variety })),
 )
 
-export const GRIND_VARIANT_PINS: readonly Pin<CropId>[] = GRIND_PINS.filter(
+export const GRIND_VARIANT_PINS: readonly Pin<GrownCrop>[] = GRIND_PINS.filter(
   p => isAnnualId(p.crop) && tierOf(p.variety) === 'variant',
 )
 
-export const GRIND_PLAIN_PINS: readonly Pin<CropId>[] = GRIND_PINS.filter(
+export const GRIND_PLAIN_PINS: readonly Pin<GrownCrop>[] = GRIND_PINS.filter(
   p => !(isAnnualId(p.crop) && tierOf(p.variety) === 'variant'),
 )
 
-function grindRow(pins: readonly Pin<CropId>[]): Recipe {
+function grindRow(pins: readonly Pin<GrownCrop>[]): Recipe {
   return {
     machine: 'grinder',
     inputs: [{ kind: 'any', faces: pins.map(p => fruitFace(p.crop, p.variety)), amount: units(1) }],
@@ -270,7 +271,7 @@ const COMPOST_FRUIT: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: [...ANNUAL_IDS, ...TREE_IDS].map(baseFruit),
+      faces: [...PLANT_CROPS, ...TREE_IDS].map(baseFruit),
       amount: units(COMPOST_NEED / COMPOST_VALUE.fruit),
     },
   ],
@@ -330,12 +331,11 @@ const FURNACE_GREEN: Recipe = {
       faces: [
         ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
         ...ANNUAL_IDS.map(c => seedFace(c, 'base')),
-        { kind: 'grass-seeds', count: 1 },
         ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t, variety: 'base' as const, quality: 0 })),
         { kind: 'weed', count: 1 },
         { kind: 'grass', count: 1 },
         ...CROP_CLASSES.map(cls => ({ kind: 'dead' as const, cls, count: 1 })),
-        ...[...ANNUAL_IDS, ...TREE_IDS].map(c => ({ kind: 'graft' as const, crop: c, variety: 'base' as const, quality: 0, count: 1 })),
+        ...[...PLANT_CROPS, ...TREE_IDS].map(c => ({ kind: 'graft' as const, crop: c, variety: 'base' as const, quality: 0, count: 1 })),
       ],
       amount: units(FURNACE_NEED / FURNACE_VALUE.green),
     },
@@ -349,7 +349,7 @@ const FURNACE_FRUIT: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: [...ANNUAL_IDS, ...TREE_IDS].map(baseFruit),
+      faces: [...PLANT_CROPS, ...TREE_IDS].map(baseFruit),
       amount: units(FURNACE_NEED / FURNACE_VALUE.fruit),
     },
   ],
@@ -492,11 +492,11 @@ const INFUSER_OIL: Recipe = {
   duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
 }
 
-export const STATION_PINS: readonly Pin<CropId>[] = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop =>
+export const STATION_PINS: readonly Pin<GrownCrop>[] = [...PLANT_CROPS, ...TREE_IDS].flatMap(crop =>
   VARIETIES[crop].filter(v => tierOf(v) === 'heirloom').map(variety => ({ crop, variety })),
 )
 
-function stationRecipe({ crop, variety }: Pin<CropId>): Recipe {
+function stationRecipe({ crop, variety }: Pin<GrownCrop>): Recipe {
   return {
     machine: 'station',
     inputs: [{ kind: 'one', face: fruitFace(crop, variety), amount: units(STATION_IN) }],

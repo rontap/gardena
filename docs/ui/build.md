@@ -17,7 +17,7 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 | Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar` | build | Machines that make goods, and the hangar your vehicles come home to. |
 | Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce | build | Boxes for what you picked, and the field silos that load trailers. |
 | Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | build | Signal, gates, readers. |
-| Land | Paving cobble → brick → paved · Fencing fence · Ground cover `pack-grass` | none | Paving, fencing, and grass seed. Click as many tiles as you like, Escape when done. |
+| Land | Paving cobble → brick → paved · Fencing fence | none | Paving and fencing. Click as many as you like, Escape when done. |
 
 Tools opens the dock: a shovel is the first thing bought and the rail is where it is found. That is why opening Build no longer peeks the `pipes` lens — Water does, on click.
 
@@ -27,9 +27,9 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 ## Filing
 
-`SHELVES` in `src/game/defs/shelf.ts` is the only source of category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. `pack-grass` is the one `seeds`-tab sku on a shelf; it gates on `unlock-landscaping` with paving and fencing, so it files under Land.
+`SHELVES` is the only source of category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. No `seeds`-tab sku sits on a shelf. `pack-grass` gates on `unlock-landscaping` and is sold at the Seed silo with the other packs — [[ui/store]].
 
-Every sku sits in exactly one shelf group, except the twelve the stores sell (`pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-grape` `pack-raspberry` `pack-sugar-cane` `pack-chilli` `buy-fertilizer` `buy-synth-fertilizer` `buy-weed-spray` `buy-sugar`) and `buy-and` `buy-or` `buy-water-system`, which sit in none — [[items/sensors]] [[ui/store]].
+Every sku sits in exactly one shelf group, except the packs and bags the stores sell (`pack-carrot` `pack-potato` `pack-wheat` `pack-tomato` `pack-grape` `pack-raspberry` `pack-sugar-cane` `pack-chilli` `pack-grass` `buy-fertilizer` `buy-synth-fertilizer` `buy-weed-spray` `buy-sugar`) and `buy-and` `buy-or` `buy-water-system`, which sit in none — [[items/sensors]] [[ui/store]].
 
 **File by primary output.** A shelf splits by what a thing emits — signal → Sensors, water → Water, goods → Automation, ground → Land, held work → Tools. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water.
 
@@ -47,14 +47,13 @@ Three per row, and **the card is one box everywhere**: same height, same width, 
 |---|---|---|
 | `not-researched` | `bg-ink/6 text-ink/35`, icon at 40% | Needs the **{research name}** research |
 | `cannot-afford` | same | Not enough money |
-| `inventory-full` | same | No room in the inventory |
 | `silo-full` | same | Seed silo full |
 | `store-full` | same | Additive store full |
 | `ok` | `bg-dirt`, `bg-ink` when armed | — |
 
 The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Never say "not researched" and leave the player guessing which one.
 
-`inventory-full` is `grass-seeds` only, when there is no merge slot and no empty house slot. The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently.
+The card never re-implements a fit rule: it asks the same numbers `buy` does, so a green card cannot fail silently. `pack-grass` is not a Build card.
 
 **Locked cards sort to the end of their own group.** The `locked` predicate is research gating alone — never money or capacity, which flip while the player hovers and would reshuffle cards under the cursor.
 
@@ -80,7 +79,7 @@ Escape in the field clears the query and goes no further. Escape with the field 
 
 ## Cluster
 
-`GHOST_SKUS` is derived from the shelves: every category whose `cluster` is `'build'`. That is Water, Automation, Storage, and Sensors. Tools and Land are `'none'` — tools go to hand, and paving, fencing and grass seed are paint tools, so a Rotate button that rotates nothing is worse than no button. [[ui/hud]] [[ui/place]]
+`GHOST_SKUS` is derived from the shelves: every category whose `cluster` is `'build'`. That is Water, Automation, Storage, and Sensors. Tools and Land are `'none'` — tools go to hand, and paving and fencing are paint tools, so a Rotate button that rotates nothing is worse than no button. [[ui/hud]] [[ui/place]]
 
 ## Arming
 
@@ -97,11 +96,10 @@ Build peek, no lock — [[ui/lens]]:
 | tab | lens |
 |---|---|
 | Water | `pipes` |
-| Automation, Storage | `vehicles` |
 | Sensors (`logic`) | `sensors` |
-| Tools, Land | restore the lens that was on before the peek |
+| Automation, Storage, Tools, Land | restore the lens that was on before the peek |
 
-Automation holds the hangar and every machine that carries a pad; Storage holds the chests, freezers and field silos a trailer docks at. Both are what the vehicle-interaction lens is for.
+Automation peeks no lens. Storage peeks no lens. Water still peeks pipes. Sensors still peeks sensors.
 
 A locked lens is not touched. Twitching off a peek tab, closing Build, or leaving it restores that saved lens. `toolLens` still wins while a sku is armed.
 
@@ -113,6 +111,6 @@ One helper in `App` owns leave, and every path calls it — the menu and multipl
 
 ## Gates
 
-`skuShown` / `skuOpen` from [[mechanics/research]]. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-grinder`, buy `unlock-furnace`. `buy-infuser` show `unlock-preservatives`, buy `unlock-infusion`. `buy-research-station` show and buy `unlock-crop-variants`. `buy-better-pickaxe` and `buy-chainsaw` show + buy `unlock-hardened-tools`. `buy-axe` show + buy `unlock-pickaxe`. `buy-hangar` shows `unlock-irrigation`, buys `unlock-vehicles`. The three silo SKUs show `unlock-vehicles`, buy `unlock-silos`. Lever, button, lamp, pulser, counter, water, fert, harvest, day, variety, weather: show + buy `unlock-sensors`. `buy-water-system` `skuShown` false. Logic gate / NOT: show `unlock-sensors`, buy `unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. One valve. `unlock-smart-irrigation` gives every valve a signal `in`. `buy-vehicle-detector` (player **Pressure plate**) shows and buys `unlock-sensors`, `need: ['unlock-vehicles']`. `buy-traffic-light` shows `unlock-sensors`, `need: ['unlock-dispatch']`. Locked callout names **Automated dispatch**. `buy-pipe` `buy-tap` show `start`, buy `unlock-irrigation`. `buy-rain-tank` show + buy `start`. `buy-pumpjack` show `start`, `buy-well` show `unlock-irrigation`, both buy `unlock-water-storage`. `buy-compost-box` shows `start`, buys `start`. `pack-grass`, `buy-fence` and all four paving SKUs show from `start`, buy after `unlock-landscaping`. `skuDesc` [[ui/sensors]].
+`skuShown` / `skuOpen` from [[mechanics/research]]. `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` `buy-freezer` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-grinder`, buy `unlock-furnace`. `buy-infuser` show `unlock-preservatives`, buy `unlock-infusion`. `buy-research-station` show and buy `unlock-crop-variants`. `buy-better-pickaxe` and `buy-chainsaw` show + buy `unlock-hardened-tools`. `buy-axe` show + buy `unlock-pickaxe`. `buy-hangar` shows `unlock-irrigation`, buys `unlock-vehicles`. The three silo SKUs show `unlock-vehicles`, buy `unlock-silos`. Lever, button, lamp, pulser, counter, water, fert, harvest, day, variety, weather: show + buy `unlock-sensors`. `buy-water-system` `skuShown` false. Logic gate / NOT: show `unlock-sensors`, buy `unlock-advanced-sensors`, `need: []`. Locked callout: Needs the **Advanced sensors** research. One valve. `unlock-smart-irrigation` gives every valve a signal `in`. `buy-vehicle-detector` (player **Pressure plate**) shows and buys `unlock-sensors`, `need: ['unlock-vehicles']`. `buy-traffic-light` shows `unlock-sensors`, `need: ['unlock-dispatch']`. Locked callout names **Automated dispatch**. `buy-pipe` `buy-tap` show `start`, buy `unlock-irrigation`. `buy-rain-tank` show + buy `start`. `buy-pumpjack` show `start`, `buy-well` show `unlock-irrigation`, both buy `unlock-water-storage`. `buy-compost-box` shows `start`, buys `start`. `buy-fence` and all four paving SKUs show from `start`, buy after `unlock-landscaping`. `pack-grass` is not on this shelf — [[ui/store]]. `skuDesc` [[ui/sensors]].
 
 Assumption: `rowState` never returns `need-skill`. Tools is the first tab because it is the first purchase; the mount `onShelf` therefore peeks no lens.

@@ -10,6 +10,7 @@ import {
   FERT_BAG_LITERS,
   FREEZER_LARGE_SLOTS,
   CHOP_GRAFTS,
+  GRASS_PACK,
   GRIND_MAX,
   GRIND_MIN,
   grindMinAt,
@@ -26,7 +27,7 @@ import {
 import { BETTER_QUALITY, purposeMul, qualityMul, VARIETIES, type VarietyId } from '../defs/varieties.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
-import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from './ids.ts'
+import { ANNUAL_IDS, packSku, type AnnualId, type PlantCrop, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
@@ -1108,7 +1109,7 @@ describe('1.8 permits and points', () => {
 })
 
 describe('1.9 stacks', () => {
-  function ripeAt(w: World, at: { col: number; row: number }, crop: AnnualId, variety: VarietyId = 'base'): void {
+  function ripeAt(w: World, at: { col: number; row: number }, crop: PlantCrop, variety: VarietyId = 'base'): void {
     w.setCell(at, { kind: 'ripe', soil: bed(), plant: new Plant(crop, variety, 0) })
   }
 
@@ -1247,7 +1248,7 @@ describe('1.9 stacks', () => {
 })
 
 describe('inventory.silo-buy', () => {
-  test('Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Same fail / merge / shop-stream as shop. No pack: no Buy.', () => {
+  test("Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy. `pack-chilli` after `unlock-infusion`. `pack-grass` after `unlock-landscaping`, `GRASS_PACK`, `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0 }`.", () => {
     expect(packSku('vanilla')).toBeUndefined()
     expect(packSku('carrot')).toBe('pack-carrot')
     const sku: SkuId = 'pack-carrot'
@@ -1270,6 +1271,25 @@ describe('inventory.silo-buy', () => {
     expect(full.buy(sku)).toBe('Seed silo full')
     full.buyPacks(sku)
     expect(siloCount(full, 'carrot', 'base')).toBe(SILO_SEED_CAP)
+
+    expect(SKUS['pack-chilli']).toMatchObject({ unlock: 'unlock-infusion', show: 'unlock-infusion' })
+    const chilli = new World(1)
+    chilli.money = 50
+    expect(chilli.buy('pack-chilli')).toBeUndefined()
+    expect(siloCount(chilli, 'chilli', 'base')).toBe(0)
+    chilli.done.add('unlock-infusion')
+    expect(chilli.buy('pack-chilli')).toBeUndefined()
+    expect(siloCount(chilli, 'chilli', 'base')).toBe(5)
+
+    expect(skuItem('pack-grass')).toEqual({ kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK })
+    const grass = new World(1)
+    grass.money = 50
+    expect(grass.buy('pack-grass')).toBeUndefined()
+    expect(siloCount(grass, 'grass', 'base')).toBe(0)
+    grass.done.add('unlock-landscaping')
+    expect(grass.buy('pack-grass')).toBeUndefined()
+    const st = grass.silo.seeds.find(s => s.crop === 'grass' && s.variety === 'base')
+    expect(st).toEqual({ crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK })
   })
 })
 
@@ -1852,7 +1872,7 @@ describe('plants.chilli', () => {
 })
 
 describe('plants.annual', () => {
-  test('`Plant.crop` is `AnnualId`. `AnnualId` is carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.', () => {
+  test("`AnnualId` is carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane grass. `Plant.crop` is `Exclude<AnnualId, 'grass'>`. Olive is `TreeId`. Tree seed on a tilled plot is a no-op.", () => {
     expect(ANNUAL_IDS).toEqual([
       'carrot',
       'potato',
@@ -1863,20 +1883,105 @@ describe('plants.annual', () => {
       'vanilla',
       'chilli',
       'sugar-cane',
+      'grass',
     ])
     expect(CROPS.olive.id).toBe('olive')
     expect(CROPS.chilli.cls).toBe('fruit')
+    expect('grass' in CROPS).toBe(false)
+    const w = new World(1)
+    w.setCell(AT, { kind: 'empty', soil: bed() })
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0 } }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(w.cell(AT).kind).toBe('empty')
   })
 })
 
 describe('plants.packs', () => {
-  test("Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). `pack-chilli` exists. No tree pack. No olive pack. No vanilla pack.", () => {
+  test("Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). `pack-chilli` exists. `packSku('grass')` is `pack-grass`. No tree pack. No olive pack. No vanilla pack.", () => {
     expect(packSku('vanilla')).toBeUndefined()
     expect(packSku('chilli')).toBe('pack-chilli')
     expect(packSku('carrot')).toBe('pack-carrot')
+    expect(packSku('grass')).toBe('pack-grass')
     expect(Object.keys(SKUS).includes('pack-olive')).toBe(false)
     expect(Object.keys(SKUS).includes('pack-vanilla')).toBe(false)
     expect(skuItem('pack-chilli')).toEqual({ kind: 'seeds', crop: 'chilli', variety: 'base', quality: 0, count: 5 })
+    expect(skuItem('pack-grass')).toEqual({ kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK })
+  })
+})
+
+describe('plants.grass', () => {
+  test("`'grass'` is `AnnualId`, `'base'` only. Item `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0; count }`. `Plant.crop` excludes `'grass'`. Sow / plant / seeder on `empty` writes turf, never a `Plant`. Turf tick and untilled cover unchanged. `pack-grass` sold at the Seed silo after `unlock-landscaping`. No `{ kind: 'grass-seeds' }`.", () => {
+    expect(ANNUAL_IDS.includes('grass')).toBe(true)
+    expect(VARIETIES.grass).toEqual(['base'])
+    expect('grass' in CROPS).toBe(false)
+    expect(skuItem('pack-grass')).toEqual({ kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK })
+    const w = new World(1)
+    w.money = 50
+    expect(w.buy('pack-grass')).toBeUndefined()
+    expect(siloCount(w, 'grass', 'base')).toBe(0)
+    w.done.add('unlock-landscaping')
+    expect(w.buy('pack-grass')).toBeUndefined()
+    expect(siloCount(w, 'grass', 'base')).toBe(GRASS_PACK)
+    w.takeSilo(w.houseCell(), 'grass', 'base')
+    const hand = w.seats[0].hand
+    expect(hand).toEqual({
+      kind: 'hold',
+      item: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK },
+    })
+    w.setCell(AT, { kind: 'empty', soil: bed() })
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.click(AT)
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(w.cell(AT).kind).toBe('turf')
+  })
+})
+
+describe('inventory.grass-silo', () => {
+  test("`pack-grass` is not on Build. After `unlock-landscaping` it is sold at the Seed silo on the same path as `pack-chilli`: column when shown, Buy / bulk Buy, lands in the silo as a `'base'` stack, take to hand, walk-up deposits, field Seeding silos included. Item `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0; count }`. `packSku('grass')` is `pack-grass`. No `SeedStore.grass`. No `Act.takeStore` `k: 'grass'`. Take is `k: 'silo'` `c: 'grass'` `r: 'base'`. No extra grass store type. Sow is turf.", () => {
+    expect(SHELF_SKUS.includes('pack-grass')).toBe(false)
+    expect(packSku('grass')).toBe('pack-grass')
+    const w = new World(1)
+    expect('grass' in w.silo).toBe(false)
+    w.money = 50
+    w.done.add('unlock-landscaping')
+    expect(w.buy('pack-grass')).toBeUndefined()
+    expect(siloCount(w, 'grass', 'base')).toBe(GRASS_PACK)
+    w.takeSilo(w.houseCell(), 'grass', 'base')
+    expect(w.seats[0].hand).toEqual({
+      kind: 'hold',
+      item: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK },
+    })
+    expect(w.log.some(c => c.a === Act.takeStore && c.k === 'silo' && c.c === 'grass' && c.r === 'base')).toBe(true)
+    const house = w.houseCell()
+    w.seats[0].actor.x = house.col + 0.5
+    w.seats[0].actor.y = house.row + 0.5
+    w.enqueue({ act: 'silo', at: house })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(siloCount(w, 'grass', 'base')).toBe(GRASS_PACK)
+    expect(w.seats[0].hand.kind).toBe('empty')
+
+    const field = new World(1)
+    field.unlockAll()
+    field.money = 99999
+    const at = { col: 6, row: 20 }
+    field.buy('buy-silo-seed')
+    field.confirmPlace(at)
+    expect(field.buyInto(at, 'pack-grass')).toBeUndefined()
+    const silo = field.cell(at)
+    expect(silo.kind).toBe('silo-seed')
+    if (silo.kind !== 'silo-seed') throw new Error('silo')
+    expect(silo.seeds.find(st => st.crop === 'grass')).toEqual({
+      crop: 'grass',
+      variety: 'base',
+      quality: 0,
+      count: GRASS_PACK,
+    })
+    field.buyPacksInto(at, 'pack-grass')
+    expect(silo.seeds.find(st => st.crop === 'grass')?.count).toBe(GRASS_PACK * 6)
   })
 })
 

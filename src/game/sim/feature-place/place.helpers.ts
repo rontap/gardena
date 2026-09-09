@@ -433,7 +433,6 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'delete' ||
     made.kind === 'tile' ||
     made.kind === 'fence' ||
-    made.kind === 'grass-seeds' ||
     made.kind === 'mill' ||
     made.kind === 'jam-machine' ||
     made.kind === 'still' ||

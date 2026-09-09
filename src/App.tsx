@@ -453,9 +453,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
     recapDayRef.current = undefined
     setRecapDay(undefined)
     consignRevision.current = next.consignRevision
+    const from = localRef.current
     localRef.current = next.local
-    rosterPrev.current = rosterOf(next)
-    rosterSeq.current = 0
+    if (from === 0 || next.local === 0) {
+      rosterPrev.current = rosterOf(next)
+      rosterSeq.current = 0
+    }
     setRosterRows([])
     if (next.local === 0) bootCheat(next)
     setWorld(next)
@@ -1426,8 +1429,6 @@ function Dash({
 
 const BUILD_LENS: Partial<Record<ShelfId, Lens>> = {
   water: 'pipes',
-  automation: 'vehicles',
-  storage: 'vehicles',
   logic: 'sensors',
 }
 

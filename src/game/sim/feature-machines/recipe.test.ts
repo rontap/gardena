@@ -20,7 +20,7 @@ import {
   STILL_WATER,
   SUGAR_BAG,
 } from '../../defs/items.ts'
-import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, STILL_CROPS, TREE_IDS, type CropId, type JamCrop, type MillRecipe } from '../ids.ts'
+import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, PLANT_CROPS, STILL_CROPS, TREE_IDS, type CropId, type GrownCrop, type JamCrop, type MillRecipe } from '../ids.ts'
 import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
 import { barrelNeed, jamSugar, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from '../building.ts'
@@ -73,7 +73,7 @@ describe('recipes.table', () => {
     expect(recipesOf('furnace').length).toBe(7)
     expect(recipesOf('infuser').length).toBe(4)
     expect(recipesOf('station').length).toBe(
-      ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).flatMap(c => VARIETIES[c]).filter(v => tierOf(v) === 'heirloom').length,
+      ([...PLANT_CROPS, ...TREE_IDS] as CropId[]).flatMap(c => VARIETIES[c]).filter(v => tierOf(v) === 'heirloom').length,
     )
   })
 
@@ -148,7 +148,7 @@ describe('recipes.table', () => {
     const [plain, variant] = recipesOf('grinder')
     expect(plain.out).toMatchObject({ kind: 'range', min: GRIND_MIN, max: GRIND_MAX })
     expect(variant.out).toMatchObject({ kind: 'range', min: GRIND_MIN, max: GRIND_MAX })
-    const pins = [...ANNUAL_IDS, ...TREE_IDS].flatMap(crop => VARIETIES[crop].map(v => [crop, v]))
+    const pins = [...PLANT_CROPS, ...TREE_IDS].flatMap(crop => VARIETIES[crop].map(v => [crop, v]))
     expect(GRIND_PINS.map(p => [p.crop, p.variety])).toEqual(pins)
     expect(GRIND_VARIANT_PINS.every(p => ANNUAL_IDS.some(a => a === p.crop) && tierOf(p.variety) === 'variant')).toBe(true)
     expect(GRIND_PLAIN_PINS).toEqual(GRIND_PINS.filter(p => !GRIND_VARIANT_PINS.includes(p)))
@@ -197,7 +197,7 @@ describe('recipes.table', () => {
     expect(rotten.inputs[0].kind).toBe('any')
     expect(ash.inputs[0].kind).toBe('one')
     if (fruit.inputs[0].kind !== 'any' || green.inputs[0].kind !== 'any' || rotten.inputs[0].kind !== 'any') return
-    expect(fruit.inputs[0].faces.map(f => (f.kind === 'fruit' ? f.crop : ''))).toEqual([...ANNUAL_IDS, ...TREE_IDS])
+    expect(fruit.inputs[0].faces.map(f => (f.kind === 'fruit' ? f.crop : ''))).toEqual([...PLANT_CROPS, ...TREE_IDS])
     expect(green.inputs[0].faces.map(f => f.kind)).toEqual(['weed', 'grass'])
     expect(rotten.inputs[0].faces.map(f => (f.kind === 'rotten' ? f.cls : ''))).toEqual(['root', 'grain', 'fruit'])
     expect(ash.inputs[0].kind === 'one' && ash.inputs[0].face.kind).toBe('ash')
@@ -365,7 +365,7 @@ describe('recipes.haste', () => {
   })
 })
 
-function fruit(crop: CropId): Face {
+function fruit(crop: GrownCrop): Face {
   return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 0.2, bio: true, cut: false }
 }
 
@@ -458,7 +458,7 @@ describe('machines.recipe-source', () => {
   })
 
   test('`recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop. It never matches the grinder, furnace or mixed-still rows, which take many crops.', () => {
-    const fruit = (crop: CropId, variety: VarietyId) =>
+    const fruit = (crop: GrownCrop, variety: VarietyId) =>
       ({ kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: true, cut: false }) as const
     expect(recipesUsing(fruit('wheat', 'red-fife')).map(r => r.machine)).toEqual(['mill', 'still'])
     const marzano = recipesUsing(fruit('tomato', 'san-marzano'))

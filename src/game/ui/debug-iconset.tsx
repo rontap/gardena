@@ -1,16 +1,16 @@
-import { ANNUAL_IDS, TREE_IDS, type CropId } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, type GrownCrop } from '../sim/ids.ts'
 import { CROPS, FRUIT, TREE_PROP, TREE_SEED_ART, groupInner, svgGroupIds, svgViewBox } from '../view/svgs.ts'
 import { Chrome } from './frame.tsx'
 
-type File = { file: string; crop: CropId; raw: string }
+type File = { file: string; crop: GrownCrop; raw: string }
 
-const FRUIT_FILES: File[] = ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).map(crop => ({
+const FRUIT_FILES: File[] = ([...PLANT_CROPS, ...TREE_IDS] as GrownCrop[]).map(crop => ({
   file: `fruit-${crop}`,
   crop,
   raw: FRUIT[crop],
 }))
 
-const GROWTH_FILES: File[] = ANNUAL_IDS.map(crop => ({
+const GROWTH_FILES: File[] = PLANT_CROPS.map(crop => ({
   file: `crop-${crop}`,
   crop,
   raw: CROPS[crop],
@@ -88,7 +88,7 @@ function Seeds() {
     <div className="flex flex-col gap-2">
       <div className="font-display text-sm">seeds</div>
       <div className="grid grid-cols-4 gap-2">
-        {ANNUAL_IDS.flatMap(crop => {
+        {PLANT_CROPS.flatMap(crop => {
           const raw = CROPS[crop]
           const file = `crop-${crop}`
           return svgGroupIds(raw)

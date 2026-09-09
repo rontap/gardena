@@ -317,11 +317,11 @@ import type { CropClass } from '../defs/crops.ts'
 import { caskGroup, tierOf, VARIETIES, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
-import { ANNUAL_IDS, TREE_IDS, type CaskId, type CropId, type JamCrop, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type SpiritKind, type TileId, type TreeId } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, type CaskId, type GrownCrop, type JamCrop, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type SpiritKind, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/feature-contracts/market.h.ts'
 
-export const CROPS: { readonly [K in CropId]: string } = {
+export const CROPS: { readonly [K in GrownCrop]: string } = {
   carrot,
   potato,
   wheat,
@@ -337,7 +337,7 @@ export const CROPS: { readonly [K in CropId]: string } = {
   cherry: apple,
 }
 
-export const FRUIT: { readonly [K in CropId]: string } = {
+export const FRUIT: { readonly [K in GrownCrop]: string } = {
   carrot: fruitCarrot,
   potato: fruitPotato,
   wheat: fruitWheat,
@@ -370,7 +370,7 @@ export function varietyGroup(variety: VarietyId): VarietyGroup {
   return tierOf(variety)
 }
 
-export const GRAFT_CUTTING: { readonly [K in CropId]: TreeId } = {
+export const GRAFT_CUTTING: { readonly [K in GrownCrop]: TreeId } = {
   apple: 'apple',
   apricot: 'apricot',
   olive: 'olive',
@@ -386,7 +386,7 @@ export const GRAFT_CUTTING: { readonly [K in CropId]: TreeId } = {
   'sugar-cane': 'apple',
 }
 
-export function graftSpecies(crop: CropId): TreeId {
+export function graftSpecies(crop: GrownCrop): TreeId {
   return GRAFT_CUTTING[crop]
 }
 
@@ -415,7 +415,7 @@ export function spiritArt(spirit: SpiritKind, variety: VarietyId): SpiritArt {
   return spirit === 'brandy' && variety === 'klosterneuburger' ? 'spirit-palinka' : `spirit-${spirit}`
 }
 
-export function cropInner(id: CropId, stage: string): string {
+export function cropInner(id: GrownCrop, stage: string): string {
   return stageOnly(CROPS[id], stage)
 }
 
@@ -467,7 +467,6 @@ export function itemInner(item: Face): string {
   if (item.kind === 'delete') return svgInner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return svgInner(itemGrass)
-  if (item.kind === 'grass-seeds') return turfInner('grow')
   if (item.kind === 'rotten') return rottenInner(item.cls)
   if (item.kind === 'dead') return deadInner(item.cls)
   if (item.kind === 'shovel') return SHOVEL_ART[item.id]
@@ -482,7 +481,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'weed-spray') return svgInner(itemWeedSpray)
   if (item.kind === 'synth') return svgInner(itemSynth)
   if (item.kind === 'compost') return svgInner(itemCompost)
-  if (item.kind === 'seeds') return cropInner(item.crop, ripeGroup(item.variety))
+  if (item.kind === 'seeds') return item.crop === 'grass' ? turfInner('grow') : cropInner(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
   if (item.kind === 'sugar') return svgInner(itemSugar)
   if (item.kind === 'spirit') return withInfused(item, SPIRIT_ART[spiritArt(item.spirit, item.variety)])
@@ -966,11 +965,11 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   lucky: svgInner(skillLucky),
 }
 
-export function fruitInner(crop: CropId): string {
+export function fruitInner(crop: GrownCrop): string {
   return stageOnly(FRUIT[crop], 'base')
 }
 
-const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: CropId } = {
+const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: GrownCrop } = {
   'better-potato': 'potato',
   'better-wheat': 'wheat',
   'better-tomato': 'tomato',
@@ -1220,7 +1219,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
     ...VARIETIES[t].map(v => treeStage(t, 'ripe', v)),
   ]),
   ...Object.values(TREE_SEED_ART),
-  ...(ANNUAL_IDS as CropId[]).flatMap(c => [
+  ...(PLANT_CROPS as GrownCrop[]).flatMap(c => [
     ...CROP_STAGES.map(s => cropInner(c, s)),
     ...VARIETIES[c].map(v => cropInner(c, ripeGroup(v))),
   ]),

@@ -19,9 +19,9 @@ Day sensor reads `clock.phase()` — [[mechanics/sensors]].
 
 ## Seam / recap
 
-On seam, before any field tick of the new day:
+On seam, before any field tick of the new day. Ended day is `clock.day - 1` after increment.
 
-1. `money += DAY_STIPEND`.
+1. `money += stipendOf(endedDay)`.
 2. `money -= tax()` — [[mechanics/expansion]]. May go negative.
 3. Pump bill: `bill = pumpLiters × PUMP_COST_PER_L × costMul(ended weather)`, `money -= bill`, `recap.water = bill`, `pumpLiters = 0`. Ended weather is `weather(clock.day - 1)` after increment. Money may go negative. Recap always shows Water line. Mid-day money unchanged. — [[mechanics/weather]]
 4. Burrow mint: `+1` per owned chunk on an eligible cell, or skip if none — [[mechanics/burrow]] `burrow.day`.
@@ -35,7 +35,20 @@ On seam, before any field tick of the new day:
 
 `World.tick` does not return early on recap. Live `Seam` is `{ kind: 'play' }`. Dump `Seam` is always `{ kind: 'play' }`.
 
-`Recap`: ended `day`, `money` after tax and pump bill, `stipend`, `died`, `harvests`, `research` finished that day, `tax`, `water` (pump bill), `contracts: HistoryEntry[]`. `water` required. Recap shows contract outcomes and that a new board is up — [[mechanics/contracts]].
+`Recap`: ended `day`, `money` after tax and pump bill, `stipend` (`stipendOf` of that ended day), `died`, `harvests`, `research` finished that day, `tax`, `water` (pump bill), `contracts: HistoryEntry[]`. `water` required. `stipend` required. Recap shows contract outcomes and that a new board is up — [[mechanics/contracts]]. Ledger stipend line omitted when `stipend === 0` — [[ui/docks]].
+
+## Stipend
+
+Identifier `stipendOf`. `stipendOf(endedDay)` — derived from `STIPEND` bands — preference.
+
+| ended day | amount |
+|---|---|
+| 1–3 | 12 |
+| 4–6 | 6 |
+| 7–10 | 3 |
+| else | 0 |
+
+`money += stipendOf(endedDay)` at the seam. `Recap.stipend` is that amount. Else 0: money unchanged by stipend, recap line omitted. Player copy uses fill from these defs, not digits. Ledger label [[ui/docks]].
 
 `World.recapAt(day): Recap` — total; missing day throws. `World.seeRecap(day)` removes `day` from `recapUnseen`; no-op if absent. Not a `Cmd`. Ping.
 
@@ -51,14 +64,16 @@ Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]
 
 ## End day
 
-Cheat `Act.cheat` `{ k: 'day' }`. Sets `clock.t = DAY_SECONDS`. Does not tick the remaining day. Next `World.tick` seams through `Clock.advance` — stipend, tax, pump bill, burrow mint, tree seam, recap append, grant, banner, play. Host only. — [[ui/cheat]]
+Cheat `Act.cheat` `{ k: 'day' }`. Sets `clock.t = DAY_SECONDS`. Does not tick the remaining day. Next `World.tick` seams through `Clock.advance` — `stipendOf`, tax, pump bill, burrow mint, tree seam, recap append, grant, banner, play. Host only. — [[ui/cheat]]
 
 ## Invariants
 
-`day.seam` — Seam at `t >= DAY_SECONDS` runs stipend, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 4`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.
+`day.seam` — Seam at `t >= DAY_SECONDS` runs `stipendOf`, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 4`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.
+
+`day.stipend` — `stipendOf(endedDay)` is 12 on ended days 1–3, 6 on 4–6, 3 on 7–10, else 0. `Recap.stipend` stores that. Recap ledger omits the stipend line when 0. Identifier `stipendOf`. Bands `STIPEND` — preference.
 
 `day.phases` — Phases: sunrise, day, sunset, twilight by share of `DAY_SECONDS`. `'night'` is not a `DayPhase`.
 
-`day.recap` — Recap persists on `World.recaps` (one per ended day). Grant is the seam, not Close. Popup opens from a Command Center recap notice (App `recapDay`, not `World.seam`). Close / Esc / backdrop is `seeRecap(day)`. `Act.dismissRecap` is a no-op.
+`day.recap` — Recap persists on `World.recaps` (one per ended day). Grant is the seam, not Close. Popup opens from a Command Center recap notice (App `recapDay`, not `World.seam`). Close / Esc / backdrop is `seeRecap(day)`. `Act.dismissRecap` is a no-op. Stipend line omitted when `Recap.stipend === 0`.
 
 `day.end-day` — End day sets `clock.t = DAY_SECONDS`. No remaining-field sim. Next tick seams.

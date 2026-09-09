@@ -17,7 +17,7 @@ import { DAY_SECONDS } from './clock.ts'
 import { hash, Rng } from './rng.ts'
 import { BIG_TICK, Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
 import { forecastWeather, pumpCostMul, soakDelta, type WeatherKind } from './weather.ts'
-import { DAY_STIPEND, DT_MAX, World } from './world.ts'
+import { DT_MAX, stipendOf, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -111,7 +111,7 @@ describe('weather', () => {
     const bill = 100 * PUMP_COST_PER_L * pumpCostMul(ended)
     expect(w.seam.kind).toBe('play')
     expect(w.recapAt(1).water).toBeCloseTo(bill, 10)
-    expect(w.recapAt(1).money).toBeCloseTo(mid + DAY_STIPEND - w.recapAt(1).tax - bill, 10)
+    expect(w.recapAt(1).money).toBeCloseTo(mid + stipendOf(1) - w.recapAt(1).tax - bill, 10)
     expect(w.pumpLiters).toBe(0)
     const dry = new World(1)
     toDay(dry, 'dry')
@@ -122,7 +122,7 @@ describe('weather', () => {
     const dryBill = 50 * PUMP_COST_PER_L * pumpCostMul('dry')
     expect(dry.seam.kind).toBe('play')
     expect(dry.recapAt(dry.clock.day - 1).water).toBeCloseTo(dryBill, 10)
-    expect(dry.money).toBeCloseTo(before + DAY_STIPEND - dry.recapAt(dry.clock.day - 1).tax - dryBill, 8)
+    expect(dry.money).toBeCloseTo(before + stipendOf(dry.clock.day - 1) - dry.recapAt(dry.clock.day - 1).tax - dryBill, 8)
     const broke = new World(1)
     broke.pumpLiters = 10000
     broke.clock.t = DAY_SECONDS - 0.001

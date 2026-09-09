@@ -102,7 +102,6 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       { label: 'Paving', skus: ['buy-tile-asphalt', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved'] },
       { label: 'Fencing', skus: ['buy-fence'] },
-      { label: 'Ground cover', skus: ['pack-grass'] },
     ],
   },
 ]

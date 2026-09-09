@@ -300,6 +300,14 @@ describe('notices.roster', () => {
     expect(rosterNotices([host], [host], 0, true, 0).rows).toEqual([])
     expect(rosterNotices([host], [host, ada], 0, false, 0).rows).toEqual([])
     expect(rosterNotices([host], [host, ada], 1, true, 0).rows).toEqual([])
+    expect(rosterNotices([host], [host, adaAway], 0, true, 0).rows).toEqual([])
+
+    const bea: RosterSeat = { id: 2, name: 'Bea', presence: 'in', napping: false }
+    const dumpAfterJoin = [host, ada, bea]
+    expect(rosterNotices(dumpAfterJoin, dumpAfterJoin, 1, true, 0).rows).toEqual([])
+    const peerJoin = rosterNotices([host, ada], dumpAfterJoin, 1, true, 0)
+    expect(peerJoin.rows.map(r => r.kind)).toEqual(['joined'])
+    expect(peerJoin.rows[0].face).toEqual({ kind: 'hat', seat: 2 })
 
     const joined = rosterNotices([host], [host, ada], 0, true, 0)
     expect(joined.rows).toHaveLength(1)

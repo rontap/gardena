@@ -63,7 +63,7 @@
   "notices_show": "Show",
   "notices_title": "Command Center",
   "notices_recap": "Day {n} Finished",
-  "notices_joined": "<needs-game-text-writer>{name} joined",
-  "notices_quit": "<needs-game-text-writer>{name} left",
-  "notices_desynced": "<needs-game-text-writer>{name} drifted"
+  "notices_joined": "{name} joined",
+  "notices_quit": "{name} left",
+  "notices_desynced": "{name} drifted"
 }

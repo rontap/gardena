@@ -8,7 +8,7 @@ import { drivesOut, isSensor, ownsPort, portXY, sameEnd, watchedCoords, wireCont
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
 import { goodness } from '../../sim/noise.ts'
-import { RANGE_SENSOR_SKUS, type CropId } from '../../sim/ids.ts'
+import { RANGE_SENSOR_SKUS, type GrownCrop } from '../../sim/ids.ts'
 import { VARIETY, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
@@ -42,7 +42,7 @@ const BAND_TINT: { readonly [K in Band]: number } = {
 
 const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
 
-function plantBands(crop: CropId, tier: VarietyTier, soil: Soil): { water: Band; fert: Band } {
+function plantBands(crop: GrownCrop, tier: VarietyTier, soil: Soil): { water: Band; fert: Band } {
   return {
     water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, tier)),
     fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, tier)),

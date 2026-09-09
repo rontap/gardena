@@ -64,7 +64,9 @@ export function Recap({
                 </div>
               )}
               <div className="mt-3 border-t border-ink/20 pt-2 text-base text-ink">
-                <Line label={m.recap_stipend()} sign="+" n={recap.stipend} />
+                {recap.stipend > 0 && (
+                  <Line label={m.recap_stipend()} sign="+" n={recap.stipend} />
+                )}
                 <Line label={m.recap_tax()} sign="−" n={recap.tax} />
                 <Line label={m.names_face_water()} sign="−" n={recap.water} />
               </div>

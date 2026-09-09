@@ -60,6 +60,7 @@ import type {
   CaskId,
   ContainerId,
   CropId,
+  GrownCrop,
   JamCrop,
   PickaxeId,
   ShovelId,
@@ -72,7 +73,7 @@ import type { Modifier } from './modifiers.ts'
 import { never } from './util.ts'
 
 export type FruitStack = {
-  crop: CropId
+  crop: GrownCrop
   variety: VarietyId
   quality: number
   count: number
@@ -90,10 +91,9 @@ export type Item =
   | { kind: 'synth'; liters: number; capacityLiters: number }
   | { kind: 'compost'; liters: number; capacityLiters: number }
   | { kind: 'seeds'; crop: AnnualId; variety: VarietyId; quality: number; count: number }
-  | { kind: 'grass-seeds'; count: number }
-  | { kind: 'fruit'; crop: CropId; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean; cut: boolean }
+  | { kind: 'fruit'; crop: GrownCrop; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean; cut: boolean }
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
-  | { kind: 'graft'; crop: CropId; variety: VarietyId; quality: number; count: number }
+  | { kind: 'graft'; crop: GrownCrop; variety: VarietyId; quality: number; count: number }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
   | { kind: 'spirit'; spirit: SpiritKind; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
   | { kind: 'cask'; cask: CaskId; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
@@ -171,7 +171,6 @@ export type Face =
 
 export function compostValue(item: Item): number {
   if (item.kind === 'seeds') return COMPOST_VALUE.seeds * item.count
-  if (item.kind === 'grass-seeds') return COMPOST_VALUE.seeds * item.count
   if (item.kind === 'fruit') {
     return COMPOST_VALUE.fruit * item.count
   }
@@ -188,7 +187,6 @@ export function furnaceValue(item: Item): number {
   if (
     item.kind === 'rotten' ||
     item.kind === 'seeds' ||
-    item.kind === 'grass-seeds' ||
     item.kind === 'weed' ||
     item.kind === 'grass' ||
     item.kind === 'dead'
@@ -277,8 +275,10 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'fertilizer') return m.names_item_fertilizer()
   if (it.kind === 'synth') return m.names_item_synth()
   if (it.kind === 'compost') return m.names_item_compost()
-  if (it.kind === 'seeds') return m.hud_tool_seed({ name: cropName(it.crop) })
-  if (it.kind === 'grass-seeds') return m.names_item_grass_seed()
+  if (it.kind === 'seeds') {
+    if (it.crop === 'grass') return m.names_item_grass_seed()
+    return m.hud_tool_seed({ name: cropName(it.crop) })
+  }
   if (it.kind === 'fruit') return cropVariety(it.crop, it.variety)
   if (it.kind === 'sugar') return m.names_item_sugar()
   if (it.kind === 'spirit') return infusedName(spiritName(it.spirit, it.variety), it.infused)
@@ -492,10 +492,8 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     })
   }
   if (item.kind === 'seeds') {
+    if (item.crop === 'grass') return m.hud_line_grass_seed({ name: m.names_item_grass_seed(), count: item.count })
     return `${m.hud_line_seed({ name: cropVariety(item.crop, item.variety), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
-  }
-  if (item.kind === 'grass-seeds') {
-    return m.hud_line_grass_seed({ name: m.names_item_grass_seed(), count: item.count })
   }
   if (item.kind === 'fruit') {
     return `${m.hud_line_fruit({
@@ -858,7 +856,7 @@ export function skuItem(id: SkuId): Face {
     case 'buy-fence':
       return { kind: 'fence' }
     case 'pack-grass':
-      return { kind: 'grass-seeds', count: GRASS_PACK }
+      return { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK }
     case 'buy-mill':
       return { kind: 'mill' }
     case 'buy-jam':
@@ -927,7 +925,7 @@ export function skuItem(id: SkuId): Face {
 }
 
 export function fruitStack(
-  crop: CropId,
+  crop: GrownCrop,
   variety: VarietyId,
   quality: number,
   count: number,
@@ -1020,7 +1018,6 @@ function copyItem(item: Item): Item {
     case 'synth':
     case 'compost':
     case 'seeds':
-    case 'grass-seeds':
     case 'fruit':
     case 'tree-seed':
     case 'graft':

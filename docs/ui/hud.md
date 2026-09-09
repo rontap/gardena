@@ -90,11 +90,11 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Automation, Storage, and Sensors. Tools, paving, fencing and `pack-grass` are out: those go to hand or paint. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
+Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Automation, Storage, and Sensors. Tools, paving and fencing are out: those go to hand or paint. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 
-Cancel does not change lens. Build close (toggle, dock **×**), opening another panel: `leaveBuild` = `cancelPlace` and restores an unlocked Build peek. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water / Automation / Storage / Sensors peek the matching lens with no lock — [[ui/lens]] [[ui/build]].
+Cancel does not change lens. Build close (toggle, dock **×**), opening another panel: `leaveBuild` = `cancelPlace` and restores an unlocked Build peek. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water peeks pipes. Build Sensors peeks sensors. Build Automation peeks no lens. Build Storage peeks no lens — [[ui/lens]] [[ui/build]].
 
 ## Lenses
 

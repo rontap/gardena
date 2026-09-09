@@ -27,6 +27,7 @@ import {
 import type {
   AnnualId,
   CropId,
+  GrownCrop,
   DaughterSkillId,
   HusbandSkillId,
   MemberId,
@@ -213,7 +214,18 @@ import type {
 
 export const POINTS_PER_DAY = 3
 
-export const DAY_STIPEND = 10
+export const STIPEND = [
+  { through: 3, amount: 12 },
+  { through: 6, amount: 6 },
+  { through: 10, amount: 3 },
+] as const
+
+export function stipendOf(endedDay: number): number {
+  const band = STIPEND.find(b => endedDay <= b.through)
+  if (band === undefined) return 0
+  return band.amount
+}
+
 export const QUEUE_CAP = 12
 
 export const DT_MAX = 1 / 15
@@ -723,7 +735,7 @@ export class World {
     enclosure.rebuild(this)
   }
 
-  statsCached(crop: CropId, variety: VarietyId): Stats {
+  statsCached(crop: GrownCrop, variety: VarietyId): Stats {
     if (this.statsCacheGen !== this.modGen) {
       this.statsCache.clear()
       this.statsCacheGen = this.modGen
@@ -1660,13 +1672,13 @@ export class World {
       const west = machineWest(c.base)
       if (this.inWorld(west)) {
         const s = this.cell(west)
-        if (s.kind === 'chest' || s.kind === 'freezer') out.push({ x: c.base.col - 0.5, y: c.base.row, side: 'in' })
+        if (s.kind === 'chest' || s.kind === 'freezer') out.push({ x: c.base.col - 0.5, y: west.row, side: 'in' })
       }
       const east = machineEast(c.base)
       if (this.inWorld(east)) {
         const s = this.cell(east)
         if (s.kind === 'chest' || s.kind === 'freezer') {
-          out.push({ x: c.base.col + c.base.w - 0.5, y: c.base.row, side: 'out' })
+          out.push({ x: c.base.col + c.base.w - 0.5, y: east.row, side: 'out' })
         }
       }
     }

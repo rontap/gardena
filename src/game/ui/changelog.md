@@ -1,11 +1,26 @@
+# 2.7.2 Grass seeds at the Seed silo
+
+Grass seeds leave Build Land. After Landscape architecture they are bought at the Seed silo like Chilli seeds, they land in the silo, and Sow grass turns a plot back into Grass. A Chest beside a Mill, Infuser, or Furnace sits on the south side, not the north side. Opening Build Automation or Storage no longer turns on Vehicle interactions. Support from grandma gets smaller over the first days and then stops. The end-of-day summary hides that line when there is none, and Almanac Day & Night uses the same words.
+
+- 🔧 Changed item: Grass seeds. previously, they sat under Land in Build, now after Landscape architecture they are bought at the Seed silo like Chilli seeds, they land in the silo, and Sow grass turns a plot back into Grass.
+- 🔧 Changed mechanic: Chest beside Mill, Infuser, or Furnace. previously, it sat on the north side, now it sits on the south side.
+- 🔧 Changed ui: Lens. previously, opening Build Automation or Storage turned on Vehicle interactions, now opening those tabs does not change the Lens.
+- 🔧 Changed mechanic: Support from grandma. previously, the extra money at the end of the day stayed the same size, now it gets smaller over the first days and then stops.
+- 🔧 Changed ui: End-of-day summary. previously, that money line said Stipend and always showed, now it says Support from grandma and the line is hidden when there is no Support from grandma.
+- 🔧 Changed ui: Almanac Day & Night. previously, it called that money daily pay, now it says Support from grandma.
+- 🔧 Changed ui: Build Land. previously, the line under the shelf listed Grass seeds with paving and fencing, now it is paving and fencing.
+
 # 2.7.1 Catching up
 
-Guests who miss what the host already did show Catching up instead of an unmoving farm. A Wooden fence run keeps money and fence together. Enter Embarks both gardeners. Extra Pumpjacks share water in the same order after join.
+Guests who miss what the host already did show Catching up instead of an unmoving farm. A Wooden fence run keeps money and fence together. Enter Embarks both gardeners. Extra Pumpjacks share water in the same order after join. Command Center names other gardeners when they join, leave, or their farm drifted.
 
 - 🐛 Fixed bug multiplayer: Catching up. Missing what the host already did used to leave the guest's farm unmoving, with no Catching up and no return to the main menu, now what the host does next waits, Catching up can show, and the guest tries again if they stay behind.
 - 🐛 Fixed bug multiplayer: Wooden fence. The host dragging Wooden fence used to spend money only on the host, so the guest's farm drifted and they were sent back to the main menu, now both farms keep the same money and the same Wooden fence.
 - 🐛 Fixed bug multiplayer: Enter. Pressing Enter beside a Quad or Tractor used to put one gardener in the seat and leave the other walking, now both Embark when they stand next to it.
 - 🐛 Fixed bug multiplayer: Pumpjack. Extra Pumpjacks used to share water in a different order after a guest joined, so the farms drifted, now they share water in the same order.
+- 🎉 Added ui: {name} joined. Command Center shows that gardener's name when they arrive on the farm.
+- 🎉 Added ui: {name} left. Command Center shows that gardener's name when they leave.
+- 🎉 Added ui: {name} drifted. Command Center shows that gardener's name when their farm drifted.
 
 # 2.7.0 Infusion
 

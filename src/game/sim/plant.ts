@@ -1,6 +1,6 @@
 import { HAPPY_START } from '../defs/crops.ts'
 import type { VarietyId } from '../defs/varieties.ts'
-import type { AnnualId } from './ids.ts'
+import type { PlantCrop } from './ids.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 
 export type Doom = 'wilt' | 'drown' | 'starve'
@@ -12,11 +12,11 @@ export class Plant {
   bio = true
   tended = false
 
-  readonly crop: AnnualId
+  readonly crop: PlantCrop
   variety: VarietyId
   quality: number
 
-  constructor(crop: AnnualId, variety: VarietyId, quality: number) {
+  constructor(crop: PlantCrop, variety: VarietyId, quality: number) {
     this.crop = crop
     this.variety = variety
     this.quality = quality

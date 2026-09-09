@@ -49,11 +49,12 @@ import {
   type BarrelCrop,
   type CaskId,
   type CropId,
+  type GrownCrop,
   type JamCrop,
   type MillRecipe,
   type SpiritKind,
   type StillCrop,
-  ANNUAL_IDS,
+  PLANT_CROPS,
   TREE_IDS,
   isTreeId,
 } from '../sim/ids.ts'
@@ -69,7 +70,7 @@ import {
 import { statsOf } from '../sim/modifiers.ts'
 import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MID } from '../sim/soil.ts'
 
-export const CROP_IDS: readonly CropId[] = [...ANNUAL_IDS, ...TREE_IDS]
+export const CROP_IDS: readonly GrownCrop[] = [...PLANT_CROPS, ...TREE_IDS]
 
 export const OFF_CHANCE_START = -0.2
 export const OFF_CHANCE_STEP = 0.2
@@ -122,7 +123,7 @@ export type Globals = {
 }
 
 export type CropEdit = {
-  id: CropId
+  id: GrownCrop
   packPrice: number | null
   packUnits: number | null
   waterUsePerSec: number
@@ -148,7 +149,7 @@ export type BalanceState = {
 }
 
 export type Row = {
-  id: CropId
+  id: GrownCrop
   tree: boolean
   variety: VarietyId
   purpose: Purpose | 'base'
@@ -725,6 +726,6 @@ export function toCsv(rows: Row[], g: Globals): string {
   return [headers.join(','), ...body].join('\n') + '\n'
 }
 
-export const ORIGIN_CROP: { readonly [K in CropId]: CropEdit } = Object.fromEntries(
+export const ORIGIN_CROP: { readonly [K in GrownCrop]: CropEdit } = Object.fromEntries(
   ORIGIN.crops.map(c => [c.id, c]),
-) as { readonly [K in CropId]: CropEdit }
+) as { readonly [K in GrownCrop]: CropEdit }

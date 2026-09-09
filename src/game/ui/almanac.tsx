@@ -6,7 +6,7 @@ import { CROP_NAME, CROPS } from '../defs/crops.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import { JAM_ROT, SKILLS } from '../defs/skills.ts'
 import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
-import { ANNUAL_IDS, TREE_IDS, type CropId, type TreeId } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, type GrownCrop, type TreeId } from '../sim/ids.ts'
 import { faceName, type Face } from '../sim/item.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
@@ -179,7 +179,7 @@ const TABS: { id: AlmanacTab; label: () => string }[] = [
   { id: 'concepts', label: () => m.almanac_tab_concepts() },
 ]
 
-const CROP_IDS = [...ANNUAL_IDS] as CropId[]
+const CROP_IDS: readonly GrownCrop[] = PLANT_CROPS
 
 type Tip = { title: string; recipe: Recipe } | undefined
 
@@ -1052,11 +1052,11 @@ function PipePane({ title, blurb }: { title: string; blurb: string }) {
   )
 }
 
-function fruitFace(crop: CropId, variety: VarietyId, sale: number): Face {
+function fruitFace(crop: GrownCrop, variety: VarietyId, sale: number): Face {
   return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, bio: true, cut: false }
 }
 
-function CropPane({ id, done }: { id: CropId; done: AlmanacDone }) {
+function CropPane({ id, done }: { id: GrownCrop; done: AlmanacDone }) {
   const d = CROPS[id]
   const stage = useCycle(3)
   const st = statsOf(id, 'base', 0, [])

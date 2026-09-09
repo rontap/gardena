@@ -1,4 +1,4 @@
-import type { CropId } from '../sim/ids.ts'
+import type { CropId, GrownCrop } from '../sim/ids.ts'
 
 export type VarietyTier = 'base' | 'variant' | 'heirloom'
 
@@ -69,7 +69,7 @@ export const TOL_MIN = 0.25
 
 export const VARIETY: {
   readonly [K in Exclude<VarietyId, 'base'>]: {
-    crop: CropId
+    crop: GrownCrop
     tier: Exclude<VarietyTier, 'base'>
     purpose: Purpose
   }
@@ -99,6 +99,7 @@ export const VARIETIES: { readonly [K in CropId]: readonly VarietyId[] } = {
   vanilla: ['base'],
   chilli: ['base'],
   'sugar-cane': ['base'],
+  grass: ['base'],
   apple: ['base', 'kingston-black', 'pink-lady'],
   apricot: ['base', 'blenheim', 'klosterneuburger'],
   olive: ['base', 'arbequina'],

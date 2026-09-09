@@ -1,6 +1,6 @@
 import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
 import { purposeMul, qualityMul, tierOf, VARIETY_GROW, VARIETY_ROT, type VarietyId } from '../defs/varieties.ts'
-import type { CropId } from './ids.ts'
+import type { CropId, GrownCrop } from './ids.ts'
 
 export type Modifier = {
   id: string
@@ -37,6 +37,6 @@ export function apply(def: CropDef, variety: VarietyId, quality: number, mods: r
   }
 }
 
-export function statsOf(crop: CropId, variety: VarietyId, quality: number, mods: readonly Modifier[]): Stats {
+export function statsOf(crop: GrownCrop, variety: VarietyId, quality: number, mods: readonly Modifier[]): Stats {
   return apply(CROPS[crop], variety, quality, mods)
 }

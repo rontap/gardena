@@ -1,12 +1,12 @@
 import { m } from '../../paraglide/messages.js'
 import { MILL_IN, SUGAR_BAG } from './items.ts'
 import { TOL_MIN, VARIETY_TOL, type VarietyId, type VarietyTier } from './varieties.ts'
-import type { CropId } from '../sim/ids.ts'
+import type { CropId, GrownCrop } from '../sim/ids.ts'
 
 export type CropClass = 'root' | 'grain' | 'fruit'
 
 export type CropDef = {
-  id: CropId
+  id: GrownCrop
   cls: CropClass
   desc: () => string
   growSeconds: number
@@ -19,7 +19,7 @@ export type CropDef = {
   saleMul?: number
 }
 
-export const CROPS: { readonly [K in CropId]: CropDef } = {
+export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
   carrot: {
     id: 'carrot',
     cls: 'root',
@@ -195,6 +195,7 @@ export const CROP_NAME: { readonly [K in CropId]: () => string } = {
   vanilla: () => m.names_crop_vanilla(),
   chilli: () => m.names_crop_chilli(),
   'sugar-cane': () => m.names_crop_sugar_cane(),
+  grass: () => m.names_sku_pack_grass(),
   apple: () => m.names_crop_apple(),
   apricot: () => m.names_crop_apricot(),
   olive: () => m.names_crop_olive(),

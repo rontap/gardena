@@ -220,7 +220,7 @@ export function doMine(w: World, at: Coord): void {
 export function canPlant(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold') return false
   if (w.act.hand.item.kind === 'tree-seed') return seedPair(w, at) !== undefined
-  if (w.act.hand.item.kind !== 'seeds' && w.act.hand.item.kind !== 'grass-seeds') return false
+  if (w.act.hand.item.kind !== 'seeds') return false
   return w.cell(at).kind === 'empty'
 }
 
@@ -238,17 +238,16 @@ export function doPlant(w: World, at: Coord): void {
     return
   }
   const bed = w.cell(at) as Extract<Plot, { kind: 'empty' }>
-  if (w.act.hand.item.kind === 'grass-seeds') {
-    const g = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'grass-seeds' }> }
+  const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
+  if (s.item.crop === 'grass') {
     const variant = Math.floor(w.rng.stream('gen').at(3, at.col, at.row) * 3) as 0 | 1 | 2
     w.setCell(at, { kind: 'turf', soil: bed.soil, turf: new Turf(variant) })
-    g.item.count -= 1
-    if (g.item.count <= 0) w.act.hand = { kind: 'empty' }
+    s.item.count -= 1
+    if (s.item.count <= 0) w.act.hand = { kind: 'empty' }
     w.compactInventory()
     w.ping()
     return
   }
-  const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
   w.setCell(at, {
     kind: 'growing',
     soil: bed.soil,

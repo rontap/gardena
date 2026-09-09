@@ -12,7 +12,7 @@ import type {
 } from '../sim/ids.ts'
 import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
-import { ANNUAL_IDS, TREE_IDS } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, type GrownCrop } from '../sim/ids.ts'
 import { ripeGroup, fruitGroup, jamArt, spiritArt, varietyGroup, graftSpecies, type JamArt, type SpiritArt, type VarietyGroup } from './svgs.ts'
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
@@ -464,7 +464,7 @@ async function add(key: AtlasKey, raw: string, group?: string, mutate?: (s: stri
   }
 }
 
-const CROP: { readonly [K in CropId]: string } = {
+const CROP: { readonly [K in GrownCrop]: string } = {
   carrot,
   potato,
   wheat,
@@ -480,7 +480,7 @@ const CROP: { readonly [K in CropId]: string } = {
   cherry: apple,
 }
 
-const FRUIT: { readonly [K in CropId]: string } = {
+const FRUIT: { readonly [K in GrownCrop]: string } = {
   carrot: fruitCarrot,
   potato: fruitPotato,
   wheat: fruitWheat,
@@ -519,12 +519,12 @@ const TREE: { readonly [K in TreeId]: string } = {
 
 const CROP_STAGES = ['sprout', 'grow', 'dead'] as const
 const CASK_GROUPS: readonly CaskGroup[] = ['base', 'heirloom']
-function groupsOf(crop: CropId): readonly VarietyGroup[] {
+function groupsOf(crop: GrownCrop): readonly VarietyGroup[] {
   return VARIETIES[crop].map(fruitGroup)
 }
 
 function graftGroups(species: TreeId): readonly VarietyGroup[] {
-  const crops = ([...ANNUAL_IDS, ...TREE_IDS] as CropId[]).filter(c => graftSpecies(c) === species)
+  const crops = ([...PLANT_CROPS, ...TREE_IDS] as GrownCrop[]).filter(c => graftSpecies(c) === species)
   return (['base', 'variant', 'heirloom'] as const).filter(g => crops.some(c => groupsOf(c).includes(g)))
 }
 
@@ -667,14 +667,14 @@ async function load(): Promise<void> {
   put('weed-0-grow', weed0, 'grow')
   put('weed-1-sprout', weed1, 'sprout')
   put('weed-1-grow', weed1, 'grow')
-  ANNUAL_IDS.forEach(id => {
+  PLANT_CROPS.forEach(id => {
     CROP_STAGES.forEach(st => put(`crop-${id}:${st}`, CROP[id], st))
     VARIETIES[id].forEach(v => {
       const st = ripeStage(v)
       put(`crop-${id}:${st}`, CROP[id], st)
     })
   })
-  ;[...ANNUAL_IDS, ...TREE_IDS].forEach(id => {
+  ;[...PLANT_CROPS, ...TREE_IDS].forEach(id => {
     groupsOf(id).forEach(g => put(`fruit-${id}:${g}`, FRUIT[id], g))
   })
   ;(TREE_IDS as TreeId[]).forEach(id => {
@@ -846,7 +846,7 @@ export function fenceFit(n: boolean, e: boolean, s: boolean, w: boolean): { key:
   return { key: 'fence-l', rot: 270 }
 }
 
-export function cropKey(id: CropId, stage: CropStage): AtlasKey {
+export function cropKey(id: GrownCrop, stage: CropStage): AtlasKey {
   return `crop-${id}:${stage}`
 }
 
@@ -883,7 +883,7 @@ export const HAT: { readonly [K in SeatId]: number } = {
 }
 
 export function faceKey(item: Item): AtlasKey {
-  if (item.kind === 'seeds') return cropKey(item.crop, ripeGroup(item.variety))
+  if (item.kind === 'seeds') return item.crop === 'grass' ? 'turf-grow' : cropKey(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return `fruit-${item.crop}:${fruitGroup(item.variety)}`
   if (item.kind === 'tree-seed') return `tree-seed-${item.tree}`
   if (item.kind === 'graft') return `graft-${graftSpecies(item.crop)}:${varietyGroup(item.variety)}`
@@ -895,7 +895,6 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'synth') return 'synth'
   if (item.kind === 'compost') return 'compost'
   if (item.kind === 'grass') return 'item-grass'
-  if (item.kind === 'grass-seeds') return 'turf-grow'
   if (item.kind === 'weed') return 'weed-0-grow'
   if (item.kind === 'rotten') return `item-rotten-${item.cls}`
   if (item.kind === 'dead') return `item-dead-${item.cls}`

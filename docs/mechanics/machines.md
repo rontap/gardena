@@ -87,21 +87,25 @@ Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
 
 West of the machine = input. East = output. Orthogonal, same row. Not N/S. Not diagonal.
 
-Still and station: west of origin, east of the east cell (`base.col + base.w`). Furnace: west of origin, east of origin, origin row only. South furnace cell is not I/O.
+South row is `base.row + base.h - 1`. West input `{ col: base.col - 1, row: south }`. East output `{ col: base.col + base.w, row: south }`.
+
+Mill, Infuser, Furnace: that south row. Furnace south cell is I/O; origin row is not.
+
+Jam, still, station unchanged: `h = 1`, so south row is origin row. Still: west of origin, east of the east cell (`base.col + base.w`). Station: west of `at`, east of `at`.
 
 Targets: chest, freezer (any slot count). Machine is the actor. Link is view-derived from adjacency. Not a `Cell`. Not saved. Not a cmd.
 
 A chest between two machines is A's output and B's input.
 
-**Pull** — each `BIG_TICK`, origin only: if west neighbor is chest/freezer, dump-all legal from its slots into the machine. Same accept as walk dump. Slot order `0..n-1`. Until hopper/cap full. Compost consumes the whole slot. Empty box cargo stays in the box. Then compact. `inn === 1` still fills.
+**Pull** — each `BIG_TICK`, origin only: if the west I/O cell (south-row west) is chest/freezer, dump-all legal from its slots into the machine. Same accept as walk dump. Slot order `0..n-1`. Until hopper/cap full. Compost consumes the whole slot. Empty box cargo stays in the box. Then compact. `inn === 1` still fills.
 
-**Push** — on produce, not on big tick. If east neighbor is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `dropSpot` (no plot → wait).
+**Push** — on produce, not on big tick. If the east I/O cell (south-row east) is chest/freezer: `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `dropSpot` (no plot → wait).
 
 `dropSpot(base)` walks `frontOfBase(base)`: the whole south row of the footprint, then the west column, then the east column, then the north row, and takes the first free plot. It is the footprint's ring, not the origin cell's four neighbours. A 2x2 mill or a 1x2 furnace would otherwise offer its own second cell as the first candidate and drop to the side instead of the front. Chopping a tree takes the same ring off `Tree.base`.
 
 Machines: mill, jam, still, compost-box, grinder, furnace, station, infuser. Not barrel.
 
-Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`. Furnace: origin row only.
+Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`. Chute row follows chest I/O: mill / infuser / furnace south row; jam / still / station their row.
 
 ## Sugar
 
@@ -117,7 +121,7 @@ Compost: `liters × COMPOST_VALUE.fruit`.
 
 Hopper. First accepted dump locks `recipe` + `variety`. Later dumps must match both. `units === 0` → `recipe: 'none'`, variety unused. Grass has no variety lock.
 
-Need: cane / olive / wheat `MILL_IN`. Grass `MILL_GRASS` — `{ kind: 'grass' }`, not grass-seeds. Vanilla `MILL_VANILLA_IN` 1 — preference. `millNeed('vanilla')` is `MILL_VANILLA_IN`. `MILL_VANILLA_OUT` 4 — preference. Chilli `MILL_CHILLI_IN` 3 — preference. `MILL_CHILLI_OUT` 2 — preference. `millNeed('chilli')` is `MILL_CHILLI_IN`. `millRecipeOf`: grass, or fruit sugar-cane | olive | wheat | vanilla | chilli.
+Need: cane / olive / wheat `MILL_IN`. Grass `MILL_GRASS` — `{ kind: 'grass' }`, not `{ kind: 'seeds'; crop: 'grass' }`. Vanilla `MILL_VANILLA_IN` 1 — preference. `millNeed('vanilla')` is `MILL_VANILLA_IN`. `MILL_VANILLA_OUT` 4 — preference. Chilli `MILL_CHILLI_IN` 3 — preference. `MILL_CHILLI_OUT` 2 — preference. `millNeed('chilli')` is `MILL_CHILLI_IN`. `millRecipeOf`: grass, or fruit sugar-cane | olive | wheat | vanilla | chilli.
 
 Running mean `quality` weighted by units. At `units >= need`: tick `progress += dt × machineMul / MILL_WORK`. At 1: consume need, drop output `frontOf` (compost rule: no plot → wait), leftover stays. Output quality is the mean of what went in. Output sale takes `purposeMul(locked variety, 'processed')` × `qualityMul(mean q)`.
 
@@ -282,7 +286,7 @@ Working: need met and `inn === 0` and `progress < 1`. Prop groups `off` / `on`. 
 
 | item | units |
 |---|---|
-| rotten, seeds, grass-seeds, tree-seed, weed, grass, dead, graft | `FURNACE_VALUE.green` × count (tree-seed: × 1, no `count`) |
+| rotten, seeds, tree-seed, weed, grass, dead, graft | `FURNACE_VALUE.green` × count (tree-seed: × 1, no `count`) |
 | fruit (any crop, any variety) | `FURNACE_VALUE.fruit` × count |
 | sugar | `FURNACE_VALUE.fruit` × liters |
 | oil (infused ignored) | `FURNACE_VALUE.oil` × count |
@@ -390,7 +394,7 @@ Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is
 
 `machines.water` — `STILL_WATER` 2 preference. Start still requires full pull. Every still recipe carries that many liters on the water face.
 
-`machines.io-side` — West chest/freezer is input. East is output. Still: west of origin, east of east cell. Furnace: west of origin, east of origin, origin row only. Station: west of `at`, east of `at`. Infuser: mill, west of origin, east of `base.col + w`.
+`machines.io-side` — West chest/freezer is input. East is output. Same row `base.row + base.h - 1`. Mill, Infuser, Furnace: south row (west of the south-west cell, east of the south-east cell). Furnace origin row is not I/O. Jam, still, station unchanged (`h = 1`). Still: west of origin, east of east cell. Station: west of `at`, east of `at`.
 
 `machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
 
@@ -436,7 +440,7 @@ Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is
 
 `machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n` including self. Still, compost, infuser take it. Barrel and station do not. Waiting / empty / gated do not count.
 
-`machines.furnace-io` — West pull, east push, pads, `in` top, `out` bottom high iff `units === 0`. Origin row only. South cell no port.
+`machines.furnace-io` — West pull, east push on the south row. Pads, `in` top, `out` bottom high iff `units === 0`. Signal ports stay origin. South cell no port. Origin row is not chest I/O.
 
 `machines.furnace-draw` — `Furnace` `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, tick origin. Hit, ghost footprint, I/O, ports, pads stay 1×2. viewBox `24×48`. Prop art occupies 1×1.5 south-aligned in that viewBox so the opening stays in the south cell. Origin-only paint + `TILE/24` of the viewBox. Do not scale the sprite down.
 

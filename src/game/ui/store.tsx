@@ -6,9 +6,9 @@ import { purposeMul, purposeOf, qualityMul, VARIETIES, type Purpose, type Variet
 import { ADDITIVE_BAG, ROW_SKU, STORE_ROW_IDS, type Coord, type StoreRowId } from '../sim/building.ts'
 import { SUGAR_BAG } from '../defs/items.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type SkuId } from '../sim/ids.ts'
-import { cropName, skuLabel } from '../sim/item.ts'
+import { cropName, skuItem, skuLabel } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
-import { cropInner, faceGfx, ripeGroup } from '../view/svgs.ts'
+import { cropInner, faceGfx, ripeGroup, turfInner } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { gateLine, rowState } from './sku-card.tsx'
 import { Bar, Checkbox, Coin, Frame } from './frame.tsx'
@@ -123,7 +123,9 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                       <svg
                         viewBox="0 0 24 24"
                         className="h-9 w-9"
-                        dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup('base')) }}
+                        dangerouslySetInnerHTML={{
+                          __html: crop === 'grass' ? turfInner('grow') : cropInner(crop, ripeGroup('base')),
+                        }}
                       />
                       <span className={`${CELL_W} text-center text-[11px] leading-tight text-ink/60`}>
                         {cropName(crop)}
@@ -182,7 +184,9 @@ export function SiloUi({ world, at, onClose }: { world: World; at: Coord; onClos
                           <svg
                             viewBox="0 0 24 24"
                             className={`h-8 w-8 shrink-0 ${n === 0 ? 'opacity-30' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: cropInner(crop, ripeGroup(variety)) }}
+                            dangerouslySetInnerHTML={{
+                              __html: crop === 'grass' ? turfInner('grow') : cropInner(crop, ripeGroup(variety)),
+                            }}
                           />
                           {variety !== 'base' && (
                             <span className="text-[11px] leading-tight">{cropVariety(crop, variety)}</span>
@@ -221,7 +225,6 @@ function SeedTip({
   quality: number
   sku?: SkuId
 }) {
-  const d = CROPS[crop]
   const packSkuId = sku ?? packSku(crop)
   const pack =
     sku !== undefined
@@ -229,7 +232,9 @@ function SeedTip({
       : packSkuId !== undefined && world.skuShown(packSkuId)
         ? world.skuPrice(packSkuId)
         : undefined
-  const sale = d.sale * qualityMul(quality) * purposeMul(variety, 'produce')
+  const made = packSkuId === undefined ? undefined : skuItem(packSkuId)
+  const packN = made !== undefined && made.kind === 'seeds' ? made.count : undefined
+  const sale = crop === 'grass' ? undefined : CROPS[crop].sale * qualityMul(quality) * purposeMul(variety, 'produce')
   const state = sku !== undefined ? rowState(world, sku, at) : 'ok'
   const bulk = sku !== undefined && world.buyPacksFail(sku, at) === undefined ? world.packsPrice(sku) : undefined
   return (
@@ -238,15 +243,17 @@ function SeedTip({
       description={
         <>
           <span className="flex items-center gap-1">{m.hud_silo_quality({ n: Math.floor(quality * 100) })}</span>
-          <PurposeLine variety={variety} />
+          {crop !== 'grass' && <PurposeLine variety={variety} />}
           <span className="flex items-center gap-1">
-            {pack === undefined ? m.hud_seed_not_stocked() : <>{m.hud_seed_pack()}<Coin n={pack} />{m.hud_per_pack({ n: 5 })}</>}
+            {pack === undefined || packN === undefined ? m.hud_seed_not_stocked() : <>{m.hud_seed_pack()}<Coin n={pack} />{m.hud_per_pack({ n: packN })}</>}
           </span>
-          <span className="mt-1 flex items-center gap-1">
-            {m.hud_sells_for()}
-            <Coin n={round(sale)} />
-            {m.hud_silo_sale()}
-          </span>
+          {sale !== undefined && (
+            <span className="mt-1 flex items-center gap-1">
+              {m.hud_sells_for()}
+              <Coin n={round(sale)} />
+              {m.hud_silo_sale()}
+            </span>
+          )}
           {bulk !== undefined && (
             <span className="mt-1 flex items-center gap-1">
               <Coin n={bulk} />

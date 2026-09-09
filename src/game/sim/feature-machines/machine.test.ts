@@ -54,6 +54,8 @@ import {
   millNeed,
   millProduct,
   millRecipeOf,
+  machineEast,
+  machineWest,
   spiritKind,
   stationAccept,
   stationApply,
@@ -64,7 +66,7 @@ import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
-import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, JamMachine, Mill, occupiedCells, PAD, PotStill, ResearchStation } from '../building.ts'
+import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, Infuser, JamMachine, Mill, occupiedCells, PAD, PotStill, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
 import { Lamp, Lever } from '../sensor.ts'
 import { BIG_TICK } from '../soil.ts'
@@ -197,35 +199,11 @@ describe('machines', () => {
     expect(barrel.crop).toBe('none')
   })
 
-  test('West chest/freezer is input. East is output. Still: west of origin, east of east cell.', () => {
-    const w = new World(1)
-    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
-    const west = { col: AT.col - 1, row: AT.row }
-    const east = { col: AT.col + MILL_W, row: AT.row }
-    occupiedCells(mill.base, w.owned).forEach(p => w.setCell(p, mill))
-    w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
-    w.setCell(east, new Freezer({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
-    const links = w.machineLinks()
-    expect(links.some(l => l.side === 'in' && l.x === AT.col - 0.5 && l.y === AT.row)).toBe(true)
-    expect(links.some(l => l.side === 'out' && l.x === AT.col + MILL_W - 0.5 && l.y === AT.row)).toBe(true)
-    const stillAt = { col: AT.col, row: AT.row + 4 }
-    const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
-    w.setCell(stillAt, still)
-    w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
-    const sw = { col: stillAt.col - 1, row: stillAt.row }
-    const se = { col: stillAt.col + 2, row: stillAt.row }
-    w.setCell(sw, new Chest({ shape: 'rect', col: sw.col, row: sw.row, w: 1, h: 1 }))
-    w.setCell(se, new Freezer({ shape: 'rect', col: se.col, row: se.row, w: 1, h: 1 }))
-    const sl = w.machineLinks()
-    expect(sl.some(l => l.side === 'in' && l.x === stillAt.col - 0.5 && l.y === stillAt.row)).toBe(true)
-    expect(sl.some(l => l.side === 'out' && l.x === stillAt.col + 1.5 && l.y === stillAt.row)).toBe(true)
-  })
-
   test('Each `BIG_TICK`, dump-all legal from the west store into the machine.', () => {
     const w = new World(1)
-    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 })
-    const west = { col: AT.col - 1, row: AT.row }
-    w.setCell(AT, mill)
+    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
+    occupiedCells(mill.base, w.owned).forEach(p => w.setCell(p, mill))
+    const west = machineWest(mill.base)
     w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
     const chest = w.cell(west)
     if (chest.kind !== 'chest') throw new Error('chest')
@@ -287,7 +265,7 @@ describe('machines', () => {
       return m
     }
     const mill = put(AT)
-    const east = { col: AT.col + MILL_W, row: AT.row }
+    const east = machineEast(mill.base)
     w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
     ticks(w, MILL_WORK)
     const chest = w.cell(east)
@@ -297,7 +275,7 @@ describe('machines', () => {
     expect(w.drops.filter(d => d.item.kind === 'flour')).toHaveLength(0)
     const mill2At = { col: AT.col, row: AT.row + 4 }
     const mill2 = put(mill2At)
-    const e2 = { col: mill2At.col + MILL_W, row: mill2At.row }
+    const e2 = machineEast(mill2.base)
     const full = new Chest({ shape: 'rect', col: e2.col, row: e2.row, w: 1, h: 1 })
     full.slots.forEach((_, i) => {
       full.slots[i] = { kind: 'hold', item: { kind: 'tree-seed', tree: 'olive', variety: 'base', quality: 0 } }
@@ -314,6 +292,83 @@ describe('machines', () => {
     expect(w.drops.some(d => d.item.kind === 'flour' && d.at.col === mill3At.col && d.at.row === mill3At.row + MILL_H)).toBe(
       true,
     )
+  })
+})
+
+describe('machines.io-side', () => {
+  test('West chest/freezer is input. East is output. Same row `base.row + base.h - 1`. Mill, Infuser, Furnace: south row (west of the south-west cell, east of the south-east cell). Furnace origin row is not I/O. Jam, still, station unchanged (`h = 1`). Still: west of origin, east of east cell. Station: west of `at`, east of `at`.', () => {
+    const w = new World(1)
+    const mill = new Mill({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
+    occupiedCells(mill.base, w.owned).forEach(p => w.setCell(p, mill))
+    const millWest = machineWest(mill.base)
+    const millEast = machineEast(mill.base)
+    expect(millWest).toEqual({ col: AT.col - 1, row: AT.row + MILL_H - 1 })
+    expect(millEast).toEqual({ col: AT.col + MILL_W, row: AT.row + MILL_H - 1 })
+    w.setCell({ col: AT.col - 1, row: AT.row }, new Chest({ shape: 'rect', col: AT.col - 1, row: AT.row, w: 1, h: 1 }))
+    w.setCell(millWest, new Chest({ shape: 'rect', col: millWest.col, row: millWest.row, w: 1, h: 1 }))
+    w.setCell(millEast, new Freezer({ shape: 'rect', col: millEast.col, row: millEast.row, w: 1, h: 1 }))
+    const infAt = { col: AT.col + 6, row: AT.row }
+    const inf = new Infuser({ shape: 'rect', col: infAt.col, row: infAt.row, w: MILL_W, h: MILL_H })
+    occupiedCells(inf.base, w.owned).forEach(p => w.setCell(p, inf))
+    const infWest = machineWest(inf.base)
+    const infEast = machineEast(inf.base)
+    expect(infWest.row).toBe(infAt.row + MILL_H - 1)
+    expect(infEast.row).toBe(infAt.row + MILL_H - 1)
+    w.setCell(infWest, new Chest({ shape: 'rect', col: infWest.col, row: infWest.row, w: 1, h: 1 }))
+    w.setCell(infEast, new Freezer({ shape: 'rect', col: infEast.col, row: infEast.row, w: 1, h: 1 }))
+    const furnaceAt = { col: AT.col, row: AT.row + 4 }
+    const furnace = putFurnace(w, furnaceAt)
+    const furnaceWest = machineWest(furnace.base)
+    const furnaceEast = machineEast(furnace.base)
+    expect(furnaceWest).toEqual({ col: furnaceAt.col - 1, row: furnaceAt.row + 1 })
+    expect(furnaceEast).toEqual({ col: furnaceAt.col + 1, row: furnaceAt.row + 1 })
+    w.setCell({ col: furnaceAt.col - 1, row: furnaceAt.row }, new Chest({ shape: 'rect', col: furnaceAt.col - 1, row: furnaceAt.row, w: 1, h: 1 }))
+    w.setCell(furnaceWest, new Chest({ shape: 'rect', col: furnaceWest.col, row: furnaceWest.row, w: 1, h: 1 }))
+    w.setCell(furnaceEast, new Freezer({ shape: 'rect', col: furnaceEast.col, row: furnaceEast.row, w: 1, h: 1 }))
+    const stillAt = { col: AT.col + 6, row: AT.row + 4 }
+    const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
+    w.setCell(stillAt, still)
+    w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
+    const stillWest = machineWest(still.base)
+    const stillEast = machineEast(still.base)
+    expect(stillWest).toEqual({ col: stillAt.col - 1, row: stillAt.row })
+    expect(stillEast).toEqual({ col: stillAt.col + 2, row: stillAt.row })
+    w.setCell(stillWest, new Chest({ shape: 'rect', col: stillWest.col, row: stillWest.row, w: 1, h: 1 }))
+    w.setCell(stillEast, new Freezer({ shape: 'rect', col: stillEast.col, row: stillEast.row, w: 1, h: 1 }))
+    const jamAt = { col: AT.col, row: AT.row + 8 }
+    const jam = new JamMachine({ shape: 'rect', col: jamAt.col, row: jamAt.row, w: 1, h: 1 })
+    w.setCell(jamAt, jam)
+    const jamWest = machineWest(jam.base)
+    const jamEast = machineEast(jam.base)
+    expect(jamWest).toEqual({ col: jamAt.col - 1, row: jamAt.row })
+    expect(jamEast).toEqual({ col: jamAt.col + 1, row: jamAt.row })
+    w.setCell(jamWest, new Chest({ shape: 'rect', col: jamWest.col, row: jamWest.row, w: 1, h: 1 }))
+    w.setCell(jamEast, new Freezer({ shape: 'rect', col: jamEast.col, row: jamEast.row, w: 1, h: 1 }))
+    const stationAt = { col: AT.col + 6, row: AT.row + 8 }
+    const station = new ResearchStation({ shape: 'rect', col: stationAt.col, row: stationAt.row, w: 1, h: 1 })
+    w.setCell(stationAt, station)
+    const stationWest = machineWest(station.base)
+    const stationEast = machineEast(station.base)
+    expect(stationWest).toEqual({ col: stationAt.col - 1, row: stationAt.row })
+    expect(stationEast).toEqual({ col: stationAt.col + station.base.w, row: stationAt.row })
+    w.setCell(stationWest, new Chest({ shape: 'rect', col: stationWest.col, row: stationWest.row, w: 1, h: 1 }))
+    w.setCell(stationEast, new Freezer({ shape: 'rect', col: stationEast.col, row: stationEast.row, w: 1, h: 1 }))
+    const links = w.machineLinks()
+    expect(links.some(l => l.side === 'in' && l.x === mill.base.col - 0.5 && l.y === millWest.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === mill.base.col + mill.base.w - 0.5 && l.y === millEast.row)).toBe(true)
+    expect(links.some(l => l.side === 'in' && l.x === mill.base.col - 0.5 && l.y === mill.base.row)).toBe(false)
+    expect(links.some(l => l.side === 'in' && l.x === inf.base.col - 0.5 && l.y === infWest.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === inf.base.col + inf.base.w - 0.5 && l.y === infEast.row)).toBe(true)
+    expect(links.some(l => l.side === 'in' && l.x === furnace.base.col - 0.5 && l.y === furnaceWest.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === furnace.base.col + furnace.base.w - 0.5 && l.y === furnaceEast.row)).toBe(true)
+    expect(links.some(l => l.x === furnace.base.col - 0.5 && l.y === furnace.base.row)).toBe(false)
+    expect(links.some(l => l.x === furnace.base.col + furnace.base.w - 0.5 && l.y === furnace.base.row)).toBe(false)
+    expect(links.some(l => l.side === 'in' && l.x === still.base.col - 0.5 && l.y === stillAt.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === still.base.col + still.base.w - 0.5 && l.y === stillAt.row)).toBe(true)
+    expect(links.some(l => l.side === 'in' && l.x === jam.base.col - 0.5 && l.y === jamAt.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === jam.base.col + jam.base.w - 0.5 && l.y === jamAt.row)).toBe(true)
+    expect(links.some(l => l.side === 'in' && l.x === station.base.col - 0.5 && l.y === stationAt.row)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === station.base.col + station.base.w - 0.5 && l.y === stationAt.row)).toBe(true)
   })
 })
 
@@ -511,20 +566,24 @@ describe('machines.furnace-haste-look', () => {
 })
 
 describe('machines.furnace-io', () => {
-  test('West pull, east push, pads, `in` top, `out` bottom high iff `units === 0`. Origin row only. South cell no port.', () => {
+  test('West pull, east push on the south row. Pads, `in` top, `out` bottom high iff `units === 0`. Signal ports stay origin. South cell no port. Origin row is not chest I/O.', () => {
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 12 }
     const f = putFurnace(w, at)
     const west = { col: at.col - 1, row: at.row }
     const east = { col: at.col + 1, row: at.row }
-    const southWest = { col: at.col - 1, row: at.row + 1 }
+    const southWest = machineWest(f.base)
+    const southEast = machineEast(f.base)
     w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
     w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
     w.setCell(southWest, new Chest({ shape: 'rect', col: southWest.col, row: southWest.row, w: 1, h: 1 }))
+    w.setCell(southEast, new Chest({ shape: 'rect', col: southEast.col, row: southEast.row, w: 1, h: 1 }))
     const links = w.machineLinks()
-    expect(links.some(l => l.side === 'in' && l.x === at.col - 0.5 && l.y === at.row)).toBe(true)
-    expect(links.some(l => l.side === 'out' && l.x === at.col + 0.5 && l.y === at.row)).toBe(true)
-    expect(links.some(l => l.y === at.row + 1)).toBe(false)
+    expect(southWest.row).toBe(at.row + 1)
+    expect(southEast.row).toBe(at.row + 1)
+    expect(links.some(l => l.side === 'in' && l.x === at.col - 0.5 && l.y === at.row + 1)).toBe(true)
+    expect(links.some(l => l.side === 'out' && l.x === at.col + 0.5 && l.y === at.row + 1)).toBe(true)
+    expect(links.some(l => l.y === at.row)).toBe(false)
     const westChest = w.cell(west)
     if (westChest.kind !== 'chest') throw new Error('chest')
     westChest.slots[0] = { kind: 'hold', item: { kind: 'weed', count: 1 } }
@@ -532,13 +591,17 @@ describe('machines.furnace-io', () => {
     if (southChest.kind !== 'chest') throw new Error('chest')
     southChest.slots[0] = { kind: 'hold', item: { kind: 'wood', count: 1 } }
     ticks(w, BIG_TICK)
-    expect(f.units).toBe(FURNACE_VALUE.green)
-    expect(southChest.slots[0].kind).toBe('hold')
+    expect(f.units).toBe(FURNACE_VALUE.wood)
+    expect(westChest.slots[0].kind).toBe('hold')
+    expect(southChest.slots.every(s => s.kind === 'empty')).toBe(true)
     f.units = FURNACE_NEED
     ticks(w, FURNACE_SECONDS)
     const eastChest = w.cell(east)
     if (eastChest.kind !== 'chest') throw new Error('chest')
-    expect(eastChest.slots.some(s => s.kind === 'hold' && s.item.kind === 'ash')).toBe(true)
+    const southEastChest = w.cell(southEast)
+    if (southEastChest.kind !== 'chest') throw new Error('chest')
+    expect(eastChest.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(southEastChest.slots.some(s => s.kind === 'hold' && s.item.kind === 'ash')).toBe(true)
     expect(f.units).toBe(0)
     w.tick(DT_MAX)
     expect(f.out).toBe(1)
@@ -723,8 +786,8 @@ describe('machines.quality-carry', () => {
 
     const w = new World(1)
     const mill = new Mill(CELL)
-    w.setCell(AT, mill)
-    const west = { col: AT.col - 1, row: AT.row }
+    occupiedCells(mill.base, w.owned).forEach(p => w.setCell(p, mill))
+    const west = machineWest(mill.base)
     w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
     const chest = w.cell(west)
     if (chest.kind !== 'chest') throw new Error('chest')

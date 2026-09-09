@@ -23,7 +23,7 @@ Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, la
 
 Trees, Utility, Water systems, Building, Game concepts: **no** Overview row. Hangar + silos stay on Automation. Station stays on Automation. Game concepts: no SKU rows.
 
-Building stays fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No watermelon row.
+Building stays fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No watermelon row. Catalog pane `grass-seeds` is the Seed silo pack after landscaping, face `{ kind: 'seeds'; crop: 'grass' }`, not a Build Land card. Cut grass pane `grass` is `{ kind: 'grass' }`. Illegal `{ kind: 'grass-seeds' }`. — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`
 
 Crop and Tree panes carry `CROPS.desc` under the name.
 
@@ -126,7 +126,7 @@ Undefined words are illegal unless a natural farming word, or this page (or a li
 
 **Recipe** is defined by [[ui/recipe]] and heads the Automation recipe block. Crop / tree Ingredients heading reuses that word: **Recipes**.
 
-Ban in player strings unless defined in-page: gem, pip, overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say daily pay). **Build** is ok as “the Build menu.” `tier` is vault-only.
+Ban in player strings unless defined in-page: gem, pip, overlay, HUD, ribbon, dock, SKU, stall, rolled, tick, recap (define it: the end-of-day summary), stipend (say **Support from grandma**). End-of-day summary stipend line is **Support from grandma**, amounts via fill from `stipendOf`. **Build** is ok as “the Build menu.” `tier` is vault-only.
 
 Natural farmer words need no glossary. Game systems get a first-sentence definition on their own page.
 

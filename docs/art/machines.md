@@ -2,7 +2,7 @@
 
 Rects. One concept per file. [[art/svg]] [[art/palette]]
 
-1×1 `0 0 24 24` except still `0 0 48 24`, furnace `0 0 24 48` and mill / infuser `0 0 48 48`. Occupancy stays 2×1 / 1×2 / 2×2. Drawn still is 1.5×1 (`36×24`) centered (`x=6`–`42`). Drawn furnace is 1×1.5 (`24×36`) south-aligned (`y=12`–`48`). Drawn infuser is 1.25×1.75 (`30×42`) south-centered (`x=9`–`39`, `y=6`–`48`). Item face is the same machine as the prop, larger — do not shrink the item. Cottage machines: copper reads as roof. Cold / condenser / litre marks / glass tubes read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water. Furnace: iron / oil stone, roof brick, steel lip; opening on the south face of the south cell. Chimney on the north of that body, in the north cell. Chimney mouth `(12, 14)`. Infuser: open copper canopy on iron posts, plank bench, hollow flasks, looped coil. Groups `off` `on`. No full-height brown walls. Flask interiors above the liquid are empty.
+1×1 `0 0 24 24` except still `0 0 48 24`, furnace `0 0 24 48` and mill / infuser `0 0 48 48`. Occupancy stays 2×1 / 1×2 / 2×2. Drawn still is 1.5×1 (`36×24`) centered (`x=6`–`42`). Drawn furnace is 1×1.5 (`24×36`) south-aligned (`y=12`–`48`). Drawn infuser is 1.25×1.75 (`30×42`) south-centered (`x=9`–`39`, `y=6`–`48`). Item face is the same machine as the prop, larger — do not shrink the item. Cottage machines: copper reads as roof. Cold / condenser / litre marks / glass tubes read as water. Still: industrial steel onion, iron lyne arm, oil foot. No `#8b3a2a` on the pot. Condenser stays water. Furnace: iron / oil stone, roof brick, steel lip; opening on the south face of the south cell. Chimney on the north of that body, in the north cell. Chimney mouth `(12, 14)`. Infuser: peaked copper canopy on four iron posts, plank bench, hollow flask, looped coil, thin receiver, beaker, iron firebox. Groups `off` `on`. Roof token is the peak and the coil, not a rectangular outline. No full-height brown walls. Flask interiors above the liquid are empty.
 
 ## Buildings
 
@@ -24,7 +24,7 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `item-furnace.svg` | same machine, card/hand, stays 24×24 |
 | `prop-research-station.svg` | 2×1 `0 0 48 24`, cottage seed-tray cabinet west, potting bench with three cuttings east, roof lamp; groups `off` `on`. Iron lamp face is the only metal |
 | `item-research-station.svg` | same machine at 1×1 `0 0 24 24`, cabinet and one potted cutting, card/hand; groups `off` `on` |
-| `prop-infuser.svg` | 2×2 `0 0 48 48`, drawn 1.25×1.75 south-centered, open copper canopy on iron posts, plank bench, hollow flasks, looped coil, beaker; groups `off` `on`. No full-height brown walls |
+| `prop-infuser.svg` | 2×2 `0 0 48 48`, drawn 1.25×1.75 south-centered, peaked copper canopy (stepped, eaves left/right only), four iron posts, plank bench, hollow flask, looped coil, thin receiver, beaker, iron/oil firebox; groups `off` `on`. No rectangular roof bar. No full-height brown walls |
 | `item-infuser.svg` | same machine, card/hand, stays 24×24; groups `off` `on` |
 
 ## Fruit
@@ -77,14 +77,14 @@ A named jar is a face, not only a name. `jamArt` selects it. `concord` and `blac
 | file | depicts |
 |---|---|
 | `item-sugar.svg` | 2 L sack, house bag, two ripe volume bars |
-| `item-oil.svg` | tall bottle, grass-dark / grass olive oil, ripe gold mark |
+| `item-oil.svg` | tall bottle, gold cap and foil neck, grass-dark / grass body, ripe gold shield. Not vanilla. Not grass extract |
 | `item-flour.svg` | house sack, wheat heads |
 | `item-extract.svg` | vial, grass-dark / leaf. Grass mill. Not vanilla |
-| `item-vanilla-extract.svg` | tall thin vial, fruit-red / roof crimson. Not oil. Not grass extract |
+| `item-vanilla-extract.svg` | tall thin dropper vial, house bulb, roof crimson fill to the neck. Not oil. Not grass extract |
 
 Station `off` is dark seed trays, an unlit lamp, and three bare cuttings in their pots. `on` lights the lamp fruit-red and puts leaf shoots on the trays and every cutting. Cottage propagation bench. Language: seed tray, potting bench, cutting. Lamp face is iron; no steel or oil.
 
-Infuser: open copper canopy on iron posts, not a brown box. Hollow flasks, looped roof coil, a small beaker. `off` water in the glass. `on` fruit-red and ripe liquid, fire under the left flask. Cottage chemistry bench. Copper is roof. Posts are iron. Glass is empty above the liquid.
+Infuser: peaked copper canopy (stepped like the mill roof, eaves left and right, iron rail between), four iron posts, not a brown box. Hollow flask, looped roof coil, thin receiver, beaker, iron/oil firebox with roof brick. `off` water in the glass, dark firebox mouth. `on` fruit-red and ripe liquid, fire in the firebox. Cottage chemistry bench. Copper is roof, and only on the peak and the coil. Posts are iron. Glass is empty above the liquid.
 
 ## Infusion
 
@@ -93,7 +93,7 @@ Infuser: open copper canopy on iron posts, not a brown box. Hollow flasks, loope
 | `crop-chilli.svg` | `sprout` `grow` `dead` `ripe` | bush, hanging pointed fruit-red chillies. One Variety |
 | `item-chilli-flakes.svg` | — | open house dish, fruit-red flakes, roof bits. Not a jam jar |
 | `item-bread.svg` | — | loaf, ripe crust, house crumb in the split |
-| `overlay-infused.svg` | — | small + mark, ink + ripe, top-right of the 24×24. Draw-over |
+| `overlay-infused.svg` | — | small + mark, ink + ripe, flush top-right border of the 24×24 (`x=19`–`24`, `y=0`–`5`). Draw-over. Not centered |
 | `ui-research-infusion.svg` | — | flask + ripe + mark. Infusion research face |
 
 Assumption: occupancy stays 2×1 / 1×2 / 2×2; still / furnace drawings are 1.5×1 / 1×1.5; infuser drawing is 1.25×1.75 south-centered. Wine / cider / cane `rare` unused: `common` stands in. Ketchup is a bottle not a jar. Passata is a can not a jar. Still shop face is the 2×1 still packed into 24×24. Chilli has one Variety; ripe group is `ripe` only. Vanilla extract is a distinct vial from grass `item-extract`.

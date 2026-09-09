@@ -52,7 +52,7 @@ export function rowState(world: World, id: SkuId, at: Coord): RowState {
     return field ? 'field-store-full' : 'store-full'
   }
   const inv = world.seats[world.local].inventory
-  if (made.kind === 'grass-seeds' || made.kind === 'sugar') {
+  if (made.kind === 'sugar') {
     const merge = inv.findIndex(s => s.kind === 'hold' && s.item.kind === made.kind)
     const empty = inv.findIndex(s => s.kind === 'empty')
     if (merge < 0 && empty < 0) return 'inventory-full'

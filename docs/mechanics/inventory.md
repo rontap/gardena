@@ -20,24 +20,24 @@ Seeds and additives do not live in the house. Each has a store building, placed 
 
 | store | holds |
 |---|---|
-| `seed-silo` | `{ crop, variety, quality, count }[]` cap `SILO_SEED_CAP` |
+| `seed-silo` | `SiloStack[]` `{ crop, variety, quality, count }` cap `SILO_SEED_CAP` |
 | `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost · weed-spray`, plus one `sugar: { liters, unitSale, quality }` bin, cap `ADDITIVE_CAP_LITERS` |
 
-Both caps are cumulative across every stack / kind in that store. Silo stacks merge on crop+variety; quality averages weighted by count.
+Both caps are cumulative across every stack / kind in that store. Silo `used` is crop-stack counts. Silo stacks merge on crop+variety; quality averages weighted by count. `accept` is `{ kind: 'seeds' }`. Grass is a silo crop like chilli: `{ crop: 'grass'; variety: 'base'; quality; count }`. `'base'` only. Field Seeding silos use the same stacks. No extra grass store type. No `SeedStore.grass` field.
 
-Walk up → the store takes back everything it keeps, from hand and from the 16 house slots, then the panel opens ([[ui/store]]). Overflow past the cap stays on you. `dest(silo)` = origin of the 1×2, not the south cell. `dest(inventory)` = `DOOR`. [[architecture/world]] `world.dest`.
+Walk up → the store takes back everything it keeps, from hand and from the 16 house slots, then the panel opens ([[ui/store]]). Seed silo keeps annual seeds, grass included. Overflow past the cap stays on you. `dest(silo)` = origin of the 1×2, not the south cell. `dest(inventory)` = `DOOR`. [[architecture/world]] `world.dest`.
 
 Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO_SEED_CAP`; additive `used >= ADDITIVE_CAP_LITERS`. Port `out` origin bottom. Load: silo seeds until cargo full; additive bags `min(ADDITIVE_BAG, stored)`. Unload until that cap.
 
-Click a stack → it goes to **hand**. Silo hands over the whole stack. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. A full hand joins or swaps first, `inventory.swap` below. Only what the store will not take back is set down on the nearest plot — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
+Click a stack → it goes to **hand**. Silo hands over the whole stack. Grass: `takeSilo('grass', 'base')` → `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality; count }`. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. A full hand joins or swaps first, `inventory.swap` below. Only what the store will not take back is set down on the nearest plot — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
-Buying: `pack-*` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Grass seeds still go to the house.
+Buying: `pack-*` including `pack-grass` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Field Seeding silo: `'Seeding silo full'`. `pack-grass` does not go to the house.
 
 Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the four additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
 
-Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. The Seed silo is the only place a pack is sold. No pack (vanilla): no Buy. `pack-chilli` Buy when `skuShown`. — [[ui/store]]
+Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. `packSku('grass')` is `pack-grass`. The Seed silo is the only place a pack is sold, including `pack-grass`. No pack (vanilla): no Buy. `pack-chilli` Buy when `skuShown`. `pack-grass` Buy when `skuShown`, buy after `unlock-landscaping`. Field Seeding silos included. — [[ui/store]]
 
-`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. — [[mechanics/family]]
+`buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. `pack-grass` delivers five × `GRASS_PACK` of `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0 }`. Ctrl is the seed-silo Buy gesture. — [[mechanics/family]]
 
 ## Starter
 
@@ -61,7 +61,7 @@ Weed spray: `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 3
 
 ## Stacks
 
-Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+variety, graft by crop+variety, spirit by kind+variety+`infused` (mixed by kind+`infused`), wine by variety+`infused`, jam by crop+variety+`infused`, oil by `infused`, flakes / vanilla-extract / bread by kind, rotten / dead by `CropClass`, weed, grass, wood, ash by kind alone.
+Countable items — `Extract<Item, { count: number }>` — merge in hand when kind and identity match: seeds and fruit by crop+variety (grass seeds are `crop: 'grass'`), graft by crop+variety, spirit by kind+variety+`infused` (mixed by kind+`infused`), wine by variety+`infused`, jam by crop+variety+`infused`, oil by `infused`, flakes / vanilla-extract / bread by kind, rotten / dead by `CropClass`, weed, grass, wood, ash by kind alone.
 
 Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread — preference. `bulk-up` adds `BULK_UP_STEP` per owned tier, `BULK_UP_CRAFTED_STEP` on the crafted cap — [[mechanics/family]]. `World.stackMax(item)` is derived, not a field.
 
@@ -111,10 +111,12 @@ Mill / jam / still / barrel / freezer / furnace / infuser / bought sugar / stati
 
 `inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
 
-`inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
+`inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`, grass included) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
 
 `inventory.swap` — Taking from a Seed silo or an Additive store with a full hand never spills what the store itself holds. The same row as the hand joins it: seed counts add and Quality averages by count; a bag tops up to its `capacityLiters` and no further, sugar averaging `unitSale` and `quality` by liters. Any other row is a swap — the held item goes back into that store, then the new stack comes out. Only what the store has no room for, and anything the store does not take, goes to `freeHand`. — [[ui/store]]
 
-`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy. `pack-chilli` after `unlock-infusion`.
+`inventory.silo-buy` — Seed silo Buy row click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. Packs `'base'` quality 0. No pack: no Buy. `pack-chilli` after `unlock-infusion`. `pack-grass` after `unlock-landscaping`, `GRASS_PACK`, `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0 }`.
+
+`inventory.grass-silo` — `pack-grass` is not on Build. After `unlock-landscaping` it is sold at the Seed silo on the same path as `pack-chilli`: column when shown, Buy / bulk Buy, lands in the silo as a `'base'` stack, take to hand, walk-up deposits, field Seeding silos included. Item `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0; count }`. `packSku('grass')` is `pack-grass`. No `SeedStore.grass`. No `Act.takeStore` `k: 'grass'`. Take is `k: 'silo'` `c: 'grass'` `r: 'base'`. No extra grass store type. Sow is turf — [[mechanics/plants]] `plants.grass`.
 
 `inventory.ash` — 1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.

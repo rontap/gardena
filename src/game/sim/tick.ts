@@ -18,7 +18,7 @@ import * as nets from './nets.ts'
 import { addRep, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
-import { DAY_STIPEND, POINTS_PER_DAY, type World } from './world.ts'
+import { POINTS_PER_DAY, stipendOf, type World } from './world.ts'
 
 export function tickSpeech(world: World, dt: number): void {
   if (world.speech.kind !== 'say') return
@@ -136,7 +136,8 @@ export function tickWorld(world: World, dt: number): void {
       s.filling = false
     })
     tickContracts(world, beforeDay, world.nowDay())
-    world.money += DAY_STIPEND
+    const stipend = stipendOf(world.clock.day - 1)
+    world.money += stipend
     const tax = world.tax()
     world.money -= tax
     const bill = world.pumpLiters * PUMP_COST_PER_L * pumpCostMul(world.weather(world.clock.day - 1))
@@ -147,7 +148,7 @@ export function tickWorld(world: World, dt: number): void {
     const recap = {
       day: world.clock.day - 1,
       money: world.money,
-      stipend: DAY_STIPEND,
+      stipend,
       died: world.tally.died,
       harvests: world.tally.harvests,
       research: world.tally.research,

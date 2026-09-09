@@ -31,7 +31,7 @@ A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A
 
 Ten rows open at start, 3 / 1 / 2 / 4 across the four tabs. Plants start shelf: **Synthetic fertilizer**, **Tomato seeds**, **Grape seeds**. Grape seeds on the shelf from the first day. **Crop variants** after tomato, grape, or irrigation. **Raspberry seeds** after tomato or grape. **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla, no olive, no watermelon research card. Land: **Unlock land** only. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Better gardening tools**, **Chest**, **Machinery**; **Fermentation** after the grinder.
 
-**×** / the rail toggle that closes **Build**: `leaveBuild` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Automation / Storage / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
+**×** / the rail toggle that closes **Build**: `leaveBuild` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Automation peeks no lens. Storage peeks no lens. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
 
 ## Overlays
 
@@ -63,7 +63,7 @@ Not a seam dialog. App opens it from a recap notice. Hidden unless App has a `re
 
 Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). When `unlock-contracts` done: that day's `Recap.contracts` as one-line history (company, stars, day, completed / missed / cancelled, `Coin` paid / penalty / fee) then **A new board is up.** Omit the block when not unlocked. [[ui/contracts]] [[mechanics/contracts]]
 
-Rule, then ledger **Stipend** `+` coin, **Tax** `−` coin, **Water** `−` `recap.water` coin. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]]
+Rule, then ledger **Support from grandma** `+` coin from `recap.stipend` when `stipend > 0`, **Tax** `−` coin, **Water** `−` `recap.water` coin. Omit the stipend line when `recap.stipend === 0`. Amounts via fill from `stipendOf` / `STIPEND`, not digits in the copy. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]] [[mechanics/day]] `day.stipend`
 
 Footer **Close**. Backdrop / Esc: same as Close. Close runs `World.seeRecap(day)` and closes the popup. Guest Close live (chrome, not a gate). `seeRecap` is not a `Cmd`. `Act.dismissRecap` is a no-op. Points already granted at the seam — not shown on this screen. Recap popup uses the same overlay pause as Family / Market / Almanac. [[mechanics/day]] [[mechanics/family]] [[ui/notices]] [[ui/hud]] [[ui/multiplayer]]
 

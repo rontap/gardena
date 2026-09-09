@@ -108,7 +108,7 @@ Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock
 
 The rotary shovel and the diamond pickaxe have no sku. Both are four-star contract prizes — [[mechanics/contracts]].
 
-`pack-tomato` show `start`, buy `unlock-tomato`. `pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. `pack-chilli` show + buy `unlock-infusion`, `PACK_N` at 10. No `pack-olive`. No `pack-vanilla`. No `pack-watermelon`. No `unlock-chilli`. Packs are `'base'` quality 0. `buy-freezer-large` `need: 'prize'` — shown and buyable only while one is banked.
+`pack-tomato` show `start`, buy `unlock-tomato`. `pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. `pack-chilli` show + buy `unlock-infusion`, `PACK_N` at 10. `pack-grass` show `start`, buy `unlock-landscaping`, `GRASS_PACK`. No `pack-olive`. No `pack-vanilla`. No `pack-watermelon`. No `unlock-chilli`. Packs are `'base'` quality 0. `buy-freezer-large` `need: 'prize'` — shown and buyable only while one is banked.
 
 `buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-grinder`, buy `unlock-furnace`. `buy-infuser` show `unlock-preservatives`, buy `unlock-infusion`. — [[mechanics/machines]] [[mechanics/infusion]]
 
@@ -155,7 +155,7 @@ Logic gate + NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` 
 
 ### Land
 
-`pack-grass`, `buy-fence` and all four paving SKUs show from `start`, buy after `unlock-landscaping`; all of them file on the Build **Land** shelf — [[items/tiles]] [[ui/build]]. `buy-pickaxe` show `start`, buy `unlock-pickaxe`. `buy-better-pickaxe` unlock and show `unlock-hardened-tools`, price 44 — preference. `buy-axe` utility, unlock and show `unlock-pickaxe`. `buy-chainsaw` utility, unlock and show `unlock-hardened-tools`, price 60 — preference. `unlock-pickaxe` effect stays `buy-pickaxe`. `unlock-hardened-tools` effect `buy-better-pickaxe`. `skuLabel` **Axe**. `skuLabel` **Chainsaw**. — [[items/tools]] [[mechanics/expansion]]
+`buy-fence` and all four paving SKUs show from `start`, buy after `unlock-landscaping`; they file on the Build **Land** shelf — [[items/tiles]] [[ui/build]]. `pack-grass` show from `start`, buy after `unlock-landscaping`; `packSku('grass')` is `pack-grass`; sold at the Seed silo as `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0 }`, not on Build — [[mechanics/inventory]] `inventory.grass-silo` [[ui/store]]. `buy-pickaxe` show `start`, buy `unlock-pickaxe`. `buy-better-pickaxe` unlock and show `unlock-hardened-tools`, price 44 — preference. `buy-axe` utility, unlock and show `unlock-pickaxe`. `buy-chainsaw` utility, unlock and show `unlock-hardened-tools`, price 60 — preference. `unlock-pickaxe` effect stays `buy-pickaxe`. `unlock-hardened-tools` effect `buy-better-pickaxe`. `skuLabel` **Axe**. `skuLabel` **Chainsaw**. — [[items/tools]] [[mechanics/expansion]]
 
 ## Invariants
 
@@ -173,7 +173,7 @@ Logic gate + NOT do not carry `need: unlock-sensors`: `unlock-advanced-sensors` 
 
 `research.reveal` — Raspberry research `reveal` tomato | grape. No olive research row. No vanilla research row. Vanilla has no pack. No `unlock-chilli`. `unlock-infusion` trade, `reveal` and `requires` `unlock-preservatives`, gates `buy-infuser` and `pack-chilli`. `pack-chilli` show + buy `unlock-infusion`. `unlock-fermentation` unlocks `pack-sugar-cane` and gates `buy-still` `buy-barrel`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `unlock-furnace` trade, `reveal` fermentation, gates `buy-furnace`, show `unlock-grinder`. `unlock-grinder` also gates `buy-mill`. `unlock-preservatives` trade, reveal `unlock-grinder`, gates `buy-jam` `buy-freezer` `buy-sugar`. Station has no research row.
 
-`research.gates` — `better-grape` gated on `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli`. No `unlock-olive`. No `unlock-chilli`. `machinery` gated on `unlock-grinder`.
+`research.gates` — `better-grape` gated on `unlock-grape`. `better-apple` `better-apricot` `better-olive` `better-cherry` gate none. No `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli` `better-grass`. No `unlock-olive`. No `unlock-chilli`. `machinery` gated on `unlock-grinder`.
 
 `research.infusion` — `unlock-infusion` trade, `reveal` and `requires` `unlock-preservatives`, `effect` `unlock-sku` `buy-infuser`. `buy-infuser` show `unlock-preservatives`, buy that row. `pack-chilli` show + buy that row, `PACK_N` at 10. No chilli research row. — [[mechanics/infusion]]
 

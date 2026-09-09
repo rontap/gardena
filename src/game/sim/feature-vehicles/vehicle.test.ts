@@ -557,6 +557,33 @@ describe('vehicles II', () => {
     expect(bed.plant.variety).toBe('base')
   })
 
+  describe('vehicles.seeder', () => {
+  test("Seeder hopper is one `{ kind: 'seeds' }` stack, `crop: 'grass'` legal. Boom on empty tilled: grass sows turf; every other annual plants as hand. Consume 1/plot.", () => {
+    const w = farm()
+    w.buyVehicle(AT, 'tractor')
+    w.buyTrailer(AT, 'seed')
+    w.deploy(1, AT, 1)
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: 8 } }
+    w.swapTrailer(1, 0)
+    const t = w.trailers[0]
+    expect(t.kind).toBe('seed')
+    if (t.kind !== 'seed') throw new Error('seed')
+    expect(t.hopper).toEqual({ kind: 'hold', item: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: 8 } })
+    const south = { col: 11, row: 16 }
+    w.setCell(south, { kind: 'empty', soil: new Soil(1, 1, 0.03) })
+    w.seats[0].actor.x = fieldTractor(w).pose.x
+    w.seats[0].actor.y = fieldTractor(w).pose.y
+    w.embark(1)
+    aimBoom(w, south)
+    w.tick(DT_MAX)
+    const bed = w.cell(south)
+    expect(bed.kind).toBe('turf')
+    if (t.hopper.kind !== 'hold') throw new Error('hopper')
+    expect(t.hopper.item.count).toBe(7)
+  })
+  })
+
   test('Boom spray band. Full plot skip. TRAILER_CAP floor(liters).', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')

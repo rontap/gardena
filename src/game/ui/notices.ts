@@ -5,7 +5,7 @@ import type { VarietyId } from '../defs/varieties.ts'
 import type { Coord } from '../sim/building.ts'
 import { filledOf, needOf } from '../sim/feature-contracts/market.ts'
 import type { CompanyId, ContractId, Demand } from '../sim/feature-contracts/market.h.ts'
-import { JAM_CROPS, type CropId, type ResearchId } from '../sim/ids.ts'
+import { JAM_CROPS, type GrownCrop, type ResearchId } from '../sim/ids.ts'
 import { statsOf, type Stats } from '../sim/modifiers.ts'
 import type { RosterSeat } from '../sim/mp.ts'
 import { grid } from '../sim/nets.ts'
@@ -92,7 +92,7 @@ export type NoticeFace =
   | { kind: 'weed' }
 
 export type NoticeSubject =
-  | { kind: 'crop'; crop: CropId }
+  | { kind: 'crop'; crop: GrownCrop }
   | { kind: 'research'; id: ResearchId }
   | { kind: 'demand'; demand: Demand }
 
@@ -123,7 +123,7 @@ function key(at: Coord): string {
   return `${at.col},${at.row}`
 }
 
-function statsFor(world: World, cache: Map<string, Stats>, crop: CropId, variety: VarietyId): Stats {
+function statsFor(world: World, cache: Map<string, Stats>, crop: GrownCrop, variety: VarietyId): Stats {
   const k = `${crop}|${variety}`
   const hit = cache.get(k)
   if (hit !== undefined) return hit
@@ -454,7 +454,7 @@ export function rosterNotices(
       rows.push(mintRoster('quit', s.id, s.name, n))
       return
     }
-    if (was === undefined || (was.presence === 'away' && s.presence === 'in')) {
+    if (s.presence === 'in' && (was === undefined || was.presence === 'away')) {
       n += 1
       rows.push(mintRoster('joined', s.id, s.name, n))
     }

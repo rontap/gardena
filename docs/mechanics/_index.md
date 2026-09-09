@@ -2,9 +2,9 @@
 
 Rules as the game runs. Named invariants live on the owning note. Numbers: preference / tuned-to / derived — [[standards/docs]].
 
-- [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center
+- [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center. `stipendOf`. `day.stipend`
 - [[mechanics/soil]]
-- [[mechanics/plants]] — variety, quality, graft attach, neighbour
+- [[mechanics/plants]] — variety, quality, graft attach, neighbour. `AnnualId` grass. `Plant.crop` excludes grass. `plants.grass`
 - [[mechanics/trees]] — axe, chainsaw, wood, trunk, grafts
 - [[mechanics/water]]
 - [[mechanics/weather]]
@@ -18,13 +18,13 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/family]] — luck
 - [[mechanics/expansion]]
 - [[mechanics/burrow]] — cover, loot roll, luck, treasure
-- [[mechanics/inventory]] — wood, ash, graft, treasure
-- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station infuser
+- [[mechanics/inventory]] — wood, ash, graft, treasure. `pack-grass` Seed silo. `inventory.grass-silo`
+- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station infuser. Mill Infuser Furnace south-row chest I/O
 - [[mechanics/infusion]] — Infusion, chilli, flakes, vanilla-extract, infused jam / cask / spirit / oil, Infuser, overlay-infused, furnace bread
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
 - [[mechanics/rng]] — burrow
-- [[mechanics/tutorial]]
+- [[mechanics/tutorial]] — `holdingSeeds` is `{ kind: 'seeds' }`. Not `tree-seed`
 - [[mechanics/multiplayer]]
 
 See [[canon]].
@@ -36,6 +36,7 @@ See [[canon]].
 | day.seam | [[mechanics/day]] |
 | day.phases | [[mechanics/day]] |
 | day.recap | [[mechanics/day]] |
+| day.stipend | [[mechanics/day]] |
 | day.end-day | [[mechanics/day]] |
 | notices.popup | [[ui/notices]] |
 | notices.dismiss | [[ui/notices]] |
@@ -56,6 +57,7 @@ See [[canon]].
 | tiles.paving | [[items/tiles]] |
 | tiles.paving-site | [[items/tiles]] |
 | vehicles.silo-store | [[mechanics/vehicles]] |
+| vehicles.seeder | [[mechanics/vehicles]] |
 | plants.drink | [[mechanics/plants]] |
 | plants.happy | [[mechanics/plants]] |
 | plants.ripen | [[mechanics/plants]] |
@@ -65,6 +67,7 @@ See [[canon]].
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
 | plants.chilli | [[mechanics/plants]] |
+| plants.grass | [[mechanics/plants]] |
 | plants.annual | [[mechanics/plants]] |
 | plants.tree-foot | [[mechanics/plants]] |
 | plants.kinds | [[mechanics/plants]] |
@@ -151,6 +154,7 @@ See [[canon]].
 | variety.stack | [[mechanics/inventory]] |
 | inventory.containers | [[mechanics/inventory]] |
 | inventory.silo-buy | [[mechanics/inventory]] |
+| inventory.grass-silo | [[mechanics/inventory]] |
 | inventory.ash | [[mechanics/inventory]] |
 | inventory.infused | [[mechanics/inventory]] |
 | machines.sugar | [[mechanics/machines]] |

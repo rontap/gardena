@@ -6,6 +6,22 @@ import { POINTS_PER_DAY, World } from '../world.ts'
 import { dump, parse } from './save.ts'
 
 describe('save.nomigrate', () => {
+  test("A dump with `{ kind: 'grass-seeds' }` or `SeedStore.grass` fails hydrate (`unusable`). No migrate.", () => {
+    const w = new World(1)
+    const s = dump(w)
+    s.seats[0].hand = { kind: 'hold', item: { kind: 'grass-seeds', count: 5 } as never }
+    const bad = parse(JSON.stringify(s))
+    expect(bad.ok).toBe(false)
+    if (!bad.ok) expect(bad.reason).toBe('unusable')
+    const g = dump(new World(1))
+    const house = g.chunks[0].cells[9][17]
+    expect(house.kind).toBe('seed-silo')
+    ;(house as { grass?: number }).grass = 1
+    const store = parse(JSON.stringify(g))
+    expect(store.ok).toBe(false)
+    if (!store.ok) expect(store.reason).toBe('unusable')
+  })
+
   test("`Item` `chainsaw` `usesLeft`+`workSeconds`", () => {
     const w = new World(1)
     w.seats[0].hand = { kind: 'hold', item: makeChainsaw() }

@@ -14,17 +14,17 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/machines]] — mill / jam / barrel / grinder lock Variety. Still mixed. Infuser. Furnace bread
 - [[ui/recipe]] — `MachineId` mill jam still barrel grinder compost-box furnace infuser. `recipesUsing` crop + Variety
 - [[ui/vehicles]]
-- [[ui/build]] — the only catalogue. Tools, Water, Automation, Storage, Sensors, Land. Shift keeps the tool in hand
-- [[ui/store]] — silo by Variety
+- [[ui/build]] — the only catalogue. Tools, Water, Automation, Storage, Sensors, Land. `pack-grass` not Land. Automation Storage peek no lens. Shift keeps the tool in hand
+- [[ui/store]] — silo by Variety. `pack-grass` Seed silo. `inventory.grass-silo`
 - [[ui/station]] — walk-up panel
 - [[ui/cheat]] — top-ribbon button. `#debug-techtree` omits `buy-or` `buy-and` `buy-water-system`. `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
 - [[ui/market]] — the tab you left it on comes back
 - [[ui/contracts]]
-- [[ui/almanac]] — top-ribbon button. Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow Infusion. chilli. One Infusion page, not infused product panes. overlay-infused
+- [[ui/almanac]] — top-ribbon button. Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow Infusion. chilli. Grass seeds pack pane `{ kind: 'seeds'; crop: 'grass' }`. Not Land. One Infusion page, not infused product panes. overlay-infused
 - [[ui/family]] — Reputation and Luck band over the three cards
 - [[ui/callout-hover]]
-- [[ui/docks]] — Recap popup is App `recapDay`, not a seam
-- [[ui/lens]]
+- [[ui/docks]] — Recap popup is App `recapDay`, not a seam. `stipendOf`
+- [[ui/lens]] — Water peeks pipes. Sensors peeks sensors. Automation Storage peek no lens
 - [[ui/sensors]] — Logic gate, Variety sensor, Weather sensor, Pressure plate. Fenced-area wash. `Checkbox` / `Radio`
 - [[ui/type]]
 

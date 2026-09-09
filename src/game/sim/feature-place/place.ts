@@ -197,16 +197,6 @@ export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
   if (!w.skuOpen(id)) return undefined
   const made = skuItem(id)
   const field = isFieldSilo(w, at)
-  if (made.kind === 'grass-seeds') {
-    const price = w.skuPrice(id)
-    if (w.money < price) return 'Cannot afford'
-    if (!canFitGrass(w)) return 'Inventory full'
-    w.money -= price
-    putGrass(w, made.count)
-    w.compactInventory()
-    w.ping()
-    return undefined
-  }
   if (made.kind === 'sugar') {
     const price = w.skuPrice(id)
     const store = additiveStoreAt(w, at)
@@ -329,23 +319,4 @@ function sprinklerSku(s: Sprinkler): SkuId {
   return 'buy-sprinkler-large'
 }
 
-function grassSlot(w: World): number {
-  return w.act.inventory.findIndex(s => s.kind === 'hold' && s.item.kind === 'grass-seeds')
-}
 
-function canFitGrass(w: World): boolean {
-  return grassSlot(w) >= 0 || w.act.inventory.some(s => s.kind === 'empty')
-}
-
-function putGrass(w: World, count: number): void {
-  const merge = grassSlot(w)
-  if (merge >= 0) {
-    const slot = w.act.inventory[merge]
-    if (slot.kind === 'hold' && slot.item.kind === 'grass-seeds') slot.item.count += count
-    return
-  }
-  w.act.inventory[w.act.inventory.findIndex(s => s.kind === 'empty')] = {
-    kind: 'hold',
-    item: { kind: 'grass-seeds', count },
-  }
-}

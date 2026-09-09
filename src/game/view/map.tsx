@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type WheelEvent as ReactWheelEvent } from 'react'
 import { m } from '../../paraglide/messages.js'
 import { HANGAR_H, HANGAR_W, MILL_H, MILL_W, SILO_H, SILO_W } from '../defs/items.ts'
-import { FADE, occupiedCells, type Coord } from '../sim/building.ts'
+import { FADE, occupiedCells, skuBase, type Coord } from '../sim/building.ts'
 import { isFenceSite } from '../sim/plot.ts'
 import { onCell } from '../sim/drop.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
@@ -204,7 +204,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     (tipDrop.item.kind === 'shovel' || tipDrop.item.kind === 'pickaxe' || tipDrop.item.kind === 'container')
       ? itemLine(tipDrop.item, world.modifiers)
       : undefined
-  const hoverFoot = strokeFoot(world, strokeCell, place, pumpjack, furnacePlace, hangarPlace, siloPlace, millPlace)
+  const hoverFoot = strokeFoot(world, strokeCell, place)
   const hoverOutline = footOutline(hoverFoot)
   const coverOutline = footOutline(coverFoot(world, strokeCell, place))
   const neighbourWatch =
@@ -945,11 +945,6 @@ function strokeFoot(
   world: World,
   stroke: { col: number; row: number } | undefined,
   place: Place,
-  pumpjack: boolean,
-  furnacePlace: boolean,
-  hangarPlace: boolean,
-  siloPlace: boolean,
-  millPlace: boolean,
 ): { col: number; row: number }[] {
   if (stroke === undefined) return []
   if (place.kind === 'none') {
@@ -958,30 +953,12 @@ function strokeFoot(
     if ('base' in cell) return occupiedCells(cell.base, world.owned)
     return [stroke]
   }
-  if (pumpjack) return [stroke, { col: stroke.col + 1, row: stroke.row }]
-  if (furnacePlace) return [stroke, { col: stroke.col, row: stroke.row + 1 }]
-  if (hangarPlace) {
-    const cells: { col: number; row: number }[] = []
-    for (let row = 0; row < HANGAR_H; row++) {
-      for (let col = 0; col < HANGAR_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
-    }
-    return cells
-  }
-  if (millPlace) {
-    const cells: { col: number; row: number }[] = []
-    for (let row = 0; row < MILL_H; row++) {
-      for (let col = 0; col < MILL_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
-    }
-    return cells
-  }
-  if (siloPlace) {
-    const cells: { col: number; row: number }[] = []
-    for (let row = 0; row < SILO_H; row++) {
-      for (let col = 0; col < SILO_W; col++) cells.push({ col: stroke.col + col, row: stroke.row + row })
-    }
-    return cells
-  }
-  return [stroke]
+  if (place.kind !== 'sku') return [stroke]
+  const base = skuBase(place.id, stroke)
+  if (base === undefined) return [stroke]
+  return Array.from({ length: base.h }, (_, row) =>
+    Array.from({ length: base.w }, (_, col) => ({ col: base.col + col, row: base.row + row })),
+  ).flat()
 }
 
 function GhostDefs() {

@@ -27,7 +27,7 @@ test('hover outline', async ({ page }) => {
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
-  await page.getByRole('button', { name: 'Delete' }).click({ force: true })
+  await page.getByRole('button', { name: 'Demolish' }).click({ force: true })
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)

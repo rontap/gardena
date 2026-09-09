@@ -2,11 +2,11 @@
 
 Types [[architecture/world]]. Chrome [[ui/hud]]. Look [[ui/inspect]]. `Place` / `StayArmed` live on `sim/world.ts`.
 
-Delete is the left-ribbon **Delete** → `armDelete()` → `{ kind: 'delete' }`. Not a shelf SKU. `buy` never arms delete. Packs never arm — `buy` merges seeds into inventory.
+Demolish is the left-ribbon **Demolish** → `armDelete()` → `{ kind: 'delete' }`. Not a shelf SKU. `buy` never arms it. Packs never arm — `buy` merges seeds into inventory.
 
 Truck is not a Place SKU. Unarmed click.
 
-Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + fifteen sensor-cell SKUs (`buy-logic` `buy-sensor-variety` `buy-sensor-weather` in place of `buy-or` `buy-and` `buy-water-system`). Delete via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
+Map `STAY_ARMED` SKUs (ghost follow + `promptHit`): `buy-pipe` `buy-valve` + three sprinklers + fifteen sensor-cell SKUs (`buy-logic` `buy-sensor-variety` `buy-sensor-weather` in place of `buy-or` `buy-and` `buy-water-system`). Demolish via `place.kind === 'delete'`. Wire via `place.kind === 'wire'`.
 
 Confirm does **not** set `none` for StayArmed, **valve**, and **tiles** (`buy-tile-paved` `buy-tile-brick` `buy-tile-cobble`). Ghost stays.
 
@@ -14,9 +14,9 @@ Shift held on the confirming click keeps every other sku armed too: App reads `S
 
 Disarm on confirm: `buy-pumpjack` `buy-rain-tank` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box` `buy-mill` `buy-infuser` `buy-jam` `buy-still` `buy-furnace` `buy-barrel` `buy-freezer` `buy-research-station` `buy-hangar` `buy-silo-seed` `buy-silo-spray` `buy-silo-produce` and item SKUs.
 
-Pay on confirm only. No charge on cancel. No refund on delete. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
+Pay on confirm only. No charge on cancel. No refund on demolish. Pan/zoom stay live except armed `buy-pipe` left-drag (that drag is the pending run, not pan) and armed `buy-fence` left-drag from a fence site. While armed, `readPrompt` is place or blocked only.
 
-Build cluster on the left ribbon, not in a dock. Trio **Delete** **Rotate** **Cancel** iff delete or sku in `GHOST_SKUS`, derived from the Water, Automation, Storage, and Sensors shelves — [[ui/build]] [[ui/sensors]]. Tiles and fence: no trio, they are paint tools. Compost-box does get the trio; the old hand-written list had dropped it. Rotate is a no-op unless `buy-sprinkler-vert` (`ns` ↔ `ew`). No rotatable sensor SKU. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
+Build cluster on the left ribbon, not in a dock. **Demolish** is always there. **Cancel** is there iff `place.kind !== 'none'`, so paving and fencing carry it too. **Rotate** only for `buy-sprinkler-vert` (`ns` ↔ `ew`); no rotatable sensor SKU. `GHOST_SKUS` gates none of the three — [[ui/hud]] [[ui/build]] [[ui/sensors]]. Facing lives on `Place`. Ghost uses `place.facing`. Hangar and field silos: door south, no rotate.
 
 The Build dock sits `left-32` past the `w-24` ribbon, `top-20` level with it. Ghosts stay on the map. It is the only panel that arms — [[ui/build]].
 
@@ -50,7 +50,7 @@ Valve stays click-per-edge. Pan while it is armed.
 
 Armed Build card (`place.kind === 'sku' && place.id === id`): selected. Label `skuLabel` + coin + price.
 
-Look: `lookText`. Armed with no cell still place / delete copy, not **—**. Status uses roof tint while armed.
+Look: `lookText`. Armed with no cell still place / demolish copy, not **—**. Status uses roof tint while armed.
 
 ## Hover cell
 
@@ -58,7 +58,7 @@ Always one cell on `floor` of the world pointer while on the map. Not gated on s
 
 One HTML overlay SVG `path` over the canvas (`fill-none` `strokeWidth` 2): the boundary of the union of the footprint cells, internal edges dropped. Every footprint in the game is rectangular, so that boundary is one rect today; the union rule is what stops an L-shaped building bringing the grid back. Hook: `data-cell-stroke` on that one path. Farm sprites have no DOM.
 
-Unarmed, and while pipe / valve / sprinkler / delete / sensor-cell / wire armed: outline always `stroke-ink`. Pipe / sprinkler / delete ghosts in addition. Pipe ghost is not a black bar.
+Unarmed, and while pipe / valve / sprinkler / demolish / sensor-cell / wire armed: outline always `stroke-ink`. Pipe / sprinkler / demolish ghosts in addition. Pipe ghost is not a black bar.
 
 Item / cell / tile SKUs: valid `stroke-ink`, blocked `stroke-roof`. Place ghosts for pumpjack / still / station / furnace / mill / infuser / hangar / silo already cover footprint — keep. Pumpjack, rain-tank, still, station: both occupied cells. Furnace: both occupied cells, 24×48. Mill / infuser: all four, 48×48. Hangar and field silos: all six. Outline stays and matches.
 
@@ -74,7 +74,7 @@ Stroke-only outline of the covering area: Chebyshev ≤ `FURNACE_REACH` over the
 | unarmed, hover a placed furnace (either cell) | covering stroke |
 | else | none |
 
-Hook: `data-furnace-cover` on one SVG `path`. `fill-none` `stroke-ink` `strokeWidth` 2. `pointer-events-none`. Union boundary of covering cells, internal edges dropped — same path rule as `data-cell-stroke`. Clip to owned (`inWorld`): drop fade and off-farm covering cells from the union. Empty intersection: no element. Blocked place still paints covering `stroke-ink`; footprint may be `stroke-roof`. Delete / other SKUs: no covering.
+Hook: `data-furnace-cover` on one SVG `path`. `fill-none` `stroke-ink` `strokeWidth` 2. `pointer-events-none`. Union boundary of covering cells, internal edges dropped — same path rule as `data-cell-stroke`. Clip to owned (`inWorld`): drop fade and off-farm covering cells from the union. Empty intersection: no element. Blocked place still paints covering `stroke-ink`; footprint may be `stroke-roof`. Demolish / other SKUs: no covering.
 
 ## Last action
 
@@ -144,7 +144,7 @@ Armed `buy-fence`. Same L-path as the pipe run, on cells: `routeCells` / `fenceO
 
 Whole run or nothing. Total over `money` → **Cannot afford**.
 
-Pipes always drawn (joints, valves, sprinklers, fences). Faint (`opacity` 0.35, preference) when the effective lens is not `pipes` and place is not delete / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
+Pipes always drawn (joints, valves, sprinklers, fences). Faint (`opacity` 0.35, preference) when the effective lens is not `pipes` and place is not demolish / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
 
 `PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-rain-tank` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
 
@@ -164,48 +164,70 @@ Unarmed: hovering a placed sprinkler vertex within `VERTEX_HIT` paints that head
 
 Unarmed, with `unlock-smart-irrigation` and a sprinkler under the vertex: **Tune sprinkler** → [[ui/docks]] object HUD. Sprinkler `in` after the same row is a wire port in `sensors` — [[ui/sensors]]. Tune unchanged.
 
-## Delete
+## Demolish
 
 `place.kind === 'delete'`. Stay armed. No money, no refund. No 64px ghost.
 
 Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within `VERTEX_HIT` first. Then `deleteBuilding(at)`.
 
+Every cell a building stood on comes back as soft untilled bare ground, `bare('soft', 0)` — the same ground a dug tree leaves. There is no `Soil` on it, so no water and no fertilizer carry over, and the cell is a paving site and a fence site again. `place.demolish-land`
+
 | hit | copy | result |
 |---|---|---|
-| bezier within `VERTEX_HIT` | **Delete wire** | remove wire |
-| owned piped edge, no valve | **Delete pipe** | remove pipe |
-| owned valved edge | **Delete valve** | valve off, pipe stays, incident wires drop |
-| owned sprinkler vertex | **Delete sprinkler** | remove sprinkler; incident wires drop |
-| pumpjack | **Delete pumpjack** | both cells → empty |
-| rain-tank | **Delete rainwater tank** | both cells → empty |
-| tap | **Delete tap** | cell → empty |
-| well | **Delete well** | cell → empty |
-| chest | **Delete chest** | slots become drops on at, cell → empty |
-| research station | **Delete {skuLabel}** | cell → empty |
-| grinder | **Delete grinder** | cell → empty |
-| compost-box | **Delete compost box** | cell → empty |
-| mill | **Delete mill** | four cells → empty |
-| infuser | **Delete Infuser** | four cells → empty |
-| still | **Delete pot still** | cell → empty |
-| furnace | **Delete {skuLabel}** | both cells → empty |
-| barrel | **Delete wine barrel** | cell → empty |
-| jam | **Delete jam machine** | cell → empty |
-| freezer | **Delete freezer** | slots become drops on at, cell → empty |
-| hangar, stores no vehicle or trailer | **Delete vehicle hangar** | six cells → empty |
-| hangar that stores a vehicle or a trailer | **Cannot delete here (stores a vehicle)** | no-op |
-| silo-seed / silo-spray / silo-produce | **Delete seeding silo** / **Delete spraying silo** / **Delete produce silo** | six cells → empty |
-| lever / button / lamp / logic / not / pulser / counter / sensor-water / sensor-fert / sensor-harvest / sensor-variety / sensor-weather / water-system / vehicle-detector / sensor-day / traffic-light | **Delete lever** / **Delete button** / **Delete lamp** / **Delete logic gate** / **Delete NOT gate** / **Delete pulser** / **Delete counter** / **Delete water sensor** / **Delete fertilizer sensor** / **Delete harvest sensor** / **Delete variety sensor** / **Delete weather sensor** / **Delete water-system sensor** / **Delete pressure plate** / **Delete day sensor** / **Delete traffic light** | cell → empty; incident wires drop. Fenceable + `hasFence`: sensor and wires go, fence remains. Traffic-light delete also strips wait stops targeting that cell |
-| house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, untilled, infertile | **Cannot delete here** | no-op |
+| bezier within `VERTEX_HIT` | **Demolish wire** | remove wire |
+| owned piped edge, no valve | **Demolish pipe** | remove pipe |
+| owned valved edge | **Demolish valve** | valve off, pipe stays, incident wires drop |
+| owned sprinkler vertex | **Demolish sprinkler** | remove sprinkler; incident wires drop |
+| pumpjack | **Demolish pumpjack** | both cells |
+| rain-tank | **Demolish rainwater tank** | both cells |
+| tap | **Demolish tap** | cell |
+| well | **Demolish well** | cell |
+| chest | **Demolish chest** | slots become drops on at, cell |
+| station | **Demolish Seed Variety Station** | both cells |
+| grinder | **Demolish seed grinder** | cell |
+| compost-box | **Demolish compost box** | cell |
+| mill | **Demolish mill** | four cells |
+| infuser | **Demolish Infuser** | four cells |
+| still | **Demolish pot still** | both cells |
+| furnace | **Demolish {skuLabel}** | both cells |
+| barrel | **Demolish wine barrel** | cell |
+| jam | **Demolish jam machine** | cell |
+| freezer | **Demolish freezer** | slots become drops on at, cell |
+| hangar, stores no vehicle or trailer | **Demolish vehicle hangar** | six cells |
+| hangar that stores a vehicle or a trailer | **Cannot demolish here (stores a vehicle)** | no-op |
+| silo-seed / silo-spray / silo-produce | **Demolish seeding silo** / **Demolish spraying silo** / **Demolish produce silo** | six cells |
+| lever / button / lamp / logic / not / pulser / counter / sensor-water / sensor-fert / sensor-harvest / sensor-variety / sensor-weather / water-system / vehicle-detector / sensor-day / traffic-light | **Demolish lever** / **Demolish button** / **Demolish lamp** / **Demolish logic gate** / **Demolish NOT gate** / **Demolish pulser** / **Demolish counter** / **Demolish water sensor** / **Demolish fertilizer sensor** / **Demolish harvest sensor** / **Demolish variety sensor** / **Demolish weather sensor** / **Demolish water-system sensor** / **Demolish pressure plate** / **Demolish day sensor** / **Demolish traffic light** | cell; incident wires drop. Fenceable + `hasFence`: sensor and wires go, fence remains. Traffic-light demolish also strips wait stops targeting that cell |
+| fenced cell, host | **Demolish wooden fence** | fence goes, cell keeps what is under it |
+| bare plot carrying paving, host | **Demolish paving** | slab goes, ground stays |
+| house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, bare untilled | **Cannot demolish here** | no-op |
+
+`place.demolish-filter` — the copy table above and `deleteBuildingBody` cover the same set. `DELETE_NAME` in `prompt.ts` is the name lookup, not the gate: a kind the body takes down and the table does not name reads **Cannot demolish here** and the click dies before `confirmPlace`. Station and paving were exactly that. Fence and paving are host only in both, so a guest reads **Cannot demolish here** rather than a prompt that does nothing. Paving needs `isPlot` on both sides: a slab under the house stays.
 
 `deletePipe` / `deleteSprinkler` / `deleteBuilding` require `place.kind === 'delete'`. They do not clear place.
 
-Delete pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline stays `stroke-ink`.
+Demolish pipe / sprinkler: look chip + cell outline. Pipes stay Pixi. Cell outline stays `stroke-ink`.
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU. Burrow: shovel **Dig**, pickaxe no-op, place / tile / fence / tree-seed refuse — [[mechanics/burrow]] `burrow.block`.
 
 `placeLabel` = `skuLabel`. Place / pulse copy is **Place {skuLabel}**. Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Smart sprinkler vertex **Tune sprinkler**. Blocked **Cannot place here**. Poor **Cannot afford**. Valve already on edge **Pipe already has a valve**. Wire: **Cannot wire here** / **Cannot loop** / **Remove wire**. Sensor Flip / Press / Tune: [[ui/sensors]]. Fenceable sensor on a fenced cell: **Place {skuLabel}**. Non-fenceable on a fence: **Cannot place here**. Fence on a fenceable sensor: **Place Wooden fence**. Burrow place / tile / fence / tree-seed: **Cannot place here**, not **Fences need untilled ground**.
 
-Pipe / delete follow copy: HTML chip under the pointer, same `bg-house` `px-2` `py-0.5` `text-base` `text-ink`, no `skuInner`.
+Pipe / demolish follow copy: HTML chip under the pointer, same `bg-house` `px-2` `py-0.5` `text-base` `text-ink`, no `skuInner`.
+
+## Ghost connections
+
+`place.ghost-io` — While `place.kind === 'sku'`, the ghost paints the connections that building will have, for that building alone. Pixi overlay layer beside the pads it mirrors, `GHOST_IO_ALPHA` 0.7 — preference. Nothing in the HTML overlay. Off-farm cells drop (`inWorld`).
+
+`skuBase(id, at)` on `building.ts` is the one footprint source: `SKU_FOOT` maps a sku to `{ w, h }`, absent for pipe, valve, sprinkler, tiles, fence and item SKUs. `strokeFoot` in `map.tsx` reads the same call, so the outline and the connections cannot disagree.
+
+| set | draws |
+|---|---|
+| `IO_SKUS` (`machine.ts`, beside `isIoCell`) | `link-in` west of the south row, `link-out` east of it — the `machineWest` / `machineEast` cells at the `machineLinks` offsets. Always, chest there or not: the point is showing where the chest goes |
+| `PAD_SKUS` (`vehicle.ts`, beside `padBuildings`) | `pad-drop` on `dropoffPad`, `pad-take` on `takeupPad` |
+| `HANGAR_PAD_SKUS` / `SILO_PAD_SKUS` | `hangar-return` on `hangarPad` / `siloPad` |
+
+Pads need `unlock-vehicles` done. Before that research the ghost shows chutes only — a pad the player cannot drive onto is chrome for a machine they do not have. The chutes are not gated: chest I/O is open from the first mill.
+
+The three sets mirror class flags (`isIoCell`, `pads`), so `place.ghost-io` places every sku in `SKU_FOOT` and asserts the built instance agrees. That test is what stops the preview drifting from the sim.
 
 ## Queue markers
 

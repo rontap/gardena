@@ -443,7 +443,6 @@ export function rosterNotices(
   const rows: Notice[] = []
   next.forEach(s => {
     if (s.id === local) return
-    const was = before.get(s.id)
     if ('leave' in s && s.leave === 'kicked') {
       n += 1
       rows.push(mintRoster('desynced', s.id, s.name, n))
@@ -454,7 +453,7 @@ export function rosterNotices(
       rows.push(mintRoster('quit', s.id, s.name, n))
       return
     }
-    if (s.presence === 'in' && (was === undefined || was.presence === 'away')) {
+    if (s.presence === 'in' && before.get(s.id)?.presence !== 'in') {
       n += 1
       rows.push(mintRoster('joined', s.id, s.name, n))
     }

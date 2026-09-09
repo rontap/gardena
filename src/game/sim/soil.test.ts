@@ -71,12 +71,10 @@ describe('tiles.paving', () => {
 
         w.armDelete()
         w.confirmPlace(at)
-        expect(w.cell(at).kind).toBe('empty')
+        expect(w.cell(at).kind).toBe('untilled')
         expect(w.pavingAt(at)).toBe('paved')
 
-        w.setCell(at, bare('soft', 0))
-        w.armDelete()
-        w.confirmPlace(at)
+        w.click(at)
         expect(w.pavingAt(at)).toBe('none')
     })
 

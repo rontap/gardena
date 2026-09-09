@@ -20,6 +20,8 @@ import {
   GRIND_MAX,
   grindMinAt,
   GRIND_WORK,
+  HANGAR_H,
+  HANGAR_W,
   JAM_BUFFER,
   JAM_IN,
   JAM_SECONDS,
@@ -29,7 +31,9 @@ import {
   PRODUCE_SLOTS,
   SILO_FIELD_ADDITIVE_CAP,
   SILO_FIELD_SEED_CAP,
+  SILO_H,
   SILO_SEED_CAP,
+  SILO_W,
   STATION_GRAFT_MAX,
   STATION_GRAFT_MIN,
   STATION_IN,
@@ -41,7 +45,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import type { AnnualId, BarrelCrop, FurnaceRecipe, GrownCrop, Infusable, JamCrop, MillRecipe, Signal, SkuId, StillCrop, TreeId } from './ids.ts'
+import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type Signal, type SkuId, type StillCrop, type TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
 import {
@@ -164,6 +168,38 @@ export function occupiedCells(base: Base, owned: readonly ChunkId[]): Coord[] {
     }
   }
   return out
+}
+
+const ONE_CELL_SKUS: readonly SkuId[] = [
+  'buy-chest',
+  'buy-freezer',
+  'buy-freezer-large',
+  'buy-grinder',
+  'buy-compost-box',
+  'buy-jam',
+  'buy-barrel',
+  'buy-tap',
+  'buy-well',
+]
+
+export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
+  'buy-pumpjack': { w: 2, h: 1 },
+  'buy-rain-tank': { w: 2, h: 1 },
+  'buy-still': { w: 2, h: 1 },
+  'buy-research-station': { w: 2, h: 1 },
+  'buy-furnace': { w: 1, h: 2 },
+  'buy-mill': { w: MILL_W, h: MILL_H },
+  'buy-infuser': { w: MILL_W, h: MILL_H },
+  'buy-hangar': { w: HANGAR_W, h: HANGAR_H },
+  'buy-silo-seed': { w: SILO_W, h: SILO_H },
+  'buy-silo-spray': { w: SILO_W, h: SILO_H },
+  'buy-silo-produce': { w: SILO_W, h: SILO_H },
+  ...Object.fromEntries([...ONE_CELL_SKUS, ...SENSOR_CELL_SKUS].map(id => [id, { w: 1, h: 1 }])),
+}
+
+export function skuBase(id: SkuId, at: Coord): RectBase | undefined {
+  const foot = SKU_FOOT[id]
+  return foot === undefined ? undefined : { shape: 'rect', col: at.col, row: at.row, w: foot.w, h: foot.h }
 }
 
 function tileBox(base: Base): { col0: number; row0: number; col1: number; row1: number } {

@@ -34,7 +34,7 @@ import {
 } from '../../defs/items.ts'
 import { purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
 import { STATION_IN } from '../../defs/items.ts'
-import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SpiritKind, StillCrop } from '../ids.ts'
+import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import { isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
   Barrel,
@@ -65,6 +65,17 @@ export function isIoCell(c: { kind: string }): c is IoCell {
     c.kind === 'infuser'
   )
 }
+
+export const IO_SKUS: readonly SkuId[] = [
+  'buy-mill',
+  'buy-infuser',
+  'buy-jam',
+  'buy-still',
+  'buy-compost-box',
+  'buy-grinder',
+  'buy-furnace',
+  'buy-research-station',
+]
 
 export function machineWest(base: RectBase): Coord {
   return { col: base.col - 1, row: base.row + base.h - 1 }

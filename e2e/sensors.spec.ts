@@ -165,7 +165,7 @@ test('delete sensor then fence remains', async ({ page }) => {
   await place(page, 'buy-sensor-water', FENCE_A)
   await place(page, 'buy-fence', FENCE_A)
   await armSku(page, 'Water sensor', 'Sensors')
-  await page.getByRole('button', { name: 'Delete' }).click({ force: true })
+  await page.getByRole('button', { name: 'Demolish' }).click({ force: true })
   await page.evaluate(at => {
     const w = (
       window as unknown as { __world?: { armDelete: () => void; deleteBuilding: (at: At) => void } }
@@ -180,7 +180,7 @@ test('delete sensor then fence remains', async ({ page }) => {
       FENCE_A,
       '{ kind: w.cell(at).kind, fence: w.hasFence(at) }',
     ),
-  ).toEqual({ kind: 'empty', fence: true })
+  ).toEqual({ kind: 'untilled', fence: true })
 })
 
 test('closed-ring wash', async ({ page }) => {

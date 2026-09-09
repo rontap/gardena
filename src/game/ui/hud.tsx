@@ -26,7 +26,6 @@ import {
   UI_WEATHER,
   type BtnState,
 } from '../view/svgs.ts'
-import { GHOST_SKUS } from '../defs/shelf.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Chrome, Coin } from './frame.tsx'
 import { LENS_ROWS } from './lens.tsx'
@@ -81,8 +80,7 @@ export function Hud({
 }) {
   const phase = world.clock.phase()
   const place = world.seats[world.local].place
-  const trio =
-    place.kind === 'delete' || (place.kind === 'sku' && (GHOST_SKUS as readonly string[]).includes(place.id))
+  const armed = place.kind !== 'none'
   const canRotate = place.kind === 'sku' && (ROTATABLE as readonly string[]).includes(place.id)
   const guest = world.local !== 0
   return (
@@ -189,19 +187,15 @@ export function Hud({
             )}
           </div>
           <FaceBtn art={UI_BTN_FAMILY} label={m.family_title()} selected={panel === 'family'} onClick={onFamily} />
-          {trio && (
-            <>
-              <div className="mx-3 my-1.5 border-t border-ink/20" />
-              <FaceBtn
-                art={UI_BTN_DELETE}
-                label={m.hud_delete()}
-                selected={place.kind === 'delete'}
-                onClick={() => world.armDelete()}
-              />
-              {canRotate && <FaceBtn art={UI_BTN_ROTATE} label={m.hud_rotate()} onClick={() => world.rotatePlace()} />}
-              <FaceBtn art={UI_BTN_CANCEL} label={m.hud_cancel()} onClick={() => world.cancelPlace()} />
-            </>
-          )}
+          <div className="mx-3 my-1.5 border-t border-ink/20" />
+          <FaceBtn
+            art={UI_BTN_DELETE}
+            label={m.hud_demolish()}
+            selected={place.kind === 'delete'}
+            onClick={() => world.armDelete()}
+          />
+          {canRotate && <FaceBtn art={UI_BTN_ROTATE} label={m.hud_rotate()} onClick={() => world.rotatePlace()} />}
+          {armed && <FaceBtn art={UI_BTN_CANCEL} label={m.hud_cancel()} onClick={() => world.cancelPlace()} />}
         </div>
       </Chrome>
     </>

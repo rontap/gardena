@@ -166,6 +166,9 @@ See [[canon]].
 | machines.tractor-mill | [[mechanics/machines]] |
 | machines.water | [[mechanics/machines]] |
 | machines.io-side | [[mechanics/machines]] |
+| place.demolish-land | [[ui/place]] |
+| place.demolish-filter | [[ui/place]] |
+| place.ghost-io | [[ui/place]] |
 | machines.io-pull | [[mechanics/machines]] |
 | machines.io-push | [[mechanics/machines]] |
 | machines.grind-hopper | [[mechanics/machines]] |

@@ -26,7 +26,7 @@ import {
 import { SENSOR_CELL_SKUS } from '../ids.ts'
 import { skuItem, tileOfSku } from '../item.ts'
 import { edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../pipe.ts'
-import { isFenceSite, isPavingSite, isPlot } from '../plot.ts'
+import { bare, isFenceSite, isPavingSite, isPlot } from '../plot.ts'
 import {
   hangarSiteOk,
   placeSolidOk,
@@ -36,7 +36,6 @@ import {
   wideSiteOk,
 } from '../prompt.ts'
 import { hitsCell, isSensor, makeSensor, skuKind, type Sensor } from '../sensor.ts'
-import { freshSoil } from '../feature-field/field.ts'
 import { stripPadStops, stripStops } from '../feature-vehicles/vehicle.ts'
 import { rebuild } from '../feature-enclosure/enclosure.ts'
 import type { World } from '../world.ts'
@@ -47,7 +46,7 @@ function deleteSensorAt(w: World, at: Coord, c: Sensor): void {
   }
   w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
   if (c.kind === 'water-system') w.waterSystems.splice(w.waterSystems.indexOf(c), 1)
-  w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+  w.setCell(at, bare('soft', 0))
   if (c.kind === 'water-system') w.dirtyNets()
   w.ping()
 }
@@ -78,7 +77,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   if (c.kind === 'pump') {
     if (c.form === 'starter') return
     occupiedCells(c.base, w.owned).forEach(p => {
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.pumps.splice(w.pumps.indexOf(c), 1)
     w.dirtyNets()
@@ -87,7 +86,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   }
   if (c.kind === 'rain-tank') {
     occupiedCells(c.base, w.owned).forEach(p => {
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.tanks.splice(w.tanks.indexOf(c), 1)
     w.dirtyNets()
@@ -95,14 +94,14 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (c.kind === 'tap') {
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.taps.splice(w.taps.indexOf(c), 1)
     w.dirtyNets()
     w.ping()
     return
   }
   if (c.kind === 'well') {
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.wells.splice(w.wells.indexOf(c), 1)
     w.dirtyNets()
     w.ping()
@@ -114,13 +113,13 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     c.slots.forEach(s => {
       if (s.kind === 'hold') w.drops.push({ at: { ...at }, item: s.item })
     })
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
   if (c.kind === 'compost-box') {
     stripPadStops(w, c)
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
@@ -128,7 +127,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
       w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.ping()
     return
@@ -136,7 +135,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   if (c.kind === 'jam') {
     stripPadStops(w, c)
     w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
@@ -144,7 +143,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
       w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.stills.splice(w.stills.indexOf(c), 1)
     w.dirtyNets()
@@ -155,7 +154,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
       w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.ping()
     return
@@ -164,13 +163,13 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
       w.dropWires(wire => hitsCell(wire.from, p) || hitsCell(wire.to, p))
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.ping()
     return
   }
   if (c.kind === 'barrel') {
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
@@ -180,7 +179,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     c.slots.forEach(s => {
       if (s.kind === 'hold') w.drops.push({ at: { ...at }, item: s.item })
     })
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
@@ -188,7 +187,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     const origin = { col: c.base.col, row: c.base.row }
     if (w.hangarStores(origin)) return
     occupiedCells(c.base, w.owned).forEach(p => {
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     w.hangars.splice(w.hangars.indexOf(c), 1)
     w.ping()
@@ -196,7 +195,7 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   }
   if (c.kind === 'silo-seed' || c.kind === 'silo-spray' || c.kind === 'silo-produce') {
     occupiedCells(c.base, w.owned).forEach(p => {
-      w.setCell(p, { kind: 'empty', soil: freshSoil(w, p) })
+      w.setCell(p, bare('soft', 0))
     })
     if (c.kind === 'silo-seed') w.seedSilos.splice(w.seedSilos.indexOf(c), 1)
     else if (c.kind === 'silo-spray') w.spraySilos.splice(w.spraySilos.indexOf(c), 1)
@@ -209,10 +208,11 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (c.kind === 'grinder') {
-    w.setCell(at, { kind: 'empty', soil: freshSoil(w, at) })
+    w.setCell(at, bare('soft', 0))
     w.ping()
     return
   }
+  if (!isPlot(c)) return
   if (w.pavingAt(at) === 'none') return
   if (w.act.id !== 0) return
   w.paving.delete(`${at.col},${at.row}`)

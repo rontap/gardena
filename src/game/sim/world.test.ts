@@ -1101,7 +1101,7 @@ describe('beta-5 invariants', () => {
         expect(fillable(w, at)).toBe(true)
         w.armDelete()
         w.deleteBuilding(at)
-        expect(w.cell(at).kind).toBe('empty')
+        expect(w.cell(at).kind).toBe('untilled')
         expect(w.wells).toHaveLength(0)
     })
 
@@ -1291,7 +1291,7 @@ describe('beta-5 invariants', () => {
         expect(w.sprinklerAt(v)).toBeUndefined()
         w.deleteBuilding(g)
         expect(w.money).toBe(money)
-        expect(w.cell(g).kind).toBe('empty')
+        expect(w.cell(g).kind).toBe('untilled')
         expect(w.cell(at).kind).toBe('pump')
         expect(w.pumps).toHaveLength(2)
     })
@@ -1581,8 +1581,8 @@ describe('beta-6 invariants', () => {
         const money = w.money
         w.deleteBuilding(AT)
         expect(w.money).toBe(money)
-        expect(w.cell(AT).kind).toBe('empty')
-        expect(w.cell({col: 11, row: 12}).kind).toBe('empty')
+        expect(w.cell(AT).kind).toBe('untilled')
+        expect(w.cell({col: 11, row: 12}).kind).toBe('untilled')
         expect(w.cell(starter).kind).toBe('pump')
         expect(w.pumps).toHaveLength(1)
         expect(w.pumps[0].form).toBe('starter')
@@ -1603,7 +1603,7 @@ describe('beta-6 invariants', () => {
         w.armDelete()
         const n = w.drops.length
         w.deleteBuilding(AT)
-        expect(w.cell(AT).kind).toBe('empty')
+        expect(w.cell(AT).kind).toBe('untilled')
         expect(w.drops).toHaveLength(n + 2)
         expect(w.drops.some(d => d.at.col === AT.col && d.at.row === AT.row && d.item.kind === 'tree-seed')).toBe(true)
         const house = {col: 14, row: 6}

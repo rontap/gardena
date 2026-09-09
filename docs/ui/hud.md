@@ -78,7 +78,7 @@ Three spans at the right end of the top ribbon, before the net chip. Play only, 
 
 `Chrome` `absolute top-20 left-4 z-20` `w-24`. Icon `h-11 w-11` above, `text-sm` semibold label below.
 
-Order: **Build** **Research** **Market** **Lens** **Family**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then if build cluster: divider, **Delete** **Rotate** **Cancel**. Almanac and Cheat are top-ribbon buttons — see above. [[ui/multiplayer]]
+Order: **Build** **Research** **Market** **Lens** **Family**. The Lens face carries the active lens id as its note, plus *locked* and a **×** that clears lens and lock — [[ui/lens]]. Then a divider and **Demolish**, always. **Rotate** and **Cancel** join it while something is armed. Almanac and Cheat are top-ribbon buttons — see above. [[ui/multiplayer]]
 
 Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family face `ui-btn-family`. Cheat face `ui-btn-cheat`.
 
@@ -86,11 +86,11 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 |---|---|---|
 | Build / Research / Market / Family | panel toggle | that panel open |
 | Lens | dock toggle | `panel === 'lens'` |
-| Delete | `armDelete()` | `place.kind === 'delete'` |
+| Demolish | `armDelete()` | `place.kind === 'delete'` |
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Build trio visible iff `place.kind === 'delete'` or sku in `GHOST_SKUS` — derived from the Build shelves whose `cluster` is `'build'`, so Water, Automation, Storage, and Sensors. Tools, paving and fencing are out: those go to hand or paint. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]]
+Divider and **Demolish** always render. A player who wants a building gone reaches for one button, not for a shelf sku first. **Cancel** renders iff `place.kind !== 'none'` — there is something on the cursor to cancel, and that now covers paving and fencing too. `GHOST_SKUS` no longer gates any of the three. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]] [[ui/place]]
 
 **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). A rotate button that rotates nothing is worse than no button. No rotatable sensor SKU. [[ui/place]].
 

@@ -118,7 +118,7 @@
   ],
   "catalog_grass_seeds": "Sold in packs of {pack}. Sow on tilled soil. Roots in {seconds}s and drinks only {drink} L a day, then the plot turns back into untilled lawn.",
   "catalog_fence": "Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.",
-  "catalog_paving": "Laid on untilled ground. Keeps the garden walkable and tidy. Dig it up with the delete tool.",
+  "catalog_paving": "Laid on untilled ground. Keeps the garden walkable and tidy. Demolish lifts it again.",
   "catalog_rotary_shovel": "Motorised. Digs anything a shovel digs, near enough instantly. {uses} uses, {workSeconds}s per dig.",
   "catalog_diamond_pickaxe": "Cuts rock like tilled soil. {uses} uses, {workSeconds}s per mine.",
   "catalog_sugar": "{bag} L bag. Does not rot. Mill cane is cheaper per litre.",

@@ -5,7 +5,7 @@ import { SPRINKLER_TILE_DAY } from '../defs/items.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
-import type { CropId } from '../sim/ids.ts'
+import type { GrownCrop } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import type { Vertex } from '../sim/pipe.ts'
 import type { HudTarget, World } from '../sim/world.ts'
@@ -60,7 +60,7 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
       })),
     ],
     pick: id => {
-      world.tuneSprinkler(at, id === 'flat' ? { kind: 'flat' } : { kind: 'crop', crop: id as CropId })
+      world.tuneSprinkler(at, id === 'flat' ? { kind: 'flat' } : { kind: 'crop', crop: id as GrownCrop })
     },
   }
 }

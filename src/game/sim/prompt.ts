@@ -325,24 +325,24 @@ export function deletePrompt(
   hit: { kind: 'pipe'; edge: Edge } | { kind: 'sprinkler'; at: Vertex },
 ): Prompt {
   if (w.act.place.kind !== 'delete') {
-    return { kind: 'blocked', text: m.prompt_cannot_delete() }
+    return { kind: 'blocked', text: m.prompt_cannot_demolish() }
   }
   if (hit.kind === 'pipe') {
     const seg = w.segmentAt(hit.edge)
     if (w.edgeOwned(hit.edge) && seg !== undefined) {
       return {
         kind: 'place',
-        text: m.prompt_delete({
+        text: m.prompt_demolish({
           name: (seg.gate.kind === 'valve' ? m.names_building_valve() : m.names_building_pipe()).toLowerCase(),
         }),
       }
     }
-    return { kind: 'blocked', text: m.prompt_cannot_delete() }
+    return { kind: 'blocked', text: m.prompt_cannot_demolish() }
   }
   if (w.sprinklerAt(hit.at) !== undefined) {
-    return { kind: 'place', text: m.prompt_delete({ name: m.names_building_sprinkler().toLowerCase() }) }
+    return { kind: 'place', text: m.prompt_demolish({ name: m.names_building_sprinkler().toLowerCase() }) }
   }
-  return { kind: 'blocked', text: m.prompt_cannot_delete() }
+  return { kind: 'blocked', text: m.prompt_cannot_demolish() }
 }
 
 const DELETE_NAME: { readonly [K in string]?: () => string } = {
@@ -381,33 +381,40 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
 }
 
 export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
-  if (w.act.place.kind !== 'delete') return { kind: 'blocked', text: m.prompt_cannot_delete() }
+  if (w.act.place.kind !== 'delete') return { kind: 'blocked', text: m.prompt_cannot_demolish() }
   if (!inWorld(at, w.owned)) return { kind: 'blocked', text: NOT_OWNED }
   const cell = w.cell(at)
   if (cell.kind === 'pump' && cell.form === 'jack') {
-    return { kind: 'place', text: m.prompt_delete({ name: m.names_face_pumpjack().toLowerCase() }) }
+    return { kind: 'place', text: m.prompt_demolish({ name: m.names_face_pumpjack().toLowerCase() }) }
   }
   if (isSensor(cell) && cell.fenceable && w.hasFence(at)) {
     const nameFn = DELETE_NAME[cell.kind]
-    if (nameFn === undefined) return { kind: 'blocked', text: m.prompt_cannot_delete() }
-    return { kind: 'place', text: m.prompt_delete({ name: nameFn().toLowerCase() }) }
+    if (nameFn === undefined) return { kind: 'blocked', text: m.prompt_cannot_demolish() }
+    return { kind: 'place', text: m.prompt_demolish({ name: nameFn().toLowerCase() }) }
   }
   if (w.hasFence(at)) {
-    return { kind: 'place', text: m.prompt_delete({ name: m.names_building_fence().toLowerCase() }) }
+    if (w.act.id !== 0) return { kind: 'blocked', text: m.prompt_cannot_demolish() }
+    return { kind: 'place', text: m.prompt_demolish({ name: m.names_building_fence().toLowerCase() }) }
   }
 
-  if (cell.kind === 'grinder') return { kind: 'place', text: m.prompt_delete_grinder() }
-  if (cell.kind === 'infuser') return { kind: 'place', text: m.prompt_delete_infuser() }
+  if (cell.kind === 'grinder') return { kind: 'place', text: m.prompt_demolish_grinder() }
+  if (cell.kind === 'infuser') return { kind: 'place', text: m.prompt_demolish_infuser() }
+  if (cell.kind === 'station') return { kind: 'place', text: m.prompt_demolish_station() }
   if (cell.kind === 'hangar') {
     const origin = { col: cell.base.col, row: cell.base.row }
-    if (w.hangarStores(origin)) return { kind: 'blocked', text: m.prompt_cannot_delete_stores() }
+    if (w.hangarStores(origin)) return { kind: 'blocked', text: m.prompt_cannot_demolish_stores() }
   }
   const nameFn = DELETE_NAME[cell.kind]
-  if (nameFn === undefined) return { kind: 'blocked', text: m.prompt_cannot_delete() }
+  if (nameFn === undefined) {
+    if (w.act.id === 0 && isPlot(cell) && w.pavingAt(at) !== 'none') {
+      return { kind: 'place', text: m.prompt_demolish_paving() }
+    }
+    return { kind: 'blocked', text: m.prompt_cannot_demolish() }
+  }
   const name = nameFn()
   return {
     kind: 'place',
-    text: m.prompt_delete({ name: cell.kind === 'not' ? name : name.toLowerCase() }),
+    text: m.prompt_demolish({ name: cell.kind === 'not' ? name : name.toLowerCase() }),
   }
 }
 
@@ -467,7 +474,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     return { kind: 'place', text: m.prompt_place_bare() }
   }
   if (w.act.place.kind === 'delete' && hit !== undefined && hit.kind === 'delete-wire') {
-    return { kind: 'place', text: m.prompt_delete_wire() }
+    return { kind: 'place', text: m.prompt_demolish_wire() }
   }
   if (
     w.act.place.kind === 'sku' &&
@@ -485,7 +492,7 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
     if (hit !== undefined && hit.kind === 'delete-pipe') return deletePrompt(w, { kind: 'pipe', edge: hit.edge })
     if (hit !== undefined && hit.kind === 'delete-sprinkler') return deletePrompt(w, { kind: 'sprinkler', at: hit.at })
     if (hit !== undefined && hit.kind === 'cell') return deleteBuildingPrompt(w, hit.at)
-    return { kind: 'blocked', text: m.prompt_cannot_delete() }
+    return { kind: 'blocked', text: m.prompt_cannot_demolish() }
   }
   if (hit?.kind !== 'cell') {
     if (w.act.place.kind === 'sku') {

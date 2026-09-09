@@ -77,8 +77,8 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | no container                               | Need a bucket                                                                                                | Need a can                                                |
 | walk                                       | Move here                                                                                                    | go, walk here                                             |
 | place a SKU                                | Place {skuLabel}                                                                                             | build, spawn, drop                                        |
-| delete a placed thing                      | Delete {skuLabel}                                                                                            | remove, destroy                                           |
-| delete a wire (tool)                       | Delete wire                                                                                                  |                                                           |
+| demolish a placed thing                    | Demolish {skuLabel}                                                                                          | delete, remove, destroy                                   |
+| demolish a wire (tool)                     | Demolish wire                                                                                                |                                                           |
 | un-draw the same wire                      | Remove wire                                                                                                  | unwire                                                    |
 | cannot cycle combinational                 | Cannot loop                                                                                                  | cycle, feedback                                           |
 | illegal port                               | Cannot wire here                                                                                             | invalid connection                                        |
@@ -133,7 +133,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | field seed tank                            | Seeding silo                                                                                                 | hopper, seed tank                                         |
 | field spray tank                           | Additive silo                                                                                                |                                                           |
 | field produce tank                         | Produce silo                                                                                                 |                                                           |
-| 2×1 paid source, build / place / delete    | Pumpjack                                                                                                     | pump, well                                                |
+| 2×1 paid source, build / place / demolish  | Pumpjack                                                                                                     | pump, well                                                |
 | look on a pump cell                        | Pump                                                                                                         |                                                           |
 | free source                                | Well                                                                                                         | borehole                                                  |
 | rain gatherer                              | Rainwater tank                                                                                               | cistern, rain barrel                                      |
@@ -295,7 +295,9 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | sensor tune prompts                        | Tune water sensor / Tune harvest sensor / Tune counter / Tune day sensor / Tune Logic gate / Tune Variety sensor / Tune Weather sensor / Tune Pressure plate | configure                                                 |
 | sensor HUD lead-in                         | Send signal when...                                                                                          | when, if, trigger                                         |
 | no expansion permits                       | No expansion permit left                                                                                     | no expansions                                             |
-| hangar stores a vehicle                    | Cannot delete here (stores a vehicle)                                                                        |                                                           |
+| hangar stores a vehicle                    | Cannot demolish here (stores a vehicle)                                                                      |                                                           |
+| paving under nothing                       | Demolish paving                                                                                              | dig up, lift                                              |
+| illegal demolish site                      | Cannot demolish here                                                                                         | Cannot delete here                                        |
 | fence site                                 | Fences need untilled ground                                                                                  |                                                           |
 | already fenced                             | Already fenced                                                                                               |                                                           |
 | seed silo at cap                           | Seed silo full                                                                                               |                                                           |
@@ -342,7 +344,7 @@ Why this is better: Explains WHY the player should want to research this, and gi
 
 ## Chrome
 
-Rail left: **Build** **Research** **Market** **Lens** **Family**. Build cluster: **Delete** **Rotate** **Cancel**.
+Rail left: **Build** **Research** **Market** **Lens** **Family**. Then **Demolish**, always. **Rotate** and **Cancel** only while something is on the cursor.
 
 Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Almanac**, **Cheat**, **Pause**/**Resume**, **Gear**.
 

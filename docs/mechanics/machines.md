@@ -107,6 +107,8 @@ Machines: mill, jam, still, compost-box, grinder, furnace, station, infuser. Not
 
 Blue chute west, green chute east. Always painted, under the machine and chest. Not lens. `pointer-events-none`. Chute row follows chest I/O: mill / infuser / furnace south row; jam / still / station their row.
 
+The placement ghost paints the same two chutes on the cells the machine is about to claim, chest there or not, so the side to build on is visible before the click — [[ui/place]] `place.ghost-io`.
+
 ## Sugar
 
 `{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `count` on sugar. Merge: weighted `unitSale` and `quality` by liters; `liters` sums; `capacityLiters` sums. Shop sugar quality 0.

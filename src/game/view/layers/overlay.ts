@@ -1,6 +1,16 @@
 import { Container, Graphics, Text } from 'pixi.js'
-import { FADE, chunkKey, chunkOf, occupiedCells, type Pump } from '../../sim/building.ts'
-import { hangarPad, siloPad, stopXY } from '../../sim/feature-vehicles/vehicle.ts'
+import { FADE, chunkKey, chunkOf, occupiedCells, skuBase, type Coord, type Pump } from '../../sim/building.ts'
+import {
+  dropoffPad,
+  hangarPad,
+  siloPad,
+  stopXY,
+  takeupPad,
+  HANGAR_PAD_SKUS,
+  PAD_SKUS,
+  SILO_PAD_SKUS,
+} from '../../sim/feature-vehicles/vehicle.ts'
+import { IO_SKUS, machineEast, machineWest } from '../../sim/feature-machines/machine.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
 import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'
 import { lookup } from '../../sim/feature-enclosure/enclosure.ts'
@@ -8,11 +18,11 @@ import { drivesOut, isSensor, ownsPort, portXY, sameEnd, watchedCoords, wireCont
 import { CROPS, tolerance } from '../../defs/crops.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from '../../sim/soil.ts'
 import { goodness } from '../../sim/noise.ts'
-import { RANGE_SENSOR_SKUS, type GrownCrop } from '../../sim/ids.ts'
+import { RANGE_SENSOR_SKUS, type GrownCrop, type SkuId } from '../../sim/ids.ts'
 import { VARIETY, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
-import { atlasTex } from '../atlas.ts'
+import { atlasTex, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
 import { AOE_WASH, PIPE_PLACE, PORT_HIT, pipesOverlay, wireEndXY, wireSignal, type Lens } from '../hit.ts'
 import type { Sprinkler } from '../../sim/pipe.ts'
@@ -24,6 +34,7 @@ const GRAPE = 0x6b1f8c
 const RIPE = 0xd4a017
 const INK = 0x1c1710
 const LATTICE_ALPHA = 0.16
+const GHOST_IO_ALPHA = 0.7
 const FLOW_DASH = 1.1
 const DASH = 7
 const WASH = 0xcfc6b0
@@ -441,11 +452,41 @@ export class OverlayLayer {
         s.alpha = p.legal ? 1 : 0.5
       })
     }
+    if (place.kind === 'sku' && ptr !== undefined) this.ghostIo(world, place.id, { col: Math.floor(ptr.x), row: Math.floor(ptr.y) })
     if (lens === 'sensors' || place.kind === 'wire') this.wires(world)
     if (place.kind === 'wire' && ptr !== undefined) this.pendingWire(world, place.from, ptr.x, ptr.y)
     this.routes(world, lens, editor)
     this.sprites.end()
     for (let i = this.nLabel; i < this.labels.length; i++) this.labels[i].visible = false
+  }
+
+  private ghostIo(world: World, id: SkuId, at: Coord): void {
+    const base = skuBase(id, at)
+    if (base === undefined) return
+    const put = (key: AtlasKey, x: number, y: number) => {
+      const s = this.sprites.take(atlasTex(key))
+      s.position.set(x * TILE, y * TILE)
+      s.alpha = GHOST_IO_ALPHA
+    }
+    if (IO_SKUS.includes(id)) {
+      const west = machineWest(base)
+      const east = machineEast(base)
+      if (world.inWorld(west)) put('link-in', base.col - 0.5, west.row)
+      if (world.inWorld(east)) put('link-out', base.col + base.w - 0.5, east.row)
+    }
+    if (!world.done.has('unlock-vehicles')) return
+    if (PAD_SKUS.includes(id)) {
+      dropoffPad(base).forEach(p => {
+        if (world.inWorld(p)) put('pad-drop', p.col, p.row)
+      })
+      takeupPad(base).forEach(p => {
+        if (world.inWorld(p)) put('pad-take', p.col, p.row)
+      })
+    }
+    const ret = HANGAR_PAD_SKUS.includes(id) ? hangarPad(base) : SILO_PAD_SKUS.includes(id) ? siloPad(base) : []
+    ret.forEach(p => {
+      if (world.inWorld(p)) put('hangar-return', p.col, p.row)
+    })
   }
 
   private takeLabel(): Text {

@@ -35,7 +35,7 @@ import {
   TRAILER_SPRAY_PRICE,
   VEHICLE_SLOTS,
 } from '../../defs/items.ts'
-import type { HarvestSlot, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from '../ids.ts'
+import type { HarvestSlot, SkuId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot } from '../ids.ts'
 import {
   cargoCount,
   compactSlots,
@@ -560,6 +560,23 @@ export function cargo(w: World): Cargo | undefined {
   if (v?.pose.kind !== 'field') return undefined
   return vehicleCargo(v, w.trailers)
 }
+
+export const PAD_SKUS: readonly SkuId[] = [
+  'buy-chest',
+  'buy-freezer',
+  'buy-freezer-large',
+  'buy-compost-box',
+  'buy-mill',
+  'buy-infuser',
+  'buy-jam',
+  'buy-still',
+  'buy-furnace',
+  'buy-research-station',
+]
+
+export const HANGAR_PAD_SKUS: readonly SkuId[] = ['buy-hangar']
+
+export const SILO_PAD_SKUS: readonly SkuId[] = ['buy-silo-seed', 'buy-silo-spray', 'buy-silo-produce']
 
 export function padBuildings(w: World): PadCell[] {
   const out: PadCell[] = []

@@ -1,3 +1,15 @@
+# 2.7.3 Better build
+
+Delete is now Demolish, and it sits on the left rail whether or not you picked something in Build. Cancel appears whenever something is on the cursor. Taking a building down leaves plain untilled ground instead of watered, fertilized soil. Demolish reaches the Seed Variety Station and paving, which used to read Cannot demolish here and do nothing. Placing a machine shows the sides a Chest connects to, and the pads a Quad or Tractor loads at.
+
+- 🔧 Changed ui: Demolish. previously, the button read Delete and showed up only after you picked a building in Build, now it reads Demolish and stays on the left rail.
+- 🔧 Changed ui: Cancel. previously, it showed up only with some Build items, now it is there whenever something is on the cursor, paving and fencing included.
+- 🔧 Changed mechanic: Demolish. previously, taking a building down left tilled soil already holding water and fertilizer, now it leaves untilled ground you can till, pave, or fence.
+- 🐛 Fixed bug ui: Seed Variety Station. Pointing Demolish at it read Cannot demolish here and the click did nothing, now it reads Demolish Seed Variety Station and both cells come down.
+- 🐛 Fixed bug ui: Paving. Pointing Demolish at a laid slab read Cannot demolish here, now it reads Demolish paving and lifts it.
+- 🎉 Added ui: Chest connection preview. While a machine is on the cursor, the blue side it takes from and the green side it gives to are painted on the ground, so you can see where a Chest goes before you build.
+- 🎉 Added ui: Pad preview. After Vehicles, a building on the cursor shows the Unload and Load pads it will have.
+
 # 2.7.2 Grass seeds at the Seed silo
 
 Grass seeds leave Build Land. After Landscape architecture they are bought at the Seed silo like Chilli seeds, they land in the silo, and Sow grass turns a plot back into Grass. A Chest beside a Mill, Infuser, or Furnace sits on the south side, not the north side. Opening Build Automation or Storage no longer turns on Vehicle interactions. Support from grandma gets smaller over the first days and then stops. The end-of-day summary hides that line when there is none, and Almanac Day & Night uses the same words.

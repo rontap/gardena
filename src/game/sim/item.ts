@@ -363,7 +363,7 @@ const PLACE_NAME = {
   'water-system': () => m.names_sensor_water_system(),
   'vehicle-detector': () => m.names_sensor_vehicle_detector(),
   'traffic-light': () => m.names_sensor_traffic_light(),
-  delete: () => m.names_face_delete(),
+  delete: () => m.names_face_demolish(),
   fence: () => m.names_building_fence(),
 } as const
 

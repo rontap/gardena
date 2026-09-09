@@ -43,6 +43,7 @@ import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
+import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
@@ -498,6 +499,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.variety))
   if (item.kind === 'wood') return svgInner(itemWood)
   if (item.kind === 'ash') return svgInner(itemAsh)
+  if (item.kind === 'fly-agaric') return svgInner(itemFlyAgaric)
   if (item.kind === 'treasure') return svgInner(itemTreasure)
   const _x: never = item
   return _x

@@ -78,7 +78,8 @@ function badge(item: Item): string | undefined {
     item.kind === 'weed' ||
     item.kind === 'grass' ||
     item.kind === 'wood' ||
-    item.kind === 'ash'
+    item.kind === 'ash' ||
+    item.kind === 'fly-agaric'
   ) {
     return String(item.count)
   }

@@ -1,11 +1,16 @@
 import {
+  AGARIC_LOOT_COUNT,
+  BURROW_DAY_CHANCE,
+  BURROW_LUCK_CHANCE,
   BURROW_START_N,
   BURROW_START_R,
+  LOOT_GATE_AGARIC,
   LOOT_GATE_BASE,
   LOOT_GATE_FERT,
   LOOT_GATE_HEIRLOOM,
   LOOT_GATE_TOOL,
   LOOT_GATE_VARIANT,
+  LOOT_GATE_WEED,
   LOOT_LUCK_DIV,
   LOOT_ROLL_BASE,
   LOOT_ROLL_DAY,
@@ -19,6 +24,7 @@ import {
   SEED_VARIANT_COUNT,
   TREASURE_COINS_BASE,
   TREASURE_COINS_SPAN,
+  WEED_LOOT_COUNT,
 } from '../../defs/burrow.ts'
 import { AXES, FERT_BAG_LITERS, PICKAXES, SHOVELS } from '../../defs/items.ts'
 import type { VarietyId } from '../../defs/varieties.ts'
@@ -38,15 +44,17 @@ import type { Rng } from '../rng.ts'
 import { nearSite } from '../store.ts'
 import type { World } from '../world.ts'
 
-type SeedCrop = 'tomato' | 'raspberry' | 'grape' | 'vanilla'
+type SeedCrop = 'tomato' | 'raspberry' | 'grape'
 type ToolId = 'better-shovel' | 'better-pickaxe' | 'axe'
-type LootRowId =
+export type LootRowId =
   | 'treasure'
   | 'tree-seed-base'
   | 'tree-seed-variant'
   | 'tree-seed-heirloom'
   | 'fertilizer'
   | 'tool'
+  | 'weed'
+  | 'fly-agaric'
   | 'seeds-base'
   | 'seeds-variant'
   | 'seeds-heirloom'
@@ -62,7 +70,7 @@ const TREE_HEIRLOOM: readonly { tree: TreeId; variety: VarietyId }[] = [
   { tree: 'apricot', variety: 'klosterneuburger' },
   { tree: 'cherry', variety: 'bing' },
 ]
-const SEED_BASE: readonly SeedCrop[] = ['tomato', 'raspberry', 'grape', 'vanilla']
+const SEED_BASE: readonly SeedCrop[] = ['tomato', 'raspberry', 'grape']
 const SEED_VARIANT: readonly { crop: SeedCrop; variety: VarietyId }[] = [
   { crop: 'tomato', variety: 'green-zebra' },
   { crop: 'grape', variety: 'concord' },
@@ -73,6 +81,7 @@ const SEED_HEIRLOOM: readonly { crop: SeedCrop; variety: VarietyId }[] = [
   { crop: 'grape', variety: 'keknyelu' },
 ]
 const TOOLS: readonly ToolId[] = ['better-shovel', 'better-pickaxe', 'axe']
+const BURROW_DAY_SALT = 9
 
 export function doorR(col: number, row: number): number {
   return Math.hypot(col + 0.5 - (DOOR.col + 0.5), row + 0.5 - (DOOR.row + 0.5))
@@ -89,15 +98,17 @@ export function lootRoll(u: number, r: number, day: number, luck: number): numbe
   )
 }
 
-function keptRows(roll: number): LootRowId[] {
+export function keptRows(roll: number): LootRowId[] {
   const rows: LootRowId[] = []
   rows.push('treasure')
-  if (roll <= LOOT_GATE_BASE && TREE_BASE.length > 0) rows.push('tree-seed-base')
+  if (roll < LOOT_GATE_BASE && TREE_BASE.length > 0) rows.push('tree-seed-base')
   if (roll >= LOOT_GATE_VARIANT && TREE_VARIANT.length > 0) rows.push('tree-seed-variant')
   if (roll >= LOOT_GATE_HEIRLOOM && TREE_HEIRLOOM.length > 0) rows.push('tree-seed-heirloom')
-  if (roll <= LOOT_GATE_FERT) rows.push('fertilizer')
-  if (roll <= LOOT_GATE_TOOL && TOOLS.length > 0) rows.push('tool')
-  if (roll <= LOOT_GATE_BASE && SEED_BASE.length > 0) rows.push('seeds-base')
+  if (roll < LOOT_GATE_FERT) rows.push('fertilizer')
+  if (roll < LOOT_GATE_TOOL && TOOLS.length > 0) rows.push('tool')
+  if (roll < LOOT_GATE_WEED) rows.push('weed')
+  if (roll >= LOOT_GATE_AGARIC) rows.push('fly-agaric')
+  if (roll < LOOT_GATE_BASE && SEED_BASE.length > 0) rows.push('seeds-base')
   if (roll >= LOOT_GATE_VARIANT && SEED_VARIANT.length > 0) rows.push('seeds-variant')
   if (roll >= LOOT_GATE_HEIRLOOM && SEED_HEIRLOOM.length > 0) rows.push('seeds-heirloom')
   return rows
@@ -158,6 +169,8 @@ export function rollLoot(rng: Rng, col: number, row: number, day: number, luck: 
   if (id === 'fertilizer') {
     return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
   }
+  if (id === 'weed') return { kind: 'weed', count: WEED_LOOT_COUNT }
+  if (id === 'fly-agaric') return { kind: 'fly-agaric', count: AGARIC_LOOT_COUNT }
   if (id === 'tool') {
     const tool = TOOLS[Math.floor(pick * TOOLS.length)]
     return toolLoot(tool, stream.at(col, row, 3) < 0.5)
@@ -248,10 +261,16 @@ export function mintStart(cells: Cell[][], rng: Rng): void {
   pickSites(rng, 0, 0, 1, BURROW_START_N, eligibleGrid(cells, id)).forEach(at => mintGrid(cells, rng, at, 1, 0))
 }
 
+export function burrowDayChance(luck: number): number {
+  return BURROW_DAY_CHANCE + luck * BURROW_LUCK_CHANCE
+}
+
 export function mintSeam(w: World): void {
   const luck = luckOf(w)
   const day = w.clock.day
+  const chance = burrowDayChance(luck)
   w.owned.forEach(id => {
+    if (w.rng.stream('burrow').at(id.cx, id.cy, day, BURROW_DAY_SALT) >= chance) return
     const list = eligibleSeam(w, id)
     pickSites(w.rng, id.cx, id.cy, day, 1, list).forEach(at => {
       const c = w.cell(at)

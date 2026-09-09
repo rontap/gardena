@@ -1,14 +1,18 @@
 import { describe, expect, test } from 'vitest'
 import { m } from '../../../paraglide/messages.js'
 import {
+  BURROW_DAY_CHANCE,
+  BURROW_LUCK_CHANCE,
   BURROW_START_N,
   BURROW_START_R,
   BURROW_MUL,
+  LOOT_GATE_AGARIC,
   LOOT_GATE_BASE,
   LOOT_GATE_FERT,
   LOOT_GATE_HEIRLOOM,
   LOOT_GATE_TOOL,
   LOOT_GATE_VARIANT,
+  LOOT_GATE_WEED,
   LOOT_LUCK_DIV,
   LOOT_ROLL_BASE,
   LOOT_ROLL_DAY,
@@ -20,6 +24,7 @@ import {
   LUCK_CAP,
 } from '../../defs/burrow.ts'
 import { AXES, FERT_BAG_LITERS, PICKAXES, SHOVELS } from '../../defs/items.ts'
+import { catalogEntries } from '../../defs/catalog.ts'
 import { chunkOf, chunkRect, frontOf, isReserved } from '../building.ts'
 import { onCell } from '../drop.ts'
 import { luckOf } from '../family.ts'
@@ -31,7 +36,7 @@ import { isFenceSite, isSolid, isPavingSite } from '../plot.ts'
 import { placeSolidOk, readPrompt } from '../prompt.ts'
 import { Rng } from '../rng.ts'
 import { DT_MAX, World } from '../world.ts'
-import { doorR, lootRoll, rollLoot } from './burrow.ts'
+import { burrowDayChance, doorR, keptRows, lootRoll, rollLoot, type LootRowId } from './burrow.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -278,12 +283,73 @@ describe('burrow.loot', () => {
     if (far.kind === 'seeds' || far.kind === 'tree-seed') expect(far.quality).toBe(0)
 
     const near = lootRoll(0, BURROW_START_R + 0.1, 1, 0)
-    expect(near).toBeLessThanOrEqual(LOOT_GATE_BASE)
-    expect(LOOT_GATE_FERT).toBeLessThanOrEqual(LOOT_GATE_BASE)
-    expect(LOOT_GATE_TOOL).toBeLessThanOrEqual(LOOT_GATE_BASE)
-    expect(3 <= LOOT_GATE_BASE).toBe(true)
-    expect(3 >= LOOT_GATE_VARIANT).toBe(true)
-    expect(LOOT_GATE_HEIRLOOM).toBeGreaterThan(LOOT_GATE_VARIANT)
+    expect(near).toBeLessThan(LOOT_GATE_BASE)
+    expect(LOOT_GATE_WEED).toBeLessThanOrEqual(LOOT_GATE_FERT)
+    expect(LOOT_GATE_FERT).toBeLessThan(LOOT_GATE_TOOL)
+    expect(LOOT_GATE_TOOL).toBeLessThan(LOOT_GATE_VARIANT)
+    expect(LOOT_GATE_VARIANT).toBeLessThan(LOOT_GATE_BASE)
+    expect(LOOT_GATE_HEIRLOOM).toBe(LOOT_GATE_BASE)
+    expect(LOOT_GATE_AGARIC).toBe(LOOT_GATE_HEIRLOOM)
+  })
+
+  test('burrow.bands - Five bands. Treasure in every one. Fertilizer and Pulled weed at the bottom, tool above them, base rows until the heirloom gate, variant rows from the variant gate, heirloom rows and Fly agaric from the top gate. Vanilla is not a burrow seed.', () => {
+    const bands: [number, LootRowId[]][] = [
+      [1, ['treasure', 'tree-seed-base', 'fertilizer', 'tool', 'weed', 'seeds-base']],
+      [2, ['treasure', 'tree-seed-base', 'tool', 'seeds-base']],
+      [3, ['treasure', 'tree-seed-base', 'seeds-base']],
+      [4, ['treasure', 'tree-seed-base', 'tree-seed-variant', 'seeds-base', 'seeds-variant']],
+      [5, ['treasure', 'tree-seed-variant', 'tree-seed-heirloom', 'fly-agaric', 'seeds-variant', 'seeds-heirloom']],
+      [9, ['treasure', 'tree-seed-variant', 'tree-seed-heirloom', 'fly-agaric', 'seeds-variant', 'seeds-heirloom']],
+    ]
+    bands.forEach(([roll, rows]) => {
+      expect([roll, keptRows(roll).slice().sort()]).toEqual([roll, rows.slice().sort()])
+    })
+    for (let roll = 0; roll <= 10; roll += 0.25) expect(keptRows(roll)).toContain('treasure')
+    const seen = new Set<string>()
+    for (let col = 0; col < 60; col++) {
+      for (let row = 0; row < 60; row++) {
+        const loot = rollLoot(new Rng(3), col, row, 20, 3)
+        if (loot.kind === 'seeds') seen.add(loot.crop)
+      }
+    }
+    expect(seen.has('tomato') || seen.has('raspberry') || seen.has('grape')).toBe(true)
+    expect([...seen].every(c => c === 'tomato' || c === 'raspberry' || c === 'grape')).toBe(true)
+  })
+
+  test('burrow.day-chance - Each owned chunk mints on a `BURROW_DAY_CHANCE + luck x BURROW_LUCK_CHANCE` roll, so a day can pass with no new burrow. Luck raises the chance and caps below certainty.', () => {
+    expect(burrowDayChance(0)).toBe(BURROW_DAY_CHANCE)
+    expect(burrowDayChance(3)).toBeCloseTo(BURROW_DAY_CHANCE + 3 * BURROW_LUCK_CHANCE, 10)
+    expect(burrowDayChance(3)).toBeGreaterThan(burrowDayChance(0))
+    expect(burrowDayChance(LUCK_CAP)).toBeLessThan(1)
+
+    let minted = 0
+    let skipped = 0
+    for (let seed = 1; seed <= 60; seed++) {
+      const w = new World(seed)
+      const before = w.burrows.size
+      w.tick(DT_MAX)
+      while (w.clock.day === 1) w.tick(DT_MAX)
+      if (w.burrows.size > before) minted += 1
+      else skipped += 1
+    }
+    expect(minted).toBeGreaterThan(0)
+    expect(skipped).toBeGreaterThan(0)
+  })
+})
+
+describe('burrow.agaric', () => {
+  test("burrow.agaric - `{ kind: 'fly-agaric'; count }`. Countable, stacks like Ash, no compost value, no furnace value, no store takes it. Top band only. Has a name and an Almanac entry.", () => {
+    const w = new World(1)
+    const item = { kind: 'fly-agaric' as const, count: 1 }
+    expect('count' in item).toBe(true)
+    expect(compostValue(item)).toBe(0)
+    expect(furnaceValue(item)).toBe(0)
+    expect(w.silo.accept(item)).toBe(0)
+    expect(w.additives.accept(item)).toBe(0)
+    expect(m.names_item_fly_agaric().length).toBeGreaterThan(0)
+    expect(catalogEntries().some(e => e.id === 'fly-agaric')).toBe(true)
+    expect(keptRows(LOOT_GATE_AGARIC)).toContain('fly-agaric')
+    expect(keptRows(LOOT_GATE_AGARIC - 0.01)).not.toContain('fly-agaric')
   })
 })
 

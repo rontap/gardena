@@ -45,6 +45,9 @@ See [[canon]].
 | expansion.chunk | [[mechanics/expansion]] |
 | burrow.start | [[mechanics/burrow]] |
 | burrow.day | [[mechanics/burrow]] |
+| burrow.day-chance | [[mechanics/burrow]] |
+| burrow.bands | [[mechanics/burrow]] |
+| burrow.agaric | [[mechanics/burrow]] |
 | burrow.block | [[mechanics/burrow]] |
 | burrow.dig | [[mechanics/burrow]] |
 | burrow.loot | [[mechanics/burrow]] |

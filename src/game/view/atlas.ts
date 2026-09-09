@@ -197,6 +197,7 @@ import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
+import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import propBurrow from '../../assets/props/prop-burrow.svg?raw'
 import propBurrow1 from '../../assets/props/prop-burrow-1.svg?raw'
@@ -348,6 +349,7 @@ export type AtlasKey =
   | 'chainsaw'
   | 'wood'
   | 'ash'
+  | 'fly-agaric'
   | 'treasure'
   | ContainerId
   | 'fertilizer'
@@ -739,6 +741,7 @@ async function load(): Promise<void> {
   put('chainsaw', itemChainsaw)
   put('wood', itemWood)
   put('ash', itemAsh)
+  put('fly-agaric', itemFlyAgaric)
   put('treasure', itemTreasure)
   ;([
     ['sprinkler-spray', spray, 4],
@@ -912,6 +915,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'chainsaw') return 'chainsaw'
   if (item.kind === 'wood') return 'wood'
   if (item.kind === 'ash') return 'ash'
+  if (item.kind === 'fly-agaric') return 'fly-agaric'
   if (item.kind === 'treasure') return 'treasure'
   const _: never = item
   throw new Error(String(_))

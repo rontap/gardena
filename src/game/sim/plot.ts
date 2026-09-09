@@ -37,8 +37,10 @@ export type Ground = 'soft' | 'hard' | 'very-hard'
 export type LootItem =
   | { kind: 'treasure'; coins: number }
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
-  | { kind: 'seeds'; crop: 'tomato' | 'raspberry' | 'grape' | 'vanilla'; variety: VarietyId; quality: number; count: number }
+  | { kind: 'seeds'; crop: 'tomato' | 'raspberry' | 'grape'; variety: VarietyId; quality: number; count: number }
   | { kind: 'fertilizer'; liters: number; capacityLiters: number }
+  | { kind: 'weed'; count: number }
+  | { kind: 'fly-agaric'; count: number }
   | { kind: 'shovel'; id: 'better-shovel'; usesLeft: number; workSeconds: number }
   | { kind: 'pickaxe'; id: 'better-pickaxe'; usesLeft: number; workSeconds: number }
   | { kind: 'axe'; usesLeft: number; workSeconds: number }

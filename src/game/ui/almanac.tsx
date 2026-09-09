@@ -86,6 +86,7 @@ const UTIL_IDS = [
   'sugar',
   'wood',
   'ash',
+  'fly-agaric',
   'rotary-shovel',
   'diamond-pickaxe',
 ]
@@ -999,6 +1000,7 @@ const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
 function skuFill(tab: AlmanacTab, id: string): string {
   if (id === 'sugar' || id === 'ash' || id === 'flakes' || id === 'vanilla-extract' || id === 'bread') return 'bg-water'
+  if (id === 'fly-agaric') return 'bg-dirt-dark'
   if (tab === 'sensors' || tab === 'automation' || tab === 'water') return 'bg-grass'
   return 'bg-dirt-dark'
 }

@@ -136,6 +136,7 @@
   "catalog_axe": "Chops a mature tree into Wood. The tree then grows a trunk and grows again before it fruits. {uses} uses, {workSeconds}s per chop.",
   "catalog_chainsaw": "Chops a mature tree into Wood. Lasts for more uses and each Chop takes fewer seconds than an Axe. {uses} uses, {workSeconds}s per chop.",
   "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
+  "catalog_fly_agaric": "A red mushroom flecked with white, dug whole out of a burrow. It only turns up where the ground has been good to you for a long while. Nothing on the farm takes it yet, so it keeps in a chest.",
   "catalog_ash": [
     {
       "declarations": [

@@ -414,6 +414,12 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_ash({ n: COMPOST_VALUE.ash }),
     },
     {
+      id: 'fly-agaric',
+      title: m.names_item_fly_agaric(),
+      icon: { kind: 'fly-agaric', count: 1 },
+      blurb: m.catalog_fly_agaric(),
+    },
+    {
       id: 'barrel',
       title: m.names_building_barrel(),
       icon: { kind: 'barrel' },

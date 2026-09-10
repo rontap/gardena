@@ -56,6 +56,7 @@ const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-furnace',
   'buy-research-station',
   'buy-infuser',
+  'buy-sorter',
   'buy-barrel',
   'buy-freezer',
   'buy-freezer-large',
@@ -294,6 +295,7 @@ export function permit(cmd: Cmd): boolean {
     case Act.acceptContract:
     case Act.cancelContract:
     case Act.reorderContract:
+    case Act.necronomicon:
       return false
     case Act.openHud:
       return (
@@ -368,9 +370,11 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
     if (c.kind === 'infuser') s += `:${c.lock === 'none' ? 'none' : c.lock.kind}:u${c.units}`
     if (c.kind === 'furnace') s += `:${c.recipe}`
+    if (c.kind === 'sorter') s += `:${c.facing}:${c.held === 'none' ? 'none' : c.held.kind}:p${q(c.progress)}`
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
+    if (c.kind === 'necronomicon') s += `:${c.crop}:n${c.cropCount}:f${c.fruit.join('.')}:a${c.ash}:g${c.gold}:d${c.done.join('.')}`
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump' || c.kind === 'infuser') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`

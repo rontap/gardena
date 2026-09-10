@@ -187,12 +187,16 @@ Parked only. `Act.swapTrailer` swaps hand with hopper or `slots[i]`, then compac
 
 ## Machine pads
 
-Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos.
+Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, sorter, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos.
+
+The cells come off the instance: `padPorts()`, split by role with `padDropCells` / `padTakeCells` — [[architecture/modules]] `building.io-ports`. Every building but the sorter takes the default, which is the geometry the two ghost helpers still compute:
 
 ```
 dropoffPad(base) = { row: base.row - 1, col: base.col + i } for i in 0..w-1
 takeupPad(base)  = { row: base.row + h, col: base.col + i } for i in 0..w-1
 ```
+
+Sorter: one dropoff beside the middle cell, three takeups beside each cell on the side its `facing` names — [[mechanics/machines]] `machines.sorter`. Load from a sorter takeup picks the ground drops of that Variety tier only, because the sorter drops each tier on its own cell.
 
 Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad. Else no-op.
 
@@ -200,7 +204,7 @@ Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)`
 
 Unload: cargo → building, all legal until dest full. Same accept as walk dump. Load: chest/freezer pull until cargo full; silo seeds; additive bags; machines pick all ground drops on takeup cells the cargo accepts. Quad uses quad slots; tractor still needs hitch (`vehicleCargo()`).
 
-Guest: mill/jam/still/compost/furnace/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
+Guest: mill/jam/still/compost/furnace/sorter/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
 
 Route load/unload stops: one transfer, same body, then next — [[#Dispatch]].
 

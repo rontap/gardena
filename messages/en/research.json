@@ -73,5 +73,7 @@
   "research_grant_automate": "Automate on the Vehicle hangar",
   "research_grant_contracts_board": "Contracts tab at the Market",
   "research_grant_rep_decay": "Reputation falls on a day with no contract taken",
-  "research_grant_jam_almanac": "Jam in the Almanac"
+  "research_grant_jam_almanac": "Jam in the Almanac",
+  "research_unlock_necronomicon_name": "Necronomicon",
+  "research_unlock_necronomicon_blurb": "Lets the husband order the book your grandmother never found, so you can build it and read what it asks for. It asks for produce, for ash, and for money, and it gives nothing back."
 }

@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js'
-import { FADE, chunkKey, chunkOf, occupiedCells, skuBase, type Coord, type Pump } from '../../sim/building.ts'
+import { FADE, chunkKey, chunkOf, occupiedCells, skuBase, skuPorts, type Coord, type Facing, type Pump } from '../../sim/building.ts'
 import {
   dropoffPad,
   hangarPad,
@@ -10,7 +10,7 @@ import {
   PAD_SKUS,
   SILO_PAD_SKUS,
 } from '../../sim/feature-vehicles/vehicle.ts'
-import { IO_SKUS, machineEast, machineWest } from '../../sim/feature-machines/machine.ts'
+import { CHUTE_SKUS } from '../../sim/feature-machines/machine.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
 import { aoe, corners, edgeKey, incident, vertexKey, vertsOf, type Edge, type Vertex } from '../../sim/pipe.ts'
 import { lookup } from '../../sim/feature-enclosure/enclosure.ts'
@@ -452,7 +452,9 @@ export class OverlayLayer {
         s.alpha = p.legal ? 1 : 0.5
       })
     }
-    if (place.kind === 'sku' && ptr !== undefined) this.ghostIo(world, place.id, { col: Math.floor(ptr.x), row: Math.floor(ptr.y) })
+    if (place.kind === 'sku' && ptr !== undefined) {
+      this.ghostIo(world, place.id, { col: Math.floor(ptr.x), row: Math.floor(ptr.y) }, place.id === 'buy-sorter' ? place.facing : 'e')
+    }
     if (lens === 'sensors' || place.kind === 'wire') this.wires(world)
     if (place.kind === 'wire' && ptr !== undefined) this.pendingWire(world, place.from, ptr.x, ptr.y)
     this.routes(world, lens, editor)
@@ -460,28 +462,36 @@ export class OverlayLayer {
     for (let i = this.nLabel; i < this.labels.length; i++) this.labels[i].visible = false
   }
 
-  private ghostIo(world: World, id: SkuId, at: Coord): void {
-    const base = skuBase(id, at)
+  private ghostIo(world: World, id: SkuId, at: Coord, facing: Facing): void {
+    const base = skuBase(id, at, facing)
     if (base === undefined) return
     const put = (key: AtlasKey, x: number, y: number) => {
       const s = this.sprites.take(atlasTex(key))
       s.position.set(x * TILE, y * TILE)
       s.alpha = GHOST_IO_ALPHA
     }
-    if (IO_SKUS.includes(id)) {
-      const west = machineWest(base)
-      const east = machineEast(base)
-      if (world.inWorld(west)) put('link-in', base.col - 0.5, west.row)
-      if (world.inWorld(east)) put('link-out', base.col + base.w - 0.5, east.row)
+    if (CHUTE_SKUS.includes(id)) {
+      skuPorts(id, base, facing).forEach(port => {
+        if (!world.inWorld(port.at)) return
+        const dx = port.at.col < base.col ? 0.5 : port.at.col >= base.col + base.w ? -0.5 : 0
+        const dy = port.at.row < base.row ? 0.5 : port.at.row >= base.row + base.h ? -0.5 : 0
+        put(port.role === 'in' ? 'link-in' : 'link-out', port.at.col + dx, port.at.row + dy)
+      })
     }
     if (!world.done.has('unlock-vehicles')) return
     if (PAD_SKUS.includes(id)) {
-      dropoffPad(base).forEach(p => {
-        if (world.inWorld(p)) put('pad-drop', p.col, p.row)
-      })
-      takeupPad(base).forEach(p => {
-        if (world.inWorld(p)) put('pad-take', p.col, p.row)
-      })
+      if (id === 'buy-sorter') {
+        skuPorts(id, base, facing).forEach(port => {
+          if (world.inWorld(port.at)) put(port.role === 'in' ? 'pad-drop' : 'pad-take', port.at.col, port.at.row)
+        })
+      } else {
+        dropoffPad(base).forEach(p => {
+          if (world.inWorld(p)) put('pad-drop', p.col, p.row)
+        })
+        takeupPad(base).forEach(p => {
+          if (world.inWorld(p)) put('pad-take', p.col, p.row)
+        })
+      }
     }
     const ret = HANGAR_PAD_SKUS.includes(id) ? hangarPad(base) : SILO_PAD_SKUS.includes(id) ? siloPad(base) : []
     ret.forEach(p => {

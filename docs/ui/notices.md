@@ -2,7 +2,7 @@
 
 The right-hand column is the **Command Center**. Identifiers stay `notices`. A row is a notice. Illegal: notification, infobox, alert, dashboard.
 
-A notice is one line saying a clock is running out, that something is waiting to be spent, that an ended day's recap is unseen, or that another gardener `joined`, `quit`, or `desynced`. `noticeRows` reads `World` and writes nothing. Roster kinds are stamped at the net/App boundary, not that read. [[ui/hud]] [[architecture/view]] [[architecture/modules]] [[architecture/net]]
+A notice is one line saying a clock is running out, that something is waiting to be spent, that an ended day's recap or a letter about grandma is unread, that the Necronomicon has a page ready, or that another gardener `joined`, `quit`, or `desynced`. `noticeRows` reads `World` and writes nothing. Roster kinds are stamped at the net/App boundary, not that read. [[ui/hud]] [[architecture/view]] [[architecture/modules]] [[architecture/net]]
 
 The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. Recap dismiss is App → `World.seeRecap`, not the pass. Roster rows live on App, not `World`. Delete `src/game/ui/notices.ts` and `src/game/ui/notices.tsx` and the sim still ticks; unseen recaps sit on `World`; stamped roster rows drop on reload or `World` swap.
 
@@ -13,6 +13,8 @@ The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReas
 | kind | condition | reads | bar | click |
 |---|---|---|---|---|
 | `recap` | `World.recapUnseen` contains that ended day | `World.recaps` / `World.recapUnseen` | — | popup recap |
+| `grandma` | `World.grandmaUnseen` contains that beat | `World.grandmaUnseen` | — | popup that letter |
+| `necronomicon` | `ritualReady(world, book)` | `World.necronomicon` | — | none |
 | `joined` | stamped: new seat or `away` → `in`, not `App.local` | App list, `Seat.name` | — | none |
 | `quit` | stamped: link released (`drop` / leave / `lost`) | App list, `Seat.name` | — | none |
 | `desynced` | stamped: `bye: kicked` then drop | App list, `Seat.name` | — | none |
@@ -62,7 +64,7 @@ A condition enters the pending set on the first pass it holds, and becomes visib
 
 Pending and visible sets are React state in the hook. Not `World`.
 
-Recap skips two-pass. Contract-done, research-done, `joined`, `quit`, and `desynced` skip two-pass.
+Recap skips two-pass. Contract-done, research-done, `joined`, `quit`, `desynced`, and `grandma` skip two-pass — a letter is an event. `necronomicon` does not: a page going full is a condition.
 
 ### Recap rows
 
@@ -183,7 +185,7 @@ NoticeGo =
   | { kind: 'panel'; panel: 'market' | 'research' | 'family' }
   | { kind: 'popup'; popup: NoticePopup }
 
-NoticePopup = { kind: 'recap'; day: number }
+NoticePopup = { kind: 'recap'; day: number } | { kind: 'grandma'; beat: Grandma }
 ```
 
 `goNotice` takes `NoticeGo`. Recap arm is App `recapDay`.
@@ -231,6 +233,6 @@ A settings row. Any second highlight that is not a cell outline. Any notice that
 
 `notices.red` — Only a red band is a notice. Orange is not.
 
-`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line. `NOTICE_ORDER` starts with `recap`, then one-time `joined` `quit` `desynced` `contract-done` `research-done`.
+`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line. `NOTICE_ORDER` starts with `recap`, then one-time `joined` `quit` `desynced` `contract-done` `research-done` `grandma`. `necronomicon` sits with the rows waiting to be spent, above `points` — [[ui/necronomicon]].
 
 `notices.bar` — A bar is drawn only for a row with a clock, and its colour is `noticeBad(kind)`: red for a draining loss, green for a filling contract or research job.

@@ -52,7 +52,7 @@
   "prompt_will_not_burn": "will not burn this",
   "prompt_furnace_bread": "Furnace - {n}/{need} flour",
   "prompt_furnace_lock": "Furnace - ash or bread",
-  "prompt_infuse_arrow": "{have}/{need} \u2192 Infused {name}",
+  "prompt_infuse_arrow": "{have}/{need} → Infused {name}",
   "prompt_infuse_flakes": "{have}/{need} Flakes",
   "prompt_infuse_extract": "{have}/{need} Vanilla extract",
   "prompt_oil_only": "Olive oil only",
@@ -60,6 +60,9 @@
   "prompt_already_infused": "Already infused",
   "prompt_infuse_working": "Infuser - working {n}%",
   "prompt_demolish_infuser": "Demolish Infuser",
+  "prompt_demolish_sorter": "Demolish Variety sorter",
+  "prompt_sorter_sorting": "Sorting {name}",
+  "prompt_sorter_full": "The {tier} side is full",
   "prompt_collect": "Collect {name}",
   "prompt_fill": "Fill",
   "prompt_fill_named": "Fill {name}",
@@ -100,11 +103,11 @@
   "prompt_maturing_pct": "maturing {n}%",
   "prompt_grapes_or_apples": "Grape or Apple",
   "prompt_crop_s_only": "{crop}s only",
-  "prompt_aging_sells": "aging {n}d, sells at \u00d7{mul}",
+  "prompt_aging_sells": "aging {n}d, sells at ×{mul}",
   "prompt_jam_buffer": "{sugar}L / {cap}L",
-  "prompt_mill_arrow": "{n}/{need} \u2192 {product}",
-  "prompt_grind_arrow": "{n} \u2192 seeds",
-  "prompt_emdash": "\u2014",
+  "prompt_mill_arrow": "{n}/{need} → {product}",
+  "prompt_grind_arrow": "{n} → seeds",
+  "prompt_emdash": "—",
   "prompt_expand": "Expand {price}",
   "prompt_of": "{stored} of {capacity}",
   "prompt_of_seeds": "{used} of {cap} seeds",
@@ -127,9 +130,9 @@
   "prompt_graft": "Graft",
   "prompt_station": "Seed Variety Station",
   "prompt_station_empty_variety": "None yet",
-  "prompt_station_grafts": "{min}\u2013{max} grafts",
+  "prompt_station_grafts": "{min}–{max} grafts",
   "prompt_station_footer": "Dump Heirloom fruit on the station. Walking up does not dump.",
-  "prompt_station_filling": "{name} {have}/{need} \u00b7 Quality {n}%",
+  "prompt_station_filling": "{name} {have}/{need} · Quality {n}%",
   "prompt_station_refuse": "Heirloom fruit only",
   "prompt_station_cut": "Cut grafts",
   "prompt_aging_max": "{cask} made from {name}. Aging up to {days} days multiplies its sale price by {mul}.",
@@ -152,12 +155,23 @@
   "prompt_water_wilting": "wilting",
   "prompt_furnace_haste": [
     {
-      "declarations": ["input n", "input pct", "local nPlural = n: plural"],
-      "selectors": ["nPlural"],
+      "declarations": [
+        "input n",
+        "input pct",
+        "local nPlural = n: plural"
+      ],
+      "selectors": [
+        "nPlural"
+      ],
       "match": {
         "nPlural=one": "Finishes {pct}% faster with {n} working Furnace than without a Furnace.",
         "nPlural=other": "Finishes {pct}% faster with {n} working Furnaces than without a Furnace."
       }
     }
-  ]
+  ],
+  "prompt_sacrifice": "Sacrifice",
+  "prompt_necronomicon_read": "Read the Necronomicon",
+  "prompt_necronomicon_shut": "No open page wants what you are carrying.",
+  "prompt_cannot_demolish_necronomicon": "The Necronomicon stays where you put it.",
+  "prompt_necronomicon_full": "Every open page already has what it asked for."
 }

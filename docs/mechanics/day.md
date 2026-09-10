@@ -25,7 +25,8 @@ On seam, before any field tick of the new day. Ended day is `clock.day - 1` afte
 2. `money -= tax()` — [[mechanics/expansion]]. May go negative.
 3. Pump bill: `bill = pumpLiters × PUMP_COST_PER_L × costMul(ended weather)`, `money -= bill`, `recap.water = bill`, `pumpLiters = 0`. Ended weather is `weather(clock.day - 1)` after increment. Money may go negative. Recap always shows Water line. Mid-day money unchanged. — [[mechanics/weather]]
 4. Burrow mint: `+1` per owned chunk on an eligible cell, or skip if none — [[mechanics/burrow]] `burrow.day`.
-5. Tree seam — [[mechanics/trees]]. Unchanged order: stipend, tax, pump bill, burrow mint, tree seam.
+5. Tree seam — [[mechanics/trees]].
+5b. `advanceGrandma(endedDay)` — [[mechanics/necronomicon]] `necro.grandma`. Moves the beat forward and pushes every beat it passed onto `grandmaUnseen`. Unchanged order: stipend, tax, pump bill, burrow mint, tree seam.
 6. Append `Recap` to `World.recaps` (ended day as key; one per ended day).
 7. Push that day onto `World.recapUnseen`.
 8. `grantPoints(POINTS_PER_DAY)`.

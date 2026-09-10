@@ -313,6 +313,14 @@ export function isPadCell(c: Cell): c is PadCell {
   return 'pads' in c && c.pads === 'both'
 }
 
+export function padDropCells(c: PadCell): Coord[] {
+  return c.padPorts().flatMap(p => (p.role === 'in' ? [p.at] : []))
+}
+
+export function padTakeCells(c: PadCell): Coord[] {
+  return c.padPorts().flatMap(p => (p.role === 'out' ? [p.at] : []))
+}
+
 export function trailerOf(trailers: readonly Trailer[], id: TrailerId): Trailer {
   const t = trailers.find(x => x.id === id)
   if (t === undefined) throw new Error('hitch')
@@ -373,7 +381,7 @@ export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[]): boo
       return cargoCouldTake(cargo, { kind: h.id, liters, capacityLiters: bag })
     })
   }
-  return takeupPad(src.base).some(p => drops.some(d => d.at.col === p.col && d.at.row === p.row && cargoCouldTake(cargo, d.item)))
+  return padTakeCells(src).some(p => drops.some(d => d.at.col === p.col && d.at.row === p.row && cargoCouldTake(cargo, d.item)))
 }
 
 export function pullFrom(src: PadCell, cargo: Cargo, drops: Drop[]): void {
@@ -383,7 +391,7 @@ export function pullFrom(src: PadCell, cargo: Cargo, drops: Drop[]): void {
     pullSugar(src, cargo)
     pullAdditive(src, cargo)
   }
-  else pullDrops(takeupPad(src.base), cargo, drops)
+  else pullDrops(padTakeCells(src), cargo, drops)
 }
 
 function pullSlots(slots: Slot[], cargo: Cargo): void {
@@ -572,6 +580,7 @@ export const PAD_SKUS: readonly SkuId[] = [
   'buy-still',
   'buy-furnace',
   'buy-research-station',
+  'buy-sorter',
 ]
 
 export const HANGAR_PAD_SKUS: readonly SkuId[] = ['buy-hangar']
@@ -594,8 +603,8 @@ export function padBuildings(w: World): PadCell[] {
 
 export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
   for (const cell of padBuildings(w)) {
-    if (onPad(dropoffPad(cell.base), at)) return { cell, side: 'dropoff' }
-    if (onPad(takeupPad(cell.base), at)) return { cell, side: 'takeup' }
+    if (onPad(padDropCells(cell), at)) return { cell, side: 'dropoff' }
+    if (onPad(padTakeCells(cell), at)) return { cell, side: 'takeup' }
   }
   return undefined
 }
@@ -863,7 +872,7 @@ export function stripStops(w: World, drop: (s: RouteStop) => boolean): void {
 }
 
 export function stripPadStops(w: World, cell: PadCell): void {
-  const pads = [...dropoffPad(cell.base), ...takeupPad(cell.base)]
+  const pads = [...padDropCells(cell), ...padTakeCells(cell)]
   stripStops(
     w,
     s => (s.kind === 'load' || s.kind === 'unload') && pads.some(p => p.col === s.at.col && p.row === s.at.row),

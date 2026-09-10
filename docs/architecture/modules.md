@@ -2,7 +2,7 @@
 
 `src/game/` is `defs`, `sim`, `ui`, `view`, `net`. `src/App.tsx` holds one [[architecture/world]] `World` or none, the panel union, App `recapDay`, `App.local: SeatId`, the MP session, and the `DT_MAX` accumulator (`frameDt * World.cheatSpeed`). No App `SPEED` 1–20. Startup [[ui/menu]]: no `World`. Play: holds `World` and ticks it. It does not own `Cell`.
 
-`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-hardened-tools` `unlock-infusion`. `SkuId` += `buy-furnace` `buy-axe` `buy-chainsaw` `buy-research-station` `buy-infuser` `pack-chilli` `pack-grass` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` `infuser` (`feature-machines/recipe.ts`). `AnnualId` += `chilli` `grass`. `GrownCrop` = `Exclude<CropId, 'grass'>`. `MillRecipe` += `chilli`. `VfxId` += `furnace-smoke`. Identifier `stipendOf`. Player strings: [[architecture/i18n]].
+`defs` are tables. `sim` is the game. `ui` is React chrome. `view` is the PixiJS v8 canvas world. HUD/panels stay React. `net` is PeerJS. `World` does not import `peerjs`. Numbers live in defs; do not duplicate them in notes. Ids: `sim/ids.ts`. `ResearchId` += `unlock-hardened-tools` `unlock-infusion` `unlock-necronomicon`. `SkuId` += `buy-necronomicon`. `PageId` and `Grandma` are `sim/ids.ts`. `SkuId` += `buy-furnace` `buy-axe` `buy-chainsaw` `buy-research-station` `buy-infuser` `pack-chilli` `pack-grass` `buy-logic` `buy-sensor-variety` `buy-sensor-weather`. `SensorKind` += `logic` `sensor-variety` `sensor-weather`. `MachineId` += `furnace` `station` `infuser` (`feature-machines/recipe.ts`). `AnnualId` += `chilli` `grass`. `GrownCrop` = `Exclude<CropId, 'grass'>`. `MillRecipe` += `chilli`. `VfxId` += `furnace-smoke`. Identifier `stipendOf`. Player strings: [[architecture/i18n]].
 
 ## defs
 
@@ -19,6 +19,7 @@
 | `companies.ts` | `COMPANIES` book — [[mechanics/contracts]] |
 | `weather.ts` | weather numbers — [[mechanics/weather]] |
 | `burrow.ts` | `BURROW_MUL` `BURROW_START_N` loot-roll numbers `LUCK_CAP` — [[mechanics/burrow]] |
+| `necronomicon.ts` | `PAGES` `PAGE_IDS` `EARLY_FRUIT` `GRANDMA_DAY` `NECRO_*` `pageWant` — [[mechanics/necronomicon]] |
 | `math.ts` | `Math.visualRound` — [[architecture/view]] `view.round` |
 
 ## sim
@@ -67,6 +68,7 @@
 | `feature-machines/recipe.ts` | `recipesOf`, `recipesUsing`, mill/jam/still/barrel rows pinned to variety, compost 4, furnace 7, station, infuser 4, still water face. `MachineId` += `furnace` `station` `infuser` |
 | `feature-field/field.ts` | grow / recover tick, tree seam, weeds, grass |
 | `feature-burrow/` | start mint, seam mint, loot roll, extract. Types in `burrow.h.ts`, functions in `burrow.ts`. `World` indexes `burrows` and calls in |
+| `feature-necronomicon/` | pages, claim, ritual, gold, grandma beats. Types in `necronomicon.h.ts`, functions `(w, …)` in `necronomicon.ts`. `World` holds `necronomicon` `grandma` `grandmaUnseen` and calls in — [[mechanics/necronomicon]] |
 | `feature-enclosure/` | `Enclosure`, rebuild, lookup. Types in `enclosure.h.ts`, functions `(w, …)` in `enclosure.ts`. `World` indexes; it does not own. Rebuild on fence add/remove and `indexAll` |
 | `feature-field/field.helpers.ts` | neighbour, waterable, mood, age, till / plant / water / harvest / tend / chop / graft. Chop accepts axe or chainsaw; work is the held item's `workSeconds`. Shovel on burrow cover calls feature-burrow extract |
 | `feature-place/place.ts` | `buyBody` `buyPacksBody` `clickBody` `clickValveBody` `rightClickBody` `expandBody` `faces` `placePipeBody` `deletePipeBody` `placeSprinklerBody` `deleteSprinklerBody` `armDeleteBody` `rotatePlaceBody` `cancelPlaceBody`. Public `buy` / `click` / `confirmPlace` stay World wrappers |
@@ -183,6 +185,8 @@ BaseBuilding
   ticks → false
   hasted → false
   tick(w, at, dt) → false
+  storePorts() → defaultStorePorts(base)
+  padPorts() → pads === 'none' ? [] : defaultPadPorts(base)
 
 Machine extends BaseBuilding
   inn: Signal
@@ -206,6 +210,18 @@ Override only when the body is real logic. Do not put mill / jam / furnace speci
 
 Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `dumpAccept` is `dest.accept`. `dumpApply` is `dest.apply` then `take` (`takeAll` → whole item, else `n`). `ownsPort` for mill / jam / still / furnace / station / infuser / chest / freezer / seed-silo / additive-store / pump: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. Pumpjack east cell: no port. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Keep `isIoCell` as its own predicate, not a flag alias. Chest west / east adjacency stays `World`; payload is `accept` / `apply`. Mill, Infuser, Furnace: south row `base.row + base.h - 1`. Jam, still, station: origin row. [[mechanics/machines]] `machines.io-side`. Plots stay a union; no `Cell.accept`. Barrel collect is not `accept`. `isSolid` uses `solid` for the `BaseBuilding` half; house / rock / tree / truck / pump stay kind arms; sensors via `isSensor`.
 
+## I/O ports
+
+`IoPort` is `{ at: Coord; role: 'in' | 'out'; takes?: (item: Item) => boolean }`. Derived, never saved.
+
+`storePorts()` is the chest and freezer link set. `padPorts()` is the vehicle Load / Unload set. Both live on the instance. `defaultStorePorts(base)` is west `in` / east `out` on the south row; `defaultPadPorts(base)` is the whole north edge `in` / the whole south edge `out`. Every live building takes those two defaults, so nothing moved when the functions replaced the fixed geometry.
+
+Read the instance, not the geometry: `pullMachineStores`, `World.machineLinks`, `World.machinePads`, `padHit`, `stripPadStops`, `pullFrom` and `loadWould` all walk one of those two lists. `padDropCells` / `padTakeCells` split a `padPorts()` list by role. `dropoffPad` / `takeupPad` / `machineWest` / `machineEast` stay for the placement ghost, which holds a `RectBase` and a `SkuId` and no instance; `skuPorts(id, base, facing)` answers the same question for that ghost.
+
+`pads` still says **whether** a building has vehicle pads — `PadCell` and `padBuildings` read it. `padPorts()` says **where**. `Sorter` overrides both port functions and returns the same four cells from each.
+
+`takes` is present only on a building with more than one `out` port. `Sorter` puts one predicate per output side. A second sorting axis is another predicate on another port, not another machine and not a new call site.
+
 Sensors are not `Machine` and not `BaseBuilding`. They carry the same readonly `ports`. Make table and ports: [[mechanics/sensors]].
 
 `building.flags` — `BaseBuilding` carries `solid` `ticks` `hasted` beside `ports` `pads` `takeAll`. A building that wants the default declares nothing. No call site re-derives a flag by listing kinds.
@@ -213,6 +229,8 @@ Sensors are not `Machine` and not `BaseBuilding`. They carry the same readonly `
 `building.ports-single` — `ports` is the only statement of which ports a cell has. `hit.ts` has no `portsOf`. Sensors carry the same field.
 
 `machines.tick-self` — `tickMachines` does not name a machine kind. Origin-cell guard and `ticks` live in the loop; rate and product live on the machine.
+
+`building.io-ports` — `storePorts()` and `padPorts()` on the instance are the only statement of which cells a building reads and writes. Defaults are `defaultStorePorts` west `in` / east `out` south row, and `defaultPadPorts` north edge `in` / south edge `out`. No sim or view call site rebuilds either set from `base`. `dropoffPad` / `takeupPad` / `machineWest` / `machineEast` and `skuPorts` serve the ghost, which has no instance. `pads` says whether, `padPorts()` says where. `IoPort.takes` is the per-output test; only a multi-output building sets it.
 
 Assumption: leftover `useOf` is `purposeMul`; no `pathUse`.
 

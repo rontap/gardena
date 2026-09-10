@@ -2,13 +2,14 @@ import { m } from '../../paraglide/messages.js'
 import { CROP_NAME, CROPS, FRESH_FULL, HAPPY_MAX, type CropClass } from '../defs/crops.ts'
 import { RESEARCH } from '../defs/research.ts'
 import type { VarietyId } from '../defs/varieties.ts'
-import type { Coord } from '../sim/building.ts'
+import { occupiedCells, type Coord } from '../sim/building.ts'
 import { filledOf, needOf } from '../sim/feature-contracts/market.ts'
 import type { CompanyId, ContractId, Demand } from '../sim/feature-contracts/market.h.ts'
-import { JAM_CROPS, type GrownCrop, type ResearchId } from '../sim/ids.ts'
+import { JAM_CROPS, type Grandma, type GrownCrop, type ResearchId } from '../sim/ids.ts'
 import { statsOf, type Stats } from '../sim/modifiers.ts'
 import type { RosterSeat } from '../sim/mp.ts'
 import { grid } from '../sim/nets.ts'
+import { bookOf, ritualReady } from '../sim/feature-necronomicon/necronomicon.ts'
 import { fertBand, waterBand } from '../sim/soil.ts'
 import type { SeatId, World } from '../sim/world.ts'
 
@@ -18,6 +19,8 @@ export const NOTICE_WATER_LOW = 0.2
 
 export type NoticeKind =
   | 'recap'
+  | 'grandma'
+  | 'necronomicon'
   | 'joined'
   | 'quit'
   | 'desynced'
@@ -44,6 +47,7 @@ export const NOTICE_ORDER: readonly NoticeKind[] = [
   'desynced',
   'contract-done',
   'research-done',
+  'grandma',
   'fuel',
   'drowning',
   'wilting',
@@ -55,6 +59,7 @@ export const NOTICE_ORDER: readonly NoticeKind[] = [
   'contract',
   'research',
   'water-low',
+  'necronomicon',
   'points',
   'expansion',
 ]
@@ -77,6 +82,8 @@ export function noticeBad(kind: NoticeKind): boolean {
 
 export type NoticeFace =
   | { kind: 'recap' }
+  | { kind: 'grandma' }
+  | { kind: 'necronomicon' }
   | { kind: 'hat'; seat: SeatId }
   | { kind: 'company'; id: CompanyId }
   | { kind: 'oil' }
@@ -96,7 +103,7 @@ export type NoticeSubject =
   | { kind: 'research'; id: ResearchId }
   | { kind: 'demand'; demand: Demand }
 
-export type NoticePopup = { kind: 'recap'; day: number }
+export type NoticePopup = { kind: 'recap'; day: number } | { kind: 'grandma'; beat: Grandma }
 
 export type NoticeGo =
   | { kind: 'none' }
@@ -350,8 +357,40 @@ export function recapRows(world: World): Notice[] {
   }))
 }
 
+export function grandmaRows(world: World): Notice[] {
+  return world.grandmaUnseen.map(beat => ({
+    id: `grandma:${beat}`,
+    kind: 'grandma' as const,
+    text: m.notices_grandma(),
+    face: { kind: 'grandma' as const },
+    subjects: [],
+    cells: [],
+    bar: undefined,
+    go: { kind: 'popup' as const, popup: { kind: 'grandma' as const, beat } },
+  }))
+}
+
+export function necronomiconRows(world: World): Notice[] {
+  const book = bookOf(world)
+  if (book === undefined || !ritualReady(world, book)) return []
+  return [
+    {
+      id: 'necronomicon',
+      kind: 'necronomicon' as const,
+      text: m.notices_necronomicon(),
+      face: { kind: 'necronomicon' as const },
+      subjects: [],
+      cells: occupiedCells(book.base, world.owned),
+      bar: undefined,
+      go: { kind: 'none' as const },
+    },
+  ]
+}
+
 export function noticeRows(world: World): Notice[] {
   return [
+    ...grandmaRows(world),
+    ...necronomiconRows(world),
     ...recapRows(world),
     ...contractRows(world),
     ...fuelRows(world),
@@ -408,7 +447,7 @@ export function doneRows(world: World, before: Pass): Notice[] {
 }
 
 function skipDelay(kind: NoticeKind): boolean {
-  return kind === 'recap' || kind === 'joined' || kind === 'quit' || kind === 'desynced'
+  return kind === 'recap' || kind === 'grandma' || kind === 'joined' || kind === 'quit' || kind === 'desynced'
 }
 
 function rosterText(kind: 'joined' | 'quit' | 'desynced', name: string): string {

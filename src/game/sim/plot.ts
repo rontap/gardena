@@ -12,11 +12,13 @@ import {
   type SiloSpray,
   type JamMachine,
   type Mill,
+  type Necronomicon,
   type Furnace,
   type Infuser,
   type PotStill,
   type Pump,
   type ResearchStation,
+  type Sorter,
   type RainTank,
   type Rock,
   type SeedSilo,
@@ -81,7 +83,9 @@ export type Cell =
   | PotStill
   | Furnace
   | Infuser
+  | Necronomicon
   | ResearchStation
+  | Sorter
   | Barrel
   | Freezer
   | Hangar

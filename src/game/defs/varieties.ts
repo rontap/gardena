@@ -2,6 +2,8 @@ import type { CropId, GrownCrop } from '../sim/ids.ts'
 
 export type VarietyTier = 'base' | 'variant' | 'heirloom'
 
+export const VARIETY_TIERS: readonly VarietyTier[] = ['base', 'variant', 'heirloom']
+
 export type VarietyId =
   | 'base'
   | 'bintje'

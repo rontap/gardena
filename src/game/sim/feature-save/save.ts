@@ -100,6 +100,8 @@ export function dump(world: World): Save {
       contracts: r.contracts.slice(),
     })),
     recapUnseen: world.recapUnseen.slice(),
+    grandma: world.grandma,
+    grandmaUnseen: world.grandmaUnseen.slice(),
     chunks: world.owned.map(id => {
       const { col0, row0 } = chunkRect(id)
       const cells: SaveCell[][] = []
@@ -198,7 +200,9 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
     c.kind === 'still' ||
     c.kind === 'furnace' ||
     c.kind === 'infuser' ||
+    c.kind === 'necronomicon' ||
     c.kind === 'station' ||
+    c.kind === 'sorter' ||
     c.kind === 'barrel' ||
     c.kind === 'freezer' ||
     c.kind === 'hangar' ||
@@ -314,6 +318,17 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         out: c.out,
         hold: c.hold,
       }
+    case 'necronomicon':
+      return {
+        kind: 'necronomicon',
+        base: c.base,
+        crop: c.crop,
+        cropCount: c.cropCount,
+        fruit: c.fruit.slice(),
+        ash: c.ash,
+        gold: c.gold,
+        pages: c.done.slice(),
+      }
     case 'infuser':
       return {
         kind: 'infuser',
@@ -337,6 +352,14 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         units: c.units,
         progress: c.progress,
         inn: c.inn,
+      }
+    case 'sorter':
+      return {
+        kind: 'sorter',
+        base: c.base,
+        facing: c.facing,
+        held: c.held === 'none' ? { kind: 'empty' } : { kind: 'hold', item: c.held },
+        progress: c.progress,
       }
     case 'barrel':
       return { kind: 'barrel', base: c.base, crop: c.crop, feed: c.feed.map(f => ({ ...f })), age: c.age, n: c.n }

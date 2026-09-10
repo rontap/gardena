@@ -120,6 +120,7 @@ const AUTO_IDS = [
   'freezer',
   'station',
   'infuser',
+  'sorter',
   'hangar',
   'silo-seed',
   'silo-produce',

@@ -84,6 +84,8 @@ export const STATION_SECONDS = 90
 export const STATION_GRAFT_MIN = 1
 export const STATION_GRAFT_MAX = 2
 
+export const SORT_SECONDS = 0.5
+
 export const FREEZER_SLOTS = 6
 export const FREEZER_ROT_MUL = 0.2
 
@@ -159,6 +161,8 @@ export const PRODUCE_SLOTS = 16
 
 export const MILL_W = 2
 export const MILL_H = 2
+
+export const SORT_LEN = 3
 
 export const SILO_W = 2
 export const SILO_H = 3

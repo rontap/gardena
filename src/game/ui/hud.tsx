@@ -31,7 +31,7 @@ import { Chrome, Coin } from './frame.tsx'
 import { LENS_ROWS } from './lens.tsx'
 import type { PanelKind } from './panel.ts'
 
-const ROTATABLE = ['buy-sprinkler-vert'] as const
+const ROTATABLE = ['buy-sprinkler-vert', 'buy-sorter'] as const
 
 function lensNote(lens: Lens, lock: boolean): string | undefined {
   if (lens === 'off') return undefined

@@ -18,10 +18,12 @@ import {
   Mill,
   Furnace,
   Infuser,
+  Necronomicon,
   PotStill,
   Pump,
   RainTank,
   ResearchStation,
+  Sorter,
   Rock,
   SeedSilo,
   Tap,
@@ -114,6 +116,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     tanks: live.tanks,
     taps: live.taps,
     stills: live.stills,
+    necronomicon: live.necronomicon,
     waterSystems: live.waterSystems,
     wires: save.wires,
     valveHold: save.valveHold,
@@ -167,6 +170,8 @@ function worldFromSave(save: Save, sink: LogSink): World {
     seam: { kind: 'play' },
     recaps: recapsFrom(save),
     recapUnseen: unseenFrom(save),
+    grandma: save.grandma,
+    grandmaUnseen: save.grandmaUnseen,
     segments: save.segments,
     wells: live.wells,
     sprinklers: save.sprinklers,
@@ -252,6 +257,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
   taps: Tap[]
   wells: Well[]
   stills: PotStill[]
+  necronomicon: Necronomicon | 'none'
   waterSystems: WaterSystem[]
   hangars: Hangar[]
   seedSilos: SiloSeed[]
@@ -264,6 +270,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
   const taps: Tap[] = []
   const wells: Well[] = []
   const stills: PotStill[] = []
+  let necronomicon: Necronomicon | 'none' = 'none'
   const waterSystems: WaterSystem[] = []
   const hangars: Hangar[] = []
   const seedSilos: SiloSeed[] = []
@@ -291,6 +298,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
         if (made.kind === 'tap') taps.push(made)
         if (made.kind === 'well') wells.push(made)
         if (made.kind === 'still') stills.push(made)
+        if (made.kind === 'necronomicon') necronomicon = made
         if (made.kind === 'water-system') waterSystems.push(made)
         if (made.kind === 'hangar') hangars.push(made)
         if (made.kind === 'silo-seed') seedSilos.push(made)
@@ -318,7 +326,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, tanks, taps, wells, stills, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
+  return { chunks, house, truck, silo, additives, pumps, tanks, taps, wells, stills, necronomicon, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
@@ -454,6 +462,16 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       furnace.hold = cell.hold
       return furnace
     }
+    case 'necronomicon': {
+      const book = new Necronomicon(cell.base)
+      book.crop = cell.crop
+      book.cropCount = cell.cropCount
+      cell.fruit.forEach(c => book.fruit.push(c))
+      book.ash = cell.ash
+      book.gold = cell.gold
+      cell.pages.forEach(id => book.done.push(id))
+      return book
+    }
     case 'infuser': {
       const inf = new Infuser(cell.base)
       inf.lock = cell.lock
@@ -476,6 +494,13 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       station.progress = cell.progress
       station.inn = cell.inn
       return station
+    }
+    case 'sorter': {
+      const sorter = new Sorter(cell.base, cell.facing)
+      const held = liveSlot(cell.held)
+      sorter.held = held.kind === 'hold' ? held.item : 'none'
+      sorter.progress = cell.progress
+      return sorter
     }
     case 'barrel': {
       const barrel = new Barrel(cell.base)

@@ -36,6 +36,7 @@ Vault for this game. Agents read this first.
 - [[mechanics/sensors]]
 - [[mechanics/enclosure]] — fenced area, fenceable sensor range
 - [[mechanics/infusion]] — Infusion, chilli, Infuser, overlay-infused
+- [[mechanics/necronomicon]] — grandma, pages, sacrifice, ritual
 
 ## Items
 
@@ -57,6 +58,7 @@ Vault for this game. Agents read this first.
 - [[ui/_index]]
 - [[ui/changelog]] — menu chrome for the player changelog
 - [[ui/settings]] — player options behind the gear
+- [[ui/necronomicon]] — the book's panel, the letters, its Command Center rows
 
 ## Art
 

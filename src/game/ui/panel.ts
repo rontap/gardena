@@ -16,6 +16,7 @@ export type Panel =
   | { kind: 'additives'; at: Coord }
   | { kind: 'hangar'; at: Coord }
   | { kind: 'station'; at: Coord }
+  | { kind: 'necronomicon'; at: Coord }
   | { kind: 'vehicle'; id: VehicleId }
   | { kind: 'menu' }
   | { kind: 'multiplayer' }
@@ -30,6 +31,7 @@ export function cued(kind: PanelKind): boolean {
     kind === 'additives' ||
     kind === 'hangar' ||
     kind === 'station' ||
+    kind === 'necronomicon' ||
     kind === 'vehicle'
   )
 }

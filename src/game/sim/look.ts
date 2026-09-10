@@ -12,6 +12,7 @@ import {
   jamLook,
   millLook,
   sensorName,
+  sorterLook,
   stillLook,
   treeLine,
   type PromptHit,
@@ -20,11 +21,12 @@ import { onCell } from './drop.ts'
 import { cropVariety } from '../defs/crops.ts'
 import { caskName, heldText, skuLabel, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
-import type { Barrel } from './building.ts'
+import type { Barrel, Necronomicon } from './building.ts'
 import { barrelNeed, caskAgeMul, caskAgeTop, feedUnits, feedVariety, meanQuality } from './feature-machines/machine.ts'
 import { BARREL_AGE, BARREL_MATURE, FURNACE_HASTE } from '../defs/items.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { isSensor } from './sensor.ts'
+import { pageStates } from './feature-necronomicon/necronomicon.ts'
 import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
 import { CASK_OF, type TileId } from './ids.ts'
 import type { World } from './world.ts'
@@ -140,6 +142,8 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'furnace') lines.push(furnaceLook(cell, hand))
   else if (cell.kind === 'infuser') lines.push(infuserLook(cell, hand))
   else if (cell.kind === 'station') lines.push(stationLook(cell, hand))
+  else if (cell.kind === 'necronomicon') lines.push(necronomiconLook(world, cell))
+  else if (cell.kind === 'sorter') lines.push(sorterLook(cell))
   else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
   else if (cell.kind === 'jam') lines.push(jamLook(cell, hand))
   else if (cell.kind === 'tree') lines.push(treeLine(cell))
@@ -267,4 +271,11 @@ function waterWord(soil: Soil, tol: number): string {
 
 function labeled(name: string, detail: string): string {
   return m.prompt_labeled({ name, detail })
+}
+
+function necronomiconLook(world: World, book: Necronomicon): string {
+  const open = pageStates(world, book)
+  if (open.length === 0) return m.names_building_necronomicon()
+  const done = open.filter(p => p.done).length
+  return labeled(m.names_building_necronomicon(), m.necro_look_pages({ done, open: open.length }))
 }

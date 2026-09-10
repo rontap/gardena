@@ -1,6 +1,6 @@
 import { STILL_WATER } from '../../defs/items.ts'
-import { frontOfBase, type Coord, type RectBase } from '../building.ts'
-import { insertSlots, type Item, type Slot } from '../item.ts'
+import { compactSlots, insertSlots, slotsCouldTake, type Item, type Slot } from '../item.ts'
+import { frontOfBase, type Coord, type RectBase, type Sorter } from '../building.ts'
 import { isPlot } from '../plot.ts'
 import type { World } from '../world.ts'
 import { machineEast } from './machine.ts'
@@ -45,4 +45,45 @@ export function pullStillWater(w: World, still: { base: RectBase }): boolean {
   if (held < STILL_WATER) return false
   w.pullWater(net.sources, STILL_WATER)
   return true
+}
+
+function sortPort(w: World, c: Sorter, item: Item): Coord | undefined {
+  const at = c.storePorts().find(p => p.role === 'out' && p.takes !== undefined && p.takes(item))?.at
+  if (at === undefined || !w.inWorld(at)) return undefined
+  const cell = w.cell(at)
+  if (cell.kind === 'chest' || cell.kind === 'freezer') {
+    return slotsCouldTake(cell.slots, item, cell.slots.length, undefined) ? at : undefined
+  }
+  return isPlot(cell) ? at : undefined
+}
+
+export function emitSorted(w: World, c: Sorter, item: Item): boolean {
+  const at = sortPort(w, c, item)
+  if (at === undefined) return false
+  const cell = w.cell(at)
+  if (cell.kind === 'chest' || cell.kind === 'freezer') {
+    const ok = insertSlots(cell.slots, item, cell.slots.length, undefined)
+    if (ok) w.track(at, cell)
+    return ok
+  }
+  w.drops.push({ at: { ...at }, item })
+  return true
+}
+
+export function pullSorted(w: World, c: Sorter): Item | undefined {
+  const at = c.storePorts().find(p => p.role === 'in')?.at
+  if (at === undefined || !w.inWorld(at)) return undefined
+  const store = w.cell(at)
+  if (store.kind !== 'chest' && store.kind !== 'freezer') return undefined
+  for (let i = 0; i < store.slots.length; i++) {
+    const s = store.slots[i]
+    if (s.kind !== 'hold') continue
+    if (sortPort(w, c, s.item) === undefined) continue
+    const item = s.item
+    store.slots[i] = { kind: 'empty' }
+    compactSlots(store.slots)
+    w.track(at, store)
+    return item
+  }
+  return undefined
 }

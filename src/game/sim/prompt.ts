@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import { cropVariety } from '../defs/crops.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { inWorld, type Barrel, type Coord, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type ResearchStation, type Tree } from './building.ts'
+import { inWorld, sortVariety, sorterBase, sorterCells, type Barrel, type Coord, type Facing, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type ResearchStation, type Sorter, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
 import type { CropId, JamCrop, MillRecipe, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
@@ -23,7 +23,7 @@ import {
   INFUSE_FLAKES,
   INFUSE_IN,
 } from '../defs/items.ts'
-import { caskName, countable, jamJar, jamJarName, skuLabel, spiritName, stackable, toolName, type Hand, type Item } from './item.ts'
+import { caskName, countable, faceName, jamJar, jamJarName, skuLabel, spiritName, stackable, tierLabel, toolName, type Hand, type Item } from './item.ts'
 import {
   barrelAccept,
   barrelCropOf,
@@ -52,6 +52,7 @@ import { isSensor, isSeqIn, makeSensor, sameNode, skuKind, wouldCycle, type Wire
 import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { dest } from './queue.ts'
+import { openClaim } from './feature-necronomicon/necronomicon.ts'
 import { fillable } from './nets.ts'
 import { seedPair, waterable } from './feature-field/field.helpers.ts'
 import type { Intent, TaskName, World } from './world.ts'
@@ -216,6 +217,8 @@ export function taskName(w: World, i: Intent): TaskName {
       return m.prompt_graft()
     case 'infuse':
       return m.names_building_infuser()
+    case 'necronomicon':
+      return m.names_building_necronomicon()
   }
 }
 
@@ -353,6 +356,7 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   'compost-box': m.names_building_compost_box,
   mill: m.names_building_mill,
   infuser: m.names_building_infuser,
+  sorter: m.names_building_sorter,
   still: m.names_building_still,
   furnace: m.names_building_furnace,
   barrel: m.names_building_barrel,
@@ -400,6 +404,8 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'grinder') return { kind: 'place', text: m.prompt_demolish_grinder() }
   if (cell.kind === 'infuser') return { kind: 'place', text: m.prompt_demolish_infuser() }
   if (cell.kind === 'station') return { kind: 'place', text: m.prompt_demolish_station() }
+  if (cell.kind === 'sorter') return { kind: 'place', text: m.prompt_demolish_sorter() }
+  if (cell.kind === 'necronomicon') return { kind: 'blocked', text: m.prompt_cannot_demolish_necronomicon() }
   if (cell.kind === 'hangar') {
     const origin = { col: cell.base.col, row: cell.base.row }
     if (w.hangarStores(origin)) return { kind: 'blocked', text: m.prompt_cannot_demolish_stores() }
@@ -549,6 +555,10 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!squareSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
+    if (w.act.place.id === 'buy-sorter') {
+      if (!sorterSiteOk(w, at, w.act.place.facing)) return { kind: 'blocked', text: m.prompt_cannot_place() }
+      return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
+    }
     if (
       w.act.place.id === 'buy-chest' ||
       w.act.place.id === 'buy-grinder' ||
@@ -664,6 +674,12 @@ export function readPrompt(w: World, at: Coord): Prompt {
       return intent(m.prompt_station_cut(), { act: 'station', at })
     }
     return intent(stationLook(cell, w.act.hand), { act: 'station', at })
+  }
+  if (cell.kind === 'necronomicon') {
+    if (w.act.hand.kind === 'hold' && openClaim(w, cell, w.act.hand.item) !== undefined) {
+      return intent(m.prompt_sacrifice(), { act: 'necronomicon', at })
+    }
+    return intent(m.prompt_necronomicon_read(), { act: 'necronomicon', at })
   }
   if (cell.kind === 'barrel') {
     const look = barrelLook(cell, w.act.hand)
@@ -861,6 +877,10 @@ export function squareSiteOk(w: World, at: Coord): boolean {
     }
   }
   return true
+}
+
+export function sorterSiteOk(w: World, at: Coord, facing: Facing): boolean {
+  return sorterCells(sorterBase(at, facing)).every(p => placeSolidOk(w, p))
 }
 
 export function wideSiteOk(w: World, at: Coord): boolean {
@@ -1137,4 +1157,14 @@ export function treeLine(cell: Tree): string {
   if (cell.juvenile < 1) return labeled(name, m.prompt_growing())
   if (cell.yield.kind === 'on') return labeled(name, m.prompt_on_season())
   return labeled(name, m.prompt_off_season())
+}
+
+export function sorterLook(c: Sorter): string {
+  if (c.held === 'none') return m.names_building_sorter()
+  const v = sortVariety(c.held)
+  const tier = v === undefined ? 'base' : tierOf(v)
+  if (c.progress >= 1) {
+    return labeled(m.names_building_sorter(), m.prompt_sorter_full({ tier: tierLabel(tier) }))
+  }
+  return labeled(m.names_building_sorter(), m.prompt_sorter_sorting({ name: faceName(c.held) }))
 }

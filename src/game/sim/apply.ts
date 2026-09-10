@@ -1,5 +1,6 @@
 import { Act, type Cmd } from './log.ts'
 import * as family from './family.ts'
+import * as necro from './feature-necronomicon/necronomicon.ts'
 import * as place from './feature-place/place.ts'
 import * as store from './store.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
@@ -188,6 +189,10 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       return
     case Act.route:
       vehicles.routeBody(w, cmd)
+      return
+    case Act.necronomicon:
+      if (cmd.k === 'gold') necro.sacrificeGoldBody(w)
+      else necro.ritualBody(w)
       return
   }
 }

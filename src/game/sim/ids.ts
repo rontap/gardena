@@ -185,6 +185,7 @@ export type ResearchId =
   | 'unlock-contracts'
   | 'unlock-furnace'
   | 'unlock-infusion'
+  | 'unlock-necronomicon'
 
 export type SkuId =
   | 'pack-carrot'
@@ -256,6 +257,14 @@ export type SkuId =
   | 'buy-chainsaw'
   | 'buy-research-station'
   | 'buy-infuser'
+  | 'buy-sorter'
+  | 'buy-necronomicon'
+
+export type PageId = 'crop' | 'early-fruit' | 'ash' | 'gold'
+
+export type Grandma = 'well' | 'ill' | 'care' | 'gone' | 'told'
+
+export const GRANDMA_IDS: readonly Grandma[] = ['well', 'ill', 'care', 'gone', 'told']
 
 export type SensorKind =
   | 'lever'

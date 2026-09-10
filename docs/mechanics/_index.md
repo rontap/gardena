@@ -21,6 +21,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 - [[mechanics/inventory]] — wood, ash, graft, treasure. `pack-grass` Seed silo. `inventory.grass-silo`
 - [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station infuser. Mill Infuser Furnace south-row chest I/O
 - [[mechanics/infusion]] — Infusion, chilli, flakes, vanilla-extract, infused jam / cask / spirit / oil, Infuser, overlay-infused, furnace bread
+- [[mechanics/necronomicon]] — grandma beats, pages, sacrifice, twilight ritual. Owns **page** **sacrifice** **ritual** **beat**
 - [[mechanics/vehicles]]
 - [[mechanics/log]]
 - [[mechanics/rng]] — burrow
@@ -48,6 +49,14 @@ See [[canon]].
 | burrow.day-chance | [[mechanics/burrow]] |
 | burrow.bands | [[mechanics/burrow]] |
 | burrow.agaric | [[mechanics/burrow]] |
+| necro.reveal | [[mechanics/necronomicon]] |
+| necro.grandma | [[mechanics/necronomicon]] |
+| necro.one | [[mechanics/necronomicon]] |
+| necro.claim | [[mechanics/necronomicon]] |
+| necro.chest | [[mechanics/necronomicon]] |
+| necro.ritual | [[mechanics/necronomicon]] |
+| necro.gold | [[mechanics/necronomicon]] |
+| necro.save | [[mechanics/necronomicon]] |
 | burrow.block | [[mechanics/burrow]] |
 | burrow.dig | [[mechanics/burrow]] |
 | burrow.loot | [[mechanics/burrow]] |

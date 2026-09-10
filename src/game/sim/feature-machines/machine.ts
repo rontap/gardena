@@ -43,6 +43,7 @@ import type {
   Furnace,
   Grinder,
   Infuser,
+  Necronomicon,
   JamMachine,
   Mill,
   PotStill,
@@ -51,7 +52,7 @@ import type {
 } from '../building.ts'
 import { furnaceValue, type Item } from '../item.ts'
 
-export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser
+export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser | Necronomicon
 
 export function isIoCell(c: { kind: string }): c is IoCell {
   return (
@@ -62,13 +63,15 @@ export function isIoCell(c: { kind: string }): c is IoCell {
     c.kind === 'grinder' ||
     c.kind === 'furnace' ||
     c.kind === 'station' ||
-    c.kind === 'infuser'
+    c.kind === 'infuser' ||
+    c.kind === 'necronomicon'
   )
 }
 
 export const IO_SKUS: readonly SkuId[] = [
   'buy-mill',
   'buy-infuser',
+  'buy-necronomicon',
   'buy-jam',
   'buy-still',
   'buy-compost-box',
@@ -76,6 +79,8 @@ export const IO_SKUS: readonly SkuId[] = [
   'buy-furnace',
   'buy-research-station',
 ]
+
+export const CHUTE_SKUS: readonly SkuId[] = [...IO_SKUS, 'buy-sorter']
 
 export function machineWest(base: RectBase): Coord {
   return { col: base.col - 1, row: base.row + base.h - 1 }

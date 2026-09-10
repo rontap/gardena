@@ -52,7 +52,7 @@ import {
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
-import { caskGroup, purposeMul, qualityMul, type VarietyId } from '../defs/varieties.ts'
+import { caskGroup, purposeMul, qualityMul, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
 import type {
@@ -142,6 +142,8 @@ export type Face =
   | { kind: 'furnace' }
   | { kind: 'station' }
   | { kind: 'infuser' }
+  | { kind: 'necronomicon' }
+  | { kind: 'sorter' }
   | { kind: 'barrel' }
   | { kind: 'freezer'; slots: number }
   | { kind: 'hangar' }
@@ -341,6 +343,8 @@ const PLACE_NAME = {
   furnace: () => m.names_building_furnace(),
   station: () => m.names_building_station(),
   infuser: () => m.names_building_infuser(),
+  necronomicon: () => m.names_building_necronomicon(),
+  sorter: () => m.names_building_sorter(),
   barrel: () => m.names_building_barrel(),
   freezer: () => m.names_building_freezer(),
   hangar: () => m.names_building_hangar(),
@@ -369,6 +373,16 @@ const PLACE_NAME = {
   fence: () => m.names_building_fence(),
 } as const
 
+const TIER_LABEL: { readonly [K in VarietyTier]: () => string } = {
+  base: () => m.sensors_base(),
+  variant: () => m.sensors_variant(),
+  heirloom: () => m.sensors_heirloom(),
+}
+
+export function tierLabel(tier: VarietyTier): string {
+  return TIER_LABEL[tier]()
+}
+
 export function faceName(face: Face): string {
   switch (face.kind) {
     case 'tile':
@@ -392,6 +406,8 @@ export function faceName(face: Face): string {
     case 'furnace':
     case 'station':
     case 'infuser':
+    case 'necronomicon':
+    case 'sorter':
     case 'barrel':
     case 'freezer':
     case 'hangar':
@@ -646,6 +662,8 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-chainsaw': () => m.names_sku_buy_chainsaw(),
   'buy-research-station': () => m.names_sku_buy_research_station(),
   'buy-infuser': () => m.names_sku_buy_infuser(),
+  'buy-necronomicon': () => m.names_sku_buy_necronomicon(),
+  'buy-sorter': () => m.names_sku_buy_sorter(),
 }
 
 export function skuLabel(id: SkuId): string {
@@ -734,6 +752,8 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
       max: STATION_GRAFT_MAX,
     }),
   'buy-infuser': () => m.catalog_sku_buy_infuser({ seconds: INFUSE_SECONDS }),
+  'buy-necronomicon': () => m.catalog_sku_buy_necronomicon(),
+  'buy-sorter': () => m.catalog_sku_buy_sorter(),
 }
 
 export function skuDesc(id: SkuId): string {
@@ -872,6 +892,10 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'station' }
     case 'buy-infuser':
       return { kind: 'infuser' }
+    case 'buy-necronomicon':
+      return { kind: 'necronomicon' }
+    case 'buy-sorter':
+      return { kind: 'sorter' }
     case 'buy-barrel':
       return { kind: 'barrel' }
     case 'buy-freezer':

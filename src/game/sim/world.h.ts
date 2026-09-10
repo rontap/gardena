@@ -3,11 +3,13 @@ import type {
   AdditiveStore,
   ChunkId,
   Coord,
+  Facing,
   Hangar,
   House,
   PotStill,
   Pump,
   RainTank,
+  Necronomicon,
   SeedSilo,
   SiloProduce,
   SiloSeed,
@@ -19,6 +21,7 @@ import type {
 import type { Drop } from './drop.ts'
 import type {
   DaughterSkillId,
+  Grandma,
   HusbandSkillId,
   PlayerSkillId,
   ResearchId,
@@ -66,6 +69,7 @@ export type Intent =
   | { act: 'furnace'; at: Coord }
   | { act: 'station'; at: Coord }
   | { act: 'infuse'; at: Coord }
+  | { act: 'necronomicon'; at: Coord }
   | { act: 'barrel'; at: Coord }
   | { act: 'jam'; at: Coord }
   | { act: 'mill'; at: Coord }
@@ -89,14 +93,16 @@ export type Cue =
   | { kind: 'additives'; at: Coord }
   | { kind: 'hangar'; at: Coord }
   | { kind: 'station'; at: Coord }
+  | { kind: 'necronomicon'; at: Coord }
   | { kind: 'vehicle'; id: VehicleId }
 
 export type Speech = { kind: 'none' } | { kind: 'say'; text: string; left: number }
 
 export type Place =
   | { kind: 'none' }
-  | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert'> }
+  | { kind: 'sku'; id: Exclude<SkuId, 'buy-sprinkler-vert' | 'buy-sorter'> }
   | { kind: 'sku'; id: 'buy-sprinkler-vert'; facing: 'ns' | 'ew' }
+  | { kind: 'sku'; id: 'buy-sorter'; facing: Facing }
   | { kind: 'wire'; from: WireEnd }
   | { kind: 'delete' }
 
@@ -223,6 +229,7 @@ export type Hydrate = {
   tanks: RainTank[]
   taps: Tap[]
   stills: PotStill[]
+  necronomicon: Necronomicon | 'none'
   waterSystems: WaterSystem[]
   wires: Wire[]
   valveHold: ValveHold[]
@@ -257,6 +264,8 @@ export type Hydrate = {
   seam: Seam
   recaps: Recap[]
   recapUnseen: number[]
+  grandma: Grandma
+  grandmaUnseen: Grandma[]
   segments: Segment[]
   wells: Well[]
   sprinklers: Sprinkler[]

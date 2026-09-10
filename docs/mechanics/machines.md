@@ -15,7 +15,7 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 
 ## Buildings
 
-1×1 except mill, infuser, still, station and furnace. Place like chest. Still and station: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Mill and Infuser: `RectBase` `w = MILL_W` `h = MILL_H`, origin NW, no rotate, same instance all four cells, `squareSiteOk`, hover origin extends east and south; pads two cells wide. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station` `buy-infuser`.
+1×1 except mill, infuser, still, station, furnace and sorter. Place like chest. Still and station: pumpjack — `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, hover origin extends east. Furnace: `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, hover origin extends south. Mill and Infuser: `RectBase` `w = MILL_W` `h = MILL_H`, origin NW, no rotate, same instance all four cells, `squareSiteOk`, hover origin extends east and south; pads two cells wide. Pay on confirm. Disarm. Automation tab. `haggling`. Guest may shop + place + `delete` building. Guest `GUEST_BUILD` += `buy-furnace` `buy-research-station` `buy-infuser` `buy-sorter`.
 
 | class | `kind` | sku | unlock |
 |---|---|---|---|
@@ -27,6 +27,7 @@ Named specialty alcohols are out of this update. Still output is the existing `S
 | `Freezer` | `freezer` | `buy-freezer` | `unlock-preservatives` |
 | `ResearchStation` | `station` | `buy-research-station` | `unlock-crop-variants` |
 | `Infuser` | `infuser` | `buy-infuser` | `unlock-infusion` |
+| `Sorter` | `sorter` | `buy-sorter` | `unlock-crop-variants` |
 
 `buy-research-station`: Automation shelf, unlock and show `unlock-crop-variants`, `need: []`. No research row of its own. `haggling`. Guest may shop, place, delete and dump. `dest(station)` = `at`.
 
@@ -63,7 +64,7 @@ Machine extends BaseBuilding
 
 `Machine` (has `inn`): `Mill`, `JamMachine`, `PotStill`, `Furnace`, `ResearchStation`, `Infuser`.
 
-`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`. `CompostBox.pads = 'both'`, `takeAll`. Grinder / barrel keep `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
+`BaseBuilding`, not `Machine` (no `inn`): `Grinder`, `CompostBox`, `Barrel`, `Chest`, `Freezer`, `Sorter`. `CompostBox.pads = 'both'`, `takeAll`. Grinder / barrel keep `'none'`. `Chest` `Freezer` override `pads` `'both'`, `ports` `['out']`, `takeAll`.
 
 `Store`: `SeedSilo`, `AdditiveStore`. Override `pads` `'both'`, `ports` `['out']`.
 
@@ -270,6 +271,32 @@ Assumption: both outputs land or neither does. The east store is measured for th
 
 Assumption: a tree grind emits one tree seed per unit consumed. `{ kind: 'tree-seed' }` carries no `count`, so a stack of them is not representable; `GRIND_MIN`..`GRIND_MAX` and `GRIND_MIN_AT(q)` govern annual seeds only.
 
+## Variety sorter
+
+Sorts seeds and fruit by `tierOf(variety)`. Makes nothing, so it is not a `MachineId` and has no `Recipe` row. Almanac page, no recipe pane.
+
+`Sorter` `RectBase` 1 x `SORT_LEN` upright, `SORT_LEN` x 1 flat. `facing: Facing` `'n' | 'e' | 's' | 'w'` names the side the three outputs face; `'e'` and `'w'` stand it upright, `'n'` and `'s'` lay it flat. Rotate while armed: `Act.rotatePlace`, the second sku to use it after `buy-sprinkler-vert` and the first with four facings. `Place` carries `facing` the way the vertical sprinkler does. Origin NW, same instance on all three cells, tick origin, every cell must pass `placeSolidOk`. `sorterBase(at, facing)` `sorterCells(base)` `sorterPorts(base, facing)` `sortVariety(item)` in `building.ts`.
+
+One `in` port beside the middle cell. Three `out` ports beside each cell on the far side, in `VARIETY_TIERS` order along the footprint: `base`, `variant`, `heirloom`. `storePorts()` and `padPorts()` return those same four cells, so an output side is a chest link when a chest or freezer sits there and a vehicle Load pad when it does not.
+
+No `inn`. No port. No wire. No HUD, no walk-up panel, no dump prompt. No hopper: `held: Item | 'none'` is the one item mid-sort, beside `progress`.
+
+Takes what carries a `VarietyId` and is grown or sown: `{ kind: 'seeds' }` `{ kind: 'fruit' }` `{ kind: 'tree-seed' }` `{ kind: 'graft' }`. `sortVariety` is that list, and it is `undefined` for everything else, jam / cask / spirit / oil included — those carry a `variety` field and are still refused. Whole stack per cycle, not per unit: a stack is one crop and one variety, so it is one tier.
+
+`SORT_SECONDS` 0.5 - preference. `progress += dt / SORT_SECONDS`. Not `machineMul`, not `furnaceMul`, not `machinery`, not `hasted`. Grass seed and tree seed are `'base'` only, so they always leave the first side.
+
+Tick, origin only. `held === 'none'`: `pullSorted` takes the first slot of the `in` chest or freezer whose tier port has room, slot order `0..n-1`, then compacts. Not `pullMachineStores` - the sorter is not an `IoCell`, and the big tick would empty the chest in one go. Otherwise `progress` runs and `emitSorted` places the item at 1.
+
+`emitSorted` writes that tier's port cell and no other: chest or freezer `insertSlots`; plot, a ground drop on that cell. It never walks `frontOfBase`, so the three tiers never land on one pile. A tier whose port cell is a full chest, or is not a plot at all, has no room, and `pullSorted` steps over it while the other two keep moving. The sorter never takes in what it cannot put down, so a blocked side stops that side alone.
+
+`accept` is 1 when `held === 'none'` and `sortVariety` is not `undefined`, else 0 - that gates vehicle Unload. `apply` sets `held`. `takeAll`.
+
+Demolish drops `held` at the origin and clears all three cells. `stripPadStops` first, like every pad building.
+
+Art: `prop-sorter-v.svg` groups `e` `w` at viewBox `24 x 72`, `prop-sorter-h.svg` groups `n` `s` at `72 x 24`. Pale body, one band per output side in `VARIETY_TIERS` order: `leaf` `#6bc04a`, `tier-1` `#3d7ea6`, `tier-3` `#e07b18`. Four facings are four groups because a mirror would reverse the band order. `item-sorter.svg` is the shop and almanac face. Blue chute `in`, green chute `out`, rotated by `machineLinks().turn`. [[art/machines]]
+
+Assumption: the three tier band colours on the machine are not the three the lens overlay washes plots with (`WASH` Plain, `LEAF` Named, `RIPE` Heirloom). Green reads Plain here and Named there.
+
 ## Furnace
 
 `Furnace` `{ recipe; units; progress; inn; out; hold }`. `FurnaceRecipe = 'none' | 'ash' | 'bread'`. `base.w = 1` `base.h = 2`. Tick origin. Hit, ghost footprint, I/O, ports, pads stay 1×2. viewBox stays `24×48`. Prop art occupies 1×1.5 south-aligned in that viewBox (12 viewBox units empty at the top) so the opening stays in the south cell. Chimney sits in the origin cell. Origin-only paint + `TILE/24` of the viewBox; empty margin is empty pixels. Do not scale the sprite down. [[art/machines]]
@@ -368,7 +395,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 ## Pads
 
-Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station / infuser: `'both'`. Grinder pads and `inn`, Compost box `inn`: [[plans/next-automation]]. Barrel stays `'none'`.
+`pads` on the instance says whether, `padPorts()` says where — [[architecture/modules]] `building.io-ports`. `'none' | 'both'`. `PadCell` is `pads === 'both'` (type guard). `padBuildings` walks machines / stores / silo / additives and keeps that set. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell (`base.row + h`). Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station / infuser / sorter: `'both'`. The sorter is the one building whose pads are not the north and south edges. Grinder pads and `inn`, Compost box `inn`: [[plans/next-automation]]. Barrel stays `'none'`.
 
 `IoCell` is west-pull (mill, jam, still, compost-box, grinder, furnace, station, infuser). Not the same set as `PadCell`.
 
@@ -385,6 +412,8 @@ Geometric, not a `Cell`. `pads` on the instance, `'none' | 'both'`. `PadCell` is
 `machines.barrel` — Barrel locks one `BarrelCrop` + variety on first dump: grape → wine, apple → cider. No mix. Collect clears `crop`. No whisky. `barrelNeed('apple')` 4, `barrelNeed('grape')` 5. `recipesOf('barrel')` lists `BARREL_CROPS` varieties. Catalog/recipe rows use `barrelNeed`. `CASK_SALE.cider` unchanged. `caskAgeTop(q)` lerps the cap over quality. Past `BARREL_MATURE` the look block carries a second line naming the cask, the variety it was made from, `BARREL_AGE / DAY_SECONDS` days and `caskAgeTop(q)` — [[ui/machines]]. Maturing carries no such line.
 
 `machines.still-foot` — `PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner. Hit, ghost footprint, I/O, ports, pads stay 2×1. viewBox `48×24`. Prop art occupies 1.5×1 centered in that viewBox. Origin-only paint + `TILE/24` of the viewBox. Do not scale the sprite down.
+
+`machines.sorter` - `Sorter` 1 x `SORT_LEN`, four `facing` values, rotates while armed, same instance all three cells, tick origin. One `in` port beside the middle cell, three `out` ports beside each cell on the far side in `VARIETY_TIERS` order. `storePorts()` and `padPorts()` are the same four cells. No `inn`, no wire, no HUD, no hopper: `held` plus `progress`. Takes seeds, fruit, tree seed, graft; refuses everything else including jam / cask / spirit / oil. Whole stack per cycle at `SORT_SECONDS`, not `machineMul` and not `furnaceMul`. `emitSorted` writes that tier's port cell only, never `frontOfBase`. A blocked side stops that side alone; the sorter never takes in what it cannot put down. Makes nothing, so no `MachineId` and no `Recipe` row.
 
 `machines.inn` — `inn === 1` freezes mill/jam/still/furnace/station/infuser ticks (progress + still water pull). Dump and Unload still fill.
 

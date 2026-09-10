@@ -1,4 +1,5 @@
 import { FREEZER_LARGE_SLOTS, HANGAR_H, HANGAR_W, MILL_H, MILL_W, SILO_H, SILO_W } from '../../defs/items.ts'
+import { NECRO_H, NECRO_W } from '../../defs/necronomicon.ts'
 import {
   Barrel,
   Chest,
@@ -8,6 +9,7 @@ import {
   Grinder,
   Hangar,
   Infuser,
+  Necronomicon,
   inWorld,
   JamMachine,
   Mill,
@@ -19,6 +21,9 @@ import {
   SiloProduce,
   SiloSeed,
   SiloSpray,
+  Sorter,
+  sorterBase,
+  sorterCells,
   Tap,
   Well,
   type Coord,
@@ -31,6 +36,7 @@ import {
   hangarSiteOk,
   placeSolidOk,
   siloSiteOk,
+  sorterSiteOk,
   squareSiteOk,
   tallSiteOk,
   wideSiteOk,
@@ -120,6 +126,15 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   if (c.kind === 'compost-box') {
     stripPadStops(w, c)
     w.setCell(at, bare('soft', 0))
+    w.ping()
+    return
+  }
+  if (c.kind === 'sorter') {
+    stripPadStops(w, c)
+    if (c.held !== 'none') w.drops.push({ at: { ...at }, item: c.held })
+    sorterCells(c.base).forEach(p => {
+      w.setCell(p, bare('soft', 0))
+    })
     w.ping()
     return
   }
@@ -312,6 +327,8 @@ export function confirmPlace(w: World, at: Coord): void {
     w.act.place.id === 'buy-well' ||
     w.act.place.id === 'buy-mill' ||
     w.act.place.id === 'buy-infuser' ||
+    w.act.place.id === 'buy-necronomicon' ||
+    w.act.place.id === 'buy-sorter' ||
     w.act.place.id === 'buy-jam' ||
     w.act.place.id === 'buy-barrel' ||
     w.act.place.id === 'buy-freezer' ||
@@ -333,6 +350,27 @@ export function confirmPlace(w: World, at: Coord): void {
           w.setCell({ col: at.col + col, row: at.row + row }, made)
         }
       }
+      w.act.place = { kind: 'none' }
+      w.ping()
+      return
+    }
+    if (w.act.place.id === 'buy-sorter') {
+      const facing = w.act.place.facing
+      if (!sorterSiteOk(w, at, facing)) return
+      w.money -= price
+      const made = new Sorter(sorterBase(at, facing), facing)
+      sorterCells(made.base).forEach(p => w.setCell(p, made))
+      w.act.place = { kind: 'none' }
+      w.ping()
+      return
+    }
+    if (w.act.place.id === 'buy-necronomicon') {
+      if (w.necronomicon !== 'none') return
+      if (!squareSiteOk(w, at)) return
+      w.money -= price
+      const made = new Necronomicon({ shape: 'rect', col: at.col, row: at.row, w: NECRO_W, h: NECRO_H })
+      occupiedCells(made.base, w.owned).forEach(p => w.setCell(p, made))
+      w.necronomicon = made
       w.act.place = { kind: 'none' }
       w.ping()
       return
@@ -439,6 +477,8 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'furnace' ||
     made.kind === 'station' ||
     made.kind === 'infuser' ||
+    made.kind === 'necronomicon' ||
+    made.kind === 'sorter' ||
     made.kind === 'barrel' ||
     made.kind === 'freezer' ||
     made.kind === 'hangar' ||

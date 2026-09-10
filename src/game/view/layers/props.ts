@@ -1,6 +1,7 @@
 import { Container, Texture } from 'pixi.js'
-import { HOUSE_BASE, type CircleBase, type RectBase } from '../../sim/building.ts'
+import { HOUSE_BASE, type CircleBase, type Facing, type RectBase } from '../../sim/building.ts'
 import { furnaceWorking, infuserWorking, millWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
+import { ritualReady } from '../../sim/feature-necronomicon/necronomicon.ts'
 import { isSensor } from '../../sim/sensor.ts'
 import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'
@@ -13,6 +14,13 @@ const WHITE = Texture.WHITE
 const WASH = 0xcfc6b0
 const GOOD = 0x2fd15a
 const INK = 0x1c1710
+
+const SORTER_KEY: { readonly [K in Facing]: AtlasKey } = {
+  n: 'sorter-n',
+  e: 'sorter-e',
+  s: 'sorter-s',
+  w: 'sorter-w',
+}
 
 const PROP = {
   chest: 'chest',
@@ -93,7 +101,9 @@ export class PropsLayer {
     put('house', HOUSE_BASE.col, HOUSE_BASE.row)
     world.machineLinks().forEach(l => {
       const s = this.pool.take(atlasTex(l.side === 'in' ? 'link-in' : 'link-out'))
-      s.position.set(l.x * TILE, l.y * TILE)
+      s.anchor.set(0.5)
+      s.rotation = l.turn
+      s.position.set((l.x + 0.5) * TILE, (l.y + 0.5) * TILE)
     })
     for (const at of world.machines.values()) {
       const cell = world.cell(at)
@@ -122,6 +132,14 @@ export class PropsLayer {
       }
       if (cell.kind === 'infuser') {
         put(infuserWorking(cell) ? 'infuser-on' : 'infuser-off', at.col, at.row)
+        continue
+      }
+      if (cell.kind === 'necronomicon') {
+        put(ritualReady(world, cell) ? 'necronomicon-on' : 'necronomicon-off', at.col, at.row)
+        continue
+      }
+      if (cell.kind === 'sorter') {
+        put(SORTER_KEY[cell.facing], at.col, at.row)
         continue
       }
       if (

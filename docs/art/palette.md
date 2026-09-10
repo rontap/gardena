@@ -24,7 +24,7 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | tier-3 | `#e07b18` | contract difficulty dot, 3 |
 | tier-4 | `#e23b2e` | contract difficulty dot, 4 |
 
-`src/index.css` `@theme` `--color-*` matches these except `fruit-red`, `fire` and `slab` (SVG only).
+`src/index.css` `@theme` `--color-*` matches these except `fruit-red`, `fire` and `slab` (SVG only). `grape` is in `@theme` as well as in SVG: the Necronomicon panel paints its ritual button and page bars with it — [[ui/necronomicon]].
 
 `slab` is the one paving tone that `house` cannot carry: a flagstone needs two faces to read as laid stone rather than a blank floor, and the second must sit close enough to `house` to stay one material. Paving art: [[items/tiles]].
 

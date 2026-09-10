@@ -65,5 +65,7 @@
   "notices_recap": "Day {n} Finished",
   "notices_joined": "{name} joined",
   "notices_quit": "{name} left",
-  "notices_desynced": "{name} drifted"
+  "notices_desynced": "{name} drifted",
+  "notices_necronomicon": "A page is ready for the ritual",
+  "notices_grandma": "A letter is waiting"
 }

@@ -40,6 +40,8 @@ const HAT_INNER = hatInner(actorSvg)
 
 function faceInner(face: NoticeFace): string {
   if (face.kind === 'recap') return UI_RECAP_NIGHT
+  if (face.kind === 'grandma') return UI_RECAP_NIGHT
+  if (face.kind === 'necronomicon') return itemInner({ kind: 'necronomicon' })
   if (face.kind === 'hat') return HAT_INNER
   if (face.kind === 'company') return COMPANY[face.id]
   if (face.kind === 'oil') return itemInner({ kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false })

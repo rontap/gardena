@@ -8,6 +8,7 @@ import {
   QUAD_REFILL,
   SPEECH_S
 } from '../defs/items.ts'
+import { NECRO_RESEARCH } from '../defs/necronomicon.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import {
   betterGain,
@@ -27,6 +28,7 @@ import {
 import type {
   AnnualId,
   CropId,
+  Grandma,
   GrownCrop,
   DaughterSkillId,
   HusbandSkillId,
@@ -73,6 +75,7 @@ import {
   type Coord,
   type Furnace,
   type Hangar,
+  type Necronomicon,
   type PotStill,
   type RainTank,
   type RectBase,
@@ -92,11 +95,7 @@ import {
   makeContainer,
   type Countable
 } from './item.ts'
-import {
-  isIoCell,
-  machineEast,
-  machineWest
-} from './feature-machines/machine.ts'
+import { isIoCell } from './feature-machines/machine.ts'
 import * as machines from './feature-machines/machines.tick.ts'
 import {
   CONTRACT_ACTIVE,
@@ -151,10 +150,8 @@ import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng } from './rng.ts'
 import {
   compactSlots,
-  dropoffPad,
   hangarPad,
   putSugarInto,
-  takeupPad,
   type PadCell,
   type Route,
   type RouteStop,
@@ -317,6 +314,9 @@ export class World {
   seam: Seam = { kind: 'play' }
   recaps: Recap[] = []
   recapUnseen: number[] = []
+  necronomicon: Necronomicon | 'none' = 'none'
+  grandma: Grandma = 'well'
+  grandmaUnseen: Grandma[] = []
   groundRev = 0
   bigTicks = 0
   cheatFastResearch = false
@@ -417,6 +417,9 @@ export class World {
       this.seam = { kind: 'play' }
       this.recaps = h.recaps
       this.recapUnseen = h.recapUnseen
+      this.grandma = h.grandma
+      this.grandmaUnseen = h.grandmaUnseen
+      this.necronomicon = h.necronomicon
       this.segments.clear()
       h.segments.forEach(s => this.segments.set(edgeKey(s.at), s))
       this.wells = h.wells
@@ -917,6 +920,7 @@ export class World {
   }
 
   skuOpen(id: SkuId): boolean {
+    if (id === 'buy-necronomicon' && this.necronomicon !== 'none') return false
     const s = SKUS[id]
     if (s.need === 'prize') return this.prizeStock(id) > 0
     if (s.need.length > 0 && !s.need.some(r => this.done.has(r))) return false
@@ -925,6 +929,7 @@ export class World {
 
   skuShown(id: SkuId): boolean {
     if (id === 'buy-water-system' || id === 'buy-or' || id === 'buy-and') return false
+    if (id === 'buy-necronomicon' && this.necronomicon !== 'none') return false
     if (SKUS[id].need === 'prize') return this.prizeStock(id) > 0
     const s = SKUS[id].show
     return s === 'start' || this.done.has(s)
@@ -936,6 +941,7 @@ export class World {
   }
 
   researchShown(id: ResearchId): boolean {
+    if (id === NECRO_RESEARCH) return this.grandma === 'told'
     const r = RESEARCH[id].reveal
     return r.length === 0 || r.some(p => this.done.has(p))
   }
@@ -1651,11 +1657,11 @@ export class World {
         : undefined
     const out: { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] = []
     this.padBuildings().forEach(b => {
-      dropoffPad(b.base).forEach(p => {
+      vehicles.padDropCells(b).forEach(p => {
         const on = floor !== undefined && p.col === floor.col && p.row === floor.row
         out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && vehicles.unloadWould(this) })
       })
-      takeupPad(b.base).forEach(p => {
+      vehicles.padTakeCells(b).forEach(p => {
         const on = floor !== undefined && p.col === floor.col && p.row === floor.row
         out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && vehicles.loadWould(this) })
       })
@@ -1663,24 +1669,21 @@ export class World {
     return out
   }
 
-  machineLinks(): { x: number; y: number; side: 'in' | 'out' }[] {
-    const out: { x: number; y: number; side: 'in' | 'out' }[] = []
+  machineLinks(): { x: number; y: number; side: 'in' | 'out'; turn: number }[] {
+    const out: { x: number; y: number; side: 'in' | 'out'; turn: number }[] = []
     for (const at of this.machines.values()) {
       const c = this.cell(at)
-      if (!isIoCell(c)) continue
+      if (!isIoCell(c) && c.kind !== 'sorter') continue
       if (c.base.col !== at.col || c.base.row !== at.row) continue
-      const west = machineWest(c.base)
-      if (this.inWorld(west)) {
-        const s = this.cell(west)
-        if (s.kind === 'chest' || s.kind === 'freezer') out.push({ x: c.base.col - 0.5, y: west.row, side: 'in' })
-      }
-      const east = machineEast(c.base)
-      if (this.inWorld(east)) {
-        const s = this.cell(east)
-        if (s.kind === 'chest' || s.kind === 'freezer') {
-          out.push({ x: c.base.col + c.base.w - 0.5, y: east.row, side: 'out' })
-        }
-      }
+      c.storePorts().forEach(port => {
+        if (!this.inWorld(port.at)) return
+        const s = this.cell(port.at)
+        if (s.kind !== 'chest' && s.kind !== 'freezer') return
+        const dx = port.at.col < c.base.col ? 0.5 : port.at.col >= c.base.col + c.base.w ? -0.5 : 0
+        const dy = port.at.row < c.base.row ? 0.5 : port.at.row >= c.base.row + c.base.h ? -0.5 : 0
+        const turn = dy === 0 ? 0 : dy > 0 ? -Math.PI / 2 : Math.PI / 2
+        out.push({ x: port.at.col + dx, y: port.at.row + dy, side: port.role, turn })
+      })
     }
     return out
   }
@@ -1829,6 +1832,21 @@ export class World {
 
   sellAll(): void {
     this.commit({ a: Act.sellAll, t: this.now, p: this.local })
+  }
+
+  sacrificeGold(): void {
+    this.commit({ a: Act.necronomicon, t: this.now, p: this.local, k: 'gold' })
+  }
+
+  performRitual(): void {
+    this.commit({ a: Act.necronomicon, t: this.now, p: this.local, k: 'ritual' })
+  }
+
+  seeGrandma(beat: Grandma): void {
+    const i = this.grandmaUnseen.indexOf(beat)
+    if (i < 0) return
+    this.grandmaUnseen.splice(i, 1)
+    this.ping()
   }
 
   

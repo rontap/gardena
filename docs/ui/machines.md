@@ -137,6 +137,18 @@ Lock `Infusable`. Oil is infusable. Output `infused: true`. Face is the good plu
 
 `need` `INFUSE_IN`. Prompt dump legal: **Infuse**. `{ act: 'infuse'; at }`. Any of four cells, one look.
 
+## Variety sorter
+
+Sorts by `tierOf(variety)`. Three output sides, `VARIETY_TIERS` order along the footprint. No HUD, no walk-up panel, no dump prompt: the input is a chest or a vehicle Unload. Any of three cells, one look.
+
+| when | text |
+|---|---|
+| empty (`held` `'none'`) | **Variety sorter** |
+| carrying an item | **Variety sorter - Sorting {name}** |
+| that side full (`progress >= 1`) | **Variety sorter - The {tier} side is full** |
+
+`{name}` is `faceName(held)`. `{tier}` is `tierLabel`, the same **Plain** / **Named** / **Heirloom** the Variety sensor HUD ticks — [[standards/user-facing-text]]. `progress >= 1` only persists when the emit failed, so it is the blocked state and needs no world read.
+
 ## Covering haste
 
 Hover mill / jam / still / grinder / compost-box / furnace / infuser. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Infuser: any of four cells, one line. Live covering count `n`, not `furnaceSnap`. Neighbour wait on a plant uses this same insertion — [[ui/inspect]].

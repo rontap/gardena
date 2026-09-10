@@ -10,6 +10,7 @@ import { HangarUi } from './game/ui/hangar.tsx'
 import { VehicleUi } from './game/ui/vehicle.tsx'
 import { AdditivesUi, SiloUi } from './game/ui/store.tsx'
 import { StationUi } from './game/ui/station.tsx'
+import { NecronomiconUi } from './game/ui/necronomicon.tsx'
 import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
@@ -17,6 +18,7 @@ import { ObjectHud } from './game/ui/objecthud.tsx'
 import { Market, type MarketTab } from './game/ui/market.tsx'
 import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
+import { Story } from './game/ui/story.tsx'
 import { Research } from './game/ui/research.tsx'
 import { Cheat } from './game/ui/cheat.tsx'
 import { Build } from './game/ui/build.tsx'
@@ -43,7 +45,7 @@ import { lookText } from './game/sim/look.ts'
 import { aoe } from './game/sim/pipe.ts'
 import { bare } from './game/sim/plot.ts'
 import { sensorWashCells } from './game/view/layers/overlay.ts'
-import { SENSOR_LENS_SKUS, type RouteId, type TrailerId, type VehicleId } from './game/sim/ids.ts'
+import { SENSOR_LENS_SKUS, type Grandma, type RouteId, type TrailerId, type VehicleId } from './game/sim/ids.ts'
 import type { Item } from './game/sim/item.ts'
 import { trailerUsed } from './game/sim/feature-vehicles/vehicle.ts'
 import { Btn, Field, Window } from './game/ui/frame.tsx'
@@ -121,6 +123,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [recapDay, setRecapDay] = useState<number | undefined>(undefined)
   const recapDayRef = useRef<number | undefined>(undefined)
   recapDayRef.current = recapDay
+  const [storyBeat, setStoryBeat] = useState<Exclude<Grandma, 'well'> | undefined>(undefined)
+  const storyBeatRef = useRef<Exclude<Grandma, 'well'> | undefined>(undefined)
+  storyBeatRef.current = storyBeat
   const editorLens = useRef<Lens>('off')
   const [paused, setPaused] = useState(false)
   const [prefs, setPrefs] = useState<Settings>(() => settings())
@@ -244,7 +249,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       updatePanel(p => (p.kind === 'vehicle' && p.id === cue.id ? p : { kind: 'vehicle', id: cue.id }))
       return
     }
-    if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives' && cue.kind !== 'station') return
+    if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives' && cue.kind !== 'station' && cue.kind !== 'necronomicon') return
     const at = cue.at
     updatePanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
   }, [hudN, world])
@@ -629,6 +634,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (go.kind === 'none') return
     if (go.kind === 'popup') {
       if (go.popup.kind === 'recap') openRecap(go.popup.day)
+      else if (go.popup.beat !== 'well') openStory(go.popup.beat)
       return
     }
     if (guest) return
@@ -650,7 +656,12 @@ export default function App({ sink }: { sink: WorkerSink }) {
       return
     }
     if (world === undefined) return
-    if (row.go.kind !== 'popup' || row.go.popup.kind !== 'recap') return
+    if (row.go.kind !== 'popup') return
+    if (row.go.popup.kind === 'grandma') {
+      world.seeGrandma(row.go.popup.beat)
+      if (storyBeatRef.current === row.go.popup.beat) closeStory()
+      return
+    }
     world.seeRecap(row.go.popup.day)
     if (recapDayRef.current === row.go.popup.day) closeRecap()
   }
@@ -751,6 +762,16 @@ export default function App({ sink }: { sink: WorkerSink }) {
     recapDayRef.current = undefined
     setRecapDay(undefined)
     overlayPause(from, overlayHold(panelRef.current.kind, undefined))
+  }
+
+  function openStory(beat: Exclude<Grandma, 'well'>): void {
+    storyBeatRef.current = beat
+    setStoryBeat(beat)
+  }
+
+  function closeStory(): void {
+    storyBeatRef.current = undefined
+    setStoryBeat(undefined)
   }
 
   function updatePanel(fn: (p: Panel) => Panel): void {
@@ -1128,6 +1149,17 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }}
             />
           )}
+          {panel.kind === 'necronomicon' && (
+            <NecronomiconUi
+              world={world}
+              at={panel.at}
+              guest={guest}
+              onClose={() => {
+                world.ackCue()
+                setPanel({ kind: 'none' })
+              }}
+            />
+          )}
           {panel.kind === 'additives' && (
             <AdditivesUi
               world={world}
@@ -1222,6 +1254,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
             />
           )}
           <ObjectHud world={world} cam={cam} onClose={() => world.closeHud()} />
+          {storyBeat !== undefined && (
+            <Story
+              beat={storyBeat}
+              onDismiss={() => {
+                world.seeGrandma(storyBeat)
+                closeStory()
+              }}
+            />
+          )}
           {recapDay !== undefined && (
             <Recap
               recap={world.recapAt(recapDay)}

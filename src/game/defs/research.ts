@@ -19,6 +19,7 @@ import {
     TRAFFIC_LIGHT_PRICE,
     WATER_SYSTEM_PRICE,
 } from './items.ts'
+import {NECRO_COST, NECRO_PRICE, NECRO_SECONDS} from './necronomicon.ts'
 import type {ResearchId, SkuId} from '../sim/ids.ts'
 
 export type ResearchDef = {
@@ -400,6 +401,18 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         blurb: m.research_unlock_infusion_blurb(),
         effect: {kind: 'unlock-sku', sku: 'buy-infuser'},
     },
+    'unlock-necronomicon': {
+        id: 'unlock-necronomicon',
+        name: m.research_unlock_necronomicon_name(),
+        tree: 'trade',
+        cost: NECRO_COST,
+        seconds: NECRO_SECONDS,
+        reveal: [],
+        requires: [],
+        grants: ['The Necronomicon on the Build Automation shelf'],
+        blurb: m.research_unlock_necronomicon_blurb(),
+        effect: {kind: 'unlock-sku', sku: 'buy-necronomicon'},
+    },
 }
 
 
@@ -506,7 +519,16 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-still': {id: 'buy-still', price: 45, tab: 'automation', unlock: 'unlock-fermentation', show: 'unlock-grinder', need: []},
     'buy-furnace': {id: 'buy-furnace', price: 55, tab: 'automation', unlock: 'unlock-furnace', show: 'unlock-grinder', need: []},
     'buy-infuser': {id: 'buy-infuser', price: 50, tab: 'automation', unlock: 'unlock-infusion', show: 'unlock-preservatives', need: []},
+    'buy-necronomicon': {
+        id: 'buy-necronomicon',
+        price: NECRO_PRICE,
+        tab: 'automation',
+        unlock: 'unlock-necronomicon',
+        show: 'unlock-necronomicon',
+        need: [],
+    },
     'buy-research-station': {id: 'buy-research-station', price: 60, tab: 'automation', unlock: 'unlock-crop-variants', show: 'unlock-crop-variants', need: []},
+    'buy-sorter': {id: 'buy-sorter', price: 45, tab: 'automation', unlock: 'unlock-crop-variants', show: 'unlock-crop-variants', need: []},
     'buy-barrel': {id: 'buy-barrel', price: 18, tab: 'automation', unlock: 'unlock-fermentation', show: 'start', need: []},
     'buy-freezer': {id: 'buy-freezer', price: 36, tab: 'automation', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-freezer-large': {id: 'buy-freezer-large', price: 0, tab: 'automation', unlock: 'start', show: 'start', need: 'prize'},

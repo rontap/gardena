@@ -34,6 +34,8 @@ import {
   SILO_H,
   SILO_SEED_CAP,
   SILO_W,
+  SORT_LEN,
+  SORT_SECONDS,
   STATION_GRAFT_MAX,
   STATION_GRAFT_MIN,
   STATION_IN,
@@ -44,10 +46,12 @@ import {
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type Signal, type SkuId, type StillCrop, type TreeId } from './ids.ts'
+import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
+import { tierOf, VARIETY_TIERS, type VarietyId } from '../defs/varieties.ts'
+import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SkuId, type StillCrop, type TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
+import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
   addStillFeed,
   bakeBreadSale,
@@ -82,7 +86,7 @@ import {
   stillCropOf,
   stillReady,
 } from './feature-machines/machine.ts'
-import { emitPair, emitProduct, pullStillWater } from './feature-machines/machines.emit.ts'
+import { emitPair, emitProduct, emitSorted, pullSorted, pullStillWater } from './feature-machines/machines.emit.ts'
 import type { World } from './world.ts'
 import { Reservoir } from './water.ts'
 
@@ -190,6 +194,7 @@ export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
   'buy-furnace': { w: 1, h: 2 },
   'buy-mill': { w: MILL_W, h: MILL_H },
   'buy-infuser': { w: MILL_W, h: MILL_H },
+  'buy-necronomicon': { w: NECRO_W, h: NECRO_H },
   'buy-hangar': { w: HANGAR_W, h: HANGAR_H },
   'buy-silo-seed': { w: SILO_W, h: SILO_H },
   'buy-silo-spray': { w: SILO_W, h: SILO_H },
@@ -197,9 +202,14 @@ export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
   ...Object.fromEntries([...ONE_CELL_SKUS, ...SENSOR_CELL_SKUS].map(id => [id, { w: 1, h: 1 }])),
 }
 
-export function skuBase(id: SkuId, at: Coord): RectBase | undefined {
+export function skuBase(id: SkuId, at: Coord, facing: Facing = 'e'): RectBase | undefined {
+  if (id === 'buy-sorter') return sorterBase(at, facing)
   const foot = SKU_FOOT[id]
   return foot === undefined ? undefined : { shape: 'rect', col: at.col, row: at.row, w: foot.w, h: foot.h }
+}
+
+export function skuPorts(id: SkuId, base: RectBase, facing: Facing): IoPort[] {
+  return id === 'buy-sorter' ? sorterPorts(base, facing) : defaultStorePorts(base)
 }
 
 function tileBox(base: Base): { col0: number; row0: number; col1: number; row1: number } {
@@ -387,6 +397,75 @@ export class Tree {
   }
 }
 
+export type Facing = 'n' | 'e' | 's' | 'w'
+
+export const FACINGS: readonly Facing[] = ['n', 'e', 's', 'w']
+
+export const STEP: { readonly [K in Facing]: Coord } = {
+  n: { col: 0, row: -1 },
+  e: { col: 1, row: 0 },
+  s: { col: 0, row: 1 },
+  w: { col: -1, row: 0 },
+}
+
+export type IoPort = { at: Coord; role: 'in' | 'out'; takes?: (item: Item) => boolean }
+
+export function sortVariety(item: Item): VarietyId | undefined {
+  if (item.kind === 'seeds' || item.kind === 'fruit' || item.kind === 'tree-seed' || item.kind === 'graft') {
+    return item.variety
+  }
+  return undefined
+}
+
+export function sorterBase(at: Coord, facing: Facing): RectBase {
+  const along = facing === 'e' || facing === 'w'
+  return along
+    ? { shape: 'rect', col: at.col, row: at.row, w: 1, h: SORT_LEN }
+    : { shape: 'rect', col: at.col, row: at.row, w: SORT_LEN, h: 1 }
+}
+
+export function sorterCells(base: RectBase): Coord[] {
+  return Array.from({ length: SORT_LEN }, (_, i) =>
+    base.w === 1 ? { col: base.col, row: base.row + i } : { col: base.col + i, row: base.row },
+  )
+}
+
+export function sorterPorts(base: RectBase, facing: Facing): IoPort[] {
+  const d = STEP[facing]
+  const cells = sorterCells(base)
+  const mid = cells[1]
+  return [
+    { at: { col: mid.col - d.col, row: mid.row - d.row }, role: 'in' },
+    ...cells.map((c, i) => {
+      const tier = VARIETY_TIERS[i]
+      return {
+        at: { col: c.col + d.col, row: c.row + d.row },
+        role: 'out' as const,
+        takes: (item: Item) => {
+          const v = sortVariety(item)
+          return v !== undefined && tierOf(v) === tier
+        },
+      }
+    }),
+  ]
+}
+
+export function defaultStorePorts(base: RectBase): IoPort[] {
+  const row = base.row + base.h - 1
+  return [
+    { at: { col: base.col - 1, row }, role: 'in' },
+    { at: { col: base.col + base.w, row }, role: 'out' },
+  ]
+}
+
+export function defaultPadPorts(base: RectBase): IoPort[] {
+  const cols = Array.from({ length: base.w }, (_, i) => base.col + i)
+  return [
+    ...cols.map(col => ({ at: { col, row: base.row - 1 }, role: 'in' as const })),
+    ...cols.map(col => ({ at: { col, row: base.row + base.h }, role: 'out' as const })),
+  ]
+}
+
 export class BaseBuilding {
   readonly base: RectBase
   readonly ports: readonly ('out' | 'in' | 'in-l' | 'in-r')[] = []
@@ -397,6 +476,12 @@ export class BaseBuilding {
   readonly hasted: boolean = false
   constructor(base: RectBase) {
     this.base = base
+  }
+  storePorts(): IoPort[] {
+    return defaultStorePorts(this.base)
+  }
+  padPorts(): IoPort[] {
+    return this.pads === 'none' ? [] : defaultPadPorts(this.base)
   }
   accept(_item: Item): number {
     return 0
@@ -915,6 +1000,29 @@ export class ResearchStation extends Machine {
   }
 }
 
+export class Necronomicon extends BaseBuilding {
+  readonly kind = 'necronomicon' as const
+  override readonly ticks = true
+  crop: GrownCrop | 'none' = 'none'
+  cropCount = 0
+  fruit: GrownCrop[] = []
+  ash = 0
+  gold = 0
+  done: PageId[] = []
+  constructor(base: RectBase) {
+    super({ shape: 'rect', col: base.col, row: base.row, w: NECRO_W, h: NECRO_H })
+  }
+  override accept(item: Item): number {
+    const claim = pageClaim(this, item)
+    return claim === undefined ? 0 : claim.n
+  }
+  override apply(item: Item, n: number): void {
+    const claim = pageClaim(this, item)
+    if (claim === undefined || n <= 0) return
+    applyClaim(this, claim, Math.min(n, claim.n))
+  }
+}
+
 export class Barrel extends BaseBuilding {
   readonly kind = 'barrel' as const
   override readonly ticks = true
@@ -955,6 +1063,50 @@ export class Freezer extends BaseBuilding {
   }
   override apply(item: Item, _n: number): void {
     giveSlots(this.slots, item, this.slots.length, undefined)
+  }
+}
+
+export class Sorter extends BaseBuilding {
+  readonly kind = 'sorter' as const
+  readonly facing: Facing
+  override readonly pads = 'both'
+  override readonly takeAll = true
+  override readonly ticks = true
+  held: Item | 'none' = 'none'
+  progress = 0
+  constructor(base: RectBase, facing: Facing) {
+    super(base)
+    this.facing = facing
+  }
+  override storePorts(): IoPort[] {
+    return sorterPorts(this.base, this.facing)
+  }
+  override padPorts(): IoPort[] {
+    return sorterPorts(this.base, this.facing)
+  }
+  override accept(item: Item): number {
+    if (this.held !== 'none') return 0
+    return sortVariety(item) === undefined ? 0 : 1
+  }
+  override apply(item: Item, _n: number): void {
+    this.held = { ...item }
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.held === 'none') {
+      const taken = pullSorted(w, this)
+      if (taken === undefined) return false
+      this.held = taken
+      this.progress = 0
+      w.track(at, this)
+      return true
+    }
+    this.progress += dt / SORT_SECONDS
+    if (this.progress < 1) return false
+    if (!emitSorted(w, this, this.held)) return false
+    this.held = 'none'
+    this.progress = 0
+    w.track(at, this)
+    return true
   }
 }
 

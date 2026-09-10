@@ -355,6 +355,18 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_infuser({ seconds: INFUSE_SECONDS }),
     },
     {
+      id: 'necronomicon',
+      title: m.names_building_necronomicon(),
+      icon: { kind: 'necronomicon' },
+      blurb: m.catalog_necronomicon(),
+    },
+    {
+      id: 'sorter',
+      title: m.names_building_sorter(),
+      icon: { kind: 'sorter' },
+      blurb: m.catalog_sorter(),
+    },
+    {
       id: 'flakes',
       title: m.names_item_flakes(),
       icon: { kind: 'flakes', quality: 0, count: 1 },

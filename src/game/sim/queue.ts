@@ -15,6 +15,7 @@ import * as machines from './feature-machines/machines.tick.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as store from './store.ts'
 import { fillable } from './nets.ts'
+import { canSacrifice, doSacrifice } from './feature-necronomicon/necronomicon.ts'
 import type { Intent, TaskName, World } from './world.ts'
 
 function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
@@ -120,6 +121,8 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.prompt_graft()
     case 'infuse':
       return m.names_building_infuser()
+    case 'necronomicon':
+      return m.names_building_necronomicon()
   }
 }
 
@@ -418,6 +421,19 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, 0.4)
       return
+    case 'necronomicon': {
+      if (world.cell(i.at).kind !== 'necronomicon') {
+        shiftHead(world)
+        return
+      }
+      if (canSacrifice(world, i.at)) {
+        arm(world, 0.4)
+        return
+      }
+      world.act.cue = { kind: 'necronomicon', at: { ...i.at } }
+      shiftHead(world)
+      return
+    }
   }
 }
 
@@ -474,6 +490,7 @@ export function finishWork(world: World): void {
   if (i.act === 'chop') field.doChop(world, i.at)
   if (i.act === 'graft') field.doGraft(world, i.at)
   if (i.act === 'infuse') machines.doInfuse(world, i.at)
+  if (i.act === 'necronomicon') doSacrifice(world, i.at)
   shiftHead(world)
 }
 

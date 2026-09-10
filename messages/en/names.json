@@ -282,6 +282,8 @@
   "names_sku_buy_research_station": "Seed Variety Station",
   "names_sku_buy_infuser": "Infuser",
   "names_building_infuser": "Infuser",
+  "names_sku_buy_sorter": "Variety sorter",
+  "names_building_sorter": "Variety sorter",
   "names_item_graft": "{name} graft",
   "names_variety_pair": "{crop} ({variety})",
   "names_spirit_klosterneuburger": "Barackpálinka",
@@ -289,5 +291,7 @@
   "names_purpose_processed": "Preserving",
   "names_purpose_alcohol": "Alcohol",
   "names_tile_asphalt": "Asphalt",
-  "names_sku_buy_tile_asphalt": "Asphalt"
+  "names_sku_buy_tile_asphalt": "Asphalt",
+  "names_building_necronomicon": "Necronomicon",
+  "names_sku_buy_necronomicon": "Necronomicon"
 }

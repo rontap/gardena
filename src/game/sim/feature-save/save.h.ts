@@ -4,6 +4,7 @@ import type {
   Base,
   ChunkId,
   Coord,
+  Facing,
   RectBase,
   SiloStack,
   SugarBin,
@@ -14,12 +15,14 @@ import type {
   PlantCrop,
   BarrelCrop,
   GrownCrop,
+  Grandma,
   DaughterSkillId,
   FurnaceRecipe,
   HusbandSkillId,
   Infusable,
   JamCrop,
   MillRecipe,
+  PageId,
   PlayerSkillId,
   ResearchId,
   RouteId,
@@ -99,7 +102,9 @@ export type SaveCell =
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
+  | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; pages: PageId[] }
   | { kind: 'station'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
+  | { kind: 'sorter'; base: RectBase; facing: Facing; held: Slot; progress: number }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
   | { kind: 'freezer'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'hangar'; base: RectBase }
@@ -250,6 +255,8 @@ export type Save = {
   seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
   recaps: SaveRecap[]
   recapUnseen: number[]
+  grandma: Grandma
+  grandmaUnseen: Grandma[]
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
   sprinklers: Sprinkler[]

@@ -48,6 +48,8 @@ export const SHELVES: readonly Shelf[] = [
       { label: 'Infusing', skus: ['buy-infuser'] },
       { label: 'Compost', skus: ['buy-compost-box', 'buy-furnace'] },
       { label: 'Grafting', skus: ['buy-research-station'] },
+      { label: 'Sorting', skus: ['buy-sorter'] },
+      { label: 'Necronomicon', skus: ['buy-necronomicon'] },
       { label: 'Hangar', skus: ['buy-hangar'] },
     ],
   },

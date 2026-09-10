@@ -42,6 +42,10 @@ A vault term used outside its owner is as wrong as an invented one. `starve` is 
 | **net** | overloaded | `Net` in `sim/world.ts` is water; [[architecture/net]] is multiplayer | player copy, ever. The player reads **water network** |
 | **signal** | [[mechanics/sensors]] | what a wire carries, on or off | power, current, juice, a "high output" to the player |
 | **blurb** | none | nothing. `CatalogEntry.blurb` is a field, cite it backticked | the word for written text — that is a **description** |
+| **sacrifice** | [[mechanics/necronomicon]] `necro.claim` | giving an item or money to the Necronomicon, which destroys it | a dump into a mill, still, jam machine or compost box — those return something |
+| **page** | [[mechanics/necronomicon]] | one `PageId` row of the Necronomicon | a contract line, a research row, a shelf entry, an almanac page |
+| **ritual** | [[mechanics/necronomicon]] `necro.ritual` | the twilight act that closes every full page | any other timed act, tick, or craft |
+| **beat** | [[mechanics/necronomicon]] `necro.grandma` | one step of `Grandma`, developer register only; the player reads a letter | a day, a phase, a recap. Never player copy |
 | **infuse** | [[mechanics/infusion]] `infusion.machine` | the Infuser consuming flakes or vanilla-extract to set `infused` true on jam, cask, spirit, or oil | mill, jam, still, stall, furnace |
 | **infused** | [[mechanics/infusion]] `infusion.item` | the required boolean on jam, cask, spirit, oil; stall `InfusedKey` | a second SKU, a stall good of its own, flavour |
 

@@ -22,7 +22,7 @@ Husband is the research role. One job. `startResearch` no-op if a job is running
 
 `need` as a list puts an item behind two capabilities without inventing a research row for the intersection.
 
-`researchShown(id)`: `reveal.length === 0 || reveal.some(r => done.has(r))`. `researchOpen(id)`: `requires.every(r => done.has(r))` — a row can be on the shelf and still shut. `unlock-smart-irrigation` and `unlock-heirloom` can be shown and shut. The Research card grays and the callout names the missing rows — [[ui/docks]].
+`researchShown(id)`: `reveal.length === 0 || reveal.some(r => done.has(r))`, except `unlock-necronomicon`, which is shut until `World.grandma` is `told` whatever `reveal` says — a story gate, not a topology one — [[mechanics/necronomicon]] `necro.reveal`. `researchOpen(id)`: `requires.every(r => done.has(r))` — a row can be on the shelf and still shut. `unlock-smart-irrigation` and `unlock-heirloom` can be shown and shut. The Research card grays and the callout names the missing rows — [[ui/docks]].
 
 `grants`: `readonly string[]` — the concepts a row turns on that no table can express, one short noun phrase each. `SKUS` and `SKILLS` already name what they gate; `grants` covers the rest, the `world.done.has(...)` feature sites. Empty on rows whose unlocks are fully covered by those two tables. Read by [[ui/cheat]] `#debug-techtree`, not by the sim. That graph omits SKUs `skuShown` false: `buy-or` `buy-and` `buy-water-system`.
 
@@ -75,6 +75,7 @@ Blurbs as `RESEARCH[id].blurb`. `reveal` and `requires` are lists; `—` is `[]`
 | unlock-fermentation | trade | unlock-grinder | — | — |
 | unlock-furnace | trade | unlock-fermentation | — | — |
 | unlock-infusion | trade | unlock-preservatives | unlock-preservatives | — |
+| unlock-necronomicon | trade | — | — | The Necronomicon on the Build Automation shelf |
 
 Seconds preference: `unlock-raspberry` 40, `unlock-heirloom` 120, `unlock-chest` 30, `unlock-grinder` 45, `unlock-fermentation` 70, `unlock-furnace` 80, `unlock-infusion` preference, `unlock-vehicles` 60, `unlock-adv-irrigation` 70, `unlock-auto-irrigation` 45, `unlock-irrigation` 30, `unlock-hardened-tools` 20.
 
@@ -96,7 +97,7 @@ Advanced sensors and Advanced irrigation carry the money in Automation: both are
 
 `unlock-smart-irrigation` is the merged capstone: the crop dial and the signal input were always one idea split in half. Sprinkler HUD and sprinkler wire endpoints both read this row.
 
-Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. No `unlock-chilli`. `unlock-infusion` → `pack-chilli` `buy-infuser`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-furnace` → `buy-furnace`. Name **Furnace**. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac Ingredients: jam gate `unlock-preservatives`; spirit / wine / cider gate `unlock-fermentation`; oil / flour / extract / mill sugar / flakes / vanilla-extract gate `unlock-grinder`; infuser gate `unlock-infusion`. Furnace gate `unlock-furnace`. Station has no research row. Layout is UI. — [[ui/almanac]]
+Carrot / potato / wheat start unlocked. `unlock-grape` → `pack-grape`. `unlock-raspberry` → `pack-raspberry`. Vanilla and olive have no research row and no pack. Olive is `TreeId`. No `unlock-chilli`. `unlock-infusion` → `pack-chilli` `buy-infuser`. `unlock-fermentation` → `pack-sugar-cane`; also `buy-still` `buy-barrel`. `unlock-furnace` → `buy-furnace`. Name **Furnace**. `unlock-grinder` → `buy-grinder` `buy-mill`. `unlock-preservatives` → `buy-jam` `buy-freezer` `buy-sugar`. Almanac Ingredients: jam gate `unlock-preservatives`; spirit / wine / cider gate `unlock-fermentation`; oil / flour / extract / mill sugar / flakes / vanilla-extract gate `unlock-grinder`; infuser gate `unlock-infusion`. Furnace gate `unlock-furnace`. Station and sorter have no research row. Almanac sorter page, no recipe pane: it makes nothing. Layout is UI. — [[ui/almanac]]
 
 `unlock-fertilizer` unlocks **synthetic**. Ordinary bag is always at the Additive store. `buy-weed-spray` gates on `unlock-fertilizer`; the research `effect` stays one SKU.
 
@@ -110,7 +111,7 @@ The rotary shovel and the diamond pickaxe have no sku. Both are four-star contra
 
 `pack-tomato` show `start`, buy `unlock-tomato`. `pack-grape` show `start`, buy `unlock-grape`. `pack-raspberry` show `unlock-grape`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. `pack-chilli` show + buy `unlock-infusion`, `PACK_N` at 10. `pack-grass` show `start`, buy `unlock-landscaping`, `GRASS_PACK`. No `pack-olive`. No `pack-vanilla`. No `pack-watermelon`. No `unlock-chilli`. Packs are `'base'` quality 0. `buy-freezer-large` `need: 'prize'` — shown and buyable only while one is banked.
 
-`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-grinder`, buy `unlock-furnace`. `buy-infuser` show `unlock-preservatives`, buy `unlock-infusion`. — [[mechanics/machines]] [[mechanics/infusion]]
+`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-grinder`, buy `unlock-furnace`. `buy-infuser` show `unlock-preservatives`, buy `unlock-infusion`. `buy-sorter` show + buy `unlock-crop-variants`, the same row that shows `buy-research-station`; no research row of its own. — [[mechanics/machines]] [[mechanics/infusion]]
 
 ### Water
 

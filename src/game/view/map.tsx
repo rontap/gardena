@@ -954,7 +954,7 @@ function strokeFoot(
     return [stroke]
   }
   if (place.kind !== 'sku') return [stroke]
-  const base = skuBase(place.id, stroke)
+  const base = skuBase(place.id, stroke, place.id === 'buy-sorter' ? place.facing : undefined)
   if (base === undefined) return [stroke]
   return Array.from({ length: base.h }, (_, row) =>
     Array.from({ length: base.w }, (_, col) => ({ col: base.col + col, row: base.row + row })),

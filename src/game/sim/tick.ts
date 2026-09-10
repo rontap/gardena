@@ -12,6 +12,7 @@ import * as machines from './feature-machines/machines.tick.ts'
 import { sproutWeeds, sproutGrass } from './feature-field/field.ts'
 import * as field from './feature-field/field.ts'
 import * as burrow from './feature-burrow/burrow.ts'
+import { advanceGrandma } from './feature-necronomicon/necronomicon.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as queue from './queue.ts'
 import * as nets from './nets.ts'
@@ -145,6 +146,7 @@ export function tickWorld(world: World, dt: number): void {
     world.pumpLiters = 0
     burrow.mintSeam(world)
     field.tickTreesSeam(world)
+    advanceGrandma(world, world.clock.day - 1)
     const recap = {
       day: world.clock.day - 1,
       money: world.money,

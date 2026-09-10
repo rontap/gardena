@@ -74,6 +74,7 @@ export const Act = {
   cancelContract: 'Y',
   reorderContract: 'Z',
   route: 'o',
+  necronomicon: '0',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -173,6 +174,7 @@ export type Cmd =
   | { a: typeof Act.route; t: number; p: SeatId; k: 'remove'; r: RouteId; i: number }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'reorder'; r: RouteId; i: number; d: 1 | -1 }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'rename'; r: RouteId; n: string }
+  | { a: typeof Act.necronomicon; t: number; p: SeatId; k: 'gold' | 'ritual' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'start' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'automate'; v: VehicleId; c: XY }
 

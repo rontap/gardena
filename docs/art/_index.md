@@ -12,7 +12,7 @@
 - [[art/skills]] — luck
 - [[art/tilled-edges]]
 - [[art/ground-variants]]
-- [[art/machines]] — furnace, still, station, Infuser, overlay-infused
+- [[art/machines]] — furnace, still, station, Infuser, Necronomicon, overlay-infused
 - [[art/electricity]]
 - [[art/vehicles]]
 - [[art/sensors]]

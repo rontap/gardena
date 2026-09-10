@@ -102,6 +102,9 @@ import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
 import propInfuser from '../../assets/props/prop-infuser.svg?raw'
+import propNecronomicon from '../../assets/props/prop-necronomicon.svg?raw'
+import propSorterV from '../../assets/props/prop-sorter-v.svg?raw'
+import propSorterH from '../../assets/props/prop-sorter-h.svg?raw'
 import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
@@ -269,6 +272,12 @@ export type AtlasKey =
   | 'station-on'
   | 'infuser-off'
   | 'infuser-on'
+  | 'necronomicon-off'
+  | 'necronomicon-on'
+  | 'sorter-n'
+  | 'sorter-e'
+  | 'sorter-s'
+  | 'sorter-w'
   | 'overlay-infused'
   | 'hangar'
   | 'quad'
@@ -595,6 +604,12 @@ async function load(): Promise<void> {
   put('station-on', propStation, 'on')
   put('infuser-off', propInfuser, 'off')
   put('infuser-on', propInfuser, 'on')
+  put('necronomicon-off', propNecronomicon, 'off')
+  put('necronomicon-on', propNecronomicon, 'on')
+  put('sorter-e', propSorterV, 'e')
+  put('sorter-w', propSorterV, 'w')
+  put('sorter-n', propSorterH, 'n')
+  put('sorter-s', propSorterH, 's')
   put('overlay-infused', overlayInfused)
   put('hangar', propHangar)
   put('quad', propQuad)

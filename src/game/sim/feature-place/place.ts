@@ -4,6 +4,7 @@ import {
   CHUNK,
   chunkKey,
   chunkRect,
+  FACINGS,
   inFade,
   inWorld,
   type AdditiveLevel,
@@ -159,13 +160,21 @@ export function armDeleteBody(w: World): void {
 }
 
 export function rotatePlaceBody(w: World): void {
-  if (w.act.place.kind !== 'sku' || w.act.place.id !== 'buy-sprinkler-vert') return
-  w.act.place = {
-    kind: 'sku',
-    id: 'buy-sprinkler-vert',
-    facing: w.act.place.facing === 'ns' ? 'ew' : 'ns',
+  if (w.act.place.kind !== 'sku') return
+  if (w.act.place.id === 'buy-sprinkler-vert') {
+    w.act.place = {
+      kind: 'sku',
+      id: 'buy-sprinkler-vert',
+      facing: w.act.place.facing === 'ns' ? 'ew' : 'ns',
+    }
+    w.ping()
+    return
   }
-  w.ping()
+  if (w.act.place.id === 'buy-sorter') {
+    const next = FACINGS[(FACINGS.indexOf(w.act.place.facing) + 1) % FACINGS.length]
+    w.act.place = { kind: 'sku', id: 'buy-sorter', facing: next }
+    w.ping()
+  }
 }
 
 export function clickBody(w: World, at: Coord): 'queued' | 'placed' | 'blocked' | 'noop' {
@@ -228,6 +237,7 @@ export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
     return undefined
   }
   if (id === 'buy-sprinkler-vert') w.act.place = { kind: 'sku', id: 'buy-sprinkler-vert', facing: 'ns' }
+  else if (id === 'buy-sorter') w.act.place = { kind: 'sku', id: 'buy-sorter', facing: 'e' }
   else w.act.place = { kind: 'sku', id }
   w.ping()
   return undefined

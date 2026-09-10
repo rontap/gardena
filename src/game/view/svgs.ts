@@ -33,6 +33,7 @@ import itemSeedCherry from '../../assets/items/item-seed-cherry.svg?raw'
 import itemSugar from '../../assets/items/item-sugar.svg?raw'
 import itemMill from '../../assets/items/item-mill.svg?raw'
 import itemInfuser from '../../assets/items/item-infuser.svg?raw'
+import itemNecronomicon from '../../assets/items/item-necronomicon.svg?raw'
 import itemStill from '../../assets/items/item-still.svg?raw'
 import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
@@ -73,6 +74,7 @@ import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
 import propInfuser from '../../assets/props/prop-infuser.svg?raw'
+import itemSorter from '../../assets/items/item-sorter.svg?raw'
 import propStation from '../../assets/props/prop-research-station.svg?raw'
 import propHangar from '../../assets/props/prop-hangar.svg?raw'
 import propQuad from '../../assets/props/prop-quad.svg?raw'
@@ -495,6 +497,8 @@ export function itemInner(item: Face): string {
   if (item.kind === 'flakes') return svgInner(itemFlakes)
   if (item.kind === 'vanilla-extract') return svgInner(itemVanillaExtract)
   if (item.kind === 'infuser') return stageOnly(itemInfuser, 'off')
+  if (item.kind === 'necronomicon') return svgInner(itemNecronomicon)
+  if (item.kind === 'sorter') return svgInner(itemSorter)
   if (item.kind === 'tree-seed') return TREE_SEED_ART[item.tree]
   if (item.kind === 'graft') return stageOnly(GRAFT_ART[graftSpecies(item.crop)], varietyGroup(item.variety))
   if (item.kind === 'wood') return svgInner(itemWood)
@@ -539,6 +543,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-tap') return itemInner({ kind: 'tap' })
   if (id === 'buy-mill') return itemInner({ kind: 'mill' })
   if (id === 'buy-infuser') return itemInner({ kind: 'infuser' })
+  if (id === 'buy-sorter') return itemInner({ kind: 'sorter' })
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
@@ -673,6 +678,8 @@ export function researchInner(id: ResearchId): string {
       return svgInner(itemFurnace)
     case 'unlock-infusion':
       return svgInner(uiResearchInfusion)
+    case 'unlock-necronomicon':
+      return svgInner(itemNecronomicon)
   }
 }
 

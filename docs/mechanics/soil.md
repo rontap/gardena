@@ -18,7 +18,7 @@ Clamp `0..SOIL_WATER_MAX`. `drowning` iff `water > SOIL_WATER_MID`.
 
 `FERT_PLOT_MAX` — preference.
 
-Growing draw `PLANT_FERT_PER_SEC` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
+Growing draw `PLANT_FERT_PER_SEC × CROPS.fertUseMul`. `1` is carrot. Trees 0. `PLANT_FERT_PER_SEC` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot at mul 1 empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
 
 Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one `feed` lands `>= BIO_RESTORE` — preference. Produce copies soil `bio` while growing.
 

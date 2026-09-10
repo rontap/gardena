@@ -156,11 +156,11 @@ function digest(w: World) {
 }
 
 describe('0.8 plants and trees', () => {
-  test('vanilla saleMul 1 / 1.25 / 3 / 6; common 22 < raspberry 26', () => {
+  test('vanilla saleMul 1 / 1.25 / 3 / 6; common 24, raspberry 24', () => {
     const w = new World()
-    expect(statsOf('vanilla', 'base', 0, w.modifiers).sale).toBe(22)
-    expect(statsOf('vanilla', 'base', 1, w.modifiers).sale).toBe(22 * 3.5)
-    expect(statsOf('raspberry', 'base', 0, w.modifiers).sale).toBe(26)
+    expect(statsOf('vanilla', 'base', 0, w.modifiers).sale).toBe(24)
+    expect(statsOf('vanilla', 'base', 1, w.modifiers).sale).toBe(24 * 3.5)
+    expect(statsOf('raspberry', 'base', 0, w.modifiers).sale).toBe(24)
   })
 
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
@@ -180,7 +180,7 @@ describe('0.8 plants and trees', () => {
     expect(packSku('grape')).toBe('pack-grape')
   })
 
-  test('Ripe cane harvests as fruit. Mill 5 cane → `SUGAR_BAG` 2 L at `SUGAR_MILL` 5 / L. Sugar `{ kind: \'sugar\'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.', () => {
+  test('Ripe cane harvests as fruit. Mill 5 cane → `SUGAR_BAG` 2 L at `SUGAR_MILL` 15 / L. Sugar `{ kind: \'sugar\'; liters; capacityLiters; unitSale }`. Illegal: `sugar.count`. Sugar does not tick freshness.', () => {
     const w = new World()
     w.seats[0].hand = { kind: 'empty' }
     w.seats[0].actor.x = AT.col + 0.5
@@ -270,7 +270,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'still', at: AT })
     for (let i = 0; i < 40; i++) w.tick(DT_MAX)
@@ -918,10 +918,10 @@ describe('1.5.2', () => {
     expect(w.skuPrice('buy-shovel')).toBe(7)
   })
 
-  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 10, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
+  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 8, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
     expect(CONTAINERS.bucket.capacityLiters).toBe(5)
     expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
-    expect(FERT_BAG_LITERS).toBe(10)
+    expect(FERT_BAG_LITERS).toBe(8)
     expect(SKUS['buy-fertilizer'].price).toBe(18)
     expect(SYNTH_BAG_LITERS).toBe(16)
     expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
@@ -931,6 +931,25 @@ describe('1.5.2', () => {
     expect(COMPOST_SECONDS).toBe(60)
     expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
+  })
+
+  test('Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`. Ripe does not drink. Trees draw 0 fertilizer. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.', () => {
+    expect(CROPS.vanilla.fertUseMul).toBe(0.1)
+    expect(CROPS.raspberry.fertUseMul).toBe(0.75)
+    expect(CROPS.grape.fertUseMul).toBe(0.75)
+    expect(CROPS.carrot.fertUseMul).toBe(1)
+    expect(CROPS.wheat.fertUseMul).toBe(1.25)
+    expect(CROPS.tomato.fertUseMul).toBe(1.25)
+    expect(CROPS.potato.fertUseMul).toBe(1.25)
+    expect(CROPS['sugar-cane'].fertUseMul).toBe(1.5)
+    expect(CROPS.chilli.fertUseMul).toBe(1.5)
+    expect(CROPS.apple.fertUseMul).toBe(0)
+    expect(CROPS.apricot.fertUseMul).toBe(0)
+    expect(CROPS.olive.fertUseMul).toBe(0)
+    expect(CROPS.cherry.fertUseMul).toBe(0)
+    expect(statsOf('carrot', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC, 12)
+    expect(statsOf('chilli', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * 1.5, 12)
+    expect(statsOf('apple', 'base', 0, []).fertUsePerSec).toBe(0)
   })
 
   test('`Seat.stride`. Not driver, `presence === \'in\'`, not recap: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.', () => {
@@ -959,13 +978,13 @@ describe('1.5.2', () => {
 
   test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {
     expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 180 })
-    expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 302.4 })
-    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 124.8 })
-    expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 240 })
-    expect(CROPS.apricot.sale).toBe(6.1)
-    expect(CROPS.apple.sale).toBe(15.4)
-    expect(CROPS.cherry.sale).toBe(8.45)
-    expect(CROPS.olive.sale).toBe(24.4)
+    expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 300 })
+    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 140 })
+    expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 260 })
+    expect(CROPS.apricot.sale).toBe(5)
+    expect(CROPS.apple.sale).toBe(8)
+    expect(CROPS.cherry.sale).toBe(4)
+    expect(CROPS.olive.sale).toBe(10)
     expect(TREE_YIELD_MUL).toBe(3.5)
     expect(TREE_OFF_MUL).toBe(0.75)
     expect(TREE_YIELD_DAYS).toBe(2)
@@ -1332,7 +1351,7 @@ describe('market.quality', () => {
         variety: 'bintje',
         quality: 0,
         count: 2,
-        unitSale: 6,
+        unitSale: 5,
         freshness: 1,
         bio: true,
         cut: false,

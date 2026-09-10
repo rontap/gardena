@@ -13,9 +13,9 @@ export type TreeDef = {
 
 export const TREES: { readonly [K in TreeId]: TreeDef } = {
   apricot: { id: 'apricot', juvenileSeconds: 192, fruitSeconds: 180 },
-  apple: { id: 'apple', juvenileSeconds: 240, fruitSeconds: 302.4 },
-  cherry: { id: 'cherry', juvenileSeconds: 336, fruitSeconds: 124.8 },
-  olive: { id: 'olive', juvenileSeconds: 384, fruitSeconds: 240 },
+  apple: { id: 'apple', juvenileSeconds: 240, fruitSeconds: 300 },
+  cherry: { id: 'cherry', juvenileSeconds: 336, fruitSeconds: 140 },
+  olive: { id: 'olive', juvenileSeconds: 384, fruitSeconds: 260 },
 }
 
 export const TREE_NAME: { readonly [K in TreeId]: () => string } = {

@@ -17,6 +17,8 @@ Noise-based, not random. Equal thirds within each tier.
 
 Infertile cells use the same very-hard band as their position's noise.
 
+A `rock` cell paints the band its own noise generates, through `fadeKey`. Falling through to `grassKey` cut a green square out of a hard field wherever a rock landed. Clearing the rock still writes the soft baseline — [[mechanics/soil]] `soil.hardness` — so the cell turns to grass once the rock is gone.
+
 ## Grass
 
 Random per tile via `tileVariant`: group = `tileVariant(col, row, 2)`, variant within group = `tileVariant(col, row, 4, 1)`. Tile index = `group * 4 + variant`.

@@ -586,7 +586,7 @@ describe('saturation', () => {
   test('Sell all of clean value `V` at `sat` pays the trapezoid, clamped piecewise at `SAT_FLOOR[good]`. Ten sales of `V/10` pay the same total as one sale of `V`.', () => {
     const good = 'potato' as const
     const k = 1 - SAT_FLOOR[good]
-    const V = 60
+    const V = 50
     const sat = 0.2
     expect(paid(sat, good, V)).toBeCloseTo(V * (1 - k * (sat + V / (2 * SAT_DEPTH))), 9)
     const satHi = 0.95
@@ -628,10 +628,10 @@ describe('saturation', () => {
     const w = new World(1)
     w.stall.potato.take('base', 10, 1, false)
     w.stall.carrot.take('base', 5, 1, false)
-    expect(w.marketQuote().clean).toBe(75)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 60) + paid(0, 'carrot', 15), 9)
+    expect(w.marketQuote().clean).toBe(65)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 50) + paid(0, 'carrot', 15), 9)
     w.stall.potato.sat = 0.4
-    expect(w.marketGain()).toBeCloseTo(paid(0.4, 'potato', 60) + paid(0, 'carrot', 15), 9)
+    expect(w.marketGain()).toBeCloseTo(paid(0.4, 'potato', 50) + paid(0, 'carrot', 15), 9)
     const refused = new World(1)
     refused.seats[0].actor.x = PAD.col + 0.5
     refused.seats[0].actor.y = PAD.row + 0.5
@@ -658,10 +658,10 @@ describe('saturation', () => {
     mixed.clearance = 5
     mixed.stall.potato.take('base', 10, 1, false)
     mixed.stall.potato.sat = 0.3
-    expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 60) + 5, 9)
+    expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 50) + 5, 9)
     mixed.sellAll()
     expect(mixed.clearance).toBe(0)
-    expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 60 / SAT_DEPTH), 9)
+    expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 50 / SAT_DEPTH), 9)
   })
 
   test("heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider.", () => {

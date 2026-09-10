@@ -42,8 +42,8 @@ export const VARIETY_IDS: readonly VarietyId[] = [
 export const PURPOSE_MUL: {
   readonly [K in Exclude<VarietyTier, 'base'>]: { readonly on: number; readonly off: number }
 } = {
-  variant: { on: 1.5, off: 0.8 },
-  heirloom: { on: 2, off: 0.7 },
+  variant: { on: 1.4, off: 0.8 },
+  heirloom: { on: 1.8, off: 0.6 },
 }
 
 export const VARIETY_GROW: { readonly [K in VarietyTier]: number } = {

@@ -440,7 +440,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'pack-wheat': {id: 'pack-wheat', price: 10, tab: 'seeds', unlock: 'start', show: 'start', need: []},
     'pack-tomato': {id: 'pack-tomato', price: 15, tab: 'seeds', unlock: 'unlock-tomato', show: 'start', need: []},
     'pack-grape': {id: 'pack-grape', price: 16, tab: 'seeds', unlock: 'unlock-grape', show: 'start', need: []},
-    'pack-raspberry': {id: 'pack-raspberry', price: 22, tab: 'seeds', unlock: 'unlock-raspberry', show: 'unlock-grape', need: []},
+    'pack-raspberry': {id: 'pack-raspberry', price: 20, tab: 'seeds', unlock: 'unlock-raspberry', show: 'unlock-grape', need: []},
     'pack-sugar-cane': {id: 'pack-sugar-cane', price: 8, tab: 'seeds', unlock: 'unlock-fermentation', show: 'unlock-fermentation', need: []},
     'pack-chilli': {id: 'pack-chilli', price: 10, tab: 'seeds', unlock: 'unlock-infusion', show: 'unlock-infusion', need: []},
     'buy-shovel': {id: 'buy-shovel', price: 10, tab: 'utility', unlock: 'start', show: 'start', need: []},

@@ -10,10 +10,10 @@ Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Planted fro
 
 | species | `juvenileSeconds` | `fruitSeconds` | `CROPS.sale` |
 |---|---|---|---|
-| apricot | 192 | 180 | 6.10 |
-| apple | 240 | 302.4 | 15.40 |
-| cherry | 336 | 124.8 | 8.45 |
-| olive | 384 | 240 | 24.40 |
+| apricot | 192 | 180 | 5 |
+| apple | 240 | 300 | 8 |
+| cherry | 336 | 140 | 4 |
+| olive | 384 | 260 | 10 |
 
 ```
 TreeYield = pending | { on; daysLeft: 1 | 2 } | { off; chance }

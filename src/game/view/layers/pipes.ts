@@ -1,7 +1,10 @@
 import { Container } from 'pixi.js'
 import { occupiedCells, type Coord } from '../../sim/building.ts'
-import type { Edge } from '../../sim/pipe.ts'
-import type { CropId } from '../../sim/ids.ts'
+import { snapFlow } from '../../defs/items.ts'
+import { DAY_SECONDS } from '../../sim/clock.ts'
+import { statsOf } from '../../sim/modifiers.ts'
+import type { Edge, Sprinkler } from '../../sim/pipe.ts'
+import { PLANT_CROPS, type CropId, type GrownCrop } from '../../sim/ids.ts'
 import type { World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex, fenceFit, pipeFit, type AtlasKey } from '../atlas.ts'
@@ -87,8 +90,9 @@ export class PipesLayer {
       s.position.set(sp.at.col * TILE, sp.at.row * TILE)
       s.rotation = (rot * Math.PI) / 180
       s.alpha = alpha
-      if (sp.tune.kind === 'crop') {
-        const c = this.pool.take(atlasTex(cropTune(sp.tune.crop)))
+      const tuned = tunedCrop(world, sp)
+      if (tuned !== undefined) {
+        const c = this.pool.take(atlasTex(cropTune(tuned)))
         c.position.set(sp.at.col * TILE - TILE * 0.22, sp.at.row * TILE - TILE * 0.62)
         c.scale.set(0.44)
         c.alpha = alpha
@@ -111,4 +115,16 @@ export class PipesLayer {
 
 function cropTune(crop: CropId): AtlasKey {
   return `crop-${crop}:ripe`
+}
+
+/**
+ * The crop face a sprinkler wears on the map: the one that drinks exactly what
+ * the head pours. A head between two crops wears none — a nearest match would
+ * claim the player set something they did not.
+ */
+export function tunedCrop(world: World, s: Sprinkler): GrownCrop | undefined {
+  if (s.tune.kind === 'crop') return s.tune.crop
+  if (s.tune.kind === 'flat') return undefined
+  const day = snapFlow(s.tune.day)
+  return PLANT_CROPS.find(crop => snapFlow(statsOf(crop, 'base', 0, world.modifiers).waterUsePerSec * DAY_SECONDS) === day)
 }

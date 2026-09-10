@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import { forwardRef, type MouseEvent, type ReactNode } from 'react'
+import { forwardRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
 import * as Progress from '@radix-ui/react-progress'
 import {
@@ -188,6 +188,32 @@ export const Field = forwardRef<HTMLInputElement, {
       className="w-full select-text border-2 border-ink/30 bg-parch px-2 py-2 font-mono text-sm tabular-nums text-ink shadow-[inset_2px_2px_0_0_rgba(28,23,16,0.12)] outline-none placeholder:text-ink/35 focus:border-ink"
       onChange={e => onChange(e.target.value)}
       onFocus={e => e.currentTarget.select()}
+    />
+  )
+})
+
+export const Slider = forwardRef<HTMLInputElement, {
+  name: string
+  value: number
+  max: number
+  step: number
+  onChange: (v: number) => void
+  'aria-label': string
+}>(function Slider({ name, value, max, step, onChange, 'aria-label': label }, ref) {
+  const pct = (value / max) * 100
+  return (
+    <input
+      ref={ref}
+      type="range"
+      name={name}
+      value={value}
+      min={0}
+      max={max}
+      step={step}
+      aria-label={label}
+      className="hud-slider w-full cursor-pointer appearance-none bg-transparent outline-none"
+      style={{ '--fill': `${pct}%` } as CSSProperties}
+      onChange={e => onChange(Number(e.target.value))}
     />
   )
 })

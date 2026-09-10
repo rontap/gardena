@@ -96,4 +96,4 @@ Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale
 
 `market.mixed` — Mixed still `unitSale` = `MIXED_MUL` × `SPIRIT_SALE.vodka` × `qualityMul(mean q)`, neutral rating. Mixed vodka at quality 0 < 10 `'base'` potato fruit.
 
-`market.sugar` — `SUGAR_MILL` < `SUGAR_SHOP`. `buy-sugar` is `SUGAR_BAG` at `SUGAR_SHOP`, quality 0.
+`market.sugar` — `SUGAR_MILL` > `SUGAR_SHOP`. `buy-sugar` is `SUGAR_BAG` at `SUGAR_SHOP`, quality 0.

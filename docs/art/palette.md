@@ -28,6 +28,19 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 
 `slab` is the one paving tone that `house` cannot carry: a flagstone needs two faces to read as laid stone rather than a blank floor, and the second must sit close enough to `house` to stay one material. Paving art: [[items/tiles]].
 
+## Stone
+
+Rock props only — `prop-rock`, `prop-rock-1`, `prop-rock-long`. Warm grey. A Rock is not soil and never takes a soil hex: the stone cell has to read apart from the ground around it at a glance. Outlines stay `ink`, and the iron stain stays `roof`.
+
+| token | hex | use |
+|---|---|---|
+| stone-lit | `#a79681` | the face turned to the light |
+| stone | `#897861` | the body |
+| stone-mid | `#685b4b` | the face turned away, and the foot |
+| stone-dark | `#463e34` | the cleave between two facets |
+
+SVG only, like `slab`.
+
 ## Cobble
 
 `tile-cobble` / `item-cobble` stone fills. Extra hexes, allowed. Not cottage dirt. Joints stay `ink`.

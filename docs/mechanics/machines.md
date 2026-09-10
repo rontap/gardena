@@ -116,7 +116,7 @@ The placement ghost paints the same two chutes on the cells the machine is about
 
 `SUGAR_BAG`. Mill output `unitSale` `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Additive store `buy-sugar` `SUGAR_SHOP` for `SUGAR_BAG` — derived `SUGAR_SHOP × SUGAR_BAG`. Utility tab. `unlock-preservatives`. `haggling`. Does not arm.
 
-Growing + milling cane is cheaper per liter than the Additive store (`SUGAR_MILL < SUGAR_SHOP`). Cane fruit also sells as fruit.
+Mill sugar sells for more per liter than Additive store sugar (`SUGAR_MILL` > `SUGAR_SHOP`). Cane fruit also sells as fruit.
 
 Compost: `liters × COMPOST_VALUE.fruit`.
 

@@ -59,7 +59,7 @@ describe('quality.sale', () => {
     )
     expect(statsOf('cherry', 'bing', 1, []).sale).toBe(CROPS.cherry.sale * qualityMul(1) * PURPOSE_MUL.heirloom.on)
     expect(statsOf('vanilla', 'base', 0, []).sale).toBe(CROPS.vanilla.sale)
-    expect(statsOf('vanilla', 'base', 0, []).sale).toBeLessThan(CROPS.raspberry.sale)
+    expect(statsOf('vanilla', 'base', 0, []).sale).toBe(CROPS.raspberry.sale)
   })
 })
 

@@ -1,37 +1,40 @@
 import { m } from '../../paraglide/messages.js'
 import type { ReactNode } from 'react'
 import { CROPS, CROP_NAME } from '../defs/crops.ts'
-import { SPRINKLER_TILE_DAY } from '../defs/items.ts'
+import { SPRINKLER_STEP, SPRINKLER_TILE_DAY, snapFlow } from '../defs/items.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { Coord } from '../sim/building.ts'
 import type { GrownCrop } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
+import { tuneDay } from '../sim/nets.ts'
 import type { Vertex } from '../sim/pipe.ts'
 import type { HudTarget, World } from '../sim/world.ts'
 import { TILE, type Camera } from '../view/camera.ts'
 import { bindHud } from '../view/motion.ts'
-import { cropInner, itemInner, ripeGroup } from '../view/svgs.ts'
-import { Btn, Checkbox, Chrome, Field, Radio } from './frame.tsx'
-
-export type HudOption = { id: string; label: string; note: string; icon: string; on: boolean }
+import { cropInner, ripeGroup } from '../view/svgs.ts'
+import { Btn, Checkbox, Chrome, Field, Radio, Slider } from './frame.tsx'
 
 export type HudRow =
   | { kind: 'check'; id: string; label: string; on: boolean }
   | { kind: 'radio'; id: string; label: string; options: { id: string; label: string; on: boolean }[] }
 
-export type HudSpec = {
-  title: string
-  col: number
-  row: number
-  stay: boolean
-  pick: (id: string) => void
-} & ({ chrome: 'btns'; options: HudOption[] } | { chrome: 'rows'; rows: HudRow[] })
+/** A crop drawn above the sprinkler slider, at the flow that crop drinks. */
+export type HudMark = { crop: GrownCrop; label: string; day: number; icon: string }
+
+export type HudSpec = { title: string; col: number; row: number } & (
+  | { chrome: 'rows'; rows: HudRow[]; pick: (id: string) => void }
+  | { chrome: 'slider'; day: number; max: number; step: number; marks: HudMark[]; set: (day: number) => void }
+)
 
 const TUNABLE = (Object.keys(CROPS) as (keyof typeof CROPS)[]).filter(id => CROPS[id].waterUsePerSec > 0)
 
 function perDay(n: number): string {
-  return m.sensors_per_tile({ n: Number((n * DAY_SECONDS).toFixed(2)) })
+  return m.sensors_per_tile({ n: Number(n.toFixed(2)) })
+}
+
+function cropDay(world: World, crop: GrownCrop): number {
+  return statsOf(crop, 'base', 0, world.modifiers).waterUsePerSec * DAY_SECONDS
 }
 
 function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
@@ -41,26 +44,18 @@ function sprinklerSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.sensors_sprinkler_output(),
     col: at.col,
     row: at.row,
-    stay: false,
-    chrome: 'btns',
-    options: [
-      {
-        id: 'flat',
-        label: m.sensors_full_flow(),
-        note: m.sensors_per_tile({ n: SPRINKLER_TILE_DAY }),
-        icon: itemInner({ kind: 'sprinkler' }),
-        on: s.tune.kind === 'flat',
-      },
-      ...TUNABLE.map(crop => ({
-        id: crop,
-        label: CROP_NAME[crop](),
-        note: perDay(statsOf(crop, 'base', 0, world.modifiers).waterUsePerSec),
-        icon: cropInner(crop, ripeGroup('base')),
-        on: s.tune.kind === 'crop' && s.tune.crop === crop,
-      })),
-    ],
-    pick: id => {
-      world.tuneSprinkler(at, id === 'flat' ? { kind: 'flat' } : { kind: 'crop', crop: id as GrownCrop })
+    chrome: 'slider',
+    day: snapFlow(tuneDay(world, s)),
+    max: SPRINKLER_TILE_DAY,
+    step: SPRINKLER_STEP,
+    marks: TUNABLE.map(crop => ({
+      crop,
+      label: CROP_NAME[crop](),
+      day: snapFlow(cropDay(world, crop)),
+      icon: cropInner(crop, ripeGroup('base')),
+    })),
+    set: day => {
+      world.tuneSprinkler(at, { kind: 'rate', day: snapFlow(day) })
     },
   }
 }
@@ -72,7 +67,6 @@ function waterSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_water(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       { kind: 'check', id: 'wilt', label: m.sensors_wilting(), on: c.wilt },
@@ -92,7 +86,6 @@ function harvestSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_harvest(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       {
@@ -118,7 +111,6 @@ function daySpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_day(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       { kind: 'check', id: 'sunrise', label: m.names_phase_sunrise(), on: c.sunrise },
@@ -142,7 +134,6 @@ function logicSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_logic(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       {
@@ -168,7 +159,6 @@ function varietySpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_variety(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       { kind: 'check', id: 'base', label: m.sensors_base(), on: c.baseOn },
@@ -191,7 +181,6 @@ function weatherSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_weather(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       { kind: 'check', id: 'clear', label: WEATHER_NAME.clear(), on: c.clear },
@@ -221,7 +210,6 @@ function pressureSpec(world: World, at: Vertex): HudSpec | undefined {
     title: m.names_sensor_vehicle_detector(),
     col: at.col,
     row: at.row,
-    stay: true,
     chrome: 'rows',
     rows: [
       { kind: 'check', id: 'vehicle', label: m.sensors_vehicle(), on: c.vehicle },
@@ -312,6 +300,7 @@ function HudShell({
   title,
   onClose,
   pin,
+  width,
   children,
 }: {
   col: number
@@ -320,12 +309,13 @@ function HudShell({
   title: string
   onClose: () => void
   pin: 'above' | 'at'
+  width: string
   children: ReactNode
 }) {
   const above = pin === 'above'
   return (
     <div
-      className="pointer-events-auto absolute z-30 w-56"
+      className={`pointer-events-auto absolute z-30 ${width}`}
       style={{
         left: `calc(50% + ${(col + (above ? 0.5 : 0) - cam.x) * TILE * cam.scale}px)`,
         top: `calc(50% + ${(row - cam.y) * TILE * cam.scale}px)`,
@@ -344,6 +334,64 @@ function HudShell({
         </div>
       </Chrome>
     </div>
+  )
+}
+
+/** Half the slider thumb, so a mark sits over the value the thumb reads there. */
+const THUMB = 10
+
+/** The cell a crop mark sits in. Big enough to read the fruit, not just tell that one is there. */
+const MARK = 45
+
+/** Crops that want the same amount share one spot, so they stack instead of hiding each other. */
+function columnsOf(marks: readonly HudMark[]): HudMark[][] {
+  const byDay = new Map<number, HudMark[]>()
+  marks.forEach(mk => {
+    const col = byDay.get(mk.day)
+    if (col === undefined) byDay.set(mk.day, [mk])
+    else col.push(mk)
+  })
+  return [...byDay.values()].sort((x, y) => x[0]!.day - y[0]!.day)
+}
+
+function FlowSlider({ spec }: { spec: Extract<HudSpec, { chrome: 'slider' }> }) {
+  const columns = columnsOf(spec.marks)
+  const tall = Math.max(...columns.map(col => col.length))
+  return (
+    <>
+      <div className="relative" style={{ height: tall * MARK }}>
+        {columns.map(col => (
+          <div
+            key={col[0]!.day}
+            className="absolute bottom-0 flex -translate-x-1/2 flex-col-reverse items-center"
+            style={{ left: `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${col[0]!.day / spec.max})` }}
+          >
+            {col.map(mk => (
+              <button
+                key={mk.crop}
+                type="button"
+                aria-label={`${mk.label} ${perDay(mk.day)}`}
+                title={`${mk.label} — ${perDay(mk.day)}`}
+                className="flex cursor-pointer items-center justify-center hover:bg-dirt/30"
+                style={{ width: MARK, height: MARK }}
+                onClick={() => spec.set(mk.day)}
+              >
+                <svg className="size-9" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: mk.icon }} />
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <Slider
+        name="flow"
+        aria-label={spec.title}
+        value={spec.day}
+        max={spec.max}
+        step={spec.step}
+        onChange={spec.set}
+      />
+      <div className="tabular-nums text-base text-ink">{perDay(spec.day)}</div>
+    </>
   )
 }
 
@@ -388,29 +436,16 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
       title={spec.title}
       onClose={onClose}
       pin={spec.chrome === 'rows' ? 'above' : 'at'}
+      width={spec.chrome === 'rows' ? 'w-56' : 'w-72'}
     >
-      {spec.chrome === 'rows' ? <div className="text-sm text-ink/55">{m.sensors_send_when()}</div> : undefined}
-      {spec.chrome === 'btns'
-        ? spec.options.map(o => (
-            <Btn
-              key={o.id}
-              className="w-full"
-              selected={o.on}
-              onClick={() => {
-                spec.pick(o.id)
-                if (!spec.stay) onClose()
-              }}
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: o.icon }} />
-                <span className="flex flex-col leading-tight">
-                  <span className="text-base">{o.label}</span>
-                  <span className="text-base opacity-70">{o.note}</span>
-                </span>
-              </span>
-            </Btn>
-          ))
-        : <RowList spec={spec} />}
+      {spec.chrome === 'rows' ? (
+        <>
+          <div className="text-sm text-ink/55">{m.sensors_send_when()}</div>
+          <RowList spec={spec} />
+        </>
+      ) : (
+        <FlowSlider spec={spec} />
+      )}
     </HudShell>
   )
 }

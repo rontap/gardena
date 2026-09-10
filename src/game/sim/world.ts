@@ -6,7 +6,8 @@ import {
   STACK_MAX_CRAFTED,
   CONTAINERS,
   QUAD_REFILL,
-  SPEECH_S
+  SPEECH_S,
+  snapFlow
 } from '../defs/items.ts'
 import { NECRO_RESEARCH } from '../defs/necronomicon.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
@@ -1060,7 +1061,8 @@ export class World {
   tuneSprinklerBody(at: Vertex, tune: Tune): void {
     const s = this.sprinklerAt(at)
     if (s === undefined) return
-    s.tune = tune
+    // Snap here, not at the HUD: a remote seat's command lands here too.
+    s.tune = tune.kind === 'rate' ? { kind: 'rate', day: snapFlow(tune.day) } : tune
     this.ping()
   }
 

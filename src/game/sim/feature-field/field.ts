@@ -12,7 +12,6 @@ import { isPlot, isTilled } from '../plot.ts'
 import {
   fertBand,
   GRASS_CHANCE,
-  PLANT_FERT_PER_SEC,
   ramped,
   STUNT,
   waterBand,
@@ -116,7 +115,7 @@ export function tickField(w: World, dt: number): void {
     const mood0 = mood(c.soil, st)
     if (c.kind === 'growing') {
       c.soil.drink(st.waterUsePerSec * dt)
-      c.soil.starve(PLANT_FERT_PER_SEC * dt)
+      c.soil.starve(st.fertUsePerSec * dt)
       if (!c.soil.bio) c.plant.bio = false
       const water = waterBand(c.soil.water, st.waterTolerance)
       const fert = fertBand(c.soil.fertilizer, st.fertTolerance)

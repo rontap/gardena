@@ -48,7 +48,15 @@ export const GRASS_WATER_PER_SEC = 0.0012
 export const GRASS_PACK = 5
 export const SPRINKLER_TILE_DAY = 2.5
 export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
-export const FERT_BAG_LITERS = 10
+export const SPRINKLER_STEP = 0.05
+
+/** The stops the sprinkler slider offers: 0 to `SPRINKLER_TILE_DAY`, every `SPRINKLER_STEP`. */
+export function snapFlow(day: number): number {
+  const top = Math.round(SPRINKLER_TILE_DAY / SPRINKLER_STEP)
+  const steps = Math.min(Math.max(Math.round(day / SPRINKLER_STEP), 0), top)
+  return Number((steps * SPRINKLER_STEP).toFixed(2))
+}
+export const FERT_BAG_LITERS = 8
 export const SYNTH_BAG_LITERS = 16
 export const COMPOST_LITERS = 5
 export const WEED_SPRAY_BAG = 30
@@ -93,7 +101,7 @@ export const FREEZER_LARGE_SLOTS = 9
 export const SILO_SEED_CAP = 100
 export const ADDITIVE_CAP_LITERS = 200
 export const SUGAR_BAG = 2
-export const SUGAR_MILL = 5
+export const SUGAR_MILL = 15
 export const SUGAR_SHOP = 8
 export const MILL_IN = 5
 export const MILL_GRASS = 15
@@ -117,29 +125,29 @@ export const STILL_SECONDS = 160
 export const BARREL_CAP = 5
 export const BARREL_MATURE = DAY_SECONDS
 export const BARREL_AGE = 3 * DAY_SECONDS
-export const OIL = 96
-export const FLOUR = 72
+export const OIL = 72
+export const FLOUR = 54
 export const BREAD = 108
 export const FURNACE_BREAD_IN = 1
 export const EXTRACT = 8
 export const MIXED_MUL = 0.7
 export const CASK_SALE: { readonly [K in CaskId]: number } = {
-  wine: 108,
-  cider: 120,
+  wine: 140,
+  cider: 60,
 }
 export const SPIRIT_SALE: { readonly [K in Exclude<SpiritKind, 'mixed'>]: number } = {
-  vodka: 72,
-  beer: 144,
-  brandy: 108,
+  vodka: 66,
+  beer: 120,
+  brandy: 78,
 }
 export const CASK_AGE_MIN = 1.5
-export const CASK_AGE_MAX = 3
+export const CASK_AGE_MAX = 2.5
 export const JAM_SALE: { readonly [K in JamCrop]: number } = {
-  apricot: 36,
-  grape: 72,
-  raspberry: 104,
-  cherry: 20,
-  tomato: 80,
+  apricot: 40,
+  grape: 118,
+  raspberry: 158,
+  cherry: 30,
+  tomato: 94,
 }
 
 export const QUAD_VMAX = 8

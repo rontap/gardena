@@ -86,21 +86,21 @@ function ticks(w: World, seconds: number): void {
 }
 
 describe('machines', () => {
-  test('10 common potato fruit `marketGain` $60. One still batch of 10 common potato is vodka `unitSale` $72.', () => {
+  test('10 common potato fruit `marketGain` $50. One still batch of 10 common potato is vodka `unitSale` $66.', () => {
     const w = new World()
     w.seats[0].actor.x = PAD.col + 0.5
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 6, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBe(60)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 60), 9)
+    expect(w.marketQuote().clean).toBe(50)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 50), 9)
     expect(spiritKind([{ crop: 'potato', variety: 'base', count: 10 }])).toBe('vodka')
-    expect(bakeSpiritSale('vodka', 'base', 0)).toBe(72)
+    expect(bakeSpiritSale('vodka', 'base', 0)).toBe(66)
   })
 
   test('10 variant potato fruit `marketGain` follows the off-purpose variant rate. A still batch of one variety bakes that variety purpose rate.', () => {
@@ -109,20 +109,20 @@ describe('machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 21, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 17.5, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBeCloseTo(168, 9)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 168), 9)
+    expect(w.marketQuote().clean).toBeCloseTo(140, 9)
+    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 140), 9)
     expect(bakeSpiritSale('vodka', 'bintje', 1)).toBe(SPIRIT_SALE.vodka * PURPOSE_MUL.variant.on * 3.5)
   })
 
-  test('Mixed still `unitSale` = `MIXED_MUL` × that rarity’s spirit sale. Mixed common vodka < 10 common potato fruit $60.', () => {
+  test('Mixed still `unitSale` = `MIXED_MUL` × that rarity’s spirit sale. Mixed common vodka < 10 common potato fruit $50.', () => {
     const mixed = bakeSpiritSale('mixed', 'base', 0)
     expect(mixed).toBe(MIXED_MUL * SPIRIT_SALE.vodka)
-    expect(mixed).toBeLessThan(60)
+    expect(mixed).toBeLessThan(50)
     expect(
       spiritKind([
         { crop: 'potato', variety: 'base', count: 5 },
@@ -131,10 +131,10 @@ describe('machines', () => {
     ).toBe('mixed')
   })
 
-  test('`SUGAR_MILL` 5 / L < `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.', () => {
-    expect(SUGAR_MILL).toBe(5)
+  test('`SUGAR_MILL` 15 / L > `SUGAR_SHOP` 8 / L. `buy-sugar` $16 for `SUGAR_BAG` 2 L.', () => {
+    expect(SUGAR_MILL).toBe(15)
     expect(SUGAR_SHOP).toBe(8)
-    expect(SUGAR_MILL).toBeLessThan(SUGAR_SHOP)
+    expect(SUGAR_MILL).toBeGreaterThan(SUGAR_SHOP)
     expect(SUGAR_BAG).toBe(2)
     expect(SUGAR_SHOP * SUGAR_BAG).toBe(16)
     expect(millNeed('sugar-cane')).toBe(MILL_IN)
@@ -165,7 +165,7 @@ describe('machines', () => {
     w.seats[0].actor.y = at.row + 1.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 15.4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -181,7 +181,7 @@ describe('machines', () => {
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 15.4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, bio: true, cut: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -237,7 +237,7 @@ describe('machines', () => {
     if (sc.kind !== 'chest') throw new Error('chest')
     sc.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 6, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     ticks(w, BIG_TICK)
     expect(still.feed.reduce((n, f) => n + f.count, 0)).toBe(STILL_CAP)

@@ -6,7 +6,7 @@ Crop table is `CROPS`. Tree juvenile / fruit intervals are `TREES`. Variety tabl
 
 Classes: carrot potato root; wheat sugar-cane grain; else fruit. Chilli fruit.
 
-Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1.
+Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1. `fertUseMul` 1 is `PLANT_FERT_PER_SEC`. Trees 0.
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
@@ -39,7 +39,7 @@ One axis, not three. Each named variety is good for exactly one of the three thi
 
 **produce** is the fruit sold as it is. **processed** is the jam machine and the mill. **alcohol** is the still and the barrel. Which of those a crop can reach at all is not a variety property — `MILL_RECIPES` `JAM_CROPS` `STILL_CROPS` `BARREL_CROPS` in `sim/ids.ts` own that.
 
-`purposeMul(variety, path)` — `1` for `'base'`; else `PURPOSE_MUL[tier].on` when `path` is that variety's purpose, `PURPOSE_MUL[tier].off` otherwise. `PURPOSE_MUL` `variant` 1.5 / 0.8, `heirloom` 2 / 0.7 — preference. It multiplies the sale of the good made on that path and nothing else: not yield, not speed, not input count.
+`purposeMul(variety, path)` — `1` for `'base'`; else `PURPOSE_MUL[tier].on` when `path` is that variety's purpose, `PURPOSE_MUL[tier].off` otherwise. `PURPOSE_MUL` `variant` 1.4 / 0.8, `heirloom` 1.8 / 0.6 — preference. It multiplies the sale of the good made on that path and nothing else: not yield, not speed, not input count.
 
 | crop | variant | heirloom |
 |---|---|---|
@@ -99,6 +99,7 @@ Assumption: `'grass'` is `AnnualId` so silo / seeds / `packSku` match chilli. `P
 - sale: `CROPS.sale × qualityMul(quality) × purposeMul(variety, 'produce') × Π saleMul` × (`CROPS.saleMul` or 1)
 - grow: `(CROPS.growSeconds × VARIETY_GROW[tier]) / growSpeed`
 - drink: `CROPS.waterUsePerSec × waterUseMul`
+- fert: `PLANT_FERT_PER_SEC × fertUseMul`
 - tols: `tolerance(base, tier) = max(TOL_MIN, base × VARIETY_TOL[tier])`
 - rot: `CROPS.rotSeconds × VARIETY_ROT[tier]`
 
@@ -112,7 +113,7 @@ Seed on `empty`, `crop !== 'grass'` → `growing`, same `Soil`, same `variety`, 
 
 Stage: maturity `< 0.33` sprout, else grow, then ripe, dead.
 
-While growing: drink water and `PLANT_FERT_PER_SEC` — [[mechanics/soil]]. Bands from soil vs tols.
+While growing: drink water and `PLANT_FERT_PER_SEC × fertUseMul` — [[mechanics/soil]]. Trees `fertUseMul` 0. Bands from soil vs tols.
 
 `STUNT` — preference. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.
 
@@ -218,7 +219,7 @@ Assumption: shovel keeps the tree's variety on the seed.
 
 ## Invariants
 
-`plants.drink` — Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC`. Ripe does not drink. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.
+`plants.drink` — Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`. Ripe does not drink. Trees draw 0 fertilizer. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.
 
 `plants.happy` — Happiness starts `HAPPY_START`. Drown drain `HAPPY_DROWN_SECONDS`. Wilt `HAPPY_WILT_SECONDS`. Starve `HAPPY_STARVE_SECONDS`. Happiness 0 while growing: drown → `rotten`; wilt/starve → `dead`. Ripe does not die of water or fertilizer.
 
@@ -248,7 +249,7 @@ Assumption: shovel keeps the tree's variety on the seed.
 
 `plants.tend` — Tend once: player owns `tending`, empty hand, growing, `tended === false`. Not ripe. Then `tended = true`. Trees: [[mechanics/trees]] `trees.tend`.
 
-`plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, a flat number. One variety. Base vanilla sale < raspberry. Mill yields vanilla-extract, not stall extract — [[mechanics/infusion]] `infusion.extract`.
+`plants.vanilla` — Vanilla `statsOf` sale uses vanilla `saleMul`, a flat number. One variety. Base vanilla sale matches raspberry. Mill yields vanilla-extract, not stall extract — [[mechanics/infusion]] `infusion.extract`.
 
 `plants.chilli` — Chilli `growSeconds` 190, slower than potato, faster than vanilla. `rotSeconds` longer than potato. One Variety `'base'`. No `unlock-chilli`. `pack-chilli` show and buy `unlock-infusion`, `PACK_N` at 10. Mill yields flakes — [[mechanics/infusion]] `infusion.chilli`.
 

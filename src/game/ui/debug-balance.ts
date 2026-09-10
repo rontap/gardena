@@ -1,4 +1,4 @@
-import { CROPS } from '../defs/crops.ts'
+import { CROPS, freshMul } from '../defs/crops.ts'
 import {
   BARREL_AGE,
   BARREL_MATURE,
@@ -68,7 +68,7 @@ import {
   millProduct,
 } from '../sim/feature-machines/machine.ts'
 import { statsOf } from '../sim/modifiers.ts'
-import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MID } from '../sim/soil.ts'
+import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
 
 export const CROP_IDS: readonly GrownCrop[] = [...PLANT_CROPS, ...TREE_IDS]
 
@@ -127,6 +127,7 @@ export type CropEdit = {
   packPrice: number | null
   packUnits: number | null
   waterUsePerSec: number
+  fertUseMul: number
   fruitSeconds: number
   juvenileSeconds: number | null
   sale: number
@@ -156,7 +157,8 @@ export type Row = {
   packPrice: number | null
   packUnits: number | null
   costSeed: number | null
-  waterUsePerSec: number
+  waterUsePerDay: number
+  fertUseMul: number
   fruitSeconds: number
   juvenileSeconds: number | null
   growSeconds: number
@@ -309,6 +311,7 @@ export function snapshot(): BalanceState {
         packPrice: pack === null ? null : pack.price,
         packUnits: pack === null ? null : pack.units,
         waterUsePerSec: def.waterUsePerSec,
+        fertUseMul: def.fertUseMul,
         fruitSeconds: tree === null ? def.growSeconds : tree.fruitSeconds,
         juvenileSeconds: tree === null ? null : tree.juvenileSeconds,
         sale: def.sale,
@@ -376,13 +379,16 @@ function seasonF(onDays: number, onMul: number, offDays: number, offMul: number)
   return (onDays * onMul + offDays * offMul) / (onDays + offDays)
 }
 
-function poursUnrounded(totalUse: number, start: number, mid: number, tol: number): number {
+function pourSpan(mid: number, tol: number, max: number): number {
+  const red = (mid + tol) / 2
+  const wilt = mid - red
+  const drown = max - (mid + red)
+  return max - wilt - drown
+}
+
+function poursUnrounded(totalUse: number, mid: number, tol: number, max: number): number {
   if (totalUse <= 0) return 0
-  const low = mid - tol
-  const high = mid + tol
-  const first = Math.max(0, start - low)
-  if (totalUse <= first) return 0
-  return (totalUse - first) / (high - low)
+  return totalUse / pourSpan(mid, tol, max)
 }
 
 function jamSugarAt(crop: JamCrop, variety: VarietyId, g: Globals): number {
@@ -462,9 +468,9 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
     const fruitPeriod = tree ? c.fruitSeconds / F : growSeconds
     const tol = Math.max(g.tolMin, c.waterTolerance * g.varietyTol[tier])
     const totalWater = tree ? 0 : c.waterUsePerSec * growSeconds
-    const pours = tree ? 0 : poursUnrounded(totalWater, g.startWater, g.soilWaterMid, tol)
+    const pours = tree ? 0 : poursUnrounded(totalWater, g.soilWaterMid, tol, SOIL_WATER_MAX)
     const fruitSale = c.sale * qMul * purposeMulAt(variety, 'produce', g) * c.saleMul
-    const fertL = tree ? 0 : g.fertDraw * growSeconds
+    const fertL = tree ? 0 : g.fertDraw * c.fertUseMul * growSeconds
     const fertCost = (fertL / g.fertBagLiters) * g.fertCost
     const fertUnit = g.fertPaid ? fertCost : 0
     const costSeed = c.packPrice === null || c.packUnits === null ? null : c.packPrice / c.packUnits
@@ -582,7 +588,8 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
       packPrice: c.packPrice,
       packUnits: c.packUnits,
       costSeed,
-      waterUsePerSec: c.waterUsePerSec,
+      waterUsePerDay: c.waterUsePerSec * g.daySeconds,
+      fertUseMul: c.fertUseMul,
       fruitSeconds: c.fruitSeconds,
       juvenileSeconds: c.juvenileSeconds,
       growSeconds,
@@ -653,7 +660,8 @@ export function toCsv(rows: Row[], g: Globals): string {
     'grow_days',
     'fruit_seconds',
     'fruit_days',
-    'water_use_per_sec',
+    'water_use_per_day',
+    'fert_use_mul',
     'total_water_L',
     'pours',
     'fert_L',
@@ -693,7 +701,8 @@ export function toCsv(rows: Row[], g: Globals): string {
       r.growDays,
       r.fruitSeconds,
       r.fruitDays,
-      r.waterUsePerSec,
+      r.waterUsePerDay,
+      r.fertUseMul,
       r.totalWater,
       r.pours,
       r.fertL,
@@ -724,6 +733,101 @@ export function toCsv(rows: Row[], g: Globals): string {
       .join(','),
   )
   return [headers.join(','), ...body].join('\n') + '\n'
+}
+
+export const CLICK_SECONDS = 2
+export const HAND_PLANTED_MAX = 100
+export const HAND_DAY_SECONDS = 400
+
+export type HandSat = {
+  loweringMax: number
+  perUnit: number
+  recoveryPerDay: number
+}
+
+export const HAND_SAT: HandSat = { loweringMax: 40, perUnit: 1, recoveryPerDay: 100 }
+
+export type HandPoint = { planted: number; cpm: number; pps: number }
+export type HandLine = { id: GrownCrop; tree: boolean; points: HandPoint[] }
+
+export function handClicks(row: Row, autoWater: boolean): number {
+  return row.fieldClicks - (autoWater ? row.pours : 0)
+}
+
+function ladderDrop(n: number, u: number, cap: number): number {
+  if (n <= 0 || u <= 0) return 0
+  const xL = cap / u
+  if (n <= xL) return (u * (n + 1)) / 2
+  return (u * xL * (xL + 1) / 2 + cap * (n - xL)) / n
+}
+
+export function handSatMul(planted: number, grow: number, sat: HandSat): number {
+  if (sat.perUnit <= 0) return 1
+  const perDay = (planted * HAND_DAY_SECONDS) / grow
+  const absorb = sat.recoveryPerDay / sat.perUnit
+  if (perDay <= absorb) return 1
+  const extra = perDay - absorb
+  const drop = ladderDrop(extra, sat.perUnit, sat.loweringMax)
+  return (absorb + extra * (1 - drop / 100)) / perDay
+}
+
+function handUnit(
+  row: Row,
+  planted: number,
+  autoWater: boolean,
+  clickSec: number,
+  daySeconds: number,
+  sat: HandSat,
+  fertPaid: boolean,
+): { fruit: number; seed: number; fert: number; grow: number } {
+  const rot = row.rotDays * daySeconds
+  const grow = row.tree ? row.fruitDays * daySeconds : row.growSeconds
+  const step = handClicks(row, autoWater) * clickSec
+  const seed = row.costSeed === null ? 0 : row.costSeed
+  const fert = fertPaid ? row.fertCost : 0
+  const late = planted * step - grow
+  const wait = late > 0 ? late : 0
+  const f = 1 - wait / rot
+  const fruit = f <= 0 ? 0 : row.fruitSale * freshMul(f) * handSatMul(planted, grow, sat)
+  return { fruit, seed, fert, grow }
+}
+
+export function handIncome(
+  row: Row,
+  planted: number,
+  autoWater: boolean,
+  clickSec: number,
+  daySeconds: number,
+  sat: HandSat,
+  fertPaid: boolean,
+): number {
+  const u = handUnit(row, planted, autoWater, clickSec, daySeconds, sat, fertPaid)
+  return (planted * (u.fruit - u.seed - u.fert) / u.grow) * 60
+}
+
+export function handCurve(
+  rows: Row[],
+  autoWater: boolean,
+  clickSec: number,
+  daySeconds: number,
+  sat: HandSat,
+  fertPaid: boolean,
+): HandLine[] {
+  const base = rows.filter(r => r.variety === 'base')
+  return base.map(r => ({
+    id: r.id,
+    tree: r.tree,
+    points: Array.from({ length: HAND_PLANTED_MAX }, (_, i) => {
+      const planted = i + 1
+      const u = handUnit(r, planted, autoWater, clickSec, daySeconds, sat, fertPaid)
+      const profit = u.fruit - u.seed - u.fert
+      return {
+        planted,
+        cpm: (planted * profit / u.grow) * 60,
+        pps: profit,
+      }
+    }),
+  }))
 }
 
 export const ORIGIN_CROP: { readonly [K in GrownCrop]: CropEdit } = Object.fromEntries(

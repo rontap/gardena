@@ -18,7 +18,7 @@ HUD, docks, inspect, place, copy. As the game runs.
 - [[ui/store]] — silo by Variety. `pack-grass` Seed silo. `inventory.grass-silo`
 - [[ui/station]] — walk-up panel
 - [[ui/necronomicon]] — walk-up panel, pages, twilight ritual, the letters
-- [[ui/cheat]] — top-ribbon button. `#debug-techtree` omits `buy-or` `buy-and` `buy-water-system`. `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance`
+- [[ui/cheat]] — top-ribbon button. `#debug-techtree` omits `buy-or` `buy-and` `buy-water-system`. `#debug-contracts` `#debug-weather` `#debug-iconset` `#debug-balance` `#debug-view`
 - [[ui/market]] — the tab you left it on comes back
 - [[ui/contracts]]
 - [[ui/almanac]] — top-ribbon button. Ingredients `recipesUsing`. Utility chainsaw. Concepts Variety Quality Luck Burrow Infusion. chilli. Grass seeds pack pane `{ kind: 'seeds'; crop: 'grass' }`. Not Land. One Infusion page, not infused product panes. overlay-infused

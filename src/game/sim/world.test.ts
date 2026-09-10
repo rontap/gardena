@@ -1400,36 +1400,36 @@ describe('beta-6 invariants', () => {
     test('pack prices and CROPS match the table', () => {
         expect(CROPS.carrot).toMatchObject({
             growSeconds: 90,
-            waterUsePerSec: 0.004889,
+            waterUsePerSec: 0.0041667,
             sale: 3,
             seed: 1,
             rotSeconds: 420,
         })
         expect(CROPS.potato).toMatchObject({
             growSeconds: 120,
-            waterUsePerSec: 0.00375,
-            sale: 6,
+            waterUsePerSec: 0.0035417,
+            sale: 5,
             seed: 2,
             rotSeconds: 600,
         })
         expect(CROPS.wheat).toMatchObject({
             growSeconds: 180,
-            waterUsePerSec: 0.0045833,
-            sale: 12,
+            waterUsePerSec: 0.0041667,
+            sale: 9,
             seed: 2,
             rotSeconds: 420,
         })
         expect(CROPS.tomato).toMatchObject({
-            growSeconds: 280,
-            waterUsePerSec: 0.0043611,
-            sale: 20,
+            growSeconds: 220,
+            waterUsePerSec: 0.005625,
+            sale: 14,
             seed: 3,
             rotSeconds: 300,
         })
         expect(CROPS.raspberry).toMatchObject({
-            growSeconds: 340,
-            waterUsePerSec: 0.0045833,
-            sale: 26,
+            growSeconds: 300,
+            waterUsePerSec: 0.0052083,
+            sale: 24,
             seed: 4,
             rotSeconds: 160,
         })
@@ -1437,7 +1437,7 @@ describe('beta-6 invariants', () => {
         expect(SKUS['pack-potato'].price).toBe(6)
         expect(SKUS['pack-wheat'].price).toBe(10)
         expect(SKUS['pack-tomato'].price).toBe(15)
-        expect(SKUS['pack-raspberry'].price).toBe(22)
+        expect(SKUS['pack-raspberry'].price).toBe(20)
     })
 
     test('ripe plant freshness starts 1 then rots', () => {

@@ -1,4 +1,5 @@
 import { SPRINKLER_TILE_RATE } from '../defs/items.ts'
+import { DAY_SECONDS } from './clock.ts'
 import { occupiedCells, originCell, type Base, type Coord } from './building.ts'
 import { statsOf } from './modifiers.ts'
 import { aoe, edgeKey, corners, incident, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
@@ -175,8 +176,14 @@ export function rebuildWired(world: World): void {
 }
 
 export function tileRate(world: World, s: Sprinkler): number {
+  if (s.tune.kind === 'rate') return s.tune.day / DAY_SECONDS
   if (s.tune.kind === 'flat') return SPRINKLER_TILE_RATE
   return statsOf(s.tune.crop, 'base', 0, world.modifiers).waterUsePerSec
+}
+
+/** What the head is set to pour per tile, in litres a day, whichever `Tune` it carries. */
+export function tuneDay(world: World, s: Sprinkler): number {
+  return tileRate(world, s) * DAY_SECONDS
 }
 
 export function demand(world: World, s: Sprinkler): number {

@@ -670,7 +670,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     chest.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5
@@ -707,7 +707,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     fz.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 6, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5

@@ -252,3 +252,52 @@ body,
 [data-reduced-motion] .vfx-frame[data-vfx-i='0'] {
   opacity: 1;
 }
+
+/* Sprinkler output slider. `--fill` is the share of the track already poured. */
+.hud-slider {
+  height: 18px;
+}
+
+.hud-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border: 2px solid var(--color-ink);
+  background: linear-gradient(to right, var(--color-water) var(--fill), rgba(28, 23, 16, 0.15) var(--fill));
+}
+
+.hud-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 16px;
+  margin-top: -5px;
+  border: 2px solid var(--color-house);
+  background: var(--color-ink);
+}
+
+.hud-slider::-moz-range-track {
+  height: 6px;
+  border: 2px solid var(--color-ink);
+  background: rgba(28, 23, 16, 0.15);
+}
+
+.hud-slider::-moz-range-progress {
+  height: 6px;
+  border: 2px solid var(--color-ink);
+  border-right: 0;
+  background: var(--color-water);
+}
+
+.hud-slider::-moz-range-thumb {
+  width: 10px;
+  height: 16px;
+  border: 2px solid var(--color-house);
+  border-radius: 0;
+  background: var(--color-ink);
+}
+
+.hud-slider:focus-visible::-webkit-slider-thumb {
+  border-color: var(--color-ripe);
+}
+
+.hud-slider:focus-visible::-moz-range-thumb {
+  border-color: var(--color-ripe);
+}

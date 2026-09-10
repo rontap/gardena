@@ -25,6 +25,7 @@
     "@radix-ui/react-progress": "^1.1.16",
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.16",
+    "chart.js": "^4.5.1",
     "mermaid": "^11.17.2",
     "peerjs": "^1.5.5",
     "pixi.js": "^8.20.1",

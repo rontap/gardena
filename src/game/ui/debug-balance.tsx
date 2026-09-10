@@ -1,13 +1,18 @@
 import { CROP_NAME, cropVariety } from '../defs/crops.ts'
 import type { Purpose } from '../defs/varieties.ts'
-import * as Checkbox from '@radix-ui/react-checkbox'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Btn, Chrome } from './frame.tsx'
+import { Check } from './debug-balance-check.tsx'
+import { HandChart } from './debug-balance-chart.tsx'
 import {
+  CLICK_SECONDS,
+  HAND_SAT,
   ORIGIN,
   ORIGIN_CROP,
   cellParity,
   compute,
+  handCurve,
+  type HandSat,
   parityOk,
   sameState,
   snapshot,
@@ -17,6 +22,7 @@ import {
   type Globals,
   type Row,
 } from './debug-balance.ts'
+import type { GrownCrop } from '../sim/ids.ts'
 
 const numClass =
   'w-[4.75rem] select-text border-2 border-ink/30 bg-parch px-1 py-0.5 font-mono text-xs tabular-nums text-ink outline-none focus:border-ink'
@@ -188,34 +194,6 @@ function Td({
   )
 }
 
-function Check({
-  on,
-  label,
-  onChange,
-}: {
-  on: boolean
-  label: string
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2">
-      <Checkbox.Root
-        checked={on}
-        aria-label={label}
-        onCheckedChange={v => onChange(v === true)}
-        className="size-4 shrink-0 cursor-pointer border-2 border-ink/30 bg-parch outline-none data-[state=checked]:border-ink data-[state=checked]:bg-ink"
-      >
-        <Checkbox.Indicator className="flex items-center justify-center text-house">
-          <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true">
-            <path d="M2 6.5 L4.75 9 L10 3" fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
-        </Checkbox.Indicator>
-      </Checkbox.Root>
-      <span className="text-sm">{label}</span>
-    </label>
-  )
-}
-
 function downloadCsv(state: BalanceState, rows: Row[]): void {
   const blob = new Blob([toCsv(rows, state.g)], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -230,7 +208,14 @@ export function DebugBalance() {
   const [state, setState] = useState<BalanceState>(() => snapshot())
   const [showVarieties, setShowVarieties] = useState(false)
   const [highlight, setHighlight] = useState<Highlight>('off')
+  const [autoWater, setAutoWater] = useState(false)
+  const [hidden, setHidden] = useState<ReadonlySet<GrownCrop>>(() => new Set())
+  const [sat, setSat] = useState<HandSat>(HAND_SAT)
   const { rows, offDays, treeF } = useMemo(() => compute(state), [state])
+  const lines = useMemo(
+    () => handCurve(rows, autoWater, CLICK_SECONDS, state.g.daySeconds, sat, state.g.fertPaid),
+    [rows, autoWater, state.g.daySeconds, sat, state.g.fertPaid],
+  )
   const pristine = sameState(state, ORIGIN)
   const g = state.g
   const og = ORIGIN.g
@@ -661,7 +646,8 @@ export function DebugBalance() {
                   <th className={th}>Pack money</th>
                   <th className={th}>Seeds in a pack</th>
                   <th className={th}>Money per seed</th>
-                  <th className={th}>Water per second</th>
+                  <th className={th}>Water per day</th>
+                  <th className={th}>Relative fertilizer</th>
                   <th className={th}>Seconds to fruit</th>
                   <th className={th}>Seconds as a young tree</th>
                   <th className={th}>Fresh sale</th>
@@ -709,13 +695,25 @@ export function DebugBalance() {
                         <td className={td}>
                           {base ? (
                             <Num
-                              value={c.waterUsePerSec}
+                              value={c.waterUsePerSec * g.daySeconds}
                               dirty={c.waterUsePerSec !== o.waterUsePerSec}
                               min={0}
-                              onChange={n => setCrop(c.id, { waterUsePerSec: n })}
+                              onChange={n => setCrop(c.id, { waterUsePerSec: n / g.daySeconds })}
                             />
                           ) : (
-                            <Calc n={r.waterUsePerSec} d={5} />
+                            <Calc n={r.waterUsePerDay} d={4} />
+                          )}
+                        </td>
+                        <td className={td}>
+                          {base ? (
+                            <Num
+                              value={c.fertUseMul}
+                              dirty={c.fertUseMul !== o.fertUseMul}
+                              min={0}
+                              onChange={n => setCrop(c.id, { fertUseMul: n })}
+                            />
+                          ) : (
+                            <Calc n={r.fertUseMul} d={2} />
                           )}
                         </td>
                         <td className={td}>
@@ -990,6 +988,23 @@ export function DebugBalance() {
                 ))}
               </tbody>
             </Table>
+
+            <HandChart
+              lines={lines}
+              autoWater={autoWater}
+              onAutoWater={setAutoWater}
+              sat={sat}
+              onSat={setSat}
+              hidden={hidden}
+              onHidden={(id, hide) =>
+                setHidden(prev => {
+                  const next = new Set(prev)
+                  if (hide) next.add(id)
+                  else next.delete(id)
+                  return next
+                })
+              }
+            />
           </main>
         </div>
       </Chrome>

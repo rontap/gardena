@@ -48,11 +48,13 @@ Water-system sensors: `netOfCell` + cached demand, not `grid().find`. — [[mech
 
 `dirtyNets()` only when `conducts(e)` actually flips or topology changes (place/delete pipe/valve/smart, or a source cell). Not every tick because `smartHold.size > 0`. — [[architecture/tick]]
 
-`unlock-smart-irrigation`: every vertex sprinkler gains a signal `in` and a crop dial, and every valve gains a signal `in` — one row, all of it. Sprinkler unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. — [[mechanics/sensors]]
+`unlock-smart-irrigation`: every vertex sprinkler gains a signal `in` and an output slider, and every valve gains a signal `in` — one row, all of it. Sprinkler unwired: **on**. Wired: high = pour existing AoE + dial, low = off. Unwired ≠ low. Pour uses this tick’s eval. — [[mechanics/sensors]]
 
 ## Smart dial
 
-`unlock-smart-irrigation`. Feature, not a building. Every placed sprinkler gains a crop dial. Tuned: pours that crop’s `waterUsePerSec` per tile. Flat: `SPRINKLER_TILE_RATE`. Tuning does not rewrite soil already wet or dry. The dial and the signal input are one row.
+`unlock-smart-irrigation`. Feature, not a building. Every placed sprinkler gains an output slider: how many litres a day it pours per tile, `0` to `SPRINKLER_TILE_DAY` on `SPRINKLER_STEP` stops. `Tune` `{ kind: 'rate', day }`, snapped in `tuneSprinklerBody` so a remote seat's command lands on a stop too. `0` pours nothing. Tuning does not rewrite soil already wet or dry. The slider and the signal input are one row. — [[ui/docks]]
+
+`Tune` still reads `{ kind: 'flat' }` and `{ kind: 'crop' }`: sprinklers saved before the slider carry them, `flat` as `SPRINKLER_TILE_RATE` and `crop` as that crop's `waterUsePerSec`. Nothing writes them. Collapsing `Tune` to the one variant needs a `SAVE_VERSION` bump, which is the orchestrator's.
 
 ## Hand pour
 
@@ -68,6 +70,6 @@ A drowning empty plot (`water >= mid`) takes nothing. A wilting growing plot can
 
 `water.autolay` — `buy-valve` on an owned edge with no pipe places pipe and valve together and charges both, or places neither. On a bare piped edge it charges the valve alone. On a valved edge: **Pipe already has a valve**.
 
-`water.pour` — Untuned sprinkler: `SPRINKLER_TILE_DAY` per covered growing tile. Smart crop dial: that crop’s `waterUsePerSec` per tile. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`.
+`water.pour` — A sprinkler pours what its slider is set to per covered growing tile, `0` to `SPRINKLER_TILE_DAY` a day. A head saved before the slider pours `SPRINKLER_TILE_DAY` untuned, or its crop’s `waterUsePerSec`. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`.
 
 `water.targets` — Each sprinkler caches growing targets. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, or expand. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Wired vertices: `Set` rebuilt on wire change. Water-system: `netOfCell` + cached demand, not `grid().find`. Pour amounts unchanged.

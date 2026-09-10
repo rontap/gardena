@@ -47,7 +47,7 @@ if (location.hash === '#debug-techtree') {
       <DebugIconset />
     </StrictMode>,
   )
-} else if (location.hash === '#debug-balance') {
+} else if (location.hash === '#debug-balance' || location.hash === '#debug-view') {
   openScroll()
   createRoot(root).render(
     <StrictMode>

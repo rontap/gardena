@@ -41,12 +41,16 @@ function fadeKey(col: number, row: number, g: number): AtlasKey {
 }
 
 function groundKey(col: number, row: number, cell: Cell, g: number): AtlasKey {
+  // A rock stands on the ground the noise generated. Falling through to grass
+  // cut a green square out of a hard field wherever a rock landed.
+  if (cell.kind === 'rock') return fadeKey(col, row, g)
   if (cell.kind === 'untilled' && cell.ground === 'hard') return `hard-${hBand(g)}`
   if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') return `vh-${vhBand(g)}`
   return grassKey(col, row)
 }
 
 function token(col: number, row: number, cell: Cell, g: number): string {
+  if (cell.kind === 'rock') return `k${fadeKey(col, row, g)}`
   if (cell.kind === 'untilled' && cell.ground === 'hard') return `h${hBand(g)}`
   if ((cell.kind === 'untilled' && cell.ground === 'very-hard') || cell.kind === 'infertile') return `v${vhBand(g)}`
   return `g${tileVariant(col, row, 2) * 4 + tileVariant(col, row, 4, 1)}`

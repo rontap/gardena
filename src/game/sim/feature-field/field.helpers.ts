@@ -1,4 +1,5 @@
 import {
+  CROPS,
   HAPPY_DROWN_SECONDS,
   HAPPY_GAIN_SECONDS,
   HAPPY_MAX,
@@ -6,10 +7,18 @@ import {
   HAPPY_WILT_SECONDS,
 } from '../../defs/crops.ts'
 import { CHOP_GRAFTS, NEIGHBOUR_REACH } from '../../defs/items.ts'
-import { needsNeighbour, tierOf } from '../../defs/varieties.ts'
+import { experiencedTier } from '../../defs/skills.ts'
+import {
+  CROSSBREED_REACH,
+  needsNeighbour,
+  nextVariety,
+  tierOf,
+  varietyChance,
+  type VarietyId,
+} from '../../defs/varieties.ts'
 import { chunkRect, occupiedCells, Tree, type Coord } from '../building.ts'
 import type { CropId } from '../ids.ts'
-import { fruitStack, mergeInto, type Item } from '../item.ts'
+import { fruitStack, mergeInto, type Countable, type Item } from '../item.ts'
 import type { Modifier, Stats } from '../modifiers.ts'
 import { extractBurrow } from '../feature-burrow/burrow.ts'
 import { goodness } from '../noise.ts'
@@ -23,6 +32,12 @@ type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
 export function pourTarget(c: Extract<Plot, { soil: Soil }>, mods: readonly Modifier[]): number {
   if (c.kind !== 'growing' && c.kind !== 'ripe') return SOIL_WATER_MID
   return SOIL_WATER_MID + c.plant.stats(mods).waterTolerance
+}
+
+export function plotPick(c: Cell, day: number): Countable | undefined {
+  if (c.kind === 'dead') return { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 }
+  if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1, createdAt: day }
+  return undefined
 }
 
 export function waterable(c: Cell, mods: readonly Modifier[]): boolean {
@@ -95,6 +110,36 @@ export function goodNeighbour(w: World, at: Coord, crop: CropId, self: readonly 
 
 export function hasNeighbour(w: World, cells: readonly Coord[], crop: CropId): boolean {
   return neighbourReach(cells).some(p => goodNeighbour(w, p, crop, cells))
+}
+
+function crossReach(at: Coord): Coord[] {
+  const span = Array.from({ length: CROSSBREED_REACH * 2 + 1 }, (_, i) => i - CROSSBREED_REACH)
+  return span.flatMap(dc => span.map(dr => ({ col: at.col + dc, row: at.row + dr })))
+}
+
+export function hasCrossbreed(w: World, at: Coord, crop: CropId, variety: VarietyId): boolean {
+  return crossReach(at).some(p => {
+    if (p.col === at.col && p.row === at.row) return false
+    if (!w.inWorld(p)) return false
+    const c = w.cell(p)
+    if (c.kind !== 'growing' && c.kind !== 'ripe') return false
+    return c.plant.crop === crop && c.plant.variety !== variety
+  })
+}
+
+export function upgradeVariety(w: World, at: Coord, p: Plant): boolean {
+  const next = nextVariety(p.crop, p.variety)
+  if (next === undefined) return false
+  const chance = varietyChance(
+    p.quality,
+    experiencedTier(p.crop, id => w.skillTier(id)) > 0,
+    hasCrossbreed(w, at, p.crop, p.variety),
+  )
+  const u = w.rng.stream('variety').at(at.col, at.row, w.clock.day, Math.round(p.quality * 10000))
+  if (u >= chance) return false
+  p.variety = next
+  p.quality = 0
+  return true
 }
 
 export function neighbourWatch(

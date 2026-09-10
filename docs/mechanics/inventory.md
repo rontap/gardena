@@ -79,7 +79,7 @@ Ordinary bag `FERT_BAG_LITERS`, always at the Additive store. Synthetic `SYNTH_B
 
 Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
-`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Ash composts as `count × COMPOST_VALUE.ash`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing — [[mechanics/plants]]. Fruit composts at `COMPOST_VALUE.fruit` regardless of variety. Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread / wood / graft / treasure: not compost.
+`COMPOST_VALUE` — preference. Sugar composts as `liters × COMPOST_VALUE.fruit`. Ash composts as `count × COMPOST_VALUE.ash`. Empty-hand weeds/grass are feedstock. Compost accepts weeds (`COMPOST_VALUE.weed`). Shovel dead/rotten drops nothing; an empty hand picks one up instead, and both compost at 1 — [[mechanics/plants]] `plants.pick-spoiled`. Fruit composts at `COMPOST_VALUE.fruit` regardless of variety. Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread / wood / graft / treasure: not compost.
 
 `FURNACE_CAP` `FURNACE_NEED` — preference. `furnaceValue` — [[mechanics/machines]] `machines.furnace-feed`. Wood `{ kind: 'wood'; count }`. Ash `{ kind: 'ash'; count }`. Graft at the green rate. Not stall goods. `STACK_MAX`. Treasure not furnace. Flour is bread lock, not ash — [[mechanics/infusion]] `infusion.furnace`. Flakes and vanilla-extract refuse.
 

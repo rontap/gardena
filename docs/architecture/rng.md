@@ -10,7 +10,7 @@ Deterministic streams. [[architecture/world]] [[architecture/log]] [[architectur
 
 ## Types
 
-`StreamId = SpatialId | SeqId`. Spatial: `gen` `weed` `grass` `tree` `skill` `grind` `contract` `weather` `burrow`. Seq: `fruit`. Shape: `sim/rng.ts`.
+`StreamId = SpatialId | SeqId`. Spatial: `gen` `weed` `grass` `tree` `skill` `grind` `contract` `weather` `burrow` `variety`. Seq: `fruit`. Shape: `sim/rng.ts`.
 
 `streamSeed` = mixer u32 of `world.seed` and `StreamId`. `at(...ints)` mixes those ints onto `streamSeed` and returns `[0,1)`. `next()` mixes a per-stream monotonic seq starting at 0.
 

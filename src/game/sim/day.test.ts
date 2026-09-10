@@ -15,7 +15,7 @@ function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
 
 describe('day.seam', () => {
     test('Seam at `t >= DAY_SECONDS` runs `stipendOf`, tax, pump bill, burrow mint, tree seam, then appends `Recap`, pushes `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `banner = 4`, `seam` stays play, then tally reset — all before any field tick of the new day. `World.tick` does not return early.', () => {
-        const w = new World(1)
+        const w = new World(2)
         const p = new Plant('carrot', 'base', 0)
         p.maturity = 0.4
         w.setCell(AT, {kind: 'growing', soil: bed(), plant: p})

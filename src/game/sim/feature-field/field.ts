@@ -29,6 +29,7 @@ import {
   hasNeighbour,
   mood,
   treeCells,
+  upgradeVariety,
 } from './field.helpers.ts'
 
 export {
@@ -58,8 +59,10 @@ export {
   mood,
   neighbourReach,
   neighbourWatch,
+  plotPick,
   pourTarget,
   treeCells,
+  upgradeVariety,
   waterable,
 } from './field.helpers.ts'
 
@@ -134,6 +137,7 @@ export function tickField(w: World, dt: number): void {
         c.plant.maturity = 1
         c.plant.freshness = 1
         c.plant.quality = q
+        upgradeVariety(w, at, c.plant)
         w.setCell(at, { kind: 'ripe', soil: c.soil, plant: c.plant })
         dirty = true
         continue

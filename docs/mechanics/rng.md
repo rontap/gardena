@@ -16,8 +16,9 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `contract` | board slot | `at(day, slot, k)` |
 | `weather` | day kind | `at(day, k)` |
 | `burrow` | site pick, loot | `at(cx, cy, day, k)` / `at(col, row, salt)` |
+| `variety` | variety roll at ripen | `at(col, row, day, round(quality × 10000))` |
 
-No grow stream. No `World.ripenN`. Bought packs do not roll. Still and barrel do not roll. Burrow is not seq.
+No grow stream. No `World.ripenN`. Bought packs do not roll. Still and barrel do not roll. Burrow is not seq. The `variety` roll is at ripen only — [[mechanics/plants]] `plants.variety-roll`.
 
 Failed buy / bulk / drop consumes 0 `next()`.
 

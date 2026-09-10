@@ -469,6 +469,9 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       cell.fruit.forEach(c => book.fruit.push(c))
       book.ash = cell.ash
       book.gold = cell.gold
+      book.agaric = cell.agaric
+      book.tool = cell.tool
+      cell.supper.forEach(g => book.supper.push(g))
       cell.pages.forEach(id => book.done.push(id))
       return book
     }

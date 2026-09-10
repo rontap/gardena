@@ -15,6 +15,7 @@ import {
 } from '../building.ts'
 import { generateChunk } from '../gen.ts'
 import { packSku, type SkuId } from '../ids.ts'
+import { seedBankQuality } from '../../defs/skills.ts'
 import { skuItem } from '../item.ts'
 import { aoe, edgeKey, vertexKey, vertsOf, type Edge, type Sprinkler, type Vertex } from '../pipe.ts'
 import { isPlot } from '../plot.ts'
@@ -222,7 +223,7 @@ export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
     if (w.money < price) return 'Cannot afford'
     if (silo.free < made.count) return field ? 'Seeding silo full' : 'Seed silo full'
     w.money -= price
-    silo.put(made.crop, 'base', 0, made.count)
+    silo.put(made.crop, 'base', seedBankQuality(w.skillTier('seed-bank')), made.count)
     w.ping()
     return undefined
   }
@@ -301,7 +302,7 @@ export function buyPacksBody(w: World, id: SkuId, at: Coord): void {
   const made = skuItem(id)
   if (made.kind !== 'seeds') return
   w.money -= packsPrice(w, id)
-  seedStoreAt(w, at).put(made.crop, 'base', 0, 5 * made.count)
+  seedStoreAt(w, at).put(made.crop, 'base', seedBankQuality(w.skillTier('seed-bank')), 5 * made.count)
   w.ping()
 }
 

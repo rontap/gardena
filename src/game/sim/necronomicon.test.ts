@@ -3,6 +3,7 @@ import { catalogEntries } from '../defs/catalog.ts'
 import {
   EARLY_FRUIT,
   GRANDMA_DAY,
+  NECRO_AGARIC,
   NECRO_ASH,
   NECRO_COST,
   NECRO_CROP,
@@ -12,6 +13,7 @@ import {
   NECRO_W,
   PAGES,
   PAGE_IDS,
+  SUPPER,
   pageWant,
 } from '../defs/necronomicon.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
@@ -35,7 +37,7 @@ import {
 } from './feature-necronomicon/necronomicon.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { GRANDMA_IDS } from './ids.ts'
-import { skuItem, type Item } from './item.ts'
+import { makePickaxe, makeShovel, skuItem, type Item } from './item.ts'
 import { NOTICE_ORDER, noticeRows } from '../ui/notices.ts'
 import { World } from './world.ts'
 
@@ -138,14 +140,20 @@ describe('necronomicon.grandma', () => {
 })
 
 describe('necronomicon.pages', () => {
-  test('Four pages. `crop` and `early-fruit` are open from the start; `ash` and `gold` need two pages done, and `ash` also needs the furnace. A shut page is not in `pageStates` and `pagesHidden` says so.', () => {
-    expect(PAGE_IDS).toEqual(['crop', 'early-fruit', 'ash', 'gold'])
+  test('Seven pages. `crop` and `early-fruit` are open from the start; `agaric`, `ash` and `gold` need two pages done, `ash` also needs the furnace, `tool` needs three and `supper` four. A shut page is not in `pageStates` and `pagesHidden` says so.', () => {
+    expect(PAGE_IDS).toEqual(['crop', 'early-fruit', 'agaric', 'ash', 'gold', 'tool', 'supper'])
     expect(pageWant('crop')).toBe(NECRO_CROP)
     expect(pageWant('early-fruit')).toBe(EARLY_FRUIT.length)
     expect(pageWant('ash')).toBe(NECRO_ASH)
     expect(pageWant('gold')).toBe(NECRO_GOLD)
+    expect(pageWant('agaric')).toBe(NECRO_AGARIC)
+    expect(pageWant('tool')).toBe(1)
+    expect(pageWant('supper')).toBe(SUPPER.length)
     expect(PAGES.ash.lock).toEqual({ pages: 2, research: ['unlock-furnace'] })
     expect(PAGES.gold.lock).toEqual({ pages: 2, research: [] })
+    expect(PAGES.agaric.lock).toEqual({ pages: 2, research: [] })
+    expect(PAGES.tool.lock).toEqual({ pages: 3, research: [] })
+    expect(PAGES.supper.lock).toEqual({ pages: 4, research: [] })
 
     const { w, book } = farm()
     expect(pageStates(w, book).map(p => p.id)).toEqual(['crop', 'early-fruit'])
@@ -153,9 +161,17 @@ describe('necronomicon.pages', () => {
 
     book.done.push('crop', 'early-fruit')
     expect(pageOpen(w, book, 'gold')).toBe(true)
+    expect(pageOpen(w, book, 'agaric')).toBe(true)
     expect(pageOpen(w, book, 'ash')).toBe(false)
+    expect(pageOpen(w, book, 'tool')).toBe(false)
     w.done.add('unlock-furnace')
     expect(pageOpen(w, book, 'ash')).toBe(true)
+    expect(pagesHidden(w, book)).toBe(true)
+    book.done.push('agaric')
+    expect(pageOpen(w, book, 'tool')).toBe(true)
+    expect(pageOpen(w, book, 'supper')).toBe(false)
+    book.done.push('ash')
+    expect(pageOpen(w, book, 'supper')).toBe(true)
     expect(pagesHidden(w, book)).toBe(false)
   })
 
@@ -193,14 +209,60 @@ describe('necronomicon.pages', () => {
     const { book } = farm()
     expect(book.accept({ ...fruit('carrot', 3), cut: true })).toBe(0)
     expect(book.accept({ kind: 'wood', count: 9 })).toBe(0)
-    expect(book.accept({ kind: 'fly-agaric', count: 3 })).toBe(0)
     expect(book.accept({ kind: 'treasure', coins: 99 })).toBe(0)
+    expect(book.accept(makeShovel('better-shovel'))).toBe(0)
+    expect(book.accept(makePickaxe('better-pickaxe'))).toBe(0)
+    expect(book.accept({ kind: 'flour', quality: 0, count: 2, unitSale: 1 })).toBe(0)
+  })
+
+  test('The `agaric` page takes `NECRO_AGARIC` Fly agaric and nothing else takes them.', () => {
+    const { book } = farm()
+    expect(pageClaim(book, { kind: 'fly-agaric', count: 1 })).toEqual({ page: 'agaric', n: 1 })
+    book.apply({ kind: 'fly-agaric', count: 1 }, 1)
+    expect(book.agaric).toBe(1)
+    expect(book.accept({ kind: 'fly-agaric', count: NECRO_AGARIC })).toBe(NECRO_AGARIC - 1)
+    book.apply({ kind: 'fly-agaric', count: NECRO_AGARIC }, NECRO_AGARIC - 1)
+    expect(pageFilled(book, 'agaric')).toBe(NECRO_AGARIC)
+    expect(book.accept({ kind: 'fly-agaric', count: 1 })).toBe(0)
+  })
+
+  test('The `tool` page takes one Rotary shovel or one Diamond pickaxe, whichever comes first, and refuses the other after. A starter or better tool is never a sacrifice.', () => {
+    const { book } = farm()
+    expect(book.accept(makeShovel('shovel'))).toBe(0)
+    expect(book.accept(makePickaxe('pickaxe'))).toBe(0)
+    expect(pageClaim(book, makePickaxe('diamond-pickaxe'))).toEqual({ page: 'tool', n: 1 })
+    expect(pageClaim(book, makeShovel('rotary-shovel'))).toEqual({ page: 'tool', n: 1 })
+    book.apply(makeShovel('rotary-shovel'), 1)
+    expect(book.tool).toBe(true)
+    expect(pageFilled(book, 'tool')).toBe(1)
+    expect(book.accept(makePickaxe('diamond-pickaxe'))).toBe(0)
+  })
+
+  test('The `supper` page takes one Barackpalinka, one Premium wine and one Bread, one of each and never a second. Any other spirit or cask falls through.', () => {
+    const { book } = farm()
+    const palinka: Item = { kind: 'spirit', spirit: 'brandy', variety: 'klosterneuburger', quality: 0, count: 2, unitSale: 1, infused: false }
+    const wine: Item = { kind: 'cask', cask: 'wine', variety: 'keknyelu', quality: 0, count: 1, unitSale: 1, infused: false }
+    const bread: Item = { kind: 'bread', quality: 0, count: 4, unitSale: 1 }
+    const vodka: Item = { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false }
+    const cider: Item = { kind: 'cask', cask: 'cider', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false }
+    expect(book.accept(vodka)).toBe(0)
+    expect(book.accept(cider)).toBe(0)
+    expect(pageClaim(book, palinka)).toEqual({ page: 'supper', n: 1, good: 'palinka' })
+    book.apply(palinka, 1)
+    expect(book.accept(palinka)).toBe(0)
+    expect(pageClaim(book, wine)).toEqual({ page: 'supper', n: 1, good: 'wine' })
+    book.apply(wine, 1)
+    expect(pageClaim(book, bread)).toEqual({ page: 'supper', n: 1, good: 'bread' })
+    book.apply(bread, 1)
+    expect(book.supper).toEqual(['palinka', 'wine', 'bread'])
+    expect(pageFilled(book, 'supper')).toBe(SUPPER.length)
+    expect(book.accept(bread)).toBe(0)
   })
 
   test('The `ash` page takes ash only while it is open, counts to `NECRO_ASH`, and a shut page takes nothing.', () => {
     const { w, book } = farm()
     const ash: Item = { kind: 'ash', count: 30 }
-    expect(pageClaim(book, ash)).toEqual({ page: 'ash', n: 30, crop: 'none' })
+    expect(pageClaim(book, ash)).toEqual({ page: 'ash', n: 30 })
     expect(book.accept(ash)).toBe(30)
     book.done.push('crop', 'early-fruit')
     w.done.add('unlock-furnace')

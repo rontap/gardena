@@ -36,15 +36,19 @@ try {
   ask(`The version guard could not read this tool call. ${REASON}`)
 }
 
-const target = input?.tool_input?.file_path
-if (typeof target !== 'string') process.exit(0)
-const norm = target.replace(/\\/g, '/')
+let norm = ''
+try {
+  norm = input.tool_input.file_path.replace(/\\/g, '/')
+} catch {
+  process.exit(0)
+}
+if (norm === '') process.exit(0)
 
 if (PATH_FILES.some(f => norm.endsWith(f))) ask(`${norm} is version text. ${REASON}`)
 
 const hit = CONST_FILES.find(c => norm.endsWith(c.file))
 if (hit !== undefined) {
-  const body = [input?.tool_input?.new_string, input?.tool_input?.content].filter(s => typeof s === 'string').join('\n')
+  const body = [input.tool_input.new_string, input.tool_input.content].join('\n')
   if (hit.re.test(body)) ask(`This edit touches the version constant in ${norm}. ${REASON}`)
 }
 

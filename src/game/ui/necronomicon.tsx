@@ -1,10 +1,11 @@
 import { m } from '../../paraglide/messages.js'
 import { CROP_NAME } from '../defs/crops.ts'
-import { EARLY_FRUIT, NECRO_GOLD, PAGES } from '../defs/necronomicon.ts'
+import { EARLY_FRUIT, NECRO_GOLD, PAGES, SUPPER } from '../defs/necronomicon.ts'
 import type { Coord } from '../sim/building.ts'
 import { pagesHidden, pageStates, ritualReady } from '../sim/feature-necronomicon/necronomicon.ts'
 import type { PageState } from '../sim/feature-necronomicon/necronomicon.h.ts'
-import type { GrownCrop } from '../sim/ids.ts'
+import type { GrownCrop, SupperId } from '../sim/ids.ts'
+import type { Item } from '../sim/item.ts'
 import type { World } from '../sim/world.ts'
 import { fruitInner, itemInner } from '../view/svgs.ts'
 import { Bar } from './frame.tsx'
@@ -39,7 +40,7 @@ export function NecronomiconUi({
         <div className="text-sm leading-relaxed text-ink/70">{m.necro_intro()}</div>
         <div className="flex flex-col gap-2">
           {pages.map(p => (
-            <PageRow key={p.id} page={p} book={{ fruit: book.fruit }} />
+            <PageRow key={p.id} page={p} book={{ fruit: book.fruit, supper: book.supper }} />
           ))}
         </div>
         {pagesHidden(world, book) && <div className="text-sm text-ink/55">{m.necro_more()}</div>}
@@ -61,7 +62,13 @@ export function NecronomiconUi({
   )
 }
 
-function PageRow({ page, book }: { page: PageState; book: { fruit: readonly GrownCrop[] } }) {
+function PageRow({
+  page,
+  book,
+}: {
+  page: PageState
+  book: { fruit: readonly GrownCrop[]; supper: readonly SupperId[] }
+}) {
   const name =
     page.id === 'crop' && page.crop !== 'none'
       ? m.necro_page_crop_name_locked({ crop: CROP_NAME[page.crop]() })
@@ -77,6 +84,8 @@ function PageRow({ page, book }: { page: PageState; book: { fruit: readonly Grow
       <div className="text-sm leading-relaxed text-ink/70">{PAGES[page.id].blurb}</div>
       {page.id === 'early-fruit' ? (
         <FruitRow given={book.fruit} />
+      ) : page.id === 'supper' ? (
+        <SupperRow given={book.supper} />
       ) : (
         <Bar value={page.have / page.want} color="bg-grape" track="bg-ink/20" className="h-1.5" />
       )}
@@ -93,6 +102,27 @@ function FruitRow({ given }: { given: readonly GrownCrop[] }) {
           className={`h-6 w-6 ${given.includes(crop) ? '' : 'opacity-25 grayscale'}`}
           viewBox="0 0 24 24"
           dangerouslySetInnerHTML={{ __html: fruitInner(crop) }}
+        />
+      ))}
+    </div>
+  )
+}
+
+const SUPPER_FACE: { readonly [K in SupperId]: Item } = {
+  palinka: { kind: 'spirit', spirit: 'brandy', variety: 'klosterneuburger', quality: 0, count: 1, unitSale: 0, infused: false },
+  wine: { kind: 'cask', cask: 'wine', variety: 'keknyelu', quality: 0, count: 1, unitSale: 0, infused: false },
+  bread: { kind: 'bread', quality: 0, count: 1, unitSale: 0 },
+}
+
+function SupperRow({ given }: { given: readonly SupperId[] }) {
+  return (
+    <div className="flex items-center gap-1">
+      {SUPPER.map(good => (
+        <svg
+          key={good}
+          className={`h-6 w-6 ${given.includes(good) ? '' : 'opacity-25 grayscale'}`}
+          viewBox="0 0 24 24"
+          dangerouslySetInnerHTML={{ __html: itemInner(SUPPER_FACE[good]) }}
         />
       ))}
     </div>

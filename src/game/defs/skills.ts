@@ -14,10 +14,17 @@ import {HAPPY_MAX} from './crops.ts'
 
 export const TEND_WORK = 0.7
 
+export const SEED_BANK_QUALITY = 0.1
+
+export function seedBankQuality(tier: number): number {
+    return SEED_BANK_QUALITY * tier
+}
+
 export const PLAYER_SKILL_IDS: readonly PlayerSkillId[] = [
     'boots',
     'bulk-up',
     'lucky',
+    'seed-bank',
     'driving-classes',
     'tending',
     'better-potato',
@@ -45,10 +52,13 @@ export const BETTER_IDS = {
     cherry: 'better-cherry',
 } as const satisfies { readonly [K in BetterCrop]: PlayerSkillId }
 
-export function betterGain(crop: CropId, h: number, tierOf: (id: SkillId) => number): number {
+export function experiencedTier(crop: CropId, tierOf: (id: SkillId) => number): number {
     if (!(crop in BETTER_IDS)) return 0
-    const id = BETTER_IDS[crop as BetterCrop]
-    const t = tierOf(id)
+    return tierOf(BETTER_IDS[crop as BetterCrop])
+}
+
+export function betterGain(crop: CropId, h: number, tierOf: (id: SkillId) => number): number {
+    const t = experiencedTier(crop, tierOf)
     if (t <= 0) return 0
     return BETTER_QUALITY * t * (h / HAPPY_MAX)
 }
@@ -62,17 +72,18 @@ export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
     'water-study',
     'land-study',
     'inherit-land',
+    'lucky-husband',
 ]
 export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'saleswoman',
     'heirloom',
-    'bio',
     'industrial',
     'broker',
     'open-late',
     'open-24',
     'jam',
     'clearance',
+    'lucky-daughter',
 ]
 
 export const JAM_ROT = 0.15
@@ -105,7 +116,7 @@ export type SkillEffect =
     | { kind: 'inherit-land' }
     | { kind: 'saleswoman'; mul: 1.02 }
     | { kind: 'heirloom'; mul: 1.05 }
-    | { kind: 'better'; crop: CropId; saleMul: 1.04; up1: 0.04 }
+    | { kind: 'better'; crop: CropId; saleMul: number }
     | { kind: 'bio'; mul: 1.04 }
     | { kind: 'open-late' }
     | { kind: 'open-24' }
@@ -113,6 +124,7 @@ export type SkillEffect =
     | { kind: 'clearance' }
     | { kind: 'forecast' }
     | { kind: 'lucky' }
+    | { kind: 'seed-bank' }
 
 export type SkillDef<Id extends SkillId = SkillId> = {
     id: Id
@@ -161,7 +173,31 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         3,
         {kind: 'bulk-up'},
     ),
-    lucky: row('lucky', 'player', m.skills_lucky_name(), m.skills_lucky_blurb(), 3, {kind: 'lucky'}),
+    lucky: row('lucky', 'player', m.skills_lucky_name(), m.skills_lucky_blurb(), 1, {kind: 'lucky'}),
+    'lucky-husband': row(
+        'lucky-husband',
+        'husband',
+        m.skills_lucky_husband_name(),
+        m.skills_lucky_husband_blurb(),
+        1,
+        {kind: 'lucky'},
+    ),
+    'lucky-daughter': row(
+        'lucky-daughter',
+        'daughter',
+        m.skills_lucky_daughter_name(),
+        m.skills_lucky_daughter_blurb(),
+        1,
+        {kind: 'lucky'},
+    ),
+    'seed-bank': row(
+        'seed-bank',
+        'player',
+        m.skills_seed_bank_name(),
+        m.skills_seed_bank_blurb({pct: Math.round(SEED_BANK_QUALITY * 100)}),
+        1,
+        {kind: 'seed-bank'},
+    ),
     'driving-classes': row(
         'driving-classes',
         'player',
@@ -270,45 +306,45 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         'better-potato',
         'player',
         m.skills_better_potato_name(),
-        m.skills_better_potato_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_potato_blurb(),
         1,
-        {kind: 'better', crop: 'potato', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'potato', saleMul: 1},
         {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-wheat': row(
         'better-wheat',
         'player',
         m.skills_better_wheat_name(),
-        m.skills_better_wheat_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_wheat_blurb(),
         1,
-        {kind: 'better', crop: 'wheat', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'wheat', saleMul: 1},
         {kind: 'research', id: 'unlock-crop-variants'},
     ),
     'better-tomato': row(
         'better-tomato',
         'player',
         m.skills_better_tomato_name(),
-        m.skills_better_tomato_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_tomato_blurb(),
         1,
-        {kind: 'better', crop: 'tomato', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'tomato', saleMul: 1},
         {kind: 'research', id: 'unlock-tomato'},
     ),
     'better-raspberry': row(
         'better-raspberry',
         'player',
         m.skills_better_raspberry_name(),
-        m.skills_better_raspberry_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_raspberry_blurb(),
         1,
-        {kind: 'better', crop: 'raspberry', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'raspberry', saleMul: 1},
         {kind: 'research', id: 'unlock-raspberry'},
     ),
     'better-grape': row(
         'better-grape',
         'player',
         m.skills_better_grape_name(),
-        m.skills_better_grape_blurb({pct: BETTER_SALE_PCT}),
+        m.skills_better_grape_blurb(),
         1,
-        {kind: 'better', crop: 'grape', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'grape', saleMul: 1},
         {kind: 'research', id: 'unlock-grape'},
     ),
     'better-apple': row(
@@ -317,7 +353,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_better_apple_name(),
         m.skills_better_apple_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'apple', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'apple', saleMul: 1.04},
     ),
     'better-apricot': row(
         'better-apricot',
@@ -325,7 +361,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_better_apricot_name(),
         m.skills_better_apricot_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'apricot', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'apricot', saleMul: 1.04},
     ),
     'better-olive': row(
         'better-olive',
@@ -333,7 +369,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_better_olive_name(),
         m.skills_better_olive_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'olive', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'olive', saleMul: 1.04},
     ),
     'better-cherry': row(
         'better-cherry',
@@ -341,7 +377,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_better_cherry_name(),
         m.skills_better_cherry_blurb({pct: BETTER_SALE_PCT}),
         1,
-        {kind: 'better', crop: 'cherry', saleMul: 1.04, up1: 0.04},
+        {kind: 'better', crop: 'cherry', saleMul: 1.04},
     ),
     bio: row(
         'bio',
@@ -444,6 +480,8 @@ export function skillBlurb(id: SkillId, tier: number): string {
             return m.skills_heirloom_skillblurb({pct: HEIRLOOM_PCT * tier})
         case 'bio':
             return m.skills_bio_skillblurb({pct: BIO_PCT * tier})
+        case 'seed-bank':
+            return m.skills_seed_bank_skillblurb({pct: Math.round(seedBankQuality(tier) * 100)})
         case 'jam':
             return m.skills_jam_skillblurb({pct: JAM_PCT * tier})
         default:

@@ -104,7 +104,7 @@ export type Item =
   | { kind: 'flakes'; quality: number; count: number }
   | { kind: 'vanilla-extract'; quality: number; count: number }
   | { kind: 'bread'; quality: number; count: number; unitSale: number }
-  | { kind: 'rotten'; cls: CropClass; count: number }
+  | { kind: 'rotten'; cls: CropClass; count: number; createdAt: number }
   | { kind: 'dead'; cls: CropClass; count: number }
   | { kind: 'weed'; count: number }
   | { kind: 'grass'; count: number }
@@ -1013,6 +1013,9 @@ export function stackable(a: Countable, b: Countable): boolean {
 }
 
 export function mergeInto(a: Countable, b: Countable, n: number): void {
+  if (a.kind === 'rotten' && b.kind === 'rotten') {
+    a.createdAt = a.createdAt < b.createdAt ? a.createdAt : b.createdAt
+  }
   if (a.kind === 'fruit' && b.kind === 'fruit') {
     const part = { ...b, count: n }
     a.unitSale = mergeUnitSale(a, part)

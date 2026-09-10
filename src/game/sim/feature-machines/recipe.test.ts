@@ -164,7 +164,7 @@ describe('recipes.table', () => {
     ).toEqual(
       GRIND_PLAIN_PINS.map(p =>
         ANNUAL_IDS.some(a => a === p.crop)
-          ? ['seeds', p.crop, tierOf(p.variety) === 'heirloom' ? 'base' : p.variety]
+          ? ['seeds', p.crop, p.variety]
           : ['tree-seed', p.crop, 'base'],
       ),
     )
@@ -189,7 +189,7 @@ describe('recipes.table', () => {
     expect(pIn.faces.some(f => f.kind === 'fruit' && TREE_IDS.some(t => t === f.crop))).toBe(true)
   })
 
-  test('Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
+  test('Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (10). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
     const [fruit, green, rotten, ash] = recipesOf('compost-box')
     expect(recipesOf('compost-box').length).toBe(4)
     expect(fruit.inputs[0].kind).toBe('any')
@@ -204,7 +204,7 @@ describe('recipes.table', () => {
     expect(unitsOf(fruit.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.fruit)
     expect(unitsOf(green.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.weed)
     expect(unitsOf(rotten.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.rotten)
-    expect(unitsOf(rotten.inputs[0])).toBe(5)
+    expect(unitsOf(rotten.inputs[0])).toBe(10)
     expect(unitsOf(ash.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.ash)
     expect(fruit.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })
     expect(green.out).toMatchObject({ kind: 'exact', amount: { kind: 'liters', l: COMPOST_LITERS } })

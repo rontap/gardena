@@ -8,7 +8,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.3
+export const PROTOCOL = 2.4
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -362,9 +362,9 @@ export function digestParts(world: World): Record<string, unknown> {
     let s = `${at.col},${at.row}:${c.kind}`
     if (c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead') {
       s += `:${c.plant.crop}:${c.plant.variety}:${q(c.plant.quality)}:${q(c.plant.maturity)}`
-      happiness.push(`${at.col},${at.row}:${c.plant.happiness}`)
+      happiness.push(`${at.col},${at.row}:${q(c.plant.happiness)}`)
     }
-    if (isTilled(c)) soil.push(`${at.col},${at.row}:${c.soil.water}:${c.soil.fertilizer}`)
+    if (isTilled(c)) soil.push(`${at.col},${at.row}:${q(c.soil.water)}:${q(c.soil.fertilizer)}`)
     if (c.kind === 'tree') s += `:${c.variety}`
     if (c.kind === 'silo-seed' || c.kind === 'silo-spray') s += `:re${c.restock ? 1 : 0}`
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
@@ -374,7 +374,7 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
-    if (c.kind === 'necronomicon') s += `:${c.crop}:n${c.cropCount}:f${c.fruit.join('.')}:a${c.ash}:g${c.gold}:d${c.done.join('.')}`
+    if (c.kind === 'necronomicon') s += `:${c.crop}:n${c.cropCount}:f${c.fruit.join('.')}:a${c.ash}:g${c.gold}:m${c.agaric}:t${c.tool ? 1 : 0}:s${c.supper.join('.')}:d${c.done.join('.')}`
     if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump' || c.kind === 'infuser') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
@@ -394,7 +394,7 @@ export function digestParts(world: World): Record<string, unknown> {
   const vehicles = world.vehicles.map(v => ({
     id: v.id,
     kind: v.kind,
-    fuel: v.fuel,
+    fuel: q(v.fuel),
     pose: qVehiclePose(v.pose),
     route: v.route,
     cursor: v.cursor,
@@ -453,17 +453,17 @@ export function digestParts(world: World): Record<string, unknown> {
         filled: a.bins.map(b => b.filled),
       })),
     },
-    bigAcc: world.bigAcc,
+    bigAcc: q(world.bigAcc),
     soil,
     happiness,
     stored: world
       .sources()
       .map(s => {
         const o = originCell(s.base)
-        return `${o.col},${o.row}:${s.water.stored}`
+        return `${o.col},${o.row}:${q(s.water.stored)}`
       })
       .sort(),
-    pumpLiters: world.pumpLiters,
+    pumpLiters: q(world.pumpLiters),
     job: world.job,
     points: world.points,
     nextVehicleId: world.nextVehicleId,

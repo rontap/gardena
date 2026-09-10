@@ -277,6 +277,7 @@ import skillOpen24 from '../../assets/skills/skill-open-24.svg?raw'
 import skillJam from '../../assets/skills/skill-jam.svg?raw'
 import skillClearance from '../../assets/skills/skill-clearance.svg?raw'
 import skillLucky from '../../assets/skills/skill-lucky.svg?raw'
+import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
 import statReputation from '../../assets/skills/stat-reputation.svg?raw'
 import statLuck from '../../assets/skills/stat-luck.svg?raw'
@@ -972,6 +973,9 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   jam: svgInner(skillJam),
   clearance: svgInner(skillClearance),
   lucky: svgInner(skillLucky),
+  'lucky-husband': svgInner(skillLucky),
+  'lucky-daughter': svgInner(skillLucky),
+  'seed-bank': svgInner(skillSeedBank),
 }
 
 export function fruitInner(crop: GrownCrop): string {

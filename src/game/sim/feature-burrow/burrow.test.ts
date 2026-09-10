@@ -28,6 +28,7 @@ import { catalogEntries } from '../../defs/catalog.ts'
 import { chunkOf, chunkRect, frontOf, isReserved } from '../building.ts'
 import { onCell } from '../drop.ts'
 import { luckOf } from '../family.ts'
+import { BURROW_DAY_SALT } from './burrow.ts'
 import { dump, parse } from '../feature-save/save.ts'
 import { seedPair } from '../feature-field/field.helpers.ts'
 import { compostValue, furnaceValue, makePickaxe, makeShovel, toolName } from '../item.ts'
@@ -81,7 +82,7 @@ describe('burrow.start', () => {
 
 describe('burrow.day', () => {
   test('Seam, after stipend and tax, before field tick: `+1` per owned chunk on an eligible cell, or skip if none. Eligible: owned, untilled, not very-hard, cover bare or grass, not reserved, no drop. Grass cover is replaced.', () => {
-    const w = new World(1)
+    const w = new World(2)
     const n0 = w.burrows.size
     w.endDay()
     w.tick(DT_MAX)
@@ -89,7 +90,7 @@ describe('burrow.day', () => {
     expect(w.recaps).toHaveLength(1)
     expect(w.burrows.size).toBe(n0 + 1)
 
-    const two = new World(1)
+    const two = new World(2)
     two.done.add('unlock-expand')
     two.money = 999
     two.expand({ cx: 1, cy: 0 })
@@ -98,7 +99,7 @@ describe('burrow.day', () => {
     two.tick(DT_MAX)
     expect(two.burrows.size).toBe(n1 + 2)
 
-    const skip = new World(1)
+    const skip = new World(2)
     skip.forEachCell((at, c) => {
       if (c.kind === 'untilled' && c.cover.kind !== 'burrow') {
         skip.paving.set(`${at.col},${at.row}`, 'paved')
@@ -109,7 +110,7 @@ describe('burrow.day', () => {
     skip.tick(DT_MAX)
     expect(skip.burrows.size).toBe(nSkip)
 
-    const grass = new World(1)
+    const grass = new World(2)
     let keep: { col: number; row: number } | undefined
     grass.forEachCell((at, c) => {
       if (keep !== undefined) return
@@ -322,18 +323,24 @@ describe('burrow.loot', () => {
     expect(burrowDayChance(3)).toBeGreaterThan(burrowDayChance(0))
     expect(burrowDayChance(LUCK_CAP)).toBeLessThan(1)
 
-    let minted = 0
-    let skipped = 0
-    for (let seed = 1; seed <= 60; seed++) {
+    const rolls = Array.from({ length: 60 }, (_, i) => {
+      const seed = i + 1
+      const w = new World(seed)
+      const id = w.owned[0]
+      return { seed, mints: w.rng.stream('burrow').at(id.cx, id.cy, 2, BURROW_DAY_SALT) < burrowDayChance(0) }
+    })
+    const mints = rolls.find(r => r.mints)
+    const skips = rolls.find(r => !r.mints)
+    if (mints === undefined || skips === undefined) throw new Error('seed')
+
+    const seam = (seed: number) => {
       const w = new World(seed)
       const before = w.burrows.size
-      w.tick(DT_MAX)
       while (w.clock.day === 1) w.tick(DT_MAX)
-      if (w.burrows.size > before) minted += 1
-      else skipped += 1
+      return w.burrows.size > before
     }
-    expect(minted).toBeGreaterThan(0)
-    expect(skipped).toBeGreaterThan(0)
+    expect(seam(mints.seed)).toBe(true)
+    expect(seam(skips.seed)).toBe(false)
   })
 })
 
@@ -407,12 +414,14 @@ describe('burrow.treasure', () => {
 })
 
 describe('family.lucky', () => {
-  test("`PlayerSkillId` `lucky` maxTier 3, gate none, effect `{ kind: 'lucky' }`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip.", () => {
+  test("One `lucky` per member, each maxTier 1. Luck is `min(LUCK_CAP, the three tiers summed)`. Not a World field. No HUD chip.", () => {
     const w = new World(1)
     expect('luck' in w).toBe(false)
     expect(luckOf(w)).toBe(0)
     w.unlockAllSkills()
-    expect(w.skillTier('lucky')).toBe(3)
+    expect(w.skillTier('lucky')).toBe(1)
+    expect(w.skillTier('lucky-husband')).toBe(1)
+    expect(w.skillTier('lucky-daughter')).toBe(1)
     expect(luckOf(w)).toBe(LUCK_CAP < 3 ? LUCK_CAP : 3)
   })
 })

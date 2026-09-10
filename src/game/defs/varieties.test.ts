@@ -5,16 +5,58 @@ import { statsOf } from '../sim/modifiers.ts'
 import { Plant } from '../sim/plant.ts'
 import { Tree } from '../sim/building.ts'
 import {
+  CROSSBREED_VAR_BONUS,
+  EXPERIENCED_VAR_BONUS,
+  MAX_QUALITY_VAR_IMPACT,
+  nextVariety,
   PURPOSE_MUL,
   purposeMul,
   qualityMul,
   tierOf,
   VARIETIES,
   VARIETY,
+  varietyChance,
   varietyFits,
   type Purpose,
   type VarietyId,
 } from './varieties.ts'
+
+describe('variety.ladder', () => {
+  test("`nextVariety` is the rung above: `'base'` to that crop's `variant`, or straight to its `heirloom` when it has no `variant`; `variant` to `heirloom`. `heirloom` and a crop that lists only `'base'` have no next rung.", () => {
+    expect(nextVariety('potato', 'base')).toBe('bintje')
+    expect(nextVariety('potato', 'bintje')).toBeUndefined()
+    expect(nextVariety('tomato', 'base')).toBe('green-zebra')
+    expect(nextVariety('tomato', 'green-zebra')).toBe('san-marzano')
+    expect(nextVariety('tomato', 'san-marzano')).toBeUndefined()
+    expect(nextVariety('raspberry', 'base')).toBe('black-raspberry')
+    expect(nextVariety('cherry', 'base')).toBe('bing')
+    expect(nextVariety('carrot', 'base')).toBeUndefined()
+    expect(nextVariety('vanilla', 'base')).toBeUndefined()
+    expect(nextVariety('chilli', 'base')).toBeUndefined()
+    expect(nextVariety('sugar-cane', 'base')).toBeUndefined()
+    const crops = [...ANNUAL_IDS, ...TREE_IDS] as CropId[]
+    for (const crop of crops) {
+      const next = nextVariety(crop, 'base')
+      if (next !== undefined) expect(VARIETIES[crop]).toContain(next)
+      for (const v of VARIETIES[crop]) {
+        if (tierOf(v) === 'heirloom') expect(nextVariety(crop, v)).toBeUndefined()
+      }
+    }
+  })
+
+  test('`varietyChance` is `quality squared x MAX_QUALITY_VAR_IMPACT`, plus `EXPERIENCED_VAR_BONUS` when the player owns that crop skill, plus `CROSSBREED_VAR_BONUS` when a different Variety of that crop is in reach. Nothing else moves it.', () => {
+    expect(varietyChance(0, false, false)).toBe(0)
+    expect(varietyChance(1, false, false)).toBeCloseTo(MAX_QUALITY_VAR_IMPACT, 12)
+    expect(varietyChance(0.5, false, false)).toBeCloseTo(0.25 * MAX_QUALITY_VAR_IMPACT, 12)
+    expect(varietyChance(0, true, false)).toBeCloseTo(EXPERIENCED_VAR_BONUS, 12)
+    expect(varietyChance(0, false, true)).toBeCloseTo(CROSSBREED_VAR_BONUS, 12)
+    expect(varietyChance(1, true, true)).toBeCloseTo(
+      MAX_QUALITY_VAR_IMPACT + EXPERIENCED_VAR_BONUS + CROSSBREED_VAR_BONUS,
+      12,
+    )
+    expect(varietyChance(1, true, true)).toBeGreaterThan(varietyChance(1, true, false))
+  })
+})
 
 describe('variety.identity', () => {
   test("`Plant.variety`, `Tree.variety`, and `variety` on seeds, fruit, grafts are required `VarietyId`. Illegal: optional `variety`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. `'base'` is legal on every `CropId`. Set at plant. Graft is the only later change.", () => {

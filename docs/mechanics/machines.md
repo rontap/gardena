@@ -149,10 +149,9 @@ Mill ignores freshness. Quality and path rating ride the output. Grass has no cr
 
 1×1 hopper. First accepted dump locks `crop` + `variety`. Later dumps must match both. `units === 0` → `crop: 'none'`. Need 1 fruit including sugar-cane and tree fruit. Not sugar liters.
 
-The grinder returns the plainest thing that fruit can be.
+The grinder returns the seed of what went in. It is how a variety line widens.
 
-- Annual `'base'` or `variant` fruit → seeds of the same crop and variety.
-- Annual `heirloom` fruit → seeds of the same crop at `'base'`.
+- Annual fruit → seeds of the same crop and variety, `heirloom` included.
 - Tree fruit → `{ kind: 'tree-seed' }` of that species at `'base'`, whatever went in.
 
 Seed quality equals the fruit's quality in every case. Refuse list loses tree fruit and keeps sugar. This is the only way to make a tree seed outside a contract prize.
@@ -328,11 +327,11 @@ Ash into compost: `COMPOST_VALUE.ash` × count. Compost still counts `COMPOST_NE
 
 ## furnaceMul
 
-Chebyshev ≤ `FURNACE_REACH` between any cell of a **working** furnace and any cell of the target footprint (derived 7 wide × 8 tall from a 1×2). Count `n` working furnaces in reach, **including the target** if it is a working furnace. `FURNACE_REACH` `FURNACE_HASTE` — preference.
+Chebyshev ≤ `FURNACE_REACH` between any cell of a **working** furnace and any cell of the target footprint (derived 7 wide × 8 tall from a 1×2). Count `n` working furnaces in reach, **never the target itself**. `FURNACE_REACH` `FURNACE_HASTE` — preference.
 
 `furnaceMul = 1 + FURNACE_HASTE × n`. Progress `+= dt × machineMul() × furnaceMul / work` on mill, jam, grinder. Progress `+= dt × furnaceMul / fixed` on still, compost-box, furnace, infuser. Barrel age unchanged. Station progress is `fixed`, no `furnaceMul`. Catalog `clockText` stays nominal seconds. Live `left` uses the tick rate.
 
-A lone working furnace covers itself. Two covering furnaces on a mill: `n = 2`. Empty / filling / `inn === 1` / waiting on output (`progress >= 1`): that furnace is not in `n`.
+A lone working furnace has `n = 0` and runs at its own rate; a furnace is hasted only by other furnaces in reach. Two covering furnaces on a mill: `n = 2`. Empty / filling / `inn === 1` / waiting on output (`progress >= 1`): that furnace is not in `n`.
 
 Snapshot the working set at the start of `tickMachines` (after this tick’s `evalSensors`). Two-pass: who would tick, then apply. Compost-box reads that same set from the same loop.
 
@@ -353,7 +352,7 @@ Player `machinery`: valve 0.3 s, mill tick, jam tick, grinder tick `÷ (1 + 0.05
 
 `MachineId` — `mill` `jam` `still` `barrel` `grinder` `compost-box` `furnace` `station` `infuser`. Freezer and chest are storage, not machines. `machineOfSku('buy-furnace')` is `furnace`. `machineOfSku('buy-research-station')` is `station`. `machineOfSku('buy-infuser')` is `infuser`. `CraftCell` += `Furnace` `ResearchStation` `Infuser`.
 
-`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (5), ash `COMPOST_NEED / COMPOST_VALUE.ash`. Furnace live `have` / `need` are furnace units (`FURNACE_NEED`). List rows show item counts `FURNACE_NEED / FURNACE_VALUE.*`.
+`Amount` — `units` | `liters` | `waste`. Sugar and still water are liters. The box still fills on `COMPOST_NEED` waste (`COMPOST_VALUE`, not items). Display rows use the item counts that make one batch: fruit `COMPOST_NEED / COMPOST_VALUE.fruit`, weed/grass `COMPOST_NEED / COMPOST_VALUE.weed`, rotten `COMPOST_NEED / COMPOST_VALUE.rotten` (10), ash `COMPOST_NEED / COMPOST_VALUE.ash`. Furnace live `have` / `need` are furnace units (`FURNACE_NEED`). List rows show item counts `FURNACE_NEED / FURNACE_VALUE.*`.
 
 `Ingredient` — `one` | `any`. `any` is the set-input rows: mixed still, grinder plain (`'base'` / `heirloom` annuals plus tree fruit), grinder annual `variant`, compost fruit (any `CropId`), compost green (weed, grass), compost rotten (`CropClass` faces), furnace green / fruit / spirit, infuser reagent (flakes | vanilla-extract).
 
@@ -459,7 +458,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.recipe-water` — Every still recipe carries one `liters` input of `STILL_WATER` on the `water` face and `STILL_CAP` fruit.
 
-`machines.recipe-compost` — Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
+`machines.recipe-compost` — Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (10). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.
 
 `machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not. `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace progress; not barrel, not station. Infuser is `fixed`, not `work`. Catalog `clockText` stays nominal.
 
@@ -469,7 +468,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.furnace-lock` — First dump locks `'ash' | 'bread'`. `units === 0` → `'none'`. No mix. — [[mechanics/infusion]] `infusion.furnace`
 
-`machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n` including self. Still, compost, infuser take it. Barrel and station do not. Waiting / empty / gated do not count.
+`machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n`, the target itself never in `n`. Still, compost, infuser take it. Barrel and station do not. Waiting / empty / gated do not count.
 
 `machines.furnace-io` — West pull, east push on the south row. Pads, `in` top, `out` bottom high iff `units === 0`. Signal ports stay origin. South cell no port. Origin row is not chest I/O.
 

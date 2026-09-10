@@ -206,7 +206,7 @@ export function catalogEntries(): CatalogEntry[] {
     {
       id: 'rotten',
       title: m.catalog_title_rotten(),
-      icon: { kind: 'rotten', cls: 'fruit', count: 1 },
+      icon: { kind: 'rotten', cls: 'fruit', count: 1, createdAt: 0 },
       blurb: m.catalog_rotten({ n: COMPOST_VALUE.rotten }),
     },
     {

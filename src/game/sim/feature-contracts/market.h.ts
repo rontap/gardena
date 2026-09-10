@@ -109,6 +109,7 @@ export type HistoryEntry = {
   company: CompanyId
   stars: Stars
   day: number
+  rep: number
   outcome: Outcome
 }
 

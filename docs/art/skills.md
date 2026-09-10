@@ -60,7 +60,7 @@ One copy of each shared symbol; icons composite it.
 - **Money** — every coin is `ui-coin.svg` embedded verbatim under a `translate` (and `scale(2)` in
   `skill-saleswoman` `skill-lucky`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
   `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom` `skill-lucky`.
-- **Lucky** — `skill-lucky.svg` is `ui-coin.svg` at `scale(2)` under a clover mark in the `ui-quality.svg`
+- **Lucky** — `skill-lucky.svg` is the `stat-luck.svg` four-leaf clover, no coin. All three `lucky` skills draw it. Was: `ui-coin.svg` at `scale(2)` under a clover mark in the `ui-quality.svg`
   language (`leaf` fill). One icon all tiers. Do not redraw the Coin.
 - `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
 - **Haggling** — `skill-contracts.svg`. Do not redraw.

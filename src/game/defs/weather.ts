@@ -24,6 +24,10 @@ export const PUMP_DAY_COST = 40
 export const WEATHER_THROUGH_DAY = 100
 
 export const PUMP_COST_PER_L = PUMP_DAY_COST / (SOURCE.pump.rate * DAY_SECONDS)
+
+export function pumpBill(liters: number, costMul: number): number {
+  return Math.round(liters * PUMP_COST_PER_L * costMul * 100) / 100
+}
 export const RAIN_SOAK_TICK = RAIN_SOAK_DAY / (DAY_SECONDS / BIG_TICK)
 export const FLOOD_SOAK_TICK = FLOOD_SOAK_DAY / (DAY_SECONDS / BIG_TICK)
 export const DRY_EVAP_TICK = DRY_EVAP_DAY / (DAY_SECONDS / BIG_TICK)

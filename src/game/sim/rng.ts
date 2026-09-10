@@ -17,7 +17,17 @@ function streamSeed(seed: number, id: StreamId): number {
   return h
 }
 
-export type SpatialId = 'gen' | 'weed' | 'grass' | 'tree' | 'skill' | 'grind' | 'contract' | 'weather' | 'burrow'
+export type SpatialId =
+  | 'gen'
+  | 'weed'
+  | 'grass'
+  | 'tree'
+  | 'skill'
+  | 'grind'
+  | 'contract'
+  | 'weather'
+  | 'burrow'
+  | 'variety'
 export type SeqId = 'fruit'
 export type StreamId = SpatialId | SeqId
 export type Stream = Spatial | Seq

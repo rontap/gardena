@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/mechanics/enclosure.md",
+                "file": "src/game/ui/changelog.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "enclosure"
+              "title": "changelog"
             }
           }
         ]
@@ -190,6 +190,9 @@
   },
   "active": "8be52ee30d7dde7c",
   "lastOpenFiles": [
+    "docs/GLOBAL_VERSION.md",
+    "docs/e2e_test.md",
+    "docs/mechanics/enclosure.md",
     "src/paraglide/messages/en.js",
     "src/paraglide/messages/en.d.ts",
     "dist/assets/xychartDiagram-XJAZEDNM-qgYPQOZD.js",
@@ -200,7 +203,6 @@
     "dist/assets/chunk-ZQN7UHIL-Ddsmy5lP.js",
     "dist/assets/chunk-ZNLK7HRR-BK7VUFGq.js",
     "dist/assets/chunk-Z6V44ARX-FaKoxY7f.js",
-    "dist/assets/chunk-YDMLL4PJ-BKXNUUFO.js",
     "docs/ui/necronomicon.md",
     "docs/mechanics/necronomicon.md",
     "src/assets/props/prop-necronomicon.svg",
@@ -226,7 +228,6 @@
     "test-results/sensors-delete-sensor-then-fence-remains/error-context.md",
     "coverage/favicon.png",
     "CLAUDE.md",
-    "docs/mechanics/enclosure.md",
     "src/assets/ui/ui-notice-rail.svg",
     "docs/ui/notices.md",
     "docs/mechanics/saturation.md",
@@ -234,7 +235,6 @@
     "docs/architecture/ai-gameplay-api.md",
     "docs/plans/2.6.0.md",
     "docs/standards/user-facing-text.md",
-    "docs/agents/game-text-writer.md",
-    "docs/art/beta-5.md"
+    "docs/agents/game-text-writer.md"
   ]
 }

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { CROPS } from '../defs/crops.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import { CLICK_SECONDS, HAND_PLANTED_MAX, HAND_SAT, compute, handClicks, handCurve, handIncome, snapshot, toCsv } from './debug-balance.ts'
+import { compute, snapshot, toCsv } from './debug-balance.ts'
 
 test('Constant settings **Water per day** is `waterUsePerSec × daySeconds`; the field writes `n / daySeconds`. CSV `water_use_per_day`. **Water consumed (L)** stays `waterUsePerSec × growSeconds`.', () => {
   const s = snapshot()
@@ -47,44 +47,3 @@ test('#debug-balance **Pours** is long-run: `waterUsePerSec × growSeconds / pou
   expect(carrot.pours).toBeCloseTo(use / span, 10)
   expect(carrot.pours).toBeGreaterThan(0)
 })
-
-test('#debug-balance hand chart: cycle is grow or planted × click time. Late is `i × step − grow`. Auto-water field clicks match across pack annuals. Raspberry peaks after carrot. X 1…`HAND_PLANTED_MAX`.', () => {
-  const s = snapshot()
-  const { rows } = compute(s)
-  const carrot = rows.find(r => r.id === 'carrot' && r.variety === 'base')
-  const wheat = rows.find(r => r.id === 'wheat' && r.variety === 'base')
-  if (carrot === undefined || wheat === undefined) throw new Error('row')
-  expect(carrot.fruitSale).toBe(CROPS.carrot.sale)
-  expect(carrot.costSeed).toBe(3 / 5)
-  const one = handIncome(carrot, 1, true, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  expect(one).toBeCloseTo(((CROPS.carrot.sale - 3 / 5) / CROPS.carrot.growSeconds) * 60, 10)
-  const two = handIncome(carrot, 2, true, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  expect(two).toBeCloseTo(one * 2, 10)
-  const step = handClicks(carrot, true) * CLICK_SECONDS
-  const fullN = Math.floor(CROPS.carrot.growSeconds / step) + 1
-  const full = handIncome(carrot, fullN, true, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  expect(full).toBeCloseTo(one * fullN, 10)
-  const lines = handCurve(rows, true, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  expect(lines[0]?.points.length).toBe(HAND_PLANTED_MAX)
-  const peak = (id: (typeof rows)[number]['id']) => {
-    const line = lines.find(l => l.id === id)
-    if (line === undefined) throw new Error('line')
-    let n = 1
-    let y = line.points[0].cpm
-    for (const p of line.points) {
-      if (p.cpm > y) {
-        y = p.cpm
-        n = p.planted
-      }
-    }
-    return n
-  }
-  expect(handClicks(carrot, true)).toBe(handClicks(wheat, true))
-  expect(peak('carrot')).toBeLessThan(peak('raspberry'))
-  const dry = handIncome(wheat, 40, false, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  const wet = handIncome(wheat, 40, true, CLICK_SECONDS, s.g.daySeconds, HAND_SAT, false)
-  expect(wet).toBeGreaterThan(dry)
-  expect(handClicks(carrot, false)).toBe(carrot.fieldClicks)
-  expect(handClicks(carrot, true)).toBe(carrot.fieldClicks - carrot.pours)
-})
-

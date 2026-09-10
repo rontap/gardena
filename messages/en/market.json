@@ -11,6 +11,7 @@
   "market_sell_all": "Sell all - ",
   "market_sell_all_label": "Sell all",
   "market_reputation": "Reputation",
+  "market_rep_change": "{sign}{n} Reputation",
   "market_no_running": "No contracts running.",
   "market_cancel": "Cancel",
   "market_cancelling": "Cancelling this offer will incur a ",

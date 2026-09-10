@@ -119,6 +119,7 @@ export type PlayerSkillId =
   | 'boots'
   | 'bulk-up'
   | 'lucky'
+  | 'seed-bank'
   | 'driving-classes'
   | 'tending'
   | 'better-potato'
@@ -140,6 +141,7 @@ export type HusbandSkillId =
   | 'water-study'
   | 'land-study'
   | 'inherit-land'
+  | 'lucky-husband'
 
 export type DaughterSkillId =
   | 'saleswoman'
@@ -151,6 +153,7 @@ export type DaughterSkillId =
   | 'open-24'
   | 'jam'
   | 'clearance'
+  | 'lucky-daughter'
 
 export type SkillId = PlayerSkillId | HusbandSkillId | DaughterSkillId
 
@@ -260,7 +263,9 @@ export type SkuId =
   | 'buy-sorter'
   | 'buy-necronomicon'
 
-export type PageId = 'crop' | 'early-fruit' | 'ash' | 'gold'
+export type PageId = 'crop' | 'early-fruit' | 'ash' | 'gold' | 'agaric' | 'tool' | 'supper'
+
+export type SupperId = 'palinka' | 'wine' | 'bread'
 
 export type Grandma = 'well' | 'ill' | 'care' | 'gone' | 'told'
 

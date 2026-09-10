@@ -50,6 +50,7 @@ Line-oriented subset, 1:1 with those types. UTF-8. No frontmatter. No HTML. No `
 - Child at 2 spaces, **with** kind emoji → nested `Change` (encounter order). Legal only under `major-feature`. Else throw.
 - Nested notes at 4 spaces under that nested change. A 4-space kind emoji throws. Further nest throws.
 - List marker is `- ` only. Indent is 0 / 2 / 4 spaces only. Not tabs.
+- A line whose trimmed end is `NOTE_SIGN` (`- Aron`) is prose, whatever else it holds: it is read before every other rule, so emphasis, a link, a leading space or a stray marker in it is not an error. In the summary block it joins the summary, trimmed. Anywhere else it is passed over. A line signed with any other name is not this rule and throws as before.
 - Blank lines ignored. Other line shapes throw.
 
 Parser dialect stays this. Ill-formed wording is not a dialect error.
@@ -58,7 +59,7 @@ Parser dialect stays this. Ill-formed wording is not a dialect error.
 
 `parseChangelog` is total: well-formed `src` → `readonly Release[]`. Ill-formed → throw `ChangelogParseError`. No `??` / `||` recovery. No default, no empty array, no skip.
 
-Throw (named `ChangelogParseError`): empty file; missing `id` / `name` / `summary`; empty `text` / empty note; unknown emoji; nested `Change` under non-`major-feature`; duplicate `id`; extra constructs (frontmatter, HTML, `##`, links, emphasis, wrong indent, other markers).
+Throw (named `ChangelogParseError`): empty file; missing `id` / `name` / `summary`; empty `text` / empty note; unknown emoji; nested `Change` under non-`major-feature`; duplicate `id`; extra constructs (frontmatter, HTML, `##`, links, emphasis, wrong indent, other markers). A `NOTE_SIGN` line is none of those — a release whose only summary line is signed still has a summary.
 
 Ill-formed *wording* does not throw at module load.
 

@@ -68,6 +68,8 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.hello` — `hello` when `seats.length === 4` → `reject: full`. Away occupies a slot. Rejoin is the same `playerId`.
 
+`mp.float` — `Math.sin/cos/atan2/hypot/exp` differ by an ULP between engines, so every continuously integrated float in the digest is quantised to four decimals before hashing, and the seam's pump bill is rounded to cents so that drift never reaches `money`. A raw float in the digest is a resync storm on two machines and looks clean on one — [[architecture/net]] `net.digest`.
+
 `mp.mismatch` — Digest mismatch: pause, `resync`, Ready, unpause. Two mismatches within two digest periods → that guest `bye: kicked`. Host continues. Host `rebaseAndSnapshotAll(except?)` before every snapshot, so the resync converges for every seated guest — [[architecture/net]] `net.snapshot`.
 
 `mp.stride` — `Seat.stride`. Not driver, `presence === 'in'`: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.

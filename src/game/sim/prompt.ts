@@ -54,7 +54,7 @@ import { COMPOST_NEED } from '../defs/items.ts'
 import { dest } from './queue.ts'
 import { openClaim } from './feature-necronomicon/necronomicon.ts'
 import { fillable } from './nets.ts'
-import { seedPair, waterable } from './feature-field/field.helpers.ts'
+import { plotPick, seedPair, waterable } from './feature-field/field.helpers.ts'
 import type { Intent, TaskName, World } from './world.ts'
 
 export const NOT_OWNED = m.prompt_not_owned()
@@ -835,6 +835,14 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (w.act.hand.kind === 'empty') return intent(m.prompt_pick_up(), { act: 'pickup', at })
     if (w.act.hand.item.kind === kind) {
       if (handFullFor(w, { kind, count: 1 })) return { kind: 'blocked', text: HAND_FULL }
+      return intent(m.prompt_pick_up(), { act: 'pickup', at })
+    }
+  }
+  const picked = plotPick(cell, w.clock.day)
+  if (picked !== undefined) {
+    if (w.act.hand.kind === 'empty') return intent(m.prompt_pick_up(), { act: 'pickup', at })
+    if (w.act.hand.item.kind === picked.kind) {
+      if (handFullFor(w, picked)) return { kind: 'blocked', text: HAND_FULL }
       return intent(m.prompt_pick_up(), { act: 'pickup', at })
     }
   }

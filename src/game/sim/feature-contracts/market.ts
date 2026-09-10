@@ -631,9 +631,11 @@ export function emptyContracts(): Contracts {
   return { active: [], takenToday: [], history: [], book: emptyBook(), rep: 0, repDay: 0 }
 }
 
-export function addRep(w: World, n: number): void {
-  const next = w.contracts.rep + n
+export function addRep(w: World, n: number): number {
+  const was = w.contracts.rep
+  const next = was + n
   w.contracts.rep = next < 0 ? 0 : next > REP_MAX ? REP_MAX : next
+  return w.contracts.rep - was
 }
 
 function dropActive(w: World, a: Active): void {
@@ -734,13 +736,14 @@ function resolveDone(w: World, a: Active): void {
   w.contracts.book[a.offer.company].done += 1
   const need = a.bins.reduce((n, b) => n + b.demand.amount, 0)
   const infused = a.bins.reduce((n, b) => n + b.infusedFilled, 0)
-  addRep(w, REP_DONE[a.offer.stars] * (1 + 0.25 * infused / need))
+  const rep = addRep(w, REP_DONE[a.offer.stars] * (1 + 0.25 * infused / need))
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,
     company: a.offer.company,
     stars: a.offer.stars,
     day: w.clock.day,
+    rep,
     outcome: { kind: 'done', paid: paidN, prize },
   })
   w.ping()
@@ -751,13 +754,14 @@ function resolveMiss(w: World, a: Active): void {
   const penalty = missPenalty(a)
   w.money += sold - penalty
   w.contracts.book[a.offer.company].missed += 1
-  addRep(w, -REP_LOST[a.offer.stars])
+  const rep = addRep(w, -REP_LOST[a.offer.stars])
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,
     company: a.offer.company,
     stars: a.offer.stars,
     day: w.clock.day,
+    rep,
     outcome: { kind: 'missed', sold, penalty },
   })
   w.ping()
@@ -804,13 +808,14 @@ export function cancelContractBody(w: World, c: ContractId): void {
   const sold = dumpFilled(w, a)
   const fee = cancelFee(a, w.nowDay())
   w.money += sold - fee
-  addRep(w, -REP_LOST[a.offer.stars])
+  const rep = addRep(w, -REP_LOST[a.offer.stars])
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,
     company: a.offer.company,
     stars: a.offer.stars,
     day: w.clock.day,
+    rep,
     outcome: { kind: 'cancelled', sold, fee },
   })
   w.ping()

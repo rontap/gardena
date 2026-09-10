@@ -1,7 +1,7 @@
-import { FREEZER_ROT_MUL } from '../defs/items.ts'
+import { FREEZER_ROT_MUL, ROTTEN_GROUND_DAYS } from '../defs/items.ts'
 import { jamRotMul } from '../defs/skills.ts'
 import { CROPS } from '../defs/crops.ts'
-import { PUMP_COST_PER_L } from '../defs/weather.ts'
+import { pumpBill } from '../defs/weather.ts'
 import { statsOf } from './modifiers.ts'
 import { tickButton } from './sensor.ts'
 import { BIG_TICK } from './soil.ts'
@@ -60,7 +60,7 @@ export function tickFreshness(world: World, dt: number): void {
     if (item.kind !== 'fruit') return item
     rot(item, mul)
     if (item.freshness > 0) return item
-    return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count }
+    return { kind: 'rotten', cls: CROPS[item.crop].cls, count: item.count, createdAt: world.clock.day }
   }
   const slots = (mul: number) => (s: Slot) => {
     if (s.kind !== 'hold') return
@@ -87,6 +87,15 @@ export function tickFreshness(world: World, dt: number): void {
   world.trailers.forEach(t => {
     if (t.kind === 'harvest') t.slots.forEach(open)
   })
+}
+
+export function clearOldRotten(world: World): void {
+  const keep = world.drops.filter(
+    d => d.item.kind !== 'rotten' || world.clock.day - d.item.createdAt < ROTTEN_GROUND_DAYS,
+  )
+  if (keep.length === world.drops.length) return
+  world.drops.length = 0
+  keep.forEach(d => world.drops.push(d))
 }
 
 export function tickBig(world: World, dt: number): void {
@@ -141,9 +150,10 @@ export function tickWorld(world: World, dt: number): void {
     world.money += stipend
     const tax = world.tax()
     world.money -= tax
-    const bill = world.pumpLiters * PUMP_COST_PER_L * pumpCostMul(world.weather(world.clock.day - 1))
+    const bill = pumpBill(world.pumpLiters, pumpCostMul(world.weather(world.clock.day - 1)))
     world.money -= bill
     world.pumpLiters = 0
+    clearOldRotten(world)
     burrow.mintSeam(world)
     field.tickTreesSeam(world)
     advanceGrandma(world, world.clock.day - 1)

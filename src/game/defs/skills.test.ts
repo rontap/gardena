@@ -72,18 +72,26 @@ describe('skills i18n', () => {
 })
 
 describe('family.lucky', () => {
-  test("`PlayerSkillId` `lucky` maxTier 3, gate none, effect `{ kind: 'lucky' }`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip.", () => {
-    expect(SKILLS.lucky.member).toBe('player')
-    expect(SKILLS.lucky.maxTier).toBe(3)
-    expect(SKILLS.lucky.gate).toEqual({ kind: 'none' })
-    expect(SKILLS.lucky.effect).toEqual({ kind: 'lucky' })
+  test("`lucky` `lucky-husband` `lucky-daughter`, one per member, each maxTier 1, gate none, effect `{ kind: 'lucky' }`. Luck is `min(LUCK_CAP, the three tiers summed)`. Not a World field. No HUD chip.", () => {
+    const rows = [
+      ['lucky', 'player'],
+      ['lucky-husband', 'husband'],
+      ['lucky-daughter', 'daughter'],
+    ] as const
+    rows.forEach(([id, member]) => {
+      expect(SKILLS[id].member).toBe(member)
+      expect(SKILLS[id].maxTier).toBe(1)
+      expect(SKILLS[id].gate).toEqual({ kind: 'none' })
+      expect(SKILLS[id].effect).toEqual({ kind: 'lucky' })
+    })
     const w = new World(1)
     expect('luck' in w).toBe(false)
     expect(luckOf(w)).toBe(0)
-    w.family.player.owned.set('lucky', 2)
-    expect(luckOf(w)).toBe(2)
-    w.family.player.owned.set('lucky', 3)
-    expect(luckOf(w)).toBe(LUCK_CAP < 3 ? LUCK_CAP : 3)
+    w.family.player.owned.set('lucky', 1)
+    expect(luckOf(w)).toBe(1)
+    w.family.husband.owned.set('lucky-husband', 1)
+    w.family.daughter.owned.set('lucky-daughter', 1)
+    expect(luckOf(w)).toBe(3)
     w.family.player.owned.set('lucky', 99)
     expect(luckOf(w)).toBe(LUCK_CAP)
   })

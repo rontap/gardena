@@ -635,7 +635,7 @@ describe('saturation', () => {
     const refused = new World(1)
     refused.seats[0].actor.x = PAD.col + 0.5
     refused.seats[0].actor.y = PAD.row + 0.5
-    refused.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 4 } }
+    refused.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 4, createdAt: 1 } }
     refused.enqueue({ act: 'consign' })
     refused.tick(DT_MAX)
     expect(refused.clearance).toBe(0)
@@ -644,7 +644,7 @@ describe('saturation', () => {
     c.family.daughter.owned.set('clearance', 1)
     c.seats[0].actor.x = PAD.col + 0.5
     c.seats[0].actor.y = PAD.row + 0.5
-    c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10 } }
+    c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10, createdAt: 1 } }
     c.enqueue({ act: 'consign' })
     c.tick(DT_MAX)
     expect(c.clearance).toBe(10)

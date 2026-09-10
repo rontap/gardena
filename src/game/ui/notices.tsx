@@ -50,7 +50,7 @@ function faceInner(face: NoticeFace): string {
   if (face.kind === 'harvest') return itemInner({ kind: 'sensor-harvest' })
   if (face.kind === 'water-system') return itemInner({ kind: 'water-system' })
   if (face.kind === 'dead') return itemInner({ kind: 'dead', cls: face.cls, count: 1 })
-  if (face.kind === 'rotten') return itemInner({ kind: 'rotten', cls: face.cls, count: 1 })
+  if (face.kind === 'rotten') return itemInner({ kind: 'rotten', cls: face.cls, count: 1, createdAt: 0 })
   if (face.kind === 'research') return itemInner({ kind: 'station' })
   if (face.kind === 'points') return SKILL_POINT
   if (face.kind === 'weed') return itemInner({ kind: 'weed', count: 1 })

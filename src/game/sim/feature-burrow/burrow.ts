@@ -81,7 +81,7 @@ const SEED_HEIRLOOM: readonly { crop: SeedCrop; variety: VarietyId }[] = [
   { crop: 'grape', variety: 'keknyelu' },
 ]
 const TOOLS: readonly ToolId[] = ['better-shovel', 'better-pickaxe', 'axe']
-const BURROW_DAY_SALT = 9
+export const BURROW_DAY_SALT = 9
 
 export function doorR(col: number, row: number): number {
   return Math.hypot(col + 0.5 - (DOOR.col + 0.5), row + 0.5 - (DOOR.row + 0.5))

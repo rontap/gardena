@@ -1,6 +1,6 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
-import { ChangelogParseError, parseChangelog, RELEASES, topLineShape } from './changelog.ts'
+import { ChangelogParseError, NOTE_SIGN, parseChangelog, RELEASES, topLineShape } from './changelog.ts'
 
 function throws(src: string) {
   expect(() => parseChangelog(src)).toThrow(ChangelogParseError)
@@ -182,6 +182,23 @@ Summary.
 - ✨ Text
    - note
 `)
+  })
+
+  test('A line ending `- Aron` is prose whatever it holds: it stands as the summary, keeps its text trimmed, and never throws.', () => {
+    const [release] = parseChangelog(`# 1.0 Title\n\n Reworked the Build menu, and **every** building can now be deleted. - Aron \n\n- \u2728 Text\n`)
+    expect(NOTE_SIGN).toBe('- Aron')
+    expect(release.summary).toBe('Reworked the Build menu, and **every** building can now be deleted. - Aron')
+    expect(release.changes).toHaveLength(1)
+  })
+
+  test('A line ending `- Aron` beside a summary joins it, and one among the changes is passed over.', () => {
+    const [release] = parseChangelog(`# 1.0 Title\n\nSummary.\nSecond thoughts - Aron\n\n- \u2728 Text\n loose note - Aron\n- \u{1F41B} Fix\n`)
+    expect(release.summary).toBe('Summary. Second thoughts - Aron')
+    expect(release.changes.map(c => c.kind)).toEqual(['feature', 'bugfix'])
+  })
+
+  test('A line without that ending still throws.', () => {
+    throws(`# 1.0 Title\n\nSummary.\n\n- \u2728 Text\n loose note - Bela\n`)
   })
 
   test('4-space kind emoji throws ChangelogParseError', () => {

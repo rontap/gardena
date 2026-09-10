@@ -51,6 +51,12 @@ function isBlank(line: string): boolean {
   return line === '' || /^ +$/.test(line)
 }
 
+export const NOTE_SIGN = '- Aron'
+
+function isNote(line: string): boolean {
+  return line.trimEnd().endsWith(NOTE_SIGN)
+}
+
 function isExtra(line: string): boolean {
   if (line.startsWith('##')) return true
   if (line.startsWith('---')) return true
@@ -124,6 +130,10 @@ export function parseChangelog(src: string): readonly Release[] {
     skipBlanks()
     if (i >= n) break
     const heading = lines[i]
+    if (isNote(heading)) {
+      i++
+      continue
+    }
     if (heading.includes('\t')) fail('wrong indent')
     if (isExtra(heading)) fail('extra construct')
     if (!heading.startsWith('# ')) fail('extra construct')
@@ -144,6 +154,11 @@ export function parseChangelog(src: string): readonly Release[] {
     const summaryParts: string[] = []
     while (i < n) {
       const line = lines[i]
+      if (isNote(line)) {
+        summaryParts.push(line.trim())
+        i++
+        continue
+      }
       if (line.includes('\t')) fail('wrong indent')
       if (isBlank(line)) break
       if (isExtra(line)) fail('extra construct')
@@ -163,6 +178,10 @@ export function parseChangelog(src: string): readonly Release[] {
     skipBlanks()
     while (i < n) {
       const line = lines[i]
+      if (isNote(line)) {
+        i++
+        continue
+      }
       if (line.includes('\t')) fail('wrong indent')
       if (isBlank(line)) {
         i++

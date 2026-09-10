@@ -200,6 +200,8 @@ A match is a match. No overage bonus. Freshness, variety, quality, and `infused`
 
 `Bin = { demand; filled; infusedFilled }`. `infusedFilled` starts 0.
 
+`HistoryEntry = { id; company; stars; day; rep; outcome }`. `rep` required, the reputation `addRep` actually moved on that outcome — `contracts.rep-line`.
+
 New farm → empty. Load restores what was saved, including part-filled bins. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX`.
 
 ```
@@ -226,11 +228,11 @@ A bin takes a unit iff `Accepts` and `filled < amount`. `{ kind: 'rotten' }` nev
 
 ## Complete
 
-Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. History `{ kind: 'done'; paid; prize }`. Slot freed. Those units never hit the stall.
+Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. History `{ kind: 'done'; paid; prize }` on an entry carrying `rep`. Slot freed. Those units never hit the stall.
 
 ```
 fraction = sum(bin.infusedFilled) / sum(bin.demand.amount)
-addRep(REP_DONE[stars] × (1 + 0.25 × fraction))     // clamp [0, REP_MAX]
+rep = addRep(REP_DONE[stars] × (1 + 0.25 × fraction))   // clamp [0, REP_MAX], returns what it moved
 ```
 
 Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier (0 if absent), and `paid` is that number.
@@ -248,7 +250,7 @@ penalty = offer.penalty * max(PENALTY_FLOOR, 1 - filled / need)
 
 `need` = sum of line amounts. `filled` = sum of `bin.filled`. `filled === need` is completion, never a miss.
 
-Remainders consign into stall (stock + worth). Plain remainders raise `sat` by that clean `V / SAT_DEPTH`. Infused remainders enter infused worth and do not raise `sat`. `money += sold - penalty`. `sold` is those units at the current saturated rate (infused at `mul(sat)`). `book[company].missed += 1`. History `{ kind: 'missed'; sold; penalty }`. Slot freed. Miss does not take the infused reputation mul.
+Remainders consign into stall (stock + worth). Plain remainders raise `sat` by that clean `V / SAT_DEPTH`. Infused remainders enter infused worth and do not raise `sat`. `money += sold - penalty`. `sold` is those units at the current saturated rate (infused at `mul(sat)`). `book[company].missed += 1`. History `{ kind: 'missed'; sold; penalty }` on an entry carrying `rep`, which is negative. Slot freed. Miss does not take the infused reputation mul.
 
 ## Cancel
 
@@ -259,7 +261,7 @@ elapsed = nowDay - (dueDay - offer.days)
 fee     = lerp(CANCEL_MIN * clean, missPenalty(active), clamp(elapsed / offer.days, 0, 1))
 ```
 
-At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at that fill. Delivered units consign + raise `sat` as in Miss. `money += sold - fee`. Not a miss: `book` untouched. History `{ kind: 'cancelled'; sold; fee }`. Slot freed.
+At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at that fill. Delivered units consign + raise `sat` as in Miss. `money += sold - fee`. Not a miss: `book` untouched. History `{ kind: 'cancelled'; sold; fee }` on an entry carrying `rep`, which is negative. Slot freed.
 
 ## Recap
 
@@ -304,6 +306,8 @@ Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; j
 `contracts.demand` — A `Demand` is a plain good match or a group. No minimum. `Lines` never nests.
 
 `contracts.amount` — `amount >= AMOUNT_MIN` on every published offer, and `amount <= FEASIBLE_PER_DAY[good] * days * scale(day)`.
+
+`contracts.rep-line` — `addRep` returns what it actually moved after the `[0, REP_MAX]` clamp, and every `HistoryEntry` stores that number as `rep`. Complete is positive, miss and cancel are `-REP_LOST[stars]`, and a clamp at either end stores the smaller move that really happened. Board, Recap and Command Center read the stored number, never recompute it — [[ui/contracts]].
 
 `contracts.reward` — `reward = clean * (1 + markup)` baked at generation. Saturation at delivery time does not move it.
 

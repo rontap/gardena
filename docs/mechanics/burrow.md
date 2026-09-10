@@ -140,7 +140,7 @@ Item += { kind: 'fly-agaric'; count: number }
 
 `AGARIC_LOOT_COUNT` — preference. Top band only, so the first one arrives late. Art `item-fly-agaric.svg`, cap `fruit-red` over `roof`, spots and stem `house` over `slab`, ink outline — [[art/palette]] [[art/items]]. Almanac Utility.
 
-It does nothing yet. Do not give it a use, a price, or a recipe without a note that owns the use.
+No machine takes it, the Market does not buy it, and it has no price. Its one use is the Necronomicon `agaric` page, which wants `NECRO_AGARIC` of them — [[mechanics/necronomicon]]. Do not give it a second use without a note that owns that use.
 
 ## Luck
 
@@ -172,7 +172,7 @@ Save: Cover arm + treasure on Item. Fields added, no migrate. [[architecture/sav
 
 `burrow.loot` — `lootRoll` as `defs/burrow.ts`. Eleven rows, filter by gate + non-empty pool, then equal chance. Treasure always. Second roll uniform in that row's listed pool. Quality 0. Spatial `burrow.at(col, row, salt)`. Stored at spawn.
 
-`burrow.agaric` — `{ kind: 'fly-agaric'; count }`. `Countable`, stacks like Ash. `compostValue` 0, `furnaceValue` 0, no store accepts it. Only the top band. Name, Almanac Utility entry, and `item-fly-agaric.svg` exist. No use yet.
+`burrow.agaric` — `{ kind: 'fly-agaric'; count }`. `Countable`, stacks like Ash. `compostValue` 0, `furnaceValue` 0, no store accepts it. Only the top band. Name, Almanac Utility entry, and `item-fly-agaric.svg` exist. Its one sink is the Necronomicon `agaric` page — [[mechanics/necronomicon]] `necro.claim`.
 
 `burrow.bands` — Five bands off the gate table. Low gates strict `<`, high gates `≥`. Treasure in every band. Fly agaric only in the top one. No vanilla, chilli, or grass in a seed row.
 

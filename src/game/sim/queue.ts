@@ -562,24 +562,31 @@ export function doPickup(world: World, at: Coord): void {
   if (i < 0) {
     const c = world.cell(at)
     const cover = c.kind === 'untilled' && c.cover.kind === 'grass'
-    if (c.kind !== 'weed' && !cover) return
-    const kind = c.kind === 'weed' ? 'weed' : 'grass'
+    const gained =
+      c.kind === 'weed'
+        ? { kind: 'weed' as const, count: 1 }
+        : cover
+          ? { kind: 'grass' as const, count: 1 }
+          : field.plotPick(c, world.clock.day)
+    if (gained === undefined) return
     const held = world.act.hand
     if (held.kind === 'hold') {
-      if (held.item.kind !== kind) return
+      if (!countable(held.item) || !stackable(held.item, gained)) return
       if (held.item.count >= world.stackMax(held.item)) {
         world.say(HAND_FULL)
         return
       }
-      held.item.count += 1
+      mergeInto(held.item, gained, 1)
     }
     if (c.kind === 'weed') {
       c.soil.weedChance = 0
       world.setCell(at, { kind: 'empty', soil: c.soil })
     } else if (c.kind === 'untilled') {
       world.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'bare' } })
+    } else if (c.kind === 'dead' || c.kind === 'rotten') {
+      world.setCell(at, { kind: 'empty', soil: c.soil })
     }
-    if (held.kind === 'empty') world.act.hand = { kind: 'hold', item: { kind, count: 1 } }
+    if (held.kind === 'empty') world.act.hand = { kind: 'hold', item: gained }
       return
   }
   const taken = world.drops[i].item

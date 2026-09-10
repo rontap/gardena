@@ -1749,7 +1749,7 @@ describe('world.pulse', () => {
 })
 
 describe('family.unlockSkills', () => {
-    test('`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.', () => {
+    test('`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned tree `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.', () => {
         const w = new World(1)
         w.grantPoints(1)
         const points = w.points
@@ -1769,7 +1769,10 @@ describe('family.unlockSkills', () => {
         expect(w.skillTier('better-grape')).toBe(SKILLS['better-grape'].maxTier)
         expect(w.points).toBe(points)
         expect(w.done.size).toBe(done)
-        const better = PLAYER_SKILL_IDS.filter(id => SKILLS[id].effect.kind === 'better')
+        const better = PLAYER_SKILL_IDS.filter(id => {
+            const e = SKILLS[id].effect
+            return e.kind === 'better' && e.saleMul !== 1
+        })
         expect(w.modifiers.filter(m => m.source === 'skill').map(m => m.id).sort()).toEqual([...better].sort())
         expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price - SKILLS.haggling.maxTier)
         expect(w.log).toEqual([{a: Act.cheat, t: 0, p: 0, k: 'skills'}])

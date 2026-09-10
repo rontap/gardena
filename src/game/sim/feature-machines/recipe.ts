@@ -302,7 +302,7 @@ const COMPOST_ROTTEN: Recipe = {
   inputs: [
     {
       kind: 'any',
-      faces: CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
+      faces: CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1, createdAt: 0 })),
       amount: units(COMPOST_NEED / COMPOST_VALUE.rotten),
     },
   ],
@@ -329,7 +329,7 @@ const FURNACE_GREEN: Recipe = {
     {
       kind: 'any',
       faces: [
-        ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1 })),
+        ...CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1, createdAt: 0 })),
         ...ANNUAL_IDS.map(c => seedFace(c, 'base')),
         ...TREE_IDS.map(t => ({ kind: 'tree-seed' as const, tree: t, variety: 'base' as const, quality: 0 })),
         { kind: 'weed', count: 1 },

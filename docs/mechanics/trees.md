@@ -2,17 +2,17 @@
 
 Yield, plant, drop: [[mechanics/plants]]. Types: [[architecture/tree]]. Art: [[art/tree]]. Copy: [[ui/inspect]]. Variety: [[mechanics/plants]].
 
-`DAY_SECONDS` stays. `TREE_YIELD_MUL` 3.5 / `TREE_OFF_MUL` 0.75 stay. Income `$/min` = `CROPS.sale × mul / fruitSeconds × 60` — derived, not a field. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. No tree shop pack.
+`DAY_SECONDS` stays. `TREE_YIELD_MUL` 3 / `TREE_OFF_MUL` 0.7 — preference. Income `$/min` = `CROPS.sale × mul / fruitSeconds × 60` — derived, not a field. mul is `TREE_YIELD_MUL` while `on`, else `TREE_OFF_MUL`. No tree shop pack.
 
-Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Planted from `{ kind: 'tree-seed'; tree; variety; quality }` on the clicked cell as the foot. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. `Tree.variety` required `VarietyId`. `Tree.tended: boolean` required, starts `false`. `Tree.trunk: boolean` required, starts `false`. Illegal: optional `tended`. Illegal: optional `trunk`. Illegal: optional `variety`. No `Tree.quality` — fruit quality is 0.
+Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Planted from `{ kind: 'tree-seed'; tree; variety; quality }` on the clicked cell as the foot. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. `Tree.variety` required `VarietyId`. `Tree.tended: boolean` required, starts `false`. `Tree.trunk: boolean` required, starts `false`. Illegal: optional `tended`. Illegal: optional `trunk`. Illegal: optional `variety`. No `Tree.quality` — fruit quality is 0. A tree never rolls a variety at fruit drop; graft is the only way its variety changes — [[mechanics/plants]] `plants.variety-roll`.
 
 `TREES` in `defs/trees.ts`. `TREE_YIELD_DAYS` — preference. `juvenileSeconds` / `fruitSeconds` / `CROPS.sale` — preference.
 
 | species | `juvenileSeconds` | `fruitSeconds` | `CROPS.sale` |
 |---|---|---|---|
-| apricot | 192 | 180 | 5 |
+| apricot | 192 | 200 | 5 |
 | apple | 240 | 300 | 8 |
-| cherry | 336 | 140 | 4 |
+| cherry | 336 | 160 | 4 |
 | olive | 384 | 260 | 10 |
 
 ```

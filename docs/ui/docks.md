@@ -61,7 +61,7 @@ Walk-up hangar or parked / automated Quad / tractor → cue → dialog. Not dock
 
 Not a seam dialog. App opens it from a recap notice. Hidden unless App has a `recapDay`. `w-[26rem]`. `ui-recap-night` strip on top ([[art/recap-night]]). Title **Day {ended}**. Subtitle **turned in** unchanged.
 
-Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). When `unlock-contracts` done: that day's `Recap.contracts` as one-line history (company, stars, day, completed / missed / cancelled, `Coin` paid / penalty / fee) then **A new board is up.** Omit the block when not unlocked. [[ui/contracts]] [[mechanics/contracts]]
+Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joined; `—` when none). When `unlock-contracts` done: that day's `Recap.contracts` as one-line history (company, stars, day, completed / missed / cancelled, the Reputation it moved, `Coin` paid / penalty / fee) then **A new board is up.** Omit the block when not unlocked. [[ui/contracts]] [[mechanics/contracts]]
 
 Rule, then ledger **Support from grandma** `+` coin from `recap.stipend` when `stipend > 0`, **Tax** `−` coin, **Water** `−` `recap.water` coin. Omit the stipend line when `recap.stipend === 0`. Amounts via fill from `stipendOf` / `STIPEND`, not digits in the copy. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]] [[mechanics/day]] `day.stipend`
 

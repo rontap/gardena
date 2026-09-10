@@ -63,12 +63,13 @@ export const WEED_SPRAY_BAG = 30
 export const SPRAY_WORK = 0.33
 export const COMPOST_NEED = 10
 export const COMPOST_SECONDS = 60
+export const ROTTEN_GROUND_DAYS = 3
 export const COMPOST_VALUE = {
   seeds: 1,
   fruit: 5,
   grass: 1,
   weed: 1,
-  rotten: 2,
+  rotten: 1,
   dead: 1,
   ash: 4,
 } as const

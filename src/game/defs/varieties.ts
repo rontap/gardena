@@ -69,6 +69,11 @@ export const QUALITY_STEP = 0.25
 export const BETTER_QUALITY = 0.04
 export const TOL_MIN = 0.25
 
+export const MAX_QUALITY_VAR_IMPACT = 0.015
+export const EXPERIENCED_VAR_BONUS = 0.005
+export const CROSSBREED_VAR_BONUS = 0.01
+export const CROSSBREED_REACH = 1
+
 export const VARIETY: {
   readonly [K in Exclude<VarietyId, 'base'>]: {
     crop: GrownCrop
@@ -149,6 +154,25 @@ export function qualityGain(h: number, happyStart: number, happyMax: number): nu
 export function tierOf(variety: VarietyId): VarietyTier {
   if (variety === 'base') return 'base'
   return VARIETY[variety].tier
+}
+
+export function nextVariety(crop: CropId, variety: VarietyId): VarietyId | undefined {
+  const tier = tierOf(variety)
+  if (tier === 'heirloom') return undefined
+  const list = VARIETIES[crop]
+  if (tier === 'base') {
+    const variant = list.find(v => tierOf(v) === 'variant')
+    if (variant !== undefined) return variant
+  }
+  return list.find(v => tierOf(v) === 'heirloom')
+}
+
+export function varietyChance(quality: number, experienced: boolean, crossbred: boolean): number {
+  return (
+    quality * quality * MAX_QUALITY_VAR_IMPACT +
+    (experienced ? EXPERIENCED_VAR_BONUS : 0) +
+    (crossbred ? CROSSBREED_VAR_BONUS : 0)
+  )
 }
 
 export function purposeOf(variety: VarietyId): Purpose | 'base' {

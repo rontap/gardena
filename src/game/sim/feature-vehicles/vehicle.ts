@@ -1051,7 +1051,7 @@ function harvestItem(w: World, c: Cell): Item | undefined {
     return undefined
   }
   if (c.kind === 'dead') return { kind: 'dead', cls: CROPS[c.plant.crop].cls, count: 1 }
-  if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1 }
+  if (c.kind === 'rotten') return { kind: 'rotten', cls: CROPS[c.crop].cls, count: 1, createdAt: w.clock.day }
   if (c.kind === 'weed') return { kind: 'weed', count: 1 }
   return undefined
 }

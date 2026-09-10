@@ -4,7 +4,7 @@ Rules as the game runs. Named invariants live on the owning note. Numbers: prefe
 
 - [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center. `stipendOf`. `day.stipend`
 - [[mechanics/soil]]
-- [[mechanics/plants]] — variety, quality, graft attach, neighbour. `AnnualId` grass. `Plant.crop` excludes grass. `plants.grass`
+- [[mechanics/plants]] — variety, quality, graft attach, neighbour, the ripen variety roll. `AnnualId` grass. `Plant.crop` excludes grass. `plants.grass` `plants.variety-roll`
 - [[mechanics/trees]] — axe, chainsaw, wood, trunk, grafts
 - [[mechanics/water]]
 - [[mechanics/weather]]
@@ -75,7 +75,10 @@ See [[canon]].
 | plants.ripen | [[mechanics/plants]] |
 | plants.fresh | [[mechanics/plants]] |
 | plants.harvest | [[mechanics/plants]] |
+| plants.pick-spoiled | [[mechanics/plants]] |
+| plants.rot-ground | [[mechanics/plants]] |
 | plants.packs | [[mechanics/plants]] |
+| plants.variety-roll | [[mechanics/plants]] |
 | plants.tend | [[mechanics/plants]] |
 | plants.vanilla | [[mechanics/plants]] |
 | plants.chilli | [[mechanics/plants]] |
@@ -135,6 +138,7 @@ See [[canon]].
 | contracts.demand | [[mechanics/contracts]] |
 | contracts.amount | [[mechanics/contracts]] |
 | contracts.reward | [[mechanics/contracts]] |
+| contracts.rep-line | [[mechanics/contracts]] |
 | contracts.miss | [[mechanics/contracts]] |
 | contracts.cancel | [[mechanics/contracts]] |
 | contracts.consign | [[mechanics/contracts]] |
@@ -280,6 +284,7 @@ See [[canon]].
 | tutorial.dismiss | [[mechanics/tutorial]] |
 | tutorial.no-force | [[mechanics/tutorial]] |
 | mp.tick | [[mechanics/multiplayer]] |
+| mp.float | [[mechanics/multiplayer]] |
 | mp.bundle | [[mechanics/multiplayer]] |
 | mp.drop | [[mechanics/multiplayer]] |
 | mp.guest | [[mechanics/multiplayer]] |

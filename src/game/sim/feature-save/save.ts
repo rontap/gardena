@@ -327,6 +327,9 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         fruit: c.fruit.slice(),
         ash: c.ash,
         gold: c.gold,
+        agaric: c.agaric,
+        tool: c.tool,
+        supper: c.supper.slice(),
         pages: c.done.slice(),
       }
     case 'infuser':

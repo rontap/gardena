@@ -145,6 +145,8 @@ Below the stack. One line each, `history` array order, at most `CONTRACT_HISTORY
 | `missed` | Missed | `penalty` |
 | `cancelled` | Cancelled | `fee` |
 
+Between the outcome and the amount, `RepChange` prints the stored `HistoryEntry.rep` as **{sign}{n} Reputation**, `text-tier-2` when it rose and `text-roof` when it fell, one decimal and no trailing zero. `rep === 0` prints nothing, so a contract that moved nothing because reputation was already at `REP_MAX` shows no line rather than a lie. Same component on the Recap line — [[ui/docks]] [[mechanics/contracts]] `contracts.rep-line`.
+
 ## Recap
 
 Seam dialog [[ui/docks]]. When `unlock-contracts` done: that day's `Recap.contracts` as history lines (completed / missed / cancelled) and **A new board is up.** Omit the block when not unlocked.

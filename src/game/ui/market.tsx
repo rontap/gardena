@@ -507,6 +507,16 @@ export function OutcomePay({ entry }: { entry: HistoryEntry }) {
   return <Coin n={n} />
 }
 
+export function RepChange({ rep }: { rep: number }) {
+  if (rep === 0) return null
+  const n = Math.round(Math.abs(rep) * 10) / 10
+  return (
+    <span className={rep > 0 ? 'text-tier-2' : 'text-roof'}>
+      {m.market_rep_change({ sign: rep > 0 ? '+' : '−', n: Number.isInteger(n) ? n : n.toFixed(1) })}
+    </span>
+  )
+}
+
 function HistoryLine({ entry }: { entry: HistoryEntry }) {
   const outcome =
     entry.outcome.kind === 'done' ? m.recap_completed() : entry.outcome.kind === 'missed' ? m.recap_missed() : m.recap_cancelled()
@@ -516,6 +526,7 @@ function HistoryLine({ entry }: { entry: HistoryEntry }) {
       <Difficulty stars={entry.stars} />
       <span>{entry.day}</span>
       <span>{outcome}</span>
+      <RepChange rep={entry.rep} />
       <span className="ml-auto">
         <OutcomePay entry={entry} />
       </span>

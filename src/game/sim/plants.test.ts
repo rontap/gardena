@@ -24,9 +24,18 @@ import {
   SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
-import { BETTER_QUALITY, purposeMul, qualityMul, VARIETIES, type VarietyId } from '../defs/varieties.ts'
+import {
+  BETTER_QUALITY,
+  CROSSBREED_REACH,
+  purposeMul,
+  qualityMul,
+  VARIETIES,
+  varietyChance,
+  type VarietyId,
+} from '../defs/varieties.ts'
+import { hasCrossbreed, upgradeVariety } from './feature-field/field.helpers.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SKILLS, TEND_WORK } from '../defs/skills.ts'
+import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SEED_BANK_QUALITY, SKILLS, TEND_WORK } from '../defs/skills.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type PlantCrop, type SkuId } from './ids.ts'
 import {
   Chest,
@@ -317,7 +326,7 @@ describe('1.2 machines', () => {
     chest.slots[0] = { kind: 'hold', item: { ...fruit } }
     w.drops.push({ at: { col: AT.col + 1, row: AT.row }, item: { ...fruit } })
     w.tick(1)
-    const rotten = { kind: 'rotten' as const, cls: CROPS.carrot.cls, count: 3 }
+    const rotten = { kind: 'rotten' as const, cls: CROPS.carrot.cls, count: 3, createdAt: w.clock.day }
     expect(w.seats[0].hand).toEqual({ kind: 'hold', item: rotten })
     expect(w.seats[0].inventory[0]).toEqual({ kind: 'hold', item: rotten })
     expect(chest.slots[0]).toEqual({ kind: 'hold', item: rotten })
@@ -614,7 +623,7 @@ describe('0.9 log and rng', () => {
     expect(siloCount(bulk, 'carrot', 'base')).toBe(32)
   })
 
-  test('Pack rarity is rollShopRarity(seed-bank tier, shop.next()). Not clock.t. Not money.', () => {
+  test("A bought pack is `'base'` at `seedBankQuality(skillTier('seed-bank'))` — quality 0 without that skill, `SEED_BANK_QUALITY` with it. Single buy and the five-pack buy both. No rarity roll. Not `clock.t`. Not money.", () => {
     const w = new World(1)
     w.clock.t = 80
     w.money = 80
@@ -625,6 +634,18 @@ describe('0.9 log and rng', () => {
       quality: 0,
       count: 5,
     })
+
+    const b = new World(1)
+    b.money = 400
+    b.family.player.owned.set('seed-bank', 1)
+    expect(b.buy('pack-wheat')).toBeUndefined()
+    expect(b.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.quality).toBe(SEED_BANK_QUALITY)
+
+    const c = new World(1)
+    c.money = 400
+    c.family.player.owned.set('seed-bank', 1)
+    c.buyPacks('pack-carrot')
+    expect(c.silo.seeds.find(st => st.crop === 'carrot' && st.variety === 'base')?.quality).toBeGreaterThan(0)
   })
 })
 
@@ -977,16 +998,16 @@ describe('1.5.2', () => {
   })
 
   test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {
-    expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 180 })
+    expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 200 })
     expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 300 })
-    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 140 })
+    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 160 })
     expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 260 })
     expect(CROPS.apricot.sale).toBe(5)
     expect(CROPS.apple.sale).toBe(8)
     expect(CROPS.cherry.sale).toBe(4)
     expect(CROPS.olive.sale).toBe(10)
-    expect(TREE_YIELD_MUL).toBe(3.5)
-    expect(TREE_OFF_MUL).toBe(0.75)
+    expect(TREE_YIELD_MUL).toBe(3)
+    expect(TREE_OFF_MUL).toBe(0.7)
     expect(TREE_YIELD_DAYS).toBe(2)
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
@@ -1606,7 +1627,7 @@ describe('variety.neighbour', () => {
 
 describe('machines.grind-tree', () => {
   const NAME =
-    "Tree fruit accepted. Yield `{ kind: 'tree-seed' }` of that species at `'base'`. Annual `heirloom` fruit to `'base'` seeds. Annual `'base'` or `variant` to same variety seeds. Seed quality equals fruit quality. Sugar refused. Hopper locks crop + variety. `GRIND_MIN_AT(q)` raises the yield floor with quality."
+    "Tree fruit accepted. Yield `{ kind: 'tree-seed' }` of that species at `'base'`. Annual fruit yields seeds of the Variety that went in, `heirloom` included. Seed quality equals fruit quality. Sugar refused. Hopper locks crop + variety. `GRIND_MIN_AT(q)` raises the yield floor with quality."
 
   function hopper(): Grinder {
     return new Grinder({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
@@ -1623,7 +1644,13 @@ describe('machines.grind-tree', () => {
 
     const heir = hopper()
     grindApply(heir, { crop: 'tomato', variety: 'san-marzano', quality: 0.25, n: 1 })
-    expect(grindProduct(heir, 2)).toEqual({ kind: 'seeds', crop: 'tomato', variety: 'base', quality: 0.25, count: 2 })
+    expect(grindProduct(heir, 2)).toEqual({
+      kind: 'seeds',
+      crop: 'tomato',
+      variety: 'san-marzano',
+      quality: 0.25,
+      count: 2,
+    })
 
     const variant = hopper()
     grindApply(variant, { crop: 'grape', variety: 'concord', quality: 0.5, n: 1 })
@@ -1744,5 +1771,78 @@ describe('quality.carry', () => {
     w.click(AT)
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(p.quality).toBeCloseTo(0.77, 9)
+  })
+})
+
+describe('plants.variety-roll', () => {
+  const NAME =
+    "At ripen an annual rolls `varietyChance` off the `variety` stream. A hit sets the plant to `nextVariety` and its quality to 0. A crop with no rung above rolls nothing. `CROSSBREED_REACH` is Chebyshev 1, same crop, a different Variety, growing or ripe."
+
+  function ripenAt(w: World, at: { col: number; row: number }, plant: Plant): void {
+    plant.maturity = 1
+    plant.happiness = HAPPY_START
+    w.setCell(at, { kind: 'growing', soil: bed(), plant })
+    w.tick(DT_MAX)
+  }
+
+  test(NAME, () => {
+    const w = new World(11)
+    const near = { col: AT.col + CROSSBREED_REACH, row: AT.row }
+    const far = { col: AT.col + CROSSBREED_REACH + 1, row: AT.row }
+
+    w.setCell(near, { kind: 'growing', soil: bed(), plant: new Plant('tomato', 'green-zebra', 0) })
+    expect(hasCrossbreed(w, AT, 'tomato', 'base')).toBe(true)
+    expect(hasCrossbreed(w, AT, 'tomato', 'green-zebra')).toBe(false)
+    expect(hasCrossbreed(w, AT, 'potato', 'base')).toBe(false)
+    w.setCell(near, { kind: 'ripe', soil: bed(), plant: new Plant('tomato', 'green-zebra', 0) })
+    expect(hasCrossbreed(w, AT, 'tomato', 'base')).toBe(true)
+    w.setCell(near, { kind: 'dead', soil: bed(), plant: new Plant('tomato', 'green-zebra', 0) })
+    expect(hasCrossbreed(w, AT, 'tomato', 'base')).toBe(false)
+    w.setCell(near, { kind: 'empty', soil: bed() })
+    w.setCell(far, { kind: 'growing', soil: bed(), plant: new Plant('tomato', 'green-zebra', 0) })
+    expect(hasCrossbreed(w, AT, 'tomato', 'base')).toBe(false)
+    w.setCell(far, { kind: 'empty', soil: bed() })
+
+    const stream = new Rng(w.seed).stream('variety')
+    const roll = (q: number) => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000))
+    const qualities = Array.from({ length: 2000 }, (_, i) => 1 - i / 10000)
+    const hitQ = qualities.find(q => roll(q) < varietyChance(q, false, false))
+    const missQ = qualities.find(q => roll(q) >= varietyChance(q, false, false))
+    if (hitQ === undefined || missQ === undefined) throw new Error('roll')
+
+    const hit = new Plant('tomato', 'base', hitQ)
+    expect(upgradeVariety(w, AT, hit)).toBe(true)
+    expect(hit.variety).toBe('green-zebra')
+    expect(hit.quality).toBe(0)
+
+    const miss = new Plant('tomato', 'base', missQ)
+    expect(upgradeVariety(w, AT, miss)).toBe(false)
+    expect(miss.variety).toBe('base')
+    expect(miss.quality).toBe(missQ)
+
+    const carrot = new Plant('carrot', 'base', 1)
+    expect(upgradeVariety(w, AT, carrot)).toBe(false)
+    expect(carrot.quality).toBe(1)
+
+    const top = new Plant('tomato', 'san-marzano', 1)
+    expect(upgradeVariety(w, AT, top)).toBe(false)
+    expect(top.variety).toBe('san-marzano')
+  })
+
+  test('The roll runs on the ripen seam, so the ripe plot carries the new Variety and Quality 0.', () => {
+    const w = new World(11)
+    const stream = new Rng(w.seed).stream('variety')
+    const qualities = Array.from({ length: 2000 }, (_, i) => 1 - i / 10000)
+    const hitQ = qualities.find(
+      q => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000)) < varietyChance(q, false, false),
+    )
+    if (hitQ === undefined) throw new Error('roll')
+
+    ripenAt(w, AT, new Plant('tomato', 'base', hitQ))
+    const c = w.cell(AT)
+    expect(c.kind).toBe('ripe')
+    if (c.kind !== 'ripe') return
+    expect(c.plant.variety).toBe('green-zebra')
+    expect(c.plant.quality).toBe(0)
   })
 })

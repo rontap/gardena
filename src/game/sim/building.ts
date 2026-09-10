@@ -48,7 +48,7 @@ import {
 } from '../defs/items.ts'
 import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
 import { tierOf, VARIETY_TIERS, type VarietyId } from '../defs/varieties.ts'
-import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SkuId, type StillCrop, type TreeId } from './ids.ts'
+import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { statsOf } from './modifiers.ts'
 import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
@@ -1008,6 +1008,9 @@ export class Necronomicon extends BaseBuilding {
   fruit: GrownCrop[] = []
   ash = 0
   gold = 0
+  agaric = 0
+  tool = false
+  supper: SupperId[] = []
   done: PageId[] = []
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: NECRO_W, h: NECRO_H })

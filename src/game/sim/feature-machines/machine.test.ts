@@ -63,11 +63,12 @@ import {
 } from './machine.ts'
 import { CASK_NAME, caskMulOf, caskName, furnaceValue, mergeInto, type Item } from '../item.ts'
 import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
-import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W } from '../../defs/items.ts'
+import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
 import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, Infuser, JamMachine, Mill, occupiedCells, PAD, PotStill, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
+import { bare } from '../plot.ts'
 import { Lamp, Lever } from '../sensor.ts'
 import { BIG_TICK } from '../soil.ts'
 import { DT_MAX, World } from '../world.ts'
@@ -458,14 +459,21 @@ describe('machines.furnace-burn', () => {
 })
 
 describe('machines.furnace-haste', () => {
-  test('Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n` including self. Still and compost take it. Barrel does not. Waiting / empty / gated do not count.', () => {
+  test('Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint. `1 + FURNACE_HASTE × n`, the target itself never in `n`. Still and compost take it. Barrel does not. Waiting / empty / gated do not count.', () => {
     const w = new World(1)
     const at = { col: 8, row: 14 }
     const f = putFurnace(w, at)
     f.recipe = 'ash'
     f.units = FURNACE_NEED
     expect(furnaceWorking(f)).toBe(true)
-    expect(furnaceMul([f], f.base)).toBe(1 + FURNACE_HASTE)
+    expect(furnaceMul([f], f.base)).toBe(1)
+    const g = putFurnace(w, { col: at.col + FURNACE_REACH, row: at.row })
+    g.recipe = 'ash'
+    g.units = FURNACE_NEED
+    expect(furnaceMul([f, g], f.base)).toBe(1 + FURNACE_HASTE)
+    expect(furnaceMul([f, g], g.base)).toBe(1 + FURNACE_HASTE)
+    w.setCell({ col: at.col + FURNACE_REACH, row: at.row }, bare('soft', 0))
+    w.setCell({ col: at.col + FURNACE_REACH, row: at.row + 1 }, bare('soft', 0))
     expect(FURNACE_REACH).toBe(3)
     expect(FURNACE_HASTE).toBe(0.25)
     const millAt = { col: at.col + 3, row: at.row }
@@ -509,7 +517,7 @@ describe('machines.furnace-haste', () => {
 })
 
 describe('machines.furnace-haste-look', () => {
-  test('Hover mill / jam / still / grinder / compost-box / furnace: one look line iff covering working count `n > 0`. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. Barrel never. `n === 0`: no line. Live working set, not `furnaceSnap`.', () => {
+  test('Hover mill / jam / still / grinder / compost-box / furnace: one look line iff covering working count `n > 0`. `{%}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. A furnace never counts itself, so a lone furnace has no line. Barrel never. `n === 0`: no line. Live working set, not `furnaceSnap`.', () => {
     const w = new World(1)
     const millAt = { col: AT.col, row: AT.row + 12 }
     const jamAt = { col: AT.col, row: AT.row + 14 }
@@ -518,7 +526,7 @@ describe('machines.furnace-haste-look', () => {
     const stillAt = { col: AT.col, row: AT.row + 16 }
     const barrelAt = { col: AT.col - 4, row: AT.row + 12 }
     const f1At = { col: AT.col - 2, row: AT.row + 14 }
-    const f2At = { col: AT.col + 2, row: AT.row + 14 }
+    const f2At = { col: AT.col + 1, row: AT.row + 14 }
     w.setCell(millAt, new Mill({ shape: 'rect', col: millAt.col, row: millAt.row, w: 1, h: 1 }))
     w.setCell(jamAt, new JamMachine({ shape: 'rect', col: jamAt.col, row: jamAt.row, w: 1, h: 1 }))
     w.setCell(grindAt, new Grinder({ shape: 'rect', col: grindAt.col, row: grindAt.row, w: 1, h: 1 }))
@@ -545,11 +553,10 @@ describe('machines.furnace-haste-look', () => {
     const stillEast = lookText(w, { kind: 'cell', at: { col: stillAt.col + 1, row: stillAt.row } }, false).split('\n')
     expect(stillOrigin.filter(l => l === one)).toHaveLength(1)
     expect(stillEast.filter(l => l === one)).toHaveLength(1)
-    const furnaceOrigin = lookText(w, { kind: 'cell', at: f1At }, false).split('\n')
-    const furnaceSouth = lookText(w, { kind: 'cell', at: { col: f1At.col, row: f1At.row + 1 } }, false).split('\n')
-    expect(furnaceOrigin[1]).toBe(one)
-    expect(furnaceOrigin.filter(l => l === one)).toHaveLength(1)
-    expect(furnaceSouth.filter(l => l === one)).toHaveLength(1)
+    const alone = lookText(w, { kind: 'cell', at: f1At }, false).split('\n')
+    const aloneSouth = lookText(w, { kind: 'cell', at: { col: f1At.col, row: f1At.row + 1 } }, false).split('\n')
+    expect(alone).not.toContain(one)
+    expect(aloneSouth).not.toContain(one)
     expect(lookText(w, { kind: 'cell', at: barrelAt }, false).split('\n')).not.toContain(one)
     const f2 = putFurnace(w, f2At)
     f2.recipe = 'ash'
@@ -557,6 +564,12 @@ describe('machines.furnace-haste-look', () => {
     const mill2 = lookText(w, { kind: 'cell', at: millAt }, false).split('\n')
     expect(mill2[1]).toBe(two)
     expect(mill2.filter(l => l === two)).toHaveLength(1)
+    const furnaceOrigin = lookText(w, { kind: 'cell', at: f1At }, false).split('\n')
+    const furnaceSouth = lookText(w, { kind: 'cell', at: { col: f1At.col, row: f1At.row + 1 } }, false).split('\n')
+    expect(furnaceOrigin[1]).toBe(one)
+    expect(furnaceOrigin.filter(l => l === one)).toHaveLength(1)
+    expect(furnaceSouth.filter(l => l === one)).toHaveLength(1)
+    expect(lookText(w, { kind: 'cell', at: f2At }, false).split('\n')).toContain(one)
     w.tick(DT_MAX)
     f1.inn = 1
     f2.inn = 1
@@ -606,7 +619,7 @@ describe('machines.furnace-io', () => {
     w.tick(DT_MAX)
     expect(f.out).toBe(1)
     f.units = 1
-    w.tick(DT_MAX)
+    ticks(w, DT_MAX * SENSOR_HOLD)
     expect(f.out).toBe(0)
     const pads = w.machinePads()
     expect(pads.some(p => p.side === 'dropoff' && p.row === at.row - 1 && p.col === at.col)).toBe(true)

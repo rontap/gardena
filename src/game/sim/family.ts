@@ -6,7 +6,7 @@ import type { MemberState, SkillRef, World } from './world.ts'
 const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
 
 export function luckOf(w: World): number {
-  const n = w.skillTier('lucky')
+  const n = w.skillTier('lucky') + w.skillTier('lucky-husband') + w.skillTier('lucky-daughter')
   return n < LUCK_CAP ? n : LUCK_CAP
 }
 
@@ -28,7 +28,7 @@ export function pickSkillBody(w: World, member: MemberId, slot: number): void {
   w.points -= 1
   st.owned.set(offer.id as never, offer.tier)
   const effect = SKILLS[offer.id].effect
-  if (effect.kind === 'better') {
+  if (effect.kind === 'better' && effect.saleMul !== 1) {
     w.modifiers.push({
       id: offer.id,
       source: 'skill',
@@ -50,7 +50,7 @@ export function rebuildSkillModifiers(w: World): void {
   keep.forEach(m => w.modifiers.push(m))
   w.family.player.owned.forEach((_tier, id) => {
     const effect = SKILLS[id].effect
-    if (effect.kind !== 'better') return
+    if (effect.kind !== 'better' || effect.saleMul === 1) return
     w.modifiers.push({
       id,
       source: 'skill',

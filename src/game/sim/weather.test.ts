@@ -7,6 +7,7 @@ import {
   DRY_EVAP_DAY,
   FLOOD_SOAK_DAY,
   PUMP_COST_PER_L,
+  pumpBill,
   RAIN_SOAK_DAY,
   SEVERE_P,
   SPECIAL_START,
@@ -98,7 +99,7 @@ describe('weather', () => {
     expect(forecastWeather(seed, 5, dryPins)[4]).toBe('drought')
   })
 
-  test('Seam bills `pumpLiters × PUMP_COST_PER_L × costMul(ended weather)` before recap. Mid-day money unchanged. `recap.water` is the bill. `pumpLiters` then 0. Money may go negative.', () => {
+  test('Seam bills `pumpBill(pumpLiters, costMul(ended weather))`, rounded to cents so engine float drift never reaches `money`, before recap. Mid-day money unchanged. `recap.water` is the bill. `pumpLiters` then 0. Money may go negative.', () => {
     const w = new World(1)
     w.pumpLiters = 100
     const mid = w.money
@@ -108,7 +109,8 @@ describe('weather', () => {
     w.clock.t = DAY_SECONDS - 0.001
     w.tick(1)
     const ended = w.weather(w.clock.day - 1)
-    const bill = 100 * PUMP_COST_PER_L * pumpCostMul(ended)
+    const bill = pumpBill(100, pumpCostMul(ended))
+    expect(bill).toBe(Math.round(100 * PUMP_COST_PER_L * pumpCostMul(ended) * 100) / 100)
     expect(w.seam.kind).toBe('play')
     expect(w.recapAt(1).water).toBeCloseTo(bill, 10)
     expect(w.recapAt(1).money).toBeCloseTo(mid + stipendOf(1) - w.recapAt(1).tax - bill, 10)
@@ -119,7 +121,7 @@ describe('weather', () => {
     const before = dry.money
     dry.clock.t = DAY_SECONDS - 0.001
     dry.tick(1)
-    const dryBill = 50 * PUMP_COST_PER_L * pumpCostMul('dry')
+    const dryBill = pumpBill(50, pumpCostMul('dry'))
     expect(dry.seam.kind).toBe('play')
     expect(dry.recapAt(dry.clock.day - 1).water).toBeCloseTo(dryBill, 10)
     expect(dry.money).toBeCloseTo(before + stipendOf(dry.clock.day - 1) - dry.recapAt(dry.clock.day - 1).tax - dryBill, 8)

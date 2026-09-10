@@ -10,7 +10,7 @@ Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertToler
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-`PACK_N` packs: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` is `pack-{crop}` except vanilla (`undefined`). `packSku('grass')` is `pack-grass`. A bought pack is `'base'` at quality 0. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Chilli `unlock-infusion`; ripe chilli is fruit; mill for flakes — [[mechanics/infusion]]. Grass `unlock-landscaping`; sow is turf, not a `Plant`. Olive is `TreeId`. Trees have no pack.
+`PACK_N` packs: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` is `pack-{crop}` except vanilla (`undefined`). `packSku('grass')` is `pack-grass`. A bought pack is `'base'` at `seedBankQuality(skillTier('seed-bank'))`, quality 0 without that skill — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Tomato grape via [[mechanics/research]] plants. Raspberry `reveal: unlock-tomato | unlock-grape`. Sugar cane `unlock-fermentation`; ripe cane is fruit; mill for sugar — [[mechanics/machines]]. Chilli `unlock-infusion`; ripe chilli is fruit; mill for flakes — [[mechanics/infusion]]. Grass `unlock-landscaping`; sow is turf, not a `Plant`. Olive is `TreeId`. Trees have no pack.
 
 Vanilla has no pack and no research row. Seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise: the four starting `'base'` seeds and the one wild apple are the only ones not won from a contract.
 
@@ -18,7 +18,7 @@ Chilli has a pack. No chilli research row. `pack-chilli` show and buy `unlock-in
 
 ## Variety
 
-Identity, not a ladder. Set when the seed goes in the ground and never changes after, except graft — [[#Graft]]. Two varieties of the same crop are siblings, not steps.
+A ladder. `'base'` → `variant` → `heirloom`, one tier at a time. Set when the seed goes in the ground; changed after only by graft — [[#Graft]] — or by the roll at ripen — [[#Variety roll]]. A crop carries at most one `variant` and at most one `heirloom`, so the climb is at most two steps.
 
 ```
 VarietyTier = 'base' | 'variant' | 'heirloom'
@@ -64,7 +64,7 @@ Six heirlooms, two per purpose. The starter annuals carry the fewest paths and p
 
 ### At ripen
 
-No roll. No grow stream. No `World.ripenN`.
+No grow stream. No `World.ripenN`.
 
 ```
 quality = clamp(seed.quality + qualityGain(happiness) + betterGain, 0, 1)
@@ -74,7 +74,31 @@ quality = clamp(seed.quality + qualityGain(happiness) + betterGain, 0, 1)
 
 `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)` when the player owns `better-{crop}`, else 0. `better-*` maxTier 1. No `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli` `better-grass`. Tree `better-*` does not run here — trees have no happiness — [[mechanics/family]] `family.better-set`.
 
-`freshness = 1`. Variety unchanged.
+`freshness = 1`. Variety then rolls — [[#Variety roll]].
+
+### Variety roll
+
+`plants.variety-roll` — Baking quality is followed by one roll on that plot. Annuals only. A tree's variety comes from the graft — [[mechanics/trees]]; `upgradeVariety` takes a `Plant`, and `Plant.crop` is `Exclude<AnnualId, 'grass'>`, so a tree cannot reach it.
+
+`nextVariety(crop, variety)` is the tier above: `'base'` → that crop's `variant`, or straight to its `heirloom` when it has no `variant`; `variant` → `heirloom`. `heirloom`, and a crop whose `VARIETIES` row is `['base']`, have none — those plants do not roll.
+
+```
+chance = quality² × MAX_QUALITY_VAR_IMPACT
+       + EXPERIENCED_VAR_BONUS   iff the player owns better-{crop}
+       + CROSSBREED_VAR_BONUS    iff crossbred
+```
+
+`quality` is the number just baked, not the seed's. `MAX_QUALITY_VAR_IMPACT` `EXPERIENCED_VAR_BONUS` `CROSSBREED_VAR_BONUS` — preference. No floor: a quality-0 plant whose owner holds neither bonus never rolls.
+
+Crossbred: a cell within `CROSSBREED_REACH` Chebyshev of the plot holding a `growing` or `ripe` plant, same crop, a **different** `variety`. `CROSSBREED_REACH` 1 — preference. The plot itself does not count. `dead` and `rotten` do not count. No crop is both `AnnualId` and `TreeId`, so a tree is never a crossbreed neighbour.
+
+`variety.at(col, row, day, round(quality × 10000))` — [[mechanics/rng]]. Hit: `variety` becomes `nextVariety`, `quality` becomes 0. Miss: nothing changes. The plant is ripe either way.
+
+Quality resetting is what stops one high-quality seed line from walking both tiers in a row: the climb to `heirloom` starts from 0 again.
+
+`ripe` is reached before the roll, so a neighbour-need heirloom minted here does not stall the plant that made it. `needsNeighbour` binds that plant's seeds, not it — [[#Needs a neighbour]].
+
+Assumption: baked quality is a key of the `variety` stream because a plot can ripen twice in one day — carrot `growSeconds` is under `DAY_SECONDS` — and `(col, row, day)` alone would hand both plants the same roll.
 
 ## Grass
 
@@ -142,9 +166,15 @@ Ripe does not die of water or fertilizer. It only rots.
 
 On the plant, while ripe: `freshness -= dt / (rotSeconds × jamRotMul)`. `<= 0` → `{ kind: 'rotten', soil, crop }`. `jamRotMul` 1 unless daughter owns `jam` and freshness `< 0.5` — [[mechanics/family]].
 
-After pick, fruit keeps rotting in hand, house, chest, ground, quad, and harvest trailer until sold. `tickFreshness`. Freezer slots rot at `FREEZER_ROT_MUL` of the open rate: cold slows rot, it does not stop it and it never restores freshness. `<= 0` replaces that slot with `{ kind: 'rotten'; cls: CROPS[crop].cls; count }`. Convert in place, no auto-merge. Sugar does not tick. Mill hopper is units, no freshness. Freshness-0 fruit no longer exists as an item after tick. On-plant ripe already becomes plot rotten.
+After pick, fruit keeps rotting in hand, house, chest, ground, quad, and harvest trailer until sold. `tickFreshness`. Freezer slots rot at `FREEZER_ROT_MUL` of the open rate: cold slows rot, it does not stop it and it never restores freshness. `<= 0` replaces that slot with `{ kind: 'rotten'; cls: CROPS[crop].cls; count; createdAt: clock.day }`. Convert in place, no auto-merge. `createdAt` is required on every rotten item and is the day it stopped being fruit; merging two rotten stacks keeps the smaller of the two, so a merge never buys a pile more time — [[#Rotten on the ground]]. Sugar does not tick. Mill hopper is units, no freshness. Freshness-0 fruit no longer exists as an item after tick. On-plant ripe already becomes plot rotten.
 
 `freshMul(f) = f >= 0.8 ? 1 : f / 0.8` — preference at 0.8. Harvest bakes `unitSale = stats.sale`. Sale uses `freshMul` of current freshness — [[mechanics/market]]. Jam rot — [[mechanics/family]].
+
+## Rotten on the ground
+
+`clearOldRotten` runs at the seam, `clock.day` already incremented, before `mintSeam`: every `World.drops` entry whose item is `rotten` and whose `clock.day - createdAt >= ROTTEN_GROUND_DAYS` leaves the array. `ROTTEN_GROUND_DAYS` — preference. Nothing else is swept, and a rotten stack in a hand, chest, freezer, quad, or trailer is not touched — only the ground clears itself.
+
+Shortest life is the last tick of the day it rotted, two whole days, then the first seam of the third: rot on day 4, gone at the seam that opens day 7. Clearing before `mintSeam` frees those cells, so a burrow can mint where a pile stood.
 
 Merge same crop+variety: weighted `unitSale`, `freshness`, and `quality`. Different variety never merges.
 
@@ -156,7 +186,9 @@ Merge same crop+variety: weighted `unitSale`, `freshness`, and `quality`. Differ
 
 Ripe annual including sugar-cane, empty hand: one fruit, current freshness, `variety` and `quality` from the plant, `cut: false`, plot `empty` same soil. Same crop+variety in hand: merged onto that stack up to the cap — [[mechanics/inventory]].
 
-Shovel growing or ripe annual: one seed, same variety, quality as the plant (growing: planted quality; ripe: baked). Same soil. Shovel dead or rotten: empty, no drop. Compost is from what you already carry.
+Shovel growing or ripe annual: one seed, same variety, quality as the plant (growing: planted quality; ripe: baked). Same soil. Shovel dead or rotten: empty, no drop.
+
+Empty hand on a `dead` or `rotten` plot: `{ act: 'pickup'; at }`, prompt **Pick up**, no work — the weed and grass path. `plotPick` is the item: `{ kind: 'dead'; cls: CROPS[plant.crop].cls; count: 1 }` or `{ kind: 'rotten'; cls: CROPS[crop].cls; count: 1; createdAt: clock.day }`. Plot becomes `empty` on the same `Soil`. Holding a stack of the same kind merges one onto it up to the cap; a full hand says `HAND_FULL`; any other held item falls through to the shovel or drop path. Both compost at `COMPOST_VALUE` 1 — [[mechanics/inventory]].
 
 Harvest boom (driven tractor, hitch harvest, steer 0, speed > 0): ripe same as empty-hand; growing `< 0.2` one seed at planted variety and quality; growing `> 0.8` fruit (plant variety, quality baked as ripen, freshness = maturity); growing mid destroyed; dead/rotten/weed items. Skip trees and turf. Cap / no slot: plant stays. — [[mechanics/vehicles]]
 
@@ -242,6 +274,10 @@ Assumption: shovel keeps the tree's variety on the seed.
 `quality.carry` — Grind seed quality equals the fruit's quality. Graft copies quality onto the target. Machine output quality is the mean of what went in — [[mechanics/machines]] `machines.quality-carry`.
 
 `plants.harvest` — Empty-hand harvest of ripe annual including sugar-cane: one fruit, current freshness, plant `variety` and `quality`, `cut: false`, `unitSale = stats.sale`, plot `empty` same soil. Same crop+variety in hand: merged up to the stack cap. Shovel growing/ripe annual: one seed, same variety, plant quality. Shovel dead, rotten, weed, or grass: no drop.
+
+`plants.pick-spoiled` — Empty hand on `dead` or `rotten` is `{ act: 'pickup'; at }`, no work: one `{ kind: 'dead' | 'rotten'; cls; count: 1 }`, `createdAt` on the rotten one, plot `empty` on the same `Soil`. Same kind in hand merges one up to the cap, a full hand says `HAND_FULL`. The shovel path still clears the plot and drops nothing.
+
+`plants.rot-ground` — `clearOldRotten` at the seam, before `mintSeam`, drops every `World.drops` entry that is `rotten` with `clock.day - createdAt >= ROTTEN_GROUND_DAYS`. Rotten held, stored, or carried never expires. `createdAt` is required on the item and is the day the fruit rotted; a merge keeps the smaller of the two.
 
 `plants.packs` — Crop stats are `CROPS`. Bought packs are `'base'` at quality 0. `packSku` is `pack-{crop}` except vanilla (`undefined`). `pack-chilli` exists. `packSku('grass')` is `pack-grass`. No tree pack. No olive pack. No vanilla pack.
 

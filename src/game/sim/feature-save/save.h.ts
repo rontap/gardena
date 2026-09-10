@@ -28,6 +28,7 @@ import type {
   RouteId,
   StallGoodId,
   StillCrop,
+  SupperId,
   TrailerId,
   TreeId,
   VehicleId,
@@ -102,7 +103,7 @@ export type SaveCell =
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
-  | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; pages: PageId[] }
+  | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; agaric: number; tool: boolean; supper: SupperId[]; pages: PageId[] }
   | { kind: 'station'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'sorter'; base: RectBase; facing: Facing; held: Slot; progress: number }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }

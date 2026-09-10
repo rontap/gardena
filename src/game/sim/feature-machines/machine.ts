@@ -32,7 +32,7 @@ import {
   CASK_AGE_MIN,
   CASK_SALE,
 } from '../../defs/items.ts'
-import { purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
+import { purposeMul, qualityMul, type VarietyId } from '../../defs/varieties.ts'
 import { STATION_IN } from '../../defs/items.ts'
 import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import { isAnnualId, SPIRIT_OF } from '../ids.ts'
@@ -189,8 +189,7 @@ export function grindProduct(
 ): Extract<Item, { kind: 'seeds' | 'tree-seed' }> {
   if (g.crop === 'none') throw new Error('grind')
   if (!isAnnualId(g.crop)) return { kind: 'tree-seed', tree: g.crop, variety: 'base', quality: g.quality }
-  const variety = tierOf(g.variety) === 'heirloom' ? 'base' : g.variety
-  return { kind: 'seeds', crop: g.crop, variety, quality: g.quality, count }
+  return { kind: 'seeds', crop: g.crop, variety: g.variety, quality: g.quality, count }
 }
 
 export function takeCount(item: Item, n: number): boolean {
@@ -486,7 +485,7 @@ export function furnaceCovers(furnace: Furnace, target: RectBase): boolean {
 }
 
 export function furnaceMul(working: readonly Furnace[], target: RectBase): number {
-  return 1 + FURNACE_HASTE * working.filter(f => furnaceCovers(f, target)).length
+  return 1 + FURNACE_HASTE * working.filter(f => f.base !== target && furnaceCovers(f, target)).length
 }
 
 export type StationTake = { crop: GrownCrop; variety: VarietyId; quality: number; n: number }

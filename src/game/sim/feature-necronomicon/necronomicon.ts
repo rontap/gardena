@@ -1,16 +1,18 @@
 import {
   EARLY_FRUIT,
   GRANDMA_DAY,
+  NECRO_AGARIC,
   NECRO_ASH,
   NECRO_CROP,
   NECRO_GOLD,
   PAGES,
   PAGE_IDS,
+  SUPPER_VARIETY,
   pageWant,
 } from '../../defs/necronomicon.ts'
 import type { Coord, Necronomicon } from '../building.ts'
 import { takeCount } from '../feature-machines/machine.ts'
-import { GRANDMA_IDS, type Grandma, type PageId } from '../ids.ts'
+import { GRANDMA_IDS, type Grandma, type PageId, type SupperId } from '../ids.ts'
 import type { Item } from '../item.ts'
 import type { World } from '../world.ts'
 import type { PageClaim, PageState } from './necronomicon.h.ts'
@@ -19,6 +21,9 @@ export function pageFilled(book: Necronomicon, id: PageId): number {
   if (id === 'crop') return book.cropCount
   if (id === 'early-fruit') return book.fruit.length
   if (id === 'ash') return book.ash
+  if (id === 'agaric') return book.agaric
+  if (id === 'tool') return book.tool ? 1 : 0
+  if (id === 'supper') return book.supper.length
   return book.gold
 }
 
@@ -53,11 +58,35 @@ export function ritualReady(w: World, book: Necronomicon): boolean {
   return PAGE_IDS.some(id => pageOpen(w, book, id) && !pageDone(book, id) && pageFull(book, id))
 }
 
+export function supperOf(item: Item): SupperId | undefined {
+  if (item.kind === 'bread') return 'bread'
+  if (item.kind === 'spirit' && item.spirit === 'brandy' && item.variety === SUPPER_VARIETY.palinka) return 'palinka'
+  if (item.kind === 'cask' && item.cask === 'wine' && item.variety === SUPPER_VARIETY.wine) return 'wine'
+  return undefined
+}
+
 export function pageClaim(book: Necronomicon, item: Item): PageClaim | undefined {
   if (item.kind === 'ash') {
     const room = NECRO_ASH - book.ash
     if (book.done.includes('ash') || room <= 0 || item.count <= 0) return undefined
-    return { page: 'ash', n: Math.min(room, item.count), crop: 'none' }
+    return { page: 'ash', n: Math.min(room, item.count) }
+  }
+  if (item.kind === 'fly-agaric') {
+    const room = NECRO_AGARIC - book.agaric
+    if (book.done.includes('agaric') || room <= 0 || item.count <= 0) return undefined
+    return { page: 'agaric', n: Math.min(room, item.count) }
+  }
+  if (item.kind === 'shovel' && item.id === 'rotary-shovel') {
+    return book.done.includes('tool') || book.tool ? undefined : { page: 'tool', n: 1 }
+  }
+  if (item.kind === 'pickaxe' && item.id === 'diamond-pickaxe') {
+    return book.done.includes('tool') || book.tool ? undefined : { page: 'tool', n: 1 }
+  }
+  if (item.kind === 'bread' || item.kind === 'spirit' || item.kind === 'cask') {
+    const good = supperOf(item)
+    if (good === undefined || item.count <= 0) return undefined
+    if (book.done.includes('supper') || book.supper.includes(good)) return undefined
+    return { page: 'supper', n: 1, good }
   }
   if (item.kind !== 'fruit' || item.cut || item.count <= 0) return undefined
   if (
@@ -78,12 +107,22 @@ export function applyClaim(book: Necronomicon, claim: PageClaim, n: number): voi
     book.ash += n
     return
   }
+  if (claim.page === 'agaric') {
+    book.agaric += n
+    return
+  }
+  if (claim.page === 'tool') {
+    book.tool = true
+    return
+  }
+  if (claim.page === 'supper') {
+    book.supper.push(claim.good)
+    return
+  }
   if (claim.page === 'early-fruit') {
-    if (claim.crop === 'none') return
     book.fruit.push(claim.crop)
     return
   }
-  if (claim.crop === 'none') return
   book.crop = claim.crop
   book.cropCount += n
 }

@@ -28,6 +28,7 @@ import {
 import { originCell } from './building.ts'
 import { originOrder } from './util.ts'
 import { DT_MAX, World } from './world.ts'
+import { PUMP_COST_PER_L, pumpBill } from '../defs/weather.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -1016,3 +1017,32 @@ function delayToHost(): { hostW: MpWire; guestW: MpWire; flush: () => void } {
     },
   }
 }
+
+describe('mp.float', () => {
+  test('Every continuously integrated float in the digest is quantised to four decimals, so an ULP of engine drift is not a desync while a real difference still is. The seam pump bill is rounded to cents, so that drift never reaches `money`.', () => {
+    const a = new World(5)
+    const b = new World(5)
+    expect(digestDiff(a, b)).toEqual([])
+
+    a.pumpLiters = 12.3456
+    b.pumpLiters = 12.34560001
+    expect(digestDiff(a, b)).toEqual([])
+    b.pumpLiters = 12.3466
+    expect(digestDiff(a, b)).toEqual(['pumpLiters'])
+    b.pumpLiters = a.pumpLiters
+
+    a.pump.water.stored = 40.1234
+    b.pump.water.stored = 40.12340001
+    expect(digestDiff(a, b)).toEqual([])
+    b.pump.water.stored = 40.1244
+    expect(digestDiff(a, b)).toEqual(['stored'])
+    b.pump.water.stored = a.pump.water.stored
+
+    a.bigAcc = 0.5
+    b.bigAcc = 0.50000001
+    expect(digestDiff(a, b)).toEqual([])
+
+    expect(pumpBill(100, 1)).toBe(Math.round(100 * PUMP_COST_PER_L * 100) / 100)
+    expect(pumpBill(100, 1) * 100).toBe(Math.round(pumpBill(100, 1) * 100))
+  })
+})

@@ -1,6 +1,6 @@
 # Recipe
 
-Crafting shown as a picture. One component, four mounts. Rules [[mechanics/machines]]. Table `sim/recipe.ts`.
+Crafting shown as a picture. One component, four mounts. Rules [[mechanics/machines]] `machines.recipe-source` `machines.recipe-collapse`. Table `sim/recipe.ts`.
 
 **Recipe** is a player-facing word. Defined here, used in the almanac heading.
 
@@ -8,39 +8,13 @@ No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]
 
 ## Shape
 
-`ui/recipe.tsx`. `Recipes({ view, size })`.
-
-```
-RecipeView =
-  | { kind: 'list'; machine: MachineId }
-  | { kind: 'one'; recipe: Recipe }
-  | { kind: 'live'; craft: Craft }
-
-MachineId = 'mill' | 'jam' | 'still' | 'barrel' | 'grinder' | 'compost-box' | 'furnace' | 'infuser'
-
-Recipe = {
-  machine: MachineId
-  inputs: readonly Ingredient[]
-  out: Yield
-  duration: Duration
-}
-```
+`Recipes({ view, size })`. `list` is every recipe of a machine. `one` is a single recipe. `live` is the hovered machine's craft.
 
 A `one` fruit / seed / jam face carries `variety`. `recipesUsing(face)` matches crop + Variety on a `one` input. Almanac Ingredients follows that list — [[ui/almanac]]. `any` inputs do not pin a Variety.
 
-`size` `'sm'` 24px faces, `'md'` 32px. Three columns per row: `grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]`. Input and yield each take at most half. The row does not wrap. Names `whitespace-nowrap` `truncate`. Cycle never changes row height.
+`size` `'sm'` / `'md'`. Three columns per row: inputs, arrow + duration, yield. The row does not wrap. Names truncate. Cycle never changes row height. Each slot is face + **name** + amount. Name is `faceName` — the same words as the held line. Amount: `units` bare digits, `liters` `{n}L` `Math.visualRound`, `waste` `{n} waste`, `range` `{min}-{max}`. Duration caption `clockText` uses `Math.visualRound`.
 
-| col | content |
-|---|---|
-| 1 | inputs stacked, face + amount |
-| 2 | arrow, duration under it |
-| 3 | the yield, face + amount |
-
-Each slot is face + **name** + amount. Name is `faceName` — the same words as the held line, not an id. Amount: `units` bare digits, `liters` `{n}L` `Math.visualRound`, `waste` `{n} waste`, `range` `{min}-{max}`. Duration caption `clockText` uses `Math.visualRound`.
-
-Type: `sm` `text-sm`, `md` `text-base`. Time caption matches. Not `text-xs`.
-
-Every mount is `pointer-events-none`. No tooltip, no `title`, no hover state, no focusable node. Ever. Almanac Ingredients plates are the hover target, not this component.
+Every mount is not a hover target. No tooltip. Almanac Ingredients plates are the hover target, not this component.
 
 ## Mounts
 
@@ -51,94 +25,43 @@ Every mount is `pointer-events-none`. No tooltip, no `title`, no hover state, no
 | Almanac Overlay Ingredients callout — [[ui/almanac]] | `one` | `sm` |
 | Bottom-right `Status` — [[ui/inspect]] | `live` | `md` |
 
-Build shows every recipe stacked, `divide-y divide-ink/10`, under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
+Build shows every recipe stacked under `skuDesc`, above the gate line. Machine SKUs only. No reverse lookup from ingredients.
 
-Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)` on that Variety's fruit, then `one` in the Overlay callout. `one` is that recipe's row, same three columns as `list`. Hover `Coin` bakes `unitSale` at Quality 0 × that Variety's `purposeMul` on that path.
+Almanac crop / tree Ingredients is the reverse lookup: `recipesUsing(face)` on that Variety's fruit, then `one` in the Overlay callout. Hover `Coin` bakes `unitSale` at Quality 0 × that Variety's `purposeMul` on that path.
 
 ## List rows
 
-Static. Arrow painted full. Duration is `{n} sec` — `clockText`, the recipe's nominal seconds, base, not divided by `machineMul`, not multiplied by `furnaceMul`, matching the catalog blurbs. Not `m:ss`. Not `Xs`. Not `Xd`.
+Static. Arrow painted full. Duration is `{n} sec` — `clockText`, the recipe's nominal seconds, base, not divided by `machineMul`, not multiplied by `furnaceMul`. Row counts and inputs: [[mechanics/machines]] `machines.recipe-source`. Named jam titles and **Premium** casks from `faceName` / `caskName` — [[mechanics/machines]] `machines.cask-premium`.
 
 `any` inputs cycle their faces at `CYCLE_MS`. A `range` yield with `faces` shares that index: grinder fruit `i` shows seed `i`. One `useCycle` per row.
 
-Counts from `sim/recipe.ts`. Do not retype. Rows that pin a Variety carry that Variety on the `one` face.
-
-| machine | rows |
-|---|---|
-| mill | one row per `MILL_RECIPES` entry — every Variety of that crop collapses onto it, six rows. Grass unchanged. Vanilla: `MILL_VANILLA_IN` 1 fruit → `MILL_VANILLA_OUT` 4 vanilla-extract. `millProductName('vanilla')` is **vanilla extract**. Chilli: `MILL_CHILLI_IN` 3 fruit → `MILL_CHILLI_OUT` 2 flakes. `millProductName('chilli')` is **Flakes**. |
-| jam | eight rows. Sugar per jar, `jamSugar`: the Passata row is one input, the Ketchup row twice a jam. A named jar keeps its own row; every other Variety of that crop collapses onto the plain jar. No apple. Named jars below. Every tomato but San Marzano is **Ketchup**. |
-| still | five rows: one per `STILL_CROPS` entry, Klosterneuburger apart under its own spirit name, plus mixed `any`. Every still recipe carries `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. |
-| barrel | four rows: per crop, `'base'` and the variant collapse onto one jar, the heirloom keeps its own (its jar is drawn apart). Grape → wine `barrelNeed('grape')`, apple → cider `barrelNeed('apple')`. |
-| grinder | 2. First `any`: `'base'` and `heirloom` annuals plus every tree fruit. Yield seeds / tree-seed at `'base'` when the input `tier` is `heirloom` or the input is tree fruit; else same Variety. Second `any`: annual `variant` fruit only, yield that Variety's seeds. Trees stay on the first row. Quality carries. |
-| compost-box | 4: any fruit → `COMPOST_LITERS`, then weed/grass → `COMPOST_LITERS`, then rotten (`CropClass` faces) → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (5), then ash `one` → `COMPOST_LITERS`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Variety ignored. |
-| furnace | 7: green `any` (includes graft), fruit `any`, sugar `one`, oil `one`, spirit `any`, wood `one`, flour `one` bread. Ash rows yield `FURNACE_ASH` ash. Bread row yields `{ kind: 'bread' }`. Duration `fixed` `FURNACE_SECONDS`. Lock ash vs bread. Item counts `FURNACE_NEED / FURNACE_VALUE.*` on ash; bread `FURNACE_BREAD_IN`. Variety and Quality ignored on ash. |
-| infuser | 4: jam `any`, spirit `any`, cask `any`, oil `one`. Each carries reagent `any` flakes \| vanilla-extract amount 1. Yield the same good `infused: true`. Duration `fixed` `INFUSE_SECONDS`. Face overlay-infused. One reagent, not both. |
-
-### Named jam
-
-`faceName` of the jar. Five Varieties have a product of their own; every other Variety falls back to the plain jam of its crop; base tomato keeps **Ketchup**.
-
-| variety | jam reads |
-|---|---|
-| `concord` | **Grape jelly** |
-| `black-raspberry` | **Black raspberry jam** |
-| `san-marzano` | **Passata** |
-| tomato `'base'` | **Ketchup** |
-
-A named jar draws its own face — [[art/machines]]. A cask from an heirloom Variety reads **Premium wine** / **Premium cider**, `caskName`.
-| else | `{Crop} jam` |
+Still water is an input of `STILL_WATER` liters on the `water` face. Water is not an `Item`. Not `tap`. Infuser yield face overlay-infused. One reagent, not both.
 
 ## Live row
 
 One row. Machine empty → cycle every recipe at `CYCLE_MS`. Machine has a recipe → pin to it, including the locked Variety.
 
-Live barrel pins the locked crop + Variety row. Empty barrel (`crop === 'none'`) cycles the barrel list.
-
-Live mill / jam / grinder pin the locked Variety. Empty (`'none'`) cycles.
-
-Live furnace empty (`units === 0`) cycles all list rows. Filling / working / ready pin the locked recipe; ash `have` / `need` stay furnace units (`FURNACE_NEED`); bread uses `FURNACE_BREAD_IN`. No `thirsty`. `inn === 1` and `units > 0` → **Paused by wire**.
-
-Live infuser empty (`lock === 'none'`) cycles all list rows. Filling / working / ready pin the locked good. `filling.at` good, then the reagent. No `thirsty`. Yield face draws overlay-infused.
+Live barrel pins the locked crop + Variety row. Empty barrel (`crop === 'none'`) cycles the barrel list. Live mill / jam / grinder pin the locked Variety. Empty (`'none'`) cycles. Live furnace empty (`units === 0`) cycles all list rows; filling / working / ready pin the locked recipe. Live infuser empty (`lock === 'none'`) cycles; filling / working / ready pin the locked good. Live compost filling pins the fruit row; empty compost is idle and cycles all list rows. `filling.at` indexes `recipe.inputs`. Jam reports fruit first, then sugar. Infuser reports the good first, then the reagent.
 
 | `Craft` | row | line under |
 |---|---|---|
 | `idle` | cycles | **Empty** |
-| `filling` | pinned, short input shows `{have}/{need}` in `text-roof` bold | — |
+| `filling` | pinned, short input shows `{have}/{need}` | — |
 | `paused` | pinned | **Paused by wire** |
 | `thirsty` | pinned | **Needs water** |
 | `working` | arrow fills `progress`, caption counts down (tick rate: `machineMul × furnaceMul` on `work`, `furnaceMul` on `fixed`) | — |
 | `ready` | arrow full | **Output blocked** |
 
-`filling.at` indexes `recipe.inputs`. Jam reports fruit first, then sugar. That index is data, not a guess.
+The still holds one instance in two cells, so hovering either half binds the same machine and shows one row. Furnace: either cell of the 1×2, one row. Infuser: any of four cells of the 2×2, one row.
 
 ## Arrow
 
-`ui-arrow-right.svg`, groups `ink` `fill` — [[art/svg]]. `UI_ARROW_INK` / `UI_ARROW_FILL`.
-
-Track is `ink` at `opacity-25`. Over it a clipped span of width `progress`, holding `ink` then `fill`. A left-to-right wipe. `preserveAspectRatio="none"`.
-
-Not a `Bar`. `Bar` is a Radix Progress rectangle — wrong shape, wrong meaning.
-
-No keyframes, no transition. Reduced motion is not a concern for the arrow.
+`ui-arrow-right.svg`, groups `ink` `fill` — [[art/svg]]. Track is `ink` faded. Over it a clipped span of width `progress`. A left-to-right wipe. Not a `Bar`. No keyframes.
 
 ## Per-frame paint
 
-`progress` moves every tick and React does not re-render every tick — [[ui/hud]]. The live arrow and its caption are painted by `paintMotion`, not React.
-
-`bindCraft(cell)` from the live mount, `bindHud('craft-fill' | 'craft-time', el)` on the two nodes. `data-craft-fill` / `data-craft-time`. React renders the same values so the first frame is right. Change the markup here and change `motion.ts` too.
-
-`idle` is not painted imperatively — the cycle is React's.
-
-The still holds one instance in two cells, so hovering either half binds the same machine and shows one row. Furnace: either cell of the 1×2, one row. Infuser: any of four cells of the 2×2, one row.
+`progress` moves every tick and React does not re-render every tick — [[ui/hud]]. The live arrow and its caption are painted by `paintMotion`, not React. `bindCraft(cell)` from the live mount. React renders the same values so the first frame is right. `idle` is not painted imperatively — the cycle is React's.
 
 ## Cycle
 
-`ui/cycle.ts`. `useCycle(n)`, `CYCLE_MS` 800. `n < 2` runs no timer.
-
-The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePane` / CropPane plant stages / TreePane stages [[ui/almanac]]. Variety row does not cycle.
-
-Assumption: `useCycle` ignores `prefers-reduced-motion`, as the four call sites it replaced always did.
-
-Assumption: recipe columns `minmax(0,1fr)` each are the 0.5 clamp — names truncate rather than wrap, every mount.
-
-Assumption: live compost filling pins the fruit row; empty compost is idle and cycles all list rows. Live furnace filling pins the first list row.
+`ui/cycle.ts`. `useCycle(n)`, `CYCLE_MS`. `n < 2` runs no timer. The one cadence. Callers: this component, `AnyJamFace` [[ui/contracts]], `PipePane` / CropPane plant stages / TreePane stages [[ui/almanac]]. Variety row does not cycle. `useCycle` ignores `prefers-reduced-motion`.

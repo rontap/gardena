@@ -2,35 +2,13 @@
 
 Types as they run. Illegal states are unrepresentable. Coders do not runtime-check these.
 
-Owners: [[architecture/modules]]. Ids: `sim/ids.ts` (`RouteId`, `VehicleId`, `SensorKind`, `VarietyId`, `EnclosureId`). Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`. Routes: `sim/vehicle.ts`. Light: `sim/sensor.ts`. Fenced area: `sim/feature-enclosure/`.
+Owners: [[architecture/modules]]. Ids: `sim/ids.ts`. Cells / items: `sim/plot.ts` `sim/item.ts` `sim/building.ts`. Tick: [[architecture/tick]]. Log: [[architecture/log]].
 
 ## Unrepresentable
 
-`Plant.crop` is `Exclude<AnnualId, 'grass'>`. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. `Plant.variety` `Tree.variety` required `VarietyId`. `quality` required on `Plant`, seeds, fruit, graft, spirit, cask, jam, oil, flour, extract, sugar, flakes, vanilla-extract, bread. Fruit `cut: boolean` required. `infused: boolean` required on jam, cask, spirit, oil.
+`Plant.crop` excludes grass. `Tree.species` is `TreeId`. `seeds.crop` is `AnnualId`. `variety` and `quality` required on plant, seeds, fruit, graft, spirit, cask, jam, oil, flour, extract, sugar, flakes, vanilla-extract, bread. Fruit `cut` required. `infused` required on jam, cask, spirit, oil.
 
-```
-AnnualId     = carrot | potato | wheat | tomato | raspberry | grape | vanilla | chilli | sugar-cane | grass
-TreeId       = apple | apricot | olive | cherry
-CropId       = AnnualId | TreeId
-BetterCrop   = potato | wheat | tomato | raspberry | grape | apple | apricot | olive | cherry
-MillRecipe   = sugar-cane | olive | wheat | grass | vanilla | chilli
-JamCrop      = apricot | grape | raspberry | cherry | tomato
-BarrelCrop   = grape | apple
-CaskId       = wine | cider
-FruitAnnualId = tomato | raspberry | grape | vanilla | chilli
-FurnaceRecipe = none | ash | bread
-InfusedKey   = plain | infused
-VarietyTier  = base | variant | heirloom
-VarietyId    = base | bintje | red-fife | green-zebra | san-marzano | black-raspberry
-             | concord | keknyelu | kingston-black | pink-lady | blenheim | klosterneuburger
-             | arbequina | bing
-```
-
-`MillRecipe` `'grass'` is cut grass `{ kind: 'grass' }`, not the seed crop.
-
-`ResearchId` has no `unlock-watermelon`. `ResearchId` has no `unlock-chilli`. `ResearchId` += `unlock-hardened-tools` `unlock-infusion`. `SkuId` has no `pack-watermelon`. `SkuId` += `buy-research-station` `buy-chainsaw` `buy-infuser` `pack-chilli`. `PlayerSkillId` has no `better-watermelon` `better-carrot` `better-vanilla` `better-sugar-cane` `better-chilli` `better-grass`. `PlayerSkillId` += `lucky`. `BETTER_IDS` is a complete `{ [K in BetterCrop]: PlayerSkillId }`.
-
-Illegal: olive as `AnnualId`. Illegal: `Plant.crop` `'grass'`. Illegal: `{ kind: 'grass-seeds' }`. Illegal: grass fruit. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`. Illegal: optional `quality`. Illegal: optional `cut`. Illegal: optional `infused`. Illegal: flakes or vanilla-extract as `StallGoodId`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`. `WeatherKind` is `'clear' | 'rain' | 'dry' | 'flood' | 'drought'`.
+Illegal: olive as `AnnualId`. Illegal: `Plant.crop` `'grass'`. Illegal: `{ kind: 'grass-seeds' }`. Illegal: grass fruit. Illegal: apple as `JamCrop`. Illegal: `'berry'`. Illegal: whisky. Illegal: `sugar.count`. Illegal: optional `variety`, `quality`, `cut`, `infused`. Illegal: flakes or vanilla-extract as `StallGoodId`. Illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`. Illegal: `World.pause`. `World.cheatFastResearch` is boolean. `World.cheatSpeed` is `1 | 3`.
 
 `isPlot` / `isSolid` split the `Cell` union. A pipe, sprinkler, wire, or valve is not a `Cell`. Sensor cells sunk; vehicles `SURFACE_SLOW`.
 
@@ -38,250 +16,113 @@ Illegal: `Shrub`. Illegal: `AppleTree`.
 
 `House`, starter pump (`form: 'starter'`), `Truck` are not delete targets.
 
-`Pump.water` and `RainTank.water` are required `Reservoir`. `Pump.ports = ['in']`. `Pump.inn: Signal`. Combinational, no hold, not saved. `inn === 1` → `gatherWater` skips that reservoir. Unwired 0 gathers. Stored still fills a bucket and still feeds the water network. Origin cell owns the port (`originCell` on `Base`); Pumpjack east cell does not. Starter is wireable. `Tap` has no reservoir; it draws from `Net`. `Reservoir.rate` is `SOURCE[kind].rate` × weather mul. `World.pumpLiters` counts pump-kind `take()`.
+`Pump.water` and `RainTank.water` are required `Reservoir`. `Pump.ports = ['in']`. `Pump.inn: Signal`. Combinational, no hold, not saved. `inn === 1` → `gatherWater` skips that reservoir. Unwired 0 gathers. Stored still fills a bucket and still feeds the water network. Origin cell owns the port; Pumpjack east cell does not. Starter is wireable. `Tap` has no reservoir; it draws from `Net`.
 
 ## Same instance
 
-Multi-cell buildings store **the same instance** in every occupied cell: `House`, starter `Pump`, pumpjack, `RainTank`, `Truck`, `Tree`, `Hangar`, `SiloSeed`, `SiloSpray`, `SiloProduce`, `PotStill`, `Mill`, `Infuser`, `SeedSilo`, `AdditiveStore`. Interact on any occupied cell; it is one object. [[architecture/tree]] for the 1×2 tree. Hangar `HANGAR_W × HANGAR_H`. Vehicle silos `SILO_W × SILO_H`. Still 2×1, prop `48×24` occupying both cells. Mill / Infuser 2×2, prop `48×48` occupying four cells. House seed silo / additive-store 1×2. Station 1×1.
+Multi-cell buildings store **the same instance** in every occupied cell. Interact on any occupied cell; it is one object. Hangar door south, no rotate. Still 2×1. Mill / Infuser 2×2. House seed silo / additive-store 1×2. Station 1×1. Furnace 1×2. [[architecture/tree]] for the 1×2 tree.
 
-`World.pumps` / `World.tanks` / `World.wells` / `World.taps` / `World.stills` / `World.waterSystems` hold those same instances for the water grid. Still 2×1 and water-system join like tap (any corner). Host live order is purchase order until `rebase()` sorts by `originCell` row then col — [[architecture/net]] `net.order`. `World.pump` and `generateChunk`'s starter argument find `form === 'starter'`; sort must not be required to keep index 0. `World.hangars` / field silos / `World.vehicles` / `World.trailers` / `World.routes` — [[mechanics/vehicles]]. `World.silo` / `World.additives` starter stores. `World.wires` — [[mechanics/sensors]].
+`World.pumps` / `tanks` / `wells` / `taps` / `stills` / `waterSystems` hold those same instances for the water grid. Host live order is purchase order until `rebase()` sorts by `originCell` row then col — [[architecture/net]] `net.order`. `World.pump` and `generateChunk`'s starter argument find `form === 'starter'`; sort must not be required to keep index 0.
 
-Mill/jam/still/station/infuser/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Mill, Infuser, Furnace: south row (`base.row + base.h - 1`). Jam, still, station unchanged. Rules: [[mechanics/machines]] [[mechanics/infusion]] [[mechanics/sensors]] [[mechanics/inventory]].
+Mill/jam/still/station/infuser/pump `inn` no hold. Chest/freezer/seed-silo/additive-store `out` + `SENSOR_HOLD`. Compost-box: pads, no port. Grinder hopper, no pads, no `inn`. West chest/freezer pull and east push are adjacency, not cells. Mill, Infuser, Furnace: south row. Jam, still, station: origin row. Rules: [[mechanics/machines]] [[mechanics/infusion]] [[mechanics/sensors]] [[mechanics/inventory]].
 
-`SiloStack` is `{ crop: AnnualId; variety; quality; count }`. `'grass'` is a legal `crop`. Field `SiloSeed` the same stacks. No `SeedStore.grass`. [[mechanics/inventory]] `inventory.grass-silo`.
-
-Still `base.w = 2` `base.h = 1` and prop `48×24` occupying both cells.
+`SiloStack` is `{ crop: AnnualId; variety; quality; count }`. `'grass'` is a legal `crop`. No `SeedStore.grass`.
 
 ## Seats
 
-`World.seats: Seat[]`. Length 1..4. Index 0 is always the host / solo player. Each `inventory` length 16.
-
-`App.local: SeatId` is who this page is. Solo and tests: one in-seat, `local === 0`.
-
-`apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work/stride and that seat hand/inventory freshness. Seat stays in `seats`. Freezer slots rot at `FREEZER_ROT_MUL`. [[mechanics/multiplayer]] [[mechanics/machines]]
-
-Assumption: walk/work transients (`workLeft`, `workTotal`, `filling`, `legStart`) live on the seat, not `World`.
+`World.seats: Seat[]`. Length 1..4. Index 0 is always the host / solo player. Each `inventory` length 16. `App.local: SeatId` is who this page is. Solo and tests: one in-seat, `local === 0`. `apply(cmd)` mutates `seats[cmd.p]`. `tick` walks every `presence === 'in'` seat. Away: skip that actor walk/work/stride and that seat hand/inventory freshness. Seat stays in `seats`. Walk/work transients live on the seat, not `World`. [[mechanics/multiplayer]]
 
 ## Plot
 
-`soil` is required on every tilled arm. A tilled plot without dirt cannot be written. `untilled` and `infertile` have no `soil` field. `Soil.weedChance: number` required. `Weed.spread: boolean` required, starts `false`.
+`soil` is required on every tilled arm. `untilled` and `infertile` have no `soil` field. `Soil.weedChance` required. `Weed.spread` required, starts `false`.
 
-Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `rotten` — `crop: CropId` only. Illegal: grass as a nullable index; it is a `Cover` arm. Illegal: `untilled` without `ground` and `cover`.
+Illegal: optional `plant` on `growing` / `ripe` / `dead`. Illegal: `Plant` on `rotten` — `crop` only. Illegal: grass as a nullable index; it is a `Cover` arm. Illegal: `untilled` without `ground` and `cover`.
 
-```
-Cover =
-  | { kind: 'bare' }
-  | { kind: 'grass'; variant: 0 | 1 | 2 }
-  | { kind: 'tile'; tile: TileId }
-  | { kind: 'burrow'; loot: LootItem }
-```
+Cover is `bare` | `grass` (variant 0|1|2) | `tile` | `burrow` (loot required). Burrow is untilled cover, not a `Cell` kind. Not solid. Walk ok. [[mechanics/burrow]]
 
-Burrow is untilled cover, not a `Cell` kind. `loot` required. Illegal: optional `loot`. `LootItem` shovel id is `'better-shovel'` only; pickaxe id is `'better-pickaxe'` only. Not solid. Walk ok. [[mechanics/burrow]]
-
-`Plant.tended: boolean` required, starts `false`, same instance through ripe / dead. `Plant.variety` `Plant.quality` required. `Tree.tended: boolean` required, starts `false`. `Tree.variety` required. [[architecture/family]] [[architecture/tree]].
+`Plant.tended` required, starts `false`, same instance through ripe / dead. `Tree.tended` required, starts `false`. `Tree.variety` required.
 
 ## Place
 
 `Seat.place` is always a `Place`. No `World.place`. Place is per-seat. `armWire` sets `{ kind: 'wire'; from }`. `buy` never arms wire.
 
-Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `pack-*` including `pack-grass` merge into the silo as `'base'` quality 0.
+Illegal: `facing` on any id other than `buy-sprinkler-vert`. Illegal: delete as a `SkuId`. Packs never arm — `pack-*` merge into the silo as `'base'` quality 0.
 
-Confirm: cell buildings and item drops set `none` except StayArmed sensor cells (incl. pulser, counter, day, traffic-light, logic, variety, weather, pressure plate). Pipe, valve, sprinkler, tile, sensor cells, and delete do not.
+Confirm: cell buildings and item drops set `none` except StayArmed (pipe, valve, sprinkler, tile, sensor cells, delete). Pattern: [[ui/place]].
 
 ## Intent
 
-`plant` is seeds (`AnnualId`) or tree seed (`TreeId`). Same act. `crop === 'grass'` writes turf, not a `Plant`. Tree seed anchors on the clicked cell as the lower half. [[architecture/tree]] [[mechanics/plants]] `plants.grass`.
+`plant` is seeds (`AnnualId`) or tree seed (`TreeId`). Same act. `crop === 'grass'` writes turf, not a `Plant`. Tree seed anchors on the clicked cell as the lower half.
 
-`graft` is `{ act: 'graft'; at: Coord }`. `dest` = `at`. Hold a graft. Never plants.
+`graft` is `{ act: 'graft'; at }`. Hold a graft. Never plants.
 
-`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance (`base.col`, `base.row`; a leftover circle dump: its occupied cell), not the interior cell clicked. `dest(station | infuser)` = `at`. `dest(open)` = `at`. `{ act: 'open'; at }`. `{ act: 'infuse'; at }`. Enqueue, no new `Act` letter. Work 0. Intent `at` may still be the clicked occupied cell (same instance). Else `at`.
+`dest(consign) = PAD`. `dest(inventory) = DOOR`. `dest(vehicle)` / `dest(embark)` = floor of that vehicle at enqueue. `dest(toggle) = at`. `dest(hangar | silo | still | fill)` = origin of that instance. `dest(station | infuser | open | additives)` = `at`. `{ act: 'open'; at }`. `{ act: 'infuse'; at }`. Enqueue, no new `Act` letter. Work 0.
 
 `QUEUE_CAP` — preference. `enqueueOn` past that length is a no-op and `say(prompt_queue_full)`. Not Save.
 
-No `World.pulse`. No `Pulse` type. Last-action highlight gone. Not a cmd. Not Save. `say` / `grantPoint` stay.
+No `World.pulse`. No `Pulse` type. Last-action highlight gone. Not a cmd. Not Save.
 
 Truck cells enqueue `{ act: 'consign' }`. Yard cells are plots.
 
 ## Stall
 
-`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Sugar-cane fruit is a stall good. Chilli fruit is a stall good. Bread is a stall good. Illegal: grass fruit. Illegal: whisky. Illegal: flakes or vanilla-extract as `StallGoodId`. `JamId` is `jam-${JamCrop}`. One `extract` (grass mill). Olive fruit is a stall good (`TreeId`). `{ kind: 'rotten' }` is not a `StallGoodId`. Assumption: consigned rotten is `World.clearance: number`.
+`World.stall` is a complete map. Illegal: seeds on the stall. Illegal: a missing good. Illegal: `'berry'`. Illegal: grass fruit. Illegal: whisky. Illegal: flakes or vanilla-extract as `StallGoodId`. Sugar-cane fruit, chilli fruit, bread, olive fruit are stall goods. `{ kind: 'rotten' }` is not a `StallGoodId`. Consigned rotten is `World.clearance: number`.
 
-Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract / bread. Infused jam / cask / spirit / oil: stock per `InfusedKey`. Flakes and vanilla-extract are not `StallGoodId`. [[architecture/family]] [[mechanics/infusion]].
+Saleswoman `(1 + 0.02 × tier)` on every `StallGoodId`. Őstermelő `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine. Not sugar / jam / oil / flour / extract / bread. Infused jam / cask / spirit / oil: stock per `InfusedKey`. Crop goods: stock and worth per variety × `bio`. Infusable goods: stock and worth per variety × `InfusedKey`. Illegal: fruit consign that drops `fruit.bio`. [[architecture/family]] [[mechanics/infusion]]
 
-Crop goods: stock and worth per variety × `bio`. Illegal: fruit consign that drops `fruit.bio`. Infusable goods: stock and worth per variety × `InfusedKey`.
-
-`World.contracts: Contracts`. Dump persists `active` with fills, `takenToday`, `history`, `book`, plus `rep` / `repDay`. Board is not in the file. New farm empty. Consign fills `active` in array order, then stall. Miss on the tick `nowDay` crosses `dueDay`. [[mechanics/contracts]] [[architecture/save]]
+`World.contracts: Contracts`. Dump persists `active` with fills, `takenToday`, `history`, `book`, plus `rep` / `repDay`. Board is not in the file. [[mechanics/contracts]]
 
 ## Hand / Item
 
-No `Item | null`. Chest slots and inventory slots are `Slot[]`. Fruit and grind input stay `CropId`. Sugar-cane harvests as fruit. Chilli harvests as fruit. Illegal: `sugar.count`. Illegal: whisky. Wine age baked into `unitSale`. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }`. `{ kind: 'weed-spray'; liters; capacityLiters }`. Illegal: `liters` 0 as held. No `usesLeft` field. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `{ kind: 'box' }`. Not sugar liters. Not spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread. `{ kind: 'graft'; crop; variety; quality; count }`. Fruit `cut: boolean` required. `{ kind: 'flakes'; quality; count }`. `{ kind: 'vanilla-extract'; quality; count }`. `{ kind: 'bread'; quality; count; unitSale }`. Illegal: `unitSale` on flakes or vanilla-extract. `{ kind: 'treasure'; coins: number }`. `coins` required. Illegal: `treasure.count`. Not countable.
-
-```
-ChopItem =
-  | { kind: 'axe'; usesLeft: number; workSeconds: number }
-  | { kind: 'chainsaw'; usesLeft: number; workSeconds: number }
-```
-
-No `id` on either. Illegal: `{ kind: 'better-axe' }`. Chop legal hand is `ChopItem`. Work is the held item's `workSeconds`.
-
-```
-Spirit =
-  | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
-  | { kind: 'spirit'; spirit: 'mixed'; quality: number; count: number; unitSale: number; infused: boolean }
-```
-
-Illegal: optional `infused` on jam, cask, spirit, oil.
+No `Item | null`. Chest slots and inventory slots are `Slot[]`. Illegal: `sugar.count`. Illegal: whisky. Illegal: `{ kind: 'apple-tree' }` `{ kind: 'berry' }` `{ kind: 'shrub' }` `{ kind: 'box' }`. Illegal: `liters` 0 as held. Illegal: fruit with `freshness <= 0` after `tickFreshness`. Illegal: `treasure.count`. Illegal: `unitSale` on flakes or vanilla-extract. Fruit `cut` required. `weed-spray` is `liters`+`capacityLiters`. Chop legal hand is axe or chainsaw (`usesLeft`, `workSeconds`). No `id` on either. Illegal: `{ kind: 'better-axe' }`. Mixed spirit has no `variety` field. Optional `infused` on jam, cask, spirit, oil is illegal.
 
 ## Recap / Seam
 
-```
-Recap = {
-  day: number
-  money: number
-  stipend: number
-  died: number
-  harvests: number
-  research: ResearchId[]
-  tax: number
-  water: number
-  contracts: HistoryEntry[]
-}
+Live `World.seam` is always `{ kind: 'play' }`. Dump `Seam` is always `{ kind: 'play' }`. Illegal: live `seam.kind === 'recap'`. Illegal: `recipient` on `Recap`. `Recap.water` required.
 
-Seam = { kind: 'play' }
-```
-
-Illegal: `recipient?: MemberId` on `Recap`. `Recap.water` required (pump bill). Illegal: live `seam.kind === 'recap'`. Live `World.seam` is always `{ kind: 'play' }`. Dump `Seam` is always `{ kind: 'play' }`.
-
-`World.recaps: Recap[]` — one per ended day; `Recap.day` is the key. `World.recapUnseen: number[]`.
-
-`World.recapAt(day): Recap` — total; missing day throws. `World.seeRecap(day)` removes `day` from `recapUnseen`; no-op if absent. Not a `Cmd`. Ping.
+`World.recaps: Recap[]` — one per ended day; `Recap.day` is the key. `World.recapUnseen: number[]`. `World.recapAt(day)` — total; missing day throws. `World.seeRecap(day)` removes `day` from `recapUnseen`; no-op if absent. Not a `Cmd`.
 
 `Act.dismissRecap` / `dismissRecapBody`: no-op. Log letter unchanged.
 
-Seam, before any field tick of the new day: `stipendOf(endedDay)`, tax, pump bill, burrow mint, tree seam, append `Recap` to `World.recaps`, push that day onto `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `clock.banner = 4`, `seam` stays play, tally reset, `contracts.takenToday`, ping. `Recap.stipend` is `stipendOf` of that ended day. `World.tick` does not return early. Recap popup is App `recapDay`, not `World.seam`. [[architecture/family]] [[mechanics/day]] `day.stipend` [[mechanics/contracts]] [[mechanics/weather]] [[mechanics/burrow]] [[ui/notices]].
+Seam, before any field tick of the new day: `stipendOf(endedDay)`, tax, pump bill, burrow mint, tree seam, append `Recap`, push that day onto `recapUnseen`, `grantPoints(POINTS_PER_DAY)`, `clock.banner = 4`, `seam` stays play. Recap popup is App `recapDay`, not `World.seam`. [[mechanics/day]]
 
 ## Family
 
-`World.family: Family` always. Offers, owned, pickCount per member. Shared `World.points`. [[architecture/family]].
+`World.family: Family` always. Shared `World.points`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. Illegal: `World.luck`. [[architecture/family]]
 
-Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. Illegal: `World.luck`.
+`offers` length 0..3. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier` including `haggling`, ignores gates, rebuilds modifiers, empties offers. `cheatFastResearch` multiplies job drain by 3 on top of Speedy research. `cheatMoney` `+200`. `cheatPoints` `+10`. End day sets `clock.t = DAY_SECONDS`. Cheats not Save.
 
-`offers` length 0..3. `buyPacks` always legal: five seed packs at `5 × skuPrice × 0.95`, `'base'` quality 0. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier` including `haggling`, ignores gates, rebuilds modifiers, empties offers. `cheatFastResearch` multiplies job drain by 3 on top of Speedy research. `cheatMoney` `+200`. `cheatPoints` `+10` to the shared bank. End day sets `clock.t = DAY_SECONDS`.
+## Time / indexes / log
 
-```
-World.cheatFastResearch = boolean
-World.cheatSpeed         = 1 | 3
-```
+[[architecture/tick]] [[architecture/log]]. Do not restate them here.
 
-`cheatFastResearch` starts false. Not Save. Toggle `Act.cheat` `{ k: 'research' }`.
-`cheatSpeed` starts 1. Not Save. `Act.cheat` `{ k: 'speed'; n: 1 | 3 }`.
+Fenced-area maps, not `track()`: `enclosures` / `fenceEnclosures` / `plotEnclosures`. Rebuild on fence add / fence remove / `indexAll`. Never on tick. Not Save. [[mechanics/enclosure]]
 
-## Time
+Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Mill/jam/still/station/infuser/pump `inn` hold. Pad as a `Cell`. Logic gate / NOT buyable on `unlock-sensors` alone. Live `SensorKind` `'or'` `'and'`. Traffic-light `inn` combinationally driving `out`. `HudTarget` hangar or vehicle. Enclosure on tick. `plotEnclosures` as a field on `Plot`. Infuser 1×1. `unlock-chilli`.
 
-Tick law: [[architecture/tick]].
+`World.routes: Route[]`. `World.nextRouteId` starts 1. Vehicle holds `route: RouteId | 'none'`, `cursor`, `running`. Rules: [[mechanics/vehicles]].
 
-`World.now: number` — integer count of `tick()` entries. Starts 0. Increments by 1 at every `tick()` entry.
-
-`Cmd.t` is `now` after last completed tick, before apply. `Cmd.p` is `SeatId`. Solo and tests: `p = 0`. [[architecture/log]]
-
-Live: App host accumulator `frameDt * World.cheatSpeed`, then `tick(DT_MAX)` only, at most two ticks per frame. Never a leftover. World.tick does not multiply `dt`. View paints via the Pixi ticker. No sim interpolation. View vehicles keep `QUAD_FOLLOW`. Do not raise `DT_MAX`. Do not move `World` to a worker. Solo and MP. Tests replay with `dt = DT_MAX`. MP: one `tick(DT_MAX)` per host bundle. [[architecture/net]] [[architecture/view]] [[architecture/tick]]
-
-### Indexes
-
-Maps on `World`, same `Coord` values as `live`. Origin-only for multi-cell. `track()` from `setCell`. `indexAll` on hydrate / rebase. No `sim/index.ts`. `live` is not a tick walk.
-
-| name | members |
-|---|---|
-| grow | growing, ripe, dead, rotten, weed, turf, tree origin |
-| machines | mill, jam, still, barrel, grinder, compost, furnace, station, infuser origin |
-| stores | chest, freezer |
-| sensors | sunk sensor cells |
-| buttons | button cells |
-| recover | tilled with `weedChance < WEED_CHANCE` |
-| empty | empty plots |
-| tilled | `isTilled` |
-| burrows | untilled `cover.kind === 'burrow'` |
-
-Fenced-area maps, not `track()`:
-
-| name | key | value |
-|---|---|---|
-| enclosures | `EnclosureId` | `Enclosure` |
-| fenceEnclosures | `"col,row"` | `EnclosureId[]` |
-| plotEnclosures | `"col,row"` | `EnclosureId[]` |
-
-Rebuild on fence add / fence remove / `indexAll`. Never on tick. Not Save. [[mechanics/enclosure]]
-
-`tickField` grow+recover. `tickMachines` machines (compost-box in the same loop). `tickFreshness` stores (+ seats / drops / vehicles, not grow). `tickButtons` buttons. `evalSensors` sensors+machines+stores+`World.pumps`. `sproutWeeds` empty. Weather soak `tickBig` walks tilled. `padBuildings` machines+stores (+ World `silo` / `additives` / `seedSilos`).
-
-`forEachCell` is forbidden on the tick path. Iterate maps directly. No live-array copy. View dirty walks these plus `segments` / `sprinklers` / `fences`; not `forEachCell`. [[architecture/view]] `view.scan`.
-
-## Log
-
-`World.log: Cmd[]` is source of truth. In-process. Worker is an async JSON sink. It does not apply cmds. It does not own `World`. Vitest never uses a Worker.
-
-```
-dispatch(cmd): log then apply
-apply(cmd): mutate seats[cmd.p] and shared farm. No log.
-```
-
-No silent flag. Replay calls `apply` only.
-
-`ping()` coalesces: marks dirty reasons (`'act' | 'field' | 'big' | 'speech' | 'vfx'`) and flushes subscribers once per microtask with the reason set. From tick only on discrete change. Continuous world chrome is the Pixi ticker. Continuous HUD chrome is `paintMotion`. No every-tick counter HUD `this.ping()`. Juvenile growth does not ping `'field'`. [[mechanics/trees]] `poured` / `sold` emit synchronously. `flushDirty()` forces a flush. FPS readout: [[ui/hud]]. Not a `DirtyReason`.
-
-Ping consumption: `speech` HTML bind + ticker pose; `vfx` not Hud; `field` / `big` world-view patch not whole chrome; `act` Hud + patch. A new `DirtyReason` must have a view that filters it. Unused reason is a defect. [[architecture/tick]] [[architecture/view]]
-
-Public UI methods wrap `dispatch`. `enqueue` is a mutator (tests); UI field acts go through `click` / `clickValve`. `confirmPlace` is inside `click` — not a cmd. Map fence run is `click` per cell, not `confirmPlace`. Map `rightClick` is a cmd.
-
-`Seat.place` / `World.hud` / `Seat.cue` are game and are logged via the mutators that set them. Panel / camera / hover / lens / hangar select / camera follow / Dash Automate / editor open are not. Camera follow is view-local, not `World`, not sim.
-
-Cheats are cmds.
-
-Cmd table: [[architecture/log]]. Do not restate it here.
-
-Vehicles unrepresentable: two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, quad hitch, quad boom, boom other than `3 | 5`, two trailers on one tractor, trailer attached + stored. Cycle wire. Two direct paths same `nodeKey(from)` → `nodeKey(to)`. Wire into an output. Analogue signal. Still rotate / 1×1. Still prop not occupying both cells. Mill/jam/still/station/infuser/pump `inn` hold. Pad as a `Cell`. Logic gate / NOT buyable on `unlock-sensors` alone. Live `SensorKind` `'or'` `'and'`. Traffic-light `inn` combinationally driving `out`. `HudTarget` hangar. `HudTarget` vehicle. Enclosure on tick. `plotEnclosures` as a field on `Plot`. Infuser 1×1. Optional `infused`. Flakes or vanilla-extract as `StallGoodId`. `unlock-chilli`. `{ kind: 'grass-seeds' }`. `Plant.crop` `'grass'`. Grass fruit.
-
-`World.routes: Route[]`. `World.nextRouteId` starts 1. Vehicle holds `route: RouteId | 'none'`, `cursor`, `running`. `RouteStop` is a closed union. Rules: [[mechanics/vehicles]] `vehicles.dispatch`.
-
-```
-HudTarget =
-  | { kind: 'sprinkler'; at: Vertex }
-  | { kind: 'water'; at: Coord }
-  | { kind: 'harvest'; at: Coord }
-  | { kind: 'counter'; at: Coord }
-  | { kind: 'day'; at: Coord }
-  | { kind: 'logic'; at: Coord }
-  | { kind: 'variety'; at: Coord }
-  | { kind: 'weather'; at: Coord }
-  | { kind: 'pressure'; at: Coord }
-
-EnclosureId = number
-Enclosure = { id: EnclosureId; interior: Coord[]; fences: Coord[] }
-```
+`HudTarget` is sprinkler vertex or a sensor cell (water, harvest, counter, day, logic, variety, weather, pressure). No hangar. No vehicle.
 
 ## Rng
 
-`World.rng: Rng`. `World.seed` is `rng.seed`. `Math.random` only when seed is omitted.
-
-No `World.ripenN`. No grow stream. [[architecture/rng]]
+`World.rng: Rng`. `World.seed` is `rng.seed`. `Math.random` only when seed is omitted. No `World.ripenN`. No grow stream. [[architecture/rng]]
 
 Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only. Burrow site `at(cx, cy, day, k)`. Burrow loot `at(col, row, salt)`. `clock.t` or `money` as entropy.
 
 ## Weather
 
-`WeatherKind` on `sim/weather.ts`. Table from `forecastWeather(seed, throughDay, pins?)`. `World.weather(day)` indexes it. Current = `weather(clock.day)`. `World.pumpLiters` 0 at init, load, `rebase()`, and after the seam bill. Pins: `Map<day, WeatherKind>`, not Save, not `Cmd`, host only. [[mechanics/weather]]
+`World.weather(day)` indexes `forecastWeather(seed, throughDay, pins?)`. Current = `weather(clock.day)`. `World.pumpLiters` 0 at init, load, `rebase()`, and after the seam bill. Pins: `Map<day, WeatherKind>`, not Save, not `Cmd`, host only. [[mechanics/weather]]
 
 ## Modifier
 
-`Modifier.source = 'research' | 'fertilizer' | 'skill'`. Skill crop sale (`better-*`) is `source: 'skill'`.
-
-`World.modGen` increments when `modifiers` change. Cache `statsOf(crop, variety)` for that generation. `qualityMul` applies at sale, not in the cache key. Plants do not re-filter modifiers every tick.
+`Modifier.source = 'research' | 'fertilizer' | 'skill'`. Skill crop sale (`better-*`) is `source: 'skill'`. `World.modGen` increments when `modifiers` change. Cache `statsOf(crop, variety)` for that generation. `qualityMul` applies at sale, not in the cache key.
 
 ## Invariants
 
 `world.queue` — `Seat.queue` length ≤ `QUEUE_CAP`. Further `enqueueOn` is a no-op and `say(prompt_queue_full)`. Not Save.
 
-`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station | infuser)` is `at`. `dest(open)` is `at`.
+`world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station | infuser | open | additives)` is `at`.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
 
@@ -290,5 +131,3 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 `world.cheatSpeed` — `World.cheatSpeed` is `1 | 3`. App host accumulator `frameDt * cheatSpeed`. World.tick does not multiply `dt`. `Act.cheat` `{ k: 'speed'; n: 1 | 3 }`. `?speed=3` boots 3; any other URL value boots 1. Not job drain.
 
 `world.cheatFastResearch` — `World.cheatFastResearch` is boolean. Starts false. Not Save. Toggle `Act.cheat` `{ k: 'research' }`. On: job drain `× 3` on top of Speedy research. Off: Speedy research only. Not `cheatSpeed`.
-
-Assumption: `dest(additives)` stays `at`.

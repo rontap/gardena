@@ -83,37 +83,14 @@ Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. L
 
 `Act.openHud` `k` is a closed union: `sprinkler` | `water` | `harvest` | `counter` | `day` | `logic` | `variety` | `weather` | `pressure`.
 
-`Act.tuneSensor` `'e'`. Inner `k` closed union:
-
-```
-| { a: Act.tuneSensor; t; p; k: 'logic'; c: XY; mode: 'or' | 'and' }
-| { a: Act.tuneSensor; t; p; k: 'variety'; c: XY; base: boolean; variant: boolean; heirloom: boolean }
-| { a: Act.tuneSensor; t; p; k: 'weather'; c: XY; clear: boolean; rain: boolean; dry: boolean; flood: boolean; drought: boolean }
-| { a: Act.tuneSensor; t; p; k: 'pressure'; c: XY; vehicle: boolean; player: boolean; item: boolean }
-```
-
-`log.letters` += `Act.tuneSensor` `'e'`. New cmds → orchestrator bumps `PROTOCOL` with [[GLOBAL_VERSION]].
+`Act.tuneSensor` inner `k` is a closed union: logic mode, variety flags, weather flags, pressure flags. New cmds → orchestrator bumps `PROTOCOL` with [[GLOBAL_VERSION]].
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart.
 
-`Act.cheat` inner `k` is a closed union:
+`Act.cheat` inner `k` is a closed union: `all` `money` `points` `research` `speed` `day` `skills`. `n` required on `speed` (`1 | 3`).
 
-```
-| { a: Act.cheat; t; p; k: 'all' }
-| { a: Act.cheat; t; p; k: 'money' }
-| { a: Act.cheat; t; p; k: 'points' }
-| { a: Act.cheat; t; p; k: 'research' }
-| { a: Act.cheat; t; p; k: 'speed'; n: 1 | 3 }
-| { a: Act.cheat; t; p; k: 'day' }
-| { a: Act.cheat; t; p; k: 'skills' }
-```
-
-`n` required on `speed`.
-
-`Act.route` `'o'`. Inner `k` closed union: `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Guest may. All no-op unless `unlock-dispatch` in `done`.
+`Act.route` inner `k` closed union: `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Guest may. All no-op unless `unlock-dispatch` in `done`.
 
 Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm uses `seats[cmd.p]`: if that `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and that hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 
 `confirmPlace` is inside `click`. No `confirmPlace` cmd.
-
-Assumption: lowercase `o` was the remaining free letter; `Act.route` bundles inner `k`.

@@ -42,7 +42,7 @@ Any other held item cannot gather. Compost takes gathered weeds — [[mechanics/
 
 ## Spray
 
-Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L — preference (old 30 uses). Illegal: `liters` 0 as held (empty bag leaves the hand). No `usesLeft` field. If a constant remains it is the bag liters.
+Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG` 30 L — preference. Illegal: `liters` 0 as held (empty bag leaves the hand). No `usesLeft` field. If a constant remains it is the bag liters.
 
 `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store, not house. `unlock-fertilizer` effect stays one SKU; spray gates on the research id. — [[mechanics/research]] [[mechanics/inventory]]
 
@@ -50,7 +50,7 @@ Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Instant. Not
 
 A `weed` plot becomes `empty` on the same click, same soil, no drop. Every other tilled plot keeps its kind. Spray is the one way to clear a standing weed with neither a shovel nor a free hand.
 
-Assumption: bag `WEED_SPRAY_BAG` = 30 L (old 30 uses). Spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work `SPRAY_WORK`.
+Spray click is `Intent` `{ act: 'weed-spray'; at }`, `dest` = `at`, work `SPRAY_WORK`.
 
 ## Grass
 
@@ -58,9 +58,7 @@ Cosmetic `untilled` cover. Three variants. Not a plant.
 
 World roll each `BIG_TICK`: `mul` 0 → skip; `grassCount() >= CHUNK * owned.length` → skip, before the roll and before any `grass` draw; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. `GRASS_CHANCE` — preference. Keep day-one ramp. `mul` from current weather — [[mechanics/weather]]
 
-If it fires, pick eligible untilled from the grass stream: untilled, not very-hard, cover bare, no drop. Do not sample `bounds()` AABB (unowned holes). At most one tuft. Variant unchanged: `grass.at(col, row, bigTicks)`. Appears grown.
-
-Assumption: keep try-index `i` on the pick rolls; world roll is `at(bigTicks)`.
+If it fires, pick eligible untilled from the grass stream: untilled, not very-hard, cover bare, no drop. Do not sample `bounds()` AABB (unowned holes). Try-index `i` on the pick rolls; world roll is `at(bigTicks)`. At most one tuft. Variant unchanged: `grass.at(col, row, bigTicks)`. Appears grown.
 
 Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with **no grass drop**; tilling removes the cover into `empty` soil. Grass un-tills when sown as turf — [[mechanics/plants]].
 

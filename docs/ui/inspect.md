@@ -1,6 +1,6 @@
 # Inspect
 
-Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is `font-display` `text-sm` `truncate` — rustic, a step up from body, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof (`bg-roof/20`). Litres and × multipliers a person reads here use `Math.visualRound` — [[architecture/view]] `view.round`.
+Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is rustic, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof. Litres and × multipliers a person reads here use `Math.visualRound` — [[architecture/view]] `view.round`.
 
 `Seat.queue` cap `QUEUE_CAP`. A further click `say`s **I can't remember more errands than that!**. [[architecture/world]] `world.queue`
 
@@ -21,11 +21,7 @@ Look names the Variety, not the crop alone. Copy: **{Variety}**. Growth % stays 
 | Fertilizer | segmented + notch | `floor(fertilizer * 100)%` |
 | Water | segmented + notch | `{water}L` `Math.visualRound` |
 
-Growth is a fill, not a banded bar. Blue `#4b91c2` vs empty `#8b887d`.
-
-Happiness / fertilizer / water: dark track, colored segments, pale notch at current value. Notch `#fff6d5`, outlined, taller than the bar.
-
-Bands: green `#4f9d69`, amber `#d69a3a`, red `#c9574b`.
+Growth is a fill, not a banded bar. Happiness / fertilizer / water: dark track, colored segments, pale notch at current value. Bands: green, amber, red — [[art/palette]].
 
 | bar | red | amber | green |
 |---|---|---|---|
@@ -33,18 +29,11 @@ Bands: green `#4f9d69`, amber `#d69a3a`, red `#c9574b`.
 | Fertilizer | `0 .. floor/2` | `floor/2 .. floor` | `floor .. 1` |
 | Water | dry + drown ends | between red and green | `MID ± waterTolerance` |
 
-`floor = FERT_PLOT_MAX - fertTolerance`. Water is 0–`SOIL_WATER_MAX` (2 L). Happy band centered on `SOIL_WATER_MID` (1 L). Red at both ends.
-
-No Quality bar while growing. Happiness is the live care; Quality bakes at ripen.
+`floor = FERT_PLOT_MAX - fertTolerance`. Water is 0–`SOIL_WATER_MAX`. Happy band centered on `SOIL_WATER_MID`. Red at both ends. No Quality bar while growing. Happiness is the live care; Quality bakes at ripen.
 
 ## Neighbour
 
-One `lookText` line in that same `Status` block, after the plant or tree look, before the prompt. Not a bar. Not ObjectHud. Not a new dock. Same insertion as covering haste.
-
-`keknyelu` `pink-lady` `bing` only. `NEIGHBOUR_REACH` Chebyshev from the plot, or from either cell of a 1×2 tree. A valid neighbour is the same crop, `tier` not `heirloom`, and:
-
-- annual: `growing`, water band not red, fertilizer band not red
-- tree: `juvenile >= 1`, `trunk === false`
+One `lookText` line in that same `Status` block, after the plant or tree look, before the prompt. Not a bar. Not ObjectHud. Same insertion as covering haste. `keknyelu` `pink-lady` `bing` only. Rule [[mechanics/plants]] `variety.neighbour`.
 
 | when | line |
 |---|---|
@@ -53,63 +42,37 @@ One `lookText` line in that same `Status` block, after the plant or tree look, b
 | those, valid neighbour | (no line) |
 | any other Variety | (no line) |
 
-Hover also paints the reach: one `data-neighbour-reach` path around the union of the cells in range, the same union walk as the furnace covering outline — [[architecture/view]] `view.outline`. Stroke is the inspect-bar `good` when a valid neighbour is in range, `bad` when none is — [[art/palette]]. It draws for those three Varieties only, whether or not the need is met, and only with an empty place tool. No fill. No per-cell rect.
-
-Without a neighbour the plant does not advance toward fruit — annual `maturity` holds, tree `fruit` holds and the seam does not turn `pending` into `on`. Water, fertilizer, happiness, stunt, death, and `juvenile` still tick. Copy [[agents/game-text-writer]].
+Hover also paints the reach: one path around the union of the cells in range, the same union walk as the furnace covering outline — [[architecture/view]] `view.outline`. Stroke is the inspect-bar `good` when a valid neighbour is in range, `bad` when none is — [[art/palette]]. It draws for those three Varieties only, whether or not the need is met, and only with an empty place tool. No fill.
 
 ## Store contents
 
-Hovering a `chest` or `freezer` that holds anything adds one block under the look text: the filled slots as a wrapped row of `DashFace` (`h-6 w-6` face plus its count badge), same `bg-dirt/25 px-3 py-2.5` chrome as the plant bars. Empty store draws nothing — the look line already names it.
+Hovering a `chest` or `freezer` that holds anything adds one block under the look text: the filled slots as a wrapped row of `DashFace`. Empty store draws nothing — the look line already names it.
 
 ## Barrel aging
 
-Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `Math.visualRound(caskMulOf)` as the right-hand readout. `caskAgeTop(q)` lerps the top over Quality; `caskMulOf` reads purpose and age back out of `unitSale` as one multiplier. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
+Hovering a barrel past `BARREL_MATURE` adds an **Aging** fill row: `(age - BARREL_MATURE) / BARREL_AGE`, with `Math.visualRound(caskMulOf)` as the right-hand readout. The maturing ramp before that is the craft panel's own progress — [[ui/recipe]]. The look block above it carries the aging top line — [[ui/machines]].
 
 ## Ripe
 
-Look names the Variety and nothing else. Copy: **{Variety}**. Quality and Freshness are the two bars under it, `FruitStats`.
-
-| row | style | value |
-|---|---|---|
-| Quality | blue FillBar `#4b91c2` / `#8b887d` | `floor(quality * 100)%` |
-| Freshness | banded, no amber | `floor(freshness * 100)%` |
-
-Freshness bands: red `0 .. 0.8`, green `0.8 .. 1`. Notch at current.
+Look names the Variety and nothing else. Copy: **{Variety}**. Quality and Freshness are the two bars under it, `FruitStats`. Quality: fill bar, `floor(quality * 100)%`. Freshness: banded, no amber, `floor(freshness * 100)%`. Freshness bands: red `0 .. 0.8`, green `0.8 .. 1`. Notch at current.
 
 ## Fruit on the ground
 
-A fruit item lying on the hovered cell draws the same `FruitStats` block, from the item's own `quality` and `freshness`. Top drop only, the one the look line names. Its look line is **{Variety} - {count}** and stops there: the numbers live on the bars, the same rule the ripe plot follows. Any other dropped item keeps its full `heldText` line and draws no bars.
-
-A ripe plot carrying a dropped fruit draws both blocks, plant first, drop second — the same order the two look lines are in. They are two different things and neither replaces the other.
+A fruit item lying on the hovered cell draws the same `FruitStats` block, from the item's own `quality` and `freshness`. Top drop only, the one the look line names. Its look line is **{Variety} - {count}** and stops there. Any other dropped item keeps its full `heldText` line and draws no bars. A ripe plot carrying a dropped fruit draws both blocks, plant first, drop second.
 
 Weed / dead / rotten / turf / untilled: no bars. Burrow is untilled cover: no bars. Look names the burrow, not loot: **Burrow**. Not Grass. Not Hard soil.
 
 ## Empty
 
-`kind: 'empty'` only.
-
-| row | style | value | number |
-|---|---|---|---|
-| Fertilizer | blue FillBar `#4b91c2` / `#8b887d` | `fertilizer / FERT_PLOT_MAX` | `floor(fertilizer * 100)%` |
-| Water | blue FillBar | `water / SOIL_WATER_MAX` | `{water}L` two decimals |
-| Weed resistance | banded, no amber | `clamp((1 - weedChance) / 2, 0, 1)` | `floor(* 100)%` |
-
-Weed resistance: 1 at `weedChance === -1`. Green `weedChance < 0` (bar 0.5..1). Red `weedChance >= 0` (bar 0..0.5). Outbreak above +1 clamps to 0. Notch at current. Label **Weed resistance**.
+`kind: 'empty'` only. Fertilizer fill bar, `floor(fertilizer * 100)%`. Water fill bar, `{water}L`. Weed resistance banded, no amber, `clamp((1 - weedChance) / 2, 0, 1)`, `floor(* 100)%`. Weed resistance: 1 at `weedChance === -1`. Green `weedChance < 0`. Red `weedChance >= 0`. Outbreak above +1 clamps to 0. Label **Weed resistance**.
 
 ## Tend
 
-Empty hand, player owns `tending`, work `TEND_WORK` 0.7s. Click queues `{ act: 'tend'; at }`. Prompt **Tend**.
-
-- growing plot, `plant.tended === false`: plants unchanged. Not ripe. Not twice.
-- tree, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`, `trunk === false`: either cell of the 1×2. Not pending. Not `{ on }`. Not juvenile. Not trunk. Not grow. Not twice.
-
-`pending` look is off-season; prompt is not Tend. Else empty-hand growing / tree stays **Move here**. [[mechanics/family]] [[mechanics/trees]] `trees.tend`.
+Empty hand, player owns `tending`, work `TEND_WORK`. Click queues `{ act: 'tend'; at }`. Prompt **Tend**. Growing plot, `plant.tended === false`: plants unchanged. Not ripe. Not twice. Tree, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`, `trunk === false`: either cell of the 1×2. Not pending. Not `{ on }`. Not juvenile. Not trunk. `pending` look is off-season; prompt is not Tend. Else empty-hand growing / tree stays **Move here**. [[mechanics/family]] [[mechanics/trees]] `trees.tend`.
 
 ## Tree
 
-Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars. No soil bars.
-
-`lookText` uses the Variety name. No `%` in the line. Player copy: resting → off-season, yielding → on-season. Copy: **{Variety} tree - {trunk \| growing \| on-season \| off-season}**.
+Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars. No soil bars. `lookText` uses the Variety name. No `%` in the line. Copy: **{Variety} tree - {trunk \| growing \| on-season \| off-season}**. Neighbour line may follow.
 
 | state | line |
 |---|---|
@@ -118,51 +81,27 @@ Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness b
 | `yield` `{ on }` | **{Name} tree - on-season** |
 | `pending` or `{ off }` | **{Name} tree - off-season** |
 
-`{Name}` is the Variety, not only the species. Neighbour line may follow — [[#Neighbour]].
-
-Blue plant FillBar (`#4b91c2` / `#8b887d`), label **Growth**: `juvenile` 0..1 while `trunk` or `grow`; `fruit` 0..1 once mature. Number `floor(* 100)%`. Trunk and grow both **Growth** on `juvenile`.
+`{Name}` is the Variety, not only the species. FillBar label **Growth**: `juvenile` 0..1 while `trunk` or `grow`; `fruit` 0..1 once mature.
 
 ## Prompts
 
-Tree seed in hand (`{ kind: 'tree-seed'; tree; variety; quality }`), hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}** (`TREE_NAME`). `{ act: 'plant' }`. Work same as sowing. Cover grass clears to bare. Tilled plot: no-op. Burrow: no-op — [[mechanics/plants]] [[mechanics/burrow]] `burrow.block`.
+Tree seed in hand, hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}**. `{ act: 'plant' }`. Tilled plot: no-op. Burrow: no-op — [[mechanics/plants]] [[mechanics/burrow]] `burrow.block`.
 
-Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees.
-
-Shovel on burrow: **Dig**. `{ act: 'shovel' }`. Work `workSeconds × BURROW_MUL`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`
+Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees. Shovel on burrow: **Dig**. Work `workSeconds × BURROW_MUL`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`.
 
 Treasure on the ground: **Pick up**, `{ act: 'pickup'; at }`. Picking it up pays `coins` and clears the drop. It is never held, so there is no **Open treasure**.
 
-Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. `{ act: 'chop'; at }`. Either cell. Axe on grow / trunk: no-op. Prompt is the look line. Chop yields 1 wood and 2 grafts of that tree's Variety, then `trunk = true`, `juvenile = 0`, fruit lost.
+Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. `{ act: 'chop'; at }`. Either cell. Axe on grow / trunk: no-op. Chop yields 1 wood and 2 grafts of that tree's Variety, then `trunk = true`, `juvenile = 0`, fruit lost.
 
-Held `{ kind: 'graft'; crop; variety; quality; count }`, hovered legal target, same crop, target `tier` is not `heirloom`: **Graft**. `{ act: 'graft'; at }`. `dest` = `at`. Work `GRAFT_WORK`.
+Held graft, hovered legal target, same crop, target `tier` is not `heirloom`: **Graft**. `{ act: 'graft'; at }`. Annual `growing`. Tree `juvenile < 1`. Illegal target: prompt stays the look line. A graft is never planted.
 
-| target | state |
-|---|---|
-| annual `Plant` | `growing`. Not ripe, dead, rotten, empty. |
-| `Tree` | `juvenile < 1` — sapling or `trunk`. Not mature. |
-
-Illegal target: prompt stays the look line. A graft is never planted.
-
-Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop + Variety in hand under the stack cap. `{ act: 'harvest' }`. Same crop + Variety at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters. Not holding sugar. Quality averages on merge.
+Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop + Variety in hand under the stack cap. `{ act: 'harvest' }`. Same crop + Variety at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters.
 
 Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Spend 1 L. Not untilled. Not spray-trailer. [[mechanics/weeds]]
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud.
-
-Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block, own `bg-dirt/25 px-3 py-2.5` band, like the plant bars. The arrow is a fill, not a `Bar` — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Still / furnace: either cell, one row. Infuser: any of four cells, one row. Infused yield face draws overlay-infused.
-
-Covering haste is a `lookText` line in that same `Status` block, after the machine look, before the prompt. Not the recipe row. Not ObjectHud. Not a new dock.
-
-| when | line |
-|---|---|
-| mill / jam / still / grinder / compost-box / furnace / infuser, covering working `n > 0` | **Finishes {pct}% faster with {n} working Furnace than without a Furnace.** / **Finishes {pct}% faster with {n} working Furnaces than without a Furnace.** |
-| those, `n === 0` | (no line) |
-| barrel | never |
-| station | never |
-
-`{pct}` is `FURNACE_HASTE × n` as percent. `{n}` is covering count. Still / furnace: either cell, one line. Live working set. Copy [[ui/machines]].
+Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud. Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Covering haste is a `lookText` line in that same `Status` block, after the machine look, before the prompt — [[ui/machines]].
 
 ## Held
 
@@ -182,14 +121,8 @@ Covering haste is a `lookText` line in that same `Status` block, after the machi
 
 ## Vehicles
 
-Hangar, parked or automated Quad, parked or automated tractor: look and prompt [[ui/vehicles]]. Field silos: look name only (**Seeding silo** / **Spraying silo** / **Produce silo**), no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
+Hangar, parked or automated Quad, parked or automated tractor: look and prompt [[ui/vehicles]]. Field silos: look name only, no prompt, no dialog. Not plots. No soil bars. No ObjectHud. Illegal: hangar or vehicle on `HudTarget`.
 
 ## Sensors
 
-Sensor cells and valves: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**.
-
-Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**.
-
-Fenceable reader on a fence that closes nothing: **open fence, close it to turn the sensor on**. Exact. No **on** / **off** on that line.
-
-Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day / logic / variety / weather / pressure HUD: **Tune {skuLabel}** when port hits are off. ObjectHud family, not a new shell. Fertilizer / water-system / pulser / lamp / traffic light: look only. Pulser **Pulser**. Counter **Counter**. Day **Day sensor**. Logic gate **Logic gate**. Variety sensor **Variety sensor**. Weather sensor **Weather sensor**. Pressure plate **Pressure plate**. Traffic light **Traffic light**. [[ui/sensors]]
+Sensor cells and valves: look names [[ui/sensors]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. Look may append **on** / **off**. Water-system not on a net: **Water-system sensor - no pipes around sensor!** Exact. Else **Water-system sensor - on/off**. Fenceable reader on a fence that closes nothing: **open fence, close it to turn the sensor on**. Exact. Lever / button walk-to: **Flip lever** / **Press button**. Water / harvest / counter / day / logic / variety / weather / pressure HUD: **Tune {skuLabel}** when port hits are off. Fertilizer / water-system / pulser / lamp / traffic light: look only. [[ui/sensors]]

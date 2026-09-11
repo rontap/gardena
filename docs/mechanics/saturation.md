@@ -43,7 +43,7 @@ Ten sales of `V/10` pay the same total as one sale of `V`.
 
 `marketGain` computes each good's clean subtotal — freshness, `stallX`, `raritySale`, saleswoman, heirloom, bio — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
 
-Clearance's `{ kind: 'rotten' }` `$1` is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`.
+Clearance's `{ kind: 'rotten' }` `$1` is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`. Subject is rotten, not 0% fruit.
 
 Consign still accumulates `worth` untouched. Saturation is sampled at Sell all only.
 
@@ -71,9 +71,7 @@ The panel reads the quote. It does no arithmetic.
 
 `marketQuote()` does not mutate `sat`.
 
-Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Digest includes `sat` — [[architecture/net]]. Dummy dump fields `offered` `market` `target` `acc` — [[architecture/save]].
-
-Assumption: clearance `$1` is excluded from `V`. Dummy dump values are 0. Subject is rotten, not 0% fruit.
+Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Digest includes `sat` — [[architecture/net]]. Dummy dump fields `offered` `market` `target` `acc` are 0 — [[architecture/save]].
 
 ## Invariants
 

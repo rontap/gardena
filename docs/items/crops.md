@@ -27,7 +27,7 @@ Olive is `TreeId`. Not an annual. Not a seed pack.
 
 Sugar cane harvests as fruit. Mill 5 cane → 2 L sugar — [[mechanics/machines]]. Vanilla mill: `MILL_VANILLA_IN` 1 fruit → `{ kind: 'vanilla-extract' }` count `MILL_VANILLA_OUT` 4, not stall extract. Chilli mill: `MILL_CHILLI_IN` 3 fruit → `{ kind: 'flakes' }` count `MILL_CHILLI_OUT` 2, not stall. Oil, jam, cask, spirit carry required `infused` — [[mechanics/infusion]]. `jam-tomato` display **Ketchup** for every tomato variety but `san-marzano`, which is Passata. Ketchup takes `KETCHUP_SUGAR`, twice a jam; Passata takes none — [[mechanics/machines]]. There is no plain tomato jam. Named jars: [[mechanics/machines]]. Apple is barrel cider, not jam. Grape jam stays.
 
-`pack-grass` is a silo crop like chilli, `'base'` only. `AnnualId` += `'grass'`. Sold at the Seed silo after `unlock-landscaping`, same path as `pack-chilli`, not on Build — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`. Item `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0; count }`. Sow is turf, not a `Plant` — [[mechanics/plants]] `plants.grass`. No `{ kind: 'grass-seeds' }`.
+`pack-grass` is a silo crop like chilli, `'base'` only. Sold at the Seed silo after `unlock-landscaping`, same path as `pack-chilli`, not on Build — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`. Item `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality: 0; count }`. Sow is turf, not a `Plant` — [[mechanics/plants]] `plants.grass`. No `{ kind: 'grass-seeds' }`.
 
 Neighbour-need: `keknyelu` `pink-lady` `bing` — [[mechanics/plants]] `variety.neighbour`.
 

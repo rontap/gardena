@@ -78,13 +78,11 @@ No `id`. No better-axe. 0 uses: hand empty.
 
 Legal: hand axe or chainsaw, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`. Not grow. Not trunk. Axe or chainsaw on grow / trunk: no-op.
 
-Complete: `usesLeft -= 1`, drop `{ kind: 'wood'; count: 1 }` `frontOf`, drop `{ kind: 'graft'; crop: species; variety: Tree.variety; quality: 0; count: 2 }` `frontOf`, then `trunk = true`, `juvenile = 0`, `fruit = 0`, `yield = pending`, `tended = false`. Pending fruit is lost. Ground drops around the tree stay. Chop always completes. Variety on the trunk is unchanged.
+Complete: `usesLeft -= 1`, drop `{ kind: 'wood'; count: 1 }` `frontOf` / `dropSpot`, drop `{ kind: 'graft'; crop: species; variety: Tree.variety; quality: 0; count: 2 }` `frontOf` / `dropSpot`, then `trunk = true`, `juvenile = 0`, `fruit = 0`, `yield = pending`, `tended = false`. Pending fruit is lost. Ground drops around the tree stay. Chop always completes. No plot does not undo the chop. Variety on the trunk is unchanged.
 
 Loop: chop → `trunk` (`juvenileSeconds`) → `grow` (`trunk = false`, `juvenile` 0, another `juvenileSeconds`) → mature `pending`. Two full grows after a chop.
 
 Graft attach onto a sapling or trunk: [[mechanics/plants]] `graft.attach`.
-
-Assumption: wood and grafts use `frontOf` / `dropSpot`; no plot does not undo the chop.
 
 ## Invariants
 

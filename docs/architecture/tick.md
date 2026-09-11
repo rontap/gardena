@@ -48,7 +48,7 @@ Iterate maps directly. `[...this.live.values()]` is illegal. No live-array copy.
 
 `forEachCell` is forbidden on the tick path, including seam (`tickTreesSeam` walks grow). `indexAll` may `forEachCell`.
 
-Assumption: `evalSensors` storeRaw and `padBuildings` also walk existing World silo / additive instance lists (`silo`, `additives`, `seedSilos`). View props for house / truck / pumps / tanks / taps / hangars / field silos come from those World lists; ground stays terrain.
+`evalSensors` storeRaw and `padBuildings` also walk existing World silo / additive instance lists (`silo`, `additives`, `seedSilos`). View props for house / truck / pumps / tanks / taps / hangars / field silos come from those World lists; ground stays terrain.
 
 ## Seam hold
 

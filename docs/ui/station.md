@@ -2,36 +2,15 @@
 
 Walk-up panel for the research station. Player name **Seed Variety Station**. Shape [[ui/store]]: Radix dialog + `Frame` `Shell`, optional width, hover `aside`. Opened by a walk-up cue, never from the rail. Not a dock. Not ObjectHud. Dump is a world act on the cell, not a control in the panel.
 
-Rules [[mechanics/machines]] `station.cut` `station.io` `variety.copy`. Place [[ui/place]]. Look points here from [[ui/inspect]].
+Rules [[mechanics/machines]] `station.cut` `station.io` `variety.copy`. Place [[ui/place]]. Look points here from [[ui/inspect]]. Size [[items/buildings]] `station`.
 
-Assumption: empty `crop === 'none'` stores `variety: 'base'` and `quality: 0` until the first dump locks both.
+Empty (`crop === 'none'`) stores `variety: 'base'` and `quality: 0` until the first dump locks both. `units === 0` → `crop` `'none'`. Illegal: optional `variety`. Illegal: optional `quality`. Returned fruit freshness and organic: [[mechanics/machines]].
 
-Assumption: the type carries no freshness and no organic field, so returned fruit leaves at freshness 1 and not organic — [[mechanics/machines]].
-
-## Type
-
-```
-ResearchStation = {
-  crop: CropId | 'none'
-  variety: VarietyId
-  quality: number
-  units: number
-  progress: number
-  inn: Signal
-}
-```
-
-`units === 0` → `crop` `'none'`. `quality` 0..1, required. Illegal: optional `variety`. Illegal: optional `quality`.
-
-`dest(station)` = `at`. 2×1, origin NW, no rotate, same instance both cells, hover origin extends east — place like the still, [[ui/place]]. Pads, west pull, east push, `inn` port: still. Dropoff north Unload, takeup south Load. Lens [[ui/sensors]].
-
-SKU `buy-research-station`. Automation shelf. Unlock and show `unlock-crop-variants`. `need: []`. `haggling`. Guest may buy, place, demolish, dump, and open this panel. Demolish reads **Demolish Seed Variety Station** and clears both cells — [[ui/place]]. Not on the shelf until Crop variants is done.
-
-Accepts `tier` `heirloom` fruit only, `cut === false`. First dump locks crop + Variety; later dumps must match. `STATION_IN` `STATION_SECONDS` `STATION_GRAFT_MIN` `STATION_GRAFT_MAX`. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` **and** a rolled 1–2 grafts of that Variety, both at the input Quality. East store else `frontOf`; no room → wait.
+SKU `buy-research-station`. Automation shelf. Unlock and show `unlock-crop-variants`. Guest may buy, place, demolish, dump, and open this panel. Demolish reads **Demolish Seed Variety Station** and clears both cells — [[ui/place]]. Not on the shelf until Crop variants is done.
 
 The second face — feeding seed to earn a Variety — is [[plans/next-variant]]. Not this panel.
 
-Prop `off` / `on` from working. Reduced motion: frame 0. Atlas [[architecture/view]].
+Prop `off` / `on` from working — [[art/machines]].
 
 ## Cue
 

@@ -46,9 +46,7 @@ Jam / oil / flour / extract / bread: one bin, `worth += count × unitSale`. Infu
 
 Seeds and grafts illegal. Wrong tool: speech, hand unchanged.
 
-Consign fills `contracts.active` in array order, then the stall. A full bin passes through. A unit that `Accepts` and `filled < amount` is contract-bound: it does not enter `StallGood.worth` and does not raise `sat`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`, never contract-bound. Freshness-0 fruit is not an item after tick. Miss / cancel remainders enter `worth` and raise `sat` — [[mechanics/contracts]].
-
-Assumption: consigned rotten is `World.clearance: number`, not a `StallGoodId`. Dump persists it. Sell all zeros it.
+Consign fills `contracts.active` in array order, then the stall. A full bin passes through. A unit that `Accepts` and `filled < amount` is contract-bound: it does not enter `StallGood.worth` and does not raise `sat`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`, never contract-bound. Consigned rotten is `World.clearance: number` — [[architecture/world]]. Dump persists it. Sell all zeros it. Freshness-0 fruit is not an item after tick. Miss / cancel remainders enter `worth` and raise `sat` — [[mechanics/contracts]].
 
 `StallGoodId` — `sim/ids.ts`. Illegal: `'berry'`. Illegal: whisky.
 

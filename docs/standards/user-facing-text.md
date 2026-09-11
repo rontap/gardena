@@ -1,7 +1,6 @@
 # User-facing text
 
-User-facing text must be standardized and use consistent, useful and understandable names. This document contains law regarding to game concepts that are usable as words, words that are forbidden, and specific examples of bad text with specific ways in which it can be improved.
-This file MUST be read IN FULL, never just grepped or sliced. 
+The Concepts table is law. Read that table. How to write a player sentence: [[standards/lexicon]] **Player copy**. 
 
 `lex.user` — Chat with the developer, [[standards/update-notes]], HUD, prompts, callouts, almanac, build, inspect. Not `src/` identifiers. Not vault notes — those stay [[standards/lexicon]].
 
@@ -315,39 +314,6 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | family pick                                | Choose one / Nothing left to learn / Learned / None yet                                                      |                                                           |
 | skill rank                                 | I–V                                                                                                          | plus, star                                                |
 | heirloom daughter skill                    | Őstermelő                                                                                                    | Heirloom farmer                                           |
-# Examples of good and bad UI Text
-
-## example 1 Research
-Bad: "Holds ${n} L and works the same, but the soil and its produce stop being organic." 
-Problems: 
-- "works the same" - as what? never add unqualified comparisons. 
-- "produce" is not a game keyword. fruit is. 
-- "stops being" is how it is coded. A human sees that a fruit that grows is not organic. Text should reflect what the human sees, not what the code does. 
-- It does not explain at all that synthetic fertilizer is the property of the _soil_  
-Should be: "Synthetic fertilizer is cheaper than organic fertilizer and is more efficient , but fruits grown in soil that had synthetic fertilizer added are not considered organic, and are sold for slightly less." 
-
-## example 2 description of grape
-Bad: "A mid fruit. Softer than a raspberry, and the path to one." 
-Problems: 
-- This text should be flavour text, and it does not deliver. 
-- Mid is not a game concept, it is not even a code concept. 
-- "Path to one" this refers to research being gated behind grape, which is no longer true anyways, and has no place in the description example 3 
-## research: unlock irrigation 
-Now: "Unlocks Pipe and Tap in the general store. Route the water the farm pump already lifts." Problems: 
-- "Farm pump" is loose and underdefined. 
-- "route" is the incorrect word here 
-- "lifts" is the incorrect word here 
-Should be: "Unlocks pipes and tap in the store. Placing a tap closer to the tilled soil can save a lot of walking, and can be connected from the pump through pipes." 
-Why this is better: Explains WHY the player should want to research this, and gives a concept of what the mechanic is and what the player will be able to do / need to do once researched.
-
-## General Guidelines
-1. listing items statically (jam, wine, spirit, oil, flour, extract) is dangerous because the player might not have encountered with this thing before and agents may forget to change the description.
-2. "another part" is undefined. You can say "signal". "power" is also a reserved term, these are sensors sending signals
-3. When writing text to not subtract universe from object to define it. It should not tutorialize on mechanics in the game code "The day after a flood or a drought is always clear". what if that changes or becomes toggleable? Description should be ""this state and its effects""
-4. No need to bring in unrelated concepts, such as tending or negating world by saying no fertilizer. it also doesnt need oil or carrot seeds.
-5. When writing numbers, always say what unit. Never "3" - 3 what? apples? children? 3 days, 3 L, 3 {fruit}, etc.
-6. Always qualify subject: "each time it gets there" -> what is "it"? 
-7. ONLY use game concepts, never use CODE concepts. Common code concept issues are "drinks", "blurb", "beds", "out of air", ""
 
 ## Chrome
 

@@ -1,6 +1,6 @@
 # Contracts
 
-Daily buyer board, generator, accept / deliver / complete / miss / cancel / reorder. Types `src/game/sim/market.h.ts`. Spec [[plans/1.8.0]] Part 2. Stall [[mechanics/market]]. Sat [[mechanics/saturation]]. Family [[mechanics/family]]. Stream [[architecture/rng]]. Research [[mechanics/research]]. MP [[architecture/net]]. Guest cmds: [[mechanics/multiplayer]] `mp.guest`.
+Daily buyer board, generator, accept / deliver / complete / miss / cancel / reorder. Stall [[mechanics/market]]. Sat [[mechanics/saturation]]. Family [[mechanics/family]]. Stream [[architecture/rng]]. Research [[mechanics/research]]. MP [[architecture/net]]. Guest cmds: [[mechanics/multiplayer]] `mp.guest`. Chrome [[ui/contracts]].
 
 `World.contracts` is saved: `active` with bin fills, `takenToday`, `history`, `book`. `rep` and `repDay` stay on the top-level record. The board itself is derived, never saved and never digested. Digest includes active fill, `takenToday`, every `StallGood.sat`.
 
@@ -12,7 +12,7 @@ Offers match a plain good only. No Variety. No Quality floor. Those fields: [[pl
 
 Board size = `CONTRACT_OFFERS +` broker offered bonus. Offered bonus is `+1` at `broker` tier ≥ 1. Tier 2 does not add a second card. Published slots `0..size-1`. Slot `7` unused. `SLOT_BANDS` stays length 8.
 
-Pure function of `(seed, day, slot)` on `SpatialId` `'contract'`. Reads no player state — not inventory, plantings, research, money, `clock.t`, not `broker`. Caller passes `slots`. Not a `Cmd`. Not in `World.log`. Not stored. Regenerating is free.
+Pure function of `(seed, day, slot)` on `SpatialId` `'contract'`. Reads no player state. Caller passes `slots`. Not a `Cmd`. Not in `World.log`. Not stored. Regenerating is free.
 
 Visible iff `unlock-contracts` is in `done`. Tab gating is UI. Generation does not read `done`.
 
@@ -22,11 +22,7 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` a
 
 ## rollBoard
 
-`market.ts` owns `rollBoard(rng, day, slots, rep) → readonly ContractOffer[]`. Each slot `i` uses `rng.stream('contract').at(day, i, k)`.
-
-`rollBoardAtD(rng, D, slots)` is the debug ladder: it forces `D` on every slot and scales amounts at `LADDER_DAY`. `#debug-contracts` only — [[ui/contracts]].
-
-### `contract` — `at(day, slot, k)`
+`market.ts` owns `rollBoard(rng, day, slots, rep)`. Each slot `i` uses `rng.stream('contract').at(day, i, k)`. `rollBoard` takes `Rng`. `rollBoardAtD` is the debug ladder — [[ui/contracts]].
 
 | k | roll |
 |---|---|
@@ -41,9 +37,9 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` a
 | 30, 31 | the two prize slots, at `(day, 0, ·)` |
 | 32 | rotary vs diamond, when the prize is a tool |
 
-`k` 1, 4, 9 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST` — not a coin flip.
+`k` 1, 4, 9 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST`. Jam/spirit group vs specific is a roll.
 
-Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It **does** decide the prize, because the prize table is keyed by company.
+Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It does decide the prize, because the prize table is keyed by company.
 
 ### Difficulty
 
@@ -54,15 +50,11 @@ f      = cap / DIFFICULTY_MAX
 D      = l + floor(u * (h - l + 1)) + rep                                   // clamp DIFFICULTY_CEILING
 ```
 
-`rep` is `contracts.repDay`, the reputation snapshot taken at the seam, not live rep. Mid-day rep does not move the board.
-
-Then the shape of the lines bumps it: `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` for carrot / potato / wheat. `offer.difficulty` is `eff`, and `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`.
-
-`eff` is what the prize band reads. Not `D`. The difficulty budget is requoted against the smaller spread (no floor spend).
+`rep` is `contracts.repDay`, the reputation snapshot taken at the seam, not live rep. Then `eff = clamp(D + shapeD(line1) + shapeD(line2), 0, DIFFICULTY_CEILING)`, where `shapeD` is `D_STARTER` for carrot / potato / wheat. `offer.difficulty` is `eff`. `stars` is the highest `Stars` with `eff >= STAR_MIN[stars]`. `eff` is what the prize band reads.
 
 ### Grammar budget
 
-Two budgets, spent independently. The **grammar** budget buys shape; the **money** pool buys size.
+Two budgets, spent independently. The grammar budget buys shape; the money pool buys size.
 
 ```
 opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]
@@ -70,11 +62,7 @@ budget = max(opened, -BUDGET_OVERDRAFT)
 pair   = budget >= PAIR_COST                                 // then budget = (budget - PAIR_COST) / 2
 ```
 
-Each line then spends `GOOD_COST[good]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1.
-
-`GOOD_COST` carries crop tier; low-`D` slots cannot afford vanilla. No player state is read. Grammar no longer spends on a floor.
-
-Jam specific → `plain` `JamId`. Jam group → `{ kind: 'group'; group: 'jam' }`. Crop / wine / spirit specific → `plain`. Sugar / oil / flour / extract / bread → `plain`. Spirit group → `{ kind: 'group'; group: 'spirit' }`. Sugar and extract are never demanded (`CONTRACT_GOODS` excludes them). Flakes and vanilla-extract are not `StallGoodId`. Infused is not a demand; `Accepts` ignores `infused`.
+Each line then spends `GOOD_COST[good]`. Candidates are filtered to `GOOD_TIER[good] <= stars` and cost within `budget + BUDGET_OVERDRAFT`. A jam or spirit good may go group for `GROUP_COST` if `GROUP_TIER` allows at that star. Line 2 may not share a family with line 1. Sugar and extract are never demanded. Flakes and vanilla-extract are not `StallGoodId`. Infused is not a demand; `Accepts` ignores `infused`.
 
 ### Money pool and amount
 
@@ -86,13 +74,7 @@ amount  = nice(min(target / cleanUnit(demand), FEASIBLE_PER_DAY[good] * days * s
 scale(day) = min(1, SCALE_START + day / SCALE_DAYS)
 ```
 
-`load(D)` is the share of a mature farm-day the contract eats. `REFERENCE_GOLD_PER_DAY` is the median `unitOf(g) * FEASIBLE_PER_DAY[g]` over `CONTRACT_GOODS` — derived.
-
-`LOAD_CURVE` and `LOAD_MAX` — preference. The curve is convex on purpose: the pool must climb harder over the top half of the ladder than the bottom, so a four-star board is worth giving up a prize slot for.
-
-Divide by `cleanUnit`, the unit the reward is later settled at — **not** `unitOf` if those ever diverge.
-
-`nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`, floor `NICE_AMOUNTS[0]`. There is no discard-and-retry. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`.
+`load(D)` is the share of a mature farm-day the contract eats. `REFERENCE_GOLD_PER_DAY` is the median `unitOf(g) * FEASIBLE_PER_DAY[g]` over `CONTRACT_GOODS` — derived. `LOAD_CURVE` and `LOAD_MAX` — preference. Divide by `cleanUnit`. `nice()` snaps down to the largest `NICE_AMOUNTS[i] <= x`. Group jam uses `jam-cherry` as the feasible key; group spirit uses `vodka`. `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`. `FEASIBLE_PLOTS` preference. `FEASIBLE_PER_DAY` tuned-to grow / barrel / still / mill / jam / furnace rates.
 
 ### Deadline
 
@@ -102,9 +84,7 @@ steps    = (hi - lo) / DEADLINE_STEP + 1
 days     = lo + DEADLINE_STEP * floor(u * steps)
 ```
 
-Each band offers three lengths, halves included. `nowDay` is fractional already.
-
-Band feeds three things: `days`, the grammar deduction `DEADLINE_COST[band]`, and `MARKUP_BAND[band]`. `DEADLINE_WEIGHT` — preference.
+Band feeds `days`, `DEADLINE_COST[band]`, and `MARKUP_BAND[band]`. `DEADLINE_WEIGHT` — preference.
 
 ### Reward
 
@@ -115,206 +95,93 @@ reward  = round(clean * (1 + markup))
 penalty = round(PENALTY_RATE * clean)
 ```
 
-Baked at generation. Saturation at delivery does not move `reward`. `industrial` multiplies at complete, not here.
-
-`reward` is published on every offer, prize or not. A prize offer never pays it — but the fertilizer prize is priced against it, and `penalty` derives from `clean`, so miss and cancel math is identical either way.
+Baked at generation. Saturation at delivery does not move `reward`. `industrial` multiplies at complete, not here. A prize offer never pays `reward` — but the fertilizer prize is priced against it, and `penalty` derives from `clean`.
 
 ## Prizes
 
-Two of the six offers each day pay goods instead of money, and pay **no** money.
+Two of the six offers each day pay goods instead of money, and pay no money. The board is the only source of tree seeds past the starting four, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Tree-seed prizes are `'base'` quality 0. Vanilla prizes are `'base'` quality 0.
 
-The board is the only source of tree seeds past the starting four, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Money buys capability; it does not buy these. Tree-seed prizes are `'base'` quality 0. Vanilla prizes are `'base'` quality 0.
+Kinds: `cash` | `tree-seed` | `seeds` (vanilla) | `fertilizer` | `freezer` | `expansion-slot` | `skill-points` | `tool` (rotary-shovel | diamond-pickaxe).
 
-```
-Prize =
-  | { kind: 'cash' }
-  | { kind: 'tree-seed'; tree: TreeId }
-  | { kind: 'seeds'; crop: 'vanilla'; count }
-  | { kind: 'fertilizer' }
-  | { kind: 'freezer' }
-  | { kind: 'expansion-slot' }
-  | { kind: 'skill-points'; n }
-  | { kind: 'tool'; tool: 'rotary-shovel' | 'diamond-pickaxe' }
-```
+`prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31. Drawn from the base six, never from the live slot count. Broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two on eight.
 
-### Which slots
+`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only which slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32.
 
-`prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31 — `b >= a ? b + 1 : b`, the standard distinct-second draw.
-
-Drawn from the base six, **never** from the live slot count. `broker` grows the board and must not reshuffle the offers already on it, so broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two on eight.
-
-### Which prize
-
-`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only *which* slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`.
-
-Six firms, three columns: Whole Cart / Little Lid tree-seeds-vanilla-tools; Trade Jo / Mercanova buildings-and-land; Halbert Eijn / Intercrop household. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32. Every other arm is returned as written.
-
-### Payout
-
-`World.payPrize` in `world.ts`, from `resolveDone`. Only `cash` touches `money`.
-
-| prize | lands as |
-|---|---|
-| `tree-seed` | drop at `DOOR`, `'base'` quality 0 |
-| `tool` | drop at `DOOR`, full `SHOVELS` / `PICKAXES` uses |
-| `seeds` | `putSilo('vanilla', 'base', 0, count)` |
-| `fertilizer` | `putAdditive('fertilizer', bags * FERT_BAG_LITERS)`, `bags = max(1, round(reward / SKUS['buy-fertilizer'].price))` — "worth the cash" |
-| `freezer` | `prizeFreezers += 1`; `buy-freezer-large` opens while stock lasts — [[mechanics/research]] |
-| `expansion-slot` | `prizeSlots += 1` — [[mechanics/expansion]] |
-| `skill-points` | `grantPoints(n)` into the shared bank — [[mechanics/family]] |
-
-Drops at the door, the way a shovelled-up tree seed drops. Store prizes clamp to free space; overflow is lost, same as any other put.
+`World.payPrize` from `resolveDone`. Only `cash` touches `money`. Tree-seed and tool drop at `DOOR`. Vanilla `putSilo`. Fertilizer `putAdditive`, bags = `max(1, round(reward / SKUS['buy-fertilizer'].price))`. Freezer `prizeFreezers += 1` — [[mechanics/research]]. Expansion `prizeSlots += 1` — [[mechanics/expansion]]. Skill-points `grantPoints(n)` — [[mechanics/family]]. Store prizes clamp to free space; overflow is lost.
 
 ## cleanUnit
 
-| demand | unit |
-|---|---|
-| `plain` crop | `CROPS[good].sale` |
-| `plain` wine | `WINE_SALE` — no age |
-| `plain` spirit | `SPIRIT_SALE[spirit]` |
-| `plain` sugar | `SUGAR_MILL` |
-| `plain` jam | `JAM_SALE[crop]` |
-| `plain` oil / flour / extract / bread | `OIL` / `FLOUR` / `EXTRACT` / `BREAD` |
-| group jam | `min JAM_SALE` (`cherry`) |
-| group spirit | `SPIRIT_SALE.vodka` |
-
-No skills, freshness, bio, quality, or path rating.
+Plain crop `CROPS[good].sale`. Plain wine `WINE_SALE` — no age. Plain spirit `SPIRIT_SALE[spirit]`. Plain sugar `SUGAR_MILL`. Plain jam `JAM_SALE[crop]`. Plain oil / flour / extract / bread `OIL` / `FLOUR` / `EXTRACT` / `BREAD`. Group jam `min JAM_SALE` (`cherry`). Group spirit `SPIRIT_SALE.vodka`. No skills, freshness, bio, quality, or path rating.
 
 ## Accepts
 
-```
-Accepts(demand, good) → boolean
-```
-
-| demand | accepts |
-|---|---|
-| `plain` | `good === demand.good` |
-| group jam | `good` is `JamId` |
-| group spirit | `good` is `SpiritKind` |
-
-A match is a match. No overage bonus. Freshness, variety, quality, and `infused` are not in `Accepts`. `{ kind: 'rotten' }` is not a `StallGoodId`, never `Accepts`. Freshness-0 fruit is not an item after tick. Flakes and vanilla-extract never `Accepts`.
+`plain`: `good === demand.good`. Group jam: `good` is `JamId`. Group spirit: `good` is `SpiritKind`. A match is a match. No overage bonus. Freshness, variety, quality, and `infused` are not in `Accepts`. `{ kind: 'rotten' }` never `Accepts`. Flakes and vanilla-extract never `Accepts`.
 
 ## State
 
-`World.contracts: Contracts = { active, takenToday, history, book, rep, repDay }`.
-
-`Bin = { demand; filled; infusedFilled }`. `infusedFilled` starts 0.
-
-`HistoryEntry = { id; company; stars; day; rep; outcome }`. `rep` required, the reputation `addRep` actually moved on that outcome — `contracts.rep-line`.
-
-New farm → empty. Load restores what was saved, including part-filled bins. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX`.
-
-```
-nowDay = (clock.day - 1) + clock.t / DAY_SECONDS
-```
-
-Deadline runs from acceptance, not publication.
+`nowDay = (clock.day - 1) + clock.t / DAY_SECONDS`. Deadline runs from acceptance, not publication. `Bin = { demand; filled; infusedFilled }`. `infusedFilled` starts 0. `HistoryEntry.rep` required, the reputation `addRep` actually moved — `contracts.rep-line`. New farm → empty. `book` is a complete `CompanyId` → `{ done: 0, missed: 0 }`. `history` ring `CONTRACT_HISTORY_MAX`.
 
 ## Accept
 
-`Act.acceptContract` `'J'` `{ c: ContractId }`.
-
-Legal iff `unlock-contracts` done, `active.length < CONTRACT_ACTIVE +` broker active bonus, the id is on today's board (`rollBoard` at current `slots`, not in `takenToday`). Else no-op.
-
-Creates `Active` with `dueDay = nowDay + offer.days` and one `Bin` per line at `filled: 0`, `infusedFilled: 0`. Pushes `offer.id` onto `takenToday`.
+`Act.acceptContract` `'J'` `{ c: ContractId }`. Legal iff `unlock-contracts` done, `active.length` under cap, the id is on today's board. Else no-op. Creates `Active` with `dueDay = nowDay + offer.days` and one `Bin` per line at `filled: 0`. Pushes `offer.id` onto `takenToday`.
 
 ## Deliver
 
-Existing consign at the truck. Logged as `enqueue`. `consignBody` fills `contracts.active` in array order, then the stall remainder.
-
-`Act.reorderContract` `'Z'` `{ c: ContractId; d: 1 | -1 }` swaps that entry with its neighbour. `d = 1` toward the end. No-op at ends or unknown id. Fill priority **is** array order. No lookahead.
-
-A bin takes a unit iff `Accepts` and `filled < amount`. `{ kind: 'rotten' }` never counts. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Fruit / jam / spirit / wine / oil / flour / extract / bread fill in count. Jam / cask / spirit / oil with `infused === true` also increment `infusedFilled`. `infusedFilled <= filled`.
+Existing consign at the truck. `consignBody` fills `contracts.active` in array order, then the stall remainder. `Act.reorderContract` `'Z'` swaps that entry with its neighbour. `d = 1` toward the end. Fill priority **is** array order. A bin takes a unit iff `Accepts` and `filled < amount`. A full bin passes through. Contract-bound units do not enter `StallGood.worth` and do not raise `sat`. Sugar fills in liters. Else count. Jam / cask / spirit / oil with `infused === true` also increment `infusedFilled`. `infusedFilled <= filled`.
 
 ## Complete
 
-Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. History `{ kind: 'done'; paid; prize }` on an entry carrying `rep`. Slot freed. Those units never hit the stall.
+Every bin `filled === amount` → immediate on that delivering tick. `book[company].done += 1`. Slot freed. Those units never hit the stall.
 
 ```
 fraction = sum(bin.infusedFilled) / sum(bin.demand.amount)
 rep = addRep(REP_DONE[stars] × (1 + 0.25 × fraction))   // clamp [0, REP_MAX], returns what it moved
 ```
 
-Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier (0 if absent), and `paid` is that number.
-
-Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply. Prize complete still takes the infused fraction.
+Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier. Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply. Prize complete still takes the infused fraction.
 
 ## Miss
 
-On the tick `nowDay` crosses `dueDay`, if not complete:
-
-```
-sold    = delivered units sold at the current saturated market rate
-penalty = offer.penalty * max(PENALTY_FLOOR, 1 - filled / need)
-```
-
-`need` = sum of line amounts. `filled` = sum of `bin.filled`. `filled === need` is completion, never a miss.
-
-Remainders consign into stall (stock + worth). Plain remainders raise `sat` by that clean `V / SAT_DEPTH`. Infused remainders enter infused worth and do not raise `sat`. `money += sold - penalty`. `sold` is those units at the current saturated rate (infused at `mul(sat)`). `book[company].missed += 1`. History `{ kind: 'missed'; sold; penalty }` on an entry carrying `rep`, which is negative. Slot freed. Miss does not take the infused reputation mul.
+On the tick `nowDay` crosses `dueDay`, if not complete: sold = delivered units at the current saturated market rate; `penalty = offer.penalty * max(PENALTY_FLOOR, 1 - filled / need)`. `filled === need` is completion, never a miss. Remainders consign into stall. Plain remainders raise `sat`. Infused remainders enter infused worth and do not raise `sat`. `money += sold - penalty`. `book[company].missed += 1`. History `{ kind: 'missed' }` carrying `rep`, which is negative. Miss does not take the infused reputation mul.
 
 ## Cancel
 
-`Act.cancelContract` `'Y'` `{ c: ContractId }`. Legal while that id is `active`. Else no-op.
-
-```
-elapsed = nowDay - (dueDay - offer.days)
-fee     = lerp(CANCEL_MIN * clean, missPenalty(active), clamp(elapsed / offer.days, 0, 1))
-```
-
-At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at that fill. Delivered units consign + raise `sat` as in Miss. `money += sold - fee`. Not a miss: `book` untouched. History `{ kind: 'cancelled'; sold; fee }` on an entry carrying `rep`, which is negative. Slot freed.
+`Act.cancelContract` `'Y'`. Legal while that id is `active`. `elapsed = nowDay - (dueDay - offer.days)`. `fee = lerp(CANCEL_MIN * clean, missPenalty(active), clamp(elapsed / offer.days, 0, 1))`. At `elapsed = 0`: `CANCEL_MIN * clean`. At `elapsed = days`: the miss penalty at that fill. Delivered units consign + raise `sat` as in Miss. `money += sold - fee`. Not a miss: `book` untouched. History `{ kind: 'cancelled' }` carrying `rep`, which is negative.
 
 ## Recap
 
-`DayTally.contracts: HistoryEntry[]`. Complete / miss / cancel push here and onto `history`. Seam copies tally into `Recap.contracts`, then tally resets (`contracts: []`). Recap shows those outcomes and that a new board is up (`rollBoard` for the new `clock.day`). `takenToday` clears at the seam. Dump omits `tally.contracts` and `Recap.contracts`. Parse hydrates `[]`.
-
-## CompanyId
-
-Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. Header `CompanyId` is this union.
-
-`GoodClass` covers every pool member. `FruitAnnualId` = tomato | raspberry | grape | vanilla | chilli. Not root/grain, not `sugar-cane`. Olive is `TreeId`. Trees are `TreeId`. `SpiritKind` is not in any pool. `JamId` from `JAM_CROPS` 5. No apple jam.
-
-`defs/companies.ts` owns `COMPANIES` and `COMPANY_PRIZES`. Both complete maps. The generator reads no company field at all when picking goods or difficulty. Sector = `region`.
+`DayTally.contracts: HistoryEntry[]`. Complete / miss / cancel push here and onto `history`. Seam copies tally into `Recap.contracts`, then tally resets. Recap shows those outcomes and that a new board is up. `takenToday` clears at the seam. Dump omits `tally.contracts` and `Recap.contracts`.
 
 ## Skills
 
-Husband `haggling`. Utility and automation `skuPrice − $tier`, min $1. Hangar-buys still not `skuPrice`. Max 3.
+Husband `haggling`. Utility and automation `skuPrice − $tier`, min $1. Hangar-buys still not `skuPrice` — [[mechanics/family]].
 
-Daughter `broker` max `BROKER_MAX_TIER`. Gate research `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
+Daughter `broker` max `BROKER_MAX_TIER`. Gate `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
 
-Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time, current tier. Max 3. Miss and cancel do not take it.
-
-`FEASIBLE_PER_DAY` complete `{ [K in StallGoodId]: number }`. Tuned-to `CROPS.growSeconds` / `BARREL_AGE` / `STILL_SECONDS` / mill and jam batch / furnace bread. `FEASIBLE_PLOTS` preference — mature-farm crop plots; `scale(day)` is the early-farm fraction.
-
-Crop: `round(FEASIBLE_PLOTS * DAY_SECONDS / CROPS[id].growSeconds)`.
-
-Spirit: `DAY_SECONDS / STILL_SECONDS` (one still). Jam: `DAY_SECONDS / JAM_SECONDS` (one jam). Oil / flour / extract: `DAY_SECONDS / MILL_WORK` (one mill). Sugar: that mill rate × `SUGAR_BAG`. Bread: `DAY_SECONDS / FURNACE_SECONDS` (one furnace). Wine stock-only: 1. Flakes and vanilla-extract have no row.
-
-Constants valued in `market.ts`. Header stays `declare const`.
-
-Assumption: `FEASIBLE_PLOTS` so `SCALE_START` × long carrot ≥ `AMOUNT_MIN`; jam/spirit group vs specific is a roll; pair iff the grammar budget covers `PAIR_COST`; group jam unit is `min JAM_SALE`; `rollBoard` takes `Rng`.
+Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time. Miss and cancel do not take it.
 
 ## Invariants
 
-`contracts.board` — Board slot `i` on day `d` is a pure function of `(seed, d, i)`. Same seed, same day → same offer, regardless of inventory, plantings, research, money, or `clock.t`.
+`contracts.board` — Board slot `i` on day `d` is a pure function of `(seed, d, i)`; same seed, same day → same offer, regardless of inventory, plantings, research, money, or `clock.t`.
 
-`contracts.id` — `ContractId = day * CONTRACT_SLOT_MAX + slot`. Growing the board with `broker` adds slots and does not change slots 0..5.
+`contracts.id` — `ContractId = day * CONTRACT_SLOT_MAX + slot`; growing the board with `broker` adds slots and does not change slots 0..5.
 
 `contracts.not-cmd` — Board generation is not a `Cmd`.
 
-`contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel plain remainders do both. Infused remainders enter infused worth and raise no `sat`.
+`contracts.sat` — Contract delivery raises no `sat` and enters no `StallGood.worth`; miss and cancel plain remainders do both; infused remainders enter infused worth and raise no `sat`.
 
-`contracts.demand` — A `Demand` is a plain good match or a group. No minimum. `Lines` never nests.
+`contracts.demand` — A `Demand` is a plain good match or a group; no minimum; `Lines` never nests.
 
 `contracts.amount` — `amount >= AMOUNT_MIN` on every published offer, and `amount <= FEASIBLE_PER_DAY[good] * days * scale(day)`.
 
-`contracts.rep-line` — `addRep` returns what it actually moved after the `[0, REP_MAX]` clamp, and every `HistoryEntry` stores that number as `rep`. Complete is positive, miss and cancel are `-REP_LOST[stars]`, and a clamp at either end stores the smaller move that really happened. Board, Recap and Command Center read the stored number, never recompute it — [[ui/contracts]].
+`contracts.rep-line` — `addRep` returns what it actually moved after the `[0, REP_MAX]` clamp, and every `HistoryEntry` stores that number as `rep`; complete is positive, miss and cancel are `-REP_LOST[stars]`; board, Recap and Command Center read the stored number, never recompute it — [[ui/contracts]].
 
-`contracts.reward` — `reward = clean * (1 + markup)` baked at generation. Saturation at delivery time does not move it.
+`contracts.reward` — `reward = clean * (1 + markup)` baked at generation; saturation at delivery time does not move it.
 
-`contracts.miss` — Miss pays market rate for delivered units and `offer.penalty * max(PENALTY_FLOOR, 1 - filled/need)`. `filled = need` is completion, never a miss.
+`contracts.miss` — Miss pays market rate for delivered units and `offer.penalty * max(PENALTY_FLOOR, 1 - filled/need)`; `filled = need` is completion, never a miss.
 
 `contracts.cancel` — Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.
 
-`contracts.consign` — Consign fills `active` in array order, then the stall. A full bin passes through. Guest cmds: [[mechanics/multiplayer]] `mp.guest`.
+`contracts.consign` — Consign fills `active` in array order, then the stall; a full bin passes through; guest cmds: [[mechanics/multiplayer]] `mp.guest`.
 
-`contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`. `Bin.infusedFilled` counts infused jam / cask / spirit / oil only. `Accepts` ignores `infused`. Miss and cancel do not take the mul.
+`contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`; `Bin.infusedFilled` counts infused jam / cask / spirit / oil only; `Accepts` ignores `infused`; miss and cancel do not take the mul.

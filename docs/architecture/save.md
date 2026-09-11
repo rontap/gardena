@@ -74,7 +74,7 @@ parse(text: string, sink?: LogSink): LoadResult
 
 After load: `World.log` empty, `sink.reset(seed)`, `World.now = 0`. Each seat: `queue` empty, actor `work = 0`, no fill, idle at saved `x,y` (at vehicle if `pose.driver` this seat), `place` `none`, `drive` `{0,0}`, `stride` `{0,0}`. `cue` `none`. `speech` `none`. `hud` absent. No `World.pulse`. `cheatSpeed` 1. `cheatFastResearch` false. `clock.banner` 0 except the old `seam.kind === 'recap'` path. Every `StallGood.sat` 0. `World.contracts` from the file (`active`, `takenToday`, `history`, `book`, plus top-level `rep` / `repDay`). Tally `contracts` hydrates empty. `recaps` / `recapUnseen` from the file; missing → `[]`.
 
-Dump always writes `recaps: Recap[]` (full `Recap` including `contracts`) and `recapUnseen: number[]`. `SaveRecap` += `contracts: HistoryEntry[]`. Dump `seam` is always `{ kind: 'play' }`.
+Dump always writes `recaps: Recap[]` (full `Recap` including `contracts`) and `recapUnseen: number[]`. Dump `seam` is always `{ kind: 'play' }`.
 
 Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]` if the dump omitted them), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, live seam play, `banner = 4`. Not a migrate. Total hydrate. [[mechanics/day]]
 
@@ -96,7 +96,7 @@ Spatial streams: seed + identity ints. No cursor in the file.
 
 Seq streams: cursor in the file. `SaveRng = { seed; fruit }`. `fruit` is `Seq` consumed count (`n`). Hydrate sets that cursor. Next `next()` is the next roll. Do not reset to 0. Do not replay `next()` for its values.
 
-Assumption: shop seq cursor is not in the file.
+Shop seq cursor is not in the file.
 
 `Math.random` only when a new farm omits seed. Parse never.
 
@@ -130,4 +130,4 @@ Working notes never write version digits; they [[GLOBAL_VERSION]].
 
 `save.recaps` — Dump always writes `recaps: Recap[]` and `recapUnseen: number[]`. `SaveRecap` includes `contracts: HistoryEntry[]`. Parse missing `recaps` / `recapUnseen` as `[]`. Old `seam.kind === 'recap'`: append that recap (`contracts` `[]` if omitted), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 4`. Not a migrate.
 
-Assumption: a [[GLOBAL_VERSION]] farm whose dump lacks `routes` / vehicle `route` / traffic-light / `Tree.trunk` / furnace / `variety` / `quality` / `cut` / station / additive-store `sugar` fields fails hydrate (`unusable`). No migrate. Missing logic `mode` / variety / weather / pressure flags hydrate as the place defaults. `'and'`/`'or'` cells hydrate as `LogicGate`. Pump `inn` absent is eval, not fail. Missing `infused` hydrates `false`. Missing furnace `recipe` hydrates `'none'` when empty else `'ash'`. Missing `Bin.infusedFilled` hydrates 0. A dump with `{ kind: 'grass-seeds' }` or `SeedStore.grass` fails hydrate (`unusable`). No migrate.
+A dump that lacks `routes` / vehicle `route` / traffic-light / `Tree.trunk` / furnace / `variety` / `quality` / `cut` / station / additive-store `sugar` fields fails hydrate (`unusable`). No migrate. Missing logic `mode` / variety / weather / pressure flags hydrate as the place defaults. `'and'`/`'or'` cells hydrate as `LogicGate`. Pump `inn` absent is eval, not fail. Missing `infused` hydrates `false`. Missing furnace `recipe` hydrates `'none'` when empty else `'ash'`. Missing `Bin.infusedFilled` hydrates 0. A dump with `{ kind: 'grass-seeds' }` or `SeedStore.grass` fails hydrate (`unusable`).

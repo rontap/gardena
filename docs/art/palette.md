@@ -54,15 +54,13 @@ SVG only, like `slab`.
 
 ## Industrial
 
-Vehicle / machine metal only. Not cottage. Do not replace cottage tokens. Ink outlines stay `#1c1710`. Not inspect bars.
+Vehicle / machine metal only. Not cottage. Do not replace cottage tokens. Ink outlines stay `#1c1710`. Not inspect bars. SVG only, like `fruit-red`. Not `@theme`.
 
 | token | hex | use |
 |---|---|---|
 | steel | `#8a9198` | galvanized sheet; hangar walls / roof; quad body |
 | iron | `#4c4844` | structural; corrugation; roller door; chassis |
 | oil | `#2c322c` | grease; tracks; underbody |
-
-SVG only, like `fruit-red`. Not `@theme`.
 
 ## Inspect bars
 
@@ -82,5 +80,3 @@ Separate bar palette. Never in `src/assets/*.svg`. Inspect `STAT_COLOR` / `GROWT
 Cottage hex, plus industrial metal on vehicle/machine assets. No bar hex. No `currentColor`. No text. `shape-rendering="crispEdges"`. 24-unit tile grid — [[art/svg]]. No raster.
 
 Tree ripe variety fruit reuses fruit-red, roof, ripe, blush, grape. No new hex.
-
-Assumption: industrial tokens stay SVG-only. `fire` is SVG-only, like `fruit-red`.

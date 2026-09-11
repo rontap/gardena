@@ -48,13 +48,4 @@ Direction from `row.sat` only. No sat history. No second store.
 
 **Sell all - {Coin n=quote.paid}**. When `quote.paid !== quote.clean`, also `{Coin n=quote.clean}` in `text-ink/55`. `Btn` `w-full` `data-sell-all`. Disabled when `quote.paid === 0` or `!marketOpen`. Click `sellAll()` then close.
 
-`!marketOpen`: overlay still opens (HUD or consign). Consign still works. Sell all stays disabled. Reason under the button (`text-sm text-roof`) — the why line. Weather-blocked copy first; hours copy unchanged otherwise. `open-late` does not reopen a weather block. [[mechanics/weather]]
-
-| case | copy |
-|---|---|
-| flood ∧ sunrise, no `open-24` | Stall closed this morning. |
-| drought ∧ day, no `open-24` | Stall closed at midday. |
-| sunset, no `open-late` | Stall closed until morning. |
-| twilight, no `open-24` | Stall closed at twilight. |
-
-Assumption: direction is `sat === 0` → `—`; else `↓` (depressed). Stall row face is `'base'`; count is `binCount` over variety × bio bins.
+`!marketOpen`: overlay still opens (HUD or consign). Consign still works. Sell all stays disabled. Reason under the button (`text-sm text-roof`) — the why line. Weather-blocked copy first; hours copy unchanged otherwise. `open-late` does not reopen a weather block. Closed copy: [[mechanics/market]] `market.sell`. [[mechanics/weather]]

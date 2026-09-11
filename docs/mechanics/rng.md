@@ -12,7 +12,7 @@ Named streams. Types: [[architecture/rng]]. Mixer `hash` stays.
 | `tree` | yield on/off | `at(base.col, base.row, day)` |
 | `fruit` | tree drop spot | one `next()` per successful drop |
 | `skill` | offer draw | `at(memberIx, pickCount, i)` |
-| `grind` | grind units; station graft count | `at(col, row, day[, i])` |
+| `grind` | grind units; station graft count 1–2 on finish | `at(col, row, day[, i])` |
 | `contract` | board slot | `at(day, slot, k)` |
 | `weather` | day kind | `at(day, k)` |
 | `burrow` | site pick, loot | `at(cx, cy, day, k)` / `at(col, row, salt)` |
@@ -24,7 +24,7 @@ Failed buy / bulk / drop consumes 0 `next()`.
 
 `clock.t` or `money` as entropy is illegal. `Math.random` only when world seed is omitted.
 
-Assumption: station graft count 1–2 uses `grind.at(col, row, day)` on finish.
+Station graft count 1–2 uses `grind.at(col, row, day)` on finish.
 
 ## Invariants
 

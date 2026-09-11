@@ -25,12 +25,12 @@ father's eyes — same girl as in `ui-market-stall.svg`.
 
 ## Button
 
-`ui-btn-family.svg` — viewBox `0 0 24 24`, groups `idle` `hover` `selected` `disabled`, frame language of
+`ui-btn-family.svg` — groups `idle` `hover` `selected` `disabled`, frame language of
 `ui-btn-research.svg`, select with `btnFace`. Three heads: husband left, you centre, daughter right.
 
 ## Skill icons
 
-viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, the UI draws the level.
+No groups, one per skill family — every tier reuses it, the UI draws the level.
 
 `skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` · `skill-research-speed` `skill-contracts`
 `skill-forecast` `skill-tax` `skill-water-study` `skill-land-study` ·
@@ -39,11 +39,11 @@ viewBox `0 0 24 24`, no groups, one per skill family — every tier reuses it, t
 
 ## Standing icons
 
-`stat-reputation.svg` `stat-luck.svg` — viewBox `0 0 24 24`, the Family standing band, not a skill — [[ui/family]]. Drawn shapes, **not** a glyph inside a badge: the badge form is what a skill chip wears, and these two are the farm's standing.
+`stat-reputation.svg` `stat-luck.svg` — the Family standing band, not a skill — [[ui/family]]. Drawn shapes, **not** a glyph inside a badge: the badge form is what a skill chip wears, and these two are the farm's standing.
 
 `stat-reputation` is a five-point star filling the box: `ink` outline, `ripe` body, a `dirt` inner rim for depth, a two-pixel `house` glint on the upper-left arm — the same four tones and the same order as the coin inside `skill-lucky`.
 
-`stat-luck` is a four-leaf clover: four lobes, each a disc with the outer corner notched, `ink` seams down and across the middle so the four read as four, `leaf` body, and a `grass-dark` stem leaving the centre and bending right below the leaves.
+`stat-luck` is a four-leaf clover: four lobes, each a disc with the outer corner notched, `ink` seams down and across the middle so the four read as four, `leaf` body, and a `grass-dark` stem leaving the centre and bending right below the leaves. Copied into `skill-lucky`, not redrawn.
 
 Both are scanline `rect` rows like `ui-cursor.svg`, not paths.
 
@@ -58,11 +58,8 @@ One copy of each shared symbol; icons composite it.
 - **Arrows** — up / down badge in the `ui-quality.svg` language: ink square, solid `leaf` fill, ink glyph cut out.
 - **Őstermelő** — `skill-heirloom.svg` is `ui-quality.svg` at 3× in heirloom gold. Not a new symbol.
 - **Money** — every coin is `ui-coin.svg` embedded verbatim under a `translate` (and `scale(2)` in
-  `skill-saleswoman` `skill-lucky`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
-  `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom` `skill-lucky`.
-- **Lucky** — `skill-lucky.svg` is the `stat-luck.svg` four-leaf clover, no coin. All three `lucky` skills draw it. Was: `ui-coin.svg` at `scale(2)` under a clover mark in the `ui-quality.svg`
-  language (`leaf` fill). One icon all tiers. Do not redraw the Coin.
+  `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
+  `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom`.
+- **Lucky** — `skill-lucky.svg` is the `stat-luck.svg` four-leaf clover, no coin. All three `lucky` skills draw it. Do not redraw the Coin.
 - `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
 - **Haggling** — `skill-contracts.svg`. Do not redraw.
-
-Assumption: clover glyph; prompt named a mark, not which. `stat-reputation` star is new; the clover in `stat-luck` is copied from `skill-lucky`, not redrawn.

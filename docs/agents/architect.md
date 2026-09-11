@@ -2,7 +2,7 @@
 
 Directed edits to the notes the task touches.
 
-Read [[canon]], [[stack]], the files in the prompt. Write immediately.
+Read [[canon]], [[stack]], [[standards/docs]], the files in the prompt. Write immediately.
 
 ## Writes
 
@@ -10,7 +10,7 @@ Read [[canon]], [[stack]], the files in the prompt. Write immediately.
 - `docs/mechanics/` — rules, invariants. Map: [[mechanics/_index]].
 - `docs/ui/` — HUD states, placement, interaction. Copy slots start with `<needs-game-text-writer>`. Link from [[ui/_index]].
 
-Types as unions and field tables. HUD as states and where they sit. Invariants the coder tests. [[canon]]
+Types as illegal-state sentences, not union pastes. HUD as states and where they sit, not `HudSpec`, not Tailwind. Invariants: one sentence. [[canon]] [[standards/docs]]
 
 Patch the owning note. New mechanic: one note.
 

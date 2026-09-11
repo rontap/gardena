@@ -2,13 +2,11 @@
 
 Player-facing release list in the menu. Menu-local view state. Not World. Not Save. Not a `Panel` arm. Not a mechanic. [[architecture/modules]] [[architecture/save]] [[ui/menu]]
 
-Assumption: boot `joining` stays App-owned; Menu forces home when `joining`; wordmark click is a no-op while joining.
+Boot `joining` stays App-owned; Menu forces home when `joining`; wordmark click is a no-op while joining.
 
 Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate. Version: [[GLOBAL_VERSION]].
 
 `src/game/ui/changelog.md` is the source of truth. Manual edits only. No script, dump, codegen, or agent writes that file from TypeScript, git, or defs. Markdown is never generated from code. `parseChangelog` reads. It does not write. No markdown library.
-
-Assumption: plant, tool, tile, seed, tree seed → type `item`. Placed machine / store / pipe building → `building`. Overlay / panel / button / lens → `ui`. Multiplayer host / join → `multiplayer`. Contracts, stall pressure, family, wires-as-system → `mechanic`.
 
 `changelog.ts` owns `ChangeKind` `Change` `Release` `KIND_EMOJI` `parseChangelog` `ChangelogParseError` `RELEASES` `topLineShape`. `changelog.tsx` renders only. `menu.tsx` owns `MenuPage` and open/close. Drafts `changelogs-*.md` are not `RELEASES` sources.
 
@@ -74,6 +72,8 @@ Exact. After the kind emoji and one space, `text` matches:
 `/^(New|Added|Removed|Changed|Fixed bug) (building|item|ui|mechanic|multiplayer)\b/`
 
 `Fixed bug` is two words. Type token is lowercase: `building` `item` `ui` `mechanic` `multiplayer`. Verb tokens are that exact casing.
+
+Type token: plant, tool, tile, seed, tree seed → `item`. Placed machine / store / pipe building → `building`. Overlay / panel / button / lens → `ui`. Multiplayer host / join → `multiplayer`. Contracts, stall pressure, family, wires-as-system → `mechanic`.
 
 Not a runtime parse throw. `topLineShape(text)` is that match. Parser dialect unchanged.
 

@@ -1,6 +1,6 @@
 # Lens
 
-A left [[ui/docks]] `Dock` titled **Lens**, `w-80`. Was a bare floating menu; it is a panel like every other now.
+A left [[ui/docks]] `Dock` titled **Lens**, `w-80`.
 
 HUD **Lens** toggles the dock. The rail button shows the active lens id under the label when one is on.
 
@@ -42,9 +42,7 @@ Three states, view-local in `map.tsx`. Not `World`, not Save, not logged.
 
 Effective lens = `toolLens` when set, else `lens`. Disarm restores the picked lens; it never overwrites it. `toolLens` is `sensors` while a sensor-cell sku is armed, `pipes` while a `PIPE_PLACE` sku or delete is armed.
 
-Build peek is not `toolLens` and is not a lock. App remembers the `lens` that was on, writes the tab's lens, and restores on leaving that tab, closing Build, or opening another panel. Water → `pipes`. Sensors → `sensors`. Automation, Storage, Tools, Land restore. Automation peeks no lens. Storage peeks no lens. `lensLock` already true → no write, no remember, no restore. Confirming a sensor-cell place still sets and locks `sensors`, once per arming.
-
-Assumption: Water tab peeks `pipes`, not Water need — Water need is a study skill, and the tab is pumps, pipes, and sprinklers.
+Build peek is not `toolLens` and is not a lock. App remembers the `lens` that was on, writes the tab's lens, and restores on leaving that tab, closing Build, or opening another panel. Water → `pipes` (pumps, pipes, sprinklers — not Water need; Water need is a study skill). Sensors → `sensors`. Automation, Storage, Tools, Land restore. Automation peeks no lens. Storage peeks no lens. `lensLock` already true → no write, no remember, no restore. Confirming a sensor-cell place still sets and locks `sensors`, once per arming.
 
 **Lock view** sits under **No lens**, `selected` on `lensLock`, disabled while `lens === 'off'` with the reason in the row — [[ui/callout-hover]]. Closing the dock (**×**, rail toggle, Esc) drops an unlocked lens to `off` and keeps a locked one.
 
@@ -56,7 +54,7 @@ Hide **Sensors** until `unlock-sensors`. Not a family-study row. Not in that foo
 
 Hide **Vehicle interactions** until `unlock-vehicles`. Not a family-study row. Not in that footer.
 
-Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e9be6`, `leaf` `#6bc04a`, `water` `#3d7ea6`, `ink` `#1c1710`, `roof` `#8b3a2a`, `house` `#cfc6b0`, `ripe` `#d4a017`.
+Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e9be6`. Cottage tokens [[art/palette]].
 
 Pipes (joints, valves, sprinklers, fences) always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku — [[ui/place]]. Lens **Pipes** is the wetness tint + sprinkler AoE wash, not the only way to see joints.
 

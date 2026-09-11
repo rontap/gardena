@@ -32,11 +32,11 @@ Vault for this game. Agents read this first.
 
 - [[mechanics/_index]]
 - [[mechanics/weather]]
-- [[mechanics/burrow]] — luck, treasure
+- [[mechanics/burrow]]
 - [[mechanics/sensors]]
-- [[mechanics/enclosure]] — fenced area, fenceable sensor range
-- [[mechanics/infusion]] — Infusion, chilli, Infuser, overlay-infused
-- [[mechanics/necronomicon]] — grandma, pages, sacrifice, ritual
+- [[mechanics/enclosure]]
+- [[mechanics/infusion]]
+- [[mechanics/necronomicon]]
 
 ## Items
 
@@ -56,9 +56,9 @@ Vault for this game. Agents read this first.
 ## UI
 
 - [[ui/_index]]
-- [[ui/changelog]] — menu chrome for the player changelog
-- [[ui/settings]] — player options behind the gear
-- [[ui/necronomicon]] — the book's panel, the letters, its Command Center rows
+- [[ui/changelog]]
+- [[ui/settings]]
+- [[ui/necronomicon]]
 
 ## Art
 
@@ -66,6 +66,4 @@ Vault for this game. Agents read this first.
 
 ## Plans
 
-- [[plans/_index]] — next work. Not rules.
-
-
+- [[plans/_index]]

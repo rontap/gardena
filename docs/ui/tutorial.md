@@ -2,15 +2,13 @@
 
 Bottom-center Chrome card. Gates and predicates: [[mechanics/tutorial]]. Type [[ui/type]].
 
-Wrapper `pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2`. Map and HUD stay live. Camera not forced. HUD not blocked.
+Map and HUD stay live. Camera not forced. HUD not blocked.
 
 Show iff `kind === 'on'` and `ready(step)`. One step. No counter. No card while `ready` is false.
 
-`Chrome` `relative w-80 px-4 pt-4 pb-3`. Body `relative z-20 text-base leading-relaxed text-ink`.
-
 Card `pointer-events-auto` only on step 9. Steps 1–8: clicks on the card do not skip (they pass through). Step 9: the card is the hit; click → `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss.
 
-Assumption: step 6 copy names 5 L (`CONTAINERS.bucket`).
+Step 6 copy names `CONTAINERS.bucket` liters.
 
 | step | copy |
 |---|---|

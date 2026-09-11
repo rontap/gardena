@@ -6,14 +6,7 @@ Standard. How a mechanic is added so the next reader finds it without opening `w
 
 An agent sent at the price of carrots opens `defs/crops.ts` and `sim/modifiers.ts`. Two files. It never opens `world.ts`, and it does not need to know that plants exist in chunks, that stalls have bins, or that a tractor can harvest.
 
-Measured on the code as it stands:
-
-| task | files to edit | files to read | `world.ts` |
-|---|---|---|---|
-| retune carrot sale | 1 — `CROPS.carrot.sale` | 1 — `apply()` in `modifiers.ts`, 52 lines | no |
-| add the research station | 33 | all of them | yes |
-
-The first number is what layering buys. The second is what a mechanic costs when it is threaded by hand through every seam. Aim each new mechanic at the first.
+Aim each new mechanic at a retune: one defs file, not a pass through `world.ts`.
 
 ## Four layers
 
@@ -97,30 +90,7 @@ Mechanics meet through a funnel, never by importing each other.
 
 When a new mechanic needs to influence an old one, look for the funnel first. Build a new one only when the note can say what it folds and who may contribute. Two mechanics importing each other is the failure this section exists to prevent.
 
-## Wiring a new machine
-
-The honest seam list, taken from the newest one. Split by whether the seam is real.
-
-**Irreducible — the machine must name itself here.**
-
-| file | why |
-|---|---|
-| `sim/ids.ts` | the id |
-| `sim/building.ts` | the class |
-| `defs/shelf.ts`, `defs/research.ts`, `defs/catalog.ts` | SKU, gate, almanac entry |
-| `defs/items.ts` | its numbers |
-| `sim/feature-machines/recipe.ts`, `recipe.h.ts` | its recipe rows |
-| `sim/feature-machines/machines.helpers.ts` | `canX` / `doX` |
-| `sim/feature-save/save.h.ts`, `save.ts`, `save.parse.ts` | the wire shape |
-| `sim/look.ts`, `sim/prompt.ts` | player copy — the i18n boundary, [[architecture/i18n]] |
-| `view/svgs.ts`, `view/layers/props.ts` | art — `sim` never imports `view` |
-| `ui/<name>.tsx`, `ui/panel.ts`, `App.tsx` | its panel, if it has one |
-
-**Should be a field, not a mention.** Every file here names the machine only to answer a question a capability field already answers or should.
-
-`sim/plot.ts` · `sim/world.ts` · `sim/nets.ts` · `sim/sensor.ts` · `sim/mp.ts` · `view/hit.ts` · `view/layers/overlay.ts` · `feature-vehicles/vehicle.ts` · `feature-machines/machine.ts` · `feature-place/place.helpers.ts`
-
-Ten of the thirty-three. If your mechanic adds a line to any of them, ask which question is being asked and put it on the class.
+A new machine names itself in ids, the class, defs (SKU, gate, numbers, catalog), recipe rows, save shape, look/prompt, and art. If it adds a line to `plot.ts` `world.ts` `nets.ts` `sensor.ts` `mp.ts` `hit.ts` overlay, vehicle, or place helpers, that line is a question a capability field should answer.
 
 ## Rules
 

@@ -6,7 +6,7 @@ Read [[canon]], [[stack]], every path in the prompt. Write `src/`. No handoff te
 
 ## Writes
 
-`src/` once it exists — impl and `src/**/*.test.ts`. Test names are the invariant text.
+`src/` once it exists — impl and `src/**/*.test.ts`. Test names are the invariant **id**.
 
 New or changed player strings start with `<needs-game-text-writer>`. Reused locked strings (`skuLabel`, chrome, existing prompts) stay as they are.
 

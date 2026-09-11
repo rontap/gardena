@@ -1,333 +1,45 @@
 # Mechanics
 
-Rules as the game runs. Named invariants live on the owning note. Numbers: preference / tuned-to / derived — [[standards/docs]].
-
-- [[mechanics/day]] — seam stays play. Recap on `World.recaps`. Popup from Command Center. `stipendOf`. `day.stipend`
-- [[mechanics/soil]]
-- [[mechanics/plants]] — variety, quality, graft attach, neighbour, the ripen variety roll. `AnnualId` grass. `Plant.crop` excludes grass. `plants.grass` `plants.variety-roll`
-- [[mechanics/trees]] — axe, chainsaw, wood, trunk, grafts
-- [[mechanics/water]]
-- [[mechanics/weather]]
-- [[mechanics/sensors]]
-- [[mechanics/enclosure]] — fenced area, fenceable sensor range
-- [[mechanics/weeds]]
-- [[mechanics/market]]
-- [[mechanics/saturation]]
-- [[mechanics/contracts]]
-- [[mechanics/research]] — `unlock-hardened-tools`. `research.hardened` `research.techtree`
-- [[mechanics/family]] — luck
-- [[mechanics/expansion]]
-- [[mechanics/burrow]] — cover, loot roll, luck, treasure
-- [[mechanics/inventory]] — wood, ash, graft, treasure. `pack-grass` Seed silo. `inventory.grass-silo`
-- [[mechanics/machines]] — furnace covering, smoke. `MachineId` mill jam still barrel grinder compost-box furnace station infuser. Mill Infuser Furnace south-row chest I/O
-- [[mechanics/infusion]] — Infusion, chilli, flakes, vanilla-extract, infused jam / cask / spirit / oil, Infuser, overlay-infused, furnace bread
-- [[mechanics/necronomicon]] — grandma beats, pages, sacrifice, twilight ritual. Owns **page** **sacrifice** **ritual** **beat**
-- [[mechanics/vehicles]]
-- [[mechanics/log]]
-- [[mechanics/rng]] — burrow
-- [[mechanics/tutorial]] — `holdingSeeds` is `{ kind: 'seeds' }`. Not `tree-seed`
-- [[mechanics/multiplayer]]
+Rules as the game runs. Named invariants live on the owning note. Grep the id; the linked note owns the one-sentence invariant. Numbers: preference / tuned-to / derived — [[standards/docs]].
 
 See [[canon]].
 
 ## Ids
 
-| id | note |
-|---|---|
-| day.seam | [[mechanics/day]] |
-| day.phases | [[mechanics/day]] |
-| day.recap | [[mechanics/day]] |
-| day.stipend | [[mechanics/day]] |
-| day.end-day | [[mechanics/day]] |
-| notices.popup | [[ui/notices]] |
-| notices.dismiss | [[ui/notices]] |
-| notices.roster | [[ui/notices]] |
-| expansion.tax | [[mechanics/expansion]] |
-| expansion.chunk | [[mechanics/expansion]] |
-| burrow.start | [[mechanics/burrow]] |
-| burrow.day | [[mechanics/burrow]] |
-| burrow.day-chance | [[mechanics/burrow]] |
-| burrow.bands | [[mechanics/burrow]] |
-| burrow.agaric | [[mechanics/burrow]] |
-| necro.reveal | [[mechanics/necronomicon]] |
-| necro.grandma | [[mechanics/necronomicon]] |
-| necro.one | [[mechanics/necronomicon]] |
-| necro.claim | [[mechanics/necronomicon]] |
-| necro.chest | [[mechanics/necronomicon]] |
-| necro.ritual | [[mechanics/necronomicon]] |
-| necro.gold | [[mechanics/necronomicon]] |
-| necro.save | [[mechanics/necronomicon]] |
-| burrow.block | [[mechanics/burrow]] |
-| burrow.dig | [[mechanics/burrow]] |
-| burrow.loot | [[mechanics/burrow]] |
-| burrow.open | [[mechanics/burrow]] |
-| soil.till | [[mechanics/soil]] |
-| soil.instance | [[mechanics/soil]] |
-| soil.goodness | [[mechanics/soil]] |
-| soil.hardness | [[mechanics/soil]] |
-| soil.dig | [[mechanics/soil]] |
-| tiles.paving | [[items/tiles]] |
-| tiles.paving-site | [[items/tiles]] |
-| vehicles.silo-store | [[mechanics/vehicles]] |
-| vehicles.seeder | [[mechanics/vehicles]] |
-| plants.drink | [[mechanics/plants]] |
-| plants.happy | [[mechanics/plants]] |
-| plants.ripen | [[mechanics/plants]] |
-| plants.fresh | [[mechanics/plants]] |
-| plants.harvest | [[mechanics/plants]] |
-| plants.pick-spoiled | [[mechanics/plants]] |
-| plants.rot-ground | [[mechanics/plants]] |
-| plants.packs | [[mechanics/plants]] |
-| plants.variety-roll | [[mechanics/plants]] |
-| plants.tend | [[mechanics/plants]] |
-| plants.vanilla | [[mechanics/plants]] |
-| plants.chilli | [[mechanics/plants]] |
-| plants.grass | [[mechanics/plants]] |
-| plants.annual | [[mechanics/plants]] |
-| plants.tree-foot | [[mechanics/plants]] |
-| plants.kinds | [[mechanics/plants]] |
-| variety.identity | [[mechanics/plants]] |
-| variety.neighbour | [[mechanics/plants]] |
-| graft.attach | [[mechanics/plants]] |
-| quality.ripen | [[mechanics/plants]] |
-| quality.sale | [[mechanics/plants]] |
-| quality.carry | [[mechanics/plants]] |
-| trees.wild | [[mechanics/trees]] |
-| trees.yield | [[mechanics/trees]] |
-| trees.drop | [[mechanics/trees]] |
-| trees.rng | [[mechanics/trees]] |
-| trees.ping | [[mechanics/trees]] |
-| trees.tend | [[mechanics/trees]] |
-| trees.chop | [[mechanics/trees]] |
-| graft.axe | [[mechanics/trees]] |
-| trees.trunk | [[mechanics/trees]] |
-| water.pour | [[mechanics/water]] |
-| water.targets | [[mechanics/water]] |
-| water.valve | [[mechanics/water]] |
-| water.autolay | [[mechanics/water]] |
-| weather.chain | [[mechanics/weather]] |
-| weather.spatial | [[mechanics/weather]] |
-| weather.continue-neg | [[mechanics/weather]] |
-| weather.severe-first | [[mechanics/weather]] |
-| weather.pump | [[mechanics/weather]] |
-| weather.soak | [[mechanics/weather]] |
-| weather.market | [[mechanics/weather]] |
-| weather.shop | [[mechanics/weather]] |
-| weather.forecast | [[mechanics/weather]] |
-| weeds.sprout | [[mechanics/weeds]] |
-| weeds.chance | [[mechanics/weeds]] |
-| weeds.outbreak | [[mechanics/weeds]] |
-| weeds.spray | [[mechanics/weeds]] |
-| weeds.pull | [[mechanics/weeds]] |
-| weeds.grass | [[mechanics/weeds]] |
-| market.sell | [[mechanics/market]] |
-| market.quality | [[mechanics/market]] |
-| market.vodka-common | [[mechanics/market]] |
-| market.vodka-heirloom | [[mechanics/market]] |
-| market.mixed | [[mechanics/market]] |
-| market.sugar | [[mechanics/market]] |
-| market.infused | [[mechanics/market]] |
-| sat.recover | [[mechanics/saturation]] |
-| sat.trapezoid | [[mechanics/saturation]] |
-| sat.last | [[mechanics/saturation]] |
-| sat.infused | [[mechanics/saturation]] |
-| contracts.board | [[mechanics/contracts]] |
-| contracts.id | [[mechanics/contracts]] |
-| contracts.not-cmd | [[mechanics/contracts]] |
-| contracts.sat | [[mechanics/contracts]] |
-| contracts.demand | [[mechanics/contracts]] |
-| contracts.amount | [[mechanics/contracts]] |
-| contracts.reward | [[mechanics/contracts]] |
-| contracts.rep-line | [[mechanics/contracts]] |
-| contracts.miss | [[mechanics/contracts]] |
-| contracts.cancel | [[mechanics/contracts]] |
-| contracts.consign | [[mechanics/contracts]] |
-| contracts.infused | [[mechanics/contracts]] |
-| research.job | [[mechanics/research]] |
-| research.tiles | [[mechanics/research]] |
-| research.better | [[mechanics/research]] |
-| research.unlockAll | [[mechanics/research]] |
-| research.reveal | [[mechanics/research]] |
-| research.gates | [[mechanics/research]] |
-| research.dispatch | [[mechanics/research]] |
-| research.furnace | [[mechanics/research]] |
-| research.variants | [[mechanics/research]] |
-| research.start | [[mechanics/research]] |
-| research.hardened | [[mechanics/research]] |
-| research.techtree | [[mechanics/research]] |
-| research.infusion | [[mechanics/research]] |
-| family.pick | [[mechanics/family]] |
-| family.lens | [[mechanics/family]] |
-| family.skills | [[mechanics/family]] |
-| family.jam-rot | [[mechanics/family]] |
-| family.hidden | [[mechanics/family]] |
-| family.unlockSkills | [[mechanics/family]] |
-| family.lucky | [[mechanics/family]] |
-| family.better-set | [[mechanics/family]] |
-| inventory.slots | [[mechanics/inventory]] |
-| inventory.compost | [[mechanics/inventory]] |
-| inventory.stack | [[mechanics/inventory]] |
-| variety.stack | [[mechanics/inventory]] |
-| inventory.containers | [[mechanics/inventory]] |
-| inventory.silo-buy | [[mechanics/inventory]] |
-| inventory.grass-silo | [[mechanics/inventory]] |
-| inventory.ash | [[mechanics/inventory]] |
-| inventory.infused | [[mechanics/inventory]] |
-| machines.sugar | [[mechanics/machines]] |
-| machines.barrel | [[mechanics/machines]] |
-| machines.still-foot | [[mechanics/machines]] |
-| machines.inn | [[mechanics/machines]] |
-| machines.unwired | [[mechanics/machines]] |
-| machines.quad-mill | [[mechanics/machines]] |
-| machines.tractor-mill | [[mechanics/machines]] |
-| machines.water | [[mechanics/machines]] |
-| machines.io-side | [[mechanics/machines]] |
-| place.demolish-land | [[ui/place]] |
-| place.demolish-filter | [[ui/place]] |
-| place.ghost-io | [[ui/place]] |
-| machines.io-pull | [[mechanics/machines]] |
-| machines.io-push | [[mechanics/machines]] |
-| machines.grind-hopper | [[mechanics/machines]] |
-| machines.grind-tree | [[mechanics/machines]] |
-| machines.grind-variant-row | [[mechanics/machines]] |
-| machines.variety-lock | [[mechanics/machines]] |
-| still.variety | [[mechanics/machines]] |
-| machines.jam-sugar | [[mechanics/machines]] |
-| machines.cask-premium | [[mechanics/machines]] |
-| machines.quality-carry | [[mechanics/machines]] |
-| station.cut | [[mechanics/machines]] |
-| station.io | [[mechanics/machines]] |
-| variety.copy | [[mechanics/machines]] |
-| machines.recipe-source | [[mechanics/machines]] |
-| machines.recipe-water | [[mechanics/machines]] |
-| machines.recipe-compost | [[mechanics/machines]] |
-| machines.recipe-haste | [[mechanics/machines]] |
-| machines.mill-vanilla | [[mechanics/machines]] |
-| machines.mill-chilli | [[mechanics/machines]] |
-| machines.infuser | [[mechanics/machines]] |
-| machines.furnace-lock | [[mechanics/machines]] |
-| machines.recipes-using | [[mechanics/machines]] |
-| machines.furnace-feed | [[mechanics/machines]] |
-| machines.furnace-burn | [[mechanics/machines]] |
-| machines.furnace-haste | [[mechanics/machines]] |
-| machines.furnace-io | [[mechanics/machines]] |
-| machines.furnace-draw | [[mechanics/machines]] |
-| machines.furnace-smoke | [[mechanics/machines]] |
-| machines.furnace-cover | [[mechanics/machines]] |
-| machines.furnace-haste-look | [[mechanics/machines]] |
-| infusion.chilli | [[mechanics/infusion]] |
-| infusion.extract | [[mechanics/infusion]] |
-| infusion.item | [[mechanics/infusion]] |
-| infusion.machine | [[mechanics/infusion]] |
-| infusion.overlay | [[mechanics/infusion]] |
-| infusion.stall | [[mechanics/infusion]] |
-| infusion.rep | [[mechanics/infusion]] |
-| infusion.furnace | [[mechanics/infusion]] |
-| vehicles.kind | [[mechanics/vehicles]] |
-| vehicles.buy | [[mechanics/vehicles]] |
-| vehicles.surface | [[mechanics/vehicles]] |
-| vehicles.empty | [[mechanics/vehicles]] |
-| vehicles.refill | [[mechanics/vehicles]] |
-| vehicles.drive | [[mechanics/vehicles]] |
-| vehicles.hangar | [[mechanics/vehicles]] |
-| vehicles.enter | [[mechanics/vehicles]] |
-| vehicles.slots | [[mechanics/vehicles]] |
-| vehicles.away | [[mechanics/vehicles]] |
-| vehicles.unrep | [[mechanics/vehicles]] |
-| vehicles.dash | [[mechanics/vehicles]] |
-| vehicles.dispatch | [[mechanics/vehicles]] |
-| vehicles.auto | [[mechanics/vehicles]] |
-| vehicles.route | [[mechanics/vehicles]] |
-| sensors.cycle | [[mechanics/sensors]] |
-| sensors.button | [[mechanics/sensors]] |
-| sensors.hold | [[mechanics/sensors]] |
-| sensors.unwired-sprinkler | [[mechanics/sensors]] |
-| sensors.valve | [[mechanics/sensors]] |
-| sensors.port | [[mechanics/sensors]] |
-| sensors.fan | [[mechanics/sensors]] |
-| sensors.mask | [[mechanics/sensors]] |
-| sensors.signal | [[mechanics/sensors]] |
-| sensors.chest | [[mechanics/sensors]] |
-| sensors.silo | [[mechanics/sensors]] |
-| sensors.vfx | [[mechanics/sensors]] |
-| sensors.counter | [[mechanics/sensors]] |
-| sensors.day | [[mechanics/sensors]] |
-| sensors.lever | [[mechanics/sensors]] |
-| sensors.light | [[mechanics/sensors]] |
-| enclosure.close | [[mechanics/enclosure]] |
-| enclosure.leak | [[mechanics/enclosure]] |
-| enclosure.grid | [[mechanics/enclosure]] |
-| enclosure.nest | [[mechanics/enclosure]] |
-| enclosure.static | [[mechanics/enclosure]] |
-| sensors.fence-range | [[mechanics/sensors]] |
-| sensors.fence-place | [[mechanics/sensors]] |
-| sensors.fence-delete | [[mechanics/sensors]] |
-| sensors.logic | [[mechanics/sensors]] |
-| sensors.pressure | [[mechanics/sensors]] |
-| sensors.variety | [[mechanics/sensors]] |
-| sensors.weather | [[mechanics/sensors]] |
-| sensors.pump | [[mechanics/sensors]] |
-| log.now | [[mechanics/log]] |
-| log.dispatch | [[mechanics/log]] |
-| log.cmds | [[mechanics/log]] |
-| log.json | [[mechanics/log]] |
-| log.letters | [[mechanics/log]] |
-| rng.spatial | [[mechanics/rng]] |
-| rng.fail | [[mechanics/rng]] |
-| rng.burrow | [[mechanics/rng]] |
-| tutorial.on | [[mechanics/tutorial]] |
-| tutorial.session | [[mechanics/tutorial]] |
-| tutorial.tilled | [[mechanics/tutorial]] |
-| tutorial.research | [[mechanics/tutorial]] |
-| tutorial.thirst | [[mechanics/tutorial]] |
-| tutorial.sell | [[mechanics/tutorial]] |
-| tutorial.dismiss | [[mechanics/tutorial]] |
-| tutorial.no-force | [[mechanics/tutorial]] |
-| mp.tick | [[mechanics/multiplayer]] |
-| mp.float | [[mechanics/multiplayer]] |
-| mp.bundle | [[mechanics/multiplayer]] |
-| mp.drop | [[mechanics/multiplayer]] |
-| mp.guest | [[mechanics/multiplayer]] |
-| mp.away | [[mechanics/multiplayer]] |
-| mp.hello | [[mechanics/multiplayer]] |
-| mp.mismatch | [[mechanics/multiplayer]] |
-| mp.stride | [[mechanics/multiplayer]] |
-| tick.scan | [[architecture/tick]] |
-| tick.nets | [[architecture/tick]] |
-| tick.ping | [[architecture/tick]] |
-| view.scan | [[architecture/view]] |
-| view.hit | [[architecture/view]] |
-| view.hud | [[architecture/view]] |
-| view.boot | [[architecture/view]] |
-| view.ticker | [[architecture/view]] |
-| view.edge | [[architecture/view]] |
-| view.source | [[architecture/view]] |
-| view.drop | [[architecture/view]] |
-| view.vfx.drain | [[architecture/view]] |
-| view.furnace-cover | [[architecture/view]] |
-| view.named-face | [[architecture/view]] |
-| view.infused-overlay | [[architecture/view]] |
-| view.round | [[architecture/view]] |
-| world.queue | [[architecture/world]] |
-| world.dest | [[architecture/world]] |
-| world.pulse | [[architecture/world]] |
-| world.pause | [[architecture/world]] |
-| world.cheatSpeed | [[architecture/world]] |
-| world.cheatFastResearch | [[architecture/world]] |
-| save.parse | [[architecture/save]] |
-| save.nomigrate | [[architecture/save]] |
-| save.recaps | [[architecture/save]] |
-| net.digest | [[architecture/net]] |
-| net.bundle | [[architecture/net]] |
-| net.full | [[architecture/net]] |
-| net.kick | [[architecture/net]] |
-| net.order | [[architecture/net]] |
-| play.hold | [[architecture/ai-gameplay-api]] |
-| play.drain | [[architecture/ai-gameplay-api]] |
-| play.seam | [[architecture/ai-gameplay-api]] |
-| play.logged | [[architecture/ai-gameplay-api]] |
-| play.witness | [[architecture/ai-gameplay-api]] |
-| docs.version | [[standards/docs]] |
-| lex.term | [[standards/lexicon]] |
-| lex.copy | [[standards/lexicon]] |
-| lex.user | [[standards/user-facing-text]] |
+- [[mechanics/day]] — `day.seam` `day.phases` `day.recap` `day.stipend` `day.end-day`
+- [[ui/notices]] — `notices.popup` `notices.dismiss` `notices.roster`
+- [[mechanics/expansion]] — `expansion.tax` `expansion.chunk`
+- [[mechanics/burrow]] — `burrow.start` `burrow.day` `burrow.day-chance` `burrow.bands` `burrow.agaric` `burrow.block` `burrow.dig` `burrow.loot` `burrow.open`
+- [[mechanics/necronomicon]] — `necro.reveal` `necro.grandma` `necro.one` `necro.claim` `necro.chest` `necro.ritual` `necro.gold` `necro.save`
+- [[mechanics/soil]] — `soil.till` `soil.instance` `soil.goodness` `soil.hardness` `soil.dig`
+- [[items/tiles]] — `tiles.paving` `tiles.paving-site`
+- [[mechanics/vehicles]] — `vehicles.silo-store` `vehicles.seeder` `vehicles.kind` `vehicles.buy` `vehicles.surface` `vehicles.empty` `vehicles.refill` `vehicles.drive` `vehicles.hangar` `vehicles.enter` `vehicles.slots` `vehicles.away` `vehicles.unrep` `vehicles.dash` `vehicles.dispatch` `vehicles.auto` `vehicles.route`
+- [[mechanics/plants]] — `plants.drink` `plants.happy` `plants.ripen` `plants.fresh` `plants.harvest` `plants.pick-spoiled` `plants.rot-ground` `plants.packs` `plants.variety-roll` `plants.tend` `plants.vanilla` `plants.chilli` `plants.grass` `plants.annual` `plants.tree-foot` `plants.kinds` `variety.identity` `variety.neighbour` `graft.attach` `quality.ripen` `quality.sale` `quality.carry`
+- [[mechanics/trees]] — `trees.wild` `trees.yield` `trees.drop` `trees.rng` `trees.ping` `trees.tend` `trees.chop` `graft.axe` `trees.trunk`
+- [[mechanics/water]] — `water.pour` `water.targets` `water.valve` `water.autolay`
+- [[mechanics/weather]] — `weather.chain` `weather.spatial` `weather.continue-neg` `weather.severe-first` `weather.pump` `weather.soak` `weather.market` `weather.shop` `weather.forecast`
+- [[mechanics/weeds]] — `weeds.sprout` `weeds.chance` `weeds.outbreak` `weeds.spray` `weeds.pull` `weeds.grass`
+- [[mechanics/market]] — `market.sell` `market.quality` `market.vodka-common` `market.vodka-heirloom` `market.mixed` `market.sugar` `market.infused`
+- [[mechanics/saturation]] — `sat.recover` `sat.trapezoid` `sat.last` `sat.infused`
+- [[mechanics/contracts]] — `contracts.board` `contracts.id` `contracts.not-cmd` `contracts.sat` `contracts.demand` `contracts.amount` `contracts.reward` `contracts.rep-line` `contracts.miss` `contracts.cancel` `contracts.consign` `contracts.infused`
+- [[mechanics/research]] — `research.job` `research.tiles` `research.better` `research.unlockAll` `research.reveal` `research.gates` `research.dispatch` `research.furnace` `research.variants` `research.start` `research.hardened` `research.techtree` `research.infusion`
+- [[mechanics/family]] — `family.pick` `family.lens` `family.skills` `family.jam-rot` `family.hidden` `family.unlockSkills` `family.lucky` `family.better-set`
+- [[mechanics/inventory]] — `inventory.slots` `inventory.compost` `inventory.stack` `variety.stack` `inventory.containers` `inventory.silo-buy` `inventory.grass-silo` `inventory.ash` `inventory.infused`
+- [[mechanics/machines]] — `machines.sugar` `machines.barrel` `machines.still-foot` `machines.inn` `machines.unwired` `machines.quad-mill` `machines.tractor-mill` `machines.water` `machines.io-side` `machines.io-pull` `machines.io-push` `machines.grind-hopper` `machines.grind-tree` `machines.grind-variant-row` `machines.variety-lock` `still.variety` `machines.jam-sugar` `machines.cask-premium` `machines.quality-carry` `station.cut` `station.io` `variety.copy` `machines.recipe-source` `machines.recipe-water` `machines.recipe-compost` `machines.recipe-haste` `machines.mill-vanilla` `machines.mill-chilli` `machines.infuser` `machines.furnace-lock` `machines.recipes-using` `machines.furnace-feed` `machines.furnace-burn` `machines.furnace-haste` `machines.furnace-io` `machines.furnace-draw` `machines.furnace-smoke` `machines.furnace-cover` `machines.furnace-haste-look` `machines.sorter`
+- [[ui/place]] — `place.demolish-land` `place.demolish-filter` `place.ghost-io`
+- [[mechanics/infusion]] — `infusion.chilli` `infusion.extract` `infusion.item` `infusion.machine` `infusion.overlay` `infusion.stall` `infusion.rep` `infusion.furnace`
+- [[mechanics/sensors]] — `sensors.cycle` `sensors.button` `sensors.hold` `sensors.unwired-sprinkler` `sensors.valve` `sensors.port` `sensors.fan` `sensors.mask` `sensors.signal` `sensors.chest` `sensors.silo` `sensors.vfx` `sensors.counter` `sensors.day` `sensors.lever` `sensors.light` `sensors.fence-range` `sensors.fence-place` `sensors.fence-delete` `sensors.logic` `sensors.pressure` `sensors.variety` `sensors.weather` `sensors.pump`
+- [[mechanics/enclosure]] — `enclosure.close` `enclosure.leak` `enclosure.grid` `enclosure.nest` `enclosure.static`
+- [[mechanics/log]] — `log.now` `log.dispatch` `log.cmds` `log.json` `log.letters`
+- [[mechanics/rng]] — `rng.spatial` `rng.fail` `rng.burrow`
+- [[mechanics/tutorial]] — `tutorial.on` `tutorial.session` `tutorial.tilled` `tutorial.research` `tutorial.thirst` `tutorial.sell` `tutorial.dismiss` `tutorial.no-force`
+- [[mechanics/multiplayer]] — `mp.tick` `mp.float` `mp.bundle` `mp.drop` `mp.guest` `mp.away` `mp.hello` `mp.mismatch` `mp.stride`
+- [[architecture/tick]] — `tick.scan` `tick.nets` `tick.ping`
+- [[architecture/view]] — `view.scan` `view.hit` `view.hud` `view.boot` `view.ticker` `view.edge` `view.source` `view.drop` `view.vfx.drain` `view.furnace-cover` `view.named-face` `view.infused-overlay` `view.round`
+- [[architecture/world]] — `world.queue` `world.dest` `world.pulse` `world.pause` `world.cheatSpeed` `world.cheatFastResearch`
+- [[architecture/save]] — `save.parse` `save.nomigrate` `save.recaps`
+- [[architecture/net]] — `net.digest` `net.bundle` `net.full` `net.kick` `net.order`
+- [[architecture/ai-gameplay-api]] — `play.hold` `play.drain` `play.seam` `play.logged` `play.witness`
+- [[standards/docs]] — `docs.version`
+- [[standards/lexicon]] — `lex.term` `lex.copy`
+- [[standards/user-facing-text]] — `lex.user`

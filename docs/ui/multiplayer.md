@@ -91,4 +91,4 @@ Away actor is not drawn.
 
 Pause face stays. Guests may toggle.
 
-Assumption: guest in-play ×/Esc/backdrop close does not leave; terminal overlay errors then reuse the fail line on the startup four buttons.
+In-play guest × / Esc / backdrop close does not leave. Terminal overlay errors then reuse the fail line on the startup four buttons.

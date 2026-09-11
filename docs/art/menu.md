@@ -6,4 +6,4 @@ Water sky, ripe sun upper right (`ui-phase-day` disc), cottage left: `#8b3a2a` s
 
 `ui-btn-gear.svg`, `0 0 24 24`. HUD face, groups `idle` `hover` `selected` `disabled`. Frame language of `ui-btn-research.svg` (ink border, house fill, dirt cap, dirt-dark studs). Glyph: one cog. Select with `btnFace`.
 
-`ui-btn-multiplayer.svg`, `0 0 24 24`. HUD face, same groups and frame language. Glyph: two small gardeners. Select with `btnFace`. Assumption: actor-reduced (ripe hat, house face, roof shirt, water overalls, dirt boots), not Family busts.
+`ui-btn-multiplayer.svg`, `0 0 24 24`. HUD face, same groups and frame language. Glyph: two small gardeners. Select with `btnFace`. Actor-reduced (ripe hat, house face, roof shirt, water overalls, dirt boots), not Family busts.

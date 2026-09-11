@@ -2,36 +2,13 @@
 
 PixiJS v8 canvas world. HUD stays React. Not tick logic. Not Save. Not `PROTOCOL`. [[architecture/modules]] [[architecture/tick]] [[architecture/world]] [[art/svg]] [[art/vfx]]
 
-No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventMode` `'none'`. Hits are world-space math in `hit.ts`.
+No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventMode` `'none'`. Hits are world-space math in `hit.ts`. Pointer while armed: [[ui/place]].
 
-## Owners
-
-`src/game/view/`
-
-| file | owner |
-|---|---|
-| `camera.ts` | `Camera`, `TILE`, `DROP_FACE`, `DROP_INSET`, `DROP_STEP`, `clampCam`, `tileVariant` |
-| `atlas.ts` | named SVG `<g id>` → `Texture`, 2×, nearest. `EDGE_PAD` on every key in `PADDED`. `vfx-furnace-smoke.svg`. Variety groups, station `off`/`on`, infuser `off`/`on`, graft face. Logic `or`/`and`. Variety / weather `off`/`on`. `overlay-infused` |
-| `app.ts` | `Application` create / resize / destroy `releaseGlobalResources` |
-| `world-view.ts` | scene graph, dirty patch, Pixi ticker motion, `QUAD_FOLLOW`, `CullerPlugin`, pending pipe run |
-| `hit.ts` | `clickHit` / `nearestEdge` / `nearestVertex` / `dropHit` / `routeEdges` / `onEdgeBand` / port discs / ghosts. Pump origin `in`. HUD hits: water / harvest / counter / day / logic / variety / weather / pressure |
-| `outline.ts` | union footprint path. Directed edges, reverse cancel, then walk |
-| `layers/ground.ts` | terrain + fade chunks, paving and its kerb |
-| `layers/plots.ts` | plots, plants, weeds, turf, rocks, trees, tufts, burrow cover |
-| `layers/pipes.ts` | pipes, valves, sprinklers, fences. `pipe-source` |
-| `layers/props.ts` | buildings, sensors, house, truck, hangars, silos, station, infuser. `tick` paints the pump arm and the turning mill sails on the ticker from a second pool. Furnace / still native viewBox; art occupancy 1×1.5 / 1.5×1 inside. Mill / infuser viewBox `48×48`. Station `off`/`on`. Infuser `off`/`on`. Logic `or`/`and`. Variety / weather `off`/`on` |
-| `layers/actors.ts` | seats, vehicles, trailers, drops |
-| `layers/overlay.ts` | lens wash, routes, wires, ports, AoE, edge lattice, flow dashes and beads. Fenceable sensor wash is the watched set, not a hardcoded 3×3. Pump origin port |
-| `layers/vfx.ts` | `VfxDef`, state / burst paint. Drain `World.bursts`. Tractor exhaust at a fractional cell coord. Furnace fire south + `furnace-smoke` origin while working |
-| `map.tsx` | React host: canvas + HTML ghosts / speech / expand. `MapView`, `Lens`. Boot `onReady` after `WorldView.mount` + first `layout`. Loading overlay until `onReady`. `data-furnace-cover` |
-| `svgs.ts` | chrome-only (HUD, almanac, Build). `varietyGroup(crop, variety)` selects the plant / fruit / cask / tree group. Not a ladder. `overlay-infused.svg` composites on infused faces, plus flush top-right border |
-| `motion.ts` | HUD-only binds (`paintMotion` clock / day / fps / dash / queue / banner). Not notices — that column is React, [[ui/notices]] |
+`src/game/view/`: `camera.ts` `atlas.ts` `app.ts` `world-view.ts` `hit.ts` `outline.ts` `layers/*` `map.tsx` `svgs.ts` `motion.ts`. Chrome SVG never enters the atlas. Map tiles never enter `svgs.ts`.
 
 `TILE` 48. Atlas raster is 2× of 24-viewBox art, nearest. Sprite size at scale 1 is `TILE` per tile. Multi-cell props paint at origin, native viewBox. Still viewBox `48×24`; art occupies 1.5×1 centered inside it. Furnace viewBox `24×48`; art occupies 1×1.5 south-aligned inside it so the opening stays in the south cell. Mill / infuser viewBox `48×48`. Empty viewBox margin is empty pixels. Do not scale those sprites down. Hit, ghost footprint, I/O, ports, pads stay 2×1 / 1×2 / 2×2.
 
 `DROP_FACE` 33 — preference (pre-Pixi DropGfx). `DROP_INSET` 4 `DROP_STEP` 6 — preference. Live next to `TILE` in `camera.ts`. Drop sprite scale `DROP_FACE / TILE` on a 24-unit atlas sprite.
-
-Chrome SVG never enters the atlas. Map tiles never enter `svgs.ts`.
 
 ## Layers
 
@@ -46,22 +23,13 @@ Bottom → top, one container each:
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, fenceable sensor wash from the watched set (HUD, lens, unarmed hover, or armed range-reader SKU at the ghost cell), the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`. Pump origin `in`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
 
-HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces. `data-cell-stroke` (one footprint outline path, never one rect per cell) `data-furnace-cover` (one covering outline path) `data-neighbour-reach` (one neighbour-reach outline path) `data-notice-cells` (one hovered-notice outline path — [[ui/notices]]) `data-pipe-ghost` `data-valve-ghost` `data-queued` `data-speech` stay on HTML. Farm sprites have no DOM.
+HTML over the canvas (`map.tsx`): sku / pipe / sprinkler / delete ghosts, speech, expand faces, one outline path per footprint. Farm sprites have no DOM.
 
 ## Atlas
 
 `atlas.ts` rasterizes a named group (`varietyGroup`, `off`/`on`, pipe fit, `f0`…`fN`) from the SVG file. One `Texture` per `(file, group id)`. Scale 2×. `scaleMode` nearest. Not a whole-file mount. Not `Graphics.svg`.
 
-Group selection is by Variety, not a ladder.
-
-```
-VarietyGroup = VarietyTier = 'base' | 'variant' | 'heirloom'
-CaskGroup    = 'base' | 'heirloom'
-TreeStage    = 'trunk' | 'grow' | 'unripe' | 'ripe'
-CropStage    = 'sprout' | 'grow' | 'ripe' | 'dead'
-```
-
-`varietyGroup(variety)` **is** `tierOf(variety)`. A crop carries at most one `variant` and at most one `heirloom`, so the group is the tier — nothing positional, nothing to order.
+Group selection is by Variety, not a ladder. `varietyGroup(variety)` **is** `tierOf(variety)`. A crop carries at most one `variant` and at most one `heirloom`, so the group is the tier — nothing positional, nothing to order.
 
 Illegal: comparing two Varieties. Illegal: a group from anything but `VARIETY`.
 
@@ -75,17 +43,7 @@ Tree `trunk`, `grow` and `unripe` are shared, not Variety — unripe fruit does 
 
 A file carries exactly the groups `VARIETIES[crop]` asks for and no others — `atlas.test.ts` `view.groups` sweeps every key the loader builds against the file it reads. `groupOf` throws outside its `try`, so a missing group is a permanent, cached atlas boot failure.
 
-```
-AtlasKey +=
-  | `graft-${CropId}:${VarietyGroup}`
-  | 'station-off'
-  | 'station-on'
-  | 'infuser-off'
-  | 'infuser-on'
-  | 'overlay-infused'
-```
-
-A product a Variety renames also carries its own face, and one selector says which: `jamArt(crop, variety)` and `spiritArt(spirit, variety)` in `svgs.ts`, read by both the HUD chrome and `faceKey`. `jamArt` adds `'jam-concord'` `'jam-black-raspberry'` `'passata'` beside the per-crop jars and `'ketchup'`; `spiritArt` adds `'spirit-palinka'` for `klosterneuburger` brandy. Whole files, not `<g id>` groups — a named product is a different container, not a tint of the same one.
+A product a Variety renames also carries its own face, and one selector says which: `jamArt` and `spiritArt` in `svgs.ts`, read by both the HUD chrome and `faceKey`. Whole files, not `<g id>` groups — a named product is a different container, not a tint of the same one.
 
 `faceKey` / `itemInner` take Variety, not a ladder. Graft face. Station prop `off` / `on`. Infuser prop `off` / `on`. Faces carry no Quality mark; Quality is copy — [[ui/inspect]]. Infused jam / cask / spirit / oil: `itemInner` draws the plain face then one `overlay-infused.svg`. One SVG. Not a named face. Not a second file per product.
 
@@ -169,7 +127,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.hud` — HUD / docks / panels are React. Not in Pixi. No `@pixi/react`. No Pixi HUD.
 
-`view.boot` — Until `WorldView.mount` + first `layout` (`onReady`), a `pointer-events-none` overlay on the map host: centered **Loading...**, `font-display` `text-5xl` `text-white`, fade in 0.5s ease-in opacity 0 → 0.7, fade out 0.5s ease-out to 0, then unmount. Play and menu. Menu canvas fade-in still runs after `onReady`. Not Pixi. Not a `DirtyReason`.
+`view.boot` — Until `WorldView.mount` + first `layout` (`onReady`), a loading overlay on the map host: **Loading...**, then unmount. Play and menu. Menu canvas fade-in still runs after `onReady`. Not Pixi. Not a `DirtyReason`.
 
 `view.ticker` — Sim is not interpolated. View vehicles keep `QUAD_FOLLOW`. App owns the `DT_MAX` accumulator. Pixi ticker paints. `ping` is discrete dirty only.
 
@@ -179,7 +137,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.outline` — Hover paints one outline per footprint: the boundary of the union of its cells, internal edges dropped, one `data-cell-stroke` element. Directed cell-edge set; opposite edges cancel; walk the remainder. Same path for `data-furnace-cover`. Stroke sits inside a 1-unit pad so the 2-wide stroke is not clipped.
 
-`view.furnace-cover` — Armed `buy-furnace` (ghost follows hover) and unarmed hover of a placed furnace (either cell): one `data-furnace-cover` path, the union of covering cells (Chebyshev ≤ `FURNACE_REACH` over the 1×2, derived 7×8). `fill-none` `stroke-ink` `strokeWidth` 2. Clip to owned (`inWorld`); drop fade and off-farm cells. Internal edges dropped. Footprint `data-cell-stroke` stays. Not sprinkler fill. Not a lens. Not a dock. Not Pixi overlay wash.
+`view.furnace-cover` — Armed `buy-furnace` (ghost follows hover) and unarmed hover of a placed furnace (either cell): one covering outline, the union of covering cells (Chebyshev ≤ `FURNACE_REACH` over the 1×2). Clip to owned; drop fade and off-farm cells. Internal edges dropped. Footprint outline stays. Not sprinkler fill. Not a lens. Not a dock. Not Pixi overlay wash.
 
 `view.flow` — The flow `Graphics` repaints on the Pixi ticker, never from a `DirtyReason`. It carries no frames and no sim state. Pipe dash direction is a view-local BFS from source vertices over conducting edges. Each half paints only while its own overlay is up: dashes with `pipesOverlay`, beads with the `sensors` lens. Faint pipe does not flow — nothing reads on a network you are not looking at.
 
@@ -204,6 +162,4 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 
 `view.round` — Litres and recipe amounts a person reads use `Math.visualRound` (nearest half). Percents stay `floor(* 100)`. [[ui/inspect]] [[ui/recipe]]
 
-Assumption: [[art/tilled-edges]] / [[art/vfx]] follow the pad / drain / vertex-anchor rules.
-Assumption: `furnace-smoke` viewBox `24×24`, frames `f0`–`f3`, cell-anchor at the origin cell corner.
-Assumption: plots layer paints burrow cover from `World.burrows`; atlas key is later.
+Plots layer paints burrow cover from `World.burrows`. `furnace-smoke` frames `f0`–`f3`, cell-anchor at the origin cell corner. [[art/tilled-edges]] [[art/vfx]] follow the pad / drain / vertex-anchor rules.

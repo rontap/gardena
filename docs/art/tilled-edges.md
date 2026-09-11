@@ -10,9 +10,7 @@ SVG rules: [[art/svg]].
 
 ## Atlas
 
-Atlas must keep the overhang. Raster `EDGE_PAD` 4 (preference) around `tile-dirt-edge` / `tile-dirt-inset`. Wrap viewBox `-4 -4 32 32`. Do not clip to `0 0 24 24`. 2× nearest — [[architecture/view]].
-
-Assumption: source SVGs keep `viewBox="0 0 24 24"`; paths already paint outside that box; atlas wrap is the pad.
+Atlas must keep the overhang. Raster `EDGE_PAD` 4 (preference) around `tile-dirt-edge` / `tile-dirt-inset`. Wrap viewBox `-4 -4 32 32`. Do not clip to `0 0 24 24`. Source files keep tile viewBox; paths already paint outside that box; atlas wrap is the pad. 2× nearest — [[architecture/view]].
 
 ## Placement
 

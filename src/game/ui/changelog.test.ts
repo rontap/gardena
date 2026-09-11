@@ -213,7 +213,7 @@ Summary.
   })
 })
 
-const TOP_LINE = /^(New|Added|Removed|Changed|Fixed bug) (building|item|ui|mechanic|multiplayer)\b/
+const TOP_LINE = /^(New|Added|Removed|Changed|Fixed bug|Rebalanced) (building|item|ui|mechanic|multiplayer|research|researches)\b/
 
 test('A top-level changelog line is {emoji} {New|Added|Removed|Changed|Fixed bug} {building|item|ui|mechanic|multiplayer} {*}.', () => {
   expect(topLineShape('Added building: Freezer. Nine slots instead of six, and fruit inside still does not rot.')).toBe(true)

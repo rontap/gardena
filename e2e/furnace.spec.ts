@@ -166,7 +166,7 @@ test('research furnace, place 1×2, dump mixed feedstock, ash, compost', async (
   expect(units).toBe(FURNACE_VALUE.green * 8 + FURNACE_VALUE.fruit * 4)
   expect(units).toBe(FURNACE_NEED)
 
-  await ticks(page, FURNACE_SECONDS / (1 + FURNACE_HASTE) + 1)
+  await ticks(page, FURNACE_SECONDS + 1)
   const ash = await readWorld<{ n: number; east: boolean }>(
     page,
     FURNACE_AT,
@@ -543,9 +543,9 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
   await hoverWorld(page, still.col + 1.5, still.row + 0.5)
   expect((await lookAt(page, { col: still.col + 1, row: still.row })).split('\n')).toContain(line)
   await hoverWorld(page, furnace.col + 0.5, furnace.row + 0.5)
-  expect((await lookAt(page, furnace)).split('\n')).toContain(line)
+  expect((await lookAt(page, furnace)).split('\n')).not.toContain(line)
   await hoverWorld(page, furnace.col + 0.5, furnace.row + 1.5)
-  expect((await lookAt(page, { col: furnace.col, row: furnace.row + 1 })).split('\n')).toContain(line)
+  expect((await lookAt(page, { col: furnace.col, row: furnace.row + 1 })).split('\n')).not.toContain(line)
   await hoverWorld(page, barrel.col + 0.5, barrel.row + 0.5)
   expect((await lookAt(page, barrel)).split('\n')).not.toContain(line)
   expect(extraLines(idle.barrel, await lookAt(page, barrel))).toHaveLength(0)

@@ -224,7 +224,7 @@ export function parseChangelog(src: string): readonly Release[] {
   return releases
 }
 
-const TOP_LINE = /^(New|Added|Removed|Changed|Fixed bug) (building|item|ui|mechanic|multiplayer)\b/
+const TOP_LINE = /^(New|Added|Removed|Changed|Fixed bug|Rebalanced) (building|item|ui|mechanic|multiplayer|research|researches)\b/
 
 export function topLineShape(text: string): boolean {
   return TOP_LINE.test(text)

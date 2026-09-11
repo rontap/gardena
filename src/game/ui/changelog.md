@@ -197,7 +197,7 @@ Rarity is removed from the game and split into Variety and Quality. Every plant 
 - 🚫 Removed mechanic: Trusted seed bank. Seed packs bought from a shop no longer arrive better than the plain pack.
 - 🚫 Removed mechanic: Experienced carrot, vanilla and sugar cane growers. Those three crops have one Variety each, so there was nothing left for the skill to raise.
 
-# 2.3.0 Machine update II
+# 2.3.0 Machine update IV
 
 New building: Furnace. Burns mixed waste into Ash and speeds nearby machines. Trees can be chopped down for wood.
 
@@ -365,7 +365,7 @@ Quad and tractor can be automated. A traffic light holds a truck only when that 
 - ✨ Added item: Traffic light. A truck waits here only if this light is a stop, until the input is green, and the output is on while one waits.
 - ✨ Added ui: Automate. It opens the stop list from the dash, paints the purple path with numbered dots, and names Add stop, load, unload, or wait under the cursor.
 
-# 1.8.3 Automation update IV
+# 1.8.3 Machine Update III
 
 A chest or freezer beside a machine now feeds it and takes what it makes.
 
@@ -472,7 +472,7 @@ Working machines show what they are doing, and five props are easier to read.
 - 🔧 Changed building: Mill. previously, it was hard to read, now it has a millstone and a flour sack.
 - 🔧 Changed building: Seed grinder. previously, it was hard to read, now it has a drum and a crank.
 
-# 1.6.2 Machine — Vehicle patch
+# 1.6.2 Machine — Vehicle Update
 
 Machines, stores, and vehicles pass goods. Sensors can pause machines and read full stores.
 
@@ -495,7 +495,7 @@ The Sensors shelf turns on the overlay. Ports, wires, and the water-system senso
 - 🔧 Changed mechanic: Wires. previously, drawing the same path again did nothing, now drawing it again removes it, and an input takes many wires as OR.
 - 🔧 Changed building: Water-system sensor. previously, it stayed silent with no pipes around it, now it says so.
 
-# 1.6 Automation III
+# 1.6 Machine Update II
 
 Sensors and Smart Irrigation.
 
@@ -515,7 +515,7 @@ Sensors and Smart Irrigation.
 - ✨ Added building: Smart valve. It sits on an edge, it stays closed unless its input is high, and it has no manual click.
 - ✨ Added building: Vehicle detector. It is a flush plate, and it is high when a Quad or tractor sits on this tile.
 
-# 1.5.2 Vehicles II patch
+# 1.5.2 Vehicles II Patch
 
 Boom width, slower machines, weed spray, and skill moves.
 

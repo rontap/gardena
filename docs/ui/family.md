@@ -8,7 +8,7 @@ HUD **Family** toggles it. × closes. Esc closes. Backdrop pointer-down on the d
 
 Solo (`role === 'off'`): open pauses the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. [[ui/hud]]
 
-Guest: overlay opens. Offers not clickable. [[ui/multiplayer]]
+Guest: overlay opens. Offers not clickable. Why: **Only the host can choose a skill.** [[ui/multiplayer]] [[mechanics/multiplayer]] `mp.guest`
 
 ## Standing
 
@@ -46,7 +46,7 @@ Icon: `skill-{id}` except `better-{crop}` — `fruitInner(crop)` under `skill-be
 
 Live lists. Not `bulk-buying` `tool-contracts` `machine-contracts`. Player includes `driving-classes` `lucky`. Husband: `machinery` `forecast`. `forecast` is live — HUD tomorrow iff owned. [[mechanics/weather]] No luck HUD chip; Luck is read on the standing band.
 
-Click `pickSkill(member, slot)` iff that member’s `points > 0`. Else disabled. `forecast` picking still spends the point.
+Click `pickSkill(member, slot)` iff that member’s `points > 0` and `world.local === 0`. Else disabled. `forecast` picking still spends the point. Guest: never.
 
 Hover (offers and learned): [[ui/callout-hover]] to the right of the Family window. Title `SKILLS[id].name`, description `skillBlurb(id, tier)`.
 

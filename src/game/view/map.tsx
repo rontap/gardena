@@ -752,7 +752,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
             }}
           />
         ))}
-        {faces.map(face => {
+        {world.local === 0 && faces.map(face => {
           const s = TILE * 0.85
           const o = (TILE - s) / 2
           const noPermit = world.expandLeft() <= 0

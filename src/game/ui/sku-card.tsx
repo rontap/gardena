@@ -4,7 +4,6 @@ import { shelfOf } from '../defs/shelf.ts'
 import type { SkuId } from '../sim/ids.ts'
 import { skuDesc, skuItem, skuLabel } from '../sim/item.ts'
 import { cropVariety } from '../defs/crops.ts'
-import { guestBlockedSku } from '../sim/mp.ts'
 import type { Coord } from '../sim/building.ts'
 import { additiveStoreAt, seedStoreAt } from '../sim/store.ts'
 import type { BuyFail, World } from '../sim/world.ts'
@@ -98,7 +97,6 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
   const crumb = crumbOf(id)
   const bulkFail = world.buyPacksFail(id, world.houseCell())
   const bulk = bulkFail === 'Locked' ? undefined : world.packsPrice(id)
-  const guestOff = world.local !== 0 && guestBlockedSku(id)
   const machine = machineOfSku(id)
   const made = skuItem(id)
   return (
@@ -118,7 +116,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
               <Recipes view={{ kind: 'list', machine }} size="sm" />
             </span>
           )}
-          {state !== 'ok' && !guestOff && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}
+          {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}
           {bulk !== undefined && (
             <span className={`mt-2 flex items-center gap-1 font-bold ${bulkFail === undefined ? '' : 'text-roof'}`}>
               {m.hud_ctrl_packs({ n: 5 })}
@@ -146,8 +144,7 @@ export function SkuCard({
   const state = rowState(world, id, world.houseCell())
   const place = world.seats[world.local].place
   const armed = place.kind === 'sku' && place.id === id
-  const guestOff = world.local !== 0 && guestBlockedSku(id)
-  const off = state !== 'ok' || guestOff
+  const off = state !== 'ok'
   const face = off
     ? 'cursor-default bg-ink/6 text-ink/35'
     : armed

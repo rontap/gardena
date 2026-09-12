@@ -35,11 +35,10 @@ Under the list, when any page is still shut: **The book has more pages.** It nam
 
 **Money button.** Only while `gold` is open, unclosed and unpaid. Face is the treasure art, label **Sacrifice $666** through `fill`, not digits. Disabled when the farm cannot pay, with **The farm does not have that much.** under it.
 
-**Ritual button.** Full width, `bg-grape`, `text-house`. Disabled outside twilight, with nothing full, or for a guest, and the reason sits under it in `text-ink/55` — a grey control that does not say why is a dead end [[ui/callout-hover]]:
+**Ritual button.** Full width, `bg-grape`, `text-house`. Disabled outside twilight or with nothing full, and the reason sits under it in `text-ink/55` — a grey control that does not say why is a dead end [[ui/callout-hover]]:
 
 | when | line |
 |---|---|
-| guest | Only the gardener who owns this farm can perform the ritual. |
 | not twilight | The ritual can only be performed at twilight. |
 | nothing full | No page has everything it asked for yet. |
 

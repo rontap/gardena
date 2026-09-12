@@ -396,7 +396,6 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
     return { kind: 'place', text: m.prompt_demolish({ name: nameFn().toLowerCase() }) }
   }
   if (w.hasFence(at)) {
-    if (w.act.id !== 0) return { kind: 'blocked', text: m.prompt_cannot_demolish() }
     return { kind: 'place', text: m.prompt_demolish({ name: m.names_building_fence().toLowerCase() }) }
   }
 
@@ -411,7 +410,7 @@ export function deleteBuildingPrompt(w: World, at: Coord): Prompt {
   }
   const nameFn = DELETE_NAME[cell.kind]
   if (nameFn === undefined) {
-    if (w.act.id === 0 && isPlot(cell) && w.pavingAt(at) !== 'none') {
+    if (isPlot(cell) && w.pavingAt(at) !== 'none') {
       return { kind: 'place', text: m.prompt_demolish_paving() }
     }
     return { kind: 'blocked', text: m.prompt_cannot_demolish() }

@@ -129,7 +129,7 @@ describe('vehicles I', () => {
     expect(t.boom).toBe(5)
   })
 
-  test('Guests: hangar cue HUD, `buy-hangar` in `GUEST_BUILD`, buy Quad, refill, `swapVehicle`, embark, disembark, dock, drive, delete empty hangar. Guest `swapChest` still not.', () => {
+  test('Guests: hangar cue HUD, buy hangar, buy Quad, refill, `swapVehicle`, embark, disembark, dock, drive, delete empty hangar. Guest `swapChest`.', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buyVehicle, t: 0, p: 1, c: [0, 0], k: 'quad' })).toBe(true)
     expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
@@ -142,7 +142,7 @@ describe('vehicles I', () => {
     expect(permit({ a: Act.load, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.unload, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [0, 0], i: 0 })).toBe(false)
+    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [0, 0], i: 0 })).toBe(true)
   })
 
   test('Surface mul applies to the cap, not accel. Paved `SURFACE_PAVED`. Tilled (empty weed growing ripe dead rotten turf) / rock / `isSolid` `SURFACE_SLOW`. Grass, untilled bare, cobble, brick, fence `SURFACE_NORMAL`. After integrate, `floor(x,y)` not owned → reject the step. No fade driving. Walk speed unchanged.', () => {

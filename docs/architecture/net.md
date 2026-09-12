@@ -68,7 +68,7 @@ Guests are behind by ~1 RTT, not divergent. A stalled guest fast-forwards queued
 
 `bundle.t` is a sequence, not a label. Guest applies only `t === now + 1`. `t <= now` is stale, dropped. `t > now + 1` is a gap: `hello`, resync, later bundles stay queued, catching holds. `lastWall` moves only on an applied bundle, so a lost hello still stalls and hellos again. The wire is ordered (`reliable: true`) — the check is the backstop, not the mechanism.
 
-Guest contract cmds are dropped by the sequencer and never enter a bundle. Guest consign at the truck still fills contract bins. — [[mechanics/multiplayer]] `mp.guest`.
+Guest cmds: [[mechanics/multiplayer]] `mp.guest`.
 
 ## Snapshot
 

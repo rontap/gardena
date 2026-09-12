@@ -20,8 +20,23 @@
               "icon": "lucide-file",
               "title": "machines"
             }
+          },
+          {
+            "id": "34330b10f9863724",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/plans/2.8.x Skill & Tech Tree.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "2.8.x Skill & Tech Tree"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -188,21 +203,26 @@
       "bases:Create new base": false
     }
   },
-  "active": "8be52ee30d7dde7c",
+  "active": "34330b10f9863724",
   "lastOpenFiles": [
     "test-results",
-    "coverage/game/ui/status.tsx.html",
-    "coverage/game/ui/techtree.ts.html",
-    "coverage/game/ui/recap.tsx.html",
-    "coverage/game/ui/recipe.tsx.html",
-    "coverage/game/ui/objecthud.tsx.html",
-    "coverage/game/ui/notices.ts.html",
-    "coverage/game/ui/market.tsx.html",
-    "coverage/game/ui/index.html",
-    "coverage/game/ui/held.tsx.html",
-    "coverage/game/ui/debug-balance.ts.html",
+    "test-results/mp-guest-Guest-Market-Accept-takes-an-offer/error-context.md",
+    "test-results/mp-guest-Guest-Market-Accept-takes-an-offer",
+    "src/paraglide/messages/en.d.ts",
+    "src/paraglide/messages/en.js",
+    "src/paraglide/messages/prompt_rotten.d.ts",
+    "src/paraglide/messages/prompt_ripe_fresh.d.ts",
+    "src/paraglide/messages/prompt_ripe_variety.d.ts",
+    "src/paraglide/messages/prompt_ripe.d.ts",
+    "src/paraglide/messages/prompt_remove_wire.d.ts",
+    "src/paraglide/messages/prompt_queue_full.d.ts",
+    "test-results/mp-guest-Guest-Expand-plat-dc97f-e-Pipe-and-Wooden-fence-arm/error-context.md",
+    "test-results/mp-guest-Guest-research-card-starts-a-job/error-context.md",
+    "test-results/mp-guest-Guest-Family-offers-stay-unclickable/error-context.md",
     "coverage/sort-arrow-sprite.png",
     "coverage/favicon.png",
+    "docs/mechanics/machines.md",
+    "docs/plans/2.8.x Skill & Tech Tree.md",
     "test-results/axes-rotten-consign-pays-after-Fermentation-refused-before/error-context.md",
     "docs/mechanics/plants.md",
     "docs/mechanics/research.md",
@@ -222,12 +242,6 @@
     "docs/mechanics/expansion.md",
     "docs/mechanics/enclosure.md",
     "docs/items/sensors.md",
-    "docs/items/fertilizer.md",
-    "docs/items/buildings.md",
-    "docs/infra/index.md",
-    "docs/art/electricity.md",
-    "docs/art/companies.md",
-    "docs/architecture/world.md",
     "src/assets/props/prop-necronomicon.svg",
     "src/assets/items/item-necronomicon.svg",
     "src/assets/items/item-sorter.svg",

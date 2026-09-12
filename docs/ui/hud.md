@@ -32,7 +32,7 @@ Right-hand cluster: **Multiplayer** **Almanac** **Cheat** **Pause** **Gear**. No
 
 ### Overlay pause
 
-Family / Market / Almanac open, or App `recapDay` set, and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause. Rising edge (enter `family` | `market` | `almanac` | recap popup from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those four): if `resumeRef.current`, unpause and clear it. Switching among the four is not a falling edge. Host or guest: these overlays do not auto-pause. Pause button still toggles user pause. Build / Research / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate. The day seam does not pause. On `clock.day` increment App only `writeSlot`s and closes the open panel. The **Day {n} Finished** notice is how the day is noticed, and opening the recap popup from it pauses under the same overlay rule as Family / Market / Almanac. [[ui/settings]] [[mechanics/day]] [[ui/notices]]
+Family / Market / Almanac open, or App `recapDay` set, and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause. Rising edge (enter `family` | `market` | `almanac` | recap popup from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those four): if `resumeRef.current`, unpause and clear it. Switching among the four is not a falling edge. Host or guest: these overlays do not auto-pause. Pause button still toggles user pause. Build / Research / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate. The day seam does not pause. On `clock.day` increment App `writeSlot`s when `world.local === 0` and closes the open panel. The **Day {n} Finished** notice is how the day is noticed, and opening the recap popup from it pauses under the same overlay rule as Family / Market / Almanac. [[ui/settings]] [[mechanics/day]] [[ui/notices]]
 
 The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]]. The hovered machine's recipe arrow and its countdown are on the same contract, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
 
@@ -62,10 +62,11 @@ The lens picker is its own dock now — [[ui/lens]]. The rail button shows the a
 
 ## Expand faces
 
-Map-edge plates. HTML overlays over the canvas, not farm sprites. After `unlock-expand` only. Size `TILE * 0.85`, centred on `face.at`. Copy **Expand** + `<Coin n={face.price} />` except no-permit. Plates take pointer. [[mechanics/expansion]]
+Map-edge plates. HTML overlays over the canvas, not farm sprites. After `unlock-expand` only. Size `TILE * 0.85`, centred on `face.at`. Copy **Expand** + `<Coin n={face.price} />` except no-permit. Plates take pointer. Hidden when `world.local !== 0`. Command Center expansion row stays, `go: none`. [[mechanics/expansion]] [[mechanics/multiplayer]] `mp.guest` [[ui/notices]]
 
 | state | plate | pointer |
 |---|---|---|
+| `world.local !== 0` | hidden | no plate |
 | clickable | hover fill | pointer → `expand(id)` |
 | poor (money) | same fill, muted type | pointer, click no-op |
 | no permit | muted | no pointer; **No permit left** |

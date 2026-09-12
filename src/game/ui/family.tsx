@@ -190,12 +190,11 @@ function MemberCol({
                   onTip({
                     title: label,
                     description: skillBlurb(o.id, o.tier),
-                    why: canPick ? undefined : m.family_no_point(),
+                    why: canPick ? undefined : guest ? m.family_guest_pick() : m.family_no_point(),
                   })
                 }
                 onPointerLeave={() => onTip(undefined)}
                 onClick={() => {
-                  // TODO 1.1 multiplayer guest family pick
                   if (!canPick) return
                   world.pickSkill(member, slot)
                 }}

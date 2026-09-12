@@ -80,11 +80,11 @@ describe('1.1 multiplayer', () => {
 
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
     expect(permit({ a: Act.cheat, t: 0, p: 1, k: 'money' })).toBe(false)
-    expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(false)
+    expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(true)
     expect(permit({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })).toBe(false)
     expect(permit({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })).toBe(false)
-    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [1, 1], i: 0 })).toBe(false)
-    expect(permit({ a: Act.dismissRecap, t: 0, p: 1 })).toBe(false)
+    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [1, 1], i: 0 })).toBe(true)
+    expect(permit({ a: Act.dismissRecap, t: 0, p: 1 })).toBe(true)
     expect(permit({ a: Act.cheat, t: 0, p: 0, k: 'money' })).toBe(true)
     const w = new World(1)
     const { guest } = pair(w)
@@ -94,62 +94,39 @@ describe('1.1 multiplayer', () => {
     expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
   })
 
-  test('Guest may shop + place + `delete` building for pumpjack, well, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pumpjack', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-well', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tap', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-chest', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-grinder', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-compost-box', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-mill', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-jam', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-still', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-furnace', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-barrel', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-freezer', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-hangar', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buyVehicle, t: 0, p: 1, c: [0, 0], k: 'quad' })).toBe(true)
-    expect(permit({ a: Act.buyTrailer, t: 0, p: 1, c: [0, 0], k: 'seed' })).toBe(true)
-    expect(permit({ a: Act.deploy, t: 0, p: 1, v: 1, c: [0, 0], hitch: 'none' })).toBe(true)
-    expect(permit({ a: Act.swapTrailer, t: 0, p: 1, u: 1, i: 0 })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-seed', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-spray', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-silo-produce', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.embark, t: 0, p: 1, v: 1 })).toBe(true)
-    expect(permit({ a: Act.disembark, t: 0, p: 1 })).toBe(true)
-    expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
-    expect(permit({ a: Act.swapVehicle, t: 0, p: 1, v: 1, i: 0 })).toBe(true)
-    expect(permit({ a: Act.drive, t: 0, p: 1, throttle: 1, steer: 0 })).toBe(true)
-    expect(permit({ a: Act.stride, t: 0, p: 1, x: 1, y: 0 })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pulser', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-counter', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sensor-day', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.refill, t: 0, p: 1, c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.load, t: 0, p: 1 })).toBe(true)
-    expect(permit({ a: Act.unload, t: 0, p: 1 })).toBe(true)
-    expect(permit({ a: Act.route, t: 0, p: 1, k: 'create' })).toBe(true)
-    expect(permit({ a: Act.route, t: 0, p: 1, k: 'start' })).toBe(true)
-    expect(permit({ a: Act.route, t: 0, p: 1, k: 'automate', v: 1, c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-traffic-light', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.delete, t: 0, p: 1, k: 'building', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-valve', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sprinkler', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sprinkler-vert', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-sprinkler-large', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tile-paved', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tile-brick', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tile-cobble', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-fence', c: [0, 0] })).toBe(false)
-    expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
-    expect(permit({ a: Act.placeSprinkler, t: 0, p: 1, s: { variant: 'basic', at: { col: 1, row: 1 }, tune: { kind: 'flat' }, inn: 0, hold: 0 } })).toBe(false)
-    expect(permit({ a: Act.clickValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
-    expect(permit({ a: Act.delete, t: 0, p: 1, k: 'pipe', e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
+  test('A guest (`cmd.p !== 0`) may send every `Cmd` a host may send except `Act.pickSkill`, `Act.expand`, `Act.cheat`; the sequencer drops those three and they never enter a bundle.', () => {
+    expect(permit({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })).toBe(false)
     expect(permit({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })).toBe(false)
-    expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(false)
-    expect(permit({ a: Act.pickSkill, t: 0, p: 1, m: 'husband', s: 0 })).toBe(false)
     expect(permit({ a: Act.cheat, t: 0, p: 1, k: 'all' })).toBe(false)
-    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [2, 2], i: 0 })).toBe(false)
+    expect(permit({ a: Act.pickSkill, t: 0, p: 0, m: 'player', s: 0 })).toBe(true)
+    expect(permit({ a: Act.expand, t: 0, p: 0, k: { cx: 1, cy: 0 } })).toBe(true)
+    expect(permit({ a: Act.cheat, t: 0, p: 0, k: 'all' })).toBe(true)
+    expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(true)
+    expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [2, 2], i: 0 })).toBe(true)
+    expect(permit({ a: Act.acceptContract, t: 0, p: 1, c: 0 })).toBe(true)
+    expect(permit({ a: Act.cancelContract, t: 0, p: 1, c: 0 })).toBe(true)
+    expect(permit({ a: Act.reorderContract, t: 0, p: 1, c: 0, d: 1 })).toBe(true)
+    expect(permit({ a: Act.tuneSprinkler, t: 0, p: 1, c: [0, 0], u: { kind: 'flat' } })).toBe(true)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe', c: [0, 0] })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-fence', c: [0, 0] })).toBe(true)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tile-paved', c: [0, 0] })).toBe(true)
+    expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
+    expect(permit({ a: Act.placeSprinkler, t: 0, p: 1, s: { variant: 'basic', at: { col: 1, row: 1 }, tune: { kind: 'flat' }, inn: 0, hold: 0 } })).toBe(true)
+    expect(permit({ a: Act.clickValve, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
+    expect(permit({ a: Act.delete, t: 0, p: 1, k: 'pipe', e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
+    expect(permit({ a: Act.necronomicon, t: 0, p: 1, k: 'ritual' })).toBe(true)
+    expect(permit({ a: Act.necronomicon, t: 0, p: 1, k: 'gold' })).toBe(true)
+    const w = new World(1)
+    const { guest } = pair(w)
+    const money = w.money
+    guest.intent({ a: Act.cheat, t: 0, p: 1, k: 'money' })
+    expect(w.money).toBe(money)
+    expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
+    guest.intent({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })
+    expect(w.log.some(c => c.a === Act.pickSkill)).toBe(false)
+    guest.intent({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })
+    expect(w.log.some(c => c.a === Act.expand)).toBe(false)
   })
 
   test('presence === \'away\': tick skips that actor walk/work and that seat hand/inventory freshness. Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.', () => {
@@ -643,7 +620,7 @@ describe('1.1 multiplayer', () => {
     expect(w.join('g1', 'Ada')).toBe(1)
   })
 
-  test('Guest Unload chest no-op. Guest Load chest no-op.', () => {
+  test('Guest Unload chest. Guest Load chest.', () => {
     const w = new World(1)
     w.unlockAll()
     w.money = 999
@@ -666,8 +643,8 @@ describe('1.1 multiplayer', () => {
     const chest = w.cell(chestAt)
     expect(chest.kind).toBe('chest')
     if (chest.kind !== 'chest') return
-    expect(chest.slots.every(s => s.kind === 'empty')).toBe(true)
-    expect(v.slots[0].kind).toBe('hold')
+    expect(chest.slots[0].kind).toBe('hold')
+    expect(v.slots[0].kind).toBe('empty')
     chest.slots[0] = {
       kind: 'hold',
       item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, cut: false },
@@ -676,11 +653,11 @@ describe('1.1 multiplayer', () => {
     v.pose.y = 17.5
     v.slots[0] = { kind: 'empty' }
     w.apply({ a: Act.load, t: w.now, p: 1 })
-    expect(chest.slots[0].kind).toBe('hold')
-    expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(chest.slots[0].kind).toBe('empty')
+    expect(v.slots[0].kind).toBe('hold')
   })
 
-  test('Guest Unload freezer no-op. Guest Load freezer no-op.', () => {
+  test('Guest Unload freezer. Guest Load freezer.', () => {
     const w = new World(1)
     w.unlockAll()
     w.money = 999
@@ -703,8 +680,8 @@ describe('1.1 multiplayer', () => {
     const fz = w.cell(fzAt)
     expect(fz.kind).toBe('freezer')
     if (fz.kind !== 'freezer') return
-    expect(fz.slots.every(s => s.kind === 'empty')).toBe(true)
-    expect(v.slots[0].kind).toBe('hold')
+    expect(fz.slots[0].kind).toBe('hold')
+    expect(v.slots[0].kind).toBe('empty')
     fz.slots[0] = {
       kind: 'hold',
       item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, cut: false },
@@ -713,8 +690,8 @@ describe('1.1 multiplayer', () => {
     v.pose.y = 17.5
     v.slots[0] = { kind: 'empty' }
     w.apply({ a: Act.load, t: w.now, p: 1 })
-    expect(fz.slots[0].kind).toBe('hold')
-    expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
+    expect(fz.slots[0].kind).toBe('empty')
+    expect(v.slots[0].kind).toBe('hold')
   })
 
   test('Digest includes mill/jam/still `inn` and chest/freezer/seed-silo/additive-store `out`.', () => {

@@ -27,7 +27,7 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 ## Filing
 
-`SHELVES` is the only source of category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts and by [[ui/multiplayer]] for guest permission. No `seeds`-tab sku sits on a shelf. `pack-grass` gates on `unlock-landscaping` and is sold at the Seed silo with the other packs — [[ui/store]].
+`SHELVES` is the only source of category order, group order, and footer copy. `Sku.tab` is **not** it: that field is the commerce class, read by `skuPrice` for skill discounts. No `seeds`-tab sku sits on a shelf. `pack-grass` gates on `unlock-landscaping` and is sold at the Seed silo with the other packs — [[ui/store]]. Guest Build: [[mechanics/multiplayer]] `mp.guest`.
 
 Every sku sits in exactly one shelf group, except the packs and bags the stores sell and `buy-and` `buy-or` `buy-water-system`, which sit in none — [[items/sensors]] [[ui/store]].
 

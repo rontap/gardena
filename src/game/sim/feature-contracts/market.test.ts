@@ -449,10 +449,10 @@ describe('contracts', () => {
     expect(w.stall.carrot.stock.base.plain).toBe(1)
   })
 
-  test('Guest `acceptContract` / `cancelContract` / `reorderContract` never enter a bundle. Guest consign fills bins.', () => {
-    expect(permit({ a: Act.acceptContract, t: 0, p: 1, c: 0 })).toBe(false)
-    expect(permit({ a: Act.cancelContract, t: 0, p: 1, c: 0 })).toBe(false)
-    expect(permit({ a: Act.reorderContract, t: 0, p: 1, c: 0, d: 1 })).toBe(false)
+  test('Host and guest: Accept / Cancel / Reorder. Guest consign fills bins.', () => {
+    expect(permit({ a: Act.acceptContract, t: 0, p: 1, c: 0 })).toBe(true)
+    expect(permit({ a: Act.cancelContract, t: 0, p: 1, c: 0 })).toBe(true)
+    expect(permit({ a: Act.reorderContract, t: 0, p: 1, c: 0, d: 1 })).toBe(true)
     expect(permit({ a: Act.acceptContract, t: 0, p: 0, c: 0 })).toBe(true)
     const w = new World(1)
     expect(w.join('g')).toBe(1)

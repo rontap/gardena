@@ -36,11 +36,15 @@ A new seat resyncs every guest already connected: `join` never rides the log and
 
 Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter a bundle. Dropped cmds no-op. Guest cmds: `mp.guest`.
 
-Cheat: seat 0 only. Sequencer drops every other `Act.cheat`.
+Cheat: seat 0 only. Sequencer drops every other `Act.cheat`. Ribbon hidden when `world.local !== 0`.
 
-House click opens *this* seat's 16. Placing a chest or freezer is allowed; opening it is not.
+Family overlay opens. `Act.pickSkill` never fires for a guest. Offers not clickable.
 
-Guest never `writeSlot` for a hosted farm.
+Expand plates hidden when `world.local !== 0`. Command Center expansion row stays, `go: none`.
+
+House click opens *this* seat's 16. Chest and freezer open; `swapChest` / Load / Unload live.
+
+Gear **Save game** and **Download Save** live for a guest. **New Game** / **Load Save** / **Upload Save** stay greyed while connected. day-seam / Main menu / host-leave `writeSlot` host-only.
 
 ## Pause / leave
 
@@ -62,7 +66,7 @@ Accumulator in App. `tick(DT_MAX)` only. Never a leftover. Host accumulator pump
 
 `mp.drop` — Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.
 
-`mp.guest` — Guest may: buy + place + `delete` building for pumpjack, well, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar, silo-seed, silo-spray, silo-produce, lever, button, lamp, Logic gate, NOT, pulser, counter, water/fert/harvest/variety/weather/day sensors, pressure plate, traffic light; dump mill/jam/still/barrel/grinder like compost; `load`/`unload` mill/jam/still/compost/seed-silo/additive-store; wires (`armWire` `placeWire` delete wire) — guest may wire a valve and a pump `in`; place and click stay host-only; toggle lever/button, water/harvest/counter/day/logic/variety/weather/pressure HUD, stride; hangar cue HUD, `buy-hangar` + three silo SKUs + `buy-traffic-light` `buy-logic` `buy-sensor-variety` `buy-sensor-weather` in `GUEST_BUILD`, buy Quad / tractor / trailers, refill, `swapVehicle` `swapTrailer`, embark, disembark, dock, drive, `setBoom`, `Act.route` (create/assign/add/remove/reorder/rename/delete, Start, hangar Automate), delete empty hangar. Guest consign fills contract bins. Guest `placeWire` permitted. Guest may not: chest/freezer `swapChest`, chest/freezer `load`/`unload`, pipes, `placePipe`, manual valves, sprinklers, tiles, fences, expand, research start, family pick, `acceptContract` `cancelContract` `reorderContract`, cheat. Guest Pipe / Valve / Sprinkler / paving / fence / Chest: [[plans/next-mp]]. Guest Unload chest no-op. Guest Load chest no-op. Guest contract cmds never enter a bundle. Auto tick chest/freezer load/unload is not a guest cmd. `buy-or` `buy-and` `buy-water-system` not in `GUEST_BUILD`.
+`mp.guest` — A guest (`cmd.p !== 0`) may send every `Cmd` a host may send except `Act.pickSkill`, `Act.expand`, `Act.cheat`; the sequencer drops those three and they never enter a bundle.
 
 `mp.away` — `presence === 'away'`: tick skips that actor walk/work and that seat hand/inventory freshness. Field, chest, and ground rot continue. Freezer slots never tick freshness. Seat stays in `seats`.
 

@@ -22,7 +22,7 @@ One valve. `buy-valve` on an owned edge with no pipe lays the pipe **and** the v
 
 After `unlock-smart-irrigation` every valve owns a signal `in`. Unwired: `open` rules and the click still walks the gardener over. Wired: the held input rules and the click is a no-op, look **Valve - wired**. `open` is kept underneath and rules again the moment the last wire on that `in` goes. Unwired is **not** closed. `valveHold` carries `level` / `hold` for wired valves only, rebuilt with the wire set. — [[mechanics/sensors]]
 
-`Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }`. There is no smart gate. `SENSOR_HOLD` on a wired valve input. Guest may wire a valve; place and click stay host-only. — [[mechanics/sensors]]
+`Gate = { kind: 'bare' } | { kind: 'valve'; open: boolean }`. There is no smart gate. `SENSOR_HOLD` on a wired valve input. — [[mechanics/sensors]] [[mechanics/multiplayer]] `mp.guest`
 
 `TAP_RATE` — preference. Tap 1×1. Not a producer. Fills a bucket at `TAP_RATE` while the net’s tanks hold; once dry, only as fast as sources make.
 

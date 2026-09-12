@@ -337,14 +337,14 @@ describe('1.6 sensors', () => {
     expect(l2.inn).toBe(1)
   })
 
-  test('Guest placeWire permitted; guest placePipe still not.', () => {
+  test('Guest placeWire permitted; guest placePipe permitted.', () => {
     const from = { kind: 'cell' as const, at: A, port: 'out' as const }
     const to = { kind: 'cell' as const, at: B, port: 'in' as const }
     expect(permit({ a: Act.placeWire, t: 0, p: 1, from, to })).toBe(true)
     expect(permit({ a: Act.armWire, t: 0, p: 1, from })).toBe(true)
-    expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(false)
+    expect(permit({ a: Act.placePipe, t: 0, p: 1, e: { axis: 'h', col: 0, row: 0 } })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-lever', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe', c: [0, 0] })).toBe(false)
+    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pipe', c: [0, 0] })).toBe(true)
   })
 
   test('Fan-in OR: two levers, one lamp, both wires stay; lamp high if either is.', () => {
@@ -717,7 +717,7 @@ describe('1.6 sensors', () => {
     expect(p2.out).toBe(1)
   })
 
-  test('Valve: unwired manual; wired follows the held input; hold; wire drops on delete; guest wires but does not place or click.', () => {
+  test('Valve: unwired manual; wired follows the held input; hold; wire drops on delete; guest wires, places, and clicks.', () => {
     const e = { axis: 'h' as const, col: 18, row: 7 }
     const v = { col: 19, row: 7 }
     const w = new World(1)
@@ -747,8 +747,8 @@ describe('1.6 sensors', () => {
     w.deleteWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
     expect(w.valveWired(e)).toBe(false)
     expect(w.conducts(e)).toBe(true)
-    expect(permit({ a: Act.placePipe, t: 0, p: 1, e })).toBe(false)
-    expect(permit({ a: Act.clickValve, t: 0, p: 1, e })).toBe(false)
+    expect(permit({ a: Act.placePipe, t: 0, p: 1, e })).toBe(true)
+    expect(permit({ a: Act.clickValve, t: 0, p: 1, e })).toBe(true)
     const s = dump(w)
     expect(s.valveHold).toHaveLength(0)
     expect(s.segments.some(seg => seg.gate.kind === 'valve')).toBe(true)
@@ -1201,7 +1201,7 @@ describe('1.6 sensors', () => {
     expect(w.skuOpen('buy-not')).toBe(true)
   })
 
-  test('`SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. Guest `placeWire` permitted; guest `placePipe` still not.', () => {
+  test('`SensorKind` += `pulser` `counter` `sensor-day`. Lever has `in`. Guest `placeWire` permitted; guest `placePipe` permitted.', () => {
     const w = new World(1)
     ready(w)
     put(w, 'buy-pulser', A)
@@ -1218,10 +1218,10 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.tuneDay, t: 0, p: 1, c: [C.col, C.row], sunrise: false, day: true, sunset: false, twilight: false })).toBe(true)
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'counter', c: [B.col, B.row] })).toBe(true)
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'day', c: [C.col, C.row] })).toBe(true)
-    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(false)
+    expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(true)
   })
 
-  test('Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Guest `GUEST_BUILD`. Wait resolve after `evalDag` using this tick’s `inn`.', () => {
+  test('Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Wait resolve after `evalDag` using this tick’s `inn`.', () => {
     const w = new World(1)
     ready(w)
     w.done.add('unlock-vehicles')

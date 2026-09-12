@@ -74,6 +74,6 @@ Counter column stays open: title **Counter** + ×; live `count`; label **Count t
 
 **×** / map click elsewhere / Esc → `closeHud`. Map click another water / harvest / counter / day / logic / variety / weather / pressure / sprinkler-hud hit retargets.
 
-Guest: sensor cells, wires, lever / button, water / harvest / counter / day / logic / variety / weather / pressure HUD. Still no pipes / valves / sprinklers / sprinkler HUD. [[mechanics/multiplayer]] `mp.guest`
+Guest: [[mechanics/multiplayer]] `mp.guest`.
 
 Flip / Press / Tune fire when `place.kind === 'none'` and port hits are off (`lens !== 'sensors'`); in `sensors`, output-only whole-cell starts a wire.

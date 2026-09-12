@@ -16,7 +16,7 @@
   "menu_pause_hidden": "Pause when this tab is not in front",
   "menu_pause_hidden_body": "The farm stops the moment you switch to another tab or window, and starts again when you come back to it.",
   "menu_host_lock": "Starting or loading another farm is off while you are hosting — it would drop everyone who joined.",
-  "menu_guest_lock": "This farm belongs to the host, so it is theirs to save, load, and download.",
+  "menu_guest_lock": "Starting or loading another farm is off while you are a guest.",
   "menu_fail_unknown_format": "The file is in an unknown format.",
   "menu_fail_not_gardena": "The file is not a gardena format",
   "menu_fail_version": "This savefile is from an older Gardena version and could not be loaded",

@@ -25,13 +25,11 @@ export type MarketTab = 'stall' | 'contracts'
 
 export function Market({
   world,
-  guest,
   tab,
   onTab,
   onClose,
 }: {
   world: World
-  guest: boolean
   tab: MarketTab
   onTab: (tab: MarketTab) => void
   onClose: () => void
@@ -110,7 +108,6 @@ export function Market({
                 <OfferCard
                   key={offer.id}
                   offer={offer}
-                  guest={guest}
                   atCap={atCap}
                   cap={cap}
                   onTip={setTip}
@@ -118,7 +115,7 @@ export function Market({
                 />
               ))}
             </div>
-            <ContractsRight world={world} guest={guest} nowDay={nowDay} onTip={setTip} />
+            <ContractsRight world={world} nowDay={nowDay} onTip={setTip} />
             </div>
           </Tabs.Content>
         )}
@@ -127,15 +124,14 @@ export function Market({
   )
 }
 
-function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: number): Tip {
+function offerHover(offer: ContractOffer, atCap: boolean, cap: number): Tip {
   const company = COMPANIES[offer.company].name
   const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
     .map(line => m.market_deliver_plain({ amount: line.amount, good: demandName(line) }))
     .join('\n')
   const cash = offer.prize.kind === 'cash'
-  const why =
-    !guest && atCap ? (cap === 4 ? m.market_cap_four() : m.market_cap_three()) : undefined
+  const why = atCap ? (cap === 4 ? m.market_cap_four() : m.market_cap_three()) : undefined
   return {
     title: company,
     description: (
@@ -146,7 +142,7 @@ function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: n
         {`\n${m.market_cancel_cost()}`}
         <Coin n={offer.penalty} />
         {m.almanac_period()}
-        {!guest && !atCap ? `\n${m.market_click_accept()}` : null}
+        {!atCap ? `\n${m.market_click_accept()}` : null}
         {why !== undefined ? <span className="mt-2 block font-bold text-roof">{why}</span> : null}
       </>
     ),
@@ -155,20 +151,18 @@ function offerHover(offer: ContractOffer, guest: boolean, atCap: boolean, cap: n
 
 export function OfferCard({
   offer,
-  guest,
   atCap,
   cap,
   onTip,
   onAccept,
 }: {
   offer: ContractOffer
-  guest: boolean
   atCap: boolean
   cap: number
   onTip: (tip: Tip) => void
   onAccept: () => void
 }) {
-  const grey = atCap && !guest
+  const grey = atCap
   const body = (
     <>
       <HeaderRow offer={offer} />
@@ -181,15 +175,8 @@ export function OfferCard({
       </div>
     </>
   )
-  const enter = () => onTip(offerHover(offer, guest, atCap, cap))
+  const enter = () => onTip(offerHover(offer, atCap, cap))
   const leave = () => onTip(undefined)
-  if (guest) {
-    return (
-      <div className="bg-ink/6 px-3 py-2 flex flex-col gap-1" onPointerEnter={enter} onPointerLeave={leave}>
-        {body}
-      </div>
-    )
-  }
   return (
     <button
       type="button"
@@ -363,12 +350,10 @@ export function demandItem(demand: Demand, count: number): Item {
 
 function ContractsRight({
   world,
-  guest,
   nowDay,
   onTip,
 }: {
   world: World
-  guest: boolean
   nowDay: number
   onTip: (tip: Tip) => void
 }) {
@@ -380,7 +365,7 @@ function ContractsRight({
     <div className="flex min-h-0 flex-col overflow-y-auto scroll-pane">
       <div className="flex flex-col gap-2">
         {world.contracts.active.map(a => (
-          <ActiveCard key={a.offer.id} active={a} guest={guest} nowDay={nowDay} world={world} onTip={onTip} />
+          <ActiveCard key={a.offer.id} active={a} nowDay={nowDay} world={world} onTip={onTip} />
         ))}
       </div>
       <div className="mt-2 flex flex-col gap-1">
@@ -394,13 +379,11 @@ function ContractsRight({
 
 function ActiveCard({
   active,
-  guest,
   nowDay,
   world,
   onTip,
 }: {
   active: Active
-  guest: boolean
   nowDay: number
   world: World
   onTip: (tip: Tip) => void
@@ -412,37 +395,35 @@ function ActiveCard({
   const fee = cancelFee(active, nowDay)
   return (
     <div className="relative bg-ink/6 px-3 py-2 flex flex-col gap-1">
-      {!guest && (
-        <button
-          type="button"
-          aria-label={m.market_cancel()}
-          className={`absolute top-1 right-1 cursor-pointer text-lg ${
-            armed ? 'bg-ink text-house' : 'text-ink/60 hover:bg-dirt hover:text-house'
-          }`}
-          onPointerEnter={() =>
-            onTip({
-              title: COMPANIES[active.offer.company].name,
-              description: (
-                <>
-                  {m.market_cancelling()}
-                  <Coin n={fee} />
-                  {m.market_penalty()}
-                </>
-              ),
-            })
+      <button
+        type="button"
+        aria-label={m.market_cancel()}
+        className={`absolute top-1 right-1 cursor-pointer text-lg ${
+          armed ? 'bg-ink text-house' : 'text-ink/60 hover:bg-dirt hover:text-house'
+        }`}
+        onPointerEnter={() =>
+          onTip({
+            title: COMPANIES[active.offer.company].name,
+            description: (
+              <>
+                {m.market_cancelling()}
+                <Coin n={fee} />
+                {m.market_penalty()}
+              </>
+            ),
+          })
+        }
+        onPointerLeave={() => onTip(undefined)}
+        onClick={() => {
+          if (!armed) {
+            setArmed(true)
+            return
           }
-          onPointerLeave={() => onTip(undefined)}
-          onClick={() => {
-            if (!armed) {
-              setArmed(true)
-              return
-            }
-            world.cancelContract(active.offer.id)
-          }}
-        >
-          ×
-        </button>
-      )}
+          world.cancelContract(active.offer.id)
+        }}
+      >
+        ×
+      </button>
       <div className="flex items-start gap-2 pr-6">
         <div className="min-w-0 flex-1 flex flex-col gap-1">
           <HeaderRow offer={active.offer} />
@@ -450,24 +431,22 @@ function ActiveCard({
             <AmountRow key={i} demand={bin.demand} count={bin.demand.amount - bin.filled} />
           ))}
         </div>
-        {!guest && (
-          <div className="flex shrink-0 flex-col">
-            <button
-              type="button"
-              className="cursor-pointer px-1 text-sm leading-none"
-              onClick={() => world.reorderContract(active.offer.id, -1)}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              className="cursor-pointer px-1 text-sm leading-none"
-              onClick={() => world.reorderContract(active.offer.id, 1)}
-            >
-              ▼
-            </button>
-          </div>
-        )}
+        <div className="flex shrink-0 flex-col">
+          <button
+            type="button"
+            className="cursor-pointer px-1 text-sm leading-none"
+            onClick={() => world.reorderContract(active.offer.id, -1)}
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            className="cursor-pointer px-1 text-sm leading-none"
+            onClick={() => world.reorderContract(active.offer.id, 1)}
+          >
+            ▼
+          </button>
+        </div>
       </div>
       <div className="text-sm tabular-nums">{m.market_days_left({ n: left.toFixed(1) })}</div>
       <div>

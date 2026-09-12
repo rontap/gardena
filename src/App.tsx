@@ -639,7 +639,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
       else if (go.popup.beat !== 'well') openStory(go.popup.beat)
       return
     }
-    if (guest) return
     open({ kind: go.panel })
   }
 
@@ -1113,7 +1112,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'market' && (
             <Market
               world={world}
-              guest={guest}
               tab={marketTab}
               onTab={setMarketTab}
               onClose={() => setPanel({ kind: 'none' })}
@@ -1155,7 +1153,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
             <NecronomiconUi
               world={world}
               at={panel.at}
-              guest={guest}
               onClose={() => {
                 world.ackCue()
                 setPanel({ kind: 'none' })

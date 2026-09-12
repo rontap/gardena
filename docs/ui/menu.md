@@ -73,7 +73,7 @@ Seven buttons, in order:
 | **Settings** | `MenuPage` → `{ kind: 'settings' }`. Same shell. Not play. [[ui/settings]] |
 | **Main menu** | `writeSlot(dump(world))` unless guest, then `toStartup` — startup shell, no `World`. No confirm. |
 
-While connected (host or guest of an MP session): **New Game** **Load Save** **Upload Save** `Btn disabled`. Host: **Save game** + **Download Save** stay. Guest: those five greyed; add **Leave Multiplayer** — same leave as the in-play guest dialog. No `writeSlot`. **Settings** and **Main menu** stay live for host and guest; **Main menu** skips the `writeSlot` for a guest, the farm is not theirs. [[ui/multiplayer]]
+While connected (host or guest of an MP session): **New Game** **Load Save** **Upload Save** `Btn disabled`. Host and guest: **Save game** + **Download Save** stay. Guest: add **Leave Multiplayer** — same leave as the in-play guest dialog. day-seam / **Main menu** / host-leave `writeSlot` host-only. **Settings** and **Main menu** stay live for host and guest. Guest lock line: **Starting or loading another farm is off while you are a guest.** [[ui/multiplayer]]
 
 Gear selected while this shell is open. Click gear again toggles it shut. Opening any other panel replaces this one.
 

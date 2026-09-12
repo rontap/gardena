@@ -76,18 +76,19 @@ Away actor is not drawn.
 
 ## Guest rails
 
-`App.local !== 0`. Sequencer still drops illegal cmds.
+`world.local !== 0`. Sequencer drops the three `mp.guest` cmds. Chrome that is not a `Cmd` sits here.
 
-| surface                    | guest                                                                                                                                                                                                                                                                                                                                                                                                     |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cheat                      | hidden on the top ribbon. Hidden ≠ disabled. [[ui/hud]]                                                                                                                                                                                                                                                                                                                                                             |
-| Research                   | dock opens. Cards read-only. No start. Hover stays.                                                                                                                                                                                                                                                                                                                                                       |
-| Family                     | overlay opens. Offers not clickable.                                                                                                                                                                                                                                                                                                                                                                      |
-| `seeds` / `utility` tab skus  | unchanged                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `automation` / `building` tab skus | **allowed** (arm + place + delete building): `buy-pumpjack` `buy-well` `buy-tap` `buy-chest` `buy-grinder` `buy-compost-box`. **disabled** (do not arm): `buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-tile-paved` `buy-tile-brick` `buy-tile-cobble` `buy-fence`. Blocked face `bg-ink/6 text-ink/35`, `aria-disabled`. Callout `skuDesc` only. |
-| Recap                      | no dismiss. Esc does not dismiss. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                            |
-| Inventory                  | this seat's 16. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                                              |
-| Chest                      | no open, no `swapChest`. [[ui/docks]]                                                                                                                                                                                                                                                                                                                                                                     |
+| surface | guest |
+|---|---|
+| Cheat | hidden on the top ribbon. Hidden ≠ disabled. [[ui/hud]] |
+| Family | overlay opens. Offers not clickable. Why: **Only the host can choose a skill.** [[ui/family]] |
+| Expand plates | hidden. Command Center expansion row stays, `go: none`. [[ui/hud]] [[ui/notices]] |
+| Recap | Close / Esc / backdrop live. `seeRecap` is not a `Cmd`. [[ui/docks]] |
+| Inventory | this seat's 16. [[ui/docks]] |
+| Chest / Freezer | open, `swapChest`, Load, Unload. [[ui/docks]] |
+| Gear | **Save game** and **Download Save** live. **New Game** / **Load Save** / **Upload Save** greyed while connected. **Leave Multiplayer** — same leave as this dialog. day-seam / **Main menu** / host-leave `writeSlot` host-only. Lock line: **Starting or loading another farm is off while you are a guest.** [[ui/menu]] |
+
+Build, Research, Market, sensors, sprinkler HUD, pipes, valves, paving, fence: same as host.
 
 Pause face stays. Guests may toggle.
 

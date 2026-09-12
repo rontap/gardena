@@ -15,25 +15,21 @@ export function NecronomiconUi({
   world,
   at,
   onClose,
-  guest,
 }: {
   world: World
   at: Coord
   onClose: () => void
-  guest: boolean
 }) {
   const book = world.cell(at)
   if (book.kind !== 'necronomicon') return null
   const pages = pageStates(world, book)
   const twilight = world.clock.phase() === 'twilight'
   const ready = ritualReady(world, book)
-  const reason = guest
-    ? m.necro_ritual_guest()
-    : !twilight
-      ? m.necro_ritual_wait()
-      : !ready
-        ? m.necro_ritual_nothing()
-        : ''
+  const reason = !twilight
+    ? m.necro_ritual_wait()
+    : !ready
+      ? m.necro_ritual_nothing()
+      : ''
   return (
     <Shell title={m.necro_title()} onClose={onClose} className="w-[34rem]">
       <div className="flex flex-col gap-3">
@@ -44,7 +40,7 @@ export function NecronomiconUi({
           ))}
         </div>
         {pagesHidden(world, book) && <div className="text-sm text-ink/55">{m.necro_more()}</div>}
-        <GoldRow world={world} have={book.gold} open={pages.some(p => p.id === 'gold')} done={book.done.includes('gold')} guest={guest} />
+        <GoldRow world={world} have={book.gold} open={pages.some(p => p.id === 'gold')} done={book.done.includes('gold')} />
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -134,13 +130,11 @@ function GoldRow({
   have,
   open,
   done,
-  guest,
 }: {
   world: World
   have: number
   open: boolean
   done: boolean
-  guest: boolean
 }) {
   if (!open || done || have >= NECRO_GOLD) return null
   const short = world.money < NECRO_GOLD
@@ -148,7 +142,7 @@ function GoldRow({
     <div className="flex flex-col gap-1">
       <button
         type="button"
-        disabled={short || guest}
+        disabled={short}
         onClick={() => world.sacrificeGold()}
         className="flex h-9 items-center justify-center gap-2 bg-dirt text-sm font-semibold text-house disabled:bg-ink/10 disabled:text-ink/40"
       >

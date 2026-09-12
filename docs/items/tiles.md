@@ -14,7 +14,7 @@ Site: `isPavingSite` — any `untilled` cell, **or** a solid building cell. Pavi
 
 Ground art is `BUILDING_TILES` (`groundSig` no longer carries it; `World.bumpGround` marks the ground dirty on lay and lift). The held / card / almanac face is `TILE_ICON` (`item-{tile}.svg`).
 
-Demolish order on one cell: fenceable sensor + fence → sensor (and its wires), then fence, then paving. Else fence, then building, then paving. The thing standing on the cell goes first and a second click lifts the slab. Prompt **Demolish paving**, and it reads that only once the cell is a bare plot — a slab under the house stays. Host only. [[ui/place]] Fenceable sensors: [[mechanics/sensors]].
+Demolish order on one cell: fenceable sensor + fence → sensor (and its wires), then fence, then paving. Else fence, then building, then paving. The thing standing on the cell goes first and a second click lifts the slab. Prompt **Demolish paving**, and it reads that only once the cell is a bare plot — a slab under the house stays. [[ui/place]] Fenceable sensors: [[mechanics/sensors]].
 
 `paved` and `asphalt` drive at `SURFACE_PAVED`; `cobble` and `brick` stay `SURFACE_NORMAL` — [[mechanics/vehicles]]. `surfaceMul(world, at)` reads the paving map, not the cell.
 
@@ -47,7 +47,7 @@ Fences do not block movement. Cosmetic only.
 
 Drag-to-place uses the same L-path as pipe: [[ui/place]] fence run. Unconnected fence ×0.75 of the mode’s base alpha; a fence in a closed fenced area ×1.25 (cap 1). Base is 0.35 off the pipes overlay, 1 on it or while placing fence — [[architecture/view]] [[mechanics/enclosure]].
 
-Demolish → `fences.delete`. Prompt **Demolish wooden fence**, host only. Fence wins over paving and over a non-fenceable building when they sit on the cell. Fenceable sensor on a fence: sensor first, fence second. Rebuild fenced areas after fence add / fence remove — [[mechanics/enclosure]].
+Demolish → `fences.delete`. Prompt **Demolish wooden fence**. Fence wins over paving and over a non-fenceable building when they sit on the cell. Fenceable sensor on a fence: sensor first, fence second. Rebuild fenced areas after fence add / fence remove — [[mechanics/enclosure]].
 
 ## Invariants
 

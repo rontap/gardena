@@ -1209,7 +1209,6 @@ export function loadBody(w: World): void {
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = cargo(w)
   if (hit?.side !== 'takeup' || load === undefined) return
-  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
   transferLoad(w, v)
   w.ping()
 }
@@ -1220,7 +1219,6 @@ export function unloadBody(w: World): void {
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = cargo(w)
   if (hit?.side !== 'dropoff' || load === undefined) return
-  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return
   transferUnload(w, v)
   w.ping()
 }
@@ -1233,7 +1231,6 @@ export function loadWould(w: World): boolean {
   if (v.pose.speed !== 0) return false
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   if (hit?.side !== 'takeup') return false
-  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
   return canPull(hit.cell, load, w.drops)
 }
 
@@ -1245,7 +1242,6 @@ export function unloadWould(w: World): boolean {
   if (v.pose.speed !== 0) return false
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   if (hit?.side !== 'dropoff') return false
-  if (w.act.id !== 0 && (hit.cell.kind === 'chest' || hit.cell.kind === 'freezer')) return false
   return canDumpCargo(load, hit.cell)
 }
 

@@ -86,7 +86,6 @@ function Row({
           <OfferCard
             key={offer.id}
             offer={offer}
-            guest={false}
             atCap={false}
             cap={3}
             onTip={onTip}

@@ -182,6 +182,6 @@ Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` 
 
 `contracts.cancel` — Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.
 
-`contracts.consign` — Consign fills `active` in array order, then the stall; a full bin passes through; guest cmds: [[mechanics/multiplayer]] `mp.guest`.
+`contracts.consign` — Consign fills `active` in array order, then the stall; a full bin passes through; guest `acceptContract` / `cancelContract` / `reorderContract` / consign: [[mechanics/multiplayer]] `mp.guest`.
 
 `contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`; `Bin.infusedFilled` counts infused jam / cask / spirit / oil only; `Accepts` ignores `infused`; miss and cancel do not take the mul.

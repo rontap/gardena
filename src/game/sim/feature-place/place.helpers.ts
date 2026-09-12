@@ -73,7 +73,6 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (w.hasFence(at)) {
-    if (w.act.id !== 0) return
     w.fences.delete(`${at.col},${at.row}`)
     rebuild(w)
     w.ping()
@@ -219,7 +218,6 @@ export function deleteBuildingBody(w: World, at: Coord): void {
   }
   if (!isPlot(c)) return
   if (w.pavingAt(at) === 'none') return
-  if (w.act.id !== 0) return
   w.paving.delete(`${at.col},${at.row}`)
   w.bumpGround()
   w.ping()
@@ -248,7 +246,6 @@ export function confirmPlace(w: World, at: Coord): void {
     w.act.place.id === 'buy-tile-cobble' ||
     w.act.place.id === 'buy-tile-asphalt'
   ) {
-    if (w.act.id !== 0) return
     if (!inWorld(at, w.owned)) return
     if (!isPavingSite(w.cell(at))) return
     w.money -= price
@@ -258,7 +255,6 @@ export function confirmPlace(w: World, at: Coord): void {
     return
   }
   if (w.act.place.id === 'buy-fence') {
-    if (w.act.id !== 0) return
     if (!inWorld(at, w.owned)) return
     if (!isFenceSite(w.cell(at))) return
     if (w.hasFence(at)) return

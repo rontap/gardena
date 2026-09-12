@@ -1,6 +1,4 @@
-import { SKUS } from '../defs/research.ts'
 import { originCell } from './building.ts'
-import type { SkuId } from './ids.ts'
 import { Act, type Cmd } from './log.ts'
 import { isTilled } from './plot.ts'
 import { drivesOut } from './sensor.ts'
@@ -8,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.5
+export const PROTOCOL = 2.6
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -41,56 +39,6 @@ export type RejectReason = 'version' | 'full' | 'busy'
 export type RosterSeat =
   | { id: SeatId; name: string; presence: Presence; napping: boolean }
   | { id: SeatId; name: string; presence: Presence; napping: boolean; leave: 'drop' | 'kicked' }
-
-const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
-  'buy-pumpjack',
-  'buy-well',
-  'buy-tap',
-  'buy-chest',
-  'buy-grinder',
-  'buy-compost-box',
-  'buy-mill',
-  'buy-jam',
-  'buy-still',
-  'buy-furnace',
-  'buy-research-station',
-  'buy-infuser',
-  'buy-sorter',
-  'buy-barrel',
-  'buy-freezer',
-  'buy-freezer-large',
-  'buy-hangar',
-  'buy-silo-seed',
-  'buy-silo-spray',
-  'buy-silo-produce',
-  'buy-lever',
-  'buy-button',
-  'buy-lamp',
-  'buy-logic',
-  'buy-not',
-  'buy-pulser',
-  'buy-counter',
-  'buy-sensor-water',
-  'buy-sensor-fert',
-  'buy-sensor-harvest',
-  'buy-sensor-day',
-  'buy-sensor-variety',
-  'buy-sensor-weather',
-  'buy-vehicle-detector',
-  'buy-traffic-light',
-])
-
-const GUEST_PIPE: ReadonlySet<SkuId> = new Set([
-  'buy-pipe',
-  'buy-valve',
-  'buy-sprinkler',
-  'buy-sprinkler-vert',
-  'buy-sprinkler-large',
-  'buy-tile-paved',
-  'buy-tile-brick',
-  'buy-tile-cobble',
-  'buy-fence',
-])
 
 export function readMpMsg(data: unknown): MpMsg | undefined {
   if (data === null || data === undefined) return undefined
@@ -266,60 +214,7 @@ export function jitterLoopback(): [MpWire, MpWire, Jitter] {
 
 export function permit(cmd: Cmd): boolean {
   if (cmd.p === 0) return true
-  switch (cmd.a) {
-    case Act.startResearch:
-      // TODO 1.1 multiplayer guest research start
-      return false
-    case Act.pickSkill:
-      // TODO 1.1 multiplayer guest family pick
-      return false
-    case Act.expand:
-      // TODO 1.1 multiplayer guest expand
-      return false
-    case Act.placePipe:
-    case Act.placeSprinkler:
-    case Act.clickValve:
-    case Act.rotatePlace:
-      // TODO 1.1 multiplayer guest pipe/valve/sprinkler/tile/fence
-      return false
-    case Act.swapChest:
-      // TODO 1.1 multiplayer guest chest swap
-      return false
-    case Act.delete:
-      if (cmd.k === 'building' || cmd.k === 'wire') return true
-      return false
-    case Act.tuneSprinkler:
-    case Act.dismissRecap:
-    case Act.cheat:
-    case Act.acceptContract:
-    case Act.cancelContract:
-    case Act.reorderContract:
-    case Act.necronomicon:
-      return false
-    case Act.openHud:
-      return (
-        cmd.k === 'water' ||
-        cmd.k === 'harvest' ||
-        cmd.k === 'counter' ||
-        cmd.k === 'day' ||
-        cmd.k === 'logic' ||
-        cmd.k === 'variety' ||
-        cmd.k === 'weather' ||
-        cmd.k === 'pressure'
-      )
-    case Act.buy:
-      if (GUEST_PIPE.has(cmd.s)) return false
-      if (SKUS[cmd.s].tab === 'seeds' || SKUS[cmd.s].tab === 'utility') return true
-      return GUEST_BUILD.has(cmd.s)
-    case Act.buyPacks:
-      return SKUS[cmd.s].tab === 'seeds'
-    default:
-      return true
-  }
-}
-
-export function guestBlockedSku(id: SkuId): boolean {
-  return GUEST_PIPE.has(id)
+  return cmd.a !== Act.pickSkill && cmd.a !== Act.expand && cmd.a !== Act.cheat
 }
 
 export function applyBundle(world: World, cmds: Cmd[]): void {

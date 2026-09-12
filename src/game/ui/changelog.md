@@ -1,3 +1,14 @@
+# 2.8.5 Multiplayer Update III
+
+Guests can accept contracts, start research, place water and paving, tune a Sprinkler, open a Chest, and save or download. Family skills, Cheat, and Expand stay with the host.
+
+- 🔧 Changed multiplayer: previously a guest could not accept or cancel a contract, now they can.
+- 🔧 Changed multiplayer: previously a guest could not start research, now they can.
+- 🔧 Changed multiplayer: previously a guest could not place Pipe, Valve, Sprinkler, paving, or Wooden fence, now they can.
+- 🔧 Changed multiplayer: previously a guest could not tune a Sprinkler, now they can.
+- 🔧 Changed multiplayer: previously a guest could not open a Chest or Freezer, now they can.
+- 🔧 Changed multiplayer: previously a guest could not save or download, now they can.
+
 # 2.8.4 Deprecation
 
 Fewer Family skills, and each remaining pick is a real bonus. The stall stays open all day. Some research and items are gone; pumps and wells gather slower.

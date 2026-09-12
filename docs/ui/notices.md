@@ -96,7 +96,7 @@ Right-click a row: `preventDefault`, discard that row, do not run `go`. The colu
 
 ## Multiplayer
 
-A guest may not accept contracts, start research, pick a skill, or expand ([[mechanics/multiplayer]] `mp.guest`). Those four rows show for a guest and do not click through. Refill is guest-legal, so the fuel row is live for both. Recap is live for both. Roster rows show for host and guest. `go: none`. Dismiss is local chrome.
+Guest chrome matches [[mechanics/multiplayer]] `mp.guest`. Research, Family, and Market `go` is live. Family overlay opens; picks stay dead. Expansion row stays, `go: none`. Cheat is not a notice. Refill is guest-legal, so the fuel row is live. Recap is live. Roster rows show for host and guest. Dismiss is local chrome.
 
 ## Invariants
 

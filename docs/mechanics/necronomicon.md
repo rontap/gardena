@@ -63,7 +63,7 @@ Seven pages, two open at the start. Closing both opens `agaric`, `gold`, and `as
 
 ## Ritual
 
-`Act.necronomicon` `'0'` `{ k: 'gold' | 'ritual' }`. `ritualBody`: legal only while `clock.phase()` is `twilight`. It closes **every** open page that is full, in one go, and does nothing when none is. Closing pages is what opens the next lock, so two pages closed at one ritual open `gold` at that same ritual. `ritualReady` is what the prop's lit frame and the Command Center row read. Guest may sacrifice by hand and may open the panel. Guest may not perform the ritual, sacrifice gold, or buy the book — [[mechanics/multiplayer]] `mp.guest`.
+`Act.necronomicon` `'0'` `{ k: 'gold' | 'ritual' }`. `ritualBody`: legal only while `clock.phase()` is `twilight`. It closes **every** open page that is full, in one go, and does nothing when none is. Closing pages is what opens the next lock, so two pages closed at one ritual open `gold` at that same ritual. `ritualReady` is what the prop's lit frame and the Command Center row read. Guest: [[mechanics/multiplayer]] `mp.guest`.
 
 ## Save
 
@@ -81,7 +81,7 @@ Fields added, no migrate — [[architecture/save]]. `SaveCell` `necronomicon` ca
 
 `necro.chest` — The book is an `IoCell` and `buy-necronomicon` an `IO_SKU`, so a chest or freezer west of its bottom row is emptied into the open page on the big tick, capped at what that page still wants; the book has no `pads`, no `ports` and no `inn`.
 
-`necro.ritual` — The ritual runs only at `twilight`; it closes every open page that is full in one go and is a no-op when none is; two pages closed at one ritual open `gold` at that ritual; guest may not perform it, sacrifice gold, or buy the book.
+`necro.ritual` — The ritual runs only at `twilight`; it closes every open page that is full in one go and is a no-op when none is; two pages closed at one ritual open `gold` at that ritual.
 
 `necro.gold` — `gold` is a button, not a dump; it pays `NECRO_GOLD` whole or not at all, only while the page is open, unclosed and unpaid and the farm can pay.
 

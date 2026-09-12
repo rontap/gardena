@@ -10,7 +10,7 @@ Intents `still` `barrel` `jam` `mill` `furnace` `station` `infuse` at `Coord`. `
 
 Refuse `{ kind: 'rotten' }` `{ kind: 'dead' }`. Freshness-0 fruit is not an item after tick. Seeds, tree seeds, tools: refuse. Graft: mill/jam/still/barrel/grinder/station refuse; furnace green rate. Furnace accept is the feedstock table.
 
-Grinder dump is mill-style: `{ act: 'grind' }`, into hopper. Not actor `GRIND_WORK`. Guest may dump. Freezer reuses `{ act: 'chest' }` and `swapChest`. Guest may not open.
+Grinder dump is mill-style: `{ act: 'grind' }`, into hopper. Not actor `GRIND_WORK`. Guest may dump. Freezer reuses `{ act: 'chest' }` and `swapChest`.
 
 Tick origin cell only (`base` matches `at`), after eval, so `inn` gates the same tick. Not cmds. Not actor work except dump. `World.stills` holds the same `PotStill` instances as their cells. Furnace and station are cell-only, not a water join.
 

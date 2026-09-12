@@ -4,7 +4,7 @@ Tab on [[ui/market]]. Panel stays `{ kind: 'market' }`. Hidden iff `!world.done.
 
 `slots = CONTRACT_OFFERS +` (broker ≥ 1 ? 1 : 0). Cap `CONTRACT_ACTIVE +` (broker ≥ 2 ? 1 : 0). Board `rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay)`. Drop ids in `takenToday`. Regenerating is free. Panel does not re-roll mix / amount / fee lerp; remaining days and live cancel fee are display.
 
-Host: Accept / Cancel / Reorder. Guest: board and fill progress plus offer hover; those controls omitted. Guest cmds never fire. [[ui/multiplayer]]
+Host and guest: Accept / Cancel / Reorder. [[mechanics/multiplayer]] `mp.guest` [[ui/multiplayer]]
 
 `#debug-contracts` — generator ladder, not the overlay. [[ui/cheat]]
 
@@ -20,9 +20,8 @@ The card is the Accept control. Not a nested label. Host click `acceptContract {
 
 | who | fill | click |
 |---|---|---|
-| host, not at cap | hover fill, pointer | `acceptContract` |
-| host, at cap | no hover fill, `aria-disabled` guarded click | no-op |
-| guest | no hover fill. Not the Accept control | never |
+| not at cap | hover fill, pointer | `acceptContract` |
+| at cap | no hover fill, `aria-disabled` guarded click | no-op |
 
 Not the `disabled` attribute. Taken today: card gone, not grey.
 
@@ -30,7 +29,7 @@ Row 1: company face `company-{id}.svg` left of `COMPANIES[offer.company].name`, 
 
 ### Hover
 
-[[ui/callout-hover]] on Market Overlay `aside`. Title `COMPANIES[offer.company].name`. Hover on guest and host, including at-cap. Prize-only hover replaces a cash explanation. Body slots: `{difficulty}/40 difficulty contract for {company}`; one **Deliver** line per demand; duration and reward (cash includes `{pct}% more than farmer's market`; prize has no that clause); **Cancellation cost is {fee}**; **Click to accept offer** on board, host, not at cap. At-cap why: cap 3 **Three contracts already running.**; broker T2 **Four contracts already running.** Guest: no CTA. No at-cap why.
+[[ui/callout-hover]] on Market Overlay `aside`. Title `COMPANIES[offer.company].name`. Hover including at-cap. Prize-only hover replaces a cash explanation. Body slots: `{difficulty}/40 difficulty contract for {company}`; one **Deliver** line per demand; duration and reward (cash includes `{pct}% more than farmer's market`; prize has no that clause); **Cancellation cost is {fee}**; **Click to accept offer** on board, not at cap. At-cap why: cap 3 **Three contracts already running.**; broker T2 **Four contracts already running.**
 
 `item` = `demandName`. The board does not ask for a variety or a quality floor. [[mechanics/contracts]]
 
@@ -60,9 +59,9 @@ Count / liters is on the `Item`. Sugar and extract are never demanded. Faces car
 
 ## Accepted
 
-`world.contracts.active` array order — that is fill order. Remaining per line: `amount - filled`. `{x.x} days left` own line — one decimal, `dueDay - nowDay`. Reward own line. Then `Bar` `value={filled / need}`. Reorder host only: ▲ `reorderContract { c, d: -1 }`, ▼ `{ c, d: 1 }`. Ends: still shown, sim no-op.
+`world.contracts.active` array order — that is fill order. Remaining per line: `amount - filled`. `{x.x} days left` own line — one decimal, `dueDay - nowDay`. Reward own line. Then `Bar` `value={filled / need}`. Reorder: ▲ `reorderContract { c, d: -1 }`, ▼ `{ c, d: 1 }`. Ends: still shown, sim no-op.
 
-Host ×. Guest: omitted. Click arms. Armed click `cancelContract { c }`. Not a new dialog. Hover (armed or not): Overlay aside. Title the company name. Body **Cancelling this offer will incur a {Coin fee} penalty.** `{fee}` = `cancelFee(active, nowDay)`.
+×. Click arms. Armed click `cancelContract { c }`. Not a new dialog. Hover (armed or not): Overlay aside. Title the company name. Body **Cancelling this offer will incur a {Coin fee} penalty.** `{fee}` = `cancelFee(active, nowDay)`.
 
 ## History
 

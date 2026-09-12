@@ -116,12 +116,12 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 | owned sprinkler vertex | **Demolish sprinkler** | remove sprinkler; incident wires drop |
 | hangar that stores a vehicle or a trailer | **Cannot demolish here (stores a vehicle)** | no-op |
 | fenceable sensor + `hasFence` | **Demolish {skuLabel}** | sensor and wires go, fence remains. Traffic-light demolish also strips wait stops targeting that cell |
-| fenced cell, host | **Demolish wooden fence** | fence goes, cell keeps what is under it |
-| bare plot carrying paving, host | **Demolish paving** | slab goes, ground stays |
+| fenced cell | **Demolish wooden fence** | fence goes, cell keeps what is under it |
+| bare plot carrying paving | **Demolish paving** | slab goes, ground stays |
 | house, starter, truck, rock, tree, growing / ripe / dead / rotten, empty, bare untilled, Necronomicon | **Cannot demolish here** | no-op |
 | else a building the body takes down | **Demolish {skuLabel}** | every cell it stood on |
 
-`place.demolish-filter` — The copy table and `deleteBuildingBody` cover the same set. `DELETE_NAME` is the name lookup, not the gate: a kind the body takes down and the table does not name reads **Cannot demolish here** and the click dies before `confirmPlace`. Fence and paving are host only in both, so a guest reads **Cannot demolish here**. Paving needs `isPlot` on both sides: a slab under the house stays.
+`place.demolish-filter` — The copy table and `deleteBuildingBody` cover the same set. `DELETE_NAME` is the name lookup, not the gate: a kind the body takes down and the table does not name reads **Cannot demolish here** and the click dies before `confirmPlace`. Paving needs `isPlot` on both sides: a slab under the house stays.
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU.
 

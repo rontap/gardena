@@ -278,11 +278,6 @@ export function begin(world: World, i: Intent): void {
         shiftHead(world)
         return
       }
-      // TODO 1.1 multiplayer guest chest swap
-      if (world.act.id !== 0) {
-        shiftHead(world)
-        return
-      }
       world.act.cue = { kind: 'chest', at: { ...i.at } }
       shiftHead(world)
       return

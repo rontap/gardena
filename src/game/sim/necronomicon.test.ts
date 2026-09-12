@@ -46,7 +46,7 @@ const AT = { col: 10, row: 12 }
 type Fruit = Extract<Item, { kind: 'fruit' }>
 
 function fruit(crop: 'carrot' | 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'grape' | 'apple', count: number): Fruit {
-  return { kind: 'fruit', crop, variety: 'base', quality: 0.5, count, unitSale: 1, freshness: 1, bio: true, cut: false }
+  return { kind: 'fruit', crop, variety: 'base', quality: 0.5, count, unitSale: 1, freshness: 1, cut: false }
 }
 
 function farm(): { w: World; book: Necronomicon } {
@@ -279,7 +279,6 @@ describe('necronomicon.sacrifice', () => {
     expect(IO_SKUS).toContain('buy-necronomicon')
     const west = { col: book.base.col - 1, row: book.base.row + book.base.h - 1 }
     w.money = 9999
-    w.done.add('unlock-chest')
     w.setCell(west, bare('soft', 0))
     w.buy('buy-chest')
     w.confirmPlace(west)

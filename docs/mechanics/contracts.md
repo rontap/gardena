@@ -111,7 +111,7 @@ Kinds: `cash` | `tree-seed` | `seeds` (vanilla) | `fertilizer` | `freezer` | `ex
 
 ## cleanUnit
 
-Plain crop `CROPS[good].sale`. Plain wine `WINE_SALE` — no age. Plain spirit `SPIRIT_SALE[spirit]`. Plain sugar `SUGAR_MILL`. Plain jam `JAM_SALE[crop]`. Plain oil / flour / extract / bread `OIL` / `FLOUR` / `EXTRACT` / `BREAD`. Group jam `min JAM_SALE` (`cherry`). Group spirit `SPIRIT_SALE.vodka`. No skills, freshness, bio, quality, or path rating.
+Plain crop `CROPS[good].sale`. Plain wine `WINE_SALE` — no age. Plain spirit `SPIRIT_SALE[spirit]`. Plain sugar `SUGAR_MILL`. Plain jam `JAM_SALE[crop]`. Plain oil / flour / extract / bread `OIL` / `FLOUR` / `EXTRACT` / `BREAD`. Group jam `min JAM_SALE` (`cherry`). Group spirit `SPIRIT_SALE.vodka`. No skills, freshness, quality, or path rating.
 
 ## Accepts
 
@@ -154,7 +154,7 @@ On the tick `nowDay` crosses `dueDay`, if not complete: sold = delivered units a
 
 ## Skills
 
-Husband `haggling`. Utility and automation `skuPrice − $tier`, min $1. Hangar-buys still not `skuPrice` — [[mechanics/family]].
+Hangar-buys are not `skuPrice` — [[mechanics/family]].
 
 Daughter `broker` max `BROKER_MAX_TIER`. Gate `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
 

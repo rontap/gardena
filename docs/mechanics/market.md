@@ -4,19 +4,7 @@ Walk fruit, sugar, and machine goods to the truck, open Market. Overlay **Stall*
 
 ## Hours
 
-`marketOpen(phase)` — [[mechanics/family]] [[mechanics/weather]].
-
-Weather block: `(flood ∧ sunrise) ∨ (drought ∧ day)` unless daughter owns `open-24`. Then:
-
-| phase | open |
-|---|---|
-| sunrise, day | always |
-| sunset | daughter owns `open-late` |
-| twilight | daughter owns `open-24` |
-
-`open-late` does not reopen a weather block. Consign always. Sell all illegal when closed.
-
-Closed copy: flood “Stall closed this morning.” drought “Stall closed at midday.” Else “Stall closed until morning.” / “Stall closed at twilight.”
+`marketOpen` is always true. No phase hours. No weather close. Consign always. Sell all always legal.
 
 ## Truck
 
@@ -28,7 +16,7 @@ Look **Market truck**. Prompt **Drop off**. Arrive pad: consign instant.
 
 ## Consign
 
-Legal cargo: fruit (incl. sugar-cane, chilli), sugar, spirit, cask (wine / cider), jam, oil, flour, extract, bread. Flakes and vanilla-extract illegal. `{ kind: 'rotten' }` legal iff daughter owns `clearance`. Without the skill: compost only, consign refused. Infused jam / cask / spirit / oil consign as those goods; `infused` is kept — [[mechanics/infusion]] `infusion.stall`.
+Legal cargo: fruit (incl. sugar-cane, chilli), sugar, spirit, cask (wine / cider), jam, oil, flour, extract, bread. Flakes and vanilla-extract illegal. `{ kind: 'rotten' }` legal iff `unlock-fermentation` in `done`. Without that row: compost only, consign refused. Infused jam / cask / spirit / oil consign as those goods; `infused` is kept — [[mechanics/infusion]] `infusion.stall`.
 
 Fruit: stall takes count at
 
@@ -50,13 +38,13 @@ Consign fills `contracts.active` in array order, then the stall. A full bin pass
 
 `StallGoodId` — `sim/ids.ts`. Illegal: `'berry'`. Illegal: whisky.
 
-Crop stall bins: stock + worth per variety × bio. Illegal: consign that drops `fruit.bio`. Sugar / flour / extract / bread: stock + worth only. Jam / oil: stock + worth per `InfusedKey`. Spirit / cask: stock + worth per variety × `InfusedKey`. Mixed: one bin × `InfusedKey`. Flakes and vanilla-extract are not `StallGoodId`.
+Crop stall bins: stock + worth per variety. Sugar / flour / extract / bread: stock + worth only. Jam / oil: stock + worth per `InfusedKey`. Spirit / cask: stock + worth per variety × `InfusedKey`. Mixed: one bin × `InfusedKey`. Flakes and vanilla-extract are not `StallGoodId`.
 
 ## Sell all
 
-Legal only when `marketOpen`. Else closed copy.
+Legal when `marketOpen`. `marketOpen` is always true.
 
-`marketGain`: per crop good, per variety × bio, `worth × stallX(id, mods)`, then sale skills. Sugar / jam / oil / flour / extract / bread: `worth ×` saleswoman only. Spirit / wine: `worth ×` saleswoman, and heirloom if variety tier is `heirloom`. Cider: `worth ×` saleswoman only. Infused uses the same skills as the plain good.
+`marketGain`: per crop good, per variety, `worth × stallX(id, mods)`, then sale skills. Sugar / jam / oil / flour / extract / bread: `worth ×` saleswoman only. Spirit / wine: `worth ×` saleswoman, and heirloom if variety tier is `heirloom`. Cider: `worth ×` saleswoman only. Infused uses the same skills as the plain good.
 
 `stallX`: crop → `CROPS.sale ×` skill `saleMul` from player `better-*` (`Modifier.source === 'skill'`). Quality and path rating are already in `worth` at consign, not inside `stallX`. Sugar and machine goods skip `stallX` (already in `unitSale`). Sugar-cane fruit uses crop `stallX`.
 
@@ -66,11 +54,10 @@ Then at `marketGain`, not crop `Modifier`:
 
 - saleswoman: every `StallGoodId` × `(1 + 0.02 × tier)`
 - heirloom: variety tier `heirloom` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider. Not sugar / jam / oil / flour / extract / bread
-- bio: crop fruit `bio === true` × `(1 + 0.04 × tier)`. Not sugar / machine goods
-- clearance: `{ kind: 'rotten' }` `$1` each. Sat exempt. Saleswoman / heirloom / bio / weather do not apply. Sugar and machine goods do not rot. Without the skill: consign refused.
 - flood or drought: fruit stall goods only (annual including sugar-cane and chilli, tree fruit) × `WEATHER_FRUIT_SALE`. Not sugar / jam / spirit / wine / oil / flour / extract / bread. After skills, before sat. — [[mechanics/weather]]
+- rotten: `{ kind: 'rotten' }` `$1` each iff `unlock-fermentation` in `done`. Sat exempt. Saleswoman / heirloom / weather do not apply. Sugar and machine goods do not rot. Without that row: consign refused.
 
-Saturation last, per good, over that subtotal. Infused clean pays `mul(sat)` and does not raise `sat` — [[mechanics/infusion]] `infusion.stall` [[mechanics/saturation]] `sat.infused`. Clearance `$1` exempt. `marketGain()` is the paid total. At `sat = 0` it equals this number.
+Saturation last, per good, over that subtotal. Infused clean pays `mul(sat)` and does not raise `sat` — [[mechanics/infusion]] `infusion.stall` [[mechanics/saturation]] `sat.infused`. Rotten `$1` exempt. `marketGain()` is the paid total. At `sat = 0` it equals this number.
 
 Consign still accumulates `worth` untouched except contract-bound units, which skip `worth` and `sat`. Saturation is sampled at Sell all, never at consign. Miss / cancel remainders do raise `sat`.
 
@@ -82,11 +69,11 @@ Better skill after pick: Sell all uses current `stallX`, not the baked `unitSale
 
 ## Invariants
 
-`market.sell` — Market is Sell all iff `marketOpen`. Weather block: flood sunrise / drought midday unless `open-24`; `open-late` does not reopen. Then sunrise/day always; sunset if `open-late`; twilight if `open-24`. Consign always. Closed: flood “Stall closed this morning.” drought “Stall closed at midday.” else “Stall closed until morning.” / “Stall closed at twilight.” Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`, bio `(1 + 0.04 × tier)`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; clearance `{ kind: 'rotten' }` `$1`, sat exempt, saleswoman / heirloom / bio / weather do not apply. Crop stall stock/worth per variety×bio. Consign: fruit (incl. sugar-cane, chilli), sugar, spirit, cask, jam, oil, flour, extract, bread; `{ kind: 'rotten' }` iff `clearance`. Flakes and vanilla-extract illegal. Without the skill: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract / bread: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. Infused jam / cask / spirit / oil: same skills, `InfusedKey` bin. No berry. Sat last; infused pays `mul(sat)` and does not raise `sat` — [[mechanics/saturation]] [[mechanics/infusion]] [[mechanics/weather]].
+`market.sell` — Market is Sell all iff `marketOpen`. `marketOpen` is always true. No phase hours. No weather close. Consign always. Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; `{ kind: 'rotten' }` `$1` iff `unlock-fermentation` in `done`, sat exempt, saleswoman / heirloom / weather do not apply. Crop stall stock/worth per variety. Consign: fruit (incl. sugar-cane, chilli), sugar, spirit, cask, jam, oil, flour, extract, bread; `{ kind: 'rotten' }` iff `unlock-fermentation` in `done`. Flakes and vanilla-extract illegal. Without that row: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract / bread: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. Infused jam / cask / spirit / oil: same skills, `InfusedKey` bin. No berry. Sat last; infused pays `mul(sat)` and does not raise `sat` — [[mechanics/saturation]] [[mechanics/infusion]] [[mechanics/weather]].
 
 `market.infused` — Infused clean `V_inf` pays `V_inf × mul(sat, good)` at that good's sat at the start of Sell all for that good, and does not raise `sat`. Plain trapezoid still raises `sat`. Flakes and vanilla-extract are not stall goods.
 
-`market.quality` — Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `purposeMul(variety, 'produce')` into `worth`. Sell all uses `stallX` and sale skills; no second purpose multiplier.
+`market.quality` — Crop stall bins per crop × variety. Consign folds `freshMul`, `qualityMul`, and `purposeMul(variety, 'produce')` into `worth`. Sell all uses `stallX` and sale skills; no second purpose multiplier.
 
 `market.vodka-common` — 10 `'base'` potato fruit at quality 0 `marketGain` vs one still batch of 10 `'base'` potato vodka at quality 0 `unitSale`: batch > fruit.
 

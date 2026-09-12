@@ -157,7 +157,7 @@ test('research furnace, place 1×2, dump mixed feedstock, ash, compost', async (
     if (w === undefined) throw new Error('no __world')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 4, unitSale: 1, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 4, unitSale: 1, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'furnace', at })
   }, FURNACE_AT)

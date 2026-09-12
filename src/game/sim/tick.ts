@@ -32,7 +32,7 @@ export function tickSpeech(world: World, dt: number): void {
 export function tickJob(world: World, dt: number): void {
   if (world.job.kind === 'idle') return
   const cheat = world.cheatFastResearch ? 3 : 1
-  world.job.left -= dt * (1 + 0.05 * world.skillTier('research-speed')) * cheat
+  world.job.left -= dt * cheat
   if (world.job.left > 0) return
   const id = world.job.id
   world.done.add(id)

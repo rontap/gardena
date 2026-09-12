@@ -4,13 +4,13 @@ Hand is one item. Empty or hold.
 
 House: 16 slots. Walk to the door, swap with hand. Auto-merge same crop+variety seeds and fruit. Sugar merges weighted `unitSale` and `quality` by liters. Weighted freshness / `unitSale` / `quality` on fruit.
 
-Chest: `CHEST_SLOTS` — preference. 1×1, `unlock-chest`. Walk up, swap any item. Dump/pull all legal until dest or cargo full. Pads + `Act.load`/`unload` — [[mechanics/vehicles]]. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. Guest `swapChest` / Load / Unload: not. — [[mechanics/multiplayer]] `mp.guest`.
+Chest: `CHEST_SLOTS` — preference. 1×1, unlock `start`, price preference. Walk up, swap any item. Dump/pull all legal until dest or cargo full. Pads + `Act.load`/`unload` — [[mechanics/vehicles]]. `out` + `SENSOR_HOLD`: full = no empty slot. Port `out` origin bottom. Guest `swapChest` / Load / Unload: not. — [[mechanics/multiplayer]] `mp.guest`.
 
 Freezer: `FREEZER_SLOTS` — preference. 1×1, `unlock-preservatives`. Reuses chest act / `swapChest`. Slots rot at `FREEZER_ROT_MUL` of the open rate: cold slows rot, it does not stop it and it never restores freshness. Guest may not open. Same pads / `out` / guest ban as chest. — [[mechanics/machines]] [[mechanics/sensors]]
 
 Quad: `VEHICLE_SLOTS` — preference. Any `Item`, chest swap + compact. Freshness ticks (not freezer). `Act.swapVehicle` legal iff parked (`field` && `driver === 'none'`). Stored: no-op. Driven: no-op. Guests may swap. Hangar HUD has no 6-slot. Tractor has no 6-slot. Fuel is not an item.
 
-Trailer cargo: `TRAILER_CAP`. Seed hopper one seeds stack. Spray hopper one fertilizer|synth|compost bag. `weed-spray` in that hopper unrepresentable. Harvest `HARVEST_SLOTS`, mixed produce, chest merge+compact. `Act.swapTrailer` legal iff trailer attached to a tractor that is field && `driver === 'none'`. Hangar / driving / stored unattached: no-op. Seeder/sprayer refuse wrong kind. — [[mechanics/vehicles]]
+Trailer cargo: `TRAILER_CAP`. Seed hopper one seeds stack. Spray hopper one fertilizer|compost bag. `weed-spray` in that hopper unrepresentable. Harvest `HARVEST_SLOTS`, mixed produce, chest merge+compact. `Act.swapTrailer` legal iff trailer attached to a tractor that is field && `driver === 'none'`. Hangar / driving / stored unattached: no-op. Seeder/sprayer refuse wrong kind. — [[mechanics/vehicles]]
 
 ## Stores
 
@@ -21,7 +21,7 @@ Seeds and additives do not live in the house. Each has a store building, placed 
 | store | holds |
 |---|---|
 | `seed-silo` | `SiloStack[]` `{ crop, variety, quality, count }` cap `SILO_SEED_CAP` |
-| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · synth · compost · weed-spray`, plus one `sugar: { liters, unitSale, quality }` bin, cap `ADDITIVE_CAP_LITERS` |
+| `additive-store` | `{ id, liters }[]`, `ADDITIVE_IDS = fertilizer · compost · weed-spray`, plus one `sugar: { liters, unitSale, quality }` bin, cap `ADDITIVE_CAP_LITERS` |
 
 Both caps are cumulative across every stack / kind in that store. Silo `used` is crop-stack counts. Silo stacks merge on crop+variety; quality averages weighted by count. `accept` is `{ kind: 'seeds' }`. Grass is a silo crop like chilli: `{ crop: 'grass'; variety: 'base'; quality; count }`. `'base'` only. Field Seeding silos use the same stacks. No extra grass store type. No `SeedStore.grass` field.
 
@@ -31,9 +31,9 @@ Pads + `Act.load`/`unload`. Guest may. `out` + `SENSOR_HOLD`: silo `used >= SILO
 
 Click a stack → it goes to **hand**. Silo hands over the whole stack. Grass: `takeSilo('grass', 'base')` → `{ kind: 'seeds'; crop: 'grass'; variety: 'base'; quality; count }`. Additive store hands over one bag, `min(ADDITIVE_BAG[id], stored)`. A full hand joins or swaps first, `inventory.swap` below. Only what the store will not take back is set down on the nearest plot — the gardener's cell, else a `frontOf` neighbour. No free plot: the take is refused rather than destroying the item.
 
-Buying: `pack-*` including `pack-grass` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-synth-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Field Seeding silo: `'Seeding silo full'`. `pack-grass` does not go to the house.
+Buying: `pack-*` including `pack-grass` → silo as `'base'` quality 0, `buy-fertilizer` / `buy-weed-spray` / `buy-sugar` → additive store. Neither arms a place ghost. Over cap the buy is refused: `'Seed silo full'` / `'Additive store full'` (`BuyFail`). Field Seeding silo: `'Seeding silo full'`. `pack-grass` does not go to the house.
 
-Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the four additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
+Sugar is not an `AdditiveId`. It sits in its own `sugar` bin on the store because it carries `unitSale` and `quality` and the additives carry neither, and because a spray trailer must never be able to load it. `putSugarInto` mixes `unitSale` and `quality` weighted by liters, the way `mergeSugar` does in the hand. `takeSugar()` hands over `min(SUGAR_BAG, stored)` at the bin's sale and quality. Walk-up deposit folds a carried bag back in. `Act.takeStore` `k: 'sugar'`.
 
 Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. `packSku('grass')` is `pack-grass`. The Seed silo is the only place a pack is sold, including `pack-grass`. No pack (vanilla): no Buy. `pack-chilli` Buy when `skuShown`. `pack-grass` Buy when `skuShown`, buy after `unlock-landscaping`. Field Seeding silos included. — [[ui/store]]
 
@@ -43,7 +43,7 @@ Seed silo Buy row: click `buy(packSku)`, Ctrl+click `buyPacks(packSku)`. `packSk
 
 Shovel in hand. Bucket on the doorstep (full `CONTAINERS.bucket`). Money `MONEY_START` — preference.
 
-House: four `base` tree seeds, one graft of every tree variety, and `STARTER_FRUIT_N` fruit of every `STARTER_FRUIT` Variety — `keknyelu` and `san-marzano`, Quality 0, fresh, organic. Twelve of sixteen slots. That is one barrel of Premium wine and one Passata without waiting on a first crop.
+House: four `base` tree seeds, one graft of every tree variety, and `STARTER_FRUIT_N` fruit of every `STARTER_FRUIT` Variety — `keknyelu` and `san-marzano`, Quality 0, fresh. Twelve of sixteen slots. That is one barrel of Premium wine and one Passata without waiting on a first crop.
 
 Seed silo: starter carrot / tomato / potato at `'base'` quality 0 (today's starter counts, merged onto `'base'`), plus one `PACK_N` pack of each annual variety: `bintje` `red-fife` `green-zebra` `san-marzano` `black-raspberry` `concord` `keknyelu`. Seven packs. Total under `SILO_SEED_CAP`.
 
@@ -53,7 +53,7 @@ House: four `'base'` tree seeds — apple, apricot, olive, cherry — quality 0,
 
 ## Tools
 
-Shovel, better shovel, pickaxe, hardened pickaxe, axe, chainsaw, bucket, large bucket. Uses / work / capacities — preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.axe.workSeconds` / `AXES.chainsaw.workSeconds`. No better-axe. Burrow extract: any shovel id, work `workSeconds × BURROW_MUL`, 1 use, not hardness — [[mechanics/burrow]] `burrow.dig`.
+Shovel, better shovel, pickaxe, hardened pickaxe, axe, chainsaw, bucket, large bucket. Uses / work / capacities — preference. `SHOVELS.shovel.uses` and `buy-shovel` price preference. `SHOVELS['better-shovel'].uses` and `buy-better-shovel` price preference. Unlock ids on `SKUS`. 0 uses: hand empty. `workSeconds` is baked on the Item. New games / new buys use `SHOVELS.*.workSeconds` / `AXES.axe.workSeconds` / `AXES.chainsaw.workSeconds`. No better-axe. Burrow extract: any shovel id, work `workSeconds × BURROW_MUL`, 1 use, not hardness — [[mechanics/burrow]] `burrow.dig`.
 
 `{ kind: 'axe'; usesLeft; workSeconds }`. `{ kind: 'chainsaw'; usesLeft; workSeconds }`. No `id`. SKU `buy-axe` `buy-chainsaw`. Chop: [[mechanics/trees]] `trees.chop`.
 
@@ -69,13 +69,13 @@ The cap is on growth, not possession. Harvest, pickup, weed pull, and barrel col
 
 Refused merge: `say(HAND_FULL)`, prompt `blocked` `My hand is full!`. The crop stays on the plant, the remainder stays on the ground, the hand is not emptied. A different kind or identity is not a refusal — pickup still swaps hand and ground.
 
-Liters are not counts. Buckets, fertilizer / synth / compost / weed-spray bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them. Sugar merges weighted `unitSale` and `quality` by liters.
+Liters are not counts. Buckets, fertilizer / compost / weed-spray bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them. Sugar merges weighted `unitSale` and `quality` by liters.
 
 Same variety at different quality merges and averages, weighted by count — by liters for sugar.
 
 ## Fertilizer / compost
 
-Ordinary bag `FERT_BAG_LITERS`, always at the Additive store. Synthetic `SYNTH_BAG_LITERS`, research. Compost `COMPOST_LITERS`, organic feed.
+Ordinary bag `FERT_BAG_LITERS`, always at the Additive store. Compost `COMPOST_LITERS` — preference. Compost is a bag that feeds like fertilizer.
 
 Compost box, start SKU. `COMPOST_NEED` units → one bag in `COMPOST_SECONDS` — preference. Output: east store else `frontOf`. Dump all legal until dest full. Pads; no port. Guest dump / Load / Unload. Chest I/O [[mechanics/machines]].
 
@@ -109,9 +109,9 @@ Mill / jam / still / barrel / freezer / furnace / infuser / bought sugar / stati
 
 `inventory.infused` — `infused: boolean` required on jam, cask, spirit, oil. Flakes and vanilla-extract countable, no `unitSale`, not stall. Bread countable, stall. — [[mechanics/infusion]] `infusion.item`
 
-`inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `SYNTH_BAG_LITERS`, `buy-synth-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.
+`inventory.containers` — `CONTAINERS.bucket`. `large-bucket`. `FERT_BAG_LITERS`, `buy-fertilizer`. `COMPOST_LITERS`. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` preference.
 
-`inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`, grass included) and the four `ROW_SKU` rows restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
+`inventory.restock` — `SiloSeed.restock` / `SiloSpray.restock`, saved, default false. Field silos only; the house `SeedSilo` and `AdditiveStore` have no such field. On a removal, the silo's `levels()` taken before it are compared with the levels after, and `buyBody` runs `ceil(missing / pack)` times per row, stopping on the first failure. Only `'base'` seeds (`packSku`, grass included) and the `ROW_SKU` rows that have a SKU restock; a named Variety and compost do not. `Act.takeStore` is the only removal that reaches a field silo. `Act.setRestock` toggles it. — [[ui/store]]
 
 `inventory.swap` — Taking from a Seed silo or an Additive store with a full hand never spills what the store itself holds. The same row as the hand joins it: seed counts add and Quality averages by count; a bag tops up to its `capacityLiters` and no further, sugar averaging `unitSale` and `quality` by liters. Any other row is a swap — the held item goes back into that store, then the new stack comes out. Only what the store has no room for, and anything the store does not take, goes to `freeHand`. — [[ui/store]]
 

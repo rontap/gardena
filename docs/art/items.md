@@ -8,7 +8,7 @@
 
 Ink silhouette, inner fill, bands, center spray glyph. No pump T. No wand. No ripe volume bars. Coder draws it.
 
-`ui-research-fertilizer.svg` — Small synth bag + small spray bag (not a small can). Unlock-fertilizer research face. Synth dark is `water`. Coder draws it.
+`ui-research-fertilizer.svg` remains on disk; not live.
 
 `ui-research-crop-variants.svg` — Two quality marks: uncommon `leaf` left, rare `water` right. Crop variants research face. Not heirloom gold.
 

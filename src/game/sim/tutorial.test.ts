@@ -120,14 +120,13 @@ describe('tutorial', () => {
         count: 1,
         unitSale: 1,
         freshness: 1,
-        bio: true,
         cut: false,
       },
     })
     const t = check(w, on(1))
     expect(t.kind === 'on' && t.step === 8).toBe(true)
     w.clock.t = 220
-    expect(w.marketOpen()).toBe(false)
+    expect(w.marketOpen()).toBe(true)
     w.sellAll()
     const closed = check(w, t)
     expect(closed.kind === 'on' && closed.step === 8).toBe(true)
@@ -136,7 +135,7 @@ describe('tutorial', () => {
     expect(w.marketGain()).toBe(0)
     const noop = check(w, t)
     expect(noop.kind === 'on' && noop.step === 8).toBe(true)
-    w.stall.carrot.take('base', 2, 1, true)
+    w.stall.carrot.take('base', 2, 1)
     expect(w.marketOpen() && w.marketGain() > 0).toBe(true)
     const pays = w.marketOpen() && w.marketGain() > 0
     w.sellAll()

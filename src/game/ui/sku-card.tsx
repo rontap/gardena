@@ -47,7 +47,7 @@ export function rowState(world: World, id: SkuId, at: Coord): RowState {
     if (seedStoreAt(world, at).free >= made.count) return 'ok'
     return field ? 'field-silo-full' : 'silo-full'
   }
-  if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
+  if (made.kind === 'fertilizer' || made.kind === 'weed-spray') {
     if (additiveStoreAt(world, at).free >= made.liters) return 'ok'
     return field ? 'field-store-full' : 'store-full'
   }

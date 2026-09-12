@@ -78,7 +78,6 @@ export function soloSeat(playerId: PlayerId, name: string): Seat {
       count: STARTER_FRUIT_N,
       unitSale: statsOf(VARIETY[v].crop, v, 0, []).sale,
       freshness: 1,
-      bio: true,
       cut: false,
     })),
   ]

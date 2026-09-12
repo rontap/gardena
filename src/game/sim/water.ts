@@ -1,9 +1,8 @@
-export type SourceKind = 'pump' | 'well' | 'rain-tank'
+export type SourceKind = 'pump' | 'well'
 
 export const SOURCE: { readonly [K in SourceKind]: { rate: number; capacity: number; start: number } } = {
-  pump: { rate: 2.5, capacity: 50, start: 50 },
-  well: { rate: 5, capacity: 150, start: 150 },
-  'rain-tank': { rate: 0.4, capacity: 100, start: 0 },
+  pump: { rate: 0.6, capacity: 50, start: 50 },
+  well: { rate: 0.4, capacity: 150, start: 150 },
 }
 
 export const TAP_RATE = 5

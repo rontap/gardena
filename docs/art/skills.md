@@ -32,10 +32,9 @@ father's eyes — same girl as in `ui-market-stall.svg`.
 
 No groups, one per skill family — every tier reuses it, the UI draws the level.
 
-`skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` · `skill-research-speed` `skill-contracts`
-`skill-forecast` `skill-tax` `skill-water-study` `skill-land-study` ·
-`skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-bio` `skill-industrial` `skill-open-late` `skill-open-24`
-`skill-jam` `skill-clearance` `skill-lucky` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
+Live: `skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` `skill-forecast` `skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-industrial` `skill-jam` `skill-lucky` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
+
+Skill svg files remain on disk; not live. They are not in this list.
 
 ## Standing icons
 
@@ -47,8 +46,6 @@ No groups, one per skill family — every tier reuses it, the UI draws the level
 
 Both are scanline `rect` rows like `ui-cursor.svg`, not paths.
 
-Live sheet drops `skill-tool-contracts` `skill-machine-contracts` `skill-bulk-buying` (files may remain).
-
 ## Reuse, not redraw
 
 One copy of each shared symbol; icons composite it.
@@ -58,8 +55,6 @@ One copy of each shared symbol; icons composite it.
 - **Arrows** — up / down badge in the `ui-quality.svg` language: ink square, solid `leaf` fill, ink glyph cut out.
 - **Őstermelő** — `skill-heirloom.svg` is `ui-quality.svg` at 3× in heirloom gold. Not a new symbol.
 - **Money** — every coin is `ui-coin.svg` embedded verbatim under a `translate` (and `scale(2)` in
-  `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into `skill-contracts`
-  `skill-tax` `skill-clearance` `skill-saleswoman` `skill-heirloom`.
+  `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into live money icons
+  `skill-saleswoman` `skill-heirloom`.
 - **Lucky** — `skill-lucky.svg` is the `stat-luck.svg` four-leaf clover, no coin. All three `lucky` skills draw it. Do not redraw the Coin.
-- `skill-open-late` reuses the `ui-phase-sunset` sun, `skill-open-24` the `ui-phase-twilight` moon.
-- **Haggling** — `skill-contracts.svg`. Do not redraw.

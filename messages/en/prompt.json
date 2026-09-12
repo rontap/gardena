@@ -141,7 +141,6 @@
   "prompt_no_pipes": "no pipes around sensor!",
   "prompt_not_enclosed": "open fence, close it to turn the sensor on",
   "prompt_soil": "Water {water}, Fertilizer {n}%",
-  "prompt_soil_not_organic": "Water {water}, Fertilizer {n}%, not organic",
   "prompt_liters": "{n}L",
   "prompt_on": "on",
   "prompt_off": "off",

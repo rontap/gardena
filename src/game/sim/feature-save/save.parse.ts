@@ -21,7 +21,6 @@ import {
   Necronomicon,
   PotStill,
   Pump,
-  RainTank,
   ResearchStation,
   Sorter,
   Rock,
@@ -113,7 +112,6 @@ function worldFromSave(save: Save, sink: LogSink): World {
     additives: live.additives,
     truck: live.truck,
     pumps: live.pumps,
-    tanks: live.tanks,
     taps: live.taps,
     stills: live.stills,
     necronomicon: live.necronomicon,
@@ -238,8 +236,8 @@ function makeStallMap(s: Save['stall']): StallMap {
     const src = s[id]
     const g = new StallGood(id)
     VARIETY_IDS.forEach(r => {
-      g.stock[r] = { organic: src.stock[r].organic, synth: src.stock[r].synth }
-      g.worth[r] = { organic: src.worth[r].organic, synth: src.worth[r].synth }
+      g.stock[r] = { plain: src.stock[r].plain, infused: src.stock[r].infused }
+      g.worth[r] = { plain: src.worth[r].plain, infused: src.worth[r].infused }
     })
     stall[id] = g
   }
@@ -253,7 +251,6 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
   silo: SeedSilo
   additives: AdditiveStore
   pumps: Pump[]
-  tanks: RainTank[]
   taps: Tap[]
   wells: Well[]
   stills: PotStill[]
@@ -266,7 +263,6 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
 } {
   const origins = new Map<string, Cell>()
   const pumps: Pump[] = []
-  const tanks: RainTank[] = []
   const taps: Tap[] = []
   const wells: Well[] = []
   const stills: PotStill[] = []
@@ -294,7 +290,6 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
         if (made.kind === 'seed-silo' && made.useDefault) silo = made
         if (made.kind === 'additive-store' && made.useDefault) additives = made
         if (made.kind === 'pump') pumps.push(made)
-        if (made.kind === 'rain-tank') tanks.push(made)
         if (made.kind === 'tap') taps.push(made)
         if (made.kind === 'well') wells.push(made)
         if (made.kind === 'still') stills.push(made)
@@ -326,7 +321,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, tanks, taps, wells, stills, necronomicon, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
+  return { chunks, house, truck, silo, additives, pumps, taps, wells, stills, necronomicon, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
@@ -360,11 +355,6 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       const pump = new Pump(cell.base, cell.form)
       pump.water.stored = cell.stored
       return pump
-    }
-    case 'rain-tank': {
-      const tank = new RainTank(cell.base)
-      tank.water.stored = cell.stored
-      return tank
     }
     case 'tap':
       return new Tap(cell.base)
@@ -677,9 +667,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
 }
 
 function makeSoil(s: SaveSoil): Soil {
-  const soil = new Soil(s.water, s.fertilizer, s.weedChance)
-  soil.bio = s.bio
-  return soil
+  return new Soil(s.water, s.fertilizer, s.weedChance)
 }
 
 function refuseGrassStore(cell: SaveCell): void {
@@ -692,7 +680,6 @@ function makePlant(p: SavePlant): Plant {
   plant.maturity = p.maturity
   plant.freshness = p.freshness
   plant.happiness = p.happiness
-  plant.bio = p.bio
   plant.tended = p.tended
   return plant
 }

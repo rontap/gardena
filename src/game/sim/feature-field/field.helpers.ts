@@ -322,7 +322,7 @@ export function doWater(w: World, at: Coord): boolean {
 export function canFertilize(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold') return false
   const it = w.act.hand.item
-  if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost') return false
+  if (it.kind !== 'fertilizer' && it.kind !== 'compost') return false
   if (it.liters <= 0) return false
   const c = w.cell(at)
   return isTilled(c) && c.soil.fertilizer < FERT_PLOT_MAX
@@ -331,11 +331,10 @@ export function canFertilize(w: World, at: Coord): boolean {
 export function doFertilize(w: World, at: Coord): void {
   if (!canFertilize(w, at)) return
   const c = w.cell(at) as Extract<Plot, { soil: Soil }>
-  const bag = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'synth' | 'compost' }> }
+  const bag = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'compost' }> }
   const need = FERT_PLOT_MAX - c.soil.fertilizer
   const use = need > bag.item.liters ? bag.item.liters : need
-  if (bag.item.kind === 'synth') c.soil.spike(use)
-  else c.soil.feed(use)
+  c.soil.feed(use)
   bag.item.liters -= use
   if (bag.item.liters <= 0) w.act.hand = { kind: 'empty' }
 }
@@ -429,7 +428,7 @@ export function doHarvest(w: World, at: Coord): void {
   const c = w.cell(at)
   const bed = c as Extract<Plot, { kind: 'ripe' }>
   const p = bed.plant
-  const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(w.modifiers).sale, p.freshness, p.bio, false)
+  const picked = fruitStack(p.crop, p.variety, p.quality, 1, p.stats(w.modifiers).sale, p.freshness, false)
   w.setCell(at, { kind: 'empty', soil: bed.soil })
   w.tally.harvests += 1
   if (w.act.hand.kind === 'empty') {

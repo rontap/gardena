@@ -38,20 +38,6 @@ export function Market({
 }) {
   const [tip, setTip] = useState<Tip>(undefined)
   const quote = world.marketQuote()
-  const open = world.marketOpen()
-  const phase = world.clock.phase()
-  const weather = world.weather(world.clock.day)
-  const allDay = world.hasSkill('open-24')
-  const closed =
-    open
-      ? undefined
-      : weather === 'flood' && phase === 'sunrise' && !allDay
-        ? m.market_closed_morning()
-        : weather === 'drought' && phase === 'day' && !allDay
-          ? m.market_closed_midday()
-          : phase === 'sunset'
-            ? m.market_closed_morning_until()
-            : m.market_closed_twilight()
   const contracts = world.done.has('unlock-contracts')
   const slots = world.contractSlots()
   const cap = world.contractCap()
@@ -91,7 +77,7 @@ export function Market({
             <Btn
               data-sell-all=""
               className="w-full"
-              disabled={quote.paid === 0 || !open}
+              disabled={quote.paid === 0}
               onClick={() => {
                 world.sellAll()
                 onClose()
@@ -106,7 +92,6 @@ export function Market({
                 </span>
               )}
             </Btn>
-            {closed !== undefined && <div className="text-sm text-roof">{closed}</div>}
           </div>
         </Tabs.Content>
         {contracts && (
@@ -371,7 +356,6 @@ export function demandItem(demand: Demand, count: number): Item {
       count,
       unitSale: CROPS[demand.good].sale,
       freshness: 1,
-      bio: false,
     }
   }
   throw new Error('demandItem')
@@ -591,7 +575,7 @@ function stallName(id: StallGoodId): string {
 
 function stallInfused(world: World, id: StallGoodId): boolean {
   if (!isInfusedStall(id)) return false
-  return VARIETY_IDS.some(v => world.stall[id].stock[v].synth > 0)
+  return VARIETY_IDS.some(v => world.stall[id].stock[v].infused > 0)
 }
 
 function boxFace(id: StallGoodId, infused: boolean): Item {
@@ -607,5 +591,5 @@ function boxFace(id: StallGoodId, infused: boolean): Item {
   if (id === 'flour' || id === 'extract' || id === 'bread') return { kind: id, quality: 0, count: 1, unitSale: 1 }
   if (id === 'oil') return { kind: 'oil', quality: 0, count: 1, unitSale: 1, infused }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
-  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, bio: true, cut: false }
+  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, cut: false }
 }

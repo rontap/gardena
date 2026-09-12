@@ -61,13 +61,13 @@ Versions and player changelog (`wordmark`, `SAVE_VERSION`, dump `version`, `PROT
 
 ## 4. Gate
 
-After each child:
+After each child, `docs/pipeline.md` **Miss**:
 
-- Allowed files missing, or invented scope, or a fallback, or a coined / borrowed game word (`docs/standards/lexicon.md`) → reject. Re-spawn. Do not silently repair.
+- Allowed files missing, invented scope, fallback, coined / borrowed game word (`docs/standards/lexicon.md`), wrong spec, incomplete impl → orchestrator edits those files, or `resume_from` that child. Do not spawn a new agent of that kind.
 - One-line question with no writes → ask the user.
-- A finished note that names an assumption is not a halt. Spawn the next.
+- A finished note that names an assumption is not a halt. Spawn the next kind.
 
-After game-text-writer: grep `<needs-game-text-writer>`. Hits → re-spawn that agent. Present its developer summary.
+After game-text-writer: grep `<needs-game-text-writer>`. Hits → orchestrator strips or rewrites, or `resume_from` that child. Do not spawn a new one. Present its developer summary.
 
 ## 5. Stop
 

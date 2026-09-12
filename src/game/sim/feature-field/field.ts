@@ -119,7 +119,6 @@ export function tickField(w: World, dt: number): void {
     if (c.kind === 'growing') {
       c.soil.drink(st.waterUsePerSec * dt)
       c.soil.starve(st.fertUsePerSec * dt)
-      if (!c.soil.bio) c.plant.bio = false
       const water = waterBand(c.soil.water, st.waterTolerance)
       const fert = fertBand(c.soil.fertilizer, st.fertTolerance)
       const q = w.bakeQuality(c.plant)
@@ -241,7 +240,6 @@ export function dropTreeFruit(w: World, t: Tree): boolean {
       count: 1,
       unitSale: sale,
       freshness: 1,
-      bio: true,
       cut: false,
     },
   })

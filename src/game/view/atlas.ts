@@ -90,7 +90,6 @@ import propLinkIn from '../../assets/props/prop-link-in.svg?raw'
 import propLinkOut from '../../assets/props/prop-link-out.svg?raw'
 import propWell from '../../assets/props/prop-well.svg?raw'
 import propTruck from '../../assets/props/prop-truck.svg?raw'
-import propRainTank from '../../assets/props/prop-rain-tank.svg?raw'
 import propTap from '../../assets/props/prop-tap.svg?raw'
 import propSprinkler from '../../assets/props/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/props/prop-sprinkler-vert.svg?raw'
@@ -169,7 +168,6 @@ import bucket from '../../assets/items/item-bucket.svg?raw'
 import largeBucket from '../../assets/items/item-large-bucket.svg?raw'
 import itemFertilizer from '../../assets/items/item-fertilizer.svg?raw'
 import itemWeedSpray from '../../assets/items/item-weed-spray.svg?raw'
-import itemSynth from '../../assets/items/item-synth.svg?raw'
 import itemCompost from '../../assets/items/item-compost.svg?raw'
 import itemRotten from '../../assets/items/item-rotten.svg?raw'
 import itemDead from '../../assets/items/item-dead.svg?raw'
@@ -255,7 +253,6 @@ export type AtlasKey =
   | 'link-in'
   | 'link-out'
   | 'well'
-  | 'rain-tank'
   | 'tap'
   | 'sprinkler'
   | 'sprinkler-vert'
@@ -363,7 +360,6 @@ export type AtlasKey =
   | ContainerId
   | 'fertilizer'
   | 'weed-spray'
-  | 'synth'
   | 'compost'
   | `item-rotten-${CropClass}`
   | `item-dead-${CropClass}`
@@ -587,7 +583,6 @@ async function load(): Promise<void> {
   put('link-in', propLinkIn)
   put('link-out', propLinkOut)
   put('well', propWell)
-  put('rain-tank', propRainTank)
   put('tap', propTap)
   put('sprinkler', propSprinkler)
   put('sprinkler-vert', propSprinklerVert)
@@ -719,7 +714,6 @@ async function load(): Promise<void> {
   put('large-bucket', largeBucket)
   put('fertilizer', itemFertilizer)
   put('weed-spray', itemWeedSpray)
-  put('synth', itemSynth)
   put('compost', itemCompost)
   put('item-rotten-root', itemRotten, 'root')
   put('item-rotten-grain', itemRotten, 'grain')
@@ -910,7 +904,6 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'container') return item.id
   if (item.kind === 'fertilizer') return 'fertilizer'
   if (item.kind === 'weed-spray') return 'weed-spray'
-  if (item.kind === 'synth') return 'synth'
   if (item.kind === 'compost') return 'compost'
   if (item.kind === 'grass') return 'item-grass'
   if (item.kind === 'weed') return 'weed-0-grow'

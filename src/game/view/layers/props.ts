@@ -88,7 +88,6 @@ export class PropsLayer {
       const row = p.base.shape === 'rect' ? p.base.row : Math.floor(p.base.cy - p.base.r)
       put('pump-body', col, row)
     })
-    world.tanks.forEach(t => put('rain-tank', t.base.col, t.base.row))
     world.taps.forEach(t => put('tap', t.base.col, t.base.row))
     world.wells.forEach(w => put('well', w.base.col, w.base.row))
     world.hangars.forEach(h => put('hangar', h.base.col, h.base.row))

@@ -4,7 +4,7 @@ Crop table is `CROPS`. Tree juvenile / fruit intervals are `TREES`. Variety tabl
 
 `AnnualId` includes `'grass'`. `Plant.crop` is `Exclude<AnnualId, 'grass'>`. Classes: carrot potato root; wheat sugar-cane grain; else fruit. Chilli fruit.
 
-Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1. `fertUseMul` 1 is `PLANT_FERT_PER_SEC`. Trees 0.
+Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1. `fertUseMul` 1 is carrot. Trees 0. potato wheat tomato, chilli, vanilla, raspberry grape, sugar-cane `fertUseMul` — preference on `CROPS`. `PLANT_FERT_PER_SEC` — preference.
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
@@ -71,7 +71,7 @@ Sow / plant on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. Never a `Plant`
 
 ## Grow
 
-Seed on `empty`, `crop !== 'grass'` → `growing`, same `Soil`, same `variety`, same `quality`. Planting does not change water. `Plant.happiness = HAPPY_START` — preference. `Plant.tended` required, starts `false`, same instance through ripe / dead. `bio` starts true; soil non-organic marks the plant. `crop === 'grass'` → turf, not a `Plant`.
+Seed on `empty`, `crop !== 'grass'` → `growing`, same `Soil`, same `variety`, same `quality`. Planting does not change water. `Plant.happiness = HAPPY_START` — preference. `Plant.tended` required, starts `false`, same instance through ripe / dead. `crop === 'grass'` → turf, not a `Plant`.
 
 Stage: maturity `< 0.33` sprout, else grow, then ripe, dead. While growing: drink water and `PLANT_FERT_PER_SEC × fertUseMul` — [[mechanics/soil]]. Trees `fertUseMul` 0. `STUNT` — preference. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`. Ripe does not drink. Sprinklers skip ripe / dead / rotten. A neighbour-need variety does not raise `maturity` without a neighbour. Water, fertilizer, happiness, stunt and death still tick.
 
@@ -101,7 +101,7 @@ Harvest boom: [[mechanics/vehicles]]. Growing `> 0.8` bakes quality as ripen. Gr
 
 ## Graft
 
-`{ kind: 'graft'; crop; variety; quality; count }`. Stacks on crop + variety, quality averaged. Not compost. Furnace takes it at the green rate — [[mechanics/inventory]]. A graft is never planted. `Intent` `{ act: 'graft'; at }`. Hold a graft. Work `GRAFT_WORK` — preference. Prompt **Graft**. Legal targets, same crop, graft's tier is anything, **target's variety tier is not `heirloom`**: annual `growing`; tree `juvenile < 1`. Complete: the target's `variety` and `quality` become the graft's, one graft is consumed. Maturity, juvenile progress, `trunk`, happiness, `tended`, organic and the soil are untouched. Grafting a `Tree` sets `variety` only — there is no `Tree.quality`. Sources: axe on a mature tree — [[mechanics/trees]] `graft.axe`; research station — [[mechanics/machines]] `station.io`.
+`{ kind: 'graft'; crop; variety; quality; count }`. Stacks on crop + variety, quality averaged. Not compost. Furnace takes it at the green rate — [[mechanics/inventory]]. A graft is never planted. `Intent` `{ act: 'graft'; at }`. Hold a graft. Work `GRAFT_WORK` — preference. Prompt **Graft**. Legal targets, same crop, graft's tier is anything, **target's variety tier is not `heirloom`**: annual `growing`; tree `juvenile < 1`. Complete: the target's `variety` and `quality` become the graft's, one graft is consumed. Maturity, juvenile progress, `trunk`, happiness, `tended` and the soil are untouched. Grafting a `Tree` sets `variety` only — there is no `Tree.quality`. Sources: axe on a mature tree — [[mechanics/trees]] `graft.axe`; research station — [[mechanics/machines]] `station.io`.
 
 ## Needs a neighbour
 
@@ -133,7 +133,7 @@ Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untill
 
 `variety.neighbour` — `keknyelu` `pink-lady` `bing` need a neighbour in Chebyshev `NEIGHBOUR_REACH`; without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`; juvenile still grows; water, fertilizer, happiness, stunt, death still tick.
 
-`graft.attach` — A graft is never planted; same crop, target variety tier not `heirloom`; annual `growing`; tree `juvenile < 1`; complete: target `variety` and `quality` become the graft's; one consumed; maturity, juvenile, `trunk`, happiness, `tended`, organic, soil untouched.
+`graft.attach` — A graft is never planted; same crop, target variety tier not `heirloom`; annual `growing`; tree `juvenile < 1`; complete: target `variety` and `quality` become the graft's; one consumed; maturity, juvenile, `trunk`, happiness, `tended`, soil untouched.
 
 `quality.carry` — Grind seed quality equals the fruit's quality; graft copies quality onto the target; machine output quality is the mean of what went in — [[mechanics/machines]] `machines.quality-carry`.
 

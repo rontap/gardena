@@ -55,7 +55,7 @@ Seven pages, two open at the start. Closing both opens `agaric`, `gold`, and `as
 
 ### What the book takes
 
-`pageClaim(book, item)` returns the one page that claims that item, or nothing. **One dump feeds one page.** Order by item kind, and one kind reaches at most one page: `ash` to `ash`, `fly-agaric` to `agaric`, the two prize tools to `tool`, bread and the two named drinks to `supper`. Fruit is the only kind two pages want, and there `early-fruit` claims before `crop`. The six-fruit page is the pickier and takes exactly **one** unit, so a stack of ten carrots gives it one and the next dump gives the rest to the bulk page. `crop` locks on the first fruit sacrificed and refuses every other crop after. Refused always: cut fruit, and every item no page asks for. Fruit Variety, Quality, freshness and `bio` are not read — a page counts units. A closed page takes nothing. A page full but not yet closed takes nothing either.
+`pageClaim(book, item)` returns the one page that claims that item, or nothing. **One dump feeds one page.** Order by item kind, and one kind reaches at most one page: `ash` to `ash`, `fly-agaric` to `agaric`, the two prize tools to `tool`, bread and the two named drinks to `supper`. Fruit is the only kind two pages want, and there `early-fruit` claims before `crop`. The six-fruit page is the pickier and takes exactly **one** unit, so a stack of ten carrots gives it one and the next dump gives the rest to the bulk page. `crop` locks on the first fruit sacrificed and refuses every other crop after. Refused always: cut fruit, and every item no page asks for. Fruit Variety, Quality, and freshness are not read — a page counts units. A closed page takes nothing. A page full but not yet closed takes nothing either.
 
 ### Gold
 
@@ -77,7 +77,7 @@ Fields added, no migrate — [[architecture/save]]. `SaveCell` `necronomicon` ca
 
 `necro.one` — One book per farm; `skuShown` and `skuOpen` are false for `buy-necronomicon` while one stands, so no ghost arms; `confirmPlace` refuses a second; it cannot be demolished.
 
-`necro.claim` — `pageClaim` returns one page or nothing, and one dump feeds one page; fruit is the only kind two pages want, and `early-fruit` claims before `crop` and takes exactly one unit; `fly-agaric` reaches only `agaric`, prize tools only `tool`, bread and the two named drinks only `supper`; `crop` locks on the first fruit; cut fruit is never a sacrifice; a closed page and a shut page both take nothing; Variety, Quality, freshness and `bio` are not read.
+`necro.claim` — `pageClaim` returns one page or nothing, and one dump feeds one page; fruit is the only kind two pages want, and `early-fruit` claims before `crop` and takes exactly one unit; `fly-agaric` reaches only `agaric`, prize tools only `tool`, bread and the two named drinks only `supper`; `crop` locks on the first fruit; cut fruit is never a sacrifice; a closed page and a shut page both take nothing; Variety, Quality, and freshness are not read.
 
 `necro.chest` — The book is an `IoCell` and `buy-necronomicon` an `IO_SKU`, so a chest or freezer west of its bottom row is emptied into the open page on the big tick, capped at what that page still wants; the book has no `pads`, no `ports` and no `inn`.
 

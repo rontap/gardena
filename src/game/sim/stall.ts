@@ -33,10 +33,6 @@ export function infusedKey(infused: boolean): InfusedKey {
   return infused ? 'infused' : 'plain'
 }
 
-function infusedBin(k: InfusedKey): BioKey {
-  return k === 'infused' ? 'synth' : 'organic'
-}
-
 export function isCropStall(id: StallGoodId): id is GrownCrop {
   return (PLANT_CROPS as readonly string[]).includes(id) || (TREE_IDS as readonly string[]).includes(id)
 }
@@ -53,14 +49,7 @@ export function isSpiritStall(id: StallGoodId): boolean {
   return (SPIRIT_KINDS as readonly string[]).includes(id) || (CASK_IDS as readonly string[]).includes(id)
 }
 
-export const BIO_KEYS = ['organic', 'synth'] as const
-export type BioKey = (typeof BIO_KEYS)[number]
-
-export function bioKey(bio: boolean): BioKey {
-  return bio ? 'organic' : 'synth'
-}
-
-export type BioBins = { organic: number; synth: number }
+export type InfusedBins = { [K in InfusedKey]: number }
 
 export function goodIx(id: StallGoodId): number {
   return STALL_IDS.indexOf(id)
@@ -75,15 +64,15 @@ export function stallX(id: StallGoodId, mods: readonly Modifier[]): number {
   return CROPS[id].sale * saleMul(id, mods)
 }
 
-function emptyBins(): { [K in VarietyId]: BioBins } {
-  return Object.fromEntries(VARIETY_IDS.map(v => [v, { organic: 0, synth: 0 }])) as { [K in VarietyId]: BioBins }
+function emptyBins(): { [K in VarietyId]: InfusedBins } {
+  return Object.fromEntries(VARIETY_IDS.map(v => [v, { plain: 0, infused: 0 }])) as { [K in VarietyId]: InfusedBins }
 }
 
 export class StallGood {
   readonly id: StallGoodId
   sat: number
-  readonly stock: { [K in VarietyId]: BioBins }
-  readonly worth: { [K in VarietyId]: BioBins }
+  readonly stock: { [K in VarietyId]: InfusedBins }
+  readonly worth: { [K in VarietyId]: InfusedBins }
 
   constructor(id: StallGoodId) {
     this.id = id
@@ -92,31 +81,30 @@ export class StallGood {
     this.worth = emptyBins()
   }
 
-  take(variety: VarietyId, count: number, unitWorth: number, bio: boolean): void {
-    const k = bioKey(bio)
-    this.stock[variety][k] += count
-    this.worth[variety][k] += count * unitWorth
+  take(variety: VarietyId, count: number, unitWorth: number): void {
+    this.stock[variety].plain += count
+    this.worth[variety].plain += count * unitWorth
   }
 
   takeSugar(liters: number, unitSale: number): void {
-    this.stock.base.organic += liters
-    this.worth.base.organic += liters * unitSale
+    this.stock.base.plain += liters
+    this.worth.base.plain += liters * unitSale
   }
 
   takeBaked(count: number, unitSale: number): void {
-    this.stock.base.organic += count
-    this.worth.base.organic += count * unitSale
+    this.stock.base.plain += count
+    this.worth.base.plain += count * unitSale
   }
 
   takeSpirit(variety: VarietyId, count: number, unitSale: number, infused: boolean): void {
-    const k = infusedBin(infusedKey(infused))
+    const k = infusedKey(infused)
     this.stock[variety][k] += count
     this.worth[variety][k] += count * unitSale
   }
 }
 
 export function binCount(g: StallGood): number {
-  return VARIETY_IDS.reduce((n, variety) => n + g.stock[variety].organic + g.stock[variety].synth, 0)
+  return VARIETY_IDS.reduce((n, variety) => n + g.stock[variety].plain + g.stock[variety].infused, 0)
 }
 
 export type StallMap = { [K in StallGoodId]: StallGood }

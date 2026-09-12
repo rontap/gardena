@@ -43,7 +43,6 @@ import {
   STILL_CAP,
   STILL_SECONDS,
   SUGAR_SHOP,
-  SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
@@ -188,7 +187,6 @@ const ONE_CELL_SKUS: readonly SkuId[] = [
 
 export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
   'buy-pumpjack': { w: 2, h: 1 },
-  'buy-rain-tank': { w: 2, h: 1 },
   'buy-still': { w: 2, h: 1 },
   'buy-research-station': { w: 2, h: 1 },
   'buy-furnace': { w: 1, h: 2 },
@@ -327,15 +325,6 @@ export class Pump {
     this.base = base
     this.form = form
     this.water = new Reservoir('pump')
-  }
-}
-
-export class RainTank {
-  readonly kind = 'rain-tank' as const
-  readonly base: RectBase
-  readonly water = new Reservoir('rain-tank')
-  constructor(base: RectBase) {
-    this.base = base
   }
 }
 
@@ -988,7 +977,7 @@ export class ResearchStation extends Machine {
     const sale = statsOf(this.crop, this.variety, this.quality, w.modifiers).sale
     const cut: Item = {
       kind: 'fruit',
-      ...fruitStack(this.crop, this.variety, this.quality, STATION_IN, sale, 1, false, true),
+      ...fruitStack(this.crop, this.variety, this.quality, STATION_IN, sale, 1, true),
     }
     const grafts: Item = { kind: 'graft', crop: this.crop, variety: this.variety, quality: this.quality, count }
     if (!emitPair(w, this.base, cut, grafts)) return false
@@ -1197,12 +1186,11 @@ export class SiloSeed extends SeedStore {
   }
 }
 
-export const ADDITIVE_IDS = ['fertilizer', 'synth', 'compost', 'weed-spray'] as const
+export const ADDITIVE_IDS = ['fertilizer', 'compost', 'weed-spray'] as const
 export type AdditiveId = (typeof ADDITIVE_IDS)[number]
 
 export const ADDITIVE_BAG: { readonly [K in AdditiveId]: number } = {
   fertilizer: FERT_BAG_LITERS,
-  synth: SYNTH_BAG_LITERS,
   compost: COMPOST_LITERS,
   'weed-spray': WEED_SPRAY_BAG,
 }
@@ -1220,7 +1208,6 @@ export type AdditiveLevel = readonly [StoreRowId, number]
 /** The sku each Additive store row is refilled from. Compost has none: it is made, not sold. */
 export const ROW_SKU: { readonly [K in StoreRowId]: SkuId | 'none' } = {
   fertilizer: 'buy-fertilizer',
-  synth: 'buy-synth-fertilizer',
   compost: 'none',
   'weed-spray': 'buy-weed-spray',
   sugar: 'buy-sugar',
@@ -1247,7 +1234,7 @@ export abstract class AdditiveHolder extends Store {
       const room = this.free < item.liters ? this.free : item.liters
       return room > 0 ? room : 0
     }
-    if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
+    if (item.kind !== 'fertilizer' && item.kind !== 'compost' && item.kind !== 'weed-spray') return 0
     const n = this.free < item.liters ? this.free : item.liters
     return n > 0 ? n : 0
   }
@@ -1256,7 +1243,7 @@ export abstract class AdditiveHolder extends Store {
       this.putSugar(item.liters < n ? item.liters : n, item.unitSale, item.quality)
       return
     }
-    if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+    if (item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray') {
       this.putAdditive(item.kind, n)
     }
   }
@@ -1341,4 +1328,4 @@ export function frontOfBase(base: RectBase): Coord[] {
   ]
 }
 
-export type Building = House | Pump | RainTank
+export type Building = House | Pump

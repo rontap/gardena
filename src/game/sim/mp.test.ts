@@ -94,10 +94,9 @@ describe('1.1 multiplayer', () => {
     expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
   })
 
-  test('Guest may shop + place + `delete` building for pumpjack, well, rain-tank, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
+  test('Guest may shop + place + `delete` building for pumpjack, well, tap, chest, grinder, compost-box, mill, jam, still, barrel, freezer, hangar. Guest chest/freezer `swapChest`, pipes, valves, sprinklers, tiles, fences, expand, research start, family pick, cheat: not.', () => {
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-pumpjack', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-well', c: [0, 0] })).toBe(true)
-    expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-rain-tank', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-tap', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-chest', c: [0, 0] })).toBe(true)
     expect(permit({ a: Act.buy, t: 0, p: 1, s: 'buy-grinder', c: [0, 0] })).toBe(true)
@@ -159,7 +158,7 @@ describe('1.1 multiplayer', () => {
     const s1 = w.seats[1]
     s1.hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     s1.actor.x = 4
     s1.actor.y = 4
@@ -661,7 +660,7 @@ describe('1.1 multiplayer', () => {
     v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     w.apply({ a: Act.unload, t: w.now, p: 1 })
     const chest = w.cell(chestAt)
@@ -671,7 +670,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     chest.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5
@@ -698,7 +697,7 @@ describe('1.1 multiplayer', () => {
     v.pose = { kind: 'field', x: 10.5, y: 15.5, heading: 0, speed: 0, driver: 1 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     w.apply({ a: Act.unload, t: w.now, p: 1 })
     const fz = w.cell(fzAt)
@@ -708,7 +707,7 @@ describe('1.1 multiplayer', () => {
     expect(v.slots[0].kind).toBe('hold')
     fz.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, cut: false },
     }
     v.pose.x = 10.5
     v.pose.y = 17.5
@@ -879,7 +878,7 @@ describe('1.1 multiplayer', () => {
     expect(guest.catching).toBe(false)
   })
 
-  test('World.pumps tanks wells taps stills waterSystems are purchase order on the host. Dump writes no arrays for them; parse walks cells, so those lists are chunk then row/col after hydrate. pull shares by array order, so stored and pumpLiters diverge after join. rebase() sorts those lists by originCell row then col (comparator in sim/util.ts, same shape as boomHits: a.row === b.row ? a.col - b.col : a.row - b.row). Not per tick. Not per push. World.pump and generateChunk\'s starter argument find form === \'starter\'; sort must not be required to keep index 0. Parse does not unshift the starter pump. Do not sort hangars, silos, or modifiers — those are not in pull.', () => {
+  test('World.pumps wells taps stills waterSystems are purchase order on the host. Dump writes no arrays for them; parse walks cells, so those lists are chunk then row/col after hydrate. pull shares by array order, so stored and pumpLiters diverge after join. rebase() sorts those lists by originCell row then col (comparator in sim/util.ts, same shape as boomHits: a.row === b.row ? a.col - b.col : a.row - b.row). Not per tick. Not per push. World.pump and generateChunk\'s starter argument find form === \'starter\'; sort must not be required to keep index 0. Parse does not unshift the starter pump. Do not sort hangars, silos, or modifiers — those are not in pull.', () => {
     expect(originOrder({ row: 1, col: 2 }, { row: 1, col: 3 })).toBe(-1)
     expect(originOrder({ row: 2, col: 0 }, { row: 1, col: 9 })).toBeGreaterThan(0)
     const w = new World(1)

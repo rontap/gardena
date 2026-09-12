@@ -18,7 +18,7 @@ Bottom → top, one container each:
 2. `plots` — tilled / plant / weed / turf / rock / tree / tuft / burrow cover. Origin-only for multi-cell. Dirt lip / inset: 24-unit content fills the cell; pad paints onto the neighbour.
 3. `vfx.ground` — the dig patch only. Ground the sim has not tilled yet, so it paints above `plots` and below everything that stands on it.
 4. `pipes` — joints, valves, sprinklers, fences. Always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku. Wetness tint and sprinkler AoE wash still lens / tool. `pipe-source` on every `World.sources()` occupied cell only while that overlay is on. Not faint. Hidden otherwise. A fenceable sensor on a fenced cell does **not** hide the fence: `World.fences` still paints `fenceFit` joins for that cell. Fence alpha base is 1 while pipes overlay or `buy-fence` is armed, else 0.35. Unconnected (not in `fenceEnclosures`) ×0.75. Closed ring ×1.25, capped at 1. Pending fence cells ghost in this layer as unconnected.
-5. `props` — house, truck, pumps, tanks, taps, machines, stores, station, infuser, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working. Infuser `off` / `on` from working. Sensor sprite sits on top of that fence. Two sprites, not one composite. Do not bake the sensor into the fence atlas.
+5. `props` — house, truck, pumps, taps, wells, machines, stores, station, infuser, sensors, hangars, field silos, starter silo / additives. Origin-only. Station `off` / `on` from working. Infuser `off` / `on` from working. Sensor sprite sits on top of that fence. Two sprites, not one composite. Do not bake the sensor into the fence atlas.
 6. `actors` — in-seat gardeners, field vehicles / trailers, drops. Seated gardener hidden. Drops: 2×2 pack, `DROP_INSET` then `DROP_STEP`.
 7. `overlay` — lens wash, routes, wires, ports, sprinkler AoE on hover, fenceable sensor wash from the watched set (HUD, lens, unarmed hover, or armed range-reader SKU at the ghost cell), the edge lattice while a `PIPE_PLACE` sku is armed, and the flow `Graphics` repainted every frame from `flowTick`. Pump origin `in`.
 8. `vfx` — `World.vfx` state + drained `World.bursts`. `pointer-events` none. `VfxLayer.tick` drains bursts every frame. Vertex defs: sprite `anchor` 0.5, position at the vertex (px). Cell defs: origin at the cell corner. `vfxReduced()`: state frame 0, bursts do not mount.
@@ -62,7 +62,7 @@ A product a Variety renames also carries its own face, and one selector says whi
 
 Patch uses existing `World` indexes and instance lists. Illegal on the tick or dirty path: `live`, `forEachCell`, `[...this.live.values()]`. First paint / `World` swap / `groundRev` rebuilds visible chunks the same way.
 
-Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `tanks` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Fenced-area maps `enclosures` `fenceEnclosures` `plotEnclosures` — wash lookup, not a dirty walk. Ground textures stay terrain. Station and infuser patch with `machines`.
+Indexes: `grow` `empty` `machines` `stores` `sensors` `buttons` `recover` `tufts` `rocks` `burrows`. Lists: `segments` `sprinklers` `fences` `hangars` `seedSilos` `spraySilos` `produceSilos` `pumps` `taps` `wells` `stills` `waterSystems` `silo` `additives` `house` `truck` `vehicles` `trailers` `drops` `wires`. Fenced-area maps `enclosures` `fenceEnclosures` `plotEnclosures` — wash lookup, not a dirty walk. Ground textures stay terrain. Station and infuser patch with `machines`.
 
 `ping()` from tick only on discrete change. Continuous world chrome is the Pixi ticker (`QUAD_FOLLOW`, actor pose, speech follow, VFX cuts, burst drain). Continuous HUD chrome is `paintMotion`. No every-tick counter HUD ping. FPS: [[ui/hud]]. Not a `DirtyReason`.
 
@@ -144,7 +144,7 @@ Locator `data-vfx` is not proof of paint. `__view.vfxN` is.
 `view.edge` — Atlas rasters every key in `PADDED` with `EDGE_PAD` 4 viewBox units on every side (32x32 source): `dirt-edge` / `dirt-inset` and `tile-kerb`. Other keys stay viewBox-tight. Equal pad keeps the 24-unit cell at texture center. Placement: 24-unit content fills the cell; lip/inset paint onto the neighbour.
 
 
-`view.source` — `pipe-source` on pump / rain-tank occupied cells only while pipes overlay is on (`lens === 'pipes'` or place delete or a `PIPE_PLACE` sku). Not faint. Hidden otherwise. Joints stay always-on/faint.
+`view.source` — `pipe-source` on pump occupied cells only while pipes overlay is on (`lens === 'pipes'` or place delete or a `PIPE_PLACE` sku). Not faint. Hidden otherwise. Joints stay always-on/faint.
 
 `view.drop` — Drop face scale `DROP_FACE / TILE` on a 24-unit atlas sprite. Pack `DROP_INSET` `DROP_STEP` 2×2. `dropHit` is that sprite rect; topmost wins; overflow into a neighbour still picks that drop. Constants next to `TILE` in `camera.ts`.
 

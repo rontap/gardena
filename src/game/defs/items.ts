@@ -4,8 +4,8 @@ import type { CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } fr
 export const DIG_HARD_SPAN = 1.25
 
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
-  shovel: { uses: 80, workSeconds: 1 },
-  'better-shovel': { uses: 200, workSeconds: 0.7 },
+  shovel: { uses: 60, workSeconds: 1 },
+  'better-shovel': { uses: 120, workSeconds: 0.7 },
   'rotary-shovel': { uses: 1000, workSeconds: 0.3 },
 }
 
@@ -50,15 +50,13 @@ export const SPRINKLER_TILE_DAY = 2.5
 export const SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS
 export const SPRINKLER_STEP = 0.05
 
-/** The stops the sprinkler slider offers: 0 to `SPRINKLER_TILE_DAY`, every `SPRINKLER_STEP`. */
 export function snapFlow(day: number): number {
   const top = Math.round(SPRINKLER_TILE_DAY / SPRINKLER_STEP)
   const steps = Math.min(Math.max(Math.round(day / SPRINKLER_STEP), 0), top)
   return Number((steps * SPRINKLER_STEP).toFixed(2))
 }
 export const FERT_BAG_LITERS = 8
-export const SYNTH_BAG_LITERS = 16
-export const COMPOST_LITERS = 5
+export const COMPOST_LITERS = 4
 export const WEED_SPRAY_BAG = 30
 export const SPRAY_WORK = 0.33
 export const COMPOST_NEED = 10
@@ -121,7 +119,7 @@ export const KETCHUP_SUGAR = 0.8
 export const JAM_SECONDS = 40
 export const JAM_BUFFER = 4
 export const STILL_CAP = 10
-export const STILL_WATER = 2
+export const STILL_WATER = 5
 export const STILL_SECONDS = 160
 export const BARREL_CAP = 5
 export const BARREL_MATURE = DAY_SECONDS

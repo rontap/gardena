@@ -11,6 +11,7 @@ const PLOT_A: At = { col: 13, row: 11 }
 const PLOT_B: At = { col: 14, row: 11 }
 const SILO: At = { col: 17, row: 9 }
 const TRUCK: At = { col: 12, row: 8 }
+const PAD: At = { col: 12, row: 9 }
 
 function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
   return page.evaluate(
@@ -222,7 +223,6 @@ test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
         count: 1,
         unitSale: 1,
         freshness: 1,
-        bio: true,
       },
       60,
       DT_MAX,
@@ -249,6 +249,92 @@ test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
   await expect(stallTab(page)).toHaveCount(0)
   const after = await readWorld<number>(page, null, 'w.money')
   expect(after).toBeCloseTo(before + quote.paid, 8)
+})
+
+test('Sell all at twilight', async ({ page }) => {
+  await gotoPlay(page)
+  await viewReady(page)
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as {
+        __world?: {
+          clock: { t: number }
+          stall: { carrot: { take: (v: string, n: number, u: number) => void } }
+          ping: () => void
+        }
+      }
+    ).__world
+    if (w === undefined) throw new Error('no __world')
+    w.clock.t = 220
+    w.stall.carrot.take('base', 2, 5)
+    w.ping()
+  })
+  const phase = await readWorld<string>(page, null, 'w.clock.phase()')
+  expect(phase).toBe('twilight')
+  await page.getByRole('button', { name: 'Market', exact: true }).click()
+  const sell = page.locator('[data-sell-all]')
+  await expect(sell).toBeVisible()
+  await expect(sell).toBeEnabled()
+  const before = await readWorld<number>(page, null, 'w.money')
+  await sell.click()
+  await expect(stallTab(page)).toHaveCount(0)
+  const after = await readWorld<number>(page, null, 'w.money')
+  expect(after).toBeGreaterThan(before)
+})
+
+test('rotten consign pays after Fermentation, refused before', async ({ page }) => {
+  await gotoPlay(page)
+  await viewReady(page)
+  const snap = await page.evaluate(
+    ([pad, dt]) => {
+      const w = (
+        window as unknown as {
+          __world?: {
+            done: Set<string>
+            seats: { hand: unknown; actor: { x: number; y: number }; queue: unknown[] }[]
+            enqueue: (i: { act: string }) => void
+            tick: (d: number) => void
+            clearance: number
+            ping: () => void
+          }
+        }
+      ).__world
+      if (w === undefined) throw new Error('no __world')
+      const rotten = { kind: 'rotten', cls: 'root', count: 10, createdAt: 1 }
+      w.seats[0].actor.x = pad.col + 0.5
+      w.seats[0].actor.y = pad.row + 0.5
+      w.seats[0].hand = { kind: 'hold', item: rotten }
+      w.enqueue({ act: 'consign' })
+      w.tick(dt)
+      const refused = {
+        hand: (w.seats[0].hand as { kind: string }).kind,
+        clearance: w.clearance,
+      }
+      w.done.add('unlock-fermentation')
+      w.enqueue({ act: 'consign' })
+      w.tick(dt)
+      w.ping()
+      return {
+        refused,
+        hand: (w.seats[0].hand as { kind: string }).kind,
+        clearance: w.clearance,
+      }
+    },
+    [PAD, DT_MAX] as const,
+  )
+  expect(snap.refused.hand).toBe('hold')
+  expect(snap.refused.clearance).toBe(0)
+  expect(snap.hand).toBe('empty')
+  expect(snap.clearance).toBe(10)
+  await dismissRecap(page)
+  const sell = page.locator('[data-sell-all]')
+  await expect(sell).toBeVisible()
+  await expect(sell).toBeEnabled()
+  const before = await readWorld<number>(page, null, 'w.money')
+  await sell.click()
+  await expect(stallTab(page)).toHaveCount(0)
+  const after = await readWorld<number>(page, null, 'w.money')
+  expect(after).toBe(before + 10)
 })
 
 test('contract card has no grade clause', async ({ page }) => {

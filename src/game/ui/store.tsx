@@ -15,7 +15,6 @@ import { Bar, Checkbox, Coin, Frame } from './frame.tsx'
 
 const ADDITIVE_LABEL: { readonly [K in StoreRowId]: () => string } = {
   fertilizer: () => m.hud_fertilizer(),
-  synth: () => m.names_item_synth(),
   compost: () => m.names_item_compost(),
   'weed-spray': () => m.names_item_weed_spray(),
   sugar: () => m.names_item_sugar(),

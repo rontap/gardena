@@ -26,7 +26,7 @@ expandPrice = 40 + 15 * purchases
 tax = 2 + 6 * (owned.length - 1)
 ```
 
-Then `× (1 − 0.02 × tax tier)`. Then min $1 — [[mechanics/family]].
+Then min $1.
 
 `40`, `15`, `2`, `6` — preference. Tax used at sundown — [[mechanics/day]].
 
@@ -38,6 +38,6 @@ House, starter pump, truck, door, yard reserved. Rocks, one wild apple tree — 
 
 ## Invariants
 
-`expansion.tax` — Seam: `money += stipendOf(endedDay)` then `money -= tax()`. `tax() = 2 + 6 * (owned.length - 1)`, then `× (1 − 0.02 × tax tier)`, then min $1. Money may be negative. `stipendOf` — [[mechanics/day]] `day.stipend`.
+`expansion.tax` — Seam: `money += stipendOf(endedDay)` then `money -= tax()`. `tax() = 2 + 6 * (owned.length - 1)`, then min $1. Money may be negative. `stipendOf` — [[mechanics/day]] `day.stipend`.
 
 `expansion.chunk` — `CHUNK`. `expandPrice = 40 + 15 * purchases`. 4-connected after `unlock-expand`.

@@ -14,7 +14,7 @@ Accrues in **dollars**, not units. `SAT_DEPTH` is the clean revenue that takes a
 mul(sat, good) = 1 - (1 - SAT_FLOOR[good]) * sat
 ```
 
-Selling `V` clean dollars raises `sat` by `V / SAT_DEPTH`, clamp 1, after the sale. Rarity, freshness, bio are already inside `V`.
+Selling `V` clean dollars raises `sat` by `V / SAT_DEPTH`, clamp 1, after the sale. The clean subtotal is already inside `V`.
 
 ## Floor
 
@@ -41,13 +41,13 @@ Ten sales of `V/10` pay the same total as one sale of `V`.
 
 ## Order
 
-`marketGain` computes each good's clean subtotal — freshness, `stallX`, `raritySale`, saleswoman, heirloom, bio — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
+`marketGain` computes each good's clean subtotal — [[mechanics/market]]. Saturation applies **last, per good**, over that subtotal.
 
 Clearance's `{ kind: 'rotten' }` `$1` is exempt. That slice is not in `V`, is paid as `$1` each, and does not raise `sat`. Subject is rotten, not 0% fruit.
 
 Consign still accumulates `worth` untouched. Saturation is sampled at Sell all only.
 
-At `sat = 0`, `marketGain()` equals the clean number. `marketGain()` returns the paid total (sat applied). Closed: `marketGain()` is 0.
+At `sat = 0`, `marketGain()` equals the clean number. `marketGain()` returns the paid total (sat applied).
 
 ## Recover
 

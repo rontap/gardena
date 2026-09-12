@@ -114,13 +114,6 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
     lines.push(
       labeled(m.names_building_pump(), m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) })),
     )
-  } else if (cell.kind === 'rain-tank') {
-    lines.push(
-      labeled(
-        m.names_building_rain_tank(),
-        m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) }),
-      ),
-    )
   } else if (cell.kind === 'tap') lines.push(m.names_building_tap())
   else if (cell.kind === 'well') {
     lines.push(
@@ -255,7 +248,7 @@ function barrelLine(c: Barrel): string {
 function soilLine(soil: Soil): string {
   const water = liters(soil.water)
   const n = Math.floor(soil.fertilizer * 100)
-  return soil.bio ? m.prompt_soil({ water, n }) : m.prompt_soil_not_organic({ water, n })
+  return m.prompt_soil({ water, n })
 }
 
 function liters(n: number): string {

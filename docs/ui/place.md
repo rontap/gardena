@@ -88,7 +88,7 @@ Armed `buy-fence`. Same L-path on cells: `routeCells` / `fenceOk`. Press on a fe
 
 Pipes always drawn. Faint (`opacity` preference) when the effective lens is not `pipes` and place is not demolish / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
 
-`PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-rain-tank` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
+`PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
 
 ## Sprinkler
 
@@ -125,7 +125,7 @@ Same edge hit as pipe. Same vertex snap as sprinkler. Nearest wire bezier within
 
 Rocks, soil, plants stay pickaxe / shovel / harvest. Trees: shovel **Dig**, no harvest — [[ui/inspect]]. Tree seed plant is a hand `plant`, not a Place SKU.
 
-Unarmed valve **Open valve** / **Close valve**. Pump / tank / tap / well + container **Fill**; else **Need a bucket**. Blocked **Cannot place here**. Poor **Cannot afford**. Fenceable sensor on a fenced cell: **Place {skuLabel}**. Non-fenceable on a fence: **Cannot place here**. Fence on a fenceable sensor: **Place Wooden fence**. Burrow place / tile / fence / tree-seed: **Cannot place here**, not **Fences need untilled ground**.
+Unarmed valve **Open valve** / **Close valve**. Pump / tap / well + container **Fill**; else **Need a bucket**. Blocked **Cannot place here**. Poor **Cannot afford**. Fenceable sensor on a fenced cell: **Place {skuLabel}**. Non-fenceable on a fence: **Cannot place here**. Fence on a fenceable sensor: **Place Wooden fence**. Burrow place / tile / fence / tree-seed: **Cannot place here**, not **Fences need untilled ground**.
 
 ## Ghost connections
 

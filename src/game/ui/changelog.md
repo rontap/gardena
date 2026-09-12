@@ -1,3 +1,27 @@
+# 2.8.4 Deprecation
+
+Fewer Family skills, and each remaining pick is a real bonus. The stall stays open all day. Some research and items are gone; pumps and wells gather slower.
+
+- 🚫 Removed mechanic: Speedy research, Smart tax returns, Haggling, Bio farmer, Open late, Open 24/7, Land quality study, Water study, Clearance sale.
+- 🚫 Removed research: Synthetic additives, Pickaxes, Chest.
+- 🚫 Removed item: Synthetic fertilizer.
+- 🚫 Removed building: Rainwater tank.
+- 🔧 Changed mechanic: Stall. Buffed hours, always open.
+- 🔧 Changed ui: Water need. Changed unlock from Water study to Automated irrigation.
+- 🔧 Changed ui: Land quality. Changed unlock from Land quality study to Expansion.
+- 🔧 Changed mechanic: Rotten produce. Changed sale from Clearance sale to Fermentation.
+- 🔧 Changed building: Pumpjack. Nerfed gather from 2.5 L/s to 0.6 L/s, shown as L/day. Changed price from 50 to 75.
+- 🔧 Changed building: Well. Nerfed gather from 5 L/s to 0.4 L/s, shown as L/day. Changed price from 75 to 50.
+- 🔧 Changed building: Pump. Nerfed gather from 2.5 L/s to 0.6 L/s, shown as L/day. Changed running cost from 0.0667/L to 0.075/L.
+- 🔧 Changed item: Compost. Nerfed capacity from 5 L to 4 L.
+- 🔧 Changed item: Shovel. Nerfed uses from 80 to 60. Buffed price from 10 to 8.
+- 🔧 Changed item: Better shovel. Nerfed uses from 200 to 120. Buffed price from 30 to 24. Changed unlock from Gardening tools to Hardened tools.
+- 🔧 Changed building: Pot still. Nerfed water from 2 L to 5 L per batch.
+- 🔧 Changed building: Freezer. Buffed price from 36 to 32.
+- 🔧 Changed building: Chest. Buffed price from 18 to 12.
+- 🔧 Changed research: Fermentation. Buffed cost from 45 to 40.
+- 🔧 Changed mechanic: Fertilizer. Nerfed use per second from 0.00075 to 0.00085. Nerfed potato, wheat, tomato relative use from 1.25 to 1.33. Nerfed chilli from 1.5 to 1.66. Nerfed vanilla from 0.1 to 0.5. Nerfed raspberry and grape from 0.75 to 0.8.
+
 # 2.8.3 Rebalance & Necronomicon Update II
 
 

@@ -167,7 +167,6 @@ test('ripe plot and ground fruit show Quality and Freshness bars', async ({ page
         count: 2,
         unitSale: 1,
         freshness: 0.7,
-        bio: true,
         cut: false,
       },
     })
@@ -227,9 +226,45 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
 })
 
 const SILO: At = { col: 17, row: 9 }
+const ADDITIVE: At = { col: 18, row: 9 }
 const MILL_AT: At = { col: 8, row: 14 }
 const INF_AT: At = { col: 8, row: 11 }
 const FURNACE_AT: At = { col: 12, row: 16 }
+
+test('Water need lens only after Automated irrigation is done', async ({ page }) => {
+  await gotoPlay(page)
+  await page.getByRole('button', { name: /^Lens$/ }).click()
+  await expect(page.getByRole('button', { name: /^Water need/ })).toHaveCount(0)
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world?: { done: Set<string>; ping: () => void } }).__world
+    if (w === undefined) throw new Error('no __world')
+    w.done.add('unlock-auto-irrigation')
+    w.ping()
+  })
+  await expect(page.getByRole('button', { name: /^Water need/ })).toBeVisible()
+})
+
+test('Land quality lens only after Expansion is done', async ({ page }) => {
+  await gotoPlay(page)
+  await page.getByRole('button', { name: /^Lens$/ }).click()
+  await expect(page.getByRole('button', { name: /^Land quality/ })).toHaveCount(0)
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world?: { done: Set<string>; ping: () => void } }).__world
+    if (w === undefined) throw new Error('no __world')
+    w.done.add('unlock-expand')
+    w.ping()
+  })
+  await expect(page.getByRole('button', { name: /^Land quality/ })).toBeVisible()
+})
+
+test('Additive store has no synthetic fertilizer', async ({ page }) => {
+  await gotoPlay(page)
+  await tapUntil(page, ADDITIVE, async () => page.getByRole('dialog', { name: 'Additive store' }).isVisible(), 30_000)
+  const store = page.getByRole('dialog', { name: 'Additive store' })
+  await expect(store).toBeVisible()
+  await expect(store.getByRole('button', { name: /Synthetic fertilizer/ })).toHaveCount(0)
+  await expect(store.getByRole('button', { name: /Fertilizer bag/ })).toBeVisible()
+})
 
 test('Grass seeds sold at the Seed silo, not Build', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
@@ -338,7 +373,6 @@ test('mill / Infuser / Furnace chest I/O is the south row', async ({ page }) => 
         count: 5,
         unitSale: 1,
         freshness: 1,
-        bio: true,
         cut: false,
       }
       const jam = {

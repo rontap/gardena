@@ -82,9 +82,7 @@ export function rerollOffers(w: World, member: MemberId): void {
 export function skillEligible(w: World, id: SkillId): boolean {
   const def: SkillDef = SKILLS[id]
   if (w.skillTier(id) >= def.maxTier) return false
-  if (def.gate.kind === 'hidden') return false
   if (def.gate.kind === 'research') return w.done.has(def.gate.id)
-  if (def.gate.kind === 'skill') return w.hasSkill(def.gate.id)
   return true
 }
 

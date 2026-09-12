@@ -4,8 +4,7 @@ export const SOIL_WATER_MID = 1
 export const SOIL_WATER_MAX = 2
 export const SOIL_TILL_WATER = 0.75
 export const FERT_PLOT_MAX = 1
-export const BIO_RESTORE = 0.3
-export const PLANT_FERT_PER_SEC = (1 / 720) * 0.6 * 0.9
+export const PLANT_FERT_PER_SEC = 0.00085
 export const STUNT = 0.67
 export const WEED_WATER_PER_SEC = 0.008
 export const WEED_FERT_PER_SEC = (1 / 240) * 0.6 * 0.9
@@ -39,7 +38,6 @@ export function waterBand(water: number, tol: number): Band {
 export class Soil {
   water: number
   fertilizer: number
-  bio = true
   weedChance: number
 
   constructor(water: number, fertilizer: number, weedChance: number) {
@@ -65,13 +63,6 @@ export class Soil {
   feed(liters: number): void {
     const next = this.fertilizer + liters
     this.fertilizer = next > FERT_PLOT_MAX ? FERT_PLOT_MAX : next
-    if (liters >= BIO_RESTORE) this.bio = true
-  }
-
-  spike(liters: number): void {
-    const next = this.fertilizer + liters
-    this.fertilizer = next > FERT_PLOT_MAX ? FERT_PLOT_MAX : next
-    this.bio = false
   }
 
   starve(liters: number): void {

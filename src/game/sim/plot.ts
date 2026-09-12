@@ -19,7 +19,6 @@ import {
   type Pump,
   type ResearchStation,
   type Sorter,
-  type RainTank,
   type Rock,
   type SeedSilo,
   type Tap,
@@ -69,7 +68,6 @@ export type Cell =
   | Plot
   | House
   | Pump
-  | RainTank
   | Tap
   | Well
   | Rock
@@ -136,7 +134,6 @@ export function isSolid(c: Cell): boolean {
     (c instanceof BaseBuilding && c.solid) ||
     c.kind === 'house' ||
     c.kind === 'pump' ||
-    c.kind === 'rain-tank' ||
     c.kind === 'tap' ||
     c.kind === 'well' ||
     c.kind === 'rock' ||

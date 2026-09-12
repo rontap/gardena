@@ -170,7 +170,7 @@ function lensFill(
     return undefined
   }
   if (lens === 'pipes') {
-    if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap' || cell.kind === 'well') {
+    if (cell.kind === 'pump' || cell.kind === 'tap' || cell.kind === 'well') {
       return { fill: WATER, op: 0.72, hard: true }
     }
     if (aoeOn) return undefined
@@ -420,7 +420,7 @@ export class OverlayLayer {
       const col = Number(k.slice(0, comma))
       const row = Number(k.slice(comma + 1))
       const under = world.cell({ col, row }).kind
-      if (under === 'pump' || under === 'rain-tank' || under === 'tap' || under === 'well') return
+      if (under === 'pump' || under === 'tap' || under === 'well') return
       this.gfx.rect(col * TILE, row * TILE, TILE, TILE)
       this.gfx.fill({ color: WATER, alpha: hoverFill })
     })

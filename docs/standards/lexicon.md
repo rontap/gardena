@@ -55,7 +55,7 @@ Trade words from streams, queues, functional programming, and distributed system
 
 Terse per [[canon]], and interpretable. Same bans: no coined term, no borrowed one, no metaphor for a rule that has a name.
 
-Name the identifier rather than a phrase for it. Qualify an overloaded word on first use in a note. Describe the rule, not the shape of the code that carries it — `bio` going false is `soil` marking a plant as not organic, and that is what the note says.
+Name the identifier rather than a phrase for it. Qualify an overloaded word on first use in a note. Describe the rule, not the shape of the code that carries it — a plot's fertilizer dropping is `soil` starving a plant, and that is what the note says.
 
 An unqualified comparison is unreadable to a reader who was not in the session. "Works the same", "as usual", "normal", "better": name the other side or cut the sentence.
 
@@ -65,8 +65,8 @@ An unqualified comparison is unreadable to a reader who was not in the session. 
 
 - **Say why.** A research row, a skill, a machine: what the player can do after that they could not do before, and what it saves them. A description that only restates the kind is not a description.
 - **Name the other side of every comparison.** Never "the same", "as usual", "normal", "mid", "better". Cheaper *than what*, faster *than what*.
-- **Name the thing that carries the property.** Synthetic fertilizer is a property of the **soil**, and of the fruit grown in it after.
-- **Describe the world, not the transition.** The player sees a fruit that is not organic. They do not see a flag stop being true.
+- **Name the thing that carries the property.** Freshness is a property of the **fruit**, and of the ripe plant it came from.
+- **Describe the world, not the transition.** The player sees a fruit that has rotted. They do not see a flag stop being true.
 - **Describe this state, not the absence of the others.** A calm day is what a calm day does. Do not define it by what rain is not, and do not narrate what tomorrow will be — sequencing changes.
 - **Stay inside the subject.** A tree's description covers that tree. Not tending, not fertilizer, not the other species.
 - **Do not encode the table.** A constant is printable only once the concept it tunes has a name in the sentence. `TREE_YIELD_DAYS` days of what? Seasons. Say seasons first.

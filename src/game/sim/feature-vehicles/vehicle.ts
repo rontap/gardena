@@ -497,7 +497,7 @@ function cargoCouldTake(cargo: Cargo, item: Item): boolean {
     if (h.crop !== item.crop || h.variety !== item.variety) return false
     return h.count < TRAILER_CAP
   }
-  if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return false
+  if (item.kind !== 'fertilizer' && item.kind !== 'compost') return false
   if (cargo.trailer.hopper.kind === 'empty') return item.liters > 0
   if (cargo.trailer.hopper.item.kind !== item.kind) return false
   return Math.floor(cargo.trailer.hopper.item.liters) < TRAILER_CAP
@@ -526,7 +526,7 @@ function giveCargo(cargo: Cargo, item: Item): boolean {
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind !== 'fertilizer' && item.kind !== 'synth' && item.kind !== 'compost') return false
+  if (item.kind !== 'fertilizer' && item.kind !== 'compost') return false
   const have = cargo.trailer.hopper.kind === 'empty' ? 0 : cargo.trailer.hopper.item.liters
   if (cargo.trailer.hopper.kind === 'hold' && cargo.trailer.hopper.item.kind !== item.kind) return false
   const room = TRAILER_CAP - Math.floor(have)
@@ -789,7 +789,7 @@ export function swapTrailerBody(w: World, u: TrailerId, i: HarvestSlot): void {
     if (i !== 0) return
     const hand = w.act.hand
     if (hand.kind === 'hold') {
-      if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'synth' && hand.item.kind !== 'compost') return
+      if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'compost') return
       if (Math.floor(hand.item.liters) > TRAILER_CAP) return
       w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
       t.hopper = { kind: 'hold', item: hand.item }
@@ -1038,7 +1038,7 @@ function autoDrive(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'fie
 function harvestItem(w: World, c: Cell): Item | undefined {
   if (c.kind === 'ripe') {
     const p = c.plant
-    return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(w.modifiers).sale, p.freshness, p.bio, false) }
+    return { kind: 'fruit', ...fruitStack(p.crop, p.variety, p.quality, 1, p.stats(w.modifiers).sale, p.freshness, false) }
   }
   if (c.kind === 'growing') {
     const m = c.plant.maturity
@@ -1046,7 +1046,7 @@ function harvestItem(w: World, c: Cell): Item | undefined {
     if (m > 0.8) {
       const p = c.plant
       const q = w.bakeQuality(p)
-      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, w.modifiers).sale, m, p.bio, false) }
+      return { kind: 'fruit', ...fruitStack(p.crop, p.variety, q, 1, statsOf(p.crop, p.variety, q, w.modifiers).sale, m, false) }
     }
     return undefined
   }
@@ -1078,8 +1078,7 @@ function boomCell(w: World, t: Trailer, at: Coord): void {
     const bag = t.hopper.item
     const need = FERT_PLOT_MAX - c.soil.fertilizer
     const use = need > bag.liters ? bag.liters : need
-    if (bag.kind === 'synth') c.soil.spike(use)
-    else c.soil.feed(use)
+    c.soil.feed(use)
     bag.liters -= use
     if (bag.liters <= 0) t.hopper = { kind: 'empty' }
     return

@@ -22,7 +22,7 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.3 as const
+export const SAVE_VERSION = 2.4 as const
 
 export type {
   LoadFailReason,
@@ -187,7 +187,6 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
   if (
     c.kind === 'house' ||
     c.kind === 'pump' ||
-    c.kind === 'rain-tank' ||
     c.kind === 'tap' ||
     c.kind === 'well' ||
     c.kind === 'rock' ||
@@ -246,8 +245,6 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'house', base: c.base }
     case 'pump':
       return { kind: 'pump', form: c.form, base: c.base, stored: c.water.stored }
-    case 'rain-tank':
-      return { kind: 'rain-tank', base: c.base, stored: c.water.stored }
     case 'tap':
       return { kind: 'tap', base: c.base }
     case 'well':
@@ -449,7 +446,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
 }
 
 function dumpSoil(s: Soil): SaveSoil {
-  return { water: s.water, fertilizer: s.fertilizer, bio: s.bio, weedChance: s.weedChance }
+  return { water: s.water, fertilizer: s.fertilizer, weedChance: s.weedChance }
 }
 
 function dumpPlant(p: Plant): SavePlant {
@@ -460,7 +457,6 @@ function dumpPlant(p: Plant): SavePlant {
     maturity: p.maturity,
     freshness: p.freshness,
     happiness: p.happiness,
-    bio: p.bio,
     tended: p.tended,
   }
 }

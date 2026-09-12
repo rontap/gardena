@@ -8,6 +8,7 @@ import {
   COMPOST_SECONDS,
   CONTAINERS,
   FERT_BAG_LITERS,
+  SHOVELS,
   FREEZER_LARGE_SLOTS,
   CHOP_GRAFTS,
   GRASS_PACK,
@@ -21,7 +22,6 @@ import {
   STACK_MAX,
   STACK_MAX_CRAFTED,
   STILL_WATER,
-  SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
 import {
@@ -173,7 +173,7 @@ describe('0.8 plants and trees', () => {
   })
 
   test('fermentation unlocks cane; raspberry reveal is grape', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 45, seconds: 70, reveal: ['unlock-grinder'] })
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 40, seconds: 70, reveal: ['unlock-grinder'] })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
     expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
@@ -260,7 +260,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'mill', at: AT })
     for (let i = 0; i < 200; i++) w.tick(DT_MAX)
@@ -279,7 +279,7 @@ describe('1.2 machines', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'still', at: AT })
     for (let i = 0; i < 40; i++) w.tick(DT_MAX)
@@ -294,7 +294,7 @@ describe('1.2 machines', () => {
     const chestAt = { col: AT.col + 1, row: AT.row }
     const chest = new Chest({ shape: 'rect', col: chestAt.col, row: chestAt.row, w: 1, h: 1 })
     w.setCell(chestAt, chest)
-    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0 as const, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false }
+    const fruit = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0 as const, count: 1, unitSale: 4, freshness: 1, cut: false }
     fz.slots[0] = { kind: 'hold', item: { ...fruit } }
     chest.slots[0] = { kind: 'hold', item: { ...fruit } }
     w.tick(1)
@@ -316,7 +316,6 @@ describe('1.2 machines', () => {
       count: 3,
       unitSale: 3,
       freshness: 0.0001,
-      bio: true,
       cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
@@ -343,8 +342,8 @@ describe('1.2 machines', () => {
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.vodka.stock.base.organic).toBe(1)
-    expect(w.stall.vodka.worth.base.organic).toBe(72)
+    expect(w.stall.vodka.stock.base.plain).toBe(1)
+    expect(w.stall.vodka.worth.base.plain).toBe(72)
   })
 
   test('`PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner.', () => {
@@ -399,7 +398,7 @@ describe('1.2 machines', () => {
     expect(mill.progress).toBe(0.2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'wheat', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'wheat', variety: 'base', quality: 0, count: 3, unitSale: 4, freshness: 1, cut: false },
     }
     w.seats[0].actor.x = millAt.col + 0.5
     w.seats[0].actor.y = millAt.row + 0.5
@@ -682,11 +681,11 @@ describe('1.5.2', () => {
     expect(adj.weedChance).toBe(again)
   })
 
-  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-fertilizer`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Work `SPRAY_WORK`. Not untilled. Not spray-trailer.", () => {
+  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-better-tools`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Work `SPRAY_WORK`. Not untilled. Not spray-trailer.", () => {
     expect(WEED_SPRAY_BAG).toBe(30)
     expect(SKUS['buy-weed-spray'].price).toBe(12)
     const w = new World()
-    w.done.add('unlock-fertilizer')
+    w.done.add('unlock-better-tools')
     w.money = 50
     expect(w.buy('buy-weed-spray')).toBeUndefined()
     expect(w.seats[0].place.kind).toBe('none')
@@ -846,13 +845,12 @@ describe('1.5.2', () => {
     }
   })
 
-  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `haggling`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. `haggling` max 3, gate `hidden`. `skuPrice` `− $tier` on utility AND automation, min $1. Drought then ×2 on `seeds` | `utility` after that floor. Hangar-buys still not `skuPrice`. Daughter `bio` `+4%`/tier max 3. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
+  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. Hangar-buys still not `skuPrice`. Drought ×2 on `seeds` | `utility`. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
     expect(PLAYER_SKILL_IDS.includes('driving-classes')).toBe(true)
     expect(PLAYER_SKILL_IDS.includes('machinery' as never)).toBe(false)
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
     expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
     expect(HUSBAND_SKILL_IDS.includes('machinery')).toBe(true)
-    expect(HUSBAND_SKILL_IDS.includes('haggling')).toBe(true)
     expect(HUSBAND_SKILL_IDS.includes('forecast')).toBe(true)
     expect(SKILLS.forecast.maxTier).toBe(1)
     expect(SKILLS.forecast.effect).toEqual({ kind: 'forecast' })
@@ -860,19 +858,15 @@ describe('1.5.2', () => {
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('tool-contracts')).toBe(false)
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('machine-contracts')).toBe(false)
     expect((HUSBAND_SKILL_IDS as readonly string[]).includes('bulk-buying')).toBe(false)
-    expect(SKILLS.haggling.maxTier).toBe(3)
-    expect(SKILLS.haggling.gate).toEqual({ kind: 'hidden' })
     expect(SKILLS.jam.effect).toEqual({ kind: 'jam' })
     expect(JAM_ROT).toBe(0.15)
-    expect(SKILLS.bio.maxTier).toBe(3)
     expect(SKILLS.jam.maxTier).toBe(3)
     expect(SKILLS.industrial.maxTier).toBe(3)
     expect(SKILLS.broker.maxTier).toBe(2)
     expect(SKILLS.broker.gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
     const w = new World()
-    w.family.husband.owned.set('haggling', 2)
-    expect(w.skuPrice('buy-shovel')).toBe(8)
-    expect(w.skuPrice('buy-hangar')).toBe(78)
+    expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price)
+    expect(w.skuPrice('buy-hangar')).toBe(SKUS['buy-hangar'].price)
     expect(w.contractSlots()).toBe(6)
     expect(w.contractCap()).toBe(3)
     w.family.daughter.owned.set('broker', 1)
@@ -895,7 +889,7 @@ describe('1.5.2', () => {
     expect(SKILLS['better-potato'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
     expect(SKILLS['better-wheat'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
     expect(SKUS['buy-compost-box']).toMatchObject({ unlock: 'start', price: 8 })
-    expect(SKUS['buy-sensor-fert'].need).toEqual(['unlock-fertilizer'])
+    expect(SKUS['buy-sensor-fert'].need).toEqual([])
     const locked = new World(1)
     expect(locked.buy('pack-wheat')).toBeUndefined()
     expect(locked.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
@@ -923,7 +917,6 @@ describe('1.5.2', () => {
       count: 1,
       unitSale: 4,
       freshness: 0.4,
-      bio: true,
       cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: fruit }
@@ -932,44 +925,37 @@ describe('1.5.2', () => {
     expect(fruit.freshness).toBeCloseTo(0.4 - DT_MAX / (rot * (1 + 0.15 * 2)), 8)
   })
 
-  test('haggling gate hidden. Never in the offer pool. Effect still applies if owned.', () => {
-    const w = new World(1)
-    expect(w.offers('husband').some(o => o.id === 'haggling')).toBe(false)
-    w.family.husband.owned.set('haggling', 3)
-    expect(w.skuPrice('buy-shovel')).toBe(7)
-  })
-
-  test('`CONTAINERS.bucket` 5. `large-bucket` 10. `FERT_BAG_LITERS` 8, `buy-fertilizer` $18. `SYNTH_BAG_LITERS` 16, `buy-synth-fertilizer` $15. `COMPOST_LITERS` 5. `WEED_SPRAY_BAG`, `buy-weed-spray`. `PLANT_FERT_PER_SEC` and `WEED_FERT_PER_SEC` × 0.9 on the prior tuned-to×0.6 values.', () => {
+  test('inventory.containers', () => {
     expect(CONTAINERS.bucket.capacityLiters).toBe(5)
     expect(CONTAINERS['large-bucket'].capacityLiters).toBe(10)
     expect(FERT_BAG_LITERS).toBe(8)
     expect(SKUS['buy-fertilizer'].price).toBe(18)
-    expect(SYNTH_BAG_LITERS).toBe(16)
-    expect(SKUS['buy-synth-fertilizer'].price).toBe(15)
-    expect(COMPOST_LITERS).toBe(5)
+    expect(COMPOST_LITERS).toBe(4)
+    expect(SHOVELS.shovel.uses).toBe(60)
+    expect(SHOVELS['better-shovel'].uses).toBe(120)
     expect(WEED_SPRAY_BAG).toBe(30)
     expect(SKUS['buy-weed-spray'].price).toBe(12)
     expect(COMPOST_SECONDS).toBe(60)
-    expect(PLANT_FERT_PER_SEC).toBeCloseTo((1 / 720) * 0.6 * 0.9, 12)
+    expect(PLANT_FERT_PER_SEC).toBe(0.00085)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
   })
 
   test('Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`. Ripe does not drink. Trees draw 0 fertilizer. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.', () => {
-    expect(CROPS.vanilla.fertUseMul).toBe(0.1)
-    expect(CROPS.raspberry.fertUseMul).toBe(0.75)
-    expect(CROPS.grape.fertUseMul).toBe(0.75)
+    expect(CROPS.vanilla.fertUseMul).toBe(0.5)
+    expect(CROPS.raspberry.fertUseMul).toBe(0.8)
+    expect(CROPS.grape.fertUseMul).toBe(0.8)
     expect(CROPS.carrot.fertUseMul).toBe(1)
-    expect(CROPS.wheat.fertUseMul).toBe(1.25)
-    expect(CROPS.tomato.fertUseMul).toBe(1.25)
-    expect(CROPS.potato.fertUseMul).toBe(1.25)
+    expect(CROPS.wheat.fertUseMul).toBe(1.33)
+    expect(CROPS.tomato.fertUseMul).toBe(1.33)
+    expect(CROPS.potato.fertUseMul).toBe(1.33)
     expect(CROPS['sugar-cane'].fertUseMul).toBe(1.5)
-    expect(CROPS.chilli.fertUseMul).toBe(1.5)
+    expect(CROPS.chilli.fertUseMul).toBe(1.66)
     expect(CROPS.apple.fertUseMul).toBe(0)
     expect(CROPS.apricot.fertUseMul).toBe(0)
     expect(CROPS.olive.fertUseMul).toBe(0)
     expect(CROPS.cherry.fertUseMul).toBe(0)
     expect(statsOf('carrot', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC, 12)
-    expect(statsOf('chilli', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * 1.5, 12)
+    expect(statsOf('chilli', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * 1.66, 12)
     expect(statsOf('apple', 'base', 0, []).fertUsePerSec).toBe(0)
   })
 
@@ -993,8 +979,8 @@ describe('1.5.2', () => {
     expect(w.seats[0].actor.y).toBeCloseTo(y1 + step, 8)
   })
 
-  test('`STILL_WATER` 2. Start still requires full pull.', () => {
-    expect(STILL_WATER).toBe(2)
+  test('`STILL_WATER` 5. Start still requires full pull.', () => {
+    expect(STILL_WATER).toBe(5)
   })
 
   test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {
@@ -1178,7 +1164,7 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, cut: false },
     }
     expect(w.prompt(at)).toEqual({ kind: 'blocked', text: 'My hand is full!' })
     pickAt(w, at)
@@ -1193,7 +1179,7 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: STACK_MAX, unitSale: 4, freshness: 1, cut: false },
     }
     w.click(at)
     expect(w.speech).toEqual({ kind: 'say', text: 'My hand is full!', left: SPEECH_S })
@@ -1206,14 +1192,14 @@ describe('1.9 stacks', () => {
     ripeAt(w, at, 'carrot', 'base')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
     ripeAt(w, at, 'potato')
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     pickAt(w, at)
     expect(w.cell(at).kind).toBe('ripe')
@@ -1224,7 +1210,7 @@ describe('1.9 stacks', () => {
     expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'cask', cask: 'wine', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
     expect(w.stackMax({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED)
-    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(STACK_MAX)
+    expect(w.stackMax({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 1, freshness: 1, cut: false })).toBe(STACK_MAX)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX)
   })
 
@@ -1245,11 +1231,11 @@ describe('1.9 stacks', () => {
     w.setCell(at, { kind: 'empty', soil: bed() })
     w.drops.push({
       at,
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 8, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 8, unitSale: 4, freshness: 1, cut: false },
     })
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 5, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 5, unitSale: 4, freshness: 1, cut: false },
     }
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 0.5
@@ -1360,7 +1346,7 @@ describe('quality.ripen', () => {
 })
 
 describe('market.quality', () => {
-  test('Crop stall bins per crop × variety × organic. Consign folds `freshMul`, `qualityMul`, and `purposeMul(variety, produce)` into `worth`. Sell all uses `stallX` and sale skills; no second purpose multiplier.', () => {
+  test('market.quality', () => {
     const w = new World(1)
     w.seats[0].actor.x = PAD.col + 0.5
     w.seats[0].actor.y = PAD.row + 0.5
@@ -1374,23 +1360,22 @@ describe('market.quality', () => {
         count: 2,
         unitSale: 5,
         freshness: 1,
-        bio: true,
         cut: false,
       },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.potato.stock.bintje.organic).toBe(2)
-    expect(w.stall.potato.stock.base.organic).toBe(0)
+    expect(w.stall.potato.stock.bintje.plain).toBe(2)
+    expect(w.stall.potato.stock.base.plain).toBe(0)
     const unit = qualityMul(0) * purposeMul('bintje', 'produce')
-    expect(w.stall.potato.worth.bintje.organic).toBeCloseTo(2 * unit, 9)
+    expect(w.stall.potato.worth.bintje.plain).toBeCloseTo(2 * unit, 9)
     expect(w.marketQuote().clean).toBeCloseTo(2 * unit * CROPS.potato.sale, 9)
   })
 })
 
 describe('graft.attach', () => {
   const NAME =
-    "A graft is never planted. Same crop, target variety tier not `heirloom`. Annual `growing`. Tree `juvenile < 1`. Complete: target `variety` and `quality` become the graft's; one consumed. Maturity, juvenile, `trunk`, happiness, `tended`, organic, soil untouched."
+    "A graft is never planted. Same crop, target variety tier not `heirloom`. Annual `growing`. Tree `juvenile < 1`. Complete: target `variety` and `quality` become the graft's; one consumed. Maturity, juvenile, `trunk`, happiness, `tended`, soil untouched."
 
   function grafter(w: World, item: Item): void {
     w.seats[0].hand = { kind: 'hold', item }
@@ -1634,7 +1619,7 @@ describe('machines.grind-tree', () => {
   }
 
   function fruitItem(crop: 'apple' | 'grape', variety: VarietyId): Item {
-    return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false }
+    return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 1, freshness: 1, cut: false }
   }
 
   test(NAME, () => {

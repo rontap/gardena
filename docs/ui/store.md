@@ -65,15 +65,15 @@ Empty cells hover too. What a Variety sells for at Quality 0 is worth knowing be
 
 This callout is the one place a purpose reaches the player, and it is where they choose: **Best for Fresh / Preserving / Alcohol**, with the multiplier that purpose pays. `'base'` shows no such line — it is even at all three. Words: [[standards/user-facing-text]]. The Almanac carries none of this — [[ui/almanac]].
 
-The Seed silo is the only place seed packs are sold, `pack-grass` included; the Additive store is the only place fertilizer, synthetic fertilizer, weed spray and sugar are sold. There is no General store. `pack-grass` is not on Build — [[ui/build]].
+The Seed silo is the only place seed packs are sold, `pack-grass` included; the Additive store is the only place fertilizer, weed spray and sugar are sold. There is no General store. `pack-grass` is not on Build — [[ui/build]].
 
 ## Additive store
 
-Title **Additive store**. `w-[30rem]` — five rows, nothing to grow into. Capacity line reads **Click to fill a bag.** and `{used} / {cap} L`.
+Title **Additive store**. `w-[30rem]` — four rows, nothing to grow into. Capacity line reads **Click to fill a bag.** and `{used} / {cap} L`.
 
-One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Synthetic fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all five, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. The row already in hand tops that bag up instead; another row swaps — [[mechanics/inventory]] `inventory.swap`. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
+One row per `ADDITIVE_IDS` then one for **Sugar** — **Fertilizer**, **Compost**, **Weed spray**, **Sugar** — always all four, so an empty tank reads as empty rather than missing. Icon, label, stored liters right. `bg-ink/6` and `aria-disabled` at zero liters. Click → `takeAdditive(id)`, or `takeSugar()` on the sugar row, one bag to hand. The row already in hand tops that bag up instead; another row swaps — [[mechanics/inventory]] `inventory.swap`. Sugar draws `SUGAR_BAG`, not `ADDITIVE_BAG` — [[mechanics/inventory]].
 
-Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, synth, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/build]].
+Each row that has a SKU (`ADDITIVE_SKU`: fertilizer, weed-spray, sugar; compost is `'none'` and gets no button) carries a `w-20` **Buy** button at its right end, `Coin` price under the word, same three-state face as the dispense row. Click → `world.buyInto(at, sku)`, which delivers into the tank the panel is open on — the Additive store, or the Additive silo you walked up to. State and grey-out come from `rowState` / `gateLine` — the panel never re-derives afford or capacity. Hover or focus renders `AdditiveTip` as the `Shell aside`: label, price, liters delivered, and the `gateLine` reason in `text-roof` when the button is grey — [[ui/callout-hover]] [[ui/build]].
 
 Footer names the delivery rule while the store is empty, then *Walking up empties any bag you were carrying back into the tanks.*
 

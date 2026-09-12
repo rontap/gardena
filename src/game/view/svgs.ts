@@ -111,9 +111,7 @@ import bucket from '../../assets/items/item-bucket.svg?raw'
 import largeBucket from '../../assets/items/item-large-bucket.svg?raw'
 import itemFertilizer from '../../assets/items/item-fertilizer.svg?raw'
 import itemWeedSpray from '../../assets/items/item-weed-spray.svg?raw'
-import uiResearchFertilizer from '../../assets/ui/ui-research-fertilizer.svg?raw'
 import uiResearchCropVariants from '../../assets/ui/ui-research-crop-variants.svg?raw'
-import itemSynth from '../../assets/items/item-synth.svg?raw'
 import itemCompost from '../../assets/items/item-compost.svg?raw'
 import itemRotten from '../../assets/items/item-rotten.svg?raw'
 import itemDead from '../../assets/items/item-dead.svg?raw'
@@ -179,7 +177,6 @@ import itemSprinkler from '../../assets/items/item-sprinkler.svg?raw'
 import itemSprinklerVert from '../../assets/items/item-sprinkler-vert.svg?raw'
 import itemSprinklerLarge from '../../assets/items/item-sprinkler-large.svg?raw'
 import itemValve from '../../assets/items/item-valve.svg?raw'
-import itemRainTank from '../../assets/items/item-rain-tank.svg?raw'
 import itemTap from '../../assets/items/item-tap.svg?raw'
 import uiWater from '../../assets/ui/ui-water.svg?raw'
 import itemDelete from '../../assets/items/item-delete.svg?raw'
@@ -191,7 +188,6 @@ import propLinkIn from '../../assets/props/prop-link-in.svg?raw'
 import propLinkOut from '../../assets/props/prop-link-out.svg?raw'
 import propWell from '../../assets/props/prop-well.svg?raw'
 import propTruck from '../../assets/props/prop-truck.svg?raw'
-import propRainTank from '../../assets/props/prop-rain-tank.svg?raw'
 import propTap from '../../assets/props/prop-tap.svg?raw'
 import propSprinkler from '../../assets/props/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/props/prop-sprinkler-vert.svg?raw'
@@ -264,18 +260,11 @@ import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw
 import skillContracts from '../../assets/skills/skill-contracts.svg?raw'
 import skillBroker from '../../assets/skills/skill-broker.svg?raw'
 import skillForecast from '../../assets/skills/skill-forecast.svg?raw'
-import skillTax from '../../assets/skills/skill-tax.svg?raw'
-import skillWaterStudy from '../../assets/skills/skill-water-study.svg?raw'
-import skillLandStudy from '../../assets/skills/skill-land-study.svg?raw'
 import skillSaleswoman from '../../assets/skills/skill-saleswoman.svg?raw'
 import skillHeirloom from '../../assets/skills/skill-heirloom.svg?raw'
 import skillBetter from '../../assets/skills/skill-better.svg?raw'
-import skillBio from '../../assets/skills/skill-bio.svg?raw'
 import skillIndustrial from '../../assets/skills/skill-industrial.svg?raw'
-import skillOpenLate from '../../assets/skills/skill-open-late.svg?raw'
-import skillOpen24 from '../../assets/skills/skill-open-24.svg?raw'
 import skillJam from '../../assets/skills/skill-jam.svg?raw'
-import skillClearance from '../../assets/skills/skill-clearance.svg?raw'
 import skillLucky from '../../assets/skills/skill-lucky.svg?raw'
 import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
@@ -436,7 +425,6 @@ export function itemInner(item: Face): string {
   if (item.kind === 'sprinkler-vert') return svgInner(itemSprinklerVert)
   if (item.kind === 'sprinkler-large') return svgInner(itemSprinklerLarge)
   if (item.kind === 'valve') return svgInner(itemValve)
-  if (item.kind === 'rain-tank') return svgInner(itemRainTank)
   if (item.kind === 'tap') return svgInner(itemTap)
   if (item.kind === 'water') return svgInner(uiWater)
   if (item.kind === 'mill') return svgInner(itemMill)
@@ -483,7 +471,6 @@ export function itemInner(item: Face): string {
   }
   if (item.kind === 'fertilizer') return svgInner(itemFertilizer)
   if (item.kind === 'weed-spray') return svgInner(itemWeedSpray)
-  if (item.kind === 'synth') return svgInner(itemSynth)
   if (item.kind === 'compost') return svgInner(itemCompost)
   if (item.kind === 'seeds') return item.crop === 'grass' ? turfInner('grow') : cropInner(item.crop, ripeGroup(item.variety))
   if (item.kind === 'fruit') return stageOnly(FRUIT[item.crop], fruitGroup(item.variety))
@@ -540,7 +527,6 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-sprinkler-vert') return itemInner({ kind: 'sprinkler-vert' })
   if (id === 'buy-sprinkler-large') return itemInner({ kind: 'sprinkler-large' })
   if (id === 'buy-valve') return itemInner({ kind: 'valve' })
-  if (id === 'buy-rain-tank') return itemInner({ kind: 'rain-tank' })
   if (id === 'buy-tap') return itemInner({ kind: 'tap' })
   if (id === 'buy-mill') return itemInner({ kind: 'mill' })
   if (id === 'buy-infuser') return itemInner({ kind: 'infuser' })
@@ -639,16 +625,10 @@ export function researchInner(id: ResearchId): string {
       return itemInner({ kind: 'pumpjack' })
     case 'unlock-silos':
       return itemInner({ kind: 'silo-produce' })
-    case 'unlock-chest':
-      return itemInner({ kind: 'chest' })
     case 'unlock-grinder':
       return svgInner(skillMachinery)
-    case 'unlock-pickaxe':
-      return svgInner(pickaxe)
     case 'unlock-hardened-tools':
       return svgInner(betterPickaxe)
-    case 'unlock-fertilizer':
-      return svgInner(uiResearchFertilizer)
     case 'unlock-crop-variants':
       return svgInner(uiResearchCropVariants)
     case 'unlock-better-tools':
@@ -783,7 +763,6 @@ export const PIPE_L = svgInner(pipeL)
 export const PIPE_T = svgInner(pipeT)
 export const PIPE_X = svgInner(pipeX)
 export const PIPE_SOURCE = svgInner(pipeSource)
-export const RAIN_TANK = svgInner(propRainTank)
 export const TAP = svgInner(propTap)
 export function valveArt(open: boolean): string {
   return stageOnly(pipeValve, open ? 'open' : 'closed')
@@ -931,6 +910,7 @@ export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
 export const UI_MENU = svgInner(uiMenu)
 export const SKILL_POINT = svgInner(skillPoint)
+export const CHEAT_FAST_RESEARCH = svgInner(skillResearchSpeed)
 export const STAT_REPUTATION = svgInner(statReputation)
 export const STAT_LUCK = svgInner(statLuck)
 
@@ -947,13 +927,8 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'driving-classes': svgInner(skillDrivingClasses),
   machinery: svgInner(skillMachinery),
   tending: svgInner(skillTending),
-  'research-speed': svgInner(skillResearchSpeed),
-  haggling: svgInner(skillContracts),
   broker: svgInner(skillBroker),
   forecast: svgInner(skillForecast),
-  tax: svgInner(skillTax),
-  'water-study': svgInner(skillWaterStudy),
-  'land-study': svgInner(skillLandStudy),
   'inherit-land': svgInner(uiResearchExpand),
   saleswoman: svgInner(skillSaleswoman),
   heirloom: svgInner(skillHeirloom),
@@ -966,12 +941,8 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'better-apricot': svgInner(skillBetter),
   'better-olive': svgInner(skillBetter),
   'better-cherry': svgInner(skillBetter),
-  bio: svgInner(skillBio),
   industrial: svgInner(skillIndustrial),
-  'open-late': svgInner(skillOpenLate),
-  'open-24': svgInner(skillOpen24),
   jam: svgInner(skillJam),
-  clearance: svgInner(skillClearance),
   lucky: svgInner(skillLucky),
   'lucky-husband': svgInner(skillLucky),
   'lucky-daughter': svgInner(skillLucky),
@@ -1148,7 +1119,6 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   dryOf(PIPE_T),
   dryOf(PIPE_X),
   PUMP,
-  RAIN_TANK,
   TAP,
   CHEST,
   GRINDER,

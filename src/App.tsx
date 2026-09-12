@@ -161,8 +161,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     if (world === undefined) return
-    if (lens === 'water' && !world.hasSkill('water-study')) setLens('off')
-    if (lens === 'land' && !world.hasSkill('land-study')) setLens('off')
+    if (lens === 'water' && !world.done.has('unlock-auto-irrigation')) setLens('off')
+    if (lens === 'land' && !world.done.has('unlock-expand')) setLens('off')
+    if (lens === 'sensors' && !world.done.has('unlock-sensors')) setLens('off')
+    if (lens === 'vehicles' && !world.done.has('unlock-vehicles')) setLens('off')
   }, [hudN, lens, world])
 
   useEffect(() => {

@@ -110,7 +110,7 @@ No `inn`. No wire. No HUD. No hopper: `held` plus `progress`. Takes seeds, fruit
 | spirit (`infused` ignored) | `FURNACE_VALUE.spirit` × count |
 | wood | `FURNACE_VALUE.wood` × count |
 
-Flour is bread lock, not ash. Jam, cask, extract, vanilla-extract, flakes, bread, compost bags, fertilizer, synth, weed-spray, tools, ash: refuse. Tree-seed and graft are green rate. Ash into compost: `COMPOST_VALUE.ash` × count. Wood is not compost. Wood and ash are not stall goods.
+Flour is bread lock, not ash. Jam, cask, extract, vanilla-extract, flakes, bread, compost bags, fertilizer, weed-spray, tools, ash: refuse. Tree-seed and graft are green rate. Ash into compost: `COMPOST_VALUE.ash` × count. Wood is not compost. Wood and ash are not stall goods.
 
 ## furnaceMul
 

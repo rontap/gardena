@@ -18,7 +18,6 @@ const LARGE = [
   'buy-silo-spray',
   'buy-silo-produce',
   'buy-pumpjack',
-  'buy-rain-tank',
   'buy-still',
   'buy-research-station',
   'buy-furnace',

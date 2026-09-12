@@ -17,7 +17,6 @@ Perspective is one per asset. Ground and vehicles are top-down; freestanding pro
 | `prop-pump.svg` | `0 0 48 24` | iron pedestal, walking-beam rocker, rod into a sunk sump; industrial + dirt collar, no `roof` |
 | `prop-tap.svg` | `0 0 24 24` | ink-outlined `house` riser on a stone slab, spoked handwheel as a ring with a `dirt` hub out to the left, gooseneck stepping down to a spout, stream into a puddle |
 | `prop-well.svg` | `0 0 24 24` | coursed `house` wellhead with a dark mouth and water in it, two posts, stepped `roof` gable, rope down the middle |
-| `prop-rain-tank.svg` | `0 0 48 24` | wide open cistern: one ink-outlined `dirt-dark` body with `dirt` corner posts and a `house` base course, `water` surface open to the sky with `cfc6b0` glints, gutter and downspout pouring in from above left, tap at the left foot |
 | `prop-mill.svg` | `0 0 48 48` | four-course tapered `house` tower, `roof` cap, door at the foot; groups `body` and `sails`. Sails are drawn as an upright cross, hub at `(24, 18)`; the view rotates them — [[art/vfx]] |
 | `prop-freezer.svg` `item-freezer.svg` | `0 0 24 24` | low steel cabinet, lid overhanging the front, full-width handle, `house` frost pips |
 | `prop-grinder.svg` | `0 0 24 24` | iron drum on its side with bands, shallow hopper, left chute, steel crank spurring right |
@@ -25,11 +24,13 @@ Perspective is one per asset. Ground and vehicles are top-down; freestanding pro
 | `prop-link-out.svg` | `0 0 24 24` | east chute, narrow left, wide mouth right; `leaf` trough |
 | `prop-burrow.svg` `prop-burrow-1.svg` | `0 0 24 24` | thin three-way ink fissure with a `dirt-dark` crumbled lip, `dirt` crumbs and 1-unit `ripe` glints; two shapes, top-down; atlas `burrow` / `burrow-1`, picked by `tileVariant`. Not a chest |
 
+`prop-rain-tank.svg` remains on disk; not live.
+
 Mill is a 2×2 windmill: tall, cottage, tapered, sails. Grinder is low, iron, asymmetric, cranked. They were one plinth with different hats.
 
 **Mill against windmill.** `prop-windmill.svg` is the electricity wind pump — a bare lattice tower under a fan wheel and a tail, [[art/electricity]]. The Mill is a solid tapered stone tower under a `roof` cap with a four-arm sail cross. Two towers on one farm read apart by that: lattice and fan against solid and sails. Never give the Mill a fan wheel or the windmill a cap.
 
-**Water fixtures are cottage, not industrial.** Tap, well and rainwater tank take `house` for pale metal and `dirt` / `dirt-dark` for its shadow. `steel` / `iron` / `oil` stay on vehicles and machines — [[art/palette]]. The pumpjack is the exception the palette already names.
+**Water fixtures are cottage, not industrial.** Tap and well take `house` for pale metal and `dirt` / `dirt-dark` for its shadow. `steel` / `iron` / `oil` stay on vehicles and machines — [[art/palette]]. The pumpjack is the exception the palette already names.
 
 **Outline the silhouette, not every rect.** Ink outlines are not optional; dropping them leaves a prop with no edge against the ground. What made the earlier tap and tank illegible was outlining each small part separately, so a dozen little boxes each drew their own black frame and the whole thing read as a tangle. One ink mass per part, large enough to read, with the internal detail carried by fill changes inside it.
 

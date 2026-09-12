@@ -44,7 +44,7 @@ import { WorldView, type ViewHooks } from './world-view.ts'
 import { footOutline } from './outline.ts'
 import { cursorCss, cursorFor } from './cursor.ts'
 import { STAT_COLOR } from '../ui/status.tsx'
-import { FURNACE, HANGAR, INFUSER, MILL, PUMP, RAIN_TANK, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
+import { FURNACE, HANGAR, INFUSER, MILL, PUMP, SILO_PRODUCE, SILO_SEED, SILO_SPRAY, STATION, STILL, skuInner, symHref } from './svgs.ts'
 import type { VfxMount } from './layers/vfx.ts'
 import { VFX } from './vfx.ts'
 
@@ -99,7 +99,6 @@ function placeLine(id: SkuId): string {
 
 function wideGhost(id: SkuId): string {
   if (id === 'buy-pumpjack') return PUMP
-  if (id === 'buy-rain-tank') return RAIN_TANK
   if (id === 'buy-research-station') return STATION
   return STILL
 }
@@ -147,7 +146,6 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   const placeId = place.kind === 'sku' ? place.id : undefined
   const pumpjack =
     placeId === 'buy-pumpjack' ||
-    placeId === 'buy-rain-tank' ||
     placeId === 'buy-still' ||
     placeId === 'buy-research-station'
   const furnacePlace = placeId === 'buy-furnace'

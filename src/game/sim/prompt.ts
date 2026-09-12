@@ -349,7 +349,6 @@ export function deletePrompt(
 }
 
 const DELETE_NAME: { readonly [K in string]?: () => string } = {
-  'rain-tank': m.names_building_rain_tank,
   tap: m.names_building_tap,
   well: m.names_building_well,
   chest: m.names_building_chest,
@@ -540,7 +539,6 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (
       w.act.place.id === 'buy-pumpjack' ||
-      w.act.place.id === 'buy-rain-tank' ||
       w.act.place.id === 'buy-still' ||
       w.act.place.id === 'buy-research-station'
     ) {
@@ -743,7 +741,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     return { kind: 'blocked', text: sensorName(cell.kind) }
   }
-  if (cell.kind === 'pump' || cell.kind === 'rain-tank' || cell.kind === 'tap' || cell.kind === 'well') {
+  if (cell.kind === 'pump' || cell.kind === 'tap' || cell.kind === 'well') {
     if (!fillable(w, at)) return { kind: 'blocked', text: m.prompt_no_water_grid({ name: m.names_building_tap() }) }
     if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'container') {
       return intent(m.prompt_fill(), { act: 'fill', at })
@@ -1039,7 +1037,7 @@ function jamDumpPrompt(crop: JamCrop | undefined, variety: VarietyId): string {
 }
 
 function feedKind(item: Item): boolean {
-  return item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost'
+  return item.kind === 'fertilizer' || item.kind === 'compost'
 }
 
 export function compostLine(units: number, progress: number): string {

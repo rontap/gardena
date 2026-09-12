@@ -2,8 +2,8 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "family_title": "Family",
   "family_blurb_player": "Works the beds. Speed, tools and the crops themselves.",
-  "family_blurb_husband": "Runs the workshop. Research pace, prices and surveys.",
-  "family_blurb_daughter": "Minds the stall. Sale value, opening hours and grades.",
+  "family_blurb_husband": "Runs Research. Machine work, tomorrow's weather, expansion permits, and Lucky.",
+  "family_blurb_daughter": "Minds the Market. What fruit and goods sell for, contracts, and Lucky.",
   "family_point_one": "point to spend, on anyone",
   "family_point_many": "points to spend, on anyone",
   "family_nothing_left": "Nothing left to learn",
@@ -15,6 +15,6 @@
   "family_reputation_body": "Reputation is what the companies think of your farm. Completing a contract raises it. Missing one, cancelling one, or ending a day without taking one lowers it. Higher Reputation puts harder contracts on tomorrow's board: they ask for more, and they pay further over the farmer's market price than an easier contract does.",
   "family_reputation_value": "Your Reputation is {n} out of {max}.",
   "family_luck": "Luck",
-  "family_luck_body": "Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety no shelf sells as a pack. Each rank of Lucky, learned on You the Gardener, raises both. Luck is read when the burrow appears, so a burrow already on the farm stays as it is.",
+  "family_luck_body": "Luck is how much money a new burrow's treasure holds, and how often that burrow holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. You, Husband, and Daughter can each learn Lucky, and each one who has raises both. Luck is read when the burrow appears, so a burrow already on the farm stays as it is.",
   "family_luck_value": "Your Luck is {n} out of {max}."
 }

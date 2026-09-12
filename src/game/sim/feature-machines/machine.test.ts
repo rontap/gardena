@@ -78,7 +78,7 @@ import { DAY_SECONDS } from '../clock.ts'
 const AT = { col: 10, row: 12 }
 
 function wheat(n: number) {
-  return { kind: 'fruit' as const, crop: 'wheat' as const, variety: 'base' as const, quality: 0 as const, count: n, unitSale: 8, freshness: 1, bio: true, cut: false }
+  return { kind: 'fruit' as const, crop: 'wheat' as const, variety: 'base' as const, quality: 0 as const, count: n, unitSale: 8, freshness: 1, cut: false }
 }
 
 function ticks(w: World, seconds: number): void {
@@ -93,7 +93,7 @@ describe('machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
@@ -110,7 +110,7 @@ describe('machines', () => {
     w.seats[0].actor.y = PAD.row + 0.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 17.5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 17.5, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
@@ -147,7 +147,7 @@ describe('machines', () => {
       unitSale: SUGAR_MILL,
       quality: 0,
     })
-    expect(millRecipeOf({ kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, bio: true, cut: false })).toBe(
+    expect(millRecipeOf({ kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 1, unitSale: 5, freshness: 1, cut: false })).toBe(
       'sugar-cane',
     )
   })
@@ -166,7 +166,7 @@ describe('machines', () => {
     w.seats[0].actor.y = at.row + 1.5
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -175,14 +175,14 @@ describe('machines', () => {
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'grape', variety: 'base', quality: 0, count: 3, unitSale: 18, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'grape', variety: 'base', quality: 0, count: 3, unitSale: 18, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(barrel.feed[0].count).toBe(2)
     w.seats[0].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'apple', variety: 'base', quality: 0, count: 2, unitSale: 8, freshness: 1, cut: false },
     }
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
@@ -238,7 +238,7 @@ describe('machines', () => {
     if (sc.kind !== 'chest') throw new Error('chest')
     sc.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 5, freshness: 1, cut: false },
     }
     ticks(w, BIG_TICK)
     expect(still.feed.reduce((n, f) => n + f.count, 0)).toBe(STILL_CAP)
@@ -391,7 +391,7 @@ describe('machines.furnace-feed', () => {
     const f = putFurnace(w, at)
     expect(furnaceValue({ kind: 'weed', count: 3 })).toBe(FURNACE_VALUE.green * 3)
     expect(furnaceValue({ kind: 'tree-seed', tree: 'apple', variety: 'base', quality: 0 })).toBe(FURNACE_VALUE.green)
-    expect(furnaceValue({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 1, count: 2, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(
+    expect(furnaceValue({ kind: 'fruit', crop: 'carrot', variety: 'base', quality: 1, count: 2, unitSale: 1, freshness: 1, cut: false })).toBe(
       FURNACE_VALUE.fruit * 2,
     )
     expect(furnaceValue({ kind: 'sugar', liters: 3, capacityLiters: 3, unitSale: 1, quality: 0 })).toBe(FURNACE_VALUE.fruit * 3)
@@ -713,7 +713,7 @@ describe('inventory.ash', () => {
 type PinnedFruit = Extract<Item, { kind: 'fruit' }>
 
 function fruitOf(crop: PinnedFruit['crop'], variety: PinnedFruit['variety'], count: number, quality = 0): PinnedFruit {
-  return { kind: 'fruit', crop, variety, quality, count, unitSale: 1, freshness: 1, bio: true, cut: false }
+  return { kind: 'fruit', crop, variety, quality, count, unitSale: 1, freshness: 1, cut: false }
 }
 
 const CELL = { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 } as const

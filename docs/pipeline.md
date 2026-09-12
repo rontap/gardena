@@ -50,9 +50,13 @@ Done: allowed files written → stop.
 
 Confirm-only / “write nothing if complete” tasks are forbidden — the child has no exit.
 
-Invented scope is a failed run. Reject. Re-spawn. Do not silently repair.
-
 New or changed player strings in `src/` and copy slots in `docs/ui/` start with `<needs-game-text-writer>`. [[agents/game-text-writer]] rewrites them per [[standards/user-facing-text]] and strips the marker. Changelog lines: that agent drafts; orchestrator pastes. [[standards/update-notes]]
+
+## Miss
+
+One spawn per kind this run. Coders: one spawn per partition, not a retry.
+
+Wrong spec, incomplete impl, invented scope, leftover `<needs-game-text-writer>`: orchestrator edits those files, or `resume_from` that child. Do not spawn a new agent of that kind.
 
 ## Spawn
 
@@ -66,4 +70,4 @@ New or changed player strings in `src/` and copy slots in `docs/ui/` start with 
 
 Orchestrator names files and done-conditions. Unversioned: orchestrator may write `src/`. Minor / major: no sample code in the spawn prompt.
 
-After game-text-writer: grep `<needs-game-text-writer>`. Hits → re-spawn that agent. Present its developer summary.
+After game-text-writer: grep `<needs-game-text-writer>`. Hits → orchestrator strips or rewrites, or `resume_from` that child. Do not spawn a new [[agents/game-text-writer]]. Present that agent's developer summary.

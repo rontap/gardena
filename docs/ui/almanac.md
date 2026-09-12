@@ -8,10 +8,10 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 |---|---|---|
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
-| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer synth-fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
+| `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station infuser hangar silo-seed silo-produce silo-spray |
-| `water` | Water systems | pumpjack well rain-tank tap pipe valve sprinkler sprinkler-vert sprinkler-large |
+| `water` | Water systems | pumpjack well tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved |
 | `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow, Infusion |
 

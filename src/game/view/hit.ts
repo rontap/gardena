@@ -19,7 +19,6 @@ export const PORT_HIT = 0.18
 export const PIPE_PLACE: readonly SkuId[] = [
   'buy-pipe',
   'buy-valve',
-  'buy-rain-tank',
   'buy-tap',
   'buy-sprinkler',
   'buy-sprinkler-vert',

@@ -4,7 +4,7 @@ One left [[ui/docks]] `Dock` over the whole catalogue: search, a vertical catego
 
 Title **Build**. Rail button **Build**, top of the left ribbon. Width leaves the [[ui/callout-hover]] gutter clear down to 1280.
 
-There is no General store. Seed packs are bought at the [[ui/store]] Seed silo; fertilizer, synthetic fertilizer, weed spray, and sugar at the Additive store. Both stores carry their own Buy rows. `rowState` never returns `need-skill`. Tools is the first tab because it is the first purchase; the mount `onShelf` therefore peeks no lens.
+There is no General store. Seed packs are bought at the [[ui/store]] Seed silo; fertilizer, weed spray, and sugar at the Additive store. Both stores carry their own Buy rows. `rowState` never returns `need-skill`. Tools is the first tab because it is the first purchase; the mount `onShelf` therefore peeks no lens.
 
 ## Category rail
 
@@ -13,7 +13,7 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 | tab | order | cluster | idle footer |
 |---|---|---|---|
 | Tools | Digging shovel, better-shovel · Mining pickaxe, hardened, axe, chainsaw · Carry bucket, large bucket | none | Dig, mine, chop, and carry water. |
-| Water | Source pumpjack, well, rain-tank · Flow tap, pipe, valve · Output sprinkler, vertical, large | build | Source, flow, output. |
+| Water | Source pumpjack, well · Flow tap, pipe, valve · Output sprinkler, vertical, large | build | Source, flow, output. |
 | Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar` | build | Machines that make goods, and the hangar your vehicles come home to. |
 | Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce | build | Boxes for what you picked, and the field silos that load trailers. |
 | Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | build | Signal, gates, readers. |

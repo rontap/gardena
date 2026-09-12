@@ -168,15 +168,15 @@ describe('notices.once', () => {
 
   test('a run that stopped with its id in done mints a research row', () => {
     const w = new World()
-    w.done.add('unlock-fertilizer')
-    const rows = doneRows(w, { activeIds: [], running: 'unlock-fertilizer' })
+    w.done.add('unlock-tomato')
+    const rows = doneRows(w, { activeIds: [], running: 'unlock-tomato' })
     expect(kinds(rows)).toEqual(['research-done'])
   })
 
   test('a run still running mints nothing', () => {
     const w = new World()
-    w.job = { kind: 'run', id: 'unlock-fertilizer', left: 5 }
-    w.done.add('unlock-fertilizer')
+    w.job = { kind: 'run', id: 'unlock-tomato', left: 5 }
+    w.done.add('unlock-tomato')
     expect(doneRows(w, passOf(w))).toEqual([])
   })
 

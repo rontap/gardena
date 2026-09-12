@@ -8,7 +8,7 @@ Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player o
 
 `BetterCrop` = potato | wheat | tomato | raspberry | grape | apple | apricot | olive | cherry. `BETTER_IDS` complete `{ [K in BetterCrop]: PlayerSkillId }`. Tree `better-*` is legal.
 
-`SKILLS` in `defs/skills.ts`. Not on `World`. `SkillEffect` `{ kind: 'haggling' }` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` `{ kind: 'lucky' }` `{ kind: 'better'; crop: CropId; saleMul }`. No `{ kind: 'dummy' }`. Arms live in `SKILLS`.
+`SKILLS` in `defs/skills.ts`. Not on `World`. `SkillEffect` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` `{ kind: 'lucky' }` `{ kind: 'better'; crop: CropId; saleMul }`. No `{ kind: 'dummy' }`. Arms live in `SKILLS`.
 
 Type `Family` on `world.ts`. Field `World.family`. Always present. Shared `World.points`. Per member: `pickCount`, `owned`, `offers`. Missing owned key = not owned. `offers` length 0..3.
 

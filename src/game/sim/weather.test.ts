@@ -1,5 +1,6 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
+import * as weatherDefs from '../defs/weather.ts'
 import {
   CONTINUE_START,
   CONTINUE_STEP,
@@ -7,6 +8,7 @@ import {
   DRY_EVAP_DAY,
   FLOOD_SOAK_DAY,
   PUMP_COST_PER_L,
+  PUMP_DAY_COST,
   pumpBill,
   RAIN_SOAK_DAY,
   SEVERE_P,
@@ -17,7 +19,8 @@ import { SKILLS } from '../defs/skills.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { hash, Rng } from './rng.ts'
 import { BIG_TICK, Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
-import { forecastWeather, pumpCostMul, soakDelta, type WeatherKind } from './weather.ts'
+import { SOURCE } from './water.ts'
+import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, type WeatherKind } from './weather.ts'
 import { DT_MAX, stipendOf, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }
@@ -99,6 +102,17 @@ describe('weather', () => {
     expect(forecastWeather(seed, 5, dryPins)[4]).toBe('drought')
   })
 
+  test('`PUMP_COST_PER_L` = `PUMP_DAY_COST / (SOURCE.pump.rate × DAY_SECONDS)`. No `RAIN_TANK_RAIN` `RAIN_TANK_FLOOD`.', () => {
+    expect(PUMP_DAY_COST).toBe(10.8)
+    expect(PUMP_COST_PER_L).toBeCloseTo(0.075, 12)
+    expect(PUMP_COST_PER_L).toBe(PUMP_DAY_COST / (SOURCE.pump.rate * DAY_SECONDS))
+    expect('RAIN_TANK_RAIN' in weatherDefs).toBe(false)
+    expect('RAIN_TANK_FLOOD' in weatherDefs).toBe(false)
+    expect(sourceRateMul('pump', 'rain')).toBe(1)
+    expect(sourceRateMul('pump', 'flood')).toBe(1)
+    expect(sourceRateMul('pump', 'drought')).toBe(1)
+  })
+
   test('Seam bills `pumpBill(pumpLiters, costMul(ended weather))`, rounded to cents so engine float drift never reaches `money`, before recap. Mid-day money unchanged. `recap.water` is the bill. `pumpLiters` then 0. Money may go negative.', () => {
     const w = new World(1)
     w.pumpLiters = 100
@@ -162,44 +176,36 @@ describe('weather', () => {
     expect(c.water).toBe(1)
   })
 
-  test('`(flood ∧ sunrise) ∨ (drought ∧ day)` closed unless `open-24`. `open-late` does not reopen. Consign always.', () => {
+describe('weather.market', () => {
+  test('`marketOpen` is always true; no weather close; no phase hours; consign always.', () => {
     const w = new World(1)
     toDay(w, 'flood')
     w.clock.t = 0
-    expect(w.marketOpen()).toBe(false)
+    expect(w.marketOpen()).toBe(true)
     w.clock.t = DAY_SECONDS * 0.3
     expect(w.marketOpen()).toBe(true)
-    w.family.daughter.owned.set('open-late', 1)
-    w.clock.t = 0
-    expect(w.marketOpen()).toBe(false)
-    w.family.daughter.owned.set('open-24', 1)
+    w.clock.t = DAY_SECONDS * 0.8
     expect(w.marketOpen()).toBe(true)
     const d = new World(1)
     toDay(d, 'drought')
     d.clock.t = 0
     expect(d.marketOpen()).toBe(true)
     d.clock.t = DAY_SECONDS * 0.3
-    expect(d.marketOpen()).toBe(false)
-    d.family.daughter.owned.set('open-late', 1)
-    expect(d.marketOpen()).toBe(false)
-    d.family.daughter.owned.set('open-24', 1)
     expect(d.marketOpen()).toBe(true)
   })
+})
 
-  test('Drought `skuPrice`: `tab === \'seeds\' | \'utility\'`, after haggling min $1, then ×2. Automation / building / hangar-buys untouched.', () => {
+describe('weather.shop', () => {
+  test('Drought `skuPrice`: `tab === \'seeds\' | \'utility\'`, then ×2; automation / building / hangar-buys untouched.', () => {
     const w = new World(1)
     toDay(w, 'drought')
     expect(w.skuPrice('pack-carrot')).toBe(6)
-    expect(w.skuPrice('buy-shovel')).toBe(20)
+    expect(w.skuPrice('buy-shovel')).toBe(16)
     expect(w.skuPrice('buy-pipe')).toBe(3)
     expect(w.skuPrice('buy-tile-cobble')).toBe(4)
     expect(w.skuPrice('buy-hangar')).toBe(80)
-    w.family.husband.owned.set('haggling', 2)
-    expect(w.skuPrice('buy-shovel')).toBe(16)
-    expect(w.skuPrice('buy-pipe')).toBe(1)
-    w.family.husband.owned.set('haggling', 3)
-    expect(w.skuPrice('buy-pipe')).toBe(1)
   })
+})
 
   test('HUD tomorrow iff husband owns `forecast`.', () => {
     expect(SKILLS.forecast.effect).toEqual({ kind: 'forecast' })

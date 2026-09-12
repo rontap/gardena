@@ -111,7 +111,7 @@ describe('vehicles I', () => {
     expect(v.slots.every(s => s.kind === 'empty')).toBe(true)
   })
 
-  test('Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `haggling` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (haggling applies).', () => {
+  test('Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. Hangar-buys not `skuPrice`. `buy-hangar` and three silo SKUs automation `skuPrice`.', () => {
     const w = farm()
     const before = w.money
     w.buyVehicle(AT, 'quad')
@@ -120,8 +120,7 @@ describe('vehicles I', () => {
     expect(w.money).toBe(before - QUAD_PRICE - QUAD_PRICE)
     expect(SKUS['buy-hangar'].price).toBe(80)
     expect(SKUS['buy-hangar'].tab).toBe('automation')
-    w.family.husband.owned.set('haggling', 2)
-    expect(w.skuPrice('buy-hangar')).toBe(78)
+    expect(w.skuPrice('buy-hangar')).toBe(80)
     expect(QUAD_PRICE).toBe(150)
     w.buyVehicle(AT, 'tractor')
     const t = w.vehicles[2]
@@ -375,7 +374,6 @@ describe('vehicles I', () => {
       count: 1,
       unitSale: 4,
       freshness: 1,
-      bio: true,
       cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
@@ -695,7 +693,6 @@ describe('vehicles II', () => {
       count: 1,
       unitSale: 4,
       freshness: 1,
-      bio: true,
       cut: false,
     }
     w.seats[0].hand = { kind: 'hold', item: { ...fruit } }
@@ -729,8 +726,7 @@ describe('vehicles II', () => {
     w.buyTrailer(AT, 'seed')
     expect(w.money).toBe(before - TRACTOR_PRICE - TRAILER_SEED_PRICE)
     expect(SKUS['buy-silo-seed'].price).toBe(SILO_SEED_PRICE)
-    w.family.husband.owned.set('haggling', 2)
-    expect(w.skuPrice('buy-silo-seed')).toBe(68)
+    expect(w.skuPrice('buy-silo-seed')).toBe(SILO_SEED_PRICE)
     expect(TRACTOR_PRICE).toBe(250)
     expect(TRAILER_HARVEST_PRICE).toBe(100)
     w.armDelete()
@@ -859,7 +855,7 @@ describe('vehicles II', () => {
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 0 }
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'sugar-cane', variety: 'base', quality: 0, count: 5, unitSale: 5, freshness: 1, cut: false },
     }
     w.unload()
     const mill = w.cell(millAt)
@@ -1019,7 +1015,7 @@ describe('vehicles II', () => {
     if (v.kind !== 'quad') return
     v.slots[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, bio: true, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 1, unitSale: 4, freshness: 1, cut: false },
     }
     v.pose = { kind: 'field', x: 16.5, y: 11.5, heading: 0, speed: 0, driver: 'none' }
     v.running = true

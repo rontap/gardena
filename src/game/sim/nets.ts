@@ -24,7 +24,7 @@ import { tickVfx } from './tick.ts'
 
 export function fillable(world: World, at: Coord): boolean {
   const c = world.cell(at)
-  if (c.kind === 'pump' || c.kind === 'rain-tank' || c.kind === 'well') return true
+  if (c.kind === 'pump' || c.kind === 'well') return true
   if (c.kind !== 'tap') return false
   const net = netOfCell(world, c.base)
   return net !== undefined && net.sources.length > 0
@@ -335,6 +335,5 @@ export function gatherWater(world: World, dt: number): void {
     if (p.inn === 1) return
     p.water.gather(dt)
   })
-  world.tanks.forEach(t => t.water.gather(dt))
   world.wells.forEach(w => w.water.gather(dt))
 }

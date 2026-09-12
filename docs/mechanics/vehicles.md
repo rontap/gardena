@@ -18,7 +18,7 @@ Hangar `HANGAR_W × HANGAR_H`. Silo `SILO_W × SILO_H`. Door south. No rotate. S
 
 ## Buy
 
-Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. `haggling` does not discount hangar-buys. `buy-hangar` and three silo SKUs automation `skuPrice` (haggling applies). Quad / tractor / trailers are hangar-buy only.
+Unlimited quads, tractors, trailers. `Act.buyVehicle` pays `QUAD_PRICE` / `TRACTOR_PRICE`, not `skuPrice`. Tractor buy `boom` 5. `Act.buyTrailer` pays `TRAILER_*_PRICE`. Hangar-buys are not `skuPrice`. `buy-hangar` and three silo SKUs automation `skuPrice`. Quad / tractor / trailers are hangar-buy only.
 
 `unlock-vehicles` reveals after `unlock-expand`. The three silos are `unlock-silos`. Lens `vehicles` unhidden after `unlock-vehicles` — [[ui/lens]].
 
@@ -139,7 +139,7 @@ Not logged: integrate, follow hitch, boom, burn, stride integrate, synthesized a
 
 `vehicles.kind` — `VehicleKind` is `'quad' | 'tractor'`; Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom; Tractor no slots, `hitch` / `boom: 3 | 5` default 5 persist; fuel is `0..1` on the vehicle, not an Item; trailer is stored or attached, never loose; `TRAILER_CAP` is the only cargo cap.
 
-`vehicles.buy` — Unlimited quads, tractors, trailers; `Act.buyVehicle` / `Act.buyTrailer` pay hangar prices, not `skuPrice`; `haggling` does not discount hangar-buys; `buy-hangar` and three silo SKUs automation `skuPrice`.
+`vehicles.buy` — Unlimited quads, tractors, trailers; `Act.buyVehicle` / `Act.buyTrailer` pay hangar prices, not `skuPrice`; hangar-buys are not `skuPrice`; `buy-hangar` and three silo SKUs automation `skuPrice`.
 
 `vehicles.surface` — Surface mul applies to the cap, not accel, not walk; paved and asphalt from `World.paving`; tilled / rock / `isSolid` slow; grass, untilled bare, cobble, brick, fence normal; after integrate, `floor(x,y)` not owned → reject the step; walk speed unchanged.
 

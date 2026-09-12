@@ -24,7 +24,6 @@ import {
   SPRINKLER_TILE_DAY,
   SUGAR_BAG,
   SUGAR_SHOP,
-  SYNTH_BAG_LITERS,
   COMPOST_VALUE,
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
@@ -47,7 +46,7 @@ import {
   STILL_SECONDS,
 } from './items.ts'
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
-import { BIO_RESTORE, FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
+import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { GrownCrop, TileId } from '../sim/ids.ts'
 import type { Face } from '../sim/item.ts'
@@ -74,7 +73,7 @@ export function catalogEntries(): CatalogEntry[] {
     return {
       id,
       title: CROP_NAME[id](),
-      icon: { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: d.sale, freshness: 1, bio: true, cut: false },
+      icon: { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: d.sale, freshness: 1, cut: false },
       blurb: d.desc(),
     }
   })
@@ -151,12 +150,6 @@ export function catalogEntries(): CatalogEntry[] {
       title: m.names_item_fertilizer(),
       icon: { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS },
       blurb: m.catalog_fertilizer({ n: FERT_BAG_LITERS }),
-    },
-    {
-      id: 'synth-fertilizer',
-      title: m.names_item_synth(),
-      icon: { kind: 'synth', liters: SYNTH_BAG_LITERS, capacityLiters: SYNTH_BAG_LITERS },
-      blurb: m.catalog_synth({ n: SYNTH_BAG_LITERS, restore: BIO_RESTORE }),
     },
     {
       id: 'weed-spray',
@@ -270,7 +263,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'pumpjack',
       title: m.names_building_pump(),
       icon: { kind: 'pumpjack' },
-      blurb: m.catalog_pumpjack({ rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
+      blurb: m.catalog_pumpjack({ rate: SOURCE.pump.rate * DAY_SECONDS, cap: SOURCE.pump.capacity }),
     },
     {
       id: 'chest',
@@ -312,19 +305,13 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'well',
       title: m.names_building_well(),
       icon: { kind: 'well' },
-      blurb: m.catalog_well({ rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
+      blurb: m.catalog_well({ rate: SOURCE.well.rate * DAY_SECONDS, cap: SOURCE.well.capacity }),
     },
     {
       id: 'valve',
       title: m.names_building_valve(),
       icon: { kind: 'valve' },
       blurb: m.catalog_valve(),
-    },
-    {
-      id: 'rain-tank',
-      title: m.names_building_rain_tank(),
-      icon: { kind: 'rain-tank' },
-      blurb: m.catalog_rain_tank({ rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
     },
     {
       id: 'tap',

@@ -7,8 +7,6 @@ import {
   PUMP_COST_DROUGHT,
   PUMP_COST_DRY,
   RAIN_SOAK_TICK,
-  RAIN_TANK_FLOOD,
-  RAIN_TANK_RAIN,
   SEVERE_P,
   SPECIAL_AFTER_CLEAR,
   SPECIAL_START,
@@ -56,11 +54,7 @@ export function forecastWeather(
 
 export function sourceRateMul(kind: SourceKind, weather: WeatherKind): number {
   if (kind === 'pump') return 1
-  if (kind === 'well') return weather === 'drought' ? WELL_DROUGHT : 1
-  if (weather === 'rain') return RAIN_TANK_RAIN
-  if (weather === 'flood') return RAIN_TANK_FLOOD
-  if (weather === 'dry' || weather === 'drought') return 0
-  return 1
+  return weather === 'drought' ? WELL_DROUGHT : 1
 }
 
 export function pumpCostMul(weather: WeatherKind): number {

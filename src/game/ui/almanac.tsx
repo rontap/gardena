@@ -80,7 +80,6 @@ const UTIL_IDS = [
   'bucket',
   'large-bucket',
   'fertilizer',
-  'synth-fertilizer',
   'weed-spray',
   'compost',
   'sugar',
@@ -129,7 +128,6 @@ const AUTO_IDS = [
 const WATER_IDS = [
   'pumpjack',
   'well',
-  'rain-tank',
   'tap',
   'pipe',
   'valve',
@@ -637,8 +635,8 @@ function FreshnessConcept() {
         {m.almanac_fresh_p3_d()}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.jam.name}</AlmanacLink>
         {m.almanac_fresh_p3_e({ i: JAM_ROT * 100, ii: JAM_ROT * 200, iii: JAM_ROT * 300 })}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.clearance.name}</AlmanacLink>
-        {m.almanac_fresh_p3_f()}
+        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
+        {m.almanac_fresh_p3_rotten()}
         <Coin n={1} />
         {m.almanac_fresh_p3_g()}
       </div>
@@ -729,13 +727,9 @@ function DayConcept() {
       <div>
         {m.almanac_day_p3_a()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
-        {m.almanac_day_p3_b()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-late'].name}</AlmanacLink>
-        {m.almanac_day_p3_c()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-24'].name}</AlmanacLink>
-        {m.almanac_day_p3_d()}
+        {m.almanac_day_p3_hours()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.market_sell_all_label()}</AlmanacLink>
-        {m.almanac_day_p3_e()}
+        {m.almanac_day_p3_open()}
       </div>
       <div>
         {m.almanac_see()}
@@ -771,18 +765,11 @@ function MarketConcept() {
         {m.almanac_market_p3_d()}
         <AlmanacLink to={{ tab: 'concepts', id: 'variety' }}>{m.almanac_concept_variety()}</AlmanacLink>
         {m.almanac_market_p3_e({ heirloom: 5 })}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.bio.name}</AlmanacLink>
-        {m.almanac_market_p3_f({ bio: 4 })}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.jam.name}</AlmanacLink>
         {m.almanac_market_p3_g({ jam: JAM_ROT * 100 })}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS.clearance.name}</AlmanacLink>
-        {m.almanac_market_p3_h()}
+        {m.almanac_market_p3_rotten_a()}
         <Coin n={1} />
-        {m.almanac_market_p3_i()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-late'].name}</AlmanacLink>
-        {m.almanac_market_p3_j()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{SKILLS['open-24'].name}</AlmanacLink>
-        {m.almanac_market_p3_k()}
+        {m.almanac_market_p3_rotten_b()}
       </div>
       <div>
         {m.almanac_see()}
@@ -1056,7 +1043,7 @@ function PipePane({ title, blurb }: { title: string; blurb: string }) {
 }
 
 function fruitFace(crop: GrownCrop, variety: VarietyId, sale: number): Face {
-  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, bio: true, cut: false }
+  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, cut: false }
 }
 
 function CropPane({ id, done }: { id: GrownCrop; done: AlmanacDone }) {

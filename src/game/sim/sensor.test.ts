@@ -23,7 +23,6 @@ function ready(w: World): void {
   w.done.add('unlock-sensors')
   w.done.add('unlock-advanced-sensors')
   w.done.add('unlock-smart-irrigation')
-  w.done.add('unlock-fertilizer')
   w.money = 999
 }
 
@@ -1021,7 +1020,6 @@ describe('1.6 sensors', () => {
   test('Chest no empty slot (`CHEST_SLOTS` 9/9) → `out` 1 after `SENSOR_HOLD`.', () => {
     const w = new World(1)
     ready(w)
-    w.done.add('unlock-chest')
     w.buy('buy-chest')
     w.confirmPlace(A)
     const chest = w.cell(A)

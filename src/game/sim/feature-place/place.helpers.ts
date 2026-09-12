@@ -16,7 +16,6 @@ import {
   occupiedCells,
   PotStill,
   Pump,
-  RainTank,
   ResearchStation,
   SiloProduce,
   SiloSeed,
@@ -86,15 +85,6 @@ export function deleteBuildingBody(w: World, at: Coord): void {
       w.setCell(p, bare('soft', 0))
     })
     w.pumps.splice(w.pumps.indexOf(c), 1)
-    w.dirtyNets()
-    w.ping()
-    return
-  }
-  if (c.kind === 'rain-tank') {
-    occupiedCells(c.base, w.owned).forEach(p => {
-      w.setCell(p, bare('soft', 0))
-    })
-    w.tanks.splice(w.tanks.indexOf(c), 1)
     w.dirtyNets()
     w.ping()
     return
@@ -290,7 +280,6 @@ export function confirmPlace(w: World, at: Coord): void {
   }
   if (
     w.act.place.id === 'buy-pumpjack' ||
-    w.act.place.id === 'buy-rain-tank' ||
     w.act.place.id === 'buy-still' ||
     w.act.place.id === 'buy-research-station'
   ) {
@@ -308,9 +297,8 @@ export function confirmPlace(w: World, at: Coord): void {
       w.setCell({ col: at.col + 1, row: at.row }, still)
       w.dirtyNets()
     } else {
-      const made = w.act.place.id === 'buy-pumpjack' ? new Pump(base, 'jack') : new RainTank(base)
-      if (made.kind === 'pump') w.pumps.push(made)
-      else w.tanks.push(made)
+      const made = new Pump(base, 'jack')
+      w.pumps.push(made)
       w.setCell(at, made)
       w.setCell({ col: at.col + 1, row: at.row }, made)
       w.dirtyNets()
@@ -462,7 +450,6 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'compost-box' ||
     made.kind === 'well' ||
     made.kind === 'valve' ||
-    made.kind === 'rain-tank' ||
     made.kind === 'tap' ||
     made.kind === 'pipe' ||
     made.kind === 'sprinkler' ||

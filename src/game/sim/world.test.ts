@@ -201,7 +201,7 @@ describe('beta-1 invariants', () => {
         const w = new World()
         w.buy('buy-pumpjack')
         expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
-        w.money = 50
+        w.money = 200
         w.done.add('unlock-irrigation')
         w.done.add('unlock-water-storage')
         w.buy('buy-pumpjack')
@@ -458,7 +458,6 @@ describe('beta-2 invariants', () => {
                 count: 2,
                 unitSale: 4,
                 freshness: 1,
-                bio: true,
                 cut: false
             }
         }
@@ -473,7 +472,6 @@ describe('beta-2 invariants', () => {
                 count: 3,
                 unitSale: 4,
                 freshness: 1,
-                bio: true,
                 cut: false
             }
         }
@@ -510,8 +508,8 @@ describe('beta-2 invariants', () => {
         expect(w.job.kind === 'run' && w.job.left).toBeCloseTo(RESEARCH['unlock-tomato'].seconds - 3, 5)
     })
 
-    test('shovel SKU is 10', () => {
-        expect(SKUS['buy-shovel'].price).toBe(10)
+    test('shovel SKU is 8', () => {
+        expect(SKUS['buy-shovel'].price).toBe(8)
     })
 
     test('dig growing drops seed; dead drops compostable', () => {
@@ -558,9 +556,7 @@ describe('beta-2 invariants', () => {
         expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({cost: 60, seconds: 100})
         expect(RESEARCH['unlock-silos']).toMatchObject({cost: 30, seconds: 60})
         expect(RESEARCH['unlock-dispatch']).toMatchObject({cost: 100, seconds: 80, tree: 'automation'})
-        expect(RESEARCH['unlock-fertilizer']).toMatchObject({cost: 10, seconds: 30})
         expect(RESEARCH['unlock-crop-variants']).toMatchObject({cost: 16, seconds: 40, tree: 'plants'})
-        expect(RESEARCH['unlock-pickaxe']).toMatchObject({cost: 12, seconds: 40})
     })
 })
 
@@ -771,9 +767,9 @@ describe('beta-3 invariants', () => {
         expect(w.cell({col: AT.col, row: AT.row + 1})).toEqual(bare('soft', 0))
     })
 
-    test('pickaxe sku 20 gated on unlock-pickaxe; rarity table', () => {
+    test('pickaxe sku 20 gated on unlock-better-tools; rarity table', () => {
         expect(SKUS['buy-pickaxe'].price).toBe(18)
-        expect(SKUS['buy-pickaxe'].unlock).toBe('unlock-pickaxe')
+        expect(SKUS['buy-pickaxe'].unlock).toBe('unlock-better-tools')
         expect(SKUS['buy-better-pickaxe'].unlock).toBe('unlock-hardened-tools')
         expect(qualityMul(0)).toBe(1)
         expect(qualityMul(1)).toBe(3.5)
@@ -805,7 +801,7 @@ describe('beta-4 invariants', () => {
         expect(grafts.every(g => g.count === 1 && g.quality === 0 && VARIETY[g.variety as Exclude<VarietyId, 'base'>].crop === g.crop)).toBe(true)
         const fruit = inv.flatMap(s => (s.kind === 'hold' && s.item.kind === 'fruit' ? [s.item] : []))
         expect(fruit.map(f => f.variety).sort()).toEqual([...STARTER_FRUIT].sort())
-        expect(fruit.every(f => f.count === STARTER_FRUIT_N && f.quality === 0 && f.freshness === 1 && f.bio)).toBe(true)
+        expect(fruit.every(f => f.count === STARTER_FRUIT_N && f.quality === 0 && f.freshness === 1)).toBe(true)
         expect(inv.filter(s => s.kind === 'hold').length).toBe(
             TREE_IDS.length + STARTER_TREE_GRAFTS.length + STARTER_FRUIT.length,
         )
@@ -813,10 +809,9 @@ describe('beta-4 invariants', () => {
     })
 
     test('buy-chest place 1x1 own slots', () => {
-        expect(SKUS['buy-chest'].price).toBe(18)
-        expect(RESEARCH['unlock-chest'].cost).toBe(10)
+        expect(SKUS['buy-chest'].price).toBe(12)
+        expect(SKUS['buy-chest'].unlock).toBe('start')
         const w = new World()
-        w.done.add('unlock-chest')
         const a = {col: 10, row: 12}
         const b = {col: 11, row: 12}
         w.setCell(a, {kind: 'empty', soil: bed()})
@@ -860,7 +855,6 @@ describe('beta-4 invariants', () => {
                 count: 1,
                 unitSale: 28,
                 freshness: 1,
-                bio: true,
                 cut: false
             },
         }
@@ -914,7 +908,6 @@ describe('beta-4 invariants', () => {
                 count: n,
                 unitSale: 22.5,
                 freshness: 1,
-                bio: true,
                 cut: false
             },
         }
@@ -948,14 +941,11 @@ describe('beta-4 invariants', () => {
         expect(RESEARCH['unlock-tomato'].name).toBe('Tomato seeds')
         expect(RESEARCH['unlock-raspberry'].name).toBe('Raspberry seeds')
         expect(RESEARCH['unlock-heirloom'].name).toBe('Heirloom crops')
-        expect(RESEARCH['unlock-fertilizer'].name).toBe('Synthetic additives')
         expect(RESEARCH['unlock-better-tools'].name).toBe('Gardening tools')
         expect(RESEARCH['unlock-irrigation'].name).toBe('Irrigation')
-        expect(RESEARCH['unlock-chest'].name).toBe('Chest')
         expect(RESEARCH['unlock-water-storage'].name).toBe('Water storage')
         expect(RESEARCH['unlock-silos'].name).toBe('Field silos')
         expect(RESEARCH['unlock-expand'].name).toBe('Expansion')
-        expect(RESEARCH['unlock-pickaxe'].name).toBe('Pickaxes')
         expect(RESEARCH['unlock-grinder'].name).toBe('Machinery')
         expect(RESEARCH['unlock-expand'].tree).toBe('land')
     })
@@ -971,7 +961,6 @@ describe('beta-4 invariants', () => {
                 count: 3,
                 unitSale: 4,
                 freshness: 1,
-                bio: true,
                 cut: false
             }, w.modifiers),
         ).toBe(`Carrot - 3, freshness 100% ${m.hud_quality_pct({n: 0})}`)
@@ -1005,8 +994,10 @@ describe('beta-4 invariants', () => {
     test('better pickaxe shown after pickaxe research', () => {
         const w = new World()
         expect(w.skuShown('buy-pickaxe')).toBe(true)
+        expect(w.skuOpen('buy-pickaxe')).toBe(false)
         expect(w.skuShown('buy-better-pickaxe')).toBe(false)
-        w.done.add('unlock-pickaxe')
+        w.done.add('unlock-better-tools')
+        expect(w.skuOpen('buy-pickaxe')).toBe(true)
         expect(w.skuShown('buy-better-pickaxe')).toBe(false)
         expect(w.skuOpen('buy-better-pickaxe')).toBe(false)
         w.done.add('unlock-hardened-tools')
@@ -1051,8 +1042,8 @@ describe('beta-5 invariants', () => {
     })
 
     test('prices outputs starter reservoirs', () => {
-        expect(SKUS['buy-pumpjack'].price).toBe(50)
-        expect(SKUS['buy-well'].price).toBe(75)
+        expect(SKUS['buy-pumpjack'].price).toBe(75)
+        expect(SKUS['buy-well'].price).toBe(50)
         const w = new World()
         w.done.add('unlock-irrigation')
         w.done.add('unlock-auto-irrigation')
@@ -1234,7 +1225,7 @@ describe('beta-5 invariants', () => {
         expect(w.skuOpen('buy-sprinkler')).toBe(true)
     })
 
-    test('`unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `haggling`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+    test('`unlock-dispatch` automation, `reveal` and `requires` `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. `Sku.tab` automation. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
         expect(RESEARCH['unlock-dispatch']).toMatchObject({
             tree: 'automation',
             reveal: ['unlock-vehicles'],
@@ -1501,7 +1492,6 @@ describe('beta-6 invariants', () => {
                 count: 1,
                 unitSale: 4,
                 freshness: 1,
-                bio: true,
                 cut: false
             },
         }
@@ -1515,7 +1505,6 @@ describe('beta-6 invariants', () => {
                 count: 1,
                 unitSale: 6,
                 freshness: 1,
-                bio: true,
                 cut: false
             },
         }
@@ -1545,7 +1534,6 @@ describe('beta-6 invariants', () => {
             'pack-chilli',
             'pack-grass',
             'buy-fertilizer',
-            'buy-synth-fertilizer',
             'buy-weed-spray',
             'buy-sugar',
         ]
@@ -1590,7 +1578,6 @@ describe('beta-6 invariants', () => {
 
     test('delete chest drops items; house delete is no-op', () => {
         const w = new World()
-        w.done.add('unlock-chest')
         w.money = 200
         w.buy('buy-chest')
         w.setCell(AT, {kind: 'empty', soil: bed()})
@@ -1749,7 +1736,7 @@ describe('world.pulse', () => {
 })
 
 describe('family.unlockSkills', () => {
-    test('`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner, including `haggling`. Ignores gates. Rebuilds skill modifiers from owned tree `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.', () => {
+    test('`unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner. Ignores gates. Rebuilds skill modifiers from owned tree `better-*` at that tier. Empties offers. `unlockAll` still does not grant skills.', () => {
         const w = new World(1)
         w.grantPoints(1)
         const points = w.points
@@ -1764,7 +1751,6 @@ describe('family.unlockSkills', () => {
             expect(w.family[member].offers).toEqual([])
             expect(w.family[member].pickCount).toBe(member === 'player' ? pick : 0)
         })
-        expect(w.hasSkill('haggling')).toBe(true)
         expect(w.done.has('unlock-grape')).toBe(false)
         expect(w.skillTier('better-grape')).toBe(SKILLS['better-grape'].maxTier)
         expect(w.points).toBe(points)
@@ -1774,7 +1760,7 @@ describe('family.unlockSkills', () => {
             return e.kind === 'better' && e.saleMul !== 1
         })
         expect(w.modifiers.filter(m => m.source === 'skill').map(m => m.id).sort()).toEqual([...better].sort())
-        expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price - SKILLS.haggling.maxTier)
+        expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price)
         expect(w.log).toEqual([{a: Act.cheat, t: 0, p: 0, k: 'skills'}])
 
         const u = new World(1)
@@ -1788,7 +1774,6 @@ describe('family.unlockSkills', () => {
         expect(u.family.player.owned.size).toBe(owned.player)
         expect(u.family.husband.owned.size).toBe(owned.husband)
         expect(u.family.daughter.owned.size).toBe(owned.daughter)
-        expect(u.hasSkill('haggling')).toBe(false)
         expect(u.family.player.offers).toBe(offers)
     })
 })
@@ -1819,7 +1804,7 @@ describe('vehicles.silo-store', () => {
         expect(spray.putAdditive('fertilizer', 90)).toBe(90)
         expect(spray.used).toBe(90)
 
-        const fruit = {kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0.5, count: 2, unitSale: 3, freshness: 1, bio: true, cut: false} as const
+        const fruit = {kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0.5, count: 2, unitSale: 3, freshness: 1, cut: false} as const
         expect(produce.accept(fruit)).toBe(1)
         expect(produce.accept({kind: 'weed', count: 1})).toBe(1)
         expect(produce.accept({kind: 'grass', count: 1})).toBe(1)

@@ -42,23 +42,23 @@ Three states, view-local in `map.tsx`. Not `World`, not Save, not logged.
 
 Effective lens = `toolLens` when set, else `lens`. Disarm restores the picked lens; it never overwrites it. `toolLens` is `sensors` while a sensor-cell sku is armed, `pipes` while a `PIPE_PLACE` sku or delete is armed.
 
-Build peek is not `toolLens` and is not a lock. App remembers the `lens` that was on, writes the tab's lens, and restores on leaving that tab, closing Build, or opening another panel. Water → `pipes` (pumps, pipes, sprinklers — not Water need; Water need is a study skill). Sensors → `sensors`. Automation, Storage, Tools, Land restore. Automation peeks no lens. Storage peeks no lens. `lensLock` already true → no write, no remember, no restore. Confirming a sensor-cell place still sets and locks `sensors`, once per arming.
+Build peek is not `toolLens` and is not a lock. App remembers the `lens` that was on, writes the tab's lens, and restores on leaving that tab, closing Build, or opening another panel. Water → `pipes` (pumps, pipes, sprinklers — not Water need; Water need is `unlock-auto-irrigation` in `done`). Sensors → `sensors`. Automation, Storage, Tools, Land restore. Automation peeks no lens. Storage peeks no lens. `lensLock` already true → no write, no remember, no restore. Confirming a sensor-cell place still sets and locks `sensors`, once per arming.
 
 **Lock view** sits under **No lens**, `selected` on `lensLock`, disabled while `lens === 'off'` with the reason in the row — [[ui/callout-hover]]. Closing the dock (**×**, rail toggle, Esc) drops an unlocked lens to `off` and keeps a locked one.
 
 Rail **Lens** sub-line carries the lens id, and *locked* with it when locked, beside a **×** that clears lens and lock without opening the dock — [[ui/hud]].
 
-Hide **Water need** until husband owns `water-study`; hide **Land quality** until `land-study`. Hidden rows are counted and reported in the footer line — *n more lenses are waiting on a family study skill* — so the player knows they exist. If the active lens loses its skill, force `off`.
+Hide **Water need** until `unlock-auto-irrigation` in `done`; hide **Land quality** until `unlock-expand` in `done`. Hidden rows are counted and reported in the footer line — **{n} more lens waits on research.** / **{n} more lenses wait on research.** — so the player knows they exist. If the active lens's row is not in `done`, force `off`.
 
-Hide **Sensors** until `unlock-sensors`. Not a family-study row. Not in that footer.
+Hide **Sensors** until `unlock-sensors`. Not in that footer.
 
-Hide **Vehicle interactions** until `unlock-vehicles`. Not a family-study row. Not in that footer.
+Hide **Vehicle interactions** until `unlock-vehicles`. Not in that footer.
 
 Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e9be6`. Cottage tokens [[art/palette]].
 
 Pipes (joints, valves, sprinklers, fences) always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku — [[ui/place]]. Lens **Pipes** is the wetness tint + sprinkler AoE wash, not the only way to see joints.
 
-Water-source mark (`pipe-source`, × + tap glyph on each occupied pump / rain-tank cell) only while pipes overlay is on (`lens === 'pipes'` or delete / a `PIPE_PLACE` sku). Not faint. Hidden when joints are faint. Joints stay always drawn.
+Water-source mark (`pipe-source`, × + tap glyph on each occupied pump cell) only while pipes overlay is on (`lens === 'pipes'` or delete / a `PIPE_PLACE` sku). Not faint. Hidden when joints are faint. Joints stay always drawn.
 
 Wetness + AoE wash when `lens === 'pipes'` or place is delete / an `AOE_WASH` sku (`buy-pipe` `buy-valve` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large`). Unarmed hover of a placed sprinkler also paints that head’s `aoe()` — [[ui/place]].
 

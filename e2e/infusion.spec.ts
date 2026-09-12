@@ -165,7 +165,6 @@ test('chilli sow and mill flakes', async ({ page }) => {
           count: millIn,
           unitSale: 1,
           freshness: 1,
-          bio: true,
           cut: false,
         },
       }
@@ -223,7 +222,6 @@ test('vanilla mill 1 fruit to 4 vanilla-extract', async ({ page }) => {
           count: millIn,
           unitSale: 1,
           freshness: 1,
-          bio: true,
           cut: false,
         },
       }

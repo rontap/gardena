@@ -58,7 +58,7 @@ function badge(item: Item): string | undefined {
     return String(item.usesLeft)
   }
   if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Math.visualRound(item.liters)}L`
   }
   if (
@@ -117,7 +117,7 @@ function heldNumber(item: Item): string {
     return String(item.usesLeft)
   }
   if (item.kind === 'container') return `${Math.visualRound(item.liters)}L`
-  if (item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+  if (item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray') {
     return `${Math.visualRound(item.liters)}L`
   }
   if (item.kind === 'sugar') return `${Math.visualRound(item.liters)}L`

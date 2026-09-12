@@ -27,7 +27,7 @@ List **all** `World.trailers`, array order. Each row: icon by kind, status **Sto
 
 ### Buy rows
 
-Not shelf SKUs. Not `skuPrice`. `haggling` does not discount. Click hangar XY. Poor / not researched: sim no-op. No toast. Labels **Buy Quad** **Buy Tractor** **Buy seeder** **Buy sprayer** **Buy harvester**. Prices `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`.
+Not shelf SKUs. Not `skuPrice`. Click hangar XY. Poor / not researched: sim no-op. No toast. Labels **Buy Quad** **Buy Tractor** **Buy seeder** **Buy sprayer** **Buy harvester**. Prices `QUAD_PRICE` `TRACTOR_PRICE` `TRAILER_*_PRICE`.
 
 **Deploy** enabled iff the selected vehicle is stored; if tractor and a trailer selected, that trailer must be stored. Click `deploy(id, at, hitch)` this hangar. Seats immediately; cue none closes the dialog.
 

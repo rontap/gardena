@@ -64,13 +64,8 @@ export function betterGain(crop: CropId, h: number, tierOf: (id: SkillId) => num
 }
 
 export const HUSBAND_SKILL_IDS: readonly HusbandSkillId[] = [
-    'research-speed',
     'machinery',
-    'haggling',
     'forecast',
-    'tax',
-    'water-study',
-    'land-study',
     'inherit-land',
     'lucky-husband',
 ]
@@ -79,10 +74,7 @@ export const DAUGHTER_SKILL_IDS: readonly DaughterSkillId[] = [
     'heirloom',
     'industrial',
     'broker',
-    'open-late',
-    'open-24',
     'jam',
-    'clearance',
     'lucky-daughter',
 ]
 
@@ -97,8 +89,6 @@ export function jamRotMul(tier: number, freshness: number): number {
 export type SkillGate =
     | { kind: 'none' }
     | { kind: 'research'; id: ResearchId }
-    | { kind: 'skill'; id: 'open-late' }
-    | { kind: 'hidden' }
 
 export type SkillEffect =
     | { kind: 'walk'; mul: 1.05 }
@@ -106,22 +96,13 @@ export type SkillEffect =
     | { kind: 'driving-classes' }
     | { kind: 'machine'; mul: 1.05 }
     | { kind: 'tend' }
-    | { kind: 'research-speed'; mul: 1.05 }
-    | { kind: 'haggling' }
     | { kind: 'broker' }
     | { kind: 'industrial' }
-    | { kind: 'tax'; mul: 0.98 }
-    | { kind: 'water-study' }
-    | { kind: 'land-study' }
     | { kind: 'inherit-land' }
     | { kind: 'saleswoman'; mul: 1.02 }
     | { kind: 'heirloom'; mul: 1.05 }
     | { kind: 'better'; crop: CropId; saleMul: number }
-    | { kind: 'bio'; mul: 1.04 }
-    | { kind: 'open-late' }
-    | { kind: 'open-24' }
     | { kind: 'jam' }
-    | { kind: 'clearance' }
     | { kind: 'forecast' }
     | { kind: 'lucky' }
     | { kind: 'seed-bank' }
@@ -151,16 +132,10 @@ function row<Id extends SkillId>(
 const WALK_PCT = 5
 const DRIVE_PCT = 5
 const MACHINE_PCT = 5
-const RESEARCH_PCT = 5
-const TAX_PCT = 2
 const SALE_PCT = 2
 const HEIRLOOM_PCT = 5
 const BETTER_SALE_PCT = 4
-const BIO_PCT = 4
 const INDUSTRIAL_PCT = 3
-const HAGGLE_OFF = 1
-const PRICE_FLOOR = 1
-const CLEARANCE_PRICE = 1
 const JAM_PCT = Math.round(JAM_ROT * 100)
 
 export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
@@ -227,23 +202,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         1,
         {kind: 'tend'},
     ),
-    'research-speed': row(
-        'research-speed',
-        'husband',
-        m.skills_research_speed_name(),
-        m.skills_research_speed_blurb({pct: RESEARCH_PCT}),
-        3,
-        {kind: 'research-speed', mul: 1.05},
-    ),
-    haggling: row(
-        'haggling',
-        'husband',
-        m.skills_haggling_name(),
-        m.skills_haggling_blurb({off: HAGGLE_OFF}),
-        3,
-        {kind: 'haggling'},
-        {kind: 'hidden'},
-    ),
     forecast: row(
         'forecast',
         'husband',
@@ -251,30 +209,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_forecast_blurb(),
         1,
         {kind: 'forecast'},
-    ),
-    tax: row(
-        'tax',
-        'husband',
-        m.skills_tax_name(),
-        m.skills_tax_blurb({pct: TAX_PCT}),
-        3,
-        {kind: 'tax', mul: 0.98},
-    ),
-    'water-study': row(
-        'water-study',
-        'husband',
-        m.skills_water_study_name(),
-        m.skills_water_study_blurb(),
-        1,
-        {kind: 'water-study'},
-    ),
-    'land-study': row(
-        'land-study',
-        'husband',
-        m.skills_land_study_name(),
-        m.skills_land_study_blurb(),
-        1,
-        {kind: 'land-study'},
     ),
     'inherit-land': row(
         'inherit-land',
@@ -379,14 +313,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         1,
         {kind: 'better', crop: 'cherry', saleMul: 1.04},
     ),
-    bio: row(
-        'bio',
-        'daughter',
-        m.skills_bio_name(),
-        m.skills_bio_blurb({pct: BIO_PCT}),
-        3,
-        {kind: 'bio', mul: 1.04},
-    ),
     industrial: row(
         'industrial',
         'daughter',
@@ -404,23 +330,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         {kind: 'broker'},
         {kind: 'research', id: 'unlock-contracts'},
     ),
-    'open-late': row(
-        'open-late',
-        'daughter',
-        m.skills_open_late_name(),
-        m.skills_open_late_blurb(),
-        1,
-        {kind: 'open-late'},
-    ),
-    'open-24': row(
-        'open-24',
-        'daughter',
-        m.skills_open_24_name(),
-        m.skills_open_24_blurb(),
-        1,
-        {kind: 'open-24'},
-        {kind: 'skill', id: 'open-late'},
-    ),
     jam: row(
         'jam',
         'daughter',
@@ -428,14 +337,6 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef<K> } = {
         m.skills_jam_blurb({pct: JAM_PCT}),
         3,
         {kind: 'jam'},
-    ),
-    clearance: row(
-        'clearance',
-        'daughter',
-        m.skills_clearance_name(),
-        m.skills_clearance_blurb({price: CLEARANCE_PRICE}),
-        1,
-        {kind: 'clearance'},
     ),
 }
 
@@ -464,22 +365,14 @@ export function skillBlurb(id: SkillId, tier: number): string {
             return m.skills_driving_classes_skillblurb({pct: DRIVE_PCT * tier})
         case 'machinery':
             return m.skills_machinery_skillblurb({pct: MACHINE_PCT * tier})
-        case 'research-speed':
-            return m.skills_research_speed_skillblurb({pct: RESEARCH_PCT * tier})
-        case 'haggling':
-            return m.skills_haggling_skillblurb({off: HAGGLE_OFF * tier, floor: PRICE_FLOOR})
         case 'industrial':
             return m.skills_industrial_skillblurb({pct: INDUSTRIAL_PCT * tier})
         case 'broker':
             return tier === 1 ? m.skills_broker_skillblurb() : m.skills_broker_skillblurb_ii()
-        case 'tax':
-            return m.skills_tax_skillblurb({pct: TAX_PCT * tier, floor: PRICE_FLOOR})
         case 'saleswoman':
             return m.skills_saleswoman_skillblurb({pct: SALE_PCT * tier})
         case 'heirloom':
             return m.skills_heirloom_skillblurb({pct: HEIRLOOM_PCT * tier})
-        case 'bio':
-            return m.skills_bio_skillblurb({pct: BIO_PCT * tier})
         case 'seed-bank':
             return m.skills_seed_bank_skillblurb({pct: Math.round(seedBankQuality(tier) * 100)})
         case 'jam':

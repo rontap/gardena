@@ -73,7 +73,7 @@ Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not
 
 `researchStarted` = `job.kind === 'run'` or `done.size > 0`. Completes on `startResearch` that actually starts. No-op (`job` already run, id already done, gated, `money < cost`) does not start. Opening Research is App-local and does not complete.
 
-`stallStocked` = some `StallGood` has any rarity×bio count > 0.
+`stallStocked` = some `StallGood` bin count > 0.
 
 ## Steps
 

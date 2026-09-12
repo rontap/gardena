@@ -650,7 +650,7 @@ function pushHistory(w: World, e: HistoryEntry): void {
 
 function consignDemand(w: World, d: Demand, n: number, infused: boolean): void {
   if (d.kind === 'plain') {
-    if (isCropStall(d.good)) w.stall[d.good].take('base', n, 1, false)
+    if (isCropStall(d.good)) w.stall[d.good].take('base', n, 1)
     else if (isInfusedStall(d.good)) w.stall[d.good].takeSpirit('base', n, cleanUnit(d), infused)
     else if (d.good === 'sugar') w.stall.sugar.takeSugar(n, SUGAR_MILL)
     else w.stall[d.good].takeBaked(n, cleanUnit(d))

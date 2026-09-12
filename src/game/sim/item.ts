@@ -48,9 +48,9 @@ import {
   STATION_SECONDS,
   INFUSE_SECONDS,
   SUGAR_SHOP,
-  SYNTH_BAG_LITERS,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
+import { DAY_SECONDS } from './clock.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
 import { caskGroup, purposeMul, qualityMul, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
@@ -79,7 +79,6 @@ export type FruitStack = {
   count: number
   unitSale: number
   freshness: number
-  bio: boolean
   cut: boolean
 }
 
@@ -88,10 +87,9 @@ export type Item =
   | { kind: 'pickaxe'; id: PickaxeId; usesLeft: number; workSeconds: number }
   | { kind: 'container'; id: ContainerId; liters: number; capacityLiters: number }
   | { kind: 'fertilizer'; liters: number; capacityLiters: number }
-  | { kind: 'synth'; liters: number; capacityLiters: number }
   | { kind: 'compost'; liters: number; capacityLiters: number }
   | { kind: 'seeds'; crop: AnnualId; variety: VarietyId; quality: number; count: number }
-  | { kind: 'fruit'; crop: GrownCrop; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; bio: boolean; cut: boolean }
+  | { kind: 'fruit'; crop: GrownCrop; variety: VarietyId; quality: number; count: number; unitSale: number; freshness: number; cut: boolean }
   | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
   | { kind: 'graft'; crop: GrownCrop; variety: VarietyId; quality: number; count: number }
   | { kind: 'sugar'; liters: number; capacityLiters: number; unitSale: number; quality: number }
@@ -133,7 +131,6 @@ export type Face =
   | { kind: 'sprinkler-vert' }
   | { kind: 'sprinkler-large' }
   | { kind: 'valve' }
-  | { kind: 'rain-tank' }
   | { kind: 'tap' }
   | { kind: 'water' }
   | { kind: 'mill' }
@@ -276,7 +273,6 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'pickaxe') return PICKAXE_NAME[it.id]()
   if (it.kind === 'container') return CONTAINER_NAME[it.id]()
   if (it.kind === 'fertilizer') return m.names_item_fertilizer()
-  if (it.kind === 'synth') return m.names_item_synth()
   if (it.kind === 'compost') return m.names_item_compost()
   if (it.kind === 'seeds') {
     if (it.crop === 'grass') return m.names_item_grass_seed()
@@ -335,7 +331,6 @@ const PLACE_NAME = {
   'sprinkler-vert': () => m.names_building_sprinkler_vert(),
   'sprinkler-large': () => m.names_building_sprinkler_large(),
   valve: () => m.names_building_valve(),
-  'rain-tank': () => m.names_building_rain_tank(),
   tap: () => m.names_building_tap(),
   mill: () => m.names_building_mill(),
   'jam-machine': () => m.names_building_jam(),
@@ -398,7 +393,6 @@ export function faceName(face: Face): string {
     case 'sprinkler-vert':
     case 'sprinkler-large':
     case 'valve':
-    case 'rain-tank':
     case 'tap':
     case 'mill':
     case 'jam-machine':
@@ -491,13 +485,6 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'fertilizer') {
     return m.hud_line_liters({
       name: m.names_item_fertilizer(),
-      liters: Math.visualRound(item.liters),
-      capacity: item.capacityLiters,
-    })
-  }
-  if (item.kind === 'synth') {
-    return m.hud_line_liters({
-      name: m.names_item_synth(),
       liters: Math.visualRound(item.liters),
       capacity: item.capacityLiters,
     })
@@ -608,7 +595,6 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-bucket': () => m.names_sku_buy_bucket(),
   'buy-bucket-large': () => m.names_sku_buy_bucket_large(),
   'buy-fertilizer': () => m.names_sku_buy_fertilizer(),
-  'buy-synth-fertilizer': () => m.names_sku_buy_synth_fertilizer(),
   'buy-weed-spray': () => m.names_sku_buy_weed_spray(),
   'buy-compost-box': () => m.names_sku_buy_compost_box(),
   'buy-pumpjack': () => m.names_sku_buy_pumpjack(),
@@ -620,7 +606,6 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-sprinkler-large': () => m.names_sku_buy_sprinkler_large(),
   'buy-well': () => m.names_sku_buy_well(),
   'buy-valve': () => m.names_sku_buy_valve(),
-  'buy-rain-tank': () => m.names_sku_buy_rain_tank(),
   'buy-tap': () => m.names_sku_buy_tap(),
   'buy-tile-paved': () => m.names_sku_buy_tile_paved(),
   'buy-tile-brick': () => m.names_sku_buy_tile_brick(),
@@ -689,20 +674,18 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-bucket': () => m.catalog_bucket({ n: CONTAINERS.bucket.capacityLiters, plot: SOIL_WATER_MID }),
   'buy-bucket-large': () => m.catalog_bucket({ n: CONTAINERS['large-bucket'].capacityLiters, plot: SOIL_WATER_MID }),
   'buy-fertilizer': () => m.catalog_sku_buy_fertilizer({ n: FERT_BAG_LITERS }),
-  'buy-synth-fertilizer': () => m.catalog_sku_buy_synth_fertilizer({ n: SYNTH_BAG_LITERS }),
   'buy-weed-spray': () => m.catalog_weed_spray({ n: WEED_SPRAY_BAG }),
   'buy-compost-box': () =>
     m.catalog_sku_buy_compost_box({ need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS }),
-  'buy-pumpjack': () => m.catalog_pumpjack({ rate: SOURCE.pump.rate, cap: SOURCE.pump.capacity }),
+  'buy-pumpjack': () => m.catalog_pumpjack({ rate: SOURCE.pump.rate * DAY_SECONDS, cap: SOURCE.pump.capacity }),
   'buy-chest': () => m.catalog_chest({ n: CHEST_SLOTS }),
   'buy-grinder': () => m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
   'buy-pipe': () => m.catalog_pipe(),
   'buy-sprinkler': () => m.catalog_sprinkler({ w: 2, h: 2, day: SPRINKLER_TILE_DAY }),
   'buy-sprinkler-vert': () => m.catalog_sprinkler_vert({ w: 4, h: 2, day: SPRINKLER_TILE_DAY }),
   'buy-sprinkler-large': () => m.catalog_sprinkler_large({ w: 4, h: 4, day: SPRINKLER_TILE_DAY }),
-  'buy-well': () => m.catalog_well({ rate: SOURCE.well.rate, cap: SOURCE.well.capacity }),
+  'buy-well': () => m.catalog_well({ rate: SOURCE.well.rate * DAY_SECONDS, cap: SOURCE.well.capacity }),
   'buy-valve': () => m.catalog_valve(),
-  'buy-rain-tank': () => m.catalog_rain_tank({ rate: SOURCE['rain-tank'].rate, cap: SOURCE['rain-tank'].capacity }),
   'buy-tap': () => m.catalog_tap({ rate: TAP_RATE }),
   'buy-tile-paved': () => m.catalog_sku_buy_tile(),
   'buy-tile-brick': () => m.catalog_sku_buy_tile(),
@@ -792,10 +775,6 @@ export function makeFertilizer(): Item {
   return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
 }
 
-export function makeSynth(): Item {
-  return { kind: 'synth', liters: SYNTH_BAG_LITERS, capacityLiters: SYNTH_BAG_LITERS }
-}
-
 export function makeCompost(): Item {
   return { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS }
 }
@@ -840,8 +819,6 @@ export function skuItem(id: SkuId): Face {
       return makeContainer('large-bucket', CONTAINERS['large-bucket'].capacityLiters)
     case 'buy-fertilizer':
       return makeFertilizer()
-    case 'buy-synth-fertilizer':
-      return makeSynth()
     case 'buy-weed-spray':
       return { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG }
     case 'buy-compost-box':
@@ -864,8 +841,6 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'well' }
     case 'buy-valve':
       return { kind: 'valve' }
-    case 'buy-rain-tank':
-      return { kind: 'rain-tank' }
     case 'buy-tap':
       return { kind: 'tap' }
     case 'buy-tile-paved':
@@ -958,10 +933,9 @@ export function fruitStack(
   count: number,
   unitSale: number,
   freshness: number,
-  bio: boolean,
   cut: boolean,
 ): FruitStack {
-  return { crop, variety, quality, count, unitSale, freshness, bio, cut }
+  return { crop, variety, quality, count, unitSale, freshness, cut }
 }
 
 export function mergeQuality(
@@ -1021,7 +995,6 @@ export function mergeInto(a: Countable, b: Countable, n: number): void {
     a.unitSale = mergeUnitSale(a, part)
     a.freshness = mergeFreshness(a, part)
     a.quality = mergeQuality(a, part)
-    a.bio = a.bio && b.bio
     a.cut = a.cut || b.cut
   } else if ('unitSale' in a && 'unitSale' in b) {
     a.unitSale = mergeUnitSale(a, { ...b, count: n })
@@ -1045,7 +1018,6 @@ function copyItem(item: Item): Item {
     case 'pickaxe':
     case 'container':
     case 'fertilizer':
-    case 'synth':
     case 'compost':
     case 'seeds':
     case 'fruit':
@@ -1110,7 +1082,7 @@ export function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: 
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'synth' || item.kind === 'compost' || item.kind === 'weed-spray') {
+  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray') {
     const piece = { ...item }
     if (!insertSlots(slots, piece, maxSlots, undefined)) return false
     item.liters = 0

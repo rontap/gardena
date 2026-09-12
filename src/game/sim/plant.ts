@@ -9,7 +9,6 @@ export class Plant {
   maturity = 0
   freshness = 1
   happiness = HAPPY_START
-  bio = true
   tended = false
 
   readonly crop: PlantCrop

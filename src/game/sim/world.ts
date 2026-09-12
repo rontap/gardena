@@ -78,7 +78,6 @@ import {
   type Hangar,
   type Necronomicon,
   type PotStill,
-  type RainTank,
   type RectBase,
   type SiloProduce,
   type SiloSeed,
@@ -259,7 +258,6 @@ export class World {
   prizeFreezers = 0
   readonly owned: ChunkId[] = [{ cx: 0, cy: 0 }]
   readonly pumps: Pump[]
-  readonly tanks: RainTank[] = []
   readonly taps: Tap[] = []
   readonly stills: PotStill[] = []
   readonly waterSystems: WaterSystem[] = []
@@ -361,7 +359,6 @@ export class World {
       this.silo = h.silo
       this.additives = h.additives
       this.pumps = h.pumps
-      this.tanks = h.tanks
       this.taps = h.taps
       this.stills = h.stills
       this.waterSystems.length = 0
@@ -533,7 +530,6 @@ export class World {
     })
     const byOrigin = (a: { base: Base }, b: { base: Base }) => originOrder(originCell(a.base), originCell(b.base))
     this.pumps.sort(byOrigin)
-    this.tanks.sort(byOrigin)
     this.wells.sort(byOrigin)
     this.taps.sort(byOrigin)
     this.stills.sort(byOrigin)
@@ -817,9 +813,7 @@ export class World {
   }
 
   tax(): number {
-    let n = 2 + 6 * (this.owned.length - 1)
-    const cut = 0.02 * this.skillTier('tax')
-    if (cut > 0) n *= 1 - cut
+    const n = 2 + 6 * (this.owned.length - 1)
     return n < 1 ? 1 : n
   }
 
@@ -856,19 +850,12 @@ export class World {
   skuPrice(id: SkuId): number {
     let p = SKUS[id].price
     const tab = SKUS[id].tab
-    if (tab === 'utility' || tab === 'automation') p -= this.skillTier('haggling')
-    if (p < 1) p = 1
     if (this.weather(this.clock.day) === 'drought' && (tab === 'seeds' || tab === 'utility')) p *= 2
     return p
   }
 
   marketOpen(): boolean {
-    const p = this.clock.phase()
-    const w = this.weather(this.clock.day)
-    if (!this.hasSkill('open-24') && ((w === 'flood' && p === 'sunrise') || (w === 'drought' && p === 'day'))) return false
-    if (p === 'sunrise' || p === 'day') return true
-    if (p === 'sunset') return this.hasSkill('open-late')
-    return this.hasSkill('open-24')
+    return true
   }
 
   weather(day: number): WeatherKind {
@@ -1299,7 +1286,7 @@ export class World {
   }
 
   sources(): { base: Base; water: Reservoir }[] {
-    return [...this.pumps, ...this.tanks, ...this.wells]
+    return [...this.pumps, ...this.wells]
   }
 
   dirtyNets(): void {

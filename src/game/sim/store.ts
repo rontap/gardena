@@ -9,7 +9,7 @@ import type { AnnualId, StallGoodId } from './ids.ts'
 import type { Item } from './item.ts'
 import { Accepts, SAT_DEPTH, SAT_RECOVER_PER_DAY, mul, paid } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
-import { BIO_KEYS, binCount, isBakedStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
+import { binCount, isBakedStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
 import type { SellAllQuote } from './feature-contracts/market.h.ts'
@@ -139,7 +139,7 @@ function handToAdditives(world: World, store: AdditiveHolder): boolean {
   if (hand.kind !== 'hold') return true
   const it = hand.item
   if (it.kind === 'sugar') it.liters -= store.putSugar(it.liters, it.unitSale, it.quality)
-  else if (it.kind === 'fertilizer' || it.kind === 'synth' || it.kind === 'compost' || it.kind === 'weed-spray') {
+  else if (it.kind === 'fertilizer' || it.kind === 'compost' || it.kind === 'weed-spray') {
     it.liters -= store.putAdditive(it.kind, it.liters)
   } else return freeHand(world)
   if (it.liters > 0) return freeHand(world)
@@ -154,7 +154,7 @@ export function depositAdditives(world: World, at: Coord): void {
       it.liters -= store.putSugar(it.liters, it.unitSale, it.quality)
       return it.liters <= 0
     }
-    if (it.kind !== 'fertilizer' && it.kind !== 'synth' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
+    if (it.kind !== 'fertilizer' && it.kind !== 'compost' && it.kind !== 'weed-spray') return false
     const n = store.putAdditive(it.kind, it.liters)
     it.liters -= n
     return it.liters <= 0
@@ -193,7 +193,7 @@ export function doConsign(world: World): void {
   if (item.kind === 'fruit') {
     const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
     splitConsign(world, item.crop, item.count, item.freshness === 0, rest => {
-      world.stall[item.crop].take(item.variety, rest, unit, item.bio)
+      world.stall[item.crop].take(item.variety, rest, unit)
     }, false)
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
@@ -248,7 +248,7 @@ export function doConsign(world: World): void {
     return
   }
   if (item.kind === 'rotten') {
-    if (!world.hasSkill('clearance')) return
+    if (!world.done.has('unlock-fermentation')) return
     world.clearance += item.count
     world.act.hand = { kind: 'empty' }
     completeConsign(world)
@@ -301,8 +301,8 @@ export function sellAllBody(world: World): void {
   })
   STALL_IDS.forEach(id => {
     VARIETY_IDS.forEach(variety => {
-      world.stall[id].stock[variety] = { organic: 0, synth: 0 }
-      world.stall[id].worth[variety] = { organic: 0, synth: 0 }
+      world.stall[id].stock[variety] = { plain: 0, infused: 0 }
+      world.stall[id].worth[variety] = { plain: 0, infused: 0 }
     })
   })
   world.money += quote.paid
@@ -313,23 +313,22 @@ export function sellAllBody(world: World): void {
 export function stallClean(world: World, id: StallGoodId): { clean: number; infused: number; clearance: number } {
   const saleX = 1 + 0.02 * world.skillTier('saleswoman')
   const heirX = 1 + 0.05 * world.skillTier('heirloom')
-  const bioX = 1 + 0.04 * world.skillTier('bio')
   if (isInfusedStall(id)) {
     return VARIETY_IDS.reduce(
       (acc, variety) => {
         const heir = isSpiritStall(id) && id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
         const x = saleX * heir
-        const plain = world.stall[id].worth[variety].organic * x
-        const inf = world.stall[id].worth[variety].synth * x
+        const plain = world.stall[id].worth[variety].plain * x
+        const inf = world.stall[id].worth[variety].infused * x
         return { clean: acc.clean + plain + inf, infused: acc.infused + inf, clearance: 0 }
       },
       { clean: 0, infused: 0, clearance: 0 },
     )
   }
   if (isBakedStall(id)) {
-    const count = world.stall[id].stock.base.organic
+    const count = world.stall[id].stock.base.plain
     if (count === 0) return { clean: 0, infused: 0, clearance: 0 }
-    return { clean: world.stall[id].worth.base.organic * saleX, infused: 0, clearance: 0 }
+    return { clean: world.stall[id].worth.base.plain * saleX, infused: 0, clearance: 0 }
   }
   const x = stallX(id, world.modifiers)
   const w = world.weather(world.clock.day)
@@ -337,18 +336,15 @@ export function stallClean(world: World, id: StallGoodId): { clean: number; infu
   return VARIETY_IDS.reduce(
     (acc, variety) => {
       const heir = tierOf(variety) === 'heirloom' ? heirX : 1
-      return BIO_KEYS.reduce((bioAcc, k) => {
-        const count = world.stall[id].stock[variety][k]
-        if (count === 0) return bioAcc
-        const worth = world.stall[id].worth[variety][k]
-        const avg = worth / count
-        const organicMul = k === 'organic' ? bioX : 1
-        return {
-          clean: bioAcc.clean + count * avg * x * heir * saleX * organicMul * wx,
-          infused: bioAcc.infused,
-          clearance: bioAcc.clearance,
-        }
-      }, acc)
+      const count = world.stall[id].stock[variety].plain
+      if (count === 0) return acc
+      const worth = world.stall[id].worth[variety].plain
+      const avg = worth / count
+      return {
+        clean: acc.clean + count * avg * x * heir * saleX * wx,
+        infused: acc.infused,
+        clearance: acc.clearance,
+      }
     },
     { clean: 0, infused: 0, clearance: 0 },
   )

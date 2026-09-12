@@ -16,7 +16,7 @@ Buy row on the open panel puts the pack or bag in *that* silo. `Act.takeStore` c
 
 House `seed-silo` and `additive-store` already have pads `'both'` and sit in `padBuildings`. Field silos `pads: 'none'`, `ports: []`. South pad arrows are view-only. Not Dock.
 
-Spray trailer hopper: fertilizer, synthetic fertilizer, or compost. `weed-spray` in that hopper is unrepresentable.
+Spray trailer hopper: fertilizer or compost. `weed-spray` in that hopper is unrepresentable.
 
 ## New
 

@@ -8,7 +8,6 @@ import type {
   House,
   PotStill,
   Pump,
-  RainTank,
   Necronomicon,
   SeedSilo,
   SiloProduce,
@@ -226,7 +225,6 @@ export type Hydrate = {
   silo: SeedSilo
   additives: AdditiveStore
   pumps: Pump[]
-  tanks: RainTank[]
   taps: Tap[]
   stills: PotStill[]
   necronomicon: Necronomicon | 'none'

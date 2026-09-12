@@ -6,7 +6,7 @@ Water and fertilizer belong to the dirt. One `Soil` per tilled plot, carried thr
 
 Only tilling fresh ground, or clearing a deleted building, mints a new `Soil`.
 
-`Soil = { water; fertilizer; bio; weedChance }`. `weedChance` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Recover / outbreak / spray: [[mechanics/weeds]].
+`Soil = { water; fertilizer; weedChance }`. `weedChance` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Recover / outbreak / spray: [[mechanics/weeds]].
 
 ## Water
 
@@ -18,13 +18,11 @@ Clamp `0..SOIL_WATER_MAX`. `drowning` iff `water > SOIL_WATER_MID`.
 
 `FERT_PLOT_MAX` — preference.
 
-Growing draw `PLANT_FERT_PER_SEC × CROPS.fertUseMul`. `1` is carrot. Trees 0. `PLANT_FERT_PER_SEC` — tuned-to 3-day empty, then ×0.6, then ×0.9. Full plot at mul 1 empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
+Growing draw `PLANT_FERT_PER_SEC × CROPS.fertUseMul`. `1` is carrot. Trees 0. potato wheat tomato, chilli, vanilla, raspberry grape, sugar-cane `fertUseMul` — preference on `CROPS`. `PLANT_FERT_PER_SEC` — preference. Full plot at mul 1 empties in `1 / PLANT_FERT_PER_SEC / DAY_SECONDS` days (derived).
 
-Bag / compost `feed`. Synthetic `spike` (`bio = false`). `bio` restores when one `feed` lands `>= BIO_RESTORE` — preference. Produce copies soil `bio` while growing.
+Bag and compost `feed`. Compost is a bag that feeds like fertilizer. Tops a plot to full, spends only the gap. Empty bag leaves the hand.
 
-Tops a plot to full, spends only the gap. Empty bag leaves the hand.
-
-Ordinary bag always at the Additive store. Synthetic is [[mechanics/research]] `unlock-fertilizer`. Weed spray gates on the same research id — [[mechanics/weeds]].
+Ordinary bag always at the Additive store. Weed spray gates on `unlock-better-tools` — [[mechanics/weeds]].
 
 ## Goodness / ground
 

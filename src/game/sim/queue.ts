@@ -2,7 +2,7 @@ import { BURROW_MUL } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
 import { DIG_HARD_SPAN, GRAFT_WORK, SPRAY_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
-import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type RainTank, type Tap, type Well } from './building.ts'
+import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type Tap, type Well } from './building.ts'
 import { TAP_RATE } from './water.ts'
 import { flipLever, pressButton } from './sensor.ts'
 import { type Edge } from './pipe.ts'
@@ -507,8 +507,8 @@ export function tickFill(world: World, dt: number): void {
     return
   }
   const c0 = world.cell(head.at)
-  const source: Pump | RainTank | Tap | Well | undefined =
-    c0.kind === 'pump' || c0.kind === 'rain-tank' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
+  const source: Pump | Tap | Well | undefined =
+    c0.kind === 'pump' || c0.kind === 'tap' || c0.kind === 'well' ? c0 : undefined
   if (source === undefined) {
     world.act.filling = false
     shiftHead(world)
@@ -529,7 +529,7 @@ export function tickFill(world: World, dt: number): void {
   }
 }
 
-export function fillDraw(world: World, source: Pump | RainTank | Tap | Well, dt: number): number {
+export function fillDraw(world: World, source: Pump | Tap | Well, dt: number): number {
   if (source.kind === 'tap') {
     const net = world.netOfCell(source.base)
     if (net === undefined) return 0

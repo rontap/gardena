@@ -2,7 +2,7 @@ import { m } from '../../paraglide/messages.js'
 import type { ReactNode } from 'react'
 import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
 import type { World } from '../sim/world.ts'
-import { SKILL_POINT, skillInner } from '../view/svgs.ts'
+import { CHEAT_FAST_RESEARCH, SKILL_POINT } from '../view/svgs.ts'
 import { Coin, Dock } from './frame.tsx'
 
 export function Cheat({ world, onClose }: { world: World; onClose: () => void }) {
@@ -13,7 +13,7 @@ export function Cheat({ world, onClose }: { world: World; onClose: () => void })
         <Row label={m.hud_cheat_unlock_skills()} onClick={() => world.unlockAllSkills()} />
         <Row
           label={m.hud_cheat_research({ n: 3 })}
-          icon={skillInner('research-speed')}
+          icon={CHEAT_FAST_RESEARCH}
           selected={world.cheatFastResearch}
           onClick={() => world.toggleCheatResearch()}
         />

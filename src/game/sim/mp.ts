@@ -8,7 +8,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.4
+export const PROTOCOL = 2.5
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -45,7 +45,6 @@ export type RosterSeat =
 const GUEST_BUILD: ReadonlySet<SkuId> = new Set([
   'buy-pumpjack',
   'buy-well',
-  'buy-rain-tank',
   'buy-tap',
   'buy-chest',
   'buy-grinder',

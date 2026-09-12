@@ -366,7 +366,7 @@ describe('recipes.haste', () => {
 })
 
 function fruit(crop: GrownCrop): Face {
-  return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 0.2, bio: true, cut: false }
+  return { kind: 'fruit', crop, variety: 'base', quality: 0, count: 1, unitSale: 0, freshness: 0.2, cut: false }
 }
 
 function outKind(r: Recipe): string {
@@ -459,7 +459,7 @@ describe('machines.recipe-source', () => {
 
   test('`recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop. It never matches the grinder, furnace or mixed-still rows, which take many crops.', () => {
     const fruit = (crop: GrownCrop, variety: VarietyId) =>
-      ({ kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: true, cut: false }) as const
+      ({ kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, cut: false }) as const
     expect(recipesUsing(fruit('wheat', 'red-fife')).map(r => r.machine)).toEqual(['mill', 'still'])
     const marzano = recipesUsing(fruit('tomato', 'san-marzano'))
     expect(marzano.map(r => r.machine)).toEqual(['jam', 'station'])

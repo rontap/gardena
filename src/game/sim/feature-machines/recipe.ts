@@ -128,7 +128,7 @@ function amountOf(item: Item): Amount {
 }
 
 function fruitFace(crop: GrownCrop, variety: VarietyId): Face {
-  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, bio: false, cut: false }
+  return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, cut: false }
 }
 
 function baseFruit(crop: GrownCrop): Face {

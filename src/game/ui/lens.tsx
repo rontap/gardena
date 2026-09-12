@@ -93,8 +93,8 @@ export function LensPanel({
   onClose: () => void
 }) {
   const rows = LENS_ROWS.filter(row => {
-    if (row.id === 'water') return world.hasSkill('water-study')
-    if (row.id === 'land') return world.hasSkill('land-study')
+    if (row.id === 'water') return world.done.has('unlock-auto-irrigation')
+    if (row.id === 'land') return world.done.has('unlock-expand')
     if (row.id === 'sensors') return world.done.has('unlock-sensors')
     if (row.id === 'vehicles') return world.done.has('unlock-vehicles')
     return true

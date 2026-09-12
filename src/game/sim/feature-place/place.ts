@@ -227,7 +227,7 @@ export function buyBody(w: World, id: SkuId, at: Coord): BuyFail | undefined {
     w.ping()
     return undefined
   }
-  if (made.kind === 'fertilizer' || made.kind === 'synth' || made.kind === 'weed-spray') {
+  if (made.kind === 'fertilizer' || made.kind === 'weed-spray') {
     const price = w.skuPrice(id)
     const store = additiveStoreAt(w, at)
     if (w.money < price) return 'Cannot afford'

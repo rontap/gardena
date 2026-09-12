@@ -68,7 +68,7 @@ describe('contracts', () => {
     b.done.add('unlock-tomato')
     b.seats[0].inventory[0] = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 9, unitSale: 4, freshness: 1, bio: false, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 9, unitSale: 4, freshness: 1, cut: false },
     }
     b.setCell(AT, { kind: 'growing', soil: new Soil(1, 1, WEED_CHANCE), plant: new Plant('potato', 'base', 0) })
     expect(a.clock.day).toBe(b.clock.day)
@@ -134,7 +134,7 @@ describe('contracts', () => {
     })
     inf.contracts.active[0].dueDay = inf.nowDay() + 1e-12
     inf.tick(DT_MAX)
-    expect(inf.stall['jam-grape'].worth.base.synth).toBeGreaterThan(0)
+    expect(inf.stall['jam-grape'].worth.base.infused).toBeGreaterThan(0)
     expect(inf.stall['jam-grape'].sat).toBe(0)
     const loaded = dump(miss)
     expect('sat' in loaded.stall.carrot).toBe(false)
@@ -446,7 +446,7 @@ describe('contracts', () => {
     expect(Accepts({ kind: 'plain', good: 'carrot', amount: 1 }, 'potato')).toBe(false)
     dropFruit(w, 'carrot', 1, 0)
     expect(w.contracts.active[1].bins[0].filled).toBe(2)
-    expect(w.stall.carrot.stock.base.synth).toBe(1)
+    expect(w.stall.carrot.stock.base.plain).toBe(1)
   })
 
   test('Guest `acceptContract` / `cancelContract` / `reorderContract` never enter a bundle. Guest consign fills bins.', () => {
@@ -461,7 +461,7 @@ describe('contracts', () => {
     w.seats[1].actor.y = PAD.row + 0.5
     w.seats[1].hand = {
       kind: 'hold',
-      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: CROPS.carrot.sale, freshness: 1, bio: false, cut: false },
+      item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 2, unitSale: CROPS.carrot.sale, freshness: 1, cut: false },
     }
     w.apply({ a: Act.enqueue, t: 0, p: 1, i: { act: 'consign' } })
     w.tick(DT_MAX)
@@ -537,7 +537,7 @@ function dropFruit(w: World, crop: 'carrot', n: number, freshness = 1): void {
   w.seats[0].actor.y = PAD.row + 0.5
   w.seats[0].hand = {
     kind: 'hold',
-    item: { kind: 'fruit', crop, variety: 'base', quality: 0, count: n, unitSale: CROPS[crop].sale, freshness, bio: false, cut: false },
+    item: { kind: 'fruit', crop, variety: 'base', quality: 0, count: n, unitSale: CROPS[crop].sale, freshness, cut: false },
   }
   w.enqueue({ act: 'consign' })
   w.tick(DT_MAX)
@@ -545,7 +545,7 @@ function dropFruit(w: World, crop: 'carrot', n: number, freshness = 1): void {
 
 function worthOf(w: World, id: 'carrot'): number {
   return STALL_IDS.includes(id)
-    ? w.stall[id].worth.base.synth + w.stall[id].worth.base.organic
+    ? w.stall[id].worth.base.plain + w.stall[id].worth.base.infused
     : 0
 }
 
@@ -578,7 +578,7 @@ describe('saturation', () => {
     seam.tick(DT_MAX)
     expect(seam.stall.potato.sat).toBeCloseTo(0.9 - SAT_RECOVER_PER_DAY * DT_MAX / DAY_SECONDS, 9)
     const dump = new World(1)
-    dump.stall.potato.take('base', 200, 1, false)
+    dump.stall.potato.take('base', 200, 1)
     dump.sellAll()
     expect(dump.stall.potato.sat).toBe(1)
   })
@@ -607,7 +607,7 @@ describe('saturation', () => {
     }
     expect(drip).toBeCloseTo(paid(start, good, V), 9)
     const one = new World(1)
-    one.stall.potato.take('base', 10, 1, false)
+    one.stall.potato.take('base', 10, 1)
     one.stall.potato.sat = start
     const onePaid = one.marketGain()
     one.sellAll()
@@ -615,7 +615,7 @@ describe('saturation', () => {
     ten.stall.potato.sat = start
     let tenPaid = 0
     for (let i = 0; i < 10; i++) {
-      ten.stall.potato.take('base', 1, 1, false)
+      ten.stall.potato.take('base', 1, 1)
       tenPaid += ten.marketGain()
       ten.sellAll()
     }
@@ -624,14 +624,18 @@ describe('saturation', () => {
     expect(one.stall.potato.sat).toBeCloseTo(Math.min(1, start + V / SAT_DEPTH), 9)
   })
 
-  test("Saturation applies last, per good, over the existing `marketGain` subtotal. Clearance `{ kind: 'rotten' }` `$1` each, sat exempt. Without the skill: consign refused.", () => {
+describe('market.sell', () => {
+  test("Market is Sell all iff `marketOpen`. `marketOpen` is always true. No phase hours. No weather close. Consign always. Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; `{ kind: 'rotten' }` `$1` iff `unlock-fermentation` in `done`, sat exempt, saleswoman / heirloom / weather do not apply. Crop stall stock/worth per variety. Consign: fruit (incl. sugar-cane, chilli), sugar, spirit, cask, jam, oil, flour, extract, bread; `{ kind: 'rotten' }` iff `unlock-fermentation` in `done`. Flakes and vanilla-extract illegal. Without that row: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract / bread: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. Infused jam / cask / spirit / oil: same skills, `InfusedKey` bin. No berry. Sat last; infused pays `mul(sat)` and does not raise `sat` — [[mechanics/saturation]] [[mechanics/infusion]] [[mechanics/weather]].", () => {
     const w = new World(1)
-    w.stall.potato.take('base', 10, 1, false)
-    w.stall.carrot.take('base', 5, 1, false)
+    w.stall.potato.take('base', 10, 1)
+    w.stall.carrot.take('base', 5, 1)
     expect(w.marketQuote().clean).toBe(65)
     expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 50) + paid(0, 'carrot', 15), 9)
     w.stall.potato.sat = 0.4
     expect(w.marketGain()).toBeCloseTo(paid(0.4, 'potato', 50) + paid(0, 'carrot', 15), 9)
+    expect(w.marketOpen()).toBe(true)
+    w.clock.t = 220
+    expect(w.marketOpen()).toBe(true)
     const refused = new World(1)
     refused.seats[0].actor.x = PAD.col + 0.5
     refused.seats[0].actor.y = PAD.row + 0.5
@@ -641,7 +645,7 @@ describe('saturation', () => {
     expect(refused.clearance).toBe(0)
     expect(refused.seats[0].hand.kind).toBe('hold')
     const c = new World(1)
-    c.family.daughter.owned.set('clearance', 1)
+    c.done.add('unlock-fermentation')
     c.seats[0].actor.x = PAD.col + 0.5
     c.seats[0].actor.y = PAD.row + 0.5
     c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10, createdAt: 1 } }
@@ -654,15 +658,16 @@ describe('saturation', () => {
     expect(c.clearance).toBe(0)
     expect(c.money).toBe(60)
     const mixed = new World(1)
-    mixed.family.daughter.owned.set('clearance', 1)
+    mixed.done.add('unlock-fermentation')
     mixed.clearance = 5
-    mixed.stall.potato.take('base', 10, 1, false)
+    mixed.stall.potato.take('base', 10, 1)
     mixed.stall.potato.sat = 0.3
     expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 50) + 5, 9)
     mixed.sellAll()
     expect(mixed.clearance).toBe(0)
     expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 50 / SAT_DEPTH), 9)
   })
+})
 
   test("heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider.", () => {
     const wine = new World(1)

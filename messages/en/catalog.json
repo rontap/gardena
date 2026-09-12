@@ -19,16 +19,15 @@
   "catalog_better_pickaxe": "Same jobs, faster and longer lasting. {uses} uses, {workSeconds}s per mine.",
   "catalog_bucket": "Holds {n} L. Fill at a pump or well. {plot} L fills one plot.",
   "catalog_weed_spray": "Holds {n} L. Click tilled soil to starve weeds there.",
-  "catalog_pumpjack": "Gathers {rate} L/s into a {cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Everything it pumps is charged at the end of the day.",
+  "catalog_pumpjack": "Gathers {rate} L/day into a {cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Litres it pumps are billed as Water at the end of the day.",
   "catalog_chest": "{n} slots. Walk up and store any item.",
   "catalog_grinder": "Hopper. One fruit becomes {min}–{max} seeds of the same crop and rarity. {workSeconds}s per fruit.",
   "catalog_pipe": "Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.",
   "catalog_sprinkler": "Waters a {w}×{h} area of plots, {day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.",
   "catalog_sprinkler_vert": "Waters a {w}×{h} strip, {day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.",
   "catalog_sprinkler_large": "Waters a {w}×{h} area, {day} L a day per plot.",
-  "catalog_well": "Gathers {rate} L/s into a {cap} L tank, and what you draw from it costs nothing. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A drought slows it.",
+  "catalog_well": "Gathers {rate} L/day into a {cap} L tank. Litres you draw are not billed as Water, unlike a Pump. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. A Drought gathers more slowly than Clear, Rain, Dry, or Flood.",
   "catalog_valve": "Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.",
-  "catalog_rain_tank": "Gathers {rate} L/s into a {cap} L tank on its own, and many times that while it rains. It fills wherever it stands, with no pump and no pipe to a source.",
   "catalog_tap": "Fills a bucket at {rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.",
   "catalog_hangar": "{w}×{h} industrial shed. Buy Quads and tractors at a hangar.",
   "catalog_silo": "{w}×{h} field store. Walk up to take what it holds.",
@@ -54,7 +53,6 @@
   "catalog_sku_pack_sugar_cane": "Pack of {n} {name} seeds. Plant on tilled soil. Ripe cane is fruit. Mill cane for sugar.",
   "catalog_sku_pack_grass": "Pack of {n}. Sow on tilled soil. Drinks almost nothing and takes a quarter day to root, then the plot goes back to untilled lawn.",
   "catalog_sku_buy_fertilizer": "Holds {n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.",
-  "catalog_sku_buy_synth_fertilizer": "Holds {n} L and works the same, but the soil and its produce stop being organic.",
   "catalog_sku_buy_compost_box": "Drop organic waste in. {need} units make {liters} L of compost in {seconds}s. A chest on the right takes the bag, else it drops beside the box.",
   "catalog_sku_buy_fence": "Sits in the middle of an untilled tile and joins up with the fences beside it. Marks a boundary; the gardener still walks through.",
   "catalog_sku_buy_tile": "Paving. Lays on untilled ground and stays put. Keeps the garden walkable and tidy.",
@@ -66,8 +64,7 @@
   "catalog_sku_buy_freezer_large": "{n} slots. Fruit in here rots {pct}% slower. Earned from a contract, never sold.",
   "catalog_sku_buy_sugar": "{bag} L bag at {sale}/L.",
   "catalog_fertilizer": "Holds {n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing. Empty bags are thrown away.",
-  "catalog_synth": "Holds {n} L and tops a plot to full like the ordinary bag, but the soil turns non-organic and so does everything grown in it. Ordinary fertilizer or compost brings it back once {restore} L land at once.",
-  "catalog_compost": "Holds {liters} L. Feeds soil exactly like fertilizer, and it is organic.",
+  "catalog_compost": "Holds {liters} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.",
   "catalog_compost_box": "Drop any organic waste in. {need} units become {liters} L of compost in {seconds}s. A chest on the right takes the bag, else it drops beside the box. Seeds {seeds}, fruit {fruit}, heirloom fruit {heirloom}, rotten fruit {rotten}, dead plants and weeds {dead}.",
   "catalog_soil": "Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads {min} to {max} L; plants want {mid} L and drown above it. Fertilizer runs from {fertMin} to {fertMax} and a growing plant empties a full plot in three days.",
   "catalog_weed": "Takes over tilled soil left without seed. Full grown in {seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.",
@@ -81,8 +78,8 @@
         "nPlural"
       ],
       "match": {
-        "nPlural=one": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} unit in the compost box.",
-        "nPlural=other": "What is left when a plant drowns or a ripe crop is never picked. Worth nothing at market, worth {n} units in the compost box."
+        "nPlural=one": "What is left when a plant drowns or a ripe crop is never picked. After Fermentation, Drop off at the Market. Worth {n} unit in the Compost box.",
+        "nPlural=other": "What is left when a plant drowns or a ripe crop is never picked. After Fermentation, Drop off at the Market. Worth {n} units in the Compost box."
       }
     }
   ],

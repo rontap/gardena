@@ -143,7 +143,7 @@ describe('machines.mill-vanilla', () => {
   test("Mill recipe `'vanilla'`: `MILL_VANILLA_IN` 1 vanilla fruit → `{ kind: 'vanilla-extract'; quality }` count `MILL_VANILLA_OUT` 4. Not stall `'extract'`. `millProductName('vanilla')` is `vanilla extract`. Grass mill stays `{ kind: 'extract' }` stall `'extract'`, quality 0. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla chilli. Almanac vanilla-extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.", () => {
     expect(millNeed('vanilla')).toBe(MILL_VANILLA_IN)
     expect(millProductName('vanilla').toLowerCase()).toContain('vanilla extract')
-    expect(millRecipeOf({ kind: 'fruit', crop: 'vanilla', variety: 'base', quality: 0.5, count: 1, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(
+    expect(millRecipeOf({ kind: 'fruit', crop: 'vanilla', variety: 'base', quality: 0.5, count: 1, unitSale: 1, freshness: 1, cut: false })).toBe(
       'vanilla',
     )
     const w = new World(1)
@@ -161,7 +161,6 @@ describe('machines.mill-vanilla', () => {
         count: MILL_VANILLA_IN,
         unitSale: 1,
         freshness: 1,
-        bio: true,
         cut: false,
       },
     }
@@ -181,7 +180,7 @@ describe('machines.mill-chilli', () => {
   test("Mill recipe `'chilli'`: `MILL_CHILLI_IN` 3 chilli fruit → `{ kind: 'flakes'; quality }` count `MILL_CHILLI_OUT` 2. Not stall. `millProductName('chilli')` is `flakes`.", () => {
     expect(millNeed('chilli')).toBe(MILL_CHILLI_IN)
     expect(millProductName('chilli').toLowerCase()).toContain('flakes')
-    expect(millRecipeOf({ kind: 'fruit', crop: 'chilli', variety: 'base', quality: 0.25, count: 3, unitSale: 1, freshness: 1, bio: true, cut: false })).toBe(
+    expect(millRecipeOf({ kind: 'fruit', crop: 'chilli', variety: 'base', quality: 0.25, count: 3, unitSale: 1, freshness: 1, cut: false })).toBe(
       'chilli',
     )
     const w = new World(1)
@@ -199,7 +198,6 @@ describe('machines.mill-chilli', () => {
         count: MILL_CHILLI_IN,
         unitSale: 1,
         freshness: 1,
-        bio: true,
         cut: false,
       },
     }
@@ -395,7 +393,7 @@ describe('infusion.stall', () => {
       kind: 'hold',
       item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 72, infused: true },
     })
-    expect(loaded.world.stall['jam-grape'].worth.base.synth).toBe(72)
+    expect(loaded.world.stall['jam-grape'].worth.base.infused).toBe(72)
 
     const stripped = JSON.parse(JSON.stringify(s)) as {
       seats: { hand: { kind: string; item: Record<string, unknown> }; inventory: { kind: string; item?: Record<string, unknown> }[] }[]

@@ -58,11 +58,11 @@ export type SaveStallGood = {
   market: number
   target: number
   acc: number
-  stock: { [K in VarietyId]: { organic: number; synth: number } }
-  worth: { [K in VarietyId]: { organic: number; synth: number } }
+  stock: { [K in VarietyId]: { plain: number; infused: number } }
+  worth: { [K in VarietyId]: { plain: number; infused: number } }
 }
 
-export type SaveSoil = { water: number; fertilizer: number; bio: boolean; weedChance: number }
+export type SaveSoil = { water: number; fertilizer: number; weedChance: number }
 
 export type SavePlant = {
   crop: PlantCrop
@@ -71,7 +71,6 @@ export type SavePlant = {
   maturity: number
   freshness: number
   happiness: number
-  bio: boolean
   tended: boolean
 }
 
@@ -90,7 +89,6 @@ export type SaveCell =
   | { kind: 'rotten'; soil: SaveSoil; crop: GrownCrop }
   | { kind: 'house'; base: RectBase }
   | { kind: 'pump'; form: 'starter' | 'jack'; base: Base; stored: number }
-  | { kind: 'rain-tank'; base: RectBase; stored: number }
   | { kind: 'tap'; base: RectBase }
   | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }

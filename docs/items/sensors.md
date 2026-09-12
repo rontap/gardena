@@ -6,7 +6,7 @@ SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-logic` `buy-not` `buy-pulser` `bu
 
 `buy-or` `buy-and` unused, not shown. `buy-water-system` `skuShown` false, not buyable; placed ones remain.
 
-`unlock-sensors` shows the shelf. Logic gate + NOT: `unlock-advanced-sensors`. Variety `need` `unlock-crop-variants`. Traffic light `need` `unlock-dispatch`. Pressure plate `need` `unlock-vehicles`. Water `need` `unlock-irrigation`. Fertilizer `need` `[]`. Weather `need` `[]`. [[mechanics/research]]
+`unlock-sensors` shows the shelf. Buy gates: `SKUS`. The Research tree is the map. [[mechanics/research]]
 
 Valve signal input is Water, not this shelf — [[items/irrigation]].
 

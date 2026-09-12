@@ -15,13 +15,13 @@ import {
   SPECIAL_START,
   WEATHER_THROUGH_DAY,
 } from '../defs/weather.ts'
-import { SKILLS } from '../defs/skills.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { hash, Rng } from './rng.ts'
 import { BIG_TICK, Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
 import { SOURCE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, type WeatherKind } from './weather.ts'
 import { DT_MAX, stipendOf, World } from './world.ts'
+import { bare } from './plot.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -207,13 +207,30 @@ describe('weather.shop', () => {
   })
 })
 
-  test('HUD tomorrow iff husband owns `forecast`.', () => {
-    expect(SKILLS.forecast.effect).toEqual({ kind: 'forecast' })
-    expect(SKILLS.forecast.maxTier).toBe(1)
+  test('HUD tomorrow iff `forecastCount ≥ 1`; `forecastCount` is placed weather-station buildings; extras no-op; demolishable; not a `Machine`.', () => {
     const w = new World(1)
-    expect(w.hasSkill('forecast')).toBe(false)
-    w.family.husband.owned.set('forecast', 1)
-    expect(w.hasSkill('forecast')).toBe(true)
+    expect(w.forecastCount).toBe(0)
+    w.done.add('unlock-weather-station')
+    w.money = 999
+    const at = { col: 10, row: 12 }
+    w.setCell(at, bare('soft', 0))
+    w.setCell({ col: 10, row: 13 }, bare('soft', 0))
+    w.buy('buy-weather-station')
+    w.confirmPlace(at)
+    expect(w.cell(at).kind).toBe('weather-station')
+    expect(w.cell({ col: 10, row: 13 })).toBe(w.cell(at))
+    expect(w.forecastCount).toBe(1)
+    expect('inn' in w.cell(at)).toBe(false)
+    expect(w.cell(at).kind === 'weather-station' && w.cell(at).ticks).toBe(false)
+    const at2 = { col: 12, row: 12 }
+    w.setCell(at2, bare('soft', 0))
+    w.setCell({ col: 12, row: 13 }, bare('soft', 0))
+    w.buy('buy-weather-station')
+    w.confirmPlace(at2)
+    expect(w.forecastCount).toBe(2)
+    w.armDelete()
+    w.click(at2)
+    expect(w.forecastCount).toBe(1)
     expect(w.weather(w.clock.day + 1)).toBe(forecastWeather(1, WEATHER_THROUGH_DAY)[w.clock.day])
   })
 

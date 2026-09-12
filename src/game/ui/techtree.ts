@@ -26,7 +26,7 @@ export type Tree = { nodes: Map<ResearchId, Node>; roots: ResearchId[]; trees: s
 export const researchIds = (): ResearchId[] => Object.keys(RESEARCH) as ResearchId[]
 
 function parentsOf(def: ResearchDef): ResearchId[] {
-  return [...new Set([...def.reveal, ...def.requires])]
+  return def.parent === null ? [] : [def.parent]
 }
 
 /** Every distinct research that must finish before `id` can start, walking both edge kinds. */
@@ -85,7 +85,7 @@ export function buildTree(): Tree {
   }
 
   const roots = researchIds().filter(id => nodes.get(id)?.parents.length === 0)
-  const trees = [...new Set(researchIds().map(id => RESEARCH[id].tree))]
+  const trees = [...new Set(researchIds().map(id => RESEARCH[id].path))]
   return { nodes, roots, trees }
 }
 

@@ -81,7 +81,7 @@ describe('1.1 multiplayer', () => {
   test('Sequencer drops illegal guest cmds. They never enter a bundle. Those cmds no-op.', () => {
     expect(permit({ a: Act.cheat, t: 0, p: 1, k: 'money' })).toBe(false)
     expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(true)
-    expect(permit({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })).toBe(false)
+    expect(permit({ a: Act.pickSkill, t: 0, p: 1, id: 'boots' })).toBe(false)
     expect(permit({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })).toBe(false)
     expect(permit({ a: Act.swapChest, t: 0, p: 1, c: [1, 1], i: 0 })).toBe(true)
     expect(permit({ a: Act.dismissRecap, t: 0, p: 1 })).toBe(true)
@@ -95,10 +95,10 @@ describe('1.1 multiplayer', () => {
   })
 
   test('A guest (`cmd.p !== 0`) may send every `Cmd` a host may send except `Act.pickSkill`, `Act.expand`, `Act.cheat`; the sequencer drops those three and they never enter a bundle.', () => {
-    expect(permit({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })).toBe(false)
+    expect(permit({ a: Act.pickSkill, t: 0, p: 1, id: 'boots' })).toBe(false)
     expect(permit({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })).toBe(false)
     expect(permit({ a: Act.cheat, t: 0, p: 1, k: 'all' })).toBe(false)
-    expect(permit({ a: Act.pickSkill, t: 0, p: 0, m: 'player', s: 0 })).toBe(true)
+    expect(permit({ a: Act.pickSkill, t: 0, p: 0, id: 'boots' })).toBe(true)
     expect(permit({ a: Act.expand, t: 0, p: 0, k: { cx: 1, cy: 0 } })).toBe(true)
     expect(permit({ a: Act.cheat, t: 0, p: 0, k: 'all' })).toBe(true)
     expect(permit({ a: Act.startResearch, t: 0, p: 1, r: 'unlock-expand' })).toBe(true)
@@ -123,7 +123,7 @@ describe('1.1 multiplayer', () => {
     guest.intent({ a: Act.cheat, t: 0, p: 1, k: 'money' })
     expect(w.money).toBe(money)
     expect(w.log.some(c => c.a === Act.cheat)).toBe(false)
-    guest.intent({ a: Act.pickSkill, t: 0, p: 1, m: 'player', s: 0 })
+    guest.intent({ a: Act.pickSkill, t: 0, p: 1, id: 'boots' })
     expect(w.log.some(c => c.a === Act.pickSkill)).toBe(false)
     guest.intent({ a: Act.expand, t: 0, p: 1, k: { cx: 1, cy: 0 } })
     expect(w.log.some(c => c.a === Act.expand)).toBe(false)

@@ -52,7 +52,7 @@ Iterate maps directly. `[...this.live.values()]` is illegal. No live-array copy.
 
 ## Seam hold
 
-The day seam does not hold `World.tick`. Live `seam` stays `{ kind: 'play' }`. Solo App: on `clock.day` increment, `writeSlot`, close panel. No pause — `soloPause` is left to `pauseWhenHidden`, which still bounds an unattended tab. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Recap popup uses the same overlay pause as Family / Market / Almanac; that is not this pause. Seam, after stipend and tax: burrow mint, tree seam, append `Recap`, `recapUnseen`, `grantPoints`, `banner = 4` — [[mechanics/day]] [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[ui/hud]] [[architecture/net]]
+The day seam does not hold `World.tick`. Live `seam` stays `{ kind: 'play' }`. Solo App: on `clock.day` increment, `writeSlot`, close panel. No pause — `soloPause` is left to `pauseWhenHidden`, which still bounds an unattended tab. Solo only: `hostRef` and `guestRef` both undefined. World has no pause field. Recap popup uses the same overlay pause as Market / Almanac; that is not this pause. Seam, after stipend and tax: burrow mint, tree seam, append `Recap`, `recapUnseen`, `grantPoints`, `banner = 4` — [[mechanics/day]] [[mechanics/burrow]] `burrow.day`. [[ui/settings]] [[ui/hud]] [[architecture/net]]
 
 ## Nets
 

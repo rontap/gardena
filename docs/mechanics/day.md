@@ -57,7 +57,7 @@ Identifier `stipendOf`. `stipendOf(endedDay)` — derived from `STIPEND` bands �
 
 The recap popup is App `recapDay`, opened from a Command Center recap notice. Close is `seeRecap`, not a grant. [[ui/notices]] [[ui/docks]] [[mechanics/family]]
 
-Solo App: on `clock.day` increment, `writeSlot`. The open panel stays open and there is no pause — the seam does not stop the farm, and it does not take a dock out of the player's hands either. Recap popup uses the same overlay pause as Family / Market / Almanac. [[ui/hud]] [[ui/settings]]
+Solo App: on `clock.day` increment, `writeSlot`. The open panel stays open and there is no pause — the seam does not stop the farm, and it does not take a dock out of the player's hands either. Recap popup uses the same overlay pause as Market / Almanac. [[ui/hud]] [[ui/settings]]
 
 Hydrate a file whose `seam.kind === 'recap'`: append that recap (`contracts` `[]` if the dump omitted them), push its day to `recapUnseen` if missing, `grantPoints(POINTS_PER_DAY)`, play, `banner = 4`. Not a migrate. Total hydrate. [[architecture/save]]
 

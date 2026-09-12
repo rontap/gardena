@@ -273,7 +273,7 @@ describe('burrow.loot', () => {
     }
     if (c.cover.loot.kind === 'axe') expect(c.cover.loot.workSeconds).toBe(AXES.axe.workSeconds)
     if (c.cover.loot.kind === 'fertilizer') expect(c.cover.loot.liters).toBe(FERT_BAG_LITERS)
-    w.family.player.owned.set('lucky', LUCK_CAP)
+    w.family.owned.set('lucky', LUCK_CAP)
     const later = w.cell(at)
     expect(later.kind === 'untilled' && later.cover.kind === 'burrow' && later.cover.loot).toEqual(c.cover.loot)
 
@@ -414,14 +414,12 @@ describe('burrow.treasure', () => {
 })
 
 describe('family.lucky', () => {
-  test("One `lucky` per member, each maxTier 1. Luck is `min(LUCK_CAP, the three tiers summed)`. Not a World field. No HUD chip.", () => {
+  test("`lucky` one id, maxTier 3, parent `boots`, gate none, effect `{ kind: 'lucky' }`; luck is `min(LUCK_CAP, skillTier('lucky'))`; not a World field; no HUD chip; icon is the `stat-luck` clover — [[art/skills]] [[mechanics/burrow]].", () => {
     const w = new World(1)
     expect('luck' in w).toBe(false)
     expect(luckOf(w)).toBe(0)
     w.unlockAllSkills()
-    expect(w.skillTier('lucky')).toBe(1)
-    expect(w.skillTier('lucky-husband')).toBe(1)
-    expect(w.skillTier('lucky-daughter')).toBe(1)
+    expect(w.skillTier('lucky')).toBe(3)
     expect(luckOf(w)).toBe(LUCK_CAP < 3 ? LUCK_CAP : 3)
   })
 })

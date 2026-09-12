@@ -1,36 +1,42 @@
 import { LUCK_CAP } from '../defs/burrow.ts'
-import { SKILLS, skillIds, type SkillDef } from '../defs/skills.ts'
-import type { MemberId, SkillId } from './ids.ts'
-import type { MemberState, SkillRef, World } from './world.ts'
-
-const MEMBER_IX: { readonly [K in MemberId]: number } = { player: 0, husband: 1, daughter: 2 }
+import { SKILLS, SKILL_IDS, type SkillDef } from '../defs/skills.ts'
+import type { SkillId } from './ids.ts'
+import type { World } from './world.ts'
 
 export function luckOf(w: World): number {
-  const n = w.skillTier('lucky') + w.skillTier('lucky-husband') + w.skillTier('lucky-daughter')
+  const n = w.skillTier('lucky')
   return n < LUCK_CAP ? n : LUCK_CAP
 }
 
-export function emptyMember<Id extends SkillId>(): MemberState<Id> {
-  return { pickCount: 0, owned: new Map(), offers: [] }
-}
-
 export function initFamily(w: World): void {
-  rerollOffers(w, 'player')
-  rerollOffers(w, 'husband')
-  rerollOffers(w, 'daughter')
+  w.family.owned.clear()
 }
 
-export function pickSkillBody(w: World, member: MemberId, slot: number): void {
-  const st = w.family[member]
-  if (w.points < 1) return
-  const offer = st.offers[slot]
-  if (offer === undefined) return
-  w.points -= 1
-  st.owned.set(offer.id as never, offer.tier)
-  const effect = SKILLS[offer.id].effect
+export function skillOpen(w: World, id: SkillId): boolean {
+  const parent = SKILLS[id].parent
+  return parent === null || w.skillTier(parent) >= 1
+}
+
+export function skillKnown(w: World, id: SkillId): boolean {
+  const parent = SKILLS[id].parent
+  return parent === null || skillOpen(w, parent)
+}
+
+export function pickSkillBody(w: World, id: SkillId): void {
+  if (w.local !== 0) return
+  if (!skillKnown(w, id) || !skillOpen(w, id)) return
+  const def: SkillDef = SKILLS[id]
+  if (def.gate.kind === 'research' && !w.done.has(def.gate.id)) return
+  const have = w.skillTier(id)
+  if (have >= def.maxTier) return
+  const rank = have + 1
+  if (w.points < rank) return
+  w.points -= rank
+  w.family.owned.set(id, rank)
+  const effect = def.effect
   if (effect.kind === 'better' && effect.saleMul !== 1) {
     w.modifiers.push({
-      id: offer.id,
+      id,
       source: 'skill',
       crop: effect.crop,
       saleMul: effect.saleMul,
@@ -39,8 +45,6 @@ export function pickSkillBody(w: World, member: MemberId, slot: number): void {
     })
     w.modGen += 1
   }
-  st.pickCount += 1
-  rerollOffers(w, member)
   w.ping()
 }
 
@@ -48,7 +52,7 @@ export function rebuildSkillModifiers(w: World): void {
   const keep = w.modifiers.filter(m => m.source !== 'skill')
   w.modifiers.length = 0
   keep.forEach(m => w.modifiers.push(m))
-  w.family.player.owned.forEach((_tier, id) => {
+  w.family.owned.forEach((_tier, id) => {
     const effect = SKILLS[id].effect
     if (effect.kind !== 'better' || effect.saleMul === 1) return
     w.modifiers.push({
@@ -63,36 +67,9 @@ export function rebuildSkillModifiers(w: World): void {
   w.modGen += 1
 }
 
-export function rerollOffers(w: World, member: MemberId): void {
-  const st = w.family[member]
-  const pool = skillIds(member).filter(id => skillEligible(w, id))
-  const n = Math.min(3, pool.length)
-  const left = [...pool]
-  const out: SkillRef[] = []
-  for (let i = 0; i < n; i++) {
-    const u = w.rng.stream('skill').at(MEMBER_IX[member], st.pickCount, i)
-    const ix = Math.floor(u * left.length)
-    const id = left.splice(ix, 1)[0]
-    const have = w.skillTier(id)
-    out.push({ id, tier: have + 1 })
-  }
-  st.offers = out as never
-}
-
-export function skillEligible(w: World, id: SkillId): boolean {
-  const def: SkillDef = SKILLS[id]
-  if (w.skillTier(id) >= def.maxTier) return false
-  if (def.gate.kind === 'research') return w.done.has(def.gate.id)
-  return true
-}
-
 export function unlockAllSkillsBody(w: World): void {
-  ;(['player', 'husband', 'daughter'] as const).forEach(member => {
-    const st = w.family[member]
-    skillIds(member).forEach(id => {
-      st.owned.set(id as never, SKILLS[id].maxTier)
-    })
-    st.offers = []
+  SKILL_IDS.forEach(id => {
+    w.family.owned.set(id, SKILLS[id].maxTier)
   })
   rebuildSkillModifiers(w)
   w.ping()

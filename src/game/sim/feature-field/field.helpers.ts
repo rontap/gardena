@@ -380,10 +380,12 @@ export function doChop(w: World, at: Coord): void {
   const spot = w.dropSpot(c.base)
   if (spot !== undefined) {
     w.drops.push({ at: { ...spot }, item: { kind: 'wood', count: 1 } })
-    w.drops.push({
-      at: { ...spot },
-      item: { kind: 'graft', crop: c.species, variety: c.variety, quality: 0, count: CHOP_GRAFTS },
-    })
+    if (w.hasSkill('grafting')) {
+      w.drops.push({
+        at: { ...spot },
+        item: { kind: 'graft', crop: c.species, variety: c.variety, quality: 0, count: CHOP_GRAFTS },
+      })
+    }
   }
   c.trunk = true
   c.juvenile = 0

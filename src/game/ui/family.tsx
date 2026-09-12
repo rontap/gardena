@@ -1,244 +1,51 @@
 import { m } from '../../paraglide/messages.js'
-import { useState } from 'react'
-import { SKILLS, roman, skillBlurb, skillLabel } from '../defs/skills.ts'
-import type { MemberId, SkillId } from '../sim/ids.ts'
+import { SKILLS } from '../defs/skills.ts'
 import { luckOf } from '../sim/family.ts'
 import { REP_MAX } from '../sim/feature-contracts/market.ts'
 import type { World } from '../sim/world.ts'
-import { PORTRAIT, SKILL_POINT, STAT_LUCK, STAT_REPUTATION, skillInner } from '../view/svgs.ts'
-import { CalloutHover } from './callout-hover.tsx'
-import { Bar, Label, Overlay } from './frame.tsx'
-
-const NAMES: { readonly [K in MemberId]: () => string } = {
-  player: () => m.names_member_player(),
-  husband: () => m.names_member_husband(),
-  daughter: () => m.names_member_daughter(),
-}
-
-const ROLES: { readonly [K in MemberId]: () => string } = {
-  player: () => m.names_role_gardener(),
-  husband: () => m.names_role_research(),
-  daughter: () => m.names_role_market(),
-}
-
-const BLURBS: { readonly [K in MemberId]: () => string } = {
-  player: () => m.family_blurb_player(),
-  husband: () => m.family_blurb_husband(),
-  daughter: () => m.family_blurb_daughter(),
-}
-
-const MEMBERS: MemberId[] = ['player', 'husband', 'daughter']
-const SLOTS = [0, 1, 2] as const
-
-type Note = { title: string; description: string; why?: string }
-
-type Tip = Note | undefined
+import { SKILL_POINT, STAT_LUCK, STAT_REPUTATION } from '../view/svgs.ts'
+import { Bar } from './frame.tsx'
+import { TreePanel } from './tree-panel.tsx'
 
 export function Family({ world, onClose }: { world: World; onClose: () => void }) {
-  const [tip, setTip] = useState<Tip>(undefined)
-  return (
-    <Overlay
-      title={m.family_title()}
-      onClose={onClose}
-      className="max-h-[calc(100%-4rem)] w-[58rem]"
-      aside={
-        tip !== undefined ? (
-          <CalloutHover
-            title={tip.title}
-            description={
-              <>
-                <span>{tip.description}</span>
-                {tip.why !== undefined && <span className="mt-2 block font-bold text-roof">{tip.why}</span>}
-              </>
-            }
-          />
-        ) : undefined
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <PointBank world={world} />
-        <Standing world={world} onTip={setTip} />
-        <div className="grid grid-cols-3 items-start gap-3">
-          {MEMBERS.map(m => (
-            <MemberCol key={m} member={m} world={world} onTip={setTip} />
-          ))}
-        </div>
-      </div>
-    </Overlay>
-  )
-}
-
-function PointBank({ world }: { world: World }) {
   const n = world.points
-  const spendable = n > 0 && world.local === 0
   return (
-    <div
-      className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${
-        spendable ? 'bg-ripe/25 text-ink' : 'bg-ink/6 text-ink/45'
-      }`}
-    >
-      <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
-      <span className="tabular-nums">{n}</span>
-      <span>{n === 1 ? m.family_point_one() : m.family_point_many()}</span>
-    </div>
+    <TreePanel
+      world={world}
+      onClose={onClose}
+      kind="skill"
+      title={m.family_title()}
+      header={<Standing world={world} />}
+      footer={
+        <div className={`flex items-center gap-1.5 text-sm ${n > 0 ? 'font-semibold text-ink' : 'text-ink/55'}`}>
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" dangerouslySetInnerHTML={{ __html: SKILL_POINT }} />
+          <span className="tabular-nums">{n}</span>
+          <span>{n === 1 ? m.family_point_one() : m.family_point_many()}</span>
+        </div>
+      }
+    />
   )
 }
 
-function Standing({ world, onTip }: { world: World; onTip: (tip: Tip) => void }) {
+function Standing({ world }: { world: World }) {
   const rep = Math.round(world.contracts.rep * 10) / 10
   const luck = luckOf(world)
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <StatCard
-        art={STAT_REPUTATION}
-        label={m.family_reputation()}
-        value={rep / REP_MAX}
-        onTip={onTip}
-        tip={{
-          title: m.family_reputation(),
-          description: m.family_reputation_body(),
-          why: m.family_reputation_value({ n: rep, max: REP_MAX }),
-        }}
-      />
-      <StatCard
-        art={STAT_LUCK}
-        label={m.family_luck()}
-        value={luck / SKILLS.lucky.maxTier}
-        onTip={onTip}
-        tip={{
-          title: m.family_luck(),
-          description: m.family_luck_body(),
-          why: m.family_luck_value({ n: luck, max: SKILLS.lucky.maxTier }),
-        }}
-      />
-    </div>
-  )
-}
-
-function StatCard({
-  art,
-  label,
-  value,
-  tip,
-  onTip,
-}: {
-  art: string
-  label: string
-  value: number
-  tip: Note
-  onTip: (tip: Tip) => void
-}) {
-  return (
-    <div
-      className="flex items-center gap-2 bg-ink/6 px-3 py-2"
-      onPointerEnter={() => onTip(tip)}
-      onPointerLeave={() => onTip(undefined)}
-    >
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: art }} />
-      <span className="shrink-0 text-sm font-semibold">{label}</span>
-      <span className="ml-auto w-24">
-        <Bar value={value} color="bg-ripe" />
-      </span>
-    </div>
-  )
-}
-
-function MemberCol({
-  member,
-  world,
-  onTip,
-}: {
-  member: MemberId
-  world: World
-  onTip: (tip: Tip) => void
-}) {
-  const st = world.family[member]
-  const owned = [...st.owned.entries()]
-  const guest = world.local !== 0
-  const canPick = world.points > 0 && !guest
-  const empty = st.offers.length === 0
-  return (
-    <div className="flex flex-col bg-ink/6">
-      <div className="flex items-center gap-3 bg-ink/10 px-3 py-3">
-        <svg
-          viewBox="0 0 64 96"
-          className="h-20 w-[3.334rem] shrink-0 bg-ink/15"
-          dangerouslySetInnerHTML={{ __html: PORTRAIT[member] }}
-        />
-        <div className="flex min-w-0 flex-col gap-1">
-          <div className="font-display text-xs leading-none">{NAMES[member]()}</div>
-          <div className="text-sm leading-none font-semibold text-ink/60">{ROLES[member]()}</div>
-          <div className="mt-1 text-xs leading-snug text-ink/50">{BLURBS[member]()}</div>
-        </div>
+    <div className="grid shrink-0 grid-cols-2 gap-1">
+      <div className="flex items-center gap-2 bg-ink/6 px-2 py-1.5">
+        <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: STAT_REPUTATION }} />
+        <span className="min-w-0 truncate text-sm font-semibold">{m.family_reputation()}</span>
+        <span className="ml-auto w-16 shrink-0">
+          <Bar value={rep / REP_MAX} color="bg-ripe" />
+        </span>
       </div>
-
-      <div className="flex flex-1 flex-col px-3 pb-3">
-        <Label>{empty ? m.family_nothing_left() : m.family_choose_one()}</Label>
-        <div className="flex flex-col gap-1">
-          {SLOTS.map(slot => {
-            const o = st.offers[slot]
-            if (o === undefined) {
-              return <div key={slot} className="h-11 bg-ink/5" />
-            }
-            const label = skillLabel(o.id, o.tier)
-            return (
-              <button
-                key={o.id}
-                type="button"
-                aria-disabled={!canPick}
-                onPointerEnter={() =>
-                  onTip({
-                    title: label,
-                    description: skillBlurb(o.id, o.tier),
-                    why: canPick ? undefined : guest ? m.family_guest_pick() : m.family_no_point(),
-                  })
-                }
-                onPointerLeave={() => onTip(undefined)}
-                onClick={() => {
-                  if (!canPick) return
-                  world.pickSkill(member, slot)
-                }}
-                className={`flex h-11 w-full items-center gap-2 px-2 text-left ${
-                  canPick
-                    ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
-                    : 'cursor-default bg-ink/8 text-ink/45'
-                }`}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className={`h-6 w-6 shrink-0 ${canPick ? '' : 'opacity-45'}`}
-                  dangerouslySetInnerHTML={{ __html: skillInner(o.id) }}
-                />
-                <span className="min-w-0 flex-1 truncate text-base font-semibold">{label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        <Label>{m.family_learned()}</Label>
-        <div className="flex min-h-9 flex-wrap content-start items-start gap-1 bg-ink/5 p-1.5">
-          {owned.length === 0 ? (
-            <span className="px-1 text-sm leading-6 text-ink/40">{m.family_none_yet()}</span>
-          ) : (
-            owned.map(([id, tier]) => <Learned key={id} id={id} tier={tier} onTip={onTip} />)
-          )}
-        </div>
+      <div className="flex items-center gap-2 bg-ink/6 px-2 py-1.5">
+        <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: STAT_LUCK }} />
+        <span className="min-w-0 truncate text-sm font-semibold">{m.family_luck()}</span>
+        <span className="ml-auto w-16 shrink-0">
+          <Bar value={luck / SKILLS.lucky.maxTier} color="bg-ripe" />
+        </span>
       </div>
     </div>
-  )
-}
-
-function Learned({ id, tier, onTip }: { id: SkillId; tier: number; onTip: (tip: Tip) => void }) {
-  const label = skillLabel(id, tier)
-  const ranked = SKILLS[id].maxTier > 1
-  return (
-    <span
-      className="inline-flex h-7 items-center gap-0.5 bg-ink/10 px-1"
-      onPointerEnter={() => onTip({ title: label, description: skillBlurb(id, tier) })}
-      onPointerLeave={() => onTip(undefined)}
-    >
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" dangerouslySetInnerHTML={{ __html: skillInner(id) }} />
-      {ranked && <span className="text-xs leading-none font-bold text-ink/70">{roman(tier)}</span>}
-    </span>
   )
 }

@@ -100,6 +100,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propWeatherStation from '../../assets/props/prop-weather-station.svg?raw'
 import propInfuser from '../../assets/props/prop-infuser.svg?raw'
 import propNecronomicon from '../../assets/props/prop-necronomicon.svg?raw'
 import propSorterV from '../../assets/props/prop-sorter-v.svg?raw'
@@ -265,6 +266,7 @@ export type AtlasKey =
   | 'freezer'
   | 'furnace-off'
   | 'furnace-on'
+  | 'weather-station'
   | 'station-off'
   | 'station-on'
   | 'infuser-off'
@@ -595,6 +597,7 @@ async function load(): Promise<void> {
   put('freezer', propFreezer)
   put('furnace-off', propFurnace, 'off')
   put('furnace-on', propFurnace, 'on')
+  put('weather-station', propWeatherStation)
   put('station-off', propStation, 'off')
   put('station-on', propStation, 'on')
   put('infuser-off', propInfuser, 'off')

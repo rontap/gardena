@@ -19,10 +19,7 @@ import type {
 } from './building.ts'
 import type { Drop } from './drop.ts'
 import type {
-  DaughterSkillId,
   Grandma,
-  HusbandSkillId,
-  PlayerSkillId,
   ResearchId,
   RouteId,
   SkillId,
@@ -199,18 +196,10 @@ export type Recap = {
 
 export type Seam = { kind: 'play' }
 
-export type SkillRef<Id extends SkillId = SkillId> = { id: Id; tier: number }
-
-export type MemberState<Id extends SkillId> = {
-  pickCount: number
-  owned: Map<Id, number>
-  offers: SkillRef<Id>[]
-}
+export type SkillRef = { id: SkillId; tier: number }
 
 export type Family = {
-  player: MemberState<PlayerSkillId>
-  husband: MemberState<HusbandSkillId>
-  daughter: MemberState<DaughterSkillId>
+  owned: Map<SkillId, number>
 }
 
 export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; price: number }

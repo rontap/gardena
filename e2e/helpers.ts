@@ -101,6 +101,15 @@ export async function armSku(
   await btn.click()
 }
 
+export async function pickTreeNode(page: Page, key: string): Promise<void> {
+  const node = page.locator(`g.node[id*="${key}"]`).first()
+  await expect(node).toBeVisible({ timeout: 20_000 })
+  await node.scrollIntoViewIfNeeded()
+  await node.evaluate(el => {
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+  })
+}
+
 function skuButton(sku: string): RegExp {
   const m = sku.match(/^(.*) (\d+)$/)
   if (m === null) return new RegExp(sku)

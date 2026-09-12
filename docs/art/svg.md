@@ -19,7 +19,7 @@ Farm tiles: atlas rasters named groups — [[architecture/view]]. HUD / almanac 
 | kind | viewBox |
 |---|---|
 | 1×1 tile, crop, item, actor | `0 0 24 24` |
-| 1×2 tree, furnace | `0 0 24 48` |
+| 1×2 tree, furnace, weather station | `0 0 24 48` |
 | 2×1 pump, still, research station | `0 0 48 24` |
 | 3×2 hangar | `0 0 72 48` |
 | 4×3 house | `0 0 96 72` |

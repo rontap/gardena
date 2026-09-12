@@ -30,8 +30,9 @@ function drain(w: World): void {
 }
 
 describe('trees.chop', () => {
-  test('Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and 2 grafts of that tree\'s variety, fruit progress lost.', () => {
+  test('Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and trunk always, 2 grafts of that tree\'s variety iff `grafting` owned, fruit progress lost.', () => {
     const w = new World()
+    w.family.owned.set('grafting', 1)
     const tree = plantTree(w, 1, 0.6, { kind: 'on', daysLeft: 2 })
     tree.tended = true
     const stay = { col: AT.col + 1, row: AT.row }

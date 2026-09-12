@@ -1,56 +1,61 @@
 # Family
 
-Skill screen. Roles stay: player gardens, husband research, daughter stall. No Family class. No XP. `World.family` always.
+Skill screen. One owned pool. No member owner. No offers. No Family class. No XP. `World.family` always.
 
-Ids: `player` | `husband` | `daughter`. Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)` — jam names the owned tier’s slower rot. `lucky` `lucky-husband` `lucky-daughter` all read **Lucky** — one per member, each maxTier 1, each its own name and blurb key so a translator can split them.
+Ids: one `SkillId` union. No `PlayerSkillId` `HusbandSkillId` `DaughterSkillId` as owners. Names and blurbs live in `SKILLS`. Hover uses `skillBlurb(id, tier)`. `grafting` name **Tree Grafting**. `specialty` name **Specialty Maker**. `lucky` is one id, maxTier 3, name **Lucky**.
 
-Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: player `machinery`. Illegal: husband `contracts` `tool-contracts` `machine-contracts` `bulk-buying`. Owned maps are per member.
+Illegal: `better-carrot` `better-vanilla` `better-sugar-cane`. Illegal: `better-apple` `better-apricot` `better-olive` `better-cherry`. Illegal: `forecast` `lucky-husband` `lucky-daughter`. Illegal: member maps. Illegal: `offers`. Illegal: `pickCount`. Illegal: tier 0. Illegal: tier > `maxTier`.
 
-`BetterCrop` = potato | wheat | tomato | raspberry | grape | apple | apricot | olive | cherry. `BETTER_IDS` is a complete map. Tree `better-*` is legal.
+`BetterCrop` = potato | wheat | tomato | raspberry | grape. `BETTER_IDS` is a complete map. No tree `better-*`.
 
 ## State
 
-`MemberState = { pickCount, owned: id → tier, offers: { id, tier }[] }`. `Family = { player, husband, daughter }`. `World.points` — one shared bank, not per member. Start: `World.points` 0, per member `pickCount` 0, `owned` empty, offers rolled. Missing owned key = not owned. `offers` length 0..3.
+`Family = { owned: id → tier }`. `World.points` — one bank. Start: `World.points` 0, `owned` empty. Missing owned key = not owned.
 
-`bulk-up` max 3. `forecast` max 1. `driving-classes` max 3. `broker` max `BROKER_MAX_TIER`. `industrial` max 3. `jam` max 3. Else `SKILLS.maxTier`. Illegal: tier 0. Illegal: tier > max. Percent and money add per owned tier, they do not multiply. Jam uses `JAM_ROT` per owned tier.
+Cap III: `boots` `bulk-up` `driving-classes` `machinery` `industrial` `inherit-land` `saleswoman` `jam` `heirloom` `specialty` `broker` `lucky` max 3. `tending` `seed-bank` `grafting` `better-*` max 1. Else `SKILLS.maxTier`. Percent and money add per owned tier, they do not multiply. Jam uses `JAM_ROT` per owned tier.
 
-`SkillEffect` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'forecast' }` `{ kind: 'lucky' }` `{ kind: 'better'; crop; saleMul }` on husband / player. No `{ kind: 'dummy' }`. `vanilla-tending` is not a skill.
+`SkillEffect` `{ kind: 'broker' }` `{ kind: 'industrial' }` `{ kind: 'machine' }` `{ kind: 'lucky' }` `{ kind: 'grafting' }` `{ kind: 'specialty' }` `{ kind: 'better'; crop; saleMul }`. No `{ kind: 'dummy' }`. No `{ kind: 'forecast' }`. `vanilla-tending` is not a skill.
+
+## Parent
+
+Same known/open as research — [[mechanics/research]]. `parent: SkillId | null`. `skillOpen(id)`: parent is null or parent owned ≥ 1. `skillKnown(id)`: parent is null or parent is open.
+
+Not known: card stays in the grid, `skill-unknown` icon, unknown name **Unknown**, unknown description **You do not know what this does.** Disabled.
+
+Extra research lock: known and the research gate unmet shows the real name, disabled. Not known stays mystery.
+
+| id | parent | research |
+|---|---|---|
+| `boots` | — | — |
+| `tending` | `boots` | — |
+| `seed-bank` | `boots` | — |
+| `better-wheat` | `seed-bank` | `unlock-crop-variants` |
+| `better-potato` | `seed-bank` | `unlock-crop-variants` |
+| `better-tomato` | `seed-bank` | `unlock-advanced-plants` |
+| `better-grape` | `seed-bank` | `unlock-advanced-plants` |
+| `better-raspberry` | `seed-bank` | `unlock-raspberry` |
+| `grafting` | `boots` | — |
+| `lucky` | `boots` | — |
+| `bulk-up` | — | — |
+| `driving-classes` | `machinery` | `unlock-vehicles` |
+| `machinery` | `bulk-up` | `unlock-grinder` |
+| `industrial` | `broker` | `unlock-contracts` |
+| `inherit-land` | `bulk-up` | `unlock-landscaping` |
+| `saleswoman` | — | — |
+| `jam` | `saleswoman` | — |
+| `heirloom` | `saleswoman` | `unlock-heirloom` |
+| `specialty` | `heirloom` | `unlock-preservatives` |
+| `broker` | `saleswoman` | `unlock-contracts` |
+
+Potato / wheat Experienced growers: gated on Crop variants. Tomato / grape: Advanced Plants. Raspberry: Raspberry seeds.
 
 ## Points
 
-One shared bank on `World`, not three. Each seam it gets `POINTS_PER_DAY`, and any point buys any member's offer. Grant is the seam step, not Close. `grantPoints(n)`: `World.points += n`. `pickSkill(member, slot)` spends 1 from the same bank. HUD remaining-points count is `World.points`. Derived. Not a second field. `Act.dismissRecap` / `dismissRecapBody` is a no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. [[mechanics/day]]. Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop — [[mechanics/contracts]].
+One bank on `World`. Each seam it gets `POINTS_PER_DAY` 1 — preference. Grant is the seam step, not Close. `grantPoints(n)`: `World.points += n`. Rank n costs n points. `Act.pickSkill` `{ id }`. HUD remaining-points count is `World.points`. Derived. Not a second field. `Act.dismissRecap` / `dismissRecapBody` is a no-op. Recap Close is `World.seeRecap(day)` — not a `Cmd`, not a grant. [[mechanics/day]]. Contracts also pay points: 1 / 2 / 3 by band from Halbert Eijn and Intercrop — [[mechanics/contracts]]. Guest cannot pick.
 
-`unlockAll`: every research id done, `money += 999`, job idle, `points = 99`. Does not grant skills. Does not reroll. `unlockAllSkills`: every `SKILLS` id at that id's `maxTier` on its owning member. Ignores gates. Rebuilds skill `Modifier`s from owned `better-*` whose `saleMul` is not 1 — the tree rows — at that tier, `modGen++`. Empties every member's `offers`. Does not spend points. Does not bump `pickCount`. Does not touch research. `Act.cheat` `{ k: 'skills' }`.
+`unlockAll`: every research id done, `money += 999`, job idle, `points = 99`. Does not grant skills. `unlockAllSkills`: every `SKILLS` id at that id's `maxTier` on the one pool. Ignores parent and research gates. Rebuilds skill `Modifier`s from owned `better-*` whose `saleMul` is not 1 at that tier, `modGen++`. Does not spend points. Does not touch research. `Act.cheat` `{ k: 'skills' }`.
 
-## Offers
-
-Pool = that member’s ids with `owned < max` (or absent) and gate met. Offered tier = owned + 1 (absent → 1). Draw `min(3, pool.length)` distinct, no padding. Sort pool by id. Without replacement, slot `i` = `floor(skill.at(memberIx, pickCount, i) * remaining)`. — [[mechanics/rng]]. Offers exist at init. Persist until pick. Research done does not reroll. `pickSkill(member, slot)`: spend 1 of `World.points`, `owned[id] = offered.tier`, `pickCount++`, reroll that member only. Illegal: pick at 0 points. Illegal: slot past `offers.length`. Illegal: another member’s id.
-
-## Gates
-
-| id | requires |
-|---|---|
-| `heirloom` | research `unlock-heirloom` done |
-| `better-potato` | research `unlock-crop-variants` done |
-| `better-wheat` | research `unlock-crop-variants` done |
-| `better-tomato` | research `unlock-tomato` done |
-| `better-raspberry` | research `unlock-raspberry` done |
-| `better-grape` | research `unlock-grape` done |
-| `better-apple` | none |
-| `better-apricot` | none |
-| `better-olive` | none |
-| `better-cherry` | none |
-| `bulk-up` | none |
-| `lucky` | none |
-| `lucky-husband` | none |
-| `lucky-daughter` | none |
-| `seed-bank` | none |
-| `driving-classes` | research `unlock-vehicles` done |
-| `broker` | research `unlock-contracts` done |
-| `machinery` | research `unlock-grinder` done |
-| else | none |
-
-Potato / wheat Experienced growers: gated on Crop variants. Tree `better-*`: no research gate.
+`pickSkill(id)`: legal iff known, open, research gate met (or none), `owned < maxTier`, `World.points >=` next rank, `world.local === 0`. Next rank is owned + 1 (absent → 1). Spend that rank's cost, `owned[id] =` that rank. Illegal: pick at 0 points when the cost is above 0. Illegal: another seat.
 
 ## Tend
 
@@ -62,9 +67,9 @@ Potato / wheat Experienced growers: gated on Crop variants. Tree `better-*`: no 
 
 ## Sale
 
-Annual `better-*` pays ripen `betterGain` `BETTER_QUALITY` and `EXPERIENCED_VAR_BONUS` on the ripen variety roll — [[mechanics/plants]] `plants.variety-roll`. `saleMul` 1, so it pushes no `Modifier`. Tree `better-*` is `saleMul` 1.04 and a `Modifier` and nothing else: a tree has no happiness and never rolls a variety. `Modifier.source = 'research' | 'fertilizer' | 'skill'`.
+Annual `better-*` pays ripen `betterGain` `BETTER_QUALITY` and `EXPERIENCED_VAR_BONUS` on the ripen variety roll — [[mechanics/plants]] `plants.variety-roll`. `saleMul` 1, so it pushes no `Modifier`. `Modifier.source = 'research' | 'fertilizer' | 'skill'`.
 
-At `marketGain`, not crop `Modifier`: saleswoman every `StallGoodId`; heirloom variety tier `heirloom` of crop fruit, spirit, wine (not cider, not sugar / jam / oil / flour / extract / bread); jam fruit freshness `< JAM_ROT_FRESH` uses slower `rotSeconds` on ripe plants and `tickFreshness` (not a sale floor, not the jam machine); `{ kind: 'rotten' }` `$1` apiece iff `unlock-fermentation` in `done`, sat exempt; flood or drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat — [[mechanics/weather]]. Crop stall bins: stock + worth per variety. Rotten stock is `World.clearance`.
+At `marketGain`, not crop `Modifier`: saleswoman every `StallGoodId`; heirloom variety tier `heirloom` of crop fruit, spirit, wine (not cider, not sugar / jam / oil / flour / extract / bread); specialty jam / spirit / wine / cider variety tier `variant` | `heirloom` × `(1 + 0.05 × tier)`, stacks with heirloom; jam fruit freshness `< JAM_ROT_FRESH` uses slower `rotSeconds` on ripe plants and `tickFreshness` (not a sale floor, not the jam machine); `{ kind: 'rotten' }` `$1` apiece iff `unlock-fermentation` in `done`, sat exempt; flood or drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat — [[mechanics/weather]]. Crop stall bins: stock + worth per variety. Rotten stock is `World.clearance`.
 
 ## Other effects
 
@@ -75,24 +80,31 @@ At `marketGain`, not crop `Modifier`: saleswoman every `StallGoodId`; heirloom v
 - drought `skuPrice`: [[mechanics/weather]] `weather.shop`
 - Vehicle interactions lens (`vehicles`) is `unlock-vehicles` in `done` — [[mechanics/vehicles]]
 - Water need lens is `unlock-auto-irrigation` in `done`. Land quality lens is `unlock-expand` in `done`. — [[ui/lens]]
-- inherit-land: `+1` expansion permit per tier, max 2. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
+- inherit-land: `+1` expansion permit per tier, max 3. Gated on `unlock-landscaping`. Land still costs money — [[mechanics/expansion]]
+- grafting: max 1. Chop drops 2 grafts iff owned; chop always wood and trunk — [[mechanics/trees]] `trees.chop`
 - `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - broker / industrial: [[mechanics/contracts]]
-- forecast: `{ kind: 'forecast' }`. HUD tomorrow iff owned — [[mechanics/weather]] `weather.forecast`
 - lucky: `{ kind: 'lucky' }`. Luck `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. Loot roll: [[mechanics/burrow]]
+- HUD tomorrow iff `forecastCount ≥ 1` (weather-station buildings). Not a skill — [[mechanics/weather]] `weather.forecast`
 
 ## Invariants
 
-`family.pick` — Offers 0–3 persist until pick; `pickSkill` costs 1 of `World.points`, writes `owned[id] = offered.tier`, `pickCount++`, rerolls that member only.
+`family.pick` — `Act.pickSkill` `{ id }`; rank n costs n of `World.points`; writes `owned[id]` to that rank; guest never; no offers.
 
 `family.lens` — Water need lens iff `unlock-auto-irrigation` in `done`; land quality lens iff `unlock-expand` in `done`; vehicle interactions lens iff `unlock-vehicles` in `done`.
 
-`family.skills` — Player `boots` `bulk-up` `lucky` `seed-bank` `driving-classes` `tending` `better-*`; husband `machinery` `forecast` `inherit-land` `lucky-husband`; daughter `saleswoman` `jam` `industrial` `broker` `heirloom` `lucky-daughter`; gates and maxTier as this note; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.
+`family.skills` — One pool: `boots` `tending` `seed-bank` `better-wheat` `better-potato` `better-tomato` `better-grape` `better-raspberry` `grafting` `lucky` `bulk-up` `driving-classes` `machinery` `industrial` `inherit-land` `saleswoman` `jam` `heirloom` `specialty` `broker`; parent known/open as this note; research lock as this note; cap III on the I–III ids; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.
 
-`family.better-set` — `better-*` exists for potato wheat tomato raspberry grape apple apricot olive cherry; `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)`; `experiencedTier(crop, tierOf)` is the owned tier, 0 off the set; annual rows carry `saleMul` 1; tree rows carry 1.04 and are `saleMul` only.
+`family.better-set` — `better-*` exists for potato wheat tomato raspberry grape; `betterGain` is `BETTER_QUALITY × owned tier × (h / HAPPY_MAX)`; `experiencedTier(crop, tierOf)` is the owned tier, 0 off the set; annual rows carry `saleMul` 1; no tree `better-*`.
 
 `family.jam-rot` — `jam` owned tier N: fruit with freshness `< 0.5` rots `15% × N` slower; ripe plant and picked fruit; freezer skips.
 
-`family.unlockSkills` — `unlockAllSkills`: every `SKILLS` id at `maxTier` on its owner; ignores gates; rebuilds skill modifiers from owned tree `better-*` at that tier; empties offers; `unlockAll` still does not grant skills.
+`family.unlockSkills` — `unlockAllSkills`: every `SKILLS` id at `maxTier` on the one pool; ignores gates; rebuilds skill modifiers from owned `better-*` whose `saleMul` is not 1 at that tier; `unlockAll` still does not grant skills.
 
-`family.lucky` — `lucky` on the player, `lucky-husband`, `lucky-daughter`: one per member, each maxTier 1, gate none, effect `{ kind: 'lucky' }`; luck is `min(LUCK_CAP, the three tiers summed)`; not a World field; no HUD chip; icon is the `stat-luck` clover — [[art/skills]] [[mechanics/burrow]].
+`family.lucky` — `lucky` one id, maxTier 3, parent `boots`, gate none, effect `{ kind: 'lucky' }`; luck is `min(LUCK_CAP, skillTier('lucky'))`; not a World field; no HUD chip; icon is the `stat-luck` clover — [[art/skills]] [[mechanics/burrow]].
+
+`family.cost` — Rank n costs n of `World.points`; `POINTS_PER_DAY` is 1.
+
+`family.grafting` — Chop drops 2 grafts iff `grafting` owned; chop always wood and trunk — [[mechanics/trees]] `graft.axe`.
+
+`family.specialty` — jam / spirit / wine / cider whose variety tier is `variant` or `heirloom` × `(1 + 0.05 × tier)` at `marketGain`; stacks with heirloom — [[mechanics/market]].

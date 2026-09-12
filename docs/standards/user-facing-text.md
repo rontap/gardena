@@ -55,12 +55,15 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | ordinary bag                               | Fertilizer bag / fertilizer / ordinary fertilizer                                                            | compost (that is the box bag)                             |
 | better-tools research                      | Gardening tools                                                                                              | Better gardening tools                                    |
 | hardened-tools research                    | Hardened tools                                                                                               | Hardened pickaxe (that is the SKU)                        |
+| weather-station research / building        | Weather Forecast Station                                                                                     | Weather forecast, weather station                         |
 | compost bag                                | Compost                                                                                                      | manure                                                    |
 | top rarity                                 | Heirloom                                                                                                     | legendary, gold                                           |
 | rarities, in order                         | Common, Uncommon, Rare, Heirloom                                                                             | gem, pip, grade (first almanac sentence may define grade) |
 | rarity mark on fruit                       | the mark / a small colored mark                                                                              | gem, pip                                                  |
 | tend prompt                                | Tend                                                                                                         | care, pet, water by hand                                  |
 | tend skill                                 | Careful tending                                                                                              | Tending                                                   |
+| grafting skill                             | `<need-help>`                                                                                                |                                                           |
+| specialty skill                            | `<need-help>`                                                                                                |                                                           |
 | harvest ripe annual                        | Harvest                                                                                                      | pick (Harvest sensor body may say ready to pick)          |
 | shovel a tree                              | Dig                                                                                                          | harvest, uproot                                           |
 | plant a tree seed                          | Plant {Apple\|Apricot\|Cherry\|Olive}                                                                        | sow a tree                                                |
@@ -91,7 +94,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | weather dry                                | Dry                                                                                                          | drought, arid                                             |
 | weather flood                              | Flood                                                                                                        | drowning, deluge                                          |
 | weather drought                            | Drought                                                                                                      | dry, famine                                               |
-| tomorrow glyph title                       | Tomorrow · {Clear\|Rain\|Dry\|Flood\|Drought}                                                                | next day, forecast (the skill is **Weather forecast**)    |
+| tomorrow glyph title                       | Tomorrow · {Clear\|Rain\|Dry\|Flood\|Drought}                                                                | next day, forecast                                        |
 | day counter                                | Day {n}                                                                                                      |                                                           |
 | phase `sunrise`                            | Sunrise                                                                                                      | morning                                                   |
 | phase `day`                                | Midday                                                                                                       | day, noon, afternoon                                      |
@@ -196,7 +199,6 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | expansion body                             | farm expansion opportunities                                                                                 | permits (plate: **No permit left**)                       |
 | expand plate                               | Expand                                                                                                       | Buy land                                                  |
 | research in flight                         | Researching {name}                                                                                           | researching as a noun, tech tree                          |
-| research shelves                           | Plants / Land / Automation / Trade                                                                           |                                                           |
 | almanac                                    | Almanac                                                                                                      | encyclopedia, help, wiki                                  |
 | almanac tabs                               | Seeds / Trees / Utility / Sensors / Automation / Water systems / Building / Game concepts                    |                                                           |
 | almanac Infusion concept                   | Infusion                                                                                                     | flavouring, spice                                         |
@@ -263,7 +265,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | water-system look, else                    | Water-system sensor - on/off                                                                                 | network sensor                                            |
 | vehicle plate                              | Pressure plate                                                                                               | Vehicle detector                                          |
 | variety sensor HUD                         | Variety sensor                                                                                               | crop sensor, rarity sensor                                |
-| weather sensor HUD                         | Weather sensor                                                                                               | forecast sensor (the skill is **Weather forecast**)       |
+| weather sensor HUD                         | Weather sensor                                                                                               | forecast sensor                                           |
 | variety HUD                                | Plain / Named / Heirloom                                                                                     | Base, Variant, Common                                     |
 | pressure HUD                               | Vehicle / You / On the ground                                                                                | player, item, ATV                                         |
 | not-enclosed look                          | open fence, close it to turn the sensor on                                                                   | not enclosed, enclosure                                   |
@@ -303,8 +305,8 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | closing full pages at twilight             | Perform the ritual / ritual                                                                                  | rite, ceremony, cast, invoke, commune                     |
 | a page already closed                      | Done                                                                                                         | complete, fulfilled, sealed                               |
 | a story item in the Command Center         | A letter is waiting                                                                                          | event, cutscene, chapter, beat                            |
-| family pick                                | Choose one / Nothing left to learn / Learned / None yet                                                      |                                                           |
-| skill rank                                 | I–V                                                                                                          | plus, star                                                |
+| family pick                                | Done / Only the host can choose a skill.                                                                     | Choose one, Nothing left to learn, Learned, None yet      |
+| skill rank                                 | I–III                                                                                                        | plus, star, I–V                                           |
 | heirloom daughter skill                    | Őstermelő                                                                                                    | Heirloom farmer                                           |
 
 ## Chrome

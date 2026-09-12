@@ -119,7 +119,7 @@ export function Hud({
           <div className="h-7 w-px shrink-0 bg-ink/20" />
           <div className="flex shrink-0 items-center gap-2">
             <WeatherGlyph kind={world.weather(world.clock.day)} />
-            {world.hasSkill('forecast') && (
+            {world.forecastCount >= 1 && (
               <WeatherGlyph
                 kind={world.weather(world.clock.day + 1)}
                 title={m.hud_tomorrow({ name: WEATHER_NAME[world.weather(world.clock.day + 1)]() })}

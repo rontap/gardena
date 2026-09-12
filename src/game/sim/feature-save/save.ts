@@ -1,18 +1,16 @@
 import { VARIETY_IDS } from '../../defs/varieties.ts'
 import { CHUNK, chunkRect, occupiedCells, type ChunkId, type Coord } from '../building.ts'
 import type { Cell } from '../plot.ts'
-import type { SkillId } from '../ids.ts'
 import type { Contracts } from '../feature-contracts/market.h.ts'
 import type { Plant } from '../plant.ts'
 import type { Soil } from '../soil.ts'
 import { STALL_IDS, type StallGood } from '../stall.ts'
-import type { SkillRef, World } from '../world.ts'
+import type { World } from '../world.ts'
 import type { Trailer, Vehicle } from '../feature-vehicles/vehicle.h.ts'
 import type {
   Save,
   SaveCell,
   SaveContracts,
-  SaveMember,
   SavePlant,
   SaveSoil,
   SaveStallGood,
@@ -30,7 +28,7 @@ export type {
   Save,
   SaveCell,
   SaveContracts,
-  SaveMember,
+  SaveSkill,
   SavePlant,
   SaveRecap,
   SaveRng,
@@ -77,9 +75,7 @@ export function dump(world: World): Save {
     done: [...world.done],
     job: world.job,
     family: {
-      player: dumpMember(world.family.player),
-      husband: dumpMember(world.family.husband),
-      daughter: dumpMember(world.family.daughter),
+      owned: [...world.family.owned.entries()].map(([id, tier]) => ({ id, tier })),
     },
     stall: Object.fromEntries(STALL_IDS.map(id => [id, dumpStall(world.stall[id])])) as Save['stall'],
     tally: {
@@ -159,14 +155,6 @@ export function slotStamp(): string | undefined {
   }
 }
 
-function dumpMember<Id extends SkillId>(m: { pickCount: number; owned: Map<Id, number>; offers: SkillRef<Id>[] }): SaveMember<Id> {
-  return {
-    pickCount: m.pickCount,
-    owned: [...m.owned.entries()].map(([id, tier]) => ({ id, tier })),
-    offers: m.offers.map(o => ({ id: o.id, tier: o.tier })),
-  }
-}
-
 function dumpStall(g: StallGood): SaveStallGood {
   return {
     offered: 0,
@@ -200,6 +188,7 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
     c.kind === 'furnace' ||
     c.kind === 'infuser' ||
     c.kind === 'necronomicon' ||
+    c.kind === 'weather-station' ||
     c.kind === 'station' ||
     c.kind === 'sorter' ||
     c.kind === 'barrel' ||
@@ -329,6 +318,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         supper: c.supper.slice(),
         pages: c.done.slice(),
       }
+    case 'weather-station':
+      return { kind: 'weather-station', base: c.base }
     case 'infuser':
       return {
         kind: 'infuser',

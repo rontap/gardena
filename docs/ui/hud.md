@@ -6,7 +6,7 @@ Canvas host: pan / zoom / `clickHit` as now. Farm sprites have no DOM. Ghost hoo
 
 Map boot: until `WorldView.mount` + first `layout` (`onReady`), an overlay on the map host: centered **Loading...**, fade in then fade out, then unmount. Play and menu. Menu canvas fade-in still runs after `onReady`. Not Pixi. Not a `DirtyReason`. [[architecture/view]] `view.boot`
 
-Type scale: [[ui/type]]. Overlay pause snapshots `resumeRef` only on entering family/market/almanac/recap popup; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]]. Sensor Object HUD: `Checkbox` / `Radio` in `frame.tsx` — [[ui/sensors]] [[ui/docks]].
+Type scale: [[ui/type]]. Overlay pause snapshots `resumeRef` only on entering market/almanac/recap popup; switching among them keeps the hold. App `paused`, not `World.pause`. Weather glyphs [[art/weather]]. Sensor Object HUD: `Checkbox` / `Radio` in `frame.tsx` — [[ui/sensors]] [[ui/docks]].
 
 ## Top ribbon
 
@@ -17,14 +17,14 @@ Left → right, separated by rules:
 1. **Gardena** — the wordmark. Always there.
 2. `Coin` (`world.money`).
 3. Phase glyph, then **Day {n} · {phase name}** over a day bar (`clock.t / DAY_SECONDS`).
-4. Weather. After the day block: divider, current glyph, then tomorrow glyph iff husband owns `forecast`. No kind names in the row.
+4. Weather. After the day block: divider, current glyph, then tomorrow glyph iff `forecastCount ≥ 1`. No kind names in the row.
 5. Far right, left of Multiplayer: **Multiplayer** then **Almanac** then **Cheat** then **Pause** then **Gear**.
 
 The research job, the expansion chip, and the points chip are not here. They are notices on the Command Center — [[ui/notices]]. One place, not two.
 
 ### Weather
 
-After item 3. Divider, then glyphs. Same chrome as the phase glyph. Files `ui-weather-{kind}.svg` for `clear` `rain` `dry` `flood` `drought`. Art [[art/weather]]. Current = `world.weather(clock.day)`. Tomorrow = `world.weather(clock.day + 1)` iff husband owns `forecast`. No extra label in the row. Guest sees the same glyphs; forecast still requires husband owned (world skill). Each glyph is a hover target. [[ui/callout-hover]] `placement="below"`. Callout title and body live in src, keyed by kind — [[mechanics/weather]] `weather.forecast`. Tomorrow title **Tomorrow · {name}**, body of that kind. `{name}` is Clear / Rain / Dry / Flood / Drought. Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump — the bill is recap **Water**. [[ui/docks]] [[mechanics/weather]]. `#debug-weather` — forecast table, not the HUD. [[ui/cheat]]
+After item 3. Divider, then glyphs. Same chrome as the phase glyph. Files `ui-weather-{kind}.svg` for `clear` `rain` `dry` `flood` `drought`. Art [[art/weather]]. Current = `world.weather(clock.day)`. Tomorrow = `world.weather(clock.day + 1)` iff `forecastCount ≥ 1`. No extra label in the row. Guest sees the same glyphs; tomorrow still requires a weather station on the farm. Each glyph is a hover target. [[ui/callout-hover]] `placement="below"`. Callout title and body live in src, keyed by kind — [[mechanics/weather]] `weather.forecast`. Tomorrow title **Tomorrow · {name}**, body of that kind. `{name}` is Clear / Rain / Dry / Flood / Drought. Weather swaps at the seam. React, not `paintMotion`. Coin does not tick for pump — the bill is recap **Water**. [[ui/docks]] [[mechanics/weather]]. `#debug-weather` — forecast table, not the HUD. [[ui/cheat]]
 
 ### Buttons
 
@@ -32,7 +32,7 @@ Right-hand cluster: **Multiplayer** **Almanac** **Cheat** **Pause** **Gear**. No
 
 ### Overlay pause
 
-Family / Market / Almanac open, or App `recapDay` set, and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause. Rising edge (enter `family` | `market` | `almanac` | recap popup from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those four): if `resumeRef.current`, unpause and clear it. Switching among the four is not a falling edge. Host or guest: these overlays do not auto-pause. Pause button still toggles user pause. Build / Research / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate. The day seam does not pause. On `clock.day` increment App `writeSlot`s when `world.local === 0` and closes the open panel. The **Day {n} Finished** notice is how the day is noticed, and opening the recap popup from it pauses under the same overlay rule as Family / Market / Almanac. [[ui/settings]] [[mechanics/day]] [[ui/notices]]
+Market / Almanac open, or App `recapDay` set, and `role === 'off'`: pause the sim clock. App `paused`. Not `World.pause`. Close restores the previous pause state unless the player had already paused — same `resumeRef` pattern as MP lobby `setMpPanel`. Overlay pause is extra on top of user pause. Rising edge (enter `market` | `almanac` | recap popup from anything else): `resumeRef.current = !paused`, then pause. Falling edge (leave those three): if `resumeRef.current`, unpause and clear it. Switching among the three is not a falling edge. Host or guest: these overlays do not auto-pause. Pause button still toggles user pause. Build / Research / Family / Cheat / Lens do not auto-pause. MP lobby pause is `setMpPanel`, separate. The day seam does not pause. On `clock.day` increment App `writeSlot`s when `world.local === 0` and closes the open panel. The **Day {n} Finished** notice is how the day is noticed, and opening the recap popup from it pauses under the same overlay rule as Market / Almanac. [[ui/settings]] [[mechanics/day]] [[ui/notices]]
 
 The clock text and the day bar are painted every frame by `paintMotion`, not by React. Any change to that markup must land in `motion.ts` too. React renders the same strings so the first frame is right. Weather glyphs are React. Coin does not tick for pump. Research progress left this ribbon with its `motion.ts` bind — [[ui/notices]]. The hovered machine's recipe arrow and its countdown are on the same contract, bound by `bindCraft` + `bindHud`, painted only while the machine is not idle — [[ui/recipe]].
 

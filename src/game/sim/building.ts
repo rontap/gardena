@@ -190,6 +190,7 @@ export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
   'buy-still': { w: 2, h: 1 },
   'buy-research-station': { w: 2, h: 1 },
   'buy-furnace': { w: 1, h: 2 },
+  'buy-weather-station': { w: 1, h: 2 },
   'buy-mill': { w: MILL_W, h: MILL_H },
   'buy-infuser': { w: MILL_W, h: MILL_H },
   'buy-necronomicon': { w: NECRO_W, h: NECRO_H },
@@ -986,6 +987,13 @@ export class ResearchStation extends Machine {
     if (this.units === 0) this.crop = 'none'
     w.track(at, this)
     return true
+  }
+}
+
+export class WeatherStation extends BaseBuilding {
+  readonly kind = 'weather-station' as const
+  constructor(base: RectBase) {
+    super({ shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 })
   }
 }
 

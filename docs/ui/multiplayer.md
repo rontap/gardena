@@ -81,7 +81,7 @@ Away actor is not drawn.
 | surface | guest |
 |---|---|
 | Cheat | hidden on the top ribbon. Hidden ≠ disabled. [[ui/hud]] |
-| Family | overlay opens. Offers not clickable. Why: **Only the host can choose a skill.** [[ui/family]] |
+| Family | dock opens. Cards not clickable. Why: **Only the host can choose a skill.** [[ui/family]] |
 | Expand plates | hidden. Command Center expansion row stays, `go: none`. [[ui/hud]] [[ui/notices]] |
 | Recap | Close / Esc / backdrop live. `seeRecap` is not a `Cmd`. [[ui/docks]] |
 | Inventory | this seat's 16. [[ui/docks]] |

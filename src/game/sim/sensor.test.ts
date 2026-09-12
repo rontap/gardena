@@ -1221,7 +1221,7 @@ describe('1.6 sensors', () => {
     expect(permit({ a: Act.openHud, t: 0, p: 1, k: 'sprinkler', c: [0, 0] })).toBe(true)
   })
 
-  test('Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` `show` `unlock-sensors` `need` `unlock-dispatch`. StayArmed. Wait resolve after `evalDag` using this tick’s `inn`.', () => {
+  test('Traffic light: 1×1 sunk. Ports `in` top `out` bottom. Unwired `inn` 0 = red = hold. `out` 1 iff a vehicle’s current stop is this cell and it is waiting on it (`running`, wait stop, floor is that cell, `inn === 0`). Path-cross is not a wait. `SENSOR_HOLD` on `out`. Several waiters: all hold on 0, all leave on 1. No collision. Groups off/on from `inn`. Look **Traffic light**. `buy-traffic-light` unlock `unlock-dispatch`. StayArmed. Wait resolve after `evalDag` using this tick’s `inn`.', () => {
     const w = new World(1)
     ready(w)
     w.done.add('unlock-vehicles')

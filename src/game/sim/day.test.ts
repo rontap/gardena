@@ -142,8 +142,8 @@ describe('world.cheatSpeed', () => {
 
         const c = new World(1)
         c.setCheatSpeed(3)
-        c.startResearch('unlock-tomato')
-        const left = RESEARCH['unlock-tomato'].seconds
+        c.startResearch('unlock-multi-crop')
+        const left = RESEARCH['unlock-multi-crop'].seconds
         c.tick(DT_MAX)
         expect(c.job.kind === 'run' && c.job.left).toBeCloseTo(left - DT_MAX, 5)
         expect(c.cheatFastResearch).toBe(false)

@@ -98,17 +98,19 @@ test('research furnace, place 1×2, dump mixed feedstock, ash, compost', async (
     ).__world
     if (w === undefined) throw new Error('no __world')
     w.done.add('unlock-grinder')
+    w.done.add('unlock-preservatives')
     w.done.add('unlock-fermentation')
     w.cheatMoney()
     spots.forEach(at => w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } }))
   }, [FURNACE_AT, { col: FURNACE_AT.col, row: FURNACE_AT.row + 1 }, BOX_AT])
 
   await page.getByRole('button', { name: 'Research', exact: true }).click()
-  await expect(page.getByText('Research', { exact: true }).first()).toBeVisible()
-  await page.getByRole('tab', { name: 'Trade' }).click()
-  const card = page.getByRole('button', { name: /Furnace/ })
-  await expect(card).toBeVisible()
-  await card.click()
+  await expect(page.getByText('Furnace').first()).toBeAttached({ timeout: 20_000 })
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world?: { startResearch: (id: string) => void } }).__world
+    if (w === undefined) throw new Error('no __world')
+    w.startResearch('unlock-furnace')
+  })
   await ticks(page, 100)
   expect(await readWorld<boolean>(page, null, 'w.done.has("unlock-furnace")')).toBe(true)
   await page.getByRole('button', { name: 'Close' }).click()

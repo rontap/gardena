@@ -15,7 +15,7 @@ expandSlots = unlock-expand + expand-land + eminent-domain + skillTier('inherit-
 expandLeft  = max(0, expandSlots - purchases)
 ```
 
-Three from research, two from `inherit-land` — [[mechanics/family]] — and one per band-3 prize from Trade Jo or Mercanova — [[mechanics/contracts]]. `World.prizeSlots` is the saved prize counter; `purchases` is the spend counter.
+Three from research, three from `inherit-land` — [[mechanics/family]] — and one per band-3 prize from Trade Jo or Mercanova — [[mechanics/contracts]]. `World.prizeSlots` is the saved prize counter; `purchases` is the spend counter. `inherit-land` `+1` permit per rank, max 3.
 
 `expandLeft() <= 0` is a hard no-op in `expandBody`. Faces stay drawn and read `No permit left` instead of `Expand $N`.
 

@@ -19,6 +19,7 @@ import {
   Furnace,
   Infuser,
   Necronomicon,
+  WeatherStation,
   PotStill,
   Pump,
   ResearchStation,
@@ -35,7 +36,9 @@ import {
   type ChunkId,
 } from '../building.ts'
 import type { Cell } from '../plot.ts'
-import type { SkillId } from '../ids.ts'
+import { RESEARCH } from '../../defs/research.ts'
+import { SKILLS } from '../../defs/skills.ts'
+import type { ResearchId, SkillId } from '../ids.ts'
 import type { Bins, Contracts } from '../feature-contracts/market.h.ts'
 import type { Hand, Item, Slot } from '../item.ts'
 import { MemorySink, type LogSink } from '../log.ts'
@@ -66,7 +69,6 @@ import {
   World,
   type Family,
   type Hydrate,
-  type MemberState,
   type Recap,
   type Seat,
   type SeatId,
@@ -77,7 +79,7 @@ import {
   type Save,
   type SaveCell,
   type SaveContracts,
-  type SaveMember,
+  type SaveSkill,
   type SavePlant,
   type SaveRecap,
   type SaveSoil,
@@ -102,6 +104,8 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
 }
 
 function worldFromSave(save: Save, sink: LogSink): World {
+  checkDone(save.done)
+  if (save.job.kind === 'run' && !(save.job.id in RESEARCH)) throw new Error('unusable')
   const owned = save.chunks.map(ch => ch.id)
   const live = stampChunks(save.chunks)
   const h: Hydrate = {
@@ -215,19 +219,21 @@ function unseenFrom(save: Save): number[] {
 }
 
 function makeFamily(f: Save['family']): Family {
-  return {
-    player: makeMember(f.player),
-    husband: makeMember(f.husband),
-    daughter: makeMember(f.daughter),
-  }
+  if ('player' in f || 'husband' in f || 'daughter' in f) throw new Error('unusable')
+  const owned = new Map<SkillId, number>()
+  f.owned.forEach((s: SaveSkill) => {
+    if (!(s.id in SKILLS)) throw new Error('unusable')
+    const def = SKILLS[s.id]
+    if (s.tier < 1 || s.tier > def.maxTier) throw new Error('unusable')
+    owned.set(s.id, s.tier)
+  })
+  return { owned }
 }
 
-function makeMember<Id extends SkillId>(m: SaveMember<Id>): MemberState<Id> {
-  return {
-    pickCount: m.pickCount,
-    owned: new Map(m.owned.map(s => [s.id, s.tier])),
-    offers: m.offers.map(o => ({ id: o.id, tier: o.tier })),
-  }
+function checkDone(done: ResearchId[]): void {
+  done.forEach(id => {
+    if (!(id in RESEARCH)) throw new Error('unusable')
+  })
 }
 
 function makeStallMap(s: Save['stall']): StallMap {
@@ -452,6 +458,8 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       furnace.hold = cell.hold
       return furnace
     }
+    case 'weather-station':
+      return new WeatherStation(cell.base)
     case 'necronomicon': {
       const book = new Necronomicon(cell.base)
       book.crop = cell.crop

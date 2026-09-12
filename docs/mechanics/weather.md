@@ -43,7 +43,9 @@ Pump: `World.pumpLiters +=` pump-kind `take()` litres during the day. At seam, b
 
 ## Forecast
 
-Husband `forecast` max 1. Effect `{ kind: 'forecast' }`. HUD shows tomorrow iff owned. Recap / almanac / day sensor unchanged. Day sensor still `clock.phase()` only — [[mechanics/sensors]]. Skill description lives in `SKILLS`.
+`forecastCount` is the number of placed weather-station buildings. Derived. Not a World field. HUD shows tomorrow iff `forecastCount ≥ 1`. A second station is a no-op. Recap / almanac / day sensor unchanged. Day sensor still `clock.phase()` only — [[mechanics/sensors]]. No `forecast` skill.
+
+`buy-weather-station` Land shelf, show + buy `unlock-weather-station`, price 24 preference, occupancy 1×2, origin NW, no rotate, hover origin extends south. Many allowed. Demolishable. Not a `Machine`: no `ports`, no `inn`, no `pads`, `ticks` false. Extras no-op. skuLabel **Weather Forecast Station**. Description **Tomorrow's weather appears next to today, so you can plan watering, the stall, and the Water bill before Sunrise. A second station does nothing extra.** — [[items/buildings]] [[ui/build]] [[mechanics/research]]
 
 ## Debug / save
 
@@ -67,4 +69,4 @@ Cheat pins tomorrow, host only, not Save. `#debug-weather` exists. Layout is UI.
 
 `weather.shop` — Drought `skuPrice`: `tab === 'seeds' | 'utility'`, then ×2; automation / building / hangar-buys untouched.
 
-`weather.forecast` — HUD tomorrow iff husband owns `forecast`.
+`weather.forecast` — HUD tomorrow iff `forecastCount ≥ 1`; `forecastCount` is placed weather-station buildings; extras no-op; demolishable; not a `Machine`.

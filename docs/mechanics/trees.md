@@ -78,7 +78,7 @@ No `id`. No better-axe. 0 uses: hand empty.
 
 Legal: hand axe or chainsaw, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`. Not grow. Not trunk. Axe or chainsaw on grow / trunk: no-op.
 
-Complete: `usesLeft -= 1`, drop `{ kind: 'wood'; count: 1 }` `frontOf` / `dropSpot`, drop `{ kind: 'graft'; crop: species; variety: Tree.variety; quality: 0; count: 2 }` `frontOf` / `dropSpot`, then `trunk = true`, `juvenile = 0`, `fruit = 0`, `yield = pending`, `tended = false`. Pending fruit is lost. Ground drops around the tree stay. Chop always completes. No plot does not undo the chop. Variety on the trunk is unchanged.
+Complete: `usesLeft -= 1`, drop `{ kind: 'wood'; count: 1 }` `frontOf` / `dropSpot`, drop `{ kind: 'graft'; crop: species; variety: Tree.variety; quality: 0; count: 2 }` `frontOf` / `dropSpot` iff `grafting` is owned, then `trunk = true`, `juvenile = 0`, `fruit = 0`, `yield = pending`, `tended = false`. Pending fruit is lost. Ground drops around the tree stay. Chop always completes. Wood and trunk always. No plot does not undo the chop. Variety on the trunk is unchanged. No grafts when `grafting` is not owned.
 
 Loop: chop → `trunk` (`juvenileSeconds`) → `grow` (`trunk = false`, `juvenile` 0, another `juvenileSeconds`) → mature `pending`. Two full grows after a chop.
 
@@ -100,8 +100,8 @@ Graft attach onto a sapling or trunk: [[mechanics/plants]] `graft.attach`.
 
 `trees.tend` — Tend once per off-season: player owns `tending`, empty hand, `cell.kind === 'tree'`, `juvenile >= 1`, `yield.kind === 'off'`, `Tree.tended === false`, `trunk === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Seam `on` → `off`: `tended = false`, then `chance = -0.2`. Not pending. Not `{ on }`. Not juvenile. Not trunk. Not grow. Prompt **Tend**. Witness `Tree.tended`.
 
-`trees.chop` — Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and 2 grafts of that tree's variety, fruit progress lost.
+`trees.chop` — Axe or chainsaw, mature not trunk, work held `workSeconds`, `AXES.axe.uses` 30, `AXES.chainsaw.uses` 90 `workSeconds` 3, 1 wood and trunk always, 2 grafts of that tree's variety iff `grafting` owned, fruit progress lost.
 
-`graft.axe` — Chop complete drops 2 grafts of `Tree.variety` at quality 0, then the trunk result.
+`graft.axe` — Chop complete drops 2 grafts of `Tree.variety` at quality 0 iff `grafting` owned, then the trunk result.
 
 `trees.trunk` — Chop → trunk `juvenileSeconds` → sapling `juvenileSeconds` → pending. `trunk` required boolean. Stage `grow` is that sapling.

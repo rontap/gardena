@@ -12,8 +12,7 @@ import {
 import { NECRO_RESEARCH } from '../defs/necronomicon.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import {
-  betterGain,
-  SKILLS
+  betterGain
 } from '../defs/skills.ts'
 import {
   WEATHER_THROUGH_DAY
@@ -31,10 +30,6 @@ import type {
   CropId,
   Grandma,
   GrownCrop,
-  DaughterSkillId,
-  HusbandSkillId,
-  MemberId,
-  PlayerSkillId,
   ResearchId,
   SkillId,
   HarvestSlot,
@@ -174,7 +169,7 @@ import {
 } from './sensor.ts'
 import { applyCmd } from './apply.ts'
 import * as family from './family.ts'
-import { emptyMember, initFamily } from './family.ts'
+import { initFamily } from './family.ts'
 import * as queue from './queue.ts'
 import * as nets from './nets.ts'
 import * as store from './store.ts'
@@ -209,7 +204,7 @@ import type {
   TaskName,
 } from './world.h.ts'
 
-export const POINTS_PER_DAY = 3
+export const POINTS_PER_DAY = 1
 
 export const STIPEND = [
   { through: 3, amount: 12 },
@@ -454,11 +449,7 @@ export class World {
     this.additives = new AdditiveStore(ADDITIVE_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
     this.stall = Object.fromEntries(STALL_IDS.map(id => [id, makeStall(id)])) as StallMap
-    this.family = {
-      player: emptyMember(),
-      husband: emptyMember(),
-      daughter: emptyMember(),
-    }
+    this.family = { owned: new Map() }
     initFamily(this)
     this.chunks.set(
       chunkKey(this.owned[0]),
@@ -818,21 +809,28 @@ export class World {
   }
 
   hasSkill(id: SkillId): boolean {
-    const m = SKILLS[id].member
-    if (m === 'player') return this.family.player.owned.has(id as PlayerSkillId)
-    if (m === 'husband') return this.family.husband.owned.has(id as HusbandSkillId)
-    return this.family.daughter.owned.has(id as DaughterSkillId)
+    return this.family.owned.has(id)
   }
 
   skillTier(id: SkillId): number {
-    const m = SKILLS[id].member
-    if (m === 'player') return this.family.player.owned.get(id as PlayerSkillId) ?? 0
-    if (m === 'husband') return this.family.husband.owned.get(id as HusbandSkillId) ?? 0
-    return this.family.daughter.owned.get(id as DaughterSkillId) ?? 0
+    const n = this.family.owned.get(id)
+    return n === undefined ? 0 : n
   }
 
-  offers(member: MemberId): SkillRef[] {
-    return this.family[member].offers
+  skillKnown(id: SkillId): boolean {
+    return family.skillKnown(this, id)
+  }
+
+  skillOpen(id: SkillId): boolean {
+    return family.skillOpen(this, id)
+  }
+
+  get forecastCount(): number {
+    const seen = new Set<object>()
+    this.forEachCell((_at, c) => {
+      if (c.kind === 'weather-station') seen.add(c)
+    })
+    return seen.size
   }
 
   walkSpeed(): number {
@@ -895,8 +893,8 @@ export class World {
     this.points += n
   }
 
-  pickSkill(member: MemberId, slot: number): void {
-    this.commit({ a: Act.pickSkill, t: this.now, p: this.local, m: member, s: slot })
+  pickSkill(id: SkillId): void {
+    this.commit({ a: Act.pickSkill, t: this.now, p: this.local, id })
   }
 
   faces(): ExpandFace[] {
@@ -928,10 +926,14 @@ export class World {
     return id === 'buy-freezer-large' ? this.prizeFreezers : 0
   }
 
+  researchKnown(id: ResearchId): boolean {
+    if (id === NECRO_RESEARCH) return this.grandma === 'told' && this.done.has('unlock-grinder')
+    const p = RESEARCH[id].parent
+    return p === null || this.researchOpen(p)
+  }
+
   researchShown(id: ResearchId): boolean {
-    if (id === NECRO_RESEARCH) return this.grandma === 'told'
-    const r = RESEARCH[id].reveal
-    return r.length === 0 || r.some(p => this.done.has(p))
+    return this.researchKnown(id)
   }
 
   hasFence(at: Coord): boolean {
@@ -1800,11 +1802,11 @@ export class World {
   }
 
   contractSlots(): number {
-    return CONTRACT_OFFERS + (this.skillTier('broker') >= 1 ? 1 : 0)
+    return CONTRACT_OFFERS + this.skillTier('broker')
   }
 
   contractCap(): number {
-    return CONTRACT_ACTIVE + (this.skillTier('broker') >= 2 ? 1 : 0)
+    return CONTRACT_ACTIVE + this.skillTier('broker')
   }
 
   acceptContract(c: ContractId): void {
@@ -1840,7 +1842,9 @@ export class World {
 
   
   researchOpen(id: ResearchId): boolean {
-    return RESEARCH[id].requires.every(r => this.done.has(r))
+    if (id === NECRO_RESEARCH) return this.grandma === 'told' && this.done.has('unlock-grinder')
+    const p = RESEARCH[id].parent
+    return p === null || this.done.has(p)
   }
 
   startResearch(id: ResearchId): void {

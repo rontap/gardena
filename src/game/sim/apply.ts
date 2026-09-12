@@ -48,7 +48,7 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       w.startResearchBody(cmd.r)
       return
     case Act.pickSkill:
-      family.pickSkillBody(w, cmd.m, cmd.s)
+      family.pickSkillBody(w, cmd.id)
       return
     case Act.sellAll:
       store.sellAllBody(w)

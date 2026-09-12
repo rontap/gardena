@@ -32,7 +32,7 @@ father's eyes — same girl as in `ui-market-stall.svg`.
 
 No groups, one per skill family — every tier reuses it, the UI draws the level.
 
-Live: `skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` `skill-forecast` `skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-industrial` `skill-jam` `skill-lucky` · `skill-point` (unspent point) `skill-locked` (research or skill gate).
+Live: `skill-boots` `skill-driving-classes` `skill-machinery` `skill-tending` `skill-seed-bank` `skill-saleswoman` `skill-broker` `skill-heirloom` `skill-better` `skill-industrial` `skill-jam` `skill-lucky` `skill-grafting` `skill-specialty` · `skill-point` (unspent point) `skill-locked` (research or skill gate) `skill-unknown` (card not known).
 
 Skill svg files remain on disk; not live. They are not in this list.
 
@@ -58,3 +58,6 @@ One copy of each shared symbol; icons composite it.
   `skill-saleswoman`). If `ui-coin.svg` or `ui-quality.svg` changes, re-copy into live money icons
   `skill-saleswoman` `skill-heirloom`.
 - **Lucky** — `skill-lucky.svg` is the `stat-luck.svg` four-leaf clover, no coin. All three `lucky` skills draw it. Do not redraw the Coin.
+- **Grafting** — axe plus graft cutting: stick, cut face, leaf, bud. Not a canopy.
+- **Specialty** — jam jar and spirit bottle, ripe cap and foil. Not the Őstermelő plus in `skill-heirloom`.
+- **Unknown** — `skill-unknown.svg` is the `?` badge: ink square, `house` fill, ink glyph. Skill-chip language of `skill-better` / `ui-quality`. Not a circle. Used when a card is not known.

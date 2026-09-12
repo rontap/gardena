@@ -49,9 +49,15 @@
   "skills_industrial_blurb": "Completed contracts pay more. Each rank adds {pct}%.",
   "skills_industrial_skillblurb": "Completed contracts pay {pct}% more.",
   "skills_broker_name": "Broker",
-  "skills_broker_blurb": "The buyer board grows. Rank I adds one offer. Rank II adds one offer and one running contract.",
-  "skills_broker_skillblurb": "The buyer board grows by one offer.",
-  "skills_broker_skillblurb_ii": "The buyer board grows by one offer and you can run one more contract.",
+  "skills_broker_blurb": "The Contracts board grows. Each rank adds one offer and one running contract.",
+  "skills_broker_skillblurb": "The Contracts board grows by {n} offer and you can run {n} more contract.",
+  "skills_grafting_name": "Tree Grafting",
+  "skills_grafting_blurb": "Chop a mature tree and grafts of that tree's Variety drop beside the Wood. Hold a graft against a growing plant or a growing tree of the same crop to turn it into that Variety.",
+  "skills_specialty_name": "Specialty Maker",
+  "skills_specialty_blurb": "Jam, spirits, Wine, and Cider of a Named or Heirloom Variety sell for more. Each rank adds {pct}%.",
+  "skills_specialty_skillblurb": "Jam, spirits, Wine, and Cider of a Named or Heirloom Variety sell for {pct}% more.",
+  "skills_unknown_name": "Unknown",
+  "skills_unknown_blurb": "You do not know what this does.",
   "skills_jam_name": "Still good for jam",
   "skills_jam_blurb": "Fruit below half freshness rots slower. Each rank adds {pct}%.",
   "skills_jam_skillblurb": "Fruit below half freshness rots {pct}% slower.",
@@ -60,5 +66,5 @@
   "skills_lucky_husband_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. You, Husband, and Daughter can each learn Lucky, and each one who has raises both. Burrows already on the farm do not change.",
   "skills_lucky_daughter_name": "Lucky",
   "skills_lucky_daughter_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. You, Husband, and Daughter can each learn Lucky, and each one who has raises both. Burrows already on the farm do not change.",
-  "skills_lucky_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. You, Husband, and Daughter can each learn Lucky, and each one who has raises both. Burrows already on the farm do not change."
+  "skills_lucky_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. Each rank raises both. Burrows already on the farm do not change."
 }

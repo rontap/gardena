@@ -8,7 +8,7 @@ There is no General store. Seed packs are bought at the [[ui/store]] Seed silo; 
 
 ## Category rail
 
-Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailListClass` — an active left border instead of an underline, bled to the window edge — [[ui/docks]]. `orientation="vertical"` keeps `role="tab"`. Research uses the same rail.
+Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailListClass` — an active left border instead of an underline, bled to the window edge — [[ui/docks]]. `orientation="vertical"` keeps `role="tab"`. Research has no rail.
 
 | tab | order | cluster | idle footer |
 |---|---|---|---|
@@ -17,7 +17,7 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 | Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar` | build | Machines that make goods, and the hangar your vehicles come home to. |
 | Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce | build | Boxes for what you picked, and the field silos that load trailers. |
 | Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | build | Signal, gates, readers. |
-| Land | Paving cobble → brick → paved · Fencing fence | none | Paving and fencing. Click as many as you like, Escape when done. |
+| Land | Paving cobble → brick → paved · Fencing fence · `buy-weather-station` | none | Paving and fencing. A Weather Forecast Station shows tomorrow's weather. |
 
 Tools opens the dock: a shovel is the first thing bought and the rail is where it is found. That is why opening Build no longer peeks the `pipes` lens — Water does, on click.
 
@@ -31,7 +31,7 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 Every sku sits in exactly one shelf group, except the packs and bags the stores sell and `buy-and` `buy-or` `buy-water-system`, which sit in none — [[items/sensors]] [[ui/store]].
 
-**File by primary output.** A shelf splits by what a thing emits — signal → Sensors, water → Water, goods → Automation, ground → Land, held work → Tools. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water.
+**File by primary output.** A shelf splits by what a thing emits — signal → Sensors, water → Water, goods → Automation, ground → Land, held work → Tools. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water. `buy-weather-station` files on Land.
 
 Order inside a group is the function chain — source, transport, control, output — then tier. Never unlock date. Groups **order** the grid; they do not draw. No headers, no dividers.
 
@@ -53,7 +53,7 @@ The reason names the research by walking `SKUS[id].unlock` into `RESEARCH`. Neve
 
 ## Hover
 
-[[ui/callout-hover]] to the right of the dock — the same place research and family put theirs. First line is the shelf name, `crumbOf` = `shelfOf(id).label()`. Then title `skuLabel`, body `skuDesc`, then the blocking reason in bold when the card is not `ok`. Machine SKUs (`machineOfSku`) add every recipe under `skuDesc`, above the blocking reason — [[ui/recipe]]. Locked machines still show them. No reverse lookup. **Locked cards must hover.** Blocked cards carry `aria-disabled` and a guarded `onClick` instead of the `disabled` attribute. Research cards and family offers do the same.
+[[ui/callout-hover]] to the right of the dock — the same place research and family put theirs. First line is the shelf name, `crumbOf` = `shelfOf(id).label()`. Then title `skuLabel`, body `skuDesc`, then the blocking reason in bold when the card is not `ok`. Machine SKUs (`machineOfSku`) add every recipe under `skuDesc`, above the blocking reason — [[ui/recipe]]. Locked machines still show them. No reverse lookup. **Locked cards must hover.** Blocked cards carry `aria-disabled` and a guarded `onClick` instead of the `disabled` attribute. Research cards and Family cards do the same.
 
 ## Footer
 

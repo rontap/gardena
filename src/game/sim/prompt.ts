@@ -358,6 +358,7 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   sorter: m.names_building_sorter,
   still: m.names_building_still,
   furnace: m.names_building_furnace,
+  'weather-station': () => m.names_sku_buy_weather_station(),
   barrel: m.names_building_barrel,
   jam: m.names_building_jam,
   freezer: m.names_building_freezer,
@@ -544,7 +545,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!wideSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
-    if (w.act.place.id === 'buy-furnace') {
+    if (w.act.place.id === 'buy-furnace' || w.act.place.id === 'buy-weather-station') {
       if (!tallSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
@@ -677,6 +678,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
       return intent(m.prompt_sacrifice(), { act: 'necronomicon', at })
     }
     return intent(m.prompt_necronomicon_read(), { act: 'necronomicon', at })
+  }
+  if (cell.kind === 'weather-station') {
+    return { kind: 'blocked', text: skuLabel('buy-weather-station') }
   }
   if (cell.kind === 'barrel') {
     const look = barrelLook(cell, w.act.hand)

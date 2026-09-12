@@ -10,6 +10,7 @@ import {
   Hangar,
   Infuser,
   Necronomicon,
+  WeatherStation,
   inWorld,
   JamMachine,
   Mill,
@@ -163,6 +164,13 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     w.ping()
     return
   }
+  if (c.kind === 'weather-station') {
+    occupiedCells(c.base, w.owned).forEach(p => {
+      w.setCell(p, bare('soft', 0))
+    })
+    w.ping()
+    return
+  }
   if (c.kind === 'station') {
     stripPadStops(w, c)
     occupiedCells(c.base, w.owned).forEach(p => {
@@ -270,6 +278,16 @@ export function confirmPlace(w: World, at: Coord): void {
     const furnace = new Furnace({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
     w.setCell(at, furnace)
     w.setCell({ col: at.col, row: at.row + 1 }, furnace)
+    w.act.place = { kind: 'none' }
+    w.ping()
+    return
+  }
+  if (w.act.place.id === 'buy-weather-station') {
+    if (!tallSiteOk(w, at)) return
+    w.money -= price
+    const station = new WeatherStation({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+    w.setCell(at, station)
+    w.setCell({ col: at.col, row: at.row + 1 }, station)
     w.act.place = { kind: 'none' }
     w.ping()
     return
@@ -458,6 +476,7 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'jam-machine' ||
     made.kind === 'still' ||
     made.kind === 'furnace' ||
+    made.kind === 'weather-station' ||
     made.kind === 'station' ||
     made.kind === 'infuser' ||
     made.kind === 'necronomicon' ||

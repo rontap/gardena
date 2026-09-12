@@ -16,16 +16,14 @@ import type {
   BarrelCrop,
   GrownCrop,
   Grandma,
-  DaughterSkillId,
   FurnaceRecipe,
-  HusbandSkillId,
   Infusable,
   JamCrop,
   MillRecipe,
   PageId,
-  PlayerSkillId,
   ResearchId,
   RouteId,
+  SkillId,
   StallGoodId,
   StillCrop,
   SupperId,
@@ -47,11 +45,7 @@ export type LoadResult = { ok: true; world: World } | { ok: false; reason: LoadF
 
 export type SaveRng = { seed: number; fruit: number }
 
-export type SaveMember<Id> = {
-  pickCount: number
-  owned: { id: Id; tier: number }[]
-  offers: { id: Id; tier: number }[]
-}
+export type SaveSkill = { id: SkillId; tier: number }
 
 export type SaveStallGood = {
   offered: number
@@ -102,6 +96,7 @@ export type SaveCell =
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
   | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; agaric: number; tool: boolean; supper: SupperId[]; pages: PageId[] }
+  | { kind: 'weather-station'; base: RectBase }
   | { kind: 'station'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'sorter'; base: RectBase; facing: Facing; held: Slot; progress: number }
   | { kind: 'barrel'; base: RectBase; crop: BarrelCrop | 'none'; feed: { variety: VarietyId; quality: number; count: number }[]; age: number; n: number }
@@ -245,9 +240,7 @@ export type Save = {
   done: ResearchId[]
   job: { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
   family: {
-    player: SaveMember<PlayerSkillId>
-    husband: SaveMember<HusbandSkillId>
-    daughter: SaveMember<DaughterSkillId>
+    owned: SaveSkill[]
   }
   stall: { [K in StallGoodId]: SaveStallGood }
   tally: { died: number; harvests: number; research: ResearchId[] }

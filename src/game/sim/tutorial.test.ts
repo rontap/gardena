@@ -82,13 +82,13 @@ describe('tutorial', () => {
     const opened = check(w, at5)
     expect(opened.kind === 'on' && opened.step === 5).toBe(true)
     expect(w.job.kind).toBe('idle')
-    w.startResearch('unlock-tomato')
+    w.startResearch('unlock-multi-crop')
     expect(w.job.kind).toBe('run')
     const after = check(w, at5)
     expect(after.kind === 'on' && after.step !== 5).toBe(true)
     const w2 = new World(1)
     plots(w2, 5, 'growing')
-    w2.done.add('unlock-tomato')
+    w2.done.add('unlock-multi-crop')
     const viaDone = check(w2, on(1))
     expect(viaDone.kind === 'on' && viaDone.step !== 5).toBe(true)
   })
@@ -110,7 +110,7 @@ describe('tutorial', () => {
     const w = new World(1)
     plots(w, 4, 'growing')
     w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'base', 0) })
-    w.done.add('unlock-tomato')
+    w.done.add('unlock-multi-crop')
     w.drops.push({
       at: AT,
       item: {
@@ -156,11 +156,11 @@ describe('tutorial', () => {
     const w = new World(1)
     const money = w.money
     const crop = w.cell(AT).kind
-    const owned = w.family.player.owned.size
+    const owned = w.family.owned.size
     check(w, on(1))
     expect(w.money).toBe(money)
     expect(w.cell(AT).kind).toBe(crop)
-    expect(w.family.player.owned.size).toBe(owned)
+    expect(w.family.owned.size).toBe(owned)
   })
 
   test('dump→parse restores seed, clock, money, shop/fruit cursors, a tilled cell, idle gardener', () => {

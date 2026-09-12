@@ -86,15 +86,14 @@ describe('techtree', () => {
 
   it('counts a diamond ancestor once', () => {
     const n = tree.nodes.get('unlock-smart-irrigation')
-    expect(n?.parents).toEqual(expect.arrayContaining(['unlock-sensors', 'unlock-adv-irrigation']))
+    expect(n?.parents).toEqual(['unlock-advanced-sensors'])
     expect(n?.ancestors.slice().sort()).toEqual(
-      ['unlock-adv-irrigation', 'unlock-auto-irrigation', 'unlock-irrigation', 'unlock-sensors'].sort(),
+      ['unlock-advanced-sensors', 'unlock-irrigation', 'unlock-sensors'].sort(),
     )
     const sum = (f: 'cost' | 'seconds') =>
       RESEARCH['unlock-smart-irrigation'][f] +
+      RESEARCH['unlock-advanced-sensors'][f] +
       RESEARCH['unlock-sensors'][f] +
-      RESEARCH['unlock-adv-irrigation'][f] +
-      RESEARCH['unlock-auto-irrigation'][f] +
       RESEARCH['unlock-irrigation'][f]
     expect(n?.totalCost).toBe(sum('cost'))
     expect(n?.totalSeconds).toBe(sum('seconds'))

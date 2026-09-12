@@ -35,7 +35,7 @@ import {
 } from '../defs/varieties.ts'
 import { hasCrossbreed, upgradeVariety } from './feature-field/field.helpers.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { HUSBAND_SKILL_IDS, JAM_ROT, PLAYER_SKILL_IDS, SEED_BANK_QUALITY, SKILLS, TEND_WORK } from '../defs/skills.ts'
+import { JAM_ROT, SKILL_IDS, SEED_BANK_QUALITY, SKILLS, TEND_WORK } from '../defs/skills.ts'
 import { ANNUAL_IDS, packSku, type AnnualId, type PlantCrop, type SkuId } from './ids.ts'
 import {
   Chest,
@@ -155,11 +155,7 @@ function digest(w: World) {
     cells,
     drops: w.drops.length,
     done: [...w.done].sort(),
-    family: {
-      player: [...w.family.player.owned.entries()].sort(),
-      husband: [...w.family.husband.owned.entries()].sort(),
-      daughter: [...w.family.daughter.owned.entries()].sort(),
-    },
+    family: [...w.family.owned.entries()].sort(),
     stall: Object.fromEntries(STALL_IDS.map(id => [id, w.stall[id].stock])),
   }
 }
@@ -172,10 +168,10 @@ describe('0.8 plants and trees', () => {
     expect(statsOf('raspberry', 'base', 0, w.modifiers).sale).toBe(24)
   })
 
-  test('fermentation unlocks cane; raspberry reveal is grape', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ tree: 'trade', cost: 40, seconds: 70, reveal: ['unlock-grinder'] })
+  test('fermentation unlocks cane; raspberry parent is advanced plants', () => {
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ parent: 'unlock-preservatives', cost: 40, seconds: 70 })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
-    expect(RESEARCH['unlock-raspberry'].reveal).toEqual(['unlock-tomato', 'unlock-grape'])
+    expect(RESEARCH['unlock-raspberry'].parent).toBe('unlock-advanced-plants')
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
     expect(Object.keys(RESEARCH).includes('unlock-olive')).toBe(false)
   })
@@ -480,7 +476,7 @@ describe('0.9 log and rng', () => {
     const w = new World(seed)
     for (let i = 0; i < 15; i++) w.tick(1 / 15)
     w.cheatMoney()
-    w.buy('pack-wheat')
+    w.buy('pack-carrot')
     w.armDelete()
     w.cancelPlace()
     w.sellAll()
@@ -502,14 +498,14 @@ describe('0.9 log and rng', () => {
   test('shop.next() does not move when grow rolls. Same seed: shop-only vs plant-then-shop, first granted pack rarity matches.', () => {
     const seed = 9
     const shopOnly = new World(seed)
-    expect(shopOnly.buy('pack-wheat')).toBeUndefined()
+    expect(shopOnly.buy('pack-carrot')).toBeUndefined()
     const grown = new World(seed)
     const p = new Plant('carrot', 'base', 0)
     p.maturity = 1
     grown.setCell(AT, { kind: 'growing', soil: bed(), plant: p })
     grown.tick(1 / 15)
-    expect(grown.buy('pack-wheat')).toBeUndefined()
-    const stack = (w: World) => w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')
+    expect(grown.buy('pack-carrot')).toBeUndefined()
+    const stack = (w: World) => w.silo.seeds.find(st => st.crop === 'carrot' && st.variety === 'base')
     expect(stack(shopOnly)?.variety).toBe('base')
     expect(stack(grown)?.variety).toBe('base')
     expect(stack(shopOnly)?.quality).toBe(0)
@@ -578,11 +574,13 @@ describe('0.9 log and rng', () => {
     w.silo.seeds.push({ crop: 'carrot', variety: 'base', quality: 0, count: SILO_SEED_CAP })
     expect(w.buy('pack-carrot')).toBe('Seed silo full')
     w.silo.seeds.length = 0
+    w.done.add('unlock-multi-crop')
     expect(w.buy('pack-wheat')).toBeUndefined()
     expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
     expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.quality).toBe(0)
     const bulk = new World(seed)
     bulk.money = 1000
+    bulk.done.add('unlock-multi-crop')
     bulk.buyPacks('pack-wheat')
     expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.count).toBe(25)
     expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
@@ -626,6 +624,7 @@ describe('0.9 log and rng', () => {
     const w = new World(1)
     w.clock.t = 80
     w.money = 80
+    w.done.add('unlock-multi-crop')
     expect(w.buy('pack-wheat')).toBeUndefined()
     expect(w.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')).toEqual({
       crop: 'wheat',
@@ -636,13 +635,14 @@ describe('0.9 log and rng', () => {
 
     const b = new World(1)
     b.money = 400
-    b.family.player.owned.set('seed-bank', 1)
+    b.done.add('unlock-multi-crop')
+    b.family.owned.set('seed-bank', 1)
     expect(b.buy('pack-wheat')).toBeUndefined()
     expect(b.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.quality).toBe(SEED_BANK_QUALITY)
 
     const c = new World(1)
     c.money = 400
-    c.family.player.owned.set('seed-bank', 1)
+    c.family.owned.set('seed-bank', 1)
     c.buyPacks('pack-carrot')
     expect(c.silo.seeds.find(st => st.crop === 'carrot' && st.variety === 'base')?.quality).toBeGreaterThan(0)
   })
@@ -845,45 +845,37 @@ describe('1.5.2', () => {
     }
   })
 
-  test("`PlayerSkillId`: `driving-classes` not `machinery`. `driving-classes` max 3, gate `unlock-vehicles`. `HusbandSkillId`: `machinery`, `forecast`. `forecast` max 1, `{ kind: 'forecast' }`, HUD tomorrow iff owned. Hangar-buys still not `skuPrice`. Drought ×2 on `seeds` | `utility`. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 2, gate `unlock-contracts`; T1 `+1` offered; T2 `+1` offered and `+1` active.", () => {
-    expect(PLAYER_SKILL_IDS.includes('driving-classes')).toBe(true)
-    expect(PLAYER_SKILL_IDS.includes('machinery' as never)).toBe(false)
+  test("`driving-classes` max 3, gate `unlock-vehicles`. `machinery` gated on `unlock-grinder`. Hangar-buys still not `skuPrice`. Drought ×2 on `seeds` | `utility`. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 3, gate `unlock-contracts`; each rank `+1` offered and `+1` active.", () => {
+    expect(SKILL_IDS.includes('driving-classes')).toBe(true)
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
     expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
-    expect(HUSBAND_SKILL_IDS.includes('machinery')).toBe(true)
-    expect(HUSBAND_SKILL_IDS.includes('forecast')).toBe(true)
-    expect(SKILLS.forecast.maxTier).toBe(1)
-    expect(SKILLS.forecast.effect).toEqual({ kind: 'forecast' })
-    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('contracts')).toBe(false)
-    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('tool-contracts')).toBe(false)
-    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('machine-contracts')).toBe(false)
-    expect((HUSBAND_SKILL_IDS as readonly string[]).includes('bulk-buying')).toBe(false)
+    expect(SKILLS.machinery.gate).toEqual({ kind: 'research', id: 'unlock-grinder' })
+    expect('forecast' in SKILLS).toBe(false)
     expect(SKILLS.jam.effect).toEqual({ kind: 'jam' })
     expect(JAM_ROT).toBe(0.15)
     expect(SKILLS.jam.maxTier).toBe(3)
     expect(SKILLS.industrial.maxTier).toBe(3)
-    expect(SKILLS.broker.maxTier).toBe(2)
+    expect(SKILLS.broker.maxTier).toBe(3)
     expect(SKILLS.broker.gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
     const w = new World()
     expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price)
     expect(w.skuPrice('buy-hangar')).toBe(SKUS['buy-hangar'].price)
     expect(w.contractSlots()).toBe(6)
     expect(w.contractCap()).toBe(3)
-    w.family.daughter.owned.set('broker', 1)
-    expect(w.contractSlots()).toBe(7)
-    expect(w.contractCap()).toBe(3)
-    w.family.daughter.owned.set('broker', 2)
+    w.family.owned.set('broker', 1)
     expect(w.contractSlots()).toBe(7)
     expect(w.contractCap()).toBe(4)
+    w.family.owned.set('broker', 2)
+    expect(w.contractSlots()).toBe(8)
+    expect(w.contractCap()).toBe(5)
   })
 
-  test("`unlock-crop-variants` plants, cost 16, 40s, `reveal` tomato | grape | irrigation, `effect` `feature`. Ladder effects die: shop packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` `requires` it. Both rows stay.", () => {
+  test("`unlock-crop-variants` parent `unlock-multi-crop`, cost 16, 40s, `effect` `feature`. Ladder effects die: shop packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` parent is it. Both rows stay.", () => {
     expect(RESEARCH['unlock-crop-variants']).toMatchObject({
-      tree: 'plants',
+      path: 'unlock-multi-crop',
+      parent: 'unlock-multi-crop',
       cost: 16,
       seconds: 40,
-      reveal: ['unlock-tomato', 'unlock-grape', 'unlock-irrigation'],
-      requires: [],
       effect: { kind: 'feature' },
     })
     expect(SKILLS['better-potato'].gate).toEqual({ kind: 'research', id: 'unlock-crop-variants' })
@@ -891,6 +883,7 @@ describe('1.5.2', () => {
     expect(SKUS['buy-compost-box']).toMatchObject({ unlock: 'start', price: 8 })
     expect(SKUS['buy-sensor-fert'].need).toEqual([])
     const locked = new World(1)
+    locked.done.add('unlock-multi-crop')
     expect(locked.buy('pack-wheat')).toBeUndefined()
     expect(locked.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
     const p = new Plant('carrot', 'base', 0)
@@ -901,15 +894,15 @@ describe('1.5.2', () => {
     const ripe = locked.cell(AT)
     expect(ripe.kind === 'ripe' && ripe.plant.variety).toBe('base')
     expect(ripe.kind === 'ripe' && ripe.plant.quality).toBeCloseTo(0.25, 8)
-    expect(locked.researchShown('unlock-heirloom')).toBe(false)
-    locked.done.add('unlock-crop-variants')
     expect(locked.researchShown('unlock-heirloom')).toBe(true)
+    expect(locked.researchOpen('unlock-heirloom')).toBe(false)
+    locked.done.add('unlock-crop-variants')
     expect(locked.researchOpen('unlock-heirloom')).toBe(true)
   })
 
   test('jam rank N: fruit with freshness < 0.5 rots 15% × N slower. Ripe plant and picked fruit. Freezer skips.', () => {
     const w = new World(1)
-    w.family.daughter.owned.set('jam', 2)
+    w.family.owned.set('jam', 2)
     const fruit: Extract<Item, { kind: 'fruit' }> = {
       kind: 'fruit',
       crop: 'carrot',
@@ -1023,7 +1016,7 @@ describe('1.5.2', () => {
 
   test('Tend once per off-season: player owns `tending`, empty hand, `cell.kind === \'tree\'`, `juvenile >= 1`, `yield.kind === \'off\'`, `Tree.tended === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Seam `on` → `off`: `tended = false`, then `chance = -0.2`. Not pending. Not `{ on }`. Not juvenile. Prompt **Tend**. Witness `Tree.tended`.', () => {
     const w = new World()
-    w.family.player.owned.set('tending', 1)
+    w.family.owned.set('tending', 1)
     const below = { col: AT.col, row: AT.row + 1 }
     const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'off', chance: 0 })
     w.setCell(AT, tree)
@@ -1071,7 +1064,7 @@ describe('1.8 permits and points', () => {
     w.done.add('expand-land')
     w.done.add('eminent-domain')
     expect(w.expandSlots()).toBe(3)
-    w.family.husband.owned.set('inherit-land', 2)
+    w.family.owned.set('inherit-land', 2)
     expect(w.expandSlots()).toBe(5)
     w.prizeSlots = 2
     expect(w.expandSlots()).toBe(7)
@@ -1093,25 +1086,23 @@ describe('1.8 permits and points', () => {
     expect(w.owned).toHaveLength(3)
   })
 
-  test('`inherit-land` II is a husband skill gated on `unlock-expand`.', () => {
-    expect(HUSBAND_SKILL_IDS.includes('inherit-land')).toBe(true)
-    expect(SKILLS['inherit-land'].maxTier).toBe(2)
-    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-expand' })
+  test('`inherit-land` is gated on `unlock-landscaping`, max 3.', () => {
+    expect(SKILL_IDS.includes('inherit-land')).toBe(true)
+    expect(SKILLS['inherit-land'].maxTier).toBe(3)
+    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-landscaping' })
   })
 
-  test('Skill points are one shared bank of `POINTS_PER_DAY` a day, spendable on any member.', () => {
+  test('Skill points are one shared bank of `POINTS_PER_DAY` a day.', () => {
     const w = new World(1)
     expect(w.points).toBe(0)
     w.grantPoints(POINTS_PER_DAY)
-    expect(w.points).toBe(3)
-    w.pickSkill('husband', 0)
-    expect(w.points).toBe(2)
-    w.pickSkill('daughter', 0)
-    w.pickSkill('player', 0)
+    expect(w.points).toBe(1)
+    w.pickSkill('boots')
     expect(w.points).toBe(0)
-    const before = w.family.player.owned.size
-    w.pickSkill('player', 0)
-    expect(w.family.player.owned.size).toBe(before)
+    expect(w.family.owned.get('boots')).toBe(1)
+    const before = w.family.owned.size
+    w.pickSkill('saleswoman')
+    expect(w.family.owned.size).toBe(before)
   })
 
   test('The large freezer is not for sale: it opens only while a contract prize is banked, and placing it spends the stock.', () => {
@@ -1216,11 +1207,10 @@ describe('1.9 stacks', () => {
 
   test('`bulk-up` adds `BULK_UP_STEP` per rank, `BULK_UP_CRAFTED_STEP` for bottled and jarred goods. Player skill, three ranks, no gate.', () => {
     const w = new World(1)
-    expect(SKILLS['bulk-up'].member).toBe('player')
     expect(SKILLS['bulk-up'].maxTier).toBe(3)
     expect(SKILLS['bulk-up'].gate).toEqual({ kind: 'none' })
-    expect(PLAYER_SKILL_IDS.includes('bulk-up')).toBe(true)
-    w.family.player.owned.set('bulk-up', 2)
+    expect(SKILL_IDS.includes('bulk-up')).toBe(true)
+    w.family.owned.set('bulk-up', 2)
     expect(w.stackMax({ kind: 'weed', count: 1 })).toBe(STACK_MAX + 2 * BULK_UP_STEP)
     expect(w.stackMax({ kind: 'jam', crop: 'apricot', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(STACK_MAX_CRAFTED + 2 * BULK_UP_CRAFTED_STEP)
   })
@@ -1319,7 +1309,7 @@ describe('quality.ripen', () => {
     w.tick(DT_MAX)
     const ripeCared = w.cell({ col: 11, row: 12 })
     expect(ripeCared.kind === 'ripe' && ripeCared.plant.quality).toBeCloseTo(0.25, 8)
-    w.family.player.owned.set('better-potato', 1)
+    w.family.owned.set('better-potato', 1)
     const skilled = new Plant('potato', 'base', 0)
     skilled.maturity = 1
     skilled.happiness = HAPPY_MAX
@@ -1451,8 +1441,9 @@ describe('graft.attach', () => {
 })
 
 describe('graft.axe', () => {
-  test('Chop complete drops 2 grafts of `Tree.variety` at quality 0, then the trunk result.', () => {
+  test('Chop complete drops 2 grafts of `Tree.variety` at quality 0 iff `grafting` owned, then the trunk result.', () => {
     const w = new World()
+    w.family.owned.set('grafting', 1)
     const below = { col: AT.col, row: AT.row + 1 }
     const tree = new Tree('cherry', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0.5, {
       kind: 'on',

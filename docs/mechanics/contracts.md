@@ -10,7 +10,7 @@ Offers match a plain good only. No Variety. No Quality floor. Those fields: [[pl
 
 `CONTRACT_OFFERS`. `CONTRACT_SLOT_MAX`. `ContractId = day * CONTRACT_SLOT_MAX + slot`. `day` is `clock.day`.
 
-Board size = `CONTRACT_OFFERS +` broker offered bonus. Offered bonus is `+1` at `broker` tier ≥ 1. Tier 2 does not add a second card. Published slots `0..size-1`. Slot `7` unused. `SLOT_BANDS` stays length 8.
+Board size = `CONTRACT_OFFERS +` broker offered bonus. Offered bonus is `+1` per `broker` rank. Published slots `0..size-1`. `CONTRACT_SLOT_MAX` and `SLOT_BANDS` cover `CONTRACT_OFFERS +` broker max.
 
 Pure function of `(seed, day, slot)` on `SpatialId` `'contract'`. Reads no player state. Caller passes `slots`. Not a `Cmd`. Not in `World.log`. Not stored. Regenerating is free.
 
@@ -18,7 +18,7 @@ Visible iff `unlock-contracts` is in `done`. Tab gating is UI. Generation does n
 
 Unaccepted offers vanish at the next seam. Accepting writes `takenToday`; that id is not on today's board. `takenToday` clears at the seam. Active contracts persist across the seam.
 
-At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` at `broker` tier ≥ 2.
+At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` per `broker` rank.
 
 ## rollBoard
 
@@ -103,7 +103,7 @@ Two of the six offers each day pay goods instead of money, and pay no money. The
 
 Kinds: `cash` | `tree-seed` | `seeds` (vanilla) | `fertilizer` | `freezer` | `expansion-slot` | `skill-points` | `tool` (rotary-shovel | diamond-pickaxe).
 
-`prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31. Drawn from the base six, never from the live slot count. Broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two on eight.
+`prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31. Drawn from the base six, never from the live slot count. Broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two when broker grows the board.
 
 `COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only which slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32.
 
@@ -138,7 +138,7 @@ fraction = sum(bin.infusedFilled) / sum(bin.demand.amount)
 rep = addRep(REP_DONE[stars] × (1 + 0.25 × fraction))   // clamp [0, REP_MAX], returns what it moved
 ```
 
-Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current daughter `industrial` tier. Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply. Prize complete still takes the infused fraction.
+Cash offer: `money += offer.reward * (1 + 0.03 * industrialTier)` at the current `industrial` tier. Prize offer: `payPrize(prize, offer.reward)` and `paid` is 0. No money moves, so `industrial` does not apply. Prize complete still takes the infused fraction.
 
 ## Miss
 
@@ -156,9 +156,9 @@ On the tick `nowDay` crosses `dueDay`, if not complete: sold = delivered units a
 
 Hangar-buys are not `skuPrice` — [[mechanics/family]].
 
-Daughter `broker` max `BROKER_MAX_TIER`. Gate `unlock-contracts`. T1 `+1` offered. T2 `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
+`broker` max 3. Gate `unlock-contracts`. Each rank `+1` offered and `+1` active. Mid-day pick grows the board; slots `0..5` unchanged.
 
-Daughter `industrial` is live. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time. Miss and cancel do not take it.
+`industrial` is live. Gate `unlock-contracts`. Complete pays `offer.reward * (1 + 0.03 * tier)` at complete time. Miss and cancel do not take it.
 
 ## Invariants
 

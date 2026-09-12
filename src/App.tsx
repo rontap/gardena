@@ -725,7 +725,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function overlayHold(kind: Panel['kind'], recap: number | undefined): boolean {
-    return recap !== undefined || kind === 'family' || kind === 'market' || kind === 'almanac' || kind === 'menu'
+    return recap !== undefined || kind === 'market' || kind === 'almanac' || kind === 'menu'
   }
 
   function overlayPause(from: boolean, to: boolean): void {

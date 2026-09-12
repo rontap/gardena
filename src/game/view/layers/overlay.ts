@@ -134,6 +134,7 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
     cell.kind === 'jam' ||
     cell.kind === 'still' ||
     cell.kind === 'furnace' ||
+    cell.kind === 'weather-station' ||
     cell.kind === 'station' ||
     cell.kind === 'barrel' ||
     cell.kind === 'freezer' ||

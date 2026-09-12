@@ -65,7 +65,7 @@ describe('contracts', () => {
     const b = new World(seed)
     b.clock.t = 180
     b.money = 3
-    b.done.add('unlock-tomato')
+    b.done.add('unlock-multi-crop')
     b.seats[0].inventory[0] = {
       kind: 'hold',
       item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality: 0, count: 9, unitSale: 4, freshness: 1, cut: false },
@@ -671,10 +671,10 @@ describe('market.sell', () => {
 
   test("heirloom: `rarity === 'heirloom'` of crop fruit, spirit, wine × `(1 + 0.05 × tier)`. Not cider.", () => {
     const wine = new World(1)
-    wine.family.daughter.owned.set('heirloom', 1)
+    wine.family.owned.set('heirloom', 1)
     wine.stall.wine.takeSpirit('keknyelu', 1, 100, false)
     const cider = new World(1)
-    cider.family.daughter.owned.set('heirloom', 1)
+    cider.family.owned.set('heirloom', 1)
     cider.stall.cider.takeSpirit('base', 1, 100, false)
     expect(wine.marketQuote().clean).toBe(105)
     expect(cider.marketQuote().clean).toBe(100)

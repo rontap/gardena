@@ -3,8 +3,8 @@ import type { VarietyId } from '../defs/varieties.ts'
 import type {
   AnnualId,
   HarvestSlot,
-  MemberId,
   ResearchId,
+  SkillId,
   SkuId,
   TrailerId,
   TrailerKind,
@@ -98,7 +98,7 @@ export type Cmd =
   | { a: typeof Act.delete; t: number; p: SeatId; k: 'wire'; from: WireEnd; to: WireEnd }
   | { a: typeof Act.expand; t: number; p: SeatId; k: ChunkId }
   | { a: typeof Act.startResearch; t: number; p: SeatId; r: ResearchId }
-  | { a: typeof Act.pickSkill; t: number; p: SeatId; m: MemberId; s: number }
+  | { a: typeof Act.pickSkill; t: number; p: SeatId; id: SkillId }
   | { a: typeof Act.sellAll; t: number; p: SeatId }
   | { a: typeof Act.swap; t: number; p: SeatId; i: number }
   | { a: typeof Act.swapChest; t: number; p: SeatId; c: XY; i: number }

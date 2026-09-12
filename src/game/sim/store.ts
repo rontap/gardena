@@ -5,7 +5,7 @@ import { purposeMul, qualityMul, tierOf, VARIETY_IDS } from '../defs/varieties.t
 import { WEATHER_FRUIT_SALE } from '../defs/weather.ts'
 import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedStore } from './building.ts'
 import { isPlot } from './plot.ts'
-import type { AnnualId, StallGoodId } from './ids.ts'
+import { SPIRIT_KINDS, type AnnualId, type StallGoodId } from './ids.ts'
 import type { Item } from './item.ts'
 import { Accepts, SAT_DEPTH, SAT_RECOVER_PER_DAY, mul, paid } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
@@ -310,6 +310,15 @@ export function sellAllBody(world: World): void {
   world.emit('sold')
 }
 
+function specialtyMul(world: World, id: StallGoodId, variety: VarietyId): number {
+  const t = tierOf(variety)
+  if (t !== 'variant' && t !== 'heirloom') return 1
+  if (id.startsWith('jam-')) return 1 + 0.05 * world.skillTier('specialty')
+  if (id === 'wine' || id === 'cider') return 1 + 0.05 * world.skillTier('specialty')
+  if ((SPIRIT_KINDS as readonly string[]).includes(id)) return 1 + 0.05 * world.skillTier('specialty')
+  return 1
+}
+
 export function stallClean(world: World, id: StallGoodId): { clean: number; infused: number; clearance: number } {
   const saleX = 1 + 0.02 * world.skillTier('saleswoman')
   const heirX = 1 + 0.05 * world.skillTier('heirloom')
@@ -317,7 +326,8 @@ export function stallClean(world: World, id: StallGoodId): { clean: number; infu
     return VARIETY_IDS.reduce(
       (acc, variety) => {
         const heir = isSpiritStall(id) && id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
-        const x = saleX * heir
+        const spec = specialtyMul(world, id, variety)
+        const x = saleX * heir * spec
         const plain = world.stall[id].worth[variety].plain * x
         const inf = world.stall[id].worth[variety].infused * x
         return { clean: acc.clean + plain + inf, infused: acc.infused + inf, clearance: 0 }

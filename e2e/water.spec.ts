@@ -78,7 +78,7 @@ test('two sources join one network', async ({ page }) => {
   await unlockWorld(page)
   await placeEdge(page, 'h', 18, 7)
   await placeEdge(page, 'h', 19, 7)
-  await armSku(page, 'Well 75')
+  await armSku(page, 'Well 50')
   await confirmWellCell(page, 20, 7)
   await page.keyboard.press('Escape')
   await worldTrue(

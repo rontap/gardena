@@ -39,6 +39,7 @@ import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
 import itemFreezer from '../../assets/items/item-freezer.svg?raw'
 import itemFurnace from '../../assets/items/item-furnace.svg?raw'
+import itemWeatherStation from '../../assets/items/item-weather-station.svg?raw'
 import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
@@ -259,8 +260,10 @@ import skillTending from '../../assets/skills/skill-tending.svg?raw'
 import skillResearchSpeed from '../../assets/skills/skill-research-speed.svg?raw'
 import skillContracts from '../../assets/skills/skill-contracts.svg?raw'
 import skillBroker from '../../assets/skills/skill-broker.svg?raw'
-import skillForecast from '../../assets/skills/skill-forecast.svg?raw'
 import skillSaleswoman from '../../assets/skills/skill-saleswoman.svg?raw'
+import skillGrafting from '../../assets/skills/skill-grafting.svg?raw'
+import skillSpecialty from '../../assets/skills/skill-specialty.svg?raw'
+import skillUnknown from '../../assets/skills/skill-unknown.svg?raw'
 import skillHeirloom from '../../assets/skills/skill-heirloom.svg?raw'
 import skillBetter from '../../assets/skills/skill-better.svg?raw'
 import skillIndustrial from '../../assets/skills/skill-industrial.svg?raw'
@@ -433,6 +436,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'barrel') return svgInner(itemBarrel)
   if (item.kind === 'freezer') return svgInner(itemFreezer)
   if (item.kind === 'furnace') return svgInner(itemFurnace)
+  if (item.kind === 'weather-station') return svgInner(itemWeatherStation)
   if (item.kind === 'station') return stageOnly(itemStation, 'off')
   if (item.kind === 'hangar') return svgInner(itemHangar)
   if (item.kind === 'silo-seed') return svgInner(itemSiloSeed)
@@ -534,6 +538,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
+  if (id === 'buy-weather-station') return itemInner({ kind: 'weather-station' })
   if (id === 'buy-research-station') return itemInner({ kind: 'station' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer' || id === 'buy-freezer-large') return itemInner({ kind: 'freezer', slots: 0 })
@@ -607,10 +612,10 @@ export function fenceFit(n: boolean, e: boolean, s: boolean, w: boolean): { html
 
 export function researchInner(id: ResearchId): string {
   switch (id) {
-    case 'unlock-tomato':
+    case 'unlock-multi-crop':
+      return stageOnly(FRUIT.wheat, 'base')
+    case 'unlock-advanced-plants':
       return stageOnly(FRUIT.tomato, 'base')
-    case 'unlock-grape':
-      return stageOnly(FRUIT.grape, 'base')
     case 'unlock-raspberry':
       return stageOnly(FRUIT.raspberry, 'base')
     case 'unlock-fermentation':
@@ -661,6 +666,8 @@ export function researchInner(id: ResearchId): string {
       return svgInner(uiResearchInfusion)
     case 'unlock-necronomicon':
       return svgInner(itemNecronomicon)
+    case 'unlock-weather-station':
+      return svgInner(itemWeatherStation)
   }
 }
 
@@ -910,6 +917,7 @@ export const UI_BTN_PLAY = uiBtnPlay
 export const UI_BTN_MULTIPLAYER = uiBtnMultiplayer
 export const UI_MENU = svgInner(uiMenu)
 export const SKILL_POINT = svgInner(skillPoint)
+export const SKILL_UNKNOWN = svgInner(skillUnknown)
 export const CHEAT_FAST_RESEARCH = svgInner(skillResearchSpeed)
 export const STAT_REPUTATION = svgInner(statReputation)
 export const STAT_LUCK = svgInner(statLuck)
@@ -928,24 +936,19 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   machinery: svgInner(skillMachinery),
   tending: svgInner(skillTending),
   broker: svgInner(skillBroker),
-  forecast: svgInner(skillForecast),
   'inherit-land': svgInner(uiResearchExpand),
   saleswoman: svgInner(skillSaleswoman),
   heirloom: svgInner(skillHeirloom),
+  grafting: svgInner(skillGrafting),
+  specialty: svgInner(skillSpecialty),
   'better-potato': svgInner(skillBetter),
   'better-wheat': svgInner(skillBetter),
   'better-tomato': svgInner(skillBetter),
   'better-raspberry': svgInner(skillBetter),
   'better-grape': svgInner(skillBetter),
-  'better-apple': svgInner(skillBetter),
-  'better-apricot': svgInner(skillBetter),
-  'better-olive': svgInner(skillBetter),
-  'better-cherry': svgInner(skillBetter),
   industrial: svgInner(skillIndustrial),
   jam: svgInner(skillJam),
   lucky: svgInner(skillLucky),
-  'lucky-husband': svgInner(skillLucky),
-  'lucky-daughter': svgInner(skillLucky),
   'seed-bank': svgInner(skillSeedBank),
 }
 
@@ -959,10 +962,6 @@ const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: Grown
   'better-tomato': 'tomato',
   'better-raspberry': 'raspberry',
   'better-grape': 'grape',
-  'better-apple': 'apple',
-  'better-apricot': 'apricot',
-  'better-olive': 'olive',
-  'better-cherry': 'cherry',
 }
 
 export function skillInner(id: SkillId): string {

@@ -20,7 +20,7 @@ describe('0.9 log', () => {
       { a: Act.delete, t: 9, p: 0, k: 'building', c: [4, 4] },
       { a: Act.expand, t: 10, p: 0, k: { cx: 1, cy: 0 } },
       { a: Act.startResearch, t: 11, p: 0, r: 'unlock-expand' },
-      { a: Act.pickSkill, t: 12, p: 0, m: 'husband', s: 2 },
+      { a: Act.pickSkill, t: 12, p: 0, id: 'boots' },
       { a: Act.sellAll, t: 13, p: 0 },
       { a: Act.swap, t: 15, p: 0, i: 0 },
       { a: Act.swapChest, t: 16, p: 0, c: [5, 5], i: 1 },

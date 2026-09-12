@@ -6,7 +6,7 @@ import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
 
-export const PROTOCOL = 2.6
+export const PROTOCOL = 2.7
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -328,11 +328,7 @@ export function digestParts(world: World): Record<string, unknown> {
     })),
     drops: world.drops.length,
     done: [...world.done].sort(),
-    family: {
-      player: [...world.family.player.owned.entries()].sort(),
-      husband: [...world.family.husband.owned.entries()].sort(),
-      daughter: [...world.family.daughter.owned.entries()].sort(),
-    },
+    family: [...world.family.owned.entries()].sort(),
     stall: Object.fromEntries(
       (Object.keys(world.stall) as (keyof typeof world.stall)[]).map(id => [
         id,

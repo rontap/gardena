@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Build, research, lens, and cheat are left docks. Family, market, and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
+Build, research, family, lens, and cheat are left docks. Market and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
 
 ## Left docks
 
@@ -10,6 +10,7 @@ Build, research, lens, and cheat are left docks. Family, market, and almanac are
 |---|---|---|
 | build | Build | `w-[28rem]` |
 | research | Research | `w-[28rem]` |
+| family | Family | `w-[28rem]` |
 | lens | Lens | `w-80` |
 | cheat | Cheat | `w-80` |
 
@@ -17,27 +18,27 @@ Build, research, lens, and cheat are left docks. Family, market, and almanac are
 
 ## The rail
 
-Build and Research pick a category the same way: a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`.
+Build picks a category with a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`. Research has no rail and no tabs.
 
-Cards under it share one anatomy: icon `h-10` centred, `skuLabel` / research name `text-sm` `line-clamp-2 min-h-8`, then the meta line. A constant `auto-rows-*` per panel, never `fr`, so no card changes size as content changes.
+Cards share one anatomy: icon `h-10` centred, `skuLabel` / research name `text-sm` `line-clamp-2 min-h-8`, then the meta line. A constant `auto-rows-*` per panel, never `fr`, so no card changes size as content changes.
 
 [[ui/almanac]] is a centred overlay and keeps the underline `tabTriggerClass`.
 
 [[ui/build]]. [[ui/lens]]. [[ui/cheat]].
 
-Research: trees **Plants** **Land** **Automation** **Trade** on the rail, in that order. 2-col cards on `auto-rows-[8.5rem]` — two columns, not three, because the progress bar needs the width. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the `why` sentence. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
+Research: one 2-col grid on `auto-rows-[8.5rem]` — two columns, not three, because the progress bar needs the width. Every `RESEARCH` id is a card. Card = icon over name over `Coin` + seconds on one line. Faces: done `bg-leaf/20` and reads **Done**, running `bg-ink`, gated or blocked-by-another-job `bg-ink/6`, else `bg-dirt`. Mystery (not `researchKnown`): `skill-unknown` icon, unknown name **Unknown**, unknown description **You do not know what this does.** Disabled. No cost. No seconds. Bar `bg-leaf` if running or done. Hover: [[ui/callout-hover]] to the right of the dock, title `RESEARCH[id].name`, description blurb plus the `why` sentence; mystery uses the unknown slots. Footer: the running job and its seconds, or *One project at a time. It runs while you garden.* `Dock` `aside` is the callout slot. Unlock-all lives on [[ui/cheat]].
 
-A card is on the shelf when `researchShown` — `reveal` is OR, `[]` is start. A shown card is clickable when `researchOpen` — `requires` is AND. Gated is a disabled face, and `why` names what is missing: *Needs {names joined by and} first.* `unlock-smart-irrigation` and `unlock-heirloom` can be shown and shut. `why` order: done, running, gated, another job, cannot afford. [[mechanics/research]]
+A card is clickable when `researchOpen`. Gated is a disabled face, and `why` names the parent: *Needs {name} first.* `why` order: done, running, gated, another job, cannot afford. Three start rows open: **Multi-Crop Farming**, **Irrigation**, **Machinery & Expansion**. Their children are known and shut until the parent is in `done`. Deeper rows are mystery until the parent is open. `unlock-necronomicon` stays mystery until grandma `told` and `unlock-grinder` is in `done`. No vanilla, no olive, no watermelon research card. [[mechanics/research]]
 
-Nine rows open at start, 3 / 2 / 2 / 2 across the four tabs. Plants start shelf: **Tomato seeds**, **Grape seeds**, **Gardening tools**. Grape seeds on the shelf from the first day. **Crop variants** after tomato, grape, or irrigation. **Raspberry seeds** after tomato or grape. **Heirloom crops** after Crop variants, or after land/vehicles (then shut until Crop variants). No vanilla, no olive, no watermelon research card. Land: **Unlock land** and **Landscaping**. Automation: **Irrigation** and **Sensors**. Trade: **Contracts**, **Machinery**; **Fermentation** after the grinder. **Hardened tools** after Gardening tools.
+Family: the same `Dock` `w-[28rem]` as Research. No rail. No tabs. Standing (Reputation, Luck) above a 2-col `auto-rows-[8.5rem]` card grid of every `SKILLS` id. Same card anatomy as Research. Footer: unspent points. Hover: [[ui/callout-hover]] in `Dock` `aside`. Guest: dock opens, cards not clickable. [[ui/family]] [[mechanics/family]]
 
 **×** / the rail toggle that closes **Build**: `leaveBuild` = `cancelPlace`, search query cleared, unlocked Build peek restored. A tool lens ends with the arming. A locked lens stays — [[ui/lens]]. Selecting Build Water / Sensors is not a close: `onShelf` peeks that lens with no lock, no SKU armed. Automation peeks no lens. Storage peeks no lens. Closing the **Lens** dock drops an unlocked lens to `off` and keeps a locked one. Research **×** only closes the dock.
 
 ## Overlays
 
-[[ui/family]] · [[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family content centered `w-[58rem]` — [[ui/family]].
+[[ui/market]] · [[ui/almanac]]. `absolute inset-0` dim `bg-ink/40`. Not docks. Family is a left dock — [[ui/family]].
 
-Solo (`role === 'off'`): these three and the recap popup pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Build / Research / Cheat / Lens do not auto-pause. [[ui/hud]]
+Solo (`role === 'off'`): Market, Almanac, and the recap popup pause the sim clock. Close restores the previous pause state unless the player had already paused. Host / guest: no auto-pause. Build / Research / Family / Cheat / Lens do not auto-pause. [[ui/hud]]
 
 Every dialog and overlay closes on backdrop. Recap Close / Esc / backdrop is live for guest. Radix dialogs (inventory, chest, recap, hangar, parked Quad / tractor) get it from `onOpenChange`; overlays close on a pointer-down whose target is the backdrop itself. Catching-up overlay does not dismiss. [[ui/multiplayer]]
 
@@ -65,7 +66,7 @@ Tally rows **Harvested** **Lost** **Research** (`RESEARCH[id].name`, comma-joine
 
 Rule, then ledger **Support from grandma** `+` coin from `recap.stipend` when `stipend > 0`, **Tax** `−` coin, **Water** `−` `recap.water` coin. Omit the stipend line when `recap.stipend === 0`. Amounts via fill from `stipendOf` / `STIPEND`, not digits in the copy. Always a Water line. Same chrome as Tax. Not a weather forecast. Rule, then **Balance** coin — money after tax and pump bill. [[mechanics/weather]] [[mechanics/day]] `day.stipend`
 
-Footer **Close**. Backdrop / Esc: same as Close. Close runs `World.seeRecap(day)` and closes the popup. Guest Close live (chrome, not a gate). `seeRecap` is not a `Cmd`. `Act.dismissRecap` is a no-op. Points already granted at the seam — not shown on this screen. Recap popup uses the same overlay pause as Family / Market / Almanac. [[mechanics/day]] [[mechanics/family]] [[ui/notices]] [[ui/hud]] [[ui/multiplayer]]
+Footer **Close**. Backdrop / Esc: same as Close. Close runs `World.seeRecap(day)` and closes the popup. Guest Close live (chrome, not a gate). `seeRecap` is not a `Cmd`. `Act.dismissRecap` is a no-op. Points already granted at the seam — not shown on this screen. Recap popup uses the same overlay pause as Market / Almanac. [[mechanics/day]] [[mechanics/family]] [[ui/notices]] [[ui/hud]] [[ui/multiplayer]]
 
 ## Object HUD
 

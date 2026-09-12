@@ -12,7 +12,7 @@ Variety is identity, not a ladder. Set on sow, changed only by graft. One `Purpo
 
 Seed Variety Station, cutting face: Heirloom fruit in, `cut` fruit and 1–2 grafts out. [[mechanics/machines]] `station.cut` `station.io`. Panel [[ui/station]].
 
-`unlock-crop-variants` shows and unlocks `buy-research-station`. `unlock-heirloom` requires Crop variants. Daughter `heirloom` skill requires Heirloom research. Experienced potato / wheat grower require Crop variants. Variety sensor `need` Crop variants.
+`unlock-crop-variants` shows and unlocks `buy-research-station`. `unlock-heirloom` requires Crop variants. Daughter `heirloom` skill requires Heirloom research. Experienced potato / wheat grower require Crop variants. Variety sensor unlock Crop variants.
 
 Starter: one pack of each named annual Variety in the Seed silo; four `'base'` tree seeds; one graft of every tree Variety. [[mechanics/inventory]].
 

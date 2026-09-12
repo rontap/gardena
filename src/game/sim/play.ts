@@ -8,8 +8,8 @@ import { ADDITIVE_BASE, SILO_BASE, type AdditiveId, type ChunkId, type Coord } f
 import type {
   AnnualId,
   HarvestSlot,
-  MemberId,
   ResearchId,
+  SkillId,
   SkuId,
   TrailerId,
   TrailerKind,
@@ -42,7 +42,7 @@ export type TurnAction =
   | { task: 'market'; op: 'sellAll' }
   | { task: 'contract'; op: 'accept' | 'cancel'; id: ContractId }
   | { task: 'contract'; op: 'reorder'; id: ContractId; dir: 1 | -1 }
-  | { task: 'skill'; member: MemberId; slot: number }
+  | { task: 'skill'; id: SkillId }
   | { task: 'expand'; chunk: ChunkId }
   | { task: 'swap'; i: number }
   | { task: 'swapChest'; at: Coord; i: number }
@@ -472,9 +472,10 @@ function act(world: World, a: TurnAction): string {
       return world.contracts.active.length === n ? 'no effect' : ''
     }
     case 'skill': {
-      if (world.points < 1) return 'No skill points'
+      const rank = world.skillTier(a.id) + 1
+      if (world.points < rank) return 'No skill points'
       const before = world.points
-      world.pickSkill(a.member, a.slot)
+      world.pickSkill(a.id)
       return world.points === before ? 'no effect' : ''
     }
     case 'expand': {
@@ -611,7 +612,7 @@ export type PlayApi = {
   look(at: Coord): { text: string; intent: Intent | 'none' }
   research(): { id: ResearchId; name: string; cost: number; seconds: number; done: boolean; open: boolean }[]
   shop(): { id: SkuId; name: string; price: number; tab: string }[]
-  skills(): { member: MemberId; slot: number; id: string; name: string; tier: number; max: number }[]
+  skills(): { id: SkillId; name: string; tier: number; max: number }[]
   world: World
   help(): string
 }
@@ -633,7 +634,7 @@ play.turn([...TurnAction]) runs the list, then plays out queued work until idle.
   { task:'research', id }
   { task:'market', op:'sellAll' }
   { task:'contract', op, id, dir? }            accept cancel reorder
-  { task:'skill', member, slot }
+  { task:'skill', id }
   { task:'expand', chunk }
   { task:'swap', i } | { task:'swapChest', at, i }
   { task:'take', from:'silo', crop, variety } | { task:'take', from:'additive', id }
@@ -677,16 +678,14 @@ export function installPlay(world: World, hold: { current: boolean }): () => voi
         .filter(s => world.skuOpen(s.id))
         .map(s => ({ id: s.id, name: skuLabel(s.id), price: world.skuPrice(s.id), tab: s.tab })),
     skills: () =>
-      (['player', 'husband', 'daughter'] as const).flatMap(m =>
-        world.offers(m).map((ref, slot) => ({
-          member: m,
-          slot,
-          id: ref.id,
-          name: SKILLS[ref.id].name,
-          tier: world.skillTier(ref.id),
-          max: SKILLS[ref.id].maxTier,
+      (Object.keys(SKILLS) as SkillId[])
+        .filter(id => world.skillKnown(id))
+        .map(id => ({
+          id,
+          name: SKILLS[id].name,
+          tier: world.skillTier(id),
+          max: SKILLS[id].maxTier,
         })),
-      ),
     world,
     help: () => HELP,
   }

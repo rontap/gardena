@@ -7,7 +7,7 @@ Top ribbon **Cheat**, between **Almanac** and **Pause** — [[ui/hud]]. Face onl
 | row | act |
 |---|---|
 | Unlock all instantly | `unlockAll()` — every research done, `money += 999`, job idle, `World.points = 99`. Does not grant skills. Does not reroll. |
-| Unlock all skills | `unlockAllSkills()` — every `SKILLS` id at `maxTier`, ignores gates, rebuilds modifiers, empties offers. Not `unlockAll`. |
+| Unlock all skills | `unlockAllSkills()` — every `SKILLS` id at `maxTier`, ignores gates, rebuilds modifiers. Not `unlockAll`. |
 | Research speed 3× | toggle `World.cheatFastResearch`. Selected while on. Job drain `× 3`. `Act.cheat` `{ k: 'research' }`. |
 | 1× / 3× | one `flex` row, two buttons, each `flex` 2. Same card chrome as the other rows. Not a toggle. Click 1× dispatches `Act.cheat` `{ k: 'speed'; n: 1 }`. Click 3× `{ k: 'speed'; n: 3 }`. Selected = current `World.cheatSpeed`. |
 | Gain 200 | `money += 200` |

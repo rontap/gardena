@@ -336,6 +336,7 @@ export function Window({
   footer,
   aside,
   className,
+  fill,
 }: {
   title: string
   onClose?: () => void
@@ -343,10 +344,11 @@ export function Window({
   footer?: ReactNode
   aside?: ReactNode
   className: string
+  fill?: boolean
 }) {
   return (
-    <div className="relative">
-      <Chrome className={`flex flex-col overflow-hidden ${className}`}>
+    <div className={fill === true ? 'relative h-full' : 'relative'}>
+      <Chrome className={`flex flex-col overflow-hidden ${fill === true ? 'h-full' : ''} ${className}`}>
         <div className="relative z-20 flex shrink-0 items-center justify-between gap-3 border-b border-ink/15 px-4 pt-4 pb-2">
           <div className="font-display text-sm leading-none">{title}</div>
           {onClose !== undefined && (
@@ -360,7 +362,13 @@ export function Window({
             </button>
           )}
         </div>
-        <div className="scroll-pane relative z-20 min-h-0 flex-1 overflow-y-auto px-4 py-3 flex flex-col">{children}</div>
+        <div
+          className={`scroll-pane relative z-20 min-h-0 flex-1 px-4 py-3 flex flex-col ${
+            fill === true ? 'overflow-hidden' : 'overflow-y-auto'
+          }`}
+        >
+          {children}
+        </div>
         {footer !== undefined && (
           <div className="relative z-20 shrink-0 border-t border-ink/15 px-4 pt-2 pb-3">{footer}</div>
         )}
@@ -421,6 +429,26 @@ export function Dock({
         aside={aside}
         className={`max-h-[calc(100vh-6rem)] ${width}`}
       >
+        {children}
+      </Window>
+    </div>
+  )
+}
+
+export function FullDock({
+  title,
+  children,
+  footer,
+  onClose,
+}: {
+  title: string
+  children: ReactNode
+  footer?: ReactNode
+  onClose: () => void
+}) {
+  return (
+    <div className="absolute top-20 left-32 right-4 bottom-4 z-20">
+      <Window title={title} onClose={onClose} footer={footer} fill className="h-full">
         {children}
       </Window>
     </div>

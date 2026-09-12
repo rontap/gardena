@@ -38,7 +38,7 @@ Sequencer is host-only (`sim/mp.ts`). Drops illegal guest cmds. They never enter
 
 Cheat: seat 0 only. Sequencer drops every other `Act.cheat`. Ribbon hidden when `world.local !== 0`.
 
-Family overlay opens. `Act.pickSkill` never fires for a guest. Offers not clickable.
+Family dock opens. `Act.pickSkill` never fires for a guest. Cards not clickable.
 
 Expand plates hidden when `world.local !== 0`. Command Center expansion row stays, `go: none`.
 

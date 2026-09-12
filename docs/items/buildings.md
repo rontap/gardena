@@ -22,4 +22,6 @@ What the player can buy, hold, or place. Size and shelf. Gates [[mechanics/resea
 
 `necronomicon` — `buy-necronomicon`. 2×2, origin NW, no rotate, `squareSiteOk`. `Sku.tab` `automation`. One per farm. Cannot be demolished. Rules: [[mechanics/necronomicon]] `necro.one`.
 
+`weather-station` — `buy-weather-station`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `building`. Almanac **Building**. Land shelf. Price preference. Many allowed; extras no-op. Demolishable. Not a `Machine`. skuLabel **Weather Forecast Station**. Rules: [[mechanics/weather]] `weather.forecast`.
+
 Sensor cells are not this note — [[items/sensors]].

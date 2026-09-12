@@ -60,28 +60,32 @@ function farm(): { w: World; book: Necronomicon } {
 }
 
 describe('necronomicon.research', () => {
-  test('`unlock-necronomicon` is a Trade row at `NECRO_COST` and `NECRO_SECONDS` that unlocks `buy-necronomicon`. `researchShown` is false until `grandma` reaches `told`, whatever `reveal` says, and no other row reads `grandma`.', () => {
+  test('`unlock-necronomicon` parent is `unlock-grinder`; known and open only after `World.grandma` is `told` and that parent is in `done`; until then mystery; no other research row reads `grandma`.', () => {
     expect(RESEARCH['unlock-necronomicon']).toMatchObject({
-      tree: 'trade',
+      path: 'unlock-grinder',
+      parent: 'unlock-grinder',
       cost: NECRO_COST,
       seconds: NECRO_SECONDS,
-      requires: [],
       effect: { kind: 'unlock-sku', sku: 'buy-necronomicon' },
     })
     const w = new World(1)
     expect(w.grandma).toBe('well')
-    expect(w.researchShown('unlock-necronomicon')).toBe(false)
+    expect(w.researchKnown('unlock-necronomicon')).toBe(false)
+    expect(w.researchOpen('unlock-necronomicon')).toBe(false)
     w.grandma = 'gone'
-    expect(w.researchShown('unlock-necronomicon')).toBe(false)
+    expect(w.researchKnown('unlock-necronomicon')).toBe(false)
     w.grandma = 'told'
-    expect(w.researchShown('unlock-necronomicon')).toBe(true)
+    expect(w.researchKnown('unlock-necronomicon')).toBe(false)
+    expect(w.researchOpen('unlock-necronomicon')).toBe(false)
+    w.done.add('unlock-grinder')
+    expect(w.researchKnown('unlock-necronomicon')).toBe(true)
     expect(w.researchOpen('unlock-necronomicon')).toBe(true)
     const others = Object.keys(RESEARCH).filter(id => id !== 'unlock-necronomicon')
     const shownWell = new World(1)
     others.forEach(id => {
-      const before = shownWell.researchShown(id as keyof typeof RESEARCH)
+      const before = shownWell.researchKnown(id as keyof typeof RESEARCH)
       shownWell.grandma = 'told'
-      expect(shownWell.researchShown(id as keyof typeof RESEARCH)).toBe(before)
+      expect(shownWell.researchKnown(id as keyof typeof RESEARCH)).toBe(before)
       shownWell.grandma = 'well'
     })
   })

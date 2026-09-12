@@ -51,10 +51,7 @@ mermaid.initialize({
 const esc = (s: string): string => s.replace(/"/g, '#quot;').replace(/</g, '#lt;').replace(/>/g, '#gt;')
 
 function title(s: string): string {
-  if (s === 'plants') return m.hud_research_plants()
-  if (s === 'land') return m.hud_research_land()
-  if (s === 'automation') return m.hud_research_automation()
-  if (s === 'trade') return m.hud_research_trade()
+  if (s in RESEARCH) return RESEARCH[s as ResearchId].name
   return s.slice(0, 1).toUpperCase() + s.slice(1)
 }
 
@@ -64,7 +61,7 @@ const secs = (n: number): string => (n < 60 ? m.hud_debug_secs({ n }) : m.hud_de
 
 function source(tree: Tree, filter: Filter, leaves: boolean): { src: string; detail: Map<string, Detail> } {
   const detail = new Map<string, Detail>([[KEY_START, { kind: 'start' }]])
-  const shown = [...tree.nodes.values()].filter(n => filter === 'all' || n.def.tree === filter)
+  const shown = [...tree.nodes.values()].filter(n => filter === 'all' || n.def.path === filter)
   const ids = new Set(shown.map(n => n.id))
   const outside = new Set<ResearchId>()
   for (const n of shown) for (const p of n.parents) if (!ids.has(p)) outside.add(p)
@@ -93,9 +90,9 @@ function source(tree: Tree, filter: Filter, leaves: boolean): { src: string; det
         body.push(`    class ${lk} ${leaf.kind}`)
       })
     }
-    const g = groups.get(n.def.tree) ?? []
+    const g = groups.get(n.def.path) ?? []
     g.push(...body)
-    groups.set(n.def.tree, g)
+    groups.set(n.def.path, g)
   }
 
   for (const [name, body] of groups) {
@@ -111,8 +108,7 @@ function source(tree: Tree, filter: Filter, leaves: boolean): { src: string; det
   for (const n of shown) {
     const key = keyOfResearch(n.id)
     if (n.parents.length === 0) lines.push(`  ${KEY_START} --> ${key}`)
-    for (const r of n.def.reveal) lines.push(`  ${keyOfResearch(r)} --> ${key}`)
-    for (const r of n.def.requires) lines.push(`  ${keyOfResearch(r)} ==> ${key}`)
+    for (const r of n.parents) lines.push(`  ${keyOfResearch(r)} --> ${key}`)
     if (!leaves) continue
     n.leaves.forEach((leaf, i) => {
       const lk =
@@ -268,7 +264,7 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-3">
         <span className="font-display text-sm">{def.name}</span>
-        <span className="text-sm text-ink/45">{def.tree}</span>
+        <span className="text-sm text-ink/45">{RESEARCH[def.path].name}</span>
         <span className="text-sm text-ink/45">{def.id}</span>
       </div>
       <div className="text-sm text-ink/75">{def.blurb}</div>
@@ -289,9 +285,9 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
             .join(' · ')}
         </Row>
       )}
-      {def.requires.length > 0 && (
-        <Row label={def.requires.length > 1 ? m.hud_debug_hard_all() : m.hud_debug_hard_one()}>
-          {def.requires.map(r => RESEARCH[r].name).join(' · ')}
+      {def.parent !== null && (
+        <Row label={m.hud_debug_hard_one()}>
+          {RESEARCH[def.parent].name}
         </Row>
       )}
 

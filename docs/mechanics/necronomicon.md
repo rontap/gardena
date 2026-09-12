@@ -29,7 +29,7 @@ Sacrifice is not dump. A dump into a mill is feedstock and something comes out. 
 
 ## Research
 
-`unlock-necronomicon`, Trade, `NECRO_COST` and `NECRO_SECONDS` — preference. `requires` and `reveal` are both `[]`; the row is not revealed by either. `World.researchShown` returns false for `NECRO_RESEARCH` until `grandma` is `told`, and that branch is the only place a research row reads the world beyond `done`. The gate is the story, not a research topology, so it does not live in `reveal`. Unlocks `buy-necronomicon`, Automation tab, Build Automation shelf, group Necronomicon.
+`unlock-necronomicon`, path `unlock-grinder`, parent `unlock-grinder`, `NECRO_COST` and `NECRO_SECONDS` — preference. Known and open only after `grandma` is `told` **and** parent `unlock-grinder` is in `done`; until then mystery. That branch is the only place a research row reads the world beyond `done` and `parent`. Unlocks `buy-necronomicon`, Build Automation shelf, group Necronomicon.
 
 ## Building
 
@@ -71,7 +71,7 @@ Fields added, no migrate — [[architecture/save]]. `SaveCell` `necronomicon` ca
 
 ## Invariants
 
-`necro.reveal` — `unlock-necronomicon` is a Trade row, `reveal` and `requires` both `[]`; `researchShown` is false until `World.grandma` is `told`, whatever `reveal` says; no other research row reads `grandma`.
+`necro.reveal` — `unlock-necronomicon` parent is `unlock-grinder`; known and open only after `World.grandma` is `told` and that parent is in `done`; until then mystery; no other research row reads `grandma`.
 
 `necro.grandma` — `grandmaAt(endedDay)` is the latest beat at or below that day; `advanceGrandma` runs at the seam off the ended day, only moves forward, and pushes every beat it passes onto `grandmaUnseen`; `seeGrandma` drops one and is not a `Cmd`; an unseen beat is one `grandma` notice that skips the two-pass delay.
 

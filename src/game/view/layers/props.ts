@@ -167,6 +167,11 @@ export class PropsLayer {
         put(PROP[cell.kind], at.col, at.row)
       }
     }
+    world.forEachCell((at, cell) => {
+      if (cell.kind !== 'weather-station') return
+      if (cell.base.col !== at.col || cell.base.row !== at.row) return
+      put('weather-station', at.col, at.row)
+    })
     for (const at of world.sensors.values()) {
       const cell = world.cell(at)
       if (!isSensor(cell) || cell.kind === 'button') continue

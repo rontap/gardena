@@ -90,7 +90,7 @@ Seam, before any field tick of the new day: `stipendOf(endedDay)`, tax, pump bil
 
 `World.family: Family` always. Shared `World.points`. Luck is `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. Illegal: `World.luck`. [[architecture/family]]
 
-`offers` length 0..3. `unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier`, ignores gates, rebuilds modifiers, empties offers. `cheatFastResearch` multiplies job drain by 3. `cheatMoney` `+200`. `cheatPoints` `+10`. End day sets `clock.t = DAY_SECONDS`. Cheats not Save.
+`unlockAll` still every research done, `money += 999`, job idle, and `World.points = 99`. Does not grant skills. `unlockAllSkills` grants every `SKILLS` id at `maxTier`, ignores gates, rebuilds modifiers. `cheatFastResearch` multiplies job drain by 3. `cheatMoney` `+200`. `cheatPoints` `+10`. End day sets `clock.t = DAY_SECONDS`. Cheats not Save.
 
 ## Time / indexes / log
 
@@ -126,7 +126,7 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.
 
-`world.pause` — World has no `pause` field. Solo family / market / almanac overlay pause is App-local. MP pause is the net flag on `MpHost` / `MpGuest`. Not Save. Not a `Cmd`.
+`world.pause` — World has no `pause` field. Solo market / almanac / recap overlay pause is App-local. MP pause is the net flag on `MpHost` / `MpGuest`. Not Save. Not a `Cmd`.
 
 `world.cheatSpeed` — `World.cheatSpeed` is `1 | 3`. App host accumulator `frameDt * cheatSpeed`. World.tick does not multiply `dt`. `Act.cheat` `{ k: 'speed'; n: 1 | 3 }`. `?speed=3` boots 3; any other URL value boots 1. Not job drain.
 

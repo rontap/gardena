@@ -35,11 +35,12 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` p
 | 8 | line 2 group vs specific |
 | `20+i` | company shuffle, at `(day, 0, ·)` |
 | 30, 31 | the two prize slots, at `(day, 0, ·)` |
-| 32 | rotary vs diamond, when the prize is a tool |
+| 32 | tool 50/50; pool index `floor(u * n)`; `whole-cart` band 3 and `intercrop` band 3 50/50 pool vs Vanilla |
+| 33 | pool index when `k` 32 chose the pool on those two cells |
 
 `k` 1, 4, 9 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST`. Jam/spirit group vs specific is a roll.
 
-Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It does decide the prize, because the prize table is keyed by company.
+Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It does decide the prize column. `prizeFor` then rolls the pool member or the tool.
 
 ### Difficulty
 
@@ -95,19 +96,59 @@ reward  = round(clean * (1 + markup))
 penalty = round(PENALTY_RATE * clean)
 ```
 
-Baked at generation. Saturation at delivery does not move `reward`. `industrial` multiplies at complete, not here. A prize offer never pays `reward` — but the fertilizer prize is priced against it, and `penalty` derives from `clean`.
+Baked at generation. Saturation at delivery does not move `reward`. `industrial` multiplies at complete, not here. A prize offer never pays `reward` — fertilizer bags and count-from-cash seed counts use that baked number, and `penalty` derives from `clean`. Vanilla is not priced from it.
 
 ## Prizes
 
-Two of the six offers each day pay goods instead of money, and pay no money. The board is the only source of tree seeds past the starting four, of vanilla seeds, of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. Tree-seed prizes are `'base'` quality 0. Vanilla prizes are `'base'` quality 0.
+Two of the six offers each day pay goods instead of money, and pay no money. Extra `broker` slots pay money. Vanilla seeds are 1 on `whole-cart` band 3 or 2 on `intercrop` band 3, those two 4-star cells only. Named (`variant`) and Heirloom (`heirloom`) tree seeds are contract prizes. Plain (`'base'`) tree seeds still include the starting four and these boards. The board is the only source of the large freezer, of the rotary shovel and the diamond pickaxe, and of expansion permits past the third. `halbert-eijn` and `intercrop` never pay tree seeds. Every seed and tree-seed prize is quality 0.
 
-Kinds: `cash` | `tree-seed` | `seeds` (vanilla) | `fertilizer` | `freezer` | `expansion-slot` | `skill-points` | `tool` (rotary-shovel | diamond-pickaxe).
+| kind | required |
+|---|---|
+| `cash` | — |
+| `tree-seed` | `tree`, `variety` |
+| `seeds` | `crop` (annual other than `'grass'`), `variety`, `count` |
+| `fertilizer` | — |
+| `freezer` | — |
+| `expansion-slot` | — |
+| `skill-points` | `n` |
+| `tool` | `rotary-shovel` or `diamond-pickaxe` |
+
+Illegal: a resolved `tree-seed` without `variety`. Illegal: resolved `seeds` without `crop`, `variety`, and `count`. Illegal: quality other than 0 on the paid item. Illegal: `'grass'` as a prize crop. Illegal: Vanilla in any pool. Illegal: Vanilla `count` other than 1 on `whole-cart` band 3 or 2 on `intercrop` band 3. Illegal: `halbert-eijn` or `intercrop` paying `tree-seed`. Illegal: `prizeFor` on an empty pool. Illegal: an offer whose prize is still a pool template.
 
 `prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31. Drawn from the base six, never from the live slot count. Broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two when broker grows the board.
 
-`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. Fixed per company — only which slots pay a prize is rolled. Bands off `PRIZE_BAND_MIN`, read against final `eff`. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. The tool arm is a template; `prizeFor` rolls the actual tool per offer off `k` 32.
+`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. A cell is a template. Bands off `PRIZE_BAND_MIN`, read against final `eff`: 0–7, 8–19, 20–29, 30+. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. `prizeFor` resolves the cell per offer the way it already rolls the tool: pool index or tool off `k` 32; `whole-cart` band 3 and `intercrop` band 3 use `k` 32 for pool vs Vanilla, then `k` 33 for the pool member.
 
-`World.payPrize` from `resolveDone`. Only `cash` touches `money`. Tree-seed and tool drop at `DOOR`. Vanilla `putSilo`. Fertilizer `putAdditive`, bags = `max(1, round(reward / SKUS['buy-fertilizer'].price))`. Freezer `prizeFreezers += 1` — [[mechanics/research]]. Expansion `prizeSlots += 1` — [[mechanics/expansion]]. Skill-points `grantPoints(n)` — [[mechanics/family]]. Store prizes clamp to free space; overflow is lost.
+### Pools
+
+Named / Heirloom / Plain tree and annual pools are derived from `VARIETY` / `VARIETIES` / `CROPS.cls` / `TREE_IDS` / `isAnnualId`. A crop missing Named (`variant`) or missing Heirloom is absent from that pool. Potato and wheat belong in Named annuals because they have a Named row. Vanilla is in no pool.
+
+| pool | filter |
+|---|---|
+| Plain trees | `TREE_IDS` at `'base'` |
+| Named trees | `TREE_IDS` whose `VARIETIES` row has a `variant`; prize is that `variant` |
+| Heirloom trees | `TREE_IDS` whose `VARIETIES` row has an `heirloom`; prize is that `heirloom` |
+| Named annuals | `isAnnualId` crops whose `VARIETIES` row has a `variant`; prize is that `variant` |
+| Heirloom annuals | `isAnnualId` crops whose `VARIETIES` row has an `heirloom`; prize is that `heirloom` |
+| fruit-class annuals except Vanilla | `isAnnualId` and `CROPS.cls === 'fruit'` and crop is not vanilla; `'base'` |
+| `STARTER_CROPS` | `STARTER_CROPS` at `'base'` |
+
+Fixed species prizes (`cherry`, `apricot`, `apple`, `olive` on `whole-cart` / `little-lid` / `trade-jo`) stay those species at `'base'`.
+
+### Company columns
+
+| company | 0–7 | 8–19 | 20–29 | 30+ |
+|---|---|---|---|---|
+| `whole-cart` | `cherry` `'base'` tree-seed | `apricot` `'base'` tree-seed | 1 from Named trees | 1 from Heirloom trees, or 1 Vanilla seed |
+| `little-lid` | `apple` `'base'` tree-seed | `olive` `'base'` tree-seed | 1 from Plain trees | 1 from Named trees |
+| `trade-jo` | `apple` `'base'` tree-seed | `cherry` `'base'` tree-seed | 1 skill point | `tool` |
+| `mercanova` | `fertilizer` | `freezer` | 1 skill point | `expansion-slot` |
+| `halbert-eijn` | fruit-class annuals except Vanilla, count `ceil(offer.reward / CROPS[crop].seed)` | 2 from Named annuals | 1 from Heirloom annuals | `tool` |
+| `intercrop` | `STARTER_CROPS`, count `ceil(offer.reward / CROPS[crop].seed)` | same fruit-class annual pool and count-from-cash as `halbert-eijn` band 0 | 4 from Named annuals | 2 from Heirloom annuals, or 2 Vanilla seeds |
+
+Count-from-cash uses the already baked `offer.reward`. Almanac seed price is `CROPS[crop].seed`. Vanilla is not counted with cash/seed price.
+
+`World.payPrize` from `resolveDone`. Only `cash` touches `money`. Tree-seed and tool drop at `DOOR`. Seeds `putSilo(crop, variety, 0, count)`. Fertilizer `putAdditive`, bags = `max(1, round(reward / SKUS['buy-fertilizer'].price))`. Freezer `prizeFreezers += 1` — [[mechanics/research]]. Expansion `prizeSlots += 1` — [[mechanics/expansion]]. Skill-points `grantPoints(n)` — [[mechanics/family]]. Store prizes clamp to free space; overflow is lost.
 
 ## cleanUnit
 
@@ -185,3 +226,11 @@ Hangar-buys are not `skuPrice` — [[mechanics/family]].
 `contracts.consign` — Consign fills `active` in array order, then the stall; a full bin passes through; guest `acceptContract` / `cancelContract` / `reorderContract` / consign: [[mechanics/multiplayer]] `mp.guest`.
 
 `contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`; `Bin.infusedFilled` counts infused jam / cask / spirit / oil only; `Accepts` ignores `infused`; miss and cancel do not take the mul.
+
+`contracts.prize` — Two slots from `[0, CONTRACT_OFFERS)` pay goods; `broker` extras are cash; `prizeFor` resolves `COMPANY_PRIZES[company][prizeBandOf(eff)]`, rolling a pool member or tool off `k` 32 the way it already rolls the tool.
+
+`contracts.prize-pool` — Named / Heirloom / Plain pools are the `VARIETIES` rows of `TREE_IDS` or `isAnnualId` crops that have that tier; a crop missing the tier is absent; Vanilla is in no pool; `halbert-eijn` and `intercrop` never pay tree seeds.
+
+`contracts.prize-vanilla` — Vanilla is 1 seed on `whole-cart` band 3 or 2 seeds on `intercrop` band 3, those two 4-star cells only; not priced from `offer.reward`.
+
+`contracts.prize-item` — Resolved `tree-seed` carries `variety`; resolved `seeds` carry crop+variety+count (any annual other than `'grass'`, not vanilla-only); quality 0; count-from-cash is `ceil(offer.reward / CROPS[crop].seed)`.

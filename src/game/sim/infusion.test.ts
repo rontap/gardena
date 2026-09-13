@@ -492,7 +492,7 @@ describe('infusion.rep', () => {
 
     const prize = new World(1)
     prize.contracts.active.push({
-      offer: { ...offer, prize: { kind: 'tree-seed', tree: 'cherry' } },
+      offer: { ...offer, prize: { kind: 'tree-seed', tree: 'cherry', variety: 'base' } },
       dueDay: 10,
       bins: [{ demand, filled: 0, infusedFilled: 0 }],
     })

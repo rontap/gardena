@@ -1,4 +1,4 @@
-import type { CaskId, CropId, JamId, PickaxeId, ShovelId, StallGoodId, TreeId } from '../ids.ts'
+import type { CaskId, CropId, JamId, PickaxeId, PlantCrop, ShovelId, StallGoodId, TreeId } from '../ids.ts'
 import type { VarietyId } from '../../defs/varieties.ts'
 
 export declare const SAT_MAX_CUT: number
@@ -45,8 +45,6 @@ export type CompanyId =
   | 'mercanova'
   | 'intercrop'
 
-export type FruitAnnualId = 'tomato' | 'raspberry' | 'grape' | 'vanilla' | 'chilli'
-
 export type GoodClass = CropId | JamId | 'sugar' | 'flour' | 'oil' | CaskId
 
 export type CompanyRecord = { done: number; missed: number }
@@ -70,21 +68,36 @@ export type Stars = 1 | 2 | 3 | 4
 
 export type PrizeTool = Extract<ShovelId, 'rotary-shovel'> | Extract<PickaxeId, 'diamond-pickaxe'>
 
-/**
- * What a finished contract hands over. `cash` pays `offer.reward`; every other
- * arm pays the goods instead and no money at all.
- */
 export type Prize =
   | { kind: 'cash' }
-  | { kind: 'tree-seed'; tree: TreeId }
-  | { kind: 'seeds'; crop: 'vanilla'; count: number }
+  | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId }
+  | { kind: 'seeds'; crop: PlantCrop; variety: VarietyId; count: number }
   | { kind: 'fertilizer' }
   | { kind: 'freezer' }
   | { kind: 'expansion-slot' }
   | { kind: 'skill-points'; n: number }
   | { kind: 'tool'; tool: PrizeTool }
 
-/** Difficulty band a prize is drawn from. Index into a company's prize column. */
+export type PrizePool =
+  | 'plain-trees'
+  | 'named-trees'
+  | 'heirloom-trees'
+  | 'named-annuals'
+  | 'heirloom-annuals'
+  | 'fruit-annuals'
+  | 'starter-crops'
+
+export type PrizeTemplate =
+  | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId }
+  | { kind: 'fertilizer' }
+  | { kind: 'freezer' }
+  | { kind: 'expansion-slot' }
+  | { kind: 'skill-points'; n: number }
+  | { kind: 'tool' }
+  | { kind: 'pool'; pool: PrizePool; count: number }
+  | { kind: 'from-cash'; pool: PrizePool }
+  | { kind: 'pool-or-vanilla'; pool: PrizePool; count: number; vanilla: number }
+
 export type PrizeBand = 0 | 1 | 2 | 3
 
 export type DeadlineBand = 'tight' | 'normal' | 'long'
@@ -124,6 +137,7 @@ export type HistoryEntry = {
   stars: Stars
   day: number
   rep: number
+  lines: Lines
   outcome: Outcome
 }
 

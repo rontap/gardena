@@ -21,7 +21,7 @@ See [[canon]].
 - [[mechanics/weeds]] — `weeds.sprout` `weeds.chance` `weeds.outbreak` `weeds.spray` `weeds.pull` `weeds.grass`
 - [[mechanics/market]] — `market.sell` `market.quality` `market.vodka-common` `market.vodka-heirloom` `market.mixed` `market.sugar` `market.infused`
 - [[mechanics/saturation]] — `sat.recover` `sat.trapezoid` `sat.last` `sat.infused`
-- [[mechanics/contracts]] — `contracts.board` `contracts.id` `contracts.not-cmd` `contracts.sat` `contracts.demand` `contracts.amount` `contracts.reward` `contracts.rep-line` `contracts.miss` `contracts.cancel` `contracts.consign` `contracts.infused`
+- [[mechanics/contracts]] — `contracts.board` `contracts.id` `contracts.not-cmd` `contracts.sat` `contracts.demand` `contracts.amount` `contracts.reward` `contracts.rep-line` `contracts.miss` `contracts.cancel` `contracts.consign` `contracts.infused` `contracts.prize` `contracts.prize-pool` `contracts.prize-vanilla` `contracts.prize-item`
 - [[mechanics/research]] — `research.job` `research.tiles` `research.better` `research.unlockAll` `research.reveal` `research.gates` `research.dispatch` `research.furnace` `research.variants` `research.start` `research.hardened` `research.techtree` `research.infusion`
 - [[mechanics/family]] — `family.pick` `family.lens` `family.skills` `family.jam-rot` `family.unlockSkills` `family.lucky` `family.better-set` `family.cost` `family.grafting` `family.specialty`
 - [[mechanics/inventory]] — `inventory.slots` `inventory.compost` `inventory.stack` `variety.stack` `inventory.containers` `inventory.silo-buy` `inventory.grass-silo` `inventory.ash` `inventory.infused`

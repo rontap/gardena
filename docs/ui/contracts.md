@@ -25,7 +25,7 @@ The card is the Accept control. Not a nested label. Host click `acceptContract {
 
 Not the `disabled` attribute. Taken today: card gone, not grey.
 
-Row 1: company face `company-{id}.svg` left of `COMPANIES[offer.company].name`, `Difficulty` on the right. Amount row: `demandFace` then `demandName`. Pair: two rows. Count lives on the `Item`, not a `×` glyph. Duration row is duration only: `offer.days === 1` → **1 day**. Else `{offer.days} days`. Prize / cash own line. Cash: `<Coin n={offer.reward} />`. Prize: `PrizeChip` always icon + full `prizeName`.
+Row 1: company face `company-{id}.svg` left of `COMPANIES[offer.company].name`, `Difficulty` on the right. Amount row: `demandFace` then `demandName`. Pair: two rows. Count lives on the `Item`, not a `×` glyph. Duration row is duration only: `offer.days === 1` → **1 day**. Else `{offer.days} days`. Prize / cash own line. Cash: `<Coin n={offer.reward} />`. Prize: `PrizeChip` always icon + full `prizeName`. Seed and tree-seed faces carry `prize.variety`, quality 0; count on the `Item`. `prizeName` for a `tree-seed` that carries a Variety: **{Crop} ({Variety}) seed** (`names_variety_pair` into `market_tree_seed`). `prizeName` for `seeds` that carry a Variety: **{Crop} ({Variety}) seeds** (`names_variety_pair` into `market_crop_seeds`). `{Crop}` alone when Variety is `'base'`.
 
 ### Hover
 

@@ -8,7 +8,7 @@ Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertToler
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
-`PACK_N` packs: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` is `pack-{crop}` except vanilla (`undefined`). `packSku('grass')` is `pack-grass`. A bought pack is `'base'` at `seedBankQuality(skillTier('seed-bank'))`, quality 0 without that skill — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Pack gates [[mechanics/research]]. Vanilla has no pack and no research row; seeds are a contract prize — [[mechanics/contracts]]. Tree seeds likewise. Chilli pack and mill: [[mechanics/infusion]] `infusion.chilli`. Sugar cane mill: [[mechanics/machines]] `machines.sugar`. Olive is `TreeId`. Trees have no pack.
+`PACK_N` packs: `SKUS` `pack-*` for annuals that have a pack. `packSku(crop)` is `pack-{crop}` except vanilla (`undefined`). `packSku('grass')` is `pack-grass`. A bought pack is `'base'` at `seedBankQuality(skillTier('seed-bank'))`, quality 0 without that skill — [[mechanics/family]]. Carrot / potato / wheat start unlocked. Pack gates [[mechanics/research]]. Vanilla has no pack and no research row; seeds are a contract prize, 1 or 2 on the two 4-star cells only — [[mechanics/contracts]] `contracts.prize-vanilla`. `variant` and `heirloom` tree seeds are contract prizes; `'base'` tree seeds still include the starting four and these boards. `halbert-eijn` and `intercrop` never pay tree seeds. Chilli pack and mill: [[mechanics/infusion]] `infusion.chilli`. Sugar cane mill: [[mechanics/machines]] `machines.sugar`. Olive is `TreeId`. Trees have no pack.
 
 ## Variety
 

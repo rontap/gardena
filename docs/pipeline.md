@@ -21,7 +21,7 @@ Orchestrator owns [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, 
 1. [[agents/architect]] — skip on unversioned
 2. [[agents/designer]] — when SVG; ∥ architect when filenames are already in the task
 3. [[agents/coder]] × N — impl + unit tests; partition by file
-4. [[agents/code-review]] — singleton; issues, then fix `blocker`/`bug`, then e2e
+4. [[agents/code-review]] — singleton; git diff vs the asked write list; fix bugs in that diff; e2e only for a new path the asked change added
 5. [[agents/documenter]] — major, or new note / id; else orchestrator
 6. [[agents/game-text-writer]] — ∥ documenter
 
@@ -34,7 +34,7 @@ Coders may be parallel or sequential. Everyone else is a singleton.
 | Types, rules, HUD states, `docs/ui/` | [[agents/architect]] |
 | SVG | [[agents/designer]] |
 | `src/` + unit tests | [[agents/coder]] |
-| Review file, fixes, e2e | [[agents/code-review]] |
+| Bugs in the asked diff, e2e for a new path in that slice | [[agents/code-review]] |
 | Vault indexes, stale links | [[agents/documenter]] |
 | Player strings, developer summary | [[agents/game-text-writer]] |
 

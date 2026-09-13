@@ -137,7 +137,6 @@ export function tickVfx(world: World, pouring: ReadonlySet<string>): boolean {
 }
 
 export function tickWorld(world: World, dt: number): void {
-  const beforeDay = world.nowDay()
   const seam = world.clock.advance(dt) === 'seam'
   if (seam) {
     world.seats.forEach(s => {
@@ -145,7 +144,7 @@ export function tickWorld(world: World, dt: number): void {
       s.workTotal = 0
       s.filling = false
     })
-    tickContracts(world, beforeDay, world.nowDay())
+    tickContracts(world, world.nowDay())
     const stipend = stipendOf(world.clock.day - 1)
     world.money += stipend
     const tax = world.tax()
@@ -211,7 +210,7 @@ export function tickWorld(world: World, dt: number): void {
   nets.tickWater(world, dt)
   tickFreshness(world, dt)
   tickBig(world, dt)
-  tickContracts(world, beforeDay, world.nowDay())
+  tickContracts(world, world.nowDay())
   STALL_IDS.forEach(id => {
     world.stall[id].sat = recover(world.stall[id].sat, dt)
   })

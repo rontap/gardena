@@ -2,6 +2,9 @@ import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import { PHASE_NAME } from '../sim/clock.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
+import { TREE_NAME } from '../defs/trees.ts'
+import { cropVariety } from '../defs/crops.ts'
+import { cropName } from '../sim/item.ts'
 import { prizeName } from './market.tsx'
 import { recapOutcome } from './recap.tsx'
 
@@ -32,4 +35,16 @@ test('prize names reuse names_*', () => {
   expect(prizeName({ kind: 'tool', tool: 'rotary-shovel' })).toBe(m.names_shovel_rotary_shovel())
   expect(prizeName({ kind: 'tool', tool: 'diamond-pickaxe' })).toBe(m.names_pickaxe_diamond_pickaxe())
   expect(prizeName({ kind: 'cash' })).toBe(m.market_cash())
+  expect(prizeName({ kind: 'tree-seed', tree: 'cherry', variety: 'base' })).toBe(
+    m.market_tree_seed({ tree: TREE_NAME.cherry() }),
+  )
+  expect(prizeName({ kind: 'seeds', crop: 'vanilla', variety: 'base', count: 1 })).toBe(
+    m.market_crop_seeds({ crop: cropName('vanilla') }),
+  )
+  expect(prizeName({ kind: 'tree-seed', tree: 'apple', variety: 'pink-lady' })).toBe(
+    m.market_tree_seed({ tree: cropVariety('apple', 'pink-lady') }),
+  )
+  expect(prizeName({ kind: 'seeds', crop: 'potato', variety: 'bintje', count: 2 })).toBe(
+    m.market_crop_seeds({ crop: cropVariety('potato', 'bintje') }),
+  )
 })

@@ -146,6 +146,7 @@ describe('notices.once', () => {
       stars: 1,
       day: 1,
       rep: 1,
+      lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
       outcome: { kind: 'done', paid: 10, prize: { kind: 'cash' } },
     })
     const rows = doneRows(w, { activeIds: [7], running: undefined })
@@ -161,6 +162,7 @@ describe('notices.once', () => {
       stars: 1,
       day: 1,
       rep: -1,
+      lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
       outcome: { kind: 'missed', sold: 0, penalty: 5 },
     })
     expect(doneRows(w, { activeIds: [7], running: undefined })).toEqual([])

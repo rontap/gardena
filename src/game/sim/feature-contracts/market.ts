@@ -13,7 +13,20 @@ import {
 } from '../../defs/items.ts'
 import { DOOR } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
-import { CASK_IDS, JAM_IDS, SPIRIT_KINDS, type CaskId, type JamCrop, type JamId, type SpiritKind, type StallGoodId } from '../ids.ts'
+import {
+  ANNUAL_IDS,
+  CASK_IDS,
+  JAM_IDS,
+  SPIRIT_KINDS,
+  TREE_IDS,
+  isAnnualId,
+  type CaskId,
+  type JamCrop,
+  type JamId,
+  type PlantCrop,
+  type SpiritKind,
+  type StallGoodId,
+} from '../ids.ts'
 import { makePickaxe, makeShovel, type Item } from '../item.ts'
 import { bakeSpiritSale } from '../feature-machines/machine.ts'
 import type {
@@ -31,11 +44,12 @@ import type {
   HistoryEntry,
   Lines,
   Prize,
+  PrizePool,
   Stars,
 } from './market.h.ts'
 import { isBakedStall, isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
 import { WEATHER_FRUIT_IMPACT } from '../../defs/weather.ts'
-import { tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
+import { VARIETIES, tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Rng, Spatial } from '../rng.ts'
 import type { World } from '../world.ts'
 
@@ -172,7 +186,7 @@ export const REP_LOST: { readonly [K in Stars]: number } = { 1: 1, 2: 2, 3: 3, 4
 
 export const REP_IDLE = 0.3
 
-export const STARTER_CROPS: readonly StallGoodId[] = ['carrot', 'potato', 'wheat']
+export const STARTER_CROPS: readonly PlantCrop[] = ['carrot', 'potato', 'wheat']
 
 export const D_STARTER = -1
 
@@ -598,27 +612,77 @@ function slotD(stream: Spatial, day: number, slot: number, rep: number): number 
 
 export const PRIZE_SLOTS = 2
 
-/**
- * The two slots that pay goods instead of money, as a distinct pair. Rolled per
- * day off the contract stream, so the board stays a pure function of the seed,
- * the day and reputation.
- *
- * Drawn from the base six, never from the live slot count: `broker` grows the
- * board and must not reshuffle the offers already on it. Broker's extra slots
- * are always cash.
- */
+export const PLAIN_TREE_POOL = TREE_IDS.map(tree => ({ tree, variety: 'base' as const }))
+
+export const NAMED_TREE_POOL = TREE_IDS.flatMap(tree =>
+  VARIETIES[tree].filter(v => tierOf(v) === 'variant').map(variety => ({ tree, variety })),
+)
+
+export const HEIRLOOM_TREE_POOL = TREE_IDS.flatMap(tree =>
+  VARIETIES[tree].filter(v => tierOf(v) === 'heirloom').map(variety => ({ tree, variety })),
+)
+
+export const NAMED_ANNUAL_POOL = ANNUAL_IDS.flatMap(crop => {
+  if (!isAnnualId(crop) || crop === 'grass') return []
+  return VARIETIES[crop].filter(v => tierOf(v) === 'variant').map(variety => ({ crop, variety }))
+})
+
+export const HEIRLOOM_ANNUAL_POOL = ANNUAL_IDS.flatMap(crop => {
+  if (!isAnnualId(crop) || crop === 'grass') return []
+  return VARIETIES[crop].filter(v => tierOf(v) === 'heirloom').map(variety => ({ crop, variety }))
+})
+
+export const FRUIT_ANNUAL_POOL = ANNUAL_IDS.flatMap(crop => {
+  if (!isAnnualId(crop) || crop === 'grass' || crop === 'vanilla' || CROPS[crop].cls !== 'fruit') return []
+  return [{ crop, variety: 'base' as const }]
+})
+
+export const STARTER_CROP_POOL = STARTER_CROPS.map(crop => ({ crop, variety: 'base' as const }))
+
+const TREE_POOLS = {
+  'plain-trees': PLAIN_TREE_POOL,
+  'named-trees': NAMED_TREE_POOL,
+  'heirloom-trees': HEIRLOOM_TREE_POOL,
+} as const
+
+const ANNUAL_POOLS = {
+  'named-annuals': NAMED_ANNUAL_POOL,
+  'heirloom-annuals': HEIRLOOM_ANNUAL_POOL,
+  'fruit-annuals': FRUIT_ANNUAL_POOL,
+  'starter-crops': STARTER_CROP_POOL,
+} as const
+
+function isTreePool(pool: PrizePool): pool is keyof typeof TREE_POOLS {
+  return pool === 'plain-trees' || pool === 'named-trees' || pool === 'heirloom-trees'
+}
+
+function takePool(pool: PrizePool, u: number, count: number | 'cash', reward: number): Prize {
+  if (isTreePool(pool)) {
+    const m = pick(TREE_POOLS[pool], u)
+    return { kind: 'tree-seed', tree: m.tree, variety: m.variety }
+  }
+  const m = pick(ANNUAL_POOLS[pool], u)
+  const n = count === 'cash' ? Math.ceil(reward / CROPS[m.crop].seed) : count
+  return { kind: 'seeds', crop: m.crop, variety: m.variety, count: n }
+}
+
 function prizeSlots(stream: Spatial, day: number): readonly number[] {
   const a = Math.floor(stream.at(day, 0, 30) * CONTRACT_OFFERS)
   const b = Math.floor(stream.at(day, 0, 31) * (CONTRACT_OFFERS - 1))
   return [a, b >= a ? b + 1 : b]
 }
 
-/** Resolves a company's fixed table entry, rolling the tool arm per offer. */
 function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
-  const p = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
-  if (p.kind !== 'tool') return p
-  const roll = stream.at(day, o.slot, 32)
-  return { kind: 'tool', tool: roll < 0.5 ? 'rotary-shovel' : 'diamond-pickaxe' }
+  const cell = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+  const u = stream.at(day, o.slot, 32)
+  if (cell.kind === 'tool') return { kind: 'tool', tool: u < 0.5 ? 'rotary-shovel' : 'diamond-pickaxe' }
+  if (cell.kind === 'pool') return takePool(cell.pool, u, cell.count, o.reward)
+  if (cell.kind === 'from-cash') return takePool(cell.pool, u, 'cash', o.reward)
+  if (cell.kind === 'pool-or-vanilla') {
+    if (u < 0.5) return takePool(cell.pool, stream.at(day, o.slot, 33), cell.count, o.reward)
+    return { kind: 'seeds', crop: 'vanilla', variety: 'base', count: cell.vanilla }
+  }
+  return cell
 }
 
 function withPrizes(stream: Spatial, day: number, offers: readonly ContractOffer[]): readonly ContractOffer[] {
@@ -776,7 +840,7 @@ function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: numbe
     return
   }
   if (prize.kind === 'seeds') {
-    w.putSilo(prize.crop, 'base', 0, prize.count)
+    w.putSilo(prize.crop, prize.variety, 0, prize.count)
     return
   }
   if (prize.kind === 'fertilizer') {
@@ -786,7 +850,7 @@ function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: numbe
   }
   const item: Item =
     prize.kind === 'tree-seed'
-      ? { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
+      ? { kind: 'tree-seed', tree: prize.tree, variety: prize.variety, quality: 0 }
       : prize.tool === 'rotary-shovel'
         ? makeShovel('rotary-shovel')
         : makePickaxe('diamond-pickaxe')
@@ -809,6 +873,7 @@ function resolveDone(w: World, a: Active): void {
     stars: a.offer.stars,
     day: w.clock.day,
     rep,
+    lines: a.offer.lines,
     outcome: { kind: 'done', paid: paidN, prize },
   })
   w.ping()
@@ -827,6 +892,7 @@ function resolveMiss(w: World, a: Active): void {
     stars: a.offer.stars,
     day: w.clock.day,
     rep,
+    lines: a.offer.lines,
     outcome: { kind: 'missed', sold, penalty },
   })
   w.ping()
@@ -839,9 +905,9 @@ export function finishFull(w: World): void {
     .forEach(a => resolveDone(w, a))
 }
 
-export function tickContracts(w: World, before: number, after: number): void {
+export function tickContracts(w: World, after: number): void {
   w.contracts.active
-    .filter(a => before < a.dueDay && after >= a.dueDay)
+    .filter(a => after >= a.dueDay)
     .slice()
     .forEach(a => {
       if (a.bins.every(b => b.filled === b.demand.amount)) resolveDone(w, a)
@@ -881,6 +947,7 @@ export function cancelContractBody(w: World, c: ContractId): void {
     stars: a.offer.stars,
     day: w.clock.day,
     rep,
+    lines: a.offer.lines,
     outcome: { kind: 'cancelled', sold, fee },
   })
   w.ping()

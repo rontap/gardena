@@ -9,13 +9,13 @@ import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
 import { caskName, cropName, jamJarName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { SAT_MAX_CUT, cancelFee, cutOf, demandGood, filledOf, needOf, REP_MAX, rollBoard } from '../sim/feature-contracts/market.ts'
-import type { Active, ContractOffer, Demand, DemandChip, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
+import type { Active, ContractOffer, Demand, DemandChip, HistoryEntry, MarketQuote, Outcome, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
 import { isCropStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, UI_PRICE_ARROW, faceGfx } from '../view/svgs.ts'
+import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, STAT_REPUTATION, symHref, UI_COIN, UI_PRICE_ARROW, faceGfx } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar, Btn, Coin, Label, Overlay, tabTriggerClass } from './frame.tsx'
-import { ItemFace } from './held.tsx'
+import { DashFace, ItemFace } from './held.tsx'
 import { useCycle } from './cycle.ts'
 
 type Tip = { title: string; description: ReactNode } | undefined
@@ -47,7 +47,7 @@ export function Market({
     <Overlay
       title={m.names_role_market()}
       onClose={onClose}
-      className="h-[min(40rem,calc(100vh-6rem))] w-[72rem]"
+      className="h-[min(732px,calc(100vh-6rem))] w-[72rem]"
       aside={tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} /> : undefined}
     >
       <Tabs.Root
@@ -114,28 +114,45 @@ export function Market({
         </Tabs.Content>
         {contracts && (
           <Tabs.Content value="contracts" className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center gap-2 px-1 pb-2 pt-1 text-sm">
-              <span className="text-ink/60">{m.market_reputation()}</span>
-              <span className="w-24">
-                <Bar value={world.contracts.rep / REP_MAX} color="bg-tier-2" />
+            <div className="my-3 flex w-56 shrink-0 items-center gap-2 bg-ink/6 px-2 py-1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5 shrink-0"
+                dangerouslySetInnerHTML={{ __html: STAT_REPUTATION }}
+              />
+              <span className="min-w-0 truncate text-sm font-semibold">{m.market_reputation()}</span>
+              <span className="ml-auto w-16 shrink-0">
+                <Bar value={world.contracts.rep / REP_MAX} color="bg-ripe" />
               </span>
             </div>
-            <div className="grid min-h-0 flex-1 grid-cols-2">
-            <div
-              className={`grid grid-cols-2 gap-2 overflow-hidden border-r border-ink/20 ${slots >= 7 ? 'grid-rows-4' : 'grid-rows-3'}`}
-            >
-              {board.map(offer => (
-                <OfferCard
-                  key={offer.id}
-                  offer={offer}
-                  atCap={atCap}
-                  cap={cap}
-                  onTip={setTip}
-                  onAccept={() => world.acceptContract(offer.id)}
-                />
-              ))}
+            <div className="grid shrink-0 grid-cols-2">
+              <div className="pr-4">
+                <Label>{m.market_available({ n: board.length })}</Label>
+              </div>
+              <div className="pl-4">
+                <Label>{m.market_taken({ n: world.contracts.active.length, max: cap })}</Label>
+              </div>
             </div>
-            <ContractsRight world={world} nowDay={nowDay} onTip={setTip} />
+            <div className="grid min-h-0 flex-1 grid-cols-2">
+              <div className="scroll-pane min-h-0 overflow-y-auto border-r border-ink/20 pr-4">
+                {board.length === 0 ? (
+                  <div className="px-1 text-sm text-ink/55">{m.market_no_available()}</div>
+                ) : (
+                  <div className="grid auto-rows-min grid-cols-2 gap-2">
+                    {board.map(offer => (
+                      <OfferCard
+                        key={offer.id}
+                        offer={offer}
+                        atCap={atCap}
+                        cap={cap}
+                        onTip={setTip}
+                        onAccept={() => world.acceptContract(offer.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <ContractsRight world={world} nowDay={nowDay} onTip={setTip} />
             </div>
           </Tabs.Content>
         )}
@@ -183,25 +200,15 @@ export function OfferCard({
   onAccept: () => void
 }) {
   const grey = atCap
-  const body = (
-    <>
-      <HeaderRow offer={offer} />
-      {offer.lines.map((line, i) => (
-        <AmountRow key={i} demand={line} count={line.amount} />
-      ))}
-      <div className="text-sm">{offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })}</div>
-      <div>
-        {offer.prize.kind === 'cash' ? <Coin n={offer.reward} /> : <PrizeChip prize={offer.prize} />}
-      </div>
-    </>
-  )
   const enter = () => onTip(offerHover(offer, atCap, cap))
   const leave = () => onTip(undefined)
   return (
     <button
       type="button"
-      className={`bg-ink/6 px-3 py-2 flex flex-col gap-1 text-left ${
-        grey ? 'text-ink/35' : 'cursor-pointer hover:bg-ink/12 active:bg-ink/20'
+      className={`flex flex-col gap-1.5 p-3 text-left ${
+        grey
+          ? 'bg-ink/6 text-ink/35'
+          : 'cursor-pointer border border-[#444] bg-parch hover:bg-ink/6 active:bg-ink/12'
       }`}
       aria-disabled={grey || undefined}
       onPointerEnter={enter}
@@ -211,9 +218,27 @@ export function OfferCard({
         onAccept()
       }}
     >
-      {body}
+      <HeaderRow offer={offer} />
+      {offer.lines.map((line, i) => (
+        <AmountRow key={i} demand={line} count={line.amount} />
+      ))}
+      <CardFoot>
+        <div className="text-sm tabular-nums text-ink/60">
+          {offer.days === 1 ? m.market_deadline_one() : m.market_deadline({ n: offer.days })}
+        </div>
+        <Rule />
+        <Reward prize={offer.prize} reward={offer.reward} />
+      </CardFoot>
     </button>
   )
+}
+
+function CardFoot({ children }: { children: ReactNode }) {
+  return <div className="mt-auto flex w-full flex-col gap-1.5 pt-1.5">{children}</div>
+}
+
+function Rule() {
+  return <div className="border-t border-ink/15" />
 }
 
 export function prizeName(prize: Prize): string {
@@ -251,21 +276,43 @@ function flat(prize: Prize): prize is Prize & { kind: FlatPrize } {
   return prize.kind === 'expansion-slot' || prize.kind === 'skill-points' || prize.kind === 'freezer'
 }
 
+function PrizeFace({ prize }: { prize: Prize }) {
+  const item = prizeItem(prize)
+  return item !== undefined ? (
+    <DashFace item={item} />
+  ) : (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6 shrink-0"
+      dangerouslySetInnerHTML={{ __html: flat(prize) ? PRIZE_ART[prize.kind] : '' }}
+    />
+  )
+}
+
 export function PrizeChip({ prize }: { prize: Prize }) {
   if (prize.kind === 'cash') return null
-  const item = prizeItem(prize)
   return (
-    <span className="flex items-center gap-1 text-ripe">
-      {item !== undefined ? (
-        <ItemFace item={item} />
-      ) : (
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5 shrink-0"
-          dangerouslySetInnerHTML={{ __html: flat(prize) ? PRIZE_ART[prize.kind] : '' }}
-        />
-      )}
-      <span>{prizeName(prize)}</span>
+    <span className="flex min-w-0 items-center gap-2">
+      <PrizeFace prize={prize} />
+      <span className="truncate">{prizeName(prize)}</span>
+    </span>
+  )
+}
+
+function CoinFace() {
+  return (
+    <svg viewBox="0 0 12 12" className="h-6 w-6 shrink-0">
+      <use href={symHref(UI_COIN)} />
+    </svg>
+  )
+}
+
+function Reward({ prize, reward }: { prize: Prize; reward: number }) {
+  if (prize.kind !== 'cash') return <PrizeChip prize={prize} />
+  return (
+    <span className="flex items-center gap-2 tabular-nums">
+      <CoinFace />
+      <span>{Math.round(reward)}</span>
     </span>
   )
 }
@@ -287,25 +334,34 @@ export function Difficulty({ stars }: { stars: Stars }) {
   )
 }
 
-function HeaderRow({ offer }: { offer: { company: ContractOffer['company']; stars: ContractOffer['stars'] } }) {
+function HeaderRow({
+  offer,
+  actions,
+}: {
+  offer: { company: ContractOffer['company']; stars: ContractOffer['stars'] }
+  actions?: ReactNode
+}) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2">
+    <div className="flex w-full items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <svg
           viewBox="0 0 24 24"
           className="h-6 w-6 shrink-0"
           dangerouslySetInnerHTML={{ __html: COMPANY[offer.company] }}
         />
-        <span className="text-sm font-semibold">{COMPANIES[offer.company].name}</span>
+        <span className="truncate text-sm font-semibold">{COMPANIES[offer.company].name}</span>
       </div>
-      <Difficulty stars={offer.stars} />
+      <div className="flex shrink-0 items-center gap-2">
+        <Difficulty stars={offer.stars} />
+        {actions}
+      </div>
     </div>
   )
 }
 
 function AmountRow({ demand, count }: { demand: Demand; count: number }) {
   return (
-    <div className="flex items-center gap-2 text-base font-semibold">
+    <div className="flex w-full min-w-0 items-center gap-2 text-base font-semibold">
       {demandFace(demand, count)}
       <span className="truncate">{demandName(demand)}</span>
     </div>
@@ -330,6 +386,11 @@ function demandFace(demand: Demand, count: number) {
       <ItemFace item={demandItem(demand, count)} />
     )
   return face
+}
+
+function anyJamAsJar(demand: Demand): Demand {
+  if (demand.kind !== 'group' || demand.group !== 'jam') return demand
+  return { kind: 'plain', good: `jam-${JAM_CROPS[0]}` as StallGoodId, amount: demand.amount }
 }
 
 export function demandItem(demand: Demand, count: number): Item {
@@ -377,22 +438,27 @@ function ContractsRight({
   nowDay: number
   onTip: (tip: Tip) => void
 }) {
-  const empty = world.contracts.active.length === 0 && world.contracts.history.length === 0
-  if (empty) {
-    return <div className="flex items-center justify-center text-sm text-ink/50">{m.market_no_running()}</div>
-  }
   return (
-    <div className="flex min-h-0 flex-col overflow-y-auto scroll-pane">
-      <div className="flex flex-col gap-2">
-        {world.contracts.active.map(a => (
-          <ActiveCard key={a.offer.id} active={a} nowDay={nowDay} world={world} onTip={onTip} />
-        ))}
-      </div>
-      <div className="mt-2 flex flex-col gap-1">
-        {world.contracts.history.map(e => (
-          <HistoryLine key={`${e.id}-${e.day}-${e.outcome.kind}`} entry={e} />
-        ))}
-      </div>
+    <div className="scroll-pane flex min-h-0 flex-col overflow-y-auto pl-4">
+      {world.contracts.active.length === 0 ? (
+        <div className="px-1 text-sm text-ink/55">{m.market_no_running()}</div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {world.contracts.active.map(a => (
+            <ActiveCard key={a.offer.id} active={a} nowDay={nowDay} world={world} onTip={onTip} />
+          ))}
+        </div>
+      )}
+      {world.contracts.history.length > 0 && (
+        <>
+          <Label>{m.market_finished()}</Label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {world.contracts.history.map(e => (
+              <HistoryChip key={`${e.id}-${e.day}-${e.outcome.kind}`} entry={e} onTip={onTip} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -408,71 +474,66 @@ function ActiveCard({
   world: World
   onTip: (tip: Tip) => void
 }) {
-  const [armed, setArmed] = useState(false)
   const need = needOf(active)
   const filled = filledOf(active)
   const left = active.dueDay - nowDay
   const fee = cancelFee(active, nowDay)
   return (
-    <div className="relative bg-ink/6 px-3 py-2 flex flex-col gap-1">
-      <button
-        type="button"
-        aria-label={m.market_cancel()}
-        className={`absolute top-1 right-1 cursor-pointer text-lg ${
-          armed ? 'bg-ink text-house' : 'text-ink/60 hover:bg-dirt hover:text-house'
-        }`}
-        onPointerEnter={() =>
-          onTip({
-            title: COMPANIES[active.offer.company].name,
-            description: (
-              <>
-                {m.market_cancelling()}
-                <Coin n={fee} />
-                {m.market_penalty()}
-              </>
-            ),
-          })
+    <div className="flex flex-col gap-1.5 bg-ink/6 p-3">
+      <HeaderRow
+        offer={active.offer}
+        actions={
+          <>
+            <div className="flex flex-col">
+              <button
+                type="button"
+                className="cursor-pointer px-1 text-sm leading-none"
+                onClick={() => world.reorderContract(active.offer.id, -1)}
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                className="cursor-pointer px-1 text-sm leading-none"
+                onClick={() => world.reorderContract(active.offer.id, 1)}
+              >
+                ▼
+              </button>
+            </div>
+            <button
+              type="button"
+              title={m.market_cancel()}
+              aria-label={m.market_cancel()}
+              className="cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
+              onPointerEnter={() =>
+                onTip({
+                  title: COMPANIES[active.offer.company].name,
+                  description: (
+                    <>
+                      {m.market_cancelling()}
+                      <Coin n={fee} />
+                      {m.market_penalty()}
+                    </>
+                  ),
+                })
+              }
+              onPointerLeave={() => onTip(undefined)}
+              onClick={() => world.cancelContract(active.offer.id)}
+            >
+              ×
+            </button>
+          </>
         }
-        onPointerLeave={() => onTip(undefined)}
-        onClick={() => {
-          if (!armed) {
-            setArmed(true)
-            return
-          }
-          world.cancelContract(active.offer.id)
-        }}
-      >
-        ×
-      </button>
-      <div className="flex items-start gap-2 pr-6">
-        <div className="min-w-0 flex-1 flex flex-col gap-1">
-          <HeaderRow offer={active.offer} />
-          {active.bins.map((bin, i) => (
-            <AmountRow key={i} demand={bin.demand} count={bin.demand.amount - bin.filled} />
-          ))}
-        </div>
-        <div className="flex shrink-0 flex-col">
-          <button
-            type="button"
-            className="cursor-pointer px-1 text-sm leading-none"
-            onClick={() => world.reorderContract(active.offer.id, -1)}
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            className="cursor-pointer px-1 text-sm leading-none"
-            onClick={() => world.reorderContract(active.offer.id, 1)}
-          >
-            ▼
-          </button>
-        </div>
-      </div>
-      <div className="text-sm tabular-nums">{m.market_days_left({ n: left.toFixed(1) })}</div>
-      <div>
-        {active.offer.prize.kind === 'cash' ? <Coin n={active.offer.reward} /> : <PrizeChip prize={active.offer.prize} />}
-      </div>
-      <Bar value={filled / need} color="bg-leaf" track="bg-ink/25" />
+      />
+      {active.bins.map((bin, i) => (
+        <AmountRow key={i} demand={bin.demand} count={bin.demand.amount - bin.filled} />
+      ))}
+      <CardFoot>
+        <div className="text-sm tabular-nums text-ink/60">{m.market_deadline({ n: left.toFixed(1) })}</div>
+        <Bar value={filled / need} color="bg-leaf" track="bg-ink/25" />
+        <Rule />
+        <Reward prize={active.offer.prize} reward={active.offer.reward} />
+      </CardFoot>
     </div>
   )
 }
@@ -500,24 +561,56 @@ export function RepChange({ rep }: { rep: number }) {
   )
 }
 
-function HistoryLine({ entry }: { entry: HistoryEntry }) {
+const OUTCOME_TINT: { readonly [K in Outcome['kind']]: string } = {
+  done: 'bg-leaf/30',
+  missed: 'bg-roof/30',
+  cancelled: 'bg-roof/30',
+}
+
+function RepAmount({ rep }: { rep: number }) {
+  if (rep === 0) return null
+  const n = Math.round(Math.abs(rep) * 10) / 10
+  return (
+    <span className="flex shrink-0 items-center gap-1 tabular-nums">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 shrink-0"
+        dangerouslySetInnerHTML={{ __html: STAT_REPUTATION }}
+      />
+      <span>{`${rep > 0 ? '+' : '−'}${Number.isInteger(n) ? n : n.toFixed(1)}`}</span>
+    </span>
+  )
+}
+
+function HistoryChip({ entry, onTip }: { entry: HistoryEntry; onTip: (tip: Tip) => void }) {
   const outcome =
     entry.outcome.kind === 'done' ? m.recap_completed() : entry.outcome.kind === 'missed' ? m.recap_missed() : m.recap_cancelled()
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span>{COMPANIES[entry.company].name}</span>
-      <Difficulty stars={entry.stars} />
-      <span>{entry.day}</span>
-      <span>{outcome}</span>
-      <RepChange rep={entry.rep} />
-      <span className="ml-auto">
+    <div
+      className={`flex items-center gap-2 px-2 py-1 text-sm ${OUTCOME_TINT[entry.outcome.kind]}`}
+      onPointerEnter={() =>
+        onTip({
+          title: COMPANIES[entry.company].name,
+          description: `${outcome}\n${m.hud_day({ day: entry.day })}\n${m.market_difficulty({ n: entry.stars })}`,
+        })
+      }
+      onPointerLeave={() => onTip(undefined)}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5 shrink-0"
+        dangerouslySetInnerHTML={{ __html: COMPANY[entry.company] }}
+      />
+      {entry.lines.map((line, i) => (
+        <DashFace key={i} item={demandItem(anyJamAsJar(line), line.amount)} />
+      ))}
+      <span className="ml-auto flex min-w-0 items-center gap-2">
+        <RepAmount rep={entry.rep} />
         <OutcomePay entry={entry} />
       </span>
     </div>
   )
 }
-
-const DEMAND_COLS = 6
 
 function demandArrow(shown: number, cap: number, sat: number, size: string) {
   const tint = priceTint(shown, cap, sat)

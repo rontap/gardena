@@ -55,7 +55,7 @@ Done: <one line>
 
 `game-text-writer` Read list includes `docs/standards/user-facing-text.md`. Do not paste it.
 
-Code-review: unique `docs/.review-<id>.md`. It edits source and writes e2e. Delete that file after a clean run.
+Code-review: git diff vs the asked write list. Fix bugs in that diff. No `docs/.review-*.md`. e2e only for a new path the asked change added.
 
 Versions and player changelog (`wordmark`, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `changelogs-*.md`): orchestrator only, unless the user explicitly allowed a named child.
 

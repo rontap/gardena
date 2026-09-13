@@ -1,7 +1,9 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { CROPS } from '../../defs/crops.ts'
+import { VARIETIES, tierOf } from '../../defs/varieties.ts'
 import { COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
+import { ANNUAL_IDS, TREE_IDS, isAnnualId } from '../ids.ts'
 import { PAD } from '../building.ts'
 import { Act } from '../log.ts'
 import { permit } from '../mp.ts'
@@ -9,7 +11,7 @@ import { Plant } from '../plant.ts'
 import { dump, parse } from '../feature-save/save.ts'
 import { Soil, WEED_CHANCE } from '../soil.ts'
 import { DAY_SECONDS } from '../clock.ts'
-import type { Active, ContractOffer, Demand, Lines } from './market.h.ts'
+import type { Active, ContractOffer, Demand, Lines, Prize, PrizePool } from './market.h.ts'
 import {
   AMOUNT_MIN,
   CANCEL_MIN,
@@ -40,6 +42,13 @@ import {
   DEADLINE_DAYS,
   DEADLINE_STEP,
   PRIZE_SLOTS,
+  FRUIT_ANNUAL_POOL,
+  HEIRLOOM_ANNUAL_POOL,
+  HEIRLOOM_TREE_POOL,
+  NAMED_ANNUAL_POOL,
+  NAMED_TREE_POOL,
+  PLAIN_TREE_POOL,
+  STARTER_CROP_POOL,
   load,
   Accepts,
   cancelFee,
@@ -50,6 +59,7 @@ import {
   recover,
   saleUnits,
   rollBoard,
+  rollBoardAtD,
   scale,
 } from './market.ts'
 import { Rng } from '../rng.ts'
@@ -175,7 +185,7 @@ describe('contracts', () => {
   test('A contract whose prize is not cash pays the goods and no money at all.', () => {
     const w = new World(1)
     const active = carrotActive(0, 10)
-    const offer = { ...active.offer, prize: { kind: 'tree-seed', tree: 'cherry' } as const }
+    const offer = { ...active.offer, prize: { kind: 'tree-seed', tree: 'cherry', variety: 'base' } as const }
     w.contracts.active.push({ ...active, offer })
     const money = w.money
     const drops = w.drops.length
@@ -715,21 +725,42 @@ describe('market.sell', () => {
 })
 
 describe('prizes', () => {
-  test('Exactly `PRIZE_SLOTS` offers per board pay goods, and they are drawn from the base six so `broker` slots never reshuffle them.', () => {
+  test('contracts.prize', () => {
+    const tools = new Set<string>()
     for (const seed of [1, 7, 99, 12345]) {
       for (const day of [0, 1, 5, 12, 24, 40]) {
         const six = rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0)
         const prized = six.filter(o => o.prize.kind !== 'cash')
         expect(prized).toHaveLength(PRIZE_SLOTS)
+        expect(prized.every(o => o.slot < CONTRACT_OFFERS)).toBe(true)
         expect(new Set(prized.map(o => o.slot)).size).toBe(PRIZE_SLOTS)
         const eight = rollBoard(new Rng(seed), day, CONTRACT_SLOT_MAX, 0)
         expect(eight.slice(0, CONTRACT_OFFERS)).toEqual(six)
         expect(eight.slice(CONTRACT_OFFERS).every(o => o.prize.kind === 'cash')).toBe(true)
+        prized.forEach(o => {
+          const cell = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+          if (cell.kind === 'tool') {
+            expect(o.prize.kind).toBe('tool')
+            if (o.prize.kind === 'tool') tools.add(o.prize.tool)
+            return
+          }
+          if (cell.kind === 'tree-seed' || cell.kind === 'fertilizer' || cell.kind === 'freezer' || cell.kind === 'expansion-slot' || cell.kind === 'skill-points') {
+            expect(o.prize).toEqual(cell)
+            return
+          }
+          if (cell.kind === 'pool' || cell.kind === 'from-cash') {
+            expect(inPool(cell.pool, o.prize, cell.kind === 'from-cash' ? 'cash' : cell.count, o.reward)).toBe(true)
+            return
+          }
+          expect(
+            (o.prize.kind === 'seeds' && o.prize.crop === 'vanilla' && o.prize.variety === 'base' && o.prize.count === cell.vanilla) ||
+              inPool(cell.pool, o.prize, cell.count, o.reward),
+          ).toBe(true)
+        })
       }
     }
-  })
-
-  test('The prize is a pure function of seed, day and rep, like the rest of the board.', () => {
+    expect(tools.has('rotary-shovel')).toBe(true)
+    expect(tools.has('diamond-pickaxe')).toBe(true)
     for (const rep of [0, 5, REP_MAX]) {
       const a = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)
       const b = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)
@@ -737,20 +768,118 @@ describe('prizes', () => {
     }
   })
 
-  test("A prized offer carries its company's fixed entry for the band of its final difficulty. Only the rolled tool varies.", () => {
-    for (const seed of [1, 7, 99]) {
-      for (const day of [0, 4, 16, 30, 44]) {
-        rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0).forEach(o => {
-          if (o.prize.kind === 'cash') return
-          const want = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
-          if (want.kind === 'tool') {
-            expect(o.prize.kind).toBe('tool')
-            return
+  test('contracts.prize-pool', () => {
+    expect(PLAIN_TREE_POOL.map(m => m.tree)).toEqual([...TREE_IDS])
+    expect(PLAIN_TREE_POOL.every(m => m.variety === 'base')).toBe(true)
+    expect(NAMED_TREE_POOL.map(m => m.tree).sort()).toEqual(TREE_IDS.filter(t => hasTier(t, 'variant')).slice().sort())
+    expect(HEIRLOOM_TREE_POOL.map(m => m.tree).sort()).toEqual(TREE_IDS.filter(t => hasTier(t, 'heirloom')).slice().sort())
+    expect(NAMED_TREE_POOL.some(m => m.tree === 'cherry')).toBe(false)
+    expect(HEIRLOOM_TREE_POOL.some(m => m.tree === 'olive')).toBe(false)
+    const namedAnnuals = ANNUAL_IDS.filter(c => isAnnualId(c) && hasTier(c, 'variant'))
+    const heirloomAnnuals = ANNUAL_IDS.filter(c => isAnnualId(c) && hasTier(c, 'heirloom'))
+    expect(NAMED_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(namedAnnuals.slice().sort())
+    expect(HEIRLOOM_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(heirloomAnnuals.slice().sort())
+    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
+    expect(HEIRLOOM_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
+    expect(FRUIT_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
+    expect(STARTER_CROP_POOL.some(m => m.crop === 'vanilla')).toBe(false)
+    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'potato')).toBe(true)
+    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'wheat')).toBe(true)
+    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'raspberry')).toBe(false)
+    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'carrot')).toBe(false)
+    expect(FRUIT_ANNUAL_POOL.every(m => m.variety === 'base' && CROPS[m.crop].cls === 'fruit')).toBe(true)
+    for (const seed of [1, 7, 99, 12345, 555]) {
+      for (const day of [0, 8, 24, 40, 80]) {
+        for (const D of [0, 8, 20, 30, 40]) {
+          ;[...rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0), ...rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS)].forEach(o => {
+            if (o.company === 'halbert-eijn' || o.company === 'intercrop') {
+              expect(o.prize.kind).not.toBe('tree-seed')
+            }
+            if (o.prize.kind === 'seeds') {
+              expect(o.prize.crop).not.toBe('grass')
+              if (o.prize.crop === 'vanilla') return
+              const p = o.prize
+              const pools = [...NAMED_ANNUAL_POOL, ...HEIRLOOM_ANNUAL_POOL, ...FRUIT_ANNUAL_POOL, ...STARTER_CROP_POOL]
+              expect(pools.some(m => m.crop === p.crop && m.variety === p.variety)).toBe(true)
+            }
+          })
+        }
+      }
+    }
+  })
+
+  test('contracts.prize-vanilla', () => {
+    const seen: { company: string; count: number; reward: number }[] = []
+    for (const seed of [1, 7, 99, 12345, 555, 42, 1001, 777, 2024]) {
+      for (const D of [30, 32, 36, 40, 50, 60]) {
+        rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS).forEach(o => {
+          if (o.prize.kind !== 'seeds' || o.prize.crop !== 'vanilla') return
+          expect(o.prize.variety).toBe('base')
+          expect(prizeBandOf(o.difficulty)).toBe(3)
+          if (o.company === 'whole-cart') expect(o.prize.count).toBe(1)
+          else {
+            expect(o.company).toBe('intercrop')
+            expect(o.prize.count).toBe(2)
           }
-          expect(o.prize).toEqual(want)
+          seen.push({ company: o.company, count: o.prize.count, reward: o.reward })
+        })
+      }
+      for (const day of [0, 4, 12, 24]) {
+        rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0).forEach(o => {
+          if (o.prize.kind !== 'seeds' || o.prize.crop !== 'vanilla') return
+          expect(prizeBandOf(o.difficulty)).toBe(3)
+          expect(o.company === 'whole-cart' || o.company === 'intercrop').toBe(true)
         })
       }
     }
+    expect(seen.some(s => s.company === 'whole-cart' && s.count === 1)).toBe(true)
+    expect(seen.some(s => s.company === 'intercrop' && s.count === 2)).toBe(true)
+    expect(seen.some(s => s.count !== Math.ceil(s.reward / CROPS.vanilla.seed))).toBe(true)
+  })
+
+  test('contracts.prize-item', () => {
+    for (const seed of [1, 7, 99, 12345]) {
+      for (const day of [0, 8, 24, 40]) {
+        for (const D of [0, 8, 20, 30, 40]) {
+          ;[...rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0), ...rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS)].forEach(o => {
+            if (o.prize.kind === 'tree-seed') {
+              expect(o.prize.variety).toBeDefined()
+              expect(VARIETIES[o.prize.tree].includes(o.prize.variety)).toBe(true)
+            }
+            if (o.prize.kind === 'seeds') {
+              expect(o.prize.crop).not.toBe('grass')
+              expect(isAnnualId(o.prize.crop)).toBe(true)
+              expect(o.prize.variety).toBeDefined()
+              expect(o.prize.count).toBeGreaterThan(0)
+              expect(VARIETIES[o.prize.crop].includes(o.prize.variety)).toBe(true)
+              if (o.prize.crop !== 'vanilla' && o.prize.variety === 'base') {
+                expect(o.prize.count).toBe(Math.ceil(o.reward / CROPS[o.prize.crop].seed))
+              }
+            }
+          })
+        }
+      }
+    }
+    const tree = new World(1)
+    const treeActive = carrotActive(0, 10)
+    tree.contracts.active.push({
+      ...treeActive,
+      offer: { ...treeActive.offer, prize: { kind: 'tree-seed', tree: 'apple', variety: 'pink-lady' } },
+    })
+    dropFruit(tree, 'carrot', 4)
+    expect(tree.drops[tree.drops.length - 1].item).toEqual({ kind: 'tree-seed', tree: 'apple', variety: 'pink-lady', quality: 0 })
+    const seeds = new World(1)
+    const seedActive = carrotActive(0, 10)
+    seeds.contracts.active.push({
+      ...seedActive,
+      offer: { ...seedActive.offer, prize: { kind: 'seeds', crop: 'potato', variety: 'bintje', count: 4 } },
+    })
+    const before = seeds.silo.seeds.find(st => st.crop === 'potato' && st.variety === 'bintje')
+    const had = before === undefined ? 0 : before.count
+    dropFruit(seeds, 'carrot', 4)
+    const st = seeds.silo.seeds.find(s => s.crop === 'potato' && s.variety === 'bintje')
+    expect(st?.quality).toBe(0)
+    expect(st?.count).toBe(had + 4)
   })
 
   test('Bands split on final difficulty at 8 / 20 / 30.', () => {
@@ -780,3 +909,25 @@ describe('prizes', () => {
     expect(load(40) / load(20)).toBeGreaterThan(load(20) / load(8))
   })
 })
+
+function hasTier(crop: (typeof ANNUAL_IDS)[number] | (typeof TREE_IDS)[number], tier: 'variant' | 'heirloom'): boolean {
+  return VARIETIES[crop].some(v => tierOf(v) === tier)
+}
+
+function inPool(pool: PrizePool, prize: Prize, count: number | 'cash', reward: number): boolean {
+  if (pool === 'plain-trees' || pool === 'named-trees' || pool === 'heirloom-trees') {
+    const xs = pool === 'plain-trees' ? PLAIN_TREE_POOL : pool === 'named-trees' ? NAMED_TREE_POOL : HEIRLOOM_TREE_POOL
+    return prize.kind === 'tree-seed' && xs.some(m => m.tree === prize.tree && m.variety === prize.variety)
+  }
+  const xs =
+    pool === 'named-annuals'
+      ? NAMED_ANNUAL_POOL
+      : pool === 'heirloom-annuals'
+        ? HEIRLOOM_ANNUAL_POOL
+        : pool === 'fruit-annuals'
+          ? FRUIT_ANNUAL_POOL
+          : STARTER_CROP_POOL
+  if (prize.kind !== 'seeds') return false
+  const n = count === 'cash' ? Math.ceil(reward / CROPS[prize.crop].seed) : count
+  return xs.some(m => m.crop === prize.crop && m.variety === prize.variety) && prize.count === n
+}

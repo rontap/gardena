@@ -1,8 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import type { CompanyId, Prize, PrizeBand } from '../sim/feature-contracts/market.h.ts'
-
-/** One pack's worth. Vanilla has no shop pack; this is the only source. */
-export const VANILLA_PRIZE_SEEDS = 5
+import type { CompanyId, PrizeBand, PrizeTemplate } from '../sim/feature-contracts/market.h.ts'
 
 export type Company = {
   id: CompanyId
@@ -29,10 +26,6 @@ export const COMPANIES: { readonly [K in CompanyId]: Company } = {
   intercrop: { id: 'intercrop', name: m.names_company_intercrop(), riff: 'Interspar HU', region: 'HU' },
 }
 
-/**
- * Lower bound of each prize band, read against an offer's *final* difficulty.
- * Bands are `[0,8) [8,20) [20,30) [30,∞)`.
- */
 export const PRIZE_BAND_MIN: readonly [number, number, number, number] = [0, 8, 20, 30]
 
 export function prizeBandOf(difficulty: number): PrizeBand {
@@ -42,48 +35,41 @@ export function prizeBandOf(difficulty: number): PrizeBand {
   return 0
 }
 
-/**
- * What each firm hands over, by band. Fixed per company, never rolled — only
- * *which* two slots pay a prize is rolled. Six firms share three columns:
- * tree-seeds-and-rarities, buildings-and-land, and the household column.
- *
- * The `tool` arm here is a template; `market.ts` rolls the actual tool per offer.
- */
-export const COMPANY_PRIZES: { readonly [K in CompanyId]: readonly [Prize, Prize, Prize, Prize] } = {
+export const COMPANY_PRIZES: { readonly [K in CompanyId]: readonly [PrizeTemplate, PrizeTemplate, PrizeTemplate, PrizeTemplate] } = {
   'whole-cart': [
-    { kind: 'tree-seed', tree: 'cherry' },
-    { kind: 'tree-seed', tree: 'apricot' },
-    { kind: 'seeds', crop: 'vanilla', count: VANILLA_PRIZE_SEEDS },
-    { kind: 'tool', tool: 'rotary-shovel' },
+    { kind: 'tree-seed', tree: 'cherry', variety: 'base' },
+    { kind: 'tree-seed', tree: 'apricot', variety: 'base' },
+    { kind: 'pool', pool: 'named-trees', count: 1 },
+    { kind: 'pool-or-vanilla', pool: 'heirloom-trees', count: 1, vanilla: 1 },
   ],
   'little-lid': [
-    { kind: 'tree-seed', tree: 'cherry' },
-    { kind: 'tree-seed', tree: 'apricot' },
-    { kind: 'seeds', crop: 'vanilla', count: VANILLA_PRIZE_SEEDS },
-    { kind: 'tool', tool: 'rotary-shovel' },
+    { kind: 'tree-seed', tree: 'apple', variety: 'base' },
+    { kind: 'tree-seed', tree: 'olive', variety: 'base' },
+    { kind: 'pool', pool: 'plain-trees', count: 1 },
+    { kind: 'pool', pool: 'named-trees', count: 1 },
   ],
   'trade-jo': [
-    { kind: 'tree-seed', tree: 'apple' },
-    { kind: 'tree-seed', tree: 'olive' },
-    { kind: 'freezer' },
-    { kind: 'expansion-slot' },
+    { kind: 'tree-seed', tree: 'apple', variety: 'base' },
+    { kind: 'tree-seed', tree: 'cherry', variety: 'base' },
+    { kind: 'skill-points', n: 1 },
+    { kind: 'tool' },
   ],
   mercanova: [
-    { kind: 'tree-seed', tree: 'apple' },
-    { kind: 'tree-seed', tree: 'olive' },
+    { kind: 'fertilizer' },
     { kind: 'freezer' },
+    { kind: 'skill-points', n: 1 },
     { kind: 'expansion-slot' },
   ],
   'halbert-eijn': [
-    { kind: 'fertilizer' },
-    { kind: 'skill-points', n: 1 },
-    { kind: 'skill-points', n: 2 },
-    { kind: 'skill-points', n: 3 },
+    { kind: 'from-cash', pool: 'fruit-annuals' },
+    { kind: 'pool', pool: 'named-annuals', count: 2 },
+    { kind: 'pool', pool: 'heirloom-annuals', count: 1 },
+    { kind: 'tool' },
   ],
   intercrop: [
-    { kind: 'fertilizer' },
-    { kind: 'skill-points', n: 1 },
-    { kind: 'skill-points', n: 2 },
-    { kind: 'skill-points', n: 3 },
+    { kind: 'from-cash', pool: 'starter-crops' },
+    { kind: 'from-cash', pool: 'fruit-annuals' },
+    { kind: 'pool', pool: 'named-annuals', count: 4 },
+    { kind: 'pool-or-vanilla', pool: 'heirloom-annuals', count: 2, vanilla: 2 },
   ],
 }

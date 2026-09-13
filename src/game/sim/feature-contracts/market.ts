@@ -656,14 +656,19 @@ function isTreePool(pool: PrizePool): pool is keyof typeof TREE_POOLS {
   return pool === 'plain-trees' || pool === 'named-trees' || pool === 'heirloom-trees'
 }
 
-function takePool(pool: PrizePool, u: number, count: number | 'cash', reward: number): Prize {
+function takeAt(pool: PrizePool, i: number, count: number | 'cash', reward: number): Prize {
   if (isTreePool(pool)) {
-    const m = pick(TREE_POOLS[pool], u)
+    const m = TREE_POOLS[pool][i]
     return { kind: 'tree-seed', tree: m.tree, variety: m.variety }
   }
-  const m = pick(ANNUAL_POOLS[pool], u)
+  const m = ANNUAL_POOLS[pool][i]
   const n = count === 'cash' ? Math.ceil(reward / CROPS[m.crop].seed) : count
   return { kind: 'seeds', crop: m.crop, variety: m.variety, count: n }
+}
+
+function takePool(pool: PrizePool, u: number, count: number | 'cash', reward: number): Prize {
+  const xs = isTreePool(pool) ? TREE_POOLS[pool] : ANNUAL_POOLS[pool]
+  return takeAt(pool, Math.floor(u * xs.length), count, reward)
 }
 
 function prizeSlots(stream: Spatial, day: number): readonly number[] {
@@ -679,8 +684,10 @@ function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
   if (cell.kind === 'pool') return takePool(cell.pool, u, cell.count, o.reward)
   if (cell.kind === 'from-cash') return takePool(cell.pool, u, 'cash', o.reward)
   if (cell.kind === 'pool-or-vanilla') {
-    if (u < 0.5) return takePool(cell.pool, stream.at(day, o.slot, 33), cell.count, o.reward)
-    return { kind: 'seeds', crop: 'vanilla', variety: 'base', count: cell.vanilla }
+    const xs = isTreePool(cell.pool) ? TREE_POOLS[cell.pool] : ANNUAL_POOLS[cell.pool]
+    const i = Math.floor(u * (xs.length + 1))
+    if (i === xs.length) return { kind: 'seeds', crop: 'vanilla', variety: 'base', count: cell.vanilla }
+    return takeAt(cell.pool, i, cell.count, o.reward)
   }
   return cell
 }

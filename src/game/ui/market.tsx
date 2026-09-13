@@ -3,10 +3,9 @@ import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
 import { CROPS, cropVariety } from '../defs/crops.ts'
-import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
-import { caskName, cropName, jamJarName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
+import { caskName, jamJarName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
 import { SAT_MAX_CUT, cancelFee, cutOf, demandGood, filledOf, needOf, REP_MAX, rollBoard } from '../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, DemandChip, HistoryEntry, MarketQuote, Outcome, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
@@ -243,8 +242,8 @@ function Rule() {
 
 export function prizeName(prize: Prize): string {
   if (prize.kind === 'cash') return m.market_cash()
-  if (prize.kind === 'tree-seed') return m.market_tree_seed({ tree: TREE_NAME[prize.tree]() })
-  if (prize.kind === 'seeds') return m.market_crop_seeds({ crop: cropName(prize.crop) })
+  if (prize.kind === 'tree-seed') return m.market_tree_seed({ tree: cropVariety(prize.tree, prize.variety) })
+  if (prize.kind === 'seeds') return m.market_crop_seeds({ crop: cropVariety(prize.crop, prize.variety) })
   if (prize.kind === 'fertilizer') return m.market_prize_fertilizer()
   if (prize.kind === 'freezer') return m.names_sku_buy_freezer_large()
   if (prize.kind === 'expansion-slot') return m.market_expansion_permit()
@@ -253,8 +252,8 @@ export function prizeName(prize: Prize): string {
 }
 
 function prizeItem(prize: Prize): Item | undefined {
-  if (prize.kind === 'tree-seed') return { kind: 'tree-seed', tree: prize.tree, variety: 'base', quality: 0 }
-  if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, variety: 'base', quality: 0, count: prize.count }
+  if (prize.kind === 'tree-seed') return { kind: 'tree-seed', tree: prize.tree, variety: prize.variety, quality: 0 }
+  if (prize.kind === 'seeds') return { kind: 'seeds', crop: prize.crop, variety: prize.variety, quality: 0, count: prize.count }
   if (prize.kind === 'fertilizer') {
     return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
   }

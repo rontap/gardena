@@ -35,10 +35,9 @@ At most `CONTRACT_ACTIVE +` broker active bonus accepted. Active bonus is `+1` p
 | 8 | line 2 group vs specific |
 | `20+i` | company shuffle, at `(day, 0, ·)` |
 | 30, 31 | the two prize slots, at `(day, 0, ·)` |
-| 32 | tool 50/50; pool index `floor(u * n)`; `whole-cart` band 3 and `intercrop` band 3 50/50 pool vs Vanilla |
-| 33 | pool index when `k` 32 chose the pool on those two cells |
+| 32 | tool 50/50; pool index `floor(u * n)`; `whole-cart` band 3 and `intercrop` band 3 `floor(u * (n + 1))` with Vanilla as one extra option |
 
-`k` 1, 4, 9 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST`. Jam/spirit group vs specific is a roll.
+`k` 1, 4, 9, 33 unused. Amount is derived, not rolled. Pair is taken iff the grammar budget covers `PAIR_COST`. Jam/spirit group vs specific is a roll.
 
 Company is cosmetic. `shuffled()` Fisher-Yates shuffles `COMPANY_IDS` per day and deals one per slot. It does not steer goods or difficulty. It does decide the prize column. `prizeFor` then rolls the pool member or the tool.
 
@@ -117,7 +116,7 @@ Illegal: a resolved `tree-seed` without `variety`. Illegal: resolved `seeds` wit
 
 `prizeSlots(stream, day)` draws a distinct pair from `[0, CONTRACT_OFFERS)` off `k` 30 and 31. Drawn from the base six, never from the live slot count. Broker slots are always cash. Exactly two prizes on a six-slot board, still exactly two when broker grows the board.
 
-`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. A cell is a template. Bands off `PRIZE_BAND_MIN`, read against final `eff`: 0–7, 8–19, 20–29, 30+. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. `prizeFor` resolves the cell per offer the way it already rolls the tool: pool index or tool off `k` 32; `whole-cart` band 3 and `intercrop` band 3 use `k` 32 for pool vs Vanilla, then `k` 33 for the pool member.
+`COMPANY_PRIZES[company][prizeBandOf(offer.difficulty)]` in `defs/companies.ts`. A cell is a template. Bands off `PRIZE_BAND_MIN`, read against final `eff`: 0–7, 8–19, 20–29, 30+. Six firms: `whole-cart` `trade-jo` `halbert-eijn` `little-lid` `mercanova` `intercrop`. `prizeFor` resolves the cell per offer the way it already rolls the tool: pool index or tool off `k` 32. `whole-cart` band 3 and `intercrop` band 3 draw Vanilla as one extra option in that same index (`n` pool members + Vanilla).
 
 ### Pools
 
@@ -227,10 +226,10 @@ Hangar-buys are not `skuPrice` — [[mechanics/family]].
 
 `contracts.infused` — Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`; `Bin.infusedFilled` counts infused jam / cask / spirit / oil only; `Accepts` ignores `infused`; miss and cancel do not take the mul.
 
-`contracts.prize` — Two slots from `[0, CONTRACT_OFFERS)` pay goods; `broker` extras are cash; `prizeFor` resolves `COMPANY_PRIZES[company][prizeBandOf(eff)]`, rolling a pool member or tool off `k` 32 the way it already rolls the tool.
+`contracts.prize` — Two slots from `[0, CONTRACT_OFFERS)` pay goods; `broker` extras are cash; `prizeFor` resolves `COMPANY_PRIZES[company][prizeBandOf(eff)]`, rolling a pool member or tool off `k` 32.
 
 `contracts.prize-pool` — Named / Heirloom / Plain pools are the `VARIETIES` rows of `TREE_IDS` or `isAnnualId` crops that have that tier; a crop missing the tier is absent; Vanilla is in no pool; `halbert-eijn` and `intercrop` never pay tree seeds.
 
-`contracts.prize-vanilla` — Vanilla is 1 seed on `whole-cart` band 3 or 2 seeds on `intercrop` band 3, those two 4-star cells only; not priced from `offer.reward`.
+`contracts.prize-vanilla` — Vanilla is 1 seed on `whole-cart` band 3 or 2 seeds on `intercrop` band 3, those two 4-star cells only; not priced from `offer.reward`; one option among that cell's pool members, same `k` 32 index.
 
 `contracts.prize-item` — Resolved `tree-seed` carries `variety`; resolved `seeds` carry crop+variety+count (any annual other than `'grass'`, not vanilla-only); quality 0; count-from-cash is `ceil(offer.reward / CROPS[crop].seed)`.

@@ -67,7 +67,7 @@ Consume only when a drop spot is found and fruit is spawned. Failed drop does no
 
 ### contract — `at(day, slot, k)`
 
-Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, slot, k)` only. Amount is derived. Pair is leftover budget, not a roll. `k` 32 is tool, pool index, or pool vs Vanilla on `whole-cart` band 3 and `intercrop` band 3. `k` 33 is the pool member when `k` 32 chose the pool on those two cells. `k` 4 and 9 unused. `rollBoard` [[mechanics/contracts]].
+Board offer for slot `i` on `clock.day`. Spatial, not `Seq`. Nothing consumed. Regenerating is free. Not a cmd. Mix ints are `(day, slot, k)` only. Amount is derived. Pair is leftover budget, not a roll. `k` 32 is tool or pool index. On `whole-cart` band 3 and `intercrop` band 3 the index is `n + 1` with Vanilla as one option among the pool. `k` 4, 9, 33 unused. `rollBoard` [[mechanics/contracts]].
 
 ### weather — `at(day, k)`
 

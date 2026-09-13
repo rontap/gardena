@@ -2,17 +2,17 @@ import { SUGAR_BAG } from '../defs/items.ts'
 import { freshMul } from '../defs/crops.ts'
 import { ADDITIVE_BAG } from './building.ts'
 import { purposeMul, qualityMul, tierOf, VARIETY_IDS } from '../defs/varieties.ts'
-import { WEATHER_FRUIT_SALE } from '../defs/weather.ts'
+import { WEATHER_FRUIT_IMPACT } from '../defs/weather.ts'
 import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedStore } from './building.ts'
 import { isPlot } from './plot.ts'
 import { SPIRIT_KINDS, type AnnualId, type StallGoodId } from './ids.ts'
 import type { Item } from './item.ts'
-import { Accepts, SAT_DEPTH, SAT_RECOVER_PER_DAY, mul, paid } from './feature-contracts/market.ts'
+import { Accepts, SAT_MAX_CUT, SAT_RECOVER_PER_DAY, impactOf, mul, saleUnits, stepOf } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
-import { binCount, isBakedStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
+import { binCount, isBakedStall, isCropStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
-import type { SellAllQuote } from './feature-contracts/market.h.ts'
+import type { DemandChip, MarketQuote, SellAllQuote } from './feature-contracts/market.h.ts'
 
 export function seedStoreAt(world: World, at: Coord): SeedStore {
   const c = world.cell(at)
@@ -295,11 +295,9 @@ export function sellAllBody(world: World): void {
   if (!world.marketOpen()) return
   const quote = marketQuote(world)
   if (quote.paid === 0) return
-  quote.rows.forEach(row => {
-    const { clean, infused } = stallClean(world, row.good)
-    world.stall[row.good].sat = Math.min(1, row.sat + (clean - infused) / SAT_DEPTH)
-  })
   STALL_IDS.forEach(id => {
+    const next = quote.after[id]
+    if (next !== undefined) world.stall[id].sat = next
     VARIETY_IDS.forEach(variety => {
       world.stall[id].stock[variety] = { plain: 0, infused: 0 }
       world.stall[id].worth[variety] = { plain: 0, infused: 0 }
@@ -319,67 +317,110 @@ function specialtyMul(world: World, id: StallGoodId, variety: VarietyId): number
   return 1
 }
 
-export function stallClean(world: World, id: StallGoodId): { clean: number; infused: number; clearance: number } {
+export function unitClean(world: World, id: StallGoodId, variety: VarietyId, infused: boolean): number {
   const saleX = 1 + 0.02 * world.skillTier('saleswoman')
   const heirX = 1 + 0.05 * world.skillTier('heirloom')
+  const key = infused ? 'infused' : 'plain'
+  const count = world.stall[id].stock[variety][key]
+  if (count === 0) return 0
+  const avg = world.stall[id].worth[variety][key] / count
   if (isInfusedStall(id)) {
-    return VARIETY_IDS.reduce(
-      (acc, variety) => {
-        const heir = isSpiritStall(id) && id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
-        const spec = specialtyMul(world, id, variety)
-        const x = saleX * heir * spec
-        const plain = world.stall[id].worth[variety].plain * x
-        const inf = world.stall[id].worth[variety].infused * x
-        return { clean: acc.clean + plain + inf, infused: acc.infused + inf, clearance: 0 }
-      },
-      { clean: 0, infused: 0, clearance: 0 },
-    )
+    const heir = isSpiritStall(id) && id !== 'cider' && tierOf(variety) === 'heirloom' ? heirX : 1
+    return avg * saleX * heir * specialtyMul(world, id, variety)
   }
-  if (isBakedStall(id)) {
-    const count = world.stall[id].stock.base.plain
-    if (count === 0) return { clean: 0, infused: 0, clearance: 0 }
-    return { clean: world.stall[id].worth.base.plain * saleX, infused: 0, clearance: 0 }
-  }
-  const x = stallX(id, world.modifiers)
-  const w = world.weather(world.clock.day)
-  const wx = w === 'flood' || w === 'drought' ? WEATHER_FRUIT_SALE : 1
+  if (isBakedStall(id)) return avg * saleX
+  const heir = tierOf(variety) === 'heirloom' ? heirX : 1
+  return avg * stallX(id, world.modifiers) * heir * saleX
+}
+
+export function stallClean(world: World, id: StallGoodId): { clean: number; infused: number; clearance: number } {
   return VARIETY_IDS.reduce(
     (acc, variety) => {
-      const heir = tierOf(variety) === 'heirloom' ? heirX : 1
-      const count = world.stall[id].stock[variety].plain
-      if (count === 0) return acc
-      const worth = world.stall[id].worth[variety].plain
-      const avg = worth / count
-      return {
-        clean: acc.clean + count * avg * x * heir * saleX * wx,
-        infused: acc.infused,
-        clearance: acc.clearance,
-      }
+      const nPlain = world.stall[id].stock[variety].plain
+      const nInf = world.stall[id].stock[variety].infused
+      const plain = nPlain * unitClean(world, id, variety, false)
+      const inf = nInf * unitClean(world, id, variety, true)
+      return { clean: acc.clean + plain + inf, infused: acc.infused + inf, clearance: 0 }
     },
     { clean: 0, infused: 0, clearance: 0 },
   )
 }
 
 export function marketQuote(world: World): SellAllQuote {
+  const kind = world.weather(world.clock.day)
+  const after: { [K in StallGoodId]?: number } = {}
   const rows = STALL_IDS.flatMap(id => {
     if (binCount(world.stall[id]) <= 0) return []
-    const { clean, infused } = stallClean(world, id)
-    const sat = world.stall[id].sat
-    const plain = clean - infused
-    return [
-      {
-        good: id,
-        sat,
-        mul: mul(sat, id),
-        clean,
-        paid: paid(sat, id, plain) + infused * mul(sat, id),
-        recoverDays: sat / SAT_RECOVER_PER_DAY,
-      },
-    ]
+    const S0 = world.stall[id].sat
+    const recoverDays = Math.abs(S0) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY
+    const wx = isCropStall(id) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
+    const rate = stepOf(id)
+    const out: MarketQuote[] = []
+    let sat = S0
+    VARIETY_IDS.forEach(variety => {
+      const n = world.stall[id].stock[variety].plain
+      if (n > 0) {
+        const cap = impactOf(id, variety)
+        const avg = unitClean(world, id, variety, false)
+        const shown = mul(sat, cap, wx)
+        const sale = saleUnits(sat, n, rate, cap, avg, wx)
+        out.push({
+          good: id,
+          variety,
+          infused: false,
+          count: n,
+          sat,
+          mul: shown,
+          cap,
+          clean: n * avg,
+          paid: sale.paid,
+          recoverDays,
+        })
+        sat = sale.after
+      }
+      const infN = world.stall[id].stock[variety].infused
+      if (infN > 0) {
+        const cap = impactOf(id, variety)
+        const avg = unitClean(world, id, variety, true)
+        const shown = mul(S0, cap, wx)
+        out.push({
+          good: id,
+          variety,
+          infused: true,
+          count: infN,
+          sat: S0,
+          mul: shown,
+          cap,
+          clean: infN * avg,
+          paid: infN * avg * shown,
+          recoverDays,
+        })
+      }
+    })
+    after[id] = sat
+    return out
   })
   return {
     rows,
     clean: rows.reduce((n, r) => n + r.clean, 0),
     paid: rows.reduce((n, r) => n + r.paid, 0) + world.clearance,
+    after,
   }
+}
+
+export function marketDemand(world: World): DemandChip[] {
+  const kind = world.weather(world.clock.day)
+  return STALL_IDS.flatMap(id => {
+    const wx = isCropStall(id) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
+    const shown = mul(world.stall[id].sat, SAT_MAX_CUT, wx)
+    if (Math.round(shown * 100) === 100) return []
+    return [
+      {
+        good: id,
+        shown,
+        sat: world.stall[id].sat,
+        recoverDays: Math.abs(world.stall[id].sat) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY,
+      },
+    ]
+  })
 }

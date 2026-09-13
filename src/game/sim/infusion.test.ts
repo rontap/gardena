@@ -35,7 +35,7 @@ const ASSETS = import.meta.glob('../../assets/**/*.svg', { query: '?raw', import
 >
 import { Furnace, Infuser, Mill, occupiedCells, PAD } from './building.ts'
 import { dump, parse } from './feature-save/save.ts'
-import { Accepts, mul, paid, SAT_DEPTH, REP_DONE, REP_MAX } from './feature-contracts/market.ts'
+import { Accepts, mul, SAT_IMPACT_CRAFT, SAT_MAX_CUT, SAT_STEP_CRAFT, saleUnits, REP_DONE, REP_MAX } from './feature-contracts/market.ts'
 import type { Demand } from './feature-contracts/market.h.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -335,10 +335,14 @@ describe('infusion.stall', () => {
     w.stall.oil.sat = 0.4
     const plainV = 200
     const infV = 300
-    expect(w.marketGain()).toBeCloseTo(paid(0.4, 'oil', plainV) + infV * mul(0.4, 'oil'), 9)
+    const cap = SAT_IMPACT_CRAFT.base
+    expect(w.marketGain()).toBeCloseTo(
+      saleUnits(0.4, 2, SAT_STEP_CRAFT, cap, 100, 0).paid + infV * mul(0.4, cap),
+      9,
+    )
     w.sellAll()
-    expect(w.stall.oil.sat).toBeCloseTo(Math.min(1, 0.4 + plainV / SAT_DEPTH), 9)
-    expect(w.stall.oil.sat).not.toBeCloseTo(Math.min(1, 0.4 + (plainV + infV) / SAT_DEPTH), 9)
+    expect(w.stall.oil.sat).toBeCloseTo(Math.min(1, 0.4 + 2 * SAT_STEP_CRAFT / SAT_MAX_CUT), 9)
+    expect(w.stall.oil.sat).not.toBeCloseTo(Math.min(1, 0.4 + 5 * SAT_STEP_CRAFT / SAT_MAX_CUT), 9)
 
     const inf = new Infuser({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
     occupiedCells(inf.base, w.owned).forEach(p => w.setCell(p, inf))

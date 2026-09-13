@@ -16,7 +16,7 @@ import { advanceGrandma } from './feature-necronomicon/necronomicon.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as queue from './queue.ts'
 import * as nets from './nets.ts'
-import { addRep, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
+import { addRep, applyDayDemand, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
 import { POINTS_PER_DAY, stipendOf, type World } from './world.ts'
@@ -177,6 +177,7 @@ export function tickWorld(world: World, dt: number): void {
     if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -REP_IDLE)
     world.contracts.takenToday = []
     world.contracts.repDay = world.contracts.rep
+    applyDayDemand(world)
     world.ping()
     return
   }

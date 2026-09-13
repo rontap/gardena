@@ -16,9 +16,16 @@ import {
   CONTRACT_OFFERS,
   CONTRACT_SLOT_MAX,
   FEASIBLE_PER_DAY,
-  SAT_DEPTH,
-  SAT_FLOOR,
+  SAT_MAX_CUT,
+  SAT_IMPACT_CRAFT,
+  SAT_IMPACT_FRUIT,
+  SAT_MIN,
   SAT_RECOVER_PER_DAY,
+  SAT_STEP_CRAFT,
+  SAT_STEP_FRUIT,
+  DEMAND_NUDGE_CROPS,
+  clampSat,
+  rollDayDemand,
   BUDGET_OVERDRAFT,
   CONTRACT_GOODS,
   DIFFICULTY_CEILING,
@@ -40,8 +47,8 @@ import {
   demandGood,
   missPenalty,
   mul,
-  paid,
   recover,
+  saleUnits,
   rollBoard,
   scale,
 } from './market.ts'
@@ -394,10 +401,10 @@ describe('contracts', () => {
     const a = carrotActive(0, 10)
     w.contracts.active.push(a)
     dropFruit(w, 'carrot', 2)
-    const V = 2 * cleanUnit(a.offer.lines[0])
+    const unit = cleanUnit(a.offer.lines[0])
     const penalty = missPenalty(w.contracts.active[0])
     expect(penalty).toBe(Math.round(a.offer.penalty * 0.5))
-    const sold = paid(0, 'carrot', V)
+    const sold = saleUnits(0, 2, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, unit, 0).paid
     const before = w.money
     w.contracts.active[0].dueDay = w.nowDay() + 1e-12
     w.tick(DT_MAX)
@@ -550,78 +557,82 @@ function worthOf(w: World, id: 'carrot'): number {
 }
 
 describe('saturation', () => {
-  test('`sat` is `0..1` per `StallGoodId`, starts 0, ticks down `SAT_RECOVER_PER_DAY` per day on every good every `dt`, never resets at the seam.', () => {
+  test('`sat` starts 0, ticks toward 0 by `SAT_RECOVER_PER_DAY` shown points per day on every good every `dt`, never resets at the seam. 50% → 80%, 70% → 100%.', () => {
     const w = new World(1)
     STALL_IDS.forEach(id => expect(w.stall[id].sat).toBe(0))
     expect(recover(0, DT_MAX)).toBe(0)
-    expect(recover(1, DAY_SECONDS)).toBeCloseTo(1 - SAT_RECOVER_PER_DAY, 9)
+    expect(recover(1, DAY_SECONDS)).toBeCloseTo(1 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT, 9)
+    expect(mul(1, SAT_MAX_CUT)).toBeCloseTo(0.5, 9)
+    expect(mul(recover(1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.8, 9)
+    expect(mul(0.6, SAT_MAX_CUT)).toBeCloseTo(0.7, 9)
+    expect(mul(recover(0.6, DAY_SECONDS), SAT_MAX_CUT)).toBe(1)
+    expect(recover(-0.4, DAY_SECONDS)).toBe(0)
     STALL_IDS.forEach(id => {
       w.stall[id].sat = 1
     })
     w.tick(DT_MAX)
-    const stepped = 1 - SAT_RECOVER_PER_DAY * DT_MAX / DAY_SECONDS
+    const stepped = 1 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT * DT_MAX / DAY_SECONDS
     STALL_IDS.forEach(id => {
       expect(w.stall[id].sat).toBeCloseTo(stepped, 9)
-      expect(w.stall[id].sat).toBeGreaterThanOrEqual(0)
-      expect(w.stall[id].sat).toBeLessThanOrEqual(1)
     })
     const empty = new World(1)
     empty.stall.vodka.sat = 0.6
     empty.tick(DT_MAX)
-    expect(empty.stall.vodka.sat).toBeCloseTo(0.6 - SAT_RECOVER_PER_DAY * DT_MAX / DAY_SECONDS, 9)
+    expect(empty.stall.vodka.sat).toBeCloseTo(0.6 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT * DT_MAX / DAY_SECONDS, 9)
     const seam = new World(1)
     seam.stall.potato.sat = 0.9
     seam.clock.t = DAY_SECONDS - 0.001
     seam.tick(1)
     expect(seam.seam.kind).toBe('play')
-    expect(seam.stall.potato.sat).toBe(0.9)
-    seam.tick(DT_MAX)
-    expect(seam.stall.potato.sat).toBeCloseTo(0.9 - SAT_RECOVER_PER_DAY * DT_MAX / DAY_SECONDS, 9)
+    const rolls = rollDayDemand(seam.rng, seam.clock.day)
+    expect(rolls).toHaveLength(DEMAND_NUDGE_CROPS)
+    expect(new Set(rolls.map(r => r.good)).size).toBe(DEMAND_NUDGE_CROPS)
+    let potato = 0.9
+    rolls.forEach(r => {
+      if (r.good === 'potato') potato = clampSat(potato - r.delta / 100 / SAT_MAX_CUT)
+    })
+    expect(seam.stall.potato.sat).toBeCloseTo(potato, 9)
     const dump = new World(1)
     dump.stall.potato.take('base', 200, 1)
     dump.sellAll()
     expect(dump.stall.potato.sat).toBe(1)
   })
 
-  test('Sell all of clean value `V` at `sat` pays the trapezoid, clamped piecewise at `SAT_FLOOR[good]`. Ten sales of `V/10` pay the same total as one sale of `V`.', () => {
-    const good = 'potato' as const
-    const k = 1 - SAT_FLOOR[good]
-    const V = 50
+  test('Sell all of `n` units at `sat` pays the unit trapezoid, unit `i` cut `min(cap, sat * SAT_MAX_CUT + i * step)`, then `sat = min(1, sat + n * step / SAT_MAX_CUT)`. `n` singles with no recover pay the same total as one sale of `n`.', () => {
+    const cap = SAT_IMPACT_FRUIT.base
+    const rate = SAT_STEP_FRUIT
+    const avg = 5
+    const n = 10
     const sat = 0.2
-    expect(paid(sat, good, V)).toBeCloseTo(V * (1 - k * (sat + V / (2 * SAT_DEPTH))), 9)
-    const satHi = 0.95
-    const Vhi = 80
-    expect(satHi + Vhi / SAT_DEPTH).toBeGreaterThan(1)
-    const vStar = SAT_DEPTH * (1 - satHi)
-    expect(paid(satHi, good, Vhi)).toBeCloseTo(
-      vStar * (1 - k * (satHi + vStar / (2 * SAT_DEPTH))) + (Vhi - vStar) * SAT_FLOOR[good],
-      9,
-    )
-    const start = 0.1
-    let dripSat = start
+    const one = saleUnits(sat, n, rate, cap, avg, 0)
+    let dripSat = sat
     let drip = 0
-    const chunk = V / 10
-    for (let i = 0; i < 10; i++) {
-      drip += paid(dripSat, good, chunk)
-      dripSat = Math.min(1, dripSat + chunk / SAT_DEPTH)
+    for (let i = 0; i < n; i++) {
+      const step = saleUnits(dripSat, 1, rate, cap, avg, 0)
+      drip += step.paid
+      dripSat = step.after
     }
-    expect(drip).toBeCloseTo(paid(start, good, V), 9)
-    const one = new World(1)
-    one.stall.potato.take('base', 10, 1)
-    one.stall.potato.sat = start
-    const onePaid = one.marketGain()
-    one.sellAll()
-    const ten = new World(1)
-    ten.stall.potato.sat = start
+    expect(drip).toBeCloseTo(one.paid, 9)
+    expect(dripSat).toBeCloseTo(one.after, 9)
+    const wOne = new World(1)
+    wOne.stall.potato.take('base', n, 1)
+    wOne.stall.potato.sat = sat
+    const onePaid = wOne.marketGain()
+    wOne.sellAll()
+    const wTen = new World(1)
+    wTen.stall.potato.sat = sat
     let tenPaid = 0
-    for (let i = 0; i < 10; i++) {
-      ten.stall.potato.take('base', 1, 1)
-      tenPaid += ten.marketGain()
-      ten.sellAll()
+    for (let i = 0; i < n; i++) {
+      wTen.stall.potato.take('base', 1, 1)
+      tenPaid += wTen.marketGain()
+      wTen.sellAll()
     }
-    expect(onePaid).toBeCloseTo(paid(start, good, V), 9)
+    expect(onePaid).toBeCloseTo(one.paid, 9)
     expect(tenPaid).toBeCloseTo(onePaid, 9)
-    expect(one.stall.potato.sat).toBeCloseTo(Math.min(1, start + V / SAT_DEPTH), 9)
+    expect(wOne.stall.potato.sat).toBeCloseTo(Math.min(1, sat + n * rate / SAT_MAX_CUT), 9)
+    const hit = saleUnits(0.9, 20, rate, cap, avg, 0)
+    expect(hit.paid).toBeGreaterThan(0)
+    expect(hit.after).toBe(1)
   })
 
 describe('market.sell', () => {
@@ -630,9 +641,17 @@ describe('market.sell', () => {
     w.stall.potato.take('base', 10, 1)
     w.stall.carrot.take('base', 5, 1)
     expect(w.marketQuote().clean).toBe(65)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 50) + paid(0, 'carrot', 15), 9)
+    expect(w.marketGain()).toBeCloseTo(
+      saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid +
+        saleUnits(0, 5, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 3, 0).paid,
+      9,
+    )
     w.stall.potato.sat = 0.4
-    expect(w.marketGain()).toBeCloseTo(paid(0.4, 'potato', 50) + paid(0, 'carrot', 15), 9)
+    expect(w.marketGain()).toBeCloseTo(
+      saleUnits(0.4, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid +
+        saleUnits(0, 5, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 3, 0).paid,
+      9,
+    )
     expect(w.marketOpen()).toBe(true)
     w.clock.t = 220
     expect(w.marketOpen()).toBe(true)
@@ -662,10 +681,10 @@ describe('market.sell', () => {
     mixed.clearance = 5
     mixed.stall.potato.take('base', 10, 1)
     mixed.stall.potato.sat = 0.3
-    expect(mixed.marketGain()).toBeCloseTo(paid(0.3, 'potato', 50) + 5, 9)
+    expect(mixed.marketGain()).toBeCloseTo(saleUnits(0.3, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid + 5, 9)
     mixed.sellAll()
     expect(mixed.clearance).toBe(0)
-    expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 50 / SAT_DEPTH), 9)
+    expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 10 * SAT_STEP_FRUIT / SAT_MAX_CUT), 9)
   })
 })
 
@@ -680,14 +699,18 @@ describe('market.sell', () => {
     expect(cider.marketQuote().clean).toBe(100)
   })
 
-  test('Infused clean `V_inf` pays `V_inf × mul(sat, good)` at sat at the start of that good and does not raise `sat`. Plain trapezoid from that same sat still raises `sat` by `V / SAT_DEPTH`. Infused miss / cancel remainders do not raise `sat`.', () => {
+  test('Infused clean `V_inf` pays `V_inf × mul(sat, cap, weatherAdd)` at sat at the start of that good and does not raise `sat`. Plain unit trapezoid from that same sat still raises `sat` by `n * step / SAT_MAX_CUT`. Infused miss / cancel remainders do not raise `sat`.', () => {
     const w = new World(1)
     w.stall.oil.takeSpirit('base', 1, 100, false)
     w.stall.oil.takeSpirit('base', 2, 100, true)
     w.stall.oil.sat = 0.5
-    expect(w.marketGain()).toBeCloseTo(paid(0.5, 'oil', 100) + 200 * mul(0.5, 'oil'), 9)
+    const cap = SAT_IMPACT_CRAFT.base
+    expect(w.marketGain()).toBeCloseTo(
+      saleUnits(0.5, 1, SAT_STEP_CRAFT, cap, 100, 0).paid + 200 * mul(0.5, cap),
+      9,
+    )
     w.sellAll()
-    expect(w.stall.oil.sat).toBeCloseTo(Math.min(1, 0.5 + 100 / SAT_DEPTH), 9)
+    expect(w.stall.oil.sat).toBeCloseTo(Math.min(1, 0.5 + SAT_STEP_CRAFT / SAT_MAX_CUT), 9)
   })
 })
 

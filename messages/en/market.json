@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "market_title": "Market",
-  "market_stall": "Stall",
+  "market_stall": "Market",
   "market_contracts": "Contracts",
   "market_no_produce": "No produce.",
   "market_sell_all": "Sell all - ",
@@ -37,7 +37,13 @@
   "market_any_jam": "Any jam",
   "market_any_spirit": "Any spirit",
   "market_jam": "{crop} jam",
-  "market_floor": "Floor {n}%. {days} to clean.",
+  "market_floor": "Maximum Market Impact {n}%. {days} to clean.",
   "market_infused": "Infused goods sell at this percent. Selling them does not change this percent.",
+  "market_row_infused": "Infused",
+  "market_col_produce": "Produce",
+  "market_col_quantity": "Quantity",
+  "market_col_price": "Demand",
+  "market_demand_empty": "All Market prices are normal.",
+  "market_col_money": "Sale price",
   "market_recover": "{n}d"
 }

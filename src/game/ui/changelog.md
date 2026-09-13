@@ -1,19 +1,20 @@
 # 2.8.6 Skill and research rebalance
 
-Research and Family are one grid each. Wheat waits on Multi-Crop Farming. Tomorrow's weather is a building.
+Research and Family fill the screen with cards in rows. Each row is a path from left to right, and the paths sit one under the next. Click a card to select it, then Research or Get skill; hover peeks the details; double-click starts research.
 
+- 🔧 Changed ui: Research. previously, cards sat in a grid under category tabs, now they sit in paths from left to right, and you click a card then Research, or double-click to start.
+- 🔧 Changed ui: Family. previously, each person had a column of skills, now the cards sit in paths like Research, with Reputation and Luck above, and you click a card then Get skill.
+- 🔧 Changed mechanic: Pulser and Counter now require Advanced sensors. Day sensor and Weather sensor now require Smart Irrigation Sensors. Traffic light now requires Automated dispatch. Variety sensor now requires Crop variants.
+- 🔧 Changed mechanic: Driving classes now requires Machinery. Industrial farmer now requires Broker skill.
 - 🎉 Added building: Weather Forecast Station. Tomorrow's weather appears next to today, so you can plan watering, the stall, and the Water bill before Sunrise.
-- ✨ Added mechanic: Tree Grafting. Chop a mature tree and grafts of that tree's Variety drop beside the Wood.
+- ✨ Added mechanic: Tree Grafting. A chop drops grafts only after you choose this skill.
 - ✨ Added mechanic: Specialty Maker. Jam, spirits, Wine, and Cider of a Named or Heirloom Variety sell for more.
 - 🔧 Changed research: Multi-Crop Farming. previously, Wheat was there from the first day, now you research Multi-Crop Farming to sow Wheat.
 - 🔧 Changed research: Advanced Plants. previously, Tomato and Grape each had their own research, now one Advanced Plants row lets you sow both.
-- 🔧 Changed research: Smart Irrigation Sensors. previously, the row was named Smart irrigation, now it is Smart Irrigation Sensors.
-- 🔧 Changed research: Machinery & Expansion. previously, the start row was named for the Seed grinder, now it is Machinery & Expansion.
 - 🔧 Changed mechanic: Lucky. previously, You, Husband, and Daughter could each learn Lucky, now Lucky is one skill and each rank raises Luck.
 - 🔧 Changed mechanic: Skill points. previously, you gained 3 skill points a day and each rank cost 1, now you gain 1 a day, rank II costs 2, and rank III costs 3.
 - 🚫 Removed mechanic: Weather forecast. Tomorrow's weather no longer comes from a skill; a Weather Forecast Station on the farm shows it.
 - 🚫 Removed mechanic: Experienced tree growers. Apple, Apricot, Olive, and Cherry no longer have an Experienced grower skill.
-- 🔧 Changed ui: Family. previously, each person had a column of skills, now Family is one grid, with Reputation and Luck above it.
 
 # 2.8.5 Multiplayer Update III
 

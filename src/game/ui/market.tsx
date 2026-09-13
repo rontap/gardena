@@ -2,26 +2,27 @@ import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { COMPANIES } from '../defs/companies.ts'
-import { CROPS } from '../defs/crops.ts'
+import { CROPS, cropVariety } from '../defs/crops.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../defs/items.ts'
-import { VARIETY_IDS } from '../defs/varieties.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../sim/ids.ts'
-import { CASK_NAME, cropName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
+import { caskName, cropName, jamJarName, makePickaxe, makeShovel, SPIRIT_NAME, type Item } from '../sim/item.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard, SAT_FLOOR } from '../sim/feature-contracts/market.ts'
-import type { Active, ContractOffer, Demand, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
-import { binCount, isCropStall, isInfusedStall } from '../sim/stall.ts'
+import { SAT_MAX_CUT, cancelFee, cutOf, demandGood, filledOf, needOf, REP_MAX, rollBoard } from '../sim/feature-contracts/market.ts'
+import type { Active, ContractOffer, Demand, DemandChip, HistoryEntry, MarketQuote, Prize, Stars } from '../sim/feature-contracts/market.h.ts'
+import { isCropStall } from '../sim/stall.ts'
 import type { World } from '../sim/world.ts'
-import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, UI_MARKET_STALL } from '../view/svgs.ts'
+import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, UI_PRICE_ARROW, faceGfx } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Bar, Btn, Coin, Overlay, tabTriggerClass } from './frame.tsx'
+import { Bar, Btn, Coin, Label, Overlay, tabTriggerClass } from './frame.tsx'
 import { ItemFace } from './held.tsx'
 import { useCycle } from './cycle.ts'
 
 type Tip = { title: string; description: ReactNode } | undefined
 
-export type MarketTab = 'stall' | 'contracts'
+export type MarketTab = 'market' | 'contracts'
+
+const MARKET_COLS = 'grid-cols-[minmax(12rem,1fr)_4.5rem_9rem_8rem]'
 
 export function Market({
   world,
@@ -46,16 +47,16 @@ export function Market({
     <Overlay
       title={m.names_role_market()}
       onClose={onClose}
-      className="max-h-[calc(100%-4rem)] w-[72rem]"
+      className="h-[min(40rem,calc(100vh-6rem))] w-[72rem]"
       aside={tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} /> : undefined}
     >
       <Tabs.Root
-        value={contracts ? tab : 'stall'}
+        value={contracts ? tab : 'market'}
         onValueChange={v => onTab(v as MarketTab)}
         className="relative z-20 flex min-h-0 flex-1 flex-col"
       >
         <Tabs.List className="flex shrink-0 flex-wrap gap-1 border-b border-ink/20 bg-house px-4">
-          <Tabs.Trigger value="stall" className={tabTriggerClass}>
+          <Tabs.Trigger value="market" className={tabTriggerClass}>
             {m.market_stall()}
           </Tabs.Trigger>
           {contracts && (
@@ -64,14 +65,30 @@ export function Market({
             </Tabs.Trigger>
           )}
         </Tabs.List>
-        <Tabs.Content value="stall">
-          <svg viewBox="0 0 240 120" aria-hidden="true" className="h-24 w-full" dangerouslySetInnerHTML={{ __html: UI_MARKET_STALL }} />
-          <div className="flex flex-col gap-2 pt-2">
-            {quote.rows.length === 0 ? (
-              <div className="py-4 text-sm text-ink/50">{m.market_no_produce()}</div>
-            ) : (
-              quote.rows.map(row => <StallRow key={row.good} row={row} world={world} onTip={setTip} />)
-            )}
+        <Tabs.Content value="market" className="flex min-h-0 flex-1 flex-col">
+          <DemandStrip world={world} onTip={setTip} />
+          <div className={`grid shrink-0 ${MARKET_COLS} items-end gap-x-3 border-b border-ink/20 px-1 pb-0.5`}>
+            <Label>{m.market_col_produce()}</Label>
+            <div className="text-right">
+              <Label>{m.market_col_quantity()}</Label>
+            </div>
+            <div className="text-right">
+              <Label>{m.market_col_price()}</Label>
+            </div>
+            <div className="text-right">
+              <Label>{m.market_col_money()}</Label>
+            </div>
+          </div>
+          {quote.rows.length === 0 ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-ink/50">{m.market_no_produce()}</div>
+          ) : (
+            <div className="scroll-pane min-h-0 flex-1">
+              {quote.rows.map(row => (
+                <MarketRow key={`${row.good}:${row.variety}:${row.infused ? 'i' : 'p'}`} row={row} onTip={setTip} />
+              ))}
+            </div>
+          )}
+          <div className="shrink-0 border-t border-ink/20 pt-2">
             <Btn
               data-sell-all=""
               className="w-full"
@@ -81,14 +98,17 @@ export function Market({
                 onClose()
               }}
             >
-              {m.market_sell_all()}
-              <Coin n={quote.paid} />
-              {quote.paid !== quote.clean && (
-                <span className="text-ink/55">
-                  {' '}
-                  <Coin n={quote.clean} />
+              <span className="flex items-center justify-between gap-3">
+                {m.market_sell_all_label()}
+                <span className="inline-flex items-center gap-3">
+                  {quote.paid !== quote.clean && (
+                    <span className="text-ink/55">
+                      <Coin n={quote.clean} />
+                    </span>
+                  )}
+                  <Coin n={quote.paid} />
                 </span>
-              )}
+              </span>
             </Btn>
           </div>
         </Tabs.Content>
@@ -497,36 +517,123 @@ function HistoryLine({ entry }: { entry: HistoryEntry }) {
   )
 }
 
-function StallRow({
-  row,
-  world,
-  onTip,
-}: {
-  row: MarketQuote
-  world: World
-  onTip: (tip: Tip) => void
-}) {
-  const infused = stallInfused(world, row.good)
-  const floor = m.market_floor({ n: SAT_FLOOR[row.good] * 100, days: nd(row.recoverDays) })
+const DEMAND_COLS = 6
+
+function demandArrow(shown: number, cap: number, sat: number, size: string) {
+  const tint = priceTint(shown, cap, sat)
+  const hex = tint === 'water' ? '#3d7ea6' : tint === 'tier-3' ? '#e07b18' : '#e23b2e'
+  const inner = UI_PRICE_ARROW.replace(/fill="#3d7ea6"/g, `fill="${hex}"`)
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={size}
+      style={{ transform: `rotate(${arrowDeg(shown)}deg)` }}
+      dangerouslySetInnerHTML={{ __html: inner }}
+    />
+  )
+}
+
+function DemandStrip({ world, onTip }: { world: World; onTip: (tip: Tip) => void }) {
+  const chips = world.marketDemand()
+  return (
+    <div className="mb-2 shrink-0 border-b border-ink/20 pb-2">
+      <Label>{m.market_col_price()}</Label>
+      {chips.length === 0 ? (
+        <div className="flex min-h-20 items-center gap-3 bg-ink/8 px-3 py-2">
+          {demandArrow(1, SAT_MAX_CUT, 0, 'h-8 w-8 shrink-0')}
+          <div className="text-sm text-ink/55">{m.market_demand_empty()}</div>
+        </div>
+      ) : (
+        <div className="grid w-fit grid-cols-6 gap-2">
+          {chips.map(chip => (
+            <DemandChipCell key={chip.good} chip={chip} onTip={onTip} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DemandChipCell({ chip, onTip }: { chip: DemandChip; onTip: (tip: Tip) => void }) {
+  const name = stallName(chip.good)
+  const floor = m.market_floor({ n: SAT_MAX_CUT * 100, days: nd(chip.recoverDays) })
   return (
     <div
-      data-stall-box={row.good}
-      className="flex items-center gap-3 bg-ink/8 px-3 py-2 text-base font-semibold"
+      className="flex h-20 w-20 cursor-default flex-col items-center justify-center gap-1 bg-ink/15 px-1 py-1 hover:bg-ink/25"
       onPointerEnter={() =>
         onTip({
-          title: stallName(row.good),
-          description: infused ? `${floor} ${m.market_infused()}` : floor,
+          title: name,
+          description: `${Math.round(chip.shown * 100)}%\n${floor}`,
         })
       }
       onPointerLeave={() => onTip(undefined)}
     >
-      <ItemFace item={boxFace(row.good, infused)} />
-      <span>{binCount(world.stall[row.good])}</span>
-      <div className="ml-auto flex items-center gap-3 text-sm tabular-nums">
-        <span>{Math.round(row.mul * 100)}%</span>
-        <span>{row.sat === 0 ? '—' : '↓'}</span>
-        <span>{nd(row.recoverDays)}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8" dangerouslySetInnerHTML={{ __html: faceGfx(boxFace(chip.good, 'base', false, 1)) }} />
+      {demandArrow(chip.shown, SAT_MAX_CUT, chip.sat, 'h-5 w-5')}
+    </div>
+  )
+}
+
+function arrowDeg(shown: number): number {
+  if (shown >= 1) return -90 * Math.min(1, (shown - 1) / 0.4)
+  return 90 * Math.min(1, Math.max(0, (1 - shown) / 0.5))
+}
+
+function priceTint(shown: number, cap: number, sat: number): 'water' | 'tier-3' | 'tier-4' {
+  if (shown > 1) return 'water'
+  return cutOf(sat, cap) < cap / 2 ? 'tier-3' : 'tier-4'
+}
+
+function PriceCell({ shown, cap, sat }: { shown: number; cap: number; sat: number }) {
+  const tint = priceTint(shown, cap, sat)
+  const hex = tint === 'water' ? '#3d7ea6' : tint === 'tier-3' ? '#e07b18' : '#e23b2e'
+  const inner = UI_PRICE_ARROW.replace(/fill="#3d7ea6"/g, `fill="${hex}"`)
+  const color = tint === 'water' ? 'text-water' : tint === 'tier-3' ? 'text-tier-3' : 'text-tier-4'
+  return (
+    <div className={`flex items-center justify-end gap-2 ${color}`}>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="h-7 w-7 shrink-0"
+        style={{ transform: `rotate(${arrowDeg(shown)}deg)` }}
+        dangerouslySetInnerHTML={{ __html: inner }}
+      />
+      <span className="w-10 text-right text-sm tabular-nums">{Math.round(shown * 100)}%</span>
+    </div>
+  )
+}
+
+function MarketRow({
+  row,
+  onTip,
+}: {
+  row: MarketQuote
+  onTip: (tip: Tip) => void
+}) {
+  const floor = m.market_floor({ n: row.cap * 100, days: nd(row.recoverDays) })
+  const name = stallRowName(row)
+  return (
+    <div
+      data-stall-box={row.good}
+      className={`grid ${MARKET_COLS} items-center gap-x-3 border-b border-ink/10 px-1 py-2 hover:bg-ink/6`}
+      onPointerEnter={() =>
+        onTip({
+          title: name,
+          description: floor,
+        })
+      }
+      onPointerLeave={() => onTip(undefined)}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <ItemFace item={boxFace(row.good, row.variety, row.infused, row.count)} />
+        <span className="truncate text-base font-semibold">{name}</span>
       </div>
+      <span className="text-right text-base tabular-nums">{row.count}</span>
+      <PriceCell shown={row.mul} cap={row.cap} sat={row.sat} />
+      <span className="justify-self-end text-base tabular-nums">
+        <Coin n={row.paid} />
+      </span>
     </div>
   )
 }
@@ -537,8 +644,13 @@ function nd(days: number): string {
 }
 
 function stallName(id: StallGoodId): string {
+  return stallRowName({ good: id, variety: 'base', infused: false } as MarketQuote)
+}
+
+function stallRowName(row: Pick<MarketQuote, 'good' | 'variety' | 'infused'>): string {
+  const id = row.good
   if (id === 'sugar') return m.names_item_sugar()
-  if (id === 'wine' || id === 'cider') return CASK_NAME[id]()
+  if (id === 'wine' || id === 'cider') return caskName(id, row.variety)
   if (id === 'oil') return m.names_item_oil()
   if (id === 'flour') return m.names_item_flour()
   if (id === 'extract') return m.names_item_extract()
@@ -546,29 +658,24 @@ function stallName(id: StallGoodId): string {
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]()
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
-    return crop === 'tomato' ? m.names_item_ketchup() : m.market_jam({ crop: cropName(crop) })
+    return jamJarName(crop, row.variety)
   }
   if (!isCropStall(id)) throw new Error(`stallName: ${id}`)
-  return cropName(id)
+  return cropVariety(id, row.variety)
 }
 
-function stallInfused(world: World, id: StallGoodId): boolean {
-  if (!isInfusedStall(id)) return false
-  return VARIETY_IDS.some(v => world.stall[id].stock[v].infused > 0)
-}
-
-function boxFace(id: StallGoodId, infused: boolean): Item {
-  if (id === 'sugar') return { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: SUGAR_MILL, quality: 0 }
+function boxFace(id: StallGoodId, variety: MarketQuote['variety'], infused: boolean, n: number): Item {
+  if (id === 'sugar') return { kind: 'sugar', liters: n, capacityLiters: n, unitSale: SUGAR_MILL, quality: 0 }
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') {
-    return { kind: 'spirit', spirit: id, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
+    return { kind: 'spirit', spirit: id, variety, quality: 0, count: n, unitSale: 1, infused }
   }
-  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
+  if (id === 'wine' || id === 'cider') return { kind: 'cask', cask: id, variety, quality: 0, count: n, unitSale: 1, infused }
   if (id.startsWith('jam-')) {
     const crop = id.slice(4) as JamCrop
-    return { kind: 'jam', crop, variety: 'base', quality: 0, count: 1, unitSale: 1, infused }
+    return { kind: 'jam', crop, variety, quality: 0, count: n, unitSale: 1, infused }
   }
-  if (id === 'flour' || id === 'extract' || id === 'bread') return { kind: id, quality: 0, count: 1, unitSale: 1 }
-  if (id === 'oil') return { kind: 'oil', quality: 0, count: 1, unitSale: 1, infused }
+  if (id === 'flour' || id === 'extract' || id === 'bread') return { kind: id, quality: 0, count: n, unitSale: 1 }
+  if (id === 'oil') return { kind: 'oil', quality: 0, count: n, unitSale: 1, infused }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
-  return { kind: 'fruit', crop: id, variety: 'base', quality: 0, count: 1, unitSale: CROPS[id].sale, freshness: 1, cut: false }
+  return { kind: 'fruit', crop: id, variety, quality: 0, count: n, unitSale: CROPS[id].sale, freshness: 1, cut: false }
 }

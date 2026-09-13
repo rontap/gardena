@@ -5,6 +5,7 @@ import {
   STACK_MAX,
   STACK_MAX_CRAFTED,
   CONTAINERS,
+  JAM_SALE,
   QUAD_REFILL,
   SPEECH_S,
   snapFlow
@@ -18,6 +19,7 @@ import {
   WEATHER_THROUGH_DAY
 } from '../defs/weather.ts'
 import {
+  CROPS,
   HAPPY_MAX,
   HAPPY_START
 } from '../defs/crops.ts'
@@ -87,8 +89,10 @@ import {
 import { generateChunk } from './gen.ts'
 import {
   crafted,
+  giveSlots,
   makeContainer,
-  type Countable
+  type Countable,
+  type Item,
 } from './item.ts'
 import { isIoCell } from './feature-machines/machine.ts'
 import * as machines from './feature-machines/machines.tick.ts'
@@ -100,6 +104,7 @@ import {
 import type {
   ContractId,
   Contracts,
+  DemandChip,
   SellAllQuote
 } from './feature-contracts/market.h.ts'
 import {
@@ -1715,6 +1720,70 @@ export class World {
     this.ping()
   }
 
+  cheatProduce(): void {
+    this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'produce' })
+  }
+
+  cheatProduceBody(): void {
+    const items: Item[] = [
+      {
+        kind: 'fruit',
+        crop: 'carrot',
+        variety: 'base',
+        quality: 0,
+        count: 15,
+        unitSale: CROPS.carrot.sale,
+        freshness: 1,
+        cut: false,
+      },
+      {
+        kind: 'jam',
+        crop: 'apricot',
+        variety: 'base',
+        quality: 0,
+        count: 10,
+        unitSale: JAM_SALE.apricot,
+        infused: false,
+      },
+      {
+        kind: 'fruit',
+        crop: 'tomato',
+        variety: 'san-marzano',
+        quality: 0,
+        count: 15,
+        unitSale: CROPS.tomato.sale,
+        freshness: 1,
+        cut: false,
+      },
+      {
+        kind: 'fruit',
+        crop: 'tomato',
+        variety: 'base',
+        quality: 0,
+        count: 5,
+        unitSale: CROPS.tomato.sale,
+        freshness: 1,
+        cut: false,
+      },
+      {
+        kind: 'fruit',
+        crop: 'tomato',
+        variety: 'green-zebra',
+        quality: 0,
+        count: 5,
+        unitSale: CROPS.tomato.sale,
+        freshness: 1,
+        cut: false,
+      },
+    ]
+    items.forEach(item => {
+      const piece = { ...item }
+      if (giveSlots(this.act.inventory, piece, this.act.inventory.length, undefined)) return
+      this.drops.push({ at: { ...DOOR }, item: piece })
+    })
+    this.ping()
+  }
+
   toggleCheatResearch(): void {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'research' })
   }
@@ -1790,6 +1859,10 @@ export class World {
 
   marketQuote(): SellAllQuote {
     return store.marketQuote(this)
+  }
+
+  marketDemand(): DemandChip[] {
+    return store.marketDemand(this)
   }
 
   marketGain(): number {

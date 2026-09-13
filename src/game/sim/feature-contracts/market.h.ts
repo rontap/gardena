@@ -1,25 +1,39 @@
 import type { CaskId, CropId, JamId, PickaxeId, ShovelId, StallGoodId, TreeId } from '../ids.ts'
+import type { VarietyId } from '../../defs/varieties.ts'
 
-export declare const SAT_DEPTH: number
+export declare const SAT_MAX_CUT: number
 
 export declare const SAT_RECOVER_PER_DAY: number
 
-export declare const SAT_FLOOR: { readonly [K in StallGoodId]: number }
+export declare const SAT_STEP_FRUIT: number
 
-export type PriceMul = (sat: number, good: StallGoodId) => number
+export declare const SAT_STEP_CRAFT: number
+
+export type PriceMul = (sat: number, cap: number, weatherAdd?: number) => number
 
 export type SatSale = { good: StallGoodId; clean: number; paid: number; before: number; after: number }
 
 export type MarketQuote = {
   good: StallGoodId
+  variety: VarietyId
+  infused: boolean
+  count: number
   sat: number
   mul: number
+  cap: number
   clean: number
   paid: number
   recoverDays: number
 }
 
-export type SellAllQuote = { rows: readonly MarketQuote[]; clean: number; paid: number }
+export type SellAllQuote = {
+  rows: readonly MarketQuote[]
+  clean: number
+  paid: number
+  after: { readonly [K in StallGoodId]?: number }
+}
+
+export type DemandChip = { good: StallGoodId; shown: number; sat: number; recoverDays: number }
 
 export type InfusedKey = 'plain' | 'infused'
 

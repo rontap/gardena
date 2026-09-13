@@ -42,6 +42,7 @@ export function Cheat({ world, onClose }: { world: World; onClose: () => void })
         />
         <Row icon={SKILL_POINT} label={m.hud_cheat_points({ n: 10 })} onClick={() => world.cheatPoints()} />
         <Row label={m.hud_cheat_end_day()} onClick={() => world.endDay()} />
+        <Row label={m.hud_cheat_produce()} onClick={() => world.cheatProduce()} />
         <div className="grid grid-cols-2 gap-1.5">
           {WEATHER_KINDS.map(kind => (
             <Row

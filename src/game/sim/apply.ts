@@ -110,6 +110,7 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       else if (cmd.k === 'research') w.toggleCheatResearchBody()
       else if (cmd.k === 'speed') w.setCheatSpeedBody(cmd.n)
       else if (cmd.k === 'day') w.endDayBody()
+      else if (cmd.k === 'produce') w.cheatProduceBody()
       else family.unlockAllSkillsBody(w)
       return
     case Act.drive:

@@ -16,7 +16,7 @@ Start: prev conceptually clear, `specialP` = `SPECIAL_START`. Walk day D given p
 
 ## Numbers
 
-Identifiers in `defs/weather.ts`. Do not copy digits. Preference: `RAIN_SOAK_DAY` `FLOOD_SOAK_DAY` `DRY_EVAP_DAY` `DROUGHT_EVAP_DAY` `WEATHER_FRUIT_SALE` `WEATHER_WEED_MUL` `WELL_DROUGHT` `PUMP_COST_DRY` `PUMP_COST_DROUGHT` `SPECIAL_START` `SPECIAL_STEP` `SPECIAL_AFTER_CLEAR` `CONTINUE_START` `CONTINUE_STEP` `SEVERE_P` `PUMP_DAY_COST`. `SOURCE.pump.rate` preference — [[mechanics/water]]. Derived: `PUMP_COST_PER_L` = `PUMP_DAY_COST / (SOURCE.pump.rate × DAY_SECONDS)`; soak per `BIG_TICK` = `*_DAY / (DAY_SECONDS / BIG_TICK)`.
+Identifiers in `defs/weather.ts`. Do not copy digits. Preference: `RAIN_SOAK_DAY` `FLOOD_SOAK_DAY` `DRY_EVAP_DAY` `DROUGHT_EVAP_DAY` `WEATHER_FRUIT_IMPACT` `WEATHER_WEED_MUL` `WELL_DROUGHT` `PUMP_COST_DRY` `PUMP_COST_DROUGHT` `SPECIAL_START` `SPECIAL_STEP` `SPECIAL_AFTER_CLEAR` `CONTINUE_START` `CONTINUE_STEP` `SEVERE_P` `PUMP_DAY_COST`. `SOURCE.pump.rate` preference — [[mechanics/water]]. Derived: `PUMP_COST_PER_L` = `PUMP_DAY_COST / (SOURCE.pump.rate × DAY_SECONDS)`; soak per `BIG_TICK` = `*_DAY / (DAY_SECONDS / BIG_TICK)`.
 
 ## Effects
 
@@ -27,7 +27,7 @@ Identifiers in `defs/weather.ts`. Do not copy digits. Preference: `RAIN_SOAK_DAY
 | well rate | 1× | 1× | 1× | 1× | `WELL_DROUGHT` |
 | pump rate | 1× | 1× | 1× | 1× | 1× |
 | pump $/L | base | base | ×`PUMP_COST_DRY` | base | ×`PUMP_COST_DROUGHT` |
-| fruit sale | 1× | 1× | 1× | ×`WEATHER_FRUIT_SALE` | ×`WEATHER_FRUIT_SALE` |
+| fruit sale | 0 | 0 | 0 | +`WEATHER_FRUIT_IMPACT` | +`WEATHER_FRUIT_IMPACT` |
 | `seeds` + `utility` tab | 1× | 1× | 1× | 1× | ×2 |
 | market | open | open | open | open | open |
 
@@ -39,7 +39,7 @@ Pump: `World.pumpLiters +=` pump-kind `take()` litres during the day. At seam, b
 
 `marketOpen`: always true. No weather close. No phase hours. Consign always. — [[mechanics/market]]
 
-`marketGain`: flood or drought, fruit stall goods only (annual including sugar-cane and chilli, tree fruit) × `WEATHER_FRUIT_SALE` after skills before sat. Not sugar / jam / spirit / wine / oil / flour / extract / bread.
+`marketGain`: flood or drought, fruit stall goods only (annual including sugar-cane and chilli, tree fruit) add `WEATHER_FRUIT_IMPACT` to shown percent after skills, with sat. Not a × on sale. Not sugar / jam / spirit / wine / oil / flour / extract / bread. Rain does not change sale. — [[mechanics/saturation]]
 
 ## Forecast
 

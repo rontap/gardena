@@ -1,6 +1,6 @@
 # Market
 
-Centered overlay (`Overlay`, dim `bg-ink/40`), not a dock. Title **Market**. Overlay `className` `max-h-[calc(100%-4rem)] w-[72rem]`. Panel `{ kind: 'market' }`. Not `{ kind: 'contracts' }`.
+Centered overlay (`Overlay`, dim `bg-ink/40`), not a dock. Title **Market**. Overlay `className` `h-[min(40rem,calc(100vh-6rem))] w-[72rem]`. Definite height, same pattern as [[ui/almanac]]. Panel `{ kind: 'market' }`. Not `{ kind: 'contracts' }`.
 
 HUD **Market** or consign at the truck opens it. [[mechanics/market]].
 
@@ -14,38 +14,35 @@ Underline tabs, same chrome as [[ui/almanac]]:
 
 | tab id | label |
 |---|---|
-| `stall` | **Stall** |
+| `market` | **Market** |
 | `contracts` | **Contracts** |
 
-**Contracts** trigger omitted iff `!world.done.has('unlock-contracts')`. [[ui/contracts]]. **Stall** always.
+**Contracts** trigger omitted iff `!world.done.has('unlock-contracts')`. [[ui/contracts]]. **Market** always.
 
 ## Which tab opens
 
-The tab the player last chose. `MarketTab` = `'stall' | 'contracts'`, App state beside `panel`, passed in as `tab` with `onTab`. Closing the overlay and opening it again lands on the same tab; a player checking a running contract does not re-pick Contracts every time. `value` is `contracts ? tab : 'stall'` — with the Contracts trigger absent there is no panel to show, so a remembered `contracts` reads as Stall until the research lands. Not Save, not a `Cmd`: it dies with the session, like the search box.
+The tab the player last chose. `MarketTab` = `'market' | 'contracts'`, App state beside `panel`, passed in as `tab` with `onTab`. Closing the overlay and opening it again lands on the same tab; a player checking a running contract does not re-pick Contracts every time. `value` is `contracts ? tab : 'market'` — with the Contracts trigger absent there is no panel to show, so a remembered `contracts` reads as Market until the research lands. Not Save, not a `Cmd`: it dies with the session, like the search box.
 
-## Stall
+## Market
 
-Picture `ui-market-stall`. `svg` `viewBox="0 0 240 120"` `h-24 w-full`. One **Sell all** button.
+Ledger, not a stack of boxes. No stall picture. `Tabs.Content` fills the overlay: Demand chips, header, scroll body, footer.
+
+Demand: Label **Demand**. Empty (`marketDemand()` length 0): level price-arrow plus **All Market prices are normal.** Not a slot grid. Occupied: `w-fit` `grid-cols-6` `gap-2`, each cell `h-20 w-20` `bg-ink/15` padded, icon + price-arrow, hover `bg-ink/25`. One cell per `StallGoodId` whose shown Demand is not 100%. Chip `recoverDays` is on the chip. Hover: [[ui/callout-hover]] Overlay `aside`, title the good’s name, body `{shown}%` and Maximum Market Impact + days to clean.
 
 `quote = world.marketQuote()`. Panel reads `quote` fields. No arithmetic. [[mechanics/saturation]].
 
-Empty: `quote.rows.length === 0` → **No produce.** Else one row per `quote.rows` (stocked `StallGoodId`).
+Four columns, one template: Produce | Quantity | Demand | Sale price.
 
-Crop row: `'base'` fruit face + count (sum of variety bins). Sugar: sugar-bag face, one bin, count only. Consign sugar at the truck — [[mechanics/market]]. Count is `binCount(world.stall[row.good])`, not a quote field. One row per stocked `StallGoodId`. No variety tabs.
+Header: Label on every column. Quantity, Demand, and Sale price right-align with their cells.
 
-Row: `flex items-center gap-3 bg-ink/8 px-3 py-2 text-base font-semibold`. `ItemFace` + count, then `ml-auto flex items-center gap-3 text-sm tabular-nums`: `{Math.round(row.mul * 100)}%`, direction, `{recoverDays}` as `Nd`.
+Empty: `quote.rows.length === 0` → **No produce.** centered in the body. Else one row per `quote.rows` (stocked good × variety × infused). Body is `scroll-pane`. Hairline under each row. Hover `bg-ink/6`. Not `bg-ink/8` cards.
 
-Direction from `row.sat` only. No sat history. No second store.
+Row: `ItemFace` + name; count `tabular-nums` right; price-arrow + `{shown}%` in water / tier-3 / tier-4; Coin paid right. No Infused column.
 
-| `row.sat` | direction |
-|---|---|
-| `0` | `—` |
-| else | `↓` |
+Price-arrow `ui-price-arrow.svg`. Rotation is absolute: 50% → 90deg, 100% → 0, 140% → −90deg. Tint: shown > 100% water; else cut < half of that row’s cap → tier-3; else tier-4. Face badge count is `row.count`.
 
-`Nd`: integer when `recoverDays` is whole, else one decimal. Suffix `d`.
+[[ui/callout-hover]] on the row. Title: that row’s name. Description names Maximum Market Impact `{cap * 100}%` and days to clean. Flakes and vanilla-extract have no row.
 
-[[ui/callout-hover]] on the row. Overlay `aside` (Family host). Hover sets the tip, leave clears it. Title: that good’s existing name — `cropName` / **Sugar** / `SPIRIT_NAME` / **Wine** / **Ketchup** / `{cropName} jam` / **Olive oil** / **Flour** / **Extract** / **Bread**. Infused stock draws overlay-infused on the face. Description names floor `{SAT_FLOOR[good] * 100}%` and days to clean (`Nd` from `row.recoverDays`). Infused: **Infused goods sell at this percent. Selling them does not change this percent.** No `why`. Sell-all blocked copy stays under the button. Flakes and vanilla-extract have no row.
-
-**Sell all - {Coin n=quote.paid}**. When `quote.paid !== quote.clean`, also `{Coin n=quote.clean}` in `text-ink/55`. `Btn` `w-full` `data-sell-all`. Disabled when `quote.paid === 0`. Click `sellAll()` then close.
+Footer, pinned: **Sell all** left, `{Coin n=quote.paid}` right. When `quote.paid !== quote.clean`, also `{Coin n=quote.clean}` in `text-ink/55`. `Btn` `w-full` `data-sell-all`. Disabled when `quote.paid === 0`. Click `sellAll()` then close.
 
 `marketOpen` is always true. Overlay opens (HUD or consign). Consign always. Sell all is not hours-blocked. [[mechanics/market]] `market.sell`. [[mechanics/weather]]

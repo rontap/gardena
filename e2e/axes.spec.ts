@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { CROPS, HAPPY_MAX, cropVariety } from '../src/game/defs/crops.ts'
 import { purposeMul, qualityMul, STARTER_VARIETY_PACKS, VARIETY } from '../src/game/defs/varieties.ts'
-import { WEATHER_FRUIT_SALE } from '../src/game/defs/weather.ts'
+
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { closeDock, dismissRecap, gotoPlay, tapWorld } from './helpers.ts'
 
@@ -66,7 +66,7 @@ async function openSilo(page: Page) {
 }
 
 function stallTab(page: Page) {
-  return page.getByRole('tab', { name: 'Stall' })
+  return page.getByRole('tab', { name: 'Market' })
 }
 
 test('silo shows the seven starter variety packs', async ({ page }) => {
@@ -240,8 +240,7 @@ test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
     null,
     '(() => { const q = w.marketQuote(); return { paid: q.paid, clean: q.clean, weather: w.weather(w.clock.day) } })()',
   )
-  const wx = quote.weather === 'flood' || quote.weather === 'drought' ? WEATHER_FRUIT_SALE : 1
-  const expected = qualityMul(quality) * produce * CROPS.tomato.sale * wx
+  const expected = qualityMul(quality) * produce * CROPS.tomato.sale
   expect(quote.clean).toBeCloseTo(expected, 8)
 
   const before = await readWorld<number>(page, null, 'w.money')

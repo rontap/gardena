@@ -105,7 +105,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const panelRef = useRef(panel)
   panelRef.current = panel
   const [query, setQuery] = useState('')
-  const [marketTab, setMarketTab] = useState<MarketTab>('stall')
+  const [marketTab, setMarketTab] = useState<MarketTab>('market')
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
   const [hangarTrailer, setHangarTrailer] = useState<TrailerId | undefined>(undefined)

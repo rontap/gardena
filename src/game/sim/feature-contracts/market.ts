@@ -33,60 +33,117 @@ import type {
   Prize,
   Stars,
 } from './market.h.ts'
-import { isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
+import { isBakedStall, isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
+import { WEATHER_FRUIT_IMPACT } from '../../defs/weather.ts'
+import { tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import type { Rng, Spatial } from '../rng.ts'
 import type { World } from '../world.ts'
 
-export const SAT_DEPTH = 400
+export const SAT_MAX_CUT = 0.5
 
-export const SAT_RECOVER_PER_DAY = 1 / 3
+export const SAT_RECOVER_PER_DAY = 0.3
 
-export const SAT_FLOOR: { readonly [K in StallGoodId]: number } = {
-  carrot: 0.55,
-  potato: 0.55,
-  wheat: 0.55,
-  tomato: 0.4,
-  raspberry: 0.4,
-  olive: 0.4,
-  grape: 0.4,
-  vanilla: 0.4,
-  chilli: 0.4,
-  'sugar-cane': 0.4,
-  apple: 0.4,
-  apricot: 0.4,
-  cherry: 0.4,
-  sugar: 0.35,
-  'jam-apricot': 0.35,
-  'jam-grape': 0.35,
-  'jam-raspberry': 0.35,
-  'jam-cherry': 0.35,
-  'jam-tomato': 0.35,
-  oil: 0.35,
-  flour: 0.35,
-  extract: 0.35,
-  bread: 0.35,
-  vodka: 0.25,
-  beer: 0.25,
-  brandy: 0.25,
-  mixed: 0.25,
-  wine: 0.25,
-  cider: 0.25,
+export const SAT_MIN = -0.8
+
+export const SAT_MAX = 1
+
+export const DEMAND_NUDGE_MAX = 20
+
+export const DEMAND_NUDGE_CROPS = 2
+
+export const SAT_STEP_FRUIT = 0.02
+
+export const SAT_STEP_CRAFT = 0.06
+
+export const SAT_IMPACT_FRUIT: { readonly [K in VarietyTier]: number } = {
+  base: 0.5,
+  variant: 0.4,
+  heirloom: 0.3,
 }
 
-export function mul(sat: number, good: StallGoodId): number {
-  return 1 - (1 - SAT_FLOOR[good]) * sat
+export const SAT_IMPACT_CRAFT: { readonly [K in VarietyTier]: number } = {
+  base: 0.35,
+  variant: 0.25,
+  heirloom: 0.25,
 }
 
-export function paid(sat: number, good: StallGoodId, V: number): number {
-  const k = 1 - SAT_FLOOR[good]
-  if (sat + V / SAT_DEPTH <= 1) return V * (1 - k * (sat + V / (2 * SAT_DEPTH)))
-  const vStar = SAT_DEPTH * (1 - sat)
-  return vStar * (1 - k * (sat + vStar / (2 * SAT_DEPTH))) + (V - vStar) * SAT_FLOOR[good]
+export function stepOf(good: StallGoodId): number {
+  return isCropStall(good) ? SAT_STEP_FRUIT : SAT_STEP_CRAFT
+}
+
+export function impactOf(good: StallGoodId, variety: VarietyId): number {
+  const t = tierOf(variety)
+  if (isCropStall(good)) return SAT_IMPACT_FRUIT[t]
+  if (isBakedStall(good) || good === 'oil') return SAT_IMPACT_CRAFT.base
+  return SAT_IMPACT_CRAFT[t]
+}
+
+export function clampSat(sat: number): number {
+  if (sat < SAT_MIN) return SAT_MIN
+  if (sat > SAT_MAX) return SAT_MAX
+  return sat
+}
+
+export function cutOf(sat: number, cap: number): number {
+  const raw = sat * SAT_MAX_CUT
+  return raw < cap ? raw : cap
+}
+
+export function mul(sat: number, cap: number, weatherAdd = 0): number {
+  return 1 - cutOf(sat, cap) + weatherAdd
+}
+
+export function saleUnits(
+  sat: number,
+  n: number,
+  rate: number,
+  cap: number,
+  avg: number,
+  weatherAdd: number,
+): { paid: number; after: number } {
+  if (n <= 0) return { paid: 0, after: sat }
+  const start = sat * SAT_MAX_CUT
+  const iHit = start >= cap ? 0 : Math.ceil((cap - start) / rate - 1e-12)
+  const nLow = iHit < n ? (iHit < 0 ? 0 : iHit) : n
+  const nHigh = n - nLow
+  const sumCuts = nLow * start + rate * nLow * (nLow - 1) / 2 + nHigh * cap
+  const paid = avg * (n * (1 + weatherAdd) - sumCuts)
+  const after = clampSat(sat + n * rate / SAT_MAX_CUT)
+  return { paid, after }
 }
 
 export function recover(sat: number, dt: number): number {
-  const next = sat - SAT_RECOVER_PER_DAY * dt / DAY_SECONDS
-  return next < 0 ? 0 : next
+  const step = SAT_RECOVER_PER_DAY / SAT_MAX_CUT * dt / DAY_SECONDS
+  if (sat > 0) {
+    const next = sat - step
+    return next < 0 ? 0 : next
+  }
+  if (sat < 0) {
+    const next = sat + step
+    return next > 0 ? 0 : next
+  }
+  return 0
+}
+
+export function rollDayDemand(rng: Rng, day: number): readonly { good: StallGoodId; delta: number }[] {
+  const crops = STALL_IDS.filter(isCropStall)
+  const stream = rng.stream('market-demand')
+  const i0 = Math.floor(stream.at(day, 0) * crops.length)
+  let i1 = Math.floor(stream.at(day, 1) * (crops.length - 1))
+  if (i1 >= i0) i1 += 1
+  const span = DEMAND_NUDGE_MAX * 2 + 1
+  const d0 = Math.floor(stream.at(day, 2) * span) - DEMAND_NUDGE_MAX
+  const d1 = Math.floor(stream.at(day, 3) * span) - DEMAND_NUDGE_MAX
+  return [
+    { good: crops[i0], delta: d0 },
+    { good: crops[i1], delta: d1 },
+  ]
+}
+
+export function applyDayDemand(w: World): void {
+  rollDayDemand(w.rng, w.clock.day).forEach(({ good, delta }) => {
+    w.stall[good].sat = clampSat(w.stall[good].sat - delta / 100 / SAT_MAX_CUT)
+  })
 }
 
 export const CONTRACT_OFFERS = 6
@@ -660,39 +717,47 @@ function consignDemand(w: World, d: Demand, n: number, infused: boolean): void {
   else w.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0), infused)
 }
 
-function addV(map: Map<StallGoodId, number>, good: StallGoodId, V: number): void {
+function addN(map: Map<StallGoodId, number>, good: StallGoodId, n: number): void {
   const cur = map.get(good)
-  map.set(good, cur === undefined ? V : cur + V)
+  map.set(good, cur === undefined ? n : cur + n)
 }
 
 function dumpFilled(w: World, a: Active): number {
   const plainAdd = new Map<StallGoodId, number>()
   const infAdd = new Map<StallGoodId, number>()
+  const unitOf = new Map<StallGoodId, number>()
   a.bins.forEach(bin => {
     if (bin.filled <= 0) return
     const good = demandGood(bin.demand)
     const unit = cleanUnit(bin.demand)
+    unitOf.set(good, unit)
     const infN = bin.infusedFilled
     const plainN = bin.filled - infN
     if (plainN > 0) {
-      addV(plainAdd, good, plainN * unit)
+      addN(plainAdd, good, plainN)
       consignDemand(w, bin.demand, plainN, false)
     }
     if (infN > 0) {
-      addV(infAdd, good, infN * unit)
+      addN(infAdd, good, infN)
       consignDemand(w, bin.demand, infN, true)
     }
   })
   const goods = new Set<StallGoodId>([...plainAdd.keys(), ...infAdd.keys()])
+  const kind = w.weather(w.clock.day)
   let sold = 0
   goods.forEach(good => {
     const p = plainAdd.get(good)
     const i = infAdd.get(good)
-    const plainV = p === undefined ? 0 : p
-    const infV = i === undefined ? 0 : i
+    const plainN = p === undefined ? 0 : p
+    const infN = i === undefined ? 0 : i
+    const unit = unitOf.get(good)
+    if (unit === undefined) return
     const sat = w.stall[good].sat
-    sold += paid(sat, good, plainV) + infV * mul(sat, good)
-    w.stall[good].sat = Math.min(1, sat + plainV / SAT_DEPTH)
+    const cap = impactOf(good, 'base')
+    const wx = isCropStall(good) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
+    const sale = saleUnits(sat, plainN, stepOf(good), cap, unit, wx)
+    sold += sale.paid + infN * unit * mul(sat, cap, wx)
+    w.stall[good].sat = sale.after
   })
   return sold
 }

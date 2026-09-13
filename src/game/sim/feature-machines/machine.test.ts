@@ -32,7 +32,7 @@ import {
   SUGAR_SHOP,
 } from '../../defs/items.ts'
 import { caskGroup, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
-import { paid } from '../feature-contracts/market.ts'
+import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from '../feature-contracts/market.ts'
 import {
   bakeCaskSale,
   bakeSpiritSale,
@@ -99,7 +99,7 @@ describe('machines', () => {
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
     expect(w.marketQuote().clean).toBe(50)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 50), 9)
+    expect(w.marketGain()).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid, 9)
     expect(spiritKind([{ crop: 'potato', variety: 'base', count: 10 }])).toBe('vodka')
     expect(bakeSpiritSale('vodka', 'base', 0)).toBe(66)
   })
@@ -116,7 +116,7 @@ describe('machines', () => {
     w.tick(DT_MAX)
     expect(w.stall.potato.sat).toBe(0)
     expect(w.marketQuote().clean).toBeCloseTo(140, 9)
-    expect(w.marketGain()).toBeCloseTo(paid(0, 'potato', 140), 9)
+    expect(w.marketGain()).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.variant, 14, 0).paid, 9)
     expect(bakeSpiritSale('vodka', 'bintje', 1)).toBe(SPIRIT_SALE.vodka * PURPOSE_MUL.variant.on * 3.5)
   })
 

@@ -51,6 +51,7 @@ describe('0.9 log', () => {
       { a: Act.cheat, t: 63, p: 0, k: 'speed', n: 3 },
       { a: Act.cheat, t: 64, p: 0, k: 'day' },
       { a: Act.cheat, t: 65, p: 0, k: 'skills' },
+      { a: Act.cheat, t: 66, p: 0, k: 'produce' },
       { a: Act.drive, t: 30, p: 0, throttle: 1, steer: -1 },
       { a: Act.stride, t: 47, p: 0, x: 1, y: -1 },
       { a: Act.buyVehicle, t: 31, p: 0, c: [1, 2], k: 'quad' },
@@ -85,7 +86,7 @@ describe('0.9 log', () => {
     })
   })
 
-  test('`Act.setBoom` `\'W\'`; `Act.placeWire` `\'N\'`; `Act.load` `\'L\'`; `Act.unload` `\'U\'`; `Act.stride` `\'K\'`; `Act.tuneCounter` `\'M\'`; `Act.tuneDay` `\'O\'`; `Act.acceptContract` `\'J\'`; `Act.cancelContract` `\'Y\'`; `Act.reorderContract` `\'Z\'`; `Act.route` `\'o\'`; inner `k` closed union `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Latest same-`t` `assign` / `start` wins like drive. Spray click is `Intent` `{ act: \'weed-spray\'; at }`. `Act.cheat` `\'u\'`; inner `k` closed union `all` | `money` | `points` | `research` | `speed` | `day` | `skills`. `speed` carries `n: 1 | 3`.', () => {
+  test('`Act.setBoom` `\'W\'`; `Act.placeWire` `\'N\'`; `Act.load` `\'L\'`; `Act.unload` `\'U\'`; `Act.stride` `\'K\'`; `Act.tuneCounter` `\'M\'`; `Act.tuneDay` `\'O\'`; `Act.acceptContract` `\'J\'`; `Act.cancelContract` `\'Y\'`; `Act.reorderContract` `\'Z\'`; `Act.route` `\'o\'`; inner `k` closed union `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Latest same-`t` `assign` / `start` wins like drive. Spray click is `Intent` `{ act: \'weed-spray\'; at }`. `Act.cheat` `\'u\'`; inner `k` closed union `all` | `money` | `points` | `research` | `speed` | `day` | `skills` | `produce`. `speed` carries `n: 1 | 3`.', () => {
     expect(Act.setBoom).toBe('W')
     expect(Act.placeWire).toBe('N')
     expect(Act.load).toBe('L')

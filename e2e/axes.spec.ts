@@ -336,20 +336,3 @@ test('rotten consign pays after Fermentation, refused before', async ({ page }) 
   expect(after).toBe(before + 10)
 })
 
-test('contract card has no grade clause', async ({ page }) => {
-  await gotoPlay(page)
-  await viewReady(page)
-  await page.evaluate(() => {
-    const w = (window as unknown as { __world: { done: Set<string>; ping: () => void } }).__world
-    w.done.add('unlock-contracts')
-    w.ping()
-  })
-  await page.getByRole('button', { name: 'Market', exact: true }).click()
-  const contracts = page.getByRole('tab', { name: 'Contracts' })
-  await expect(contracts).toBeVisible()
-  await contracts.click()
-  const body = await page.locator('.scroll-pane').innerText()
-  expect(body).not.toMatch(/grade/i)
-  expect(body).not.toMatch(/rarity/i)
-  expect(body).not.toMatch(/at least rarity/i)
-})

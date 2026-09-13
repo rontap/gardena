@@ -28,6 +28,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['src/game/sim/test-setup.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/_RECOVERY_BACKUP/**'],
     coverage: {
       exclude: ['src/assets/**'],
     },

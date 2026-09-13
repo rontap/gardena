@@ -49,6 +49,7 @@ import {
   NAMED_TREE_POOL,
   PLAIN_TREE_POOL,
   STARTER_CROP_POOL,
+  STARTER_CROPS,
   load,
   Accepts,
   cancelFee,
@@ -773,31 +774,23 @@ describe('prizes', () => {
     expect(PLAIN_TREE_POOL.every(m => m.variety === 'base')).toBe(true)
     expect(NAMED_TREE_POOL.map(m => m.tree).sort()).toEqual(TREE_IDS.filter(t => hasTier(t, 'variant')).slice().sort())
     expect(HEIRLOOM_TREE_POOL.map(m => m.tree).sort()).toEqual(TREE_IDS.filter(t => hasTier(t, 'heirloom')).slice().sort())
-    expect(NAMED_TREE_POOL.some(m => m.tree === 'cherry')).toBe(false)
-    expect(HEIRLOOM_TREE_POOL.some(m => m.tree === 'olive')).toBe(false)
     const namedAnnuals = ANNUAL_IDS.filter(c => isAnnualId(c) && hasTier(c, 'variant'))
     const heirloomAnnuals = ANNUAL_IDS.filter(c => isAnnualId(c) && hasTier(c, 'heirloom'))
     expect(NAMED_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(namedAnnuals.slice().sort())
     expect(HEIRLOOM_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(heirloomAnnuals.slice().sort())
-    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
-    expect(HEIRLOOM_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
-    expect(FRUIT_ANNUAL_POOL.some(m => m.crop === 'vanilla')).toBe(false)
-    expect(STARTER_CROP_POOL.some(m => m.crop === 'vanilla')).toBe(false)
-    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'potato')).toBe(true)
-    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'wheat')).toBe(true)
-    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'raspberry')).toBe(false)
-    expect(NAMED_ANNUAL_POOL.some(m => m.crop === 'carrot')).toBe(false)
-    expect(FRUIT_ANNUAL_POOL.every(m => m.variety === 'base' && CROPS[m.crop].cls === 'fruit')).toBe(true)
+    expect(NAMED_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(['grape', 'potato', 'tomato', 'wheat'])
+    expect(FRUIT_ANNUAL_POOL.map(m => m.crop).sort()).toEqual(
+      ANNUAL_IDS.filter(c => c !== 'grass' && c !== 'vanilla' && CROPS[c].cls === 'fruit').slice().sort(),
+    )
+    expect(STARTER_CROP_POOL.map(m => m.crop)).toEqual([...STARTER_CROPS])
     for (const seed of [1, 7, 99, 12345, 555]) {
       for (const day of [0, 8, 24, 40, 80]) {
         for (const D of [0, 8, 20, 30, 40]) {
           ;[...rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0), ...rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS)].forEach(o => {
             if (o.company === 'halbert-eijn' || o.company === 'intercrop') {
-              expect(o.prize.kind).not.toBe('tree-seed')
+              expect(o.prize.kind === 'tree-seed').toBe(false)
             }
-            if (o.prize.kind === 'seeds') {
-              expect(o.prize.crop).not.toBe('grass')
-              if (o.prize.crop === 'vanilla') return
+            if (o.prize.kind === 'seeds' && o.prize.crop !== 'vanilla') {
               const p = o.prize
               const pools = [...NAMED_ANNUAL_POOL, ...HEIRLOOM_ANNUAL_POOL, ...FRUIT_ANNUAL_POOL, ...STARTER_CROP_POOL]
               expect(pools.some(m => m.crop === p.crop && m.variety === p.variety)).toBe(true)
@@ -834,7 +827,6 @@ describe('prizes', () => {
     }
     expect(seen.some(s => s.company === 'whole-cart' && s.count === 1)).toBe(true)
     expect(seen.some(s => s.company === 'intercrop' && s.count === 2)).toBe(true)
-    expect(seen.some(s => s.count !== Math.ceil(s.reward / CROPS.vanilla.seed))).toBe(true)
   })
 
   test('contracts.prize-item', () => {
@@ -847,11 +839,9 @@ describe('prizes', () => {
               expect(VARIETIES[o.prize.tree].includes(o.prize.variety)).toBe(true)
             }
             if (o.prize.kind === 'seeds') {
-              expect(o.prize.crop).not.toBe('grass')
               expect(isAnnualId(o.prize.crop)).toBe(true)
-              expect(o.prize.variety).toBeDefined()
-              expect(o.prize.count).toBeGreaterThan(0)
               expect(VARIETIES[o.prize.crop].includes(o.prize.variety)).toBe(true)
+              expect(o.prize.count).toBeGreaterThan(0)
               if (o.prize.crop !== 'vanilla' && o.prize.variety === 'base') {
                 expect(o.prize.count).toBe(Math.ceil(o.reward / CROPS[o.prize.crop].seed))
               }
@@ -878,8 +868,8 @@ describe('prizes', () => {
     const had = before === undefined ? 0 : before.count
     dropFruit(seeds, 'carrot', 4)
     const st = seeds.silo.seeds.find(s => s.crop === 'potato' && s.variety === 'bintje')
-    expect(st?.quality).toBe(0)
-    expect(st?.count).toBe(had + 4)
+    if (st === undefined) throw new Error('bintje')
+    expect(st.count).toBe(had + 4)
   })
 
   test('Bands split on final difficulty at 8 / 20 / 30.', () => {

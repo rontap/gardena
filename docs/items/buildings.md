@@ -4,6 +4,12 @@ What the player can buy, hold, or place. Size and shelf. Gates [[mechanics/resea
 
 `house` — starter, not a SKU. Door slots: [[mechanics/inventory]].
 
+## Home chunk
+
+`HOUSE_BASE` `DOOR` `PUMP_BASE` `WAREHOUSE_BASE` `POSTBOX_BASE` `SILO_BASE` `ADDITIVE_BASE` `YARD` in `sim/building.ts` — preference. Every cell of those, plus the pads `warehousePads` derives, is in `RESERVED`, so world generation lays no rock, tree or burrow on them. `PAD` is `warehousePads(WAREHOUSE_BASE)[0]`, derived, not a second number.
+
+Reading the row band, north to south: the Seed silo and the Additive store stand east of the house against its roof line, the warehouse sits west of it a row higher with its consign row underneath, the yard runs east from that consign row to the door, and the pump stands one row below the house's east end, with the postbox below the house's west end. Moving any of them means moving it somewhere its own pads still land on walkable ground — [[mechanics/vehicles]] `vehicles.starter-pads`.
+
 `chest` — `buy-chest`. 1×1. `grinder` — `buy-grinder`. 1×1. `compost-box` — `buy-compost-box`. 1×1.
 
 `mill` — `buy-mill`. 2×2, origin NW, no rotate, `squareSiteOk`, pads two cells wide. `infuser` — `buy-infuser`. 2×2, mill I/O, `squareSiteOk`, pads two cells wide. `Sku.tab` `automation`. Almanac **Automation**. `skuLabel` **Infuser**. Rules: [[mechanics/infusion]] `infusion.machine`. `jam` — `buy-jam`. 1×1. `still` — `buy-still`. 2×1, origin NW, no rotate, hover origin extends east. `furnace` — `buy-furnace`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `automation`. Almanac **Automation**. `skuLabel` **Furnace**. Rules: [[mechanics/machines]]. `barrel` — `buy-barrel`. 1×1. `freezer` — `buy-freezer`. 1×1.

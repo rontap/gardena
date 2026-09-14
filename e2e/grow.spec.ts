@@ -1,13 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
+import { DOOR as HOUSE_DOOR, PUMP_BASE, SILO_BASE } from '../src/game/sim/building.ts'
 import { SOIL_WATER_MID, waterBand } from '../src/game/sim/soil.ts'
 import { closeDock, dismissRecap, gotoPlay, tapWorld } from './helpers.ts'
 
 type At = { col: number; row: number }
 
 const PLOT: At = { col: 13, row: 11 }
-const SILO: At = { col: 17, row: 9 }
-const DOOR: At = { col: 15, row: 9 }
-const PUMP: At = { col: 18, row: 7 }
+const SILO: At = { col: SILO_BASE.col, row: SILO_BASE.row }
+const DOOR: At = { col: HOUSE_DOOR.col, row: HOUSE_DOOR.row }
+const PUMP: At = { col: PUMP_BASE.col, row: PUMP_BASE.row }
 
 type HandSnap = { kind: string; itemKind?: string; liters?: number; capacityLiters?: number }
 

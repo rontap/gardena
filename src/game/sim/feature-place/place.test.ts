@@ -73,6 +73,28 @@ describe('place.demolish-filter', () => {
   })
 })
 
+describe('place.drop', () => {
+  test('place.drop - Only rightClick enqueues a drop. readPrompt returns walk instead, so no left click sets the hand down, and an armed sku takes the right click as a cancel.', () => {
+    const w = new World(1)
+    w.setCell(AT, bare('soft', 0))
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    const p = w.prompt(AT)
+    expect(p.kind).toBe('intent')
+    expect(p.kind === 'intent' && p.intent.act).toBe('walk')
+    w.click(AT)
+    expect(w.seats[0].queue.map(i => i.act)).toEqual(['walk'])
+    w.rightClick(AT)
+    expect(w.seats[0].queue.map(i => i.act)).toEqual(['walk', 'drop'])
+    const armed = ready()
+    clear(armed, AT, 1, 1)
+    armed.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
+    armed.buy('buy-chest')
+    armed.rightClick(AT)
+    expect(armed.seats[0].place.kind).toBe('none')
+    expect(armed.seats[0].queue).toHaveLength(0)
+  })
+})
+
 describe('place.ghost-io', () => {
   test('place.ghost-io - skuBase and the IO_SKUS / PAD_SKUS sets the ghost preview reads match the building confirmPlace actually builds.', () => {
     const ids = Object.keys(SKU_FOOT) as SkuId[]

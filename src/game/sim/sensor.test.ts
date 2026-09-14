@@ -16,6 +16,10 @@ const A = { col: 10, row: 12 }
 const B = { col: 10, row: 13 }
 const C = { col: 11, row: 12 }
 
+const PUMP_EDGE = { axis: 'h' as const, col: PUMP_BASE.col, row: PUMP_BASE.row + 1 }
+const PUMP_VERTEX = { col: PUMP_BASE.col + 1, row: PUMP_BASE.row + 1 }
+const PUMP_PLOT = { col: PUMP_BASE.col, row: PUMP_BASE.row + 1 }
+
 function ready(w: World): void {
   w.done.add('unlock-irrigation')
   w.done.add('unlock-auto-irrigation')
@@ -718,8 +722,8 @@ describe('1.6 sensors', () => {
   })
 
   test('Valve: unwired manual; wired follows the held input; hold; wire drops on delete; guest wires, places, and clicks.', () => {
-    const e = { axis: 'h' as const, col: 18, row: 7 }
-    const v = { col: 19, row: 7 }
+    const e = PUMP_EDGE
+    const v = PUMP_VERTEX
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
@@ -730,7 +734,7 @@ describe('1.6 sensors', () => {
     expect(w.conducts(e)).toBe(true)
     w.buy('buy-sprinkler')
     w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-    grow(w, { col: 18, row: 6 }, 'growing', 0.5)
+    grow(w, PUMP_PLOT, 'growing', 0.5)
     w.armWire({ kind: 'cell', at: A, port: 'out' })
     w.placeWire({ kind: 'cell', at: A, port: 'out' }, { kind: 'valve', e, port: 'in' })
     expect(w.valveWired(e)).toBe(true)
@@ -755,7 +759,7 @@ describe('1.6 sensors', () => {
   })
 
   test('Wired valve holds after its wire goes high then low.', () => {
-    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const e = PUMP_EDGE
     const w = new World(1)
     ready(w)
     put(w, 'buy-lever', A)
@@ -778,14 +782,14 @@ describe('1.6 sensors', () => {
   })
 
   test('Smart irrigation: unwired on; wired held in; digest distinguishes; wire before unlock is a no-op; dial unchanged; pour this tick.', () => {
-    const v = { col: 19, row: 7 }
-    const cropAt = { col: 18, row: 6 }
+    const v = PUMP_VERTEX
+    const cropAt = PUMP_PLOT
     const unwired = new World(1)
     ready(unwired)
     unwired.done.add('unlock-irrigation')
     unwired.done.add('unlock-auto-irrigation')
     unwired.buy('buy-pipe')
-    unwired.placePipe({ axis: 'h', col: 18, row: 7 })
+    unwired.placePipe(PUMP_EDGE)
     unwired.buy('buy-sprinkler')
     unwired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     const soilU = new Soil(0.5, 1, WEED_CHANCE)
@@ -810,7 +814,7 @@ describe('1.6 sensors', () => {
     wired.done.add('unlock-smart-irrigation')
     put(wired, 'buy-lever', A)
     wired.buy('buy-pipe')
-    wired.placePipe({ axis: 'h', col: 18, row: 7 })
+    wired.placePipe(PUMP_EDGE)
     wired.buy('buy-sprinkler')
     wired.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     wired.armWire({ kind: 'cell', at: A, port: 'out' })
@@ -830,7 +834,7 @@ describe('1.6 sensors', () => {
     twin.done.add('unlock-auto-irrigation')
     put(twin, 'buy-lever', A)
     twin.buy('buy-pipe')
-    twin.placePipe({ axis: 'h', col: 18, row: 7 })
+    twin.placePipe(PUMP_EDGE)
     twin.buy('buy-sprinkler')
     twin.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     twin.setCell(cropAt, { kind: 'growing', soil: new Soil(0.5, 1, WEED_CHANCE), plant: new Plant('carrot', 'base', 0) })
@@ -841,7 +845,7 @@ describe('1.6 sensors', () => {
     clone.done.add('unlock-auto-irrigation')
     put(clone, 'buy-lever', A)
     clone.buy('buy-pipe')
-    clone.placePipe({ axis: 'h', col: 18, row: 7 })
+    clone.placePipe(PUMP_EDGE)
     clone.buy('buy-sprinkler')
     clone.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
     clone.armWire({ kind: 'cell', at: A, port: 'out' })
@@ -961,7 +965,7 @@ describe('1.6 sensors', () => {
   })
 
   test('buy-valve on a bare edge lays the pipe too and charges both.', () => {
-    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const e = PUMP_EDGE
     const w = new World(1)
     ready(w)
     w.buy('buy-valve')
@@ -974,7 +978,7 @@ describe('1.6 sensors', () => {
   })
 
   test('buy-valve on a valved edge is Pipe already has a valve.', () => {
-    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const e = PUMP_EDGE
     const w = new World(1)
     ready(w)
     w.buy('buy-valve')
@@ -986,7 +990,7 @@ describe('1.6 sensors', () => {
   })
 
   test('Unarmed wired-valve hover is Valve - wired.', () => {
-    const e = { axis: 'h' as const, col: 18, row: 7 }
+    const e = PUMP_EDGE
     const w = new World(1)
     ready(w)
     w.buy('buy-valve')

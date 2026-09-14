@@ -2,7 +2,7 @@
 
 Two variants. Take `empty` tilled plots. Cannot plant on a weed.
 
-`Weed = { variant: 0 | 1; maturity; spread }`. `spread` starts `false`.
+`Weed = { variant: 0 | 1; maturity; spread; readyAt }`. `spread` starts `false`. `readyAt` starts `{ kind: 'growing' }`.
 
 ## Spawn
 
@@ -29,6 +29,14 @@ When a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `fals
 `WEED_FERT_PER_SEC` — preference.
 
 Same `Soil`. Drinks the whole time.
+
+## Gone
+
+`WEED_GONE_DAYS` — preference. The tick that carries a weed to maturity 1 stamps `readyAt = { kind: 'ready', day: clock.day }` on the same edge the outbreak fires. `field.clearRipeWeeds` runs at the day seam, after `clearOldRotten` and before the trees, and takes down every weed whose stamp is `WEED_GONE_DAYS` or more days behind the new `clock.day` — the same comparison `ROTTEN_GROUND_DAYS` makes on a dropped rotten fruit.
+
+The cell it leaves is `untilled`, `ground: 'soft'`, `hardness: 0`, carrying a grass cover at `grass.at(col, row, clock.day)` of three. The plot's `Soil` goes with the weed: the water, the fertilizer and the `weedChance` it had are gone, and the cell is a paving site and a fence site again. Nothing drops. A weed the gardener pulls, digs or sprays before the seam never reaches this path.
+
+With one day the shortest life a full-grown weed gets is the rest of the tick it ripened on: a weed reaching maturity 1 in the last seconds of a day is stamped with that day and the seam seconds later takes it.
 
 ## Gather vs shovel
 
@@ -71,6 +79,8 @@ Empty hand gathers `{ kind: 'grass' }`, cover bare. Shovel tills (or would) with
 `weeds.outbreak` — Outbreak: when a weed first reaches maturity 1, once. `Weed.spread: boolean`, starts `false`. `+0.05` on 4-adj (cardinals) that are empty tilled. No cap. Skip self / missing / not empty. Then `spread = true`.
 
 `weeds.spray` — Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-better-tools`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. A `weed` plot becomes `empty` when the work lands, same soil, no drop; every other tilled plot keeps its kind. Work `SPRAY_WORK` (`defs/items.ts`), armed by `canWeedSpray` the way `tend` is armed by `canTend`. Not untilled. Not spray-trailer.
+
+`weeds.gone` — Reaching maturity 1 stamps `readyAt = { kind: 'ready', day: clock.day }`, on the edge that fires the outbreak. `clearRipeWeeds` at the day seam takes down every weed with `clock.day - readyAt.day >= WEED_GONE_DAYS` and leaves `untilled` soft ground at hardness 0 under a grass cover, variant `grass.at(col, row, clock.day)` of three. The `Soil` and its `weedChance` go with it. No drop. `readyAt` is saved.
 
 `weeds.pull` — Hand pull weed: drop `{ kind: 'weed' }`, `weedChance = 0`. Weed in hand merges up to the stack cap; full is a no-op that says `HAND_FULL` (do not empty-hand). Shovel: no drop, `weedChance = −0.3`.
 

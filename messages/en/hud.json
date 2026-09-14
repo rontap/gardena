@@ -111,6 +111,8 @@
   "hud_quality": "Quality",
   "hud_weed_resistance": "Weed resistance",
   "hud_aging": "Aging",
+  "hud_durability": "Durability",
+  "hud_content": "Content",
   "hud_craft_empty": "Empty",
   "hud_craft_paused": "Paused by wire",
   "hud_craft_thirsty": "Needs water",

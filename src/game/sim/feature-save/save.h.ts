@@ -10,6 +10,7 @@ import type {
   SugarBin,
   TreeYield,
 } from '../building.ts'
+import type { WeedAge } from '../plant.ts'
 import type { Cover, Ground } from '../plot.ts'
 import type {
   PlantCrop,
@@ -68,7 +69,7 @@ export type SavePlant = {
   tended: boolean
 }
 
-export type SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean }
+export type SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean; readyAt: WeedAge }
 export type SaveTurf = { variant: 0 | 1 | 2; maturity: number }
 
 export type SaveCell =

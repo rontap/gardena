@@ -49,16 +49,16 @@ import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { CASK_OF, CROP_OF_CASK, CROP_OF_SPIRIT, SENSOR_CELL_SKUS } from './ids.ts'
 import { isFenceSite, isPavingSite, isPlot, isTilled, type Cell } from './plot.ts'
 import { isSensor, isSeqIn, makeSensor, sameNode, skuKind, wouldCycle, type WireEnd } from './sensor.ts'
-import { FERT_PLOT_MAX } from './soil.ts'
 import { COMPOST_NEED } from '../defs/items.ts'
 import { dest } from './queue.ts'
 import { openClaim } from './feature-necronomicon/necronomicon.ts'
 import { fillable } from './nets.ts'
-import { plotPick, seedPair, waterable } from './feature-field/field.helpers.ts'
+import { plotPick, seedPair } from './feature-field/field.helpers.ts'
 import type { Intent, TaskName, World } from './world.ts'
 
 export const NOT_OWNED = m.prompt_not_owned()
 export const HAND_FULL = m.prompt_hand_full()
+export const NEED_EMPTY_HAND = m.prompt_need_empty_hand()
 export const QUEUE_FULL = m.prompt_queue_full()
 
 export type Prompt =
@@ -231,6 +231,10 @@ export function maybeSay(w: World, at: Coord, blocked: string): void {
   if (emptyBucketBlocked(w, at)) return
   const action = primaryAct(w.cell(at))
   if (action === undefined) return
+  if (w.act.hand.kind === 'empty') {
+    w.say(m.prompt_need_tool({ action }))
+    return
+  }
   w.say(m.prompt_cannot_use({ tool: toolName(w.act.hand), action }))
 }
 
@@ -249,7 +253,7 @@ function usesLeftBlocked(w: World, at: Coord): boolean {
 
 function emptyBucketBlocked(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'container' || w.act.hand.item.liters > 0) return false
-  return waterable(w.cell(at), w.modifiers)
+  return isTilled(w.cell(at))
 }
 
 function primaryAct(cell: Cell): string | undefined {
@@ -815,42 +819,33 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return needSeeds(cell)
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'container' && isTilled(cell)) {
-    if (!waterable(cell, w.modifiers)) {
-      return { kind: 'blocked', text: cell.soil.drowning ? m.prompt_soil_drowning() : m.prompt_soil_watered() }
-    }
     if (w.act.hand.item.liters > 0) return intent(m.names_face_water(), { act: 'water', at })
     return { kind: 'blocked', text: m.prompt_named_empty({ name: m.names_container_bucket() }) }
   }
   if (w.act.hand.kind === 'hold' && feedKind(w.act.hand.item) && isTilled(cell)) {
-    if (cell.soil.fertilizer >= FERT_PLOT_MAX) return { kind: 'blocked', text: m.prompt_soil_fertile() }
     return intent(m.prompt_fertilize(), { act: 'fertilize', at })
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell) && w.act.hand.item.liters >= 1) {
     return intent(m.prompt_spray(), { act: 'weed-spray', at })
   }
   if (cell.kind === 'ripe') {
-    if (canHarvestHand(w, cell.plant.crop, cell.plant.variety)) return intent(m.prompt_harvest(), { act: 'harvest', at })
-    if (sameFruitInHand(w, cell.plant.crop, cell.plant.variety)) return { kind: 'blocked', text: HAND_FULL }
+    if (sameFruitInHand(w, cell.plant.crop, cell.plant.variety) && !canHarvestHand(w, cell.plant.crop, cell.plant.variety)) {
+      return { kind: 'blocked', text: HAND_FULL }
+    }
+    return intent(m.prompt_harvest(), { act: 'harvest', at })
   }
   if (cell.kind === 'weed' || (cell.kind === 'untilled' && cell.cover.kind === 'grass')) {
     const kind = cell.kind === 'weed' ? 'weed' : 'grass'
-    if (w.act.hand.kind === 'empty') return intent(m.prompt_pick_up(), { act: 'pickup', at })
-    if (w.act.hand.item.kind === kind) {
-      if (handFullFor(w, { kind, count: 1 })) return { kind: 'blocked', text: HAND_FULL }
-      return intent(m.prompt_pick_up(), { act: 'pickup', at })
-    }
+    if (handFullFor(w, { kind, count: 1 })) return { kind: 'blocked', text: HAND_FULL }
+    return intent(m.prompt_pick_up(), { act: 'pickup', at })
   }
   const picked = plotPick(cell, w.clock.day)
   if (picked !== undefined) {
-    if (w.act.hand.kind === 'empty') return intent(m.prompt_pick_up(), { act: 'pickup', at })
-    if (w.act.hand.item.kind === picked.kind) {
-      if (handFullFor(w, picked)) return { kind: 'blocked', text: HAND_FULL }
-      return intent(m.prompt_pick_up(), { act: 'pickup', at })
-    }
+    if (handFullFor(w, picked)) return { kind: 'blocked', text: HAND_FULL }
+    return intent(m.prompt_pick_up(), { act: 'pickup', at })
   }
   if (w.canTend(at)) return intent(m.prompt_tend(), { act: 'tend', at })
-  if (w.act.hand.kind === 'empty') return intent(m.prompt_move_here(), { act: 'walk', at })
-  if (isPlot(cell)) return intent(m.prompt_drop(), { act: 'drop', at })
+  if (w.act.hand.kind === 'empty' || isPlot(cell)) return intent(m.prompt_move_here(), { act: 'walk', at })
   return needSeeds(cell)
 }
 

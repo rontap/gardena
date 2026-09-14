@@ -67,7 +67,9 @@ Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / ext
 
 The cap is on growth, not possession. Harvest, pickup, weed pull, and barrel collect stop at it. A stack handed over whole — silo take, house / chest / vehicle swap — may exceed it; those containers keep their own caps and merge freely.
 
-Refused merge: `say(HAND_FULL)`, prompt `blocked` `My hand is full!`. The crop stays on the plant, the remainder stays on the ground, the hand is not emptied. A different kind or identity is not a refusal — pickup still swaps hand and ground.
+Refused merge: `say(HAND_FULL)`, prompt `blocked` `My hand is full!`. The crop stays on the plant, the remainder stays on the ground, the hand is not emptied.
+
+A different kind or identity is a refusal everywhere except a drop already lying on the ground. `doPickup` on a `World.drops` face still swaps: the held item goes down on that cell and the drop comes up, so two tools trade places in one click. Every other pick-up — weed, grass cover, dead, rotten, `harvest` — sets nothing down. It says `NEED_EMPTY_HAND` and leaves both the hand and the cell alone. `handFullFor` gates the prompt on the stack cap only, so the act queues and the hand is read on arrival — [[architecture/world]] `world.on-arrival`.
 
 Liters are not counts. Buckets, fertilizer / compost / weed-spray bags, and sugar cap at `capacityLiters`. `bulk-up` does not touch them. Sugar merges weighted `unitSale` and `quality` by liters.
 
@@ -104,6 +106,8 @@ Mill / jam / still / barrel / freezer / furnace / infuser / bought sugar / stati
 `inventory.compost` — Compost `COMPOST_NEED` → `COMPOST_LITERS` in `COMPOST_SECONDS`. `buy-compost-box` unlock `start`. Graft not compost. Treasure not compost.
 
 `inventory.stack` — Countable items merge in hand by kind and identity only. `variety` is in the identity key. `infused` is in the identity key on jam, cask, spirit, oil. Cap `STACK_MAX`; `STACK_MAX_CRAFTED` for spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread. `bulk-up` adds `BULK_UP_STEP` / `BULK_UP_CRAFTED_STEP` per owned tier. Growth only: silo / house / chest / vehicle handovers may exceed it. Refused merge says `HAND_FULL`, does not empty the hand, and leaves the crop on the plant or the remainder on the ground. Liters unaffected. Illegal: `{ kind: 'box' }`. Illegal: `{ kind: 'treasure'; count }`.
+
+`inventory.pick-full` — A pick-up whose source is the cell — weed, grass cover, dead, rotten, `harvest` — never sets the held item down. A hand holding something that will not merge says `NEED_EMPTY_HAND` and changes nothing. A `World.drops` face is the one exception and still swaps hand for drop. The gate runs in `doPickup` / `begin`, not in `readPrompt`: the prompt stays **Pick up** / **Harvest** and the act queues.
 
 `variety.stack` — Different variety never merges. Same variety at different quality merges and averages quality, weighted by count — by liters for sugar. Fruit `cut` is not in the identity key; a merged stack is cut when either side was — [[mechanics/machines]] `station.cut`. Infused never merges with plain.
 

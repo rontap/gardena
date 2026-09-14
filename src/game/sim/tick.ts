@@ -153,6 +153,7 @@ export function tickWorld(world: World, dt: number): void {
     world.money -= bill
     world.pumpLiters = 0
     clearOldRotten(world)
+    field.clearRipeWeeds(world)
     burrow.mintSeam(world)
     field.tickTreesSeam(world)
     advanceGrandma(world, world.clock.day - 1)

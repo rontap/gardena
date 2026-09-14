@@ -28,6 +28,12 @@ import {SHELF_SKUS, SHELVES} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
 const AT = {col: 10, row: 12}
+const PUMP_WEST = {col: PUMP_BASE.col, row: PUMP_BASE.row}
+const PUMP_EAST = {col: PUMP_BASE.col + 1, row: PUMP_BASE.row}
+const PUMP_EDGE: Edge = {axis: 'h', col: PUMP_BASE.col, row: PUMP_BASE.row + 1}
+const PUMP_VERTEX = {col: PUMP_BASE.col + 1, row: PUMP_BASE.row + 1}
+const PUMP_PLOT = {col: PUMP_BASE.col, row: PUMP_BASE.row + 1}
+const PUMP_PLOT_EAST = {col: PUMP_BASE.col + 1, row: PUMP_BASE.row + 1}
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
     return new Soil(water, fertilizer, WEED_CHANCE)
@@ -194,10 +200,7 @@ describe('beta-1 invariants', () => {
 
     test('house occupies 12 cells, pump two, pumpjack does not mutate starter', () => {
         expect(occupiedCells(HOUSE_BASE, HOME)).toHaveLength(12)
-        expect(occupiedCells(PUMP_BASE, HOME)).toEqual([
-            {col: 18, row: 7},
-            {col: 19, row: 7},
-        ])
+        expect(occupiedCells(PUMP_BASE, HOME)).toEqual([PUMP_WEST, PUMP_EAST])
         const w = new World()
         w.buy('buy-pumpjack')
         expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
@@ -568,9 +571,9 @@ describe('beta-3 invariants', () => {
         expect(w.cell({col: 14, row: 6}).kind).toBe('house')
         expect(w.cell({col: 17, row: 8}).kind).toBe('house')
         expect(w.cell({col: 15, row: 9}).kind).not.toBe('house')
-        expect(w.cell({col: 18, row: 7}).kind).toBe('pump')
-        expect(w.cell({col: 19, row: 7}).kind).toBe('pump')
-        expect(w.cell({col: 19, row: 7})).toBe(w.cell({col: 18, row: 7}))
+        expect(w.cell(PUMP_WEST).kind).toBe('pump')
+        expect(w.cell(PUMP_EAST).kind).toBe('pump')
+        expect(w.cell(PUMP_EAST)).toBe(w.cell(PUMP_WEST))
         expect(w.pump.water.rate).toBe(SOURCE.pump.rate)
         expect(w.pump.water.capacity).toBe(SOURCE.pump.capacity)
     })
@@ -1064,7 +1067,7 @@ describe('beta-5 invariants', () => {
         expect(well.water.capacity).toBe(SOURCE.well.capacity)
         expect(well.water.stored).toBe(SOURCE.well.start)
         expect(w.wells).toHaveLength(1)
-        const net = w.netOfVertex({col: 18, row: 7})
+        const net = w.netOfVertex(PUMP_VERTEX)
         expect(net).toBeDefined()
         expect(net?.sources).toHaveLength(1)
         const wellNet = w.netOfVertex(wellAt)
@@ -1308,16 +1311,16 @@ describe('beta-5 invariants', () => {
         w.done.add('unlock-auto-irrigation')
         w.money = 100
         w.buy('buy-pipe')
-        w.placePipe({axis: 'h', col: 18, row: 7})
+        w.placePipe(PUMP_EDGE)
         w.buy('buy-sprinkler')
-        w.placeSprinkler({variant: 'basic', at: {col: 19, row: 7}, tune: {kind: 'flat'}, inn: 0, hold: 0})
+        w.placeSprinkler({variant: 'basic', at: PUMP_VERTEX, tune: {kind: 'flat'}, inn: 0, hold: 0})
         const gs = bed(0.5)
         const g = new Plant('carrot', 'base', 0)
-        w.setCell({col: 18, row: 6}, {kind: 'growing', soil: gs, plant: g})
+        w.setCell(PUMP_PLOT, {kind: 'growing', soil: gs, plant: g})
         const rs = bed(0.5)
         const r = new Plant('carrot', 'base', 0)
         r.maturity = 1
-        w.setCell({col: 19, row: 6}, {kind: 'ripe', soil: rs, plant: r})
+        w.setCell(PUMP_PLOT_EAST, {kind: 'ripe', soil: rs, plant: r})
         w.tick(1 / 15)
         expect(gs.water).toBeGreaterThan(0.5)
         expect(rs.water).toBe(0.5)
@@ -1341,14 +1344,13 @@ describe('beta-5 invariants', () => {
         w.done.add('unlock-auto-irrigation')
         w.money = 100
         w.buy('buy-sprinkler')
-        const v = {col: 19, row: 7}
+        const v = PUMP_VERTEX
         w.placeSprinkler({variant: 'basic', at: v, tune: {kind: 'flat'}, inn: 0, hold: 0})
         const g = new Plant('carrot', 'base', 0)
-        w.setCell({col: 18, row: 6}, {kind: 'growing', soil: bed(0.5), plant: g})
+        w.setCell(PUMP_PLOT, {kind: 'growing', soil: bed(0.5), plant: g})
         expect(w.rate(v)).toBe(0)
         w.buy('buy-pipe')
-        const e: Edge = {axis: 'h', col: 18, row: 7}
-        w.placePipe(e)
+        w.placePipe(PUMP_EDGE)
         expect(w.rate(v)).toBeCloseTo(SPRINKLER_TILE_RATE, 9)
     })
 
@@ -1358,13 +1360,13 @@ describe('beta-5 invariants', () => {
         w.done.add('unlock-auto-irrigation')
         w.money = 100
         w.buy('buy-pipe')
-        w.placePipe({axis: 'h', col: 18, row: 7})
+        w.placePipe(PUMP_EDGE)
         w.buy('buy-sprinkler')
-        const v = {col: 19, row: 7}
+        const v = PUMP_VERTEX
         w.placeSprinkler({variant: 'basic', at: v, tune: {kind: 'flat'}, inn: 0, hold: 0})
         const s = bed(0.5)
         const g = new Plant('carrot', 'base', 0)
-        w.setCell({col: 18, row: 6}, {kind: 'growing', soil: s, plant: g})
+        w.setCell(PUMP_PLOT, {kind: 'growing', soil: s, plant: g})
         const r = w.rate(v)
         expect(r).toBeGreaterThan(0)
         const dt = 1 / 15
@@ -1551,7 +1553,7 @@ describe('beta-6 invariants', () => {
         w.confirmPlace(AT)
         expect(w.cell(AT).kind).toBe('pump')
         expect(w.cell({col: 11, row: 12}).kind).toBe('pump')
-        const starter = {col: 18, row: 7}
+        const starter = PUMP_WEST
         expect(w.cell(starter).kind).toBe('pump')
         w.armDelete()
         const money = w.money
@@ -1702,15 +1704,16 @@ describe('world.dest', () => {
         w.buy('buy-still')
         w.confirmPlace(stillAt)
         expect(dest({act: 'still', at: {col: stillAt.col + 1, row: stillAt.row}}, w)).toEqual(stillAt)
-        expect(dest({act: 'fill', at: {col: 18, row: 7}}, w)).toEqual({col: 18, row: 7})
-        expect(dest({act: 'fill', at: {col: 19, row: 7}}, w)).toEqual({col: 18, row: 7})
+        expect(dest({act: 'fill', at: PUMP_WEST}, w)).toEqual(PUMP_WEST)
+        expect(dest({act: 'fill', at: PUMP_EAST}, w)).toEqual(PUMP_WEST)
         w.buy('buy-pumpjack')
         const jack = {col: 8, row: 16}
         w.confirmPlace(jack)
         expect(dest({act: 'fill', at: {col: jack.col + 1, row: jack.row}}, w)).toEqual(jack)
         expect(dest({act: 'inventory'}, w)).toEqual(DOOR)
         expect(dest({act: 'consign'}, w)).toEqual(PAD)
-        expect(dest({act: 'additives', at: {col: 18, row: 10}}, w)).toEqual({col: 18, row: 10})
+        const additiveSouth = {col: ADDITIVE_BASE.col, row: ADDITIVE_BASE.row + 1}
+        expect(dest({act: 'additives', at: additiveSouth}, w)).toEqual(additiveSouth)
     })
 })
 
@@ -1719,7 +1722,7 @@ describe('world.pulse', () => {
         const w = new World(1)
         expect('pulse' in w).toBe(false)
         w.buy('buy-pipe')
-        w.placePipe({axis: 'h', col: 18, row: 7})
+        w.placePipe(PUMP_EDGE)
         expect('pulse' in w).toBe(false)
     })
 })

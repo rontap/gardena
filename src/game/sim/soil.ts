@@ -9,6 +9,7 @@ export const STUNT = 0.67
 export const WEED_WATER_PER_SEC = 0.008
 export const WEED_FERT_PER_SEC = (1 / 240) * 0.6 * 0.9
 export const WEED_GROW = 60
+export const WEED_GONE_DAYS = 1
 export const BIG_TICK = 10
 export const WEED_CHANCE = 0.03
 export const GRASS_CHANCE = 0.5

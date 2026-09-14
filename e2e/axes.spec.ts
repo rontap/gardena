@@ -3,6 +3,7 @@ import { CROPS, HAPPY_MAX, cropVariety } from '../src/game/defs/crops.ts'
 import { purposeMul, qualityMul, STARTER_VARIETY_PACKS, VARIETY } from '../src/game/defs/varieties.ts'
 import { WEATHER_FRUIT_IMPACT } from '../src/game/defs/weather.ts'
 
+import { PAD, SILO_BASE, WAREHOUSE_BASE } from '../src/game/sim/building.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { closeDock, dismissRecap, gotoPlay, tapWorld } from './helpers.ts'
 
@@ -10,9 +11,8 @@ type At = { col: number; row: number }
 
 const PLOT_A: At = { col: 13, row: 11 }
 const PLOT_B: At = { col: 14, row: 11 }
-const SILO: At = { col: 17, row: 9 }
-const WAREHOUSE: At = { col: 9, row: 8 }
-const PAD: At = { col: 9, row: 10 }
+const SILO: At = { col: SILO_BASE.col, row: SILO_BASE.row }
+const WAREHOUSE: At = { col: WAREHOUSE_BASE.col, row: WAREHOUSE_BASE.row }
 
 function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
   return page.evaluate(

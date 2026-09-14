@@ -40,8 +40,8 @@ import { Act } from '../log.ts'
 import { lookText } from '../look.ts'
 import { dest } from '../queue.ts'
 import { DT_MAX, World } from '../world.ts'
-import { SILO_BASE } from '../building.ts'
-import { boomHits, dropoffPad, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, trailerUsed } from './vehicle.ts'
+import { ADDITIVE_BASE, PAD, SILO_BASE, WAREHOUSE_BASE, warehousePads } from '../building.ts'
+import { boomHits, dropoffPad, hangarPad, hitchP, padCenter, seekSpeed, siloPad, surfaceMul, takeupPad, trailerUsed } from './vehicle.ts'
 import { isSolid } from '../plot.ts'
 import { Plant, Weed } from '../plant.ts'
 import { FERT_PLOT_MAX, Soil } from '../soil.ts'
@@ -834,13 +834,22 @@ describe('vehicles II', () => {
     expect(permit({ a: Act.dock, t: 0, p: 1 })).toBe(true)
   })
 
-  test('assumption: dropoff is (17,8). Seed-silo dropoff is house SE; drive onto it isSolid SURFACE_SLOW.', () => {
-    expect(dropoffPad(SILO_BASE)).toEqual([{ col: 17, row: 8 }])
+  test('vehicles.starter-pads - Every pad the home chunk lays out stands on ground a vehicle can drive onto.', () => {
     const w = new World(1)
-    const at = { col: 17, row: 8 }
-    expect(w.cell(at).kind).toBe('house')
-    expect(isSolid(w.cell(at))).toBe(true)
-    expect(surfaceMul(w, at)).toBe(SURFACE_SLOW)
+    const pads = [
+      ...dropoffPad(SILO_BASE),
+      ...takeupPad(SILO_BASE),
+      ...dropoffPad(ADDITIVE_BASE),
+      ...takeupPad(ADDITIVE_BASE),
+      ...warehousePads(WAREHOUSE_BASE),
+    ]
+    expect(pads).toHaveLength(6)
+    pads.forEach(at => {
+      expect([at, w.inWorld(at)]).toEqual([at, true])
+      expect([at, isSolid(w.cell(at))]).toEqual([at, false])
+      expect([at, surfaceMul(w, at)]).toEqual([at, 1])
+    })
+    expect(PAD).toEqual(warehousePads(WAREHOUSE_BASE)[0])
   })
 
   test('Quad on mill dropoff: Unload cane into mill.', () => {

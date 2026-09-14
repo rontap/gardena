@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { AXES } from '../../defs/items.ts'
+import { SILO_BASE } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
 import { makeChainsaw } from '../item.ts'
 import { POINTS_PER_DAY, World } from '../world.ts'
@@ -49,9 +50,9 @@ describe('save.nomigrate', () => {
     expect(bad.ok).toBe(false)
     if (!bad.ok) expect(bad.reason).toBe('unusable')
     const g = dump(new World(1))
-    const house = g.chunks[0].cells[9][17]
-    expect(house.kind).toBe('seed-silo')
-    ;(house as { grass?: number }).grass = 1
+    const silo = g.chunks[0].cells[SILO_BASE.row][SILO_BASE.col]
+    expect(silo.kind).toBe('seed-silo')
+    ;(silo as { grass?: number }).grass = 1
     const store = parse(JSON.stringify(g))
     expect(store.ok).toBe(false)
     if (!store.ok) expect(store.reason).toBe('unusable')

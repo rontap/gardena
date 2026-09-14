@@ -47,9 +47,12 @@ export class Turf {
   }
 }
 
+export type WeedAge = { kind: 'growing' } | { kind: 'ready'; day: number }
+
 export class Weed {
   maturity = 0
   spread = false
+  readyAt: WeedAge = { kind: 'growing' }
 
   readonly variant: 0 | 1
 

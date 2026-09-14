@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { cropVariety } from '../src/game/defs/crops.ts'
 import { MILL_H, MILL_W } from '../src/game/defs/items.ts'
 import { STARTER_FRUIT, STARTER_FRUIT_N, VARIETY } from '../src/game/defs/varieties.ts'
+import { ADDITIVE_BASE, SILO_BASE } from '../src/game/sim/building.ts'
 import { BIG_TICK } from '../src/game/sim/soil.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { armSku, closeDock, dismissRecap, gotoPlay, hoverWorld, openBuild, tapWorld } from './helpers.ts'
@@ -210,7 +211,7 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
   }, STATION)
   await armSku(page, 'Seed Variety Station 60', 'Automation')
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
-  await expect(page.getByText('Place Seed Variety Station', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-action]')).toContainText('Place Seed Variety Station')
   const art = await page.evaluate(() => {
     const e = (
       window as unknown as {
@@ -225,8 +226,8 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
   expect(art.hrefs).not.toContain(art.still)
 })
 
-const SILO: At = { col: 17, row: 9 }
-const ADDITIVE: At = { col: 18, row: 9 }
+const SILO: At = { col: SILO_BASE.col, row: SILO_BASE.row }
+const ADDITIVE: At = { col: ADDITIVE_BASE.col, row: ADDITIVE_BASE.row }
 const MILL_AT: At = { col: 8, row: 14 }
 const INF_AT: At = { col: 8, row: 11 }
 const FURNACE_AT: At = { col: 12, row: 16 }

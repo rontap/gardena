@@ -46,7 +46,7 @@ Canvas host. Wheel zoom stays. Expand plates take pointer — [[ui/hud]].
 
 Valve stays click-per-edge. Pan while it is armed.
 
-Armed Build card (`place.kind === 'sku' && place.id === id`): selected. Look: `lookText`. Armed with no cell still place / demolish copy, not **—**. Status uses roof tint while armed.
+Armed Build card (`place.kind === 'sku' && place.id === id`): selected. The place / demolish copy is the inspect action block, not a `lookText` line — over a cell the look block names the cell and the roof tint carries the arming. Armed with no cell `lookText` is still place copy, not **—**, because there is no cell to name. Status uses roof tint while armed. — [[ui/inspect]] `inspect.action`
 
 ## Hover cell
 
@@ -148,3 +148,5 @@ Every cell the local seat's queue resolves to through `dest` gets one triangle i
 Dropped item face `DROP_FACE` — preference. Click / hover on the painted face is that drop. Empty cell pixels are not the drop. Last `World.drops` face wins overlap. Drop tip: shovel / pickaxe / container on that face.
 
 Cell outline stays `floor` of the pointer.
+
+`place.drop` — Setting the held item down is a right-click. `rightClickBody` on an owned plot with nothing armed enqueues `{ act: 'drop'; at }`; the same right-click on an armed sku cancels the arming instead. `readPrompt` never returns that intent, so no left click anywhere sets the hand down: a held item over a plot with no act available reads **Move here**. The queued errand row still reads **Drop**.

@@ -1,8 +1,13 @@
 import { expect, type Page } from '@playwright/test'
+import { PUMP_BASE } from '../src/game/sim/building.ts'
 
 export const TILE = 48
 export const CAM_X = 15.5
 export const CAM_Y = 9.5
+
+export const PUMP_EDGE = { axis: 'h' as const, col: PUMP_BASE.col, row: PUMP_BASE.row + 1 }
+export const PUMP_VERTEX = { col: PUMP_BASE.col + 1, row: PUMP_BASE.row + 1 }
+export const PUMP_PLOT = { col: PUMP_BASE.col, row: PUMP_BASE.row + 1 }
 
 export async function waitPlay(page: Page): Promise<void> {
   await expect(async () => {

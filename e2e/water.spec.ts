@@ -1,8 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { SILO_BASE } from '../src/game/sim/building.ts'
+import { PUMP_BASE, SILO_BASE } from '../src/game/sim/building.ts'
 import { armSku, dismissRecap, gotoPlay, screenOf, tapWorld, unlockWorld } from './helpers.ts'
 
 type At = { col: number; row: number }
+
+const PUMP_ROW = PUMP_BASE.row
+const PUMP_WEST_COL = PUMP_BASE.col
+const PUMP_EAST_COL = PUMP_BASE.col + 1
+const PUMP_NE_COL = PUMP_BASE.col + PUMP_BASE.w
 
 function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
   return page.evaluate(
@@ -35,22 +40,22 @@ test.beforeEach(async ({ page }, info) => {
 
 test('valve feeds while open and the far side is dry when closed', async ({ page }) => {
   await unlockWorld(page)
-  await placeEdge(page, 'h', 20, 7)
-  await placeEdge(page, 'h', 21, 7)
-  await placeEdge(page, 'h', 22, 7)
-  await convertToValve(page, 21, 7)
+  await placeEdge(page, 'h', PUMP_NE_COL, PUMP_ROW)
+  await placeEdge(page, 'h', PUMP_NE_COL + 1, PUMP_ROW)
+  await placeEdge(page, 'h', PUMP_NE_COL + 2, PUMP_ROW)
+  await convertToValve(page, PUMP_NE_COL + 1, PUMP_ROW)
   await disarm(page)
   await expect(page.locator('[data-pipe]')).toHaveCount(4)
   await expect.poll(() => wetCount(page)).toBe(4)
 
-  await closeValve(page, 21, 7)
+  await closeValve(page, PUMP_NE_COL + 1, PUMP_ROW)
   await expect.poll(() => wetCount(page)).toBe(2)
   expect(
     await readWorld<boolean>(
       page,
       [
-        { col: 22, row: 7 },
-        { col: 23, row: 7 },
+        { col: PUMP_NE_COL + 2, row: PUMP_ROW },
+        { col: PUMP_NE_COL + 3, row: PUMP_ROW },
       ],
       'at.every(v => !w.vertexWet(v))',
     ),
@@ -59,33 +64,33 @@ test('valve feeds while open and the far side is dry when closed', async ({ page
 
 test('closed valve still waters through a bypass', async ({ page }) => {
   await unlockWorld(page)
-  await placeEdge(page, 'h', 18, 7)
-  await convertToValve(page, 18, 7)
-  await placeEdge(page, 'v', 18, 7)
-  await placeEdge(page, 'h', 18, 8)
-  await placeEdge(page, 'v', 19, 7)
-  await placeEdge(page, 'h', 19, 7)
+  await placeEdge(page, 'h', PUMP_WEST_COL, PUMP_ROW)
+  await convertToValve(page, PUMP_WEST_COL, PUMP_ROW)
+  await placeEdge(page, 'v', PUMP_WEST_COL, PUMP_ROW)
+  await placeEdge(page, 'h', PUMP_WEST_COL, PUMP_ROW + 1)
+  await placeEdge(page, 'v', PUMP_EAST_COL, PUMP_ROW)
+  await placeEdge(page, 'h', PUMP_EAST_COL, PUMP_ROW)
   await disarm(page)
   await expect(page.locator('[data-pipe]')).toHaveCount(5)
   await expect.poll(() => wetCount(page)).toBe(5)
 
-  await closeValve(page, 18, 7)
+  await closeValve(page, PUMP_WEST_COL, PUMP_ROW)
   await expect.poll(() => wetCount(page)).toBe(5)
-  expect(await readWorld<boolean>(page, { col: 20, row: 7 }, 'w.vertexWet(at)')).toBe(true)
+  expect(await readWorld<boolean>(page, { col: PUMP_NE_COL, row: PUMP_ROW }, 'w.vertexWet(at)')).toBe(true)
 })
 
 test('two sources join one network', async ({ page }) => {
   await unlockWorld(page)
-  await placeEdge(page, 'h', 18, 7)
-  await placeEdge(page, 'h', 19, 7)
+  await placeEdge(page, 'h', PUMP_WEST_COL, PUMP_ROW)
+  await placeEdge(page, 'h', PUMP_EAST_COL, PUMP_ROW)
   await armSku(page, 'Well 50')
-  await confirmWellCell(page, 20, 7)
+  await confirmWellCell(page, PUMP_NE_COL, PUMP_ROW)
   await page.keyboard.press('Escape')
   await worldTrue(
     page,
     [
-      { col: 19, row: 7 },
-      { col: 21, row: 7 },
+      { col: PUMP_EAST_COL, row: PUMP_ROW },
+      { col: PUMP_NE_COL + 1, row: PUMP_ROW },
     ],
     'at.map(v => w.netOfVertex(v)).every(n => n !== undefined)',
   )
@@ -93,8 +98,8 @@ test('two sources join one network', async ({ page }) => {
     await readWorld<number>(
       page,
       [
-        { col: 19, row: 7 },
-        { col: 21, row: 7 },
+        { col: PUMP_EAST_COL, row: PUMP_ROW },
+        { col: PUMP_NE_COL + 1, row: PUMP_ROW },
       ],
       'w.netOfVertex(at[0]).sources.length',
     ),
@@ -103,8 +108,8 @@ test('two sources join one network', async ({ page }) => {
     await readWorld<boolean>(
       page,
       [
-        { col: 19, row: 7 },
-        { col: 21, row: 7 },
+        { col: PUMP_EAST_COL, row: PUMP_ROW },
+        { col: PUMP_NE_COL + 1, row: PUMP_ROW },
       ],
       'w.netOfVertex(at[0]) === w.netOfVertex(at[1])',
     ),

@@ -97,6 +97,8 @@ Parked only. `Act.swapTrailer` legal iff that trailer is `attached` to a tractor
 
 Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, sorter, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos. Cells from `padPorts()` — [[architecture/modules]] `building.io-ports`. Sorter: one dropoff beside the middle cell, three takeups beside each cell on the side its `facing` names — [[mechanics/machines]] `machines.sorter`. Load from a sorter takeup picks the ground drops of that Variety tier only.
 
+`vehicles.starter-pads` — Every pad the home chunk lays out — both faces of the starter Seed silo and Additive store, and the warehouse's consign row — stands on ground a vehicle can drive onto: owned, not solid, `surfaceMul` 1. `PAD` is the first of `warehousePads(WAREHOUSE_BASE)`, not a second number to keep in step. Moving a starter building means moving it somewhere its pads still land clear — [[items/buildings]].
+
 Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad. Instant. Logged. Quad uses quad slots; tractor still needs hitch. Guest: mill/jam/still/compost/furnace/sorter/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
 
 ## Surfaces

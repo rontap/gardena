@@ -347,6 +347,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       const weed = new Weed(cell.weed.variant)
       weed.maturity = cell.weed.maturity
       weed.spread = cell.weed.spread
+      weed.readyAt = cell.weed.readyAt
       return { kind: 'weed', soil: makeSoil(cell.soil), weed }
     }
     case 'turf': {

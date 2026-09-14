@@ -6,6 +6,9 @@ import {
   hoverWorld,
   hudMoney,
   moneyValue,
+  PUMP_EDGE,
+  PUMP_PLOT,
+  PUMP_VERTEX,
   tapWorld,
 } from './helpers.ts'
 
@@ -97,12 +100,12 @@ test('dry pipes', async ({ page }) => {
 
 test('connected sprinkler waters', async ({ page }) => {
   await armSku(page, 'Pipe 3')
-  await tapWorld(page, 18.5, 7)
+  await tapWorld(page, PUMP_EDGE.col + 0.5, PUMP_EDGE.row)
   await armSku(page, 'Sprinkler 16')
-  await tapWorld(page, 19, 7)
+  await tapWorld(page, PUMP_VERTEX.col, PUMP_VERTEX.row)
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
   await page.keyboard.press('Escape')
-  const water0 = await page.evaluate(() => {
+  const water0 = await page.evaluate(plot => {
     const w = (
       window as unknown as {
         __world: {
@@ -120,22 +123,22 @@ test('connected sprinkler waters', async ({ page }) => {
       }
     ).__e2e
     if (e === undefined) throw new Error('no __e2e')
-    w.setCell({ col: 18, row: 6 }, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
-    const c = w.cell({ col: 18, row: 6 })
+    w.setCell(plot, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
+    const c = w.cell(plot)
     if (c.kind !== 'growing' || c.soil === undefined) throw new Error('growing')
     return c.soil.water
-  })
+  }, PUMP_PLOT)
   await expect
     .poll(async () => {
-      return page.evaluate(() => {
+      return page.evaluate(plot => {
         const c = (
           window as unknown as {
             __world: { cell: (at: { col: number; row: number }) => { kind: string; soil?: { water: number } } }
           }
-        ).__world.cell({ col: 18, row: 6 })
+        ).__world.cell(plot)
         if (c.kind !== 'growing' || c.soil === undefined) return -1
         return c.soil.water
-      })
+      }, PUMP_PLOT)
     })
     .toBeGreaterThan(water0)
 })

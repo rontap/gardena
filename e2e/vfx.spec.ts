@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { MILL_H, MILL_W } from '../src/game/defs/items.ts'
-import { gotoPlay, tapWorld, waitPlay } from './helpers.ts'
+import { gotoPlay, PUMP_EDGE, PUMP_PLOT, PUMP_VERTEX, tapWorld, waitPlay } from './helpers.ts'
 
 type At = { col: number; row: number }
 
@@ -28,13 +28,16 @@ async function placeMill(page: Page, units: number): Promise<void> {
 }
 
 async function fedSprinkler(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const w = (window as unknown as { __world: any }).__world
-    w.buy('buy-pipe')
-    w.placePipe({ axis: 'h', col: 18, row: 7 })
-    w.buy('buy-sprinkler')
-    w.placeSprinkler({ variant: 'basic', at: { col: 19, row: 7 }, tune: { kind: 'flat' }, inn: 0, hold: 0 })
-  })
+  await page.evaluate(
+    ([edge, v]) => {
+      const w = (window as unknown as { __world: any }).__world
+      w.buy('buy-pipe')
+      w.placePipe(edge)
+      w.buy('buy-sprinkler')
+      w.placeSprinkler({ variant: 'basic', at: v, tune: { kind: 'flat' }, inn: 0, hold: 0 })
+    },
+    [PUMP_EDGE, PUMP_VERTEX] as const,
+  )
 }
 
 async function setCrop(page: Page, at: At, growing: boolean): Promise<void> {
@@ -61,20 +64,20 @@ test('sprinkler state vfx follows the pour, on and off', async ({ page }) => {
   await expect(page.locator('[data-sprinkler]')).toHaveCount(1)
   await expect(page.locator('[data-vfx]')).toHaveCount(0)
 
-  await setCrop(page, { col: 18, row: 6 }, true)
+  await setCrop(page, PUMP_PLOT, true)
   const spray = page.locator('[data-vfx="sprinkler-spray"]')
   await expect(spray).toHaveCount(1)
   await expect.poll(async () =>
     page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),
   ).toBeGreaterThan(0)
 
-  await setCrop(page, { col: 18, row: 6 }, false)
+  await setCrop(page, PUMP_PLOT, false)
   await expect(page.locator('[data-vfx]')).toHaveCount(0)
 })
 
 test('spray cuts between frames, one at a time', async ({ page }) => {
   await fedSprinkler(page)
-  await setCrop(page, { col: 18, row: 6 }, true)
+  await setCrop(page, PUMP_PLOT, true)
   await expect(page.locator('[data-vfx="sprinkler-spray"]')).toHaveCount(1)
   await expect.poll(async () =>
     page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),
@@ -84,15 +87,15 @@ test('spray cuts between frames, one at a time', async ({ page }) => {
 test('vertical spray is oriented like its AoE, both facings', async ({ page }) => {
   for (const rotate of [false, true]) {
     await gotoPlay(page, { unlock: true })
-    await page.evaluate(async (turn) => {
+    await page.evaluate(async ([turn, edge, v]) => {
       const w = (window as unknown as { __world: any }).__world
       w.buy('buy-pipe')
-      w.placePipe({ axis: 'h', col: 18, row: 7 })
+      w.placePipe(edge)
       w.buy('buy-sprinkler-vert')
       if (turn === true) w.rotatePlace()
-      w.placeSprinkler({ variant: 'vert', at: { col: 19, row: 7 }, facing: 'ns', tune: { kind: 'flat' }, inn: 0, hold: 0 })
+      w.placeSprinkler({ variant: 'vert', at: v, facing: 'ns', tune: { kind: 'flat' }, inn: 0, hold: 0 })
       const e = (window as unknown as { __e2e: any }).__e2e
-      const s = w.sprinklerAt({ col: 19, row: 7 })
+      const s = w.sprinklerAt(v)
       const cells = e.aoe(s)
       cells.forEach((c: { col: number; row: number }) => {
         const kind = w.cell(c).kind
@@ -100,7 +103,7 @@ test('vertical spray is oriented like its AoE, both facings', async ({ page }) =
           w.setCell(c, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
       })
       ;(window as unknown as { __aoe: unknown }).__aoe = cells
-    }, rotate)
+    }, [rotate, PUMP_EDGE, PUMP_VERTEX] as const)
     await expect(page.locator('[data-vfx="sprinkler-spray-vert"]')).toHaveCount(1)
     await expect.poll(async () =>
       page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),
@@ -119,7 +122,7 @@ test('vertical spray is oriented like its AoE, both facings', async ({ page }) =
 
 test('spray does not eat pointer events', async ({ page }) => {
   await fedSprinkler(page)
-  await setCrop(page, { col: 18, row: 6 }, true)
+  await setCrop(page, PUMP_PLOT, true)
   const spray = page.locator('[data-vfx="sprinkler-spray"]')
   await expect(spray).toHaveCount(1)
   await expect.poll(async () =>
@@ -269,7 +272,7 @@ test.describe('reduced motion', () => {
 
   test('state vfx keeps frame 0 and stops animating', async ({ page }) => {
     await fedSprinkler(page)
-    await setCrop(page, { col: 18, row: 6 }, true)
+    await setCrop(page, PUMP_PLOT, true)
     await expect(page.locator('[data-vfx="sprinkler-spray"]')).toHaveCount(1)
     await expect.poll(async () =>
       page.evaluate(() => (window as unknown as { __view: { vfxN: number } }).__view.vfxN),

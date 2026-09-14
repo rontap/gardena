@@ -276,18 +276,18 @@ function clamp(n: number, a: number, c: number): number {
 }
 
 export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 6, w: 4, h: 3 }
-export const PUMP_BASE: RectBase = { shape: 'rect', col: 18, row: 7, w: 2, h: 1 }
+export const PUMP_BASE: RectBase = { shape: 'rect', col: 17, row: 10, w: 2, h: 1 }
 export const DOOR: Coord = { col: 15, row: 9 }
-export const WAREHOUSE_BASE: RectBase = { shape: 'rect', col: 9, row: 8, w: 2, h: 2 }
-export const POSTBOX_BASE: RectBase = { shape: 'rect', col: 13, row: 8, w: 1, h: 1 }
+export const WAREHOUSE_BASE: RectBase = { shape: 'rect', col: 10, row: 7, w: 2, h: 2 }
+export const POSTBOX_BASE: RectBase = { shape: 'rect', col: 14, row: 10, w: 1, h: 1 }
 export const YARD: Coord[] = [
   { col: 12, row: 9 },
   { col: 13, row: 9 },
   { col: 14, row: 9 },
 ]
-export const PAD: Coord = { col: 9, row: 10 }
-export const SILO_BASE: RectBase = { shape: 'rect', col: 17, row: 9, w: 1, h: 2 }
-export const ADDITIVE_BASE: RectBase = { shape: 'rect', col: 18, row: 9, w: 1, h: 2 }
+export const PAD: Coord = warehousePads(WAREHOUSE_BASE)[0]
+export const SILO_BASE: RectBase = { shape: 'rect', col: 19, row: 7, w: 1, h: 2 }
+export const ADDITIVE_BASE: RectBase = { shape: 'rect', col: 20, row: 7, w: 1, h: 2 }
 
 const HOME: ChunkId[] = [{ cx: 0, cy: 0 }]
 

@@ -9,7 +9,7 @@ import { type Edge } from './pipe.ts'
 import { countable, mergeInto, stackable, type Item } from './item.ts'
 import { topIndex } from './drop.ts'
 import { isPlot } from './plot.ts'
-import { HAND_FULL } from './prompt.ts'
+import { HAND_FULL, NEED_EMPTY_HAND } from './prompt.ts'
 import * as field from './feature-field/field.ts'
 import * as machines from './feature-machines/machines.tick.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
@@ -222,6 +222,7 @@ export function begin(world: World, i: Intent): void {
       return
     case 'harvest':
       if (!field.canHarvest(world, i.at)) {
+        sayHarvestRefused(world, i.at)
         shiftHead(world)
         return
       }
@@ -552,6 +553,17 @@ export function doToggle(world: World, at: Coord): void {
   }
 }
 
+function sayHarvestRefused(world: World, at: Coord): void {
+  const c = world.cell(at)
+  if (c.kind !== 'ripe' || world.act.hand.kind !== 'hold') return
+  const it = world.act.hand.item
+  if (it.kind === 'fruit' && it.crop === c.plant.crop && it.variety === c.plant.variety) {
+    world.say(HAND_FULL)
+    return
+  }
+  world.say(NEED_EMPTY_HAND)
+}
+
 export function doPickup(world: World, at: Coord): void {
   const i = topIndex(world.drops, at)
   if (i < 0) {
@@ -566,7 +578,10 @@ export function doPickup(world: World, at: Coord): void {
     if (gained === undefined) return
     const held = world.act.hand
     if (held.kind === 'hold') {
-      if (!countable(held.item) || !stackable(held.item, gained)) return
+      if (!countable(held.item) || !stackable(held.item, gained)) {
+        world.say(NEED_EMPTY_HAND)
+        return
+      }
       if (held.item.count >= world.stackMax(held.item)) {
         world.say(HAND_FULL)
         return

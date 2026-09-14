@@ -17,6 +17,7 @@ import {
   waterBand,
   WEED_CHANCE,
   WEED_FERT_PER_SEC,
+  WEED_GONE_DAYS,
   WEED_GROW,
   WEED_WATER_PER_SEC,
 } from '../soil.ts'
@@ -108,6 +109,7 @@ export function tickField(w: World, dt: number): void {
       if (c.weed.maturity === 1 && !c.weed.spread) {
         outbreak(w, at)
         c.weed.spread = true
+        c.weed.readyAt = { kind: 'ready', day: w.clock.day }
       }
       if (c.weed.stage() !== stage0) dirty = true
       continue
@@ -157,6 +159,21 @@ export function tickField(w: World, dt: number): void {
     if (now.plant.stage(now.kind) !== stage0 || mood(now.soil, st) !== mood0) dirty = true
   }
   if (dirty) w.pingFor('field')
+}
+
+export function clearRipeWeeds(w: World): void {
+  const gone: Coord[] = []
+  for (const at of w.tilled.values()) {
+    const c = w.cell(at)
+    if (c.kind !== 'weed' || c.weed.readyAt.kind !== 'ready') continue
+    if (w.clock.day - c.weed.readyAt.day < WEED_GONE_DAYS) continue
+    gone.push(at)
+  }
+  const grass = w.rng.stream('grass')
+  gone.forEach(at => {
+    const variant = Math.floor(grass.at(at.col, at.row, w.clock.day) * 3) as 0 | 1 | 2
+    w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'grass', variant } })
+  })
 }
 
 export function tickTreesSeam(w: World): void {

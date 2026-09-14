@@ -575,6 +575,28 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   return never(item)
 }
 
+export type Gauge = { label: string; value: number; max: number }
+
+export function itemGauge(item: Item): Gauge | undefined {
+  if (item.kind === 'shovel') {
+    return { label: m.hud_durability(), value: item.usesLeft, max: SHOVELS[item.id].uses }
+  }
+  if (item.kind === 'pickaxe') {
+    return { label: m.hud_durability(), value: item.usesLeft, max: PICKAXES[item.id].uses }
+  }
+  if (item.kind === 'axe') return { label: m.hud_durability(), value: item.usesLeft, max: AXES.axe.uses }
+  if (item.kind === 'chainsaw') return { label: m.hud_durability(), value: item.usesLeft, max: AXES.chainsaw.uses }
+  if (
+    item.kind === 'container' ||
+    item.kind === 'fertilizer' ||
+    item.kind === 'compost' ||
+    item.kind === 'weed-spray'
+  ) {
+    return { label: m.hud_content(), value: item.liters, max: item.capacityLiters }
+  }
+  return undefined
+}
+
 export function heldText(hand: Hand, mods: readonly Modifier[]): string {
   if (hand.kind === 'empty') return m.hud_held_empty()
   return itemLine(hand.item, mods)

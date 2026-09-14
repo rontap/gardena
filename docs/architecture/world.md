@@ -122,6 +122,8 @@ Illegal: spatial roll without identity ints. Weather identity `at(day, k)` only.
 
 `world.queue` — `Seat.queue` length ≤ `QUEUE_CAP`. Further `enqueueOn` is a no-op and `say(prompt_queue_full)`. Not Save.
 
+`world.on-arrival` — A condition the walk itself can change is read in `begin`, not in `readPrompt`. A tilled plot already at `pourTarget` or at `FERT_PLOT_MAX` still takes **Water** / **Fertilize** and queues; `canWater` / `canFertilize` drop the head on arrival with no speech. A full hand still takes **Pick up** / **Harvest** and queues; the hand is read on arrival and says `NEED_EMPTY_HAND` — [[mechanics/inventory]] `inventory.pick-full`. `readPrompt` refuses only what the walk cannot change: an empty bucket, a stack at its cap, land nobody owns.
+
 `world.dest` — `dest(hangar | silo | still | fill)` is the origin of that instance, not the interior cell clicked. Fill is pump / tap / well. `dest(inventory)` is `DOOR`. `dest(consign)` is `PAD`. `dest(station | infuser | open | additives)` is `at`.
 
 `world.pulse` — `World` has no `pulse` field. Last-action highlight gone. Not a cmd. Not Save.

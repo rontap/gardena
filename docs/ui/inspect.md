@@ -1,10 +1,24 @@
 # Inspect
 
-Bottom-right `Status` under the queue. Held face + `heldText` / fruit `ItemLineView`. The held name is rustic, one line. Then `lookText` (cell name, soil, prompt). The first look line is the same rustic face; the rest stays body. Armed place tints the look block roof. Litres and × multipliers a person reads here use `Math.visualRound` — [[architecture/view]] `view.round`.
+Bottom-right `Status` under the queue. Litres and × multipliers a person reads here use `Math.visualRound` — [[architecture/view]] `view.round`.
+
+`inspect.blocks` — Three blocks, top to bottom. **Look** is the hovered thing: `lookText` plus the bar rows below it. **Action** is the one click. **Hand** is what the gardener is carrying. The first look line and the held name are rustic, one line each; everything else is body. Armed place tints the look block roof. Hand is `h-20` whether it holds a gauge row or not, so the two blocks above it never shift under the pointer.
+
+`inspect.open` — Six acts carry the thing's own name as their prompt text rather than a verb: `inventory` `chest` `silo` `additives` `hangar` `vehicle`. The action block wraps those in **Open {name}**, so a chest reads **Click to Open Chest**, not **Click to Chest**. `station` joins them when `canStation` is false — the same gate `begin` uses to open the panel instead of cutting — and then reads **Open Seed Variety Station**, dropping the live detail `stationLook` puts in the look block. `necronomicon` stays out: **Read the Necronomicon** is already a verb. The wrap lives in the action block alone. The prompt strings, `maybeSay`, and the queued errand rows are untouched.
+
+`inspect.action` — The action block reads **Click to {action}** off `promptHit(hover)` for an `intent` or a `place` prompt, and an em-dash for a `blocked` one. The prompt text belongs to that block alone: `lookText` no longer appends it and no longer leads with **Place {name}** for an armed sku — the roof tint and the action block carry the arming. A `blocked` prompt is the one the look block still shows, appended by the panel, because the action block has the em-dash there. No transform of the prompt text — **Click to Dig**, **Click to Move here**. Queued errand rows keep the bare verb — [[ui/hud]].
 
 `Seat.queue` cap `QUEUE_CAP`. A further click `say`s **I can't remember more errands than that!**. [[architecture/world]] `world.queue`
 
-Plant bars on hover of a growing or ripe plot. Empty soil bars. Tree Growth fill. Title, drop, and prompt stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
+Plant bars on hover of a growing, ripe or weeded plot. Empty soil bars. Tree Growth fill. Title and drop stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
+
+## Gauges
+
+`inspect.gauge` — Every quantity that was printed as `x/x` is one row instead, `{label} {bar} {Math.visualRound(value)}`: the same blue fill bar Quality and Growth use, and the bare rounded amount, no unit. `itemGauge` owns the item side — **Durability** off `usesLeft` for shovel / pickaxe / axe / chainsaw, **Content** off `liters` for bucket / fertilizer / compost / weed-spray. `cellGauge` owns the cell side — **Content** off `used` for anything extending `Store` (seed silo, additive store, both field silos, produce silo) and off `water.stored` for a pump or a well. A held sugar bag is not a gauge: its line prints litres without a capacity, and it carries a Quality percent the row would drop.
+
+Those names carry no `x/x` in their look or held text any more. The gauge row is the number. A held item with a gauge shows `toolName` plus the row; every other item keeps `heldText` / `ItemLineView`. A dropped item with a gauge draws the row under the look block, the way a dropped fruit draws `FruitStats`.
+
+Machines are not gauges. A mill, still, barrel, jam machine, furnace, infuser or compost box keeps its `{n}/{cap}` look line and its own progress row — [[ui/recipe]].
 
 Player words on this HUD: **Variety** as `{Crop} ({Variety})`, **Quality** as `floor(quality * 100)%`. `tier` and `purpose` are vault-only; a purpose reaches the player as **Fresh** / **Preserving** / **Alcohol** on the seed callout — [[ui/store]] — and as the `×{mul}` on a cask, spirit or jam line.
 
@@ -33,7 +47,7 @@ Growth is a fill, not a banded bar. Happiness / fertilizer / water: dark track, 
 
 ## Neighbour
 
-One `lookText` line in that same `Status` block, after the plant or tree look, before the prompt. Not a bar. Not ObjectHud. Same insertion as covering haste. `keknyelu` `pink-lady` `bing` only. Rule [[mechanics/plants]] `variety.neighbour`.
+One `lookText` line in that same look block, after the plant or tree look. Not a bar. Not ObjectHud. Same insertion as covering haste. `keknyelu` `pink-lady` `bing` only. Rule [[mechanics/plants]] `variety.neighbour`.
 
 | when | line |
 |---|---|
@@ -60,11 +74,17 @@ Look names the Variety and nothing else. Copy: **{Variety}**. Quality and Freshn
 
 A fruit item lying on the hovered cell draws the same `FruitStats` block, from the item's own `quality` and `freshness`. Top drop only, the one the look line names. Its look line is **{Variety} - {count}** and stops there. Any other dropped item keeps its full `heldText` line and draws no bars. A ripe plot carrying a dropped fruit draws both blocks, plant first, drop second.
 
-Weed / dead / rotten / turf / untilled: no bars. Burrow is untilled cover: no bars. Look names the burrow, not loot: **Burrow**. Not Grass. Not Hard soil.
+Dead / rotten / turf / untilled: no bars. Burrow is untilled cover: no bars. Look names the burrow, not loot: **Burrow**. Not Grass. Not Hard soil.
 
 ## Empty
 
 `kind: 'empty'` only. Fertilizer fill bar, `floor(fertilizer * 100)%`. Water fill bar, `{water}L`. Weed resistance banded, no amber, `clamp((1 - weedChance) / 2, 0, 1)`, `floor(* 100)%`. Weed resistance: 1 at `weedChance === -1`. Green `weedChance < 0`. Red `weedChance >= 0`. Outbreak above +1 clamps to 0. Label **Weed resistance**.
+
+The look line is the cell name alone. The soil detail the bars carry is not repeated as text, on an empty plot or a weeded one. A `rotten` plot keeps its soil detail in the line because it draws no bars.
+
+## Weed
+
+`kind: 'weed'`. Growth off `Weed.maturity` as a fill bar, then the same Fertilizer and Water fill bars an empty plot draws, from the plot's own `Soil`. No Happiness: a weed has no `happiness`. No banded fert / water bars: bands come from a plant's `fertTolerance` / `waterTolerance` and `Weed` carries neither. No Weed resistance row — that belongs to the empty plot.
 
 ## Tend
 
@@ -85,6 +105,8 @@ Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness b
 
 ## Prompts
 
+`inspect.need-tool` — A click that dies because the hovered cell wants a tool `say`s off the hand. An empty hand reads **I need a tool to {action}**; a hand holding the wrong thing reads **I cannot use this {tool} to {action}**. `{action}` is `primaryAct` of that cell. `maybeSay` still swallows both when the refusal is a worn shovel or pickaxe, an empty bucket over tilled ground, or a cell with no primary act.
+
 Tree seed in hand, hovered cell plus the cell **above** it a valid owned 1×2 untilled `ground === 'soft'` (bare or grass): **Plant {Apricot|Olive|Cherry|Apple}**. `{ act: 'plant' }`. Tilled plot: no-op. Burrow: no-op — [[mechanics/plants]] [[mechanics/burrow]] `burrow.block`.
 
 Shovel on tree: **Dig**. `{ act: 'shovel' }`. Including trunk. No harvest on trees. Shovel on burrow: **Dig**. Work `workSeconds × BURROW_MUL`. 1 use. Does not till. Look does not name loot. Pickaxe: no-op, prompt stays the look line. [[mechanics/burrow]] `burrow.dig`.
@@ -95,13 +117,13 @@ Held axe, `cell.kind === 'tree'`, `juvenile >= 1`, `trunk === false`: **Chop**. 
 
 Held graft, hovered legal target, same crop, target `tier` is not `heirloom`: **Graft**. `{ act: 'graft'; at }`. Annual `growing`. Tree `juvenile < 1`. Illegal target: prompt stays the look line. A graft is never planted.
 
-Ripe annual including sugar-cane: **Harvest**. Empty hand, or the same crop + Variety in hand under the stack cap. `{ act: 'harvest' }`. Same crop + Variety at the cap: `blocked` **My hand is full!** — [[mechanics/inventory]]. Cane is fruit, not sugar liters.
+Ripe annual including sugar-cane: **Harvest**, whatever is in hand, unless a tool branch claims the cell first. `{ act: 'harvest' }`. The same crop + Variety at the stack cap is the one refusal: `blocked` **My hand is full!**. Anything else in hand queues and `begin` says **I need to drop what is in my hand to pick this up** — [[mechanics/inventory]] `inventory.pick-full`. Cane is fruit, not sugar liters.
 
 Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; at }`. Instant. Spend 1 L. Not untilled. Not spray-trailer. [[mechanics/weeds]]
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud. Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Covering haste is a `lookText` line in that same `Status` block, after the machine look, before the prompt — [[ui/machines]].
+Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud. Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Covering haste is a `lookText` line in that same look block, after the machine look — [[ui/machines]].
 
 ## Held
 
@@ -114,10 +136,11 @@ Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[
 | spirit / cask / jam / oil / flour / extract / sugar / flakes / vanilla-extract / bread | Quality as percent with the existing name line. Named jam and **Premium** casks from [[ui/recipe]]. Sugar **Sugar - {n}L**. Infused: **Infused {name}** plus overlay-infused. Flakes: **Flakes - {count}**. Vanilla-extract: **Vanilla extract - {count}**. Bread: **Bread - {count}** |
 | wood | **Wood - {count}** |
 | ash | **Ash - {count}, compost it** |
-| axe | **Axe - {left}/{uses} uses left** |
+| shovel / pickaxe / axe / chainsaw | `toolName` then a **Durability** gauge row |
+| bucket / fertilizer / compost / weed-spray | `toolName` then a **Content** gauge row |
 | treasure | **Treasure - {coins}** — Coin for `coins`. Money, not gold |
 
-`cut` on fruit is not a HUD flag. Tooltip is `itemTip`: same Variety + Quality words as the held line.
+`cut` on fruit is not a HUD flag. Tooltip is `itemTip`: same Variety + Quality words as the held line, and it keeps the `x/x` wording the hand block gave up to the gauge row — [[ui/inspect]] `inspect.gauge`.
 
 ## Vehicles
 

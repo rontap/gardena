@@ -220,7 +220,11 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'infertile':
       return { kind: 'infertile' }
     case 'weed':
-      return { kind: 'weed', soil: dumpSoil(c.soil), weed: { variant: c.weed.variant, maturity: c.weed.maturity, spread: c.weed.spread } }
+      return {
+        kind: 'weed',
+        soil: dumpSoil(c.soil),
+        weed: { variant: c.weed.variant, maturity: c.weed.maturity, spread: c.weed.spread, readyAt: c.weed.readyAt },
+      }
     case 'turf':
       return { kind: 'turf', soil: dumpSoil(c.soil), turf: { variant: c.turf.variant, maturity: c.turf.maturity } }
     case 'growing':

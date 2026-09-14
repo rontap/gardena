@@ -96,7 +96,7 @@ test('vertical spray is oriented like its AoE, both facings', async ({ page }) =
       const cells = e.aoe(s)
       cells.forEach((c: { col: number; row: number }) => {
         const kind = w.cell(c).kind
-        if (w.inWorld(c) && kind !== 'pump' && kind !== 'house' && kind !== 'truck')
+        if (w.inWorld(c) && kind !== 'pump' && kind !== 'house' && kind !== 'warehouse' && kind !== 'postbox')
           w.setCell(c, { kind: 'growing', soil: new e.Soil(0.2, 1, 0.03), plant: new e.Plant('carrot', 'base', 0) })
       })
       ;(window as unknown as { __aoe: unknown }).__aoe = cells

@@ -7,6 +7,7 @@ export type Panel =
   | { kind: 'build' }
   | { kind: 'research' }
   | { kind: 'market' }
+  | { kind: 'contracts' }
   | { kind: 'inventory' }
   | { kind: 'almanac' }
   | { kind: 'cheat' }

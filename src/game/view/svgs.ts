@@ -241,6 +241,7 @@ import uiBtnBuild from '../../assets/ui/ui-btn-build.svg?raw'
 import uiBtnCheat from '../../assets/ui/ui-btn-cheat.svg?raw'
 import uiBtnResearch from '../../assets/ui/ui-btn-research.svg?raw'
 import uiBtnMarket from '../../assets/ui/ui-btn-market.svg?raw'
+import uiBtnContracts from '../../assets/ui/ui-btn-contracts.svg?raw'
 import uiBtnAlmanac from '../../assets/ui/ui-btn-almanac.svg?raw'
 import uiBtnLens from '../../assets/ui/ui-btn-lens.svg?raw'
 import uiBtnDelete from '../../assets/ui/ui-btn-delete.svg?raw'
@@ -906,6 +907,7 @@ export const UI_BTN_BUILD = uiBtnBuild
 export const UI_BTN_CHEAT = uiBtnCheat
 export const UI_BTN_RESEARCH = uiBtnResearch
 export const UI_BTN_MARKET = uiBtnMarket
+export const UI_BTN_CONTRACTS = uiBtnContracts
 export const UI_BTN_ALMANAC = uiBtnAlmanac
 export const UI_BTN_LENS = uiBtnLens
 export const UI_BTN_DELETE = uiBtnDelete
@@ -1217,6 +1219,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
     UI_BTN_CHEAT,
     UI_BTN_RESEARCH,
     UI_BTN_MARKET,
+    UI_BTN_CONTRACTS,
     UI_BTN_ALMANAC,
     UI_BTN_LENS,
     UI_BTN_DELETE,

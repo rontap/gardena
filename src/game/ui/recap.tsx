@@ -5,7 +5,7 @@ import { RESEARCH } from '../defs/research.ts'
 import type { HistoryEntry } from '../sim/feature-contracts/market.h.ts'
 import type { Recap as RecapData } from '../sim/world.ts'
 import { UI_RECAP_NIGHT } from '../view/svgs.ts'
-import { Difficulty, OutcomePay, RepChange } from './market.tsx'
+import { Difficulty, OutcomePay, RepChange } from './feature-contracts/contracts.tsx'
 import { Btn, Chrome, Coin } from './frame.tsx'
 
 export function recapOutcome(kind: HistoryEntry['outcome']['kind']): string {

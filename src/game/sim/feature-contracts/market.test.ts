@@ -21,11 +21,10 @@ import {
   SAT_MAX_CUT,
   SAT_IMPACT_CRAFT,
   SAT_IMPACT_FRUIT,
-  SAT_MIN,
-  SAT_RECOVER_PER_DAY,
+9   SAT_RECOVER,
   SAT_STEP_CRAFT,
   SAT_STEP_FRUIT,
-  DEMAND_NUDGE_CROPS,
+  DEMAND_NUDGE,
   clampSat,
   rollDayDemand,
   BUDGET_OVERDRAFT,
@@ -183,18 +182,19 @@ describe('contracts', () => {
     expect(back.book['trade-jo']).toEqual({ done: 3, missed: 1 })
   })
 
-  test('A contract whose prize is not cash pays the goods and no money at all.', () => {
+  test('A contract whose prize is not cash pays the goods into the postbox and no money at all.', () => {
     const w = new World(1)
     const active = carrotActive(0, 10)
     const offer = { ...active.offer, prize: { kind: 'tree-seed', tree: 'cherry', variety: 'base' } as const }
     w.contracts.active.push({ ...active, offer })
     const money = w.money
-    const drops = w.drops.length
     dropFruit(w, 'carrot', 4)
     expect(w.contracts.active).toHaveLength(0)
     expect(w.money).toBe(money)
-    expect(w.drops.length).toBe(drops + 1)
-    expect(w.drops[w.drops.length - 1].item).toEqual({ kind: 'tree-seed', tree: 'cherry', variety: 'base', quality: 0 })
+    expect(w.postbox.slots[0]).toEqual({
+      kind: 'hold',
+      item: { kind: 'tree-seed', tree: 'cherry', variety: 'base', quality: 0 },
+    })
   })
 
   test('A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.', () => {
@@ -239,8 +239,20 @@ describe('contracts', () => {
     })
     const before = w.money
     dropFruit(w, 'carrot', 1)
-    expect(w.money).toBe(before + offer.reward)
+    const spare = saleUnits(1, 1, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, CROPS.carrot.sale, 0).paid
+    expect(w.money).toBeCloseTo(before + offer.reward + spare, 9)
     expect(w.contracts.active).toHaveLength(0)
+    const clean = new World(1)
+    clean.done.add('unlock-contracts')
+    clean.contracts.active.push({
+      offer,
+      dueDay: 10,
+      bins: offer.lines.map(d => ({ demand: d, filled: d.amount, infusedFilled: 0 })) as unknown as Active['bins'],
+    })
+    const cleanBefore = clean.money
+    dropFruit(clean, 'carrot', 1)
+    const cleanSpare = saleUnits(0, 1, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, CROPS.carrot.sale, 0).paid
+    expect(clean.money - cleanBefore - cleanSpare).toBeCloseTo(offer.reward, 9)
   })
 
   test('Every published value is a whole number: amount, clean, reward, penalty. Markup is whole percent.', () => {
@@ -568,36 +580,36 @@ function worthOf(w: World, id: 'carrot'): number {
 }
 
 describe('saturation', () => {
-  test('`sat` starts 0, ticks toward 0 by `SAT_RECOVER_PER_DAY` shown points per day on every good every `dt`, never resets at the seam. 50% → 80%, 70% → 100%.', () => {
+  test('`sat` starts 0 and ticks toward 0 by that good\'s own `SAT_RECOVER` shown points per day, on every good every `dt`, never resetting at the seam. A day takes carrot 50% → 80% and tomato 50% → 60%.', () => {
     const w = new World(1)
     STALL_IDS.forEach(id => expect(w.stall[id].sat).toBe(0))
-    expect(recover(0, DT_MAX)).toBe(0)
-    expect(recover(1, DAY_SECONDS)).toBeCloseTo(1 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT, 9)
+    expect(recover('carrot', 0, DT_MAX)).toBe(0)
+    expect(recover('carrot', 1, DAY_SECONDS)).toBeCloseTo(1 - SAT_RECOVER.carrot / SAT_MAX_CUT, 9)
     expect(mul(1, SAT_MAX_CUT)).toBeCloseTo(0.5, 9)
-    expect(mul(recover(1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.8, 9)
+    expect(mul(recover('carrot', 1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.8, 9)
+    expect(mul(recover('tomato', 1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.6, 9)
     expect(mul(0.6, SAT_MAX_CUT)).toBeCloseTo(0.7, 9)
-    expect(mul(recover(0.6, DAY_SECONDS), SAT_MAX_CUT)).toBe(1)
-    expect(recover(-0.4, DAY_SECONDS)).toBe(0)
+    expect(mul(recover('carrot', 0.6, DAY_SECONDS), SAT_MAX_CUT)).toBe(1)
+    expect(recover('carrot', -0.4, DAY_SECONDS)).toBe(0)
     STALL_IDS.forEach(id => {
       w.stall[id].sat = 1
     })
     w.tick(DT_MAX)
-    const stepped = 1 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT * DT_MAX / DAY_SECONDS
     STALL_IDS.forEach(id => {
-      expect(w.stall[id].sat).toBeCloseTo(stepped, 9)
+      expect(w.stall[id].sat).toBeCloseTo(1 - SAT_RECOVER[id] / SAT_MAX_CUT * DT_MAX / DAY_SECONDS, 9)
     })
     const empty = new World(1)
     empty.stall.vodka.sat = 0.6
     empty.tick(DT_MAX)
-    expect(empty.stall.vodka.sat).toBeCloseTo(0.6 - SAT_RECOVER_PER_DAY / SAT_MAX_CUT * DT_MAX / DAY_SECONDS, 9)
+    expect(empty.stall.vodka.sat).toBeCloseTo(0.6 - SAT_RECOVER.vodka / SAT_MAX_CUT * DT_MAX / DAY_SECONDS, 9)
     const seam = new World(1)
     seam.stall.potato.sat = 0.9
     seam.clock.t = DAY_SECONDS - 0.001
     seam.tick(1)
     expect(seam.seam.kind).toBe('play')
     const rolls = rollDayDemand(seam.rng, seam.clock.day)
-    expect(rolls).toHaveLength(DEMAND_NUDGE_CROPS)
-    expect(new Set(rolls.map(r => r.good)).size).toBe(DEMAND_NUDGE_CROPS)
+    expect(rolls.map(r => r.delta)).toEqual([DEMAND_NUDGE, -DEMAND_NUDGE])
+    expect(new Set(rolls.map(r => r.good)).size).toBe(2)
     let potato = 0.9
     rolls.forEach(r => {
       if (r.good === 'potato') potato = clampSat(potato - r.delta / 100 / SAT_MAX_CUT)
@@ -647,7 +659,7 @@ describe('saturation', () => {
   })
 
 describe('market.sell', () => {
-  test("Market is Sell all iff `marketOpen`. `marketOpen` is always true. No phase hours. No weather close. Consign always. Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; `{ kind: 'rotten' }` `$1` iff `unlock-fermentation` in `done`, sat exempt, saleswoman / heirloom / weather do not apply. Crop stall stock/worth per variety. Consign: fruit (incl. sugar-cane, chilli), sugar, spirit, cask, jam, oil, flour, extract, bread; `{ kind: 'rotten' }` iff `unlock-fermentation` in `done`. Flakes and vanilla-extract illegal. Without that row: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract / bread: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. Infused jam / cask / spirit / oil: same skills, `InfusedKey` bin. No berry. Sat last; infused pays `mul(sat)` and does not raise `sat` — [[mechanics/saturation]] [[mechanics/infusion]] [[mechanics/weather]].", () => {
+  test("Drop-off at the Produce Warehouse sells what the contracts did not take, at the same price Sell all pays. `marketOpen` is always true. No phase hours. No weather close. Consign always. Clean subtotal: freshness + quality + path rating (`worth`), saleswoman `(1 + 0.02 × tier)`, heirloom `(1 + 0.05 × tier)` on variety tier `heirloom` of crop fruit, spirit, wine, better skill `saleMul`; flood/drought fruit stall goods × `WEATHER_FRUIT_SALE` after skills before sat; `{ kind: 'rotten' }` `$1` iff `unlock-fermentation` in `done`, paid at drop-off, sat exempt, saleswoman / heirloom / weather do not apply. Crop stall stock/worth per variety. Consign: fruit (incl. sugar-cane, chilli), sugar, spirit, cask, jam, oil, flour, extract, bread; `{ kind: 'rotten' }` iff `unlock-fermentation` in `done`. Flakes and vanilla-extract illegal. Without that row: consign refused. Seeds and grafts illegal. Consign fills `contracts.active` in array order, then the stall. Contract-bound units skip `worth` and `sat`. Rotten never `Accepts`. Sugar / jam / oil / flour / extract / bread: baked `unitSale`, saleswoman only. Spirit / wine: baked `unitSale`, saleswoman, heirloom if variety tier `heirloom`. Cider: baked `unitSale`, saleswoman only. Infused jam / cask / spirit / oil: same skills, `InfusedKey` bin. No berry. Sat last; infused pays `mul(sat)` and does not raise `sat` — [[mechanics/saturation]] [[mechanics/infusion]] [[mechanics/weather]].", () => {
     const w = new World(1)
     w.stall.potato.take('base', 10, 1)
     w.stall.carrot.take('base', 5, 1)
@@ -681,10 +693,7 @@ describe('market.sell', () => {
     c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10, createdAt: 1 } }
     c.enqueue({ act: 'consign' })
     c.tick(DT_MAX)
-    expect(c.clearance).toBe(10)
     expect(c.seats[0].hand.kind).toBe('empty')
-    expect(c.marketGain()).toBe(10)
-    c.sellAll()
     expect(c.clearance).toBe(0)
     expect(c.money).toBe(60)
     const mixed = new World(1)
@@ -857,7 +866,10 @@ describe('prizes', () => {
       offer: { ...treeActive.offer, prize: { kind: 'tree-seed', tree: 'apple', variety: 'pink-lady' } },
     })
     dropFruit(tree, 'carrot', 4)
-    expect(tree.drops[tree.drops.length - 1].item).toEqual({ kind: 'tree-seed', tree: 'apple', variety: 'pink-lady', quality: 0 })
+    expect(tree.postbox.slots[0]).toEqual({
+      kind: 'hold',
+      item: { kind: 'tree-seed', tree: 'apple', variety: 'pink-lady', quality: 0 },
+    })
     const seeds = new World(1)
     const seedActive = carrotActive(0, 10)
     seeds.contracts.active.push({

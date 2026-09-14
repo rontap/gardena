@@ -3,7 +3,7 @@ import type { VarietyId } from '../../defs/varieties.ts'
 
 export declare const SAT_MAX_CUT: number
 
-export declare const SAT_RECOVER_PER_DAY: number
+export declare const SAT_RECOVER: { readonly [K in StallGoodId]: number }
 
 export declare const SAT_STEP_FRUIT: number
 

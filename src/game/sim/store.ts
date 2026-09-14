@@ -8,7 +8,7 @@ import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedSto
 import { isPlot } from './plot.ts'
 import { SPIRIT_KINDS, type AnnualId, type StallGoodId } from './ids.ts'
 import { rottenName, type Item } from './item.ts'
-import { Accepts, SAT_MAX_CUT, SAT_RECOVER_PER_DAY, impactOf, mul, saleUnits, stepOf, unitOf } from './feature-contracts/market.ts'
+import { Accepts, SAT_MAX_CUT, SAT_RECOVER, impactOf, mul, saleUnits, stepOf, unitOf } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
 import { binCount, isBakedStall, isCropStall, isInfusedStall, isSpiritStall, stallGoodName, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
@@ -369,7 +369,7 @@ export function marketQuote(world: World): SellAllQuote {
   const rows = STALL_IDS.flatMap(id => {
     if (binCount(world.stall[id]) <= 0) return []
     const S0 = world.stall[id].sat
-    const recoverDays = Math.abs(S0) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY
+    const recoverDays = Math.abs(S0) * SAT_MAX_CUT / SAT_RECOVER[id]
     const wx = isCropStall(id) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
     const rate = stepOf(id)
     const out: MarketQuote[] = []
@@ -430,7 +430,7 @@ export function marketDemand(world: World): DemandChip[] {
   return STALL_IDS.flatMap(id => {
     const wx = isCropStall(id) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
     const sat = world.stall[id].sat
-    const recoverDays = Math.abs(sat) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY
+    const recoverDays = Math.abs(sat) * SAT_MAX_CUT / SAT_RECOVER[id]
     const rows = demandVarieties(id).map(variety => {
       const cap = impactOf(id, variety)
       const shown = mul(sat, cap, wx)

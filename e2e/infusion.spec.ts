@@ -365,36 +365,6 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
   expect(stillDropped).toBe(true)
 })
 
-test('infused Sell all does not raise sat', async ({ page }) => {
-  test.setTimeout(60_000)
-  await gotoPlay(page)
-  await viewReady(page)
-  const snap = await page.evaluate(() => {
-    const w = (
-      window as unknown as {
-        __world?: {
-          unlockAll: () => void
-          clock: { t: number }
-          stall: { oil: { takeSpirit: (v: string, n: number, u: number, inf: boolean) => void; sat: number } }
-          marketOpen: () => boolean
-          sellAll: () => void
-        }
-      }
-    ).__world
-    if (w === undefined) throw new Error('no __world')
-    w.unlockAll()
-    w.clock.t = 10
-    w.stall.oil.takeSpirit('base', 3, 100, true)
-    w.stall.oil.sat = 0.4
-    const open = w.marketOpen()
-    const before = w.stall.oil.sat
-    w.sellAll()
-    return { open, before, after: w.stall.oil.sat }
-  })
-  expect(snap.open).toBe(true)
-  expect(snap.before).toBe(0.4)
-  expect(snap.after).toBeCloseTo(0.4, 9)
-})
 
 test('contract complete uses infused reputation fraction', async ({ page }) => {
   test.setTimeout(60_000)

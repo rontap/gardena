@@ -1,7 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "market_title": "Market",
-  "market_stall": "Market",
   "market_contracts": "Contracts",
   "market_sell_all": "Sell all - ",
   "market_sell_all_label": "Sell all",

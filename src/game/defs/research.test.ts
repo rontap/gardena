@@ -196,10 +196,11 @@ describe('research.reveal', () => {
     c.seats[0].actor.x = PAD.col + 0.5
     c.seats[0].actor.y = PAD.row + 0.5
     c.seats[0].hand = { kind: 'hold', item: { kind: 'rotten', cls: 'root', count: 10, createdAt: 1 } }
+    const before = c.money
     c.enqueue({ act: 'consign' })
     c.tick(DT_MAX)
-    expect(c.clearance).toBe(10)
-    expect(c.marketGain()).toBe(10)
+    expect(c.money).toBe(before + 10)
+    expect(c.seats[0].hand.kind).toBe('empty')
   })
 })
 

@@ -18,6 +18,7 @@ import {
   UI_BTN_FAMILY,
   UI_BTN_GEAR,
   UI_BTN_MARKET,
+  UI_BTN_CONTRACTS,
   UI_BTN_MULTIPLAYER,
   UI_BTN_PAUSE,
   UI_BTN_PLAY,
@@ -50,6 +51,7 @@ export function Hud({
   onBuild,
   onResearch,
   onMarket,
+  onContracts,
   onAlmanac,
   onLens,
   onLensClear,
@@ -68,6 +70,7 @@ export function Hud({
   onBuild: () => void
   onResearch: () => void
   onMarket: () => void
+  onContracts: () => void
   onAlmanac: () => void
   onLens: () => void
   onLensClear: () => void
@@ -168,6 +171,14 @@ export function Hud({
           <FaceBtn art={UI_BTN_BUILD} label={m.hud_build()} selected={panel === 'build'} onClick={onBuild} />
           <FaceBtn art={UI_BTN_RESEARCH} label={m.names_role_research()} selected={panel === 'research'} onClick={onResearch} />
           <FaceBtn art={UI_BTN_MARKET} label={m.names_role_market()} selected={panel === 'market'} onClick={onMarket} />
+          {world.done.has('unlock-contracts') && (
+            <FaceBtn
+              art={UI_BTN_CONTRACTS}
+              label={m.names_role_contracts()}
+              selected={panel === 'contracts'}
+              onClick={onContracts}
+            />
+          )}
           <div className="relative">
             <FaceBtn
               art={UI_BTN_LENS}

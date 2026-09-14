@@ -7,7 +7,7 @@ import { HAT } from '../view/map.tsx'
 import { COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { STAT_COLOR } from './status.tsx'
 import { useCycle } from './cycle.ts'
-import { demandItem } from './market.tsx'
+import { demandItem } from './feature-contracts/contracts.tsx'
 import {
   doneRows,
   dropNotice,

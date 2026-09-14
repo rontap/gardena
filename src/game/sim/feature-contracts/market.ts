@@ -55,15 +55,43 @@ import type { World } from '../world.ts'
 
 export const SAT_MAX_CUT = 0.5
 
-export const SAT_RECOVER_PER_DAY = 0.3
+export const SAT_RECOVER: { readonly [K in StallGoodId]: number } = {
+  carrot: 0.3,
+  potato: 0.2,
+  'sugar-cane': 0.2,
+  cherry: 0.2,
+  wheat: 0.15,
+  chilli: 0.15,
+  apricot: 0.15,
+  olive: 0.15,
+  apple: 0.15,
+  tomato: 0.1,
+  grape: 0.1,
+  raspberry: 0.1,
+  vanilla: 0.1,
+  vodka: 0.3,
+  beer: 0.3,
+  brandy: 0.3,
+  mixed: 0.3,
+  wine: 0.3,
+  cider: 0.3,
+  'jam-apricot': 0.3,
+  'jam-grape': 0.3,
+  'jam-raspberry': 0.3,
+  'jam-cherry': 0.3,
+  'jam-tomato': 0.3,
+  oil: 0.3,
+  flour: 0.3,
+  extract: 0.3,
+  bread: 0.3,
+  sugar: 0.3,
+}
 
 export const SAT_MIN = -0.8
 
 export const SAT_MAX = 1
 
-export const DEMAND_NUDGE_MAX = 20
-
-export const DEMAND_NUDGE_CROPS = 2
+export const DEMAND_NUDGE = 33
 
 export const SAT_STEP_FRUIT = 0.02
 
@@ -126,8 +154,8 @@ export function saleUnits(
   return { paid, after }
 }
 
-export function recover(sat: number, dt: number): number {
-  const step = SAT_RECOVER_PER_DAY / SAT_MAX_CUT * dt / DAY_SECONDS
+export function recover(good: StallGoodId, sat: number, dt: number): number {
+  const step = SAT_RECOVER[good] / SAT_MAX_CUT * dt / DAY_SECONDS
   if (sat > 0) {
     const next = sat - step
     return next < 0 ? 0 : next
@@ -145,12 +173,9 @@ export function rollDayDemand(rng: Rng, day: number): readonly { good: StallGood
   const i0 = Math.floor(stream.at(day, 0) * crops.length)
   let i1 = Math.floor(stream.at(day, 1) * (crops.length - 1))
   if (i1 >= i0) i1 += 1
-  const span = DEMAND_NUDGE_MAX * 2 + 1
-  const d0 = Math.floor(stream.at(day, 2) * span) - DEMAND_NUDGE_MAX
-  const d1 = Math.floor(stream.at(day, 3) * span) - DEMAND_NUDGE_MAX
   return [
-    { good: crops[i0], delta: d0 },
-    { good: crops[i1], delta: d1 },
+    { good: crops[i0], delta: DEMAND_NUDGE },
+    { good: crops[i1], delta: -DEMAND_NUDGE },
   ]
 }
 

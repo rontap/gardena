@@ -15,7 +15,8 @@ import { Hud } from './game/ui/hud.tsx'
 import { Status } from './game/ui/status.tsx'
 import { Inventory } from './game/ui/inventory.tsx'
 import { ObjectHud } from './game/ui/objecthud.tsx'
-import { Market, type MarketTab } from './game/ui/market.tsx'
+import { Market } from './game/ui/market.tsx'
+import { Contracts } from './game/ui/feature-contracts/contracts.tsx'
 import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Story } from './game/ui/story.tsx'
@@ -104,7 +105,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const panelRef = useRef(panel)
   panelRef.current = panel
   const [query, setQuery] = useState('')
-  const [marketTab, setMarketTab] = useState<MarketTab>('market')
   const [cam, setCam] = useState<Camera>(BOOT_CAM)
   const [hangarPick, setHangarPick] = useState<VehicleId | undefined>(undefined)
   const [hangarTrailer, setHangarTrailer] = useState<TrailerId | undefined>(undefined)
@@ -716,7 +716,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function overlayHold(kind: Panel['kind'], recap: number | undefined): boolean {
-    return recap !== undefined || kind === 'market' || kind === 'almanac' || kind === 'menu'
+    return recap !== undefined || kind === 'contracts' || kind === 'almanac' || kind === 'menu'
   }
 
   function overlayPause(from: boolean, to: boolean): void {
@@ -1055,6 +1055,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onBuild={() => open({ kind: 'build' })}
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
+            onContracts={() => open({ kind: 'contracts' })}
             onAlmanac={() => open({ kind: 'almanac' })}
             onLens={() => open({ kind: 'lens' })}
             onLensClear={clearLens}
@@ -1100,14 +1101,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
           )}
           {panel.kind === 'research' && <Research world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
-          {panel.kind === 'market' && (
-            <Market
-              world={world}
-              tab={marketTab}
-              onTab={setMarketTab}
-              onClose={() => setPanel({ kind: 'none' })}
-            />
-          )}
+          {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'contracts' && <Contracts world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (

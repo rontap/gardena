@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { CROPS, HAPPY_MAX, cropVariety } from '../src/game/defs/crops.ts'
 import { purposeMul, qualityMul, STARTER_VARIETY_PACKS, VARIETY } from '../src/game/defs/varieties.ts'
+import { WEATHER_FRUIT_IMPACT } from '../src/game/defs/weather.ts'
 
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { closeDock, dismissRecap, gotoPlay, tapWorld } from './helpers.ts'
@@ -10,8 +11,8 @@ type At = { col: number; row: number }
 const PLOT_A: At = { col: 13, row: 11 }
 const PLOT_B: At = { col: 14, row: 11 }
 const SILO: At = { col: 17, row: 9 }
-const TRUCK: At = { col: 12, row: 8 }
-const PAD: At = { col: 12, row: 9 }
+const WAREHOUSE: At = { col: 9, row: 8 }
+const PAD: At = { col: 9, row: 10 }
 
 function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
   return page.evaluate(
@@ -65,9 +66,6 @@ async function openSilo(page: Page) {
   return page.getByRole('dialog', { name: 'Seed silo' })
 }
 
-function stallTab(page: Page) {
-  return page.getByRole('tab', { name: 'Market' })
-}
 
 test('silo shows the seven starter variety packs', async ({ page }) => {
   await gotoPlay(page)
@@ -179,7 +177,7 @@ test('ripen bakes quality: happy plant quality > seed; neglected walks down', as
   expect(down).toBeLessThan(0.5)
 })
 
-test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
+test('warehouse drop-off pays quality × fresh rating and says so', async ({ page }) => {
   test.setTimeout(120_000)
   await gotoPlay(page)
   await viewReady(page)
@@ -187,32 +185,15 @@ test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
   const quality = 0.5
   const produce = purposeMul('green-zebra', 'produce')
   await page.evaluate(
-    ([item, t, dt]) => {
+    ([item, pad]) => {
       const w = (
         window as unknown as {
-          __world: {
-            seats: { hand: unknown; actor: { x: number; y: number }; queue: unknown[] }[]
-            clock: { t: number }
-            marketOpen: () => boolean
-            enqueue: (i: { act: string }) => void
-            tick: (d: number) => void
-            seam: { kind: string }
-            dismissRecap: () => void
-          }
+          __world: { seats: { hand: unknown; actor: { x: number; y: number } }[] }
         }
       ).__world
       w.seats[0].hand = { kind: 'hold', item }
-      w.seats[0].actor.x = 12.5
-      w.seats[0].actor.y = 9.5
-      if (!w.marketOpen()) w.clock.t = t
-      if (!w.marketOpen()) w.clock.t = 0
-      w.enqueue({ act: 'consign' })
-      let n = 0
-      while (w.seats[0].queue.length > 0 && n < 4000) {
-        if (w.seam.kind === 'recap') w.dismissRecap()
-        w.tick(dt)
-        n += 1
-      }
+      w.seats[0].actor.x = pad.col + 0.5
+      w.seats[0].actor.y = pad.row + 0.5
     },
     [
       {
@@ -224,61 +205,22 @@ test('consign + Sell all uses quality × fresh rating', async ({ page }) => {
         unitSale: 1,
         freshness: 1,
       },
-      60,
-      DT_MAX,
+      PAD,
     ] as const,
   )
 
-  await tapWorld(page, TRUCK.col + 0.5, TRUCK.row + 0.5)
-  if (!(await stallTab(page).isVisible())) {
-    await page.getByRole('button', { name: 'Market', exact: true }).click()
-  }
-  await expect(page.getByRole('button', { name: /Sell all/ })).toBeVisible()
-
-  const quote = await readWorld<{ paid: number; clean: number; weather: string }>(
-    page,
-    null,
-    '(() => { const q = w.marketQuote(); return { paid: q.paid, clean: q.clean, weather: w.weather(w.clock.day) } })()',
-  )
-  const expected = qualityMul(quality) * produce * CROPS.tomato.sale
-  expect(quote.clean).toBeCloseTo(expected, 8)
-
+  const kind = await readWorld<string>(page, null, 'w.weather(w.clock.day)')
+  const wx = kind === 'flood' || kind === 'drought' ? WEATHER_FRUIT_IMPACT : 0
   const before = await readWorld<number>(page, null, 'w.money')
-  await page.locator('[data-sell-all]').click()
-  await expect(stallTab(page)).toHaveCount(0)
-  const after = await readWorld<number>(page, null, 'w.money')
-  expect(after).toBeCloseTo(before + quote.paid, 8)
-})
+  await tapWorld(page, WAREHOUSE.col + 0.5, WAREHOUSE.row + 0.5)
 
-test('Sell all at twilight', async ({ page }) => {
-  await gotoPlay(page)
-  await viewReady(page)
-  await page.evaluate(() => {
-    const w = (
-      window as unknown as {
-        __world?: {
-          clock: { t: number }
-          stall: { carrot: { take: (v: string, n: number, u: number) => void } }
-          ping: () => void
-        }
-      }
-    ).__world
-    if (w === undefined) throw new Error('no __world')
-    w.clock.t = 220
-    w.stall.carrot.take('base', 2, 5)
-    w.ping()
-  })
-  const phase = await readWorld<string>(page, null, 'w.clock.phase()')
-  expect(phase).toBe('twilight')
-  await page.getByRole('button', { name: 'Market', exact: true }).click()
-  const sell = page.locator('[data-sell-all]')
-  await expect(sell).toBeVisible()
-  await expect(sell).toBeEnabled()
-  const before = await readWorld<number>(page, null, 'w.money')
-  await sell.click()
-  await expect(stallTab(page)).toHaveCount(0)
+  await expect
+    .poll(() => readWorld<string>(page, null, 'w.seats[0].hand.kind'), { timeout: 30_000 })
+    .toBe('empty')
   const after = await readWorld<number>(page, null, 'w.money')
-  expect(after).toBeGreaterThan(before)
+  const expected = qualityMul(quality) * produce * CROPS.tomato.sale * (1 + wx)
+  expect(after - before).toBeCloseTo(expected, 6)
+  expect(await readWorld<string>(page, null, 'w.speech.text')).toContain('I sold 1')
 })
 
 test('rotten consign pays after Fermentation, refused before', async ({ page }) => {
@@ -293,7 +235,7 @@ test('rotten consign pays after Fermentation, refused before', async ({ page }) 
             seats: { hand: unknown; actor: { x: number; y: number }; queue: unknown[] }[]
             enqueue: (i: { act: string }) => void
             tick: (d: number) => void
-            clearance: number
+            money: number
             ping: () => void
           }
         }
@@ -303,36 +245,29 @@ test('rotten consign pays after Fermentation, refused before', async ({ page }) 
       w.seats[0].actor.x = pad.col + 0.5
       w.seats[0].actor.y = pad.row + 0.5
       w.seats[0].hand = { kind: 'hold', item: rotten }
+      const start = w.money
       w.enqueue({ act: 'consign' })
       w.tick(dt)
       const refused = {
         hand: (w.seats[0].hand as { kind: string }).kind,
-        clearance: w.clearance,
+        gained: w.money - start,
       }
       w.done.add('unlock-fermentation')
+      const before = w.money
       w.enqueue({ act: 'consign' })
       w.tick(dt)
       w.ping()
       return {
         refused,
         hand: (w.seats[0].hand as { kind: string }).kind,
-        clearance: w.clearance,
+        gained: w.money - before,
       }
     },
     [PAD, DT_MAX] as const,
   )
   expect(snap.refused.hand).toBe('hold')
-  expect(snap.refused.clearance).toBe(0)
+  expect(snap.refused.gained).toBe(0)
   expect(snap.hand).toBe('empty')
-  expect(snap.clearance).toBe(10)
-  await dismissRecap(page)
-  const sell = page.locator('[data-sell-all]')
-  await expect(sell).toBeVisible()
-  await expect(sell).toBeEnabled()
-  const before = await readWorld<number>(page, null, 'w.money')
-  await sell.click()
-  await expect(stallTab(page)).toHaveCount(0)
-  const after = await readWorld<number>(page, null, 'w.money')
-  expect(after).toBe(before + 10)
+  expect(snap.gained).toBe(10)
 })
 

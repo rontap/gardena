@@ -95,11 +95,10 @@ describe('machines', () => {
       kind: 'hold',
       item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 10, unitSale: 5, freshness: 1, cut: false },
     }
+    const before = w.money
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBe(50)
-    expect(w.marketGain()).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid, 9)
+    expect(w.money - before).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, 5, 0).paid, 9)
     expect(spiritKind([{ crop: 'potato', variety: 'base', count: 10 }])).toBe('vodka')
     expect(bakeSpiritSale('vodka', 'base', 0)).toBe(66)
   })
@@ -112,11 +111,10 @@ describe('machines', () => {
       kind: 'hold',
       item: { kind: 'fruit', crop: 'potato', variety: 'bintje', quality: 1, count: 10, unitSale: 17.5, freshness: 1, cut: false },
     }
+    const before = w.money
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.potato.sat).toBe(0)
-    expect(w.marketQuote().clean).toBeCloseTo(140, 9)
-    expect(w.marketGain()).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.variant, 14, 0).paid, 9)
+    expect(w.money - before).toBeCloseTo(saleUnits(0, 10, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.variant, 14, 0).paid, 9)
     expect(bakeSpiritSale('vodka', 'bintje', 1)).toBe(SPIRIT_SALE.vodka * PURPOSE_MUL.variant.on * 3.5)
   })
 

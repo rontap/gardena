@@ -28,6 +28,7 @@ export type SpatialId =
   | 'weather'
   | 'burrow'
   | 'variety'
+  | 'market-demand'
 export type SeqId = 'fruit'
 export type StreamId = SpatialId | SeqId
 export type Stream = Spatial | Seq

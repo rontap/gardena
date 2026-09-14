@@ -4,7 +4,7 @@ import { CONTRACT_OFFERS, REP_MAX, rollBoard, rollBoardAtD } from '../sim/featur
 import { Rng } from '../sim/rng.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Btn, Chrome } from './frame.tsx'
-import { OfferCard } from './market.tsx'
+import { OfferCard } from './feature-contracts/contracts.tsx'
 
 type Tip = { title: string; description: ReactNode } | undefined
 

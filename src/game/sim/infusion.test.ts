@@ -333,7 +333,6 @@ describe('infusion.stall', () => {
     w.stall.oil.takeSpirit('base', 2, 100, false)
     w.stall.oil.takeSpirit('base', 3, 100, true)
     w.stall.oil.sat = 0.4
-    const plainV = 200
     const infV = 300
     const cap = SAT_IMPACT_CRAFT.base
     expect(w.marketGain()).toBeCloseTo(

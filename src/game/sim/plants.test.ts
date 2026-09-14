@@ -29,10 +29,12 @@ import {
   CROSSBREED_REACH,
   purposeMul,
   qualityMul,
+  tierOf,
   VARIETIES,
   varietyChance,
   type VarietyId,
 } from '../defs/varieties.ts'
+import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from './feature-contracts/market.ts'
 import { hasCrossbreed, upgradeVariety } from './feature-field/field.helpers.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { JAM_ROT, SKILL_IDS, SEED_BANK_QUALITY, SKILLS, TEND_WORK } from '../defs/skills.ts'
@@ -328,7 +330,7 @@ describe('1.2 machines', () => {
     expect(w.drops.find(d => d.item.kind === 'rotten')).toEqual({ at: { col: AT.col + 1, row: AT.row }, item: rotten })
   })
 
-  test('consign processed', () => {
+  test('Dropping a processed good off sells it at its baked `unitSale`.', () => {
     const w = new World()
     w.seats[0].actor.x = PAD.col + 0.5
     w.seats[0].actor.y = PAD.row + 0.5
@@ -336,10 +338,11 @@ describe('1.2 machines', () => {
       kind: 'hold',
       item: { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 72, infused: false },
     }
+    const before = w.money
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.vodka.stock.base.plain).toBe(1)
-    expect(w.stall.vodka.worth.base.plain).toBe(72)
+    expect(w.money).toBe(before + 72)
+    expect(w.seats[0].hand.kind).toBe('empty')
   })
 
   test('`PotStill` `RectBase` `w = 2` `h = 1`, origin NW, no rotate, same instance both cells, tick origin, water join any corner.', () => {
@@ -1353,13 +1356,12 @@ describe('market.quality', () => {
         cut: false,
       },
     }
+    const before = w.money
     w.enqueue({ act: 'consign' })
     w.tick(DT_MAX)
-    expect(w.stall.potato.stock.bintje.plain).toBe(2)
-    expect(w.stall.potato.stock.base.plain).toBe(0)
-    const unit = qualityMul(0) * purposeMul('bintje', 'produce')
-    expect(w.stall.potato.worth.bintje.plain).toBeCloseTo(2 * unit, 9)
-    expect(w.marketQuote().clean).toBeCloseTo(2 * unit * CROPS.potato.sale, 9)
+    const unit = qualityMul(0) * purposeMul('bintje', 'produce') * CROPS.potato.sale
+    const paid = saleUnits(0, 2, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT[tierOf('bintje')], unit, 0).paid
+    expect(w.money).toBeCloseTo(before + paid, 9)
   })
 })
 

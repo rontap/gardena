@@ -5,7 +5,7 @@ import { WEATHER_NAME } from '../defs/weather.ts'
 import { TREE_NAME } from '../defs/trees.ts'
 import { cropVariety } from '../defs/crops.ts'
 import { cropName } from '../sim/item.ts'
-import { prizeName } from './market.tsx'
+import { prizeName } from './feature-contracts/contracts.tsx'
 import { recapOutcome } from './recap.tsx'
 
 test('names is the one source for Pumpjack, Heirloom', () => {

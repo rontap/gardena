@@ -437,7 +437,7 @@ export function demandGood(d: Demand): StallGoodId {
   return 'vodka'
 }
 
-function unitOf(good: StallGoodId): number {
+export function unitOf(good: StallGoodId): number {
   if (isJamClass(good)) return JAM_SALE[jamCrop(good)]
   if (good === 'sugar') return SUGAR_MILL
   if (good === 'oil') return OIL
@@ -861,7 +861,16 @@ function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: numbe
       : prize.tool === 'rotary-shovel'
         ? makeShovel('rotary-shovel')
         : makePickaxe('diamond-pickaxe')
-  w.drops.push({ at: { ...DOOR }, item })
+  post(w, item)
+}
+
+export function post(w: World, item: Item): void {
+  const free = w.postbox.slots.findIndex(s => s.kind === 'empty')
+  if (free < 0) {
+    w.drops.push({ at: { ...DOOR }, item })
+    return
+  }
+  w.postbox.slots[free] = { kind: 'hold', item }
 }
 
 function resolveDone(w: World, a: Active): void {

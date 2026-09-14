@@ -14,7 +14,8 @@ import type {
   SiloSeed,
   SiloSpray,
   Tap,
-  Truck,
+  Warehouse,
+  Postbox,
   Well,
 } from './building.ts'
 import type { Drop } from './drop.ts'
@@ -210,7 +211,8 @@ export type Hydrate = {
   rng: Rng
   sink: LogSink
   house: House
-  truck: Truck
+  warehouse: Warehouse
+  postbox: Postbox
   silo: SeedSilo
   additives: AdditiveStore
   pumps: Pump[]

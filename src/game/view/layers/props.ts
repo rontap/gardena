@@ -96,7 +96,12 @@ export class PropsLayer {
     world.produceSilos.forEach(h => put('silo-produce', h.base.col, h.base.row))
     put('seed-silo', world.silo.base.col, world.silo.base.row)
     put('additive-store', world.additives.base.col, world.additives.base.row)
-    put('truck', world.truck.base.col, world.truck.base.row)
+    put('warehouse', world.warehouse.base.col, world.warehouse.base.row)
+    put(
+      world.postbox.slots.some(s => s.kind === 'hold') ? 'postbox-on' : 'postbox-off',
+      world.postbox.base.col,
+      world.postbox.base.row,
+    )
     put('house', HOUSE_BASE.col, HOUSE_BASE.row)
     world.machineLinks().forEach(l => {
       const s = this.pool.take(atlasTex(l.side === 'in' ? 'link-in' : 'link-out'))

@@ -59,8 +59,10 @@ import {
   Pump,
   SILO_BASE,
   SeedSilo,
-  TRUCK_BASE,
-  Truck,
+  WAREHOUSE_BASE,
+  Warehouse,
+  POSTBOX_BASE,
+  Postbox,
   chunkKey,
   chunkOf,
   chunkRect,
@@ -285,14 +287,14 @@ export class World {
   readonly sprinklerTargetCache = new Map<string, Coord[]>()
   readonly wiredVerts = new Set<string>()
   readonly house: House
-  readonly truck: Truck
+  readonly warehouse: Warehouse
+  readonly postbox: Postbox
   readonly silo: SeedSilo
   readonly additives: AdditiveStore
   readonly stall: StallMap
   readonly family: Family
   points = 0
   clearance = 0
-  consignRevision = 0
   readonly seats: Seat[]
   local: SeatId = 0
   act: Seat
@@ -355,7 +357,8 @@ export class World {
       this.rng = h.rng
       this.sink = h.sink
       this.house = h.house
-      this.truck = h.truck
+      this.warehouse = h.warehouse
+      this.postbox = h.postbox
       this.silo = h.silo
       this.additives = h.additives
       this.pumps = h.pumps
@@ -437,7 +440,6 @@ export class World {
       this.now = 0
       this.speech = { kind: 'none' }
       this.hud = undefined
-      this.consignRevision = 0
       this.groundRev = 0
       this.sink.reset(this.rng.seed)
       this.rebase()
@@ -449,7 +451,8 @@ export class World {
     this.sink = sinkOrH as LogSink
     this.sink.reset(this.rng.seed)
     this.house = new House(HOUSE_BASE, DOOR)
-    this.truck = new Truck(TRUCK_BASE)
+    this.warehouse = new Warehouse(WAREHOUSE_BASE)
+    this.postbox = new Postbox(POSTBOX_BASE)
     this.silo = new SeedSilo(SILO_BASE)
     this.additives = new AdditiveStore(ADDITIVE_BASE)
     this.pumps = [new Pump(PUMP_BASE, 'starter')]
@@ -458,7 +461,7 @@ export class World {
     initFamily(this)
     this.chunks.set(
       chunkKey(this.owned[0]),
-      generateChunk(this.rng, this.owned[0], this.house, this.pump, this.truck, this.silo, this.additives),
+      generateChunk(this.rng, this.owned[0], this.house, this.pump, this.warehouse, this.postbox, this.silo, this.additives),
     )
     this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
@@ -1444,8 +1447,9 @@ export class World {
 
   swapChestBody(at: Coord, i: number): void {
     const cell = this.cell(at)
-    if (cell.kind !== 'chest' && cell.kind !== 'freezer' && cell.kind !== 'silo-produce') return
+    if (cell.kind !== 'chest' && cell.kind !== 'freezer' && cell.kind !== 'silo-produce' && cell.kind !== 'postbox') return
     const held = this.act.hand
+    if (cell.kind === 'postbox' && held.kind === 'hold') return
     if (cell.kind === 'silo-produce' && held.kind === 'hold' && cell.accept(held.item) <= 0) return
     this.act.hand = cell.slots[i]
     cell.slots[i] = held

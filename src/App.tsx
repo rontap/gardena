@@ -78,7 +78,6 @@ function ignoreClick(_h: MapClick, _xy: { x: number; y: number }, _shift: boolea
 
 export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
-  const consignRevision = useRef(0)
   const prevDay = useRef<number | undefined>(undefined)
   const [hudN, setHudN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
@@ -226,13 +225,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     if (world.seats[world.local].cue.kind !== 'inventory') return
     setPanel({ kind: 'inventory' })
     world.ackCue()
-  }, [hudN, world])
-
-  useEffect(() => {
-    if (world === undefined) return
-    if (world.consignRevision === consignRevision.current) return
-    consignRevision.current = world.consignRevision
-    setPanel({ kind: 'market' })
   }, [hudN, world])
 
   useEffect(() => {
@@ -459,7 +451,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     prevDay.current = next.clock.day
     recapDayRef.current = undefined
     setRecapDay(undefined)
-    consignRevision.current = next.consignRevision
     const from = localRef.current
     localRef.current = next.local
     if (from === 0 || next.local === 0) {

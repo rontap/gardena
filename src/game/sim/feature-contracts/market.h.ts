@@ -33,7 +33,18 @@ export type SellAllQuote = {
   after: { readonly [K in StallGoodId]?: number }
 }
 
-export type DemandChip = { good: StallGoodId; shown: number; sat: number; recoverDays: number }
+export type DemandChip = {
+  good: StallGoodId
+  variety: VarietyId
+  shown: number
+  cap: number
+  sat: number
+  recoverDays: number
+  msrp: number
+  price: number
+}
+
+export type Sale = { name: string; n: number }
 
 export type InfusedKey = 'plain' | 'infused'
 

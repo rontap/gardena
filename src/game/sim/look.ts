@@ -109,7 +109,8 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'silo-spray') lines.push(m.names_building_silo_spray())
   else if (cell.kind === 'silo-produce') lines.push(m.names_building_silo_produce())
   else if (cell.kind === 'house') lines.push(m.names_building_house())
-  else if (cell.kind === 'truck') lines.push(m.names_building_truck())
+  else if (cell.kind === 'warehouse') lines.push(m.names_building_warehouse())
+  else if (cell.kind === 'postbox') lines.push(m.names_building_postbox())
   else if (cell.kind === 'pump') {
     lines.push(
       labeled(m.names_building_pump(), m.prompt_of({ stored: liters(cell.water.stored), capacity: liters(cell.water.capacity) })),

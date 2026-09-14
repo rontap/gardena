@@ -14,7 +14,8 @@ import {
   type House,
   type Pump,
   type SeedSilo,
-  type Truck,
+  type Warehouse,
+  type Postbox,
 } from './building.ts'
 import { mintStart } from './feature-burrow/burrow.ts'
 import { goodness, groundOf, hardnessOf } from './noise.ts'
@@ -30,7 +31,8 @@ export function generateChunk(
   id: ChunkId,
   house: House,
   pump: Pump,
-  truck: Truck,
+  warehouse: Warehouse,
+  postbox: Postbox,
   silo: SeedSilo,
   additives: AdditiveStore,
 ): Cell[][] {
@@ -62,7 +64,8 @@ export function generateChunk(
   if (id.cx === 0 && id.cy === 0) spawnAppleTree(cells, id)
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
-  occupiedCells(truck.base, owned).forEach(at => put(cells, at, truck))
+  occupiedCells(warehouse.base, owned).forEach(at => put(cells, at, warehouse))
+  occupiedCells(postbox.base, owned).forEach(at => put(cells, at, postbox))
   occupiedCells(silo.base, owned).forEach(at => put(cells, at, silo))
   occupiedCells(additives.base, owned).forEach(at => put(cells, at, additives))
   if (id.cx === 0 && id.cy === 0) mintStart(cells, rng)

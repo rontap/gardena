@@ -1,6 +1,8 @@
-import { CROPS } from '../defs/crops.ts'
+import { m } from '../../paraglide/messages.js'
+import { CROPS, cropVariety } from '../defs/crops.ts'
 import { VARIETY_IDS, type VarietyId } from '../defs/varieties.ts'
 import { YARD, type Coord } from './building.ts'
+import { caskName, jamJarName, SPIRIT_NAME } from './item.ts'
 import {
   CASK_IDS,
   JAM_IDS,
@@ -8,6 +10,7 @@ import {
   SPIRIT_KINDS,
   TREE_IDS,
   type GrownCrop,
+  type JamCrop,
   type StallGoodId,
 } from './ids.ts'
 import type { InfusedKey } from './feature-contracts/market.h.ts'
@@ -47,6 +50,19 @@ export function isInfusedStall(id: StallGoodId): boolean {
 
 export function isSpiritStall(id: StallGoodId): boolean {
   return (SPIRIT_KINDS as readonly string[]).includes(id) || (CASK_IDS as readonly string[]).includes(id)
+}
+
+export function stallGoodName(id: StallGoodId, variety: VarietyId): string {
+  if (id === 'sugar') return m.names_item_sugar()
+  if (id === 'wine' || id === 'cider') return caskName(id, variety)
+  if (id === 'oil') return m.names_item_oil()
+  if (id === 'flour') return m.names_item_flour()
+  if (id === 'extract') return m.names_item_extract()
+  if (id === 'bread') return m.names_item_bread()
+  if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]()
+  if (id.startsWith('jam-')) return jamJarName(id.slice(4) as JamCrop, variety)
+  if (!isCropStall(id)) throw new Error(`stallGoodName: ${id}`)
+  return cropVariety(id, variety)
 }
 
 export type InfusedBins = { [K in InfusedKey]: number }

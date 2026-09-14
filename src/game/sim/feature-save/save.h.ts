@@ -107,7 +107,8 @@ export type SaveCell =
   | { kind: 'silo-produce'; base: RectBase; slots: Slot[] }
   | { kind: 'seed-silo'; base: RectBase; useDefault: boolean; seeds: SiloStack[]; out: 0 | 1; hold: number }
   | { kind: 'additive-store'; base: RectBase; useDefault: boolean; held: AdditiveHold[]; sugar: SugarBin; out: 0 | 1; hold: number }
-  | { kind: 'truck'; base: RectBase }
+  | { kind: 'warehouse'; base: RectBase }
+  | { kind: 'postbox'; base: RectBase; slots: Slot[] }
   | { kind: 'lever'; base: RectBase; on: boolean; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
   | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }

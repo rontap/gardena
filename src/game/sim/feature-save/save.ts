@@ -199,7 +199,8 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
     c.kind === 'silo-produce' ||
     c.kind === 'seed-silo' ||
     c.kind === 'additive-store' ||
-    c.kind === 'truck'
+    c.kind === 'warehouse' ||
+    c.kind === 'postbox'
   ) {
     if (c.base.shape === 'rect') return { col: c.base.col, row: c.base.row }
   }
@@ -364,8 +365,10 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       return { kind: 'silo-spray', base: c.base, restock: c.restock, held: c.held.map(h => ({ ...h })), sugar: { ...c.sugar } }
     case 'silo-produce':
       return { kind: 'silo-produce', base: c.base, slots: c.slots.slice() }
-    case 'truck':
-      return { kind: 'truck', base: c.base }
+    case 'warehouse':
+      return { kind: 'warehouse', base: c.base }
+    case 'postbox':
+      return { kind: 'postbox', base: c.base, slots: c.slots.slice() }
     case 'lever':
       return { kind: 'lever', base: c.base, on: c.on, inn: c.inn, prev: c.prev, out: c.out }
     case 'button':

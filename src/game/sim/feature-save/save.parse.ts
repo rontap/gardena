@@ -29,7 +29,8 @@ import {
   Tap,
   Well,
   Tree,
-  Truck,
+  Warehouse,
+  Postbox,
   Barrel,
   chunkKey,
   chunkRect,
@@ -114,7 +115,8 @@ function worldFromSave(save: Save, sink: LogSink): World {
     house: live.house,
     silo: live.silo,
     additives: live.additives,
-    truck: live.truck,
+    warehouse: live.warehouse,
+    postbox: live.postbox,
     pumps: live.pumps,
     taps: live.taps,
     stills: live.stills,
@@ -253,7 +255,8 @@ function makeStallMap(s: Save['stall']): StallMap {
 function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
   chunks: Map<string, Cell[][]>
   house: House
-  truck: Truck
+  warehouse: Warehouse
+  postbox: Postbox
   silo: SeedSilo
   additives: AdditiveStore
   pumps: Pump[]
@@ -279,7 +282,8 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
   const spraySilos: SiloSpray[] = []
   const produceSilos: SiloProduce[] = []
   let house!: House
-  let truck!: Truck
+  let warehouse!: Warehouse
+  let postbox!: Postbox
   let silo!: SeedSilo
   let additives!: AdditiveStore
   for (const ch of chunkSaves) {
@@ -292,7 +296,8 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
         const made = makeLive(sc)
         origins.set(`${at.col},${at.row}`, made)
         if (made.kind === 'house') house = made
-        if (made.kind === 'truck') truck = made
+        if (made.kind === 'warehouse') warehouse = made
+        if (made.kind === 'postbox') postbox = made
         if (made.kind === 'seed-silo' && made.useDefault) silo = made
         if (made.kind === 'additive-store' && made.useDefault) additives = made
         if (made.kind === 'pump') pumps.push(made)
@@ -327,7 +332,7 @@ function stampChunks(chunkSaves: { id: ChunkId; cells: SaveCell[][] }[]): {
     }
     chunks.set(chunkKey(ch.id), grid)
   }
-  return { chunks, house, truck, silo, additives, pumps, taps, wells, stills, necronomicon, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
+  return { chunks, house, warehouse, postbox, silo, additives, pumps, taps, wells, stills, necronomicon, waterSystems, hangars, seedSilos, spraySilos, produceSilos }
 }
 
 function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
@@ -539,8 +544,13 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       cell.slots.forEach((s, i) => (made.slots[i] = liveSlot(s)))
       return made
     }
-    case 'truck':
-      return new Truck(cell.base)
+    case 'warehouse':
+      return new Warehouse(cell.base)
+    case 'postbox': {
+      const made = new Postbox(cell.base)
+      cell.slots.forEach((s, i) => (made.slots[i] = liveSlot(s)))
+      return made
+    }
     case 'lever': {
       const made = new Lever(cell.base)
       made.on = cell.on

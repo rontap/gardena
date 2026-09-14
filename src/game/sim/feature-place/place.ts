@@ -74,7 +74,7 @@ export function expandBody(w: World, id: ChunkId): void {
   w.sprinklerTargetCache.clear()
   w.chunks.set(
     chunkKey(id),
-    generateChunk(w.rng, id, w.house, w.pump, w.truck, w.silo, w.additives),
+    generateChunk(w.rng, id, w.house, w.pump, w.warehouse, w.postbox, w.silo, w.additives),
   )
   w.indexAll()
   w.ping()

@@ -28,6 +28,7 @@ import {
   MILL_H,
   MILL_W,
   MILL_WORK,
+  POSTBOX_SLOTS,
   PRODUCE_SLOTS,
   SILO_FIELD_ADDITIVE_CAP,
   SILO_FIELD_SEED_CAP,
@@ -277,13 +278,14 @@ function clamp(n: number, a: number, c: number): number {
 export const HOUSE_BASE: RectBase = { shape: 'rect', col: 14, row: 6, w: 4, h: 3 }
 export const PUMP_BASE: RectBase = { shape: 'rect', col: 18, row: 7, w: 2, h: 1 }
 export const DOOR: Coord = { col: 15, row: 9 }
-export const TRUCK_BASE: RectBase = { shape: 'rect', col: 12, row: 8, w: 2, h: 1 }
+export const WAREHOUSE_BASE: RectBase = { shape: 'rect', col: 9, row: 8, w: 2, h: 2 }
+export const POSTBOX_BASE: RectBase = { shape: 'rect', col: 13, row: 8, w: 1, h: 1 }
 export const YARD: Coord[] = [
   { col: 12, row: 9 },
   { col: 13, row: 9 },
   { col: 14, row: 9 },
 ]
-export const PAD: Coord = { col: 12, row: 9 }
+export const PAD: Coord = { col: 9, row: 10 }
 export const SILO_BASE: RectBase = { shape: 'rect', col: 17, row: 9, w: 1, h: 2 }
 export const ADDITIVE_BASE: RectBase = { shape: 'rect', col: 18, row: 9, w: 1, h: 2 }
 
@@ -294,7 +296,9 @@ const RESERVED = new Set(
     ...occupiedCells(HOUSE_BASE, HOME),
     ...occupiedCells(PUMP_BASE, HOME),
     DOOR,
-    ...occupiedCells(TRUCK_BASE, HOME),
+    ...occupiedCells(WAREHOUSE_BASE, HOME),
+    ...warehousePads(WAREHOUSE_BASE),
+    ...occupiedCells(POSTBOX_BASE, HOME),
     ...occupiedCells(SILO_BASE, HOME),
     ...occupiedCells(ADDITIVE_BASE, HOME),
     ...YARD,
@@ -456,6 +460,10 @@ export function defaultPadPorts(base: RectBase): IoPort[] {
   ]
 }
 
+export function warehousePads(base: RectBase): Coord[] {
+  return Array.from({ length: base.w }, (_, i) => ({ col: base.col + i, row: base.row + base.h }))
+}
+
 export class BaseBuilding {
   readonly base: RectBase
   readonly ports: readonly ('out' | 'in' | 'in-l' | 'in-r')[] = []
@@ -593,11 +601,23 @@ export class CompostBox extends BaseBuilding {
   }
 }
 
-export class Truck {
-  readonly kind = 'truck' as const
-  readonly base: RectBase
+export class Warehouse extends BaseBuilding {
+  readonly kind = 'warehouse' as const
+  override readonly pads = 'both'
   constructor(base: RectBase) {
-    this.base = base
+    super(base)
+  }
+  override padPorts(): IoPort[] {
+    return warehousePads(this.base).map(at => ({ at, role: 'in' as const }))
+  }
+}
+
+export class Postbox extends BaseBuilding {
+  readonly kind = 'postbox' as const
+  readonly slots: Slot[]
+  constructor(base: RectBase) {
+    super(base)
+    this.slots = Array.from({ length: POSTBOX_SLOTS }, (): Slot => ({ kind: 'empty' }))
   }
 }
 

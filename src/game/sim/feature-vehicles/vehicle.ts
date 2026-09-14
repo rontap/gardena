@@ -56,6 +56,7 @@ import {
   type SugarBin,
 } from '../building.ts'
 import type { Drop } from '../drop.ts'
+import { consignItem, consignUnits } from '../store.ts'
 import { Act, type Cmd } from '../log.ts'
 import { statsOf } from '../modifiers.ts'
 import { Plant, Turf } from '../plant.ts'
@@ -597,7 +598,7 @@ export function padBuildings(w: World): PadCell[] {
     const c = w.cell(at)
     if (c.kind === 'chest' || c.kind === 'freezer') out.push(c)
   }
-  out.push(w.silo, w.additives)
+  out.push(w.silo, w.additives, w.warehouse)
   return out
 }
 
@@ -1200,7 +1201,16 @@ export function transferUnload(w: World, v: Vehicle): void {
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = vehicleCargo(v, w.trailers)
   if (hit?.side !== 'dropoff' || load === undefined) return
-  dumpCargo(load, hit.cell)
+  if (hit.cell.kind === 'warehouse') sellCargo(w, load)
+  else dumpCargo(load, hit.cell)
+}
+
+function sellCargo(w: World, cargo: Cargo): void {
+  cargoEach(cargo, (item, take) => {
+    if (!consignItem(w, item)) return
+    take(-1)
+  })
+  compactCargo(cargo)
 }
 
 export function loadBody(w: World): void {
@@ -1242,6 +1252,7 @@ export function unloadWould(w: World): boolean {
   if (v.pose.speed !== 0) return false
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   if (hit?.side !== 'dropoff') return false
+  if (hit.cell.kind === 'warehouse') return cargoSome(load, item => consignUnits(w, item) > 0)
   return canDumpCargo(load, hit.cell)
 }
 

@@ -614,10 +614,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'silo-spray') return intent(m.names_building_silo_spray(), { act: 'additives', at })
   if (cell.kind === 'silo-produce') return intent(m.names_building_silo_produce(), { act: 'chest', at })
   if (cell.kind === 'house') return intent(m.prompt_inventory(), { act: 'inventory' })
-  if (cell.kind === 'truck') {
+  if (cell.kind === 'warehouse') {
     if (canConsign(w.act.hand)) return intent(m.prompt_drop_off(), { act: 'consign' })
-    return needSeeds(cell)
+    return { kind: 'blocked', text: m.names_building_warehouse() }
   }
+  if (cell.kind === 'postbox') return intent(m.names_building_postbox(), { act: 'chest', at })
   if (onCell(w.drops, at).length > 0) {
     if (handFullFor(w, w.drops[topIndex(w.drops, at)].item)) return { kind: 'blocked', text: HAND_FULL }
     return intent(m.prompt_pick_up(), { act: 'pickup', at })

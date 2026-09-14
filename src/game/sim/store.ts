@@ -1,18 +1,19 @@
+import { m } from '../../paraglide/messages.js'
 import { SUGAR_BAG } from '../defs/items.ts'
 import { freshMul } from '../defs/crops.ts'
 import { ADDITIVE_BAG } from './building.ts'
-import { purposeMul, qualityMul, tierOf, VARIETY_IDS } from '../defs/varieties.ts'
+import { purposeMul, qualityMul, tierOf, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
 import { WEATHER_FRUIT_IMPACT } from '../defs/weather.ts'
 import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedStore } from './building.ts'
 import { isPlot } from './plot.ts'
 import { SPIRIT_KINDS, type AnnualId, type StallGoodId } from './ids.ts'
-import type { Item } from './item.ts'
-import { Accepts, SAT_MAX_CUT, SAT_RECOVER_PER_DAY, impactOf, mul, saleUnits, stepOf } from './feature-contracts/market.ts'
+import { rottenName, type Item } from './item.ts'
+import { Accepts, SAT_MAX_CUT, SAT_RECOVER_PER_DAY, impactOf, mul, saleUnits, stepOf, unitOf } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
-import { binCount, isBakedStall, isCropStall, isInfusedStall, isSpiritStall, stallX, STALL_IDS } from './stall.ts'
+import { binCount, isBakedStall, isCropStall, isInfusedStall, isSpiritStall, stallGoodName, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
-import type { DemandChip, MarketQuote, SellAllQuote } from './feature-contracts/market.h.ts'
+import type { DemandChip, MarketQuote, Sale, SellAllQuote } from './feature-contracts/market.h.ts'
 
 export function seedStoreAt(world: World, at: Coord): SeedStore {
   const c = world.cell(at)
@@ -189,76 +190,90 @@ export function dropSite(world: World): Coord | undefined {
 
 export function doConsign(world: World): void {
   if (world.act.hand.kind !== 'hold') return
-  const item = world.act.hand.item
-  if (item.kind === 'fruit') {
-    const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
-    splitConsign(world, item.crop, item.count, item.freshness === 0, rest => {
-      world.stall[item.crop].take(item.variety, rest, unit)
-    }, false)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'sugar') {
-    splitConsign(world, 'sugar', item.liters, false, rest => {
-      world.stall.sugar.takeSugar(rest, item.unitSale)
-    }, false)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'spirit') {
-    splitConsign(world, item.spirit, item.count, false, rest => {
-      world.stall[item.spirit].takeSpirit(item.variety, rest, item.unitSale, item.infused)
-    }, item.infused)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'cask') {
-    splitConsign(world, item.cask, item.count, false, rest => {
-      world.stall[item.cask].takeSpirit(item.variety, rest, item.unitSale, item.infused)
-    }, item.infused)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'jam') {
-    splitConsign(world, `jam-${item.crop}`, item.count, false, rest => {
-      world.stall[`jam-${item.crop}`].takeSpirit(item.variety, rest, item.unitSale, item.infused)
-    }, item.infused)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'oil') {
-    splitConsign(world, item.kind, item.count, false, rest => {
-      world.stall[item.kind].takeSpirit('base', rest, item.unitSale, item.infused)
-    }, item.infused)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'flour' || item.kind === 'extract' || item.kind === 'bread') {
-    splitConsign(world, item.kind, item.count, false, rest => {
-      world.stall[item.kind].takeBaked(rest, item.unitSale)
-    }, false)
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-    return
-  }
-  if (item.kind === 'rotten') {
-    if (!world.done.has('unlock-fermentation')) return
-    world.clearance += item.count
-    world.act.hand = { kind: 'empty' }
-    completeConsign(world)
-  }
+  if (!consignItem(world, world.act.hand.item)) return
+  world.act.hand = { kind: 'empty' }
 }
 
-export function completeConsign(world: World): void {
-  world.consignRevision += 1
+export function consignUnits(world: World, item: Item): number {
+  if (item.kind === 'fruit') return item.count
+  if (item.kind === 'sugar') return item.liters
+  if (item.kind === 'rotten') return world.done.has('unlock-fermentation') ? item.count : 0
+  if (
+    item.kind === 'spirit' ||
+    item.kind === 'cask' ||
+    item.kind === 'jam' ||
+    item.kind === 'oil' ||
+    item.kind === 'flour' ||
+    item.kind === 'extract' ||
+    item.kind === 'bread'
+  ) {
+    return item.count
+  }
+  return 0
+}
 
+export function consignItem(world: World, item: Item): boolean {
+  if (consignUnits(world, item) === 0) return false
+  const stalled = toStall(world, item)
   market.finishFull(world)
+  const paid = sellAllBody(world)
+  if (paid > 0 && stalled.n > 0) {
+    world.say(m.market_sold({ n: Math.round(stalled.n), good: stalled.name, money: Math.round(paid) }))
+  }
+  return true
+}
+
+function toStall(world: World, item: Item): Sale {
+  if (item.kind === 'fruit') {
+    const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
+    const rest = splitConsign(world, item.crop, item.count, item.freshness === 0, n => {
+      world.stall[item.crop].take(item.variety, n, unit)
+    }, false)
+    return { name: stallGoodName(item.crop, item.variety), n: rest }
+  }
+  if (item.kind === 'sugar') {
+    const rest = splitConsign(world, 'sugar', item.liters, false, n => {
+      world.stall.sugar.takeSugar(n, item.unitSale)
+    }, false)
+    return { name: stallGoodName('sugar', 'base'), n: rest }
+  }
+  if (item.kind === 'spirit') {
+    const rest = splitConsign(world, item.spirit, item.count, false, n => {
+      world.stall[item.spirit].takeSpirit(item.variety, n, item.unitSale, item.infused)
+    }, item.infused)
+    return { name: stallGoodName(item.spirit, item.variety), n: rest }
+  }
+  if (item.kind === 'cask') {
+    const rest = splitConsign(world, item.cask, item.count, false, n => {
+      world.stall[item.cask].takeSpirit(item.variety, n, item.unitSale, item.infused)
+    }, item.infused)
+    return { name: stallGoodName(item.cask, item.variety), n: rest }
+  }
+  if (item.kind === 'jam') {
+    const good = `jam-${item.crop}` as StallGoodId
+    const rest = splitConsign(world, good, item.count, false, n => {
+      world.stall[good].takeSpirit(item.variety, n, item.unitSale, item.infused)
+    }, item.infused)
+    return { name: stallGoodName(good, item.variety), n: rest }
+  }
+  if (item.kind === 'oil') {
+    const rest = splitConsign(world, item.kind, item.count, false, n => {
+      world.stall.oil.takeSpirit('base', n, item.unitSale, item.infused)
+    }, item.infused)
+    return { name: stallGoodName('oil', 'base'), n: rest }
+  }
+  if (item.kind === 'flour' || item.kind === 'extract' || item.kind === 'bread') {
+    const good = item.kind
+    const rest = splitConsign(world, good, item.count, false, n => {
+      world.stall[good].takeBaked(n, item.unitSale)
+    }, false)
+    return { name: stallGoodName(good, 'base'), n: rest }
+  }
+  if (item.kind === 'rotten') {
+    world.clearance += item.count
+    return { name: rottenName(item.cls), n: item.count }
+  }
+  throw new Error(item.kind)
 }
 
 export function splitConsign(
@@ -268,10 +283,11 @@ export function splitConsign(
   skip: boolean,
   restToStall: (rest: number) => void,
   infused: boolean,
-): void {
+): number {
   const bound = skip ? 0 : fillContracts(world, good, n, infused)
   const rest = n - bound
   if (rest > 0) restToStall(rest)
+  return rest
 }
 
 export function fillContracts(world: World, good: StallGoodId, n: number, infused: boolean): number {
@@ -291,10 +307,10 @@ export function fillContracts(world: World, good: StallGoodId, n: number, infuse
   return n - left
 }
 
-export function sellAllBody(world: World): void {
-  if (!world.marketOpen()) return
+export function sellAllBody(world: World): number {
+  if (!world.marketOpen()) return 0
   const quote = marketQuote(world)
-  if (quote.paid === 0) return
+  if (quote.paid === 0) return 0
   STALL_IDS.forEach(id => {
     const next = quote.after[id]
     if (next !== undefined) world.stall[id].sat = next
@@ -306,6 +322,7 @@ export function sellAllBody(world: World): void {
   world.money += quote.paid
   world.clearance = 0
   world.emit('sold')
+  return quote.paid
 }
 
 function specialtyMul(world: World, id: StallGoodId, variety: VarietyId): number {
@@ -412,15 +429,19 @@ export function marketDemand(world: World): DemandChip[] {
   const kind = world.weather(world.clock.day)
   return STALL_IDS.flatMap(id => {
     const wx = isCropStall(id) && (kind === 'flood' || kind === 'drought') ? WEATHER_FRUIT_IMPACT : 0
-    const shown = mul(world.stall[id].sat, SAT_MAX_CUT, wx)
-    if (Math.round(shown * 100) === 100) return []
-    return [
-      {
-        good: id,
-        shown,
-        sat: world.stall[id].sat,
-        recoverDays: Math.abs(world.stall[id].sat) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY,
-      },
-    ]
+    const sat = world.stall[id].sat
+    const recoverDays = Math.abs(sat) * SAT_MAX_CUT / SAT_RECOVER_PER_DAY
+    const rows = demandVarieties(id).map(variety => {
+      const cap = impactOf(id, variety)
+      const shown = mul(sat, cap, wx)
+      const msrp = unitOf(id) * purposeMul(variety, 'produce')
+      return { good: id, variety, shown, cap, sat, recoverDays, msrp, price: msrp * shown }
+    })
+    const split = rows.some(r => r.shown !== rows[0].shown)
+    return (split ? rows : [rows[0]]).filter(r => Math.round(r.shown * 100) !== 100)
   })
+}
+
+function demandVarieties(id: StallGoodId): readonly VarietyId[] {
+  return isCropStall(id) ? VARIETIES[id] : ['base']
 }

@@ -24,7 +24,8 @@ import {
   type SeedSilo,
   type Tap,
   type Tree,
-  type Truck,
+  type Warehouse,
+  type Postbox,
   type Well,
   type Barrel,
 } from './building.ts'
@@ -76,7 +77,8 @@ export type Cell =
   | Chest
   | Grinder
   | CompostBox
-  | Truck
+  | Warehouse
+  | Postbox
   | Mill
   | JamMachine
   | PotStill
@@ -140,7 +142,6 @@ export function isSolid(c: Cell): boolean {
     c.kind === 'well' ||
     c.kind === 'rock' ||
     c.kind === 'tree' ||
-    c.kind === 'truck' ||
     c.kind === 'hangar' ||
     c.kind === 'silo-seed' ||
     c.kind === 'silo-spray' ||

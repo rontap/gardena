@@ -165,6 +165,7 @@ export const HANGAR_H = 2
 export const SILO_FIELD_SEED_CAP = 300
 export const SILO_FIELD_ADDITIVE_CAP = 600
 export const PRODUCE_SLOTS = 16
+export const POSTBOX_SLOTS = 4
 
 export const MILL_W = 2
 export const MILL_H = 2

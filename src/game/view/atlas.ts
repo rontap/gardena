@@ -89,7 +89,8 @@ import grinder from '../../assets/props/prop-grinder.svg?raw'
 import propLinkIn from '../../assets/props/prop-link-in.svg?raw'
 import propLinkOut from '../../assets/props/prop-link-out.svg?raw'
 import propWell from '../../assets/props/prop-well.svg?raw'
-import propTruck from '../../assets/props/prop-truck.svg?raw'
+import propWarehouse from '../../assets/props/prop-produce-warehouse.svg?raw'
+import propPostbox from '../../assets/props/prop-postbox.svg?raw'
 import propTap from '../../assets/props/prop-tap.svg?raw'
 import propSprinkler from '../../assets/props/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/props/prop-sprinkler-vert.svg?raw'
@@ -248,7 +249,9 @@ export type AtlasKey =
   | 'house'
   | 'pump-body'
   | 'pump-arm'
-  | 'truck'
+  | 'warehouse'
+  | 'postbox-off'
+  | 'postbox-on'
   | 'chest'
   | 'grinder'
   | 'link-in'
@@ -579,7 +582,9 @@ async function load(): Promise<void> {
   put('house', house)
   put('pump-body', pump, 'body')
   put('pump-arm', pump, 'arm')
-  put('truck', propTruck)
+  put('warehouse', propWarehouse)
+  put('postbox-off', propPostbox, 'off')
+  put('postbox-on', propPostbox, 'on')
   put('chest', chest)
   put('grinder', grinder)
   put('link-in', propLinkIn)

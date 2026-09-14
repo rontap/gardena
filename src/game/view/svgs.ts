@@ -188,7 +188,7 @@ import grinder from '../../assets/props/prop-grinder.svg?raw'
 import propLinkIn from '../../assets/props/prop-link-in.svg?raw'
 import propLinkOut from '../../assets/props/prop-link-out.svg?raw'
 import propWell from '../../assets/props/prop-well.svg?raw'
-import propTruck from '../../assets/props/prop-truck.svg?raw'
+import propWarehouse from '../../assets/props/prop-produce-warehouse.svg?raw'
 import propTap from '../../assets/props/prop-tap.svg?raw'
 import propSprinkler from '../../assets/props/prop-sprinkler.svg?raw'
 import propSprinklerVert from '../../assets/props/prop-sprinkler-vert.svg?raw'
@@ -716,7 +716,7 @@ export const ACTOR = svgInner(actor)
 export const HOUSE = svgInner(house)
 export const PUMP = svgInner(pump)
 export const WELL = svgInner(propWell)
-export const TRUCK = svgInner(propTruck)
+export const WAREHOUSE = svgInner(propWarehouse)
 export const CHEST = svgInner(chest)
 export const GRINDER = svgInner(grinder)
 export const LINK_IN = svgInner(propLinkIn)
@@ -1155,7 +1155,7 @@ const GRASS_STAGES = ['sprout', 'grow'] as const
   PAD_TAKE,
   UI_SLOT_DOWN,
   COMPOST_BOX,
-  TRUCK,
+  WAREHOUSE,
   HOUSE,
   WELL,
   ROCK,

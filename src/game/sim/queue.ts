@@ -274,7 +274,7 @@ export function begin(world: World, i: Intent): void {
     }
     case 'chest': {
       const c = world.cell(i.at)
-      if (c.kind !== 'chest' && c.kind !== 'freezer' && c.kind !== 'silo-produce') {
+      if (c.kind !== 'chest' && c.kind !== 'freezer' && c.kind !== 'silo-produce' && c.kind !== 'postbox') {
         shiftHead(world)
         return
       }

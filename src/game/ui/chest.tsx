@@ -8,13 +8,15 @@ import { ItemFace, ItemLineView } from './held.tsx'
 
 export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClose: () => void }) {
   const cell = world.cell(at)
-  if (cell.kind !== 'chest' && cell.kind !== 'freezer' && cell.kind !== 'silo-produce') return null
+  if (cell.kind !== 'chest' && cell.kind !== 'freezer' && cell.kind !== 'silo-produce' && cell.kind !== 'postbox') return null
   const title =
     cell.kind === 'freezer'
       ? m.names_building_freezer()
       : cell.kind === 'silo-produce'
         ? m.names_building_silo_produce()
-        : m.names_building_chest()
+        : cell.kind === 'postbox'
+          ? m.names_building_postbox()
+          : m.names_building_chest()
   return (
     <Dialog.Root
       open
@@ -27,7 +29,13 @@ export function ChestUi({ world, at, onClose }: { world: World; at: Coord; onClo
         <Dialog.Content className="fixed left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 outline-none">
           <Frame title={title} onClose={onClose}>
             <Dialog.Title className="sr-only">{title}</Dialog.Title>
-            <div className={cell.kind === 'silo-produce' ? 'grid grid-cols-4 gap-2' : 'grid grid-cols-3 gap-2'}>
+            <div
+              className={
+                cell.kind === 'silo-produce' || cell.kind === 'postbox'
+                  ? 'grid grid-cols-4 gap-2'
+                  : 'grid grid-cols-3 gap-2'
+              }
+            >
               {cell.slots.map((slot, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <button

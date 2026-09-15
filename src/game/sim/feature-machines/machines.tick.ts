@@ -42,6 +42,25 @@ export function workingFurnaces(w: World): Furnace[] {
   return out
 }
 
+export function machineLinks(w: World): { x: number; y: number; side: 'in' | 'out'; turn: number }[] {
+  const out: { x: number; y: number; side: 'in' | 'out'; turn: number }[] = []
+  for (const at of w.machines.values()) {
+    const c = w.cell(at)
+    if (!isIoCell(c) && c.kind !== 'sorter') continue
+    if (c.base.col !== at.col || c.base.row !== at.row) continue
+    c.storePorts().forEach(port => {
+      if (!w.inWorld(port.at)) return
+      const s = w.cell(port.at)
+      if (s.kind !== 'chest' && s.kind !== 'freezer') return
+      const dx = port.at.col < c.base.col ? 0.5 : port.at.col >= c.base.col + c.base.w ? -0.5 : 0
+      const dy = port.at.row < c.base.row ? 0.5 : port.at.row >= c.base.row + c.base.h ? -0.5 : 0
+      const turn = dy === 0 ? 0 : dy > 0 ? -Math.PI / 2 : Math.PI / 2
+      out.push({ x: port.at.col + dx, y: port.at.row + dy, side: port.role, turn })
+    })
+  }
+  return out
+}
+
 export function tickMachines(w: World, dt: number): void {
   w.furnaceSnap = workingFurnaces(w)
   let dirty = false

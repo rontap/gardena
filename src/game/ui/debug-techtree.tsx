@@ -309,7 +309,7 @@ function ResearchDetail({ node, tree }: { node: Node; tree: Tree }) {
           {skills.map(l =>
             l.kind !== 'skill' ? null : (
               <li key={l.id} className="text-sm">
-                {l.label} <span className="text-ink/45">{l.def.member}</span>
+                {l.label}
               </li>
             ),
           )}

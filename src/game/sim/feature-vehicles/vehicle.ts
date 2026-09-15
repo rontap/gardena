@@ -53,6 +53,7 @@ import {
   type AdditiveId,
   type AdditiveStore,
   type Coord,
+  type Hangar,
   type RectBase,
   type SeedSilo,
   type SugarBin,
@@ -66,7 +67,7 @@ import { isSolid, isTilled, type Cell } from '../plot.ts'
 import { FERT_PLOT_MAX } from '../soil.ts'
 import { stepHold, type Sensor } from '../sensor.ts'
 import type { SeatId, World } from '../world.ts'
-import { ANY, pickTakes, type Pick } from './pick.ts'
+import { ANY, pickTakes, type PadGoods, type Pick } from './pick.ts'
 import type {
   Cargo,
   Drive,
@@ -622,6 +623,108 @@ export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 
   return undefined
 }
 
+export function padGoodsAt(w: World, at: Coord): PadGoods {
+  const hit = padHit(w, at)
+  if (hit === undefined) return 'all'
+  return hit.cell.padGoods(hit.side === 'dropoff' ? 'in' : 'out')
+}
+
+export function stopAt(w: World, at: Coord): RouteStop | undefined {
+  if (!w.inWorld(at)) return undefined
+  const hit = padHit(w, at)
+  if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row }, pick: ANY }
+  if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row }, pick: ANY }
+  if (w.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
+  return { kind: 'goto', at: { col: at.col, row: at.row } }
+}
+
+export function enterBody(w: World): void {
+  if (driverVehicle(w, w.local) !== undefined) {
+    w.disembark()
+    return
+  }
+  const actor = w.seats[w.local].actor
+  let best: Vehicle | undefined
+  let bestD = Infinity
+  w.vehicles.forEach(v => {
+    if (v.pose.kind !== 'field' || v.pose.driver !== 'none') return
+    const d = Math.hypot(actor.x - v.pose.x, actor.y - v.pose.y)
+    if (d > 1.5) return
+    if (best === undefined || d < bestD) {
+      best = v
+      bestD = d
+    }
+  })
+  if (best === undefined) return
+  w.embark(best.id)
+}
+
+export function parkedAt(w: World, at: Coord): Vehicle | undefined {
+  return w.vehicles.find(
+    v =>
+      v.pose.kind === 'field' &&
+      v.pose.driver === 'none' &&
+      Math.floor(v.pose.x) === at.col &&
+      Math.floor(v.pose.y) === at.row,
+  )
+}
+
+export function hangarOrigin(w: World, at: Coord): Coord | undefined {
+  if (!w.inWorld(at)) return undefined
+  const c = w.cell(at)
+  if (c.kind !== 'hangar') return undefined
+  return { col: c.base.col, row: c.base.row }
+}
+
+export function hangarStores(w: World, origin: Coord): boolean {
+  return w.vehicles.some(v => storedHere(v.pose, origin)) || w.trailers.some(t => storedHere(t.pose, origin))
+}
+
+export function hangarAtPad(w: World, at: Coord): Hangar | undefined {
+  return w.hangars.find(h => hangarPad(h.base).some(p => p.col === at.col && p.row === at.row))
+}
+
+export function hasCargo(w: World): boolean {
+  const v = driverVehicle(w, w.local)
+  if (v?.pose.kind !== 'field') return false
+  if (v.kind === 'tractor' && v.hitch === 'none') return false
+  return true
+}
+
+function padSideOfLocal(w: World): 'dropoff' | 'takeup' | undefined {
+  const v = driverVehicle(w, w.local)
+  if (v?.pose.kind !== 'field') return undefined
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  return hit === undefined ? undefined : hit.side
+}
+
+export function onDropoffPad(w: World): boolean {
+  return padSideOfLocal(w) === 'dropoff'
+}
+
+export function onTakeupPad(w: World): boolean {
+  return padSideOfLocal(w) === 'takeup'
+}
+
+export function machinePads(w: World): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
+  w.act = w.seats[w.local]
+  const v = driverVehicle(w, w.local)
+  const floor =
+    v !== undefined && v.pose.kind === 'field' ? { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) } : undefined
+  const out: { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] = []
+  padBuildings(w).forEach(b => {
+    padDropCells(b).forEach(p => {
+      const on = floor !== undefined && p.col === floor.col && p.row === floor.row
+      out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && unloadWould(w) })
+    })
+    padTakeCells(b).forEach(p => {
+      const on = floor !== undefined && p.col === floor.col && p.row === floor.row
+      out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && loadWould(w) })
+    })
+  })
+  return out
+}
+
 export function driveBody(w: World, throttle: -1 | 0 | 1, steer: -1 | 0 | 1): void {
   if (driverVehicle(w, w.act.id) === undefined) return
   w.act.drive = { throttle, steer }
@@ -632,7 +735,7 @@ export function buyVehicleBody(w: World, at: Coord, k: VehicleKind): void {
   if (!w.done.has('unlock-vehicles')) return
   const price = k === 'quad' ? QUAD_PRICE : TRACTOR_PRICE
   if (w.money < price) return
-  const origin = w.hangarOrigin(at)
+  const origin = hangarOrigin(w, at)
   if (origin === undefined) return
   w.money -= price
   const id = w.nextVehicleId
@@ -646,7 +749,7 @@ export function buyTrailerBody(w: World, at: Coord, k: TrailerKind): void {
   if (!w.done.has('unlock-vehicles')) return
   const price = k === 'seed' ? TRAILER_SEED_PRICE : k === 'spray' ? TRAILER_SPRAY_PRICE : TRAILER_HARVEST_PRICE
   if (w.money < price) return
-  const origin = w.hangarOrigin(at)
+  const origin = hangarOrigin(w, at)
   if (origin === undefined) return
   w.money -= price
   const id = w.nextTrailerId
@@ -666,7 +769,7 @@ export function deployBody(w: World, id: VehicleId, at: Coord, hitch: TrailerId 
   const v = w.vehicles.find(x => x.id === id)
   if (v?.pose.kind !== 'stored') return
   if (driverVehicle(w, w.act.id) !== undefined) return
-  const origin = w.hangarOrigin(at)
+  const origin = hangarOrigin(w, at)
   if (origin === undefined) return
   const hangar = w.cell(origin)
   if (hangar.kind !== 'hangar') return
@@ -748,7 +851,7 @@ export function disembarkBody(w: World): void {
 export function dockBody(w: World): void {
   const v = driverVehicle(w, w.act.id)
   if (v?.pose.kind !== 'field') return
-  const hangar = w.hangarAtPad({ col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  const hangar = hangarAtPad(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   if (hangar === undefined) return
   const x = v.pose.x
   const y = v.pose.y
@@ -825,7 +928,7 @@ export function swapTrailerBody(w: World, u: TrailerId, i: HarvestSlot): void {
 }
 
 export function refillBody(w: World, at: Coord): void {
-  if (w.hangarOrigin(at) === undefined) return
+  if (hangarOrigin(w, at) === undefined) return
   const cost = w.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
   if (w.money < cost) return
   w.money -= cost
@@ -1075,7 +1178,7 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
     if (v?.pose.kind !== 'stored' || v.route === 'none') return
     const route = w.routeById(v.route)
     if (!(route?.stops.length)) return
-    const origin = w.hangarOrigin({ col: cmd.c[0], row: cmd.c[1] })
+    const origin = hangarOrigin(w, { col: cmd.c[0], row: cmd.c[1] })
     if (origin === undefined) return
     const hangar = w.cell(origin)
     if (hangar.kind !== 'hangar') return

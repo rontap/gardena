@@ -98,7 +98,6 @@ import {
   type Countable,
   type Item,
 } from './item.ts'
-import { isIoCell } from './feature-machines/machine.ts'
 import * as machines from './feature-machines/machines.tick.ts'
 import {
   CONTRACT_ACTIVE,
@@ -154,7 +153,6 @@ import { Act, type Cmd, type LogSink, MemorySink } from './log.ts'
 import { Rng } from './rng.ts'
 import {
   compactSlots,
-  hangarPad,
   putSugarInto,
   type PadCell,
   type Route,
@@ -163,7 +161,7 @@ import {
   type Trailer,
   type Vehicle
 } from './feature-vehicles/vehicle.ts'
-import { ANY, type PadGoods, type Pick } from './feature-vehicles/pick.ts'
+import type { PadGoods, Pick } from './feature-vehicles/pick.ts'
 import {
   dropIncident,
   isInEnd,
@@ -210,7 +208,6 @@ import type {
   Seat,
   SeatId,
   Seam,
-  SkillRef,
   Speech,
   TaskName,
 } from './world.h.ts'
@@ -1590,12 +1587,7 @@ export class World {
   }
 
   stopAt(at: Coord): RouteStop | undefined {
-    if (!this.inWorld(at)) return undefined
-    const hit = vehicles.padHit(this, at)
-    if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row }, pick: ANY }
-    if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row }, pick: ANY }
-    if (this.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
-    return { kind: 'goto', at: { col: at.col, row: at.row } }
+    return vehicles.stopAt(this, at)
   }
 
   setStopPick(r: RouteId, i: number, q: Pick): void {
@@ -1603,9 +1595,7 @@ export class World {
   }
 
   padGoodsAt(at: Coord): PadGoods {
-    const hit = vehicles.padHit(this, at)
-    if (hit === undefined) return 'all'
-    return hit.cell.padGoods(hit.side === 'dropoff' ? 'in' : 'out')
+    return vehicles.padGoodsAt(this, at)
   }
 
   padCellAt(at: Coord): PadCell | undefined {
@@ -1613,25 +1603,7 @@ export class World {
   }
 
   enter(): void {
-    const driven = this.driverVehicle(this.local)
-    if (driven !== undefined) {
-      this.disembark()
-      return
-    }
-    const actor = this.seats[this.local].actor
-    let best: Vehicle | undefined
-    let bestD = Infinity
-    this.vehicles.forEach(v => {
-      if (v.pose.kind !== 'field' || v.pose.driver !== 'none') return
-      const d = Math.hypot(actor.x - v.pose.x, actor.y - v.pose.y)
-      if (d > 1.5) return
-      if (best === undefined || d < bestD) {
-        best = v
-        bestD = d
-      }
-    })
-    if (best === undefined) return
-    this.embark(best.id)
+    vehicles.enterBody(this)
   }
 
   driverVehicle(id: SeatId): Vehicle | undefined {
@@ -1639,43 +1611,31 @@ export class World {
   }
 
   parkedAt(at: Coord): Vehicle | undefined {
-    return this.vehicles.find(
-      v =>
-        v.pose.kind === 'field' &&
-        v.pose.driver === 'none' &&
-        Math.floor(v.pose.x) === at.col &&
-        Math.floor(v.pose.y) === at.row,
-    )
+    return vehicles.parkedAt(this, at)
   }
 
   hangarOrigin(at: Coord): Coord | undefined {
-    if (!this.inWorld(at)) return undefined
-    const c = this.cell(at)
-    if (c.kind !== 'hangar') return undefined
-    return { col: c.base.col, row: c.base.row }
+    return vehicles.hangarOrigin(this, at)
   }
 
   hangarStores(origin: Coord): boolean {
-    return this.vehicles.some(v => vehicles.storedHere(v.pose, origin)) || this.trailers.some(t => vehicles.storedHere(t.pose, origin))
+    return vehicles.hangarStores(this, origin)
   }
 
   hangarAtPad(at: Coord): Hangar | undefined {
-    return this.hangars.find(h => hangarPad(h.base).some(p => p.col === at.col && p.row === at.row))
+    return vehicles.hangarAtPad(this, at)
   }
 
   vehicleCargo(): boolean {
-    const v = this.driverVehicle(this.local)
-    if (v?.pose.kind !== 'field') return false
-    if (v.kind === 'tractor' && v.hitch === 'none') return false
-    return true
+    return vehicles.hasCargo(this)
   }
 
   onDropoffPad(): boolean {
-    return this.padSideOfLocal() === 'dropoff'
+    return vehicles.onDropoffPad(this)
   }
 
   onTakeupPad(): boolean {
-    return this.padSideOfLocal() === 'takeup'
+    return vehicles.onTakeupPad(this)
   }
 
   canLoad(): boolean {
@@ -1689,43 +1649,11 @@ export class World {
   }
 
   machinePads(): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
-    this.act = this.seats[this.local]
-    const v = this.driverVehicle(this.local)
-    const floor =
-      v !== undefined && v.pose.kind === 'field'
-        ? { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) }
-        : undefined
-    const out: { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] = []
-    this.padBuildings().forEach(b => {
-      vehicles.padDropCells(b).forEach(p => {
-        const on = floor !== undefined && p.col === floor.col && p.row === floor.row
-        out.push({ col: p.col, row: p.row, side: 'dropoff', legal: on && vehicles.unloadWould(this) })
-      })
-      vehicles.padTakeCells(b).forEach(p => {
-        const on = floor !== undefined && p.col === floor.col && p.row === floor.row
-        out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && vehicles.loadWould(this) })
-      })
-    })
-    return out
+    return vehicles.machinePads(this)
   }
 
   machineLinks(): { x: number; y: number; side: 'in' | 'out'; turn: number }[] {
-    const out: { x: number; y: number; side: 'in' | 'out'; turn: number }[] = []
-    for (const at of this.machines.values()) {
-      const c = this.cell(at)
-      if (!isIoCell(c) && c.kind !== 'sorter') continue
-      if (c.base.col !== at.col || c.base.row !== at.row) continue
-      c.storePorts().forEach(port => {
-        if (!this.inWorld(port.at)) return
-        const s = this.cell(port.at)
-        if (s.kind !== 'chest' && s.kind !== 'freezer') return
-        const dx = port.at.col < c.base.col ? 0.5 : port.at.col >= c.base.col + c.base.w ? -0.5 : 0
-        const dy = port.at.row < c.base.row ? 0.5 : port.at.row >= c.base.row + c.base.h ? -0.5 : 0
-        const turn = dy === 0 ? 0 : dy > 0 ? -Math.PI / 2 : Math.PI / 2
-        out.push({ x: port.at.col + dx, y: port.at.row + dy, side: port.role, turn })
-      })
-    }
-    return out
+    return machines.machineLinks(this)
   }
 
   unlockAll(): void {
@@ -2034,13 +1962,6 @@ export class World {
 
   padBuildings(): PadCell[] {
     return vehicles.padBuildings(this)
-  }
-
-  private padSideOfLocal(): 'dropoff' | 'takeup' | undefined {
-    const v = this.driverVehicle(this.local)
-    if (v?.pose.kind !== 'field') return undefined
-    const hit = vehicles.padHit(this, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-    return hit === undefined ? undefined : hit.side
   }
 
   canStation(at: Coord): boolean {

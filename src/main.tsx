@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { WorkerSink } from './game/sim/log.ts'
 import { DebugBalance } from './game/ui/debug-balance.tsx'
+import { ErrorBoundary } from './game/ui/error-boundary.tsx'
 import { DebugContracts } from './game/ui/debug-contracts.tsx'
 import { DebugIconset } from './game/ui/debug-iconset.tsx'
 import { DebugWeather } from './game/ui/debug-weather.tsx'
@@ -68,7 +69,9 @@ if (location.hash === '#debug-techtree') {
   if (import.meta.hot !== undefined) import.meta.hot.dispose(() => sink.terminate())
   createRoot(root).render(
     <StrictMode>
-      <App sink={sink} />
+      <ErrorBoundary>
+        <App sink={sink} />
+      </ErrorBoundary>
     </StrictMode>,
   )
 }

@@ -192,6 +192,7 @@
   "hud_cheat_money": "Gain ",
   "hud_cheat_points": "Gain {n} skill points",
   "hud_cheat_end_day": "End day",
+  "hud_cheat_crash": "Crash the game",
   "hud_cheat_produce": "Add Carrot, Apricot jam, Tomato, Tomato (Green Zebra), and Tomato (San Marzano) to Inventory",
   "hud_cheat_tomorrow": "Tomorrow: {name}",
   "hud_lens_off": "No lens",

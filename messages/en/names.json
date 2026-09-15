@@ -292,5 +292,6 @@
   "names_sku_buy_tile_asphalt": "Asphalt",
   "names_building_necronomicon": "Necronomicon",
   "names_sku_buy_necronomicon": "Necronomicon",
-  "names_sku_buy_weather_station": "Weather Forecast Station"
+  "names_sku_buy_weather_station": "Weather Forecast Station",
+  "names_building_weather_station": "Weather Forecast Station"
 }

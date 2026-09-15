@@ -19,6 +19,7 @@ HUD, docks, inspect, place. As the game runs. Player sentences: [[standards/user
 - [[ui/station]]
 - [[ui/necronomicon]]
 - [[ui/cheat]]
+- [[ui/error-boundary]]
 - [[ui/market]]
 - [[ui/contracts]]
 - [[ui/almanac]]

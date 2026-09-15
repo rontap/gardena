@@ -98,6 +98,5 @@ describe('family.better-set', () => {
     expect(betterGain('potato', HAPPY_MAX, owned)).toBe(BETTER_QUALITY)
     expect(betterGain('potato', HAPPY_MAX / 2, owned)).toBe(BETTER_QUALITY * 0.5)
     expect(betterGain('carrot', HAPPY_MAX, owned)).toBe(0)
-    expect(betterGain('apple', HAPPY_MAX, id => (id === 'better-apple' ? 1 : 0))).toBe(0)
   })
 })

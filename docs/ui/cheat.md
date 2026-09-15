@@ -13,6 +13,7 @@ Top ribbon **Cheat**, between **Almanac** and **Pause** — [[ui/hud]]. Face onl
 | Gain 200 | `money += 200` |
 | Gain 10 skill points | `World.points += 10` |
 | End day | `Act.cheat` `{ k: 'day' }`. `clock.t = DAY_SECONDS`. No remaining-field sim. Recap: no-op. |
+| Crash the game | Sets `Cheat` local state; the next render throws. Reaches the root boundary — [[ui/error-boundary]]. Not a `Cmd`, not world state, not Save. |
 | Add Carrot, Apricot jam, Tomato, Tomato (Green Zebra), and Tomato (San Marzano) to Inventory | `cheatProduce()`. 15 Plain carrot, 10 Plain apricot jam, 15 San Marzano tomato, 5 Plain tomato, 5 Green Zebra tomato, freshness full, quality 0. Merge into matching house stacks; leftover drops at the door. |
 
 1× / 3× is world time, not a research-drain arm. Same field as `?speed=`. — [[architecture/world]] `world.cheatSpeed`

@@ -221,7 +221,8 @@ describe('weather.shop', () => {
     expect(w.cell({ col: 10, row: 13 })).toBe(w.cell(at))
     expect(w.forecastCount).toBe(1)
     expect('inn' in w.cell(at)).toBe(false)
-    expect(w.cell(at).kind === 'weather-station' && w.cell(at).ticks).toBe(false)
+    const station = w.cell(at)
+    expect(station.kind === 'weather-station' && station.ticks).toBe(false)
     const at2 = { col: 12, row: 12 }
     w.setCell(at2, bare('soft', 0))
     w.setCell({ col: 12, row: 13 }, bare('soft', 0))

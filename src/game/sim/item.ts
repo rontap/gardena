@@ -367,6 +367,7 @@ const PLACE_NAME = {
   'traffic-light': () => m.names_sensor_traffic_light(),
   delete: () => m.names_face_demolish(),
   fence: () => m.names_building_fence(),
+  'weather-station': () => m.names_building_weather_station(),
 } as const
 
 const TIER_LABEL: { readonly [K in VarietyTier]: () => string } = {
@@ -429,6 +430,7 @@ export function faceName(face: Face): string {
     case 'traffic-light':
     case 'delete':
     case 'fence':
+    case 'weather-station':
       return PLACE_NAME[face.kind]()
     default:
       return toolName({ kind: 'hold', item: face })

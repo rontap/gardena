@@ -57,5 +57,10 @@
   "menu_leave_farm": "Leave farm",
   "menu_back_to_game": "Back to game",
   "menu_quick_save": "Quick Save",
-  "menu_download_save": "Download Save…"
+  "menu_download_save": "Download Save…",
+  "menu_error_title": "Oops",
+  "menu_error_body": "Gardena encountered an error which could not be recovered. Please try downloading the save and retrying.",
+  "menu_error_download": "Download save",
+  "menu_error_exit": "Exit to main menu",
+  "menu_error_no_save": "There is no stored save to download."
 }

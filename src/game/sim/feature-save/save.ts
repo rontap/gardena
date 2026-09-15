@@ -103,6 +103,7 @@ export function dump(world: World): Save {
     recapUnseen: world.recapUnseen.slice(),
     grandma: world.grandma,
     grandmaUnseen: world.grandmaUnseen.slice(),
+    familiarity: { ...world.familiarity },
     chunks: world.owned.map(id => {
       const { col0, row0 } = chunkRect(id)
       const cells: SaveCell[][] = []

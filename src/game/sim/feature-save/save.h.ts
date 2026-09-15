@@ -252,6 +252,7 @@ export type Save = {
   recapUnseen: number[]
   grandma: Grandma
   grandmaUnseen: Grandma[]
+  familiarity: { [K in GrownCrop]: number }
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]
   sprinklers: Sprinkler[]

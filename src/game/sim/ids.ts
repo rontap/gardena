@@ -37,6 +37,26 @@ export const PLANT_CROPS: readonly PlantCrop[] = ANNUAL_IDS.filter((c): c is Pla
 
 export const TREE_IDS: readonly TreeId[] = ['apple', 'apricot', 'olive', 'cherry']
 
+export const GROWN_IDS: readonly GrownCrop[] = [...PLANT_CROPS, ...TREE_IDS]
+
+export function emptyFamiliarity(): { [K in GrownCrop]: number } {
+  return {
+    carrot: 0,
+    potato: 0,
+    wheat: 0,
+    tomato: 0,
+    raspberry: 0,
+    grape: 0,
+    vanilla: 0,
+    chilli: 0,
+    'sugar-cane': 0,
+    apple: 0,
+    apricot: 0,
+    olive: 0,
+    cherry: 0,
+  }
+}
+
 export function isTreeId(id: CropId): id is TreeId {
   return id === 'apple' || id === 'apricot' || id === 'olive' || id === 'cherry'
 }

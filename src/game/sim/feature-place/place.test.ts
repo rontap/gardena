@@ -46,6 +46,30 @@ describe('place.demolish-land', () => {
   })
 })
 
+describe('station.many', () => {
+  test('A farm may stand more than one station, and demolishing one keeps the familiarity every station raised.', () => {
+    const w = ready()
+    clear(w, AT, 2, 2)
+    w.buy('buy-research-station')
+    w.confirmPlace(AT)
+    expect(w.cell(AT).kind).toBe('station')
+
+    const second = { col: AT.col, row: AT.row + 4 }
+    clear(w, second, 2, 2)
+    w.buy('buy-research-station')
+    w.confirmPlace(second)
+    expect(w.cell(second).kind).toBe('station')
+    expect(w.skuShown('buy-research-station')).toBe(true)
+
+    w.learn('wheat', 7)
+    w.armDelete()
+    w.click(AT)
+    expect(w.cell(AT).kind).toBe('untilled')
+    expect(w.cell(second).kind).toBe('station')
+    expect(w.familiarity.wheat).toBe(7)
+  })
+})
+
 describe('place.demolish-filter', () => {
   test('place.demolish-filter - Demolish reads place on every cell the sim takes down, including the Seed Variety Station and paving, and blocked on the ones it refuses.', () => {
     const w = ready()

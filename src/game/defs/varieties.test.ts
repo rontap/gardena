@@ -7,6 +7,9 @@ import { Tree } from '../sim/building.ts'
 import {
   CROSSBREED_VAR_BONUS,
   EXPERIENCED_VAR_BONUS,
+  FAMILIARITY_PER_VARIETY,
+  FAMILIARITY_VAR_BONUS,
+  familiarityMax,
   MAX_QUALITY_VAR_IMPACT,
   nextVariety,
   PURPOSE_MUL,
@@ -44,17 +47,28 @@ describe('variety.ladder', () => {
     }
   })
 
-  test('`varietyChance` is `quality squared x MAX_QUALITY_VAR_IMPACT`, plus `EXPERIENCED_VAR_BONUS` when the player owns that crop skill, plus `CROSSBREED_VAR_BONUS` when a different Variety of that crop is in reach. Nothing else moves it.', () => {
-    expect(varietyChance(0, false, false)).toBe(0)
-    expect(varietyChance(1, false, false)).toBeCloseTo(MAX_QUALITY_VAR_IMPACT, 12)
-    expect(varietyChance(0.5, false, false)).toBeCloseTo(0.25 * MAX_QUALITY_VAR_IMPACT, 12)
-    expect(varietyChance(0, true, false)).toBeCloseTo(EXPERIENCED_VAR_BONUS, 12)
-    expect(varietyChance(0, false, true)).toBeCloseTo(CROSSBREED_VAR_BONUS, 12)
-    expect(varietyChance(1, true, true)).toBeCloseTo(
-      MAX_QUALITY_VAR_IMPACT + EXPERIENCED_VAR_BONUS + CROSSBREED_VAR_BONUS,
+  test('`varietyChance` is `quality squared x MAX_QUALITY_VAR_IMPACT`, plus `EXPERIENCED_VAR_BONUS` when the player owns that crop skill, plus `CROSSBREED_VAR_BONUS` when a different Variety of that crop is in reach, plus `FAMILIARITY_VAR_BONUS` per familiarity level. Nothing else moves it.', () => {
+    expect(varietyChance(0, false, false, 0)).toBe(0)
+    expect(varietyChance(1, false, false, 0)).toBeCloseTo(MAX_QUALITY_VAR_IMPACT, 12)
+    expect(varietyChance(0.5, false, false, 0)).toBeCloseTo(0.25 * MAX_QUALITY_VAR_IMPACT, 12)
+    expect(varietyChance(0, true, false, 0)).toBeCloseTo(EXPERIENCED_VAR_BONUS, 12)
+    expect(varietyChance(0, false, true, 0)).toBeCloseTo(CROSSBREED_VAR_BONUS, 12)
+    expect(varietyChance(0, false, false, 30)).toBeCloseTo(30 * FAMILIARITY_VAR_BONUS, 12)
+    expect(varietyChance(1, true, true, 30)).toBeCloseTo(
+      MAX_QUALITY_VAR_IMPACT + EXPERIENCED_VAR_BONUS + CROSSBREED_VAR_BONUS + 30 * FAMILIARITY_VAR_BONUS,
       12,
     )
-    expect(varietyChance(1, true, true)).toBeGreaterThan(varietyChance(1, true, false))
+    expect(varietyChance(1, true, true, 0)).toBeGreaterThan(varietyChance(1, true, false, 0))
+  })
+
+  test('`familiarityMax` is `FAMILIARITY_PER_VARIETY` per Variety the crop has, so a crop with no Variety above base stops at one band and a crop with two stops at three.', () => {
+    expect(familiarityMax('carrot')).toBe(FAMILIARITY_PER_VARIETY)
+    expect(familiarityMax('wheat')).toBe(FAMILIARITY_PER_VARIETY * 2)
+    expect(familiarityMax('tomato')).toBe(FAMILIARITY_PER_VARIETY * 3)
+    expect(familiarityMax('grape')).toBe(FAMILIARITY_PER_VARIETY * 3)
+    ;[...ANNUAL_IDS, ...TREE_IDS].forEach(c =>
+      expect(familiarityMax(c)).toBe(FAMILIARITY_PER_VARIETY * VARIETIES[c].length),
+    )
   })
 })
 

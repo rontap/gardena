@@ -134,6 +134,7 @@ export function upgradeVariety(w: World, at: Coord, p: Plant): boolean {
     p.quality,
     experiencedTier(p.crop, id => w.skillTier(id)) > 0,
     hasCrossbreed(w, at, p.crop, p.variety),
+    w.familiarity[p.crop],
   )
   const u = w.rng.stream('variety').at(at.col, at.row, w.clock.day, Math.round(p.quality * 10000))
   if (u >= chance) return false

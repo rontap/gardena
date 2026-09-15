@@ -24,6 +24,7 @@ import {
   HAPPY_START
 } from '../defs/crops.ts'
 import {
+  familiarityMax,
   qualityGain,
   type VarietyId
 } from '../defs/varieties.ts'
@@ -45,6 +46,7 @@ import type {
   VehicleSlot,
   VfxId
 } from './ids.ts'
+import { emptyFamiliarity } from './ids.ts'
 import { WALK } from './actor.ts'
 import { defaultSeatName, joinKit, soloSeat, STARTER_SEEDS } from './seat.ts'
 import { localPlayerId, localPlayerName } from './player.ts'
@@ -318,6 +320,7 @@ export class World {
   recaps: Recap[] = []
   recapUnseen: number[] = []
   necronomicon: Necronomicon | 'none' = 'none'
+  familiarity: { [K in GrownCrop]: number } = emptyFamiliarity()
   grandma: Grandma = 'well'
   grandmaUnseen: Grandma[] = []
   groundRev = 0
@@ -423,6 +426,7 @@ export class World {
       this.grandma = h.grandma
       this.grandmaUnseen = h.grandmaUnseen
       this.necronomicon = h.necronomicon
+      this.familiarity = h.familiarity
       this.segments.clear()
       h.segments.forEach(s => this.segments.set(edgeKey(s.at), s))
       this.wells = h.wells
@@ -905,6 +909,10 @@ export class World {
 
   pickSkill(id: SkillId): void {
     this.commit({ a: Act.pickSkill, t: this.now, p: this.local, id })
+  }
+
+  learn(crop: GrownCrop, n: number): void {
+    this.familiarity[crop] = Math.min(familiarityMax(crop), this.familiarity[crop] + n)
   }
 
   faces(): ExpandFace[] {

@@ -122,7 +122,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'furnace') lines.push(furnaceLook(cell, hand))
   else if (cell.kind === 'weather-station') lines.push(skuLabel('buy-weather-station'))
   else if (cell.kind === 'infuser') lines.push(infuserLook(cell, hand))
-  else if (cell.kind === 'station') lines.push(stationLook(cell, hand))
+  else if (cell.kind === 'station') lines.push(stationLook(cell, hand, crop => world.familiarity[crop]))
   else if (cell.kind === 'necronomicon') lines.push(necronomiconLook(world, cell))
   else if (cell.kind === 'sorter') lines.push(sorterLook(cell))
   else if (cell.kind === 'barrel') lines.push(barrelLine(cell))

@@ -32,8 +32,8 @@ import {
   CASK_AGE_MIN,
   CASK_SALE,
 } from '../../defs/items.ts'
-import { purposeMul, qualityMul, type VarietyId } from '../../defs/varieties.ts'
-import { STATION_IN } from '../../defs/items.ts'
+import { familiarityMax, purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
+import { FAMILIARITY_GAIN } from '../../defs/items.ts'
 import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import { isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
@@ -490,11 +490,29 @@ export function furnaceMul(working: readonly Furnace[], target: RectBase): numbe
 
 export type StationTake = { crop: GrownCrop; variety: VarietyId; quality: number; n: number }
 
-export function stationAccept(st: ResearchStation, item: Item): StationTake | undefined {
+export function stationRoom(st: ResearchStation, crop: GrownCrop, known: number, variety: VarietyId): number {
+  const left = familiarityMax(crop) - known
+  if (left <= 0) return 0
+  return Math.ceil(left / FAMILIARITY_GAIN[tierOf(variety)]) - st.units
+}
+
+export function stationAccept(
+  st: ResearchStation,
+  item: Item,
+  familiarityOf: (c: GrownCrop) => number,
+): StationTake | undefined {
   const n = st.accept(item)
   if (n <= 0) return undefined
   if (item.kind !== 'fruit') return undefined
-  return { crop: item.crop, variety: item.variety, quality: item.quality, n }
+  const room = stationRoom(st, item.crop, familiarityOf(item.crop), item.variety)
+  if (room <= 0) return undefined
+  return { crop: item.crop, variety: item.variety, quality: item.quality, n: Math.min(n, room) }
+}
+
+export function machineAccept(c: IoCell, item: Item, familiarityOf: (crop: GrownCrop) => number): number {
+  if (c.kind !== 'station') return c.accept(item)
+  const take = stationAccept(c, item, familiarityOf)
+  return take === undefined ? 0 : take.n
 }
 
 export function stationApply(st: ResearchStation, take: StationTake): void {
@@ -502,7 +520,7 @@ export function stationApply(st: ResearchStation, take: StationTake): void {
 }
 
 export function stationWorking(c: ResearchStation): boolean {
-  return c.inn !== 1 && c.crop !== 'none' && c.units >= STATION_IN
+  return c.inn !== 1 && c.crop !== 'none' && c.units >= 1
 }
 
 export function millDustAt(origin: Coord): Coord {

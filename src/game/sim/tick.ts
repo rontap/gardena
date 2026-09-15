@@ -213,6 +213,6 @@ export function tickWorld(world: World, dt: number): void {
   tickBig(world, dt)
   tickContracts(world, world.nowDay())
   STALL_IDS.forEach(id => {
-    world.stall[id].sat = recover(id, world.stall[id].sat, dt)
+    world.stall[id].sat = recover(id, world.stall[id].sat, dt, crop => world.familiarity[crop])
   })
 }

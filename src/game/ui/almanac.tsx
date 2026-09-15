@@ -1195,8 +1195,6 @@ function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
       return false
     case 'furnace':
       return done.furnace
-    case 'station':
-      return true
     case 'infuser':
       return done.infusion
   }

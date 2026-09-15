@@ -86,7 +86,7 @@ export function canStation(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold') return false
   const c = w.cell(at)
   if (c.kind !== 'station') return false
-  return stationAccept(c, w.act.hand.item) !== undefined
+  return stationAccept(c, w.act.hand.item, crop => w.familiarity[crop]) !== undefined
 }
 
 export function doStation(w: World, at: Coord): void {
@@ -94,7 +94,7 @@ export function doStation(w: World, at: Coord): void {
   if (w.act.hand.kind !== 'hold') return
   const station = w.cell(at)
   if (station.kind !== 'station') return
-  const take = stationAccept(station, w.act.hand.item)
+  const take = stationAccept(station, w.act.hand.item, crop => w.familiarity[crop])
   if (take === undefined) return
   stationApply(station, take)
   takeHandCount(w, take.n)

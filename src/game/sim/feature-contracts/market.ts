@@ -21,6 +21,7 @@ import {
   TREE_IDS,
   isAnnualId,
   type CaskId,
+  type GrownCrop,
   type JamCrop,
   type JamId,
   type PlantCrop,
@@ -49,7 +50,8 @@ import type {
 } from './market.h.ts'
 import { isBakedStall, isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
 import { WEATHER_FRUIT_IMPACT } from '../../defs/weather.ts'
-import { VARIETIES, tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
+import { FAMILIARITY_RECOVER, VARIETIES, tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
+import { boughtSeedQuality } from '../store.ts'
 import type { Rng, Spatial } from '../rng.ts'
 import type { World } from '../world.ts'
 
@@ -154,8 +156,17 @@ export function saleUnits(
   return { paid, after }
 }
 
-export function recover(good: StallGoodId, sat: number, dt: number): number {
-  const step = SAT_RECOVER[good] / SAT_MAX_CUT * dt / DAY_SECONDS
+export function recoverPerDay(good: StallGoodId, familiarityOf: (crop: GrownCrop) => number): number {
+  return SAT_RECOVER[good] + (isCropStall(good) ? familiarityOf(good) * FAMILIARITY_RECOVER : 0)
+}
+
+export function recover(
+  good: StallGoodId,
+  sat: number,
+  dt: number,
+  familiarityOf: (crop: GrownCrop) => number,
+): number {
+  const step = (recoverPerDay(good, familiarityOf) / SAT_MAX_CUT) * dt / DAY_SECONDS
   if (sat > 0) {
     const next = sat - step
     return next < 0 ? 0 : next
@@ -872,7 +883,7 @@ function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: numbe
     return
   }
   if (prize.kind === 'seeds') {
-    w.putSilo(prize.crop, prize.variety, 0, prize.count)
+    w.putSilo(prize.crop, prize.variety, boughtSeedQuality(w, prize.crop), prize.count)
     return
   }
   if (prize.kind === 'fertilizer') {

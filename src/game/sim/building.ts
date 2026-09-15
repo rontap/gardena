@@ -11,6 +11,8 @@ import {
   FURNACE_ASH,
   FURNACE_BREAD_IN,
   FURNACE_CAP,
+  FAMILIARITY_GAIN,
+  stationSeconds,
   FURNACE_NEED,
   FURNACE_SECONDS,
   INFUSE_EXTRACT,
@@ -37,10 +39,6 @@ import {
   SILO_W,
   SORT_LEN,
   SORT_SECONDS,
-  STATION_GRAFT_MAX,
-  STATION_GRAFT_MIN,
-  STATION_IN,
-  STATION_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
   SUGAR_SHOP,
@@ -49,14 +47,13 @@ import {
 import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
 import { tierOf, VARIETY_TIERS, type VarietyId } from '../defs/varieties.ts'
 import { JAM_CROPS, SENSOR_CELL_SKUS, SPIRIT_KINDS, STILL_CROPS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
-import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import { compostValue, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { allSlots, slots, type PadGoods } from './feature-vehicles/pick.ts'
 
 const JAM_GOODS = JAM_CROPS.map(c => `jam-${c}` as const)
 const MILL_IN = slots('fruit', ['sugar-cane', 'olive', 'wheat', 'vanilla', 'chilli']).concat(slots('compostable', ['grass']))
 const MILL_OUT = slots('produce', ['sugar', 'oil', 'flour', 'extract']).concat(slots('other', ['vanilla-extract', 'flakes']))
 const INFUSE_GOODS = slots('produce', [...JAM_GOODS, 'oil']).concat(allSlots('alcohol'))
-import { statsOf } from './modifiers.ts'
 import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
   addStillFeed,
@@ -92,7 +89,7 @@ import {
   stillCropOf,
   stillReady,
 } from './feature-machines/machine.ts'
-import { emitPair, emitProduct, emitSorted, pullSorted, pullStillWater } from './feature-machines/machines.emit.ts'
+import { emitProduct, emitSorted, pullSorted, pullStillWater } from './feature-machines/machines.emit.ts'
 import type { World } from './world.ts'
 import { Reservoir } from './water.ts'
 
@@ -1005,12 +1002,9 @@ export class ResearchStation extends Machine {
     super({ shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 })
   }
   override accept(item: Item): number {
-    if (item.kind !== 'fruit' || item.cut) return 0
-    if (tierOf(item.variety) !== 'heirloom') return 0
+    if (item.kind !== 'fruit' || item.count <= 0) return 0
     if (this.crop !== 'none' && (this.crop !== item.crop || this.variety !== item.variety)) return 0
-    const room = STATION_IN - this.units
-    if (room <= 0 || item.count <= 0) return 0
-    return Math.min(room, item.count)
+    return item.count
   }
   override apply(item: Item, n: number): void {
     if (item.kind !== 'fruit') return
@@ -1030,20 +1024,12 @@ export class ResearchStation extends Machine {
   }
   override tick(w: World, at: Coord, dt: number): boolean {
     if (this.inn === 1) return false
-    if (this.crop === 'none' || this.units < STATION_IN) return false
-    if (this.progress < 1) this.progress += dt / STATION_SECONDS
+    if (this.crop === 'none' || this.units < 1) return false
+    if (this.progress < 1) this.progress += dt / stationSeconds(w.familiarity[this.crop])
     if (this.progress < 1) return false
-    const u = w.rng.stream('grind').at(at.col, at.row, w.clock.day)
-    const count = STATION_GRAFT_MIN + Math.floor(u * (STATION_GRAFT_MAX - STATION_GRAFT_MIN + 1))
-    const sale = statsOf(this.crop, this.variety, this.quality, w.modifiers).sale
-    const cut: Item = {
-      kind: 'fruit',
-      ...fruitStack(this.crop, this.variety, this.quality, STATION_IN, sale, 1, true),
-    }
-    const grafts: Item = { kind: 'graft', crop: this.crop, variety: this.variety, quality: this.quality, count }
-    if (!emitPair(w, this.base, cut, grafts)) return false
+    w.learn(this.crop, FAMILIARITY_GAIN[tierOf(this.variety)])
     this.progress = 0
-    this.units -= STATION_IN
+    this.units -= 1
     if (this.units === 0) this.crop = 'none'
     w.track(at, this)
     return true

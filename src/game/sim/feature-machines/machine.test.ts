@@ -22,16 +22,17 @@ import {
   SPIRIT_SALE,
   STILL_CAP,
   STILL_SECONDS,
-  STATION_GRAFT_MAX,
-  STATION_GRAFT_MIN,
-  STATION_IN,
-  STATION_SECONDS,
+  FAMILIARITY_GAIN,
+  stationSeconds,
+  STATION_SECONDS_BASE,
+  STATION_SECONDS_STEP,
   GRAFT_WORK,
   SUGAR_BAG,
   SUGAR_MILL,
   SUGAR_SHOP,
 } from '../../defs/items.ts'
-import { caskGroup, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
+import { caskGroup, FAMILIARITY_PER_VARIETY, FAMILIARITY_SEED_QUALITY, familiarityMax, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
+import { boughtSeedQuality } from '../store.ts'
 import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from '../feature-contracts/market.ts'
 import {
   bakeCaskSale,
@@ -62,7 +63,7 @@ import {
   stationWorking,
 } from './machine.ts'
 import { CASK_NAME, caskMulOf, caskName, compostValue, furnaceValue, mergeInto, type Item } from '../item.ts'
-import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
+import { CASK_IDS, CROP_OF_CASK, GROWN_IDS } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
@@ -899,66 +900,119 @@ describe('machines.cask-premium', () => {
 })
 
 describe('station.io', () => {
-  test('Heirloom fruit only, `cut === false`. First dump locks crop + variety; later dumps must match. Room caps at `STATION_IN`.', () => {
+  test('Takes any fruit. First dump locks crop + variety; later dumps must match.', () => {
+    const fresh = () => 0
+    expect(stationWorking(new ResearchStation(CELL))).toBe(false)
     const st = new ResearchStation(CELL)
-    expect(stationAccept(st, fruitOf('tomato', 'base', 3))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('tomato', 'green-zebra', 3))).toBeUndefined()
-    const cut = fruitOf('tomato', 'san-marzano', 3)
-    cut.cut = true
-    expect(stationAccept(st, cut)).toBeUndefined()
-    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', STATION_IN + 4))).toMatchObject({
-      crop: 'tomato',
-      variety: 'san-marzano',
-      n: STATION_IN,
-    })
+    expect(stationAccept(st, fruitOf('tomato', 'base', 3), fresh)).toMatchObject({ crop: 'tomato', variety: 'base', n: 3 })
+    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', 3), fresh)).toMatchObject({ variety: 'san-marzano', n: 3 })
 
     stationApply(st, { crop: 'tomato', variety: 'san-marzano', quality: 0.4, n: 1 })
     expect(st.crop).toBe('tomato')
-    expect(stationAccept(st, fruitOf('tomato', 'green-zebra', 1))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('raspberry', 'black-raspberry', 1))).toBeUndefined()
-    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', 1))).toMatchObject({ n: 1 })
+    expect(stationAccept(st, fruitOf('tomato', 'green-zebra', 1), fresh)).toBeUndefined()
+    expect(stationAccept(st, fruitOf('raspberry', 'black-raspberry', 1), fresh)).toBeUndefined()
+    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', 1), fresh)).toMatchObject({ n: 1 })
 
     stationApply(st, { crop: 'tomato', variety: 'san-marzano', quality: 0, n: 1 })
     expect(st.quality).toBeCloseTo(0.2, 9)
-    expect(stationWorking(st)).toBe(false)
-    st.units = STATION_IN
     expect(stationWorking(st)).toBe(true)
     st.inn = 1
     expect(stationWorking(st)).toBe(false)
   })
 
-  test('At progress 1: consume, emit `STATION_IN` cut fruit and `STATION_GRAFT_MIN`..`STATION_GRAFT_MAX` grafts, both at input quality.', () => {
+  test('One fruit leaves the hopper per cycle, nothing is emitted, and an empty hopper drops the lock.', () => {
     const w = new World(1)
     w.setCell(AT, new ResearchStation({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
     const cell = w.cell(AT)
     if (cell.kind !== 'station') throw new Error('station')
     cell.crop = 'wheat'
     cell.variety = 'red-fife'
-    cell.quality = 0.5
-    cell.units = STATION_IN
-    ticks(w, STATION_SECONDS + DT_MAX)
-    const items = w.drops.map(d => d.item)
-    const fruit = items.find(it => it.kind === 'fruit')
-    const graft = items.find(it => it.kind === 'graft')
-    if (fruit?.kind !== 'fruit') throw new Error('fruit')
-    if (graft?.kind !== 'graft') throw new Error('graft')
-    expect(fruit.cut).toBe(true)
-    expect(fruit.count).toBe(STATION_IN)
-    expect(fruit.variety).toBe('red-fife')
-    expect(fruit.quality).toBe(0.5)
-    expect(graft.crop).toBe('wheat')
-    expect(graft.variety).toBe('red-fife')
-    expect(graft.quality).toBe(0.5)
-    expect(graft.count).toBeGreaterThanOrEqual(STATION_GRAFT_MIN)
-    expect(graft.count).toBeLessThanOrEqual(STATION_GRAFT_MAX)
-    const after = w.cell(AT)
-    expect(after.kind === 'station' && after.crop).toBe('none')
-    expect(after.kind === 'station' && after.units).toBe(0)
+    cell.units = 2
+    ticks(w, stationSeconds(0) + DT_MAX)
+    const one = w.cell(AT)
+    expect(one.kind === 'station' && one.units).toBe(1)
+    expect(w.drops.some(d => d.item.kind === 'fruit' || d.item.kind === 'graft')).toBe(false)
+    ticks(w, stationSeconds(w.familiarity.wheat) + DT_MAX)
+    const done = w.cell(AT)
+    expect(done.kind === 'station' && done.units).toBe(0)
+    expect(done.kind === 'station' && done.crop).toBe('none')
+    expect(w.drops.some(d => d.item.kind === 'fruit' || d.item.kind === 'graft')).toBe(false)
   })
 })
 
-describe('variety.copy', () => {
-  test('Station grafts are the locked variety at input quality. A graft attaching copies both onto the target.', () => {
+describe('familiarity.gain', () => {
+  test('A new farm knows nothing. One fruit adds its tier — base 1, variant 2, heirloom 3 — and the crop stops at `familiarityMax`.', () => {
+    const w = new World(1)
+    expect(GROWN_IDS.every(c => w.familiarity[c] === 0)).toBe(true)
+    w.learn('tomato', FAMILIARITY_GAIN.base)
+    expect(w.familiarity.tomato).toBe(1)
+    w.learn('tomato', FAMILIARITY_GAIN.variant)
+    expect(w.familiarity.tomato).toBe(3)
+    w.learn('tomato', FAMILIARITY_GAIN.heirloom)
+    expect(w.familiarity.tomato).toBe(6)
+    w.learn('tomato', 999)
+    expect(w.familiarity.tomato).toBe(familiarityMax('tomato'))
+    expect(w.familiarity.wheat).toBe(0)
+  })
+
+  test('A crop with no Variety above base stops at one band; a crop with one stops at two; a crop with two stops at three.', () => {
+    const w = new World(1)
+    w.learn('carrot', 999)
+    w.learn('wheat', 999)
+    w.learn('grape', 999)
+    expect(w.familiarity.carrot).toBe(FAMILIARITY_PER_VARIETY)
+    expect(w.familiarity.wheat).toBe(FAMILIARITY_PER_VARIETY * 2)
+    expect(w.familiarity.grape).toBe(FAMILIARITY_PER_VARIETY * 3)
+  })
+
+  test('A fruit finishing at the station raises the locked crop by its variety tier and emits nothing.', () => {
+    const w = new World(1)
+    w.setCell(AT, new ResearchStation({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
+    const cell = w.cell(AT)
+    if (cell.kind !== 'station') throw new Error('station')
+    cell.crop = 'wheat'
+    cell.variety = 'red-fife'
+    cell.units = 1
+    ticks(w, stationSeconds(0) + DT_MAX)
+    expect(w.familiarity.wheat).toBe(FAMILIARITY_GAIN.variant)
+  })
+
+  test('Each level makes the next fruit slower: `stationSeconds` rises by `STATION_SECONDS_STEP` a level.', () => {
+    expect(stationSeconds(0)).toBe(STATION_SECONDS_BASE)
+    expect(stationSeconds(30)).toBe(STATION_SECONDS_BASE + STATION_SECONDS_STEP * 30)
+    expect(stationSeconds(1) - stationSeconds(0)).toBe(STATION_SECONDS_STEP)
+  })
+})
+
+describe('familiarity.seed', () => {
+  test('Familiarity raises the quality of seed bought from a silo and won from a contract, on top of `seed-bank`. Seed already held, ground, or dug keeps the quality it has.', () => {
+    const w = new World(1)
+    expect(boughtSeedQuality(w, 'tomato')).toBe(0)
+    w.learn('tomato', familiarityMax('tomato'))
+    expect(boughtSeedQuality(w, 'tomato')).toBeCloseTo(familiarityMax('tomato') * FAMILIARITY_SEED_QUALITY, 9)
+    expect(boughtSeedQuality(w, 'wheat')).toBe(0)
+    expect(boughtSeedQuality(w, 'grass')).toBe(0)
+  })
+
+  test('A studied crop never seeds above quality 1.', () => {
+    const w = new World(1)
+    w.learn('grape', familiarityMax('grape'))
+    expect(boughtSeedQuality(w, 'grape')).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('familiarity.refuse', () => {
+  test('A crop at its cap is refused, and the station takes only as many fruit as can still count.', () => {
+    const st = new ResearchStation(CELL)
+    const cap = familiarityMax('tomato')
+    expect(stationAccept(st, fruitOf('tomato', 'base', 5), () => cap)).toBeUndefined()
+    expect(stationAccept(st, fruitOf('tomato', 'base', 5), () => cap - 2)).toMatchObject({ n: 2 })
+    expect(stationAccept(st, fruitOf('tomato', 'san-marzano', 5), () => cap - 2)).toMatchObject({ n: 1 })
+  })
+})
+
+describe('graft.attach', () => {
+  test('A graft attaching copies its variety and quality onto the target.', () => {
     const w = new World(1)
     w.setCell(AT, { kind: 'growing', soil: new Soil(SOIL_WATER_MID, 1, WEED_CHANCE), plant: new Plant('wheat', 'base', 0) })
     w.seats[0].actor.x = AT.col + 0.5

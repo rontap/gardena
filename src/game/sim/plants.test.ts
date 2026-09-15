@@ -32,6 +32,7 @@ import {
   tierOf,
   VARIETIES,
   varietyChance,
+  familiarityMax,
   type VarietyId,
 } from '../defs/varieties.ts'
 import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from './feature-contracts/market.ts'
@@ -1784,8 +1785,8 @@ describe('plants.variety-roll', () => {
     const stream = new Rng(w.seed).stream('variety')
     const roll = (q: number) => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000))
     const qualities = Array.from({ length: 2000 }, (_, i) => 1 - i / 10000)
-    const hitQ = qualities.find(q => roll(q) < varietyChance(q, false, false))
-    const missQ = qualities.find(q => roll(q) >= varietyChance(q, false, false))
+    const hitQ = qualities.find(q => roll(q) < varietyChance(q, false, false, 0))
+    const missQ = qualities.find(q => roll(q) >= varietyChance(q, false, false, 0))
     if (hitQ === undefined || missQ === undefined) throw new Error('roll')
 
     const hit = new Plant('tomato', 'base', hitQ)
@@ -1807,12 +1808,35 @@ describe('plants.variety-roll', () => {
     expect(top.variety).toBe('san-marzano')
   })
 
+  test('Familiarity with that crop is read from the World and raises the same roll: a quality that misses at 0 hits once the crop is studied to its cap.', () => {
+    const w = new World(7)
+    const bed = () => new Soil(SOIL_WATER_MID, 1, WEED_CHANCE)
+    w.setCell(AT, { kind: 'empty', soil: bed() })
+    const stream = new Rng(w.seed).stream('variety')
+    const roll = (q: number) => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000))
+    const cap = familiarityMax('tomato')
+    const q = Array.from({ length: 4000 }, (_, i) => 1 - i / 10000).find(
+      x => roll(x) >= varietyChance(x, false, false, 0) && roll(x) < varietyChance(x, false, false, cap),
+    )
+    if (q === undefined) throw new Error('roll')
+
+    const cold = new Plant('tomato', 'base', q)
+    expect(upgradeVariety(w, AT, cold)).toBe(false)
+    expect(cold.variety).toBe('base')
+
+    w.learn('tomato', cap)
+    expect(w.familiarity.tomato).toBe(cap)
+    const studied = new Plant('tomato', 'base', q)
+    expect(upgradeVariety(w, AT, studied)).toBe(true)
+    expect(studied.variety).toBe('green-zebra')
+  })
+
   test('The roll runs on the ripen seam, so the ripe plot carries the new Variety and Quality 0.', () => {
     const w = new World(11)
     const stream = new Rng(w.seed).stream('variety')
     const qualities = Array.from({ length: 2000 }, (_, i) => 1 - i / 10000)
     const hitQ = qualities.find(
-      q => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000)) < varietyChance(q, false, false),
+      q => stream.at(AT.col, AT.row, w.clock.day, Math.round(q * 10000)) < varietyChance(q, false, false, 0),
     )
     if (hitQ === undefined) throw new Error('roll')
 

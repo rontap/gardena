@@ -21,10 +21,6 @@ import {
   JAM_IN,
   JAM_SECONDS,
   MILL_WORK,
-  STATION_GRAFT_MAX,
-  STATION_GRAFT_MIN,
-  STATION_IN,
-  STATION_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
@@ -44,7 +40,7 @@ import {
   STILL_CROPS,
   TREE_IDS,
 } from '../ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, ResearchStation } from '../building.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill } from '../building.ts'
 import { faceName, type Face, type InfusedItem, type Item } from '../item.ts'
 import {
   bakeBreadSale,
@@ -100,7 +96,6 @@ export const MACHINE_IDS: readonly MachineId[] = [
   'grinder',
   'compost-box',
   'furnace',
-  'station',
   'infuser',
 ]
 
@@ -116,7 +111,6 @@ export function machineOfSku(id: SkuId): MachineId | undefined {
   if (id === 'buy-grinder') return 'grinder'
   if (id === 'buy-compost-box') return 'compost-box'
   if (id === 'buy-furnace') return 'furnace'
-  if (id === 'buy-research-station') return 'station'
   if (id === 'buy-infuser') return 'infuser'
   return undefined
 }
@@ -492,24 +486,6 @@ const INFUSER_OIL: Recipe = {
   duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
 }
 
-export const STATION_PINS: readonly Pin<GrownCrop>[] = [...PLANT_CROPS, ...TREE_IDS].flatMap(crop =>
-  VARIETIES[crop].filter(v => tierOf(v) === 'heirloom').map(variety => ({ crop, variety })),
-)
-
-function stationRecipe({ crop, variety }: Pin<GrownCrop>): Recipe {
-  return {
-    machine: 'station',
-    inputs: [{ kind: 'one', face: fruitFace(crop, variety), amount: units(STATION_IN) }],
-    out: {
-      kind: 'range',
-      faces: [{ kind: 'graft', crop, variety, quality: 0, count: 1 }],
-      min: STATION_GRAFT_MIN,
-      max: STATION_GRAFT_MAX,
-    },
-    duration: { kind: 'fixed', seconds: STATION_SECONDS },
-  }
-}
-
 export const JAM_PINS: readonly Pin<JamCrop>[] = pins(JAM_CROPS)
 export const STILL_PINS: readonly Pin<StillCrop>[] = pins(STILL_CROPS)
 export const BARREL_PINS: readonly Pin<BarrelCrop>[] = pins(BARREL_CROPS)
@@ -519,7 +495,6 @@ const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL]
 const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
 const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD, FURNACE_BREAD]
-const STATION_ROWS: readonly Recipe[] = STATION_PINS.map(stationRecipe)
 const INFUSER_ROWS: readonly Recipe[] = [infuserJam(), infuserSpirit(), infuserCask(), INFUSER_OIL]
 
 function yieldFace(y: Yield): Face {
@@ -571,7 +546,6 @@ const MILL_LIST = collapse(MILL_ROWS)
 const JAM_LIST = collapse(JAM_ROWS)
 const STILL_LIST = collapse(STILL_ROWS)
 const BARREL_LIST = collapse(BARREL_ROWS)
-const STATION_LIST = collapse(STATION_ROWS)
 
 export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'mill') return MILL_LIST
@@ -580,7 +554,6 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'barrel') return BARREL_LIST
   if (m === 'grinder') return [GRINDER, GRINDER_VARIANT]
   if (m === 'furnace') return FURNACE_ROWS
-  if (m === 'station') return STATION_LIST
   if (m === 'infuser') return INFUSER_ROWS
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
@@ -781,15 +754,6 @@ function infuserCraft(c: Infuser, haste: number): Craft {
   return { kind: 'filling', recipe, at: 1, have: c.extract, need: INFUSE_EXTRACT }
 }
 
-function stationCraft(c: ResearchStation, haste: number): Craft {
-  if (c.crop === 'none') return { kind: 'idle', machine: 'station' }
-  const recipe = STATION_ROWS[STATION_PINS.findIndex(p => p.crop === c.crop && p.variety === c.variety)]
-  if (c.inn === 1) return { kind: 'paused', recipe }
-  if (c.progress >= 1) return { kind: 'ready', recipe }
-  if (c.units < STATION_IN) return { kind: 'filling', recipe, at: 0, have: c.units, need: STATION_IN }
-  return stage(recipe, c.progress, 1, haste)
-}
-
 export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'mill') return millCraft(cell, mul, haste)
   if (cell.kind === 'jam') return jamCraft(cell, mul, haste)
@@ -797,7 +761,6 @@ export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'barrel') return barrelCraft(cell)
   if (cell.kind === 'grinder') return grinderCraft(cell, mul, haste)
   if (cell.kind === 'furnace') return furnaceCraft(cell, mul, haste)
-  if (cell.kind === 'station') return stationCraft(cell, 1)
   if (cell.kind === 'infuser') return infuserCraft(cell, haste)
   return compostCraft(cell, mul, haste)
 }

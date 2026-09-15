@@ -121,6 +121,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     taps: live.taps,
     stills: live.stills,
     necronomicon: live.necronomicon,
+    familiarity: save.familiarity,
     waterSystems: live.waterSystems,
     wires: save.wires,
     valveHold: save.valveHold,

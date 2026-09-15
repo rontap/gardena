@@ -1,9 +1,9 @@
 import { m } from '../../paraglide/messages.js'
-import { cropVariety } from '../defs/crops.ts'
+import { CROP_NAME, cropVariety } from '../defs/crops.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
 import { inWorld, sortVariety, sorterBase, sorterCells, type Barrel, type Coord, type Facing, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type ResearchStation, type Sorter, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
-import type { CropId, JamCrop, MillRecipe, SensorKind, SkuId } from './ids.ts'
+import type { CropId, GrownCrop, JamCrop, MillRecipe, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
 import {
   BARREL_MATURE,
@@ -15,7 +15,6 @@ import {
   SILO_W,
   JAM_BUFFER,
   JAM_IN,
-  STATION_IN,
   STILL_CAP,
   FURNACE_BREAD_IN,
   FURNACE_NEED,
@@ -673,10 +672,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return { kind: 'blocked', text: look }
   }
   if (cell.kind === 'station') {
-    if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
-      return intent(m.prompt_station_cut(), { act: 'station', at })
+    const known = (crop: GrownCrop) => w.familiarity[crop]
+    if (w.act.hand.kind === 'hold' && stationAccept(cell, w.act.hand.item, known) !== undefined) {
+      return intent(m.prompt_station_analyze(), { act: 'station', at })
     }
-    return intent(stationLook(cell, w.act.hand), { act: 'station', at })
+    return intent(stationLook(cell, w.act.hand, known), { act: 'station', at })
   }
   if (cell.kind === 'necronomicon') {
     if (w.act.hand.kind === 'hold' && openClaim(w, cell, w.act.hand.item) !== undefined) {
@@ -1063,27 +1063,22 @@ function labeled(name: string, detail: string): string {
   return m.prompt_labeled({ name, detail })
 }
 
-export function stationLook(st: ResearchStation, hand: Hand): string {
+export function stationLook(st: ResearchStation, hand: Hand, familiarityOf: (crop: GrownCrop) => number): string {
   const name = m.prompt_station()
-  if (hand.kind === 'hold' && hand.item.kind === 'fruit' && stationAccept(st, hand.item) === undefined) {
-    if (hand.item.cut || tierOf(hand.item.variety) !== 'heirloom') {
-      return labeled(name, m.prompt_station_refuse())
-    }
-    if (st.crop !== 'none' && st.units < STATION_IN) {
+  if (hand.kind === 'hold' && hand.item.kind === 'fruit' && stationAccept(st, hand.item, familiarityOf) === undefined) {
+    if (st.crop !== 'none' && (st.crop !== hand.item.crop || st.variety !== hand.item.variety)) {
       return labeled(name, m.prompt_only({ product: cropVariety(st.crop, st.variety) }))
     }
+    return labeled(name, m.prompt_station_full({ name: CROP_NAME[hand.item.crop]() }))
   }
-  if (st.progress >= 1) return labeled(name, m.hud_craft_blocked())
   if (st.inn === 1 && st.units > 0) return labeled(name, m.hud_craft_paused())
-  if (st.units >= STATION_IN) return labeled(name, m.prompt_working_pct({ n: Math.floor(st.progress * 100) }))
   if (st.crop === 'none') return name
   return labeled(
     name,
-    m.prompt_station_filling({
+    m.prompt_station_busy({
       name: cropVariety(st.crop, st.variety),
-      have: st.units,
-      need: STATION_IN,
-      n: Math.floor(st.quality * 100),
+      left: st.units,
+      n: Math.floor(st.progress * 100),
     }),
   )
 }

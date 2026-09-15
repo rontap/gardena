@@ -2,9 +2,13 @@
 
 Walk-up panel for the research station. Player name **Seed Variety Station**. Shape [[ui/store]]: Radix dialog + `Frame` `Shell`, optional width, hover `aside`. Opened by a walk-up cue, never from the rail. Not a dock. Not ObjectHud. Dump is a world act on the cell, not a control in the panel.
 
-Rules [[mechanics/machines]] `station.cut` `station.io` `variety.copy`. Place [[ui/place]]. Look points here from [[ui/inspect]]. Size [[items/buildings]] `station`.
+Rules [[mechanics/machines]] `station.many` `station.io` `familiarity.gain` `familiarity.cost` `familiarity.refuse`. Place [[ui/place]]. Look points here from [[ui/inspect]]. Size [[items/buildings]] `station`.
 
-Empty (`crop === 'none'`) stores `variety: 'base'` and `quality: 0` until the first dump locks both. `units === 0` → `crop` `'none'`. Illegal: optional `variety`. Illegal: optional `quality`. Returned fruit freshness and organic: [[mechanics/machines]].
+Any number per farm. Every station reads and writes the one `World.familiarity` record, so the panel shows the same rows whichever one you walk up to — [[mechanics/machines]] `station.many`.
+
+Empty (`crop === 'none'`) stores `variety: 'base'` and `quality: 0` until the first dump locks both. `units === 0` → `crop` `'none'`. Illegal: optional `variety`. Illegal: optional `quality`.
+
+`quality` is still mixed on every dump and still round-trips through the save, but nothing reads it: familiarity comes from the variety tier, not the quality. It is kept for [[plans/next-variant]] and is dead until then, like fruit `cut` — [[mechanics/machines]].
 
 SKU `buy-research-station`. Automation shelf. Unlock and show `unlock-crop-variants`. Guest may buy, place, demolish, dump, and open this panel. Demolish reads **Demolish Seed Variety Station** and clears both cells — [[ui/place]]. Not on the shelf until Crop variants is done.
 
@@ -20,16 +24,15 @@ Walk-up opens the panel. It does not dump.
 
 ## Panel
 
-Title **Seed Variety Station** — named for what the building becomes. `Shell` from [[ui/store]]. Width `w-[30rem]`.
+Title **Seed Variety Station**. `Shell` from [[ui/store]]. Width `w-[30rem]`.
 
-| field | shows |
-|---|---|
-| Variety | locked Variety name, or empty copy **None yet** |
-| Quality | `floor(quality * 100)%` of the hopper, or empty |
-| grafts | **{min}–{max} grafts** out as `STATION_GRAFT_MIN`–`STATION_GRAFT_MAX` of that Variety |
-| progress | `Bar` `value` 0..1, `bg-leaf` on `bg-ink/25`, same as a research run |
+One row per `GrownCrop` whose familiarity is above 0, in `GROWN_IDS` order: the fruit glyph, the crop name, `{n}/{max}` against that crop's `familiarityMax`, and a `Bar` at `n / familiarityMax(crop)`. The cap differs by crop, so the rows do not share a denominator. Row shape follows the Necronomicon's page rows — [[ui/necronomicon]].
 
-No withdraw grid. No deposit control. Footer **Dump Heirloom fruit on the station. Walking up does not dump.**
+No crop above 0 → the empty line alone, no rows, no zero rows.
+
+Below the rows, only while `crop !== 'none'`: the locked Variety name and a `Bar` at `progress` for the fruit being studied.
+
+No withdraw grid. No deposit control. No craft row: the station is not a `MachineId`.
 
 ## Look
 
@@ -38,19 +41,13 @@ Either the walk-up prompt or the dump prompt, not both. Dump legal → prompt is
 | when | text |
 |---|---|
 | empty (`crop` `'none'`) | **Seed Variety Station** |
-| filling | **Seed Variety Station - {Variety} {have}/{need} · Quality {n}%** |
-| wrong locked | **{Variety} only** |
-| refuse not heirloom / already `cut` | **Heirloom fruit only** |
-| working | **Seed Variety Station - working {pct}%** |
-| paused (`inn === 1`) | **Seed Variety Station - Paused by wire** |
-| ready, output blocked | **Seed Variety Station - Output blocked** |
+| holding fruit whose crop is at the cap | **Seed Variety Station - Nothing left to learn about {Crop}** |
+| holding fruit against a different lock | **Seed Variety Station - {Variety} only** |
+| paused (`inn === 1`, `units > 0`) | **Seed Variety Station - Paused by wire** |
+| studying | **Seed Variety Station - {Variety} · {n} left · {pct}%** |
 
-`{pct}` = `floor(progress * 100)`. `{need}` = `STATION_IN`.
+`{pct}` = `floor(progress * 100)`. `{n}` = `units`.
 
-Prompt dump legal: **Cut grafts**. `{ act: 'station'; at }`. Prompt walk-up: the look line for the state the station is in, not a bare title. `{ act: 'station'; at }` opens the cue when dump is not legal. The prompt and the look line are then the same string, so the hover reads once instead of twice — [[ui/inspect]].
+Prompt dump legal: **Analyze**. `{ act: 'station'; at }`. Prompt walk-up: the look line for the state the station is in, not a bare title. `{ act: 'station'; at }` opens the cue when dump is not legal. The prompt and the look line are then the same string, so the hover reads once instead of twice — [[ui/inspect]].
 
-No covering haste line. No live recipe row.
-
-## Held out
-
-Cut fruit is otherwise ordinary — sells, jams, stills, held line as fruit. Graft held line [[ui/inspect]].
+No covering haste line. No live recipe row. No output blocked state: there is no output.

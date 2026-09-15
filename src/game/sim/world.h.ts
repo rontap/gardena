@@ -21,6 +21,7 @@ import type {
 import type { Drop } from './drop.ts'
 import type {
   Grandma,
+  GrownCrop,
   ResearchId,
   RouteId,
   SkillId,
@@ -219,6 +220,7 @@ export type Hydrate = {
   taps: Tap[]
   stills: PotStill[]
   necronomicon: Necronomicon | 'none'
+  familiarity: { [K in GrownCrop]: number }
   waterSystems: WaterSystem[]
   wires: Wire[]
   valveHold: ValveHold[]

@@ -2,11 +2,12 @@ import { m } from '../../paraglide/messages.js'
 import { SUGAR_BAG } from '../defs/items.ts'
 import { freshMul } from '../defs/crops.ts'
 import { ADDITIVE_BAG } from './building.ts'
-import { purposeMul, qualityMul, tierOf, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
+import { FAMILIARITY_SEED_QUALITY, purposeMul, qualityMul, tierOf, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
+import { seedBankQuality } from '../defs/skills.ts'
 import { WEATHER_FRUIT_IMPACT } from '../defs/weather.ts'
 import { frontOf, type AdditiveHolder, type AdditiveId, type Coord, type SeedStore } from './building.ts'
 import { isPlot } from './plot.ts'
-import { SPIRIT_KINDS, type AnnualId, type StallGoodId } from './ids.ts'
+import { SPIRIT_KINDS, type AnnualId, type GrownCrop, type StallGoodId } from './ids.ts'
 import { rottenName, type Item } from './item.ts'
 import { Accepts, SAT_MAX_CUT, SAT_RECOVER, impactOf, mul, saleUnits, stepOf, unitOf } from './feature-contracts/market.ts'
 import * as market from './feature-contracts/market.ts'
@@ -25,6 +26,12 @@ export function additiveStoreAt(world: World, at: Coord): AdditiveHolder {
   const c = world.cell(at)
   if (c.kind === 'additive-store' || c.kind === 'silo-spray') return c
   return world.additives
+}
+
+export function boughtSeedQuality(world: World, crop: AnnualId | GrownCrop): number {
+  const bank = seedBankQuality(world.skillTier('seed-bank'))
+  if (crop === 'grass') return bank
+  return Math.min(1, bank + world.familiarity[crop] * FAMILIARITY_SEED_QUALITY)
 }
 
 export function putSilo(world: World, crop: AnnualId, variety: VarietyId, quality: number, count: number): number {

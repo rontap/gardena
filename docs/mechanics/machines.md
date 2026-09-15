@@ -22,13 +22,13 @@ Shape: [[architecture/modules]] Building I/O.
 
 Walk dump, chest west-pull / east-push, and vehicle pads all go through instance `accept` / `apply`. `ownsPort` for mill / jam / still / furnace / station / infuser / chest / freezer / seed-silo / additive-store: origin cell and `c.ports` includes the port. Sensor kind arms stay on `ownsPort` — [[mechanics/sensors]]. `PadCell` is `pads === 'both'`. Compost included; grinder / barrel excluded. `IoCell` is the west-pull set (includes grinder). Barrel collect is not `accept`.
 
-West of the machine = input. East = output. Same row `base.row + base.h - 1`. Mill, Infuser, Furnace: that south row. Furnace origin row is not I/O. Jam, still, station: `h = 1`, so south row is origin row. Still and station: west of origin, east of `base.col + base.w`. Targets: chest, freezer. Machine is the actor. Link is view-derived from adjacency.
+West of the machine = input. East = output. Same row `base.row + base.h - 1`. Mill, Infuser, Furnace: that south row. Furnace origin row is not I/O. Jam, still, station: `h = 1`, so south row is origin row. Still and station: west of origin, east of `base.col + base.w`. The station has no output, so only its west side carries anything. Targets: chest, freezer. Machine is the actor. Link is view-derived from adjacency.
 
 **Pull** — each `BIG_TICK`, origin only: dump-all legal from the west store into the machine. Same accept as walk dump. Until hopper/cap full. Compost consumes the whole slot. `inn === 1` still fills.
 
 **Push** — on produce. East store `insertSlots` the output item. Success → consume the batch. Full → wait, do not drop. No east store → `dropSpot(base)`: the footprint ring (south row, west column, east column, north row), first free plot. Never a cell the building itself occupies.
 
-Produce: mill, jam, still, compost-box, grinder, furnace, station, infuser. Not barrel. Ghost chutes [[ui/place]] `place.ghost-io`.
+Produce: mill, jam, still, compost-box, grinder, furnace, infuser. Not barrel, not station. Ghost chutes [[ui/place]] `place.ghost-io`.
 
 `pads` on the instance says whether, `padPorts()` says where — [[architecture/modules]] `building.io-ports`. Dropoff north Unload / takeup south Load — [[mechanics/vehicles]]. Furnace takeup is south of the south cell. Barrel, grinder: `'none'`. Seed silo / additive store / compost-box / chest / freezer / mill / still / jam / furnace / station / infuser / sorter: `'both'`. The sorter is the one building whose pads are not the north and south edges. `IoCell` is not the same set as `PadCell`.
 
@@ -81,11 +81,15 @@ First accepted dump locks `crop` + `variety`. Collect clears them back to `'none
 
 ## Cut fruit
 
-`{ kind: 'fruit'; ...; cut: boolean }`, required, `false` from the field. The research station returns the fruit it took with `cut = true` and refuses fruit that already carries it. Cut fruit is otherwise ordinary. Illegal: optional `cut`. `cut` is not in the stack identity key — [[mechanics/inventory]] `inventory.stack`. A merged stack is cut when either side was.
+`{ kind: 'fruit'; ...; cut: boolean }`, required, `false` from the field. Nothing sets it true since the research station stopped returning fruit, so every fruit in play reads `false`. It is kept for the earn path in [[plans/next-variant]] and is dead until then. Illegal: optional `cut`. `cut` is not in the stack identity key — [[mechanics/inventory]] `inventory.stack`. A merged stack is cut when either side was.
 
 ## Research station
 
-2×1. Pads, west pull, east push, `inn`, like mill. Accepts heirloom fruit only, `cut === false`. First dump locks crop + variety. Empty stores `variety: 'base'` and `quality: 0` until the first dump locks both. At `progress` 1: consume, emit `STATION_IN` fruit with `cut = true` and a rolled 1–2 grafts of that variety, both at the input quality. `grind.at(col, row, day)` on finish, same roll all day on that cell. Both outputs land or neither: the east store is measured for the cut fruit and the grafts together before either is emitted. The type carries no freshness and no organic field, so returned fruit leaves at freshness 1 and not organic. Panel [[ui/station]]. Earn path from seed: [[plans/next-variant]].
+Makes nothing, so it is not a `MachineId` and has no `Recipe` row. Any number per farm. Familiarity is on the World, not the building, so two stations study one shared set of numbers and demolishing one loses none of it.
+
+2×1. Pads, west pull, `inn`, like mill. No east push: there is no output. Accepts any fruit. First dump locks crop + variety; empty stores `variety: 'base'` and `quality: 0` until the first dump locks both. `stationSeconds(level)` per fruit, read from the locked crop's level at the moment the cycle runs: not divided by `machineMul`, not multiplied by `furnaceMul`. At `progress` 1 it consumes one fruit and raises `World.familiarity[crop]` by `FAMILIARITY_GAIN[tier]` of the locked variety. Panel [[ui/station]].
+
+Familiarity pays into the ripen roll and nothing else: `FAMILIARITY_VAR_BONUS` per level, a flat term in `varietyChance` — [[mechanics/plants]] `plants.variety-roll`. A crop with nothing above base caps at one band, so its bonus is earned but has no tier to spend it on.
 
 ## Variety sorter
 
@@ -131,9 +135,9 @@ Player `machinery`: valve, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × ti
 
 `sim/recipe.ts`. No `World`. The one enumeration of what each machine makes; every number derived from `defs/items.ts` and `sim/machine.ts`. Shown by [[ui/recipe]]. Reverse lookup `recipesUsing(face)` for [[ui/almanac]] Ingredients.
 
-`MachineId` — mill jam still barrel grinder compost-box furnace station infuser. Freezer and chest are storage, not machines. Sorter makes nothing, so no `MachineId`.
+`MachineId` — mill jam still barrel grinder compost-box furnace infuser. Freezer and chest are storage, not machines. Sorter and research station make nothing, so no `MachineId`.
 
-`Duration` — `work` divided by `machineMul` (mill, jam, grinder); `fixed` not (still, compost, furnace, station, infuser); `age` for the barrel. `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace progress; not barrel, not station. Infuser is `fixed`, not `work`. `clockText(seconds)` is `{n} sec`.
+`Duration` — `work` divided by `machineMul` (mill, jam, grinder); `fixed` not (still, compost, furnace, infuser); `age` for the barrel. `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace progress; not barrel. The station has no `Duration` at all — it has no `Recipe`; its `STATION_SECONDS` per fruit is fixed in the same sense and neither multiplier touches it. Infuser is `fixed`, not `work`. `clockText(seconds)` is `{n} sec`.
 
 `recipesUsing(face)` matches `one` inputs by kind+identity. Skip `any` (mixed still, grinder, compost, furnace green / fruit / spirit, infuser jam / spirit / cask). Infuser reagent `any` faces match flakes and vanilla-extract by kind. Almanac Ingredients is this list, gated by machine unlock in `done`.
 
@@ -173,7 +177,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.water` — `STILL_WATER` preference; start still requires full pull; every still recipe carries that many liters on the water face.
 
-`machines.io-side` — West chest/freezer is input, east is output, same row `base.row + base.h - 1`; mill / infuser / furnace use the south row; jam / still / station use origin row; still and station east of `base.col + base.w`.
+`machines.io-side` — West chest/freezer is input, east is output, same row `base.row + base.h - 1`; mill / infuser / furnace use the south row; jam / still / station use origin row; still east of `base.col + base.w`; the station has no output side.
 
 `machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
 
@@ -195,13 +199,17 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.quality-carry` — Output quality is the mean of what went in; infuser output quality is the mean of the good (flakes and vanilla-extract do not enter) and does not change `unitSale`; output sale takes `purposeMul(input variety, that machine's path)` × `qualityMul`; which machines a crop can reach is `MILL_RECIPES` / `JAM_CROPS` / `STILL_CROPS` / `BARREL_CROPS`.
 
-`station.cut` — Fruit `cut: boolean` required, `false` from the field; station returns `cut = true` and refuses `cut === true`; a merged stack is cut when either side was; illegal: optional `cut`.
+`station.many` — A farm may stand any number of stations. `buy-research-station` never leaves the Build rail and `confirmPlace` never refuses on count. `World.familiarity` is on the World, not the building, so demolishing one keeps everything every station raised.
 
-`station.io` — Station is 2×1 with mill I/O; heirloom fruit only, `cut === false`; first dump locks crop + variety; at progress 1 it emits `STATION_IN` cut fruit and 1–2 grafts at input quality, both or neither; east store else `frontOf`.
+`station.io` — Station is 2×1, takes any fruit, emits nothing; first dump locks crop + variety; `stationSeconds(level)` per fruit, no `machineMul` and no `furnaceMul`; at progress 1 it consumes one fruit and calls `World.learn`.
 
-`variety.copy` — Station grafts are the locked variety at input quality.
+`familiarity.gain` — `World.familiarity` is a complete `GrownCrop` record, 0 at a new farm. One fruit through the station adds `FAMILIARITY_GAIN[tierOf(variety)]` — `base` 1, `variant` 2, `heirloom` 3 — clamped at `familiarityMax(crop)`, which is `FAMILIARITY_PER_VARIETY` per entry in that crop's `VARIETIES` row. So a crop with nothing above base stops at one band, one Variety above base stops at two, two stops at three.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration; mill, jam, still and barrel pin every variety of their crops (grass: one); mill inputs equal `millNeed`; jam rows carry `JAM_IN` fruit and `jamSugar`; barrel inputs equal `barrelNeed` and `age` not `work`; no apple jam; named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup; grinder two rows; compost four; furnace seven; station rows pinned to each `heirloom` fruit; infuser four, each `INFUSE_IN` good + 1 reagent.
+`familiarity.cost` — `stationSeconds(level)` is `STATION_SECONDS_BASE + STATION_SECONDS_STEP × level`, read from the locked crop's current level, so each level makes the next fruit slower. One fruit is one cycle whatever its tier, so an Heirloom buys three levels for the time a base fruit spends on one.
+
+`familiarity.refuse` — The station refuses fruit whose crop is already at `familiarityMax`, and takes only as many as can still count: `ceil(left / gain) - units`. That bound holds on the walk dump and on the west chest pull alike, so a chest cannot feed a crop past the cap.
+
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration; mill, jam, still and barrel pin every variety of their crops (grass: one); mill inputs equal `millNeed`; jam rows carry `JAM_IN` fruit and `jamSugar`; barrel inputs equal `barrelNeed` and `age` not `work`; no apple jam; named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup; grinder two rows; compost four; furnace seven; no station rows; infuser four, each `INFUSE_IN` good + 1 reagent.
 
 `machines.recipe-collapse` — `recipesOf(machine)` is the catalog listing and collapses; the per-variety rows behind it stay whole for `craftState`; rows of one machine and one crop whose output reads the same name and draws the same group merge into one cycling `any` row; `recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop; it never matches the grinder, furnace or mixed-still rows.
 

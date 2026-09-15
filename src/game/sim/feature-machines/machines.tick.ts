@@ -1,7 +1,7 @@
 import { BaseBuilding, type Furnace, type RectBase } from '../building.ts'
 import { compactSlots } from '../item.ts'
 import type { World } from '../world.ts'
-import { furnaceMul, furnaceWorking, isIoCell, machineWest, takeCount } from './machine.ts'
+import { furnaceMul, furnaceWorking, isIoCell, machineAccept, machineWest, takeCount } from './machine.ts'
 
 export {
   canBarrel,
@@ -65,7 +65,7 @@ export function pullMachineStores(w: World): void {
     if (store.kind !== 'chest' && store.kind !== 'freezer') continue
     store.slots.forEach((s, i) => {
       if (s.kind !== 'hold') return
-      const n = c.accept(s.item)
+      const n = machineAccept(c, s.item, crop => w.familiarity[crop])
       if (n <= 0) return
       c.apply(s.item, n)
       if (c.takeAll || takeCount(s.item, n)) store.slots[i] = { kind: 'empty' }

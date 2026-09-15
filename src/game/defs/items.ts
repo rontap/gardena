@@ -1,5 +1,6 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
 import type { CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
+import type { VarietyTier } from './varieties.ts'
 
 export const DIG_HARD_SPAN = 1.25
 
@@ -90,10 +91,13 @@ export const FURNACE_VALUE = {
   'fly-agaric': 1,
 } as const
 
-export const STATION_IN = 3
-export const STATION_SECONDS = 90
-export const STATION_GRAFT_MIN = 1
-export const STATION_GRAFT_MAX = 2
+export const STATION_SECONDS_BASE = 30
+export const STATION_SECONDS_STEP = 3
+export const FAMILIARITY_GAIN: { readonly [K in VarietyTier]: number } = { base: 1, variant: 2, heirloom: 3 }
+
+export function stationSeconds(level: number): number {
+  return STATION_SECONDS_BASE + STATION_SECONDS_STEP * level
+}
 
 export const SORT_SECONDS = 0.5
 

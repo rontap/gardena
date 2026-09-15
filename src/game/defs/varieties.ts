@@ -73,6 +73,10 @@ export const MAX_QUALITY_VAR_IMPACT = 0.015
 export const EXPERIENCED_VAR_BONUS = 0.005
 export const CROSSBREED_VAR_BONUS = 0.01
 export const CROSSBREED_REACH = 1
+export const FAMILIARITY_VAR_BONUS = 0.001
+export const FAMILIARITY_PER_VARIETY = 10
+export const FAMILIARITY_RECOVER = 0.005
+export const FAMILIARITY_SEED_QUALITY = 0.02
 
 export const VARIETY: {
   readonly [K in Exclude<VarietyId, 'base'>]: {
@@ -167,12 +171,17 @@ export function nextVariety(crop: CropId, variety: VarietyId): VarietyId | undef
   return list.find(v => tierOf(v) === 'heirloom')
 }
 
-export function varietyChance(quality: number, experienced: boolean, crossbred: boolean): number {
+export function varietyChance(quality: number, experienced: boolean, crossbred: boolean, familiarity: number): number {
   return (
     quality * quality * MAX_QUALITY_VAR_IMPACT +
     (experienced ? EXPERIENCED_VAR_BONUS : 0) +
-    (crossbred ? CROSSBREED_VAR_BONUS : 0)
+    (crossbred ? CROSSBREED_VAR_BONUS : 0) +
+    familiarity * FAMILIARITY_VAR_BONUS
   )
+}
+
+export function familiarityMax(crop: CropId): number {
+  return FAMILIARITY_PER_VARIETY * VARIETIES[crop].length
 }
 
 export function purposeOf(variety: VarietyId): Purpose | 'base' {

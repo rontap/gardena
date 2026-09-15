@@ -38,10 +38,7 @@ import {
   JAM_SECONDS,
   SILO_H,
   SILO_W,
-  STATION_GRAFT_MAX,
-  STATION_GRAFT_MIN,
-  STATION_IN,
-  STATION_SECONDS,
+  STATION_SECONDS_BASE,
   STILL_CAP,
   STILL_SECONDS,
 } from './items.ts'
@@ -381,12 +378,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'station',
       title: m.names_building_station(),
       icon: { kind: 'station' },
-      blurb: m.catalog_station({
-        need: STATION_IN,
-        seconds: STATION_SECONDS,
-        min: STATION_GRAFT_MIN,
-        max: STATION_GRAFT_MAX,
-      }),
+      blurb: m.catalog_station({ seconds: STATION_SECONDS_BASE }),
     },
     {
       id: 'axe',

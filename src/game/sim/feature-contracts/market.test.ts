@@ -1,9 +1,9 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { CROPS } from '../../defs/crops.ts'
-import { VARIETIES, tierOf } from '../../defs/varieties.ts'
+import { FAMILIARITY_RECOVER, VARIETIES, familiarityMax, tierOf } from '../../defs/varieties.ts'
 import { COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
-import { ANNUAL_IDS, TREE_IDS, isAnnualId } from '../ids.ts'
+import { ANNUAL_IDS, TREE_IDS, isAnnualId, type GrownCrop } from '../ids.ts'
 import { PAD } from '../building.ts'
 import { Act } from '../log.ts'
 import { permit } from '../mp.ts'
@@ -57,6 +57,7 @@ import {
   missPenalty,
   mul,
   recover,
+  recoverPerDay,
   saleUnits,
   rollBoard,
   rollBoardAtD,
@@ -579,18 +580,39 @@ function worthOf(w: World, id: 'carrot'): number {
     : 0
 }
 
+describe('familiarity.market', () => {
+  test('Each familiarity level adds `FAMILIARITY_RECOVER` to that crop stall\'s daily recovery. A crop that reaches three bands doubles a `0.15` row; a crop that stops at two gains less; crafted goods never move.', () => {
+    const none = () => 0
+    const studied = (crop: GrownCrop) => () => familiarityMax(crop)
+    expect(recoverPerDay('apple', none)).toBeCloseTo(SAT_RECOVER.apple, 9)
+    expect(recoverPerDay('apple', studied('apple'))).toBeCloseTo(SAT_RECOVER.apple * 2, 9)
+    expect(recoverPerDay('wheat', studied('wheat'))).toBeCloseTo(SAT_RECOVER.wheat + 20 * FAMILIARITY_RECOVER, 9)
+    expect(recoverPerDay('vodka', studied('grape'))).toBeCloseTo(SAT_RECOVER.vodka, 9)
+    expect(recover('apple', 1, DAY_SECONDS, studied('apple'))).toBeLessThan(recover('apple', 1, DAY_SECONDS, none))
+  })
+
+  test('That recovery is how many more fruit a day the stall absorbs: a level pays `FAMILIARITY_RECOVER / SAT_STEP_FRUIT` of a fruit.', () => {
+    const perLevel = FAMILIARITY_RECOVER / SAT_STEP_FRUIT
+    expect(perLevel).toBeCloseTo(0.25, 9)
+    expect(perLevel * familiarityMax('carrot')).toBeCloseTo(2.5, 9)
+    expect(perLevel * familiarityMax('wheat')).toBeCloseTo(5, 9)
+    expect(perLevel * familiarityMax('tomato')).toBeCloseTo(7.5, 9)
+  })
+})
+
 describe('saturation', () => {
   test('`sat` starts 0 and ticks toward 0 by that good\'s own `SAT_RECOVER` shown points per day, on every good every `dt`, never resetting at the seam. A day takes carrot 50% → 80% and tomato 50% → 60%.', () => {
     const w = new World(1)
     STALL_IDS.forEach(id => expect(w.stall[id].sat).toBe(0))
-    expect(recover('carrot', 0, DT_MAX)).toBe(0)
-    expect(recover('carrot', 1, DAY_SECONDS)).toBeCloseTo(1 - SAT_RECOVER.carrot / SAT_MAX_CUT, 9)
+    const cold = () => 0
+    expect(recover('carrot', 0, DT_MAX, cold)).toBe(0)
+    expect(recover('carrot', 1, DAY_SECONDS, cold)).toBeCloseTo(1 - SAT_RECOVER.carrot / SAT_MAX_CUT, 9)
     expect(mul(1, SAT_MAX_CUT)).toBeCloseTo(0.5, 9)
-    expect(mul(recover('carrot', 1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.8, 9)
-    expect(mul(recover('tomato', 1, DAY_SECONDS), SAT_MAX_CUT)).toBeCloseTo(0.6, 9)
+    expect(mul(recover('carrot', 1, DAY_SECONDS, cold), SAT_MAX_CUT)).toBeCloseTo(0.8, 9)
+    expect(mul(recover('tomato', 1, DAY_SECONDS, cold), SAT_MAX_CUT)).toBeCloseTo(0.6, 9)
     expect(mul(0.6, SAT_MAX_CUT)).toBeCloseTo(0.7, 9)
-    expect(mul(recover('carrot', 0.6, DAY_SECONDS), SAT_MAX_CUT)).toBe(1)
-    expect(recover('carrot', -0.4, DAY_SECONDS)).toBe(0)
+    expect(mul(recover('carrot', 0.6, DAY_SECONDS, cold), SAT_MAX_CUT)).toBe(1)
+    expect(recover('carrot', -0.4, DAY_SECONDS, cold)).toBe(0)
     STALL_IDS.forEach(id => {
       w.stall[id].sat = 1
     })

@@ -58,7 +58,9 @@ Linear toward 100% shown, 30 points a day, both sides. Not a seam reset.
 
 50% → 80%. 70% → 100%. 99% → 100%. 120% → 100% the same day.
 
-`SAT_RECOVER_PER_DAY` is shown points (preference). `sat` step is that over `SAT_MAX_CUT`. Every play `dt`, every `StallGoodId`, stocked or empty. Recap does not freeze the tick. Overlay pause while the recap popup is open is App-local. Seam does not write `sat` from recover.
+`SAT_RECOVER_PER_DAY` is shown points (preference). `sat` step is that over `SAT_MAX_CUT`.
+
+A crop stall recovers faster the more that crop has been studied: `recoverPerDay` is `SAT_RECOVER[good] + familiarity × FAMILIARITY_RECOVER`, crop stalls only, never a crafted good — [[mechanics/machines]] `familiarity.gain`. Since one fruit costs `SAT_STEP_FRUIT` of cut, a level is `FAMILIARITY_RECOVER / SAT_STEP_FRUIT` more fruit the stall absorbs in a day, so how much a crop gains is set by its cap: one band 2.5 fruit, two bands 5, three bands 7.5. Every play `dt`, every `StallGoodId`, stocked or empty. Recap does not freeze the tick. Overlay pause while the recap popup is open is App-local. Seam does not write `sat` from recover.
 
 At seam, two fruit crops get integer `[-20, 20]` shown points from `rng.stream('market-demand')` at the new day. `sat` clamp `SAT_MIN`..`SAT_MAX` (−80%..+50% cut).
 
@@ -79,6 +81,8 @@ Live `sat` is not in the file. Load → `sat` 0. New farm → `sat` 0. Digest in
 ## Invariants
 
 `sat.recover` — `sat` starts 0, ticks toward 0 by `SAT_RECOVER_PER_DAY` shown points per day on every good every `dt`, never resets at the seam. 50% → 80%, 70% → 100%.
+
+`familiarity.market` — `recoverPerDay(good)` adds `familiarity × FAMILIARITY_RECOVER` to `SAT_RECOVER[good]` for crop stalls only; a crafted good never moves however studied its input crop is. A studied apple or apricot doubles its `0.15`; wheat and olive stop at two bands and reach `0.25`.
 
 `sat.trapezoid` — Sell all of `n` units at `sat` pays the unit trapezoid, unit `i` cut `min(cap, sat * SAT_MAX_CUT + i * step)`, then `sat = min(1, sat + n * step / SAT_MAX_CUT)`. `n` singles with no recover pay the same total as one sale of `n`.
 

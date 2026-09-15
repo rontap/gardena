@@ -20,7 +20,7 @@ import {
   STILL_WATER,
   SUGAR_BAG,
 } from '../../defs/items.ts'
-import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, PLANT_CROPS, STILL_CROPS, TREE_IDS, type CropId, type GrownCrop, type JamCrop, type MillRecipe } from '../ids.ts'
+import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, PLANT_CROPS, STILL_CROPS, TREE_IDS, type GrownCrop, type JamCrop, type MillRecipe } from '../ids.ts'
 import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
 import { barrelNeed, jamSugar, millNeed } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from '../building.ts'
@@ -72,9 +72,6 @@ describe('recipes.table', () => {
     expect(recipesOf('compost-box').length).toBe(4)
     expect(recipesOf('furnace').length).toBe(7)
     expect(recipesOf('infuser').length).toBe(4)
-    expect(recipesOf('station').length).toBe(
-      ([...PLANT_CROPS, ...TREE_IDS] as CropId[]).flatMap(c => VARIETIES[c]).filter(v => tierOf(v) === 'heirloom').length,
-    )
   })
 
   const millRow = (recipe: MillRecipe): Recipe => {
@@ -454,7 +451,6 @@ describe('machines.recipe-source', () => {
       r => r.out.kind === 'exact' && r.out.face.kind === 'spirit' && r.out.face.spirit === 'brandy',
     )
     expect(brandy).toHaveLength(2)
-    expect(recipesOf('station').every(r => r.inputs[0].kind === 'one')).toBe(true)
   })
 
   test('`recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop. It never matches the grinder, furnace or mixed-still rows, which take many crops.', () => {
@@ -462,7 +458,7 @@ describe('machines.recipe-source', () => {
       ({ kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: 0, freshness: 1, cut: false }) as const
     expect(recipesUsing(fruit('wheat', 'red-fife')).map(r => r.machine)).toEqual(['mill', 'still'])
     const marzano = recipesUsing(fruit('tomato', 'san-marzano'))
-    expect(marzano.map(r => r.machine)).toEqual(['jam', 'station'])
+    expect(marzano.map(r => r.machine)).toEqual(['jam'])
     expect(marzano[0].out.kind === 'exact' && marzano[0].out.face.kind === 'jam' && marzano[0].out.face.variety).toBe('san-marzano')
     expect(recipesUsing(fruit('tomato', 'green-zebra')).map(r => r.machine)).toEqual(['jam'])
   })

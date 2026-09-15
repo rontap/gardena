@@ -42,9 +42,10 @@ quality = clamp(seed.quality + qualityGain(happiness) + betterGain, 0, 1)
 chance = quality² × MAX_QUALITY_VAR_IMPACT
        + EXPERIENCED_VAR_BONUS   iff the player owns better-{crop}
        + CROSSBREED_VAR_BONUS    iff crossbred
+       + FAMILIARITY_VAR_BONUS × World.familiarity[crop]
 ```
 
-`quality` is the number just baked, not the seed's. Constants preference. No floor: a quality-0 plant whose owner holds neither bonus never rolls. Baked quality is a key of the `variety` stream because a plot can ripen twice in one day.
+`quality` is the number just baked, not the seed's. Constants preference. The familiarity term is the only one a player can raise deliberately without a harvest: it comes from the research station — [[mechanics/machines]] `familiarity.gain` — and its ceiling is that crop's `familiarityMax`, so it is worth one band per Variety the crop has. No floor: a quality-0 plant whose owner holds no bonus and has studied nothing never rolls. Baked quality is a key of the `variety` stream because a plot can ripen twice in one day.
 
 Crossbred: a cell within `CROSSBREED_REACH` Chebyshev of the plot holding a `growing` or `ripe` plant, same crop, a **different** `variety`. The plot itself does not count. `dead` and `rotten` do not count. A tree is never a crossbreed neighbour.
 
@@ -121,7 +122,7 @@ Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untill
 
 `plants.fresh` — Picked fruit keeps ticking freshness (hand, house, chest, ground, quad, harvest trailer) until sold; freezer slots rot at `FREEZER_ROT_MUL` of the open rate; mill hopper is units, no freshness; `<= 0` replaces that slot with `{ kind: 'rotten'; cls; count }` in place, no auto-merge; illegal: fruit with `freshness <= 0` after tick; `freshMul(f) = f >= 0.8 ? 1 : f / 0.8`; jam is rot, not a sale floor.
 
-`plants.variety-roll` — Baking quality is followed by one roll on that plot, annuals only; chance is `quality² × MAX_QUALITY_VAR_IMPACT` plus `EXPERIENCED_VAR_BONUS` and `CROSSBREED_VAR_BONUS` when those hold; hit: `variety` becomes `nextVariety`, `quality` becomes 0; baked quality is a key of the `variety` stream.
+`plants.variety-roll` — Baking quality is followed by one roll on that plot, annuals only; chance is `quality² × MAX_QUALITY_VAR_IMPACT` plus `EXPERIENCED_VAR_BONUS` and `CROSSBREED_VAR_BONUS` when those hold, plus `FAMILIARITY_VAR_BONUS × World.familiarity[crop]`; hit: `variety` becomes `nextVariety`, `quality` becomes 0; baked quality is a key of the `variety` stream.
 
 `quality.ripen` — No roll at ripen; bought seed quality 0 stays 0 if happiness stays `HAPPY_START`; `betterGain` only if `better-{crop}` owned; tree fruit quality is 0.
 

@@ -21,6 +21,7 @@ import { Queue } from './game/ui/queue.tsx'
 import { Recap } from './game/ui/recap.tsx'
 import { Story } from './game/ui/story.tsx'
 import { Research } from './game/ui/research.tsx'
+import { warmTrees } from './game/ui/tree-panel.tsx'
 import { Cheat } from './game/ui/cheat.tsx'
 import { Build } from './game/ui/build.tsx'
 import { Family } from './game/ui/family.tsx'
@@ -72,6 +73,8 @@ const BOOT_CAM: Camera = { x: 15.5, y: 9.5, scale: 1 }
 const NO_CELLS: readonly Coord[] = []
 const DIAL_TIMEOUT_MS = 20000
 const RECONNECT_DELAY_MS = 1500
+const TREE_WARM_GRACE = 1200
+const TREE_WARM_TIMEOUT = 4000
 
 function ignoreHover(_h: PromptHit | undefined): void {}
 function ignoreCam(_c: Camera): void {}
@@ -83,6 +86,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [hudN, setHudN] = useState(0)
   const [backdrop] = useState(() => (START_NOW ? undefined : new World()))
   const [menuCanvasIn, setMenuCanvasIn] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
   const [world, setWorld] = useState<World | undefined>(() => {
     if (!START_NOW) return undefined
     const w = new World(undefined, sink)
@@ -244,6 +248,19 @@ export default function App({ sink }: { sink: WorkerSink }) {
     const at = cue.at
     updatePanel(p => (p.kind === cue.kind && p.at.col === at.col && p.at.row === at.row ? p : { kind: cue.kind, at }))
   }, [hudN, world])
+
+  useEffect(() => {
+    if (!mapReady) return
+    const grace = setTimeout(() => {
+      requestIdleCallback(
+        () => {
+          void warmTrees('research').then(() => warmTrees('skill'))
+        },
+        { timeout: TREE_WARM_TIMEOUT },
+      )
+    }, TREE_WARM_GRACE)
+    return () => clearTimeout(grace)
+  }, [mapReady])
 
   useEffect(() => {
     if (world === undefined) return
@@ -1010,6 +1027,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             route={editRoute}
             hover={hover}
             onHover={setHover}
+            onReady={() => setMapReady(true)}
             onCam={setCam}
             onClick={(hit, shift) => {
               if (hit.kind === 'cell' && sensorArmed(world)) {

@@ -1,6 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import mermaid from 'mermaid'
+import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { RESEARCH } from '../defs/research.ts'
 import { SKILLS, SKILL_IDS, skillBlurb, skillLabel } from '../defs/skills.ts'
 import type { ResearchId, SkillId } from '../sim/ids.ts'
@@ -21,7 +20,12 @@ const token = (name: string): string =>
 
 const ICON = 36
 
-function bootMermaid(): void {
+let booted = false
+
+async function mermaidApi(): Promise<typeof import('mermaid').default> {
+  const { default: mermaid } = await import('mermaid')
+  if (booted) return mermaid
+  booted = true
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'loose',
@@ -43,6 +47,7 @@ function bootMermaid(): void {
       nodeBorder: token('--color-ink'),
     },
   })
+  return mermaid
 }
 
 function svgImg(inner: string, size: number): string {
@@ -146,6 +151,39 @@ function routeLEdges(root: HTMLElement): void {
         `M ${src.right} ${src.midY} L ${midX} ${src.midY} L ${midX} ${tgt.midY} L ${endX} ${tgt.midY}`,
       )
     })
+  })
+}
+
+const FACES: readonly Face[] = ['mystery', 'done', 'run', 'open', 'gated']
+
+function faceStyle(face: Face): { fill: string; width: string; dash: string } {
+  if (face === 'done') return { fill: '#4a9e32', width: '2px', dash: 'none' }
+  if (face === 'run') return { fill: ink(), width: '2px', dash: 'none' }
+  if (face === 'gated') return { fill: '#d6d6d6', width: '1px', dash: 'none' }
+  if (face === 'mystery') return { fill: 'none', width: '1px', dash: '4 3' }
+  return { fill: token('--color-parch'), width: '2px', dash: 'none' }
+}
+
+function paintFaces(root: HTMLElement, world: World, shown: Map<string, string>): void {
+  root.querySelectorAll('g.node').forEach(g => {
+    const pick = pickFromKey(keyFromDomId(g.id))
+    if (pick === undefined) return
+    const card = pick.kind === 'research' ? researchCard(world, pick.id) : skillCard(world, pick.id)
+    const was = shown.get(g.id)
+    const now = `${card.face}|${card.html}`
+    if (was === now) return
+    shown.set(g.id, now)
+    for (const f of FACES) g.classList.toggle(f, f === card.face)
+    const s = faceStyle(card.face)
+    g.querySelectorAll('rect').forEach(r => {
+      const st = (r as SVGRectElement).style
+      st.setProperty('fill', s.fill, 'important')
+      st.setProperty('stroke', ink(), 'important')
+      st.setProperty('stroke-width', s.width, 'important')
+      st.setProperty('stroke-dasharray', s.dash, 'important')
+    })
+    const label = g.querySelector('.nodeLabel')
+    if (label !== null) label.innerHTML = card.html
   })
 }
 
@@ -266,14 +304,15 @@ function emitGraphs(groups: Iterable<Group>): string[] {
   return [...groups].map(g => ['flowchart LR', ...g.body, ...g.edges, ...classDefs()].join('\n'))
 }
 
-function researchSrc(world: World): string[] {
+function researchSrc(): string[] {
   const tree = buildTree()
   const groups = new Map<string, Group>()
   for (const n of tree.nodes.values()) {
     const key = keyOfResearch(n.id)
-    const { html, face } = researchCard(world, n.id)
+    const d = RESEARCH[n.id]
+    const html = cardHtml(researchInner(n.id), d.name, coinMeta(d.cost, d.seconds), ink())
     const g = groups.get(n.def.path)
-    const row = [`    ${key}["${html}"]`, `    class ${key} ${face}`]
+    const row = [`    ${key}["${html}"]`, `    class ${key} open`]
     if (g === undefined) {
       groups.set(n.def.path, { body: row, edges: [] })
     } else g.body.push(...row)
@@ -297,13 +336,13 @@ function skillRoot(id: SkillId): SkillId {
   return cur
 }
 
-function skillSrc(world: World): string[] {
+function skillSrc(): string[] {
   const groups = new Map<SkillId, Group>()
   for (const id of SKILL_IDS) {
     const root = skillRoot(id)
     const key = keyOfSkill(id)
-    const { html, face } = skillCard(world, id)
-    const row = [`    ${key}["${html}"]`, `    class ${key} ${face}`]
+    const html = cardHtml(skillInner(id), SKILLS[id].name, pointsMeta(1), ink())
+    const row = [`    ${key}["${html}"]`, `    class ${key} open`]
     const g = groups.get(root)
     if (g === undefined) groups.set(root, { body: row, edges: [] })
     else g.body.push(...row)
@@ -316,6 +355,39 @@ function skillSrc(world: World): string[] {
     g.edges.push(`    ${keyOfSkill(p)} --> ${keyOfSkill(id)}`)
   }
   return emitGraphs(groups.values())
+}
+
+export type Kind = 'research' | 'skill'
+
+const graphCache = new Map<Kind, string[]>()
+const inflight = new Map<Kind, Promise<string[]>>()
+
+function fixUp(raw: string[]): string[] {
+  const host = document.createElement('div')
+  host.innerHTML = raw.map(s => `<div>${s}</div>`).join('')
+  pinLabelImages(host)
+  sizeSvgs(host)
+  routeLEdges(host)
+  return [...host.children].map(c => c.innerHTML)
+}
+
+export function warmTrees(kind: Kind): Promise<string[]> {
+  const hit = graphCache.get(kind)
+  if (hit !== undefined) return Promise.resolve(hit)
+  const running = inflight.get(kind)
+  if (running !== undefined) return running
+  const job = (async () => {
+    const mermaid = await mermaidApi()
+    const src = kind === 'research' ? researchSrc() : skillSrc()
+    const nonce = Math.random().toString(36).slice(2)
+    const rs = await Promise.all(src.map((s, i) => mermaid.render(`tp-${nonce}-${i}`, s)))
+    const svgs = fixUp(rs.map(r => r.svg))
+    graphCache.set(kind, svgs)
+    inflight.delete(kind)
+    return svgs
+  })()
+  inflight.set(kind, job)
+  return job
 }
 
 export type Pick =
@@ -379,30 +451,26 @@ export function TreePanel({
   header?: ReactNode
   footer?: ReactNode
 }) {
-  const [svgs, setSvgs] = useState<string[]>([])
+  const [svgs, setSvgs] = useState<string[]>(() => graphCache.get(kind) ?? [])
   const [err, setErr] = useState<string | undefined>(undefined)
   const [pick, setPick] = useState<Pick | undefined>(undefined)
   const [peek, setPeek] = useState<Pick | undefined>(undefined)
   const box = useRef<HTMLDivElement>(null)
+  const painted = useRef(new Map<string, string>())
+  const drawn = useRef<string[] | undefined>(undefined)
   const shown = peek ?? pick
   const stamp =
     kind === 'research'
       ? `${[...world.done].join(',')}|${world.job.kind === 'run' ? world.job.id : ''}|${world.money}`
       : `${[...world.family.owned.entries()].map(([id, t]) => `${id}:${t}`).join(',')}|${world.points}|${[...world.done].join(',')}`
-  const graphs = useMemo(
-    () => (kind === 'research' ? researchSrc(world) : skillSrc(world)),
-    [kind, stamp],
-  )
 
   useEffect(() => {
-    bootMermaid()
     let dead = false
-    const nonce = Math.random().toString(36).slice(2)
-    Promise.all(graphs.map((src, i) => mermaid.render(`tp-${nonce}-${i}`, src)))
-      .then(rs => {
+    warmTrees(kind)
+      .then(s => {
         if (dead) return
         setErr(undefined)
-        setSvgs(rs.map(r => r.svg))
+        setSvgs(s)
       })
       .catch((e: unknown) => {
         if (!dead) setErr(String(e))
@@ -410,21 +478,18 @@ export function TreePanel({
     return () => {
       dead = true
     }
-  }, [graphs])
+  }, [kind])
 
   useLayoutEffect(() => {
     const el = box.current
     if (el === null) return
-    pinLabelImages(el)
-    sizeSvgs(el)
-    routeLEdges(el)
-  }, [svgs])
-
-  useLayoutEffect(() => {
-    const el = box.current
-    if (el === null) return
+    if (drawn.current !== svgs) {
+      painted.current = new Map()
+      drawn.current = svgs
+    }
+    paintFaces(el, world, painted.current)
     paintPick(el, pick)
-  }, [svgs, pick])
+  }, [svgs, stamp, pick, kind, world])
 
   useEffect(() => {
     const el = box.current

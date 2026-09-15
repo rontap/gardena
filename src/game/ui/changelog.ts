@@ -77,12 +77,17 @@ function kindPrefix(body: string): ChangeKind | undefined {
 }
 
 function takeKind(body: string): { kind: ChangeKind; text: string } {
-  const kind = kindPrefix(body)
-  if (kind === undefined) fail('unknown emoji')
+  const trimmed = body.trim()
+  if (trimmed === '') fail('empty text')
+  const kind = kindPrefix(trimmed)
+  if (kind === undefined) {
+    if (/^\p{Extended_Pictographic}/u.test(trimmed)) fail('unknown emoji')
+    return { kind: 'improvement', text: trimmed }
+  }
   const emoji = KIND_EMOJI[kind]
-  if (body === emoji) fail('empty text')
-  if (!body.startsWith(`${emoji} `)) fail('empty text')
-  const text = body.slice(emoji.length + 1)
+  if (trimmed === emoji) fail('empty text')
+  if (!trimmed.startsWith(`${emoji} `)) fail('empty text')
+  const text = trimmed.slice(emoji.length + 1).trim()
   if (text === '') fail('empty text')
   return { kind, text }
 }
@@ -191,28 +196,29 @@ export function parseChangelog(src: string): readonly Release[] {
       if (line.startsWith('# ')) break
       const item = listItem(line)
       if (item === undefined) fail('extra construct')
+      const body = item.body.trim()
       if (item.indent === 0) {
-        const parsed = takeKind(item.body)
+        const parsed = takeKind(body)
         current = makeChange(parsed.kind, parsed.text)
         nested = undefined
         changes.push(current)
       } else if (item.indent === 2) {
         if (current === undefined) fail('extra construct')
-        if (kindPrefix(item.body) !== undefined) {
+        if (kindPrefix(body) !== undefined) {
           if (current.kind !== 'major-feature') fail('nested Change under non-major-feature')
-          const parsed = takeKind(item.body)
+          const parsed = takeKind(body)
           nested = makeChange(parsed.kind, parsed.text)
           current.changes.push(nested)
         } else {
-          if (item.body === '') fail('empty note')
+          if (body === '') fail('empty note')
           nested = undefined
-          current.notes.push(item.body)
+          current.notes.push(body)
         }
       } else {
         if (nested === undefined) fail('extra construct')
-        if (kindPrefix(item.body) !== undefined) fail('extra construct')
-        if (item.body === '') fail('empty note')
-        nested.notes.push(item.body)
+        if (kindPrefix(body) !== undefined) fail('extra construct')
+        if (body === '') fail('empty note')
+        nested.notes.push(body)
       }
       i++
     }

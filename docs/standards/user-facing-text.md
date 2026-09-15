@@ -335,7 +335,7 @@ Almanac Overview pages may define a word on first use. They still may not say: g
 
 ## Update notes
 
-Line shape [[standards/update-notes]]. Types: `building` `item` `ui` `mechanic` `multiplayer`. Verbs: `New` `Added` `Removed` `Changed` `Fixed bug`. Subject names come from this table / `skuLabel`. `{what it does}` is player register [[standards/lexicon]] `lex.copy`.
+Line shape [[standards/update-notes]]. Subject names come from this table / `skuLabel`. `{what it does}` is player register [[standards/lexicon]] `lex.copy`. No required verb or type token.
 
 # Read Check
 If you have read this document in full, when answering, acknowledge it as "user-facing-text is read in full" otherwise your work will be automatically void because law text was not read.

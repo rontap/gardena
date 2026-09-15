@@ -57,7 +57,7 @@ No body title. No lorem.
 
 ## Bullets
 
-One emoji per `ChangeKind`, on the bullet, not the release header. Markers sit under the heading, never left of `{id} {name}`.
+Kind emoji is optional. Present: one `ChangeKind`, on the bullet, not the release header. Absent: `improvement`. Markers sit under the heading, never left of `{id} {name}`.
 
 | kind | emoji |
 |---|---|
@@ -67,42 +67,20 @@ One emoji per `ChangeKind`, on the bullet, not the release header. Markers sit u
 | `bugfix` | 🐛 |
 | `deprecation` | 🚫 |
 
-Change line: emoji then `text`. `notes` under that change, indent past the parent emoji. Nested `changes` under a major-feature indent one step, same bullet shape. Empty `notes` / empty nested `changes` render nothing.
+Change line: optional emoji then `text`. `notes` under that change, indent past the parent emoji. Nested `changes` under a major-feature indent one step, same bullet shape. Empty `notes` / empty nested `changes` render nothing.
 
-Item / building / ui / multiplayer lines have no notes and no nested changes. Mechanic lines may show `notes` bullets. Nested emoji `changes` stay empty.
+Any top-level line may carry `notes`. Nested emoji `changes` only under `major-feature`.
 
 ## Dialect
 
 Parser dialect: [[architecture/changelog]]. `parseChangelog` is total: well-formed `src` → `readonly Release[]`. Ill-formed → throw `ChangelogParseError`. No `??` / `||` recovery.
 
-`topLineShape` is a predicate on `Change.text`. Vitest uses it. `parseChangelog` does not call it. It does not throw.
+`topLineShape` is a predicate on `Change.text`. Vitest fixtures only. `parseChangelog` does not call it. Shipped `RELEASES` are not asserted against it. It does not throw.
 
-Named invariant, testable only. Test name is this text:
-
-A top-level changelog line is `{emoji} {New|Added|Removed|Changed|Fixed bug} {building|item|ui|mechanic|multiplayer} {*}`.
-
-| type | notes |
-|---|---|
-| item / building / ui / multiplayer | `notes` is `[]`. No nested `changes`. |
-| mechanic | top-level; keyword `mechanic`; `notes` bullets allowed for the concept only. Nested emoji `changes` stay empty. New items/buildings are not nested under a mechanic and do not get bullets. |
-
-One subject per top-level line.
-
-| verb | shape |
-|---|---|
-| Added / New | `Added {type}: {Name}. {what it does}.` |
-| Changed | `Changed {type}: previously, it {…}, now {…}.` |
-| Removed | `Removed {type}: {Name}. {what the player loses}.` |
-| Fixed bug | `Fixed bug {type}: {SVO what was wrong and what happens now}.` |
-
-Required form: `Added building: Freezer. Nine slots instead of six, and fruit inside still does not rot.`
-
-Complete SVO sentences. Display-level words only. Never unsurfaced internals. Never code, protocol, save version, research ids. `Fixed bug` lines describe player-visible misbehavior and the fix, not the implementation.
+Wording is player copy. No required verb, type token, colon, or previously/now frame. Ill-formed wording is not a dialect error.
 
 ## Tests
 
-Vitest `src/game/ui/changelog.test.ts`. Dialect fixtures: structure, not player copy. [[standards/testing]] copy exemption does not cover the parser or this invariant. Do not lock dialect fixtures to shipped names, summaries, or bullet text.
+Vitest `src/game/ui/changelog.test.ts`. Dialect fixtures: structure, not player copy. [[standards/testing]] copy exemption does not cover the parser. Do not lock dialect fixtures to shipped names, summaries, or bullet text.
 
-`topLineShape` true/false fixtures. True: `Added building: Freezer. Nine slots instead of six, and fruit inside still does not rot.` False: `Large freezer.`; `Added a pulser, a counter, and a day sensor`; list-then-verb.
-
-Shipped `RELEASES` top-level `Change.text`: assert `topLineShape` and the notes / nested-`changes` clauses.
+`topLineShape` true/false fixtures stay. They do not run on shipped `RELEASES`.

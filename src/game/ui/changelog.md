@@ -1,4 +1,68 @@
-# 2.8.6 Skill and research rebalance
+# 2.9.1 Crop Variety Station
+
+Completely reworked the crop variety station, now fruits can be used to gain insight into their details, including almanac details and different varieties. Researching is capped to 10/20/30 units depending on the crop, and provides passive boosts to market impact recover, store-bought seed quality and variety increase chance.
+
+# 2.9.0 Vehicle Automation III
+
+Vehicle automation has been significantly redesigned; now routes can be managed directly and easily set up with drag and drop moving of stops both in the HUD and in the gameplay area. Stops can be removed, and vehicles can pick up or drop off only certain cargo at stations.
+
+- A Tractor whose boom just worked a plot is working for 3 seconds; speed cap ×0.5 while that lasts. Accel, turn, and fuel burn unchanged. An empty hopper does not set it.
+- Each Load / Unload stop can narrow what moves (any → type → good → Variety). The building’s own accept still decides.
+- 🔧 Rebalanced Vehicles, Furnace and Compost values
+  - Quad / Tractor tank lasts 360s of burn (was 180s).
+  - Compost: fruit 5 → 4; sugar 3; wood 6.
+  - Furnace: oil 25 → 20; spirit 36 → 26; wood 40 → 32.
+  - Fly agaric goes in the Compost box (4) and the Furnace (1).
+
+# 2.8.9 Gameplay Update
+
+Changed default click behavior, now correct blurb is given when performing actions.
+
+- 🔧 Changed mechanic: Weeds
+  - A full-grown Weed stamps the day it ripens. At Sunrise one day later it is gone: untilled soft ground, Grass cover, no Pulled weed, soil gone with it.
+  - Water / Fertilizer on a plot that is already full still queues; on arrival the click does nothing and says nothing.
+- 🔧 Changed mechanic: Hand actions
+  - Empty hand on a plot that wants a tool: I need a tool to {action}.
+  - Harvest / pick a Weed / Grass / Dead plant / Rotten produce with something else in hand does not swap. Speech: I need to drop what is in my hand to pick this up. A drop already on the ground still swaps.
+
+# 2.8.8 UI Update III - Market & Contracts
+
+Contracts and Market are now two separate fail items, automatically selling items.
+
+- 🔧 Changed mechanic: Market & Contracts UI
+  - Recover is per good, not a flat 30 points: Carrot 30; Potato / Sugar cane / Cherry 20; Wheat / Chilli / Apricot / Olive / Apple 15; Tomato / Grape / Raspberry / Vanilla 10; every crafted good 30.
+  - Each new day, two fruit crops move: one +33 shown points, one −33 (was two rolls in [−20, 20]).
+
+# 2.8.7 Market & Contracts Warehouse
+
+The market truck is replaced with a contracts warehouse. Rewards from contracts now arrive at postbox, a new take-only unique building. Vehicles can drop off at the warehouse.
+
+- 🔧 Changed mechanic: Market truck rework
+  - Produce warehouse replaces the Market truck. Drop off on its consign row. Vehicles can drive onto those pads.
+  - Postbox under the house. Four slots. Finished contract prizes land there instead of in the hand.
+
+# 2.8.6 Contracts Rework
+
+Changed what special items contracts can give. Now contracts can give variety and heirloom crops at higher levels.
+
+- 🔧 Changed mechanic: Contracts rework
+  - Broker I–III: +1 board slot and +1 active contract per rank (was +1 slot at I, +1 active at II). Extra slots pay money. Still exactly two prize contracts on the base six.
+  - Prize table rewritten. Named and Heirloom tree seeds and annual seeds come off the board. Halbert Eijn and Intercrop never pay tree seeds.
+  - Vanilla seeds only on two 4-star cells: 1 seed (Whole Cart) or 2 (Intercrop), as one option among that cell’s pool.
+  - Trade Jo 3-star pays 1 skill point; 4-star a Rotary shovel or Diamond pickaxe. Mercanova starts with fertilizer, then Large freezer, skill point, Expansion. Halbert Eijn / Intercrop pay fruit and Named/Heirloom annuals instead of stacked skill points.
+
+# 2.8.5 Market Rework
+
+This patch is the first of the market and contracts overhaul updates. We begin with tuning and redesigning the market view to indicate the current market prices better, and rebalance maximum market impact. Market impact is now influenced by per unit, not unit cost.
+
+- 🔧 Changed mechanic: Market rework
+  - Impact counts units sold, not money. Each extra fruit (or jar / bottle / litre) cuts the next unit’s price.
+  - Cap by Variety: Plain fruit 50%, Named 40%, Heirloom 30%. Crafted goods 35% Plain, 25% Named/Heirloom. Sugar, oil, flour, extract, Bread use the 35% cap.
+  - Flood and Drought add +40% to the shown fruit percent (was ×1.2 on the sale). Rain does not change sale.
+  - Impact can go below 100% (a crop in demand) and above it. Recovers toward 100% every day, not at Sunrise.
+  - Infused goods still pay the current percent and do not raise impact. Rotten produce at $1 still does not.
+
+# 2.8.4 Skill and research rebalance
 
 Research and Family fill the screen with cards in rows. Each row is a path from left to right, and the paths sit one under the next. Click a card to select it, then Research or Get skill; hover peeks the details; double-click starts research.
 
@@ -16,18 +80,14 @@ Research and Family fill the screen with cards in rows. Each row is a path from 
 - 🚫 Removed mechanic: Weather forecast. Tomorrow's weather no longer comes from a skill; a Weather Forecast Station on the farm shows it.
 - 🚫 Removed mechanic: Experienced tree growers. Apple, Apricot, Olive, and Cherry no longer have an Experienced grower skill.
 
-# 2.8.5 Multiplayer Update III
+# 2.8.3 Multiplayer Update III
 
 Guests can accept contracts, start research, place water and paving, tune a Sprinkler, open a Chest, and save or download. Family skills, Cheat, and Expand stay with the host.
 
 - 🔧 Changed multiplayer: previously a guest could not accept or cancel a contract, now they can.
-- 🔧 Changed multiplayer: previously a guest could not start research, now they can.
-- 🔧 Changed multiplayer: previously a guest could not place Pipe, Valve, Sprinkler, paving, or Wooden fence, now they can.
-- 🔧 Changed multiplayer: previously a guest could not tune a Sprinkler, now they can.
-- 🔧 Changed multiplayer: previously a guest could not open a Chest or Freezer, now they can.
-- 🔧 Changed multiplayer: previously a guest could not save or download, now they can.
+- 🔧 Changed multiplayer: previously a guest could not start research, place Pipe, Valve, Sprinkler, paving, or Wooden fence, tune a Sprinkler, open a Chest or Freezer, save or download, now they can.
 
-# 2.8.4 Deprecation
+# 2.8.2 Deprecation
 
 Fewer Family skills, and each remaining pick is a real bonus. The stall stays open all day. Some research and items are gone; pumps and wells gather slower.
 
@@ -51,8 +111,7 @@ Fewer Family skills, and each remaining pick is a real bonus. The stall stays op
 - 🔧 Changed research: Fermentation. Buffed cost from 45 to 40.
 - 🔧 Changed mechanic: Fertilizer. Nerfed use per second from 0.00075 to 0.00085. Nerfed potato, wheat, tomato relative use from 1.25 to 1.33. Nerfed chilli from 1.5 to 1.66. Nerfed vanilla from 0.1 to 0.5. Nerfed raspberry and grape from 0.75 to 0.8.
 
-# 2.8.3 Rebalance & Necronomicon Update II
-
+# 2.8.1 Rebalance & Necronomicon Update II
 
 Added 3 new pages to the necronomicon and generally nerfed trees, and other rebalance - Aron
 

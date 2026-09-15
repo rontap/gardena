@@ -1233,11 +1233,12 @@ describe('beta-5 invariants', () => {
         })
         expect(SKUS['buy-traffic-light'].unlock).toBe('unlock-dispatch')
         const w = new World(1)
-        w.createRoute()
-        expect(w.routes).toHaveLength(0)
-        w.done.add('unlock-dispatch')
+        expect(w.routes).toHaveLength(1)
         w.createRoute()
         expect(w.routes).toHaveLength(1)
+        w.done.add('unlock-dispatch')
+        w.createRoute()
+        expect(w.routes).toHaveLength(2)
     })
 
     test('delete no money change; pumpjack remains', () => {

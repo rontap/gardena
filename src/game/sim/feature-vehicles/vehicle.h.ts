@@ -3,18 +3,23 @@ import type { Item, Slot } from '../item.ts'
 import type { BaseBuilding, Coord } from '../building.ts'
 import type { Cell } from '../plot.ts'
 import type { SeatId } from '../world.ts'
+import type { Pick } from './pick.ts'
 
 export type { HarvestSlot, RouteId, TrailerId, TrailerKind, VehicleId, VehicleKind, VehicleSlot }
 
 export type Drive = { throttle: -1 | 0 | 1; steer: -1 | 0 | 1 }
 
 export type RouteStop =
-  | { kind: 'goto'; x: number; y: number }
-  | { kind: 'unload'; at: Coord }
-  | { kind: 'load'; at: Coord }
+  | { kind: 'goto'; at: Coord }
+  | { kind: 'unload'; at: Coord; pick: Pick }
+  | { kind: 'load'; at: Coord; pick: Pick }
   | { kind: 'wait'; at: Coord }
 
-export type Route = { id: RouteId; name: string; stops: RouteStop[] }
+export type RouteDeploy =
+  | { kind: 'quad' }
+  | { kind: 'tractor'; trailer: TrailerKind | 'none'; boom: 3 | 5 }
+
+export type Route = { id: RouteId; name: string; stops: RouteStop[]; deploy: RouteDeploy }
 
 export type VehiclePose =
   | { kind: 'stored'; hangar: Coord }
@@ -47,6 +52,7 @@ export type Vehicle =
       fuel: number
       hitch: TrailerId | 'none'
       boom: 3 | 5
+      working: number
       pose: VehiclePose
       route: RouteId | 'none'
       cursor: number

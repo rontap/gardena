@@ -190,6 +190,13 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | dash leave vehicle                         | Dock                                                                                                         | park, disembark as the button                             |
 | fuel on the vehicle                        | fuel                                                                                                         | gas, petrol                                               |
 | named stop list                            | route                                                                                                        | path, schedule                                            |
+| the route dock and its rail item           | Vehicle automation                                                                                           | dispatch, routing, logistics, fleet                       |
+| what a route sends out                     | Deploy                                                                                                       | dispatch, spawn, launch                                   |
+| bringing a deployed vehicle home           | Send back to the hangar                                                                                      | recall, retire, despawn, return to depot (no depot here)  |
+| automated vehicle, moving                  | Heading to {n}                                                                                               | en route, travelling, in transit                          |
+| automated vehicle, not moving              | Stopped                                                                                                      | idle, halted, waiting                                     |
+| automated vehicle, empty tank              | Out of fuel                                                                                                  | dry, stranded                                             |
+| how wide the boom reaches                  | Boom 3 / Boom 5                                                                                              | width, span, swath                                        |
 | family screen                              | Family                                                                                                       | skills menu                                               |
 | player member                              | You                                                                                                          | player                                                    |
 | player role                                | Gardener                                                                                                     | farmer                                                    |
@@ -318,7 +325,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 
 ## Chrome
 
-Rail left: **Build** **Research** **Market** **Lens** **Family**. Then **Demolish** while Build is open or something is armed, and **Cancel** only while something is on the cursor.
+Rail left: **Build** **Research** **Market** **Contracts** **Vehicle automation** **Lens** **Family**. **Contracts** and **Vehicle automation** appear only once their research is done. Then **Demolish** while Build is open or something is armed, and **Cancel** only while something is on the cursor.
 
 Rail top: **Gardena**, Coin, **Day {n} · {phase}**, weather glyphs, **Multiplayer**, **Almanac**, **Cheat**, **Pause**/**Resume**, **Gear**.
 

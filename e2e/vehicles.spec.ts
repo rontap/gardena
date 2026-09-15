@@ -98,7 +98,7 @@ test('tractor seeder boom', async ({ page }) => {
           disembark: () => void
           swapTrailer: (u: number, i: number) => void
           embark: (id: number) => void
-          seats: { actor: { x: number; y: number }; hand: unknown }[]
+          seats: { actor: { x: number; y: number }; hand: unknown; queue: unknown[] }[]
           setCell: (at: { col: number; row: number }, c: unknown) => void
           cell: (at: { col: number; row: number }) => { kind: string }
           vehicles: { pose: Pose }[]

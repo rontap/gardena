@@ -169,6 +169,7 @@ export type SaveVehicle =
       fuel: number
       hitch: TrailerId | 'none'
       boom: 3 | 5
+      working: number
       pose:
         | { kind: 'stored'; hangar: Coord }
         | { kind: 'field'; x: number; y: number; heading: number; speed: number; driver: SeatId | 'none' }

@@ -23,7 +23,7 @@ import {
   LOOT_U_SPAN,
   LUCK_CAP,
 } from '../../defs/burrow.ts'
-import { AXES, FERT_BAG_LITERS, PICKAXES, SHOVELS } from '../../defs/items.ts'
+import { AXES, COMPOST_VALUE, FERT_BAG_LITERS, FURNACE_VALUE, PICKAXES, SHOVELS } from '../../defs/items.ts'
 import { catalogEntries } from '../../defs/catalog.ts'
 import { chunkOf, chunkRect, frontOf, isReserved } from '../building.ts'
 import { onCell } from '../drop.ts'
@@ -345,12 +345,12 @@ describe('burrow.loot', () => {
 })
 
 describe('burrow.agaric', () => {
-  test("burrow.agaric - `{ kind: 'fly-agaric'; count }`. Countable, stacks like Ash, no compost value, no furnace value, no store takes it. Top band only. Has a name and an Almanac entry.", () => {
+  test("burrow.agaric - `{ kind: 'fly-agaric'; count }`. Countable, stacks like Ash, composts and burns, no store takes it. Top band only. Has a name and an Almanac entry.", () => {
     const w = new World(1)
     const item = { kind: 'fly-agaric' as const, count: 1 }
     expect('count' in item).toBe(true)
-    expect(compostValue(item)).toBe(0)
-    expect(furnaceValue(item)).toBe(0)
+    expect(compostValue(item)).toBe(COMPOST_VALUE['fly-agaric'])
+    expect(furnaceValue(item)).toBe(FURNACE_VALUE['fly-agaric'])
     expect(w.silo.accept(item)).toBe(0)
     expect(w.additives.accept(item)).toBe(0)
     expect(m.names_item_fly_agaric().length).toBeGreaterThan(0)

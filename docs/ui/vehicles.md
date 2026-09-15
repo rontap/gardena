@@ -1,10 +1,10 @@
 # Vehicles
 
-Hangar dialog, parked Quad / tractor, dashboard, Automate, stops Window, route overlay, follow-cam, WASD, return arrows. Rules [[mechanics/vehicles]]. Light [[ui/sensors]]. Types [[architecture/world]]. Chrome [[ui/store]] [[ui/docks]]. Place [[ui/place]]. Look [[ui/inspect]]. Shop [[ui/build]]. Hats [[ui/multiplayer]]. Art [[art/vehicles]].
+Hangar dialog, parked Quad / tractor, dashboard, Vehicle automation dock, route overlay, follow-cam, WASD, return arrows. Rules [[mechanics/vehicles]]. Light [[ui/sensors]]. Types [[architecture/world]]. Chrome [[ui/store]] [[ui/docks]]. Place [[ui/place]]. Look [[ui/inspect]]. Shop [[ui/build]]. Hats [[ui/multiplayer]]. Art [[art/vehicles]].
 
 `HudTarget` stays sprinkler-only.
 
-`src/game/ui/hangar.tsx` owns the hangar cue. `src/game/ui/vehicle.tsx` owns the parked cue. Dashboard / Automate / stops Window / follow-cam / WASD / hide-gardener / return arrows / route overlay are App + view, not those panels.
+`src/game/ui/hangar.tsx` owns the hangar cue. `src/game/ui/vehicle.tsx` owns the parked cue. `src/game/ui/feature-vehicles/automation.tsx` owns the dock. Dashboard / follow-cam / WASD / hide-gardener / return arrows / route overlay are App + view, not those panels.
 
 ## Hangar dialog
 
@@ -80,41 +80,66 @@ Dashboard `Btn`s, not the parked dialog.
 | **Unload** | shown iff `floor` is a dropoff pad. Hidden ≠ disabled. Tractor `hitch === 'none'`: hidden | `Act.unload` |
 | **Load** | shown iff `floor` is a takeup pad. Hidden ≠ disabled. Tractor `hitch === 'none'`: hidden | `Act.load` |
 | boom combobutton | local driver of a tractor (hitch optional). Quad: no button | `Act.setBoom` the other width |
-| **Automate** | shown iff `unlock-dispatch` in `done`. Hidden ≠ disabled if not researched. Always while driving once shown | open editor. Stay seated |
 
-Boom label is the current width: **Boom 3** or **Boom 5**. Cycles `3 ↔ 5`. Persist on the tractor. Guest may. **Dock** off: locked card face, `aria-disabled`, guarded click. Hover: **Dock at the hangar arrows.** **Load** / **Unload** shown+inactive: Dock-off face, no extra hover string. **Automate** selected face while the editor is on. Click opens the editor. Does not toggle off. Stay seated. WASD still drives. App-local, not logged.
+Boom label is the current width: **Boom 3** or **Boom 5**. Cycles `3 ↔ 5`. Persist on the tractor. Guest may. **Dock** off: locked card face, `aria-disabled`, guarded click. Hover: **Dock at the hangar arrows.** **Load** / **Unload** shown+inactive: Dock-off face, no extra hover string. No **Automate** button: routes are built in the Vehicle automation dock, never from the seat.
 
 Map click while driving does not dismount. Pad click is not Return. Esc does not dismount. Silo pad is not Dock. Dock click stores; Disembark dismounts in place.
 
-## Editor
+## Vehicle automation dock
 
-Shown iff local driver and `unlock-dispatch` in `done`. Open is App-local, not logged. Editor on: force `lens = 'vehicles'`. Remember the lens that was on. Close does not persist `vehicles` unless it was already `vehicles`. Window **×**: close editor, stay seated, do not Start, restore that lens. Esc: that, then existing Esc. Guest: same chrome.
+Rail item **Vehicle automation**, shown iff `unlock-dispatch` in `done`, under **Contracts** — [[ui/hud]]. `Dock` `w-[32rem]`, the Build position — [[ui/docks]]. Opening forces `lens = 'vehicles'` and remembers the lens that was on; closing restores it and drops the picked route. Rail toggle, **×** and Esc all close it. Needs no driver and no vehicle. Guest: same chrome.
 
-## Stops Window
+The picked route is App-local, not `World`, not logged. Opening the dock picks the first route, so a fresh farm can draw a route with no setup — a new `World` starts with one empty `Route 1` and `nextRouteId` 2.
 
-Editor on only. Not a dock. Not Overlay. Not a dialog. Not Object HUD. Same width as inspect, they stack, never overlap. Title = assigned route `name`. Unassigned: empty title.
+Routes are a vertical `Tabs.List`, one trigger per `World.routes` row, the same rail and active left border as Build's categories — [[ui/docks]]. Its own class, `w-36` not Build's `w-28`, because route names are typed by the player. **New route** sits under the last tab: `Act.route` `{ k: 'create' }` then picks the minted id. Opening the dock picks `routes[0]`. No routes at all: **Pick a route, or make a new one.**
 
-HUD has no dropdown primitive — native `<select>` of `World.routes` plus **New**. WASD ignored while that select or the rename `Field` is focused. Dash **Automate** with no route: create `Route 1` if `World.routes` is empty, then assign `routes[0]`. Change → `Act.route` `{ k: 'assign'; v; r }`. **New** → `{ k: 'create' }` then assign the minted id. No unassign row. Rename: `Field` shown iff a route is assigned. Empty no-op.
+Double-click the active tab to rename it: the trigger becomes an input, selected. Enter or blur writes `Act.route` `{ k: 'rename' }`; empty is a no-op; Esc restores the name and does not close the dock. Double-click on a tab that is not active only picks it. WASD ignored while that input is focused.
 
-Body: numbered rows, 1-based. Kind labels **Go** / **Load** / **Unload** / **Wait**. Reorder ▲▼ same as accepted contracts. Remove × same as contract cancel. Ends: sim no-op. No current-stop highlight in the list. Footer **Start**. Enabled iff assigned route `n ≥ 1`. Click `Act.route` `{ k: 'start' }`. Disabled hover: **Add a stop.** Guest: same chrome.
+Body order is **Vehicle**, **Boom**, **Stops**, **Out on this route**.
 
-## Map add
+Each stop is a bordered mini-card, so where one stop ends and the next begins is visible without counting rows. Its title names the building: **Load from {name}** / **Unload into {name}** from the pad's own cell, **Go** and **Wait** as they are.
 
-Editor on, `place.kind === 'none'`, local driver. In-world click → `Act.route` `{ k: 'add'; r; s }`. Consumes the click. Driving still does not dismount. No assigned route: no-op, no toast.
+A **Load** or **Unload** card carries a second line of up to three `DropdownMenu` chips that narrow what that stop moves — [[mechanics/vehicles]]. **Go** and **Wait** have none. Each chip shows the chosen row's icon and label; every row in the open menu carries the same icon, drawn by `faceGfx` from a representative item. The Any row's icon is **\***.
+
+Both the first and second chips are cut to what the building's `padGoods` names for that pad side, so a menu never offers something that pad cannot handle: a Mill dropoff lists only **Fruit** and **Compostable**, not all seven types. A step the side leaves one option for is pre-picked and rendered as a plain label rather than a menu — a Compost box takeup opens already reading **Other · Compost**, both fixed, and a Jam machine takeup opens on **Produce**. A fixed first chip still gets a second, which is how a Pot still takeup narrows from all alcohol to Brandy.
+
+The second chip's Any row names the type — **Any produce**, **Any seed** — never a bare "Anything", so the chip still says what it will take.
+
+The third chip appears once a good is chosen and only when that good has more than one variety. Rows are **Any variety**, **Basic**, then each named variety. Tier is the row's background, not a row of its own: `variant` is `bg-water/25`, `heirloom` is `bg-ripe/30`, `base` is untinted. Listing the tiers as their own rows duplicated the names whenever a tier held one variety, so they are gone.
+
+Every chip writes `Act.route` `pick` immediately. Choosing the Any row at a step clears that step and the ones below it. The chips are not draggable, so a drag that starts on one does not start a row reorder.
+
+**Stops**: numbered rows, 1-based, each a drag handle plus kind label plus **×**. Kind labels **Go** / **Load** / **Unload** / **Wait**. Drag a row onto another to move it there — `Act.route` `{ k: 'reorder'; i; to }`, a move and not a swap, so the rows between shift by one. The held row fades and the row under the pointer takes a `bg-ink/10` band. Remove × same as contract cancel. No current-stop highlight in the list. Empty: **Click the map to add a stop. Click a pad to load or unload there, a traffic light to wait.**
+
+**Vehicle**: first in the body, a 4-column grid of icon-over-text cells, one `Act.route` `{ k: 'setDeploy' }` each. Top row is **Quad** and **Tractor**, two cells each spanning two columns; bottom row is **No trailer** **Seeder** **Sprayer** **Harvester**, one column each. The top row picks the vehicle, the bottom the trailer. Picking **Quad** disables the whole bottom row — a quad has no hitch. No save button; every click writes.
+
+**Boom**: **Boom 3** / **Boom 5**, shown only for tractor with a trailer. Same `setDeploy`.
+
+**Out on this route**: every `World.vehicles` whose `route` is this one and whose pose is field. Icon, one status line, fuel `Bar`, **×**. Status: **Out of fuel** when `fuel === 0`, else **Stopped** when not running or speed 0, else **Heading to {n}** with the 1-based stop number the map marker shows. **×** is `Act.route` `{ k: 'recall' }` — it stores the vehicle at the nearest hangar, it does not drive home. Empty: **Nothing is out on this route.**
+
+Footer **Delete route** and **Deploy**. Delete disabled while one of its vehicles is on the field, hover **Send its vehicles back first.** Deploy enabled iff the route has a stop and some hangar holds what the **Vehicle** grid names; disabled hover says which of those is missing. Click `Act.route` `{ k: 'deploy' }`.
+
+Panel values move on the tick, so the dock repaints on `useRefresh` — [[ui/hud]].
+
+## Map gestures
+
+Dock open with a route picked. Left-click empty ground, `place.kind === 'none'` → `Act.route` `{ k: 'add'; r; s }`; consumes the click. Left-drag from a stop moves it: on release, `{ k: 'move'; r; i; s }` of the cell under the cursor; the dragged marker follows the pointer while held and paints `RIPE`. Release without moving: nothing. Left-drag from anywhere else pans the map as usual. Right-click a stop removes it; right-click elsewhere is the usual right-click. A stop is under the cursor when its cell is the cell under the cursor — stops are one cell each.
 
 | hit | stop |
 |---|---|
 | dropoff pad tile | `{ kind: 'unload'; at }` |
 | takeup pad tile | `{ kind: 'load'; at }` |
 | traffic-light cell | `{ kind: 'wait'; at }` |
-| else in-world owned floor | `{ kind: 'goto'; x; y }` click XY, not tile-snap |
-| unowned / invalid | no-op, no toast |
+| else in-world owned floor | `{ kind: 'goto'; at }` |
+| unowned | no-op, no toast |
 
-Pad / light win over floor. HUD / Window clicks do not add. Editor on, inspect look prepends **Add stop here** / **Add load here** / **Add unload here** / **Add wait here** from `stopAt` of the hovered cell.
+Pad / light win over floor. Every stop sits on the centre of its cell, never the click point. HUD / dock clicks do not add. With a route picked, inspect look prepends **Add stop here** / **Add load here** / **Add unload here** / **Add wait here** from `stopAt` of the hovered cell.
 
 ## Route paint
 
-Overlay Graphics. No pointer. Each drive leg is a straight stroke. Geometry is stop-to-stop plus the live pose→current stop. Editor on: paint the selected/assigned route only, numbered markers 1-based. `n === 0`: no path. `lens === 'vehicles'` and editor off: thin assigned routes, no numbers. Else: no route paint. Driving without the editor does not paint routes. Patch on dirty / lens / editor. Ticker restrokes live pose→current stop.
+Overlay Graphics. No pointer. Each drive leg is a straight stroke. Geometry is stop-to-stop plus, for every running vehicle on that route, its live pose→its current stop. Route picked: paint that one route, numbered markers 1-based. A **Load** or **Unload** marker is a bigger disc with a heavier ring and a bigger number than a **Go** or **Wait** — that is where the route does its work, and it reads at a glance from the map. `n === 0`: no path. No route picked and `lens === 'vehicles'`: thin assigned routes, no numbers. Else: no route paint. Patch on dirty / lens / picked route. Ticker restrokes live pose→current stop.
+
+Picked route whose deploy is a tractor with a trailer: every tilled cell the boom would sweep along the legs takes a `WATER` wash. Swept cells are `boomHits` at the route's boom width, sampled every `SWATH_STEP` along each leg. Under two stops: no wash. The wash says the boom can touch that plot, not that it will change it.
 
 ## Follow-cam
 
@@ -122,9 +147,9 @@ View-local. Not `World`. Not sim. Not logged. While local seat is a driver: `cam
 
 ## WASD
 
-App `keydown` / `keyup` while local seat is a driver and the target is not a text field or the route `<select>`. Not per rAF. `Act.drive` on change. Editor on: WASD still drives. W throttle 1, S −1, A steer −1, D 1, release that axis 0. Window blur → `drive` `{0,0}`.
+App `keydown` / `keyup` while local seat is a driver and the target is not a text field. Not per rAF. `Act.drive` on change. Dock open: WASD still drives. W throttle 1, S −1, A steer −1, D 1, release that axis 0. Window blur → `drive` `{0,0}`.
 
-Esc still closes panels. Esc does not dismount. Editor on: Esc closes the editor first. Enter, same text-field ignore: if driving → `Act.disembark`; else closest field vehicle with `driver === 'none'` within 1.5 → `Act.embark`. Several: min dist, then `World.vehicles` order. Running auto: pause, board. None in range: no-op. No walk-to-embark on Enter.
+Esc still closes panels. Esc does not dismount. Enter, same text-field ignore: if driving → `Act.disembark`; else closest field vehicle with `driver === 'none'` within 1.5 → `Act.embark`. Several: min dist, then `World.vehicles` order. Running auto: pause, board. None in range: no-op. No walk-to-embark on Enter.
 
 ## Return arrows
 

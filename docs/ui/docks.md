@@ -1,6 +1,6 @@
 # Docks and dialogs
 
-Build, research, family, lens, and cheat are left docks. Market and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo and the stops Window are driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
+Build, research, family, lens, cheat, and Vehicle automation are left docks. Market and almanac are centered overlays. Inventory, chest, seed silo, additive store, recap, hangar, and parked Quad / tractor are dialogs. Sprinkler tune and water / harvest / counter / day / logic / variety / weather / pressure sensor config are object HUDs on the map. Hangar and vehicle cues are not docks. Field silos: look only, no dialog — [[ui/vehicles]]. Dash cargo is driving overlay, not a dock or Object HUD — [[ui/vehicles]]. Traffic light: no config HUD — [[ui/sensors]].
 
 ## Left docks
 
@@ -13,12 +13,15 @@ Build, research, family, lens, and cheat are left docks. Market and almanac are 
 | family | Family | `w-[28rem]` |
 | lens | Lens | `w-80` |
 | cheat | Cheat | `w-80` |
+| automation | Vehicle automation | `w-[32rem]` |
 
 `Window` is the shell for all of them: display-font title, hairline under it, `scroll-pane` body, hairline over an optional footer. Sized so the common case does not scroll at 1440×900 — [[ui/type]].
 
 ## The rail
 
 Build picks a category with a vertical `Tabs.List`, `tabRailListClass`, an active left border and swatch instead of an underline. `-my-3 -ml-4` bleeds it through the `scroll-pane` padding so the rule and the swatch reach the window edge — a rail floating inside a margin reads as a stray box. Triggers carry the inset back as `pl-4`. Research has no rail and no tabs.
+
+Vehicle automation picks a route with the same rail and `tabRailClass` triggers, at `w-36` rather than Build's `w-28` because those labels are typed by the player, and with **New route** as a plain button under the last tab. Double-click the active tab to rename it in place — [[ui/vehicles]].
 
 Cards share one anatomy: icon `h-10` centred, `skuLabel` / research name `text-sm` `line-clamp-2 min-h-8`, then the meta line. A constant `auto-rows-*` per panel, never `fr`, so no card changes size as content changes.
 
@@ -56,7 +59,7 @@ Walk to a chest → cue → dialog **Chest**. 3×3, `CHEST_SLOTS` 9. Click `swap
 
 ## Hangar / parked vehicle
 
-Walk-up hangar or parked / automated Quad / tractor → cue → dialog. Not docks. Not Object HUD. Close acks. Map click closes like chest. Guests: both dialogs open. Driving HUD is overlay chrome, not a dock or dialog; **Dock** is that dash button. Stops Window is that driving overlay. Hangar **Automate** next to **Deploy**. Field silos: no cue. [[ui/vehicles]]
+Walk-up hangar or parked / automated Quad / tractor → cue → dialog. Not docks. Not Object HUD. Close acks. Map click closes like chest. Guests: both dialogs open. Driving HUD is overlay chrome, not a dock or dialog; **Dock** is that dash button. Hangar **Automate** next to **Deploy**. Routes are built in the **Vehicle automation** left dock, not from the driver's seat. Field silos: no cue. [[ui/vehicles]]
 
 ## Recap
 

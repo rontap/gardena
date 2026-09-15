@@ -307,9 +307,9 @@ test('mill / Infuser / Furnace chest I/O is the south row', async ({ page }) => 
             bigAcc: number
             cell: (at: At) => {
               kind: string
-              units?: number
-              slots?: { kind: string }[]
-              base?: { col: number; row: number; w: number; h: number }
+              units: number
+              slots: { kind: string; item: unknown }[]
+              base: { col: number; row: number; w: number; h: number }
             }
             machineLinks: () => { x: number; y: number; side: string }[]
           }

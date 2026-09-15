@@ -73,7 +73,7 @@ Five bands, treasure in every one. Fly agaric only in the top one. No cherry in 
 
 ## Fly agaric
 
-`{ kind: 'fly-agaric'; count }`. `Countable`, so it stacks and merges like **Ash**. `compostValue` 0. `furnaceValue` 0. Not a `StallGoodId`. No recipe eats it. `AGARIC_LOOT_COUNT` — preference. Top band only. Art [[art/items]]. Almanac Utility. No machine takes it, the Market does not buy it, and it has no price. Its one use is the Necronomicon `agaric` page — [[mechanics/necronomicon]] `necro.claim`.
+`{ kind: 'fly-agaric'; count }`. `Countable`, so it stacks and merges like **Ash**. `compostValue` is `COMPOST_VALUE['fly-agaric']` and `furnaceValue` is `FURNACE_VALUE['fly-agaric']`, so the compost box and the furnace both take it — [[mechanics/machines]] `machines.burn`. Not a `StallGoodId`. No recipe eats it. `AGARIC_LOOT_COUNT` — preference. Top band only. Art [[art/items]]. Almanac Utility. The Market does not buy it and it has no price. Its one use beyond waste is the Necronomicon `agaric` page — [[mechanics/necronomicon]] `necro.claim`.
 
 ## Luck
 
@@ -97,7 +97,7 @@ Derived `min(LUCK_CAP, skillTier('lucky'))`. `LUCK_CAP` — preference. Not a Wo
 
 `burrow.loot` — `lootRoll` as `defs/burrow.ts`; eleven rows, filter by gate + non-empty pool, then equal chance; treasure always; second roll uniform in that row's listed pool; quality 0; spatial `burrow.at(col, row, salt)`; stored at spawn.
 
-`burrow.agaric` — `{ kind: 'fly-agaric'; count }`; `Countable`, stacks like Ash; `compostValue` 0, `furnaceValue` 0, no store accepts it; only the top band; its one sink is the Necronomicon `agaric` page — [[mechanics/necronomicon]] `necro.claim`.
+`burrow.agaric` — `{ kind: 'fly-agaric'; count }`; `Countable`, stacks like Ash; `compostValue` is `COMPOST_VALUE['fly-agaric']` and `furnaceValue` is `FURNACE_VALUE['fly-agaric']`, so it composts and burns; no store accepts it; only the top band; the Necronomicon `agaric` page is its one sink that is not waste — [[mechanics/necronomicon]] `necro.claim`.
 
 `burrow.bands` — Five bands off the gate table; low gates strict `<`, high gates `≥`; treasure in every band; fly agaric only in the top one; no vanilla, chilli, or grass in a seed row.
 

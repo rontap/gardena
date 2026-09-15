@@ -16,7 +16,8 @@ import type {
 import type { ContractId } from './feature-contracts/market.h.ts'
 import type { Edge, Sprinkler, Tune } from './pipe.ts'
 import type { WireEnd } from './sensor.ts'
-import type { RouteStop } from './feature-vehicles/vehicle.ts'
+import type { RouteDeploy, RouteStop } from './feature-vehicles/vehicle.ts'
+import type { Pick } from './feature-vehicles/pick.ts'
 import type { Intent, SeatId } from './world.ts'
 
 export type XY = [col: number, row: number]
@@ -170,13 +171,16 @@ export type Cmd =
   | { a: typeof Act.reorderContract; t: number; p: SeatId; c: ContractId; d: 1 | -1 }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'create' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'delete'; r: RouteId }
-  | { a: typeof Act.route; t: number; p: SeatId; k: 'assign'; v: VehicleId; r: RouteId | 'none' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'add'; r: RouteId; s: RouteStop }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'remove'; r: RouteId; i: number }
-  | { a: typeof Act.route; t: number; p: SeatId; k: 'reorder'; r: RouteId; i: number; d: 1 | -1 }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'move'; r: RouteId; i: number; s: RouteStop }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'pick'; r: RouteId; i: number; q: Pick }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'reorder'; r: RouteId; i: number; to: number }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'rename'; r: RouteId; n: string }
   | { a: typeof Act.necronomicon; t: number; p: SeatId; k: 'gold' | 'ritual' }
-  | { a: typeof Act.route; t: number; p: SeatId; k: 'start' }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'setDeploy'; r: RouteId; d: RouteDeploy }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'deploy'; r: RouteId }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'recall'; v: VehicleId }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'automate'; v: VehicleId; c: XY }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }

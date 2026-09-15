@@ -74,7 +74,7 @@ import {
   type Seat,
   type SeatId,
 } from '../world.ts'
-import { makeQuad, makeTractor, type Trailer, type Vehicle } from '../feature-vehicles/vehicle.ts'
+import { makeQuad, makeTractor, type RouteStop, type Trailer, type Vehicle } from '../feature-vehicles/vehicle.ts'
 import {
   type LoadResult,
   type Save,
@@ -153,7 +153,12 @@ function worldFromSave(save: Save, sink: LogSink): World {
     nextVehicleId: save.nextVehicleId,
     trailers: save.trailers.map(liveTrailer),
     nextTrailerId: save.nextTrailerId,
-    routes: save.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops.map(s => (s.kind === 'goto' ? { ...s } : { kind: s.kind, at: { col: s.at.col, row: s.at.row } })) })),
+    routes: save.routes.map(r => ({
+      id: r.id,
+      name: r.name,
+      stops: r.stops.map(liveStop),
+      deploy: { ...r.deploy },
+    })),
     nextRouteId: save.nextRouteId,
     owned,
     chunks: live.chunks,
@@ -721,12 +726,15 @@ function liveSlot(s: Slot): Slot {
 
 function liveVehicle(v: SaveVehicle): Vehicle {
   const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
-  const made = v.kind === 'quad' ? makeQuad(v.id, v.fuel, v.slots.map(liveSlot), pose) : makeTractor(v.id, v.fuel, v.hitch, v.boom, pose)
-  made.route = v.route
-  made.cursor = v.cursor
-  made.running = v.running
-  made.dwell = v.dwell
-  return made
+  const carry = { route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
+  if (v.kind === 'quad') return { ...makeQuad(v.id, v.fuel, v.slots.map(liveSlot), pose), ...carry }
+  return { ...makeTractor(v.id, v.fuel, v.hitch, v.boom, pose), working: v.working, ...carry }
+}
+
+function liveStop(s: RouteStop): RouteStop {
+  const at = { col: s.at.col, row: s.at.row }
+  if (s.kind === 'load' || s.kind === 'unload') return { kind: s.kind, at, pick: { ...s.pick } }
+  return { kind: s.kind, at }
 }
 
 function liveTrailer(t: SaveTrailer): Trailer {

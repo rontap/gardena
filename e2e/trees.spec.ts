@@ -86,7 +86,7 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
     throw new Error('tree')
   })()`)
   await page.evaluate(
-    ([at, uses, work]) => {
+    ({ at, uses, work }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -100,7 +100,7 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
       w.seats[0].actor.y = at.row + 0.5
       w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: uses, workSeconds: work } }
     },
-    [at, AXES.axe.uses, AXES.axe.workSeconds],
+    { at, uses: AXES.axe.uses, work: AXES.axe.workSeconds },
   )
 
   await ticks(page, TREES.apple.juvenileSeconds + 1)
@@ -243,7 +243,7 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
   expect(await readWorld<boolean>(page, at, 'w.cell(at).trunk')).toBe(true)
 
   await page.evaluate(
-    ([at, uses, work]) => {
+    ({ at, uses, work }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -256,7 +256,7 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
       w.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'shovel', usesLeft: uses, workSeconds: work } }
       w.enqueue({ act: 'shovel', at })
     },
-    [at, SHOVELS.shovel.uses, SHOVELS.shovel.workSeconds],
+    { at, uses: SHOVELS.shovel.uses, work: SHOVELS.shovel.workSeconds },
   )
   await drain(page)
   const dug = await readWorld<{ origin: string; south: string; seed: boolean }>(
@@ -292,7 +292,7 @@ test('chop with Chainsaw', async ({ page }) => {
     throw new Error('tree')
   })()`)
   await page.evaluate(
-    ([at, uses, work]) => {
+    ({ at, uses, work }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -308,7 +308,7 @@ test('chop with Chainsaw', async ({ page }) => {
       const c = w.cell(at)
       if (c.kind === 'tree' && c.juvenile < 1) c.juvenile = 1
     },
-    [at, AXES.chainsaw.uses, AXES.chainsaw.workSeconds],
+    { at, uses: AXES.chainsaw.uses, work: AXES.chainsaw.workSeconds },
   )
   await ticks(page, TREES.apple.juvenileSeconds + 1)
   await page.evaluate(at => {

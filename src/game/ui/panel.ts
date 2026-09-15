@@ -8,6 +8,7 @@ export type Panel =
   | { kind: 'research' }
   | { kind: 'market' }
   | { kind: 'contracts' }
+  | { kind: 'automation' }
   | { kind: 'inventory' }
   | { kind: 'almanac' }
   | { kind: 'cheat' }

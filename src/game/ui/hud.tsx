@@ -24,6 +24,7 @@ import {
   UI_BTN_PLAY,
   UI_BTN_RESEARCH,
   UI_BTN_ROTATE,
+  UI_BTN_VEHICLES,
   UI_WEATHER,
   type BtnState,
 } from '../view/svgs.ts'
@@ -52,6 +53,7 @@ export function Hud({
   onResearch,
   onMarket,
   onContracts,
+  onAutomation,
   onAlmanac,
   onLens,
   onLensClear,
@@ -71,6 +73,7 @@ export function Hud({
   onResearch: () => void
   onMarket: () => void
   onContracts: () => void
+  onAutomation: () => void
   onAlmanac: () => void
   onLens: () => void
   onLensClear: () => void
@@ -177,6 +180,14 @@ export function Hud({
               label={m.names_role_contracts()}
               selected={panel === 'contracts'}
               onClick={onContracts}
+            />
+          )}
+          {world.done.has('unlock-dispatch') && (
+            <FaceBtn
+              art={UI_BTN_VEHICLES}
+              label={m.vehicles_automation()}
+              selected={panel === 'automation'}
+              onClick={onAutomation}
             />
           )}
           <div className="relative">

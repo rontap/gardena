@@ -85,6 +85,8 @@ Spraying: `isTilled && fertilizer < FERT_PLOT_MAX`. Hopper one bag. Spend the ga
 
 Harvest: boom width = that tractor `boom`. Mixed produce, chest merge+compact. Skip trees and turf. Full: skip that cell. Ripe: fruit as empty-hand. Growing `< 0.2`: one seed. Growing `> 0.8`: fruit, quality baked as ripen, freshness = maturity. Growing mid: destroyed. Dead/rotten/weed: that item.
 
+A tick where the boom changed at least one cell sets tractor `working` to `BOOM_WORK_SECONDS`. `working` counts down by `dt` every tick. While it is above 0 the tractor's speed cap is `× BOOM_WORK_MUL`. The cap only — not accel, not yaw, not the burn. A pass over cells the boom cannot touch does not set it, so an empty hopper costs no speed.
+
 ## Cap
 
 `TRAILER_CAP`. Seed: hopper empty → 0 else `seeds.count`. Spray: hopper empty → 0 else `floor(liters)`. Harvest: sum of fruit/seeds/dead/rotten/weed `count`. Swap that would exceed cap is no-op.
@@ -123,11 +125,48 @@ Click / walk-up the floor cell of a parked or automated vehicle. Arrival: still 
 
 ## Dispatch
 
-`World.routes`. Route is a World object, not a vehicle. Edit live for every assignee. Stops: `goto` XY, `unload` / `load` pad, `wait` traffic-light cell. Loop `i = (i + 1) % n`. Zero stops: Start / hangar Automate no-op. Create names `Route {n}`. Delete route: no-op while assigned. No dock-stop.
+`World.routes`. Route is a World object, not a vehicle. Edit live for every assignee. Stops: `goto`, `unload` / `load` pad, `wait` traffic-light cell — every one a cell `Coord`, and `stopXY` is that cell's centre. Loop `i = (i + 1) % n`. Zero stops: Deploy / hangar Automate no-op. Create names `Route {n}`. Delete route: no-op while one of its vehicles is on the field; otherwise it clears `route` on the stored ones and removes the route. No dock-stop.
 
-Goto arrive Euclidean ≤ `ROUTE_ARRIVE`. Load/unload/wait arrive `floor` is that pad/cell. Wait holds while light `inn === 0`; on `1`, next — [[mechanics/sensors]] `sensors.light`. Add appends. Add goto no-op unless `floor` owned. Cursor follows the current stop on remove/reorder. `n === 0` → `cursor` 0, assignees `running` false. Delete of a light or pad building strips targeting stops.
+A new `World` starts with one empty `Route 1` and `nextRouteId` 2, so the dock has something to draw on with no setup. That is a starting state, not an invariant: delete the last route and there are none until **New route**.
 
-`Act.route` `'o'`. All no-op unless `unlock-dispatch` in `done`. Guest may. Start: this seat drives that vehicle, route assigned, `n ≥ 1` → disembark, `running` true. Hangar Automate: vehicle stored, that hangar, route assigned, `n ≥ 1`; spawn `padCenter`, driver `'none'`, `i = 0`, `running` true; does not seat.
+Goto arrive Euclidean ≤ `ROUTE_ARRIVE`. Load/unload/wait arrive `floor` is that pad/cell. Wait holds while light `inn === 0`; on `1`, next — [[mechanics/sensors]] `sensors.light`. Add appends. Add goto no-op unless that cell is owned. Move replaces stop `i` with the stop that cell yields, so a Go dragged onto a pad becomes Load or Unload. Reorder takes stop `i` out and puts it back at `to`, a move and not a swap; `i === to` or either out of range is a no-op. Cursor follows the current stop on remove, move and reorder. `n === 0` → `cursor` 0, assignees `running` false. Delete of a light or pad building strips targeting stops.
+
+`Act.route` `'o'`. All no-op unless `unlock-dispatch` in `done`. Guest may. There is no assign and no start: a vehicle takes a route when Deploy sends it out, and keeps it until the route is deleted.
+
+Deploy: `n ≥ 1` and some hangar stores what `Route.deploy` names. First hangar in `World.hangars` order that can supply it wins. Spawn that hangar's `padCenter`, `HEADING_SOUTH`, driver `'none'`, route assigned, `i = 0`, `running` true; does not seat. Tractor takes the route's `boom`. Hangar Automate: vehicle stored, that hangar, route assigned, `n ≥ 1`; spawn `padCenter`, driver `'none'`, `i = 0`, `running` true; does not seat.
+
+Recall: vehicle field && `driver === 'none'` → store at the nearest hangar by `padCenter` distance, hitch stores with it, `running` false, route kept. No hangar: no-op. It does not drive home.
+
+## What a stop takes
+
+A Load or Unload stop carries a `Pick` — what that stop is allowed to move. It is a chain, each step carrying the ones above it: `any`, then a `PickType`, then a `PickGood`, then a variety. Every step must match the item or it does not move. A stop starts at `any`. `Act.route` `pick` sets it whole.
+
+`PickType` is `seed` `fruit` `produce` `alcohol` `compostable` `tool` `other`. `typeOf(item)` is total over `Item`. `goodOf(item)` is the good inside that type — the crop for seed, fruit and graft, the jam's crop, the spirit or cask kind, otherwise the item kind. A variety step matches one `VarietyId`; an item that carries no variety never matches one. Tier is not a step: the editor colours a variety row by `tierOf` instead, because a tier holding one variety made two rows that meant the same thing.
+
+`sampleItem(type, good, variety)` builds the representative item the editor draws an icon from. It is display only; the sim never calls it.
+
+`varietiesOf(type, good)` is every variety that good can carry, and it is `VARIETIES[cropOfGood(type, good)]` for all of them. A spirit or cask resolves through `CROP_OF_SPIRIT` / `CROP_OF_CASK`, so Brandy offers apricot's varieties and Wine offers grape's — a Brandy is never a potato variety. A mixed spirit is always `base`, so it offers nothing and the editor hides that step. A good with no crop behind it — flour, wood, a tool — offers nothing.
+
+The pick only narrows. The building's `accept` still decides: a pick cannot make a chest take what it refuses, and a stop whose pick matches nothing aboard transfers nothing and still advances.
+
+`BaseBuilding.padGoods(role)` is what each pad side handles — `in` is the dropoff, `out` the takeup. It answers `'all'` or a list of `{ type, good }` pairs, so a side can be narrow down to one good and not just one type. The editor offers only those, and pre-picks a step when the side leaves one option: the compost box takeup is the single pair `other` / `compost`, so both its chips are fixed and unclickable. This is the option space, not a second gate — the sim never reads it; `accept` still decides.
+
+| side | handles |
+|---|---|
+| Seed silo, both | every seed |
+| Warehouse in | every fruit, produce and alcohol |
+| Additive store, both | sugar, fertilizer, compost |
+| Pot still | `STILL_CROPS` in, `SPIRIT_KINDS` out |
+| Mill | its five milled crops plus grass in; sugar, oil, flour, extract, vanilla-extract, flakes out |
+| Jam machine | jam crops plus sugar in, the five jams out |
+| Compost box | compostables, seeds, fruit and sugar in; compost out |
+| Infuser | the infusables plus flakes and vanilla-extract in, the infusables out |
+
+Chest, freezer and sorter stay `'all'`.
+
+## Route deploy
+
+`Route.deploy` is `{ kind: 'quad' }` or `{ kind: 'tractor'; trailer: TrailerKind | 'none'; boom: 3 | 5 }`. A quad carries no trailer and no boom width. A new route starts `{ kind: 'quad' }`. `Act.route` `setDeploy` sets it whole. Deploy reads it and needs one hangar holding both the vehicle and, when a trailer is named, that trailer.
 
 Two-phase tick. Motion in `tickVehicles`. After `evalDag`, `tickDispatch`: wait uses this tick’s light `inn`; load/unload one transfer then next, even if 0 items moved. Empty fuel: do not transfer, do not advance. Several waiters on one light: all hold on 0, all leave on 1. `ROUTE_ARRIVE` / `ROUTE_ALIGN` preference.
 
@@ -135,11 +174,11 @@ Two-phase tick. Motion in `tickVehicles`. After `evalDag`, `tickDispatch`: wait 
 
 Away while driving: `driver = 'none'`, field pose kept, speed coasts to 0, hitch stays. Recap does not freeze vehicle integrate or `tickDispatch`. Actor pose tracks vehicle while driver. Hide gardener / hat / camera follow are view, not sim — [[ui/vehicles]]. Auto unmanned continues through the seam.
 
-Not logged: integrate, follow hitch, boom, burn, stride integrate, synthesized auto drive, wait / load / unload resolve, camera follow, hide gardener, hangar select, pad arrows, dash faces, Dash Automate, editor open. Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload` `Act.stride` `Act.route`.
+Not logged: integrate, follow hitch, boom, burn, `working` countdown, stride integrate, synthesized auto drive, wait / load / unload resolve, camera follow, hide gardener, hangar select, pad arrows, dash faces, route pick in the Vehicle automation dock. Logged: `Act.disembark` `Act.dock` `Act.setBoom` `Act.load` `Act.unload` `Act.stride` `Act.route`.
 
 ## Invariants
 
-`vehicles.kind` — `VehicleKind` is `'quad' | 'tractor'`; Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom; Tractor no slots, `hitch` / `boom: 3 | 5` default 5 persist; fuel is `0..1` on the vehicle, not an Item; trailer is stored or attached, never loose; `TRAILER_CAP` is the only cargo cap.
+`vehicles.kind` — `VehicleKind` is `'quad' | 'tractor'`; Quad `slots.length === VEHICLE_SLOTS`, no hitch, no boom, no `working`; Tractor no slots, `hitch` / `boom: 3 | 5` default 5 persist, `working` seconds of cut speed left; fuel is `0..1` on the vehicle, not an Item; trailer is stored or attached, never loose; `TRAILER_CAP` is the only cargo cap.
 
 `vehicles.buy` — Unlimited quads, tractors, trailers; `Act.buyVehicle` / `Act.buyTrailer` pay hangar prices, not `skuPrice`; hangar-buys are not `skuPrice`; `buy-hangar` and three silo SKUs automation `skuPrice`.
 
@@ -161,13 +200,19 @@ Not logged: integrate, follow hitch, boom, burn, stride integrate, synthesized a
 
 `vehicles.unrep` — Two drivers on one vehicle, two vehicles driving the same seat, seated + walk/work queue, stored + driver, stored + running, seated + running, running with no route, running with 0 stops, cursor out of range, goto without XY, load/unload without pad coord, wait without a light cell, stored tractor hitch, quad hitch, tractor slots, quad boom, boom other than `3 | 5`, two trailers on one tractor, attached + stored, trailer attached to missing tractor, harvest `slots.length ≠ HARVEST_SLOTS`, seed/spray hopper wrong item, `HudTarget` hangar, `HudTarget` vehicle: unrepresentable.
 
-`vehicles.dash` — Driving dash: occupied Face icons only; Quad occupied of `VEHICLE_SLOTS`; seed/spray hopper or none; harvest occupied of `HARVEST_SLOTS`; tractor no hitch none; empty omitted; Automate chrome iff `unlock-dispatch` in `done`; Dash Automate / editor open: App-local, not logged — [[ui/vehicles]].
+`vehicles.dash` — Driving dash: occupied Face icons only; Quad occupied of `VEHICLE_SLOTS`; seed/spray hopper or none; harvest occupied of `HARVEST_SLOTS`; tractor no hitch none; empty omitted; the dash has no Automate button and the driver's seat does not edit routes — [[ui/vehicles]].
 
-`vehicles.dispatch` — Route is a World object; vehicle holds `RouteId | 'none'`, cursor, `running`; loop `i = (i + 1) % n`; zero stops: Start / hangar Automate no-op; goto arrive dist ≤ `ROUTE_ARRIVE`; load/unload/wait arrive `floor` is that pad/cell; wait holds while light `inn === 0`; Start: this seat drives, route assigned, `n ≥ 1` → disembark, `running` true; hangar Automate: spawn pad, driver `'none'`, `running` true; two-phase: motion in `tickVehicles`, after `evalDag` `tickDispatch`; no dock-stop; guest Start / hangar Automate / route edit.
+`vehicles.dispatch` — Route is a World object; vehicle holds `RouteId | 'none'`, cursor, `running`; loop `i = (i + 1) % n`; zero stops: Deploy / hangar Automate no-op; goto arrive dist ≤ `ROUTE_ARRIVE`; load/unload/wait arrive `floor` is that pad/cell; wait holds while light `inn === 0`; Deploy: `n ≥ 1` and a hangar stores what `Route.deploy` names → spawn that pad, driver `'none'`, route assigned, `i = 0`, `running` true; Recall: field and driver `'none'` → store at the nearest hangar, `running` false, route kept; hangar Automate: spawn pad, driver `'none'`, `running` true; delete route no-op while one of its vehicles is on the field, else it clears the stored ones; two-phase: motion in `tickVehicles`, after `evalDag` `tickDispatch`; no dock-stop; guest Deploy / Recall / hangar Automate / route edit.
+
+`vehicles.pick` — A Load or Unload stop carries a `Pick` that narrows what moves: `any`, then a `PickType`, then a `PickGood`, then one `VarietyId`; each step must match; a new stop is `any`; the pick only narrows and the building's `accept` still decides; `varietiesOf` is `VARIETIES[cropOfGood(...)]`, so a spirit or cask offers only its own crop's varieties and a mixed spirit offers none; `padGoods(role)` is the building's declared option space as `{ type, good }` pairs, for the editor only — the sim never reads it — and a step with one option is pre-picked and fixed.
+
+`vehicles.deploy` — `Route.deploy` is `{ kind: 'quad' }` or `{ kind: 'tractor'; trailer: TrailerKind | 'none'; boom: 3 | 5 }`; a new route starts `{ kind: 'quad' }`; Deploy takes the first hangar in `World.hangars` order that stores that vehicle and, when a trailer is named, that trailer too; the deployed tractor takes the route's `boom`; a route with no stops is not deployable.
+
+`vehicles.boom-work` — A tick whose boom changed at least one cell sets tractor `working` to `BOOM_WORK_SECONDS`; `working` counts down by `dt` each tick; while `working > 0` the speed cap is `× BOOM_WORK_MUL`; the cap only, not accel, not yaw, not the burn.
 
 `vehicles.auto` — Auto running synthesizes Drive inside `tickVehicles`; always forward; yaw in place until `|Δ| ≤ ROUTE_ALIGN`, then throttle 1; no auto reverse; vMax `× AUTO_VMAX_MUL`; empty fuel: Drive `{0,0}`, seek 0, no crawl, no advance, `running` true; hitch follows; boom: seated or auto running, hitch, steer 0, speed > 0.
 
-`vehicles.route` — `World.routes` `World.nextRouteId`; add appends; cursor follows the current stop on remove/reorder; `n === 0` → cursor 0, `running` false; assign `'none'` or a different id: cursor 0; Quad load/unload uses quad slots; tractor needs hitch; auto tick chest/freezer legal.
+`vehicles.route` — `World.routes` `World.nextRouteId`; a new `World` starts with one empty `Route 1` and `nextRouteId` 2; every stop is a cell `Coord` and `stopXY` is that cell's centre; add appends; move replaces stop `i` with the stop that cell yields; reorder lifts stop `i` and inserts it at `to`, a move not a swap; cursor follows the current stop on remove, move and reorder; `n === 0` → cursor 0, `running` false; Quad load/unload uses quad slots; tractor needs hitch; auto tick chest/freezer legal.
 
 `vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses; Seeding silo `SILO_FIELD_SEED_CAP` seeds, grass `'base'` included; Additive silo `SILO_FIELD_ADDITIVE_CAP` liters; Produce silo `PRODUCE_SLOTS` of fruit, weed and grass only; `Act.takeStore` carries the store cell — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`.
 

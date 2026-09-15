@@ -104,7 +104,7 @@ test('chilli sow and mill flakes', async ({ page }) => {
   await gotoPlay(page)
   await viewReady(page)
   await page.evaluate(
-    ([sow, millAt, millW, millH]) => {
+    ({ sow, millAt, millW, millH }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -133,7 +133,7 @@ test('chilli sow and mill flakes', async ({ page }) => {
       w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'chilli', variety: 'base', quality: 0, count: 5 } }
       w.enqueue({ act: 'plant', at: sow })
     },
-    [SOW, MILL_AT, MILL_W, MILL_H],
+    { sow: SOW, millAt: MILL_AT, millW: MILL_W, millH: MILL_H },
   )
   await drain(page)
   const growing = await readWorld<{ kind: string; crop?: string }>(
@@ -143,7 +143,7 @@ test('chilli sow and mill flakes', async ({ page }) => {
   )
   expect(growing).toEqual({ kind: 'growing', crop: 'chilli' })
   await page.evaluate(
-    ([millAt, millIn]) => {
+    ({ millAt, millIn }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -170,7 +170,7 @@ test('chilli sow and mill flakes', async ({ page }) => {
       }
       w.enqueue({ act: 'mill', at: millAt })
     },
-    [MILL_AT, MILL_CHILLI_IN],
+    { millAt: MILL_AT, millIn: MILL_CHILLI_IN },
   )
   await drain(page)
   expect(await readWorld<string>(page, MILL_AT, 'w.cell(at).recipe')).toBe('chilli')
@@ -188,7 +188,7 @@ test('vanilla mill 1 fruit to 4 vanilla-extract', async ({ page }) => {
   await gotoPlay(page)
   await viewReady(page)
   await page.evaluate(
-    ([millAt, millW, millH, millIn]) => {
+    ({ millAt, millW, millH, millIn }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -227,7 +227,7 @@ test('vanilla mill 1 fruit to 4 vanilla-extract', async ({ page }) => {
       }
       w.enqueue({ act: 'mill', at: millAt })
     },
-    [MILL_AT, MILL_W, MILL_H, MILL_VANILLA_IN],
+    { millAt: MILL_AT, millW: MILL_W, millH: MILL_H, millIn: MILL_VANILLA_IN },
   )
   await drain(page)
   expect(await readWorld<string>(page, MILL_AT, 'w.cell(at).recipe')).toBe('vanilla')
@@ -247,7 +247,7 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
   await gotoPlay(page)
   await viewReady(page)
   await page.evaluate(
-    ([infAt, millW, millH, infIn]) => {
+    ({ infAt, millW, millH, infIn }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -277,12 +277,12 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
       }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    [INF_AT, MILL_W, MILL_H, INFUSE_IN],
+    { infAt: INF_AT, millW: MILL_W, millH: MILL_H, infIn: INFUSE_IN },
   )
   await drain(page)
   expect(await readWorld<string>(page, INF_AT, 'w.cell(at).lock.kind')).toBe('jam')
   await page.evaluate(
-    ([infAt, flakesN]) => {
+    ({ infAt, flakesN }) => {
       const w = (
         window as unknown as {
           __world?: { seats: { hand: unknown }[]; enqueue: (i: { act: string; at: At }) => void }
@@ -292,7 +292,7 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
       w.seats[0].hand = { kind: 'hold', item: { kind: 'flakes', quality: 1, count: flakesN } }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    [INF_AT, INFUSE_FLAKES],
+    { infAt: INF_AT, flakesN: INFUSE_FLAKES },
   )
   await drain(page)
   await ticks(page, INFUSE_SECONDS)
@@ -312,7 +312,7 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
   })
   await expect.poll(async () => heldOverlay(page)).toBe(true)
   await page.evaluate(
-    ([infAt, infIn]) => {
+    ({ infAt, infIn }) => {
       const w = (
         window as unknown as {
           __world?: { seats: { hand: unknown }[]; enqueue: (i: { act: string; at: At }) => void }
@@ -322,11 +322,11 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
       w.seats[0].hand = { kind: 'hold', item: { kind: 'oil', quality: 0.2, count: infIn, unitSale: 96, infused: false } }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    [INF_AT, INFUSE_IN],
+    { infAt: INF_AT, infIn: INFUSE_IN },
   )
   await drain(page)
   await page.evaluate(
-    ([infAt, extractN]) => {
+    ({ infAt, extractN }) => {
       const w = (
         window as unknown as {
           __world?: { seats: { hand: unknown }[]; enqueue: (i: { act: string; at: At }) => void }
@@ -336,7 +336,7 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
       w.seats[0].hand = { kind: 'hold', item: { kind: 'vanilla-extract', quality: 1, count: extractN } }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    [INF_AT, INFUSE_EXTRACT],
+    { infAt: INF_AT, extractN: INFUSE_EXTRACT },
   )
   await drain(page)
   await ticks(page, INFUSE_SECONDS)
@@ -432,7 +432,7 @@ test('furnace bread vs ash', async ({ page }) => {
   await gotoPlay(page)
   await viewReady(page)
   await page.evaluate(
-    ([at, breadIn]) => {
+    ({ at, breadIn }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -456,7 +456,7 @@ test('furnace bread vs ash', async ({ page }) => {
       w.seats[0].hand = { kind: 'hold', item: { kind: 'flour', quality: 0.5, count: breadIn, unitSale: 72 } }
       w.enqueue({ act: 'furnace', at })
     },
-    [FURNACE_AT, FURNACE_BREAD_IN],
+    { at: FURNACE_AT, breadIn: FURNACE_BREAD_IN },
   )
   await drain(page)
   expect(await readWorld<string>(page, FURNACE_AT, 'w.cell(at).recipe')).toBe('bread')

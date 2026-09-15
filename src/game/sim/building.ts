@@ -48,8 +48,14 @@ import {
 } from '../defs/items.ts'
 import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
 import { tierOf, VARIETY_TIERS, type VarietyId } from '../defs/varieties.ts'
-import { SENSOR_CELL_SKUS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
+import { JAM_CROPS, SENSOR_CELL_SKUS, SPIRIT_KINDS, STILL_CROPS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
 import { compostValue, fruitStack, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import { allSlots, slots, type PadGoods } from './feature-vehicles/pick.ts'
+
+const JAM_GOODS = JAM_CROPS.map(c => `jam-${c}` as const)
+const MILL_IN = slots('fruit', ['sugar-cane', 'olive', 'wheat', 'vanilla', 'chilli']).concat(slots('compostable', ['grass']))
+const MILL_OUT = slots('produce', ['sugar', 'oil', 'flour', 'extract']).concat(slots('other', ['vanilla-extract', 'flakes']))
+const INFUSE_GOODS = slots('produce', [...JAM_GOODS, 'oil']).concat(allSlots('alcohol'))
 import { statsOf } from './modifiers.ts'
 import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
@@ -481,6 +487,9 @@ export class BaseBuilding {
   padPorts(): IoPort[] {
     return this.pads === 'none' ? [] : defaultPadPorts(this.base)
   }
+  padGoods(_role: 'in' | 'out'): PadGoods {
+    return 'all'
+  }
   accept(_item: Item): number {
     return 0
   }
@@ -583,6 +592,10 @@ export class CompostBox extends BaseBuilding {
   constructor(base: RectBase) {
     super(base)
   }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    if (role === 'out') return slots('other', ['compost'])
+    return [...allSlots('compostable'), ...allSlots('seed'), ...allSlots('fruit'), ...slots('produce', ['sugar'])]
+  }
   override accept(item: Item): number {
     return organic(item) ? 1 : 0
   }
@@ -610,6 +623,9 @@ export class Warehouse extends BaseBuilding {
   override padPorts(): IoPort[] {
     return warehousePads(this.base).map(at => ({ at, role: 'in' as const }))
   }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return [...allSlots('fruit'), ...allSlots('produce'), ...allSlots('alcohol')]
+  }
 }
 
 export class Postbox extends BaseBuilding {
@@ -632,6 +648,9 @@ export class Mill extends Machine {
   progress = 0
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: MILL_W, h: MILL_H })
+  }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    return role === 'in' ? MILL_IN : MILL_OUT
   }
   override accept(item: Item): number {
     const recipe = millRecipeOf(item)
@@ -685,6 +704,10 @@ export class JamMachine extends Machine {
   progress = 0
   constructor(base: RectBase) {
     super(base)
+  }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    if (role === 'out') return slots('produce', JAM_GOODS)
+    return [...slots('fruit', JAM_CROPS), ...slots('produce', ['sugar'])]
   }
   override accept(item: Item): number {
     if (item.kind === 'sugar') return this.acceptSugar(item)
@@ -765,6 +788,9 @@ export class PotStill extends Machine {
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 })
   }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    return role === 'in' ? slots('fruit', STILL_CROPS) : slots('alcohol', SPIRIT_KINDS)
+  }
   override accept(item: Item): number {
     if (stillCropOf(item) === undefined) return 0
     const room = STILL_CAP - feedUnits(this.feed)
@@ -823,6 +849,16 @@ export class Furnace extends Machine {
   hold = 0
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: 1, h: 2 })
+  }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    if (role === 'out') return [...slots('compostable', ['ash']), ...slots('produce', ['bread'])]
+    return [
+      ...allSlots('seed'),
+      ...allSlots('fruit'),
+      ...slots('produce', ['sugar', 'oil', 'flour']),
+      ...slots('alcohol', SPIRIT_KINDS),
+      ...slots('compostable', ['wood', 'weed', 'grass', 'dead', 'rotten', 'fly-agaric']),
+    ]
   }
   override accept(item: Item): number {
     if (item.kind === 'flour') {
@@ -898,6 +934,10 @@ export class Infuser extends Machine {
   flakes = 0
   extract = 0
   progress = 0
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    if (role === 'out') return INFUSE_GOODS
+    return [...INFUSE_GOODS, ...slots('other', ['flakes', 'vanilla-extract'])]
+  }
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: MILL_W, h: MILL_H })
   }
@@ -1202,6 +1242,9 @@ export class SeedSilo extends SeedStore {
   constructor(base: RectBase, useDefault = true) {
     super(base, SILO_SEED_CAP, useDefault)
   }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return allSlots('seed')
+  }
 }
 
 export class SiloSeed extends SeedStore {
@@ -1302,6 +1345,9 @@ export class AdditiveStore extends AdditiveHolder {
   hold = 0
   constructor(base: RectBase, useDefault = true) {
     super(base, ADDITIVE_CAP_LITERS, useDefault)
+  }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return [...slots('produce', ['sugar']), ...slots('other', ['fertilizer', 'compost'])]
   }
 }
 

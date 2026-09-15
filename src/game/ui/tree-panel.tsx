@@ -443,7 +443,7 @@ export function TreePanel({
     }
     const onDbl = (e: Event) => {
       const d = pickFromKey(keyFromDomId((e.currentTarget as Element).id))
-      if (d === undefined || d.kind !== 'research') return
+      if (d?.kind !== 'research') return
       setPick(d)
       paintPick(el, d)
       world.startResearch(d.id)

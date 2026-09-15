@@ -61,7 +61,7 @@ import {
   stationApply,
   stationWorking,
 } from './machine.ts'
-import { CASK_NAME, caskMulOf, caskName, furnaceValue, mergeInto, type Item } from '../item.ts'
+import { CASK_NAME, caskMulOf, caskName, compostValue, furnaceValue, mergeInto, type Item } from '../item.ts'
 import { CASK_IDS, CROP_OF_CASK } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
@@ -250,7 +250,7 @@ describe('machines', () => {
     if (bc.kind !== 'chest') throw new Error('chest')
     bc.slots[0] = { kind: 'hold', item: wheat(2) }
     ticks(w, BIG_TICK)
-    expect(box.units).toBe(10)
+    expect(box.units).toBe(COMPOST_VALUE.fruit * 2)
     expect(bc.slots.every(s => s.kind === 'empty')).toBe(true)
   })
 
@@ -381,7 +381,8 @@ function putFurnace(w: World, at: { col: number; row: number }): Furnace {
 describe('machines.furnace-feed', () => {
   test('Ash lock: compost feedstock + oil + spirit + wood + tree-seed + graft. Values as `FURNACE_VALUE`. Mix ash. Cap `FURNACE_CAP`. Refuse jam/cask/extract/vanilla-extract/flakes/bread/ash/tools. Flour is bread lock, not ash. Variety, quality, `infused` ignored on ash.', () => {
     expect(FURNACE_CAP).toBe(100)
-    expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 25, spirit: 36, wood: 40 })
+    expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 20, spirit: 26, wood: 32, 'fly-agaric': 1 })
+    expect(COMPOST_VALUE).toEqual({ seeds: 1, fruit: 4, sugar: 3, grass: 1, weed: 1, rotten: 1, dead: 1, ash: 4, wood: 6, 'fly-agaric': 4 })
     expect(AXES.axe).toEqual({ uses: 30, workSeconds: 5 })
     expect(AXES.chainsaw).toEqual({ uses: 90, workSeconds: 3 })
     const w = new World(1)
@@ -396,6 +397,13 @@ describe('machines.furnace-feed', () => {
     expect(furnaceValue({ kind: 'oil', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(FURNACE_VALUE.oil)
     expect(furnaceValue({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(FURNACE_VALUE.spirit)
     expect(furnaceValue({ kind: 'wood', count: 1 })).toBe(FURNACE_VALUE.wood)
+    expect(furnaceValue({ kind: 'fly-agaric', count: 2 })).toBe(FURNACE_VALUE['fly-agaric'] * 2)
+    expect(furnaceValue({ kind: 'ash', count: 3 })).toBe(0)
+    expect(compostValue({ kind: 'wood', count: 2 })).toBe(COMPOST_VALUE.wood * 2)
+    expect(compostValue({ kind: 'fly-agaric', count: 2 })).toBe(COMPOST_VALUE['fly-agaric'] * 2)
+    expect(compostValue({ kind: 'ash', count: 1 })).toBe(COMPOST_VALUE.ash)
+    expect(compostValue({ kind: 'oil', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(0)
+    expect(compostValue({ kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(0)
     expect(furnaceValue({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(0)
     expect(furnaceValue({ kind: 'flour', quality: 0, count: 1, unitSale: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'flakes', quality: 0, count: 1 })).toBe(0)
@@ -687,8 +695,9 @@ describe('view.furnace-cover', () => {
 })
 
 describe('inventory.ash', () => {
-  test('1 ash = `COMPOST_VALUE.ash` compost waste. Wood/ash not stall goods.', () => {
+  test('1 ash = `COMPOST_VALUE.ash` compost waste, 1 wood = `COMPOST_VALUE.wood`. Wood/ash not stall goods.', () => {
     expect(COMPOST_VALUE.ash).toBe(4)
+    expect(COMPOST_VALUE.wood).toBe(6)
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 12 }
     const box = new CompostBox({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
@@ -702,7 +711,7 @@ describe('inventory.ash', () => {
     w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }
     w.enqueue({ act: 'compost', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
-    expect(box.units).toBe(COMPOST_VALUE.ash * 2)
+    expect(box.units).toBe(COMPOST_VALUE.ash * 2 + COMPOST_VALUE.wood)
     expect(Object.keys(w.stall).includes('ash')).toBe(false)
     expect(Object.keys(w.stall).includes('wood')).toBe(false)
   })

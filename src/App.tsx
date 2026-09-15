@@ -49,7 +49,7 @@ import { sensorWashCells } from './game/view/layers/overlay.ts'
 import { SENSOR_LENS_SKUS, type Grandma, type RouteId, type TrailerId, type VehicleId } from './game/sim/ids.ts'
 import type { Item } from './game/sim/item.ts'
 import { trailerUsed } from './game/sim/feature-vehicles/vehicle.ts'
-import { Btn, Field, Window } from './game/ui/frame.tsx'
+import { Automation } from './game/ui/feature-vehicles/automation.tsx'
 import { DashFace } from './game/ui/held.tsx'
 import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX, rosterOf, type RosterSeat } from './game/sim/mp.ts'
@@ -75,7 +75,7 @@ const RECONNECT_DELAY_MS = 1500
 
 function ignoreHover(_h: PromptHit | undefined): void {}
 function ignoreCam(_c: Camera): void {}
-function ignoreClick(_h: MapClick, _xy: { x: number; y: number }, _shift: boolean): void {}
+function ignoreClick(_h: MapClick, _shift: boolean): void {}
 
 export default function App({ sink }: { sink: WorkerSink }) {
   const root = useRef<HTMLDivElement>(null)
@@ -113,7 +113,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [lensLock, setLensLock] = useState(false)
   const peekLens = useRef<Lens | undefined>(undefined)
   const toolLens = world === undefined ? undefined : toolLensOf(world)
-  const [editor, setEditor] = useState(false)
+  const [editRoute, setEditRoute] = useState<RouteId | 'none'>('none')
   const [noticeCells, setNoticeCells] = useState<readonly Coord[]>(NO_CELLS)
   const [rosterRows, setRosterRows] = useState<readonly Notice[]>([])
   const rosterPrev = useRef<RosterSeat[]>([])
@@ -151,12 +151,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const guest = role === 'guest'
 
   useEffect(() => {
-    if (world === undefined) return
-    if (editor && world.driverVehicle(world.local) === undefined) {
-      setEditor(false)
-      setLens(editorLens.current)
-    }
-  }, [hudN, world, editor])
+    if (world === undefined || editRoute === 'none') return
+    if (world.routeById(editRoute) === undefined) setEditRoute('none')
+  }, [hudN, world, editRoute])
 
   useEffect(() => {
     if (world === undefined) return
@@ -346,10 +343,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
         setJoining(false)
         return
       }
-      if (editor) {
-        setEditor(false)
-        setLens(editorLens.current)
-      }
       world.cancelPlace()
       world.closeHud()
       setQuery('')
@@ -366,7 +359,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [world, editor])
+  }, [world])
 
   useEffect(() => {
     const held = { w: false, a: false, s: false, d: false }
@@ -737,6 +730,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   function setPanel(next: Panel): void {
     const from = overlayHold(panelRef.current.kind, recapDayRef.current)
+    const was = panelRef.current.kind === 'automation'
+    const now = next.kind === 'automation'
+    if (!was && now) {
+      editorLens.current = lens
+      setEditRoute(world !== undefined && world.routes.length > 0 ? world.routes[0].id : 'none')
+    }
+    if (was !== now) setLens(now ? 'vehicles' : editorLens.current)
+    if (was && !now) setEditRoute('none')
     panelRef.current = next
     setPanelState(next)
     overlayPause(from, overlayHold(next.kind, recapDayRef.current))
@@ -964,7 +965,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
                   world={backdrop}
                   cam={BOOT_CAM}
                   lens="off"
-                  editor={false}
+                  route="none"
                   hover={undefined}
                   onHover={ignoreHover}
                   onCam={ignoreCam}
@@ -1006,11 +1007,11 @@ export default function App({ sink }: { sink: WorkerSink }) {
             world={world}
             cam={cam}
             lens={toolLens ?? lens}
-            editor={editor}
+            route={editRoute}
             hover={hover}
             onHover={setHover}
             onCam={setCam}
-            onClick={(hit, xy, shift) => {
+            onClick={(hit, shift) => {
               if (hit.kind === 'cell' && sensorArmed(world)) {
                 setLens('sensors')
                 setLensLock(true)
@@ -1033,14 +1034,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
                 setPanel({ kind: 'none' })
                 return
               }
-              if (editor && world.seats[world.local].place.kind === 'none') {
-                const driven = world.driverVehicle(world.local)
-                if (driven !== undefined && driven.route !== 'none' && hit.kind === 'cell') {
-                  const s = world.stopAt(hit.at, xy)
-                  if (s !== undefined) world.addStop(driven.route, s)
-                  return
-                }
-                if (driven !== undefined && driven.route === 'none' && hit.kind === 'cell') return
+              if (editRoute !== 'none' && world.seats[world.local].place.kind === 'none' && hit.kind === 'cell') {
+                const s = world.stopAt(hit.at)
+                if (s !== undefined) world.addStop(editRoute, s)
+                return
               }
               dispatchClick(world, hit, shift)
             }}
@@ -1056,6 +1053,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
             onResearch={() => open({ kind: 'research' })}
             onMarket={() => open({ kind: 'market' })}
             onContracts={() => open({ kind: 'contracts' })}
+            onAutomation={() => open({ kind: 'automation' })}
             onAlmanac={() => open({ kind: 'almanac' })}
             onLens={() => open({ kind: 'lens' })}
             onLensClear={clearLens}
@@ -1069,19 +1067,15 @@ export default function App({ sink }: { sink: WorkerSink }) {
           />
           <Notices
             world={world}
-            off={editor}
+            off={false}
             roster={rosterRows}
             onHighlight={setNoticeCells}
             onGo={goNotice}
             onDismiss={dismissNotice}
           />
-          {editor && <StopsWindow world={world} onClose={() => {
-            setEditor(false)
-            setLens(editorLens.current)
-          }} />}
           <div className="pointer-events-none absolute right-4 bottom-4 z-20 flex w-80 flex-col gap-3">
             <Queue world={world} />
-            <Status world={world} hover={hover} addHint={editor ? addStopHint(world, hover) : undefined} />
+            <Status world={world} hover={hover} addHint={addStopHint(world, editRoute, hover)} />
           </div>
           {panel.kind === 'family' && <Family world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'lens' && (
@@ -1103,6 +1097,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
           {panel.kind === 'cheat' && <Cheat world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'market' && <Market world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'contracts' && <Contracts world={world} onClose={() => setPanel({ kind: 'none' })} />}
+          {panel.kind === 'automation' && (
+            <Automation
+              world={world}
+              picked={editRoute}
+              onPick={setEditRoute}
+              onClose={() => setPanel({ kind: 'none' })}
+            />
+          )}
           {panel.kind === 'inventory' && <Inventory world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'almanac' && <Almanac world={world} onClose={() => setPanel({ kind: 'none' })} />}
           {panel.kind === 'chest' && (
@@ -1184,23 +1186,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }}
             />
           )}
-          {world.driverVehicle(world.local) !== undefined && (
-            <Dash
-              world={world}
-              editor={editor}
-              onOpenEditor={() => {
-                if (editor) return
-                const driven = world.driverVehicle(world.local)
-                if (driven !== undefined && driven.route === 'none') {
-                  if (world.routes.length === 0) world.createRoute()
-                  world.assignRoute(driven.id, world.routes[0].id)
-                }
-                editorLens.current = lens
-                setEditor(true)
-                setLens('vehicles')
-              }}
-            />
-          )}
+          {world.driverVehicle(world.local) !== undefined && <Dash world={world} />}
           {panel.kind === 'menu' && recapDay === undefined && (
             <Menu
               mode="play"
@@ -1291,15 +1277,7 @@ function dashCargo(world: World, driven: NonNullable<ReturnType<World['driverVeh
   return [hitch.hopper.item]
 }
 
-function Dash({
-  world,
-  editor,
-  onOpenEditor,
-}: {
-  world: World
-  editor: boolean
-  onOpenEditor: () => void
-}) {
+function Dash({ world }: { world: World }) {
   const driven = world.driverVehicle(world.local)
   if (driven?.pose.kind !== 'field') return null
   const onPad = world.hangarAtPad({ col: Math.floor(driven.pose.x), row: Math.floor(driven.pose.y) }) !== undefined
@@ -1435,19 +1413,6 @@ function Dash({
             {driven.boom === 3 ? 'Boom 3' : 'Boom 5'}
           </button>
         )}
-        {world.done.has('unlock-dispatch') && (
-          <button
-            type="button"
-            className={`pointer-events-auto px-3 py-2 text-base ${
-              editor
-                ? 'cursor-pointer bg-ink text-house'
-                : 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark'
-            }`}
-            onClick={onOpenEditor}
-          >
-            Automate
-          </button>
-        )}
       </div>
     </div>
   )
@@ -1546,132 +1511,14 @@ function dispatchClick(world: World, hit: MapClick, shift: boolean): void {
   if (shift && armed.kind === 'sku' && world.seats[world.local].place.kind === 'none') world.buy(armed.id)
 }
 
-function addStopHint(world: World, hover: PromptHit | undefined): string | undefined {
+function addStopHint(world: World, route: RouteId | 'none', hover: PromptHit | undefined): string | undefined {
+  if (route === 'none') return undefined
   if (hover?.kind !== 'cell') return undefined
-  if (!world.inWorld(hover.at)) return undefined
-  const s = world.stopAt(hover.at, { x: hover.at.col + 0.5, y: hover.at.row + 0.5 })
+  const s = world.stopAt(hover.at)
   if (s === undefined) return undefined
-  if (s.kind === 'goto') return 'Add stop here'
-  if (s.kind === 'load') return 'Add load here'
-  if (s.kind === 'unload') return 'Add unload here'
-  return 'Add wait here'
+  if (s.kind === 'goto') return m.vehicles_hint_go()
+  if (s.kind === 'load') return m.vehicles_hint_load()
+  if (s.kind === 'unload') return m.vehicles_hint_unload()
+  return m.vehicles_hint_wait()
 }
 
-function stopLabel(kind: 'goto' | 'load' | 'unload' | 'wait'): string {
-  if (kind === 'goto') return 'Go'
-  if (kind === 'load') return 'Load'
-  if (kind === 'unload') return 'Unload'
-  return 'Wait'
-}
-
-function StopsWindow({ world, onClose }: { world: World; onClose: () => void }) {
-  const driven = world.driverVehicle(world.local)
-  if (driven === undefined) return null
-  const assigned = driven.route === 'none' ? undefined : world.routeById(driven.route)
-  const n = assigned === undefined ? 0 : assigned.stops.length
-  const canStart = n >= 1
-  return (
-    <div className="absolute top-20 right-4 z-20">
-      <Window
-        title={assigned === undefined ? '' : assigned.name}
-        onClose={onClose}
-        className="w-80 max-h-[calc(100vh-16rem)]"
-        footer={
-          <button
-            type="button"
-            aria-disabled={!canStart}
-            title={canStart ? undefined : 'Add a stop.'}
-            className={`px-3 py-2 text-base ${
-              canStart ? 'cursor-pointer bg-dirt text-house hover:bg-dirt-dark' : 'cursor-default bg-ink/6 text-ink/35'
-            }`}
-            onClick={() => {
-              if (!canStart) return
-              world.startRoute()
-            }}
-          >
-            Start
-          </button>
-        }
-      >
-        <div className="flex items-center gap-2">
-          <select
-            className="min-w-0 flex-1 border-2 border-ink/30 bg-parch px-2 py-1.5 text-sm text-ink outline-none focus:border-ink"
-            value={driven.route === 'none' ? '' : String(driven.route)}
-            onChange={e => {
-              const id = Number(e.target.value) as RouteId
-              if (!Number.isInteger(id)) return
-              world.assignRoute(driven.id, id)
-            }}
-          >
-            {driven.route === 'none' && <option value=""> </option>}
-            {world.routes.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-          <Btn
-            onClick={() => {
-              world.createRoute()
-              const minted = world.nextRouteId - 1
-              world.assignRoute(driven.id, minted)
-            }}
-          >
-            New
-          </Btn>
-        </div>
-        {assigned !== undefined && (
-          <div className="mt-2">
-            <Field
-              name="route"
-              aria-label="Route name"
-              value={assigned.name}
-              onChange={v => {
-                if (v === '') return
-                world.renameRoute(assigned.id, v)
-              }}
-            />
-          </div>
-        )}
-        {assigned !== undefined && (
-          <div className="mt-2 flex flex-col gap-1">
-            {assigned.stops.map((s, i) => {
-              return (
-                <div key={`${assigned.id}-${i}`} className="flex items-start gap-2">
-                  <span className="min-w-0 flex-1 truncate pt-0.5 text-sm">
-                    <span className="mr-2 tabular-nums">{i + 1}</span>
-                    {stopLabel(s.kind)}
-                  </span>
-                  <div className="flex shrink-0 flex-col">
-                    <button
-                      type="button"
-                      className="cursor-pointer px-1 text-sm leading-none"
-                      onClick={() => world.reorderStop(assigned.id, i, -1)}
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      className="cursor-pointer px-1 text-sm leading-none"
-                      onClick={() => world.reorderStop(assigned.id, i, 1)}
-                    >
-                      ▼
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Remove"
-                    className="cursor-pointer px-1 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
-                    onClick={() => world.removeStop(assigned.id, i)}
-                  >
-                    x
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </Window>
-    </div>
-  )
-}

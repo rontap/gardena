@@ -7,7 +7,7 @@ import { vertsOf } from '../sim/pipe.ts'
 import { TILE, clampCam, type Camera } from './camera.ts'
 import { createApp, destroyApp } from './app.ts'
 import { atlasReady } from './atlas.ts'
-import { clickHit, hoverSprinkler, type Lens } from './hit.ts'
+import { clickHit, hoverSprinkler, type Lens, type RouteEdit } from './hit.ts'
 import { GroundLayer } from './layers/ground.ts'
 import { PlotsLayer } from './layers/plots.ts'
 import { PipesLayer } from './layers/pipes.ts'
@@ -37,7 +37,7 @@ export class WorldView {
   private world: World
   cam: Camera
   lens: Lens
-  editor: boolean
+  edit: RouteEdit
   pendingPipe: Edge[] = []
   pendingFence: Coord[] = []
   private hideVerts: { col: number; row: number }[] = []
@@ -58,14 +58,14 @@ export class WorldView {
     world: World,
     cam: Camera,
     lens: Lens,
-    editor: boolean,
+    edit: RouteEdit,
     onCam: (c: Camera) => void,
   ) {
     this.app = app
     this.world = world
     this.cam = cam
     this.lens = lens
-    this.editor = editor
+    this.edit = edit
     this.onCam = onCam
     this.farm.eventMode = 'none'
     this.farm.addChild(
@@ -95,22 +95,27 @@ export class WorldView {
     world: World,
     cam: Camera,
     lens: Lens,
-    editor: boolean,
+    edit: RouteEdit,
     onCam: (c: Camera) => void,
   ): Promise<WorldView> {
     await atlasReady()
     const app = await createApp(host)
-    return new WorldView(app, world, cam, lens, editor, onCam)
+    return new WorldView(app, world, cam, lens, edit, onCam)
   }
 
   setCam(cam: Camera): void {
     this.cam = cam
   }
 
-  setLens(lens: Lens, editor: boolean): void {
+  setLens(lens: Lens, edit: RouteEdit): void {
     this.lens = lens
-    this.editor = editor
+    this.edit = edit
     this.patch('field')
+  }
+
+  setDragStop(drag: number | 'none'): void {
+    this.edit = { route: this.edit.route, drag }
+    this.patch('overlay')
   }
 
   setPending(edges: Edge[]): void {
@@ -197,7 +202,7 @@ export class WorldView {
       this.plots.patch(world)
       this.props.patch(world)
       this.pipes.patch(world, this.lens, place, this.hideVerts, this.pendingFence)
-      this.overlay.patch(world, this.lens, this.editor, place, this.hoverAoe, this.ptr)
+      this.overlay.patch(world, this.lens, this.edit, place, this.hoverAoe, this.ptr)
       this.actors.patch(world)
       this.onPipeLoc?.()
     }
@@ -205,7 +210,7 @@ export class WorldView {
       this.pipes.patch(world, this.lens, place, this.hideVerts, this.pendingFence)
     }
     if (kind === 'overlay') {
-      this.overlay.patch(world, this.lens, this.editor, place, this.hoverAoe, this.ptr)
+      this.overlay.patch(world, this.lens, this.edit, place, this.hoverAoe, this.ptr)
     }
   }
 

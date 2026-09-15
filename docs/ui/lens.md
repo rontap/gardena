@@ -64,7 +64,7 @@ Wetness + AoE wash when `lens === 'pipes'` or place is delete / an `AOE_WASH` sk
 
 Sensors: wires + port chrome + 3×3 reader wash when the effective lens is `sensors`. Build shelf `logic` peeks it unlocked and does not arm. `water` peeks `pipes`; `automation` and `storage` peek nothing; `tools` and `land` peek nothing, so opening the dock on Tools or Automation leaves the lens alone. Confirming a sensor-cell place sets and locks it, look **Sensors lens locked**, once per arming. `leaveShop` restores an unlocked Build peek; `toolLens` ends with the arming. A locked lens is not touched.
 
-Vehicles: paint hangar-return + pad arrows iff `driverVehicle(local)` OR `lens === 'vehicles'`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. No wash. Driving still paints with this lens off. Editor on: force this lens; route overlay numbered. This lens and editor off: thin assigned routes, no numbers. [[ui/vehicles]]
+Vehicles: paint hangar-return + pad arrows iff `driverVehicle(local)` OR `lens === 'vehicles'`. Same `HANGAR_RETURN` / `PAD_DROP` / `PAD_TAKE`. No lens wash of its own. Driving still paints with this lens off. Vehicle automation open: force this lens; the picked route paints numbered, and its boom swath washes the tilled cells it sweeps. This lens with no route picked: thin assigned routes, no numbers. [[ui/vehicles]]
 
 `lens === 'sensors'`: no house `WASH` on `isSensor` cells (pipes pattern: relevant tiles stay clear). Other cells may keep the kind-style fade. 3×3 reader wash unchanged. Sensor center is a sensor cell → not faded.
 

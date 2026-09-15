@@ -216,7 +216,7 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
   await gotoPlay(page)
   await viewReady(page)
   await page.evaluate(
-    ([spots, millAt, f1, f2, ctrl, millIn]) => {
+    ({ spots, millAt, f1, f2, ctrl, millIn }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -264,8 +264,8 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
       b.progress = 0
       if (b.inn !== undefined) b.inn = 0
     },
-    [
-      [
+    {
+      spots: [
         ...rectFoot(MILL_AT, MILL_W, MILL_H),
         ...rectFoot(CTRL, MILL_W, MILL_H),
         F1,
@@ -273,18 +273,18 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
         F2,
         { col: F2.col, row: F2.row + 1 },
       ],
-      MILL_AT,
-      F1,
-      F2,
-      CTRL,
-      MILL_IN,
-    ],
+      millAt: MILL_AT,
+      f1: F1,
+      f2: F2,
+      ctrl: CTRL,
+      millIn: MILL_IN,
+    },
   )
   expect(await readWorld<string>(page, MILL_AT, 'w.cell(at).kind')).toBe('mill')
   expect(await readWorld<string>(page, F1, 'w.cell(at).kind')).toBe('furnace')
   expect(await readWorld<string>(page, F2, 'w.cell(at).kind')).toBe('furnace')
   const delta = await page.evaluate(
-    ([millAt, ctrl, dt]) => {
+    ({ millAt, ctrl, dt }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -304,7 +304,7 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
       w.tick(dt)
       return { mill: mill.progress, ctrl: control.progress }
     },
-    [MILL_AT, CTRL, DT_MAX],
+    { millAt: MILL_AT, ctrl: CTRL, dt: DT_MAX },
   )
   const n = 2
   expect(delta.mill).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE * n)) / MILL_WORK)
@@ -408,7 +408,7 @@ test('working furnace mounts furnace and furnace-smoke vfx', async ({ page }) =>
   await expect(page.locator('[data-vfx="furnace"]')).toHaveCount(0)
   await expect(page.locator('[data-vfx="furnace-smoke"]')).toHaveCount(0)
   await page.evaluate(
-    ([at, need]) => {
+    ({ at, need }) => {
       const w = (
         window as unknown as {
           __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number } }
@@ -421,7 +421,7 @@ test('working furnace mounts furnace and furnace-smoke vfx', async ({ page }) =>
       f.progress = 0
       if (f.inn !== undefined) f.inn = 0
     },
-    [FURNACE_AT, FURNACE_NEED],
+    { at: FURNACE_AT, need: FURNACE_NEED },
   )
   await expect(page.locator('[data-vfx="furnace"]')).toHaveCount(1)
   await expect(page.locator('[data-vfx="furnace-smoke"]')).toHaveCount(1)
@@ -455,7 +455,7 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
   const barrel = { col: 6, row: 14 }
   const furnace = F1
   await page.evaluate(
-    ([spots, millAt, jamAt, grindAt, boxAt, stillAt, barrelAt, furnaceAt]) => {
+    ({ spots, millAt, jamAt, grindAt, boxAt, stillAt, barrelAt, furnaceAt }) => {
       const w = (
         window as unknown as {
           __world?: {
@@ -489,8 +489,8 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
       f.progress = 0
       if (f.inn !== undefined) f.inn = 0
     },
-    [
-      [
+    {
+      spots: [
         ...rectFoot(mill, MILL_W, MILL_H),
         jam,
         grind,
@@ -501,21 +501,21 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
         furnace,
         { col: furnace.col, row: furnace.row + 1 },
       ],
-      mill,
-      jam,
-      grind,
-      box,
-      still,
-      barrel,
-      furnace,
-    ],
+      millAt: mill,
+      jamAt: jam,
+      grindAt: grind,
+      boxAt: box,
+      stillAt: still,
+      barrelAt: barrel,
+      furnaceAt: furnace,
+    },
   )
   const idle = {
     mill: await lookAt(page, mill),
     barrel: await lookAt(page, barrel),
   }
   await page.evaluate(
-    ([at, need]) => {
+    ({ at, need }) => {
       const w = (
         window as unknown as {
           __world?: { cell: (at: { col: number; row: number }) => { units: number; progress: number; recipe: string; inn?: number } }
@@ -528,7 +528,7 @@ test('covering haste look on mill jam still grinder compost-box furnace, never b
       f.progress = 0
       if (f.inn !== undefined) f.inn = 0
     },
-    [furnace, FURNACE_NEED],
+    { at: furnace, need: FURNACE_NEED },
   )
   await hoverWorld(page, mill.col + 0.5, mill.row + 0.5)
   const haste = extraLines(idle.mill, await lookAt(page, mill))

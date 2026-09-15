@@ -49,12 +49,14 @@ Face states: `idle` / `hover` / `selected` / `disabled`. `ui-btn-*.svg`. Family 
 | button | act | selected |
 |---|---|---|
 | Build / Research / Market / Family | panel toggle | that panel open |
+| Contracts | panel toggle, shown iff `unlock-contracts` in `done` | `panel === 'contracts'` |
+| Vehicle automation | dock toggle, shown iff `unlock-dispatch` in `done` | `panel === 'automation'` |
 | Lens | dock toggle | `panel === 'lens'` |
 | Demolish | `armDelete()` | `place.kind === 'delete'` |
 | Rotate | `rotatePlace()` | never |
 | Cancel | `cancelPlace` | never |
 
-Divider and **Demolish** render iff `panel === 'build' || place.kind !== 'none'`. **Cancel** renders iff `place.kind !== 'none'`. `GHOST_SKUS` gates none of the three. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]] [[ui/place]]. **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). No rotatable sensor SKU. Cancel does not change lens. Build close (toggle, dock **×**), opening another panel: `leaveBuild` = `cancelPlace` and restores an unlocked Build peek. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only. Esc: `cancelPlace`; close HUD target and panel. Editor on: close editor first, stay seated, restore lens unless it was already `vehicles` — [[ui/vehicles]]. Build Water peeks pipes. Build Sensors peeks sensors. Build Automation peeks no lens. Build Storage peeks no lens — [[ui/lens]] [[ui/build]].
+Divider and **Demolish** render iff `panel === 'build' || place.kind !== 'none'`. **Cancel** renders iff `place.kind !== 'none'`. `GHOST_SKUS` gates none of the three. Hidden ≠ disabled. [[ui/build]] [[ui/sensors]] [[ui/place]]. **Rotate** only renders for a sku in `ROTATABLE` (`buy-sprinkler-vert`). No rotatable sensor SKU. Cancel does not change lens. Build close (toggle, dock **×**), opening another panel: `leaveBuild` = `cancelPlace` and restores an unlocked Build peek. Close Build / Esc: cancel the armed pipe (`cancelPlace`). A locked lens stays. Right-click: `cancelPlace` only, except over a stop of the picked route, which removes that stop — [[ui/vehicles]]. Esc: `cancelPlace`; close HUD target and panel. Opening Vehicle automation forces the `vehicles` lens and closing it restores the one that was on — [[ui/vehicles]]. Build Water peeks pipes. Build Sensors peeks sensors. Build Automation peeks no lens. Build Storage peeks no lens — [[ui/lens]] [[ui/build]].
 
 ## Lenses
 
@@ -77,7 +79,7 @@ HTML overlay. Chip follows the speaker. `'speech'` dirty binds the chip; ticker 
 
 ## Right column
 
-Stops Window (editor on): top-right, same width as inspect. [[ui/vehicles]]. Command Center claims that anchor while the editor is off — [[ui/notices]]. Never both.
+Command Center owns the top-right anchor — [[ui/notices]]. Vehicle automation is a left dock and does not claim it — [[ui/vehicles]].
 
 ## Bottom-right
 

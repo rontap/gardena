@@ -6,7 +6,7 @@ import type { Plant } from '../plant.ts'
 import type { Soil } from '../soil.ts'
 import { STALL_IDS, type StallGood } from '../stall.ts'
 import type { World } from '../world.ts'
-import type { Trailer, Vehicle } from '../feature-vehicles/vehicle.h.ts'
+import type { RouteStop, Trailer, Vehicle } from '../feature-vehicles/vehicle.h.ts'
 import type {
   Save,
   SaveCell,
@@ -70,7 +70,12 @@ export function dump(world: World): Save {
     nextVehicleId: world.nextVehicleId,
     trailers: world.trailers.map(dumpTrailer),
     nextTrailerId: world.nextTrailerId,
-    routes: world.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops.map(s => (s.kind === 'goto' ? { ...s } : { kind: s.kind, at: { col: s.at.col, row: s.at.row } })) })),
+    routes: world.routes.map(r => ({
+      id: r.id,
+      name: r.name,
+      stops: r.stops.map(dumpStop),
+      deploy: { ...r.deploy },
+    })),
     nextRouteId: world.nextRouteId,
     done: [...world.done],
     job: world.job,
@@ -472,11 +477,17 @@ function dumpPose(pose: Vehicle['pose']): SaveVehicle['pose'] {
       }
 }
 
+function dumpStop(s: RouteStop): RouteStop {
+  const at = { col: s.at.col, row: s.at.row }
+  if (s.kind === 'load' || s.kind === 'unload') return { kind: s.kind, at, pick: { ...s.pick } }
+  return { kind: s.kind, at }
+}
+
 function dumpVehicle(v: Vehicle): SaveVehicle {
   if (v.kind === 'quad') {
     return { kind: 'quad', id: v.id, fuel: v.fuel, slots: v.slots.slice(), pose: dumpPose(v.pose), route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
   }
-  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, boom: v.boom, pose: dumpPose(v.pose), route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
+  return { kind: 'tractor', id: v.id, fuel: v.fuel, hitch: v.hitch, boom: v.boom, working: v.working, pose: dumpPose(v.pose), route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
 }
 
 function dumpTrailer(t: Trailer): SaveTrailer {

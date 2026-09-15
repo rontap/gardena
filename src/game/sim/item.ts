@@ -175,12 +175,14 @@ export function compostValue(item: Item): number {
   if (item.kind === 'fruit') {
     return COMPOST_VALUE.fruit * item.count
   }
-  if (item.kind === 'sugar') return COMPOST_VALUE.fruit * item.liters
+  if (item.kind === 'sugar') return COMPOST_VALUE.sugar * item.liters
   if (item.kind === 'rotten') return COMPOST_VALUE.rotten * item.count
   if (item.kind === 'dead') return COMPOST_VALUE.dead * item.count
   if (item.kind === 'weed') return COMPOST_VALUE.weed * item.count
   if (item.kind === 'grass') return COMPOST_VALUE.grass * item.count
   if (item.kind === 'ash') return COMPOST_VALUE.ash * item.count
+  if (item.kind === 'wood') return COMPOST_VALUE.wood * item.count
+  if (item.kind === 'fly-agaric') return COMPOST_VALUE['fly-agaric'] * item.count
   return 0
 }
 
@@ -201,6 +203,7 @@ export function furnaceValue(item: Item): number {
   if (item.kind === 'oil') return FURNACE_VALUE.oil * item.count
   if (item.kind === 'spirit') return FURNACE_VALUE.spirit * item.count
   if (item.kind === 'wood') return FURNACE_VALUE.wood * item.count
+  if (item.kind === 'fly-agaric') return FURNACE_VALUE['fly-agaric'] * item.count
   return 0
 }
 

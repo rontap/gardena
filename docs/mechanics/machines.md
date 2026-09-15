@@ -34,7 +34,7 @@ Produce: mill, jam, still, compost-box, grinder, furnace, station, infuser. Not 
 
 ## Sugar
 
-`{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `count` on sugar. Merge: weighted `unitSale` and `quality` by liters. Shop sugar quality 0. Mill output `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Additive store `buy-sugar` is `SUGAR_SHOP` for `SUGAR_BAG`. Mill sugar sells for more per liter than Additive store sugar. Compost: `liters × COMPOST_VALUE.fruit`.
+`{ kind: 'sugar'; liters; capacityLiters; unitSale; quality }`. Illegal: `count` on sugar. Merge: weighted `unitSale` and `quality` by liters. Shop sugar quality 0. Mill output `SUGAR_MILL × purposeMul(variety, 'processed') × qualityMul(mean q)`. Additive store `buy-sugar` is `SUGAR_SHOP` for `SUGAR_BAG`. Mill sugar sells for more per liter than Additive store sugar. Compost: `liters × COMPOST_VALUE.sugar`, its own rate and not the fruit one. Furnace: `liters × FURNACE_VALUE.fruit`, which is still the fruit rate.
 
 ## Mill
 
@@ -109,8 +109,11 @@ No `inn`. No wire. No HUD. No hopper: `held` plus `progress`. Takes seeds, fruit
 | oil (`infused` ignored) | `FURNACE_VALUE.oil` × count |
 | spirit (`infused` ignored) | `FURNACE_VALUE.spirit` × count |
 | wood | `FURNACE_VALUE.wood` × count |
+| fly-agaric | `FURNACE_VALUE['fly-agaric']` × count |
 
-Flour is bread lock, not ash. Jam, cask, extract, vanilla-extract, flakes, bread, compost bags, fertilizer, weed-spray, tools, ash: refuse. Tree-seed and graft are green rate. Ash into compost: `COMPOST_VALUE.ash` × count. Wood is not compost. Wood and ash are not stall goods.
+Flour is bread lock, not ash. Jam, cask, extract, vanilla-extract, flakes, bread, compost bags, fertilizer, weed-spray, tools, ash: refuse. Tree-seed and graft are green rate.
+
+Compost takes what `COMPOST_VALUE` names, `× count`, or `× liters` for sugar: seeds, fruit, sugar, grass, weed, rotten, dead, ash, wood and fly-agaric. Sugar has its own compost rate; in the furnace it still rides `FURNACE_VALUE.fruit`. Fly-agaric goes to both, worth `COMPOST_VALUE['fly-agaric']` in compost and `FURNACE_VALUE['fly-agaric']` in the furnace. The two machines do not share a list: ash composts and does not burn, oil and spirit burn and do not compost. Wood and ash are not stall goods.
 
 ## furnaceMul
 
@@ -140,7 +143,7 @@ Player `machinery`: valve, mill tick, jam tick, grinder tick `÷ (1 + 0.05 × ti
 
 `sim/machine.ts`. No `World`. Crop fruit stall path: consign folds quality and path rating into `worth` — [[mechanics/market]]. Machine goods: baked `unitSale`, no `stallX`. Infused jam / cask / spirit / oil: same sale skills as the plain good. Flakes and vanilla-extract are not stall goods. Merge same keys; sugar by liters; else by count; weighted `unitSale` and `quality`.
 
-Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread / graft: not compost unless named (sugar only). Ash composts. Wood does not.
+Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread / graft: not compost. Ash, wood and fly-agaric compost.
 
 ## Invariants
 
@@ -157,6 +160,8 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 `machines.still-foot` — `PotStill` is 2×1, origin NW, no rotate, same instance both cells, tick origin, water join any corner.
 
 `machines.sorter` — `Sorter` is 1 × `SORT_LEN` with four `facing` values, same instance all three cells; one `in` and three `out` in `VARIETY_TIERS` order; `storePorts()` and `padPorts()` are those four cells; no `inn`, no wire, no hopper; takes seeds, fruit, tree-seed, graft; whole stack per cycle at `SORT_SECONDS`; `emitSorted` writes that tier's port cell only; a blocked side stops that side alone.
+
+`machines.burn` — Compost and furnace keep separate lists and are not standardised to each other: compost takes what `COMPOST_VALUE` names (seeds, fruit, sugar, grass, weed, rotten, dead, ash, wood, fly-agaric), the furnace what `furnaceValue` returns above 0 (green, fruit, sugar, oil, spirit, wood, fly-agaric) plus flour on the bread lock; ash composts and does not burn; oil and spirit burn and do not compost; fly-agaric does both; compost sugar is `COMPOST_VALUE.sugar` while furnace sugar is `FURNACE_VALUE.fruit`.
 
 `machines.inn` — `inn === 1` freezes mill/jam/still/furnace/station/infuser ticks (progress + still water pull); dump and Unload still fill.
 

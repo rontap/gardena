@@ -64,12 +64,15 @@ export const COMPOST_SECONDS = 60
 export const ROTTEN_GROUND_DAYS = 3
 export const COMPOST_VALUE = {
   seeds: 1,
-  fruit: 5,
+  fruit: 4,
+  sugar: 3,
   grass: 1,
   weed: 1,
   rotten: 1,
   dead: 1,
   ash: 4,
+  wood: 6,
+  'fly-agaric': 4,
 } as const
 
 export const FURNACE_CAP = 100
@@ -81,9 +84,10 @@ export const FURNACE_HASTE = 0.25
 export const FURNACE_VALUE = {
   green: 1,
   fruit: 3,
-  oil: 25,
-  spirit: 36,
-  wood: 40,
+  oil: 20,
+  spirit: 26,
+  wood: 32,
+  'fly-agaric': 1,
 } as const
 
 export const STATION_IN = 3
@@ -155,7 +159,7 @@ export const QUAD_ACCEL_SECONDS = 1.5
 export const QUAD_ACCEL = QUAD_VMAX / QUAD_ACCEL_SECONDS
 export const QUAD_R = 3
 export const QUAD_YAW = QUAD_VMAX / QUAD_R
-export const QUAD_FUEL_SECONDS = 180
+export const QUAD_FUEL_SECONDS = 360
 export const QUAD_REFILL = 25
 export const QUAD_PRICE = 150
 export const QUAD_EMPTY_MUL = 0.1
@@ -195,6 +199,8 @@ export const TRAILER_SPRAY_PRICE = 80
 export const TRAILER_HARVEST_PRICE = 100
 export const HARVEST_SLOTS = 8
 export const BOOM_LONG = 1
+export const BOOM_WORK_SECONDS = 3
+export const BOOM_WORK_MUL = 0.5
 export const SILO_SEED_PRICE = 70
 export const SILO_SPRAY_PRICE = 70
 export const SILO_PRODUCE_PRICE = 70

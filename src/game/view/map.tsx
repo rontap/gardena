@@ -5,7 +5,7 @@ import { FADE, occupiedCells, skuBase, type Coord } from '../sim/building.ts'
 import { isFenceSite } from '../sim/plot.ts'
 import { onCell } from '../sim/drop.ts'
 import { itemLine, skuLabel } from '../sim/item.ts'
-import type { SkuId } from '../sim/ids.ts'
+import type { RouteId, SkuId } from '../sim/ids.ts'
 import { aoe, edgeKey, vertsOf, type Edge, type Vertex } from '../sim/pipe.ts'
 import type { WireEnd } from '../sim/sensor.ts'
 import type { PromptHit } from '../sim/prompt.ts'
@@ -80,11 +80,11 @@ type Props = {
   world: World
   cam: Camera
   lens: Lens
-  editor: boolean
+  route: RouteId | 'none'
   hover: PromptHit | undefined
   onHover: (c: PromptHit | undefined) => void
   onCam: (c: Camera) => void
-  onClick: (hit: MapClick, xy: { x: number; y: number }, shift: boolean) => void
+  onClick: (hit: MapClick, shift: boolean) => void
   onReady?: () => void
   highlight: readonly Coord[]
 }
@@ -103,6 +103,16 @@ function wideGhost(id: SkuId): string {
   return STILL
 }
 
+function stopUnder(world: World, route: RouteId | 'none', wx: number, wy: number): number | 'none' {
+  if (route === 'none') return 'none'
+  const r = world.routeById(route)
+  if (r === undefined) return 'none'
+  const col = Math.floor(wx)
+  const row = Math.floor(wy)
+  const i = r.stops.findIndex(s => s.at.col === col && s.at.row === row)
+  return i < 0 ? 'none' : i
+}
+
 function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: number }, clientX: number, clientY: number) {
   return {
     x: cam.x + (clientX - box.left - box.w / 2) / (TILE * cam.scale),
@@ -110,10 +120,12 @@ function worldAt(cam: Camera, box: { left: number; top: number; w: number; h: nu
   }
 }
 
-export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onClick, onReady, highlight }: Props) {
+export function MapView({ world, cam, lens, route, hover, onHover, onCam, onClick, onReady, highlight }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<WorldView | undefined>(undefined)
-  const drag = useRef<{ x: number; y: number; cx: number; cy: number; pipe: boolean; fence: boolean; wireFrom?: WireEnd } | undefined>(undefined)
+  const drag = useRef<
+    { x: number; y: number; cx: number; cy: number; pipe: boolean; fence: boolean; stop: number | 'none'; wireFrom?: WireEnd } | undefined
+  >(undefined)
   const boxRef = useRef({ left: 0, top: 0, w: 800, h: 600 })
   const pendingMove = useRef<{ x: number; y: number; buttons: number; shift: boolean } | undefined>(undefined)
   const camRef = useRef(cam)
@@ -230,7 +242,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
     if (el === null) return
     let dead = false
     let mounted: WorldView | undefined
-    void WorldView.mount(el, world, camRef.current, lens, editor, onCam).then(v => {
+    void WorldView.mount(el, world, camRef.current, lens, { route, drag: 'none' }, onCam).then(v => {
       if (dead) {
         v.destroy()
         return
@@ -284,8 +296,8 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
   }, [cam])
 
   useEffect(() => {
-    viewRef.current?.setLens(lens, editor)
-  }, [lens, editor, world])
+    viewRef.current?.setLens(lens, { route, drag: 'none' })
+  }, [lens, route, world])
 
   useEffect(() => {
     if (place.kind !== 'sku' || place.id !== 'buy-pipe') {
@@ -367,7 +379,7 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         return
       }
       if (pipeDrag || fenceDrag) return
-      if (d !== undefined && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
+      if (d !== undefined && d.stop === 'none' && (p.buttons & 1) === 1 && world.driverVehicle(world.local) === undefined) {
         if (Math.hypot(p.x - d.x, p.y - d.y) > 3) {
           pushCam({
             x: d.cx - (p.x - d.x) / (TILE * camNow.scale),
@@ -456,6 +468,11 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
         setPendingFence([])
         viewRef.current?.setPending([])
         viewRef.current?.setPendingFence([])
+        const onStop = place.kind === 'none' ? stopUnder(world, route, wpt.x, wpt.y) : 'none'
+        if (route !== 'none' && onStop !== 'none') {
+          world.removeStop(route, onStop)
+          return
+        }
         world.rightClick({ col: Math.floor(wpt.x), row: Math.floor(wpt.y) })
       }}
       onPointerDown={e => {
@@ -471,7 +488,10 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           (world.hasFence(fenceAt) || isFenceSite(world.cell(fenceAt)))
         const down = pipe || fence ? undefined : clickHit(world, wpt.x, wpt.y, lens)
         const wireFrom = down !== undefined && down.kind === 'port' && place.kind === 'none' ? down.end : undefined
-        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe, fence, wireFrom }
+        const stop =
+          pipe || fence || place.kind !== 'none' ? 'none' : stopUnder(world, route, wpt.x, wpt.y)
+        drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, pipe, fence, stop, wireFrom }
+        if (stop !== 'none') viewRef.current?.setDragStop(stop)
         e.currentTarget.setPointerCapture(e.pointerId)
         if (pipe && anchorRef.current === undefined) anchorRef.current = roundVertex(wpt.x, wpt.y)
         if (fence && fenceAnchorRef.current === undefined) fenceAnchorRef.current = fenceAt
@@ -519,16 +539,25 @@ export function MapView({ world, cam, lens, editor, hover, onHover, onCam, onCli
           fenceAnchorRef.current = at
           return
         }
-        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) {
+        const at = { col: Math.floor(wpt.x), row: Math.floor(wpt.y) }
+        const still = Math.hypot(e.clientX - d.x, e.clientY - d.y) <= 3
+        if (d.stop !== 'none') {
+          viewRef.current?.setDragStop('none')
+          if (route === 'none' || still) return
+          const moved = world.stopAt(at)
+          if (moved !== undefined) world.moveStop(route, d.stop, moved)
+          return
+        }
+        if (!still) {
           if (d.wireFrom === undefined) return
           const drop = clickHit(world, wpt.x, wpt.y, lens)
           if (drop?.kind !== 'port') return
-          onClick({ kind: 'port', end: d.wireFrom }, { x: wpt.x, y: wpt.y }, e.shiftKey)
-          onClick(drop, { x: wpt.x, y: wpt.y }, e.shiftKey)
+          onClick({ kind: 'port', end: d.wireFrom }, e.shiftKey)
+          onClick(drop, e.shiftKey)
           return
         }
         const hit = clickHit(world, wpt.x, wpt.y, lens)
-        if (hit !== undefined) onClick(hit, { x: wpt.x, y: wpt.y }, e.shiftKey)
+        if (hit !== undefined) onClick(hit, e.shiftKey)
       }}
       onPointerLeave={() => {
         pendingMove.current = undefined

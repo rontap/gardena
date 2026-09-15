@@ -1,4 +1,4 @@
-import { SENSOR_CELL_SKUS, type SkuId } from '../sim/ids.ts'
+import { SENSOR_CELL_SKUS, type RouteId, type SkuId } from '../sim/ids.ts'
 import type { Coord } from '../sim/building.ts'
 import { isFenceSite, type Cell } from '../sim/plot.ts'
 import { aoe, edgeKey, type Edge, type Sprinkler, type Vertex } from '../sim/pipe.ts'
@@ -8,6 +8,10 @@ import type { PromptHit } from '../sim/prompt.ts'
 import { DROP_FACE, DROP_INSET, DROP_STEP, TILE } from './camera.ts'
 
 export type Lens = 'off' | 'water' | 'land' | 'ripe' | 'kind' | 'variety' | 'pipes' | 'sensors' | 'vehicles'
+
+export type RouteEdit = { route: RouteId | 'none'; drag: number | 'none' }
+
+export const NO_ROUTE_EDIT: RouteEdit = { route: 'none', drag: 'none' }
 
 export type MapClick = PromptHit
 

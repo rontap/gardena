@@ -1247,12 +1247,11 @@ describe('1.6 sensors', () => {
     const hangar = { col: 16, row: 16 }
     w.buy('buy-hangar')
     w.confirmPlace(hangar)
-    w.createRoute()
     w.addStop(1, { kind: 'wait', at: A })
-    w.addStop(1, { kind: 'goto', x: 20.5, y: 20.5 })
+    w.addStop(1, { kind: 'goto', at: { col: 20, row: 20 } })
     w.buyVehicle(hangar, 'quad')
-    w.assignRoute(1, 1)
     const v = w.vehicles[0]
+    v.route = 1
     v.pose = { kind: 'field', x: A.col + 0.5, y: A.row + 0.5, heading: 0, speed: 0, driver: 'none' }
     v.running = true
     w.tick(DT_MAX)

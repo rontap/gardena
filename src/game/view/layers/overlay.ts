@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js'
 import { FADE, chunkKey, chunkOf, occupiedCells, skuBase, skuPorts, type Coord, type Facing, type Pump } from '../../sim/building.ts'
 import {
+  boomHits,
   dropoffPad,
   hangarPad,
   siloPad,
@@ -9,6 +10,7 @@ import {
   HANGAR_PAD_SKUS,
   PAD_SKUS,
   SILO_PAD_SKUS,
+  type Route,
 } from '../../sim/feature-vehicles/vehicle.ts'
 import { CHUTE_SKUS } from '../../sim/feature-machines/machine.ts'
 import { isTilled, type Cell } from '../../sim/plot.ts'
@@ -24,7 +26,7 @@ import type { Place, World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
-import { AOE_WASH, PIPE_PLACE, PORT_HIT, pipesOverlay, wireEndXY, wireSignal, type Lens } from '../hit.ts'
+import { AOE_WASH, PIPE_PLACE, PORT_HIT, pipesOverlay, wireEndXY, wireSignal, type Lens, type RouteEdit } from '../hit.ts'
 import type { Sprinkler } from '../../sim/pipe.ts'
 
 const ROOF = 0x8b3a2a
@@ -44,6 +46,10 @@ const LENS_GOOD = 0x2fd15a
 const LENS_DONE = 0x1e9be6
 const FRUIT_RED = 0xc43c3c
 const GROUND_CHUNK = 16
+const SWATH_STEP = 0.5
+const SWATH_ALPHA = 0.35
+const STOP_R = 10
+const STOP_R_PORT = 15
 
 const BAND_TINT: { readonly [K in Band]: number } = {
   green: LENS_GOOD,
@@ -336,7 +342,7 @@ export class OverlayLayer {
   patch(
     world: World,
     lens: Lens,
-    editor: boolean,
+    edit: RouteEdit,
     place: Place,
     hoverAoe: Sprinkler | undefined,
     ptr?: { x: number; y: number },
@@ -458,7 +464,7 @@ export class OverlayLayer {
     }
     if (lens === 'sensors' || place.kind === 'wire') this.wires(world)
     if (place.kind === 'wire' && ptr !== undefined) this.pendingWire(world, place.from, ptr.x, ptr.y)
-    this.routes(world, lens, editor)
+    this.routes(world, lens, edit, ptr)
     this.sprites.end()
     for (let i = this.nLabel; i < this.labels.length; i++) this.labels[i].visible = false
   }
@@ -617,45 +623,67 @@ export class OverlayLayer {
     this.gfx.stroke({ color, width: 2.5, cap: 'round' })
   }
 
-  private routes(world: World, lens: Lens, editor: boolean): void {
-    const driven = world.driverVehicle(world.local)
+  private swath(world: World, route: Route): void {
+    if (route.deploy.kind !== 'tractor' || route.deploy.trailer === 'none') return
+    const pts = route.stops.map(stopXY)
+    const n = pts.length
+    if (n < 2) return
+    const wide = route.deploy.boom
+    const cells = new Set<string>()
+    pts.forEach((a, i) => {
+      const b = pts[(i + 1) % n]
+      const len = Math.hypot(b.x - a.x, b.y - a.y)
+      if (len === 0) return
+      const heading = Math.atan2(b.y - a.y, b.x - a.x)
+      const steps = Math.ceil(len / SWATH_STEP)
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps
+        const p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
+        boomHits(p, heading, wide, at => world.inWorld(at)).forEach(at => cells.add(`${at.col},${at.row}`))
+      }
+    })
+    cells.forEach(k => {
+      const comma = k.indexOf(',')
+      const col = Number(k.slice(0, comma))
+      const row = Number(k.slice(comma + 1))
+      if (!isTilled(world.cell({ col, row }))) return
+      this.gfx.rect(col * TILE, row * TILE, TILE, TILE)
+      this.gfx.fill({ color: WATER, alpha: SWATH_ALPHA })
+    })
+  }
+
+  private routes(world: World, lens: Lens, edit: RouteEdit, ptr: { x: number; y: number } | undefined): void {
+    const picked = edit.route === 'none' ? undefined : world.routeById(edit.route)
     const assigned = new Set(world.vehicles.filter(v => v.route !== 'none').map(v => v.route))
-    const routes = editor
-      ? driven !== undefined && driven.route !== 'none'
-        ? world.routes.filter(r => r.id === driven.route)
-        : []
-      : lens === 'vehicles'
-        ? world.routes.filter(r => assigned.has(r.id))
-        : []
+    const routes =
+      picked !== undefined ? [picked] : lens === 'vehicles' ? world.routes.filter(r => assigned.has(r.id)) : []
     if (routes.length === 0) return
-    const current = driven !== undefined && driven.route !== 'none' ? driven : undefined
-    const mover = world.vehicles.find(v => v.running && v.route !== 'none' && v.pose.kind === 'field')
+    if (picked !== undefined) this.swath(world, picked)
+    const dragAt =
+      picked !== undefined && edit.drag !== 'none' && ptr !== undefined
+        ? { x: Math.floor(ptr.x) + 0.5, y: Math.floor(ptr.y) + 0.5 }
+        : undefined
     routes.forEach(route => {
       if (route.stops.length === 0) return
-      const pts = route.stops.map(stopXY)
+      const pts = route.stops.map((s, i) => (dragAt !== undefined && edit.drag === i ? dragAt : stopXY(s)))
       const n = pts.length
-      if (n > 1) {
-        pts.forEach((p, i) => this.line(p, pts[(i + 1) % n], GRAPE))
-      }
-      const follow =
-        mover !== undefined && mover.route === route.id && mover.pose.kind === 'field' && n > 0
-          ? { from: { x: mover.pose.x, y: mover.pose.y }, to: stopXY(route.stops[mover.cursor]) }
-          : current !== undefined && current.route === route.id && current.pose.kind === 'field' && n > 0
-            ? { from: { x: current.pose.x, y: current.pose.y }, to: stopXY(route.stops[current.cursor]) }
-            : undefined
-      if (follow !== undefined) this.line(follow.from, follow.to, FRUIT_RED)
-      if (!editor) return
-      route.stops.forEach((s, i) => {
-        const p = stopXY(s)
-        const cur = current !== undefined && current.route === route.id && current.cursor === i
-        const r = cur ? 12 : 10
+      if (n > 1) pts.forEach((p, i) => this.line(p, pts[(i + 1) % n], GRAPE))
+      world.vehicles.forEach(v => {
+        if (v.route !== route.id || v.pose.kind !== 'field' || !v.running) return
+        this.line({ x: v.pose.x, y: v.pose.y }, pts[v.cursor], FRUIT_RED)
+      })
+      if (picked === undefined) return
+      pts.forEach((p, i) => {
+        const kind = route.stops[i].kind
+        const port = kind === 'load' || kind === 'unload'
+        const r = port ? STOP_R_PORT : STOP_R
         this.gfx.circle(p.x * TILE, p.y * TILE, r)
-        this.gfx.fill({ color: cur ? RIPE : WASH })
+        this.gfx.fill({ color: edit.drag === i ? RIPE : WASH })
         this.gfx.circle(p.x * TILE, p.y * TILE, r)
-        this.gfx.stroke({ color: INK, width: 2 })
+        this.gfx.stroke({ color: INK, width: port ? 3 : 2 })
         const lab = this.takeLabel()
         lab.text = String(i + 1)
-        lab.style.fontSize = cur ? 16 : 14
+        lab.style.fontSize = port ? 18 : 14
         lab.position.set(p.x * TILE, p.y * TILE)
       })
     })

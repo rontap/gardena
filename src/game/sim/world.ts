@@ -156,10 +156,12 @@ import {
   putSugarInto,
   type PadCell,
   type Route,
+  type RouteDeploy,
   type RouteStop,
   type Trailer,
   type Vehicle
 } from './feature-vehicles/vehicle.ts'
+import { ANY, type PadGoods, type Pick } from './feature-vehicles/pick.ts'
 import {
   dropIncident,
   isInEnd,
@@ -273,8 +275,8 @@ export class World {
   nextVehicleId: VehicleId = 1
   readonly trailers: Trailer[] = []
   nextTrailerId: TrailerId = 1
-  readonly routes: Route[] = []
-  nextRouteId: RouteId = 1
+  readonly routes: Route[] = [{ id: 1, name: 'Route 1', stops: [], deploy: { kind: 'quad' } }]
+  nextRouteId: RouteId = 2
   readonly segments = new Map<string, Segment>()
   readonly wells: Well[] = []
   readonly fences = new Set<string>()
@@ -1531,10 +1533,6 @@ export class World {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'create' })
   }
 
-  assignRoute(v: VehicleId, r: RouteId | 'none'): void {
-    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'assign', v, r })
-  }
-
   addStop(r: RouteId, s: RouteStop): void {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'add', r, s })
   }
@@ -1543,16 +1541,32 @@ export class World {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'remove', r, i })
   }
 
-  reorderStop(r: RouteId, i: number, d: 1 | -1): void {
-    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'reorder', r, i, d })
+  moveStop(r: RouteId, i: number, s: RouteStop): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'move', r, i, s })
+  }
+
+  reorderStop(r: RouteId, i: number, to: number): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'reorder', r, i, to })
   }
 
   renameRoute(r: RouteId, n: string): void {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'rename', r, n })
   }
 
-  startRoute(): void {
-    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'start' })
+  deleteRoute(r: RouteId): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'delete', r })
+  }
+
+  setRouteDeploy(r: RouteId, d: RouteDeploy): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'setDeploy', r, d })
+  }
+
+  deployRoute(r: RouteId): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'deploy', r })
+  }
+
+  recallVehicle(v: VehicleId): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'recall', v })
   }
 
   automate(v: VehicleId, at: Coord): void {
@@ -1563,13 +1577,31 @@ export class World {
     return this.routes.find(r => r.id === id)
   }
 
-  stopAt(at: Coord, xy: { x: number; y: number }): RouteStop | undefined {
+  routeDeployable(r: Route): boolean {
+    return vehicles.routeDeployable(this, r) !== undefined
+  }
+
+  stopAt(at: Coord): RouteStop | undefined {
+    if (!this.inWorld(at)) return undefined
     const hit = vehicles.padHit(this, at)
-    if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row } }
-    if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row } }
-    if (this.inWorld(at) && this.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
-    if (this.inWorld(at)) return { kind: 'goto', x: xy.x, y: xy.y }
-    return undefined
+    if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row }, pick: ANY }
+    if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row }, pick: ANY }
+    if (this.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
+    return { kind: 'goto', at: { col: at.col, row: at.row } }
+  }
+
+  setStopPick(r: RouteId, i: number, q: Pick): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'pick', r, i, q })
+  }
+
+  padGoodsAt(at: Coord): PadGoods {
+    const hit = vehicles.padHit(this, at)
+    if (hit === undefined) return 'all'
+    return hit.cell.padGoods(hit.side === 'dropoff' ? 'in' : 'out')
+  }
+
+  padCellAt(at: Coord): PadCell | undefined {
+    return vehicles.padHit(this, at)?.cell
   }
 
   enter(): void {

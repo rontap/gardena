@@ -71,7 +71,7 @@ describe('station.many', () => {
 })
 
 describe('place.demolish-filter', () => {
-  test('place.demolish-filter - Demolish reads place on every cell the sim takes down, including the Seed Variety Station and paving, and blocked on the ones it refuses.', () => {
+  test('place.demolish-filter - Demolish reads place on every cell the sim takes down, including the Crop Variety Station and paving, and blocked on the ones it refuses.', () => {
     const w = ready()
     clear(w, AT, 2, 2)
     w.buy('buy-research-station')

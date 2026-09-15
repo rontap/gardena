@@ -961,6 +961,10 @@ export function fruitInner(crop: GrownCrop): string {
   return stageOnly(FRUIT[crop], 'base')
 }
 
+export function fruitVarietyInner(crop: GrownCrop, variety: VarietyId): string {
+  return stageOnly(FRUIT[crop], fruitGroup(variety))
+}
+
 const BETTER_CROP: { readonly [K in Extract<SkillId, `better-${string}`>]: GrownCrop } = {
   'better-potato': 'potato',
   'better-wheat': 'wheat',

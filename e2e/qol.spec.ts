@@ -193,7 +193,7 @@ test('house inventory holds the starter Heirloom fruit', async ({ page }) => {
   }
 })
 
-test('Seed Variety Station ghost is the station, not the Pot still', async ({ page }) => {
+test('Crop Variety Station ghost is the station, not the Pot still', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
   await page.evaluate(at => {
     const w = (
@@ -209,9 +209,9 @@ test('Seed Variety Station ghost is the station, not the Pot still', async ({ pa
     w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     w.setCell({ col: at.col + 1, row: at.row }, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
   }, STATION)
-  await armSku(page, 'Seed Variety Station 60', 'Automation')
+  await armSku(page, 'Crop Variety Station 60', 'Automation')
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
-  await expect(page.locator('[data-action]')).toContainText('Place Seed Variety Station')
+  await expect(page.locator('[data-action]')).toContainText('Place Crop Variety Station')
   const art = await page.evaluate(() => {
     const e = (
       window as unknown as {

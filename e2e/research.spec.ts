@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { gotoPlay, openBuild } from './helpers.ts'
 
-test('Crop variants shows Seed Variety Station', async ({ page }) => {
+test('Crop variants shows Crop Variety Station', async ({ page }) => {
   await gotoPlay(page)
   await openBuild(page)
   await page.getByRole('tab', { name: 'Automation' }).click()
-  const station = page.getByRole('button', { name: /Seed Variety Station/ })
+  const station = page.getByRole('button', { name: /Crop Variety Station/ })
   await expect(station).toHaveCount(0)
   await page.evaluate(() => {
     const w = (window as unknown as { __world?: { done: Set<string>; cheatMoney: () => void; ping: () => void } }).__world

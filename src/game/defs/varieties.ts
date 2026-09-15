@@ -78,6 +78,29 @@ export const FAMILIARITY_PER_VARIETY = 10
 export const FAMILIARITY_RECOVER = 0.005
 export const FAMILIARITY_SEED_QUALITY = 0.02
 
+export type AlmanacEntry = 'grow' | 'water' | 'fert' | 'fresh'
+
+export const ALMANAC_AT: readonly { level: number; entry: AlmanacEntry }[] = [
+  { level: 2, entry: 'grow' },
+  { level: 4, entry: 'water' },
+  { level: 6, entry: 'fert' },
+  { level: 8, entry: 'fresh' },
+]
+
+export const VARIANT_AT = 10
+export const VARIANT_PURPOSE_AT = 12
+export const HEIRLOOM_AT = 14
+export const HEIRLOOM_PLACE_AT = 16
+export const HEIRLOOM_PURPOSE_AT = 18
+
+export function almanacEntries(n: number): readonly AlmanacEntry[] {
+  return ALMANAC_AT.filter(a => n >= a.level).map(a => a.entry)
+}
+
+export function tierVariety(crop: CropId, tier: Exclude<VarietyTier, 'base'>): Exclude<VarietyId, 'base'> | undefined {
+  return VARIETIES[crop].find((v): v is Exclude<VarietyId, 'base'> => v !== 'base' && VARIETY[v].tier === tier)
+}
+
 export const VARIETY: {
   readonly [K in Exclude<VarietyId, 'base'>]: {
     crop: GrownCrop

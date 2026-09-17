@@ -1,7 +1,8 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { Act } from './log.ts'
 import { dump, parse } from './feature-save/save.ts'
+import { GAME_VERSION } from './version.ts'
 import { Plant } from './plant.ts'
 import { Soil, SOIL_WATER_MID } from './soil.ts'
 import {
@@ -14,7 +15,6 @@ import {
   readMpMsg,
   MpGuest,
   MpHost,
-  PROTOCOL,
   RETRY_MAX,
   STALL_MS,
   AWAY_MS,
@@ -455,9 +455,9 @@ describe('1.1 multiplayer', () => {
     expect(w.seats[1].name).toBe('Ada Two')
     expect(w.seats[1].presence).toBe('in')
     expect(w.seats[1].napping).toBe(false)
-    expect(readMpMsg({ a: 'hello', protocol: PROTOCOL, playerId: 'g1', name: '  Ada  ' })).toEqual({
+    expect(readMpMsg({ a: 'hello', protocol: GAME_VERSION, playerId: 'g1', name: '  Ada  ' })).toEqual({
       a: 'hello',
-      protocol: PROTOCOL,
+      protocol: GAME_VERSION,
       playerId: 'g1',
       name: 'Ada',
     })

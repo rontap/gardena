@@ -37,6 +37,7 @@ import type { CompanyBook, ContractId, ContractOffer, Demand, HistoryEntry } fro
 import type { Edge, Segment, Sprinkler } from '../pipe.ts'
 import type { Wire } from '../sensor.ts'
 import type { Presence, SeatId, World } from '../world.ts'
+import type { Tutorial } from '../tutorial.ts'
 import type { PavedCell } from '../world.h.ts'
 import type { Route, SeedHopper, SprayHopper, TrailerPose } from '../feature-vehicles/vehicle.h.ts'
 
@@ -220,7 +221,7 @@ export type SaveContracts = {
 
 export type Save = {
   game: 'gardena'
-  version: typeof import('./save.ts').SAVE_VERSION
+  version: typeof import('../version.ts').GAME_VERSION
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }
@@ -252,6 +253,8 @@ export type Save = {
   recapUnseen: number[]
   grandma: Grandma
   grandmaUnseen: Grandma[]
+  tutorial: Tutorial
+  delivered: number
   familiarity: { [K in GrownCrop]: number }
   chunks: { id: ChunkId; cells: SaveCell[][] }[]
   segments: Segment[]

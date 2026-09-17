@@ -221,6 +221,7 @@ export function consignUnits(world: World, item: Item): number {
 
 export function consignItem(world: World, item: Item): boolean {
   if (consignUnits(world, item) === 0) return false
+  if (item.kind === 'fruit') world.delivered += item.count
   const stalled = toStall(world, item)
   market.finishFull(world)
   const paid = sellAllBody(world)

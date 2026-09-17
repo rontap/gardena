@@ -6,7 +6,7 @@
 
 `World` is the live-state coordinator and tick sequencer. `track()` stays on `World`. Do not add `sim/index.ts`. New mechanic → new `sim/<name>.ts` or `sim/feature-<x>/`. Do not append a mechanic onto `World`. Pattern: types in `<name>.h.ts`, functions in `<name>.ts`; `World` holds lists and calls in.
 
-`Place` / `StayArmed` stay on `world.ts`. Tutorial is App session state. Save I/O is `sim/feature-save/save.ts`. App does not own `Save`. Camera and `Lens` are view-local. Panel open/close is App-local. World has no pause field.
+`Place` / `StayArmed` stay on `world.ts`. Tutorial is `World.tutorial`, saved — [[mechanics/tutorial]]. Save I/O is `sim/feature-save/save.ts`. App does not own `Save`. Camera and `Lens` are view-local. Panel open/close is App-local. World has no pause field.
 
 ## Owners
 

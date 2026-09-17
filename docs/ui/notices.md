@@ -2,7 +2,7 @@
 
 The right-hand column is the **Command Center**. Identifiers stay `notices`. A row is a notice. Illegal: notification, infobox, alert, dashboard.
 
-A notice is one line saying a clock is running out, that something is waiting to be spent, that an ended day's recap or a letter about grandma is unread, that the Necronomicon has a page ready, or that another gardener `joined`, `quit`, or `desynced`. `noticeRows` reads `World` and writes nothing. Roster kinds are stamped at the net/App boundary, not that read. [[ui/hud]] [[architecture/view]] [[architecture/modules]] [[architecture/net]]
+A notice is one line saying a clock is running out, that something is waiting to be spent, that an ended day's recap or a letter about grandma is unread, that the Necronomicon has a page ready, that another gardener `joined`, `quit`, or `desynced`, or what the tutorial wants next — [[mechanics/tutorial]]. `noticeRows` reads `World` and writes nothing. Roster kinds are stamped at the net/App boundary, not that read. [[ui/hud]] [[architecture/view]] [[architecture/modules]] [[architecture/net]]
 
 The pass writes nothing. No notice is a `Cmd`, is digested, or sets a `DirtyReason`. Recap dismiss is App → `World.seeRecap`, not the pass. Roster rows live on App, not `World`. Delete `src/game/ui/notices.ts` and `src/game/ui/notices.tsx` and the sim still ticks. `Notice` in `ui/multiplayer.tsx` is an unrelated identifier.
 
@@ -12,6 +12,9 @@ Player words: [[standards/user-facing-text]]. Copy in `messages/en/notices.json`
 
 | kind | condition | reads | bar | click |
 |---|---|---|---|---|
+| `tutorial` | chain on steps 1 to 8 | `World.tutorial` | — | none |
+| `tutorial-end` | chain on step 9 | `World.tutorial` | — | none |
+| `tutorial-event` | one-time, below | `World.tutorial` | — | none |
 | `recap` | `World.recapUnseen` contains that ended day | `World.recaps` / `World.recapUnseen` | — | popup recap |
 | `grandma` | `World.grandmaUnseen` contains that beat | `World.grandmaUnseen` | — | popup that letter |
 | `necronomicon` | `ritualReady(world, book)` | `World.necronomicon` | — | none |
@@ -38,6 +41,8 @@ Player words: [[standards/user-facing-text]]. Copy in `messages/en/notices.json`
 
 `notices.red` — only a red band is a notice. Orange is the warning the plot itself already paints. A starving plant that is also wilting produces both rows.
 
+`notices.tutorial` — the tutorial has no chrome of its own; the chain and its event-bound lines are rows here — [[mechanics/tutorial]]. At most one chain row, `tutorial` up to step 8 and `tutorial-end` on step 9. Face `{ kind: 'tutorial' }`. No bar, no cells, no subject, `go: none`. All three kinds skip two-pass and wrap instead of truncating — `notices.wrap`. Hidden when `world.local !== 0`: a guest is not on their own first farm.
+
 `notices.weed` — weeds are one row for the whole farm, not one per plot. The row carries every weed cell, so hovering it paints them all at once. Its face is the pulled-weed item art. No bar.
 
 `FRESH_FULL` — the cut inside `freshMul`, named there and read by both `freshMul` and the pass. Tuned-to `freshMul`. `NOTICE_WATER_LOW` — preference. Per network, `stored` and `capacity` are the sums over `net.sources`. A network with no source is not low.
@@ -56,13 +61,21 @@ A condition enters the pending set on the first pass it holds, and becomes visib
 
 Kind `recap`. Face: `ui-recap-night`. Text: **Day {n} Finished**. `go` is `{ kind: 'popup'; popup: { kind: 'recap'; day } }`. Left click sets App `recapDay` to that ended day and opens the recap popup. Not `World.seam`. Opening does not `seeRecap`.
 
+### Tutorial rows
+
+Kind `tutorial` / `tutorial-end` is the chain's current step, read straight off `World.tutorial`. Step 6 shows nothing while it waits for a ripe crop, so the row leaves the column and comes back.
+
+Kind `tutorial-event` is a one-time row on the same machinery as contract and research completion: the pass keeps the previous `fired` list and mints a row for each id that is new. Left click does nothing, right-click drops it, and the id stays in `fired`, so the line never returns.
+
+Right-click on `tutorial` is refused — the chain is not dismissible mid-way. Right-click on `tutorial-end` is App → `World.seeTutorial()`, which closes the chain. Not a `Cmd`, the same shape as `seeRecap`.
+
 ### One-time rows
 
 Contract completion and research completion are events, not conditions. The pass keeps the previous `active` ids; an id gone from `active` is looked up in `contracts.history`; `outcome.kind === 'done'` mints a completed row. The pass keeps the previous `job`; a `run` on id `X` that is now not running, with `X` in `done`, mints a done row. They skip the two-pass delay. They clear on left click (and run `go`) and on right-click dismiss. Recap Close does not clear them. A completion that lands between the last pass and a reload or a `World` swap is never shown. Recap is not this: it lives on `World.recapUnseen` and is saved — [[architecture/save]] `save.recaps`.
 
 ### Roster rows
 
-Kinds `joined` `quit` `desynced`. Events, not conditions. `noticeRows` cannot tell a drop from silence. App stamps at the net boundary. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. Solo (`seats.length === 1`, no session) never mints. Do not mint for this page's seat. `go` is `{ kind: 'none' }`. No cells. No bar. Right-click dismiss. Reload or `World` swap drops the App list. Face: atlas `actor-hat` tinted with that seat's hex — [[ui/multiplayer]]. `Notice.id` is session-local, unique per mint. Copy: **{name} joined** / **{name} left** / **{name} drifted**. `{name}` is `Seat.name`. Player copy must not say desync. Do not bump `PROTOCOL`. [[architecture/net]]
+Kinds `joined` `quit` `desynced`. Events, not conditions. `noticeRows` cannot tell a drop from silence. App stamps at the net boundary. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. Solo (`seats.length === 1`, no session) never mints. Do not mint for this page's seat. `go` is `{ kind: 'none' }`. No cells. No bar. Right-click dismiss. Reload or `World` swap drops the App list. Face: atlas `actor-hat` tinted with that seat's hex — [[ui/multiplayer]]. `Notice.id` is session-local, unique per mint. Copy: **{name} joined** / **{name} left** / **{name} drifted**. `{name}` is `Seat.name`. Player copy must not say desync. Do not bump `GAME_VERSION`. [[architecture/net]]
 
 ## Highlight
 
@@ -70,7 +83,7 @@ Hovering a row outlines every cell that row covers, on the map. `MapView` takes 
 
 ## Column
 
-Not `Chrome` — its header band is too tall for a one-line row. Each block carries house fill, ink sides, and `ui-notice-rail.svg` on the edges. Art [[art/palette]]. Anchored top-right, one step under inspect's width. Every block is that full width; a row too long truncates. Not a scroll pane: a long list runs down the page and over Queue and Inspect. Hidden while the vehicle editor is on — the Stops Window claims that exact anchor ([[ui/vehicles]]). Recap is not a seam. The column stays up while the recap popup is open. Title **Command Center**. Not on the Hide plate.
+Not `Chrome` — its header band is too tall for a one-line row. Each block carries house fill, ink sides, and `ui-notice-rail.svg` on the edges. Art [[art/palette]]. Anchored top-right, one step under inspect's width. Every block is that full width; a row too long truncates, except the tutorial kinds, which wrap to as many lines as the sentence needs and grow the block — `notices.wrap`. Not a scroll pane: a long list runs down the page and over Queue and Inspect. Hidden while the vehicle editor is on — the Stops Window claims that exact anchor ([[ui/vehicles]]). Recap is not a seam. The column stays up while the recap popup is open. Title **Command Center**. Not on the Hide plate.
 
 ### Block
 
@@ -106,7 +119,7 @@ Guest chrome matches [[mechanics/multiplayer]] `mp.guest`. Research, Family, and
 
 `notices.once` — Contract and research completion are recovered by comparing the previous pass to this one, against `contracts.history` and `World.done`; they skip the two-pass delay and clear on left click or right-click dismiss; Recap Close does not clear them; a completion spanning a reload or a `World` swap is not shown; roster kinds share dismiss and drop-on-swap — `notices.roster`.
 
-`notices.roster` — Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`; not a `Cmd`, not digested, not in `Save`, not a recap; they skip two-pass; right-click dismiss; left click `go: none`; reload or `World` swap drops them; no cells, no bar; face `{ kind: 'hat'; seat }`; do not mint for `App.local`; do not mint for `presence: 'away'` from silence; quit is the link released; desynced is `bye: kicked` then drop; joined is a new seat or `away` → `in`; solo never mints; additive JSON; do not bump `PROTOCOL`.
+`notices.roster` — Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`; not a `Cmd`, not digested, not in `Save`, not a recap; they skip two-pass; right-click dismiss; left click `go: none`; reload or `World` swap drops them; no cells, no bar; face `{ kind: 'hat'; seat }`; do not mint for `App.local`; do not mint for `presence: 'away'` from silence; quit is the link released; desynced is `bye: kicked` then drop; joined is a new seat or `away` → `in`; solo never mints; additive JSON; do not bump `GAME_VERSION`.
 
 `notices.popup` — `NoticeGo` is `{ kind: 'none' } | { kind: 'panel'; panel } | { kind: 'popup'; popup }`; left click on a row runs that row's `go`; recap `go` sets App `recapDay` to that ended day; not `World.seam`; opening does not `seeRecap`.
 
@@ -116,6 +129,10 @@ Guest chrome matches [[mechanics/multiplayer]] `mp.guest`. Research, Family, and
 
 `notices.red` — Only a red band is a notice; orange is not.
 
-`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line; `NOTICE_ORDER` starts with `recap`, then one-time `joined` `quit` `desynced` `contract-done` `research-done` `grandma`; `necronomicon` sits with the rows waiting to be spent, above `points` — [[ui/necronomicon]].
+`notices.group` — Rows of one kind are one block, at most `NOTICE_GROUP_MAX` of them drawn, the rest counted on one more line; `NOTICE_ORDER` starts with `recap`, then `tutorial` `tutorial-end` `tutorial-event`, then one-time `joined` `quit` `desynced` `contract-done` `research-done` `grandma`; `necronomicon` sits with the rows waiting to be spent, above `points` — [[ui/necronomicon]].
+
+`notices.wrap` — Row text truncates to one line for every kind except `tutorial` `tutorial-end` `tutorial-event`, which wrap; a wrapped row aligns its glyphs to the first line.
+
+`notices.tutorial` — The chain is at most one row, `tutorial` on steps 1 to 8 and `tutorial-end` on step 9, read from `World.tutorial`; `tutorial-event` is a one-time row minted by comparing `fired` between passes; all three skip two-pass, carry no bar, cells or subject, and `go: none`; right-click on `tutorial` is refused, on `tutorial-end` it is `World.seeTutorial()`, on `tutorial-event` it drops the row; no tutorial row when `world.local !== 0` — [[mechanics/tutorial]].
 
 `notices.bar` — A bar is drawn only for a row with a clock, and its colour is `noticeBad(kind)`: red for a draining loss, green for a filling contract or research job.

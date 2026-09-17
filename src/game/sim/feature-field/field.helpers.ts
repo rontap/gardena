@@ -329,8 +329,8 @@ export function canFertilize(w: World, at: Coord): boolean {
   return isTilled(c) && c.soil.fertilizer < FERT_PLOT_MAX
 }
 
-export function doFertilize(w: World, at: Coord): void {
-  if (!canFertilize(w, at)) return
+export function doFertilize(w: World, at: Coord): boolean {
+  if (!canFertilize(w, at)) return false
   const c = w.cell(at) as Extract<Plot, { soil: Soil }>
   const bag = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'compost' }> }
   const need = FERT_PLOT_MAX - c.soil.fertilizer
@@ -338,6 +338,7 @@ export function doFertilize(w: World, at: Coord): void {
   c.soil.feed(use)
   bag.item.liters -= use
   if (bag.item.liters <= 0) w.act.hand = { kind: 'empty' }
+  return true
 }
 
 export function canTend(w: World, at: Coord): boolean {

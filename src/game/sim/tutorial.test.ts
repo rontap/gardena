@@ -1,33 +1,37 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { Plant } from './plant.ts'
-import { Rng } from './rng.ts'
 import { dump, parse } from './feature-save/save.ts'
-import { Soil, SOIL_WATER_MID, waterBand } from './soil.ts'
-import { check, ready, startTutorial, type Tutorial } from './tutorial.ts'
+import { Soil, SOIL_WATER_MID } from './soil.ts'
+import { markTutorial, startTutorial, tutorialStep, tutorialTick, type TutorialMark, type TutorialStep } from './tutorial.ts'
 import { World } from './world.ts'
 
-const AT = { col: 10, row: 12 }
-
-function on(step: Tutorial['kind'] extends 'on' ? never : 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9, extra?: { poured?: boolean; sold?: boolean }): Tutorial {
-  return { kind: 'on', step, poured: extra?.poured === true, sold: extra?.sold === true }
+function bed(): Soil {
+  return new Soil(SOIL_WATER_MID, 1, 0.03)
 }
 
-function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
-  return new Soil(water, fertilizer, 0.03)
+function chain(w: World, step: TutorialStep, marks: TutorialMark[]): void {
+  w.tutorial = { kind: 'chain', step, marks }
 }
 
-function plots(w: World, n: number, kind: 'empty' | 'growing' | 'ripe'): void {
+function stepOf(w: World): TutorialStep | undefined {
+  const t = w.tutorial
+  return t.kind === 'chain' ? t.step : undefined
+}
+
+function dig(w: World, n: number): void {
+  for (let i = 0; i < n; i++) w.setCell({ col: 10 + i, row: 12 }, { kind: 'empty', soil: bed() })
+}
+
+function grow(w: World, n: number, crop: 'carrot' | 'tomato'): void {
   for (let i = 0; i < n; i++) {
-    const at = { col: 10 + i, row: 12 }
-    if (kind === 'empty') w.setCell(at, { kind: 'empty', soil: bed() })
-    else w.setCell(at, { kind, soil: bed(), plant: new Plant('carrot', 'base', 0) })
+    w.setCell({ col: 10 + i, row: 12 }, { kind: 'growing', soil: bed(), plant: new Plant(crop, 'base', 0) })
   }
 }
 
-describe('tutorial', () => {
-  test('Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall` and query not `start=now` or `start=unlock`. `slotExists()` or `#start_now` or `#unlockall` or `?start=now` or `?start=unlock` → off, including New Game. Load / Upload → off.', () => {
-    expect(startTutorial('new', false).kind).toBe('on')
+describe('tutorial.on', () => {
+  test('The chain starts only at New Game with `!slotExists()`. A stored farm, `start_now`, Load and Upload are all off, and a fresh `World` is off until App says otherwise.', () => {
+    expect(startTutorial('new', false)).toEqual({ kind: 'chain', step: 1, marks: [] })
     expect(startTutorial('new', true).kind).toBe('off')
     expect(startTutorial('start_now', false).kind).toBe('off')
     expect(startTutorial('start_now', true).kind).toBe('off')
@@ -35,165 +39,165 @@ describe('tutorial', () => {
     expect(startTutorial('load', true).kind).toBe('off')
     expect(startTutorial('upload', false).kind).toBe('off')
     expect(startTutorial('upload', true).kind).toBe('off')
+    expect(new World(1).tutorial.kind).toBe('off')
   })
+})
 
-  test('No tutorial field on `Save` or `World`. Session only. Parse does not resume a step.', () => {
+describe('tutorial.save', () => {
+  test('Step, marks, fired lines and `delivered` ride on `Save`. A load resumes the step the farm was on.', () => {
     const w = new World(1)
-    expect(Object.hasOwn(w, 'tutorial')).toBe(false)
-    const save = dump(w)
-    expect(Object.hasOwn(save, 'tutorial')).toBe(false)
-    const r = parse(JSON.stringify(save))
-    expect(r.ok).toBe(true)
-    if (!r.ok) return
-    expect(Object.hasOwn(r.world, 'tutorial')).toBe(false)
-  })
-
-  test('`tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2.', () => {
-    const w = new World(1)
-    const t1 = check(w, on(1))
-    expect(t1.kind === 'on' && t1.step === 1).toBe(true)
-    const spots = [
-      { col: 10, row: 12 },
-      { col: 11, row: 12 },
-      { col: 12, row: 12 },
-      { col: 13, row: 12 },
-      { col: 14, row: 12 },
-    ]
-    w.setCell(spots[0], { kind: 'empty', soil: bed() })
-    const afterOne = check(w, on(1))
-    expect(afterOne.kind === 'on' && afterOne.step === 2).toBe(true)
-    w.setCell(spots[1], { kind: 'empty', soil: bed() })
-    w.setCell(spots[2], { kind: 'empty', soil: bed() })
-    w.setCell(spots[3], { kind: 'empty', soil: bed() })
-    w.setCell(spots[4], { kind: 'empty', soil: bed() })
-    const afterFive = check(w, on(1))
-    expect(afterFive.kind === 'on' && afterFive.step !== 2).toBe(true)
-    expect(afterFive.kind === 'on' && afterFive.step === 3).toBe(true)
-    w.setCell(spots[0], { kind: 'empty', soil: bed() })
-    const still = check(w, afterFive)
-    expect(still.kind === 'on' && still.step === 3).toBe(true)
-  })
-
-  test('Step 5 completes on `startResearch` that sets `job.kind === \'run\'`, or `done.size > 0`. Not on opening Research.', () => {
-    const w = new World(1)
-    plots(w, 5, 'growing')
-    const at5 = check(w, on(1))
-    expect(at5.kind === 'on' && at5.step === 5).toBe(true)
-    const opened = check(w, at5)
-    expect(opened.kind === 'on' && opened.step === 5).toBe(true)
-    expect(w.job.kind).toBe('idle')
-    w.startResearch('unlock-multi-crop')
-    expect(w.job.kind).toBe('run')
-    const after = check(w, at5)
-    expect(after.kind === 'on' && after.step !== 5).toBe(true)
+    chain(w, 5, ['poured', 'filled'])
+    w.delivered = 12
+    const mid = parse(JSON.stringify(dump(w)))
+    expect(mid.ok).toBe(true)
+    if (!mid.ok) return
+    expect(mid.world.tutorial).toEqual({ kind: 'chain', step: 5, marks: ['poured', 'filled'] })
+    expect(mid.world.delivered).toBe(12)
     const w2 = new World(1)
-    plots(w2, 5, 'growing')
-    w2.done.add('unlock-multi-crop')
-    const viaDone = check(w2, on(1))
-    expect(viaDone.kind === 'on' && viaDone.step !== 5).toBe(true)
+    w2.tutorial = { kind: 'events', fired: ['research'] }
+    const after = parse(JSON.stringify(dump(w2)))
+    expect(after.ok).toBe(true)
+    if (!after.ok) return
+    expect(after.world.tutorial).toEqual({ kind: 'events', fired: ['research'] })
   })
+})
 
-  test('Step 6 ready is `waterBand(...) === \'red\'` on a `growing` plant. No extra thirst flag.', () => {
+describe('tutorial.steps', () => {
+  test('The nine steps finish on tilled plots, seeds in hand, plants standing, the poured / filled / placed / fertilized marks, and one fruit delivered. Any crop counts.', () => {
     const w = new World(1)
-    const p = new Plant('carrot', 'base', 0)
-    w.setCell(AT, { kind: 'growing', soil: bed(0), plant: p })
-    expect(waterBand(0, p.stats(w.modifiers).waterTolerance)).toBe('red')
-    const t: Tutorial = { kind: 'on', step: 6, poured: false, sold: false }
-    expect(ready(6, w, t)).toBe(true)
-    w.setCell(AT, { kind: 'growing', soil: bed(SOIL_WATER_MID), plant: p })
-    expect(ready(6, w, t)).toBe(false)
-    expect('thirst' in w).toBe(false)
-    expect('thirst' in p).toBe(false)
+    chain(w, 1, [])
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(1)
+    dig(w, 4)
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(2)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'seeds', crop: 'tomato', variety: 'base', quality: 0, count: 4 } }
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(3)
+    grow(w, 4, 'tomato')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(4)
+    markTutorial(w, 'poured')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(5)
+    markTutorial(w, 'filled')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(5)
+    markTutorial(w, 'placed')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(6)
+    w.delivered = 1
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(7)
+    grow(w, 6, 'carrot')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(8)
+    markTutorial(w, 'fertilized')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(9)
   })
 
-  test('Step 8 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.', () => {
+  test('The step never decreases. Losing the plants that finished a step does not walk the chain back.', () => {
     const w = new World(1)
-    plots(w, 4, 'growing')
-    w.setCell({ col: 14, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'base', 0) })
-    w.done.add('unlock-multi-crop')
-    w.drops.push({
-      at: AT,
-      item: {
-        kind: 'fruit',
-        crop: 'carrot',
-        variety: 'base', quality: 0,
-        count: 1,
-        unitSale: 1,
-        freshness: 1,
-        cut: false,
-      },
-    })
-    const t = check(w, on(1))
-    expect(t.kind === 'on' && t.step === 8).toBe(true)
-    w.clock.t = 220
-    expect(w.marketOpen()).toBe(true)
-    w.sellAll()
-    const closed = check(w, t)
-    expect(closed.kind === 'on' && closed.step === 8).toBe(true)
-    w.clock.t = 10
-    w.sellAll()
-    expect(w.marketGain()).toBe(0)
-    const noop = check(w, t)
-    expect(noop.kind === 'on' && noop.step === 8).toBe(true)
-    w.stall.carrot.take('base', 2, 1)
-    expect(w.marketOpen() && w.marketGain() > 0).toBe(true)
-    const pays = w.marketOpen() && w.marketGain() > 0
-    w.sellAll()
-    const next = check(w, t.kind === 'on' ? { ...t, sold: pays } : t)
-    expect(next.kind === 'on' && next.step === 9).toBe(true)
+    chain(w, 1, [])
+    dig(w, 4)
+    grow(w, 4, 'carrot')
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(4)
+    for (let i = 0; i < 4; i++) w.setCell({ col: 10 + i, row: 12 }, { kind: 'empty', soil: bed() })
+    tutorialTick(w)
+    expect(stepOf(w)).toBe(4)
   })
+})
 
-  test('Step 9 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.', () => {
+describe('tutorial.ripe', () => {
+  test('Step 6 shows nothing until a crop is ripe. Every other step shows as soon as it is reached.', () => {
     const w = new World(1)
-    const t: Tutorial = { kind: 'on', step: 9, poured: true, sold: true }
-    expect(check(w, t)).toEqual(t)
-    const later = check(w, t)
-    expect(later.kind).toBe('on')
-    expect(later.kind === 'on' && later.step === 9).toBe(true)
+    chain(w, 6, [])
+    expect(tutorialStep(w)).toBeUndefined()
+    w.setCell({ col: 10, row: 12 }, { kind: 'ripe', soil: bed(), plant: new Plant('carrot', 'base', 0) })
+    expect(tutorialStep(w)).toBe(6)
+    chain(w, 3, [])
+    expect(tutorialStep(w)).toBe(3)
   })
+})
 
-  test('Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.', () => {
+describe('tutorial.dismiss', () => {
+  test('`seeTutorial` closes the chain at step 9 and does nothing on steps 1 to 8. A closed chain hands over to the event-bound lines.', () => {
     const w = new World(1)
-    const money = w.money
-    const crop = w.cell(AT).kind
-    const owned = w.family.owned.size
-    check(w, on(1))
-    expect(w.money).toBe(money)
-    expect(w.cell(AT).kind).toBe(crop)
-    expect(w.family.owned.size).toBe(owned)
+    chain(w, 8, [])
+    w.seeTutorial()
+    expect(w.tutorial).toEqual({ kind: 'chain', step: 8, marks: [] })
+    chain(w, 9, [])
+    w.seeTutorial()
+    expect(w.tutorial).toEqual({ kind: 'events', fired: [] })
+    w.seeTutorial()
+    expect(w.tutorial).toEqual({ kind: 'events', fired: [] })
   })
+})
 
-  test('dump→parse restores seed, clock, money, shop/fruit cursors, a tilled cell, idle gardener', () => {
+describe('tutorial.events', () => {
+  test('The research line waits for day 2 and money over 20, and skips when a job runs or anything is already researched.', () => {
     const w = new World(1)
-    w.rng.stream('fruit').next()
-    w.rng.stream('fruit').next()
-    w.rng.stream('fruit').next()
-    w.setCell(AT, { kind: 'empty', soil: bed(0.8, 0.4) })
-    w.clock.day = 3
-    w.clock.t = 41
-    w.money = 88
-    w.seats[0].actor.x = 12.25
-    w.seats[0].actor.y = 9.75
-    w.enqueue({ act: 'walk', at: AT })
-    const text = JSON.stringify(dump(w))
-    const r = parse(text)
-    expect(r.ok).toBe(true)
-    if (!r.ok) return
-    expect(r.world.seed).toBe(1)
-    expect(r.world.clock.day).toBe(3)
-    expect(r.world.clock.t).toBe(41)
-    expect(r.world.money).toBe(88)
-    expect(r.world.rng.consumed('fruit')).toBe(3)
-    expect(r.world.cell(AT).kind).toBe('empty')
-    expect(r.world.seats[0].queue).toEqual([])
-    expect(r.world.seats[0].actor.work).toBe(0)
-    expect(r.world.seats[0].actor.x).toBe(12.25)
-    expect(r.world.seats[0].actor.y).toBe(9.75)
-    const seq = new Rng(1)
-    seq.stream('fruit').next()
-    seq.stream('fruit').next()
-    seq.stream('fruit').next()
-    expect(r.world.rng.stream('fruit').next()).toBe(seq.stream('fruit').next())
+    w.tutorial = { kind: 'events', fired: [] }
+    w.money = 100
+    tutorialTick(w)
+    expect(w.tutorial).toEqual({ kind: 'events', fired: [] })
+    w.clock.day = 2
+    tutorialTick(w)
+    expect(w.tutorial.kind === 'events' && w.tutorial.fired).toContain('research')
+    const running = new World(1)
+    running.tutorial = { kind: 'events', fired: [] }
+    running.money = 100
+    running.clock.day = 2
+    running.job = { kind: 'run', id: 'unlock-multi-crop', left: 5 }
+    tutorialTick(running)
+    expect(running.tutorial.kind === 'events' && running.tutorial.fired).not.toContain('research')
+    const doneAlready = new World(1)
+    doneAlready.tutorial = { kind: 'events', fired: [] }
+    doneAlready.money = 100
+    doneAlready.clock.day = 2
+    doneAlready.done.add('unlock-multi-crop')
+    tutorialTick(doneAlready)
+    expect(doneAlready.tutorial.kind === 'events' && doneAlready.tutorial.fired).not.toContain('research')
   })
 
+  test('The sprinkler line waits for day 5 and skips once automated irrigation is researched. The contracts line waits for 30 delivered fruit and skips once contracts are researched.', () => {
+    const w = new World(1)
+    w.tutorial = { kind: 'events', fired: [] }
+    w.clock.day = 5
+    w.delivered = 30
+    tutorialTick(w)
+    expect(w.tutorial.kind === 'events' && w.tutorial.fired).toContain('irrigation')
+    expect(w.tutorial.kind === 'events' && w.tutorial.fired).toContain('contracts')
+    const researched = new World(1)
+    researched.tutorial = { kind: 'events', fired: [] }
+    researched.clock.day = 5
+    researched.delivered = 30
+    researched.done.add('unlock-auto-irrigation')
+    researched.done.add('unlock-contracts')
+    tutorialTick(researched)
+    expect(researched.tutorial.kind === 'events' && researched.tutorial.fired).not.toContain('irrigation')
+    expect(researched.tutorial.kind === 'events' && researched.tutorial.fired).not.toContain('contracts')
+  })
+
+  test('Each event-bound line fires once. A second pass with the condition still holding adds nothing.', () => {
+    const w = new World(1)
+    w.tutorial = { kind: 'events', fired: [] }
+    w.clock.day = 5
+    w.money = 0
+    tutorialTick(w)
+    tutorialTick(w)
+    tutorialTick(w)
+    expect(w.tutorial.kind === 'events' && w.tutorial.fired).toEqual(['irrigation'])
+  })
+
+  test('A farm whose tutorial is off never fires a line.', () => {
+    const w = new World(1)
+    w.clock.day = 9
+    w.money = 500
+    w.delivered = 90
+    tutorialTick(w)
+    expect(w.tutorial).toEqual({ kind: 'off' })
+  })
 })

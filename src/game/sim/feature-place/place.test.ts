@@ -1,4 +1,4 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { occupiedCells, skuBase, SKU_FOOT } from '../building.ts'
 import { isIoCell, IO_SKUS } from '../feature-machines/machine.ts'

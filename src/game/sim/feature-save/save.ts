@@ -5,6 +5,7 @@ import type { Contracts } from '../feature-contracts/market.h.ts'
 import type { Plant } from '../plant.ts'
 import type { Soil } from '../soil.ts'
 import { STALL_IDS, type StallGood } from '../stall.ts'
+import { GAME_VERSION } from '../version.ts'
 import type { World } from '../world.ts'
 import type { RouteStop, Trailer, Vehicle } from '../feature-vehicles/vehicle.h.ts'
 import type {
@@ -20,7 +21,6 @@ import type {
 
 export const SLOT_KEY = 'gardena-save-slot-1'
 export const DOWNLOAD_NAME = 'gardena.json'
-export const SAVE_VERSION = 2.4 as const
 
 export type {
   LoadFailReason,
@@ -44,7 +44,7 @@ export type {
 export function dump(world: World): Save {
   return {
     game: 'gardena',
-    version: SAVE_VERSION,
+    version: GAME_VERSION,
     savedAt: new Date().toISOString(),
     rng: { seed: world.rng.seed, fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },
@@ -103,6 +103,8 @@ export function dump(world: World): Save {
     recapUnseen: world.recapUnseen.slice(),
     grandma: world.grandma,
     grandmaUnseen: world.grandmaUnseen.slice(),
+    tutorial: world.tutorial,
+    delivered: world.delivered,
     familiarity: { ...world.familiarity },
     chunks: world.owned.map(id => {
       const { col0, row0 } = chunkRect(id)

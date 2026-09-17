@@ -54,7 +54,7 @@ Water-system sensors: `netOfCell` + cached demand, not `grid().find`. — [[mech
 
 `unlock-smart-irrigation`. Feature, not a building. Every placed sprinkler gains an output slider: how many litres a day it pours per tile, `0` to `SPRINKLER_TILE_DAY` on `SPRINKLER_STEP` stops. `Tune` `{ kind: 'rate', day }`, snapped in `tuneSprinklerBody` so a remote seat's command lands on a stop too. `0` pours nothing. Tuning does not rewrite soil already wet or dry. The slider and the signal input are one row. — [[ui/docks]]
 
-`Tune` still reads `{ kind: 'flat' }` and `{ kind: 'crop' }`: sprinklers saved before the slider carry them, `flat` as `SPRINKLER_TILE_RATE` and `crop` as that crop's `waterUsePerSec`. Nothing writes them. Collapsing `Tune` to the one variant needs a `SAVE_VERSION` bump, which is the orchestrator's.
+`Tune` still reads `{ kind: 'flat' }` and `{ kind: 'crop' }`: sprinklers saved before the slider carry them, `flat` as `SPRINKLER_TILE_RATE` and `crop` as that crop's `waterUsePerSec`. Nothing writes them. Collapsing `Tune` to the one variant needs a `GAME_VERSION` bump, which is the orchestrator's.
 
 ## Hand pour
 

@@ -17,7 +17,7 @@ export type Segment = { at: Edge; gate: Gate }
  * What a sprinkler pours, per tile. `rate` is what the HUD writes: litres a day,
  * on `SPRINKLER_STEP` stops. `flat` and `crop` are only ever read — sprinklers
  * saved before the slider carry them, and dropping them would need a
- * `SAVE_VERSION` bump this repo reserves for the orchestrator.
+ * `GAME_VERSION` bump this repo reserves for the orchestrator.
  */
 export type Tune = { kind: 'flat' } | { kind: 'crop'; crop: GrownCrop } | { kind: 'rate'; day: number }
 

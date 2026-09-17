@@ -13,7 +13,7 @@ Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
 - Minor / major: name files. No sample code in the spawn prompt.
 - One spawn per kind (coders: one per partition). Wrong spec or impl: edit the files, or `resume_from` that child. Do not spawn a new agent of that kind. [[pipeline]]
 - Grep `<needs-game-text-writer>` after [[agents/game-text-writer]]. Hits → edit, or `resume_from`. Do not spawn a new one. Present that agent's summary.
-- [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Paste changelog lines the text writer drafted.
+- [[GLOBAL_VERSION]], wordmark, `GAME_VERSION`, `src/game/ui/changelog.md`, any `changelogs-*.md`. Paste changelog lines the text writer drafted.
 
 ## Job
 

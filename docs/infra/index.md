@@ -13,6 +13,6 @@ Default branch, both green:
 - Vite `dist/` → GitHub Pages. `--base` from `configure-pages` `base_path` (`/gardena` here).
 - HEAD subject `N.N.N…` → tag `N.N.N` + GitHub Release. Existing release: no-op. Subject not `N.N.N`: no-op.
 
-`package.json` `version`, wordmark, `SAVE_VERSION`, `PROTOCOL` are not this workflow.
+`package.json` `version`, wordmark, `GAME_VERSION` are not this workflow.
 
 Stale runs on non-default branches cancel. Pages deploys do not cancel in-flight.

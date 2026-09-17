@@ -85,7 +85,7 @@ Footer names the delivery rule while the store is empty, then *Walking up emptie
 
 Full names the store it means: `'Seed silo full'` / `'Additive store full'` at the house, `'Seeding silo full'` / `'Additive silo full'` on a field silo. `rowState` mirrors that with `'field-silo-full'` / `'field-store-full'` and reads the store at `at`, never `world.silo` / `world.additives`.
 
-`PROTOCOL` moved for the two new `Cmd` fields.
+`GAME_VERSION` moved for the two new `Cmd` fields.
 
 ## Cue
 

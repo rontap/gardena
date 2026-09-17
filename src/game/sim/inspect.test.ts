@@ -1,4 +1,4 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import { AXES, CONTAINERS, PICKAXES, SHOVELS, SPEECH_S } from '../defs/items.ts'

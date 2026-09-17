@@ -1,124 +1,95 @@
 # Tutorial
 
-Early Access 1 tour. No new gameplay. Copy: [[ui/tutorial]]. This note is gates, steps, predicates.
+The first farm's teaching. No new gameplay. Every line is a Command Center row — [[ui/notices]]. Numbers `src/game/defs/tutorial.ts`. Copy `messages/en/tutorial.json`, prefix `tutorial_`.
+
+Two parts. The **chain** is nine steps in order, one row at a time, ending when the player dismisses step 9. The **event-bound lines** are three single rows after the chain, each fired once for the life of the farm when its condition holds.
 
 ## On / off
 
-Decided when play starts. Not re-checked mid-farm.
+Decided when play starts, then saved with the farm.
 
 | start | tutorial |
 |---|---|
-| New Game, `!slotExists()`, fragment not `start_now` or `unlockall`, query not `start=now` or `start=unlock` | on |
-| New Game, `slotExists()` | off |
-| Load Save | off |
-| Upload Save | off |
-| fragment `start_now` (`#start_now`) or query `start=now` | off |
-| fragment `unlockall` (`#unlockall`) or query `start=unlock` | off |
+| New Game, `!slotExists()` | `chain`, step 1 |
+| New Game, `slotExists()` | `off` |
+| Load Save, Upload Save | what the save holds |
+| fragment `start_now` / `unlockall`, query `start=now` / `start=unlock` | `off` |
 
-`slotExists()` is `SLOT_KEY` present. Off even if they press New Game.
+`slotExists()` is `SLOT_KEY` present — [[architecture/save]]. `#start_now` and `#unlockall` build a `new World` and never read the slot; App maps both fragments and both query values to `startTutorial('start_now')`. A `World` is `off` until App assigns, so only `playNew` can start a chain.
 
-`#start_now` / `?start=now` is `new World`. `#unlockall` / `?start=unlock` is `new World` then `unlockAll()`. Neither reads or writes the slot. App maps both fragments and both query values to `startTutorial('start_now')`.
-
-On only for first-time New Game with no stored farm.
-
-After step 9 card click: off for this farm this session. A later load is off because the slot exists, or a later New Game is off because the slot exists. Mid-tour load does not resume a step.
+Off is permanent for that farm. Nothing turns a tutorial back on.
 
 ## State
 
-Not a `World` field. Not a `Save` field. Sim does not change.
+`World.tutorial`, saved. Three shapes: `{ kind: 'off' }`, `{ kind: 'chain'; step; marks }`, `{ kind: 'events'; fired }`.
 
-App holds a session value: `{ kind: 'off' }` or `{ kind: 'on'; step: 1..9; poured; sold }`.
+`tutorialTick(world)` runs at the end of `tickWorld` — [[architecture/tick]]. It advances the step, and fires event-bound lines. It is the only writer.
 
-`check(world, tutorial)` is read-only on `World`. It returns the next `Tutorial`.
+`World.delivered` counts fruit consigned at the Produce Warehouse over the farm's whole life, saved. `tally.harvests` is the day's count and is not this.
 
-`poured` becomes true when `{ act: 'water' }` completes on a `growing` or `ripe` plot.
+### Marks
 
-`sold` becomes true when `sellAll` pays: `marketOpen` and `marketGain() > 0`. Dispatch of a no-op `sellAll` does not set it.
+Steps 4, 5 and 8 wait on an act that a later snapshot cannot show. `markTutorial` records them on the chain as the act completes, inside the sim, so a guest replays them the same way.
 
-## Card
-
-One step at a time. Show `step` iff `kind === 'on'` and `ready(step)`. No card while waiting for a time gate (`ready` false).
-
-No step counter. Do not block HUD. Do not force camera.
-
-Step 9: show until the player clicks the tutorial card. Then `{ kind: 'off' }`. No timer. No click-anywhere. No auto-dismiss. Clicks on the card on steps 1–8 do not skip.
-
-## Skip-ahead
-
-Each check: total recompute of `done`, not +1 from a counter.
-
-`need` = least `n` in 1..9 with `!done(n)`.
-
-If `need > step`, `step = need`. If `done(step)`, `step = need`. `step` never decreases.
-
-## Helpers
-
-Owned cells only.
-
-`tilledCount` = number of cells where `isTilled`. Kinds: `empty` `weed` `turf` `growing` `ripe` `dead` `rotten`. Distinct cells. Not `World.digs` (shovel also weeds and plants).
-
-Till = shovel `untilled` → `empty`. Re-shoveling the same tilled plot does not increment.
-
-`holdingSeeds` = `hand.kind === 'hold'` and `hand.item.kind === 'seeds'`. `{ kind: 'seeds'; crop: 'grass' }` is seeds. Not `tree-seed`.
-
-`planted` = a cell `kind` is `growing` | `ripe` | `dead` | `rotten`.
-
-`items` = hand (if hold) ∪ house `inventory` ∪ every chest `slots` ∪ `drops[].item`.
-
-`hasFruit` = some item `{ kind: 'fruit' }`. Not sugar.
-
-`wilted` = a `growing` cell with `waterBand(soil.water, plant.stats(modifiers).waterTolerance) === 'red'`. Existing water-red band. Drown is water red too. No extra thirst flag.
-
-`ripe` = a cell `kind === 'ripe'`. Annual `Plant`. A tree drop is not this.
-
-`researchStarted` = `job.kind === 'run'` or `done.size > 0`. Completes on `startResearch` that actually starts. No-op (`job` already run, id already done, gated, `money < cost`) does not start. Opening Research is App-local and does not complete.
-
-`stallStocked` = some `StallGood` bin count > 0.
+| mark | set by |
+|---|---|
+| `poured` | `water` finishing on a `growing` or `ripe` plot |
+| `filled` | a container reaching `capacityLiters` at a pump, tap or well |
+| `placed` | `drop` putting a held container on the ground |
+| `fertilized` | `fertilize` finishing on a plot |
 
 ## Steps
 
-| n | ready | done |
-|---|---|---|
-| 1 | on (start) | `tilledCount >= 1` |
-| 2 | `tilledCount >= 1` | `tilledCount >= 5` |
-| 3 | `tilledCount >= 5` | `holdingSeeds` or `planted` |
-| 4 | `holdingSeeds` | `planted` |
-| 5 | `planted` | `researchStarted` |
-| 6 | `wilted` | `poured` or `ripe` or `hasFruit` or `sold` |
-| 7 | `ripe` | `hasFruit` |
-| 8 | `hasFruit` or `stallStocked` | `sold` |
-| 9 | `sold` | click the tutorial card |
+One step at a time. Each check recomputes every step's done, takes the least undone, and never moves back — losing the plants that finished a step does not walk the chain back.
 
-Player tasks (not copy):
+| n | done |
+|---|---|
+| 1 | `world.tilled.size >= TUTORIAL_PLOTS` |
+| 2 | seeds in `seats[0]` hand, or any plant standing |
+| 3 | `TUTORIAL_PLOTS` plants standing |
+| 4 | mark `poured` |
+| 5 | marks `filled` and `placed` |
+| 6 | `world.delivered > 0` |
+| 7 | `TUTORIAL_PLANTS` plants standing |
+| 8 | mark `fertilized` |
+| 9 | right-click the row |
 
-1. Shovel grass / untilled → till.
-2. Till four more. Five distinct `isTilled` cells.
-3. House door, seeds in hand. Copy and this line: [[plans/next-tutorial-patch]].
-4. Plant those seeds on tilled (`empty` → `growing`). Hand is one item.
-5. `startResearch` any id.
-6. Bucket at `DOOR`. Fill at the pump is the existing fill. Pour on the plant. Bucket starts full; fill is not a completion predicate.
-7. Pick any fruit, then a second of the same crop onto the same stack — [[mechanics/inventory]].
-8. Truck, **Sell all**.
-9. Goodbye. Card click. Off.
+Standing is a `growing` or `ripe` cell. Any crop counts: the copy names carrots and potatoes as the suggestion, the condition takes whatever the player chose. Dead and rotten cells are not standing.
 
-Starter: shovel in hand, bucket drop at `DOOR`, seeds in the silo. [[mechanics/inventory]].
+`world.tilled` is the tilled-cell index, so step 1 counts digging. Grass sprouts as a `cover` on `untilled` and never raises it.
 
-Crops, buildings, skills, economy stay as they are. Shop prices out of scope. HUD, camera, panels stay as they are.
+Step 6 is the only step with a wait: it shows nothing until a cell is `ripe`, because the player can do nothing about it before that. `tutorialStep(world)` returns nothing in that gap and the row leaves the column.
+
+Starter farm: shovel in hand, bucket dropped at `DOOR`, `STARTER_SEEDS` in the Seed silo — seven carrot, two tomato, two potato. Step 7 wants six plants, so the player buys seeds to reach it. [[mechanics/inventory]]
+
+## Event-bound lines
+
+After step 9 is dismissed. Each is one row, fired once for the farm's life; `fired` keeps the ids, so a dismissed line never returns and a reload does not repeat it.
+
+| line | fires when |
+|---|---|
+| `research` | `clock.day >= TUTORIAL_RESEARCH_DAY`, `money > TUTORIAL_RESEARCH_MONEY`, no job running and `done` empty |
+| `irrigation` | `clock.day >= TUTORIAL_IRRIGATION_DAY` and `unlock-auto-irrigation` not researched |
+| `contracts` | `delivered >= TUTORIAL_DELIVERED` and `unlock-contracts` not researched |
+
+All six numbers are preferences in `src/game/defs/tutorial.ts`.
+
+A chain still running fires nothing: `tutorialTick` only reaches the event-bound lines in the `events` shape.
 
 ## Invariants
 
-`tutorial.on` — Tutorial on only at New Game with `!slotExists()` and fragment not `start_now` or `unlockall` and query not `start=now` or `start=unlock`. `slotExists()` or `#start_now` or `#unlockall` or `?start=now` or `?start=unlock` → off, including New Game. Load / Upload → off.
+`tutorial.on` — The chain starts only at New Game with `!slotExists()`; a stored farm, `start_now`, `unlockall`, Load and Upload are all `off`; a fresh `World` is `off` until App assigns; nothing turns a tutorial back on.
 
-`tutorial.session` — No tutorial field on `Save` or `World`. Session only. Parse does not resume a step.
+`tutorial.save` — `World.tutorial` and `World.delivered` are `Save` fields; a load resumes the step, the marks, the fired lines and the delivered count the farm had.
 
-`tutorial.tilled` — `tilledCount` is `isTilled` cells (`empty` `weed` `turf` `growing` `ripe` `dead` `rotten`), distinct. Five such cells: not step 2. Not `World.digs`.
+`tutorial.steps` — The step is the least step not done, recomputed each check, and never decreases; steps 1, 3 and 7 count tilled cells and standing plants of any crop; steps 4, 5 and 8 complete on marks, step 6 on `delivered > 0`, step 9 on the right-click.
 
-`tutorial.research` — Step 5 completes on `startResearch` that sets `job.kind === 'run'`, or `done.size > 0`. Not on opening Research.
+`tutorial.mark` — `poured` `filled` `placed` `fertilized` are set inside the sim as the act completes, never from a snapshot, and never twice.
 
-`tutorial.thirst` — Step 6 ready is `waterBand(...) === 'red'` on a `growing` plant. No extra thirst flag.
+`tutorial.ripe` — Step 6 shows nothing until a cell is `ripe`; every other reached step shows at once.
 
-`tutorial.sell` — Step 8 completes on a paying `sellAll` (`marketOpen` and `marketGain() > 0`). No-op does not complete.
+`tutorial.dismiss` — `seeTutorial` closes the chain at step 9 and does nothing on steps 1 to 8; closing hands over to the event-bound lines with `fired` empty; it is a direct `World` call, not a `Cmd`.
 
-`tutorial.dismiss` — Step 9 dismiss is a click on the tutorial card. Then off for this session. No timer, no click-anywhere, no auto-dismiss.
+`tutorial.events` — The three event-bound lines fire only in the `events` shape, once each for the farm's life, recorded in `fired`; research skips when a job runs or anything is researched; irrigation skips on `unlock-auto-irrigation`; contracts skips on `unlock-contracts`.
 
-`tutorial.no-force` — Tutorial does not change crops, buildings, skills, or economy. Does not block HUD. Does not force camera. No step counter.
+`tutorial.no-force` — The tutorial does not change crops, buildings, skills, or economy; it does not block the HUD, force the camera, or show a step counter.

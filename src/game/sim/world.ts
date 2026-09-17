@@ -188,6 +188,7 @@ import * as field from './feature-field/field.ts'
 import * as enclosure from './feature-enclosure/enclosure.ts'
 import * as place from './feature-place/place.ts'
 import { originOrder } from './util.ts'
+import type { Tutorial } from './tutorial.ts'
 
 export type * from './world.h.ts'
 import type {
@@ -242,7 +243,7 @@ function groundSig(c: Cell): string {
 
 const LOG_CAP = 500
 
-export type PingKind = 'dirty' | 'poured' | 'sold'
+export type PingKind = 'dirty' | 'sold'
 
 export type DirtyReason = 'act' | 'field' | 'big' | 'speech' | 'vfx'
 
@@ -320,6 +321,8 @@ export class World {
   familiarity: { [K in GrownCrop]: number } = emptyFamiliarity()
   grandma: Grandma = 'well'
   grandmaUnseen: Grandma[] = []
+  tutorial: Tutorial = { kind: 'off' }
+  delivered = 0
   groundRev = 0
   bigTicks = 0
   cheatFastResearch = false
@@ -422,6 +425,8 @@ export class World {
       this.recapUnseen = h.recapUnseen
       this.grandma = h.grandma
       this.grandmaUnseen = h.grandmaUnseen
+      this.tutorial = h.tutorial
+      this.delivered = h.delivered
       this.necronomicon = h.necronomicon
       this.familiarity = h.familiarity
       this.segments.clear()
@@ -1917,6 +1922,13 @@ export class World {
     const i = this.recapUnseen.indexOf(day)
     if (i < 0) return
     this.recapUnseen.splice(i, 1)
+    this.ping()
+  }
+
+  seeTutorial(): void {
+    const t = this.tutorial
+    if (t.kind !== 'chain' || t.step !== 9) return
+    this.tutorial = { kind: 'events', fired: [] }
     this.ping()
   }
 

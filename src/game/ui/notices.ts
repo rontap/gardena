@@ -11,6 +11,8 @@ import type { RosterSeat } from '../sim/mp.ts'
 import { grid } from '../sim/nets.ts'
 import { bookOf, ritualReady } from '../sim/feature-necronomicon/necronomicon.ts'
 import { fertBand, waterBand } from '../sim/soil.ts'
+import { TUTORIAL_PLANTS, TUTORIAL_PLOTS } from '../defs/tutorial.ts'
+import { tutorialStep, type TutorialEvent, type TutorialStep } from '../sim/tutorial.ts'
 import type { SeatId, World } from '../sim/world.ts'
 
 export const NOTICE_SECONDS = 1
@@ -18,6 +20,9 @@ export const NOTICE_GROUP_MAX = 3
 export const NOTICE_WATER_LOW = 0.2
 
 export type NoticeKind =
+  | 'tutorial'
+  | 'tutorial-end'
+  | 'tutorial-event'
   | 'recap'
   | 'grandma'
   | 'necronomicon'
@@ -42,6 +47,9 @@ export type NoticeKind =
 
 export const NOTICE_ORDER: readonly NoticeKind[] = [
   'recap',
+  'tutorial',
+  'tutorial-end',
+  'tutorial-event',
   'joined',
   'quit',
   'desynced',
@@ -80,7 +88,12 @@ export function noticeBad(kind: NoticeKind): boolean {
   return BAD.includes(kind)
 }
 
+export function noticeWraps(kind: NoticeKind): boolean {
+  return kind === 'tutorial' || kind === 'tutorial-end' || kind === 'tutorial-event'
+}
+
 export type NoticeFace =
+  | { kind: 'tutorial' }
   | { kind: 'recap' }
   | { kind: 'grandma' }
   | { kind: 'necronomicon' }
@@ -124,6 +137,7 @@ export type Notice = {
 export type Pass = {
   activeIds: readonly ContractId[]
   running: ResearchId | undefined
+  fired: readonly TutorialEvent[]
 }
 
 function key(at: Coord): string {
@@ -387,8 +401,45 @@ export function necronomiconRows(world: World): Notice[] {
   ]
 }
 
+const STEP_TEXT: { readonly [K in TutorialStep]: () => string } = {
+  1: () => m.tutorial_1({ n: TUTORIAL_PLOTS }),
+  2: () => m.tutorial_2(),
+  3: () => m.tutorial_3({ n: TUTORIAL_PLOTS }),
+  4: () => m.tutorial_4(),
+  5: () => m.tutorial_5(),
+  6: () => m.tutorial_6(),
+  7: () => m.tutorial_7({ n: TUTORIAL_PLANTS }),
+  8: () => m.tutorial_8(),
+  9: () => m.tutorial_9(),
+}
+
+const EVENT_TEXT: { readonly [K in TutorialEvent]: () => string } = {
+  research: () => m.tutorial_event_research(),
+  irrigation: () => m.tutorial_event_irrigation(),
+  contracts: () => m.tutorial_event_contracts(),
+}
+
+export function tutorialRows(world: World): Notice[] {
+  if (world.local !== 0) return []
+  const step = tutorialStep(world)
+  if (step === undefined) return []
+  return [
+    {
+      id: `tutorial:${step}`,
+      kind: step === 9 ? ('tutorial-end' as const) : ('tutorial' as const),
+      text: STEP_TEXT[step](),
+      face: { kind: 'tutorial' as const },
+      subjects: [],
+      cells: [],
+      bar: undefined,
+      go: { kind: 'none' as const },
+    },
+  ]
+}
+
 export function noticeRows(world: World): Notice[] {
   return [
+    ...tutorialRows(world),
     ...grandmaRows(world),
     ...necronomiconRows(world),
     ...recapRows(world),
@@ -404,6 +455,7 @@ export function passOf(world: World): Pass {
   return {
     activeIds: world.contracts.active.map(a => a.offer.id),
     running: world.job.kind === 'run' ? world.job.id : undefined,
+    fired: world.tutorial.kind === 'events' ? world.tutorial.fired.slice() : [],
   }
 }
 
@@ -443,10 +495,26 @@ export function doneRows(world: World, before: Pass): Notice[] {
           },
         ]
       : []
-  return [...closed, ...research]
+  const events =
+    world.local === 0
+      ? passOf(world)
+          .fired.filter(id => !before.fired.includes(id))
+          .map(id => ({
+            id: `tutorial-event:${id}`,
+            kind: 'tutorial-event' as const,
+            text: EVENT_TEXT[id](),
+            face: { kind: 'tutorial' as const },
+            subjects: [],
+            cells: [],
+            bar: undefined,
+            go: { kind: 'none' as const },
+          }))
+      : []
+  return [...events, ...closed, ...research]
 }
 
 function skipDelay(kind: NoticeKind): boolean {
+  if (noticeWraps(kind)) return true
   return kind === 'recap' || kind === 'grandma' || kind === 'joined' || kind === 'quit' || kind === 'desynced'
 }
 

@@ -33,7 +33,7 @@ See [[canon]].
 - [[mechanics/enclosure]] — `enclosure.close` `enclosure.leak` `enclosure.grid` `enclosure.nest` `enclosure.static`
 - [[mechanics/log]] — `log.now` `log.dispatch` `log.cmds` `log.json` `log.letters`
 - [[mechanics/rng]] — `rng.spatial` `rng.fail` `rng.burrow`
-- [[mechanics/tutorial]] — `tutorial.on` `tutorial.session` `tutorial.tilled` `tutorial.research` `tutorial.thirst` `tutorial.sell` `tutorial.dismiss` `tutorial.no-force`
+- [[mechanics/tutorial]] — `tutorial.on` `tutorial.save` `tutorial.steps` `tutorial.mark` `tutorial.ripe` `tutorial.dismiss` `tutorial.events` `tutorial.no-force`
 - [[mechanics/multiplayer]] — `mp.tick` `mp.float` `mp.bundle` `mp.drop` `mp.guest` `mp.away` `mp.hello` `mp.mismatch` `mp.stride`
 - [[architecture/tick]] — `tick.scan` `tick.nets` `tick.ping`
 - [[architecture/view]] — `view.scan` `view.hit` `view.hud` `view.boot` `view.ticker` `view.edge` `view.source` `view.drop` `view.vfx.drain` `view.furnace-cover` `view.named-face` `view.infused-overlay` `view.round`

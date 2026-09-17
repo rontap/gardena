@@ -8,7 +8,6 @@ HUD, docks, inspect, place. As the game runs. Player sentences: [[standards/user
 - [[ui/changelog]]
 - [[ui/settings]]
 - [[ui/multiplayer]]
-- [[ui/tutorial]]
 - [[ui/place]]
 - [[ui/inspect]]
 - [[ui/machines]]

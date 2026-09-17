@@ -4,9 +4,8 @@ import { isTilled } from './plot.ts'
 import { drivesOut } from './sensor.ts'
 import type { TrailerPose, VehiclePose } from './feature-vehicles/vehicle.ts'
 import { dump, parse, type Save } from './feature-save/save.ts'
+import { GAME_VERSION } from './version.ts'
 import { cleanName, DT_MAX, type PlayerId, type Presence, type SeatId, type World } from './world.ts'
-
-export const PROTOCOL = 2.7
 
 /** Ticks between digest checks. */
 export const DIGEST_EVERY = 30
@@ -581,7 +580,7 @@ export class MpHost {
     })
   }
   private onHello(link: Link, msg: Extract<MpMsg, { a: 'hello' }>): void {
-    if (msg.protocol !== PROTOCOL) {
+    if (msg.protocol !== GAME_VERSION) {
       link.wire.send({ a: 'reject', reason: 'version' })
       return
     }
@@ -620,7 +619,7 @@ export class MpHost {
     link.n = this.world.logEnd
     link.wire.send({
       a: 'welcome',
-      protocol: PROTOCOL,
+      protocol: GAME_VERSION,
       seat,
       save: dump(this.world),
       now: this.world.now,
@@ -680,7 +679,7 @@ export class MpGuest {
   /** `desyncT` names the digest `t` that mismatched, so the host can count consecutive failures
    * without guessing from wall time. Omit it for an ordinary join or a stall retry. */
   hello(desyncT?: number, diff?: string[]): void {
-    this.wire.send({ a: 'hello', protocol: PROTOCOL, playerId: this.playerId, name: this.name, desyncT, diff })
+    this.wire.send({ a: 'hello', protocol: GAME_VERSION, playerId: this.playerId, name: this.name, desyncT, diff })
   }
   intent(cmd: Cmd): void {
     // TODO 1.1 multiplayer client prediction
@@ -743,7 +742,7 @@ export class MpGuest {
       return
     }
     if (msg.a === 'welcome') {
-      if (msg.protocol !== PROTOCOL) {
+      if (msg.protocol !== GAME_VERSION) {
         this.fail = 'version'
         return
       }

@@ -17,6 +17,7 @@ import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as queue from './queue.ts'
 import * as nets from './nets.ts'
 import { addRep, applyDayDemand, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
+import { tutorialTick } from './tutorial.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
 import { POINTS_PER_DAY, stipendOf, type World } from './world.ts'
@@ -215,4 +216,5 @@ export function tickWorld(world: World, dt: number): void {
   STALL_IDS.forEach(id => {
     world.stall[id].sat = recover(id, world.stall[id].sat, dt, crop => world.familiarity[crop])
   })
+  tutorialTick(world)
 }

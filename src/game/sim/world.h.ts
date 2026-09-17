@@ -1,4 +1,5 @@
 import type { Actor } from './actor.ts'
+import type { Tutorial } from './tutorial.ts'
 import type {
   AdditiveStore,
   ChunkId,
@@ -257,6 +258,8 @@ export type Hydrate = {
   recapUnseen: number[]
   grandma: Grandma
   grandmaUnseen: Grandma[]
+  tutorial: Tutorial
+  delivered: number
   segments: Segment[]
   wells: Well[]
   sprinklers: Sprinkler[]

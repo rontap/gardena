@@ -1,6 +1,6 @@
 # View
 
-PixiJS v8 canvas world. HUD stays React. Not tick logic. Not Save. Not `PROTOCOL`. [[architecture/modules]] [[architecture/tick]] [[architecture/world]] [[art/svg]] [[art/vfx]]
+PixiJS v8 canvas world. HUD stays React. Not tick logic. Not Save. Not `GAME_VERSION`. [[architecture/modules]] [[architecture/tick]] [[architecture/world]] [[art/svg]] [[art/vfx]]
 
 No `@pixi/react`. No Pixi HUD. No `Graphics.svg` for tiles. Farm sprites `eventMode` `'none'`. Hits are world-space math in `hit.ts`. Pointer while armed: [[ui/place]].
 

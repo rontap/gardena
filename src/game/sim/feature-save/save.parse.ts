@@ -86,8 +86,8 @@ import {
   type SaveSoil,
   type SaveTrailer,
   type SaveVehicle,
-  SAVE_VERSION,
 } from './save.ts'
+import { GAME_VERSION } from '../version.ts'
 
 export function parse(text: string, sink: LogSink = new MemorySink()): LoadResult {
   let save: Save
@@ -100,7 +100,7 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
   try {
     return { ok: true, world: worldFromSave(save, sink) }
   } catch {
-    return { ok: false, reason: save.version !== SAVE_VERSION ? 'version' : 'unusable' }
+    return { ok: false, reason: save.version !== GAME_VERSION ? 'version' : 'unusable' }
   }
 }
 
@@ -182,6 +182,8 @@ function worldFromSave(save: Save, sink: LogSink): World {
     recapUnseen: unseenFrom(save),
     grandma: save.grandma,
     grandmaUnseen: save.grandmaUnseen,
+    tutorial: save.tutorial,
+    delivered: save.delivered,
     segments: save.segments,
     wells: live.wells,
     sprinklers: save.sprinklers,

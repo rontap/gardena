@@ -12,7 +12,7 @@ Unit tests defend that id by asserting **observable sim state**. They are not a 
 
 ## What not to test
 
-Never test specifically for versions, ever. `expect(SAVE_VERSION)` or `PROTOCOL` `.toBe` is disallowed.
+Never test specifically for versions, ever. `expect(GAME_VERSION).toBe` is disallowed.
 
 Copy wording, layout, SVG, Tailwind, markup `contains`, CSS `scale(`. Playwright: new user path, behavior and chrome **presence**. Not a census of class names. `e2e/buildings.spec.ts` is a placement census shot, not a copy test. Do not `toHaveText` look copy. Boot `?start=now` / `?start=unlock` — wait for the Shop rail, not `.bg-grass` (the menu backdrop is grass too). `waitPlay` retries through a reload. CI: one worker, `vite preview` after `build`, not `vite`. Page `evaluate` must not `import('/src/…')` — preview has no source tree. Constructors and look helpers live on `window.__e2e`, next to `__world`.
 

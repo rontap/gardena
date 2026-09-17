@@ -1,12 +1,15 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "tutorial_1": "Till, plant, water, harvest, sell, buy better tools. Click a grass tile to dig.",
-  "tutorial_2": "Dig four more plots.",
-  "tutorial_3": "Click the house and take seeds in hand.",
-  "tutorial_4": "You only carry one item. Plant the seeds.",
-  "tutorial_5": "Open Research and start something.",
-  "tutorial_6": "A plant is thirsty. Pick up the bucket ({n} L), fill it at the pump, water the plant.",
-  "tutorial_7": "Something is ripe. Pick it, then pick another — the same fruit stacks in your hand.",
-  "tutorial_8": "Drop it off at the Produce Warehouse. It sells on the spot.",
-  "tutorial_9": "That's the tour. You're on your own."
+  "tutorial_1": "Dig out {n} plots of land with your shovel.",
+  "tutorial_2": "Go to the Seed silo, and take carrots.",
+  "tutorial_3": "Plant those {n} carrots in the tilled soil.",
+  "tutorial_4": "Plants need water. Without it they dry out and wilt. Grab the bucket and water them.",
+  "tutorial_5": "The bucket can be refilled at the Pump, refill it. Place it down somewhere with right click.",
+  "tutorial_6": "When crops are fully grown, you can harvest them with your hand and drop them off at the Produce Warehouse!",
+  "tutorial_7": "You can buy crops, expand and repeat! Try planting {n} potatoes now.",
+  "tutorial_8": "Plants also need fertilizer to grow. Go to the Additive store, pick up fertilizer and fertilize them. You can drop the fertilizer back into the store or put it down on the ground.",
+  "tutorial_9": "That's it! You'll see more tutorials pop up when appropriate. Right click to dismiss.",
+  "tutorial_event_research": "You should research something! Researching unlocks new buildings and crops!",
+  "tutorial_event_irrigation": "You should check out the automated irrigation, sprinklers can help you irrigate your crops!",
+  "tutorial_event_contracts": "You should check out researching contracts, they offer a more stable income!"
 }

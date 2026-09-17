@@ -4,7 +4,7 @@ import actorSvg from '../../assets/actor.svg?raw'
 import type { Coord } from '../sim/building.ts'
 import type { World } from '../sim/world.ts'
 import { HAT } from '../view/map.tsx'
-import { COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
+import { ACTOR, COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { STAT_COLOR } from './status.tsx'
 import { useCycle } from './cycle.ts'
 import { demandItem } from './feature-contracts/contracts.tsx'
@@ -14,6 +14,7 @@ import {
   groupNotices,
   noticeBad,
   noticeRows,
+  noticeWraps,
   passOf,
   recapRows,
   trackPass,
@@ -39,6 +40,7 @@ function hatInner(raw: string): string {
 const HAT_INNER = hatInner(actorSvg)
 
 function faceInner(face: NoticeFace): string {
+  if (face.kind === 'tutorial') return ACTOR
   if (face.kind === 'recap') return UI_RECAP_NIGHT
   if (face.kind === 'grandma') return UI_RECAP_NIGHT
   if (face.kind === 'necronomicon') return itemInner({ kind: 'necronomicon' })
@@ -103,12 +105,13 @@ function NoticeBar({ value, bad }: { value: number; bad: boolean }) {
 
 function Row({ row }: { row: Notice }) {
   const tint = row.face.kind === 'hat' ? HAT[row.face.seat] : undefined
+  const wrap = noticeWraps(row.kind)
   return (
     <div className="flex min-w-0 flex-col">
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className={`flex min-w-0 gap-1.5 ${wrap ? 'items-start' : 'items-center'}`}>
         <Glyph art={faceInner(row.face)} tint={tint} />
         {row.subjects.length > 0 && <Subject subjects={row.subjects} />}
-        <span className="min-w-0 flex-1 truncate text-base leading-tight">{row.text}</span>
+        <span className={`min-w-0 flex-1 text-base leading-tight ${wrap ? 'break-words' : 'truncate'}`}>{row.text}</span>
       </div>
       {row.bar !== undefined && <NoticeBar value={row.bar} bad={noticeBad(row.kind)} />}
     </div>
@@ -268,6 +271,7 @@ export function Notices({
               onGo(row.go)
             }}
             onDismiss={row => {
+              if (row.kind === 'tutorial') return
               const next = dropNotice(tracked.current, once.current, row.id)
               tracked.current = next.tracked
               once.current = next.once

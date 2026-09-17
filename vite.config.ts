@@ -30,7 +30,7 @@ export default defineConfig({
     setupFiles: ['src/game/sim/test-setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/_RECOVERY_BACKUP/**'],
     coverage: {
-      exclude: ['src/assets/**'],
+      exclude: ['src/assets/**', 'src/paraglide/**/!(en).js'],
     },
   },
 })

@@ -2,11 +2,11 @@
 
 P2P farm session. Star. Host sequences. Everyone simulates. Lockstep is host bundles, not wait-for-all-inputs. [[architecture/world]] [[architecture/log]] [[architecture/save]] [[architecture/modules]] [[mechanics/multiplayer]] [[plans/early-access-1.1]]
 
-`sim/mp.ts` owns `PROTOCOL`, `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer. `net/peer.ts` owns PeerJS `MpWire`. App holds the session. `World` does not import `peerjs`. `mp.ts` does not import `peerjs`.
+`sim/mp.ts` owns `MpMsg`, `MpWire`, `MpHost`, `MpGuest`, loopback, digest, sequencer. `sim/version.ts` owns `GAME_VERSION`. `net/peer.ts` owns PeerJS `MpWire`. App holds the session. `World` does not import `peerjs`. `mp.ts` does not import `peerjs`.
 
 ## Protocol
 
-Hello compares `PROTOCOL`, not `Save.version` alone. Guest protocol ≠ `PROTOCOL` → `reject: version`. Never hydrate. Digits: [[GLOBAL_VERSION]].
+Hello compares `GAME_VERSION`. Guest protocol ≠ `GAME_VERSION` → `reject: version`. Never hydrate. Digits: [[GLOBAL_VERSION]].
 
 ## Topology
 
@@ -42,7 +42,7 @@ RosterSeat =
 
 `rosterOf` has no `leave`. Silence (`AWAY_MS` / nap) pushes `roster` with no `leave`. Link released (`drop` / leave / `lost` / `DROP_MS`): that push sets `leave: 'drop'` on that seat. `bye: kicked` then drop: that push sets `leave: 'kicked'` on that seat. Later pushes omit it.
 
-`readMpMsg` copies `leave` iff it is `'drop'` or `'kicked'`. Absent stays absent. Additive JSON. Do not bump `PROTOCOL`.
+`readMpMsg` copies `leave` iff it is `'drop'` or `'kicked'`. Absent stays absent. Additive JSON. Do not bump `GAME_VERSION`.
 
 Command Center rows are stamped at the net/App boundary from that push, not from `noticeRows` — [[ui/notices]] `notices.roster`. Host stamps `joined` on a new seat or `away` → `in`; `quit` on `leave: 'drop'`; `desynced` on `leave: 'kicked'`. Guests: join from seats; quit vs kick from `leave`. Not this page's seat. Solo (`seats.length === 1`, no session) never mints.
 

@@ -20,4 +20,4 @@ No required verb, type token, colon, or previously/now frame. Parser does not th
 
 ## Who
 
-Orchestrator owns [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, and `src/game/ui/changelog.md`. [[agents/game-text-writer]] drafts the lines; orchestrator pastes. [[pipeline]] [[agents/orchestrator]]
+Orchestrator owns [[GLOBAL_VERSION]], wordmark, `GAME_VERSION`, and `src/game/ui/changelog.md`. [[agents/game-text-writer]] drafts the lines; orchestrator pastes. [[pipeline]] [[agents/orchestrator]]

@@ -14,7 +14,7 @@ One line, orchestrator, before any spawn. Children never write version digits.
 | **minor** | new invariant on an existing note, new SKU, new prompt / inspect row, new e2e path | architect → coder(s) → code-review → game-text-writer. Designer if SVG. Documenter if a new note or id. |
 | **major** | new mechanics note, new module, new dock / lens / overlay, or a new asset set | architect → designer? → coder(s) → code-review → documenter ∥ game-text-writer |
 
-Orchestrator owns [[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `changelogs-*.md`. Quote an allow in a child's prompt to hand one of those over.
+Orchestrator owns [[GLOBAL_VERSION]], wordmark, `GAME_VERSION`, `src/game/ui/changelog.md`, `changelogs-*.md`. Quote an allow in a child's prompt to hand one of those over.
 
 ## Order
 

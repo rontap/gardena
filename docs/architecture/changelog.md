@@ -4,7 +4,7 @@ Player-facing release list in the menu. Menu-local view state. Not World. Not Sa
 
 Boot `joining` stays App-owned; Menu forces home when `joining`; wordmark click is a no-op while joining.
 
-Changelog UI does not own `SAVE_VERSION`, dump `version`, or `PROTOCOL`. No migrate. Version: [[GLOBAL_VERSION]].
+Changelog UI does not own `GAME_VERSION`. No migrate. Version: [[GLOBAL_VERSION]].
 
 `src/game/ui/changelog.md` is the source of truth. Manual edits only. No script, dump, codegen, or agent writes that file from TypeScript, git, or defs. Markdown is never generated from code. `parseChangelog` reads. It does not write. No markdown library.
 

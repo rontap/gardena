@@ -16,6 +16,7 @@ import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as store from './store.ts'
 import { fillable } from './nets.ts'
 import { canSacrifice, doSacrifice } from './feature-necronomicon/necronomicon.ts'
+import { markTutorial } from './tutorial.ts'
 import type { Intent, TaskName, World } from './world.ts'
 
 function destOrigin(c: { base: Base }, owned: readonly ChunkId[]): Coord {
@@ -243,10 +244,14 @@ export function begin(world: World, i: Intent): void {
       }
       world.act.filling = true
       return
-    case 'drop':
+    case 'drop': {
+      const held = world.act.hand
+      const bucket = held.kind === 'hold' && held.item.kind === 'container'
       doDrop(world, i.at)
+      if (bucket && world.act.hand.kind === 'empty') markTutorial(world, 'placed')
       shiftHead(world)
       return
+    }
     case 'inventory':
       world.act.cue = { kind: 'inventory' }
       shiftHead(world)
@@ -463,10 +468,10 @@ export function finishWork(world: World): void {
   if (i.act === 'mine') field.doMine(world, i.at)
   if (i.act === 'plant') field.doPlant(world, i.at)
   if (i.act === 'water' && field.doWater(world, i.at)) {
-    world.emit('poured')
     world.burst('pour', i.at)
+    markTutorial(world, 'poured')
   }
-  if (i.act === 'fertilize') field.doFertilize(world, i.at)
+  if (i.act === 'fertilize' && field.doFertilize(world, i.at)) markTutorial(world, 'fertilized')
   if (i.act === 'compost') machines.doCompost(world, i.at)
   if (i.act === 'harvest') field.doHarvest(world, i.at)
   if (i.act === 'grind') machines.doGrind(world, i.at)
@@ -520,6 +525,7 @@ export function tickFill(world: World, dt: number): void {
   const add = fillDraw(world, source, dt)
   c.liters = add >= miss ? c.capacityLiters : c.liters + add
   if (c.liters === c.capacityLiters) {
+    markTutorial(world, 'filled')
     world.act.filling = false
       shiftHead(world)
   }

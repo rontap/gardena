@@ -83,7 +83,7 @@ Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. L
 
 `Act.openHud` `k` is a closed union: `sprinkler` | `water` | `harvest` | `counter` | `day` | `logic` | `variety` | `weather` | `pressure`.
 
-`Act.tuneSensor` inner `k` is a closed union: logic mode, variety flags, weather flags, pressure flags. New cmds → orchestrator bumps `PROTOCOL` with [[GLOBAL_VERSION]].
+`Act.tuneSensor` inner `k` is a closed union: logic mode, variety flags, weather flags, pressure flags. New cmds → orchestrator bumps `GAME_VERSION` with [[GLOBAL_VERSION]].
 
 `Act.delete` inner `k` is a closed union: pipe / sprinkler / building / wire / smart.
 

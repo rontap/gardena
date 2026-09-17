@@ -21,6 +21,7 @@ import {
   dropNotice,
   groupNotices,
   noticeRows,
+  noticeWraps,
   passOf,
   rosterNotices,
   trackPass,
@@ -149,7 +150,7 @@ describe('notices.once', () => {
       lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
       outcome: { kind: 'done', paid: 10, prize: { kind: 'cash' } },
     })
-    const rows = doneRows(w, { activeIds: [7], running: undefined })
+    const rows = doneRows(w, { activeIds: [7], running: undefined, fired: [] })
     expect(kinds(rows)).toEqual(['contract-done'])
     expect(rows[0].bar).toBeUndefined()
   })
@@ -165,13 +166,13 @@ describe('notices.once', () => {
       lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
       outcome: { kind: 'missed', sold: 0, penalty: 5 },
     })
-    expect(doneRows(w, { activeIds: [7], running: undefined })).toEqual([])
+    expect(doneRows(w, { activeIds: [7], running: undefined, fired: [] })).toEqual([])
   })
 
   test('a run that stopped with its id in done mints a research row', () => {
     const w = new World()
     w.done.add('unlock-multi-crop')
-    const rows = doneRows(w, { activeIds: [], running: 'unlock-multi-crop' })
+    const rows = doneRows(w, { activeIds: [], running: 'unlock-multi-crop', fired: [] })
     expect(kinds(rows)).toEqual(['research-done'])
   })
 
@@ -284,7 +285,7 @@ describe('notices.dismiss', () => {
 })
 
 describe('notices.roster', () => {
-  test('Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. They skip two-pass. Right-click dismiss; left click `go: none`. Reload or `World` swap drops them, same cost as `notices.once`. No cells. No bar. Face `{ kind: \'hat\'; seat }` → `actor-hat` tint `HAT[seat]`. Do not mint for `App.local`. Do not mint for `presence: \'away\'` from silence (`AWAY_MS` / nap). Quit is the link released (`drop` / leave / `lost`). Desynced is `bye: kicked` then drop. Joined is a new seat or `away` → `in`. Solo (`seats.length === 1`, no session) never mints. Host sets `RosterSeat.leave` `\'drop\' | \'kicked\'` on that roster push; silence roster omits `leave`. Other peers recover join from seats; quit vs kick from `leave` surviving `readMpMsg`. Additive JSON; do not bump `PROTOCOL`.', () => {
+  test('Kinds `joined` `quit` `desynced` are stamped at the net/App boundary, never by `noticeRows`. Not a `Cmd`. Not digested. Not in `Save`. Not a recap. They skip two-pass. Right-click dismiss; left click `go: none`. Reload or `World` swap drops them, same cost as `notices.once`. No cells. No bar. Face `{ kind: \'hat\'; seat }` → `actor-hat` tint `HAT[seat]`. Do not mint for `App.local`. Do not mint for `presence: \'away\'` from silence (`AWAY_MS` / nap). Quit is the link released (`drop` / leave / `lost`). Desynced is `bye: kicked` then drop. Joined is a new seat or `away` → `in`. Solo (`seats.length === 1`, no session) never mints. Host sets `RosterSeat.leave` `\'drop\' | \'kicked\'` on that roster push; silence roster omits `leave`. Other peers recover join from seats; quit vs kick from `leave` surviving `readMpMsg`. Additive JSON; do not bump `GAME_VERSION`.', () => {
     const w = new World(1)
     expect(kinds(noticeRows(w))).not.toContain('joined')
     expect(kinds(noticeRows(w))).not.toContain('quit')
@@ -346,7 +347,17 @@ describe('notices.roster', () => {
     const dropped = dropNotice(pending, joined.rows, joined.rows[0].id)
     expect(visibleRows(dropped.tracked, dropped.once)).toEqual([])
 
-    expect(NOTICE_ORDER.slice(0, 6)).toEqual(['recap', 'joined', 'quit', 'desynced', 'contract-done', 'research-done'])
+    expect(NOTICE_ORDER.slice(0, 9)).toEqual([
+      'recap',
+      'tutorial',
+      'tutorial-end',
+      'tutorial-event',
+      'joined',
+      'quit',
+      'desynced',
+      'contract-done',
+      'research-done',
+    ])
 
     const wireDrop = { a: 'roster' as const, seats: [host, adaDrop] }
     expect(readMpMsg(wireDrop)).toEqual(wireDrop)
@@ -427,5 +438,45 @@ describe('notices.roster', () => {
     applyRoster(mirror, peerA[peerA.length - 1])
     expect(mirror.seats[2].presence).toBe('away')
     expect(mirror.seats[2].name).toBe('Bea')
+  })
+})
+
+describe('tutorial.row', () => {
+  test('The chain is one row at the head of the column. Steps 1 to 8 are `tutorial`, step 9 is `tutorial-end`. No bar, no cells, no click. The text wraps.', () => {
+    const w = new World(1)
+    w.tutorial = { kind: 'chain', step: 3, marks: [] }
+    const rows = noticeRows(w).filter(r => r.kind === 'tutorial' || r.kind === 'tutorial-end')
+    expect(rows.length).toBe(1)
+    expect(rows[0].face).toEqual({ kind: 'tutorial' })
+    expect(rows[0].bar).toBeUndefined()
+    expect(rows[0].cells).toEqual([])
+    expect(rows[0].go).toEqual({ kind: 'none' })
+    expect(noticeWraps('tutorial')).toBe(true)
+    expect(noticeWraps('tutorial-end')).toBe(true)
+    expect(noticeWraps('tutorial-event')).toBe(true)
+    expect(noticeWraps('wilting')).toBe(false)
+    w.tutorial = { kind: 'chain', step: 9, marks: [] }
+    expect(kinds(noticeRows(w))).toContain('tutorial-end')
+    w.tutorial = { kind: 'off' }
+    expect(kinds(noticeRows(w)).some(k => k === 'tutorial' || k === 'tutorial-end')).toBe(false)
+  })
+
+  test('An event-bound line is a one-time row recovered by comparing passes, and a guest page shows no tutorial row at all.', () => {
+    const w = new World(1)
+    w.tutorial = { kind: 'events', fired: [] }
+    const before = passOf(w)
+    w.tutorial = { kind: 'events', fired: ['irrigation'] }
+    const minted = doneRows(w, before)
+    expect(kinds(minted)).toEqual(['tutorial-event'])
+    expect(minted[0].id).toBe('tutorial-event:irrigation')
+    expect(doneRows(w, passOf(w))).toEqual([])
+    const guest = new World(1)
+    guest.join('g1', 'Ada')
+    guest.local = 1
+    guest.tutorial = { kind: 'chain', step: 3, marks: [] }
+    expect(kinds(noticeRows(guest)).some(k => k === 'tutorial' || k === 'tutorial-end')).toBe(false)
+    const guestBefore = passOf(guest)
+    guest.tutorial = { kind: 'events', fired: ['irrigation'] }
+    expect(doneRows(guest, guestBefore)).toEqual([])
   })
 })

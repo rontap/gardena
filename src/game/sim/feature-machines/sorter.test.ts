@@ -1,4 +1,4 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { SORT_LEN, SORT_SECONDS } from '../../defs/items.ts'
 import { Chest, Sorter, sorterBase, sorterCells, type Coord, type Facing } from '../building.ts'

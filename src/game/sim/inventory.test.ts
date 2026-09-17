@@ -1,4 +1,4 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { GRASS_PACK, SILO_H, SILO_SEED_CAP, SILO_W, SUGAR_BAG } from '../defs/items.ts'
 import { SKUS } from '../defs/research.ts'

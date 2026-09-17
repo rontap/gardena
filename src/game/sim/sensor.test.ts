@@ -1,4 +1,4 @@
-// COMMANDMENT: never test specifically for versions, ever. expect(SAVE_VERSION) or PROTOCOL .toBe is disallowed.
+// COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, test } from 'vitest'
 import { BUTTON_PULSE, COUNTER_MAX, SENSOR_HOLD, SPRINKLER_TILE_RATE } from '../defs/items.ts'
 import { PUMP_BASE, Tree } from './building.ts'

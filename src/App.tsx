@@ -28,7 +28,6 @@ import { Family } from './game/ui/family.tsx'
 import { LensPanel } from './game/ui/lens.tsx'
 import { Menu } from './game/ui/menu.tsx'
 import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
-import { TutorialCard } from './game/ui/tutorial.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
 import { Notices } from './game/ui/notices.tsx'
 import { rosterNotices, type Notice, type NoticeGo } from './game/ui/notices.ts'
@@ -56,7 +55,7 @@ import { type WorkerSink } from './game/sim/log.ts'
 import { MpGuest, MpHost, RETRY_MAX, rosterOf, type RosterSeat } from './game/sim/mp.ts'
 import { dial, listen, openPeer } from './game/net/peer.ts'
 import { DOWNLOAD_NAME, dump, parse, readSlot, slotExists, writeSlot, type LoadFailReason } from './game/sim/feature-save/save.ts'
-import { check, startTutorial, type Tutorial } from './game/sim/tutorial.ts'
+import { startTutorial } from './game/sim/tutorial.ts'
 import { saveSettings, settings, type Settings } from './game/sim/settings.ts'
 
 const HASH = window.location.hash
@@ -94,9 +93,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     bootCheat(w)
     return w
   })
-  const [tutorial, setTutorial] = useState<Tutorial>(() =>
-    START_NOW ? startTutorial('start_now', slotExists()) : { kind: 'off' },
-  )
   const [fail, setFail] = useState<LoadFailReason | undefined>(undefined)
   const [mpFail, setMpFail] = useState<MpFail | undefined>(undefined)
   const [joining, setJoining] = useState(false)
@@ -202,15 +198,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
   useEffect(() => {
     if (world === undefined) return
     return world.on((kind, reasons) => {
-      setTutorial(t => {
-        if (t.kind !== 'on') return t
-        return check(world, {
-          kind: 'on',
-          step: t.step,
-          poured: t.poured || kind === 'poured',
-          sold: t.sold || kind === 'sold',
-        })
-      })
       if (kind === 'sold') {
         setHudN(x => x + 1)
         return
@@ -457,7 +444,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     return () => window.removeEventListener('pagehide', onPageHide)
   }, [])
 
-  function session(next: World, tut: Tutorial): void {
+  function session(next: World): void {
     prevDay.current = next.clock.day
     recapDayRef.current = undefined
     setRecapDay(undefined)
@@ -470,7 +457,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setRosterRows([])
     if (next.local === 0) bootCheat(next)
     setWorld(next)
-    setTutorial(tut)
     setFail(undefined)
     setPanel({ kind: 'none' })
     setCam(BOOT_CAM)
@@ -516,7 +502,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setPaused(false)
     setPanel({ kind: 'none' })
     setWorld(undefined)
-    setTutorial({ kind: 'off' })
     setFail(undefined)
     setMpFail(line)
   }
@@ -533,7 +518,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function playNew(): void {
-    session(new World(undefined, sink), startTutorial('new', slotExists()))
+    const next = new World(undefined, sink)
+    next.tutorial = startTutorial('new', slotExists())
+    session(next)
   }
 
   function playLoad(): void {
@@ -544,7 +531,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       setFail(r.reason)
       return
     }
-    session(r.world, startTutorial('load', true))
+    session(r.world)
   }
 
   function playUpload(text: string): void {
@@ -554,7 +541,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       return
     }
     writeSlot(dump(r.world))
-    session(r.world, startTutorial('upload', true))
+    session(r.world)
   }
 
   function saveGame(): void {
@@ -658,6 +645,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
       return
     }
     if (world === undefined) return
+    if (row.kind === 'tutorial-end') {
+      world.seeTutorial()
+      return
+    }
     if (row.go.kind !== 'popup') return
     if (row.go.popup.kind === 'grandma') {
       world.seeGrandma(row.go.popup.beat)
@@ -832,7 +823,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
       retryRef.current = 0
       if (resume) return
       setCatching(true)
-      session(next, { kind: 'off' })
+      session(next)
     }
     g.onCatching = on => setCatching(on)
     g.onRetry = n => {
@@ -1262,7 +1253,6 @@ export default function App({ sink }: { sink: WorkerSink }) {
               }}
             />
           )}
-          <TutorialCard world={world} tutorial={tutorial} onOff={() => setTutorial({ kind: 'off' })} />
           <div
             key={world.clock.day}
             ref={el => bindHud('banner', el)}

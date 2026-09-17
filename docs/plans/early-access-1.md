@@ -12,7 +12,7 @@ The player can start, leave, and come back. A new player gets a short tour. Shop
 
 The farm does not gain crops, machines, or rules.
 
-Contracts: [[architecture/save]] [[mechanics/tutorial]] [[ui/menu]] [[ui/tutorial]] [[art/menu]]
+Contracts: [[architecture/save]] [[mechanics/tutorial]] [[ui/menu]] [[ui/notices]] [[art/menu]]
 
 ---
 

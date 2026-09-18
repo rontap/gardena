@@ -153,7 +153,7 @@ Esc still closes panels. Esc does not dismount. Enter, same text-field ignore: i
 
 ## Return arrows
 
-On each hangar’s three pad tiles and on every seed/spray/produce silo’s two pad tiles. Paint iff `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Driving still paints with this lens off. Silo pads: no dialog. Dropoff / takeup arrows on mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store. Not barrel, grinder, field silos. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `leaveShop` restores an unlocked Build peek. [[ui/lens]] [[ui/hud]]
+On each hangar’s three pad tiles and on every seed/spray/produce silo’s two south pad tiles. Paint iff `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Driving still paints with this lens off. Silo pads: no dialog, and a silo pad is still not Dock. The return arrow on a silo now sits on a takeup that really loads, so it marks the cell to drive onto rather than only a place to turn around. Dropoff / takeup arrows on mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store, and the three field silos. Not barrel, grinder. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `leaveShop` restores an unlocked Build peek. [[ui/lens]] [[ui/hud]]
 
 ## View
 

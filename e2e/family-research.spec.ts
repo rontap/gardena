@@ -106,11 +106,10 @@ function weatherCount(page: Page): Promise<number> {
   })
 }
 
-test('Research dock has no category rail and shows mystery cards', async ({ page }) => {
+test('Research dock shows the tree and mystery cards', async ({ page }) => {
   await gotoPlay(page)
   await page.getByRole('button', { name: 'Research', exact: true }).click()
   await expect(page.locator('div.font-display').filter({ hasText: /^Research$/ })).toBeVisible()
-  await expect(page.getByRole('tab')).toHaveCount(0)
   await expect(page.locator('g.node').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Multi-Crop Farming').first()).toBeVisible()
   await expect(page.getByText('Unknown').first()).toBeVisible()

@@ -530,7 +530,7 @@ export function TreePanel({
   }, [svgs])
 
   return (
-    <FullDock title={title} onClose={onClose} footer={footer}>
+    <FullDock title={title} onClose={onClose} footer={footer} width={kind === 'research' ? 'w-[97rem]' : 'w-[79rem]'}>
       {header}
       <div className={`grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_22rem] gap-3 ${header !== undefined ? 'mt-2' : ''}`}>
         <Graph svgs={svgs} err={err} box={box} />

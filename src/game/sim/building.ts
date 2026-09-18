@@ -1237,9 +1237,12 @@ export class SiloSeed extends SeedStore {
   readonly kind = 'silo-seed' as const
   restock = false
   override readonly ports = []
-  override readonly pads = 'none' as const
+  override readonly pads = 'both' as const
   constructor(base: RectBase) {
     super(base, SILO_FIELD_SEED_CAP)
+  }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return allSlots('seed')
   }
 }
 
@@ -1341,9 +1344,12 @@ export class SiloSpray extends AdditiveHolder {
   readonly kind = 'silo-spray' as const
   restock = false
   override readonly ports = []
-  override readonly pads = 'none' as const
+  override readonly pads = 'both' as const
   constructor(base: RectBase) {
     super(base, SILO_FIELD_ADDITIVE_CAP)
+  }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return [...slots('produce', ['sugar']), ...slots('other', ['fertilizer', 'compost'])]
   }
 }
 
@@ -1351,13 +1357,16 @@ export class SiloProduce extends Store {
   readonly kind = 'silo-produce' as const
   readonly slots: Slot[] = Array.from({ length: PRODUCE_SLOTS }, () => ({ kind: 'empty' as const }))
   override readonly ports = []
-  override readonly pads = 'none' as const
+  override readonly pads = 'both' as const
   override readonly takeAll: boolean = true
   constructor(base: RectBase) {
     super(base, PRODUCE_SLOTS)
   }
   get used(): number {
     return this.slots.filter(s => s.kind === 'hold').length
+  }
+  override padGoods(_role: 'in' | 'out'): PadGoods {
+    return [...allSlots('fruit'), ...slots('compostable', ['weed', 'grass'])]
   }
   override accept(item: Item): number {
     if (item.kind !== 'fruit' && item.kind !== 'weed' && item.kind !== 'grass') return 0

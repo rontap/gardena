@@ -56,7 +56,7 @@ Hide **Vehicle interactions** until `unlock-vehicles`. Not in that footer.
 
 Tokens (`@theme`): `lens-bad` `#e23b2e`, `lens-good` `#2fd15a`, `lens-done` `#1e9be6`. Cottage tokens [[art/palette]].
 
-Pipes (joints, valves, sprinklers, fences) always drawn. Faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku — [[ui/place]]. Lens **Pipes** is the wetness tint + sprinkler AoE wash, not the only way to see joints.
+Pipes (joints, valves, sprinklers, fences) always drawn. Joints and valves are faint when `lens !== 'pipes'` and place is not delete / a `PIPE_PLACE` sku — [[ui/place]]. Sprinklers and fences are never faint — [[architecture/view]]. Lens **Pipes** is the wetness tint + sprinkler AoE wash, not the only way to see joints.
 
 Water-source mark (`pipe-source`, × + tap glyph on each occupied pump cell) only while pipes overlay is on (`lens === 'pipes'` or delete / a `PIPE_PLACE` sku). Not faint. Hidden when joints are faint. Joints stay always drawn.
 

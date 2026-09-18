@@ -18,13 +18,15 @@ House `seed-silo` and `additive-store` already have pads `'both'` and sit in `pa
 
 Spray trailer hopper: fertilizer or compost. `weed-spray` in that hopper is unrepresentable.
 
-## New
+## Built
 
-Field silos `pads: 'both'`. `padBuildings` includes them (walk `silos` the way it walks `machines`). Dropoff north Unload, takeup south Load, same geometry as hangar-sized footprints — `siloPad` is already the south two cells; takeup is that pad. Dropoff is the north row of the footprint.
+Everything in this section is in, and graduated to [[mechanics/vehicles]] `vehicles.silo-pads`.
 
-`Act.load` / `Act.unload` (seated and auto after `DISPATCH_DWELL`) use `accept` / `apply` on that silo, same as the house Seed silo. A route may add a load or unload stop on those pads. `stopAt` / `padHit` no longer skip field silos.
+Field silos `pads: 'both'`. `padBuildings` includes them, through the `seedSilos` / `spraySilos` / `produceSilos` arrays `World` already keeps. Dropoff north Unload, takeup south Load — the inherited `defaultPadPorts` gives exactly that, and its south row is the two cells `siloPad` already names, so no new geometry.
 
-Auto-restock: on a successful Load from a Seeding silo or Additive silo, run the same restock body `Act.takeStore` uses. Vehicle take is a removal. Named Variety and compost still do not restock.
+`Act.load` / `Act.unload` (seated and auto after `DISPATCH_DWELL`) use `accept` / `apply` on that silo, same as the house Seed silo. A route may add a load or unload stop on those pads. `stopAt` / `padHit` no longer skip field silos. Each silo's `padGoods` is its starter twin's, so a stop's chips open already narrowed — a Seeding silo stop reads **Seeds** with no menu to open.
+
+Auto-restock: on a successful Load from a Seeding silo or Additive silo, run the same restock body `Act.takeStore` uses. Vehicle take is a removal. It sits in `transferLoad`, which both the seated Load and a route's load stop go through. Named Variety and compost still do not restock.
 
 Ports stay `[]`. Field silos are not sensors. `out` / full-signal is not this update.
 

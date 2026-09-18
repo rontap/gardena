@@ -8,7 +8,7 @@ Cottage tokens. Preference. Asset SVGs use these hexes, plus industrial metal wh
 | grass-dark | `#3a6232` | clumps on grass tiles |
 | dirt | `#8a5a32` | empty plot; UI studs |
 | dirt-dark | `#6b4423` | planted / clod under crop |
-| water | `#3d7ea6` | pump, water marks |
+| water | `#3d7ea6` | pump, water marks, the postbox flag when mail is waiting |
 | leaf | `#6bc04a` | plants |
 | ripe | `#d4a017` | gold ready (wheat, carrot) |
 | fruit-red | `#c43c3c` | red fruit (tomato, raspberry, apple) |

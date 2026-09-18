@@ -1,6 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "sensors_sprinkler_output": "Sprinkler output",
+  "sensors_sprinkler_output_crop": "Sprinkler output ({crop})",
   "sensors_full_flow": "Full flow",
   "sensors_per_tile": "{n} L/day per tile",
   "sensors_wilting": "Wilting",

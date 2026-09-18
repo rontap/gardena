@@ -45,7 +45,7 @@ Art joins to the four orthogonal neighbours through `fenceFit(n, e, s, w)` — s
 
 Fences do not block movement. Cosmetic only.
 
-Drag-to-place uses the same L-path as pipe: [[ui/place]] fence run. Unconnected fence ×0.75 of the mode’s base alpha; a fence in a closed fenced area ×1.25 (cap 1). Base is 0.35 off the pipes overlay, 1 on it or while placing fence — [[architecture/view]] [[mechanics/enclosure]].
+Drag-to-place uses the same L-path as pipe: [[ui/place]] fence run. A built fence draws at 1 in a closed fenced area and 0.75 unconnected, whatever lens is up — the lens no longer dims it. Pending cells ghost as unconnected — [[architecture/view]] [[mechanics/enclosure]].
 
 Demolish → `fences.delete`. Prompt **Demolish wooden fence**. Fence wins over paving and over a non-fenceable building when they sit on the cell. Fenceable sensor on a fence: sensor first, fence second. Rebuild fenced areas after fence add / fence remove — [[mechanics/enclosure]].
 

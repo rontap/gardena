@@ -1,6 +1,6 @@
 # Family
 
-Left [[ui/docks]] `Dock`, same shell as Research: `w-[28rem]`, `absolute top-20 left-32 z-20`. Title **Family**. No overlay. No dim. No auto-pause. [[mechanics/family]]. Art [[art/skills]]. Type [[ui/type]].
+Left [[ui/docks]] `FullDock`, same shell as Research: `w-[79rem]` to its `w-[97rem]`, `absolute top-20 bottom-4 left-32 z-20`, capped at `max-w-[calc(100vw-9rem)]`. The width is the skill tree's own three ranks plus the detail column, not a stretch to the page edge — [[ui/docks]]. Title **Family**. No overlay. No dim. No auto-pause. [[mechanics/family]]. Art [[art/skills]]. Type [[ui/type]].
 
 HUD **Family** toggles it. × closes. Esc closes. Selected on the ribbon while open.
 

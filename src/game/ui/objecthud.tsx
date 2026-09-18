@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { CROPS, CROP_NAME } from '../defs/crops.ts'
 import { SPRINKLER_STEP, SPRINKLER_TILE_DAY, snapFlow } from '../defs/items.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
@@ -354,34 +354,68 @@ function columnsOf(marks: readonly HudMark[]): HudMark[][] {
   return [...byDay.values()].sort((x, y) => x[0]!.day - y[0]!.day)
 }
 
-function FlowSlider({ spec }: { spec: Extract<HudSpec, { chrome: 'slider' }> }) {
+function MarkStrip({
+  columns,
+  max,
+  side,
+  set,
+  onHover,
+}: {
+  columns: HudMark[][]
+  max: number
+  side: 'above' | 'below'
+  set: (day: number) => void
+  onHover: (label: string | undefined) => void
+}) {
+  const tall = columns.reduce((n, col) => (col.length > n ? col.length : n), 0)
+  const stack = side === 'above' ? 'bottom-0 flex-col-reverse' : 'top-0 flex-col'
+  return (
+    <div className="relative" style={{ height: tall * MARK }}>
+      {columns.map(col => (
+        <div
+          key={col[0]!.day}
+          className={`absolute flex -translate-x-1/2 items-center ${stack}`}
+          style={{ left: `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${col[0]!.day / max})` }}
+        >
+          {col.map(mk => (
+            <button
+              key={mk.crop}
+              type="button"
+              aria-label={`${mk.label} ${perDay(mk.day)}`}
+              className="flex cursor-pointer items-center justify-center hover:bg-dirt/30"
+              style={{ width: MARK, height: MARK }}
+              onPointerEnter={() => onHover(mk.label)}
+              onPointerLeave={() => onHover(undefined)}
+              onFocus={() => onHover(mk.label)}
+              onBlur={() => onHover(undefined)}
+              onClick={() => set(mk.day)}
+            >
+              <svg className="size-9" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: mk.icon }} />
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FlowSlider({
+  spec,
+  onHover,
+}: {
+  spec: Extract<HudSpec, { chrome: 'slider' }>
+  onHover: (label: string | undefined) => void
+}) {
   const columns = columnsOf(spec.marks)
-  const tall = Math.max(...columns.map(col => col.length))
   return (
     <>
-      <div className="relative" style={{ height: tall * MARK }}>
-        {columns.map(col => (
-          <div
-            key={col[0]!.day}
-            className="absolute bottom-0 flex -translate-x-1/2 flex-col-reverse items-center"
-            style={{ left: `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${col[0]!.day / spec.max})` }}
-          >
-            {col.map(mk => (
-              <button
-                key={mk.crop}
-                type="button"
-                aria-label={`${mk.label} ${perDay(mk.day)}`}
-                title={`${mk.label} — ${perDay(mk.day)}`}
-                className="flex cursor-pointer items-center justify-center hover:bg-dirt/30"
-                style={{ width: MARK, height: MARK }}
-                onClick={() => spec.set(mk.day)}
-              >
-                <svg className="size-9" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: mk.icon }} />
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
+      <MarkStrip
+        columns={columns.filter((_, i) => i % 2 === 0)}
+        max={spec.max}
+        side="above"
+        set={spec.set}
+        onHover={onHover}
+      />
       <Slider
         name="flow"
         aria-label={spec.title}
@@ -390,8 +424,40 @@ function FlowSlider({ spec }: { spec: Extract<HudSpec, { chrome: 'slider' }> }) 
         step={spec.step}
         onChange={spec.set}
       />
+      <MarkStrip
+        columns={columns.filter((_, i) => i % 2 === 1)}
+        max={spec.max}
+        side="below"
+        set={spec.set}
+        onHover={onHover}
+      />
       <div className="tabular-nums text-base text-ink">{perDay(spec.day)}</div>
     </>
+  )
+}
+
+function SprinklerHud({
+  spec,
+  cam,
+  onClose,
+}: {
+  spec: Extract<HudSpec, { chrome: 'slider' }>
+  cam: Camera
+  onClose: () => void
+}) {
+  const [crop, setCrop] = useState<string | undefined>(undefined)
+  return (
+    <HudShell
+      col={spec.col}
+      row={spec.row}
+      cam={cam}
+      title={crop === undefined ? spec.title : m.sensors_sprinkler_output_crop({ crop })}
+      onClose={onClose}
+      pin="at"
+      width="w-[23.5rem]"
+    >
+      <FlowSlider spec={spec} onHover={setCrop} />
+    </HudShell>
   )
 }
 
@@ -428,24 +494,11 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
   if (target.kind === 'counter') return <CounterHud world={world} at={target.at} cam={cam} onClose={onClose} />
   const spec = hudSpec(world, target)
   if (spec === undefined) return undefined
+  if (spec.chrome === 'slider') return <SprinklerHud spec={spec} cam={cam} onClose={onClose} />
   return (
-    <HudShell
-      col={spec.col}
-      row={spec.row}
-      cam={cam}
-      title={spec.title}
-      onClose={onClose}
-      pin={spec.chrome === 'rows' ? 'above' : 'at'}
-      width={spec.chrome === 'rows' ? 'w-56' : 'w-72'}
-    >
-      {spec.chrome === 'rows' ? (
-        <>
-          <div className="text-sm text-ink/55">{m.sensors_send_when()}</div>
-          <RowList spec={spec} />
-        </>
-      ) : (
-        <FlowSlider spec={spec} />
-      )}
+    <HudShell col={spec.col} row={spec.row} cam={cam} title={spec.title} onClose={onClose} pin="above" width="w-56">
+      <div className="text-sm text-ink/55">{m.sensors_send_when()}</div>
+      <RowList spec={spec} />
     </HudShell>
   )
 }

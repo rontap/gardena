@@ -40,7 +40,7 @@ Each is a `Store` and reuses the panel its starter twin already has.
 | Additive silo | `AdditiveHolder` | `SILO_FIELD_ADDITIVE_CAP` liters |
 | Produce silo | `Store` with slots | `PRODUCE_SLOTS` of fruit, weed and grass only |
 
-Produce silo `accept` is `fruit`, `weed` or `grass`. Swapping an item it will not take is a no-op. Walk-up reuses `silo` / `additives` / `chest`. Walking up deposits first. `Act.takeStore` carries the store cell. Buy row as the house stores — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`. Ports and pads stay off. Delete always. Guest may place the three silos — [[mechanics/multiplayer]] `mp.guest`.
+Produce silo `accept` is `fruit`, `weed` or `grass`. Swapping an item it will not take is a no-op. Walk-up reuses `silo` / `additives` / `chest`. Walking up deposits first. `Act.takeStore` carries the store cell. Buy row as the house stores — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`. Pads `'both'`: dropoff the north row of the footprint, takeup the two south cells `siloPad` already names, both from the inherited `defaultPadPorts`. Signal `ports` stay `[]` — a field silo is not a sensor and has no full-signal output. Each silo's `padGoods` is its starter twin's: every seed on the Seeding silo, sugar / fertilizer / compost on the Additive silo, and fruit / weed / grass on the Produce silo, which is its own `accept`. Delete always. Guest may place the three silos — [[mechanics/multiplayer]] `mp.guest`.
 
 ## Buy / deploy / store
 
@@ -97,11 +97,13 @@ Parked only. `Act.swapTrailer` legal iff that trailer is `attached` to a tractor
 
 ## Machine pads
 
-Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, sorter, house `seed-silo`, `additive-store`. Not barrel, grinder, field silos. Cells from `padPorts()` — [[architecture/modules]] `building.io-ports`. Sorter: one dropoff beside the middle cell, three takeups beside each cell on the side its `facing` names — [[mechanics/machines]] `machines.sorter`. Load from a sorter takeup picks the ground drops of that Variety tier only.
+Geometric, not a `Cell`. Pads: mill, still, jam, compost-box, chest, freezer, furnace, sorter, house `seed-silo`, `additive-store`, and the three field silos. Not barrel, grinder. Cells from `padPorts()` — [[architecture/modules]] `building.io-ports`. Sorter: one dropoff beside the middle cell, three takeups beside each cell on the side its `facing` names — [[mechanics/machines]] `machines.sorter`. Load from a sorter takeup picks the ground drops of that Variety tier only.
 
 `vehicles.starter-pads` — Every pad the home chunk lays out — both faces of the starter Seed silo and Additive store, and the warehouse's consign row — stands on ground a vehicle can drive onto: owned, not solid, `surfaceMul` 1. `PAD` is the first of `warehousePads(WAREHOUSE_BASE)`, not a second number to keep in step. Moving a starter building means moving it somewhere its pads still land clear — [[items/buildings]].
 
-Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad. Instant. Logged. Quad uses quad slots; tractor still needs hitch. Guest: mill/jam/still/compost/furnace/sorter/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal.
+Unload: dropoff. Load: takeup. Interact iff this seat is driver and `floor(x,y)` is that pad. Instant. Logged. Quad uses quad slots; tractor still needs hitch. Guest: mill/jam/still/compost/furnace/sorter/seed-silo/additive-store yes. Chest/freezer no. Auto tick transfer: chest/freezer legal. A Load reads the silo the same way its starter twin is read: the Produce silo through its slots like a chest, the Seeding silo through its `seeds`, the Additive silo through its `sugar` and `held`. An Unload goes through `accept` / `apply` and needed nothing new.
+
+A Load that empties part of a Seeding or Additive silo runs the same restock body `Act.takeStore` runs, on the silo's own cell — a vehicle take is a removal like a hand take. It sits in `transferLoad`, the one path both the seated **Load** and a route's load stop go through. Named Variety and compost still restock nothing.
 
 ## Surfaces
 
@@ -215,5 +217,7 @@ Not logged: integrate, follow hitch, boom, burn, `working` countdown, stride int
 `vehicles.route` — `World.routes` `World.nextRouteId`; a new `World` starts with one empty `Route 1` and `nextRouteId` 2; every stop is a cell `Coord` and `stopXY` is that cell's centre; add appends; move replaces stop `i` with the stop that cell yields; reorder lifts stop `i` and inserts it at `to`, a move not a swap; cursor follows the current stop on remove, move and reorder; `n === 0` → cursor 0, `running` false; Quad load/unload uses quad slots; tractor needs hitch; auto tick chest/freezer legal.
 
 `vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses; Seeding silo `SILO_FIELD_SEED_CAP` seeds, grass `'base'` included; Additive silo `SILO_FIELD_ADDITIVE_CAP` liters; Produce silo `PRODUCE_SLOTS` of fruit, weed and grass only; `Act.takeStore` carries the store cell — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`.
+
+`vehicles.silo-pads` — The three field silos are pad buildings: `pads` `'both'`, signal `ports` still `[]`, dropoff the north row and takeup the south `siloPad` cells, so `stopAt` answers `unload` on the north and `load` on the south and a plain `goto` on the silo itself; each silo's `padGoods` is its starter twin's, and the Produce silo's is its own `accept` — fruit, weed, grass; `padBuildings` walks `seedSilos`, `spraySilos` and `produceSilos`; a Load pulls the way the twin is pulled and then runs the twin's restock body.
 
 `vehicles.seeder` — Seeder hopper is one `{ kind: 'seeds' }` stack, `crop: 'grass'` legal; boom on empty tilled: grass sows turf; every other annual plants as hand; consume 1/plot.

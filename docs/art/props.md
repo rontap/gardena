@@ -20,6 +20,7 @@ Perspective is one per asset. Ground and vehicles are top-down; freestanding pro
 | `prop-mill.svg` | `0 0 48 48` | four-course tapered `house` tower, `roof` cap, door at the foot; groups `body` and `sails`. Sails are drawn as an upright cross, hub at `(24, 18)`; the view rotates them — [[art/vfx]] |
 | `prop-freezer.svg` `item-freezer.svg` | `0 0 24 24` | low steel cabinet, lid overhanging the front, full-width handle, `house` frost pips |
 | `prop-grinder.svg` | `0 0 24 24` | iron drum on its side with bands, shallow hopper, left chute, steel crank spurring right |
+| `prop-postbox.svg` | `0 0 24 24` | steel box on a `dirt` post, hinged flap with a `house` handle on its face, flag off the right edge; groups `off` and `on`, the whole body drawn in each. `off` is a `fruit-red` flag lying flat against the body's side. `on` raises it up a short mast to sit beside the body's upper half, and paints it `water` — a full box is a thing to go and collect, not a fault, so it does not wear the red. Layer picks the group from whether any slot holds — [[art/palette]] |
 | `prop-link-in.svg` | `0 0 24 24` | west chute, wide mouth left, narrow right; `water` trough |
 | `prop-link-out.svg` | `0 0 24 24` | east chute, narrow left, wide mouth right; `leaf` trough |
 | `prop-burrow.svg` `prop-burrow-1.svg` | `0 0 24 24` | thin three-way ink fissure with a `dirt-dark` crumbled lip, `dirt` crumbs and 1-unit `ripe` glints; two shapes, top-down; atlas `burrow` / `burrow-1`, picked by `tileVariant`. Not a chest |

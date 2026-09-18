@@ -45,7 +45,7 @@ import { dest } from '../queue.ts'
 import { DT_MAX, World } from '../world.ts'
 import { ADDITIVE_BASE, PAD, SILO_BASE, WAREHOUSE_BASE, warehousePads } from '../building.ts'
 import { boomHits, dropoffPad, hangarPad, hitchP, kindVMax, padCenter, seekSpeed, siloPad, stopXY, surfaceMul, takeupPad, trailerUsed, transferUnload } from './vehicle.ts'
-import { ANY, PICK_TYPES, goodsOf, narrowGood, narrowType, narrowVariety, padGoodsOf, padTypesOf, pickTakes, sampleItem, typeOf, goodOf, varietiesOf } from './pick.ts'
+import { ANY, PICK_TYPES, goodsOf, narrowGood, narrowType, narrowVariety, padGoodsOf, padTypesOf, pickTakes, sampleItem, typeOf, goodOf, varietiesOf, type PadGoods } from './pick.ts'
 import { VARIETIES } from '../../defs/varieties.ts'
 import { SPIRIT_KINDS, STILL_CROPS } from '../ids.ts'
 import type { Item } from '../item.ts'
@@ -855,6 +855,41 @@ describe('vehicles II', () => {
       expect([at, surfaceMul(w, at)]).toEqual([at, 1])
     })
     expect(PAD).toEqual(warehousePads(WAREHOUSE_BASE)[0])
+  })
+
+  test('vehicles.silo-pads - Each field silo unloads on its north row and loads on its south pad, offering what its starter twin offers.', () => {
+    const w = farm()
+    const sites = { 'buy-silo-seed': { col: 16, row: 12 }, 'buy-silo-spray': { col: 20, row: 12 }, 'buy-silo-produce': { col: 24, row: 12 } } as const
+    ;(Object.keys(sites) as (keyof typeof sites)[]).forEach(sku => {
+      w.buy(sku)
+      w.confirmPlace(sites[sku])
+    })
+    const silos = [...w.seedSilos, ...w.spraySilos, ...w.produceSilos]
+    expect(silos).toHaveLength(3)
+    silos.forEach(s => {
+      expect([s.kind, s.pads]).toEqual([s.kind, 'both'])
+      expect([s.kind, s.ports]).toEqual([s.kind, []])
+      expect([s.kind, siloPad(s.base)]).toEqual([s.kind, takeupPad(s.base)])
+      dropoffPad(s.base).forEach(at => {
+        expect([s.kind, at, w.stopAt(at)?.kind]).toEqual([s.kind, at, 'unload'])
+      })
+      takeupPad(s.base).forEach(at => {
+        expect([s.kind, at, w.stopAt(at)?.kind]).toEqual([s.kind, at, 'load'])
+      })
+      expect([s.kind, w.stopAt({ col: s.base.col, row: s.base.row })?.kind]).toEqual([s.kind, 'goto'])
+    })
+    const labels = (pad: PadGoods): string[] | 'all' =>
+      pad === 'all' ? 'all' : pad.map(g => `${g.type}:${g.good}`).sort()
+    const goods = (at: { col: number; row: number }) => labels(w.padGoodsAt(at))
+    const seed = w.seedSilos[0]
+    const spray = w.spraySilos[0]
+    const produce = w.produceSilos[0]
+    expect(goods(dropoffPad(seed.base)[0])).toEqual(goods(takeupPad(seed.base)[0]))
+    expect(goods(dropoffPad(seed.base)[0])).toEqual(labels(w.silo.padGoods('in')))
+    expect(goods(dropoffPad(spray.base)[0])).toEqual(labels(w.additives.padGoods('in')))
+    expect(goods(dropoffPad(produce.base)[0])).toEqual(
+      [...goodsOf('fruit').map(c => `fruit:${c}`), 'compostable:grass', 'compostable:weed'].sort(),
+    )
   })
 
   test('Quad on mill dropoff: Unload cane into mill.', () => {

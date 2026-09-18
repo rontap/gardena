@@ -50,16 +50,18 @@ import {
 } from '../item.ts'
 import {
   ADDITIVE_BAG,
+  type AdditiveHolder,
   type AdditiveId,
   type AdditiveStore,
   type Coord,
   type Hangar,
   type RectBase,
-  type SeedSilo,
+  type SeedStore,
   type SugarBin,
 } from '../building.ts'
 import type { Drop } from '../drop.ts'
 import { consignItem, consignUnits } from '../store.ts'
+import { restockAdditivesBody, restockSeedsBody } from '../feature-place/place.ts'
 import { Act, type Cmd } from '../log.ts'
 import { statsOf } from '../modifiers.ts'
 import { Plant, Turf } from '../plant.ts'
@@ -365,16 +367,16 @@ export function dumpCargo(cargo: Cargo, dest: PadCell, pick: Pick): void {
 }
 
 export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[], pick: Pick): boolean {
-  if (src.kind === 'chest' || src.kind === 'freezer') {
+  if (src.kind === 'chest' || src.kind === 'freezer' || src.kind === 'silo-produce') {
     return src.slots.some(s => s.kind === 'hold' && pickTakes(pick, s.item) && cargoCouldTake(cargo, s.item))
   }
-  if (src.kind === 'seed-silo') {
+  if (src.kind === 'seed-silo' || src.kind === 'silo-seed') {
     return src.seeds.some(st => {
       const item: Item = { kind: 'seeds', crop: st.crop, variety: st.variety, quality: st.quality, count: st.count }
       return st.count > 0 && pickTakes(pick, item) && cargoCouldTake(cargo, item)
     })
   }
-  if (src.kind === 'additive-store') {
+  if (src.kind === 'additive-store' || src.kind === 'silo-spray') {
     const bag = sugarBag(src.sugar, src.sugar.liters < SUGAR_BAG ? src.sugar.liters : SUGAR_BAG)
     if (src.sugar.liters > 0 && pickTakes(pick, bag) && cargoCouldTake(cargo, bag)) return true
     return src.held.some(h => {
@@ -391,9 +393,9 @@ export function canPull(src: PadCell, cargo: Cargo, drops: readonly Drop[], pick
 }
 
 export function pullFrom(src: PadCell, cargo: Cargo, drops: Drop[], pick: Pick): void {
-  if (src.kind === 'chest' || src.kind === 'freezer') pullSlots(src.slots, cargo, pick)
-  else if (src.kind === 'seed-silo') pullSilo(src, cargo, pick)
-  else if (src.kind === 'additive-store') {
+  if (src.kind === 'chest' || src.kind === 'freezer' || src.kind === 'silo-produce') pullSlots(src.slots, cargo, pick)
+  else if (src.kind === 'seed-silo' || src.kind === 'silo-seed') pullSilo(src, cargo, pick)
+  else if (src.kind === 'additive-store' || src.kind === 'silo-spray') {
     pullSugar(src, cargo, pick)
     pullAdditive(src, cargo, pick)
   }
@@ -409,7 +411,7 @@ function pullSlots(slots: Slot[], cargo: Cargo, pick: Pick): void {
   compactSlots(slots)
 }
 
-function pullSilo(silo: SeedSilo, cargo: Cargo, pick: Pick): void {
+function pullSilo(silo: SeedStore, cargo: Cargo, pick: Pick): void {
   for (let i = 0; i < silo.seeds.length; ) {
     const st = silo.seeds[i]
     const item: Item = { kind: 'seeds', crop: st.crop, variety: st.variety, quality: st.quality, count: st.count }
@@ -432,7 +434,7 @@ export function putSugarInto(store: AdditiveStore, liters: number, unitSale: num
   return store.putSugar(liters, unitSale, quality)
 }
 
-function pullSugar(store: AdditiveStore, cargo: Cargo, pick: Pick): void {
+function pullSugar(store: AdditiveHolder, cargo: Cargo, pick: Pick): void {
   while (store.sugar.liters > 0) {
     const liters = store.sugar.liters < SUGAR_BAG ? store.sugar.liters : SUGAR_BAG
     const item = sugarBag(store.sugar, liters)
@@ -444,7 +446,7 @@ function pullSugar(store: AdditiveStore, cargo: Cargo, pick: Pick): void {
   }
 }
 
-function pullAdditive(store: AdditiveStore, cargo: Cargo, pick: Pick): void {
+function pullAdditive(store: AdditiveHolder, cargo: Cargo, pick: Pick): void {
   for (let i = 0; i < store.held.length; ) {
     const h = store.held[i]
     const bag = ADDITIVE_BAG[h.id]
@@ -595,6 +597,9 @@ export const PAD_SKUS: readonly SkuId[] = [
   'buy-furnace',
   'buy-research-station',
   'buy-sorter',
+  'buy-silo-seed',
+  'buy-silo-spray',
+  'buy-silo-produce',
 ]
 
 export const HANGAR_PAD_SKUS: readonly SkuId[] = ['buy-hangar']
@@ -612,6 +617,7 @@ export function padBuildings(w: World): PadCell[] {
     if (c.kind === 'chest' || c.kind === 'freezer') out.push(c)
   }
   out.push(w.silo, w.additives, w.warehouse)
+  out.push(...w.seedSilos, ...w.spraySilos, ...w.produceSilos)
   return out
 }
 
@@ -1407,7 +1413,13 @@ export function transferLoad(w: World, v: Vehicle, pick: Pick): void {
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
   const load = vehicleCargo(v, w.trailers)
   if (hit?.side !== 'takeup' || load === undefined) return
-  pullFrom(hit.cell, load, w.drops, pick)
+  const src = hit.cell
+  const at = { col: src.base.col, row: src.base.row }
+  const seeds = src.kind === 'silo-seed' ? src.levels() : []
+  const additives = src.kind === 'silo-spray' ? src.levels() : []
+  pullFrom(src, load, w.drops, pick)
+  restockSeedsBody(w, at, seeds)
+  restockAdditivesBody(w, at, additives)
 }
 
 export function transferUnload(w: World, v: Vehicle, pick: Pick): void {

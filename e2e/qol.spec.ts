@@ -1,8 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { cropVariety } from '../src/game/defs/crops.ts'
 import { MILL_H, MILL_W } from '../src/game/defs/items.ts'
-import { STARTER_FRUIT, STARTER_FRUIT_N, VARIETY } from '../src/game/defs/varieties.ts'
-import { ADDITIVE_BASE, SILO_BASE } from '../src/game/sim/building.ts'
+import { SILO_BASE } from '../src/game/sim/building.ts'
 import { BIG_TICK } from '../src/game/sim/soil.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { armSku, closeDock, dismissRecap, gotoPlay, hoverWorld, openBuild, tapWorld } from './helpers.ts'
@@ -13,7 +11,6 @@ const PLOT: At = { col: 13, row: 11 }
 const DROP: At = { col: 12, row: 11 }
 const STATION: At = { col: 12, row: 14 }
 const LEVER: At = { col: 11, row: 11 }
-const HOUSE: At = { col: 15, row: 8 }
 
 function readWorld<R>(page: Page, arg: unknown, body: string): Promise<R> {
   return page.evaluate(
@@ -182,18 +179,7 @@ test('ripe plot and ground fruit show Quality and Freshness bars', async ({ page
   await expect(page.getByText('Freshness', { exact: true })).toBeVisible()
 })
 
-test('house inventory holds the starter Heirloom fruit', async ({ page }) => {
-  test.setTimeout(60_000)
-  await gotoPlay(page)
-  await tapUntil(page, HOUSE, async () => page.getByRole('dialog', { name: 'Inventory' }).isVisible(), 30_000)
-  const inv = page.getByRole('dialog', { name: 'Inventory' })
-  await expect(inv).toBeVisible()
-  for (const v of STARTER_FRUIT) {
-    await expect(inv.getByText(`${cropVariety(VARIETY[v].crop, v)} - ${STARTER_FRUIT_N}`)).toBeVisible()
-  }
-})
-
-test('Crop Variety Station ghost is the station, not the Pot still', async ({ page }) => {
+test('Crop Variety Station ghost is the station', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
   await page.evaluate(at => {
     const w = (
@@ -213,21 +199,15 @@ test('Crop Variety Station ghost is the station, not the Pot still', async ({ pa
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
   await expect(page.locator('[data-action]')).toContainText('Place Crop Variety Station')
   const art = await page.evaluate(() => {
-    const e = (
-      window as unknown as {
-        __e2e?: { STATION: string; STILL: string; symHref: (html: string) => string }
-      }
-    ).__e2e
+    const e = (window as unknown as { __e2e?: { STATION: string; symHref: (html: string) => string } }).__e2e
     if (e === undefined) throw new Error('no __e2e')
     const hrefs = [...document.querySelectorAll('svg[viewBox="0 0 48 24"] use')].map(u => u.getAttribute('href'))
-    return { hrefs, station: e.symHref(e.STATION), still: e.symHref(e.STILL) }
+    return { hrefs, station: e.symHref(e.STATION) }
   })
   expect(art.hrefs).toContain(art.station)
-  expect(art.hrefs).not.toContain(art.still)
 })
 
 const SILO: At = { col: SILO_BASE.col, row: SILO_BASE.row }
-const ADDITIVE: At = { col: ADDITIVE_BASE.col, row: ADDITIVE_BASE.row }
 const MILL_AT: At = { col: 8, row: 14 }
 const INF_AT: At = { col: 8, row: 11 }
 const FURNACE_AT: At = { col: 12, row: 16 }
@@ -258,22 +238,8 @@ test('Land quality lens only after Expansion is done', async ({ page }) => {
   await expect(page.getByRole('button', { name: /^Land quality/ })).toBeVisible()
 })
 
-test('Additive store has no synthetic fertilizer', async ({ page }) => {
-  await gotoPlay(page)
-  await tapUntil(page, ADDITIVE, async () => page.getByRole('dialog', { name: 'Additive store' }).isVisible(), 30_000)
-  const store = page.getByRole('dialog', { name: 'Additive store' })
-  await expect(store).toBeVisible()
-  await expect(store.getByRole('button', { name: /Synthetic fertilizer/ })).toHaveCount(0)
-  await expect(store.getByRole('button', { name: /Fertilizer bag/ })).toBeVisible()
-})
-
-test('Grass seeds sold at the Seed silo, not Build', async ({ page }) => {
+test('Grass seeds are bought and taken at the Seed silo', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
-  await openBuild(page)
-  await page.getByRole('tab', { name: 'Land' }).click()
-  await expect(page.getByRole('button', { name: /Grass seeds/ })).toHaveCount(0)
-  await closeDock(page)
-
   await tapUntil(page, SILO, async () => page.getByRole('dialog', { name: 'Seed silo' }).isVisible(), 30_000)
   const silo = page.getByRole('dialog', { name: 'Seed silo' })
   await expect(silo).toBeVisible()

@@ -440,14 +440,16 @@ export function FullDock({
   children,
   footer,
   onClose,
+  width,
 }: {
   title: string
   children: ReactNode
   footer?: ReactNode
   onClose: () => void
+  width: string
 }) {
   return (
-    <div className="absolute top-20 left-32 right-4 bottom-4 z-20">
+    <div className={`absolute top-20 bottom-4 left-32 z-20 ${width} max-w-[calc(100vw-9rem)]`}>
       <Window title={title} onClose={onClose} footer={footer} fill className="h-full">
         {children}
       </Window>

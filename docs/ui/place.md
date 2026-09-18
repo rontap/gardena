@@ -86,7 +86,7 @@ Up, pending non-empty: commit per edge, stay armed. Up, pending empty: place the
 
 Armed `buy-fence`. Same L-path on cells: `routeCells` / `fenceOk`. Press on a fence site or an already fenced cell starts the run. Press anywhere else pans. Whole run or nothing.
 
-Pipes always drawn. Faint (`opacity` preference) when the effective lens is not `pipes` and place is not demolish / a `PIPE_PLACE` sku. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
+Pipes always drawn. Joints and valves are faint (`opacity` preference) when the effective lens is not `pipes` and place is not demolish / a `PIPE_PLACE` sku. Built sprinklers and fences are never faint — [[architecture/view]]. Wetness tint + sprinkler AoE wash still lens / tool — [[ui/lens]]. Wires painted iff the effective lens is `sensors` — [[ui/sensors]].
 
 `PIPE_PLACE`: `buy-pipe` `buy-valve` `buy-tap` `buy-sprinkler` `buy-sprinkler-vert` `buy-sprinkler-large` `buy-well` `buy-pumpjack`.
 

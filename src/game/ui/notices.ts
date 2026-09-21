@@ -204,12 +204,45 @@ function plantRows(world: World): Notice[] {
       })
       continue
     }
+    if (c.kind === 'tree') {
+      const st = statsFor(world, cache, c.species, c.variety)
+      const name = CROP_NAME[c.species]()
+      const subjects: NoticeSubject[] = [{ kind: 'crop', crop: c.species }]
+      const bar = c.happiness / HAPPY_MAX
+      const feet = occupiedCells(c.base, world.owned)
+      if (waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid) === 'red') {
+        const drowning = c.soil.drowning
+        rows.push({
+          id: `${drowning ? 'drowning' : 'wilting'}:${key(at)}`,
+          kind: drowning ? 'drowning' : 'wilting',
+          text: drowning ? m.notices_drowning({ crop: name }) : m.notices_wilting({ crop: name }),
+          face: { kind: 'water' },
+          subjects,
+          cells: feet,
+          bar,
+          go: { kind: 'none' },
+        })
+      }
+      if (fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax) === 'red') {
+        rows.push({
+          id: `starving:${key(at)}`,
+          kind: 'starving',
+          text: m.notices_starving({ crop: name }),
+          face: { kind: 'fertilizer' },
+          subjects,
+          cells: feet,
+          bar,
+          go: { kind: 'none' },
+        })
+      }
+      continue
+    }
     if (c.kind !== 'growing') continue
     const st = statsFor(world, cache, c.plant.crop, c.plant.variety)
     const name = CROP_NAME[c.plant.crop]()
     const subjects: NoticeSubject[] = [{ kind: 'crop', crop: c.plant.crop }]
     const bar = c.plant.happiness / HAPPY_MAX
-    if (waterBand(c.soil.water, st.waterTolerance) === 'red') {
+    if (waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid) === 'red') {
       const drowning = c.soil.drowning
       rows.push({
         id: `${drowning ? 'drowning' : 'wilting'}:${key(at)}`,
@@ -222,7 +255,7 @@ function plantRows(world: World): Notice[] {
         go: { kind: 'none' },
       })
     }
-    if (fertBand(c.soil.fertilizer, st.fertTolerance) === 'red') {
+    if (fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax) === 'red') {
       rows.push({
         id: `starving:${key(at)}`,
         kind: 'starving',

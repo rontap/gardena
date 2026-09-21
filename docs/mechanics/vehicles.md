@@ -81,7 +81,7 @@ Not tank. W north, S south, A west, D east. Diagonal: `speed * dt / hypot` so no
 
 Seeding: empty tilled only. Hopper one seeds stack, grass included. Consume 1/plot. Grass sows turf; every other annual plants as hand — [[mechanics/plants]] `plants.grass`.
 
-Spraying: `isTilled && fertilizer < FERT_PLOT_MAX`. Hopper one bag. Spend the gap, same as hand.
+Spraying: `isTilled && fertilizer < FERT_PLOT_MAX`, or a tree cell with `fertilizer < TREE_FERT_MAX`. Hopper one bag. Spend the gap, same as hand. Boom hits a tree cell → feed once (origin).
 
 Harvest: boom width = that tractor `boom`. Mixed produce, chest merge+compact. Skip trees and turf. Full: skip that cell. Ripe: fruit as empty-hand. Growing `< 0.2`: one seed. Growing `> 0.8`: fruit, quality baked as ripen, freshness = maturity. Growing mid: destroyed. Dead/rotten/weed: that item.
 

@@ -51,14 +51,14 @@ import {
   chunkRect,
 } from './building.ts'
 import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
-import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
+import { TREES, TREE_YIELD_DAYS } from '../defs/trees.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { makeShovel, skuItem, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { ADDITIVE_BASE, Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng } from './rng.ts'
-import { Soil, SOIL_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
 import { bare } from './plot.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
@@ -172,7 +172,7 @@ describe('0.8 plants and trees', () => {
   })
 
   test('fermentation unlocks cane; raspberry parent is advanced plants', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ parent: 'unlock-preservatives', cost: 40, seconds: 70 })
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ parent: 'unlock-preservatives', cost: 48, seconds: 70 })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
     expect(RESEARCH['unlock-raspberry'].parent).toBe('unlock-advanced-plants')
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
@@ -208,7 +208,7 @@ describe('0.8 plants and trees', () => {
   test('tree juvenile then pending; next seam starts yield', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, { kind: 'pending' })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     expect(tree.yield.kind).toBe('pending')
@@ -222,7 +222,7 @@ describe('0.8 plants and trees', () => {
   test('juvenile growth does not ping', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0, 0, { kind: 'pending' })
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 0, 0, { kind: 'pending' })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     let n = 0
@@ -538,7 +538,7 @@ describe('0.9 log and rng', () => {
   test('Two successful tree drops the same day each consume two fruit.next(): drop spot then rarity. Rarities need not match.', () => {
     const w = new World(1)
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 1, {
       kind: 'on',
       daysLeft: 2,
     })
@@ -589,7 +589,7 @@ describe('0.9 log and rng', () => {
     expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.count).toBe(25)
     expect(bulk.silo.seeds.find(st => st.crop === 'wheat' && st.variety === 'base')?.variety).toBe('base')
     const dropFail = new World(seed)
-    const trapped = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 1, {
+    const trapped = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 1, {
       kind: 'on',
       daysLeft: 2,
     })
@@ -937,7 +937,7 @@ describe('1.5.2', () => {
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)
   })
 
-  test('Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`. Ripe does not drink. Trees draw 0 fertilizer. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`.', () => {
+  test('plants.drink', () => {
     expect(CROPS.vanilla.fertUseMul).toBe(0.5)
     expect(CROPS.raspberry.fertUseMul).toBe(0.8)
     expect(CROPS.grape.fertUseMul).toBe(0.8)
@@ -947,13 +947,25 @@ describe('1.5.2', () => {
     expect(CROPS.potato.fertUseMul).toBe(1.33)
     expect(CROPS['sugar-cane'].fertUseMul).toBe(1.5)
     expect(CROPS.chilli.fertUseMul).toBe(1.66)
-    expect(CROPS.apple.fertUseMul).toBe(0)
-    expect(CROPS.apricot.fertUseMul).toBe(0)
-    expect(CROPS.olive.fertUseMul).toBe(0)
-    expect(CROPS.cherry.fertUseMul).toBe(0)
     expect(statsOf('carrot', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC, 12)
     expect(statsOf('chilli', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * 1.66, 12)
-    expect(statsOf('apple', 'base', 0, []).fertUsePerSec).toBe(0)
+    const w = new World()
+    const p = new Plant('carrot', 'base', 0)
+    const soil = bed(SOIL_WATER_MID, 1)
+    w.setCell(AT, { kind: 'growing', soil, plant: p })
+    const st = p.stats(w.modifiers)
+    const water0 = soil.water
+    const fert0 = soil.fertilizer
+    w.tick(DT_MAX)
+    expect(soil.water).toBeCloseTo(water0 - st.waterUsePerSec * DT_MAX, 8)
+    expect(soil.fertilizer).toBeCloseTo(fert0 - st.fertUsePerSec * DT_MAX, 8)
+    p.maturity = 1
+    w.setCell(AT, { kind: 'ripe', soil, plant: p })
+    const ripeW = soil.water
+    const ripeF = soil.fertilizer
+    w.tick(DT_MAX)
+    expect(soil.water).toBeCloseTo(ripeW, 8)
+    expect(soil.fertilizer).toBeCloseTo(ripeF, 8)
   })
 
   test('`Seat.stride`. Not driver, `presence === \'in\'`, not recap: if `stride !== {0,0}` clear queue+work, `actor += dir * walkSpeed() * dt`, diagonal normalized. Surfaces not. Ignored while driver. Not in Save. `Act.stride` logged; integrate not.', () => {
@@ -980,7 +992,7 @@ describe('1.5.2', () => {
     expect(STILL_WATER).toBe(5)
   })
 
-  test('Tree juvenile `TREES.juvenileSeconds` then `pending`. Next seam → `TREE_YIELD_MUL` for `TREE_YIELD_DAYS`. After that `chance = -0.2`, next seam +0.2 and roll. Off-season fruits at `TREE_OFF_MUL`. Juvenile unchanged.', () => {
+  test('trees.yield', () => {
     expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 200 })
     expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 300 })
     expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 160 })
@@ -989,12 +1001,10 @@ describe('1.5.2', () => {
     expect(CROPS.apple.sale).toBe(8)
     expect(CROPS.cherry.sale).toBe(4)
     expect(CROPS.olive.sale).toBe(10)
-    expect(TREE_YIELD_MUL).toBe(3)
-    expect(TREE_OFF_MUL).toBe(0.7)
     expect(TREE_YIELD_DAYS).toBe(2)
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    const tree = new Tree('olive', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, { kind: 'pending' })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     w.clock.t = 239.9
@@ -1004,25 +1014,37 @@ describe('1.5.2', () => {
     expect(tree.juvenile).toBe(1)
     tree.fruit = 0
     w.tick(DT_MAX)
-    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_YIELD_MUL), 8)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / (2.75 + tree.happiness * 0.5)), 8)
     tree.yield = { kind: 'on', daysLeft: 1 }
     tree.tended = true
     w.clock.t = 239.9
     const d2 = w.clock.day
     for (let i = 0; i < 20 && w.clock.day === d2; i++) w.tick(DT_MAX)
     expect(tree.tended).toBe(false)
-    expect(tree.yield).toEqual({ kind: 'off', chance: -0.2 })
+    expect(tree.yield).toEqual({ kind: 'off', chance: -0.25 + tree.happiness * 0.1 })
     tree.fruit = 0
     w.tick(DT_MAX)
-    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / TREE_OFF_MUL), 8)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / (0.25 + tree.happiness * 0.5)), 8)
     expect(tree.juvenile).toBe(1)
+    tree.soil.starve(tree.soil.fertilizer)
+    tree.happiness = 0
+    tree.yield = { kind: 'on', daysLeft: 2 }
+    tree.fruit = 0
+    w.tick(DT_MAX)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / 2.75), 8)
+    expect(tree.happiness).toBe(0)
+    tree.soil.feed(TREE_FERT_MAX)
+    tree.happiness = 1
+    tree.fruit = 0
+    w.tick(DT_MAX)
+    expect(tree.fruit).toBeCloseTo(DT_MAX / (TREES.olive.fruitSeconds / 3.25), 8)
   })
 
   test('Tend once per off-season: player owns `tending`, empty hand, `cell.kind === \'tree\'`, `juvenile >= 1`, `yield.kind === \'off\'`, `Tree.tended === false`. Either cell of the 1×2. Work `TEND_WORK`. Then `chance += 0.15`, `tended = true`. No cap. Seam `on` → `off`: `tended = false`, then `chance = -0.2`. Not pending. Not `{ on }`. Not juvenile. Prompt **Tend**. Witness `Tree.tended`.', () => {
     const w = new World()
     w.family.owned.set('tending', 1)
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'off', chance: 0 })
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, { kind: 'off', chance: 0 })
     w.setCell(AT, tree)
     w.setCell(below, tree)
     expect(tree.tended).toBe(false)
@@ -1321,7 +1343,7 @@ describe('quality.ripen', () => {
     w.tick(DT_MAX)
     const ripeSkill = w.cell({ col: 12, row: 12 })
     expect(ripeSkill.kind === 'ripe' && ripeSkill.plant.quality).toBeCloseTo(0.25 + BETTER_QUALITY, 8)
-    const tree = new Tree('olive', { shape: 'rect', col: 8, row: 12, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 2 })
+    const tree = new Tree('olive', { shape: 'rect', col: 8, row: 12, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 1, { kind: 'on', daysLeft: 2 })
     w.setCell({ col: 8, row: 12 }, tree)
     w.setCell({ col: 8, row: 13 }, tree)
     ;[
@@ -1423,7 +1445,7 @@ describe('graft.attach', () => {
   test('Tree target is `juvenile < 1` - a sapling or a trunk. Not mature. Variety changes; juvenile and `trunk` do not.', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.3, 0, { kind: 'pending' })
+    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 0.3, 0, { kind: 'pending' })
     w.setCell(AT, sapling)
     w.setCell(below, sapling)
     grafter(w, { kind: 'graft', crop: 'apple', variety: 'pink-lady', quality: 0.6, count: 1 })
@@ -1435,7 +1457,7 @@ describe('graft.attach', () => {
     expect(sapling.trunk).toBe(false)
 
     const w2 = new World()
-    const mature = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    const mature = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, { kind: 'pending' })
     w2.setCell(AT, mature)
     w2.setCell(below, mature)
     grafter(w2, { kind: 'graft', crop: 'apple', variety: 'pink-lady', quality: 0.6, count: 1 })
@@ -1448,7 +1470,7 @@ describe('graft.axe', () => {
     const w = new World()
     w.family.owned.set('grafting', 1)
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('cherry', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0.5, {
+    const tree = new Tree('cherry', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0.5, {
       kind: 'on',
       daysLeft: 2,
     })
@@ -1543,7 +1565,7 @@ describe('variety.neighbour', () => {
     expect(plotPath.d.match(/M/g)?.length).toBe(1)
 
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0, { kind: 'pending' })
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, { kind: 'pending' })
     tree.variety = 'pink-lady'
     w.setCell(AT, tree)
     w.setCell(below, tree)
@@ -1562,7 +1584,7 @@ describe('variety.neighbour', () => {
     expect(w.neighbourWatch(AT)).toBeUndefined()
 
     const below = { col: AT.col, row: AT.row + 1 }
-    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.5, 0, { kind: 'pending' })
+    const sapling = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 0.5, 0, { kind: 'pending' })
     sapling.variety = 'pink-lady'
     w.setCell(AT, sapling)
     w.setCell(below, sapling)
@@ -1575,7 +1597,7 @@ describe('variety.neighbour', () => {
   test('A lone tree raises `juvenile` but not `fruit`, and the seam leaves `pending` alone.', () => {
     const w = new World()
     const below = { col: AT.col, row: AT.row + 1 }
-    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 0.5, 0, { kind: 'pending' })
+    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 0.5, 0, { kind: 'pending' })
     tree.variety = 'pink-lady'
     w.setCell(AT, tree)
     w.setCell(below, tree)
@@ -1592,7 +1614,7 @@ describe('variety.neighbour', () => {
     expect(tree.fruit).toBe(0)
 
     const sibAt = { col: AT.col + NEIGHBOUR_REACH, row: AT.row }
-    const sib = new Tree('apple', { shape: 'rect', col: sibAt.col, row: sibAt.row, w: 1, h: 2 }, 1, 0, {
+    const sib = new Tree('apple', { shape: 'rect', col: sibAt.col, row: sibAt.row, w: 1, h: 2 }, makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE), HAPPY_START, 1, 0, {
       kind: 'pending',
     })
     w.setCell(sibAt, sib)

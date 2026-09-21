@@ -1290,6 +1290,16 @@ function boomCell(w: World, t: Trailer, at: Coord): boolean {
   }
   if (t.kind === 'spray') {
     if (t.hopper.kind === 'empty') return false
+    if (c.kind === 'tree') {
+      if (c.soil.fertilizer >= c.soil.fertMax) return false
+      const bag = t.hopper.item
+      const need = c.soil.fertMax - c.soil.fertilizer
+      const use = need > bag.liters ? bag.liters : need
+      c.soil.feed(use)
+      bag.liters -= use
+      if (bag.liters <= 0) t.hopper = { kind: 'empty' }
+      return true
+    }
     if (!isTilled(c) || c.soil.fertilizer >= FERT_PLOT_MAX) return false
     const bag = t.hopper.item
     const need = FERT_PLOT_MAX - c.soil.fertilizer
@@ -1327,7 +1337,17 @@ function boom(
   if (steer !== 0) return
   if (v.pose.speed <= 0) return
   const p = hitchP(v.pose.x, v.pose.y, v.pose.heading)
-  const worked = boomHits(p, heading, v.boom, at => w.inWorld(at)).map(at => boomCell(w, t, at))
+  const seen = new Set<string>()
+  const worked = boomHits(p, heading, v.boom, at => w.inWorld(at)).map(at => {
+    const c = w.cell(at)
+    if (c.kind === 'tree') {
+      const k = `${c.base.col},${c.base.row}`
+      if (seen.has(k)) return false
+      seen.add(k)
+      return boomCell(w, t, { col: c.base.col, row: c.base.row })
+    }
+    return boomCell(w, t, at)
+  })
   if (worked.some(Boolean)) v.working = BOOM_WORK_SECONDS
 }
 

@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
-import { CROPS } from '../defs/crops.ts'
+import { CROPS, TREE_FERT_PER_DAY } from '../defs/crops.ts'
+import { TREES } from '../defs/trees.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
+import { TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 import { compute, snapshot, toCsv } from './debug-balance.ts'
 
 test('Constant settings **Water per day** is `waterUsePerSec × daySeconds`; the field writes `n / daySeconds`. CSV `water_use_per_day`. **Water consumed (L)** stays `waterUsePerSec × growSeconds`.', () => {
@@ -46,4 +48,24 @@ test('#debug-balance **Pours** is long-run: `waterUsePerSec × growSeconds / pou
   const span = 2 * red
   expect(carrot.pours).toBeCloseTo(use / span, 10)
   expect(carrot.pours).toBeGreaterThan(0)
+})
+
+test('tree water and Fertilizer are not 0', () => {
+  const s = snapshot()
+  const { rows } = compute(s)
+  const apple = rows.find(r => r.id === 'apple' && r.variety === 'base')
+  if (apple === undefined) throw new Error('row')
+  const growSeconds = TREES.apple.juvenileSeconds
+  const totalWater = CROPS.apple.waterUsePerSec * growSeconds
+  const tol = CROPS.apple.waterTolerance
+  const red = (TREE_WATER_MID + tol) / 2
+  const wilt = TREE_WATER_MID - red
+  const drown = TREE_WATER_MAX - (TREE_WATER_MID + red)
+  const span = TREE_WATER_MAX - wilt - drown
+  expect(apple.totalWater).toBe(totalWater)
+  expect(apple.totalWater).toBeGreaterThan(0)
+  expect(apple.pours).toBeCloseTo(totalWater / span, 10)
+  expect(apple.pours).toBeGreaterThan(0)
+  expect(apple.fertL).toBeCloseTo((TREE_FERT_PER_DAY.apple / DAY_SECONDS) * growSeconds, 10)
+  expect(apple.fertL).toBeGreaterThan(0)
 })

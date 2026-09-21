@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { CROPS } from './crops.ts'
+import { CROPS, HAPPY_START } from './crops.ts'
 import { ANNUAL_IDS, TREE_IDS, type CropId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { Plant } from '../sim/plant.ts'
 import { Tree } from '../sim/building.ts'
+import { makeTreeSoil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
 import {
   CROSSBREED_VAR_BONUS,
   EXPERIENCED_VAR_BONUS,
@@ -92,7 +93,12 @@ describe('variety.identity', () => {
     const plant = new Plant('potato', 'bintje', 0)
     expect(plant.variety).toBe('bintje')
     expect(varietyFits(plant.crop, plant.variety)).toBe(true)
-    const tree = new Tree('apple', { shape: 'rect', col: 0, row: 0, w: 1, h: 2 })
+    const tree = new Tree(
+      'apple',
+      { shape: 'rect', col: 0, row: 0, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+      HAPPY_START,
+    )
     tree.variety = 'pink-lady'
     expect(tree.variety).toBe('pink-lady')
     expect(varietyFits(tree.species, tree.variety)).toBe(true)

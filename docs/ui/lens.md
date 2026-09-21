@@ -13,6 +13,8 @@ Card: name `text-base` semibold, one-line blurb `text-sm`, then the swatch legen
 | `water` | Water need | dry `lens-bad` · wet `lens-good` · full `lens-done` |
 | `land` | Land quality | low `lens-bad` · ok `lens-good` · full `lens-done` |
 
+`water` tints a tree's water band. `land` tints a tree's Fertilizer band. Both cells of the 1×2, same `Tree.soil`, same tols — [[mechanics/soil]] `soil.tree` [[mechanics/trees]] `trees.drink`.
+
 `land` also tints **untilled** ground by the goodness field (the fertility a dig would give): very-hard / hard reads red-orange, soft runs orange → green. Infertile is flat `lens-bad`. Use it to pick where to dig.
 | `ripe` | Ripeness | early `lens-bad` · ready `lens-good` · ripe `lens-done` |
 | `kind` | Object type | plant `leaf` · machine `water` · obstruction `ink` · building `roof` |

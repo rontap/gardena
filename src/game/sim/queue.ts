@@ -3,7 +3,7 @@ import { TEND_WORK } from '../defs/skills.ts'
 import { DIG_HARD_SPAN, GRAFT_WORK, SPRAY_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
 import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type Tap, type Well } from './building.ts'
-import { TAP_RATE } from './water.ts'
+import { SOURCE, TAP_RATE } from './water.ts'
 import { flipLever, pressButton } from './sensor.ts'
 import { type Edge } from './pipe.ts'
 import { countable, mergeInto, stackable, type Item } from './item.ts'
@@ -539,7 +539,7 @@ export function fillDraw(world: World, source: Pump | Tap | Well, dt: number): n
     source.drawn += got
     return got
   }
-  const got = source.water.take(source.water.rate * dt)
+  const got = source.water.take(SOURCE[source.kind].fill * dt)
   if (source.kind === 'pump') world.pumpLiters += got
   return got
 }

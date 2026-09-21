@@ -113,6 +113,12 @@ export function tickBig(world: World, dt: number): void {
       if (d > 0) c.soil.soak(d)
       else c.soil.drink(-d)
     }
+    for (const at of world.grow.values()) {
+      const c = world.cell(at)
+      if (c.kind !== 'tree') continue
+      if (d > 0) c.soil.soak(d)
+      else c.soil.drink(-d)
+    }
   }
   const weeds = sproutWeeds(world)
   const grass = sproutGrass(world)

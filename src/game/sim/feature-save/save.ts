@@ -264,6 +264,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         tended: c.tended,
         trunk: c.trunk,
         variety: c.variety,
+        happiness: c.happiness,
+        soil: dumpSoil(c.soil),
       }
     case 'chest':
       return { kind: 'chest', base: c.base, slots: c.slots.slice(), out: c.out, hold: c.hold }

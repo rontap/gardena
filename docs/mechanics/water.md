@@ -1,10 +1,18 @@
 # Water
 
-Sources own a tank. They gather every second up to capacity. Consumers spend stored water. A net can burst above production while tanks hold, then falls back to production.
+Sources own a tank. They gather every second up to capacity at `SOURCE.rate`. Bucket fill is a different L/s, drawn from that tank (or the net, for a tap). Consumers spend stored water. A net can burst above production while tanks hold, then falls back to production.
 
 `SOURCE` — preference. Starter pump is `SOURCE.pump`, `PUMP_BASE` 2×1, same instance both cells. Bought pumpjack is the same `SOURCE.pump`, 2×1. One kind. Well is `SOURCE.well`, 1×1. `SOURCE.pump.rate` preference. Player-facing gather rate for pump, pumpjack, and well is L/day: `rate × DAY_SECONDS` — derived. Not L/s.
 
-`Reservoir.rate` is `SOURCE[kind].rate` × weather mul for `weather(clock.day)`. Gather uses `rate`. Pump-kind `take()` adds litres to `World.pumpLiters`. Soak/evap is not pour — [[mechanics/weather]].
+Gather is not fill. `SOURCE.well.fill` `SOURCE.pump.fill` `TAP_RATE` — preference, L/s. Starter pump and bought pumpjack both `SOURCE.pump.fill`. Weather mul is gather only.
+
+| fill at | identifier | L/s |
+|---|---|---|
+| well | `SOURCE.well.fill` | 2 |
+| pump / pumpjack | `SOURCE.pump.fill` | 2.5 |
+| tap | `TAP_RATE` | 4 |
+
+`Reservoir.rate` is `SOURCE[kind].rate` × weather mul for `weather(clock.day)`. Gather uses `rate`. Fill does not. Pump-kind `take()` adds litres to `World.pumpLiters`. Soak/evap is not pour — [[mechanics/weather]].
 
 `pull(sources, want)` draws in proportion to `stored`.
 
@@ -12,7 +20,7 @@ Sources own a tank. They gather every second up to capacity. Consumers spend sto
 
 Pipes on **edges**. Sprinklers on **vertices**. Valves on edges. None of these are a `Cell`. A well is a `Cell`.
 
-A well is a 1×1 source cell, sited and deleted exactly like a `Tap`, joining a net through the corners of its cell like every other member of `World.sources()`. `World.wells` is a list of cells, not an edge map. Place: `Place Well` on an `untilled` or `empty` owned cell, disarms on confirm. Click with a container: gardener walks up and fills at `SOURCE.well.rate`, through the same `fill` intent as a pump. Delete tool on the cell: **Delete well**.
+A well is a 1×1 source cell, sited and deleted exactly like a `Tap`, joining a net through the corners of its cell like every other member of `World.sources()`. `World.wells` is a list of cells, not an edge map. Place: `Place Well` on an `untilled` or `empty` owned cell, disarms on confirm. Click with a container: gardener walks up and fills at `SOURCE.well.fill`, through the same `fill` intent as a pump. Delete tool on the cell: **Delete well**.
 
 Any corner of any tile a source covers connects. A pipe that meets a source at a point is fed. Two pipe runs that both touch the same source are one net and share that output.
 
@@ -30,17 +38,17 @@ Still 2×1 joins a net like a tap (any corner). `Net.stills`. Not a producer. No
 
 Water-system sensor 1×1 joins a net like a tap. `Net.waterSystems`. Not a producer. Not a fill target. No incident pipe edge at any corner → not on a net. Look: **Water-system sensor - no pipes around sensor!** Raw 0. High iff this net’s sprinkler want this tick > stored. Taps / stills not in demand. — [[mechanics/sensors]]
 
-Fill at pump / well: that tank at its `rate`. `dest(fill)` = origin of that pump / tap / well, not the interior cell clicked. [[architecture/world]] `world.dest`.
+Fill at pump / well: that tank at `SOURCE[kind].fill`. `take` returns stored; empty tank, fill falls back to gather. Tap: `TAP_RATE` while the net’s tanks hold; dry → only as fast as sources make. `dest(fill)` = origin of that pump / tap / well, not the interior cell clicked. [[architecture/world]] `world.dest`.
 
 ## Sprinklers
 
-Pour per covered **growing** tile, not as one lump.
+Pour per covered **growing** tile and per tree origin, not as one lump. Any tree footprint cell in `aoe` → pour once (dedupe origin).
 
 `SPRINKLER_TILE_DAY` — preference. `SPRINKLER_TILE_RATE = SPRINKLER_TILE_DAY / DAY_SECONDS` — derived. More than any crop drinks. Untuned overwaters on purpose.
 
-Dry, sourceless, unreachable, or nothing growing in the AoE: rate 0, no VFX. `tickWater` writes `World.vfx` from the sprinklers it actually poured and pings `'vfx'`. Not `BIG_TICK` — [[art/vfx]].
+Dry, sourceless, unreachable, or no growing tile and no tree origin in the AoE: rate 0, no VFX. `tickWater` writes `World.vfx` from the sprinklers it actually poured and pings `'vfx'`. Not `BIG_TICK` — [[art/vfx]].
 
-Cache each sprinkler's growing targets. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, expand. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Pour liters unchanged.
+Cache each sprinkler's growing tiles and tree origins. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, expand. A tree in range is the origin once. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Pour liters unchanged.
 
 Wired vertices: `Set` rebuilt on wire change, not `wires.some` per head per tick.
 
@@ -60,7 +68,7 @@ Water-system sensors: `netOfCell` + cached demand, not `grid().find`. — [[mech
 
 `CONTAINERS.bucket` / `CONTAINERS['large-bucket']` — [[mechanics/inventory]]. Fill at a source or tap.
 
-`pourTarget`: empty / weed → `SOIL_WATER_MID`. Growing / ripe → `SOIL_WATER_MID + waterTolerance` (top of the green band). Spends only the gap, clamped to bucket. Already at or above target: nothing.
+`pourTarget`: empty / weed → `SOIL_WATER_MID`. Growing / ripe → `SOIL_WATER_MID + waterTolerance` (top of the green band). Tree, either cell → `TREE_WATER_MID + waterTolerance`. Spends only the gap, clamped to bucket. Already at or above target: nothing.
 
 A drowning empty plot (`water >= mid`) takes nothing. A wilting growing plot can take well over 1 L in one pour.
 
@@ -70,6 +78,8 @@ A drowning empty plot (`water >= mid`) takes nothing. A wilting growing plot can
 
 `water.autolay` — `buy-valve` on an owned edge with no pipe places pipe and valve together and charges both, or places neither. On a bare piped edge it charges the valve alone. On a valved edge: **Pipe already has a valve**.
 
-`water.pour` — A sprinkler pours what its slider is set to per covered growing tile, `0` to `SPRINKLER_TILE_DAY` a day. A head saved before the slider pours `SPRINKLER_TILE_DAY` untuned, or its crop’s `waterUsePerSec`. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`.
+`water.pour` — A sprinkler pours what its slider is set to per covered growing tile and per tree origin, `0` to `SPRINKLER_TILE_DAY` a day. Any tree footprint cell in `aoe` → pour once. A head saved before the slider pours `SPRINKLER_TILE_DAY` untuned, or its crop’s `waterUsePerSec`. Hand pour tops empty/weed to `SOIL_WATER_MID`, growing/ripe to `SOIL_WATER_MID + waterTolerance`, tree either cell to `TREE_WATER_MID + waterTolerance`.
 
-`water.targets` — Each sprinkler caches growing targets. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, or expand. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Wired vertices: `Set` rebuilt on wire change. Water-system: `netOfCell` + cached demand, not `grid().find`. Pour amounts unchanged.
+`water.targets` — Each sprinkler caches growing tiles and tree origins. Invalidate when a cell in `aoe(s)` changes kind, sprinkler place/delete, or expand. A tree is the origin once. `demand = cached.length * tileRate`. `tickWater` soaks that list once. Wired vertices: `Set` rebuilt on wire change. Water-system: `netOfCell` + cached demand, not `grid().find`. Pour amounts unchanged.
+
+`water.fill` — Gather is `SOURCE.rate` into the tank, weather mul on gather only; bucket fill is `SOURCE.well.fill` at a well, `SOURCE.pump.fill` at a pump or pumpjack, `TAP_RATE` at a tap while the net’s tanks hold; empty `take` returns stored so fill falls back to gather; a dry net fills only as fast as sources make.

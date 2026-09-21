@@ -11,12 +11,12 @@ See [[canon]].
 - [[mechanics/expansion]] — `expansion.tax` `expansion.chunk`
 - [[mechanics/burrow]] — `burrow.start` `burrow.day` `burrow.day-chance` `burrow.bands` `burrow.agaric` `burrow.block` `burrow.dig` `burrow.loot` `burrow.open`
 - [[mechanics/necronomicon]] — `necro.reveal` `necro.grandma` `necro.one` `necro.claim` `necro.chest` `necro.ritual` `necro.gold` `necro.save`
-- [[mechanics/soil]] — `soil.till` `soil.instance` `soil.goodness` `soil.hardness` `soil.dig`
+- [[mechanics/soil]] — `soil.till` `soil.instance` `soil.goodness` `soil.hardness` `soil.dig` `soil.tree`
 - [[items/tiles]] — `tiles.paving` `tiles.paving-site`
 - [[mechanics/vehicles]] — `vehicles.silo-store` `vehicles.starter-pads` `vehicles.seeder` `vehicles.kind` `vehicles.buy` `vehicles.surface` `vehicles.empty` `vehicles.refill` `vehicles.drive` `vehicles.hangar` `vehicles.enter` `vehicles.slots` `vehicles.away` `vehicles.unrep` `vehicles.dash` `vehicles.dispatch` `vehicles.auto` `vehicles.route` `vehicles.deploy` `vehicles.boom-work` `vehicles.pick`
 - [[mechanics/plants]] — `plants.drink` `plants.happy` `plants.ripen` `plants.fresh` `plants.harvest` `plants.pick-spoiled` `plants.rot-ground` `plants.packs` `plants.variety-roll` `plants.tend` `plants.vanilla` `plants.chilli` `plants.grass` `plants.annual` `plants.tree-foot` `plants.kinds` `variety.identity` `variety.neighbour` `graft.attach` `quality.ripen` `quality.sale` `quality.carry`
-- [[mechanics/trees]] — `trees.wild` `trees.yield` `trees.drop` `trees.rng` `trees.ping` `trees.tend` `trees.chop` `graft.axe` `trees.trunk`
-- [[mechanics/water]] — `water.pour` `water.targets` `water.valve` `water.autolay`
+- [[mechanics/trees]] — `trees.wild` `trees.drink` `trees.happy` `trees.chance` `trees.yield` `trees.drop` `trees.rng` `trees.ping` `trees.tend` `trees.chop` `graft.axe` `trees.trunk`
+- [[mechanics/water]] — `water.pour` `water.targets` `water.valve` `water.autolay` `water.fill`
 - [[mechanics/weather]] — `weather.chain` `weather.spatial` `weather.continue-neg` `weather.severe-first` `weather.pump` `weather.soak` `weather.market` `weather.shop` `weather.forecast`
 - [[mechanics/weeds]] — `weeds.sprout` `weeds.chance` `weeds.outbreak` `weeds.gone` `weeds.spray` `weeds.pull` `weeds.grass`
 - [[mechanics/market]] — `market.sell` `market.quality` `market.vodka-common` `market.vodka-heirloom` `market.mixed` `market.sugar` `market.infused`

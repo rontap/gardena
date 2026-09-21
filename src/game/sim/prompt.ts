@@ -818,11 +818,11 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     return needSeeds(cell)
   }
-  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'container' && isTilled(cell)) {
+  if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'container' && (isTilled(cell) || cell.kind === 'tree')) {
     if (w.act.hand.item.liters > 0) return intent(m.names_face_water(), { act: 'water', at })
     return { kind: 'blocked', text: m.prompt_named_empty({ name: m.names_container_bucket() }) }
   }
-  if (w.act.hand.kind === 'hold' && feedKind(w.act.hand.item) && isTilled(cell)) {
+  if (w.act.hand.kind === 'hold' && feedKind(w.act.hand.item) && (isTilled(cell) || cell.kind === 'tree')) {
     return intent(m.prompt_fertilize(), { act: 'fertilize', at })
   }
   if (w.act.hand.kind === 'hold' && w.act.hand.item.kind === 'weed-spray' && isTilled(cell) && w.act.hand.item.liters >= 1) {

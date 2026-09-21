@@ -91,6 +91,7 @@ import {
 } from './feature-machines/machine.ts'
 import { emitProduct, emitSorted, pullSorted, pullStillWater } from './feature-machines/machines.emit.ts'
 import type { World } from './world.ts'
+import type { Soil } from './soil.ts'
 import { Reservoir } from './water.ts'
 
 export type Coord = { col: number; row: number }
@@ -379,9 +380,21 @@ export class Tree {
   tended = false
   trunk = false
   variety: VarietyId = 'base'
-  constructor(species: TreeId, base: RectBase, juvenile = 0, fruit = 0, y: TreeYield = { kind: 'pending' }) {
+  happiness: number
+  soil: Soil
+  constructor(
+    species: TreeId,
+    base: RectBase,
+    soil: Soil,
+    happiness: number,
+    juvenile = 0,
+    fruit = 0,
+    y: TreeYield = { kind: 'pending' },
+  ) {
     this.species = species
     this.base = base
+    this.soil = soil
+    this.happiness = happiness
     this.juvenile = juvenile
     this.fruit = fruit
     this.yield = y

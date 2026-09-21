@@ -1,13 +1,49 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import {describe, expect, test} from 'vitest'
 import {DIG_HARD_SPAN} from '../defs/items.ts'
-import {DOOR, HOUSE_BASE, Rock} from './building.ts'
-import {Soil} from './soil.ts'
+import {HAPPY_START} from '../defs/crops.ts'
+import {DOOR, HOUSE_BASE, Rock, Tree} from './building.ts'
+import {FERT_PLOT_MAX, makeTreeSoil, SOIL_WATER_MAX, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID, WEED_CHANCE} from './soil.ts'
 import {bare, isPavingSite} from './plot.ts'
 import {goodness, groundOf, hardnessOf, HARD_MAX} from './noise.ts'
 import {World} from './world.ts'
 
 const AT = {col: 10, row: 12}
+
+describe('soil.tree', () => {
+    test('soil.tree', () => {
+        const w = new World()
+        const below = {col: AT.col, row: AT.row + 1}
+        const soil = makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE)
+        const tree = new Tree('apple', {shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2}, soil, HAPPY_START, 1)
+        w.setCell(AT, tree)
+        w.setCell(below, tree)
+        expect(w.cell(AT)).toBe(tree)
+        expect(w.cell(below)).toBe(tree)
+        expect(w.cell(AT).kind === 'tree' && w.cell(AT).soil).toBe(soil)
+        expect(w.cell(below).kind === 'tree' && w.cell(below).soil).toBe(soil)
+        expect(soil.waterMax).toBe(TREE_WATER_MAX)
+        expect(soil.waterMid).toBe(TREE_WATER_MID)
+        expect(soil.fertMax).toBe(TREE_FERT_MAX)
+        soil.soak(100)
+        expect(soil.water).toBe(TREE_WATER_MAX)
+        expect(soil.drowning).toBe(true)
+        soil.drink(TREE_WATER_MAX)
+        expect(soil.water).toBe(0)
+        expect(soil.drowning).toBe(false)
+        soil.soak(TREE_WATER_MID + 0.01)
+        expect(soil.drowning).toBe(true)
+        soil.feed(100)
+        expect(soil.fertilizer).toBe(TREE_FERT_MAX)
+        const tilled = new Soil(1, 1, WEED_CHANCE)
+        expect(tilled.waterMax).toBe(SOIL_WATER_MAX)
+        expect(tilled.waterMid).toBe(SOIL_WATER_MID)
+        expect(tilled.fertMax).toBe(FERT_PLOT_MAX)
+        tilled.soak(100)
+        expect(tilled.water).toBe(SOIL_WATER_MAX)
+        expect(tilled.drowning).toBe(true)
+    })
+})
 
 describe('soil.hardness', () => {
     test('soil.hardness - untilled carries a continuous hardness alongside its tier, and the two never disagree: groundOf(1 - hardness) === ground. Generation writes 1 - goodness. Clearing a rock or a tree writes the soft baseline 0.', () => {

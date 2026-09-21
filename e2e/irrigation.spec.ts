@@ -22,7 +22,7 @@ test('hover outline', async ({ page }) => {
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await hoverWorld(page, 12.5, 10.5)
   await expect(stroke).toHaveCount(1)
   await expect(stroke).toHaveClass(/stroke-ink/)
@@ -46,7 +46,7 @@ test('house hover is one outline path', async ({ page }) => {
 })
 
 test('shop close exits pipe layer', async ({ page }) => {
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await tapWorld(page, 18.5, 7)
   await hoverWorld(page, 12.5, 10.5)
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
@@ -58,13 +58,13 @@ test('shop close exits pipe layer', async ({ page }) => {
   await page.getByRole('button', { name: /Lock view/ }).click()
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
   await expect(page.locator('[data-pipe]')).not.toHaveCount(0)
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await expect.poll(() => placeKind(page)).toBe('sku')
   await page.getByRole('button', { name: 'Build', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Water' })).toHaveCount(0)
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await page.keyboard.press('Escape')
   await expect.poll(() => placeKind(page)).toBe('none')
   await expect(page.getByRole('button', { name: /^Lens pipes/i })).toBeVisible()
@@ -79,7 +79,7 @@ test('sprinkler place without pipes', async ({ page }) => {
 })
 
 test('pipe ghost is pipe art', async ({ page }) => {
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await hoverWorld(page, 18.5, 7)
   const ghost = page.locator('[data-pipe-ghost]').first()
   await expect(ghost).toBeVisible()
@@ -89,7 +89,7 @@ test('pipe ghost is pipe art', async ({ page }) => {
 })
 
 test('dry pipes', async ({ page }) => {
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await tapWorld(page, 10.5, 20)
   await hoverWorld(page, 10.5, 20.5)
   const dry = page.locator('[data-pipe][data-wet="0"]').first()
@@ -99,7 +99,7 @@ test('dry pipes', async ({ page }) => {
 })
 
 test('connected sprinkler waters', async ({ page }) => {
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   await tapWorld(page, PUMP_EDGE.col + 0.5, PUMP_EDGE.row)
   await armSku(page, 'Sprinkler 16')
   await tapWorld(page, PUMP_VERTEX.col, PUMP_VERTEX.row)

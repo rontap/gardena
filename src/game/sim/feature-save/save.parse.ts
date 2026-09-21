@@ -63,7 +63,7 @@ import {
 } from '../sensor.ts'
 import { Plant, Turf, Weed } from '../plant.ts'
 import { Rng } from '../rng.ts'
-import { Soil } from '../soil.ts'
+import { makeTreeSoil, Soil } from '../soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from '../stall.ts'
 import {
   POINTS_PER_DAY,
@@ -386,7 +386,16 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     case 'rock':
       return new Rock(cell.base)
     case 'tree': {
-      const tree = new Tree(cell.species, cell.base, cell.juvenile, cell.fruit, cell.yield)
+      if (cell.happiness === undefined || cell.soil === undefined) throw new Error('unusable')
+      const tree = new Tree(
+        cell.species,
+        cell.base,
+        makeTreeSoil(cell.soil.water, cell.soil.fertilizer, cell.soil.weedChance),
+        cell.happiness,
+        cell.juvenile,
+        cell.fruit,
+        cell.yield,
+      )
       tree.tended = cell.tended
       tree.trunk = cell.trunk
       tree.variety = cell.variety

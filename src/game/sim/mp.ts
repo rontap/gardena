@@ -258,7 +258,13 @@ export function digestParts(world: World): Record<string, unknown> {
       happiness.push(`${at.col},${at.row}:${q(c.plant.happiness)}`)
     }
     if (isTilled(c)) soil.push(`${at.col},${at.row}:${q(c.soil.water)}:${q(c.soil.fertilizer)}`)
-    if (c.kind === 'tree') s += `:${c.variety}`
+    if (c.kind === 'tree') {
+      s += `:${c.variety}`
+      if (at.col === c.base.col && at.row === c.base.row) {
+        happiness.push(`${at.col},${at.row}:${q(c.happiness)}`)
+        soil.push(`${at.col},${at.row}:${q(c.soil.water)}:${q(c.soil.fertilizer)}`)
+      }
+    }
     if (c.kind === 'silo-seed' || c.kind === 'silo-spray') s += `:re${c.restock ? 1 : 0}`
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
     if (c.kind === 'infuser') s += `:${c.lock === 'none' ? 'none' : c.lock.kind}:u${c.units}`

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { HAPPY_MAX } from '../defs/crops.ts'
+import { CROP_NAME, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
+import { Tree } from '../sim/building.ts'
 import { Plant, Weed } from '../sim/plant.ts'
-import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
 import {
   applyRoster,
   AWAY_MS,
@@ -34,6 +35,21 @@ const AT = { col: 10, row: 12 }
 
 function bed(water = SOIL_WATER_MID, fertilizer = 1): Soil {
   return new Soil(water, fertilizer, WEED_CHANCE)
+}
+
+const BELOW = { col: AT.col, row: AT.row + 1 }
+
+function plantTree(w: World, water: number, fertilizer: number): Tree {
+  const tree = new Tree(
+    'apple',
+    { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 },
+    makeTreeSoil(water, fertilizer, WEED_CHANCE),
+    HAPPY_START,
+    1,
+  )
+  w.setCell(AT, tree)
+  w.setCell(BELOW, tree)
+  return tree
 }
 
 function kinds(rows: readonly Notice[]): string[] {
@@ -105,10 +121,43 @@ describe('notices.red', () => {
     const w = new World()
     const p = new Plant('carrot', 'base', 0)
     w.setCell(AT, { kind: 'growing', soil: bed(SOIL_WATER_MID, 0), plant: p })
-    const row = noticeRows(w).find(r => r.kind === 'starving')
+    const row = noticeRows(w).find(r => r.kind === 'starving' && r.cells.some(c => c.col === AT.col && c.row === AT.row))
     expect(row).toBeDefined()
     expect(row?.bar).toBe(p.happiness / HAPPY_MAX)
     expect(row?.cells).toEqual([AT])
+  })
+
+  test('trees: wilting / drowning / starving, species name, Happiness bar, both footprint cells', () => {
+    const wilt = new World()
+    const wilted = plantTree(wilt, 0, TREE_FERT_MAX)
+    const wiltRow = noticeRows(wilt).find(r => r.kind === 'wilting' && r.cells.some(c => c.col === AT.col && c.row === AT.row))
+    expect(wiltRow).toBeDefined()
+    expect(wiltRow?.bar).toBe(wilted.happiness / HAPPY_MAX)
+    expect(wiltRow?.cells).toEqual([AT, BELOW])
+    expect(wiltRow?.text).toBe(`${CROP_NAME.apple()} is wilting`)
+    expect(kinds(noticeRows(wilt)).filter(k => k === 'drowning')).toEqual([])
+
+    const drown = new World()
+    plantTree(drown, TREE_WATER_MAX, TREE_FERT_MAX)
+    const drownRows = noticeRows(drown).filter(r => r.cells.some(c => c.col === AT.col && c.row === AT.row))
+    expect(kinds(drownRows)).toContain('drowning')
+    expect(kinds(drownRows)).not.toContain('wilting')
+    expect(drownRows.find(r => r.kind === 'drowning')?.text).toBe(`${CROP_NAME.apple()} is drowning`)
+
+    const starve = new World()
+    const starved = plantTree(starve, TREE_WATER_MID, 0)
+    const starveRow = noticeRows(starve).find(r => r.kind === 'starving' && r.cells.some(c => c.col === AT.col && c.row === AT.row))
+    expect(starveRow).toBeDefined()
+    expect(starveRow?.bar).toBe(starved.happiness / HAPPY_MAX)
+    expect(starveRow?.cells).toEqual([AT, BELOW])
+    expect(starveRow?.text).toBe(`${CROP_NAME.apple()} is starving for fertilizer`)
+
+    const orange = new World()
+    plantTree(orange, 2, 0.5)
+    const orangeMine = noticeRows(orange).filter(r => r.cells.some(c => c.col === AT.col && c.row === AT.row))
+    expect(kinds(orangeMine)).not.toContain('wilting')
+    expect(kinds(orangeMine)).not.toContain('drowning')
+    expect(kinds(orangeMine)).not.toContain('starving')
   })
 
   test('dead and rotten cells are notices with no bar', () => {

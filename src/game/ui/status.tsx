@@ -2,7 +2,7 @@ import { m } from '../../paraglide/messages.js'
 import '../defs/math.ts'
 import { useEffect, type ReactNode } from 'react'
 import { heldText, itemGauge, toolName, type Gauge, type Hand } from '../sim/item.ts'
-import type { Modifier } from '../sim/modifiers.ts'
+import { statsOf, type Modifier } from '../sim/modifiers.ts'
 import { cellGauge, lookText } from '../sim/look.ts'
 import { onCell } from '../sim/drop.ts'
 import type { Prompt, PromptHit } from '../sim/prompt.ts'
@@ -96,6 +96,31 @@ const FRESH_SEGMENTS: readonly Segment[] = [
   { from: 0.8, to: 1, color: 'green' },
 ]
 
+const HAPPY_SEGMENTS: readonly Segment[] = [
+  { from: 0, to: HAPPY_START / 2, color: 'red' },
+  { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' },
+  { from: HAPPY_START, to: 1, color: 'green' },
+]
+
+function fertSegments(floor: number, max: number): Segment[] {
+  return [
+    { from: 0, to: floor / 2 / max, color: 'red' },
+    { from: floor / 2 / max, to: floor / max, color: 'orange' },
+    { from: floor / max, to: 1, color: 'green' },
+  ]
+}
+
+function waterSegments(mid: number, max: number, tol: number): Segment[] {
+  const redDist = (mid + tol) / 2
+  return [
+    { from: 0, to: (mid - redDist) / max, color: 'red' },
+    { from: (mid - redDist) / max, to: (mid - tol) / max, color: 'orange' },
+    { from: (mid - tol) / max, to: (mid + tol) / max, color: 'green' },
+    { from: (mid + tol) / max, to: (mid + redDist) / max, color: 'orange' },
+    { from: (mid + redDist) / max, to: 1, color: 'red' },
+  ]
+}
+
 function FruitStats({ quality, freshness }: { quality: number; freshness: number }) {
   return (
     <Rows>
@@ -144,9 +169,24 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   const cell = world.cell(hover.at)
   if (cell.kind === 'tree') {
     const value = cell.juvenile < 1 ? cell.juvenile : cell.fruit
+    const stats = statsOf(cell.species, cell.variety, 0, world.modifiers)
+    const fertFloor = cell.soil.fertMax - stats.fertTolerance
     return (
       <Rows>
         <FillRow label={m.hud_growth()} value={value} text={pct(value)} />
+        <StatRow label={m.hud_happiness()} value={cell.happiness} text={pct(cell.happiness)} segments={HAPPY_SEGMENTS} />
+        <StatRow
+          label={m.hud_fertilizer()}
+          value={cell.soil.fertilizer / cell.soil.fertMax}
+          text={liters(cell.soil.fertilizer)}
+          segments={fertSegments(fertFloor, cell.soil.fertMax)}
+        />
+        <StatRow
+          label={m.names_face_water()}
+          value={cell.soil.water / cell.soil.waterMax}
+          text={liters(cell.soil.water)}
+          segments={waterSegments(cell.soil.waterMid, cell.soil.waterMax, stats.waterTolerance)}
+        />
       </Rows>
     )
   }
@@ -154,18 +194,22 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
   if (cell.kind === 'growing') {
     const stats = cell.plant.stats(world.modifiers)
     const fertFloor = FERT_PLOT_MAX - stats.fertTolerance
-    const waterTol = stats.waterTolerance
-    const waterRedDistance = (SOIL_WATER_MID + waterTol) / 2
-    const waterRed = (SOIL_WATER_MID - waterRedDistance) / SOIL_WATER_MAX
-    const waterGreenStart = (SOIL_WATER_MID - waterTol) / SOIL_WATER_MAX
-    const waterGreenEnd = (SOIL_WATER_MID + waterTol) / SOIL_WATER_MAX
-    const waterRedEnd = (SOIL_WATER_MID + waterRedDistance) / SOIL_WATER_MAX
     return (
       <Rows>
         <FillRow label={m.hud_growth()} value={cell.plant.maturity} text={pct(cell.plant.maturity)} />
-        <StatRow label={m.hud_happiness()} value={cell.plant.happiness} text={pct(cell.plant.happiness)} segments={[{ from: 0, to: HAPPY_START / 2, color: 'red' }, { from: HAPPY_START / 2, to: HAPPY_START, color: 'orange' }, { from: HAPPY_START, to: 1, color: 'green' }]} />
-        <StatRow label={m.hud_fertilizer()} value={cell.soil.fertilizer} text={pct(cell.soil.fertilizer)} segments={[{ from: 0, to: fertFloor / 2, color: 'red' }, { from: fertFloor / 2, to: fertFloor, color: 'orange' }, { from: fertFloor, to: 1, color: 'green' }]} />
-        <StatRow label={m.names_face_water()} value={cell.soil.water / SOIL_WATER_MAX} text={liters(cell.soil.water)} segments={[{ from: 0, to: waterRed, color: 'red' }, { from: waterRed, to: waterGreenStart, color: 'orange' }, { from: waterGreenStart, to: waterGreenEnd, color: 'green' }, { from: waterGreenEnd, to: waterRedEnd, color: 'orange' }, { from: waterRedEnd, to: 1, color: 'red' }]} />
+        <StatRow label={m.hud_happiness()} value={cell.plant.happiness} text={pct(cell.plant.happiness)} segments={HAPPY_SEGMENTS} />
+        <StatRow
+          label={m.hud_fertilizer()}
+          value={cell.soil.fertilizer}
+          text={pct(cell.soil.fertilizer)}
+          segments={fertSegments(fertFloor, FERT_PLOT_MAX)}
+        />
+        <StatRow
+          label={m.names_face_water()}
+          value={cell.soil.water / SOIL_WATER_MAX}
+          text={liters(cell.soil.water)}
+          segments={waterSegments(SOIL_WATER_MID, SOIL_WATER_MAX, stats.waterTolerance)}
+        />
       </Rows>
     )
   }

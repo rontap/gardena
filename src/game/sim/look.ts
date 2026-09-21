@@ -27,7 +27,7 @@ import { BARREL_AGE, BARREL_MATURE, FURNACE_HASTE } from '../defs/items.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { isSensor } from './sensor.ts'
 import { pageStates } from './feature-necronomicon/necronomicon.ts'
-import { fertBand, waterBand, SOIL_WATER_MID, type Band, type Soil } from './soil.ts'
+import { fertBand, waterBand, type Band, type Soil } from './soil.ts'
 import { CASK_OF, type TileId } from './ids.ts'
 import type { World } from './world.ts'
 
@@ -148,14 +148,14 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       lines.push(
         m.prompt_water_stat({
           stored: liters(cell.soil.water),
-          mid: liters(SOIL_WATER_MID),
+          mid: liters(cell.soil.waterMid),
           word: waterWord(cell.soil, st.waterTolerance),
         }),
       )
       lines.push(
         m.prompt_fert_stat({
           n: Math.floor(cell.soil.fertilizer * 100),
-          word: FERT_WORD[fertBand(cell.soil.fertilizer, st.fertTolerance)](),
+          word: FERT_WORD[fertBand(cell.soil.fertilizer, st.fertTolerance, cell.soil.fertMax)](),
         }),
       )
     }
@@ -247,7 +247,7 @@ function liters(n: number): string {
 }
 
 function waterWord(soil: Soil, tol: number): string {
-  const band = waterBand(soil.water, tol)
+  const band = waterBand(soil.water, tol, soil.waterMid)
   if (band === 'green') return m.prompt_water_happy()
   if (band === 'orange') return soil.drowning ? m.prompt_water_too_wet() : m.prompt_water_thirsty()
   return soil.drowning ? m.prompt_water_drowning() : m.prompt_water_wilting()

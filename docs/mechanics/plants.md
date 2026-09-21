@@ -4,7 +4,7 @@ Crop table is `CROPS`. Tree juvenile / fruit intervals are `TREES`. Variety tabl
 
 `AnnualId` includes `'grass'`. `Plant.crop` is `Exclude<AnnualId, 'grass'>`. Classes: carrot potato root; wheat sugar-cane grain; else fruit. Chilli fruit.
 
-Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1. `fertUseMul` 1 is carrot. Trees 0. potato wheat tomato, chilli, vanilla, raspberry grape, sugar-cane `fertUseMul` — preference on `CROPS`. `PLANT_FERT_PER_SEC` — preference.
+Fields on `CROPS`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `seed`, `rotSeconds`. Optional `saleMul` number; vanilla only — preference. Absent → 1. `fertUseMul` 1 is carrot. potato wheat tomato, chilli, vanilla, raspberry grape, sugar-cane `fertUseMul` — preference on `CROPS`. `PLANT_FERT_PER_SEC` — preference. Tree drink and tols: [[mechanics/trees]] `trees.drink`.
 
 Grow days = `days(growSeconds)` — derived, [[mechanics/day]]. Drink L/day = `waterUsePerSec × DAY_SECONDS` — derived.
 
@@ -64,7 +64,7 @@ Sow / plant on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. Never a `Plant`
 - sale: `CROPS.sale × qualityMul(quality) × purposeMul(variety, 'produce') × Π saleMul` × (`CROPS.saleMul` or 1)
 - grow: `(CROPS.growSeconds × VARIETY_GROW[tier]) / growSpeed`
 - drink: `CROPS.waterUsePerSec × waterUseMul`
-- fert: `PLANT_FERT_PER_SEC × fertUseMul`
+- fert: annuals `PLANT_FERT_PER_SEC × fertUseMul`; `TreeId` [[mechanics/trees]] `trees.drink`
 - tols: `tolerance(base, tier) = max(TOL_MIN, base × VARIETY_TOL[tier])`
 - rot: `CROPS.rotSeconds × VARIETY_ROT[tier]`
 
@@ -74,7 +74,7 @@ Sow / plant on `empty` → `{ kind: 'turf'; soil; turf: Turf }`. Never a `Plant`
 
 Seed on `empty`, `crop !== 'grass'` → `growing`, same `Soil`, same `variety`, same `quality`. Planting does not change water. `Plant.happiness = HAPPY_START` — preference. `Plant.tended` required, starts `false`, same instance through ripe / dead. `crop === 'grass'` → turf, not a `Plant`.
 
-Stage: maturity `< 0.33` sprout, else grow, then ripe, dead. While growing: drink water and `PLANT_FERT_PER_SEC × fertUseMul` — [[mechanics/soil]]. Trees `fertUseMul` 0. `STUNT` — preference. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`. Ripe does not drink. Sprinklers skip ripe / dead / rotten. A neighbour-need variety does not raise `maturity` without a neighbour. Water, fertilizer, happiness, stunt and death still tick.
+Stage: maturity `< 0.33` sprout, else grow, then ripe, dead. While growing: drink water and `PLANT_FERT_PER_SEC × fertUseMul` — [[mechanics/soil]]. `STUNT` — preference. Water red or fert red: growth × `STUNT`. Both red: `STUNT × STUNT`. Ripe does not drink. Sprinklers skip ripe / dead / rotten. Trees: [[mechanics/trees]] `trees.drink`. A neighbour-need variety does not raise `maturity` without a neighbour. Water, fertilizer, happiness, stunt and death still tick.
 
 ## Happiness
 
@@ -106,15 +106,15 @@ Harvest boom: [[mechanics/vehicles]]. Growing `> 0.8` bakes quality as ripen. Gr
 
 ## Needs a neighbour
 
-`keknyelu`, `pink-lady`, `bing`. `NEIGHBOUR_IDS`. `NEIGHBOUR_REACH` preference. Chebyshev, from the plot, or from either cell of a 1×2 tree. A valid neighbour: same crop, variety tier not `heirloom`, and annual `growing` with neither band red, or tree `juvenile >= 1`, `trunk === false`. Without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`. Juvenile still grows. Water, fertilizer, happiness, stunt, death still tick. Look [[ui/inspect]].
+`keknyelu`, `pink-lady`, `bing`. `NEIGHBOUR_IDS`. `NEIGHBOUR_REACH` preference. Chebyshev, from the plot, or from either cell of a 1×2 tree. A valid neighbour: same crop, variety tier not `heirloom`, and annual `growing` with neither band red, or tree `juvenile >= 1`, `trunk === false`. Without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`. Juvenile still grows. Annual: water, fertilizer, happiness, stunt, death still tick. Tree: drink, starve, Happiness still tick; Happiness 0 does not kill and does not stunt. Look [[ui/inspect]].
 
 ## Trees
 
-Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untilled only. Drinks nothing. No fertilizer. No `Plant`. `Tree.variety` required. Yield, drop, ping: [[mechanics/trees]]. Plant tree seed: hold a tree seed, `{ act: 'plant' }`. The clicked cell is the **foot**; the pair is it and the cell **above**. Both untilled, `ground === 'soft'`, owned. Cover bare or grass — grass clears to bare. New tree `juvenile = 0`, `base` at the upper cell, `variety` from the seed. Shovel: `{ kind: 'tree-seed'; tree; variety: Tree.variety; quality: 0 }`, both cells bare soft.
+Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untilled only. Trees stay untilled. One `Soil` on the instance. `Tree.happiness` required. `Tree.soil` required. No `Plant`. `Tree.variety` required. Drink, Happiness, yield, drop, ping: [[mechanics/trees]]. Plant tree seed: hold a tree seed, `{ act: 'plant' }`. The clicked cell is the **foot**; the pair is it and the cell **above**. Both untilled, `ground === 'soft'`, owned. Cover bare or grass — grass clears to bare. New tree `juvenile = 0`, `base` at the upper cell, `variety` from the seed, Happiness `TREE_HAPPY_START`, soil mint [[mechanics/trees]]. Shovel: `{ kind: 'tree-seed'; tree; variety: Tree.variety; quality: 0 }`, both cells bare soft, soil and Happiness destroyed.
 
 ## Invariants
 
-`plants.drink` — Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`; ripe does not drink; trees draw 0 fertilizer; water red or fert red: growth × `STUNT`; both red: `STUNT × STUNT`.
+`plants.drink` — Growing drinks `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul`; ripe does not drink; trees drink [[mechanics/trees]] `trees.drink`; water red or fert red: growth × `STUNT`; both red: `STUNT × STUNT`.
 
 `plants.happy` — Happiness starts `HAPPY_START`; drown drain `HAPPY_DROWN_SECONDS`; wilt `HAPPY_WILT_SECONDS`; starve `HAPPY_STARVE_SECONDS`; happiness 0 while growing: drown → `rotten`; wilt/starve → `dead`; ripe does not die of water or fertilizer.
 
@@ -132,7 +132,7 @@ Class `Tree`. Cell `kind: 'tree'`. Same instance on a vertical 1×2. Soft untill
 
 `variety.identity` — `Plant.variety`, `Tree.variety`, and `variety` on seeds, fruit, grafts are required `VarietyId`; illegal: optional `variety`; illegal: a `variety` whose `VARIETY[v].crop` is not the item's `crop`; `'base'` is legal on every `CropId`; set at plant; graft is the only later change besides the ripen roll.
 
-`variety.neighbour` — `keknyelu` `pink-lady` `bing` need a neighbour in Chebyshev `NEIGHBOUR_REACH`; without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`; juvenile still grows; water, fertilizer, happiness, stunt, death still tick.
+`variety.neighbour` — `keknyelu` `pink-lady` `bing` need a neighbour in Chebyshev `NEIGHBOUR_REACH`; without one, annual `maturity` does not increase; tree `fruit` does not increase and the seam does not turn `pending` into `on`; juvenile still grows; annual water, fertilizer, happiness, stunt, death still tick; tree drink, starve, Happiness still tick.
 
 `graft.attach` — A graft is never planted; same crop, target variety tier not `heirloom`; annual `growing`; tree `juvenile < 1`; complete: target `variety` and `quality` become the graft's; one consumed; maturity, juvenile, `trunk`, happiness, `tended`, soil untouched.
 

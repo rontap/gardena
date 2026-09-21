@@ -8,8 +8,9 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { lookText } from './look.ts'
-import { counterDial, evalDag, HarvestSensor, isSeqIn, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle, type WireEnd } from './sensor.ts'
-import { Soil, WEED_CHANCE } from './soil.ts'
+import { counterDial, evalDag, FertSensor, HarvestSensor, isSeqIn, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle, type WireEnd } from './sensor.ts'
+import { HAPPY_START } from '../defs/crops.ts'
+import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
 import { DT_MAX, World } from './world.ts'
 
 const A = { col: 10, row: 12 }
@@ -537,7 +538,7 @@ describe('1.6 sensors', () => {
     ripe.tick(DT_MAX)
     const w6 = ripe.cell(A)
     if (w6.kind !== 'sensor-water') throw new Error('water')
-    expect(w6.out).toBe(0)
+    expect(w6.out).toBe(1)
   })
 
   test('Harvest any/all.', () => {
@@ -588,7 +589,18 @@ describe('1.6 sensors', () => {
     const trees = new World(1)
     ready(trees)
     put(trees, 'buy-sensor-harvest', A)
-    trees.setCell(B, new Tree('apple', { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 1 }))
+    trees.setCell(
+      B,
+      new Tree(
+        'apple',
+        { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 },
+        makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+        HAPPY_START,
+        1,
+        1,
+        { kind: 'on', daysLeft: 1 },
+      ),
+    )
     trees.tick(DT_MAX)
     const a6 = trees.cell(A)
     if (a6.kind !== 'sensor-harvest') throw new Error('harvest')
@@ -596,6 +608,23 @@ describe('1.6 sensors', () => {
     const s = new HarvestSensor({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
     s.mode = 'any'
     expect(readerRaw(s, [], () => undefined, [])).toBe(0)
+    const water = new WaterSensor({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+    const fert = new FertSensor({ shape: 'rect', col: 0, row: 0, w: 1, h: 1 })
+    const dry = new Tree(
+      'apple',
+      { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 },
+      makeTreeSoil(0, 0, WEED_CHANCE),
+      HAPPY_START,
+      0,
+    )
+    const cells = new Map<string, Tree>([
+      [`${B.col},${B.row}`, dry],
+      [`${B.col},${B.row + 1}`, dry],
+    ])
+    const at = (c: { col: number; row: number }) => cells.get(`${c.col},${c.row}`)
+    const around = [B, { col: B.col, row: B.row + 1 }]
+    expect(readerRaw(water, around, at, [])).toBe(1)
+    expect(readerRaw(fert, around, at, [])).toBe(1)
   })
 
   test('Water sensor hold: output edge then hold SENSOR_HOLD ticks.', () => {
@@ -1453,7 +1482,18 @@ describe('sensors.variety', () => {
     expect(s.baseOn).toBe(true)
     expect(s.variant).toBe(false)
     expect(s.heirloom).toBe(false)
-    w.setCell(B, new Tree('apple', { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 }, 1, 1, { kind: 'on', daysLeft: 1 }))
+    w.setCell(
+      B,
+      new Tree(
+        'apple',
+        { shape: 'rect', col: B.col, row: B.row, w: 1, h: 2 },
+        makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+        HAPPY_START,
+        1,
+        1,
+        { kind: 'on', daysLeft: 1 },
+      ),
+    )
     w.tick(DT_MAX)
     expect(s.out).toBe(1)
     w.tuneSensor({ k: 'variety', at: A, base: false, variant: false, heirloom: false })

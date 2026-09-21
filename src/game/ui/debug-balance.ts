@@ -1,4 +1,4 @@
-import { CROPS, freshMul } from '../defs/crops.ts'
+import { CROPS, freshMul, TREE_FERT_PER_DAY } from '../defs/crops.ts'
 import {
   BARREL_AGE,
   BARREL_MATURE,
@@ -68,7 +68,7 @@ import {
   millProduct,
 } from '../sim/feature-machines/machine.ts'
 import { statsOf } from '../sim/modifiers.ts'
-import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
+import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MAX, SOIL_WATER_MID, TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 
 export const CROP_IDS: readonly GrownCrop[] = [...PLANT_CROPS, ...TREE_IDS]
 
@@ -467,10 +467,15 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
     const F = tree ? treeF : 1
     const fruitPeriod = tree ? c.fruitSeconds / F : growSeconds
     const tol = Math.max(g.tolMin, c.waterTolerance * g.varietyTol[tier])
-    const totalWater = tree ? 0 : c.waterUsePerSec * growSeconds
-    const pours = tree ? 0 : poursUnrounded(totalWater, g.soilWaterMid, tol, SOIL_WATER_MAX)
+    const totalWater = c.waterUsePerSec * growSeconds
+    const pours = poursUnrounded(
+      totalWater,
+      tree ? TREE_WATER_MID : g.soilWaterMid,
+      tol,
+      tree ? TREE_WATER_MAX : SOIL_WATER_MAX,
+    )
     const fruitSale = c.sale * qMul * purposeMulAt(variety, 'produce', g) * c.saleMul
-    const fertL = tree ? 0 : g.fertDraw * c.fertUseMul * growSeconds
+    const fertL = tree ? (TREE_FERT_PER_DAY[c.id] / g.daySeconds) * growSeconds : g.fertDraw * c.fertUseMul * growSeconds
     const fertCost = (fertL / g.fertBagLiters) * g.fertCost
     const fertUnit = g.fertPaid ? fertCost : 0
     const costSeed = c.packPrice === null || c.packUnits === null ? null : c.packPrice / c.packUnits

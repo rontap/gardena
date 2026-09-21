@@ -657,7 +657,7 @@ export class World {
     grid[loc.row][loc.col] = cell
     if (groundSig(prev) !== groundSig(cell)) this.groundRev += 1
     this.track(at, cell)
-    if ((prev.kind === 'growing') !== (cell.kind === 'growing')) this.dropTargetCachesAt(at)
+    if (prev.kind !== cell.kind) this.dropTargetCachesAt(at)
     if (prevTilled !== isTilled(cell)) this.invalidateDirtEdges(at)
   }
 

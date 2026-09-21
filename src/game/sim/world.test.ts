@@ -17,7 +17,7 @@ import {Rock, Tree} from './building.ts'
 import {Act} from './log.ts'
 import {Rng} from './rng.ts'
 import {Clock, days} from './clock.ts'
-import {BIG_TICK, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, WEED_CHANCE, GRASS_CHANCE, ramped} from './soil.ts'
+import {BIG_TICK, makeTreeSoil, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE, GRASS_CHANCE, ramped} from './soil.ts'
 import {bare} from './plot.ts'
 import {SOURCE} from './water.ts'
 import {goodness} from './noise.ts'
@@ -511,8 +511,8 @@ describe('beta-2 invariants', () => {
         expect(w.job.kind === 'run' && w.job.left).toBeCloseTo(RESEARCH['unlock-multi-crop'].seconds - 3, 5)
     })
 
-    test('shovel SKU is 8', () => {
-        expect(SKUS['buy-shovel'].price).toBe(8)
+    test('shovel SKU is 12', () => {
+        expect(SKUS['buy-shovel'].price).toBe(12)
     })
 
     test('dig growing drops seed; dead drops compostable', () => {
@@ -548,17 +548,17 @@ describe('beta-2 invariants', () => {
         expect(RESEARCH['unlock-raspberry']).toMatchObject({cost: 32, seconds: 40})
         expect(RESEARCH['unlock-heirloom']).toMatchObject({cost: 140, seconds: 120, path: 'unlock-multi-crop'})
         expect(RESEARCH['unlock-better-tools']).toMatchObject({cost: 16, seconds: 45})
-        expect(RESEARCH['unlock-irrigation']).toMatchObject({cost: 10, seconds: 30})
-        expect(RESEARCH['unlock-water-storage']).toMatchObject({cost: 30, seconds: 70})
-        expect(RESEARCH['unlock-expand']).toMatchObject({cost: 25, seconds: 45})
-        expect(RESEARCH['expand-land']).toMatchObject({cost: 120, seconds: 90})
+        expect(RESEARCH['unlock-irrigation']).toMatchObject({cost: 9, seconds: 30})
+        expect(RESEARCH['unlock-water-storage']).toMatchObject({cost: 64, seconds: 70})
+        expect(RESEARCH['unlock-expand']).toMatchObject({cost: 32, seconds: 45})
+        expect(RESEARCH['expand-land']).toMatchObject({cost: 128, seconds: 90})
         expect(RESEARCH['eminent-domain']).toMatchObject({cost: 420, seconds: 180})
-        expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({cost: 16, seconds: 45})
-        expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({cost: 75, seconds: 70})
-        expect(RESEARCH['unlock-advanced-sensors']).toMatchObject({cost: 140, seconds: 60})
-        expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({cost: 60, seconds: 100})
+        expect(RESEARCH['unlock-auto-irrigation']).toMatchObject({cost: 12, seconds: 45})
+        expect(RESEARCH['unlock-adv-irrigation']).toMatchObject({cost: 84, seconds: 70})
+        expect(RESEARCH['unlock-advanced-sensors']).toMatchObject({cost: 60, seconds: 60})
+        expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({cost: 180, seconds: 100})
         expect(RESEARCH['unlock-silos']).toMatchObject({cost: 30, seconds: 60})
-        expect(RESEARCH['unlock-dispatch']).toMatchObject({cost: 100, seconds: 80, path: 'unlock-irrigation'})
+        expect(RESEARCH['unlock-dispatch']).toMatchObject({cost: 160, seconds: 80, path: 'unlock-irrigation'})
         expect(RESEARCH['unlock-crop-variants']).toMatchObject({cost: 16, seconds: 40, path: 'unlock-multi-crop'})
     })
 })
@@ -735,10 +735,18 @@ describe('beta-3 invariants', () => {
     test('shovel tree drops tree-seed; cells stay tree until dug', () => {
         const w = new World()
         const below = {col: AT.col, row: AT.row + 1}
-        const tree = new Tree('apricot', {shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2}, 1, 0, {
-            kind: 'on',
-            daysLeft: 2
-        })
+        const tree = new Tree(
+            'apricot',
+            {shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2},
+            makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+            HAPPY_START,
+            1,
+            0,
+            {
+                kind: 'on',
+                daysLeft: 2,
+            },
+        )
         w.setCell(AT, tree)
         w.setCell(below, tree)
         w.seats[0].hand = {kind: 'hold', item: {kind: 'shovel', id: 'shovel', usesLeft: 10, workSeconds: 0}}
@@ -933,10 +941,10 @@ describe('beta-4 invariants', () => {
         expect(w.seats[0].inventory.every(s => s.kind === 'hold' && s.item.kind === 'tree-seed')).toBe(true)
     })
 
-    test('unlock-grinder automation buy-grinder 30', () => {
+    test('unlock-grinder automation buy-grinder 28', () => {
         expect(RESEARCH['unlock-grinder'].cost).toBe(10)
         expect(RESEARCH['unlock-grinder'].path).toBe('unlock-grinder')
-        expect(SKUS['buy-grinder'].price).toBe(30)
+        expect(SKUS['buy-grinder'].price).toBe(28)
         expect(SKUS['buy-grinder'].unlock).toBe('unlock-grinder')
     })
 
@@ -1010,8 +1018,8 @@ describe('beta-4 invariants', () => {
 })
 
 describe('beta-5 invariants', () => {
-    test('buy-pipe 3; two adjacent owned edges join one net', () => {
-        expect(SKUS['buy-pipe'].price).toBe(3)
+    test('buy-pipe 2; two adjacent owned edges join one net', () => {
+        expect(SKUS['buy-pipe'].price).toBe(2)
         const w = new World()
         w.done.add('unlock-irrigation')
         w.done.add('unlock-auto-irrigation')
@@ -1025,7 +1033,7 @@ describe('beta-5 invariants', () => {
         expect(w.seats[0].place).toEqual({kind: 'sku', id: 'buy-pipe'})
         expect(w.hasPipe(e1)).toBe(true)
         expect(w.hasPipe(e2)).toBe(true)
-        expect(w.money).toBe(44)
+        expect(w.money).toBe(46)
         const netA = w.netOfVertex({col: 10, row: 12})
         const netB = w.netOfVertex({col: 12, row: 12})
         expect(netA).toBeDefined()
@@ -1222,13 +1230,13 @@ describe('beta-5 invariants', () => {
         expect(w.skuOpen('buy-sprinkler')).toBe(true)
     })
 
-    test('`unlock-dispatch` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 100, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` unlock `unlock-dispatch`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+    test('`unlock-dispatch` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 160, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` unlock `unlock-dispatch`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
         expect(RESEARCH['unlock-dispatch']).toMatchObject({
             parent: 'unlock-vehicles',
             effect: {kind: 'feature'},
             grants: [m.research_grant_automate()],
             name: 'Automated dispatch',
-            cost: 100,
+            cost: 160,
             seconds: 80,
         })
         expect(SKUS['buy-traffic-light'].unlock).toBe('unlock-dispatch')

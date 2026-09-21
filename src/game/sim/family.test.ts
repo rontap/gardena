@@ -7,7 +7,8 @@ import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import type { Item } from './item.ts'
 import { DAY_SECONDS } from './clock.ts'
-import { Soil, WEED_CHANCE } from './soil.ts'
+import { HAPPY_START } from '../defs/crops.ts'
+import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
 import { AXES } from '../defs/items.ts'
 import { Tree } from './building.ts'
 import { makeAxe } from './item.ts'
@@ -226,7 +227,14 @@ describe('family.grafting', () => {
   test('Chop drops 2 grafts iff `grafting` owned; chop always wood and trunk — [[mechanics/trees]] `graft.axe`.', () => {
     const below = { col: AT.col, row: AT.row + 1 }
     const w = new World(1)
-    const tree = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0.4)
+    const tree = new Tree(
+      'apple',
+      { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+      HAPPY_START,
+      1,
+      0.4,
+    )
     w.setCell(AT, tree)
     w.setCell(below, tree)
     w.seats[0].hand = { kind: 'hold', item: makeAxe() }
@@ -240,7 +248,14 @@ describe('family.grafting', () => {
 
     const g = new World(1)
     g.family.owned.set('grafting', 1)
-    const t2 = new Tree('apple', { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 }, 1, 0.4)
+    const t2 = new Tree(
+      'apple',
+      { shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+      HAPPY_START,
+      1,
+      0.4,
+    )
     g.setCell(AT, t2)
     g.setCell(below, t2)
     g.seats[0].hand = { kind: 'hold', item: makeAxe() }

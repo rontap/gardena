@@ -18,9 +18,11 @@ import {
   type Postbox,
 } from './building.ts'
 import { mintStart } from './feature-burrow/burrow.ts'
+import { TREE_HAPPY_START } from '../defs/trees.ts'
 import { goodness, groundOf, hardnessOf } from './noise.ts'
 import { bare, type Cell } from './plot.ts'
 import type { Rng } from './rng.ts'
+import { makeTreeSoil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
 
 const ROCK_BASE = 0.002
 const ROCK_EDGE = 0.004
@@ -61,7 +63,7 @@ export function generateChunk(
     }
   }
   clearBase(cells, id)
-  if (id.cx === 0 && id.cy === 0) spawnAppleTree(cells, id)
+  if (id.cx === 0 && id.cy === 0) spawnAppleTree(cells, id, rng)
   occupiedCells(house.base, owned).forEach(at => put(cells, at, house))
   occupiedCells(pump.base, owned).forEach(at => put(cells, at, pump))
   occupiedCells(warehouse.base, owned).forEach(at => put(cells, at, warehouse))
@@ -72,7 +74,7 @@ export function generateChunk(
   return cells
 }
 
-function spawnAppleTree(cells: Cell[][], id: ChunkId): void {
+function spawnAppleTree(cells: Cell[][], id: ChunkId, rng: Rng): void {
   const rect = chunkRect(id)
   for (let row = rect.row0; row < rect.row1; row++) {
     for (let col = rect.col0; col < rect.col1; col++) {
@@ -83,7 +85,12 @@ function spawnAppleTree(cells: Cell[][], id: ChunkId): void {
       const ca = atCell(cells, a)
       const cb = atCell(cells, b)
       if (ca.kind !== 'untilled' || cb.kind !== 'untilled' || ca.ground !== 'soft' || cb.ground !== 'soft') continue
-      const tree = new Tree('apple', { shape: 'rect', col, row, w: 1, h: 2 })
+      const tree = new Tree(
+        'apple',
+        { shape: 'rect', col, row, w: 1, h: 2 },
+        makeTreeSoil(TREE_WATER_MID, goodness(rng, col, row) * TREE_FERT_MAX, WEED_CHANCE),
+        TREE_HAPPY_START,
+      )
       put(cells, a, tree)
       put(cells, b, tree)
       return

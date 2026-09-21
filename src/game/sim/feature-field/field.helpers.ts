@@ -6,6 +6,13 @@ import {
   HAPPY_STARVE_SECONDS,
   HAPPY_WILT_SECONDS,
 } from '../../defs/crops.ts'
+import {
+  TREE_HAPPY_DROWN_SECONDS,
+  TREE_HAPPY_GAIN_SECONDS,
+  TREE_HAPPY_START,
+  TREE_HAPPY_STARVE_SECONDS,
+  TREE_HAPPY_WILT_SECONDS,
+} from '../../defs/trees.ts'
 import { CHOP_GRAFTS, NEIGHBOUR_REACH } from '../../defs/items.ts'
 import { experiencedTier } from '../../defs/skills.ts'
 import {
@@ -19,17 +26,20 @@ import {
 import { chunkRect, occupiedCells, Tree, type Coord } from '../building.ts'
 import type { CropId } from '../ids.ts'
 import { fruitStack, mergeInto, type Countable, type Item } from '../item.ts'
-import type { Modifier, Stats } from '../modifiers.ts'
+import { statsOf, type Modifier, type Stats } from '../modifiers.ts'
 import { extractBurrow } from '../feature-burrow/burrow.ts'
 import { goodness } from '../noise.ts'
 import { Plant, Turf, type Doom } from '../plant.ts'
 import { bare, isPlot, isTilled, type Cell, type Plot } from '../plot.ts'
-import { FERT_PLOT_MAX, fertBand, SOIL_TILL_WATER, SOIL_WATER_MID, Soil, waterBand, WEED_CHANCE, type Band } from '../soil.ts'
+import { fertBand, makeTreeSoil, SOIL_TILL_WATER, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MID, waterBand, WEED_CHANCE, type Band } from '../soil.ts'
 import type { World } from '../world.ts'
 
 type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
 
-export function pourTarget(c: Extract<Plot, { soil: Soil }>, mods: readonly Modifier[]): number {
+type HappyClocks = { starve: number; drown: number; wilt: number; gain: number }
+
+export function pourTarget(c: Cell, mods: readonly Modifier[]): number {
+  if (c.kind === 'tree') return c.soil.waterMid + statsOf(c.species, c.variety, 0, mods).waterTolerance
   if (c.kind !== 'growing' && c.kind !== 'ripe') return SOIL_WATER_MID
   return SOIL_WATER_MID + c.plant.stats(mods).waterTolerance
 }
@@ -41,31 +51,56 @@ export function plotPick(c: Cell, day: number): Countable | undefined {
 }
 
 export function waterable(c: Cell, mods: readonly Modifier[]): boolean {
-  if (c.kind !== 'empty' && c.kind !== 'weed' && c.kind !== 'growing' && c.kind !== 'ripe') return false
+  if (c.kind !== 'empty' && c.kind !== 'weed' && c.kind !== 'growing' && c.kind !== 'ripe' && c.kind !== 'tree') return false
   return c.soil.water < pourTarget(c, mods)
 }
 
 export function mood(soil: Soil, st: Stats): string {
-  return `${waterBand(soil.water, st.waterTolerance)}-${fertBand(soil.fertilizer, st.fertTolerance)}`
+  return `${waterBand(soil.water, st.waterTolerance, soil.waterMid)}-${fertBand(soil.fertilizer, st.fertTolerance, soil.fertMax)}`
 }
 
-export function age(plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+function ageHappiness(
+  target: { happiness: number },
+  soil: Soil,
+  water: Band,
+  fert: Band,
+  dt: number,
+  clocks: HappyClocks,
+): Harm {
   let harm: Harm = { kind: 'none' }
   if (fert === 'red') {
-    plant.happiness -= dt / HAPPY_STARVE_SECONDS
+    target.happiness -= dt / clocks.starve
     harm = { kind: 'hurt', by: 'starve' }
   }
   if (water === 'red') {
     const by: Doom = soil.drowning ? 'drown' : 'wilt'
-    plant.happiness -= dt / (by === 'drown' ? HAPPY_DROWN_SECONDS : HAPPY_WILT_SECONDS)
+    target.happiness -= dt / (by === 'drown' ? clocks.drown : clocks.wilt)
     harm = { kind: 'hurt', by }
   }
   if (harm.kind === 'none') {
-    if (fert === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
-    if (water === 'green') plant.happiness += dt / HAPPY_GAIN_SECONDS
+    if (fert === 'green') target.happiness += dt / clocks.gain
+    if (water === 'green') target.happiness += dt / clocks.gain
   }
-  plant.happiness = plant.happiness < 0 ? 0 : plant.happiness > HAPPY_MAX ? HAPPY_MAX : plant.happiness
+  target.happiness = target.happiness < 0 ? 0 : target.happiness > HAPPY_MAX ? HAPPY_MAX : target.happiness
   return harm
+}
+
+export function age(plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+  return ageHappiness(plant, soil, water, fert, dt, {
+    starve: HAPPY_STARVE_SECONDS,
+    drown: HAPPY_DROWN_SECONDS,
+    wilt: HAPPY_WILT_SECONDS,
+    gain: HAPPY_GAIN_SECONDS,
+  })
+}
+
+export function ageTree(tree: Tree, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+  return ageHappiness(tree, soil, water, fert, dt, {
+    starve: TREE_HAPPY_STARVE_SECONDS,
+    drown: TREE_HAPPY_DROWN_SECONDS,
+    wilt: TREE_HAPPY_WILT_SECONDS,
+    gain: TREE_HAPPY_GAIN_SECONDS,
+  })
 }
 
 export function doomed(by: Doom, soil: Soil, plant: Plant): Plot {
@@ -101,7 +136,8 @@ export function goodNeighbour(w: World, at: Coord, crop: CropId, self: readonly 
     if (c.plant.crop !== crop || tierOf(c.plant.variety) === 'heirloom') return false
     const st = w.statsCached(c.plant.crop, c.plant.variety)
     return (
-      waterBand(c.soil.water, st.waterTolerance) !== 'red' && fertBand(c.soil.fertilizer, st.fertTolerance) !== 'red'
+      waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid) !== 'red' &&
+      fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax) !== 'red'
     )
   }
   if (c.kind === 'tree') return c.species === crop && tierOf(c.variety) !== 'heirloom' && c.juvenile >= 1 && !c.trunk
@@ -276,7 +312,12 @@ export function doPlant(w: World, at: Coord): void {
   if (w.act.hand.item.kind === 'tree-seed') {
     const above = seedPair(w, at)
     if (above === undefined) return
-    const tree = new Tree(w.act.hand.item.tree, { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 })
+    const tree = new Tree(
+      w.act.hand.item.tree,
+      { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, goodness(w.rng, above.col, above.row) * TREE_FERT_MAX, WEED_CHANCE),
+      TREE_HAPPY_START,
+    )
     tree.variety = w.act.hand.item.variety
     w.setCell(above, tree)
     w.setCell(at, tree)
@@ -311,7 +352,10 @@ export function canWater(w: World, at: Coord): boolean {
 
 export function doWater(w: World, at: Coord): boolean {
   if (!canWater(w, at)) return false
-  const c = w.cell(at) as Extract<Plot, { soil: Soil }>
+  const c = w.cell(at)
+  if (c.kind !== 'empty' && c.kind !== 'weed' && c.kind !== 'growing' && c.kind !== 'ripe' && c.kind !== 'tree') {
+    return false
+  }
   const bucket = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'container' }> }
   const need = pourTarget(c, w.modifiers) - c.soil.water
   const use = need > bucket.item.liters ? bucket.item.liters : need
@@ -326,14 +370,16 @@ export function canFertilize(w: World, at: Coord): boolean {
   if (it.kind !== 'fertilizer' && it.kind !== 'compost') return false
   if (it.liters <= 0) return false
   const c = w.cell(at)
-  return isTilled(c) && c.soil.fertilizer < FERT_PLOT_MAX
+  if (c.kind === 'tree') return c.soil.fertilizer < c.soil.fertMax
+  return isTilled(c) && c.soil.fertilizer < c.soil.fertMax
 }
 
 export function doFertilize(w: World, at: Coord): boolean {
   if (!canFertilize(w, at)) return false
-  const c = w.cell(at) as Extract<Plot, { soil: Soil }>
+  const c = w.cell(at)
+  if (c.kind !== 'tree' && !isTilled(c)) return false
   const bag = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'compost' }> }
-  const need = FERT_PLOT_MAX - c.soil.fertilizer
+  const need = c.soil.fertMax - c.soil.fertilizer
   const use = need > bag.item.liters ? bag.item.liters : need
   c.soil.feed(use)
   bag.item.liters -= use

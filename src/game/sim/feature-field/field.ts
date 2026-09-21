@@ -1,7 +1,7 @@
 import { FRESH_FULL } from '../../defs/crops.ts'
 import { GRASS_GROW, GRASS_WATER_PER_SEC } from '../../defs/items.ts'
 import { jamRotMul } from '../../defs/skills.ts'
-import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../../defs/trees.ts'
+import { TREES, TREE_OFF_CHANCE, TREE_YIELD_DAYS } from '../../defs/trees.ts'
 import { needsNeighbour } from '../../defs/varieties.ts'
 import { CHUNK, chunkRect, type Coord, type Tree } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
@@ -12,6 +12,7 @@ import { isPlot, isTilled } from '../plot.ts'
 import {
   fertBand,
   GRASS_CHANCE,
+  happyBand,
   ramped,
   STUNT,
   waterBand,
@@ -25,6 +26,7 @@ import { weedMul } from '../weather.ts'
 import type { World } from '../world.ts'
 import {
   age,
+  ageTree,
   doomed,
   grassCount,
   hasNeighbour,
@@ -121,8 +123,8 @@ export function tickField(w: World, dt: number): void {
     if (c.kind === 'growing') {
       c.soil.drink(st.waterUsePerSec * dt)
       c.soil.starve(st.fertUsePerSec * dt)
-      const water = waterBand(c.soil.water, st.waterTolerance)
-      const fert = fertBand(c.soil.fertilizer, st.fertTolerance)
+      const water = waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid)
+      const fert = fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax)
       const q = w.bakeQuality(c.plant)
       const harm = age(c.plant, c.soil, water, fert, dt)
       if (harm.kind === 'hurt' && c.plant.happiness <= 0) {
@@ -195,18 +197,24 @@ export function advanceYield(w: World, t: Tree): void {
     const left = (t.yield.daysLeft - 1) as 0 | 1
     if (left === 0) {
       t.tended = false
-      t.yield = { kind: 'off', chance: -0.2 }
+      t.yield = { kind: 'off', chance: -0.25 + t.happiness * 0.1 }
     } else {
       t.yield = { kind: 'on', daysLeft: left }
     }
     return
   }
-  const chance = t.yield.chance + 0.2
+  const chance = t.yield.chance + TREE_OFF_CHANCE[happyBand(t.happiness)]
   const u = w.rng.stream('tree').at(t.base.col, t.base.row, w.clock.day)
   t.yield = u < chance ? { kind: 'on', daysLeft: TREE_YIELD_DAYS } : { kind: 'off', chance }
 }
 
 export function tickTree(w: World, t: Tree, dt: number): boolean {
+  const st = w.statsCached(t.species, t.variety)
+  t.soil.drink(st.waterUsePerSec * dt)
+  t.soil.starve(st.fertUsePerSec * dt)
+  const water = waterBand(t.soil.water, st.waterTolerance, t.soil.waterMid)
+  const fert = fertBand(t.soil.fertilizer, st.fertTolerance, t.soil.fertMax)
+  ageTree(t, t.soil, water, fert, dt)
   if (t.juvenile < 1) {
     t.juvenile += dt / TREES[t.species].juvenileSeconds
     if (t.juvenile < 1) return false
@@ -223,7 +231,7 @@ export function tickTree(w: World, t: Tree, dt: number): boolean {
   if (t.yield.kind === 'pending') return false
   if (needsNeighbour(t.variety) && !hasNeighbour(w, treeCells(t), t.species)) return false
   const ripe = t.fruit >= 1
-  const mul = t.yield.kind === 'on' ? TREE_YIELD_MUL : TREE_OFF_MUL
+  const mul = t.yield.kind === 'on' ? 2.75 + t.happiness * 0.5 : 0.25 + t.happiness * 0.5
   t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
   if (t.fruit < 1) return false
   if (!dropTreeFruit(w, t)) {

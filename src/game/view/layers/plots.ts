@@ -41,6 +41,21 @@ export class PlotsLayer {
               : 'unripe'
         const s = this.pool.take(atlasTex(`tree-${cell.species}:${treeAtlasStage(stage, cell.variety)}`))
         s.position.set(at.col * TILE, at.row * TILE)
+        const t = tierOf(cell.variety)
+        const water = waterBand(cell.soil.water, tolerance(CROPS[cell.species].waterTolerance, t), cell.soil.waterMid)
+        const fert = fertBand(cell.soil.fertilizer, tolerance(CROPS[cell.species].fertTolerance, t), cell.soil.fertMax)
+        const feet = [
+          { col: at.col, row: at.row },
+          { col: at.col, row: at.row + 1 },
+        ]
+        feet.forEach(foot => {
+          if (water !== 'green') {
+            this.bar(foot.col, foot.row, TILE - 6, water === 'red' ? BAD : MID, ((TILE - 6) * cell.soil.water) / cell.soil.waterMax)
+          }
+          if (fert !== 'green') {
+            this.bar(foot.col, foot.row, TILE - 11, fert === 'red' ? BAD : MID, ((TILE - 6) * cell.soil.fertilizer) / cell.soil.fertMax)
+          }
+        })
         continue
       }
       this.plot(world, at.col, at.row)

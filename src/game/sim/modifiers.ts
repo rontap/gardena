@@ -1,6 +1,7 @@
-import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
+import { CROPS, TREE_FERT_PER_DAY, tolerance, type CropDef } from '../defs/crops.ts'
 import { purposeMul, qualityMul, tierOf, VARIETY_GROW, VARIETY_ROT, type VarietyId } from '../defs/varieties.ts'
-import type { CropId, GrownCrop } from './ids.ts'
+import { DAY_SECONDS } from './clock.ts'
+import { isTreeId, type CropId, type GrownCrop } from './ids.ts'
 import { PLANT_FERT_PER_SEC } from './soil.ts'
 
 export type Modifier = {
@@ -35,7 +36,7 @@ export function apply(def: CropDef, variety: VarietyId, quality: number, mods: r
     waterUsePerSec: def.waterUsePerSec * waterUseMul,
     waterTolerance: tolerance(def.waterTolerance, tier),
     fertTolerance: tolerance(def.fertTolerance, tier),
-    fertUsePerSec: PLANT_FERT_PER_SEC * def.fertUseMul,
+    fertUsePerSec: isTreeId(def.id) ? TREE_FERT_PER_DAY[def.id] / DAY_SECONDS : PLANT_FERT_PER_SEC * def.fertUseMul,
     rotSeconds: def.rotSeconds * VARIETY_ROT[tier],
   }
 }

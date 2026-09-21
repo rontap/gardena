@@ -61,8 +61,8 @@ const PORTS: readonly PortId[] = ['out', 'in', 'in-l', 'in-r']
 
 function plantBands(crop: GrownCrop, tier: VarietyTier, soil: Soil): { water: Band; fert: Band } {
   return {
-    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, tier)),
-    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, tier)),
+    water: waterBand(soil.water, tolerance(CROPS[crop].waterTolerance, tier), soil.waterMid),
+    fert: fertBand(soil.fertilizer, tolerance(CROPS[crop].fertTolerance, tier), soil.fertMax),
   }
 }
 
@@ -96,6 +96,9 @@ function scaleTint(t: number): number {
 
 function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
   if (lens === 'water') {
+    if (cell.kind === 'tree') {
+      return BAND_TINT[plantBands(cell.species, varietyTierOf(cell.variety), cell.soil).water]
+    }
     if (!isTilled(cell)) return undefined
     if (cell.kind === 'growing' || cell.kind === 'ripe') {
       return BAND_TINT[plantBands(cell.plant.crop, varietyTierOf(cell.plant.variety), cell.soil).water]
@@ -104,6 +107,9 @@ function lensHit(lens: Lens, cell: Cell, g: number): number | undefined {
     return scaleTint(cell.soil.water / SOIL_WATER_MID)
   }
   if (lens === 'land') {
+    if (cell.kind === 'tree') {
+      return BAND_TINT[plantBands(cell.species, varietyTierOf(cell.variety), cell.soil).fert]
+    }
     if (!isTilled(cell)) {
       if (cell.kind === 'infertile') return LENS_BAD
       if (cell.kind === 'untilled') return scaleTint(g)

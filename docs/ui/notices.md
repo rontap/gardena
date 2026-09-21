@@ -24,9 +24,9 @@ Player words: [[standards/user-facing-text]]. Copy in `messages/en/notices.json`
 | `contract` | `contracts.active` entry | `dueDay - nowDay`, `sum(bin.filled) / need` | fill | Market |
 | `contract-done` | one-time, below | `contracts.history` | — | Market |
 | `fuel` | `fuel === 0` | `World.vehicles` | — | none |
-| `wilting` | `waterBand(soil.water, tol) === 'red'`, not `soil.drowning` | `grow` → `growing` | `happiness / HAPPY_MAX` | none |
-| `drowning` | `waterBand(soil.water, tol) === 'red'`, `soil.drowning` | `grow` → `growing` | `happiness / HAPPY_MAX` | none |
-| `starving` | `fertBand(soil.fertilizer, tol) === 'red'` | `grow` → `growing` | `happiness / HAPPY_MAX` | none |
+| `wilting` | `waterBand(water, tol, mid) === 'red'`, not `drowning` | `grow` → `growing` or `tree` | `happiness / HAPPY_MAX` | none |
+| `drowning` | `waterBand(water, tol, mid) === 'red'`, `drowning` | `grow` → `growing` or `tree` | `happiness / HAPPY_MAX` | none |
+| `starving` | `fertBand(fertilizer, tol, max) === 'red'` | `grow` → `growing` or `tree` | `happiness / HAPPY_MAX` | none |
 | `freshness` | `plant.freshness < FRESH_FULL` | `grow` → `ripe` | `freshness` | none |
 | `dead` | that cell kind | `grow` → `dead` | — | none |
 | `rotten` | that cell kind | `grow` → `rotten` | — | none |
@@ -37,7 +37,7 @@ Player words: [[standards/user-facing-text]]. Copy in `messages/en/notices.json`
 | `water-low` | `stored / capacity < NOTICE_WATER_LOW` | `nets.grid(world)` | `stored / capacity` | none |
 | `weed` | any `weed` cell on the farm | `grow` → `weed` | — | none |
 
-`grow` covers six rows in one walk. [[architecture/tick]] [[architecture/world]]
+`grow` covers six rows in one walk. Trees: wilting / drowning / starving, species name, Happiness bar, both footprint cells, `Tree.soil` and tree tols. Copy: **{Crop} is wilting** / **{Crop} is drowning** / **{Crop} is starving for fertilizer** — `notices_wilting` `notices_drowning` `notices_starving`. No dead / rotten from trees. [[architecture/tick]] [[architecture/world]] [[mechanics/trees]] `trees.happy`
 
 `notices.red` — only a red band is a notice. Orange is the warning the plot itself already paints. A starving plant that is also wilting produces both rows.
 

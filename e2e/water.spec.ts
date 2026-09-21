@@ -250,7 +250,7 @@ async function stepKind(page: Page, at: At): Promise<string> {
 
 async function placeEdge(page: Page, axis: 'h' | 'v', col: number, row: number): Promise<void> {
   const key = `${axis}:${col},${row}`
-  await armSku(page, 'Pipe 3')
+  await armSku(page, 'Pipe 2')
   const wx = axis === 'h' ? col + 0.5 : col
   const wy = axis === 'h' ? row : row + 0.5
   await expect

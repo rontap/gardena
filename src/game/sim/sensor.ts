@@ -3,7 +3,7 @@ import { tierOf, type VarietyId } from '../defs/varieties.ts'
 import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type Infuser, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
 import type { SensorKind, Signal, SkuId } from './ids.ts'
-import type { Modifier } from './modifiers.ts'
+import { statsOf, type Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import type { Cell } from './plot.ts'
 import { fertBand, waterBand } from './soil.ts'
@@ -372,18 +372,35 @@ export function readerRaw(
   const plants = around.filter(c => c.kind !== 'tree')
   if (s.kind === 'sensor-water') {
     if (!s.wilt && !s.over) return 0
-    return plants.some(c => {
-      if (c.kind !== 'growing') return false
-      if (waterBand(c.soil.water, c.plant.stats(mods).waterTolerance) !== 'red') return false
+    const seen = new Set<string>()
+    return around.some(c => {
+      if (c.kind === 'tree') {
+        const k = `${c.base.col},${c.base.row}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        const st = statsOf(c.species, c.variety, 0, mods)
+        if (waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid) !== 'red') return false
+        return c.soil.drowning ? s.over : s.wilt
+      }
+      if (c.kind !== 'growing' && c.kind !== 'ripe') return false
+      if (waterBand(c.soil.water, c.plant.stats(mods).waterTolerance, c.soil.waterMid) !== 'red') return false
       return c.soil.drowning ? s.over : s.wilt
     })
       ? 1
       : 0
   }
   if (s.kind === 'sensor-fert') {
-    return plants.some(
-      c => c.kind === 'growing' && fertBand(c.soil.fertilizer, c.plant.stats(mods).fertTolerance) === 'red',
-    )
+    const seen = new Set<string>()
+    return around.some(c => {
+      if (c.kind === 'tree') {
+        const k = `${c.base.col},${c.base.row}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        const st = statsOf(c.species, c.variety, 0, mods)
+        return fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax) === 'red'
+      }
+      return c.kind === 'growing' && fertBand(c.soil.fertilizer, c.plant.stats(mods).fertTolerance, c.soil.fertMax) === 'red'
+    })
       ? 1
       : 0
   }

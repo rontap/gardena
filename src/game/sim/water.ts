@@ -1,11 +1,11 @@
 export type SourceKind = 'pump' | 'well'
 
-export const SOURCE: { readonly [K in SourceKind]: { rate: number; capacity: number; start: number } } = {
-  pump: { rate: 0.6, capacity: 50, start: 50 },
-  well: { rate: 0.4, capacity: 150, start: 150 },
+export const SOURCE: { readonly [K in SourceKind]: { rate: number; capacity: number; start: number; fill: number } } = {
+  pump: { rate: 0.6, capacity: 50, start: 50, fill: 2.5 },
+  well: { rate: 0.4, capacity: 150, start: 150, fill: 2 },
 }
 
-export const TAP_RATE = 5
+export const TAP_RATE = 4
 
 export class Reservoir {
   readonly kind: SourceKind

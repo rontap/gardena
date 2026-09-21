@@ -125,14 +125,14 @@ Button, lever, pulser, counter, chest/silo full: [[#Invariants]].
 
 ## Readers
 
-Skip unowned. Water / fertilizer / harvest: skip non-plants, skip trees. Center is the sensor, never a plant. Variety: growing / ripe annuals **and** trees (`trunk === false`). Pressure plate: vehicles, in-seat actors, drops — not plants.
+Skip unowned. Harvest: skip non-plants, skip trees. Water / fertilizer: a tree in range counts (origin once). Center is the sensor, never a plant. Variety: growing / ripe annuals **and** trees (`trunk === false`). Pressure plate: vehicles, in-seat actors, drops — not plants.
 
-Growing annuals unless noted.
+Growing annuals unless noted. Trees: water and fertilizer, every stage.
 
 | Device | High when |
 |---|---|
-| Water | any in range matches a checked box: Wilting = `waterBand === 'red'` ∧ ¬`drowning`; Overwatered = `waterBand === 'red'` ∧ `drowning`. Both off → raw 0 |
-| Fertilizer | any **growing** `fertBand === 'red'` |
+| Water | any in range matches a checked box: Wilting = `waterBand === 'red'` ∧ ¬`drowning`; Overwatered = `waterBand === 'red'` ∧ `drowning`. Growing / ripe annual or tree. Both off → raw 0 |
+| Fertilizer | any **growing** annual or tree `fertBand === 'red'` |
 | Harvest `any` | ≥1 `ripe` |
 | Harvest `all` | count(`growing` ∨ `ripe`) ≥ 1 and every such is `ripe` |
 | Variety | any in-range growing/ripe annual or non-trunk tree whose `tierOf(variety)` is ticked. All off → raw 0 |

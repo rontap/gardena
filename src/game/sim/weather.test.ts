@@ -15,9 +15,12 @@ import {
   SPECIAL_START,
   WEATHER_THROUGH_DAY,
 } from '../defs/weather.ts'
+import { HAPPY_START } from '../defs/crops.ts'
+import { Tree } from './building.ts'
 import { DAY_SECONDS } from './clock.ts'
+import { statsOf } from './modifiers.ts'
 import { hash, Rng } from './rng.ts'
-import { BIG_TICK, Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { BIG_TICK, makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
 import { SOURCE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, type WeatherKind } from './weather.ts'
 import { DT_MAX, stipendOf, World } from './world.ts'
@@ -148,7 +151,7 @@ describe('weather', () => {
     expect(broke.recapAt(1).water).toBeGreaterThan(0)
   })
 
-  test('Soak/evap on `BIG_TICK` only, `tilled` index, not `forEachCell`, not every `dt`. Full day sums to `*_DAY`.', () => {
+  test('weather.soak', () => {
     expect(soakDelta('rain') * (DAY_SECONDS / BIG_TICK)).toBeCloseTo(RAIN_SOAK_DAY, 10)
     expect(soakDelta('flood') * (DAY_SECONDS / BIG_TICK)).toBeCloseTo(FLOOD_SOAK_DAY, 10)
     expect(-soakDelta('dry') * (DAY_SECONDS / BIG_TICK)).toBeCloseTo(DRY_EVAP_DAY, 10)
@@ -174,6 +177,23 @@ describe('weather', () => {
     const c = (clear.cell(AT) as { soil: Soil }).soil
     stepBig(clear)
     expect(c.water).toBe(1)
+    const trees = new World(1)
+    toDay(trees, 'rain')
+    const origin = { col: 10, row: 12 }
+    const foot = { col: 10, row: 13 }
+    const tree = new Tree(
+      'apple',
+      { shape: 'rect', col: origin.col, row: origin.row, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, TREE_FERT_MAX, WEED_CHANCE),
+      HAPPY_START,
+      1,
+    )
+    trees.setCell(origin, tree)
+    trees.setCell(foot, tree)
+    const before = tree.soil.water
+    const drink = statsOf('apple', 'base', 0, trees.modifiers).waterUsePerSec
+    stepBig(trees)
+    expect(tree.soil.water).toBeCloseTo(before + soakDelta('rain') - drink * BIG_TICK, 3)
   })
 
 describe('weather.market', () => {
@@ -200,8 +220,8 @@ describe('weather.shop', () => {
     const w = new World(1)
     toDay(w, 'drought')
     expect(w.skuPrice('pack-carrot')).toBe(6)
-    expect(w.skuPrice('buy-shovel')).toBe(16)
-    expect(w.skuPrice('buy-pipe')).toBe(3)
+    expect(w.skuPrice('buy-shovel')).toBe(24)
+    expect(w.skuPrice('buy-pipe')).toBe(2)
     expect(w.skuPrice('buy-tile-cobble')).toBe(4)
     expect(w.skuPrice('buy-hangar')).toBe(80)
   })

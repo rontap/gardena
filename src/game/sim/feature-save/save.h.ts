@@ -88,7 +88,7 @@ export type SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }
-  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId }
+  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId; happiness: number; soil: SaveSoil }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }

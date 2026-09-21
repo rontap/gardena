@@ -10,7 +10,7 @@ Bottom-right `Status` under the queue. Litres and × multipliers a person reads 
 
 `Seat.queue` cap `QUEUE_CAP`. A further click `say`s **I can't remember more errands than that!**. [[architecture/world]] `world.queue`
 
-Plant bars on hover of a growing, ripe or weeded plot. Empty soil bars. Tree Growth fill. Title and drop stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot: no soil bars.
+Plant bars on hover of a growing, ripe or weeded plot. Empty soil bars. Tree Growth fill plus Happiness / Fertilizer / Water, wired to `Tree`. Title and drop stay in the look block. `lookText(..., plantStats: false)` — numbers live on the bars, not duplicated as extra look lines. A tree is not a plot.
 
 ## Gauges
 
@@ -92,7 +92,7 @@ Empty hand, player owns `tending`, work `TEND_WORK`. Click queues `{ act: 'tend'
 
 ## Tree
 
-Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness bars. No soil bars. `lookText` uses the Variety name. No `%` in the line. Copy: **{Variety} tree - {trunk \| growing \| on-season \| off-season}**. Neighbour line may follow.
+Cell `kind: 'tree'`. Not a plot. `lookText` uses the Variety name. No `%` in the line. Copy: **{Variety} tree - {trunk \| growing \| on-season \| off-season}**. Neighbour line may follow. Either cell of the 1×2.
 
 | state | line |
 |---|---|
@@ -101,7 +101,16 @@ Cell `kind: 'tree'`. Not a plot. No Happiness / Fertilizer / Water / Freshness b
 | `yield` `{ on }` | **{Name} tree - on-season** |
 | `pending` or `{ off }` | **{Name} tree - off-season** |
 
-`{Name}` is the Variety, not only the species. FillBar label **Growth**: `juvenile` 0..1 while `trunk` or `grow`; `fruit` 0..1 once mature.
+`{Name}` is the Variety, not only the species.
+
+| row | fill | number |
+|---|---|---|
+| Growth | fill bar | `juvenile` 0..1 while `trunk` or `grow`; `fruit` 0..1 once mature |
+| Happiness | segmented + notch | `floor(happiness * 100)%` |
+| Fertilizer | segmented + notch | `{fertilizer}L` `Math.visualRound` |
+| Water | segmented + notch | `{water}L` `Math.visualRound` |
+
+Wired to `Tree.happiness` / `Tree.soil` / tree tols. Happiness / Fertilizer / Water: same segmented geometry as a growing plant — [[mechanics/soil]] `soil.tree`. Happiness bands: red 0–0.25, orange 0.25–0.5, green 0.5–1. Fertilizer `floor = TREE_FERT_MAX − fertTolerance`, scale 0–`TREE_FERT_MAX`. Water 0–`TREE_WATER_MAX`, green `TREE_WATER_MID ± waterTolerance`. No Quality bar. No Freshness bar. No Weed resistance.
 
 ## Prompts
 

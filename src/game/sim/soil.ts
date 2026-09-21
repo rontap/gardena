@@ -20,35 +20,58 @@ export function ramped(chance: number, bigTicks: number): number {
   return -0.1 + (chance + 0.1) * k
 }
 
+export const TREE_WATER_MAX = 10
+export const TREE_WATER_MID = 5
+export const TREE_FERT_MAX = 2
+
 export type Band = 'green' | 'orange' | 'red'
 
-export function fertBand(fertilizer: number, tol: number): Band {
-  const floor = FERT_PLOT_MAX - tol
+export function fertBand(fertilizer: number, tol: number, max = FERT_PLOT_MAX): Band {
+  const floor = max - tol
   if (fertilizer >= floor) return 'green'
   if (fertilizer <= floor / 2) return 'red'
   return 'orange'
 }
 
-export function waterBand(water: number, tol: number): Band {
-  const d = Math.abs(water - SOIL_WATER_MID)
+export function waterBand(water: number, tol: number, mid = SOIL_WATER_MID): Band {
+  const d = Math.abs(water - mid)
   if (d <= tol) return 'green'
-  if (d >= (SOIL_WATER_MID + tol) / 2) return 'red'
+  if (d >= (mid + tol) / 2) return 'red'
   return 'orange'
+}
+
+export function happyBand(h: number): Band {
+  if (h < 0.25) return 'red'
+  if (h < 0.5) return 'orange'
+  return 'green'
 }
 
 export class Soil {
   water: number
   fertilizer: number
   weedChance: number
+  readonly waterMax: number
+  readonly waterMid: number
+  readonly fertMax: number
 
-  constructor(water: number, fertilizer: number, weedChance: number) {
+  constructor(
+    water: number,
+    fertilizer: number,
+    weedChance: number,
+    waterMax = SOIL_WATER_MAX,
+    waterMid = SOIL_WATER_MID,
+    fertMax = FERT_PLOT_MAX,
+  ) {
     this.water = water
     this.fertilizer = fertilizer
     this.weedChance = weedChance
+    this.waterMax = waterMax
+    this.waterMid = waterMid
+    this.fertMax = fertMax
   }
 
   get drowning(): boolean {
-    return this.water > SOIL_WATER_MID
+    return this.water > this.waterMid
   }
 
   drink(liters: number): void {
@@ -58,16 +81,20 @@ export class Soil {
 
   soak(liters: number): void {
     const next = this.water + liters
-    this.water = next > SOIL_WATER_MAX ? SOIL_WATER_MAX : next
+    this.water = next > this.waterMax ? this.waterMax : next
   }
 
   feed(liters: number): void {
     const next = this.fertilizer + liters
-    this.fertilizer = next > FERT_PLOT_MAX ? FERT_PLOT_MAX : next
+    this.fertilizer = next > this.fertMax ? this.fertMax : next
   }
 
   starve(liters: number): void {
     const next = this.fertilizer - liters
     this.fertilizer = next < 0 ? 0 : next
   }
+}
+
+export function makeTreeSoil(water: number, fertilizer: number, weedChance: number): Soil {
+  return new Soil(water, fertilizer, weedChance, TREE_WATER_MAX, TREE_WATER_MID, TREE_FERT_MAX)
 }

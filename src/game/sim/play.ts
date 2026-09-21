@@ -155,8 +155,8 @@ function plotCrop(c: Tilled): string {
 function fieldRow(world: World, at: Coord, c: Tilled): FieldRow {
   const planted = c.kind === 'growing' || c.kind === 'ripe' || c.kind === 'dead'
   const stats = planted ? c.plant.stats(world.modifiers) : undefined
-  const wb = stats === undefined ? 'n/a' : waterBand(c.soil.water, stats.waterTolerance)
-  const fb = stats === undefined ? 'n/a' : fertBand(c.soil.fertilizer, stats.fertTolerance)
+  const wb = stats === undefined ? 'n/a' : waterBand(c.soil.water, stats.waterTolerance, c.soil.waterMid)
+  const fb = stats === undefined ? 'n/a' : fertBand(c.soil.fertilizer, stats.fertTolerance, c.soil.fertMax)
   const flag = [
     c.kind === 'ripe' ? 'ripe' : '',
     c.kind === 'dead' ? 'dead' : '',
@@ -204,7 +204,7 @@ function buildingStatus(c: Cell): string {
     case 'freezer':
       return `${c.slots.filter(s => s.kind === 'hold').length}/${c.slots.length} slots`
     case 'tree':
-      return `${c.species} fruit ${c.fruit}`
+      return `${c.species} fruit ${c.fruit} h${f2(c.happiness)}`
     default:
       return ''
   }

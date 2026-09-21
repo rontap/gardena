@@ -146,7 +146,21 @@ export function sprinklerTargets(world: World, s: Sprinkler): Coord[] {
   const k = vertexKey(s.at)
   const hit = world.sprinklerTargetCache.get(k)
   if (hit !== undefined) return hit
-  const made = aoe(s).filter(at => world.inWorld(at) && world.cell(at).kind === 'growing')
+  const seen = new Set<string>()
+  const made: Coord[] = []
+  aoe(s).forEach(at => {
+    if (!world.inWorld(at)) return
+    const c = world.cell(at)
+    if (c.kind === 'growing') {
+      made.push(at)
+      return
+    }
+    if (c.kind !== 'tree') return
+    const origin = `${c.base.col},${c.base.row}`
+    if (seen.has(origin)) return
+    seen.add(origin)
+    made.push({ col: c.base.col, row: c.base.row })
+  })
   world.sprinklerTargetCache.set(k, made)
   return made
 }
@@ -229,8 +243,7 @@ export function tickWater(world: World, dt: number): void {
       const add = ((want[i] / total) * got) / targets.length
       targets.forEach(at => {
         const c = world.cell(at)
-        if (c.kind !== 'growing') return
-        c.soil.soak(add)
+        if (c.kind === 'growing' || c.kind === 'tree') c.soil.soak(add)
       })
     })
   })

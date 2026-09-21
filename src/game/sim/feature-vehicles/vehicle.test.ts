@@ -43,7 +43,8 @@ import { Act } from '../log.ts'
 import { lookText } from '../look.ts'
 import { dest } from '../queue.ts'
 import { DT_MAX, World } from '../world.ts'
-import { ADDITIVE_BASE, PAD, SILO_BASE, WAREHOUSE_BASE, warehousePads } from '../building.ts'
+import { HAPPY_START } from '../../defs/crops.ts'
+import { ADDITIVE_BASE, PAD, SILO_BASE, Tree, WAREHOUSE_BASE, warehousePads } from '../building.ts'
 import { boomHits, dropoffPad, hangarPad, hitchP, kindVMax, padCenter, seekSpeed, siloPad, stopXY, surfaceMul, takeupPad, trailerUsed, transferUnload } from './vehicle.ts'
 import { ANY, PICK_TYPES, goodsOf, narrowGood, narrowType, narrowVariety, padGoodsOf, padTypesOf, pickTakes, sampleItem, typeOf, goodOf, varietiesOf, type PadGoods } from './pick.ts'
 import { VARIETIES } from '../../defs/varieties.ts'
@@ -51,7 +52,7 @@ import { SPIRIT_KINDS, STILL_CROPS } from '../ids.ts'
 import type { Item } from '../item.ts'
 import { isSolid } from '../plot.ts'
 import { Plant, Weed } from '../plant.ts'
-import { FERT_PLOT_MAX, Soil } from '../soil.ts'
+import { FERT_PLOT_MAX, makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from '../soil.ts'
 import { CROPS } from '../../defs/crops.ts'
 
 const AT = { col: 10, row: 12 }
@@ -128,7 +129,7 @@ describe('vehicles I', () => {
     expect(SKUS['buy-hangar'].price).toBe(80)
     expect(SKUS['buy-hangar'].tab).toBe('automation')
     expect(w.skuPrice('buy-hangar')).toBe(80)
-    expect(QUAD_PRICE).toBe(150)
+    expect(QUAD_PRICE).toBe(75)
     w.buyVehicle(AT, 'tractor')
     const t = w.vehicles[2]
     expect(t.kind).toBe('tractor')
@@ -620,6 +621,36 @@ describe('vehicles II', () => {
     expect(c.soil.fertilizer).toBe(FERT_PLOT_MAX)
   })
 
+  test('Boom spray a tree cell feeds the origin once, up to TREE_FERT_MAX.', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'tractor')
+    w.buyTrailer(AT, 'spray')
+    w.deploy(1, AT, 1)
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'fertilizer', liters: 5, capacityLiters: 5 } }
+    w.swapTrailer(1, 0)
+    const origin = { col: 11, row: 16 }
+    const foot = { col: 11, row: 17 }
+    const tree = new Tree(
+      'apple',
+      { shape: 'rect', col: origin.col, row: origin.row, w: 1, h: 2 },
+      makeTreeSoil(TREE_WATER_MID, 0, WEED_CHANCE),
+      HAPPY_START,
+      1,
+    )
+    w.setCell(origin, tree)
+    w.setCell(foot, tree)
+    w.seats[0].actor.x = fieldTractor(w).pose.x
+    w.seats[0].actor.y = fieldTractor(w).pose.y
+    w.embark(1)
+    aimBoom(w, origin)
+    w.tick(DT_MAX)
+    expect(tree.soil.fertilizer).toBeCloseTo(TREE_FERT_MAX, 3)
+    const t = w.trailers[0]
+    if (t.kind !== 'spray' || t.hopper.kind !== 'hold') throw new Error('spray')
+    expect(t.hopper.item.liters).toBe(5 - TREE_FERT_MAX)
+  })
+
   test('Boom harvest bands. ripe fruit, growing seed/destroy/late fruit, dead, rotten, weed.', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
@@ -733,8 +764,8 @@ describe('vehicles II', () => {
     expect(w.money).toBe(before - TRACTOR_PRICE - TRAILER_SEED_PRICE)
     expect(SKUS['buy-silo-seed'].price).toBe(SILO_SEED_PRICE)
     expect(w.skuPrice('buy-silo-seed')).toBe(SILO_SEED_PRICE)
-    expect(TRACTOR_PRICE).toBe(250)
-    expect(TRAILER_HARVEST_PRICE).toBe(100)
+    expect(TRACTOR_PRICE).toBe(125)
+    expect(TRAILER_HARVEST_PRICE).toBe(75)
     w.armDelete()
     w.deleteBuilding(AT)
     expect(w.cell(AT).kind).toBe('hangar')

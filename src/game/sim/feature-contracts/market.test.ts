@@ -4,7 +4,7 @@ import { CROPS } from '../../defs/crops.ts'
 import { FAMILIARITY_RECOVER, VARIETIES, familiarityMax, tierOf } from '../../defs/varieties.ts'
 import { COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
 import { ANNUAL_IDS, TREE_IDS, isAnnualId, type GrownCrop } from '../ids.ts'
-import { PAD } from '../building.ts'
+import { PAD, WAREHOUSE_BASE } from '../building.ts'
 import { Act } from '../log.ts'
 import { permit } from '../mp.ts'
 import { Plant } from '../plant.ts'
@@ -14,9 +14,11 @@ import { DAY_SECONDS } from '../clock.ts'
 import type { Active, ContractOffer, Demand, Lines, Prize, PrizePool } from './market.h.ts'
 import {
   AMOUNT_MIN,
+  BROKER_MAX_TIER,
   CANCEL_MIN,
   CONTRACT_OFFERS,
   CONTRACT_SLOT_MAX,
+  SLOT_BANDS,
   FEASIBLE_PER_DAY,
   SAT_MAX_CUT,
   SAT_IMPACT_CRAFT,
@@ -98,18 +100,23 @@ describe('contracts', () => {
     const rng = new Rng(7)
     const day = 4
     const six = rollBoard(rng, day, 6, 0)
-    const eight = rollBoard(rng, day, 8, 0)
+    const nine = rollBoard(rng, day, CONTRACT_SLOT_MAX, 0)
+    expect(BROKER_MAX_TIER).toBe(3)
+    expect(CONTRACT_SLOT_MAX).toBe(CONTRACT_OFFERS + BROKER_MAX_TIER)
+    expect(SLOT_BANDS).toHaveLength(CONTRACT_SLOT_MAX)
     expect(six).toHaveLength(6)
-    expect(eight).toHaveLength(8)
-    expect(six).toEqual(eight.slice(0, 6))
+    expect(nine).toHaveLength(CONTRACT_SLOT_MAX)
+    expect(six).toEqual(nine.slice(0, 6))
     six.forEach((offer, slot) => {
       expect(offer.id).toBe(day * CONTRACT_SLOT_MAX + slot)
       expect(offer.slot).toBe(slot)
     })
-    expect(eight[6].id).toBe(day * CONTRACT_SLOT_MAX + 6)
-    expect(eight[7].id).toBe(day * CONTRACT_SLOT_MAX + 7)
-    expect(eight[6].slot).toBe(6)
-    expect(eight[7].slot).toBe(7)
+    expect(nine[8].id).toBe(day * CONTRACT_SLOT_MAX + 8)
+    expect(nine[8].slot).toBe(8)
+    expect(nine[8].id).not.toBe(rollBoard(rng, day + 1, CONTRACT_SLOT_MAX, 0)[0].id)
+    const ranked = new World(1)
+    ranked.family.owned.set('broker', 3)
+    expect(rollBoard(ranked.rng, ranked.clock.day, ranked.contractSlots(), 0)).toHaveLength(ranked.contractSlots())
   })
 
   test('Board generation is not a `Cmd`.', () => {
@@ -124,7 +131,7 @@ describe('contracts', () => {
     expect(w.log).toEqual([])
   })
 
-  test('Contract delivery raises no `sat` and enters no `StallGood.worth`. Miss and cancel plain remainders do both. Infused remainders enter infused worth and raise no `sat`.', () => {
+  test('Contract delivery raises no `sat` and enters no `StallGood.worth`. A miss or cancel pays the delivered units once and raises `sat` for units that are not infused. Those units do not stay in stock, so the next drop-off does not pay them again. Infused units raise no `sat` and do not stay in stock. `sat` round-trips through the save.', () => {
     const w = new World(1)
     w.contracts.active.push(carrotActive(0, 10))
     dropFruit(w, 'carrot', 2)
@@ -132,8 +139,19 @@ describe('contracts', () => {
     expect(worthOf(w, 'carrot')).toBe(0)
     expect(w.contracts.active[0].bins[0].filled).toBe(2)
     w.cancelContract(0)
-    expect(worthOf(w, 'carrot')).toBeGreaterThan(0)
+    expect(worthOf(w, 'carrot')).toBe(0)
+    expect(w.stall.carrot.stock.base.plain).toBe(0)
     expect(w.stall.carrot.sat).toBeGreaterThan(0)
+    const afterCancel = w.money
+    w.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: CROPS.potato.sale, freshness: 1, cut: false },
+    }
+    w.enqueue({ act: 'consign' })
+    w.tick(DT_MAX)
+    const potato = saleUnits(0, 1, SAT_STEP_FRUIT, SAT_IMPACT_FRUIT.base, CROPS.potato.sale, 0).paid
+    expect(w.money - afterCancel).toBeCloseTo(potato, 9)
+    expect(worthOf(w, 'carrot')).toBe(0)
     const miss = new World(1)
     miss.contracts.active.push(carrotActive(0, 10))
     dropFruit(miss, 'carrot', 2)
@@ -141,8 +159,18 @@ describe('contracts', () => {
     expect(worthOf(miss, 'carrot')).toBe(0)
     miss.contracts.active[0].dueDay = miss.nowDay() + 1e-12
     miss.tick(DT_MAX)
-    expect(worthOf(miss, 'carrot')).toBeGreaterThan(0)
+    expect(worthOf(miss, 'carrot')).toBe(0)
+    expect(miss.stall.carrot.stock.base.plain).toBe(0)
     expect(miss.stall.carrot.sat).toBeGreaterThan(0)
+    const afterMiss = miss.money
+    miss.seats[0].hand = {
+      kind: 'hold',
+      item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 1, unitSale: CROPS.potato.sale, freshness: 1, cut: false },
+    }
+    miss.enqueue({ act: 'consign' })
+    miss.tick(DT_MAX)
+    expect(miss.money - afterMiss).toBeCloseTo(potato, 9)
+    expect(worthOf(miss, 'carrot')).toBe(0)
     const inf = new World(1)
     const jamDemand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
     inf.contracts.active.push({
@@ -150,18 +178,24 @@ describe('contracts', () => {
       dueDay: 10,
       bins: [{ demand: jamDemand, filled: 2, infusedFilled: 2 }],
     })
+    const pen = missPenalty(inf.contracts.active[0])
+    const infBefore = inf.money
     inf.contracts.active[0].dueDay = inf.nowDay() + 1e-12
     inf.tick(DT_MAX)
-    expect(inf.stall['jam-grape'].worth.base.infused).toBeGreaterThan(0)
+    expect(inf.stall['jam-grape'].worth.base.infused).toBe(0)
+    expect(inf.stall['jam-grape'].stock.base.infused).toBe(0)
     expect(inf.stall['jam-grape'].sat).toBe(0)
+    const jamPaid = 2 * cleanUnit(jamDemand) * mul(0, SAT_IMPACT_CRAFT.base, 0)
+    expect(inf.money).toBeCloseTo(infBefore + jamPaid - pen, 9)
     const loaded = dump(miss)
-    expect('sat' in loaded.stall.carrot).toBe(false)
+    expect(Object.keys(loaded.stall.carrot).sort()).toEqual(['sat', 'stock', 'worth'])
+    expect(loaded.stall.carrot.sat).toBe(miss.stall.carrot.sat)
     const parsed = parse(JSON.stringify(loaded))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(parsed.world.contracts.active).toEqual([])
     expect(parsed.world.contracts.history).toEqual(miss.contracts.history)
-    expect(parsed.world.stall.carrot.sat).toBe(0)
+    expect(parsed.world.stall.carrot.sat).toBe(miss.stall.carrot.sat)
   })
 
   test('A save round-trips the live board: active contracts, their bin fills, `takenToday`, history and the company book.', () => {
@@ -589,6 +623,20 @@ describe('familiarity.market', () => {
     expect(recoverPerDay('wheat', studied('wheat'))).toBeCloseTo(SAT_RECOVER.wheat + 20 * FAMILIARITY_RECOVER, 9)
     expect(recoverPerDay('vodka', studied('grape'))).toBeCloseTo(SAT_RECOVER.vodka, 9)
     expect(recover('apple', 1, DAY_SECONDS, studied('apple'))).toBeLessThan(recover('apple', 1, DAY_SECONDS, none))
+    const plain = new World(1)
+    plain.stall.carrot.sat = 1
+    plain.stall.vodka.sat = 1
+    const learned = new World(1)
+    learned.stall.carrot.sat = 1
+    learned.familiarity.carrot = familiarityMax('carrot')
+    const plainDays = plain.marketDemand().find(c => c.good === 'carrot')
+    const learnedDays = learned.marketDemand().find(c => c.good === 'carrot')
+    const vodkaDays = plain.marketDemand().find(c => c.good === 'vodka')
+    if (plainDays === undefined || learnedDays === undefined || vodkaDays === undefined) throw new Error('row')
+    expect(plainDays.recoverDays).toBeCloseTo(SAT_MAX_CUT / SAT_RECOVER.carrot, 9)
+    expect(learnedDays.recoverDays).toBeCloseTo(SAT_MAX_CUT / recoverPerDay('carrot', () => familiarityMax('carrot')), 9)
+    expect(learnedDays.recoverDays).toBeLessThan(plainDays.recoverDays)
+    expect(vodkaDays.recoverDays).toBeCloseTo(SAT_MAX_CUT / SAT_RECOVER.vodka, 9)
   })
 
   test('That recovery is how many more fruit a day the stall absorbs: a level pays `FAMILIARITY_RECOVER / SAT_STEP_FRUIT` of a fruit.', () => {
@@ -727,6 +775,19 @@ describe('market.sell', () => {
     mixed.sellAll()
     expect(mixed.clearance).toBe(0)
     expect(mixed.stall.potato.sat).toBeCloseTo(Math.min(1, 0.3 + 10 * SAT_STEP_FRUIT / SAT_MAX_CUT), 9)
+  })
+
+  test('Rotten produce offers Drop off at the Produce Warehouse only after `unlock-fermentation`.', () => {
+    const at = { col: WAREHOUSE_BASE.col, row: WAREHOUSE_BASE.row }
+    const hand = { kind: 'hold' as const, item: { kind: 'rotten' as const, cls: 'root' as const, count: 4, createdAt: 1 } }
+    const locked = new World(1)
+    locked.seats[0].hand = hand
+    expect(locked.prompt(at).kind).toBe('blocked')
+    const open = new World(1)
+    open.done.add('unlock-fermentation')
+    open.seats[0].hand = hand
+    const p = open.prompt(at)
+    expect(p).toMatchObject({ kind: 'intent', intent: { act: 'consign' } })
   })
 })
 

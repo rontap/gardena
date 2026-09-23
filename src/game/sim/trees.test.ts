@@ -346,14 +346,6 @@ describe('trees.wild', () => {
     const cell = saved.chunks[0].cells[found.base.row][found.base.col]
     expect(cell.kind === 'tree' && cell.happiness).toBe(TREE_HAPPY_START)
     expect(cell.kind === 'tree' && cell.soil.water).toBe(TREE_WATER_MID)
-    const missingHappy = JSON.parse(JSON.stringify(saved)) as typeof saved
-    const goneH = missingHappy.chunks[0].cells[found.base.row][found.base.col]
-    if (goneH.kind === 'tree') delete (goneH as { happiness?: number }).happiness
-    expect(parse(JSON.stringify(missingHappy)).ok).toBe(false)
-    const missingSoil = JSON.parse(JSON.stringify(saved)) as typeof saved
-    const goneS = missingSoil.chunks[0].cells[found.base.row][found.base.col]
-    if (goneS.kind === 'tree') delete (goneS as { soil?: unknown }).soil
-    expect(parse(JSON.stringify(missingSoil)).ok).toBe(false)
   })
 })
 

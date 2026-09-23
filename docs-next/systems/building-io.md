@@ -86,7 +86,7 @@ A building with `pads: 'both'` has vehicle loading spots (`padPorts`, `defaultPa
       +---+---+
         L   L        L  load spot: building -> vehicle
 ``` 
-`padGoods(role)` limits which items a spot handles. Buildings with loading spots: machines (including the Grinder), chests, freezers, the compost box, the stores and the field silos. The Barrel has none. See [[features/vehicles]].
+`padGoods(role)` limits which items a spot handles. Buildings with loading spots (`pads = 'both'`): every `Machine` (Mill, Jam machine, Grinder, Pot still, Furnace, Infuser, research station), chests, freezers, the Sorter, the compost box, the Refueling station, the Produce Warehouse, the stores and the field silos. See [[features/vehicles]].
 
 ### Signal input
 
@@ -102,7 +102,7 @@ A `Machine` has an `inn` signal. While `inn` is 1, the machine does not start or
 
 ## Data
 
-Building contents are saved with the building's cell. `inn` is worked out from wires each step and is not the source of truth ([[systems/signals]]).
+Building contents are saved with the building's cell. `inn` is worked out from wires each step ([[systems/signals]]).
 
 ## Invariants
 

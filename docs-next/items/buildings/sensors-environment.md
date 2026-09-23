@@ -47,5 +47,3 @@ Hover: **{name} - on** / **{name} - off**. Clicking opens its tuning panel under
 ## Art
 
 `prop-sensor-weather.svg`, `prop-sensor-day.svg`, `prop-vehicle-detector.svg` and matching `item-*.svg`, groups `off` and `on`.
-
-The Water-system sensor (`buy-water-system`) exists in code but is not shown in Build (`skuShown`).

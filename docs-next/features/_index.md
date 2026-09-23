@@ -12,7 +12,7 @@ One page per player-facing feature. Copy [[features/_template]].
 - [[features/inventory]] — hand, inventory, chests, stores, tools
 - [[features/build]] — Build menu, placing, demolishing, paving
 - [[features/machines]] — machines, infusion, research station
-- [[features/market]] — Market truck, selling, saturation
+- [[features/market]] — Produce Warehouse, selling, price drop
 - [[features/contracts]] — contract board, companies, prizes
 - [[features/research]] — research rows
 - [[features/family]] — skills, skill points

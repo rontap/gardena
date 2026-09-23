@@ -7,6 +7,7 @@ Start here. Find the task type, read the pages it lists, then grep the code usin
 - **Never write about the starting kit**: what a new game puts in the inventory at the house or in the Seed silo (`STARTER_SEEDS`, `STARTER_FRUIT`, `STARTER_TREE_GRAFTS`, `STARTER_VARIETY_PACKS`, the items in `soloSeat`). No page lists it, names it as a source of an item, or refers to it.
 
 - The code is the truth. A page states what `src/`, `src/game/defs/` and `messages/en/` do now.
+- A page describes the current game only. Git versions the pages: a page states what the game does, and leaves out what it used to do, what it lacks, leftovers in the code, and bugs. Findings go to the developer in chat.
 - The old `docs/` is used only for what code cannot show: why a rule exists, architectural decisions, invariants.
 - Pages name identifiers, constants and string keys. They do not cite line numbers or restate code; [[code-map]] says where to look.
 - Constants by name, never their digits.

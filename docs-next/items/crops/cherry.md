@@ -25,7 +25,7 @@ Fields of `TREES.cherry` (`juvenileSeconds`, `fruitSeconds`), `CROPS.cherry` (`w
 
 ## Selling
 
-Fruit at the Market for `CROPS.cherry.sale` × the Fresh best-for multiplier × freshness. Tree fruit has quality 0 ([[features/market]]).
+Fruit at the Market for `CROPS.cherry.sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop. Tree fruit has quality 0 ([[features/market]]).
 
 ## Art
 

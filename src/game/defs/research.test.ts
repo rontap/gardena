@@ -7,6 +7,11 @@ import { PAD } from '../sim/building.ts'
 import { DT_MAX, World } from '../sim/world.ts'
 
 describe('research i18n', () => {
+  test('Contracts research names the Contracts button and window.', () => {
+    expect(m.research_grant_contracts_board()).toBe('Contracts button')
+    expect(m.research_unlock_contracts_blurb().startsWith('A Contracts button opens the Contracts window.')).toBe(true)
+  })
+
   test('RESEARCH[id].name and .blurb and SKILLS[id].name/.blurb become calls to `m.*`', () => {
     const ids = Object.keys(RESEARCH) as ResearchId[]
     for (const id of ids) {

@@ -52,7 +52,7 @@ A job is an `Intent`: an action (`walk`, `shovel`, `plant`, `water`, `harvest`, 
 
 1. If a work timer is running, it counts down; at zero, `finishWork` applies the job's effect.
 2. If a bucket is filling, `tickFill` continues.
-3. Otherwise the gardener walks toward `dest(job)`: a building's origin, the door for the inventory, the truck's loading spot for Drop off.
+3. Otherwise the gardener walks toward `dest(job)`: a building's origin, the door for the inventory, the Produce Warehouse loading spot (`PAD`) for Drop off.
 4. On arrival, `begin` either applies the effect at once or starts a work timer with `arm`.
 
 ```
@@ -88,7 +88,7 @@ Buying, placing pipes and sprinklers, deleting, expanding, research, skills, inv
 
 ## Data
 
-The job list, work timer and bucket filling are seat fields. They are not saved; `rebase()` clears them. The command log is not saved.
+The job list, work timer and bucket filling are seat fields; `rebase()` clears them on load, and the command log starts empty on load ([[systems/save]]).
 
 ## Invariants
 

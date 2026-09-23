@@ -516,9 +516,6 @@ export class World {
     this.cheatFastResearch = false
     this.cheatSpeed = 1
     this.nets = undefined
-    STALL_IDS.forEach(id => {
-      this.stall[id].sat = 0
-    })
     this.seats.forEach(s => {
       s.queue.length = 0
       s.cue = { kind: 'none' }

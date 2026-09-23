@@ -629,7 +629,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
   if (cell.kind === 'silo-produce') return intent(m.names_building_silo_produce(), { act: 'chest', at })
   if (cell.kind === 'house') return intent(m.prompt_inventory(), { act: 'inventory' })
   if (cell.kind === 'warehouse') {
-    if (canConsign(w.act.hand)) return intent(m.prompt_drop_off(), { act: 'consign' })
+    if (canConsign(w)) return intent(m.prompt_drop_off(), { act: 'consign' })
     return { kind: 'blocked', text: m.names_building_warehouse() }
   }
   if (cell.kind === 'postbox') return intent(m.names_building_postbox(), { act: 'chest', at })
@@ -936,11 +936,13 @@ function handFullFor(w: World, item: Item): boolean {
   return held.count >= w.stackMax(held)
 }
 
-function canConsign(hand: Hand): boolean {
+function canConsign(w: World): boolean {
+  const hand = w.act.hand
   if (hand.kind !== 'hold') return false
   const it = hand.item
   if (it.kind === 'fruit') return it.count >= 1
   if (it.kind === 'sugar') return it.liters > 0
+  if (it.kind === 'rotten') return w.done.has('unlock-fermentation') && it.count >= 1
   if (
     it.kind === 'spirit' ||
     it.kind === 'cask' ||

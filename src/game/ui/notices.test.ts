@@ -202,6 +202,33 @@ describe('notices.once', () => {
     const rows = doneRows(w, { activeIds: [7], running: undefined, fired: [] })
     expect(kinds(rows)).toEqual(['contract-done'])
     expect(rows[0].bar).toBeUndefined()
+    expect(rows[0].go).toEqual({ kind: 'panel', panel: 'contracts' })
+  })
+
+  test('a running contract row opens the Contracts window', () => {
+    const w = new World()
+    const demand = { kind: 'plain' as const, good: 'carrot' as const, amount: 4 }
+    w.contracts.active.push({
+      offer: {
+        id: 3,
+        slot: 0,
+        company: 'whole-cart',
+        difficulty: 1,
+        stars: 1,
+        band: 'normal',
+        days: 2,
+        lines: [demand],
+        prize: { kind: 'cash' },
+        clean: 12,
+        markup: 0.2,
+        reward: 14,
+        penalty: 2,
+      },
+      dueDay: 5,
+      bins: [{ demand, filled: 1, infusedFilled: 0 }],
+    })
+    const row = noticeRows(w).find(r => r.kind === 'contract')
+    expect(row?.go).toEqual({ kind: 'panel', panel: 'contracts' })
   })
 
   test('a contract gone from active with a missed outcome mints nothing', () => {

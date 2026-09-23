@@ -52,11 +52,11 @@ Changes that are not player actions (growth, water, machines, vehicles on routes
 
 ### Construction
 
-`new World(seed)` creates a new game: the house, the Produce Warehouse (the Market truck), the postbox, the Seed silo, the Additive store and the starter pump in chunk (0, 0); one solo seat; a bucket at the door; 50 coins. The weather table for every day is computed from the seed.
+`new World(seed)` creates a new game: the house, the Produce Warehouse, the postbox, the Seed silo, the Additive store and the starter pump in chunk (0, 0); one solo seat. The weather table for every day is computed from the seed.
 
 `World.hydrate(h)` creates a game from loaded save data, then runs `rebase()`, `indexAll()` and the weather setup.
 
-`rebase()` clears state that is not saved: each seat's job list, work timer, Build tool, driving input and walking input; `bigAcc`; `pumpLiters`; each Market good's price drop (`sat`); the cheats; the cached water networks. It also sorts pumps, wells, taps, stills and water-system sensors by position. Two `World` instances loaded from the same save are equal after `rebase()`.
+`rebase()` clears state that starts fresh on every load: each seat's job list, work timer, Build tool, driving input and walking input; `bigAcc`; `pumpLiters`; the cheats; the cached water networks. It also sorts pumps, wells, taps, stills and water-system sensors by position. Two `World` instances loaded from the same save are equal after `rebase()`.
 
 ### Other fields
 
@@ -64,7 +64,7 @@ The starting buildings are fields: `house`, `warehouse`, `postbox`, `silo`, `add
 
 `money`, `clock`, `done` and `job` (research), `family` and `points` (skills), `contracts`, `stall` (Market), `recaps` and `recapUnseen` (end-of-day summaries), `grandma` and `grandmaUnseen`, `tutorial`, `familiarity`, `vehicles`, `trailers` and `routes` are fields on `World`.
 
-`World.seam` is only ever `{ kind: 'play' }`. Whether an end-of-day summary is unread is stored in `recapUnseen`.
+Whether an end-of-day summary is unread is stored in `recapUnseen`.
 
 ## Entry points
 
@@ -80,7 +80,7 @@ The starting buildings are fields: `house`, `warehouse`, `postbox`, `silo`, `add
 
 | id | rule | test |
 |---|---|---|
-| `world.dest` | a job on a multi-tile building walks to its origin; the inventory job walks to the door; Drop off walks to the truck's loading spot | `world.test.ts` |
+| `world.dest` | a job on a multi-tile building walks to its origin; the inventory job walks to the door; Drop off walks to the Produce Warehouse loading spot (`PAD`) | `world.test.ts` |
 | `world.queue` | a seat's job list holds at most `QUEUE_CAP` jobs; one more shows the list-full message | `queue.test.ts` |
 
 ## When you change this

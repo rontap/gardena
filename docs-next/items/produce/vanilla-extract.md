@@ -6,7 +6,7 @@
 | unit | count |
 | stack limit | `STACK_MAX_CRAFTED` (+ `bulk-up`) |
 | made by | [[items/buildings/mill]] from [[items/crops/vanilla]] |
-| sold at | not sold; the Market truck refuses it |
+| sold at | not sold |
 
 Crushed vanilla, used to infuse goods ([[features/machines]]). Different item from [[items/produce/extract]].
 

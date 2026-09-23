@@ -50,10 +50,7 @@ export type SaveRng = { seed: number; fruit: number }
 export type SaveSkill = { id: SkillId; tier: number }
 
 export type SaveStallGood = {
-  offered: number
-  market: number
-  target: number
-  acc: number
+  sat: number
   stock: { [K in VarietyId]: { plain: number; infused: number } }
   worth: { [K in VarietyId]: { plain: number; infused: number } }
 }
@@ -115,8 +112,6 @@ export type SaveCell =
   | { kind: 'lever'; base: RectBase; on: boolean; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
   | { kind: 'button'; base: RectBase; left: number; out: 0 | 1 }
   | { kind: 'lamp'; base: RectBase; inn: 0 | 1 }
-  | { kind: 'or'; base: RectBase; out: 0 | 1 }
-  | { kind: 'and'; base: RectBase; out: 0 | 1 }
   | { kind: 'logic'; base: RectBase; mode: 'or' | 'and'; out: 0 | 1 }
   | { kind: 'not'; base: RectBase; out: 0 | 1 }
   | { kind: 'pulser'; base: RectBase; inn: 0 | 1; prev: 0 | 1; out: 0 | 1 }
@@ -249,8 +244,7 @@ export type Save = {
     owned: SaveSkill[]
   }
   stall: { [K in StallGoodId]: SaveStallGood }
-  tally: { died: number; harvests: number; research: ResearchId[] }
-  seam: { kind: 'play' } | { kind: 'recap'; recap: SaveRecap }
+  tally: { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
   recaps: SaveRecap[]
   recapUnseen: number[]
   grandma: Grandma

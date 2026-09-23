@@ -872,6 +872,9 @@ describe('1.5.2', () => {
     w.family.owned.set('broker', 2)
     expect(w.contractSlots()).toBe(8)
     expect(w.contractCap()).toBe(5)
+    w.family.owned.set('broker', 3)
+    expect(w.contractSlots()).toBe(9)
+    expect(w.contractCap()).toBe(6)
   })
 
   test("`unlock-crop-variants` parent `unlock-multi-crop`, cost 16, 40s, `effect` `feature`. Ladder effects die: shop packs `'base'` quality 0 with or without it; ripen does not roll; silo does not hide columns. `buy-research-station` unlock and show that row. `unlock-heirloom` parent is it. Both rows stay.", () => {

@@ -24,7 +24,7 @@ Fields of `CROPS.chilli`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fe
 
 ## Selling
 
-Fruit at the Market for `CROPS.chilli.sale` × `qualityMul(quality)` × freshness ([[features/market]]).
+Fruit at the Market for `CROPS.chilli.sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop ([[features/market]]).
 
 ## Art
 

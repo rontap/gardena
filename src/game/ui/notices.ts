@@ -120,7 +120,7 @@ export type NoticePopup = { kind: 'recap'; day: number } | { kind: 'grandma'; be
 
 export type NoticeGo =
   | { kind: 'none' }
-  | { kind: 'panel'; panel: 'market' | 'research' | 'family' }
+  | { kind: 'panel'; panel: 'market' | 'contracts' | 'research' | 'family' }
   | { kind: 'popup'; popup: NoticePopup }
 
 export type Notice = {
@@ -323,7 +323,7 @@ function contractRows(world: World): Notice[] {
     subjects: a.bins.filter(b => b.filled < b.demand.amount).flatMap(b => demandSubjects(b.demand)),
     cells: [],
     bar: filledOf(a) / needOf(a),
-    go: { kind: 'panel' as const, panel: 'market' as const },
+    go: { kind: 'panel' as const, panel: 'contracts' as const },
   }))
 }
 
@@ -508,7 +508,7 @@ export function doneRows(world: World, before: Pass): Notice[] {
           subjects: [],
           cells: [],
           bar: undefined,
-          go: { kind: 'panel' as const, panel: 'market' as const },
+          go: { kind: 'panel' as const, panel: 'contracts' as const },
         },
       ]
     })

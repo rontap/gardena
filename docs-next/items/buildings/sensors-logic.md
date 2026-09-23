@@ -34,7 +34,7 @@ Devices that the player operates, that combine signals, or that show a signal. S
 
 ## Lamp
 
-Shows its input. It has no output.
+Lights while its input is on.
 
 ## Logic gate
 

@@ -6,7 +6,7 @@ import { FERT_BAG_LITERS, SUGAR_MILL } from '../../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../../sim/ids.ts'
 import { makePickaxe, makeShovel, type Item } from '../../sim/item.ts'
 import { DAY_SECONDS } from '../../sim/clock.ts'
-import { cancelFee, demandGood, filledOf, needOf, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
+import { CANCEL_MIN, cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
 import { isCropStall, stallGoodName } from '../../sim/stall.ts'
 import type { World } from '../../sim/world.ts'
@@ -74,23 +74,30 @@ export function Contracts({ world, onClose }: { world: World; onClose: () => voi
   )
 }
 
-function offerHover(offer: ContractOffer, atCap: boolean, cap: number): Tip {
+export function capFull(cap: number): string {
+  if (cap === 6) return m.market_cap_six()
+  if (cap === 5) return m.market_cap_five()
+  if (cap === 4) return m.market_cap_four()
+  return m.market_cap_three()
+}
+
+export function offerHover(offer: ContractOffer, atCap: boolean, cap: number): Tip {
   const company = COMPANIES[offer.company].name
   const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
     .map(line => m.market_deliver_plain({ amount: line.amount, good: demandName(line) }))
     .join('\n')
   const cash = offer.prize.kind === 'cash'
-  const why = atCap ? (cap === 4 ? m.market_cap_four() : m.market_cap_three()) : undefined
+  const why = atCap ? capFull(cap) : undefined
   return {
     title: company,
     description: (
       <>
-        {`${m.market_offer_head({ difficulty: offer.difficulty, max: 40, company })}\n${deliver}\n${m.market_duration_earn({ days })}`}
+        {`${m.market_offer_head({ difficulty: offer.difficulty, max: DIFFICULTY_CEILING, company })}\n${deliver}\n${m.market_duration_earn({ days })}`}
         {cash ? <Coin n={offer.reward} /> : prizeName(offer.prize)}
         {cash ? m.market_when_markup({ markup: Math.round(offer.markup * 100) }) : m.market_when_completed()}
         {`\n${m.market_cancel_cost()}`}
-        <Coin n={offer.penalty} />
+        <Coin n={Math.round(CANCEL_MIN * offer.clean)} />
         {m.almanac_period()}
         {!atCap ? `\n${m.market_click_accept()}` : null}
         {why !== undefined ? <span className="mt-2 block font-bold text-roof">{why}</span> : null}

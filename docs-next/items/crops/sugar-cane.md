@@ -24,7 +24,7 @@ Fields of `CROPS['sugar-cane']`: `growSeconds`, `waterUsePerSec`, `waterToleranc
 
 ## Selling
 
-Fruit at the Market for `CROPS['sugar-cane'].sale` × `qualityMul(quality)` × freshness ([[features/market]]).
+Fruit at the Market for `CROPS['sugar-cane'].sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop ([[features/market]]).
 
 ## Art
 

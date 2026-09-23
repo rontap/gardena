@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs-next/systems/building-io.md",
+                "file": "docs-next/features/market.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "building-io"
+              "title": "market"
             }
           }
         ],
@@ -114,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs-next/systems/building-io.md",
+                "file": "docs-next/features/market.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -202,13 +202,31 @@
       "bases:Create new base": false
     }
   },
-  "active": "06eeedefa5501be2",
+  "active": "59eca57691151b0e",
   "lastOpenFiles": [
-    "docs-next/items/buildings/paving.md.tmp.45000.a175c11d542a",
+    "docs-next/features/plants.md",
+    "docs-next/items/buildings/sprinkler.md",
+    "docs-next/items/other/bucket.md",
+    "docs-next/features/trees.md",
+    "docs-next/items/crops/apple.md",
+    "docs-next/definitions.md",
+    "docs-next/features/machines.md.tmp.28736.03a8053f3b09",
+    "docs-next/features/machines.md.tmp.28736.445d21bf86eb",
+    "docs-next/systems/building-io.md.tmp.28736.60f0699421ad",
+    "docs-next/items/buildings/sensors-logic.md.tmp.28736.be8467564709",
+    "docs-next/items/buildings/infuser.md.tmp.28736.e3c6c761ab5b",
+    "docs-next/items/buildings/freezer.md.tmp.28736.cd0b2a98a163",
+    "docs-next/items/buildings/sensors-environment.md.tmp.28736.e29404243629",
+    "docs-next/game.md.tmp.28736.02189577dca4",
+    "docs-next/items/buildings/produce-warehouse.md.tmp.28736.3511062d753e",
+    "docs-next/items/buildings/produce-warehouse.md.tmp.28736.f2fbbc2daeed",
+    "docs-next/game.md",
+    "docs-next/systems/building-io.md",
+    "docs-next/features/contracts.md",
+    "docs-next/features/market.md",
     "docs-next/items/other/trailers.md",
     "docs-next/items/other/vehicles.md",
     "docs-next/items/other/dead-plant.md",
-    "docs-next/items/other/dead-plant.md.tmp.45000.21b203365129",
     "docs-next/items/other/tree-seed.md",
     "docs-next/items/other/graft.md",
     "docs-next/items/other/treasure.md",
@@ -222,24 +240,6 @@
     "docs-next/items/buildings/necronomicon.md",
     "docs-next/items/buildings/paving.md",
     "docs-next/items/buildings/fence.md",
-    "docs-next/items/buildings/sprinkler.md",
-    "docs-next/items/buildings/pipe.md",
-    "docs-next/items/buildings/tap.md",
-    "docs-next/items/buildings/well.md",
-    "docs-next/items/buildings/pump.md",
-    "docs-next/items/buildings/pump.md.tmp.45000.ea9d77974e8b",
-    "docs-next/items/buildings/hangar.md",
-    "docs-next/items/buildings/hangar.md.tmp.45000.5e2d7b3a3e5c",
-    "docs-next/items/buildings/field-silos.md",
-    "docs-next/items/buildings/field-silos.md.tmp.45000.a2f029ded8fc",
-    "docs-next/items/buildings/freezer.md",
-    "docs-next/items/buildings/chest.md",
-    "docs-next/items/buildings/grinder.md.tmp.45000.11c95b8949a6",
-    "src/paraglide/messages/en.d.ts",
-    "src/paraglide/messages/en.js",
-    "src/paraglide/messages/prompt_cannot_reach.js",
-    "src/paraglide/messages/prompt_cannot_use.js",
-    "src/paraglide/messages/prompt_cannot_place.js",
     "src/assets/items/item-dispatch.svg",
     "src/assets/props/prop-dispatch.svg",
     "src/assets/actor.svg",

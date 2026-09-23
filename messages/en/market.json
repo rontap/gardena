@@ -28,6 +28,8 @@
   "market_when_completed": " when completed.",
   "market_cancel_cost": "Cancellation cost is ",
   "market_click_accept": "Click to accept offer",
+  "market_cap_six": "Six contracts already running.",
+  "market_cap_five": "Five contracts already running.",
   "market_cap_four": "Four contracts already running.",
   "market_cap_three": "Three contracts already running.",
   "market_cash": "Cash",

@@ -26,7 +26,7 @@ Fields of `CROPS.raspberry`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, 
 
 ## Selling
 
-Fruit at the Market for `CROPS.raspberry.sale` × `qualityMul(quality)` × the Fresh best-for multiplier × freshness ([[features/market]]).
+Fruit at the Market for `CROPS.raspberry.sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop ([[features/market]]).
 
 ## Affected by
 

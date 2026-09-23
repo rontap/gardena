@@ -6,7 +6,7 @@
 | demolish | yes |
 | cell kind | `'freezer'` |
 
-A chest that slows the loss of freshness: fruit inside loses freshness at `FREEZER_ROT_MUL` of the normal rate. It does not stop it or restore it.
+A chest that slows the loss of freshness: fruit inside loses freshness at `FREEZER_ROT_MUL` of the normal rate.
 
 ## Sizes
 

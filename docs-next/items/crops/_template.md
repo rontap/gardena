@@ -26,7 +26,7 @@ Fields of `CROPS.{id}` (trees also `TREES.{id}`, `TREE_FERT_PER_DAY.{id}`): `gro
 
 ## Selling
 
-{Fruit at the Market; price rule; link [[features/market]].}
+Fruit at the Market for `CROPS.{id}.sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop ([[features/market]]).
 
 ## Affected by
 

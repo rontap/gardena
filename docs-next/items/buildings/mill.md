@@ -14,7 +14,7 @@ Crushes one kind of crop into a product.
 
 ## Use
 
-The first item put in sets the Mill's recipe and variety. Until it is empty, it accepts only more of that crop and variety; Cut grass has no variety. It accepts every unit offered; there is no capacity limit. Quality is averaged over what went in.
+The first item put in sets the Mill's recipe and variety. Until it is empty, it accepts only more of that crop and variety; Cut grass has no variety. It accepts every unit offered. Quality is averaged over what went in.
 
 When it holds at least the recipe's input amount, it runs for `MILL_WORK` seconds, divided by the machine speed skill (`machineMul`) and by the speed-up from working Furnaces nearby (`furnaceMul`). It then outputs one batch and starts the next if enough is left. A signal of 1 on its input stops it.
 

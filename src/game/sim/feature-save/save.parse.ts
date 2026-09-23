@@ -38,11 +38,8 @@ import {
   type ChunkId,
 } from '../building.ts'
 import type { Cell } from '../plot.ts'
-import { RESEARCH } from '../../defs/research.ts'
-import { SKILLS } from '../../defs/skills.ts'
-import type { ResearchId, SkillId } from '../ids.ts'
+import type { SkillId } from '../ids.ts'
 import type { Bins, Contracts } from '../feature-contracts/market.h.ts'
-import type { Hand, Item, Slot } from '../item.ts'
 import { MemorySink, type LogSink } from '../log.ts'
 import {
   Button,
@@ -67,15 +64,7 @@ import { Plant, Turf, Weed } from '../plant.ts'
 import { Rng } from '../rng.ts'
 import { makeTreeSoil, Soil } from '../soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from '../stall.ts'
-import {
-  POINTS_PER_DAY,
-  World,
-  type Family,
-  type Hydrate,
-  type Recap,
-  type Seat,
-  type SeatId,
-} from '../world.ts'
+import { World, type Family, type Hydrate, type Seat, type SeatId } from '../world.ts'
 import { makeQuad, makeTractor, type RouteStop, type Trailer, type Vehicle } from '../feature-vehicles/vehicle.ts'
 import {
   type LoadResult,
@@ -84,7 +73,6 @@ import {
   type SaveContracts,
   type SaveSkill,
   type SavePlant,
-  type SaveRecap,
   type SaveSoil,
   type SaveTrailer,
   type SaveVehicle,
@@ -107,8 +95,6 @@ export function parse(text: string, sink: LogSink = new MemorySink()): LoadResul
 }
 
 function worldFromSave(save: Save, sink: LogSink): World {
-  checkDone(save.done)
-  if (save.job.kind === 'run' && !(save.job.id in RESEARCH)) throw new Error('unusable')
   const owned = save.chunks.map(ch => ch.id)
   const live = stampChunks(save.chunks)
   const h: Hydrate = {
@@ -137,8 +123,8 @@ function worldFromSave(save: Save, sink: LogSink): World {
       napping: false,
       cue: { kind: 'none' },
       actor: new Actor(s.actor.x, s.actor.y),
-      hand: liveHand(s.hand),
-      inventory: s.inventory.map(liveSlot),
+      hand: s.hand,
+      inventory: s.inventory,
       queue: [],
       place: { kind: 'none' },
       workLeft: 0,
@@ -161,7 +147,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
       name: r.name,
       stops: r.stops.map(liveStop),
       deploy: { ...r.deploy },
-      end: r.end === 'hangar' ? 'hangar' : 'loop',
+      end: r.end,
     })),
     nextRouteId: save.nextRouteId,
     owned,
@@ -179,10 +165,10 @@ function worldFromSave(save: Save, sink: LogSink): World {
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,
-    tally: { died: save.tally.died, harvests: save.tally.harvests, research: save.tally.research, contracts: [] },
+    tally: save.tally,
     seam: { kind: 'play' },
-    recaps: recapsFrom(save),
-    recapUnseen: unseenFrom(save),
+    recaps: save.recaps,
+    recapUnseen: save.recapUnseen,
     grandma: save.grandma,
     grandmaUnseen: save.grandmaUnseen,
     tutorial: save.tutorial,
@@ -192,61 +178,13 @@ function worldFromSave(save: Save, sink: LogSink): World {
     sprinklers: save.sprinklers,
     fences: save.fences,
     paving: save.paving,
-    drops: save.drops.map(d => ({ at: { col: d.at.col, row: d.at.row }, item: liveItem(d.item) })),
+    drops: save.drops,
   }
-  const world = World.hydrate(h)
-  if (save.seam.kind === 'recap') {
-    world.grantPoints(POINTS_PER_DAY)
-    world.clock.banner = 4
-  }
-  return world
-}
-
-function liveRecap(r: SaveRecap): Recap {
-  return {
-    day: r.day,
-    money: r.money,
-    stipend: r.stipend,
-    died: r.died,
-    harvests: r.harvests,
-    research: r.research,
-    tax: r.tax,
-    water: r.water,
-    contracts: r.contracts === undefined ? [] : r.contracts,
-  }
-}
-
-function recapsFrom(save: Save): Recap[] {
-  const listed = save.recaps === undefined ? [] : save.recaps.map(liveRecap)
-  if (save.seam.kind !== 'recap') return listed
-  const extra = liveRecap(save.seam.recap)
-  if (listed.some(r => r.day === extra.day)) return listed
-  return [...listed, extra]
-}
-
-function unseenFrom(save: Save): number[] {
-  const listed = save.recapUnseen === undefined ? [] : save.recapUnseen.slice()
-  if (save.seam.kind !== 'recap') return listed
-  if (listed.includes(save.seam.recap.day)) return listed
-  return [...listed, save.seam.recap.day]
+  return World.hydrate(h)
 }
 
 function makeFamily(f: Save['family']): Family {
-  if ('player' in f || 'husband' in f || 'daughter' in f) throw new Error('unusable')
-  const owned = new Map<SkillId, number>()
-  f.owned.forEach((s: SaveSkill) => {
-    if (!(s.id in SKILLS)) throw new Error('unusable')
-    const def = SKILLS[s.id]
-    if (s.tier < 1 || s.tier > def.maxTier) throw new Error('unusable')
-    owned.set(s.id, s.tier)
-  })
-  return { owned }
-}
-
-function checkDone(done: ResearchId[]): void {
-  done.forEach(id => {
-    if (!(id in RESEARCH)) throw new Error('unusable')
-  })
+  return { owned: new Map<SkillId, number>(f.owned.map((s: SaveSkill) => [s.id, s.tier])) }
 }
 
 function makeStallMap(s: Save['stall']): StallMap {
@@ -254,6 +192,7 @@ function makeStallMap(s: Save['stall']): StallMap {
   for (const id of STALL_IDS) {
     const src = s[id]
     const g = new StallGood(id)
+    g.sat = src.sat
     VARIETY_IDS.forEach(r => {
       g.stock[r] = { plain: src.stock[r].plain, infused: src.stock[r].infused }
       g.worth[r] = { plain: src.worth[r].plain, infused: src.worth[r].infused }
@@ -389,7 +328,6 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     case 'rock':
       return new Rock(cell.base)
     case 'tree': {
-      if (cell.happiness === undefined || cell.soil === undefined) throw new Error('unusable')
       const tree = new Tree(
         cell.species,
         cell.base,
@@ -406,13 +344,12 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'chest': {
       const chest = new Chest(cell.base)
-      for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = liveSlot(cell.slots[i])
+      for (let i = 0; i < CHEST_SLOTS; i++) chest.slots[i] = cell.slots[i]
       chest.out = cell.out
       chest.hold = cell.hold
       return chest
     }
     case 'seed-silo': {
-      refuseGrassStore(cell)
       const silo = new SeedSilo(cell.base, cell.useDefault)
       cell.seeds.forEach(st => silo.seeds.push({ ...st }))
       silo.out = cell.out
@@ -482,9 +419,8 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'furnace': {
       const furnace = new Furnace(cell.base)
-      const recipe = cell.recipe
-      furnace.recipe = recipe === 'none' || recipe === 'ash' || recipe === 'bread' ? recipe : cell.units === 0 ? 'none' : 'ash'
-      furnace.quality = cell.quality === undefined ? 0 : cell.quality
+      furnace.recipe = cell.recipe
+      furnace.quality = cell.quality
       furnace.units = cell.units
       furnace.progress = cell.progress
       furnace.inn = cell.inn
@@ -511,7 +447,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       const inf = new Infuser(cell.base)
       inf.lock = cell.lock
       inf.quality = cell.quality
-      inf.unitSale = cell.unitSale === undefined ? 0 : cell.unitSale
+      inf.unitSale = cell.unitSale
       inf.units = cell.units
       inf.flakes = cell.flakes
       inf.extract = cell.extract
@@ -521,7 +457,6 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'station': {
       const station = new ResearchStation(cell.base)
-      if ((cell as { crop: string }).crop === 'grass') throw new Error('unusable')
       station.crop = cell.crop
       station.variety = cell.variety
       station.quality = cell.quality
@@ -532,8 +467,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'sorter': {
       const sorter = new Sorter(cell.base, cell.facing)
-      const held = liveSlot(cell.held)
-      sorter.held = held.kind === 'hold' ? held.item : 'none'
+      sorter.held = cell.held.kind === 'hold' ? cell.held.item : 'none'
       sorter.progress = cell.progress
       return sorter
     }
@@ -547,7 +481,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'freezer': {
       const freezer = new Freezer(cell.base, cell.slots.length)
-      for (let i = 0; i < cell.slots.length; i++) freezer.slots[i] = liveSlot(cell.slots[i])
+      for (let i = 0; i < cell.slots.length; i++) freezer.slots[i] = cell.slots[i]
       freezer.out = cell.out
       freezer.hold = cell.hold
       return freezer
@@ -555,7 +489,6 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     case 'hangar':
       return new Hangar(cell.base)
     case 'silo-seed': {
-      refuseGrassStore(cell)
       const made = new SiloSeed(cell.base)
       made.restock = cell.restock
       cell.seeds.forEach(st => made.seeds.push({ ...st }))
@@ -570,14 +503,14 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'silo-produce': {
       const made = new SiloProduce(cell.base)
-      cell.slots.forEach((s, i) => (made.slots[i] = liveSlot(s)))
+      cell.slots.forEach((s, i) => (made.slots[i] = s))
       return made
     }
     case 'warehouse':
       return new Warehouse(cell.base)
     case 'postbox': {
       const made = new Postbox(cell.base)
-      cell.slots.forEach((s, i) => (made.slots[i] = liveSlot(s)))
+      cell.slots.forEach((s, i) => (made.slots[i] = s))
       return made
     }
     case 'lever': {
@@ -597,18 +530,6 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     case 'lamp': {
       const made = new Lamp(cell.base)
       made.inn = cell.inn
-      return made
-    }
-    case 'or': {
-      const made = new LogicGate(cell.base)
-      made.mode = 'or'
-      made.out = cell.out
-      return made
-    }
-    case 'and': {
-      const made = new LogicGate(cell.base)
-      made.mode = 'and'
-      made.out = cell.out
       return made
     }
     case 'logic': {
@@ -726,12 +647,7 @@ function makeSoil(s: SaveSoil): Soil {
   return new Soil(s.water, s.fertilizer, s.weedChance)
 }
 
-function refuseGrassStore(cell: SaveCell): void {
-  if ('grass' in cell) throw new Error('unusable')
-}
-
 function makePlant(p: SavePlant): Plant {
-  if ((p as { crop: string }).crop === 'grass') throw new Error('unusable')
   const plant = new Plant(p.crop, p.variety, p.quality)
   plant.maturity = p.maturity
   plant.freshness = p.freshness
@@ -740,26 +656,10 @@ function makePlant(p: SavePlant): Plant {
   return plant
 }
 
-function liveItem(it: Item): Item {
-  if ((it as { kind: string }).kind === 'grass-seeds') throw new Error('unusable')
-  if (it.kind === 'jam' || it.kind === 'cask' || it.kind === 'spirit' || it.kind === 'oil') {
-    return { ...it, infused: it.infused === true }
-  }
-  return it
-}
-
-function liveHand(h: Hand): Hand {
-  return h.kind === 'hold' ? { kind: 'hold', item: liveItem(h.item) } : h
-}
-
-function liveSlot(s: Slot): Slot {
-  return s.kind === 'hold' ? { kind: 'hold', item: liveItem(s.item) } : s
-}
-
 function liveVehicle(v: SaveVehicle): Vehicle {
   const pose = v.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...v.pose.hangar } } : { ...v.pose }
   const carry = { route: v.route, cursor: v.cursor, running: v.running, dwell: v.dwell }
-  if (v.kind === 'quad') return { ...makeQuad(v.id, v.fuel, v.slots.map(liveSlot), pose), ...carry }
+  if (v.kind === 'quad') return { ...makeQuad(v.id, v.fuel, v.slots, pose), ...carry }
   return { ...makeTractor(v.id, v.fuel, v.hitch, v.boom, pose), working: v.working, ...carry }
 }
 
@@ -774,7 +674,7 @@ function liveTrailer(t: SaveTrailer): Trailer {
   const pose = t.pose.kind === 'stored' ? { kind: 'stored' as const, hangar: { ...t.pose.hangar } } : { ...t.pose }
   if (t.kind === 'seed') return { kind: 'seed', id: t.id, pose, hopper: t.hopper }
   if (t.kind === 'spray') return { kind: 'spray', id: t.id, pose, hopper: t.hopper }
-  return { kind: 'harvest', id: t.id, pose, slots: t.slots.map(liveSlot) }
+  return { kind: 'harvest', id: t.id, pose, slots: t.slots }
 }
 
 function liveContracts(s: SaveContracts, rep: number, repDay: number): Contracts {
@@ -785,7 +685,7 @@ function liveContracts(s: SaveContracts, rep: number, repDay: number): Contracts
       bins: a.bins.map(b => ({
         demand: b.demand,
         filled: b.filled,
-        infusedFilled: b.infusedFilled === undefined ? 0 : b.infusedFilled,
+        infusedFilled: b.infusedFilled,
       })) as unknown as Bins,
     })),
     takenToday: s.takenToday.slice(),

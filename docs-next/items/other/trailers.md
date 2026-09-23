@@ -19,7 +19,7 @@ A trailer loads and unloads at building loading spots that handle its items ([[s
 ## What each does on a plot
 
 - **Seeder**: plants its seeds on each empty plot; grass seed makes turf.
-- **Sprayer**: fertilizes each plot and tree below its maximum, using only the difference. It does not carry Weed spray.
+- **Sprayer**: carries fertilizer or compost and fertilizes each plot and tree below its maximum, using only the difference.
 - **Harvester**:
 
 | plot | result |
@@ -31,4 +31,4 @@ A trailer loads and unloads at building loading spots that handle its items ([[s
 | dead plant, Rotten produce | the item, into the trailer; plot empty |
 | weed | a Pulled weed, into the trailer; plot empty, weed chance unchanged |
 
-It skips trees and turf, and a plot whose item does not fit.
+It works plots only, and passes over a plot whose item would not fit in the trailer.

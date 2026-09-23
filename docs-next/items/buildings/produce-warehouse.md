@@ -7,15 +7,15 @@
 | demolish | no |
 | cell kind | `'warehouse'` |
 
-Where goods are sold: the Market truck. **Drop off** here fills accepted contracts first and sells the rest at once ([[features/market]], [[features/contracts]]).
+Where goods are sold. **Drop off** here fills accepted contracts first and sells the rest at once ([[features/market]], [[features/contracts]]).
 
 ## Use
 
-Clicking it with a sellable item in hand walks the gardener to the loading spot below it (`PAD`) and drops the item off. Items the Market does not take are refused.
+Clicking it with a sellable item in hand walks the gardener to the loading spot below it (`PAD`) and drops the item off. The items it takes are listed in [[features/market]].
 
 ## Connections
 
-Vehicle unload spots on the row below it (`warehousePads`); they take fruit, produce and alcohol ([[features/vehicles]]). No chest input or output.
+Vehicle unload spots on the row below it (`warehousePads`); a route unload there takes fruit, produce and alcohol ([[features/vehicles]]).
 
 ## Screen
 
@@ -23,4 +23,4 @@ Hover: **Produce Warehouse**. Prompt: **Drop off**.
 
 ## Art
 
-`prop-produce-warehouse.svg`, `prop-truck.svg`.
+`prop-produce-warehouse.svg`.

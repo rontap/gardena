@@ -27,9 +27,9 @@ Each batch takes `INFUSE_IN` good and `INFUSE_FLAKES` flakes, or `INFUSE_EXTRACT
 | `INFUSE_IN` [[items/produce/cask]] + reagent | 1 infused wine or cider, same variety |
 | `INFUSE_IN` [[items/produce/oil]] + reagent | 1 infused olive oil |
 
-An infused good is not worth more per unit. It has two outcomes ([[features/machines]]):
+An infused good keeps the value per unit of the good that went in. It has two outcomes ([[features/machines]]):
 
-1. At the Market it sells at the price drop in force when the drop-off started and does not add to the price drop.
+1. At the Market it sells at the price drop in force when the drop-off started and leaves the price drop as it is.
 2. In a completed contract it raises the reputation gained by up to 25%, in proportion to the infused share of delivered units.
 
 ## Connections

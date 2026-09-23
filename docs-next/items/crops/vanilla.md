@@ -24,7 +24,7 @@ Fields of `CROPS.vanilla`: `growSeconds`, `waterUsePerSec`, `waterTolerance`, `f
 
 ## Selling
 
-Fruit at the Market for `CROPS.vanilla.sale` × `CROPS.vanilla.saleMul` × `qualityMul(quality)` × freshness ([[features/market]]).
+Fruit at the Market for `CROPS.vanilla.sale` × `freshMul(freshness)` × `qualityMul(quality)` × `purposeMul(variety, 'produce')` × the `saleswoman` skill × the `heirloom` skill for an Heirloom variety, then the price drop ([[features/market]]). `CROPS.vanilla.saleMul` is not part of that price.
 
 ## Art
 

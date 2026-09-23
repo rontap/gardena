@@ -397,46 +397,6 @@ describe('infusion.stall', () => {
       item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 72, infused: true },
     })
     expect(loaded.world.stall['jam-grape'].worth.base.infused).toBe(72)
-
-    const stripped = JSON.parse(JSON.stringify(s)) as {
-      seats: { hand: { kind: string; item: Record<string, unknown> }; inventory: { kind: string; item?: Record<string, unknown> }[] }[]
-      chunks: { cells: { kind: string; recipe?: string; units?: number }[][] }[]
-    }
-    stripped.seats[0].inventory[2] = {
-      kind: 'hold',
-      item: { kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 72 },
-    }
-    const rawFurnace = stripped.chunks[0].cells.flat().find(c => c.kind === 'furnace')
-    if (rawFurnace !== undefined) delete rawFurnace.recipe
-    const missing = parse(JSON.stringify(stripped))
-    expect(missing.ok).toBe(true)
-    if (!missing.ok) return
-    const jam = missing.world.seats[0].inventory[2]
-    expect(jam.kind).toBe('hold')
-    if (jam.kind !== 'hold') return
-    expect(jam.item.kind).toBe('jam')
-    if (jam.item.kind !== 'jam') return
-    expect(jam.item.infused).toBe(false)
-    const fMissing = missing.world.cell(furnaceAt)
-    expect(fMissing.kind).toBe('furnace')
-    if (fMissing.kind !== 'furnace') return
-    expect(fMissing.recipe).toBe('ash')
-    const millRaw = JSON.parse(JSON.stringify(s)) as {
-      chunks: { cells: { kind: string; recipe?: string; units?: number }[][] }[]
-    }
-    millRaw.chunks[0].cells.flat().forEach(c => {
-      if (c.kind === 'furnace') {
-        delete c.recipe
-        c.units = 0
-      }
-    })
-    const noneHydrate = parse(JSON.stringify(millRaw))
-    expect(noneHydrate.ok).toBe(true)
-    if (!noneHydrate.ok) return
-    const fNone = noneHydrate.world.cell(furnaceAt)
-    expect(fNone.kind).toBe('furnace')
-    if (fNone.kind !== 'furnace') return
-    expect(fNone.recipe).toBe('none')
     expect((STALL_IDS as readonly string[]).includes('bread')).toBe(true)
     expect((STALL_IDS as readonly string[]).includes('flakes')).toBe(false)
   })
@@ -531,12 +491,6 @@ describe('infusion.rep', () => {
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(parsed.world.contracts.active[0].bins[0].infusedFilled).toBe(2)
-    const raw = JSON.parse(JSON.stringify(saved)) as { contracts: { active: { bins: { filled: number; infusedFilled?: number }[] }[] } }
-    delete raw.contracts.active[0].bins[0].infusedFilled
-    const missing = parse(JSON.stringify(raw))
-    expect(missing.ok).toBe(true)
-    if (!missing.ok) return
-    expect(missing.world.contracts.active[0].bins[0].infusedFilled).toBe(0)
     expect(Accepts({ kind: 'plain', good: 'jam-grape', amount: 1 }, 'jam-grape')).toBe(true)
   })
 })

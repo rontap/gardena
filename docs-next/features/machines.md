@@ -71,9 +71,9 @@ A machine with a signal input stops starting and advancing batches while that in
 
 ### Infusion
 
-The Infuser sets `infused` on jam, spirits, wine and cider, and olive oil, using flakes or vanilla extract ([[items/buildings/infuser]]). An infused item keeps the quality and `unitSale` of the good that went in, and stacks separately from the plain good. Infusion does not raise the price of a unit. It has two outcomes:
+The Infuser sets `infused` on jam, spirits, wine and cider, and olive oil, using flakes or vanilla extract ([[items/buildings/infuser]]). An infused item keeps the quality and `unitSale` of the good that went in, and stacks separately from the plain good. Infusion has two outcomes:
 
-1. **Market: no price drop.** Infused units of a good all sell at the price drop that good had when the drop-off started. They do not add to the price drop, so selling many infused units does not lower the price of the next ones or of plain units sold later (`marketQuote`, [[features/market]]).
+1. **Market: a fixed price drop.** Infused units of a good all sell at the price drop that good had when the drop-off started, and leave it as it is, so any number of infused units sells at one price (`marketQuote`, [[features/market]]).
 2. **Contracts: more reputation.** Infused units count toward a contract like plain ones. On completion, reputation gained is multiplied by 1 + 0.25 × (infused units delivered ÷ units required) ([[features/contracts]]).
 
 ### Familiarity

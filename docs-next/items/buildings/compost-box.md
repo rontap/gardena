@@ -14,7 +14,7 @@ Turns organic waste into [[items/other/compost]].
 
 ## Use
 
-Takes any item with a compost value, a whole stack at a time. Each item adds points (`COMPOST_VALUE`); there is no upper limit. Every time it holds `COMPOST_NEED` points it makes one bag in `COMPOST_SECONDS`, sped up by nearby Furnaces, and keeps the rest.
+Takes any item with a compost value, a whole stack at a time. Each item adds points (`COMPOST_VALUE`), without a limit on the total. Every time it holds `COMPOST_NEED` points it makes one bag in `COMPOST_SECONDS`, sped up by nearby Furnaces, and keeps the rest.
 
 ## Recipe
 

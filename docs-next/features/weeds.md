@@ -49,7 +49,7 @@ Each leaves an empty plot with the same soil. Spray works on any tilled plot, we
 ### Items
 
 **Pulled weed** stacks. The Compost box and the Furnace take it, and a burrow can drop it.
-**Weed spray** is a `WEED_SPRAY_BAG` litre bag from the Additive store. The Sprayer trailer does not carry it; it carries fertilizer and compost only.
+**Weed spray** is a `WEED_SPRAY_BAG` litre bag from the Additive store, used by hand.
 
 ### Grass
 

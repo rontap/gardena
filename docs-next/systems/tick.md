@@ -59,7 +59,7 @@ When `Clock.advance` crosses `DAY_SECONDS`, the day number increases, `t` become
 6. A `Recap` for the ended day is added to `recaps` and its day to `recapUnseen`; `POINTS_PER_DAY` skill points are granted; `clock.banner` is set.
 7. `tally` is reset. If contracts are unlocked and no contract was accepted that day, reputation is reduced by `REP_IDLE`. `takenToday` is cleared, `repDay` is set to the current reputation, and `applyDayDemand` sets the Market demand for the new day.
 
-The end-of-day summary does not pause the game. It is listed in the Command Center until the player opens it.
+The game keeps running after the end of the day. The end-of-day summary is listed in the Command Center until the player opens it.
 
 ## Entry points
 

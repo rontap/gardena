@@ -20,4 +20,4 @@ Rotten produce on the ground is removed at the end of the day once it has lain t
 
 ## Selling
 
-Refused at the Market truck until `unlock-fermentation` is researched. After that, each unit pays 1 coin. Skills and the price drop do not apply (`World.clearance`).
+Refused until `unlock-fermentation` is researched. After that, Drop off at the Produce Warehouse pays 1 coin per unit, by hand or from a vehicle. Skills and the price drop do not apply (`World.clearance`).

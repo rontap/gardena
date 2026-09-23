@@ -48,7 +48,7 @@ import type {
   PrizePool,
   Stars,
 } from './market.h.ts'
-import { isBakedStall, isCropStall, isInfusedStall, STALL_IDS } from '../stall.ts'
+import { isBakedStall, isCropStall, STALL_IDS } from '../stall.ts'
 import { WEATHER_FRUIT_IMPACT } from '../../defs/weather.ts'
 import { FAMILIARITY_RECOVER, VARIETIES, tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
 import { boughtSeedQuality } from '../store.ts'
@@ -200,9 +200,9 @@ export const CONTRACT_OFFERS = 6
 
 export const CONTRACT_ACTIVE = 3
 
-export const CONTRACT_SLOT_MAX = 8
+export const BROKER_MAX_TIER = 3
 
-export const BROKER_MAX_TIER = 2
+export const CONTRACT_SLOT_MAX = CONTRACT_OFFERS + BROKER_MAX_TIER
 
 export const CONTRACT_HISTORY_MAX = 24
 
@@ -235,6 +235,7 @@ export const SLOT_BANDS: readonly (readonly [number, number])[] = [
   [32, 40],
   [25, 33],
   [32, 40],
+  [28, 36],
 ]
 
 export const STAR_MIN: { readonly [K in Stars]: number } = {
@@ -812,18 +813,6 @@ function pushHistory(w: World, e: HistoryEntry): void {
   w.tally.contracts.push(e)
 }
 
-function consignDemand(w: World, d: Demand, n: number, infused: boolean): void {
-  if (d.kind === 'plain') {
-    if (isCropStall(d.good)) w.stall[d.good].take('base', n, 1)
-    else if (isInfusedStall(d.good)) w.stall[d.good].takeSpirit('base', n, cleanUnit(d), infused)
-    else if (d.good === 'sugar') w.stall.sugar.takeSugar(n, SUGAR_MILL)
-    else w.stall[d.good].takeBaked(n, cleanUnit(d))
-    return
-  }
-  if (d.group === 'jam') w.stall['jam-cherry'].takeSpirit('base', n, JAM_SALE.cherry, infused)
-  else w.stall.vodka.takeSpirit('base', n, bakeSpiritSale('vodka', 'base', 0), infused)
-}
-
 function addN(map: Map<StallGoodId, number>, good: StallGoodId, n: number): void {
   const cur = map.get(good)
   map.set(good, cur === undefined ? n : cur + n)
@@ -840,14 +829,8 @@ function dumpFilled(w: World, a: Active): number {
     unitOf.set(good, unit)
     const infN = bin.infusedFilled
     const plainN = bin.filled - infN
-    if (plainN > 0) {
-      addN(plainAdd, good, plainN)
-      consignDemand(w, bin.demand, plainN, false)
-    }
-    if (infN > 0) {
-      addN(infAdd, good, infN)
-      consignDemand(w, bin.demand, infN, true)
-    }
+    if (plainN > 0) addN(plainAdd, good, plainN)
+    if (infN > 0) addN(infAdd, good, infN)
   })
   const goods = new Set<StallGoodId>([...plainAdd.keys(), ...infAdd.keys()])
   const kind = w.weather(w.clock.day)

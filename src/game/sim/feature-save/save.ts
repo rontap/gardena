@@ -88,8 +88,8 @@ export function dump(world: World): Save {
       died: world.tally.died,
       harvests: world.tally.harvests,
       research: world.tally.research.slice(),
+      contracts: world.tally.contracts.slice(),
     },
-    seam: { kind: 'play' },
     recaps: world.recaps.map(r => ({
       day: r.day,
       money: r.money,
@@ -166,10 +166,7 @@ export function slotStamp(): string | undefined {
 
 function dumpStall(g: StallGood): SaveStallGood {
   return {
-    offered: 0,
-    market: 0,
-    target: 0,
-    acc: 0,
+    sat: g.sat,
     stock: Object.fromEntries(VARIETY_IDS.map(v => [v, { ...g.stock[v] }])) as SaveStallGood['stock'],
     worth: Object.fromEntries(VARIETY_IDS.map(v => [v, { ...g.worth[v] }])) as SaveStallGood['worth'],
   }

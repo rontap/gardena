@@ -34,4 +34,4 @@ Prompt **Mine**.
 | one-tile rock | soft untilled ground | 1 | work seconds |
 | two-tile rock | both tiles become soft untilled ground | 2; refused with fewer left | work seconds × 2 |
 
-A pickaxe at 0 uses is removed from the hand. A pickaxe on a burrow does nothing.
+A pickaxe at 0 uses is removed from the hand.

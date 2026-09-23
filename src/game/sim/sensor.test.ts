@@ -1353,7 +1353,7 @@ describe('sensors.fence-delete', () => {
 })
 
 describe('sensors.logic', () => {
-  test('mode `or` / `and` matches old OR / AND. Default `or`.', () => {
+  test('mode `or` / `and`. Default `or`. The mode loads back from a save.', () => {
     const orW = new World(1)
     ready(orW)
     put(orW, 'buy-logic', A)
@@ -1409,15 +1409,7 @@ describe('sensors.logic', () => {
       })
     })
     expect(found).toBe(true)
-    const raw = JSON.parse(JSON.stringify(dumped))
-    raw.chunks.forEach((ch: { cells: { kind: string }[][] }) => {
-      ch.cells.forEach(row => {
-        row.forEach(c => {
-          if (c.kind === 'logic') c.kind = 'or'
-        })
-      })
-    })
-    const loaded = parse(JSON.stringify(raw))
+    const loaded = parse(JSON.stringify(dumped))
     expect(loaded.ok).toBe(true)
     if (!loaded.ok) return
     const parsed = loaded.world.cell(A)
